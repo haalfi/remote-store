@@ -1,0 +1,5 @@
+# extra: dagster
+# python:
+# captured:
+# Stub baseline — first population pending.
+# Run: hatch run drift-check refresh-baseline dagster

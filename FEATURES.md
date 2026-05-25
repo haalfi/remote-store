@@ -375,3 +375,8 @@ pip install remote-store[toml]        # TOML config (stdlib on Python 3.11+)
 pip install remote-store[yaml]        # YAML config loading
 ```
 <!-- END_GENERATED:install_extras -->
+
+Each extra declares a floor in `pyproject.toml` and in most cases
+deliberately no ceiling (the `arrow` and `sql-query` extras carry a
+`pyarrow<25` ceiling). For the exact upper-bound versions CI was last
+green against, see [Tested upper-bound versions](https://docs.remotestore.dev/stable/reference/tested-versions/).

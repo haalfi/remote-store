@@ -7,6 +7,9 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-182: Scheduled drift guard for unbounded extra-dependency floors, with a
+  new user-facing [Tested upper-bound versions](docs-src/reference/tested-versions.md)
+  page recording what CI was last green against.
 - ID-208: Dagster compute log manager (`RemoteStoreComputeLogManager`)
 - BK-236: Fix broken documentation links in the README and the data-lake
   patterns guide that pointed at docs-site paths which do not exist.

@@ -33,6 +33,7 @@ _COMPOSE_FILE = _ROOT / "infra" / "docker-compose.yml"
 # source ``infra/.env`` and reference variables, not literals.
 _CI_FILES = (
     _ROOT / ".github" / "actions" / "start-backends" / "action.yml",
+    _ROOT / ".github" / "workflows" / "drift-guard.yml",
     _ROOT / ".github" / "workflows" / "mutation.yml",
     _ROOT / ".github" / "workflows" / "publish.yml",
 )

@@ -1,0 +1,275 @@
+id: ID-182
+title: "Scheduled CI drift guard for unbounded extra-dependency floors"
+trigger: |
+  PR 613 closed two paramiko silent-upgrade breakages back-to-back
+  (BUG-204 channel_timeout: 2.x -> 3.x; BK-198 ssh-rsa: 4.x -> 5.x).
+  Both shared the same shape: an unbounded floor in `pyproject.toml`,
+  a working install on day N, a transitive upgrade on day N+3, a
+  broken install on day N+3. The pattern applies to every extra
+  (s3, azure, sql, arrow, ...), not just sftp. Without a guard, the
+  next one is just a matter of time.
+
+source_items:
+  - ID-182
+
+audience:
+  - user.site
+  - infra.ci
+  - contributor.tooling
+
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+
+# Two review rounds. Round 1 surfaced five operational issues + an
+# under-tested-script concern (items 1-6 below). Round 2 surfaced four more
+# operational issues caught on a closer pass (items 7-10). One claim in
+# round 2 (co_shipped_items: BK-236) was checked against the diff and
+# skipped — BK-236 shipped in PR #670, not this one.
+#   1. render_docs interpolated today's date → --check in preflight would
+#      fail every CI run after the PR-author day. Fixed by removing the
+#      date from the rendered footer (output is now idempotent).
+#   2. drift_smoke_map.py routed tests/e2e/* into the sftp smoke, but
+#      pyproject's addopts="--ignore=tests/e2e ..." silently dropped them.
+#      Added `-o addopts=` to the sftp target (same shape as the `e2e`
+#      hatch script).
+#   3. Workflow used `if: !cancelled()` after the diff step, so a
+#      resolve-step failure surfaced as a confusing FileNotFoundError.
+#      Switched to `if: success()`.
+#   4. Workflow hard-coded port 2223 for legacy-sftp; check_infra_settings
+#      enforces .env-sourced ports for CI files in _CI_FILES, but
+#      drift-guard.yml was not in that tuple. Both fixed: sourced the
+#      port from infra/.env, added the workflow to _CI_FILES.
+#   5. drift_check docstring claimed "stdlib-only" but tomllib is stdlib
+#      only on Python 3.11+. Docstring rewritten to be accurate.
+# Also added unit tests for the pure helpers (_is_prerelease, _parse_freeze,
+# _direct_deps_for, lock parsing, write_lock no-op refresh, render_docs
+# idempotency).
+#
+# Round 2 findings:
+#   7. resolve_extra ran `pip install` without redirecting stdout, so pip's
+#      deprecation notices / retry messages could leak into the JSON file
+#      the workflow redirects script stdout into. Switched to explicit
+#      stdout=DEVNULL, stderr=PIPE; stderr surfaces on CalledProcessError.
+#   8. Drift-guard workflow installed only pytest/pytest-asyncio/pytest-xdist
+#      for the smoke run, but tests/backends/conformance/conftest.py exits
+#      with UsageError when pytest-recording is missing (TEST-007). Backend
+#      smokes would fail at collection rather than detect drift. Added the
+#      hard-required test plugins (pytest-recording, hypothesis, moto[server,s3]).
+#   9. Workflow used `> file` shell redirect for the JSON report. A
+#      script-internal failure inside diff_extra left a truncated/empty
+#      file that drift_report.py would crash on, masking every other extra.
+#      Added `diff --out PATH` which writes atomically (tempfile + os.replace)
+#      and emits a synthetic `status: error` report on resolve failure;
+#      drift_report.py now renders an "Errors" section for them.
+#  10. No `concurrency:` group declared. A manual workflow_dispatch racing
+#      the scheduled Monday run could last-writer-wins the rolling-issue
+#      reconciliation. Added `concurrency: { group: drift-guard, cancel-in-progress: false }`.
+#
+# Round 2 also claimed `co_shipped_items: BK-236`; checked against
+# `git diff origin/master...HEAD` — BK-236 was closed by PR #670 (merge
+# commit fbc2258, the base of this PR), not by this PR. Claim incorrect,
+# skipped. The BK-236 BACKLOG-DONE entry appears in our diff only because
+# our ID-182 entry was inserted above it; no BK-236 code changes here.
+#
+# Round 3 findings:
+#  11. drift_smoke_map keyword selectors `sql_blob`, `sql_query`,
+#      `"http or requests"`, `"http or httpx"` all collected zero tests.
+#      The conformance fixture is registered as `sqlblob` (one word); no
+#      `sqlquery` conformance fixture exists; HTTP backend tests live at
+#      tests/backends/http/, not tests/ext/. Switched the four selectors
+#      to direct paths (`tests/backends/sqlblob/`, `tests/backends/sqlquery/`,
+#      `tests/backends/http/`).
+#  12. workflow_dispatch.inputs.extra reached `matrix.extra` (and from there
+#      multiple shell `run:` blocks) without validation. The setup step's
+#      env-routing pattern (mutation.yml-style) only hides template
+#      interpolation in setup itself; the matrix re-introduces the value
+#      into shell unguarded. Added a validate-against-list_extras() check
+#      in setup so a crafted INPUT_EXTRA never reaches matrix.
+#  13. render_docs prose claimed "deliberately no ceiling" library-wide,
+#      but pyproject.toml's arrow / sql-query carry `pyarrow<25`. Reworded
+#      to "in most cases deliberately no ceiling" with the explicit
+#      exception named. Same update applied to CONTRIBUTING.md and FEATURES.md.
+#  14. Inline legacy-sftp wait loop fell through after 30s without checking
+#      whether the port had come up. Added the `nc -z ... || exit 1`
+#      terminal validation that .github/actions/start-backends already uses.
+#  15. Comment on the smoke-step install claimed test infrastructure was
+#      "not pulled from the drifted resolution, so version flux here does
+#      not compromise the smoke". That overstates the isolation — pip
+#      installs into one env, so shared transitives (urllib3, cryptography)
+#      can be re-pinned to satisfy moto. Comment rewritten to be honest
+#      about the limitation; `--upgrade-strategy only-if-needed` made
+#      explicit to maximise drift-preservation when constraints allow.
+#  16. drift_smoke_map shipped with no tests (gap from round 2, now
+#      addressed). Added tests/scripts/test_drift_smoke_map.py — one
+#      parametrized test per extra that asserts `pytest --collect-only`
+#      collects ≥1 item. rc=2 with ModuleNotFoundError is treated as
+#      "not installed locally" and skipped (CI installs `.[<extra>]`
+#      before running the smoke).
+#
+# Round 4 findings:
+#  17. render_docs emitted RST double-backticks (``foo``) in the prose
+#      header. MkDocs/CommonMark renders these as code spans containing
+#      literal backtick characters, not as inline code around `foo`.
+#      Switched to single-backtick Markdown spans; tested-versions.md
+#      regenerated.
+#  18. Two import shapes for scripts/ in drift-guard.yml: setup used
+#      `sys.path.insert(0, "scripts"); from drift_check import ...`,
+#      the smoke step used `from scripts.drift_smoke_map import ...`
+#      (implicit namespace package). The two would diverge if cwd
+#      changes or `scripts/__init__.py` is later added. Unified on the
+#      sys.path.insert shape (matching setup).
+#  19. Smoke comment claimed `-p no:benchmark` "drops coverage / xdist",
+#      but pytest-cov / pytest-benchmark aren't installed by the smoke
+#      install (so the flag was dead) and pytest-xdist is harmless
+#      without `-n`. Dropped the flag and updated the comment.
+#
+# Round 5 findings (all rooted in "workflow smoke-install does not match
+# what the smoke targets transitively need to execute"):
+#  20. otel smoke routed to tests/ext/test_otel.py, which imports
+#      opentelemetry.sdk.* unconditionally at module level. The [otel]
+#      extra only ships opentelemetry-api, so collection fails in the
+#      workflow's smoke env. Switched to an import-only smoke that
+#      targets remote_store.ext.otel (extending the `--import-only`
+#      fallback to accept an explicit module name).
+#  21. requests / httpx smokes routed to tests/backends/http/test_config.py,
+#      which `importorskip`'s pytest-httpserver at module level. The
+#      smoke install list did not include pytest-httpserver, so every
+#      test skipped (rc=0 = false-clear). Added pytest-httpserver to the
+#      smoke install line.
+#  22. drift_report._load_reports used `glob("*.json")` but
+#      actions/upload-artifact@v4 preserves the workspace-relative path
+#      prefix inside the artefact, so download extracts to
+#      <root>/drift-reports/<extra>.json — one level deeper than the
+#      script looked. Every weekly run would have found zero reports and
+#      logged "No drift reports found; nothing to reconcile" without
+#      opening any issue. Switched to `rglob("*.json")` (handles both
+#      flat and nested layouts robustly).
+#  23. test_drift_smoke_map's rc=2 skip heuristic matched only
+#      "ModuleNotFoundError" — missed ImportError, importorskip,
+#      INTERNALERROR, etc. Widened the heuristic to all four collection-
+#      error shapes pytest can take.
+#
+# Self-validation discussion surfaced one defensive add: actionlint is
+# now wired into the CI lint job (`.github/workflows/ci.yml`). Catches
+# template-injection vectors, undefined env / matrix references,
+# outdated runner labels, and shellcheck issues inside `run:` blocks
+# statically — closes the "drift-guard.yml never runs on PRs" gap by
+# at least running the static lint on every PR that touches a workflow
+# file. CODE_PAT widened to trigger lint on any `.github/workflows/`
+# change, not just `ci.yml`.
+#
+# Round 6 findings (post-actionlint, post-rebase):
+#  24. ci.yml comment claimed "see BACKLOG" for the re-enable-shellcheck
+#      follow-up, but no entry exists in sdd/BACKLOG.md. Rephrased the
+#      comment to be honest ("deferred — turn back on once pre-existing
+#      workflows pass shellcheck, or move to per-file ignore via
+#      .github/actionlint.yaml") rather than file a backlog item
+#      unilaterally — that decision is the user's.
+#  25. actionlint downloader-script URL was pulled from `main`
+#      (https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/...)
+#      while the binary version was pinned to 1.7.7. Supply-chain hygiene
+#      gap: a pushed-to-main bootstrap could run arbitrary code in the
+#      lint job before the pinned binary executes. Pinned the script URL
+#      to the matching v1.7.7 tag.
+#
+# Round 6 findings deferred by the reviewer's own recommendation (paper
+# trail per "deferred review threads" rule); nothing required before
+# landing — these are hardening / clarity passes for the follow-up:
+#  - Tighten test_drift_smoke_map skip message to "rc=2 with import/internal
+#    marker — assumed env mismatch; CI is authoritative", so a debugging
+#    maintainer doesn't trust the skip prematurely on a real script bug.
+#  - Replace `eval pytest "${TARGETS#PYTEST:}"` in drift-guard.yml smoke
+#    step with a python-driven exec (argv via temp JSON + subprocess.run)
+#    to remove the future-fragility if shlex.quote is ever dropped.
+#  - Switch `-shellcheck=` (global) to per-file ignores via
+#    .github/actionlint.yaml, so new workflows benefit from shellcheck
+#    immediately and only the pre-existing noisy files are silenced.
+review_rounds: 6
+
+surprising_ripples:
+  - scripts/check_infra_settings.py
+  - scripts/drift_report.py
+  - tests/scripts/test_drift_check.py
+  - tests/scripts/test_drift_smoke_map.py
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: pyproject.toml
+        section: "[project.optional-dependencies] (lines 53-74)"
+        read_type: gate
+        extract: "Inventory the extras the guard must cover; confirm none have ceilings"
+      - file: sdd/traces/BUG-204-paramiko-lower-bound.yml
+        section: "phases / tests"
+        read_type: reference
+        extract: "Shape of the signature-introspection test that would have caught the 2.x->3.x drift if run weekly"
+      - file: sdd/traces/BK-198-ssh-rsa-compat.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Shape of the legacy-sftp e2e — the deterministic fixture the backlog cites as the model"
+      - file: .github/workflows/mutation.yml
+        section: "schedule + workflow_dispatch + setup job"
+        read_type: reference
+        extract: "Established pattern for scheduled jobs with matrix-from-script and per-event dispatch fallback"
+      - file: .github/actions/start-backends/action.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Reuse for s3/azure/sftp smokes; legacy-sftp comes via docker-compose"
+
+  - id: design
+    name: Design
+    steps:
+      - file: scripts/gen_features.py
+        section: "_load_pyproject + main (--check pattern)"
+        read_type: reference
+        extract: "Existing template for tomllib-driven scripts with a --check staleness mode"
+      - file: sdd/traces/_schema.yml
+        section: "audience derived rule (line 115)"
+        read_type: gate
+        extract: "user.site in audience -> CHANGELOG entry required"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/drift_check.py
+        section: "(full)"
+        read_type: reference
+        extract: "Stdlib-only resolver + diff + render-docs subcommands"
+      - file: scripts/drift_smoke_map.py
+        section: "SMOKE_TARGETS / backends_needed"
+        read_type: reference
+        extract: "Per-extra pytest selection routing; existing tests/ext/ modules as the most-likely-to-break surface"
+      - file: scripts/drift_report.py
+        section: "(full)"
+        read_type: reference
+        extract: "Rolling-issue reconciliation via the gh CLI"
+      - file: .github/workflows/drift-guard.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Mon 07:00 UTC + workflow_dispatch; matrix over extras; per-extra artefacts; single report job"
+      - file: infra/drift-locks/README.md
+        section: "(full)"
+        read_type: reference
+        extract: "File-format and bootstrap docs for the lock directory; stubs ship empty awaiting first refresh"
+      - file: docs-src/reference/tested-versions.md
+        section: "(generated)"
+        read_type: reference
+        extract: "User-facing page derived from the locks; first-population-pending sections until baselines are refreshed"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Dependency"
+        read_type: verify
+        extract: "pyproject extras + pins, README install, docs prerequisites — README install is unchanged; docs prerequisites get the new Tested-versions page"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "Trace ships in the same PR; audience priority-sorted; CHANGELOG required because user.site is in audience"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Docs navigation"
+        read_type: verify
+        extract: "docs-src/reference/_nav.yml updated for the new Tested-versions page"

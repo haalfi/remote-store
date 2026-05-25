@@ -1,0 +1,246 @@
+name: Drift Guard
+
+# ID-182: weekly scheduled re-resolution of every `remote-store[<extra>]`
+# against the latest available transitive versions (including pre-releases),
+# diffed against the committed baselines in `infra/drift-locks/`. On drift,
+# runs the most-likely-to-break smoke tests against deterministic fixtures
+# and opens (or updates) a single rolling GitHub issue.
+#
+# Explicit non-goals:
+#  - This workflow NEVER edits pyproject.toml.
+#  - This workflow NEVER auto-merges a pin / floor update.
+#  - The point is early warning, not automated remediation.
+#
+# Refreshing baselines: maintainer runs `hatch run drift-check refresh-baseline <extra>`
+# locally (on Python 3.13, matching this workflow's runner) and commits the
+# updated lock + regenerated docs page in the same PR as whatever motivated
+# the refresh.
+
+on:
+  schedule:
+    - cron: "0 7 * * 1"  # Every Monday 07:00 UTC
+  workflow_dispatch:
+    inputs:
+      extra:
+        description: "Single extra to check (default: all)"
+        required: false
+        default: "all"
+        type: string
+
+env:
+  PY_VERSION: "3.13"
+
+permissions:
+  contents: read
+  issues: write
+
+# Single-writer guarantee on the rolling issue: a manual `workflow_dispatch`
+# launched while the scheduled Monday run is still in its longest matrix leg
+# would otherwise race the `report` job and last-writer-wins on `gh issue
+# edit` / `close`. Queue dispatches behind a running schedule rather than
+# cancelling, so the schedule's wider matrix always completes.
+concurrency:
+  group: drift-guard
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      extras: ${{ steps.set-extras.outputs.extras }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PY_VERSION }}
+      - id: set-extras
+        env:
+          # Route the user-supplied input through env, not direct template
+          # interpolation (mutation.yml:35-42 pattern). Validation below
+          # additionally ensures INPUT_EXTRA reaches `matrix.extra` (and
+          # downstream shell interpolation in the check job) only after
+          # matching against the known extras list — otherwise a crafted
+          # workflow_dispatch input could break out of the shell context.
+          INPUT_EXTRA: ${{ github.event.inputs.extra }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = "schedule" ] || [ -z "$INPUT_EXTRA" ] || [ "$INPUT_EXTRA" = "all" ]; then
+            extras=$(python scripts/drift_check.py extras)
+          else
+            extras=$(python -c '
+          import json, os, sys
+          sys.path.insert(0, "scripts")
+          from drift_check import list_extras
+          chosen = os.environ["INPUT_EXTRA"]
+          known = list_extras()
+          if chosen not in known:
+              sys.exit(f"::error::INPUT_EXTRA={chosen!r} is not in the known extras list: {known}")
+          print(json.dumps([chosen]))
+          ')
+          fi
+          echo "extras=${extras}" >> "$GITHUB_OUTPUT"
+
+  check:
+    needs: [setup]
+    name: check-${{ matrix.extra }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        extra: ${{ fromJson(needs.setup.outputs.extras) }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PY_VERSION }}
+
+      # Start the docker-compose backends the smoke targets need.
+      # The conditional matches scripts/drift_smoke_map.py::backends_needed.
+      - name: Start backends (if needed)
+        if: contains(fromJson('["s3","s3-pyarrow","azure","sftp"]'), matrix.extra)
+        uses: ./.github/actions/start-backends
+        with:
+          minio: ${{ contains(fromJson('["s3","s3-pyarrow"]'), matrix.extra) }}
+          azurite: ${{ matrix.extra == 'azure' }}
+          sftp: ${{ matrix.extra == 'sftp' }}
+
+      - name: Build legacy-sftp container (sftp only)
+        if: matrix.extra == 'sftp'
+        run: |
+          set -a
+          . infra/.env
+          set +a
+          docker compose -f infra/docker-compose.yml up -d legacy-sftp
+          for i in $(seq 1 30); do
+            nc -z 127.0.0.1 "${LEGACY_SFTP_HOST_PORT}" && break || sleep 1
+          done
+          # Match the start-backends action's validation shape: fail loudly
+          # if the port never came up, rather than letting the smoke fail
+          # later with a confusing connection-refused error.
+          nc -z 127.0.0.1 "${LEGACY_SFTP_HOST_PORT}" || { echo "::error::legacy-sftp failed to start on port ${LEGACY_SFTP_HOST_PORT}"; exit 1; }
+
+      # Diff: writes a structured JSON report; never fails the job on drift,
+      # so we collect every extra's report before the report job decides
+      # whether to open / update / close the rolling issue.
+      #
+      # `--out` writes atomically (tempfile + rename) so a script-internal
+      # failure leaves no truncated JSON for `drift_report.py` to crash on.
+      # On unrecoverable error the script writes a synthetic `status:error`
+      # report rather than failing the step, so one extra's PyPI flake does
+      # not mask drift on the other twelve.
+      - name: Resolve and diff
+        run: |
+          mkdir -p drift-reports
+          python scripts/drift_check.py diff "${{ matrix.extra }}" --out "drift-reports/${{ matrix.extra }}.json"
+          echo "=== diff report for ${{ matrix.extra }} ==="
+          cat "drift-reports/${{ matrix.extra }}.json"
+
+      # If the diff reports drift (stable or pre-release), install the
+      # fresh resolution into the runner Python and run the smoke targets.
+      # Status "needs_refresh" (empty baseline) is reported but does not
+      # gate a smoke run — there is nothing to compare against yet.
+      # Gated on success() so a resolve-step failure surfaces as the
+      # original error rather than a confusing FileNotFoundError here.
+      - name: Install fresh resolution and run smokes (on drift)
+        if: success()
+        run: |
+          STATUS=$(python -c "import json; print(json.load(open('drift-reports/${{ matrix.extra }}.json'))['status'])")
+          if [ "$STATUS" != "drift" ]; then
+            echo "No drift / nothing to smoke — status=$STATUS"
+            exit 0
+          fi
+          python -m pip install --upgrade --pre ".[${{ matrix.extra }}]"
+          # Test infrastructure. pytest-recording is hard-required by
+          # tests/backends/conformance/conftest.py (TEST-007); the rest match
+          # what `[dev]` brings in. `--upgrade-strategy only-if-needed` is
+          # pip's default but explicit here: shared transitive deps already
+          # installed at the drifted version (urllib3, cryptography, etc.)
+          # are left alone unless moto / boto3 / etc. cannot otherwise be
+          # satisfied. Honest caveat: when constraints DO conflict, pip
+          # will downgrade the shared dep to satisfy the test plugins,
+          # which means the smoke for that one extra exercises a slightly
+          # mixed version set rather than the pure fresh resolution. For
+          # early-warning that is acceptable; a future refactor could
+          # isolate the two via separate venvs.
+          # Smoke install list must cover every pytest plugin the smoke
+          # targets transitively import. pytest-recording is hard-required
+          # by tests/backends/conformance/conftest.py (TEST-007).
+          # pytest-httpserver is `importorskip`-ed by tests/backends/http/
+          # — without it the http smoke would skip-everything (rc=0) and
+          # the rolling issue would silently report drift as "clear".
+          python -m pip install --upgrade-strategy only-if-needed \
+            pytest pytest-asyncio pytest-xdist pytest-recording pytest-httpserver hypothesis 'moto[server,s3]'
+          TARGETS=$(python -c "
+          import shlex, sys
+          sys.path.insert(0, 'scripts')
+          from drift_smoke_map import smoke_for
+          argv = smoke_for('${{ matrix.extra }}')
+          if argv and argv[0] == '--import-only':
+              module = argv[1] if len(argv) > 1 else 'remote_store'
+              print(f'IMPORT_ONLY:{module}')
+          else:
+              print('PYTEST:' + ' '.join(shlex.quote(t) for t in argv))
+          ")
+          if [[ "$TARGETS" == IMPORT_ONLY:* ]]; then
+            MODULE="${TARGETS#IMPORT_ONLY:}"
+            python -c "import importlib; importlib.import_module('$MODULE'); print('import smoke passed for ${{ matrix.extra }}: $MODULE')"
+          else
+            # Serial run, no special plugin disables: pytest-cov and
+            # pytest-benchmark are not installed by the smoke setup, and
+            # pytest-xdist is harmless without `-n`.
+            eval pytest "${TARGETS#PYTEST:}"
+          fi
+
+      - name: Upload drift report and fresh resolution
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-${{ matrix.extra }}
+          path: drift-reports/${{ matrix.extra }}.json
+          if-no-files-found: warn
+
+      # Also upload a freeze of the resolved package set so a maintainer
+      # can download it and commit as the new baseline if desired (no PR
+      # is opened automatically — see the non-goals comment at the top).
+      - name: Upload fresh resolution as candidate baseline
+        if: always()
+        run: |
+          mkdir -p drift-candidates
+          python scripts/drift_check.py resolve "${{ matrix.extra }}" > "drift-candidates/${{ matrix.extra }}.txt" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate-baseline-${{ matrix.extra }}
+          path: drift-candidates/${{ matrix.extra }}.txt
+          if-no-files-found: warn
+
+  report:
+    needs: [check]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PY_VERSION }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: drift-reports
+          pattern: drift-*
+          merge-multiple: true
+
+      # Compose the rolling-issue body from every per-extra report, then:
+      #  - drift or needs_refresh anywhere -> create/update the rolling issue.
+      #  - all clear and an open issue exists -> comment "cleared" and close.
+      #  - all clear and no issue exists -> no-op.
+      - name: Update rolling drift issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python scripts/drift_report.py drift-reports \
+            --repo "$REPO" \
+            --run-url "$RUN_URL" \
+            --title "[drift-guard] Weekly transitive dependency drift"
