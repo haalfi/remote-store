@@ -9474,33 +9474,233 @@
 <p>Each <code>[&lt;extra&gt;]</code> declares a floor in <code>pyproject.toml</code> and in most cases deliberately no ceiling (the <code>arrow</code> and <code>sql-query</code> extras carry a <code>pyarrow&lt;25</code> ceiling — see the comment on <code>[project.optional-dependencies]</code> in <code>pyproject.toml</code>). The drift guard (<code>.github/workflows/drift-guard.yml</code>, ID-182) records the last known-good resolution per extra in <code>infra/drift-locks/</code> and re-resolves weekly against the latest available versions (including pre-releases) to surface silent transitive upgrades before they reach users.</p>
 <p>The table below is the projection of those lock files onto the top-level packages each extra declares. "Tested up to" is the exact version pinned in the lock at capture time — that is what CI was last green against.</p>
 <h2 id="arrow"><code>[arrow]</code><a class="headerlink" href="#arrow" title="Permanent link">&para;</a></h2>
-<p><em>First population pending. Run <code>hatch run drift-check refresh-baseline arrow</code> on the primary Python and commit the generated <code>infra/drift-locks/arrow.txt</code>.</em></p>
+<p><em>Captured 2026-05-25 on Python 3.13.</em></p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Tested up to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pyarrow</code></td>
+<td><code>24.0.0</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="azure"><code>[azure]</code><a class="headerlink" href="#azure" title="Permanent link">&para;</a></h2>
-<p><em>First population pending. Run <code>hatch run drift-check refresh-baseline azure</code> on the primary Python and commit the generated <code>infra/drift-locks/azure.txt</code>.</em></p>
+<p><em>Captured 2026-05-25 on Python 3.13.</em></p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Tested up to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>azure-identity</code></td>
+<td><code>1.26.0b2</code></td>
+</tr>
+<tr>
+<td><code>azure-storage-file-datalake</code></td>
+<td><code>12.25.0b1</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="dagster"><code>[dagster]</code><a class="headerlink" href="#dagster" title="Permanent link">&para;</a></h2>
-<p><em>First population pending. Run <code>hatch run drift-check refresh-baseline dagster</code> on the primary Python and commit the generated <code>infra/drift-locks/dagster.txt</code>.</em></p>
+<p><em>Captured 2026-05-25 on Python 3.13.</em></p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Tested up to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dagster</code></td>
+<td><code>1.13.6</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="httpx"><code>[httpx]</code><a class="headerlink" href="#httpx" title="Permanent link">&para;</a></h2>
-<p><em>First population pending. Run <code>hatch run drift-check refresh-baseline httpx</code> on the primary Python and commit the generated <code>infra/drift-locks/httpx.txt</code>.</em></p>
+<p><em>Captured 2026-05-25 on Python 3.13.</em></p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Tested up to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>httpx</code></td>
+<td><code>1.0.dev3</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="otel"><code>[otel]</code><a class="headerlink" href="#otel" title="Permanent link">&para;</a></h2>
-<p><em>First population pending. Run <code>hatch run drift-check refresh-baseline otel</code> on the primary Python and commit the generated <code>infra/drift-locks/otel.txt</code>.</em></p>
+<p><em>Captured 2026-05-25 on Python 3.13.</em></p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Tested up to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>opentelemetry-api</code></td>
+<td><code>1.42.1</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="pydantic"><code>[pydantic]</code><a class="headerlink" href="#pydantic" title="Permanent link">&para;</a></h2>
-<p><em>First population pending. Run <code>hatch run drift-check refresh-baseline pydantic</code> on the primary Python and commit the generated <code>infra/drift-locks/pydantic.txt</code>.</em></p>
+<p><em>Captured 2026-05-25 on Python 3.13.</em></p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Tested up to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pydantic-settings</code></td>
+<td><code>2.14.1</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="requests"><code>[requests]</code><a class="headerlink" href="#requests" title="Permanent link">&para;</a></h2>
-<p><em>First population pending. Run <code>hatch run drift-check refresh-baseline requests</code> on the primary Python and commit the generated <code>infra/drift-locks/requests.txt</code>.</em></p>
+<p><em>Captured 2026-05-25 on Python 3.13.</em></p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Tested up to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>requests</code></td>
+<td><code>2.34.2</code></td>
+</tr>
+<tr>
+<td><code>urllib3</code></td>
+<td><code>2.7.0</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="s3"><code>[s3]</code><a class="headerlink" href="#s3" title="Permanent link">&para;</a></h2>
-<p><em>First population pending. Run <code>hatch run drift-check refresh-baseline s3</code> on the primary Python and commit the generated <code>infra/drift-locks/s3.txt</code>.</em></p>
+<p><em>Captured 2026-05-25 on Python 3.13.</em></p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Tested up to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>s3fs</code></td>
+<td><code>2026.4.0</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="s3-pyarrow"><code>[s3-pyarrow]</code><a class="headerlink" href="#s3-pyarrow" title="Permanent link">&para;</a></h2>
-<p><em>First population pending. Run <code>hatch run drift-check refresh-baseline s3-pyarrow</code> on the primary Python and commit the generated <code>infra/drift-locks/s3-pyarrow.txt</code>.</em></p>
+<p><em>Captured 2026-05-25 on Python 3.13.</em></p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Tested up to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pyarrow</code></td>
+<td><code>24.0.0</code></td>
+</tr>
+<tr>
+<td><code>s3fs</code></td>
+<td><code>2026.4.0</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="sftp"><code>[sftp]</code><a class="headerlink" href="#sftp" title="Permanent link">&para;</a></h2>
-<p><em>First population pending. Run <code>hatch run drift-check refresh-baseline sftp</code> on the primary Python and commit the generated <code>infra/drift-locks/sftp.txt</code>.</em></p>
+<p><em>Captured 2026-05-25 on Python 3.13.</em></p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Tested up to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>paramiko</code></td>
+<td><code>5.0.0</code></td>
+</tr>
+<tr>
+<td><code>tenacity</code></td>
+<td><code>9.1.4</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="sql"><code>[sql]</code><a class="headerlink" href="#sql" title="Permanent link">&para;</a></h2>
-<p><em>First population pending. Run <code>hatch run drift-check refresh-baseline sql</code> on the primary Python and commit the generated <code>infra/drift-locks/sql.txt</code>.</em></p>
+<p><em>Captured 2026-05-25 on Python 3.13.</em></p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Tested up to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sqlalchemy</code></td>
+<td><code>2.1.0b2</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="sql-query"><code>[sql-query]</code><a class="headerlink" href="#sql-query" title="Permanent link">&para;</a></h2>
-<p><em>First population pending. Run <code>hatch run drift-check refresh-baseline sql-query</code> on the primary Python and commit the generated <code>infra/drift-locks/sql-query.txt</code>.</em></p>
+<p><em>Captured 2026-05-25 on Python 3.13.</em></p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Tested up to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pyarrow</code></td>
+<td><code>24.0.0</code></td>
+</tr>
+<tr>
+<td><code>sqlalchemy</code></td>
+<td><code>2.1.0b2</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="yaml"><code>[yaml]</code><a class="headerlink" href="#yaml" title="Permanent link">&para;</a></h2>
-<p><em>First population pending. Run <code>hatch run drift-check refresh-baseline yaml</code> on the primary Python and commit the generated <code>infra/drift-locks/yaml.txt</code>.</em></p>
-<hr />
-<p><em>Sections marked "first population pending" will fill in once a maintainer runs <code>hatch run drift-check refresh-baseline &lt;extra&gt;</code> and commits the generated <code>infra/drift-locks/&lt;extra&gt;.txt</code>.</em></p>
+<p><em>Captured 2026-05-25 on Python 3.13.</em></p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Tested up to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pyyaml</code></td>
+<td><code>6.0.3</code></td>
+</tr>
+</tbody>
+</table>
 
 
 
