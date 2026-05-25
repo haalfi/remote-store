@@ -6,7 +6,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## Unreleased
+## v0.26.0
 
 - [x] **ID-182 — Scheduled CI drift guard for unbounded extra-dependency floors**
   spec: — · audience: user.site, infra.ci, contributor.tooling
