@@ -1,5 +1,7 @@
 # extra: sql
-# python:
-# captured:
-# Stub baseline — first population pending.
-# Run: hatch run drift-check refresh-baseline sql
+# python: 3.13
+# captured: 2026-05-25
+# Regenerate with: hatch run drift-check refresh-baseline sql
+
+sqlalchemy==2.1.0b2
+typing-extensions==4.15.0

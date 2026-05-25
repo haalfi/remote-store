@@ -7,57 +7,110 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[arrow]`
 
-_First population pending. Run `hatch run drift-check refresh-baseline arrow` on the primary Python and commit the generated `infra/drift-locks/arrow.txt`._
+_Captured 2026-05-25 on Python 3.13._
+
+| Package | Tested up to |
+|---|---|
+| `pyarrow` | `24.0.0` |
 
 ## `[azure]`
 
-_First population pending. Run `hatch run drift-check refresh-baseline azure` on the primary Python and commit the generated `infra/drift-locks/azure.txt`._
+_Captured 2026-05-25 on Python 3.13._
+
+| Package | Tested up to |
+|---|---|
+| `azure-identity` | `1.26.0b2` |
+| `azure-storage-file-datalake` | `12.25.0b1` |
 
 ## `[dagster]`
 
-_First population pending. Run `hatch run drift-check refresh-baseline dagster` on the primary Python and commit the generated `infra/drift-locks/dagster.txt`._
+_Captured 2026-05-25 on Python 3.13._
+
+| Package | Tested up to |
+|---|---|
+| `dagster` | `1.13.6` |
 
 ## `[httpx]`
 
-_First population pending. Run `hatch run drift-check refresh-baseline httpx` on the primary Python and commit the generated `infra/drift-locks/httpx.txt`._
+_Captured 2026-05-25 on Python 3.13._
+
+| Package | Tested up to |
+|---|---|
+| `httpx` | `1.0.dev3` |
 
 ## `[otel]`
 
-_First population pending. Run `hatch run drift-check refresh-baseline otel` on the primary Python and commit the generated `infra/drift-locks/otel.txt`._
+_Captured 2026-05-25 on Python 3.13._
+
+| Package | Tested up to |
+|---|---|
+| `opentelemetry-api` | `1.42.1` |
 
 ## `[pydantic]`
 
-_First population pending. Run `hatch run drift-check refresh-baseline pydantic` on the primary Python and commit the generated `infra/drift-locks/pydantic.txt`._
+_Captured 2026-05-25 on Python 3.13._
+
+| Package | Tested up to |
+|---|---|
+| `pydantic-settings` | `2.14.1` |
 
 ## `[requests]`
 
-_First population pending. Run `hatch run drift-check refresh-baseline requests` on the primary Python and commit the generated `infra/drift-locks/requests.txt`._
+_Captured 2026-05-25 on Python 3.13._
+
+| Package | Tested up to |
+|---|---|
+| `requests` | `2.34.2` |
+| `urllib3` | `2.7.0` |
 
 ## `[s3]`
 
-_First population pending. Run `hatch run drift-check refresh-baseline s3` on the primary Python and commit the generated `infra/drift-locks/s3.txt`._
+_Captured 2026-05-25 on Python 3.13._
+
+| Package | Tested up to |
+|---|---|
+| `s3fs` | `2026.4.0` |
 
 ## `[s3-pyarrow]`
 
-_First population pending. Run `hatch run drift-check refresh-baseline s3-pyarrow` on the primary Python and commit the generated `infra/drift-locks/s3-pyarrow.txt`._
+_Captured 2026-05-25 on Python 3.13._
+
+| Package | Tested up to |
+|---|---|
+| `pyarrow` | `24.0.0` |
+| `s3fs` | `2026.4.0` |
 
 ## `[sftp]`
 
-_First population pending. Run `hatch run drift-check refresh-baseline sftp` on the primary Python and commit the generated `infra/drift-locks/sftp.txt`._
+_Captured 2026-05-25 on Python 3.13._
+
+| Package | Tested up to |
+|---|---|
+| `paramiko` | `5.0.0` |
+| `tenacity` | `9.1.4` |
 
 ## `[sql]`
 
-_First population pending. Run `hatch run drift-check refresh-baseline sql` on the primary Python and commit the generated `infra/drift-locks/sql.txt`._
+_Captured 2026-05-25 on Python 3.13._
+
+| Package | Tested up to |
+|---|---|
+| `sqlalchemy` | `2.1.0b2` |
 
 ## `[sql-query]`
 
-_First population pending. Run `hatch run drift-check refresh-baseline sql-query` on the primary Python and commit the generated `infra/drift-locks/sql-query.txt`._
+_Captured 2026-05-25 on Python 3.13._
+
+| Package | Tested up to |
+|---|---|
+| `pyarrow` | `24.0.0` |
+| `sqlalchemy` | `2.1.0b2` |
 
 ## `[yaml]`
 
-_First population pending. Run `hatch run drift-check refresh-baseline yaml` on the primary Python and commit the generated `infra/drift-locks/yaml.txt`._
+_Captured 2026-05-25 on Python 3.13._
 
+| Package | Tested up to |
+|---|---|
+| `pyyaml` | `6.0.3` |
 
----
-
-_Sections marked "first population pending" will fill in once a maintainer runs `hatch run drift-check refresh-baseline <extra>` and commits the generated `infra/drift-locks/<extra>.txt`._

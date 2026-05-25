@@ -1,5 +1,6 @@
 # extra: yaml
-# python:
-# captured:
-# Stub baseline — first population pending.
-# Run: hatch run drift-check refresh-baseline yaml
+# python: 3.13
+# captured: 2026-05-25
+# Regenerate with: hatch run drift-check refresh-baseline yaml
+
+pyyaml==6.0.3

@@ -1,5 +1,13 @@
 # extra: sftp
-# python:
-# captured:
-# Stub baseline — first population pending.
-# Run: hatch run drift-check refresh-baseline sftp
+# python: 3.13
+# captured: 2026-05-25
+# Regenerate with: hatch run drift-check refresh-baseline sftp
+
+bcrypt==5.0.0
+cffi==2.0.0
+cryptography==48.0.0
+invoke==3.0.3
+paramiko==5.0.0
+pycparser==3.0
+pynacl==1.6.2
+tenacity==9.1.4

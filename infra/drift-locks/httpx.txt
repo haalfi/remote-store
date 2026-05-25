@@ -1,5 +1,7 @@
 # extra: httpx
-# python:
-# captured:
-# Stub baseline — first population pending.
-# Run: hatch run drift-check refresh-baseline httpx
+# python: 3.13
+# captured: 2026-05-25
+# Regenerate with: hatch run drift-check refresh-baseline httpx
+
+certifi==2026.5.20
+httpx==1.0.dev3

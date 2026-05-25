@@ -1,5 +1,7 @@
 # extra: otel
-# python:
-# captured:
-# Stub baseline — first population pending.
-# Run: hatch run drift-check refresh-baseline otel
+# python: 3.13
+# captured: 2026-05-25
+# Regenerate with: hatch run drift-check refresh-baseline otel
+
+opentelemetry-api==1.42.1
+typing-extensions==4.15.0
