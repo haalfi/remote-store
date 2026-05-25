@@ -123,7 +123,33 @@ expected_ripples:
 #      but pytest-cov / pytest-benchmark aren't installed by the smoke
 #      install (so the flag was dead) and pytest-xdist is harmless
 #      without `-n`. Dropped the flag and updated the comment.
-review_rounds: 4
+#
+# Round 5 findings (all rooted in "workflow smoke-install does not match
+# what the smoke targets transitively need to execute"):
+#  20. otel smoke routed to tests/ext/test_otel.py, which imports
+#      opentelemetry.sdk.* unconditionally at module level. The [otel]
+#      extra only ships opentelemetry-api, so collection fails in the
+#      workflow's smoke env. Switched to an import-only smoke that
+#      targets remote_store.ext.otel (extending the `--import-only`
+#      fallback to accept an explicit module name).
+#  21. requests / httpx smokes routed to tests/backends/http/test_config.py,
+#      which `importorskip`'s pytest-httpserver at module level. The
+#      smoke install list did not include pytest-httpserver, so every
+#      test skipped (rc=0 = false-clear). Added pytest-httpserver to the
+#      smoke install line.
+#  22. drift_report._load_reports used `glob("*.json")` but
+#      actions/upload-artifact@v4 preserves the workspace-relative path
+#      prefix inside the artefact, so download extracts to
+#      <root>/drift-reports/<extra>.json — one level deeper than the
+#      script looked. Every weekly run would have found zero reports and
+#      logged "No drift reports found; nothing to reconcile" without
+#      opening any issue. Switched to `rglob("*.json")` (handles both
+#      flat and nested layouts robustly).
+#  23. test_drift_smoke_map's rc=2 skip heuristic matched only
+#      "ModuleNotFoundError" — missed ImportError, importorskip,
+#      INTERNALERROR, etc. Widened the heuristic to all four collection-
+#      error shapes pytest can take.
+review_rounds: 5
 
 surprising_ripples:
   - scripts/check_infra_settings.py

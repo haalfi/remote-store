@@ -24,9 +24,11 @@ from pathlib import Path
 
 def _load_reports(dir_: Path) -> dict[str, dict]:
     reports: dict[str, dict] = {}
-    for path in sorted(dir_.glob("*.json")):
-        # The matrix uploads artefacts under names like "drift-sftp" containing
-        # "sftp.json"; download-artifact merge-multiple flattens that.
+    # rglob (not glob): upload-artifact@v4 preserves the workspace-relative
+    # directory prefix of `path:` inside the artefact, so the matrix uploads
+    # are extracted to `<dir>/drift-reports/<extra>.json`, one level deeper
+    # than a flat layout. rglob handles both shapes.
+    for path in sorted(dir_.rglob("*.json")):
         with path.open(encoding="utf-8") as f:
             data = json.load(f)
         reports[data["extra"]] = data

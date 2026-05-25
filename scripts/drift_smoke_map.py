@@ -55,7 +55,13 @@ SMOKE_TARGETS: dict[str, list[str]] = {
     "httpx": ["tests/backends/http/"],
     # Extension extras — the matching tests/ext/ module is the smoke.
     "arrow": ["tests/ext/test_arrow.py", "tests/ext/test_parquet.py"],
-    "otel": ["tests/ext/test_otel.py"],
+    # otel: tests/ext/test_otel.py imports opentelemetry.sdk.* at module
+    # level, but the [otel] extra only ships opentelemetry-api. Running the
+    # unit test would need the SDK in the workflow's smoke env, which would
+    # falsely test more than [otel] delivers. An import-only smoke targeting
+    # the ext module exercises remote_store.ext.otel against the freshly
+    # resolved opentelemetry-api without that conflation.
+    "otel": ["--import-only", "remote_store.ext.otel"],
     "yaml": ["tests/ext/test_yaml.py"],
     "pydantic": ["tests/ext/test_pydantic.py"],
     "dagster": ["tests/ext/test_dagster.py"],
@@ -63,13 +69,16 @@ SMOKE_TARGETS: dict[str, list[str]] = {
 
 
 def smoke_for(extra: str) -> list[str]:
-    """Return the pytest argv for an extra; falls back to an import smoke."""
+    """Return the smoke argv for an extra.
+
+    A list starting with ``--import-only`` signals an import smoke; the
+    second element (if present) names the module to import. The workflow
+    branches on the first element. Falls back to importing
+    ``remote_store`` when no entry is registered.
+    """
     if extra in SMOKE_TARGETS:
         return SMOKE_TARGETS[extra]
-    # Fallback: just import the package's top-level module. The workflow
-    # turns this into `python -c "import remote_store; ..."` rather than a
-    # pytest invocation.
-    return ["--import-only"]
+    return ["--import-only", "remote_store"]
 
 
 def backends_needed(extra: str) -> dict[str, bool]:

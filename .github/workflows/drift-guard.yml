@@ -163,21 +163,33 @@ jobs:
           # mixed version set rather than the pure fresh resolution. For
           # early-warning that is acceptable; a future refactor could
           # isolate the two via separate venvs.
+          # Smoke install list must cover every pytest plugin the smoke
+          # targets transitively import. pytest-recording is hard-required
+          # by tests/backends/conformance/conftest.py (TEST-007).
+          # pytest-httpserver is `importorskip`-ed by tests/backends/http/
+          # — without it the http smoke would skip-everything (rc=0) and
+          # the rolling issue would silently report drift as "clear".
           python -m pip install --upgrade-strategy only-if-needed \
-            pytest pytest-asyncio pytest-xdist pytest-recording hypothesis 'moto[server,s3]'
+            pytest pytest-asyncio pytest-xdist pytest-recording pytest-httpserver hypothesis 'moto[server,s3]'
           TARGETS=$(python -c "
-          import json, shlex, sys
+          import shlex, sys
           sys.path.insert(0, 'scripts')
           from drift_smoke_map import smoke_for
-          print(' '.join(shlex.quote(t) for t in smoke_for('${{ matrix.extra }}')))
+          argv = smoke_for('${{ matrix.extra }}')
+          if argv and argv[0] == '--import-only':
+              module = argv[1] if len(argv) > 1 else 'remote_store'
+              print(f'IMPORT_ONLY:{module}')
+          else:
+              print('PYTEST:' + ' '.join(shlex.quote(t) for t in argv))
           ")
-          if [ "$TARGETS" = "--import-only" ]; then
-            python -c "import remote_store; print('import smoke passed for ${{ matrix.extra }}')"
+          if [[ "$TARGETS" == IMPORT_ONLY:* ]]; then
+            MODULE="${TARGETS#IMPORT_ONLY:}"
+            python -c "import importlib; importlib.import_module('$MODULE'); print('import smoke passed for ${{ matrix.extra }}: $MODULE')"
           else
             # Serial run, no special plugin disables: pytest-cov and
             # pytest-benchmark are not installed by the smoke setup, and
             # pytest-xdist is harmless without `-n`.
-            eval pytest $TARGETS
+            eval pytest "${TARGETS#PYTEST:}"
           fi
 
       - name: Upload drift report and fresh resolution
