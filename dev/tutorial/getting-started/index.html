@@ -9766,14 +9766,14 @@ use a Registry with declarative config:</p>
 <p>Storage behavior must be predictable and correct. We verify this across multiple dimensions:</p>
 <ul>
 <li><strong>Spec-driven development:</strong> behavior specifications are the source of truth; tests link directly to them. <em>Prevents feature drift.</em></li>
-<li><strong>Extensive unit tests:</strong> high coverage across all backends, focused on behavior. <em>Catches integration issues early.</em></li>
-<li><strong>Dependency drift guard:</strong> scheduled CI re-resolves every backend extra against latest versions to catch silent transitive upgrades. <em>Surfaces upstream breakage early.</em></li>
 <li><strong>Design by Contract:</strong> pre/post conditions and invariants catch incorrect usage early. <em>Fails fast on misuse.</em></li>
+<li><strong>Examples and snippets:</strong> runnable code in <a href="https://github.com/haalfi/remote-store/tree/master/examples"><code>examples/</code></a> and <a href="https://github.com/haalfi/remote-store/tree/master/examples/notebooks">notebooks</a>; docs are tested against actual behavior. <em>Keeps examples real.</em></li>
+<li><strong>Extensive unit tests:</strong> high coverage across all backends, focused on behavior. <em>Catches integration issues early.</em></li>
+<li><strong>Dependency drift guard:</strong> scheduled CI re-resolves extras against latest versions to catch silent transitive upgrades. <em>Surfaces upstream breakage early.</em></li>
 <li><strong>Property-based testing:</strong> randomized input generation via <a href="https://hypothesis.readthedocs.io/">Hypothesis</a> surfaces edge cases no hand-written test would find. <em>Finds blind spots.</em></li>
 <li><strong>Formal verification:</strong> critical paths are proven correct in <a href="https://dafny.org/">Dafny</a> before implementation. <em>Eliminates logic errors.</em></li>
 <li><strong>Mutation testing:</strong> <a href="https://pypi.org/project/pytest-gremlins/">gremlins</a> modify the code; if they survive the tests, the tests have gaps. <em>Exposes weak test coverage.</em></li>
 <li><strong>Benchmarks:</strong> performance tracked per operation and backend. <em>Provides baseline for optimization.</em></li>
-<li><strong>Examples and snippets:</strong> runnable code in <a href="https://github.com/haalfi/remote-store/tree/master/examples"><code>examples/</code></a> and <a href="https://github.com/haalfi/remote-store/tree/master/examples/notebooks">notebooks</a>; docs are tested against actual behavior. <em>Keeps examples real.</em></li>
 </ul>
 <h2 id="learn-more">Learn more<a class="headerlink" href="#learn-more" title="Permanent link">&para;</a></h2>
 <p>To explore <code>remote-store</code> beyond the Quick Start:</p>
