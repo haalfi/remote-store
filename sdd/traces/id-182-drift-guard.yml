@@ -149,6 +149,15 @@ expected_ripples:
 #      "ModuleNotFoundError" — missed ImportError, importorskip,
 #      INTERNALERROR, etc. Widened the heuristic to all four collection-
 #      error shapes pytest can take.
+#
+# Self-validation discussion surfaced one defensive add: actionlint is
+# now wired into the CI lint job (`.github/workflows/ci.yml`). Catches
+# template-injection vectors, undefined env / matrix references,
+# outdated runner labels, and shellcheck issues inside `run:` blocks
+# statically — closes the "drift-guard.yml never runs on PRs" gap by
+# at least running the static lint on every PR that touches a workflow
+# file. CODE_PAT widened to trigger lint on any `.github/workflows/`
+# change, not just `ci.yml`.
 review_rounds: 5
 
 surprising_ripples:
