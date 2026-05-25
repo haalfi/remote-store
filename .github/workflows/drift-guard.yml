@@ -26,6 +26,18 @@ on:
         required: false
         default: "all"
         type: string
+  # TEMP(ID-182): pre-merge validation only. workflow_dispatch needs the
+  # workflow file on the default branch first, so we trigger via push to
+  # this PR branch instead. The setup step below forces INPUT_EXTRA=httpx
+  # on push events to keep the matrix to a single cheap extra. REMOVE
+  # this push block and the push-event branch in set-extras before merge.
+  push:
+    branches:
+      - claude/id-182-planning-vgmXj
+    paths:
+      - .github/workflows/drift-guard.yml
+      - scripts/drift_*.py
+      - infra/drift-locks/**
 
 env:
   PY_VERSION: "3.13"
@@ -64,10 +76,16 @@ jobs:
           INPUT_EXTRA: ${{ github.event.inputs.extra }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
+          # TEMP(ID-182): pre-merge validation force-pins push events to a
+          # single cheap extra. Remove this branch when removing the push:
+          # trigger above.
+          if [ "$EVENT_NAME" = "push" ]; then
+            INPUT_EXTRA="httpx"
+          fi
           if [ "$EVENT_NAME" = "schedule" ] || [ -z "$INPUT_EXTRA" ] || [ "$INPUT_EXTRA" = "all" ]; then
             extras=$(python scripts/drift_check.py extras)
           else
-            extras=$(python -c '
+            extras=$(INPUT_EXTRA="$INPUT_EXTRA" python -c '
           import json, os, sys
           sys.path.insert(0, "scripts")
           from drift_check import list_extras
