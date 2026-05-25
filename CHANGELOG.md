@@ -7,12 +7,113 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- ID-182: Scheduled drift guard for unbounded extra-dependency floors, with a
-  new user-facing [Tested upper-bound versions](docs-src/reference/tested-versions.md)
-  page recording what CI was last green against.
-- ID-208: Dagster compute log manager (`RemoteStoreComputeLogManager`)
-- BK-236: Fix broken documentation links in the README and the data-lake
-  patterns guide that pointed at docs-site paths which do not exist.
+## [0.26.0] - 2026-05-25
+
+### Added
+
+- **`RemoteStoreComputeLogManager` — Dagster compute log manager** (ID-208,
+  RFC-0014, DAG-021 -- DAG-033): `ext.dagster` now covers Dagster's second
+  storage extension point. `RemoteStoreComputeLogManager` is a Dagster
+  *instance* component, configured in `dagster.yaml`, that captures op/step
+  `stdout` / `stderr` and persists it to any remote-store backend —
+  complementing the existing IO manager. It subclasses Dagster's
+  `TruncatingCloudStorageComputeLogManager` and builds its own `Store` from
+  `backend_type` + `backend_options` via the shared `_build_store`, which now
+  `Secret`-wraps credential-named options (DAG-033). The credential masking
+  applies retroactively to the v2 `DagsterStoreResource` and
+  `RemoteStoreIOManager`. Verified against the installed `dagster` 1.13.5; the
+  RFC's assumed import paths were corrected. Install via
+  `pip install "remote-store[dagster]"`.
+
+### Fixed
+
+- **Broken `docs.remotestore.dev` links in the README and the data-lake
+  patterns guide** (BK-236): two README links and one guide link pointed at
+  docs-site paths that never existed. A new `check_docs_site_links` lint gate
+  (DOCFRAME-009) now resolves every
+  `https://docs.remotestore.dev/stable|latest/<path>` link against the page
+  set derived from `build_source_map` — the same source→docs-URL map the
+  mkdocs bridge uses — offline, with no docs build and no HTTP request. The
+  new gate surfaced three additional broken links (a research doc plus the
+  guide above) and an unregistered example
+  (`dagster_compute_log_manager` missing from `examples/_categories.yml`, an
+  ID-208 ripple miss), all fixed in the same PR.
+
+### Documentation
+
+- **`docs-src/reference/tested-versions.md`** (ID-182): new user-facing page
+  recording the upper-bound transitive versions CI was last green against per
+  `[<extra>]`. Generated from `infra/drift-locks/` by `drift-check
+  render-docs`; refreshed in lockstep with the scheduled drift-guard run.
+  `FEATURES.md` § Install extras and the README link to it.
+
+### Internal
+
+- **Formal Verification wave — Dafny as the spec-test interlock** (ID-190,
+  ID-206, BK-196, BK-232, BK-195, BK-233, BK-231):
+    - **`WellFormedPath` predicate in the Dafny contract** (ID-190,
+      PATH-002 -- PATH-008, NPR-020): paths are no longer opaque non-empty
+      strings; a `ghost predicate WellFormedPath` characterising a normalised
+      path is a `requires` precondition on all 13 contract methods.
+      `NativePathRoundTrip` proves NPR-020's `to_key(native_path(k)) == k`
+      identity for non-empty keys; the empty-key round-trip is
+      backend-divergent and tracked as BK-234. Ghost-only — the compiled
+      oracle is unchanged.
+    - **Mechanical spec ↔ Dafny ↔ test traceability gate** (ID-206):
+      `scripts/check_formal_trace.py` builds a coverage matrix across spec
+      IDs with `// @spec` tags in `sdd/formal/*.dfy`, `@pytest.mark.spec`
+      conformance markers, and `sdd/specs/` IDs; fails on Dafny-backed
+      clauses with no test, tests citing absent IDs, or tags citing absent
+      IDs. Dual-wired into `hatch run lint` and the CI lint job, behind a
+      baseline of five known gaps that must shrink, never grow.
+    - **Metadata pinned in the Dafny `Copy` and `Move` postconditions**
+      (BK-196, BK-232, WR-013, BE-018, BE-019): both postconditions now pin
+      `fs[dst].info.metadata == old(fs)[src].info.metadata`, closing the (C)
+      gap that let `MemoryBackend.dfy` verify cleanly while encoding a
+      metadata-losing copy/move.
+    - **`copy()` / `move()` user-metadata conformance tests** (BK-195,
+      BK-233, WR-013, BE-018, BE-019, ASYNC-018, ASYNC-019):
+      `test_metadata_round_trips_through_move_copy` (sync + async) writes a
+      file with non-empty metadata, copies/moves it, and asserts
+      `get_file_info(dst)` returns the mapping verbatim; gated by the
+      compiled Dafny oracle, parametrised over the backend registry,
+      self-skipping backends without `USER_METADATA`.
+    - **`sdd/formal/README.md` path corrections** (BK-231): oracle adapter
+      and conformance-suite paths refreshed for the `tests/backends/dafny/`
+      and `tests/backends/conformance/` layout.
+- **Scheduled CI drift guard for unbounded extra-dependency floors** (ID-182):
+  `.github/workflows/drift-guard.yml` runs Mondays 07:00 UTC, re-resolving
+  each `remote-store[<extra>]` with `pip install --upgrade --pre`, diffing
+  against `infra/drift-locks/<extra>.txt`, and running smoke targets from
+  `scripts/drift_smoke_map.py` for any drifted extra. A single rolling GitHub
+  issue is created / updated / auto-closed by `scripts/drift_report.py`.
+  Pre-release resolutions surface in a distinct section so RCs do not look
+  like stable drift. The workflow never edits `pyproject.toml` and never
+  opens a pin-update PR — early warning, not automated remediation.
+- **`benchmarks/infra/` → top-level `infra/`** (ID-204): the compose stack is
+  consumed primarily by the test suite (sftp_docker / azurite conformance
+  fixtures, `test-cov-strict`, every `tests/e2e/*` module); the old
+  `benchmarks/` path misled contributors. MinIO host ports moved off the
+  VSCode Jupyter scan band (`9000/9001` → `19100/19101`; container internal
+  port unchanged). `infra/.env` is now the single source of truth for
+  local-infra ports / hosts / credentials, exposed via `infra/_settings.py`
+  (stdlib only); `scripts/check_infra_settings.py` fails lint on any literal
+  `-p N:M` outside `infra/.env`, dual-wired into `hatch run lint` and the CI
+  lint job.
+- **Live HNS suites trimmed to HNS-unique cases; async conformance gaps
+  closed** (BK-182, BK-228, BK-229): after the Stage 3 cassette / replay
+  infrastructure landed in v0.25.0, the per-backend live HNS suites
+  duplicated happy-path coverage already exercised by conformance (sync 31
+  → 13 cases, async 33 → 12). The BK-182 inventory surfaced two async
+  conformance gaps the deleted duplicates had been masking — `iter_children`
+  and `write_atomic` had no async happy-path coverage in
+  `test_async_extended.py` — both closed in the same PR.
+- **CI annotation silencing** (BK-230): nested Node 20 deprecation warnings
+  in `verify-formal` (from `dafny-lang/setup-dafny-action@v1.9.1`'s internal
+  pins) silenced via `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` at the job level;
+  uv cache reservation race between `test-primary` and `e2e` resolved via
+  per-job `cache-suffix`. Drift-guard artifact actions bumped to v7/v8 (Node
+  24).
 
 ## [0.25.0] - 2026-05-18
 
