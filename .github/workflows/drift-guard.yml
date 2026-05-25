@@ -194,7 +194,7 @@ jobs:
 
       - name: Upload drift report and fresh resolution
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: drift-${{ matrix.extra }}
           path: drift-reports/${{ matrix.extra }}.json
@@ -208,7 +208,7 @@ jobs:
         run: |
           mkdir -p drift-candidates
           python scripts/drift_check.py resolve "${{ matrix.extra }}" > "drift-candidates/${{ matrix.extra }}.txt" || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: candidate-baseline-${{ matrix.extra }}
@@ -224,7 +224,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PY_VERSION }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: drift-reports
           pattern: drift-*
