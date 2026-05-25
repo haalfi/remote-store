@@ -1,5 +1,6 @@
 # extra: arrow
-# python:
-# captured:
-# Stub baseline — first population pending.
-# Run: hatch run drift-check refresh-baseline arrow
+# python: 3.13
+# captured: 2026-05-25
+# Regenerate with: hatch run drift-check refresh-baseline arrow
+
+pyarrow==24.0.0

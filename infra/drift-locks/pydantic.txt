@@ -1,5 +1,12 @@
 # extra: pydantic
-# python:
-# captured:
-# Stub baseline — first population pending.
-# Run: hatch run drift-check refresh-baseline pydantic
+# python: 3.13
+# captured: 2026-05-25
+# Regenerate with: hatch run drift-check refresh-baseline pydantic
+
+annotated-types==0.7.0
+pydantic==2.14.0a1
+pydantic-core==2.47.0
+pydantic-settings==2.14.1
+python-dotenv==1.2.2
+typing-extensions==4.15.0
+typing-inspection==0.4.2
