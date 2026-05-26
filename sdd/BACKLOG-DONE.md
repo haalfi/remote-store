@@ -8,6 +8,53 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## v0.26.0
 
+- [x] **ID-193 — Async conformance extended: pattern research and implementation**
+  spec: ASYNC-018, ASYNC-019 · audience: contributor.process, infra.test
+  Closed by rollup: the three phases the original item named — document
+  constraints, write a pattern doc or PoC, implement against the settled async
+  API surface — landed incrementally across ID-155, BK-182, BK-228, and BK-229
+  without citing ID-193, so the parent went stale rather than wrong. The
+  realised pattern, tying the predecessor items into one place so the trail is
+  not lost:
+  - **Hypothesis 6.x stateful-test workaround** (the line the ID-193 description
+    called out explicitly). `AsyncBackendModel` in
+    `tests/aio/test_async_pbt_stateful.py` drives a `RuleBasedStateMachine`
+    against `AsyncMemoryBackend` (native) and
+    `SyncBackendAdapter(MemoryBackend())` (adapted) in lock-step against a
+    shared `dict[str, bytes] + dirs` model. Rules dispatch through a
+    per-instance event loop with `loop.run_until_complete` so `asyncio.Lock`
+    state and `asyncio.to_thread` executor identity stay stable across the
+    rule sequence — a per-rule `asyncio.run` would not. Landed under ID-155.
+  - **Extended conformance suite.**
+    `tests/backends/conformance/test_async_extended.py` (952 lines, 81
+    `@pytest.mark.spec` markers across 18 ASYNC-* IDs: ASYNC-004 — ASYNC-008,
+    ASYNC-010, ASYNC-012 — ASYNC-020, ASYNC-024, ASYNC-029, ASYNC-047) covers
+    error-fidelity, listing completeness, move/copy postconditions (the
+    ASYNC-018 / ASYNC-019 IDs the original item names — `TestMoveCopyErrorFidelity`,
+    `TestMoveCopyOverwrite`, `TestMoveCopySelfOperation`, `TestMovePostState`,
+    `TestCopyPostState`, `TestMoveCopyMetadataPreservation`), write-read
+    round-trips, streaming-read consumption (ASYNC-020 analogue of SIO-001),
+    operational consistency, and `iter_children`. Two structural gaps closed
+    in the BK-182 PR: BK-228 added `TestAsyncIterChildren`, BK-229 added
+    `TestAsyncWriteAtomic`.
+  - **Registry-driven indirect fixture.** The `async_backend` fixture in
+    `tests/backends/conformance/conftest.py` parametrises every conformance
+    test that requests `async_backend` over the registry rows with
+    `is_async=true` (currently `memory_async_native`, `memory_async_adapted`,
+    `local_async_adapted`, `azure_live_async`, `azure_replay_async`).
+    `pytest-asyncio` in `asyncio_mode = "auto"` (`pyproject.toml`) makes
+    `async def` test/fixture functions first-class without decorators.
+  Carve-out: the original phase-3 line "oracle integration with async
+  backends" is genuinely undone — `DafnyOracleBackend`
+  (`tests/backends/dafny/_helpers.py`) is sync-only with no async wrapper or
+  `dafny_oracle_async` fixture, so the async suite cross-checks two Python
+  implementations of the contract rather than the verified-by-construction
+  oracle. Spun off as ID-210 (Formal Verification section) so the close-out
+  reflects scope honestly; ID-203 (test folder restructure) and ID-179 / ID-198
+  (downstream consumers that named ID-193 as a dependency) updated to drop the
+  stale block.
+  Trace: `sdd/traces/id-193-async-conformance-pattern.yml`.
+
 - [x] **ID-184 — Listing traversability: prove the contract, then enforce it**
   spec: BE-013, BE-014, BE-015 · audience: contributor.process, infra.test
   A (C)+(T) pair, the first item of the Formal Verification Wave 1.

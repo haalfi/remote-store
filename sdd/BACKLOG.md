@@ -82,7 +82,7 @@ none of which is "run a second backend and diff the output":
 |---|---|---|
 | 0 — property-based (O) | ID-187 | Self-contained; bundles its own oracle helper |
 | 1 — contract + test | ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
-| 1 — test backfill (T) | ID-185 | Conformance gaps for already-verified clauses |
+| 1 — test backfill (T) | ID-185, ID-210 | Conformance gaps for already-verified clauses |
 
 Items stay granular for tracking, but a whole wave row may ship as one
 PR where its items share a file or proof.
@@ -152,6 +152,47 @@ PR where its items share a file or proof.
   comparison fails, so a harness bug cannot leave the property-based test
   vacuously green (the Safe/Unsafe-pair discipline in
   `sdd/formal/README.md`).
+
+- [ ] **ID-210 — Async Dafny oracle: certify async conformance against the verified `MemoryBackend`**
+  spec: ASYNC-001 — ASYNC-029 · effort: M · audience: infra.test
+  A (T) gap spun off from ID-193 close-out: the original "oracle integration
+  with async backends" phase was not in fact delivered. The sync conformance
+  suite parametrises `dafny_oracle` as a peer backend
+  (`tests/backends/fixtures/dafny_oracle.py`, `is_async=false` in
+  `tests/backends/fixtures/fixtures.toml`), so every sync conformance test the
+  oracle passes proves the test faithfully encodes the verified contract.
+  The async suite (`tests/backends/conformance/test_async_extended.py`) runs
+  against `memory_async_native`, `memory_async_adapted`, `local_async_adapted`,
+  and the Azure async fixtures — but never against the compiled `MemoryBackend`
+  from `sdd/formal/MemoryBackend-py/`. The async-shaped contract is therefore
+  cross-checked between two Python implementations (`AsyncMemoryBackend` and
+  `SyncBackendAdapter(MemoryBackend())`) rather than against the
+  verified-by-construction oracle, weakening the (T) leg for async-only spec
+  divergence.
+  Build `AsyncDafnyOracleBackend` as an `AsyncBackend` subclass that
+  delegates each method to the existing `DafnyOracleBackend` via
+  `asyncio.to_thread()` — same shape as `SyncBackendAdapter` (ASYNC-030 —
+  ASYNC-037), scoped to the oracle so the correct-by-construction property
+  the sync oracle has is preserved on the async side. Streaming methods
+  (`read`, `list_files`, `list_folders`, `iter_children`) materialise the
+  sync iterator inside the worker thread and re-yield from the async generator
+  per ASYNC-032 / ASYNC-033. Register `dafny_oracle_async` in
+  `tests/backends/fixtures/fixtures.toml` with `is_async=true` and a sibling
+  `tests/backends/fixtures/dafny_oracle_async.py`; the registry-driven
+  conformance hook in `tests/backends/conformance/conftest.py` then picks it
+  up automatically. Spec markers covered by parametrisation: ASYNC-004,
+  ASYNC-005, ASYNC-006, ASYNC-007, ASYNC-008, ASYNC-010, ASYNC-012, ASYNC-013,
+  ASYNC-014, ASYNC-015, ASYNC-016, ASYNC-017, ASYNC-018, ASYNC-019, ASYNC-020,
+  ASYNC-024, ASYNC-029, ASYNC-047 — the 18 the async extended conformance
+  suite already exercises.
+  **Open question:** whether to additionally model a native-`AsyncBackend`
+  refinement in Dafny (closing the spec-side gap that the trait today only
+  describes the sync `Backend`) or whether the `to_thread`-bridged sync
+  oracle is sufficient for T-side certification. Recommendation: ship the
+  bridged variant first; revisit the native-async refinement only if a
+  divergence emerges that the bridge masks (analogous to how
+  `SyncBackendAdapter` certifies the sync→async bridge in product code
+  without a separate verified contract for it).
 
 - [ ] **ID-191 — Move atomicity: model the observable contract, then enforce it**
   spec: BE-018, ASYNC-018 · effort: L · audience: infra.test
@@ -234,22 +275,11 @@ PR where its items share a file or proof.
 
 ## Async API Verification
 
-Async API surface, conformance, and tooling. ID-192 (aio.md rework) has landed
-(see BACKLOG-DONE.md); the verifier (ID-194) can now be made authoritative and
-the conformance pattern (ID-193) can lock in the test shape against the
-stabilised page.
+Async API surface, conformance, and tooling. ID-192 (aio.md rework) and ID-193
+(async conformance pattern) have landed (see BACKLOG-DONE.md); the verifier
+(ID-194) can now be made authoritative against the stabilised page.
 
-**Sequence:** ID-194 (in parallel with ID-193) → ID-172 → ID-173
-
-- [ ] **ID-193 — Async conformance extended: pattern research and implementation**
-  spec: ASYNC-018, ASYNC-019 · effort: L · audience: infra.test, library.maintainer
-  The sync extended conformance chain is complete (spec → Dafny MemoryBackend oracle →
-  conformance test), but the async variant has no pattern yet. Research event-loop
-  per-test management, Hypothesis 6.x stateful-test workarounds (per-instance loop +
-  `run_until_complete`), and oracle integration with async backends. Three phases:
-  (1) document constraints and open questions; (2) write pattern doc or PoC;
-  (3) implement against settled async API surface. Do not port sync tests line-for-line.
-  ID-192 (aio.md rework) prerequisite has landed.
+**Sequence:** ID-194 → ID-172 → ID-173
 
 - [ ] **ID-194 — gen_graph.py async gate extension (prereq for ID-172)**
   spec: — · effort: M · audience: platform.tooling, library.maintainer
@@ -292,9 +322,10 @@ stabilised page.
   subtree and other packages grow, test file placement becomes ambiguous.
   Mirror `src/` layout (e.g. `tests/aio/`, `tests/backends/`) and carve out
   `tests/scripts/` for script-level tests.
-  **Blocked on:** ID-193 (async conformance pattern) + ID-194 (gen_graph async
-  gate) + ID-172 + ID-173 — the async API surface must be settled before
-  reorganising the tests that cover it.
+  **Blocked on:** ID-194 (gen_graph async gate) + ID-172 + ID-173 — the async
+  API surface must be settled before reorganising the tests that cover it.
+  ID-193 (async conformance pattern) is no longer a blocker — landed (see
+  BACKLOG-DONE.md).
 
 ---
 
@@ -528,8 +559,8 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   - ID-172 + ID-173 (aio verifiers): `aio.md` and `index.md` must accurately
     reflect the async API before they are linked as authoritative reference.
   - ID-192 (aio.md rework): landed — `aio.md` structural rework is in place; required for ID-172 to close (see BACKLOG-DONE.md).
-  - ID-193 (async conformance): async extended conformance pattern must be
-    designed and implemented before the aio API surface is considered settled.
+  - ID-193 (async conformance): landed — async extended conformance pattern is
+    in place (see BACKLOG-DONE.md).
 
   **Exit criteria:** `docs-src/llms.txt` committed; `GET
   https://docs.remotestore.dev/llms.txt` returns the file after next deploy.
@@ -780,8 +811,8 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   combining Dagster orchestration with an Azure HNS backend, but has never executed
   against a live ADLS Gen2 account. Run the full example end-to-end against real cloud
   infrastructure to surface testing gaps, implementation TODOs, or edge cases that
-  conformance and unit tests miss. Schedule after async conformance (ID-193) completes
-  so async patterns are settled. Findings inform the next release scope; no code changes
+  conformance and unit tests miss. Async patterns are settled (ID-193 landed,
+  see BACKLOG-DONE.md). Findings inform the next release scope; no code changes
   are produced by this item itself.
 
 - [ ] **BK-235 — Record the Azure cassettes for new conformance tests**

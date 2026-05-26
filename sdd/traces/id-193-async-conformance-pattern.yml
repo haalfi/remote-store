@@ -1,0 +1,101 @@
+id: ID-193
+title: "Async conformance extended: pattern research and implementation"
+trigger: "BACKLOG.md carried ID-193 as open ('async variant has no pattern yet'), but a thorough audit found the three phases the item named (document constraints, write a pattern doc or PoC, implement) had landed incrementally across ID-155, BK-182, BK-228, and BK-229 without citing ID-193 — the parent went stale, not wrong. One sub-area of phase 3 ('oracle integration with async backends') was genuinely undone: DafnyOracleBackend is sync-only and no AsyncBackend wrapper or dafny_oracle_async fixture exists."
+source_items:
+  - ID-193
+discovery_followups:
+  - ID-210
+audience:
+  - contributor.process
+  - infra.test
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+phases:
+  - id: audit
+    name: Audit (per CLAUDE.md § Audits — report only, user decides)
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-193 (item body)"
+        read_type: gate
+        extract: "Original scope: research event-loop per-test management, Hypothesis 6.x stateful-test workarounds (per-instance loop + run_until_complete), and oracle integration with async backends. Three phases: (1) document constraints, (2) pattern doc or PoC, (3) implement against settled async API surface"
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "(full — module docstring + class headers)"
+        read_type: gate
+        extract: "952 lines, 81 @pytest.mark.spec markers across 18 ASYNC-* specs (ASYNC-004 — ASYNC-008, ASYNC-010, ASYNC-012 — ASYNC-020, ASYNC-024, ASYNC-029, ASYNC-047). ASYNC-018 / ASYNC-019 covered by TestMoveCopyErrorFidelity, TestMoveCopyOverwrite, TestMoveCopySelfOperation, TestMovePostState, TestCopyPostState, TestMoveCopyMetadataPreservation"
+      - file: tests/aio/test_async_pbt_stateful.py
+        section: "AsyncBackendModel (module docstring lines 1-20, __init__ lines 81-105)"
+        read_type: gate
+        extract: "Hypothesis stateful workaround the ID-193 description called out explicitly: per-instance event loop + loop.run_until_complete keeps asyncio.Lock state and asyncio.to_thread executor identity stable across the rule sequence; native AsyncMemoryBackend and SyncBackendAdapter driven in lock-step against a dict+dirs model"
+      - file: tests/backends/conformance/conftest.py
+        section: "pytest_generate_tests, async_backend fixture (lines 317-383)"
+        read_type: gate
+        extract: "Registry-driven indirect async fixture parametrises every conformance test requesting async_backend over fixture_params(is_async=True): memory_async_native, memory_async_adapted, local_async_adapted, azure_live_async, azure_replay_async. Both sync cleanup and async aclose teardown channels are honoured"
+      - file: pyproject.toml
+        section: "asyncio_mode (line 338)"
+        read_type: gate
+        extract: "pytest-asyncio in auto mode — async def test/fixture functions are first-class without decorators; satisfies the event-loop-per-test management line of the ID-193 description"
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-155, BK-182, BK-228, BK-229"
+        read_type: gate
+        extract: "ID-155 shipped the stateful PBT (per-instance loop pattern). BK-182 trimmed live HNS to HNS-unique cases and exposed two async conformance gaps; BK-228 added TestAsyncIterChildren, BK-229 added TestAsyncWriteAtomic. Each closed without citing ID-193, leaving the parent stale"
+      - file: tests/backends/dafny/_helpers.py
+        section: "DafnyOracleBackend (lines 184-300)"
+        read_type: gate
+        extract: "Compiled-Dafny oracle is sync-only. CAPABILITIES is a sync CapabilitySet; the methods are sync def. No AsyncDafnyOracleBackend exists; no dafny_oracle_async row in fixtures.toml. This is the one phase-3 sub-area genuinely undone — extract for the ID-210 follow-up"
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "fixture.dafny_oracle (lines 70-75)"
+        read_type: gate
+        extract: "is_async = false, single sync registration. Confirms the async oracle gap is structural (no row to flip)"
+      - file: CLAUDE.md
+        section: "Audits"
+        read_type: gate
+        extract: "Report only — present findings with evidence. User decides next steps. An audit's authority is its diagnosis; its prescription is advisory"
+        outcome: ok
+  - id: report
+    name: Report findings to user
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-193 description vs. realised state"
+        read_type: reference
+        extract: "Built a phase scoreboard mapping the three named phases against existing code with file:line evidence. Recommended three paths: (1) close-out by rollup, (2) build the async Dafny oracle, (3) defer. User picked option 1 with a sub-decision: confirm the async oracle is not duplicated elsewhere before spinning a new item"
+      - file: sdd/BACKLOG.md
+        section: "Formal Verification section (ID-187, ID-188, ID-189, ID-185, ID-191, ID-209)"
+        read_type: verify
+        extract: "Searched for async-dafny / dafny-async references across BACKLOG.md, BACKLOG-DONE.md, sdd/specs/, sdd/adrs/, sdd/formal/. Two hits in BACKLOG-DONE.md (ID-184 mirroring forall quantifier in async test, BK-232 mentioning Dafny oracle in ASYNC-018 metadata context) — neither covers an async oracle backend. Confirmed the async oracle is not in any existing item; OK to spin ID-210"
+        outcome: ok
+  - id: close_out
+    name: Close out ID-193 + spin ID-210
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Async API Verification preamble + ID-193 item"
+        read_type: reference
+        extract: "Removed ID-193 from the active section, updated the section preamble ('ID-192 and ID-193 have landed; the verifier (ID-194) can now be made authoritative'), simplified the Sequence: line to drop the parallel-with-ID-193 framing"
+      - file: sdd/BACKLOG.md
+        section: "ID-203 (Blocked on), ID-179 (Sequence — start after all of), ID-198 (Schedule after async conformance)"
+        read_type: reference
+        extract: "Three downstream consumers named ID-193 as a blocker / prerequisite / schedule gate. All three updated to point at BACKLOG-DONE.md without dropping the surface area they document"
+      - file: sdd/BACKLOG-DONE.md
+        section: "v0.26.0 — new ID-193 entry"
+        read_type: reference
+        extract: "Authored close-out entry: tied phases 1+2+3 to ID-155, BK-182, BK-228, BK-229 (the items that actually shipped the work) with file paths and line references; named the carve-out (no async Dafny oracle) and forwarded it to ID-210; audience contributor.process + infra.test (no CHANGELOG entry per the trace-schema rule)"
+      - file: sdd/BACKLOG.md
+        section: "Formal Verification — new ID-210 item + Wave 1 (T) row"
+        read_type: reference
+        extract: "Added ID-210 'Async Dafny oracle' between ID-191 and ID-209: AsyncDafnyOracleBackend as an AsyncBackend wrapper delegating each method to DafnyOracleBackend via asyncio.to_thread() (ASYNC-030 — ASYNC-037 shape), dafny_oracle_async fixture row in fixtures.toml. Updated the wave table to list ID-210 alongside ID-185 in the test-backfill row"
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: verify
+        extract: "Tracks max DONE ID per prefix (scripts/gen_backlogid.py:53-54). ID-193 going to BACKLOG-DONE does not raise ID max (193 < 208); ID-210 is active, not done. JSON unchanged at ID=208 — gen-backlogid-check should pass"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "BACKLOG → BACKLOG-DONE move shipped in-PR; trace authored in-PR (sdd/traces/id-193-async-conformance-pattern.yml). Audience contributor.process + infra.test → no CHANGELOG entry required"
+      - file: scripts/gen_backlogid.py
+        section: "_check"
+        read_type: verify
+        extract: "Run hatch run gen-backlogid-check (or python scripts/gen_backlogid.py --check): expect stored=208 matches actual=208 (max done unchanged), next safe IDs include ID=211 (one above the active ID-210)"
