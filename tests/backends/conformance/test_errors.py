@@ -74,9 +74,10 @@ class TestReadErrorFidelity:
         """ID-209 round-2: a path under a file-ancestor is not in ``fs`` per
         the Dafny model, so BE-006 / BE-007's ``!PathExists ==> NotFound``
         applies — not the writer-side ``InvalidPath`` clause from BE-008.
-        Pre-PR LocalBackend leaked ``NotADirectoryError`` and SFTPBackend
-        (after round 1) returned ``InvalidPath``; both now return
-        ``NotFound`` matching MemoryBackend.
+        Hierarchical backends must surface ``NotFound`` for this case rather
+        than leaking native errors or returning ``InvalidPath`` (the
+        rationale lives in the trace, not in this docstring — TEST-010
+        forbids concrete backend names here).
         """
         _skip_flat_namespace(
             backend,
