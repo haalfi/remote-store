@@ -436,10 +436,11 @@ class TestListFilesCompleteness:
 
     @pytest.mark.spec("ASYNC-014")
     async def test_list_files_non_traversable_ancestor_yields_empty(self, async_backend: AsyncBackend) -> None:
-        """Dafny (ID-184): ``!AllAncestorsTraversable(fs, path) ==> r.value == []``.
-
-        Async mirror of the sync gate in ``test_listing.py``: a file appearing as a
-        directory component short-circuits ``list_files`` to an empty iterator.
+        """Async mirror of the file-ancestor adapter gate in
+        ``test_listing.py``. See the sync test's docstring for the scope
+        caveat — this exercises the `!PathExists` disjunct of the Dafny
+        empty-result postcondition under a file-ancestor path shape,
+        not the ID-184 `!AllAncestorsTraversable` disjunct directly.
         """
         _require(async_backend, Capability.LIST, Capability.WRITE)
         await _seed(async_backend, {"badanc.txt": b"x"})
@@ -475,10 +476,9 @@ class TestListFoldersCompleteness:
 
     @pytest.mark.spec("ASYNC-015")
     async def test_list_folders_non_traversable_ancestor_yields_empty(self, async_backend: AsyncBackend) -> None:
-        """Dafny (ID-184): ``!AllAncestorsTraversable(fs, path) ==> r.value == []``.
-
-        Async mirror of the sync gate in ``test_listing.py``: a file appearing as a
-        directory component short-circuits ``list_folders`` to an empty iterator.
+        """Async mirror of the ``list_folders`` file-ancestor adapter
+        gate in ``test_listing.py``. See the sync sibling's docstring
+        for the scope caveat.
         """
         _require(async_backend, Capability.LIST, Capability.WRITE)
         await _seed(async_backend, {"badanc.txt": b"x"})

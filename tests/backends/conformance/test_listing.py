@@ -234,12 +234,20 @@ class TestListFilesCompleteness:
 
     @pytest.mark.spec("BE-014")
     def test_list_files_non_traversable_ancestor_yields_empty(self, backend: Backend) -> None:
-        """Dafny (ID-184): ``!AllAncestorsTraversable(fs, path) ==> r.value == []``.
+        """Listing under a file-ancestor path MUST return an empty iterator,
+        never raise. Pins the adapter's exception translation: ``badanc.txt``
+        is a file, so a hierarchical backend driving ``os.scandir`` or an
+        SFTP listing on ``badanc.txt/child`` naturally hits
+        ``NotADirectoryError`` / ``SFTPError`` — the adapter must swallow
+        those and return ``[]`` per BE-014.
 
-        When a file appears as a directory component in ``path`` (here ``badanc.txt``),
-        listing under it MUST return an empty iterator, never raise — symmetric with
-        ``Exists/IsFileMethod/IsFolderMethod`` already gating their results on the
-        same predicate.
+        Strict scope: the listed path is not in ``fs``, so the Dafny
+        `!PathExists` disjunct of the empty-result postcondition fires
+        first. This test does not directly exercise the ID-184
+        `!AllAncestorsTraversable` disjunct — that disjunct is verified by
+        the Dafny refinement only, since no public ``Backend`` trait
+        method can construct ``path in fs && !AllAncestorsTraversable``
+        from a well-formed initial fs.
         """
         _seed(backend, {"badanc.txt": b"x"})
         assert list(backend.list_files("badanc.txt/child", recursive=True)) == []
@@ -274,11 +282,12 @@ class TestListFoldersCompleteness:
 
     @pytest.mark.spec("BE-015")
     def test_list_folders_non_traversable_ancestor_yields_empty(self, backend: Backend) -> None:
-        """Dafny (ID-184): ``!AllAncestorsTraversable(fs, path) ==> r.value == []``.
-
-        Sibling of ``test_list_files_non_traversable_ancestor_yields_empty`` for the
-        BE-015 surface — a file appearing as a directory component must short-circuit
-        ``list_folders`` to an empty iterator, never raise.
+        """``list_folders`` sibling of the file-ancestor adapter gate in
+        ``TestListFilesCompleteness`` — see that test's docstring for the
+        scope caveat (this exercises the `!PathExists` disjunct of the
+        Dafny empty-result postcondition under a file-ancestor path
+        shape, not the new ID-184 `!AllAncestorsTraversable` disjunct
+        directly).
         """
         _require(backend, Capability.WRITE)
         _seed(backend, {"badanc.txt": b"x"})

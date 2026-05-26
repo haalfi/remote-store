@@ -11,7 +11,7 @@ discovery_followups:
 expected_ripples:
   - sdd/formal/MemoryBackend-py/module_.py
   - sdd/specs/003-backend-adapter-contract.md
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -149,3 +149,18 @@ phases:
         section: "expected_ripples"
         read_type: reference
         extract: "Review caught sdd/backlogid.json in expected_ripples — `hatch run gen-backlogid` ran but ID-184 was below the max counter so the JSON did not actually change. Dropped the entry"
+      - file: tests/backends/conformance/test_listing.py
+        section: "test_list_files / test_list_folders non_traversable_ancestor (sync + async)"
+        read_type: reference
+        extract: "Round 2: reviewer (adversarial pass) flagged that the new tests do not exercise the new `!AllAncestorsTraversable` disjunct — `badanc.txt/child` is not in fs, so the existing `!PathExists` disjunct fires and the `||` short-circuits before `AncestorsTraversableCheck`'s result matters. The tests are still useful: they pin the adapter's exception translation on Local/SFTP (NotADirectoryError/SFTPError → empty). Reworded the docstrings to describe what they actually pin (adapter exception-handling under a file-ancestor path shape) and to note the new disjunct is Dafny-verified only — the triggering state is structurally unreachable through public Backend trait methods on a well-formed initial fs"
+        outcome: misleading
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-014 / BE-015 Formal coverage"
+        read_type: reference
+        extract: "Round 2: reviewer flagged that the spec prose described the completeness clause as 'symmetrically gated' without acknowledging the completeness obligation was *weakened*, not just strengthened — `PathExists` → `PathExists && AllAncestorsTraversable` relaxes the implementer obligation in the malformed-fs slice, jointly necessary with the new empty-result disjunct for satisfiability. Reworded the Formal coverage paragraphs to call out the widening explicitly and to note that the new disjunct is defensive against fs corruption rather than a behavioural gap a compliant refinement could reach"
+        outcome: misleading
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-184 (C) and (T) paragraphs"
+        read_type: reference
+        extract: "Round 2: reviewer flagged 'a backend that lists successfully when an ancestor is a file satisfied the contract' as overstating the pre-PR hole (the old `!PathExists` clause already forced emptiness for paths under a file-ancestor; the only state the old contract permitted non-empty listing in is structurally unreachable). Reworded (C) to a malformed-fs framing and added an Honest scope paragraph; reworded (T) to describe what the new tests actually pin (adapter exception-translation for the `!PathExists` leg under a file-ancestor path shape) rather than claiming they pin the new clause directly"
+        outcome: misleading

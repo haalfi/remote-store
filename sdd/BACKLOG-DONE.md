@@ -13,15 +13,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   A (C)+(T) pair, the first item of the Formal Verification Wave 1.
   (C) `AllAncestorsTraversable` was already used in `Exists`,
   `IsFileMethod`, and `IsFolderMethod`, but `ListFiles` and `ListFolders`
-  were silent on it — a backend that lists successfully when an ancestor
-  is a file satisfied the contract. The `BackendContract.dfy` listing
-  postconditions now gate both the empty-result early-return
-  (`!PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
-  ==> r.value == []`) and the completeness clause on the same
-  conjunction; the two `MemoryBackend` classes call the existing
+  were silent on it — a malformed-fs state where a file appeared
+  mid-path satisfied the listing postconditions even though
+  `Exists`/`IsFile`/`IsFolder` would all return false on the same path
+  shape. The `BackendContract.dfy` listing postconditions now gate the
+  empty-result early-return on
+  `!PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
+  ==> r.value == []` and the completeness clause symmetrically widens
+  its guard from `PathExists` to `PathExists && AllAncestorsTraversable`
+  — relaxing the implementer obligation in the same malformed-fs slice,
+  which is what keeps the two clauses jointly satisfiable.
+  Honest scope: the new state is structurally unreachable through any
+  public `Backend` trait method on a well-formed initial fs
+  (`EnsureParents` inserts `DirEntry` for every slash-aligned prefix;
+  `Write` to a path under a file is not in the reachable state-space),
+  so this is a defensive postcondition against fs corruption rather
+  than a behavioural gap any compliant refinement could exhibit. The
+  two `MemoryBackend` classes call the existing
   `AncestorsTraversableCheck` helper before iterating, and the compiled
-  oracle was regenerated. Spec 003 BE-014/BE-015 carry the matching prose
-  invariant and a Formal coverage paragraph.
+  oracle was regenerated. Spec 003 BE-014/BE-015 carry the matching
+  prose invariant and a Formal coverage paragraph.
   (T) Two conformance additions: a new
   `TestDeleteFolderErrorFidelity::test_delete_folder_recursive_no_child_survives`
   (sync + async) pins the Dafny `forall p | IsChildOf(p, path) ::
@@ -30,13 +41,18 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   unrecorded `azure_replay` cassette self-skips without breaking the
   existing recording (BK-235 picks up the cassette refresh); and a
   paired `test_list_files_non_traversable_ancestor_yields_empty` /
-  `test_list_folders_non_traversable_ancestor_yields_empty` (sync + async)
-  added during review pins the new (C) clause directly — seed
-  `badanc.txt` as a file, then list under `badanc.txt/child` and assert
-  empty, so a backend that surfaces native NotADirectoryError instead of
-  the empty result fails the gate. All new tests carry the matching
-  `@pytest.mark.spec` markers (BE-013, BE-014, BE-015, plus the ASYNC-*
-  mirrors); the formal-trace gate stays green without a baseline change.
+  `test_list_folders_non_traversable_ancestor_yields_empty` (sync +
+  async) added during review pins the adapter's exception-translation on
+  Local/SFTP: seed `badanc.txt` as a file, then list under
+  `badanc.txt/child` — the natural `NotADirectoryError` /
+  `SFTPError` must be swallowed and surface as `[]`. Strict scope: the
+  listed path is not in `fs`, so the existing `!PathExists` disjunct of
+  the Dafny empty-result postcondition fires first; the new
+  `!AllAncestorsTraversable` disjunct (unreachable from a well-formed
+  initial fs through public trait methods) is verified by the Dafny
+  refinement only. All new tests carry the matching `@pytest.mark.spec`
+  markers (BE-013, BE-014, BE-015, plus the ASYNC-* mirrors); the
+  formal-trace gate stays green without a baseline change.
   Trace: `sdd/traces/id-184-listing-traversability.yml`.
 
 - [x] **ID-182 — Scheduled CI drift guard for unbounded extra-dependency floors**
