@@ -1390,6 +1390,21 @@ class SFTPBackend(Backend):
         Only fires on the slow error path, so the per-stat-per-ancestor
         round-trip cost is paid once per failing read, not per
         successful read.
+
+        Known limitation (ID-212): the helper walks from the absolute
+        SFTP root ``/`` rather than from ``self._base_path``, and on a
+        non-ENOENT stat error returns False conservatively (lets the
+        caller's original ``OSError(errno=None)`` fall through to
+        ``RemoteStoreError("Failure")``).  In a chrooted SFTP deployment
+        where stat on an ancestor above the chroot returns
+        ``SSH_FX_PERMISSION_DENIED``, the walk aborts on the first such
+        ancestor and a genuine file-ancestor case under the chroot is
+        mis-classified as a generic Failure rather than NotFound.  The
+        ``sftp_inproc`` conformance fixture does not exercise this
+        because it grants unrestricted local-FS access; ID-212 tracks
+        the proper fix (walk from ``self._base_path`` down, consolidating
+        with ``_ensure_parent_dirs`` whose docstring already claims this
+        but whose code does not).
         """
         parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else ""
         if not parent or parent == self._base_path:
@@ -1407,7 +1422,8 @@ class SFTPBackend(Backend):
                 if getattr(exc, "errno", None) == errno.ENOENT:
                     return False  # ancestor missing, not a file
                 # Opaque error walking the chain — be conservative and
-                # let the caller's original failure surface as-is.
+                # let the caller's original failure surface as-is.  See
+                # the chroot limitation note above and ID-212.
                 return False
             if st.st_mode is None or not stat.S_ISDIR(st.st_mode):
                 return True  # ancestor exists and is not a directory

@@ -11,6 +11,7 @@ audience:
   - user.api
 discovery_followups:
   - ID-211
+  - ID-212
 co_shipped_items:
   - BK-235
 expected_ripples:
@@ -22,7 +23,7 @@ surprising_ripples:
   - src/remote_store/_backend.py
   - src/remote_store/aio/_async_backend.py
   - sdd/specs/029-async-store-backend-api.md
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -247,4 +248,9 @@ phases:
         section: "ID-211 entry PR placeholder"
         read_type: reference
         extract: "Round 3 review (Consistency) noted `Follow-up to ID-209 (PR ___)` still had the unfilled placeholder. Per CLAUDE.md principle 3 (`Repo describes reality at every commit`), filled with `#680`."
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor opaque-error fallback (chroot limitation)"
+        read_type: reference
+        extract: "Round 4 review (Possible) on the new `_has_file_ancestor` helper: the conservative `return False` on non-ENOENT stat errors silently mis-classifies a genuine file-ancestor case in chrooted SFTP setups where stat on an ancestor above the chroot returns `SSH_FX_PERMISSION_DENIED`. Pre-existing `_ensure_parent_dirs` shares the same walk-from-`/` pattern (its comment says walk-from-base_path but the code walks from `/`). The in-process sftp_inproc fixture does not exercise the chroot case because it grants unrestricted local-FS access. Per the reviewer's `either acknowledge or follow-up` framing, did both: tightened the `_has_file_ancestor` docstring with a `Known limitation (ID-212)` block, and opened ID-212 in BACKLOG.md to track the proper fix (refactor both walks onto `self._base_path`, add a `sftp_chroot_inproc` fixture variant exercising the restricted-permission case)."
         outcome: misleading
