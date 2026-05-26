@@ -598,15 +598,20 @@ trait Backend {
   // Gap 4: depth <= max_depth (inclusive).
   // max_depth < 0 means unlimited (no depth filtering).
   // recursive=false constrains results to immediate children (depth 0).
+  // ID-184: a non-traversable ancestor (a file in path's prefix chain)
+  //   yields an empty listing, matching Exists/IsFileMethod/IsFolderMethod
+  //   semantics where `AllAncestorsTraversable` gates reachability.
   method ListFiles(path: Path, recursive: bool, max_depth: int)
     returns (r: Result<seq<FileInfo>>)
     requires WellFormedPath(path)
     // Gap 3 / BE-014: listing is total — never raises NotFound.
     // @spec BE-014
     ensures r.Ok?
-    // Gap 3 / BE-014: missing path yields an empty result, not an error.
+    // Gap 3 / BE-014 (ID-184): missing path OR a non-traversable ancestor
+    // yields an empty result, never an error.
     // @spec BE-014
-    ensures !PathExists(fs, path) ==> r.value == []
+    ensures !PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
+      ==> r.value == []
     // All results are files that are children of path.
     // @spec BE-014
     ensures r.Ok? ==>
@@ -624,9 +629,11 @@ trait Backend {
     // @spec DEPTH-003
     ensures recursive && max_depth >= 0 && r.Ok? ==>
       forall fi | fi in r.value :: Depth(path, fi.path) <= max_depth
-    // Completeness: every matching file MUST appear in the result.
+    // Completeness (ID-184): every matching file MUST appear in the result,
+    // gated on path being reachable (exists AND ancestors traversable) —
+    // the symmetric tightening of the missing-path early-return above.
     // @spec BE-014
-    ensures r.Ok? && PathExists(fs, path) ==>
+    ensures r.Ok? && PathExists(fs, path) && AllAncestorsTraversable(fs, path) ==>
       forall p: Path | IsFile(fs, p) && IsChildOf(p, path) &&
         (if !recursive then Depth(path, p) == 0
          else if max_depth >= 0 then Depth(path, p) <= max_depth
@@ -636,21 +643,26 @@ trait Backend {
   // ====================================================================
   // list_folders(path)
   // ====================================================================
+  // ID-184: a non-traversable ancestor yields an empty listing, see
+  // ListFiles for the rationale.
   method ListFolders(path: Path) returns (r: Result<seq<FolderEntry>>)
     requires WellFormedPath(path)
     // Gap 3 / BE-015: listing is total — never raises NotFound.
     // @spec BE-015
     ensures r.Ok?
-    // Gap 3 / BE-015: missing path yields an empty result, not an error.
+    // Gap 3 / BE-015 (ID-184): missing path OR a non-traversable ancestor
+    // yields an empty result, never an error.
     // @spec BE-015
-    ensures !PathExists(fs, path) ==> r.value == []
+    ensures !PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
+      ==> r.value == []
     // All results are immediate child directories of path.
     // @spec BE-015
     ensures r.Ok? ==>
       forall fe | fe in r.value :: IsDir(fs, fe.path) && IsChildOf(fe.path, path)
-    // Completeness: every immediate child directory MUST appear.
+    // Completeness (ID-184): every immediate child directory MUST appear,
+    // gated on path being reachable.
     // @spec BE-015
-    ensures r.Ok? && PathExists(fs, path) ==>
+    ensures r.Ok? && PathExists(fs, path) && AllAncestorsTraversable(fs, path) ==>
       forall p: Path | IsDir(fs, p) && IsChildOf(p, path) ::
         exists fe | fe in r.value :: fe.path == p
 

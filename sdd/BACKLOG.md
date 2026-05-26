@@ -81,29 +81,13 @@ none of which is "run a second backend and diff the output":
 | Wave | Items | Notes |
 |---|---|---|
 | 0 — property-based (O) | ID-187 | Self-contained; bundles its own oracle helper |
-| 1 — contract + test | ID-184, ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
+| 1 — contract + test | ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
 | 1 — test backfill (T) | ID-185 | Conformance gaps for already-verified clauses |
 
 Items stay granular for tracking, but a whole wave row may ship as one
 PR where its items share a file or proof.
 
-- [ ] **ID-184 — Listing traversability: prove the contract, then enforce it**
-  spec: BE-013, BE-014, BE-015 · effort: M · audience: infra.test
-  A (C)+(T) pair: the Dafny change and the tests it makes certifiable
-  ship together.
-  (C) `AllAncestorsTraversable` is defined in `BackendContract.dfy` and
-  used in the `Exists`, `IsFileMethod`, and `IsFolderMethod`
-  postconditions, but `ListFiles` and `ListFolders` are silent on it: a
-  backend that lists successfully even when an ancestor is a file
-  satisfies the contract today. Add the traversability requirement to
-  both listing postconditions (BE-014, BE-015) and re-verify the
-  `MemoryBackend` refinement, which already establishes it.
-  (T) One conformance-test gap for a clause the verified contract states:
-  `delete_folder` completeness. `test_delete_folder_recursive_removes_all`
-  asserts the named paths are gone; add a `list_files` scan asserting no
-  path under the deleted prefix survives, matching the Dafny `forall`
-  quantifier. For move/copy destination discrimination see BK-177, which
-  already tracks that `match=` fix.
+ID-184 (Wave 1 C+T) landed; see BACKLOG-DONE.md.
 
 - [ ] **ID-188 — Resource safety: prove the quality flags, then enforce cleanup**
   spec: SIO-001, SIO-008, SIO-009, SAW-004 · effort: M · audience: infra.test
@@ -742,14 +726,17 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   so async patterns are settled. Findings inform the next release scope; no code changes
   are produced by this item itself.
 
-- [ ] **BK-235 — Record the Azure cassette for the copy/move metadata conformance tests**
+- [ ] **BK-235 — Record the Azure cassettes for new conformance tests**
   spec: — · effort: S · audience: infra.test
-  BK-195/BK-233 added `test_metadata_round_trips_through_move_copy` (sync +
-  async), but `azure_replay` self-skips it — no replay cassette exists, so
-  the Azure backend is not actually exercised by the new gate. Record the
-  cassette via `RS_TEST_LIVE_HNS=1 hatch run record-azure` against a live
-  ADLS Gen2 account (Stage-3 credentials; per TEST-009 CI does not
-  auto-record). Surfaced during BK-195/BK-233.
+  Three new conformance tests self-skip on `azure_replay` because no
+  cassette exists yet, so the Azure backend is not actually exercised by
+  the new gates: `test_metadata_round_trips_through_move_copy` (sync +
+  async, BK-195/BK-233) and `test_delete_folder_recursive_no_child_survives`
+  (sync + async, ID-184). Record the cassettes via
+  `RS_TEST_LIVE_HNS=1 hatch run record-azure` against a live ADLS Gen2
+  account (Stage-3 credentials; per TEST-009 CI does not auto-record).
+  Surfaced during BK-195/BK-233; ID-184 extended the worklist with two
+  more cases under the same recording recipe.
 
 - [ ] **BK-208 — Triage post-v0.23.0 lessons-learned into backlog items**
   spec: — · effort: M · audience: library.maintainer

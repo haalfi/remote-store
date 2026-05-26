@@ -352,11 +352,13 @@ class MemoryBackend extends Backend {
 
   // ListFiles: non-vacuous iteration with depth + recursive filtering.
   // Includes completeness lower bound: every matching file appears.
+  // ID-184: a non-traversable ancestor short-circuits to the empty listing.
   method ListFiles(path: Path, recursive: bool, max_depth: int)
     returns (r: Result<seq<FileInfo>>)
     requires WellFormedPath(path)
     ensures r.Ok?
-    ensures !PathExists(fs, path) ==> r.value == []
+    ensures !PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
+      ==> r.value == []
     ensures r.Ok? ==>
       forall fi | fi in r.value :: IsFile(fs, fi.path) && IsChildOf(fi.path, path)
     ensures r.Ok? ==>
@@ -365,15 +367,15 @@ class MemoryBackend extends Backend {
       forall fi | fi in r.value :: Depth(path, fi.path) == 0
     ensures recursive && max_depth >= 0 && r.Ok? ==>
       forall fi | fi in r.value :: Depth(path, fi.path) <= max_depth
-    ensures r.Ok? && PathExists(fs, path) ==>
+    ensures r.Ok? && PathExists(fs, path) && AllAncestorsTraversable(fs, path) ==>
       forall p: Path | IsFile(fs, p) && IsChildOf(p, path) &&
         (if !recursive then Depth(path, p) == 0
          else if max_depth >= 0 then Depth(path, p) <= max_depth
          else true) ::
         exists fi | fi in r.value :: fi.path == p
   {
-    if path !in fs {
-      assert !PathExists(fs, path);
+    var ancestors_ok := AncestorsTraversableCheck(path);
+    if path !in fs || !ancestors_ok {
       r := Ok([]);
       return;
     }
@@ -426,18 +428,20 @@ class MemoryBackend extends Backend {
     r := Ok(result);
   }
 
+  // ID-184: a non-traversable ancestor short-circuits to the empty listing.
   method ListFolders(path: Path) returns (r: Result<seq<FolderEntry>>)
     requires WellFormedPath(path)
     ensures r.Ok?
-    ensures !PathExists(fs, path) ==> r.value == []
+    ensures !PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
+      ==> r.value == []
     ensures r.Ok? ==>
       forall fe | fe in r.value :: IsDir(fs, fe.path) && IsChildOf(fe.path, path)
-    ensures r.Ok? && PathExists(fs, path) ==>
+    ensures r.Ok? && PathExists(fs, path) && AllAncestorsTraversable(fs, path) ==>
       forall p: Path | IsDir(fs, p) && IsChildOf(p, path) ::
         exists fe | fe in r.value :: fe.path == p
   {
-    if path !in fs {
-      assert !PathExists(fs, path);
+    var ancestors_ok := AncestorsTraversableCheck(path);
+    if path !in fs || !ancestors_ok {
       r := Ok([]);
       return;
     }
@@ -1027,11 +1031,13 @@ class MemoryBackendMinimal extends Backend {
     r := Ok(());
   }
 
+  // ID-184: a non-traversable ancestor short-circuits to the empty listing.
   method ListFiles(path: Path, recursive: bool, max_depth: int)
     returns (r: Result<seq<FileInfo>>)
     requires WellFormedPath(path)
     ensures r.Ok?
-    ensures !PathExists(fs, path) ==> r.value == []
+    ensures !PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
+      ==> r.value == []
     ensures r.Ok? ==>
       forall fi | fi in r.value :: IsFile(fs, fi.path) && IsChildOf(fi.path, path)
     ensures r.Ok? ==>
@@ -1040,15 +1046,15 @@ class MemoryBackendMinimal extends Backend {
       forall fi | fi in r.value :: Depth(path, fi.path) == 0
     ensures recursive && max_depth >= 0 && r.Ok? ==>
       forall fi | fi in r.value :: Depth(path, fi.path) <= max_depth
-    ensures r.Ok? && PathExists(fs, path) ==>
+    ensures r.Ok? && PathExists(fs, path) && AllAncestorsTraversable(fs, path) ==>
       forall p: Path | IsFile(fs, p) && IsChildOf(p, path) &&
         (if !recursive then Depth(path, p) == 0
          else if max_depth >= 0 then Depth(path, p) <= max_depth
          else true) ::
         exists fi | fi in r.value :: fi.path == p
   {
-    if path !in fs {
-      assert !PathExists(fs, path);
+    var ancestors_ok := AncestorsTraversableCheck(path);
+    if path !in fs || !ancestors_ok {
       r := Ok([]);
       return;
     }
@@ -1095,18 +1101,20 @@ class MemoryBackendMinimal extends Backend {
     r := Ok(result);
   }
 
+  // ID-184: a non-traversable ancestor short-circuits to the empty listing.
   method ListFolders(path: Path) returns (r: Result<seq<FolderEntry>>)
     requires WellFormedPath(path)
     ensures r.Ok?
-    ensures !PathExists(fs, path) ==> r.value == []
+    ensures !PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
+      ==> r.value == []
     ensures r.Ok? ==>
       forall fe | fe in r.value :: IsDir(fs, fe.path) && IsChildOf(fe.path, path)
-    ensures r.Ok? && PathExists(fs, path) ==>
+    ensures r.Ok? && PathExists(fs, path) && AllAncestorsTraversable(fs, path) ==>
       forall p: Path | IsDir(fs, p) && IsChildOf(p, path) ::
         exists fe | fe in r.value :: fe.path == p
   {
-    if path !in fs {
-      assert !PathExists(fs, path);
+    var ancestors_ok := AncestorsTraversableCheck(path);
+    if path !in fs || !ancestors_ok {
       r := Ok([]);
       return;
     }

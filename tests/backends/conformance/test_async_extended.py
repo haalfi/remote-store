@@ -286,6 +286,18 @@ class TestDeleteFolderErrorFidelity:
         assert not await async_backend.exists("dfr/sub/b.txt")
         assert not await async_backend.exists("dfr")
 
+    @pytest.mark.spec("ASYNC-013")
+    async def test_delete_folder_recursive_no_child_survives(self, async_backend: AsyncBackend) -> None:
+        """ID-184 (T-side, async): the Dafny ``forall p | IsChildOf(p, path)
+        :: !PathExists(fs, p)`` quantifier — no file under the deleted prefix
+        survives the recursive delete. Async mirror of the sync sibling in
+        ``test_errors.py``.
+        """
+        _require(async_backend, Capability.DELETE, Capability.WRITE, Capability.LIST)
+        await _seed(async_backend, {"dfrls/a.txt": b"a", "dfrls/sub/b.txt": b"b"})
+        await async_backend.delete_folder("dfrls", recursive=True)
+        assert [fi async for fi in async_backend.list_files("dfrls", recursive=True)] == []
+
 
 class TestGetFileInfoErrorFidelity:
     """ASYNC-016 (mirrors BE-016)."""

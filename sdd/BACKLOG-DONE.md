@@ -8,6 +8,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## v0.26.0
 
+- [x] **ID-184 — Listing traversability: prove the contract, then enforce it**
+  spec: BE-013, BE-014, BE-015 · audience: contributor.process, infra.test
+  A (C)+(T) pair, the first item of the Formal Verification Wave 1.
+  (C) `AllAncestorsTraversable` was already used in `Exists`,
+  `IsFileMethod`, and `IsFolderMethod`, but `ListFiles` and `ListFolders`
+  were silent on it — a backend that lists successfully when an ancestor
+  is a file satisfied the contract. The `BackendContract.dfy` listing
+  postconditions now gate both the empty-result early-return
+  (`!PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
+  ==> r.value == []`) and the completeness clause on the same
+  conjunction; the two `MemoryBackend` classes call the existing
+  `AncestorsTraversableCheck` helper before iterating, and the compiled
+  oracle was regenerated. Spec 003 BE-014/BE-015 carry the matching prose
+  invariant and a Formal coverage paragraph.
+  (T) A new conformance sibling
+  `TestDeleteFolderErrorFidelity::test_delete_folder_recursive_no_child_survives`
+  (sync + async) pins the Dafny `forall p | IsChildOf(p, path) ::
+  !PathExists(fs, p)` quantifier via a `list_files(prefix, recursive=True)`
+  scan, separate from `test_delete_folder_recursive_removes_all` so its
+  unrecorded `azure_replay` cassette self-skips without breaking the
+  existing recording (BK-235 picks up the cassette refresh). The new
+  sibling carries `@pytest.mark.spec("BE-013")` and `ASYNC-013`; BE-014
+  already had conformance markers so the formal-trace gate stays green
+  without a baseline change.
+  Trace: `sdd/traces/id-184-listing-traversability.yml`.
+
 - [x] **ID-182 — Scheduled CI drift guard for unbounded extra-dependency floors**
   spec: — · audience: user.site, infra.ci, contributor.tooling
   Every `[<extra>]` in `pyproject.toml` declares a floor and deliberately no

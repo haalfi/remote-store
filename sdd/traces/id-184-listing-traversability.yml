@@ -1,0 +1,132 @@
+id: ID-184
+title: "Listing traversability: prove the contract, then enforce it"
+trigger: "BackendContract.dfy used AllAncestorsTraversable in Exists / IsFileMethod / IsFolderMethod but not in ListFiles / ListFolders. A backend that returned entries when a parent path was a file satisfied the contract today. Bundled (T): test_delete_folder_recursive_removes_all asserted only the seeded paths were gone, not the Dafny `forall p | IsChildOf(p, path) :: !PathExists(fs, p)` quantifier."
+source_items:
+  - ID-184
+audience:
+  - contributor.process
+  - infra.test
+discovery_followups:
+  - BK-235
+expected_ripples:
+  - sdd/formal/MemoryBackend-py/module_.py
+  - sdd/backlogid.json
+  - sdd/specs/003-backend-adapter-contract.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-184, Formal Verification execution-order table"
+        read_type: gate
+        extract: "Wave 1 C+T pick: the listing-traversability contract clause and the delete_folder forall conformance gap ship together"
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-232, BK-196, ID-190"
+        read_type: gate
+        extract: "Template trace for C+T Dafny pairs in this wave; BK-232 supplies the done-entry prose shape and ripple list, ID-190 the recent precedent of touching BackendContract.dfy postconditions"
+      - file: sdd/traces/bk-232-move-metadata-postcondition.yml
+        section: "(full)"
+        read_type: gate
+        extract: "Phase ordering (orient/design/implement/verify/review) and step granularity to mirror; the verify phase's check_formal_trace and oracle-import smoke tests are the same gates ID-184 must clear"
+      - file: sdd/formal/README.md
+        section: "Compiled oracle as conformance gate, Verification practices"
+        read_type: gate
+        extract: "Non-ghost body change (the new AncestorsTraversableCheck call) requires oracle regeneration; MemoryBackend / MemoryBackendMinimal parity is review-enforced, not CI-enforced"
+      - file: sdd/formal/BackendContract.dfy
+        section: "ListFiles, ListFolders, Exists / IsFileMethod / IsFolderMethod, AllAncestorsTraversable"
+        read_type: gate
+        extract: "Existing pattern: Exists/IsFile/IsFolder ensure `r.value == (PathExists && AllAncestorsTraversable)`; listing postconditions had only the PathExists half. Predicate AllAncestorsTraversable was already in scope (used by the three predicates above), so the contract change is purely a postcondition tightening"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "ListFiles, ListFolders, AncestorsTraversableCheck (MemoryBackend and MemoryBackendMinimal)"
+        read_type: gate
+        extract: "AncestorsTraversableCheck already exists as a helper with `ensures result == AllAncestorsTraversable(fs, path)`; both classes have it, so the refinement change is a one-line gate at the top of each ListFiles/ListFolders body"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-014, BE-015"
+        read_type: gate
+        extract: "Existing Missing-path behavior text covers does-not-exist + does-not-name-folder; non-traversable-ancestor was implicit. Neither BE-014 nor BE-015 had a Formal coverage paragraph yet — added under ID-184"
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestDeleteFolderErrorFidelity::test_delete_folder_recursive_removes_all"
+        read_type: gate
+        extract: "Existing test asserts the named seeded paths are gone via three `backend.exists(...)` checks; nothing scans for orphan children. The (T) gap is exactly the Dafny `forall p | IsChildOf(p, path) :: !PathExists(fs, p)` quantifier"
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestDeleteFolderErrorFidelity::test_delete_folder_recursive_removes_all"
+        read_type: gate
+        extract: "Async mirror of the sync test with the same gap; gets a parallel sibling under the same ASYNC-013 marker"
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "ListFiles / ListFolders postconditions"
+        read_type: reference
+        extract: "Two-clause tightening (not a new clause): the missing-path early-return widens to `!PathExists || !AllAncestorsTraversable ==> r.value == []`, and the completeness clause's guard widens to `PathExists && AllAncestorsTraversable ==>`. A standalone `!AllAncestorsTraversable ==> r.value == []` clause would contradict the existing completeness clause when PathExists holds — the conjunction in the guards keeps the model satisfiable"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "ListFiles / ListFolders refinement"
+        read_type: reference
+        extract: "Compact form `if path !in fs || !ancestors_ok { Ok([]); return; }` over a sequential pair of early-returns. AncestorsTraversableCheck mutates nothing and reads only fs, so the existing loop invariants are unchanged"
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestDeleteFolderErrorFidelity"
+        read_type: reference
+        extract: "Sibling test approach over mutating `test_delete_folder_recursive_removes_all`: the existing cassette for `azure_replay` covers the original three exists() calls, and adding a fourth HTTP call (list_files) would invalidate it and break replay until re-recording. A new sibling under an unrecorded name self-skips via the missing-cassette mechanism, keeping the existing assertion green on azure_replay. BK-235 picks up the recording"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "ListFiles / ListFolders"
+        read_type: reference
+        extract: "Widen the missing-path early-return and the completeness guard with `|| !AllAncestorsTraversable(fs, path)` and `&& AllAncestorsTraversable(fs, path)` respectively; both clauses retain their `// @spec BE-014` / `BE-015` tags. Added explanatory comments tying the change to ID-184"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "ListFiles / ListFolders (MemoryBackend and MemoryBackendMinimal)"
+        read_type: reference
+        extract: "In both classes (parity rule), call `AncestorsTraversableCheck(path)` before the existing membership test, and widen the early-return condition to `path !in fs || !ancestors_ok`. Existing iteration unchanged"
+      - file: sdd/formal/MemoryBackend-py/module_.py
+        section: "MemoryBackend.ListFiles / ListFolders and MemoryBackendMinimal mirrors"
+        read_type: reference
+        extract: "Regenerated via native `dafny build -t py` (Docker daemon unreachable in this sandbox); _dafny_classorder.py reapplied. Diff is exactly the four method bodies (two methods × two classes) — the AncestorsTraversableCheck call and the widened early-return; variable indices shifted accordingly"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-014, BE-015"
+        read_type: reference
+        extract: "Extended Missing-path behavior to include the non-traversable-ancestor case; added Formal coverage paragraphs naming the Dafny postcondition shape and citing ID-184"
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestDeleteFolderErrorFidelity::test_delete_folder_recursive_no_child_survives"
+        read_type: reference
+        extract: "New sibling using prefix `dfrls/` (distinct from the existing `dfr/` seed to keep cassette diffs clean and avoid replay-side cross-talk); `@pytest.mark.spec(\"BE-013\")` marker carries forward the spec citation"
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestDeleteFolderErrorFidelity::test_delete_folder_recursive_no_child_survives"
+        read_type: reference
+        extract: "Async mirror under `@pytest.mark.spec(\"ASYNC-013\")`; uses the conformance suite's `async for` comprehension idiom matching neighbouring tests"
+      - file: sdd/BACKLOG.md
+        section: "BK-235"
+        read_type: reference
+        extract: "Extended BK-235 wording to enumerate the two new self-skipping tests alongside the BK-195/BK-233 originals, since the recording recipe is identical"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "(full)"
+        read_type: verify
+        extract: "`dafny verify` on all four .dfy files — 168 verified, 0 errors (matches the pre-change baseline; postcondition tightening plus the refinement gate clear together)"
+      - file: sdd/formal/MemoryBackend-py/module_.py
+        section: "ListFiles / ListFolders"
+        read_type: verify
+        extract: "Import smoke test `python -c \"import sys; sys.path.insert(0, 'sdd/formal/MemoryBackend-py'); import module_\"` passes after `_dafny_classorder.py` reorder"
+      - file: tests/backends/conformance/
+        section: "dafny_oracle parametrization"
+        read_type: verify
+        extract: "Oracle conformance still green (176 passed, 6 skipped); no test depended on the pre-fix listing-on-bad-ancestor behaviour"
+      - file: tests/backends/conformance/test_errors.py
+        section: "test_delete_folder_recursive (both)"
+        read_type: verify
+        extract: "13 passed, 3 skipped on the sync side (azure_replay skips the new sibling via missing-cassette; s3_pyarrow_moto skips per its existing carve-out)"
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "test_delete_folder_recursive (both)"
+        read_type: verify
+        extract: "7 passed, 1 skipped on the async side (azure_replay_async skips the new sibling via missing-cassette)"
+      - file: scripts/check_formal_trace.py
+        section: "_BASELINE, F1 worklist"
+        read_type: verify
+        extract: "BE-014 and BE-015 were already in T (existing @pytest.mark.spec markers on listing tests), so adding more `// @spec BE-014` / `BE-015` tags adds no new F1 violations. Baseline unchanged"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "BACKLOG → BACKLOG-DONE move, gen-backlogid refresh, trace shipped in-PR; audience is contributor.process + infra.test so no CHANGELOG entry"
