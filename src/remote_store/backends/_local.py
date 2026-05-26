@@ -164,19 +164,12 @@ class LocalBackend(Backend):
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
         if not overwrite and full.exists():
             raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+        # ID-209: scope the file-ancestor → InvalidPath mapping to the mkdir
+        # call alone.  Wrapping the write itself would mis-attribute any
+        # downstream NotADirectoryError / FileExistsError (e.g. from a
+        # TOCTOU race) to the file-ancestor wording.
         try:
             full.parent.mkdir(parents=True, exist_ok=True)
-            if isinstance(content, bytes):
-                full.write_bytes(content)
-                size = len(content)
-                st = full.stat()
-            else:
-                with open(str(full), "wb") as f:
-                    shutil.copyfileobj(content, f, _COPY_BUFSIZE)
-                st = full.stat()
-                size = st.st_size
-        except IsADirectoryError:
-            raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name) from None
         except (NotADirectoryError, FileExistsError):
             # ID-209: parent.mkdir(parents=True, exist_ok=True) raises one of these
             # when an ancestor of `path` is itself a regular file (NotADirectoryError
@@ -188,6 +181,20 @@ class LocalBackend(Backend):
                 path=path,
                 backend=self.name,
             ) from None
+        except PermissionError:
+            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        try:
+            if isinstance(content, bytes):
+                full.write_bytes(content)
+                size = len(content)
+                st = full.stat()
+            else:
+                with open(str(full), "wb") as f:
+                    shutil.copyfileobj(content, f, _COPY_BUFSIZE)
+                st = full.stat()
+                size = st.st_size
+        except IsADirectoryError:
+            raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
         return WriteResult(
@@ -210,8 +217,19 @@ class LocalBackend(Backend):
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
         if not overwrite and full.exists():
             raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+        # ID-209: same narrowing as LocalBackend.write — file-ancestor mapping
+        # scoped to the mkdir call alone.
         try:
             full.parent.mkdir(parents=True, exist_ok=True)
+        except (NotADirectoryError, FileExistsError):
+            raise InvalidPath(
+                f"Cannot write — an ancestor of '{path}' exists as a file",
+                path=path,
+                backend=self.name,
+            ) from None
+        except PermissionError:
+            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        try:
             fd, tmp_path = tempfile.mkstemp(dir=str(full.parent))
             try:
                 with os.fdopen(fd, "wb") as f:
@@ -229,13 +247,6 @@ class LocalBackend(Backend):
                 raise
         except IsADirectoryError:
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name) from None
-        except (NotADirectoryError, FileExistsError):
-            # ID-209: see LocalBackend.write — same mapping.
-            raise InvalidPath(
-                f"Cannot write — an ancestor of '{path}' exists as a file",
-                path=path,
-                backend=self.name,
-            ) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
         return WriteResult(
@@ -426,16 +437,22 @@ class LocalBackend(Backend):
             return  # self-move is a no-op
         if not overwrite and dst_full.exists():
             raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
+        # ID-209: scope the file-ancestor → InvalidPath mapping to mkdir alone.
+        # Wrapping shutil.move would mis-attribute its own FileExistsError —
+        # which can fire under a TOCTOU overwrite=False race with the
+        # dst_full.exists() check above — to the file-ancestor wording.
         try:
             dst_full.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(src_full), str(dst_full))
         except (NotADirectoryError, FileExistsError):
-            # ID-209: see LocalBackend.write — file-ancestor on dst.
             raise InvalidPath(
                 f"Cannot move — an ancestor of '{dst}' exists as a file",
                 path=dst,
                 backend=self.name,
             ) from None
+        except PermissionError:
+            raise PermissionDenied(f"Permission denied: {src} -> {dst}", path=src, backend=self.name) from None
+        try:
+            shutil.move(str(src_full), str(dst_full))
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {src} -> {dst}", path=src, backend=self.name) from None
 
@@ -452,16 +469,20 @@ class LocalBackend(Backend):
             return  # self-copy is a no-op
         if not overwrite and dst_full.exists():
             raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
+        # ID-209: same narrowing as LocalBackend.move — see that method for
+        # the rationale.
         try:
             dst_full.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(str(src_full), str(dst_full))
         except (NotADirectoryError, FileExistsError):
-            # ID-209: see LocalBackend.write — file-ancestor on dst.
             raise InvalidPath(
                 f"Cannot copy — an ancestor of '{dst}' exists as a file",
                 path=dst,
                 backend=self.name,
             ) from None
+        except PermissionError:
+            raise PermissionDenied(f"Permission denied: {src} -> {dst}", path=src, backend=self.name) from None
+        try:
+            shutil.copy2(str(src_full), str(dst_full))
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {src} -> {dst}", path=src, backend=self.name) from None
 

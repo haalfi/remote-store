@@ -193,25 +193,42 @@ class TestWriteErrorFidelity:
         with pytest.raises(InvalidPath, match=dir_path):
             await getattr(async_backend, method)(dir_path, b"data", overwrite=overwrite)
 
-    @pytest.mark.spec("ASYNC-008")
+    @pytest.mark.parametrize(
+        ("method", "cap"),
+        [
+            pytest.param("write", Capability.WRITE, id="write", marks=pytest.mark.spec("ASYNC-008")),
+            pytest.param(
+                "write_atomic",
+                Capability.ATOMIC_WRITE,
+                id="write_atomic",
+                marks=pytest.mark.spec("ASYNC-010"),
+            ),
+        ],
+    )
     @pytest.mark.spec("BE-008")
-    async def test_write_under_file_ancestor_raises_invalid_path(self, async_backend: AsyncBackend) -> None:
+    async def test_write_under_file_ancestor_raises_invalid_path(
+        self, async_backend: AsyncBackend, method: str, cap: Capability
+    ) -> None:
         """ID-209 async sibling: !AllAncestorsTraversable(fs, path) => InvalidPath.
 
         Mirrors the sync ``TestWriteErrorFidelity::test_write_under_file_
-        ancestor_raises_invalid_path`` against the async backend surface.
-        Flat-namespace backends skip per the same rationale as the sync
-        test — ID-210 tracks the optional HEAD-pre-check follow-up.
+        ancestor_raises_invalid_path`` against the async backend surface,
+        parametrised over ``write`` and ``write_atomic`` (ASYNC-008 /
+        ASYNC-010).  Flat-namespace backends skip per the same rationale
+        as the sync test — ID-210 tracks the optional HEAD-pre-check
+        follow-up.
         """
-        _require(async_backend, Capability.WRITE)
+        _require(async_backend, cap)
         _skip_flat_namespace(
             async_backend,
             "flat-namespace backends cannot reject write-under-file in O(1) (ID-210)",
         )
-        await async_backend.write("wufa.txt", b"file-blocking")
-        with pytest.raises(InvalidPath, match="wufa.txt"):
-            await async_backend.write("wufa.txt/child.txt", b"under-file")
-        assert await async_backend.read_bytes("wufa.txt") == b"file-blocking"
+        seed = f"wufa_{method}.txt"
+        nested = f"{seed}/child.txt"
+        await async_backend.write(seed, b"file-blocking")
+        with pytest.raises(InvalidPath, match=seed):
+            await getattr(async_backend, method)(nested, b"under-file")
+        assert await async_backend.read_bytes(seed) == b"file-blocking"
 
 
 @pytest.mark.spec("ASYNC-012")
@@ -596,6 +613,32 @@ class TestMoveCopyErrorFidelity:
         _require(async_backend, cap)
         with pytest.raises(NotFound, match="ec_mc_missing_src"):
             await _do_op(async_backend, op, "ec_mc_missing_src.txt", "ec_mc_dst.txt")
+
+    @pytest.mark.spec("ASYNC-018")
+    @pytest.mark.spec("ASYNC-019")
+    @pytest.mark.spec("BE-018")
+    @pytest.mark.spec("BE-019")
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
+    async def test_destination_under_file_ancestor_raises_invalid_path(
+        self, async_backend: AsyncBackend, op: str, cap: Capability
+    ) -> None:
+        """ID-209 async sibling: !AllAncestorsTraversable(fs, dst) => InvalidPath(dst)."""
+        _require(async_backend, cap, Capability.WRITE)
+        _skip_flat_namespace(
+            async_backend,
+            "flat-namespace backends cannot reject move/copy-under-file in O(1) (ID-210)",
+        )
+        await async_backend.write(f"mcua/{op}_blocker.txt", b"file-blocking")
+        await async_backend.write(f"mcua/{op}_src.txt", b"srcdata")
+        with pytest.raises(InvalidPath, match=f"mcua/{op}_blocker.txt"):
+            await _do_op(
+                async_backend,
+                op,
+                f"mcua/{op}_src.txt",
+                f"mcua/{op}_blocker.txt/dst.txt",
+            )
+        assert await async_backend.read_bytes(f"mcua/{op}_blocker.txt") == b"file-blocking"
+        assert await async_backend.read_bytes(f"mcua/{op}_src.txt") == b"srcdata"
 
 
 class TestMoveCopyOverwrite:

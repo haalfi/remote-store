@@ -1386,7 +1386,18 @@ class SFTPBackend(Backend):
                         raise
             else:
                 # ID-209: ancestor exists; reject if it's not a directory.
-                if st.st_mode is not None and not stat.S_ISDIR(st.st_mode):
+                # `st.st_mode is None` (paramiko's representation of an
+                # unsupported / missing mode field — e.g. against some
+                # non-OpenSSH SFTP servers) is treated defensively as
+                # "not a directory" here: the entry exists, mkdir would
+                # have raised EEXIST anyway, and the subsequent walk
+                # against `<ancestor>/<next_part>` would otherwise surface
+                # an opaque ``SFTPError(SSH_FX_FAILURE)`` the errno-keyed
+                # ``_map_exception`` cannot disambiguate.  False positives
+                # against directory-typed mode-less stats are acceptable
+                # — they fail loud (InvalidPath) rather than silently
+                # leaking a native exception.
+                if st.st_mode is None or not stat.S_ISDIR(st.st_mode):
                     raise InvalidPath(
                         f"Cannot operate — an ancestor of '{sftp_path}' exists as a file",
                         path=sftp_path,

@@ -11,10 +11,15 @@ audience:
   - user.api
 discovery_followups:
   - ID-210
+co_shipped_items:
+  - BK-235
 expected_ripples:
   - sdd/formal/MemoryBackend-py/module_.py
   - sdd/specs/003-backend-adapter-contract.md
   - CHANGELOG.md
+surprising_ripples:
+  - src/remote_store/backends/_sftp.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -170,3 +175,26 @@ phases:
         section: "(full)"
         read_type: verify
         extract: "`hatch run gen-backlogid` updated ID counter to 209 (BACKLOG-DONE max); active BACKLOG ID-210 is the next allocated."
+  - id: review
+    name: Review
+    steps:
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestWriteErrorFidelity, TestMoveCopyErrorFidelity"
+        read_type: reference
+        extract: "Round 1 review flagged the new test exercised only `write` while the CHANGELOG / code / BE-018/19 spec prose extend the file-ancestor InvalidPath mapping to `write_atomic`, `open_atomic`, `move`, and `copy`. Parametrised the existing test over `(write, write_atomic)` (mirroring the BE-008 dir-overwrite test shape) and added `test_open_atomic_under_file_ancestor_raises_invalid_path` plus `test_destination_under_file_ancestor_raises_invalid_path` (parametrised over `(move, copy)`) — five sync test cases now back the four-method spec promise. Async siblings extended in parallel."
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_ensure_parent_dirs (line 1387-1394)"
+        read_type: reference
+        extract: "Round 1 review flagged the original `st.st_mode is not None and not S_ISDIR(...)` guard fell through to the opaque SFTPError(SSH_FX_FAILURE) for mode-less stat results (paramiko's representation against some non-OpenSSH servers). Switched to `st.st_mode is None or not S_ISDIR(st.st_mode)` and added a block comment explaining the defensive interpretation — unknown mode is treated as not-a-directory rather than left ambiguous."
+        outcome: misleading
+      - file: src/remote_store/backends/_local.py
+        section: "LocalBackend.write / write_atomic / move / copy"
+        read_type: reference
+        extract: "Round 1 review flagged the file-ancestor `except (NotADirectoryError, FileExistsError)` block wrapped both `mkdir` and the subsequent `shutil.move` / `shutil.copy2` / write call — a TOCTOU race on `dst_full.exists()` between the AlreadyExists check and the move/copy could surface as the file-ancestor wording. Narrowed the except scope to the `mkdir` call alone in all four sites; the actual I/O sits in a separate try/except that only handles PermissionError + IsADirectoryError. `open_atomic` was already narrowed."
+        outcome: misleading
+      - file: sdd/traces/id-209-fs-wellformedness.yml
+        section: "discovery_followups / co_shipped_items / surprising_ripples / review phase"
+        read_type: reference
+        extract: "Round 1 review noted the trace lacked `surprising_ripples` (the sftp_inproc verify-time failure that drove the `_ensure_parent_dirs` S_ISDIR guard fix is not in `expected_ripples` and was a genuine doc-coverage gap), `co_shipped_items` (BK-235 worklist extension), and a `review` phase. Added all three plus `review_rounds: 1`."
+        outcome: misleading
