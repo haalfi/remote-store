@@ -10140,17 +10140,39 @@ postcondition-chain coverage as <code>write</code>. See ID-151.</p>
 <h3 id="be-014-list_files">BE-014: list_files()<a class="headerlink" href="#be-014-list_files" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>list_files(path, recursive=False)</code> returns <code>Iterator[FileInfo]</code>.
 <strong>Postconditions:</strong> Returns only files, not folders. If <code>recursive=True</code>, includes files in all subdirectories.
-<strong>Missing-path behavior:</strong> If <code>path</code> does not exist or does not name a folder,
-the iterator yields nothing. <code>list_files()</code> MUST NOT raise <code>NotFound</code> for
-missing or non-existent paths. This matches the behavior already guaranteed by
-BE-026 (<code>iter_children</code>) and ensures callers can safely iterate over potentially
-absent paths without defensive guards.</p>
+<strong>Missing-path behavior:</strong> If <code>path</code> does not exist, does not name a folder,
+or has a non-traversable ancestor (i.e. a file appears as a directory component
+in the path), the iterator yields nothing. <code>list_files()</code> MUST NOT raise
+<code>NotFound</code> for missing or non-existent paths. This matches the behavior already
+guaranteed by BE-026 (<code>iter_children</code>) and ensures callers can safely iterate
+over potentially absent paths without defensive guards.
+<strong>Formal coverage:</strong> <code>list_files()</code> is modelled in
+<code>sdd/formal/BackendContract.dfy</code> as <code>ListFiles</code>. The missing-path /
+non-traversable-ancestor early-return is pinned by
+<code>!PathExists(fs, path) || !AllAncestorsTraversable(fs, path) ==&gt; r.value == []</code>;
+the completeness postcondition's guard widened symmetrically from
+<code>PathExists(fs, path)</code> to <code>PathExists(fs, path) &amp;&amp; AllAncestorsTraversable(fs, path)</code>,
+relaxing the implementer obligation in the same malformed-fs slice — both
+changes together keep the model satisfiable. The new disjunct is a
+defensive postcondition against fs corruption: no public <code>Backend</code> trait
+method can construct <code>path in fs &amp;&amp; !AllAncestorsTraversable(fs, path)</code>
+from a well-formed initial fs (<code>EnsureParents</code> inserts <code>DirEntry</code> for
+every slash-aligned prefix, and <code>Write</code> to a path under a file is not in
+the reachable state-space), so a compliant refinement satisfies the
+clause vacuously. Verified in <code>MemoryBackend.dfy</code>. See ID-184.</p>
 <h3 id="be-015-list_folders">BE-015: list_folders()<a class="headerlink" href="#be-015-list_folders" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>list_folders(path)</code> returns <code>Iterator[FolderEntry]</code> of immediate subfolders.
 Each <code>FolderEntry</code> has <code>.name</code> (folder name) and <code>.path</code> (backend-relative <code>RemotePath</code>).
-<strong>Missing-path behavior:</strong> If <code>path</code> does not exist or does not name a folder,
-the iterator yields nothing. <code>list_folders()</code> MUST NOT raise <code>NotFound</code> for
-missing or non-existent paths.</p>
+<strong>Missing-path behavior:</strong> If <code>path</code> does not exist, does not name a folder,
+or has a non-traversable ancestor, the iterator yields nothing. <code>list_folders()</code>
+MUST NOT raise <code>NotFound</code> for missing or non-existent paths.
+<strong>Formal coverage:</strong> <code>list_folders()</code> is modelled in
+<code>sdd/formal/BackendContract.dfy</code> as <code>ListFolders</code>, with the same
+two-sided ancestor-traversability gating as BE-014 above (early-return
+disjunct plus completeness conjunction). The new disjunct is defensive
+against fs corruption rather than a behavioural gap any compliant
+refinement could reach (see BE-014). Verified in <code>MemoryBackend.dfy</code>.
+See ID-184.</p>
 <h3 id="be-016-get_file_info">BE-016: get_file_info()<a class="headerlink" href="#be-016-get_file_info" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>get_file_info(path)</code> returns <code>FileInfo</code>.
 <strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if the path names a directory (Dafny: <code>GetFileInfo: IsDir → InvalidPath</code>). See BE-021.
