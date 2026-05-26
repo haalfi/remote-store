@@ -81,7 +81,7 @@ class TestReadErrorFidelity:
         """
         _skip_flat_namespace(
             backend,
-            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-211)",
         )
         backend.write("rufa.txt", b"file-blocking")
         with pytest.raises(NotFound, match="rufa.txt"):
@@ -135,12 +135,12 @@ class TestWriteErrorFidelity:
         backends (S3, Azure non-HNS, SQLBlob, HTTP) skip via
         ``_skip_flat_namespace`` — they cannot distinguish the case in
         O(1) without an extra HEAD round trip and are tracked under
-        ID-210 (the HEAD-pre-check follow-up).
+        ID-211 (the HEAD-pre-check follow-up).
         """
         _require(backend, cap)
         _skip_flat_namespace(
             backend,
-            "flat-namespace backends cannot reject write-under-file in O(1) (ID-210)",
+            "flat-namespace backends cannot reject write-under-file in O(1) (ID-211)",
         )
         seed = f"wufa_{method}.txt"
         nested = f"{seed}/child.txt"
@@ -157,7 +157,7 @@ class TestWriteErrorFidelity:
         _require(backend, Capability.ATOMIC_WRITE)
         _skip_flat_namespace(
             backend,
-            "flat-namespace backends cannot reject write-under-file in O(1) (ID-210)",
+            "flat-namespace backends cannot reject write-under-file in O(1) (ID-211)",
         )
         backend.write("wufa_oa.txt", b"file-blocking")
         with pytest.raises(InvalidPath, match="wufa_oa.txt"), backend.open_atomic("wufa_oa.txt/child.txt") as f:
@@ -194,7 +194,7 @@ class TestDeleteErrorFidelity:
         """
         _skip_flat_namespace(
             backend,
-            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-211)",
         )
         backend.write("dufa.txt", b"file-blocking")
         with pytest.raises(NotFound, match="dufa.txt"):
@@ -306,7 +306,7 @@ class TestGetFileInfoErrorFidelity:
         """ID-209 round-2: file-ancestor path → NotFound (read-side semantics)."""
         _skip_flat_namespace(
             backend,
-            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-211)",
         )
         backend.write("gfufa.txt", b"file-blocking")
         with pytest.raises(NotFound, match="gfufa.txt"):
@@ -378,13 +378,13 @@ class TestMoveCopyErrorFidelity:
 
         Mirror of the BE-008 file-ancestor clause on the dst side of
         move/copy.  Same flat-namespace skip rationale as the write test:
-        ID-210 tracks the optional HEAD pre-check follow-up for flat-NS
+        ID-211 tracks the optional HEAD pre-check follow-up for flat-NS
         backends.
         """
         _require(backend, cap)
         _skip_flat_namespace(
             backend,
-            "flat-namespace backends cannot reject move/copy-under-file in O(1) (ID-210)",
+            "flat-namespace backends cannot reject move/copy-under-file in O(1) (ID-211)",
         )
         backend.write(f"mcua/{op}_blocker.txt", b"file-blocking")
         backend.write(f"mcua/{op}_src.txt", b"srcdata")

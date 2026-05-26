@@ -176,7 +176,7 @@ class TestReadErrorFidelity:
         _require(async_backend, Capability.READ, Capability.WRITE)
         _skip_flat_namespace(
             async_backend,
-            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-211)",
         )
         await async_backend.write("rufa.txt", b"file-blocking")
         with pytest.raises(NotFound, match="rufa.txt"):
@@ -194,7 +194,7 @@ class TestReadErrorFidelity:
         _require(async_backend, Capability.READ, Capability.WRITE)
         _skip_flat_namespace(
             async_backend,
-            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-211)",
         )
         await async_backend.write("rufa_stream.txt", b"file-blocking")
         with pytest.raises(NotFound, match="rufa_stream.txt"):
@@ -253,13 +253,13 @@ class TestWriteErrorFidelity:
         ancestor_raises_invalid_path`` against the async backend surface,
         parametrised over ``write`` and ``write_atomic`` (ASYNC-008 /
         ASYNC-010).  Flat-namespace backends skip per the same rationale
-        as the sync test — ID-210 tracks the optional HEAD-pre-check
+        as the sync test — ID-211 tracks the optional HEAD-pre-check
         follow-up.
         """
         _require(async_backend, cap)
         _skip_flat_namespace(
             async_backend,
-            "flat-namespace backends cannot reject write-under-file in O(1) (ID-210)",
+            "flat-namespace backends cannot reject write-under-file in O(1) (ID-211)",
         )
         seed = f"wufa_{method}.txt"
         nested = f"{seed}/child.txt"
@@ -301,7 +301,7 @@ class TestDeleteErrorFidelity:
         _require(async_backend, Capability.DELETE, Capability.WRITE)
         _skip_flat_namespace(
             async_backend,
-            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-211)",
         )
         await async_backend.write("dufa.txt", b"file-blocking")
         with pytest.raises(NotFound, match="dufa.txt"):
@@ -415,7 +415,7 @@ class TestGetFileInfoErrorFidelity:
         _require(async_backend, Capability.METADATA, Capability.WRITE)
         _skip_flat_namespace(
             async_backend,
-            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-211)",
         )
         await async_backend.write("gfufa.txt", b"file-blocking")
         with pytest.raises(NotFound, match="gfufa.txt"):
@@ -693,7 +693,7 @@ class TestMoveCopyErrorFidelity:
         _require(async_backend, cap, Capability.WRITE)
         _skip_flat_namespace(
             async_backend,
-            "flat-namespace backends cannot reject move/copy-under-file in O(1) (ID-210)",
+            "flat-namespace backends cannot reject move/copy-under-file in O(1) (ID-211)",
         )
         await async_backend.write(f"mcua/{op}_blocker.txt", b"file-blocking")
         await async_backend.write(f"mcua/{op}_src.txt", b"srcdata")

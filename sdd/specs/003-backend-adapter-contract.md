@@ -117,7 +117,7 @@ rejection added by ID-209 is similarly exempt on flat-namespace backends —
 they cannot detect a file-ancestor in O(1) without an extra HEAD round trip
 on the parent chain, so the conformance gate
 (`test_write_under_file_ancestor_raises_invalid_path`) skips on flat-NS
-fixtures via `_skip_flat_namespace`. ID-210 tracks the optional HEAD
+fixtures via `_skip_flat_namespace`. ID-211 tracks the optional HEAD
 pre-check follow-up. For these backends the effective order is: existence
 check (non-existent target treated as writable) → overwrite conflict → I/O.
 **Formal coverage:** `write()` is modelled in `sdd/formal/BackendContract.dfy`

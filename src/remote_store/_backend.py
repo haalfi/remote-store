@@ -212,7 +212,7 @@ class Backend(abc.ABC):
                 *path* is a regular file (ID-209; see spec 003 § BE-008).
                 Flat-namespace backends (S3, Azure non-HNS, SQL) cannot
                 detect a file-ancestor in O(1) and skip this case — see
-                ID-210.
+                ID-211.
         """
 
     @abc.abstractmethod

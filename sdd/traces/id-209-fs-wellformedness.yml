@@ -10,7 +10,7 @@ audience:
   - library.maintainer
   - user.api
 discovery_followups:
-  - ID-210
+  - ID-211
 co_shipped_items:
   - BK-235
 expected_ripples:
@@ -30,7 +30,7 @@ phases:
       - file: sdd/BACKLOG.md
         section: "ID-209 (Formal Verification)"
         read_type: gate
-        extract: "Two open decisions: (1) Dafny Write reacts to file-ancestor via precondition vs new error path; (2) Python conformance picks reject vs supersede vs backend-dependent. Both decided up front via AskUserQuestion: (1)(b) new error path returning InvalidPath; (2)(a) raise InvalidPath. Flat-NS strategy: option (C) carve-out + follow-up ID-210 for the HEAD pre-check."
+        extract: "Two open decisions: (1) Dafny Write reacts to file-ancestor via precondition vs new error path; (2) Python conformance picks reject vs supersede vs backend-dependent. Both decided up front via AskUserQuestion: (1)(b) new error path returning InvalidPath; (2)(a) raise InvalidPath. Flat-NS strategy: option (C) carve-out + follow-up ID-211 for the HEAD pre-check."
       - file: sdd/BACKLOG-DONE.md
         section: "ID-184"
         read_type: gate
@@ -122,7 +122,7 @@ phases:
       - file: tests/backends/conformance/test_errors.py
         section: "TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path"
         read_type: reference
-        extract: "Sync conformance gate added inside the existing TestWriteErrorFidelity class — same `@pytest.mark.spec(\"BE-008\")` shape, `_skip_flat_namespace` carve-out keyed by the existing per-fixture record (flat-NS backends skip pending ID-210). Reads back the original file after the failed write to confirm no superseding side effect."
+        extract: "Sync conformance gate added inside the existing TestWriteErrorFidelity class — same `@pytest.mark.spec(\"BE-008\")` shape, `_skip_flat_namespace` carve-out keyed by the existing per-fixture record (flat-NS backends skip pending ID-211). Reads back the original file after the failed write to confirm no superseding side effect."
       - file: tests/backends/conformance/test_async_extended.py
         section: "TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path"
         read_type: reference
@@ -130,15 +130,15 @@ phases:
       - file: sdd/specs/003-backend-adapter-contract.md
         section: "BE-008, BE-014, BE-015, BE-018, BE-019"
         read_type: reference
-        extract: "BE-008: extended precondition order (step 1 now also covers file-ancestor InvalidPath) plus the flat-namespace exemption rationale and the ID-210 cross-reference. BE-014/015: reframed the !AllAncestorsTraversable disjunct as a logical consequence of Valid() rather than a defensive postcondition. BE-018/019: added the file-ancestor-on-dst clause to Raises:."
+        extract: "BE-008: extended precondition order (step 1 now also covers file-ancestor InvalidPath) plus the flat-namespace exemption rationale and the ID-211 cross-reference. BE-014/015: reframed the !AllAncestorsTraversable disjunct as a logical consequence of Valid() rather than a defensive postcondition. BE-018/019: added the file-ancestor-on-dst clause to Raises:."
       - file: sdd/formal/MemoryBackend-py/module_.py
         section: "(full)"
         read_type: reference
         extract: "Regenerated via `dafny build -t py sdd/formal/MemoryBackend.dfy` + `scripts/_dafny_classorder.py`. The diff covers the new file-ancestor early returns in Write/Move/Copy plus the two factored lemmas (ghost-only — erased at compile time, so no behavioural diff)."
       - file: sdd/BACKLOG.md
-        section: "ID-210"
+        section: "ID-211"
         read_type: reference
-        extract: "Opened ID-210 (HEAD pre-check for flat-NS backends) as the user-nominated follow-up — most writes target the store root so the round-trip cost only applies to nested-path writes; worth measuring before shipping."
+        extract: "Opened ID-211 (HEAD pre-check for flat-NS backends) as the user-nominated follow-up — most writes target the store root so the round-trip cost only applies to nested-path writes; worth measuring before shipping."
       - file: sdd/BACKLOG-DONE.md
         section: "ID-209 ([Unreleased])"
         read_type: reference
@@ -169,7 +169,7 @@ phases:
       - file: scripts/check_formal_trace.py
         section: "_BASELINE worklist"
         read_type: verify
-        extract: "6 baselined gaps unchanged (BE-008 already tested → no new F1 from the new file-ancestor `// @spec BE-008` tag; ID-210 not yet referenced from a Dafny tag so no F3)."
+        extract: "6 baselined gaps unchanged (BE-008 already tested → no new F1 from the new file-ancestor `// @spec BE-008` tag; ID-211 not yet referenced from a Dafny tag so no F3)."
       - file: scripts/check_infra_settings.py
         section: "(full hatch run lint)"
         read_type: verify
@@ -177,7 +177,7 @@ phases:
       - file: sdd/backlogid.json
         section: "(full)"
         read_type: verify
-        extract: "`hatch run gen-backlogid` updated ID counter to 209 (BACKLOG-DONE max); active BACKLOG ID-210 is the next allocated."
+        extract: "`hatch run gen-backlogid` updated ID counter to 209 (BACKLOG-DONE max); active BACKLOG ID-211 is the next allocated."
   - id: review
     name: Review
     steps:
@@ -214,7 +214,7 @@ phases:
       - file: tests/backends/conformance/test_errors.py
         section: "TestReadErrorFidelity / TestDeleteErrorFidelity / TestGetFileInfoErrorFidelity"
         read_type: reference
-        extract: "Round 2 review flagged the lack of read-side file-ancestor conformance gates. Added `test_read_under_file_ancestor_raises_not_found` (parametrised over `(read, read_bytes)`), `test_delete_under_file_ancestor_raises_not_found` (covering both `missing_ok=False` → NotFound and `missing_ok=True` → no-op), and `test_get_file_info_under_file_ancestor_raises_not_found`. Async siblings mirrored. All pass on memory / local / sftp_inproc / dafny_oracle; flat-NS skip via the existing `_skip_flat_namespace` carve-out (still under ID-210)."
+        extract: "Round 2 review flagged the lack of read-side file-ancestor conformance gates. Added `test_read_under_file_ancestor_raises_not_found` (parametrised over `(read, read_bytes)`), `test_delete_under_file_ancestor_raises_not_found` (covering both `missing_ok=False` → NotFound and `missing_ok=True` → no-op), and `test_get_file_info_under_file_ancestor_raises_not_found`. Async siblings mirrored. All pass on memory / local / sftp_inproc / dafny_oracle; flat-NS skip via the existing `_skip_flat_namespace` carve-out (still under ID-211)."
       - file: src/remote_store/backends/_local.py
         section: "LocalBackend.open_atomic (dual-wrap mkdir + mkstemp)"
         read_type: reference
@@ -223,7 +223,7 @@ phases:
       - file: src/remote_store/_backend.py
         section: "Backend ABC docstrings (write / write_atomic / open_atomic / move / copy)"
         read_type: reference
-        extract: "Round 2 review (Consistency/Ripple) flagged the sync Backend ABC docstrings still documented only `InvalidPath: If *path* names a directory` — the canonical user-API reference for the file-ancestor InvalidPath promise was absent. Extended each docstring's Raises: block with the new clause and a pointer to spec 003 § BE-008/018/019 and ID-209/ID-210."
+        extract: "Round 2 review (Consistency/Ripple) flagged the sync Backend ABC docstrings still documented only `InvalidPath: If *path* names a directory` — the canonical user-API reference for the file-ancestor InvalidPath promise was absent. Extended each docstring's Raises: block with the new clause and a pointer to spec 003 § BE-008/018/019 and ID-209/ID-211."
       - file: src/remote_store/aio/_async_backend.py
         section: "AsyncBackend ABC docstrings (write / write_atomic / move / copy)"
         read_type: reference
@@ -233,3 +233,8 @@ phases:
         read_type: reference
         extract: "Round 2 review (Spec/Ripple) flagged that BE-008/018/019 got the file-ancestor clause in spec 003 but the async mirror (spec 029) was not updated. Extended ASYNC-008's Raises: with the InvalidPath clauses (both directory and file-ancestor), ASYNC-010 delegating to ASYNC-008, and ASYNC-018/019 with the file-ancestor-on-dst clause. The conformance test markers already cited both the ASYNC-* and BE-* IDs; this round closes the prose-side coverage."
         outcome: misleading
+      - file: sdd/BACKLOG.md
+        section: "ID-211 (formerly ID-210)"
+        read_type: reference
+        extract: "Rebase race: while this PR was in review, PR #681 (ID-193 async conformance close-out) landed on master and allocated ID-210 to a parallel follow-up item (Async Dafny oracle). On rebase the follow-up this PR opens (write-under-file HEAD pre-check for flat-NS backends) was renumbered to ID-211 — the next free slot above master's. Cross-references touched across CHANGELOG.md, BACKLOG-DONE.md (ID-209 entry), spec 003, _backend.py, aio/_async_backend.py, conformance tests, and this trace. Master's ID-210 references in BACKLOG.md / BACKLOG-DONE.md / id-193 trace are intact. `gen_backlogid --check` confirms no collisions; next safe ID is 212."
+        outcome: unclear

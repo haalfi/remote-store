@@ -211,7 +211,7 @@ PR where its items share a file or proof.
   `@pytest.mark.spec("BE-018")` marker. The abstract contract (BE-018,
   Gap 5) currently sidesteps intermediate states.
 
-- [ ] **ID-210 — write-under-file HEAD pre-check for flat-namespace backends**
+- [ ] **ID-211 — write-under-file HEAD pre-check for flat-namespace backends**
   spec: BE-008 · effort: M · audience: user.api, library.maintainer
   Follow-up to ID-209 (PR ___). Decision 2 (a) landed: write/move/copy
   to a path under a file ancestor MUST raise `InvalidPath` cross-backend.
@@ -225,9 +225,11 @@ PR where its items share a file or proof.
   nested path. Evaluate: (a) is the HEAD pre-check worth shipping
   unconditionally for nested-path writes on flat-NS backends; (b) does
   it belong behind an opt-in client option; (c) does the per-fixture
-  carve-out remain the right answer and we just close ID-210 with the
+  carve-out remain the right answer and we just close ID-211 with the
   measurement. Output: short findings note in `sdd/research/`, plus
-  whichever follow-up the disposition demands.
+  whichever follow-up the disposition demands. (Note: ID-210 was
+  allocated upstream to the async Dafny oracle item that landed in PR #681
+  via a parallel rebase race; this follow-up takes the next free ID.)
 
 ---
 

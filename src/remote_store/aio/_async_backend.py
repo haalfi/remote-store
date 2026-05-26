@@ -151,7 +151,7 @@ class AsyncBackend(abc.ABC):
                 ``path`` is a regular file (ID-209; see spec 003 § BE-008
                 and spec 029 § ASYNC-008).  Flat-namespace backends cannot
                 detect a file-ancestor in O(1) and skip this case — see
-                ID-210.
+                ID-211.
         """
 
     @abc.abstractmethod

@@ -24,7 +24,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   Flat-namespace backends (S3, Azure non-HNS, SQLBlob, HTTP) cannot
   detect a file-ancestor in O(1) without an extra HEAD round trip; the
   conformance gate skips on those fixtures via `_skip_flat_namespace`,
-  and ID-210 tracks the optional HEAD pre-check follow-up.
+  and ID-211 tracks the optional HEAD pre-check follow-up.
 
 ### Internal
 
