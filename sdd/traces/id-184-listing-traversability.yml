@@ -10,8 +10,8 @@ discovery_followups:
   - BK-235
 expected_ripples:
   - sdd/formal/MemoryBackend-py/module_.py
-  - sdd/backlogid.json
   - sdd/specs/003-backend-adapter-contract.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -130,3 +130,22 @@ phases:
         section: "Ripple-check table / Backlog item touched"
         read_type: verify
         extract: "BACKLOG → BACKLOG-DONE move, gen-backlogid refresh, trace shipped in-PR; audience is contributor.process + infra.test so no CHANGELOG entry"
+  - id: review
+    name: Review
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Formal Verification execution-order table"
+        read_type: reference
+        extract: "Review flagged the redundant 'ID-184 (Wave 1 C+T) landed' breadcrumb under the wave table — the BACKLOG-DONE.md entry already records the move, the breadcrumb just duplicates it. Removed"
+      - file: tests/backends/conformance/test_errors.py
+        section: "test_delete_folder_recursive_no_child_survives docstring"
+        read_type: reference
+        extract: "Review caught a stale `dfr/` reference in the docstring (the test seeds `dfrls/` to avoid cassette cross-talk). Reworded the docstring to name `dfrls/` and added a sentence explaining the prefix rename rationale, so a future maintainer does not unify the seed back to `dfr/` and break the azure_replay self-skip"
+      - file: tests/backends/conformance/test_listing.py
+        section: "TestListFilesCompleteness / TestListFoldersCompleteness"
+        read_type: reference
+        extract: "Review flagged the new `!AllAncestorsTraversable ==> r.value == []` clause as ID-tested via BE-014/BE-015 but not clause-tested. Added test_list_files_non_traversable_ancestor_yields_empty and the matching list_folders sibling (sync + async): seed `badanc.txt` as a file, then list under `badanc.txt/child` and assert empty. The four new tests pass on memory, local, sftp_inproc, sqlblob, s3_moto, dafny_oracle, memory_async_*, and local_async_adapted; s3_pyarrow_moto and azure_replay/azure_replay_async self-skip via their existing carve-outs"
+      - file: sdd/traces/id-184-listing-traversability.yml
+        section: "expected_ripples"
+        read_type: reference
+        extract: "Review caught sdd/backlogid.json in expected_ripples — `hatch run gen-backlogid` ran but ID-184 was below the max counter so the JSON did not actually change. Dropped the entry"

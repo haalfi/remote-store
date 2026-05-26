@@ -232,6 +232,18 @@ class TestListFilesCompleteness:
         for f in files:
             assert str(f.path).startswith("lfc/"), f"Unexpected path: {f.path}"
 
+    @pytest.mark.spec("BE-014")
+    def test_list_files_non_traversable_ancestor_yields_empty(self, backend: Backend) -> None:
+        """Dafny (ID-184): ``!AllAncestorsTraversable(fs, path) ==> r.value == []``.
+
+        When a file appears as a directory component in ``path`` (here ``badanc.txt``),
+        listing under it MUST return an empty iterator, never raise — symmetric with
+        ``Exists/IsFileMethod/IsFolderMethod`` already gating their results on the
+        same predicate.
+        """
+        _seed(backend, {"badanc.txt": b"x"})
+        assert list(backend.list_files("badanc.txt/child", recursive=True)) == []
+
 
 @pytest.mark.extended_conformance
 @pytest.mark.parametrize("backend", fixture_params(Capability.LIST), indirect=True)
@@ -259,3 +271,15 @@ class TestListFoldersCompleteness:
         )
         folders = list(backend.list_folders("lfc2"))
         assert {f.name for f in folders} == {"s1", "s2", "s3"}
+
+    @pytest.mark.spec("BE-015")
+    def test_list_folders_non_traversable_ancestor_yields_empty(self, backend: Backend) -> None:
+        """Dafny (ID-184): ``!AllAncestorsTraversable(fs, path) ==> r.value == []``.
+
+        Sibling of ``test_list_files_non_traversable_ancestor_yields_empty`` for the
+        BE-015 surface — a file appearing as a directory component must short-circuit
+        ``list_folders`` to an empty iterator, never raise.
+        """
+        _require(backend, Capability.WRITE)
+        _seed(backend, {"badanc.txt": b"x"})
+        assert list(backend.list_folders("badanc.txt/child")) == []

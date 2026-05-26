@@ -22,16 +22,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `AncestorsTraversableCheck` helper before iterating, and the compiled
   oracle was regenerated. Spec 003 BE-014/BE-015 carry the matching prose
   invariant and a Formal coverage paragraph.
-  (T) A new conformance sibling
+  (T) Two conformance additions: a new
   `TestDeleteFolderErrorFidelity::test_delete_folder_recursive_no_child_survives`
   (sync + async) pins the Dafny `forall p | IsChildOf(p, path) ::
   !PathExists(fs, p)` quantifier via a `list_files(prefix, recursive=True)`
   scan, separate from `test_delete_folder_recursive_removes_all` so its
   unrecorded `azure_replay` cassette self-skips without breaking the
-  existing recording (BK-235 picks up the cassette refresh). The new
-  sibling carries `@pytest.mark.spec("BE-013")` and `ASYNC-013`; BE-014
-  already had conformance markers so the formal-trace gate stays green
-  without a baseline change.
+  existing recording (BK-235 picks up the cassette refresh); and a
+  paired `test_list_files_non_traversable_ancestor_yields_empty` /
+  `test_list_folders_non_traversable_ancestor_yields_empty` (sync + async)
+  added during review pins the new (C) clause directly — seed
+  `badanc.txt` as a file, then list under `badanc.txt/child` and assert
+  empty, so a backend that surfaces native NotADirectoryError instead of
+  the empty result fails the gate. All new tests carry the matching
+  `@pytest.mark.spec` markers (BE-013, BE-014, BE-015, plus the ASYNC-*
+  mirrors); the formal-trace gate stays green without a baseline change.
   Trace: `sdd/traces/id-184-listing-traversability.yml`.
 
 - [x] **ID-182 — Scheduled CI drift guard for unbounded extra-dependency floors**

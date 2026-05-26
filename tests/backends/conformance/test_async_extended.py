@@ -434,6 +434,18 @@ class TestListFilesCompleteness:
         for f in files:
             assert str(f.path).startswith("lfc/"), f"Unexpected path: {f.path}"
 
+    @pytest.mark.spec("ASYNC-014")
+    async def test_list_files_non_traversable_ancestor_yields_empty(self, async_backend: AsyncBackend) -> None:
+        """Dafny (ID-184): ``!AllAncestorsTraversable(fs, path) ==> r.value == []``.
+
+        Async mirror of the sync gate in ``test_listing.py``: a file appearing as a
+        directory component short-circuits ``list_files`` to an empty iterator.
+        """
+        _require(async_backend, Capability.LIST, Capability.WRITE)
+        await _seed(async_backend, {"badanc.txt": b"x"})
+        files = [f async for f in async_backend.list_files("badanc.txt/child", recursive=True)]
+        assert files == []
+
 
 class TestListFoldersCompleteness:
     """ASYNC-015 (mirrors BE-015): every immediate child dir MUST appear."""
@@ -460,6 +472,18 @@ class TestListFoldersCompleteness:
         )
         folders = [f async for f in async_backend.list_folders("lfc2")]
         assert {f.name for f in folders} == {"s1", "s2", "s3"}
+
+    @pytest.mark.spec("ASYNC-015")
+    async def test_list_folders_non_traversable_ancestor_yields_empty(self, async_backend: AsyncBackend) -> None:
+        """Dafny (ID-184): ``!AllAncestorsTraversable(fs, path) ==> r.value == []``.
+
+        Async mirror of the sync gate in ``test_listing.py``: a file appearing as a
+        directory component short-circuits ``list_folders`` to an empty iterator.
+        """
+        _require(async_backend, Capability.LIST, Capability.WRITE)
+        await _seed(async_backend, {"badanc.txt": b"x"})
+        folders = [f async for f in async_backend.list_folders("badanc.txt/child")]
+        assert folders == []
 
 
 class TestAsyncIterChildren:

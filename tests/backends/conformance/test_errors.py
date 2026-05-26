@@ -177,7 +177,9 @@ class TestDeleteFolderErrorFidelity:
         ``test_delete_folder_recursive_removes_all`` whose named-path checks
         only spot-check the seed; this ``list_files`` scan extends the
         coverage to anything else the backend might have left behind under
-        ``dfr/``.
+        ``dfrls/``. The distinct prefix (vs ``dfr/`` in the sibling test)
+        keeps the new test free of cassette cross-talk so its unrecorded
+        ``azure_replay`` cassette self-skips cleanly.
         """
         _require(backend, Capability.WRITE, Capability.LIST)
         _seed(backend, {"dfrls/a.txt": b"a", "dfrls/sub/b.txt": b"b"})

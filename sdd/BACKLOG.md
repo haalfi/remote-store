@@ -87,8 +87,6 @@ none of which is "run a second backend and diff the output":
 Items stay granular for tracking, but a whole wave row may ship as one
 PR where its items share a file or proof.
 
-ID-184 (Wave 1 C+T) landed; see BACKLOG-DONE.md.
-
 - [ ] **ID-188 — Resource safety: prove the quality flags, then enforce cleanup**
   spec: SIO-001, SIO-008, SIO-009, SAW-004 · effort: M · audience: infra.test
   A (C)+(T) pair.
