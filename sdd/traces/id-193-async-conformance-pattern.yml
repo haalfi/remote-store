@@ -11,6 +11,7 @@ audience:
 expected_ripples:
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
+review_rounds: 1
 phases:
   - id: audit
     name: Audit (per CLAUDE.md § Audits — report only, user decides)
@@ -22,7 +23,7 @@ phases:
       - file: tests/backends/conformance/test_async_extended.py
         section: "(full — module docstring + class headers)"
         read_type: gate
-        extract: "952 lines, 81 @pytest.mark.spec markers across 18 ASYNC-* specs (ASYNC-004 — ASYNC-008, ASYNC-010, ASYNC-012 — ASYNC-020, ASYNC-024, ASYNC-029, ASYNC-047). ASYNC-018 / ASYNC-019 covered by TestMoveCopyErrorFidelity, TestMoveCopyOverwrite, TestMoveCopySelfOperation, TestMovePostState, TestCopyPostState, TestMoveCopyMetadataPreservation"
+        extract: "951 lines, 81 @pytest.mark.spec markers across 18 ASYNC-* specs (ASYNC-004 — ASYNC-008, ASYNC-010, ASYNC-012 — ASYNC-020, ASYNC-024, ASYNC-029, ASYNC-047). ASYNC-018 / ASYNC-019 covered by TestMoveCopyErrorFidelity, TestMoveCopyOverwrite, TestMoveCopySelfOperation, TestMovePostState, TestCopyPostState, TestMoveCopyMetadataPreservation"
       - file: tests/aio/test_async_pbt_stateful.py
         section: "AsyncBackendModel (module docstring lines 1-20, __init__ lines 81-105)"
         read_type: gate
@@ -72,7 +73,7 @@ phases:
         read_type: reference
         extract: "Removed ID-193 from the active section, updated the section preamble ('ID-192 and ID-193 have landed; the verifier (ID-194) can now be made authoritative'), simplified the Sequence: line to drop the parallel-with-ID-193 framing"
       - file: sdd/BACKLOG.md
-        section: "ID-203 (Blocked on), ID-179 (Sequence — start after all of), ID-198 (Schedule after async conformance)"
+        section: "ID-203 (Blocked on), ID-161 (Sequence — start after all of), ID-198 (Schedule after async conformance)"
         read_type: reference
         extract: "Three downstream consumers named ID-193 as a blocker / prerequisite / schedule gate. All three updated to point at BACKLOG-DONE.md without dropping the surface area they document"
       - file: sdd/BACKLOG-DONE.md
@@ -99,3 +100,16 @@ phases:
         section: "_check"
         read_type: verify
         extract: "Run hatch run gen-backlogid-check (or python scripts/gen_backlogid.py --check): expect stored=208 matches actual=208 (max done unchanged), next safe IDs include ID=211 (one above the active ID-210)"
+  - id: review
+    name: Review (PR #681 round 1)
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-193 close-out narrative (downstream consumers paragraph)"
+        read_type: reference
+        extract: "Review caught: narrative cited 'ID-179 / ID-198' as the two non-ID-203 updated consumers, but ID-179 ('Trace schema validator …') never referenced ID-193 and was not touched by this diff. The actually-updated item is ID-161 ('Publish llms.txt'), whose 'Sequence — start after all of' bullet was rewritten. Same misattribution in the trace's close_out phase second step and in the PR body. Fixed in all three places — record drift between what the diff actually touched and what the close-out narrative claimed (CLAUDE.md principle 6, trace-schema 'record what actually happened')"
+        outcome: misleading
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "(wc -l)"
+        read_type: reference
+        extract: "Review caught: '952 lines' off by one — actual line count on this branch is 951. Cited in both BACKLOG-DONE.md and the trace. Fixed; the kind of number that will drift again on the next edit but cheap to verify here"
+        outcome: misleading

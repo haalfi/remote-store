@@ -26,7 +26,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     state and `asyncio.to_thread` executor identity stay stable across the
     rule sequence — a per-rule `asyncio.run` would not. Landed under ID-155.
   - **Extended conformance suite.**
-    `tests/backends/conformance/test_async_extended.py` (952 lines, 81
+    `tests/backends/conformance/test_async_extended.py` (951 lines, 81
     `@pytest.mark.spec` markers across 18 ASYNC-* IDs: ASYNC-004 — ASYNC-008,
     ASYNC-010, ASYNC-012 — ASYNC-020, ASYNC-024, ASYNC-029, ASYNC-047) covers
     error-fidelity, listing completeness, move/copy postconditions (the
@@ -50,7 +50,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `dafny_oracle_async` fixture, so the async suite cross-checks two Python
   implementations of the contract rather than the verified-by-construction
   oracle. Spun off as ID-210 (Formal Verification section) so the close-out
-  reflects scope honestly; ID-203 (test folder restructure) and ID-179 / ID-198
+  reflects scope honestly; ID-203 (test folder restructure) and ID-161 / ID-198
   (downstream consumers that named ID-193 as a dependency) updated to drop the
   stale block.
   Trace: `sdd/traces/id-193-async-conformance-pattern.yml`.
