@@ -211,65 +211,23 @@ PR where its items share a file or proof.
   `@pytest.mark.spec("BE-018")` marker. The abstract contract (BE-018,
   Gap 5) currently sidesteps intermediate states.
 
-- [ ] **ID-209 — `fs` well-formedness as a `Backend` class invariant + write-under-file conformance gate**
-  spec: BE-008, BE-014, BE-015 · effort: L · audience: contributor.process, infra.test, library.maintainer
-  Follow-up to ID-184 (PR #679 adversarial review). The new
-  `!AllAncestorsTraversable(fs, path) ==> r.value == []` disjunct on
-  `ListFiles` / `ListFolders` is a defensive postcondition: its
-  triggering state (`path in fs && !AllAncestorsTraversable(fs, path)`)
-  is structurally unreachable through any public `Backend` trait method
-  on a well-formed initial `fs`, so every compliant refinement
-  satisfies it vacuously. ID-209 makes the unreachability load-bearing
-  rather than informal, on both layers.
-
-  (C) Promote well-formedness to a Dafny class invariant.
-  Declare `predicate Valid()` on the `Backend` trait reading
-  `forall p :: p in fs ==> AllAncestorsTraversable(fs, p)`, add
-  `requires Valid() ensures Valid()` to every mutating method
-  (`Write`, `Delete`, `DeleteFolder`, `Move`, `Copy`), and prove the
-  refinement maintains it in both `MemoryBackend` and
-  `MemoryBackendMinimal`. The cheap-to-prove cases (`Delete`,
-  `DeleteFolder`, `Move`, `Copy`) are mostly assert-breadcrumbs over
-  the existing key-set comprehensions; the load-bearing case is
-  `Write`, which today calls `EnsureParents` and then unconditionally
-  inserts a `FileEntry` at `path`. To preserve `Valid()` when an
-  ancestor of `path` is a file, `Write` either needs a precondition
-  rejecting such paths (forcing callers to check) or a new error path
-  returning `InvalidPath` for the file-ancestor case. Spec decision
-  required: which one. The InvalidPath path mirrors the existing
-  IsDir / IsFile precondition pattern in BE-008 and is the
-  recommendation, but bundling it in this item rather than spinning a
-  sub-RFC keeps the trade-off visible. `EnsureParents` itself already
-  short-circuits on `prefix in fs`, so under the chosen path it is
-  reachable only in the AllAncestorsTraversable case — no body change.
-
-  (T) Conformance gate: write-under-file is either rejected or
-  supersedes. Spec decision required, distinct from the (C)
-  decision: when a caller does `backend.write("foo.txt", b"x")` then
-  `backend.write("foo.txt/child.txt", b"y")`, the contract picks one
-  of: (a) the second write raises `InvalidPath` (hierarchical-backend
-  semantics — Local raises NotADirectoryError natively, the adapter
-  maps; recommendation, matches the (C) decision above); (b) the
-  second write supersedes — `foo.txt` is no longer a file after the
-  call (flat-namespace semantics, but locks users into surprising
-  behavior); (c) "backend-dependent, callers must not rely on either
-  outcome" (status quo, weakest option). New conformance test
-  `test_write_under_file_ancestor_rejected_or_supersedes` (sync +
-  async) pins whichever the spec picks. Likely outcome: flat-namespace
-  backends (S3, Azure non-HNS) currently silently allow the malformed
-  state — the test will fail there, requiring either a defensive
-  pre-check in `_S3Base.write` / `_azure.write` or an explicit carve-out
-  in the conformance fixture record. The carve-out is the path of less
-  resistance but acknowledges the invariant doesn't hold cross-backend
-  in v1.
-
-  **Honest scope:** option (a) on both axes is the tightest end-to-end
-  answer (Dafny invariant + Python rejection at write-time, with
-  flat-NS backends gaining a defensive pre-check). Option (c) on the
-  (T) axis combined with (a)+precondition on the (C) axis is a softer
-  landing where the Dafny model gets tight but Python only documents
-  the divergence. The decision is the load-bearing piece; the diff
-  follows.
+- [ ] **ID-210 — write-under-file HEAD pre-check for flat-namespace backends**
+  spec: BE-008 · effort: M · audience: user.api, library.maintainer
+  Follow-up to ID-209 (PR ___). Decision 2 (a) landed: write/move/copy
+  to a path under a file ancestor MUST raise `InvalidPath` cross-backend.
+  Hierarchical backends (Local, SFTP, Memory) enforce this via native
+  mappings; flat-namespace backends (S3, Azure non-HNS, SQLBlob, HTTP)
+  skip the conformance gate today because detecting a file-ancestor
+  costs an extra HEAD round trip per write. Observation from the ID-209
+  thread: most writes go to store-root paths (no ancestor to check), so
+  a cheap "skip the check when there are no slash segments" guard
+  brings the round-trip cost down to writes that explicitly target a
+  nested path. Evaluate: (a) is the HEAD pre-check worth shipping
+  unconditionally for nested-path writes on flat-NS backends; (b) does
+  it belong behind an opt-in client option; (c) does the per-fixture
+  carve-out remain the right answer and we just close ID-210 with the
+  measurement. Output: short findings note in `sdd/research/`, plus
+  whichever follow-up the disposition demands.
 
 ---
 
@@ -817,15 +775,20 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
 - [ ] **BK-235 — Record the Azure cassettes for new conformance tests**
   spec: — · effort: S · audience: infra.test
-  Three new conformance tests self-skip on `azure_replay` because no
+  Five new conformance tests self-skip on `azure_replay` because no
   cassette exists yet, so the Azure backend is not actually exercised by
   the new gates: `test_metadata_round_trips_through_move_copy` (sync +
-  async, BK-195/BK-233) and `test_delete_folder_recursive_no_child_survives`
-  (sync + async, ID-184). Record the cassettes via
+  async, BK-195/BK-233), `test_delete_folder_recursive_no_child_survives`
+  (sync + async, ID-184), and
+  `test_write_under_file_ancestor_raises_invalid_path` (sync + async,
+  ID-209 — HNS Azure has real directories so the gate should pass once
+  recorded; flat-NS Azurite already skips via the per-fixture
+  `flat_namespace=true` override). Record the cassettes via
   `RS_TEST_LIVE_HNS=1 hatch run record-azure` against a live ADLS Gen2
   account (Stage-3 credentials; per TEST-009 CI does not auto-record).
   Surfaced during BK-195/BK-233; ID-184 extended the worklist with two
-  more cases under the same recording recipe.
+  more cases under the same recording recipe; ID-209 extended again
+  with the write-under-file-ancestor case.
 
 - [ ] **BK-208 — Triage post-v0.23.0 lessons-learned into backlog items**
   spec: — · effort: M · audience: library.maintainer

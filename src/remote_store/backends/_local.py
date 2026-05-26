@@ -177,6 +177,17 @@ class LocalBackend(Backend):
                 size = st.st_size
         except IsADirectoryError:
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name) from None
+        except (NotADirectoryError, FileExistsError):
+            # ID-209: parent.mkdir(parents=True, exist_ok=True) raises one of these
+            # when an ancestor of `path` is itself a regular file (NotADirectoryError
+            # on Linux mkdir descent, FileExistsError when an exact ancestor path
+            # exists as a file).  Map to InvalidPath rather than leaking the
+            # native exception (BE-021).
+            raise InvalidPath(
+                f"Cannot write — an ancestor of '{path}' exists as a file",
+                path=path,
+                backend=self.name,
+            ) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
         return WriteResult(
@@ -218,6 +229,13 @@ class LocalBackend(Backend):
                 raise
         except IsADirectoryError:
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name) from None
+        except (NotADirectoryError, FileExistsError):
+            # ID-209: see LocalBackend.write — same mapping.
+            raise InvalidPath(
+                f"Cannot write — an ancestor of '{path}' exists as a file",
+                path=path,
+                backend=self.name,
+            ) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
         return WriteResult(
@@ -237,6 +255,13 @@ class LocalBackend(Backend):
         try:
             full.parent.mkdir(parents=True, exist_ok=True)
             fd, tmp_path = tempfile.mkstemp(dir=str(full.parent))
+        except (NotADirectoryError, FileExistsError):
+            # ID-209: see LocalBackend.write — same mapping.
+            raise InvalidPath(
+                f"Cannot write — an ancestor of '{path}' exists as a file",
+                path=path,
+                backend=self.name,
+            ) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
@@ -404,6 +429,13 @@ class LocalBackend(Backend):
         try:
             dst_full.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(src_full), str(dst_full))
+        except (NotADirectoryError, FileExistsError):
+            # ID-209: see LocalBackend.write — file-ancestor on dst.
+            raise InvalidPath(
+                f"Cannot move — an ancestor of '{dst}' exists as a file",
+                path=dst,
+                backend=self.name,
+            ) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {src} -> {dst}", path=src, backend=self.name) from None
 
@@ -423,6 +455,13 @@ class LocalBackend(Backend):
         try:
             dst_full.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(str(src_full), str(dst_full))
+        except (NotADirectoryError, FileExistsError):
+            # ID-209: see LocalBackend.write — file-ancestor on dst.
+            raise InvalidPath(
+                f"Cannot copy — an ancestor of '{dst}' exists as a file",
+                path=dst,
+                backend=self.name,
+            ) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {src} -> {dst}", path=src, backend=self.name) from None
 

@@ -496,6 +496,21 @@ class Backend:
     @fs.setter
     def fs(self, value):
         self._fs = value
+    @staticmethod
+    def Valid(self):
+        def lambda0_(forall_var_0_):
+            def lambda1_(forall_var_1_):
+                d_1_i_: int = forall_var_1_
+                return not ((((0) < (d_1_i_)) and ((d_1_i_) < ((len(d_0_p_)) - (1)))) and (((d_0_p_)[d_1_i_]) == (_dafny.CodePoint('/')))) or (default__.IsDir(self.fs, _dafny.SeqWithoutIsStrInference((d_0_p_)[:d_1_i_:])))
+
+            d_0_p_: _dafny.Seq = forall_var_0_
+            if Path._Is(d_0_p_):
+                return not ((d_0_p_) in (self.fs)) or (_dafny.quantifier(_dafny.IntegerRange((0) + (1), (len(d_0_p_)) - (1)), True, lambda1_))
+            elif True:
+                return True
+
+        return _dafny.quantifier((self.fs).keys.Elements, True, lambda0_)
+
     def Exists(self, path):
         pass
 
@@ -684,6 +699,9 @@ class MemoryBackend(Backend):
     @fs.setter
     def fs(self, value):
         self._fs = value
+    def Valid(self):
+        return Backend.Valid(self)
+
     @property
     def name(self):
         return self._name
@@ -775,6 +793,8 @@ class MemoryBackend(Backend):
                 d_1_prefix_ = _dafny.SeqWithoutIsStrInference((path)[:d_0_i_:])
                 if (d_1_prefix_) not in (self.fs):
                     (self).fs = (self.fs).set(d_1_prefix_, Entry_DirEntry())
+                elif True:
+                    pass
             d_0_i_ = (d_0_i_) + (1)
 
     def Write(self, path, content, overwrite, metadata):
@@ -785,29 +805,36 @@ class MemoryBackend(Backend):
         if (((path) in (self.fs)) and (((self.fs)[path]).is_FileEntry)) and (not(overwrite)):
             r = Result_Err(Error_AlreadyExists(path, (self).name))
             return r
+        d_0_ancestors__ok_: bool
+        out0_: bool
+        out0_ = (self).AncestorsTraversableCheck(path)
+        d_0_ancestors__ok_ = out0_
+        if not(d_0_ancestors__ok_):
+            r = Result_Err(Error_InvalidPath(path, (self).name))
+            return r
         if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) not in ((self).capabilities)):
             r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(Capability_CapUserMetadata()), (self).name))
             return r
         (self).EnsureParents(path)
-        d_0_stored__metadata_: Option
+        d_1_stored__metadata_: Option
         if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) in ((self).capabilities)):
-            d_0_stored__metadata_ = metadata
+            d_1_stored__metadata_ = metadata
         elif True:
-            d_0_stored__metadata_ = Option_None()
-        d_1_ts_: Option
+            d_1_stored__metadata_ = Option_None()
+        d_2_ts_: Option
         if (Capability_CapWriteResultNative()) in ((self).capabilities):
-            d_1_ts_ = Option_Some(0)
+            d_2_ts_ = Option_Some(0)
         elif True:
-            d_1_ts_ = Option_None()
-        d_2_info_: FileInfo
-        d_2_info_ = FileInfo_FileInfo(path, path, len(content), Option_None(), Option_None(), d_1_ts_, d_0_stored__metadata_)
-        (self).fs = (self.fs).set(path, Entry_FileEntry(content, d_2_info_))
-        d_3_wr__source_: WriteSource
+            d_2_ts_ = Option_None()
+        d_3_info_: FileInfo
+        d_3_info_ = FileInfo_FileInfo(path, path, len(content), Option_None(), Option_None(), d_2_ts_, d_1_stored__metadata_)
+        (self).fs = (self.fs).set(path, Entry_FileEntry(content, d_3_info_))
+        d_4_wr__source_: WriteSource
         if (Capability_CapWriteResultNative()) in ((self).capabilities):
-            d_3_wr__source_ = WriteSource_NativeSource()
+            d_4_wr__source_ = WriteSource_NativeSource()
         elif True:
-            d_3_wr__source_ = WriteSource_BasicSource()
-        r = Result_Ok(WriteResult_WriteResult(path, len(content), Option_None(), Option_None(), Option_None(), d_1_ts_, d_0_stored__metadata_, d_3_wr__source_))
+            d_4_wr__source_ = WriteSource_BasicSource()
+        r = Result_Ok(WriteResult_WriteResult(path, len(content), Option_None(), Option_None(), Option_None(), d_2_ts_, d_1_stored__metadata_, d_4_wr__source_))
         return r
 
     def Delete(self, path, missing__ok):
@@ -1023,26 +1050,35 @@ class MemoryBackend(Backend):
         if (src) == (dst):
             r = Result_Ok(())
             return r
+        d_0_dst__ancestors__ok_: bool
+        out0_: bool
+        out0_ = (self).AncestorsTraversableCheck(dst)
+        d_0_dst__ancestors__ok_ = out0_
+        if not(d_0_dst__ancestors__ok_):
+            r = Result_Err(Error_InvalidPath(dst, (self).name))
+            return r
         if (((dst) in (self.fs)) and (((self.fs)[dst]).is_FileEntry)) and (not(overwrite)):
             r = Result_Err(Error_AlreadyExists(dst, (self).name))
             return r
+        d_1_srcEntry_: Entry
+        d_1_srcEntry_ = (self.fs)[src]
         (self).EnsureParents(dst)
-        d_0_srcEntry_: Entry
-        d_0_srcEntry_ = (self.fs)[src]
-        d_1_newInfo_: FileInfo
-        d_1_newInfo_ = FileInfo_FileInfo(dst, dst, ((d_0_srcEntry_).info).size, Option_None(), Option_None(), Option_None(), ((d_0_srcEntry_).info).metadata)
-        d_2_newEntry_: Entry
-        d_2_newEntry_ = Entry_FileEntry((d_0_srcEntry_).content, d_1_newInfo_)
+        d_2_newInfo_: FileInfo
+        d_2_newInfo_ = FileInfo_FileInfo(dst, dst, ((d_1_srcEntry_).info).size, Option_None(), Option_None(), Option_None(), ((d_1_srcEntry_).info).metadata)
+        d_3_newEntry_: Entry
+        d_3_newEntry_ = Entry_FileEntry((d_1_srcEntry_).content, d_2_newInfo_)
         def iife0_():
             coll0_ = _dafny.Map()
             compr_0_: _dafny.Seq
             for compr_0_ in (self.fs).keys.Elements:
-                d_3_k_: _dafny.Seq = compr_0_
-                if ((d_3_k_) in (self.fs)) and ((d_3_k_) != (src)):
-                    coll0_[d_3_k_] = (self.fs)[d_3_k_]
+                d_4_k_: _dafny.Seq = compr_0_
+                if Path._Is(d_4_k_):
+                    if ((d_4_k_) in (self.fs)) and ((d_4_k_) != (src)):
+                        coll0_[d_4_k_] = (self.fs)[d_4_k_]
             return _dafny.Map(coll0_)
-        (self).fs = (iife0_()
-        ).set(dst, d_2_newEntry_)
+        (self).fs = iife0_()
+        
+        (self).fs = (self.fs).set(dst, d_3_newEntry_)
         r = Result_Ok(())
         return r
 
@@ -1060,15 +1096,22 @@ class MemoryBackend(Backend):
         if (src) == (dst):
             r = Result_Ok(())
             return r
+        d_0_dst__ancestors__ok_: bool
+        out0_: bool
+        out0_ = (self).AncestorsTraversableCheck(dst)
+        d_0_dst__ancestors__ok_ = out0_
+        if not(d_0_dst__ancestors__ok_):
+            r = Result_Err(Error_InvalidPath(dst, (self).name))
+            return r
         if (((dst) in (self.fs)) and (((self.fs)[dst]).is_FileEntry)) and (not(overwrite)):
             r = Result_Err(Error_AlreadyExists(dst, (self).name))
             return r
+        d_1_srcEntry_: Entry
+        d_1_srcEntry_ = (self.fs)[src]
         (self).EnsureParents(dst)
-        d_0_srcEntry_: Entry
-        d_0_srcEntry_ = (self.fs)[src]
-        d_1_newInfo_: FileInfo
-        d_1_newInfo_ = FileInfo_FileInfo(dst, dst, ((d_0_srcEntry_).info).size, Option_None(), Option_None(), Option_None(), ((d_0_srcEntry_).info).metadata)
-        (self).fs = (self.fs).set(dst, Entry_FileEntry((d_0_srcEntry_).content, d_1_newInfo_))
+        d_2_newInfo_: FileInfo
+        d_2_newInfo_ = FileInfo_FileInfo(dst, dst, ((d_1_srcEntry_).info).size, Option_None(), Option_None(), Option_None(), ((d_1_srcEntry_).info).metadata)
+        (self).fs = (self.fs).set(dst, Entry_FileEntry((d_1_srcEntry_).content, d_2_newInfo_))
         r = Result_Ok(())
         return r
 
@@ -1096,6 +1139,9 @@ class MemoryBackendMinimal(Backend):
     @fs.setter
     def fs(self, value):
         self._fs = value
+    def Valid(self):
+        return Backend.Valid(self)
+
     @property
     def name(self):
         return self._name
@@ -1187,6 +1233,8 @@ class MemoryBackendMinimal(Backend):
                 d_1_prefix_ = _dafny.SeqWithoutIsStrInference((path)[:d_0_i_:])
                 if (d_1_prefix_) not in (self.fs):
                     (self).fs = (self.fs).set(d_1_prefix_, Entry_DirEntry())
+                elif True:
+                    pass
             d_0_i_ = (d_0_i_) + (1)
 
     def Write(self, path, content, overwrite, metadata):
@@ -1197,24 +1245,31 @@ class MemoryBackendMinimal(Backend):
         if (((path) in (self.fs)) and (((self.fs)[path]).is_FileEntry)) and (not(overwrite)):
             r = Result_Err(Error_AlreadyExists(path, (self).name))
             return r
+        d_0_ancestors__ok_: bool
+        out0_: bool
+        out0_ = (self).AncestorsTraversableCheck(path)
+        d_0_ancestors__ok_ = out0_
+        if not(d_0_ancestors__ok_):
+            r = Result_Err(Error_InvalidPath(path, (self).name))
+            return r
         if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) not in ((self).capabilities)):
             r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(Capability_CapUserMetadata()), (self).name))
             return r
         (self).EnsureParents(path)
-        d_0_stored__metadata_: Option
+        d_1_stored__metadata_: Option
         if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) in ((self).capabilities)):
-            d_0_stored__metadata_ = metadata
+            d_1_stored__metadata_ = metadata
         elif True:
-            d_0_stored__metadata_ = Option_None()
-        d_1_info_: FileInfo
-        d_1_info_ = FileInfo_FileInfo(path, path, len(content), Option_None(), Option_None(), Option_None(), d_0_stored__metadata_)
-        (self).fs = (self.fs).set(path, Entry_FileEntry(content, d_1_info_))
-        d_2_wr__source_: WriteSource
+            d_1_stored__metadata_ = Option_None()
+        d_2_info_: FileInfo
+        d_2_info_ = FileInfo_FileInfo(path, path, len(content), Option_None(), Option_None(), Option_None(), d_1_stored__metadata_)
+        (self).fs = (self.fs).set(path, Entry_FileEntry(content, d_2_info_))
+        d_3_wr__source_: WriteSource
         if (Capability_CapWriteResultNative()) in ((self).capabilities):
-            d_2_wr__source_ = WriteSource_NativeSource()
+            d_3_wr__source_ = WriteSource_NativeSource()
         elif True:
-            d_2_wr__source_ = WriteSource_BasicSource()
-        r = Result_Ok(WriteResult_WriteResult(path, len(content), Option_None(), Option_None(), Option_None(), Option_None(), d_0_stored__metadata_, d_2_wr__source_))
+            d_3_wr__source_ = WriteSource_BasicSource()
+        r = Result_Ok(WriteResult_WriteResult(path, len(content), Option_None(), Option_None(), Option_None(), Option_None(), d_1_stored__metadata_, d_3_wr__source_))
         return r
 
     def Delete(self, path, missing__ok):
@@ -1430,26 +1485,35 @@ class MemoryBackendMinimal(Backend):
         if (src) == (dst):
             r = Result_Ok(())
             return r
+        d_0_dst__ancestors__ok_: bool
+        out0_: bool
+        out0_ = (self).AncestorsTraversableCheck(dst)
+        d_0_dst__ancestors__ok_ = out0_
+        if not(d_0_dst__ancestors__ok_):
+            r = Result_Err(Error_InvalidPath(dst, (self).name))
+            return r
         if (((dst) in (self.fs)) and (((self.fs)[dst]).is_FileEntry)) and (not(overwrite)):
             r = Result_Err(Error_AlreadyExists(dst, (self).name))
             return r
+        d_1_srcEntry_: Entry
+        d_1_srcEntry_ = (self.fs)[src]
         (self).EnsureParents(dst)
-        d_0_srcEntry_: Entry
-        d_0_srcEntry_ = (self.fs)[src]
-        d_1_newInfo_: FileInfo
-        d_1_newInfo_ = FileInfo_FileInfo(dst, dst, ((d_0_srcEntry_).info).size, Option_None(), Option_None(), Option_None(), ((d_0_srcEntry_).info).metadata)
-        d_2_newEntry_: Entry
-        d_2_newEntry_ = Entry_FileEntry((d_0_srcEntry_).content, d_1_newInfo_)
+        d_2_newInfo_: FileInfo
+        d_2_newInfo_ = FileInfo_FileInfo(dst, dst, ((d_1_srcEntry_).info).size, Option_None(), Option_None(), Option_None(), ((d_1_srcEntry_).info).metadata)
+        d_3_newEntry_: Entry
+        d_3_newEntry_ = Entry_FileEntry((d_1_srcEntry_).content, d_2_newInfo_)
         def iife0_():
             coll0_ = _dafny.Map()
             compr_0_: _dafny.Seq
             for compr_0_ in (self.fs).keys.Elements:
-                d_3_k_: _dafny.Seq = compr_0_
-                if ((d_3_k_) in (self.fs)) and ((d_3_k_) != (src)):
-                    coll0_[d_3_k_] = (self.fs)[d_3_k_]
+                d_4_k_: _dafny.Seq = compr_0_
+                if Path._Is(d_4_k_):
+                    if ((d_4_k_) in (self.fs)) and ((d_4_k_) != (src)):
+                        coll0_[d_4_k_] = (self.fs)[d_4_k_]
             return _dafny.Map(coll0_)
-        (self).fs = (iife0_()
-        ).set(dst, d_2_newEntry_)
+        (self).fs = iife0_()
+        
+        (self).fs = (self.fs).set(dst, d_3_newEntry_)
         r = Result_Ok(())
         return r
 
@@ -1467,15 +1531,22 @@ class MemoryBackendMinimal(Backend):
         if (src) == (dst):
             r = Result_Ok(())
             return r
+        d_0_dst__ancestors__ok_: bool
+        out0_: bool
+        out0_ = (self).AncestorsTraversableCheck(dst)
+        d_0_dst__ancestors__ok_ = out0_
+        if not(d_0_dst__ancestors__ok_):
+            r = Result_Err(Error_InvalidPath(dst, (self).name))
+            return r
         if (((dst) in (self.fs)) and (((self.fs)[dst]).is_FileEntry)) and (not(overwrite)):
             r = Result_Err(Error_AlreadyExists(dst, (self).name))
             return r
+        d_1_srcEntry_: Entry
+        d_1_srcEntry_ = (self.fs)[src]
         (self).EnsureParents(dst)
-        d_0_srcEntry_: Entry
-        d_0_srcEntry_ = (self.fs)[src]
-        d_1_newInfo_: FileInfo
-        d_1_newInfo_ = FileInfo_FileInfo(dst, dst, ((d_0_srcEntry_).info).size, Option_None(), Option_None(), Option_None(), ((d_0_srcEntry_).info).metadata)
-        (self).fs = (self.fs).set(dst, Entry_FileEntry((d_0_srcEntry_).content, d_1_newInfo_))
+        d_2_newInfo_: FileInfo
+        d_2_newInfo_ = FileInfo_FileInfo(dst, dst, ((d_1_srcEntry_).info).size, Option_None(), Option_None(), Option_None(), ((d_1_srcEntry_).info).metadata)
+        (self).fs = (self.fs).set(dst, Entry_FileEntry((d_1_srcEntry_).content, d_2_newInfo_))
         r = Result_Ok(())
         return r
 

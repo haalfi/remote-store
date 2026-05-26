@@ -88,6 +88,29 @@ class TestWriteErrorFidelity:
         with pytest.raises(InvalidPath, match="wdir2"):
             backend.write("wdir2", b"data", overwrite=True)
 
+    @pytest.mark.spec("BE-008")
+    def test_write_under_file_ancestor_raises_invalid_path(self, backend: Backend) -> None:
+        """ID-209: !AllAncestorsTraversable(old(fs), path) ==> InvalidPath.
+
+        Mirrors the new Dafny Write postcondition that closes ID-184's
+        trait-totality gap.  Hierarchical backends (Local, SFTP, Memory)
+        natively reject the second write because EnsureParents / mkdir /
+        sftp.mkdir cannot descend through a regular-file path component.
+        Flat-namespace backends (S3, Azure non-HNS, SQLBlob, HTTP) skip
+        via ``_skip_flat_namespace`` — they cannot distinguish the case
+        in O(1) without an extra HEAD round trip and are tracked under
+        ID-210 (the HEAD-pre-check follow-up).
+        """
+        _skip_flat_namespace(
+            backend,
+            "flat-namespace backends cannot reject write-under-file in O(1) (ID-210)",
+        )
+        backend.write("wufa.txt", b"file-blocking")
+        with pytest.raises(InvalidPath, match="wufa.txt"):
+            backend.write("wufa.txt/child.txt", b"under-file")
+        # Original file unaffected.
+        assert backend.read_bytes("wufa.txt") == b"file-blocking"
+
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.DELETE, Capability.WRITE), indirect=True)
 class TestDeleteErrorFidelity:

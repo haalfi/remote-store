@@ -1353,7 +1353,15 @@ class SFTPBackend(Backend):
             raise
 
     def _ensure_parent_dirs(self, sftp_path: str) -> None:
-        """Create parent directories for the given SFTP path if they don't exist."""
+        """Create parent directories for the given SFTP path if they don't exist.
+
+        ID-209: an existing entry along the parent chain that is a regular
+        file (not a directory) raises ``InvalidPath`` rather than letting
+        the subsequent stat/mkdir against ``file/child`` fail with a
+        generic SSH_FX_FAILURE — paramiko surfaces that as a non-OSError
+        ``SFTPError`` whose ``errno`` attribute is unset, which our
+        OSError-keyed ``_map_exception`` cannot disambiguate.
+        """
         parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else ""
         if not parent or parent == self._base_path:
             return
@@ -1366,7 +1374,7 @@ class SFTPBackend(Backend):
                 continue
             current = f"{current}/{part}" if current and current != "/" else f"/{part}"
             try:
-                self._sftp.stat(current)
+                st = self._sftp.stat(current)
             except OSError as exc:
                 if getattr(exc, "errno", None) != errno.ENOENT:
                     raise
@@ -1376,6 +1384,14 @@ class SFTPBackend(Backend):
                     # Suppress EEXIST (race condition: another client created it)
                     if getattr(mkdir_exc, "errno", None) != errno.EEXIST:
                         raise
+            else:
+                # ID-209: ancestor exists; reject if it's not a directory.
+                if st.st_mode is not None and not stat.S_ISDIR(st.st_mode):
+                    raise InvalidPath(
+                        f"Cannot operate — an ancestor of '{sftp_path}' exists as a file",
+                        path=sftp_path,
+                        backend=self.name,
+                    )
 
     @contextmanager
     def _errors(self, path: str = "") -> Iterator[None]:
@@ -1407,6 +1423,16 @@ class SFTPBackend(Backend):
                 return PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name)
             if code == errno.EEXIST:
                 return AlreadyExists(f"Already exists: {path}", path=path, backend=self.name)
+            if code == errno.ENOTDIR:
+                # ID-209: a SFTP server raises ENOTDIR when an ancestor of the
+                # target path is a regular file (sftp.mkdir / stat / open during
+                # _ensure_parent_dirs).  Map to InvalidPath rather than leaking
+                # the native OSError (BE-021).
+                return InvalidPath(
+                    f"Cannot operate — an ancestor of '{path}' exists as a file",
+                    path=path,
+                    backend=self.name,
+                )
             return RemoteStoreError(str(exc), path=path, backend=self.name)
         if isinstance(exc, paramiko.ssh_exception.IncompatiblePeer):
             # IncompatiblePeer wraps host-key / KEX / cipher / MAC negotiation

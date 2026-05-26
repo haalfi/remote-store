@@ -193,6 +193,26 @@ class TestWriteErrorFidelity:
         with pytest.raises(InvalidPath, match=dir_path):
             await getattr(async_backend, method)(dir_path, b"data", overwrite=overwrite)
 
+    @pytest.mark.spec("ASYNC-008")
+    @pytest.mark.spec("BE-008")
+    async def test_write_under_file_ancestor_raises_invalid_path(self, async_backend: AsyncBackend) -> None:
+        """ID-209 async sibling: !AllAncestorsTraversable(fs, path) => InvalidPath.
+
+        Mirrors the sync ``TestWriteErrorFidelity::test_write_under_file_
+        ancestor_raises_invalid_path`` against the async backend surface.
+        Flat-namespace backends skip per the same rationale as the sync
+        test — ID-210 tracks the optional HEAD-pre-check follow-up.
+        """
+        _require(async_backend, Capability.WRITE)
+        _skip_flat_namespace(
+            async_backend,
+            "flat-namespace backends cannot reject write-under-file in O(1) (ID-210)",
+        )
+        await async_backend.write("wufa.txt", b"file-blocking")
+        with pytest.raises(InvalidPath, match="wufa.txt"):
+            await async_backend.write("wufa.txt/child.txt", b"under-file")
+        assert await async_backend.read_bytes("wufa.txt") == b"file-blocking"
+
 
 @pytest.mark.spec("ASYNC-012")
 class TestDeleteErrorFidelity:
