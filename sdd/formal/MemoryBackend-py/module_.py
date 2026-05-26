@@ -883,68 +883,76 @@ class MemoryBackend(Backend):
 
     def ListFiles(self, path, recursive, max__depth):
         r: Result = Result.default()()
-        if (path) not in (self.fs):
+        d_0_ancestors__ok_: bool
+        out0_: bool
+        out0_ = (self).AncestorsTraversableCheck(path)
+        d_0_ancestors__ok_ = out0_
+        if ((path) not in (self.fs)) or (not(d_0_ancestors__ok_)):
             r = Result_Ok(_dafny.SeqWithoutIsStrInference([]))
             return r
-        d_0_result_: _dafny.Seq
-        d_0_result_ = _dafny.SeqWithoutIsStrInference([])
-        d_1_remaining_: _dafny.Set
-        d_1_remaining_ = (self.fs).keys
-        while (d_1_remaining_) != (_dafny.Set({})):
-            d_2_k_: _dafny.Seq
+        d_1_result_: _dafny.Seq
+        d_1_result_ = _dafny.SeqWithoutIsStrInference([])
+        d_2_remaining_: _dafny.Set
+        d_2_remaining_ = (self.fs).keys
+        while (d_2_remaining_) != (_dafny.Set({})):
+            d_3_k_: _dafny.Seq
             with _dafny.label("_ASSIGN_SUCH_THAT_d_0"):
                 assign_such_that_0_: _dafny.Seq
-                for assign_such_that_0_ in (d_1_remaining_).Elements:
-                    d_2_k_ = assign_such_that_0_
-                    if Path._Is(d_2_k_):
-                        if (d_2_k_) in (d_1_remaining_):
+                for assign_such_that_0_ in (d_2_remaining_).Elements:
+                    d_3_k_ = assign_such_that_0_
+                    if Path._Is(d_3_k_):
+                        if (d_3_k_) in (d_2_remaining_):
                             raise _dafny.Break("_ASSIGN_SUCH_THAT_d_0")
                 raise Exception("assign-such-that search produced no value")
                 pass
-            d_1_remaining_ = (d_1_remaining_) - (_dafny.Set({d_2_k_}))
-            if (((d_2_k_) in (self.fs)) and (((self.fs)[d_2_k_]).is_FileEntry)) and (default__.IsChildOf(d_2_k_, path)):
-                d_3_d_: int
-                d_3_d_ = default__.Depth(path, d_2_k_)
-                d_4_dominated_: bool
+            d_2_remaining_ = (d_2_remaining_) - (_dafny.Set({d_3_k_}))
+            if (((d_3_k_) in (self.fs)) and (((self.fs)[d_3_k_]).is_FileEntry)) and (default__.IsChildOf(d_3_k_, path)):
+                d_4_d_: int
+                d_4_d_ = default__.Depth(path, d_3_k_)
+                d_5_dominated_: bool
                 if not(recursive):
-                    d_4_dominated_ = (d_3_d_) == (0)
+                    d_5_dominated_ = (d_4_d_) == (0)
                 elif (max__depth) >= (0):
-                    d_4_dominated_ = (d_3_d_) <= (max__depth)
+                    d_5_dominated_ = (d_4_d_) <= (max__depth)
                 elif True:
-                    d_4_dominated_ = True
-                if d_4_dominated_:
-                    d_5_fi_: FileInfo
-                    d_5_fi_ = default__.BasicFileInfo(d_2_k_, d_2_k_, len(((self.fs)[d_2_k_]).content))
-                    d_0_result_ = (d_0_result_) + (_dafny.SeqWithoutIsStrInference([d_5_fi_]))
-        r = Result_Ok(d_0_result_)
+                    d_5_dominated_ = True
+                if d_5_dominated_:
+                    d_6_fi_: FileInfo
+                    d_6_fi_ = default__.BasicFileInfo(d_3_k_, d_3_k_, len(((self.fs)[d_3_k_]).content))
+                    d_1_result_ = (d_1_result_) + (_dafny.SeqWithoutIsStrInference([d_6_fi_]))
+        r = Result_Ok(d_1_result_)
         return r
 
     def ListFolders(self, path):
         r: Result = Result.default()()
-        if (path) not in (self.fs):
+        d_0_ancestors__ok_: bool
+        out0_: bool
+        out0_ = (self).AncestorsTraversableCheck(path)
+        d_0_ancestors__ok_ = out0_
+        if ((path) not in (self.fs)) or (not(d_0_ancestors__ok_)):
             r = Result_Ok(_dafny.SeqWithoutIsStrInference([]))
             return r
-        d_0_result_: _dafny.Seq
-        d_0_result_ = _dafny.SeqWithoutIsStrInference([])
-        d_1_remaining_: _dafny.Set
-        d_1_remaining_ = (self.fs).keys
-        while (d_1_remaining_) != (_dafny.Set({})):
-            d_2_k_: _dafny.Seq
+        d_1_result_: _dafny.Seq
+        d_1_result_ = _dafny.SeqWithoutIsStrInference([])
+        d_2_remaining_: _dafny.Set
+        d_2_remaining_ = (self.fs).keys
+        while (d_2_remaining_) != (_dafny.Set({})):
+            d_3_k_: _dafny.Seq
             with _dafny.label("_ASSIGN_SUCH_THAT_d_0"):
                 assign_such_that_0_: _dafny.Seq
-                for assign_such_that_0_ in (d_1_remaining_).Elements:
-                    d_2_k_ = assign_such_that_0_
-                    if Path._Is(d_2_k_):
-                        if (d_2_k_) in (d_1_remaining_):
+                for assign_such_that_0_ in (d_2_remaining_).Elements:
+                    d_3_k_ = assign_such_that_0_
+                    if Path._Is(d_3_k_):
+                        if (d_3_k_) in (d_2_remaining_):
                             raise _dafny.Break("_ASSIGN_SUCH_THAT_d_0")
                 raise Exception("assign-such-that search produced no value")
                 pass
-            d_1_remaining_ = (d_1_remaining_) - (_dafny.Set({d_2_k_}))
-            if (((d_2_k_) in (self.fs)) and (((self.fs)[d_2_k_]).is_DirEntry)) and (default__.IsChildOf(d_2_k_, path)):
-                d_3_fe_: FolderEntry
-                d_3_fe_ = FolderEntry_FolderEntry(d_2_k_, d_2_k_)
-                d_0_result_ = (d_0_result_) + (_dafny.SeqWithoutIsStrInference([d_3_fe_]))
-        r = Result_Ok(d_0_result_)
+            d_2_remaining_ = (d_2_remaining_) - (_dafny.Set({d_3_k_}))
+            if (((d_3_k_) in (self.fs)) and (((self.fs)[d_3_k_]).is_DirEntry)) and (default__.IsChildOf(d_3_k_, path)):
+                d_4_fe_: FolderEntry
+                d_4_fe_ = FolderEntry_FolderEntry(d_3_k_, d_3_k_)
+                d_1_result_ = (d_1_result_) + (_dafny.SeqWithoutIsStrInference([d_4_fe_]))
+        r = Result_Ok(d_1_result_)
         return r
 
     def GetFileInfo(self, path):
@@ -1282,68 +1290,76 @@ class MemoryBackendMinimal(Backend):
 
     def ListFiles(self, path, recursive, max__depth):
         r: Result = Result.default()()
-        if (path) not in (self.fs):
+        d_0_ancestors__ok_: bool
+        out0_: bool
+        out0_ = (self).AncestorsTraversableCheck(path)
+        d_0_ancestors__ok_ = out0_
+        if ((path) not in (self.fs)) or (not(d_0_ancestors__ok_)):
             r = Result_Ok(_dafny.SeqWithoutIsStrInference([]))
             return r
-        d_0_result_: _dafny.Seq
-        d_0_result_ = _dafny.SeqWithoutIsStrInference([])
-        d_1_remaining_: _dafny.Set
-        d_1_remaining_ = (self.fs).keys
-        while (d_1_remaining_) != (_dafny.Set({})):
-            d_2_k_: _dafny.Seq
+        d_1_result_: _dafny.Seq
+        d_1_result_ = _dafny.SeqWithoutIsStrInference([])
+        d_2_remaining_: _dafny.Set
+        d_2_remaining_ = (self.fs).keys
+        while (d_2_remaining_) != (_dafny.Set({})):
+            d_3_k_: _dafny.Seq
             with _dafny.label("_ASSIGN_SUCH_THAT_d_0"):
                 assign_such_that_0_: _dafny.Seq
-                for assign_such_that_0_ in (d_1_remaining_).Elements:
-                    d_2_k_ = assign_such_that_0_
-                    if Path._Is(d_2_k_):
-                        if (d_2_k_) in (d_1_remaining_):
+                for assign_such_that_0_ in (d_2_remaining_).Elements:
+                    d_3_k_ = assign_such_that_0_
+                    if Path._Is(d_3_k_):
+                        if (d_3_k_) in (d_2_remaining_):
                             raise _dafny.Break("_ASSIGN_SUCH_THAT_d_0")
                 raise Exception("assign-such-that search produced no value")
                 pass
-            d_1_remaining_ = (d_1_remaining_) - (_dafny.Set({d_2_k_}))
-            if (((d_2_k_) in (self.fs)) and (((self.fs)[d_2_k_]).is_FileEntry)) and (default__.IsChildOf(d_2_k_, path)):
-                d_3_d_: int
-                d_3_d_ = default__.Depth(path, d_2_k_)
-                d_4_dominated_: bool
+            d_2_remaining_ = (d_2_remaining_) - (_dafny.Set({d_3_k_}))
+            if (((d_3_k_) in (self.fs)) and (((self.fs)[d_3_k_]).is_FileEntry)) and (default__.IsChildOf(d_3_k_, path)):
+                d_4_d_: int
+                d_4_d_ = default__.Depth(path, d_3_k_)
+                d_5_dominated_: bool
                 if not(recursive):
-                    d_4_dominated_ = (d_3_d_) == (0)
+                    d_5_dominated_ = (d_4_d_) == (0)
                 elif (max__depth) >= (0):
-                    d_4_dominated_ = (d_3_d_) <= (max__depth)
+                    d_5_dominated_ = (d_4_d_) <= (max__depth)
                 elif True:
-                    d_4_dominated_ = True
-                if d_4_dominated_:
-                    d_5_fi_: FileInfo
-                    d_5_fi_ = default__.BasicFileInfo(d_2_k_, d_2_k_, len(((self.fs)[d_2_k_]).content))
-                    d_0_result_ = (d_0_result_) + (_dafny.SeqWithoutIsStrInference([d_5_fi_]))
-        r = Result_Ok(d_0_result_)
+                    d_5_dominated_ = True
+                if d_5_dominated_:
+                    d_6_fi_: FileInfo
+                    d_6_fi_ = default__.BasicFileInfo(d_3_k_, d_3_k_, len(((self.fs)[d_3_k_]).content))
+                    d_1_result_ = (d_1_result_) + (_dafny.SeqWithoutIsStrInference([d_6_fi_]))
+        r = Result_Ok(d_1_result_)
         return r
 
     def ListFolders(self, path):
         r: Result = Result.default()()
-        if (path) not in (self.fs):
+        d_0_ancestors__ok_: bool
+        out0_: bool
+        out0_ = (self).AncestorsTraversableCheck(path)
+        d_0_ancestors__ok_ = out0_
+        if ((path) not in (self.fs)) or (not(d_0_ancestors__ok_)):
             r = Result_Ok(_dafny.SeqWithoutIsStrInference([]))
             return r
-        d_0_result_: _dafny.Seq
-        d_0_result_ = _dafny.SeqWithoutIsStrInference([])
-        d_1_remaining_: _dafny.Set
-        d_1_remaining_ = (self.fs).keys
-        while (d_1_remaining_) != (_dafny.Set({})):
-            d_2_k_: _dafny.Seq
+        d_1_result_: _dafny.Seq
+        d_1_result_ = _dafny.SeqWithoutIsStrInference([])
+        d_2_remaining_: _dafny.Set
+        d_2_remaining_ = (self.fs).keys
+        while (d_2_remaining_) != (_dafny.Set({})):
+            d_3_k_: _dafny.Seq
             with _dafny.label("_ASSIGN_SUCH_THAT_d_0"):
                 assign_such_that_0_: _dafny.Seq
-                for assign_such_that_0_ in (d_1_remaining_).Elements:
-                    d_2_k_ = assign_such_that_0_
-                    if Path._Is(d_2_k_):
-                        if (d_2_k_) in (d_1_remaining_):
+                for assign_such_that_0_ in (d_2_remaining_).Elements:
+                    d_3_k_ = assign_such_that_0_
+                    if Path._Is(d_3_k_):
+                        if (d_3_k_) in (d_2_remaining_):
                             raise _dafny.Break("_ASSIGN_SUCH_THAT_d_0")
                 raise Exception("assign-such-that search produced no value")
                 pass
-            d_1_remaining_ = (d_1_remaining_) - (_dafny.Set({d_2_k_}))
-            if (((d_2_k_) in (self.fs)) and (((self.fs)[d_2_k_]).is_DirEntry)) and (default__.IsChildOf(d_2_k_, path)):
-                d_3_fe_: FolderEntry
-                d_3_fe_ = FolderEntry_FolderEntry(d_2_k_, d_2_k_)
-                d_0_result_ = (d_0_result_) + (_dafny.SeqWithoutIsStrInference([d_3_fe_]))
-        r = Result_Ok(d_0_result_)
+            d_2_remaining_ = (d_2_remaining_) - (_dafny.Set({d_3_k_}))
+            if (((d_3_k_) in (self.fs)) and (((self.fs)[d_3_k_]).is_DirEntry)) and (default__.IsChildOf(d_3_k_, path)):
+                d_4_fe_: FolderEntry
+                d_4_fe_ = FolderEntry_FolderEntry(d_3_k_, d_3_k_)
+                d_1_result_ = (d_1_result_) + (_dafny.SeqWithoutIsStrInference([d_4_fe_]))
+        r = Result_Ok(d_1_result_)
         return r
 
     def GetFileInfo(self, path):

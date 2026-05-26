@@ -167,19 +167,41 @@ postcondition-chain coverage as `write`. See ID-151.
 
 **Invariant:** `list_files(path, recursive=False)` returns `Iterator[FileInfo]`.
 **Postconditions:** Returns only files, not folders. If `recursive=True`, includes files in all subdirectories.
-**Missing-path behavior:** If `path` does not exist or does not name a folder,
-the iterator yields nothing. `list_files()` MUST NOT raise `NotFound` for
-missing or non-existent paths. This matches the behavior already guaranteed by
-BE-026 (`iter_children`) and ensures callers can safely iterate over potentially
-absent paths without defensive guards.
+**Missing-path behavior:** If `path` does not exist, does not name a folder,
+or has a non-traversable ancestor (i.e. a file appears as a directory component
+in the path), the iterator yields nothing. `list_files()` MUST NOT raise
+`NotFound` for missing or non-existent paths. This matches the behavior already
+guaranteed by BE-026 (`iter_children`) and ensures callers can safely iterate
+over potentially absent paths without defensive guards.
+**Formal coverage:** `list_files()` is modelled in
+`sdd/formal/BackendContract.dfy` as `ListFiles`. The missing-path /
+non-traversable-ancestor early-return is pinned by
+`!PathExists(fs, path) || !AllAncestorsTraversable(fs, path) ==> r.value == []`;
+the completeness postcondition's guard widened symmetrically from
+`PathExists(fs, path)` to `PathExists(fs, path) && AllAncestorsTraversable(fs, path)`,
+relaxing the implementer obligation in the same malformed-fs slice — both
+changes together keep the model satisfiable. The new disjunct is a
+defensive postcondition against fs corruption: no public `Backend` trait
+method can construct `path in fs && !AllAncestorsTraversable(fs, path)`
+from a well-formed initial fs (`EnsureParents` inserts `DirEntry` for
+every slash-aligned prefix, and `Write` to a path under a file is not in
+the reachable state-space), so a compliant refinement satisfies the
+clause vacuously. Verified in `MemoryBackend.dfy`. See ID-184.
 
 ### BE-015: list_folders()
 
 **Invariant:** `list_folders(path)` returns `Iterator[FolderEntry]` of immediate subfolders.
 Each `FolderEntry` has `.name` (folder name) and `.path` (backend-relative `RemotePath`).
-**Missing-path behavior:** If `path` does not exist or does not name a folder,
-the iterator yields nothing. `list_folders()` MUST NOT raise `NotFound` for
-missing or non-existent paths.
+**Missing-path behavior:** If `path` does not exist, does not name a folder,
+or has a non-traversable ancestor, the iterator yields nothing. `list_folders()`
+MUST NOT raise `NotFound` for missing or non-existent paths.
+**Formal coverage:** `list_folders()` is modelled in
+`sdd/formal/BackendContract.dfy` as `ListFolders`, with the same
+two-sided ancestor-traversability gating as BE-014 above (early-return
+disjunct plus completeness conjunction). The new disjunct is defensive
+against fs corruption rather than a behavioural gap any compliant
+refinement could reach (see BE-014). Verified in `MemoryBackend.dfy`.
+See ID-184.
 
 ### BE-016: get_file_info()
 

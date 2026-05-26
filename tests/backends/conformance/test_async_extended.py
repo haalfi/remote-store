@@ -286,6 +286,18 @@ class TestDeleteFolderErrorFidelity:
         assert not await async_backend.exists("dfr/sub/b.txt")
         assert not await async_backend.exists("dfr")
 
+    @pytest.mark.spec("ASYNC-013")
+    async def test_delete_folder_recursive_no_child_survives(self, async_backend: AsyncBackend) -> None:
+        """ID-184 (T-side, async): the Dafny ``forall p | IsChildOf(p, path)
+        :: !PathExists(fs, p)`` quantifier — no file under the deleted prefix
+        survives the recursive delete. Async mirror of the sync sibling in
+        ``test_errors.py``.
+        """
+        _require(async_backend, Capability.DELETE, Capability.WRITE, Capability.LIST)
+        await _seed(async_backend, {"dfrls/a.txt": b"a", "dfrls/sub/b.txt": b"b"})
+        await async_backend.delete_folder("dfrls", recursive=True)
+        assert [fi async for fi in async_backend.list_files("dfrls", recursive=True)] == []
+
 
 class TestGetFileInfoErrorFidelity:
     """ASYNC-016 (mirrors BE-016)."""
@@ -422,6 +434,19 @@ class TestListFilesCompleteness:
         for f in files:
             assert str(f.path).startswith("lfc/"), f"Unexpected path: {f.path}"
 
+    @pytest.mark.spec("ASYNC-014")
+    async def test_list_files_non_traversable_ancestor_yields_empty(self, async_backend: AsyncBackend) -> None:
+        """Async mirror of the file-ancestor adapter gate in
+        ``test_listing.py``. See the sync test's docstring for the scope
+        caveat — this exercises the `!PathExists` disjunct of the Dafny
+        empty-result postcondition under a file-ancestor path shape,
+        not the ID-184 `!AllAncestorsTraversable` disjunct directly.
+        """
+        _require(async_backend, Capability.LIST, Capability.WRITE)
+        await _seed(async_backend, {"badanc.txt": b"x"})
+        files = [f async for f in async_backend.list_files("badanc.txt/child", recursive=True)]
+        assert files == []
+
 
 class TestListFoldersCompleteness:
     """ASYNC-015 (mirrors BE-015): every immediate child dir MUST appear."""
@@ -448,6 +473,17 @@ class TestListFoldersCompleteness:
         )
         folders = [f async for f in async_backend.list_folders("lfc2")]
         assert {f.name for f in folders} == {"s1", "s2", "s3"}
+
+    @pytest.mark.spec("ASYNC-015")
+    async def test_list_folders_non_traversable_ancestor_yields_empty(self, async_backend: AsyncBackend) -> None:
+        """Async mirror of the ``list_folders`` file-ancestor adapter
+        gate in ``test_listing.py``. See the sync sibling's docstring
+        for the scope caveat.
+        """
+        _require(async_backend, Capability.LIST, Capability.WRITE)
+        await _seed(async_backend, {"badanc.txt": b"x"})
+        folders = [f async for f in async_backend.list_folders("badanc.txt/child")]
+        assert folders == []
 
 
 class TestAsyncIterChildren:

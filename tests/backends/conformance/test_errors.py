@@ -169,6 +169,23 @@ class TestDeleteFolderErrorFidelity:
         assert not backend.exists("dfr/sub/b.txt")
         assert not backend.exists("dfr")
 
+    @pytest.mark.spec("BE-013")
+    def test_delete_folder_recursive_no_child_survives(self, backend: Backend) -> None:
+        """ID-184 (T-side): the Dafny ``forall p | IsChildOf(p, path) ::
+        !PathExists(fs, p)`` quantifier — no file under the deleted prefix
+        survives the recursive delete. Sibling of
+        ``test_delete_folder_recursive_removes_all`` whose named-path checks
+        only spot-check the seed; this ``list_files`` scan extends the
+        coverage to anything else the backend might have left behind under
+        ``dfrls/``. The distinct prefix (vs ``dfr/`` in the sibling test)
+        keeps the new test free of cassette cross-talk so its unrecorded
+        ``azure_replay`` cassette self-skips cleanly.
+        """
+        _require(backend, Capability.WRITE, Capability.LIST)
+        _seed(backend, {"dfrls/a.txt": b"a", "dfrls/sub/b.txt": b"b"})
+        backend.delete_folder("dfrls", recursive=True)
+        assert list(backend.list_files("dfrls", recursive=True)) == []
+
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)
 class TestGetFileInfoErrorFidelity:

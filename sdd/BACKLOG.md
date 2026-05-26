@@ -81,29 +81,11 @@ none of which is "run a second backend and diff the output":
 | Wave | Items | Notes |
 |---|---|---|
 | 0 — property-based (O) | ID-187 | Self-contained; bundles its own oracle helper |
-| 1 — contract + test | ID-184, ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
+| 1 — contract + test | ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
 | 1 — test backfill (T) | ID-185 | Conformance gaps for already-verified clauses |
 
 Items stay granular for tracking, but a whole wave row may ship as one
 PR where its items share a file or proof.
-
-- [ ] **ID-184 — Listing traversability: prove the contract, then enforce it**
-  spec: BE-013, BE-014, BE-015 · effort: M · audience: infra.test
-  A (C)+(T) pair: the Dafny change and the tests it makes certifiable
-  ship together.
-  (C) `AllAncestorsTraversable` is defined in `BackendContract.dfy` and
-  used in the `Exists`, `IsFileMethod`, and `IsFolderMethod`
-  postconditions, but `ListFiles` and `ListFolders` are silent on it: a
-  backend that lists successfully even when an ancestor is a file
-  satisfies the contract today. Add the traversability requirement to
-  both listing postconditions (BE-014, BE-015) and re-verify the
-  `MemoryBackend` refinement, which already establishes it.
-  (T) One conformance-test gap for a clause the verified contract states:
-  `delete_folder` completeness. `test_delete_folder_recursive_removes_all`
-  asserts the named paths are gone; add a `list_files` scan asserting no
-  path under the deleted prefix survives, matching the Dafny `forall`
-  quantifier. For move/copy destination discrimination see BK-177, which
-  already tracks that `match=` fix.
 
 - [ ] **ID-188 — Resource safety: prove the quality flags, then enforce cleanup**
   spec: SIO-001, SIO-008, SIO-009, SAW-004 · effort: M · audience: infra.test
@@ -187,6 +169,66 @@ PR where its items share a file or proof.
   does not certify it; the traceability gate still requires its
   `@pytest.mark.spec("BE-018")` marker. The abstract contract (BE-018,
   Gap 5) currently sidesteps intermediate states.
+
+- [ ] **ID-209 — `fs` well-formedness as a `Backend` class invariant + write-under-file conformance gate**
+  spec: BE-008, BE-014, BE-015 · effort: L · audience: contributor.process, infra.test, library.maintainer
+  Follow-up to ID-184 (PR #679 adversarial review). The new
+  `!AllAncestorsTraversable(fs, path) ==> r.value == []` disjunct on
+  `ListFiles` / `ListFolders` is a defensive postcondition: its
+  triggering state (`path in fs && !AllAncestorsTraversable(fs, path)`)
+  is structurally unreachable through any public `Backend` trait method
+  on a well-formed initial `fs`, so every compliant refinement
+  satisfies it vacuously. ID-209 makes the unreachability load-bearing
+  rather than informal, on both layers.
+
+  (C) Promote well-formedness to a Dafny class invariant.
+  Declare `predicate Valid()` on the `Backend` trait reading
+  `forall p :: p in fs ==> AllAncestorsTraversable(fs, p)`, add
+  `requires Valid() ensures Valid()` to every mutating method
+  (`Write`, `Delete`, `DeleteFolder`, `Move`, `Copy`), and prove the
+  refinement maintains it in both `MemoryBackend` and
+  `MemoryBackendMinimal`. The cheap-to-prove cases (`Delete`,
+  `DeleteFolder`, `Move`, `Copy`) are mostly assert-breadcrumbs over
+  the existing key-set comprehensions; the load-bearing case is
+  `Write`, which today calls `EnsureParents` and then unconditionally
+  inserts a `FileEntry` at `path`. To preserve `Valid()` when an
+  ancestor of `path` is a file, `Write` either needs a precondition
+  rejecting such paths (forcing callers to check) or a new error path
+  returning `InvalidPath` for the file-ancestor case. Spec decision
+  required: which one. The InvalidPath path mirrors the existing
+  IsDir / IsFile precondition pattern in BE-008 and is the
+  recommendation, but bundling it in this item rather than spinning a
+  sub-RFC keeps the trade-off visible. `EnsureParents` itself already
+  short-circuits on `prefix in fs`, so under the chosen path it is
+  reachable only in the AllAncestorsTraversable case — no body change.
+
+  (T) Conformance gate: write-under-file is either rejected or
+  supersedes. Spec decision required, distinct from the (C)
+  decision: when a caller does `backend.write("foo.txt", b"x")` then
+  `backend.write("foo.txt/child.txt", b"y")`, the contract picks one
+  of: (a) the second write raises `InvalidPath` (hierarchical-backend
+  semantics — Local raises NotADirectoryError natively, the adapter
+  maps; recommendation, matches the (C) decision above); (b) the
+  second write supersedes — `foo.txt` is no longer a file after the
+  call (flat-namespace semantics, but locks users into surprising
+  behavior); (c) "backend-dependent, callers must not rely on either
+  outcome" (status quo, weakest option). New conformance test
+  `test_write_under_file_ancestor_rejected_or_supersedes` (sync +
+  async) pins whichever the spec picks. Likely outcome: flat-namespace
+  backends (S3, Azure non-HNS) currently silently allow the malformed
+  state — the test will fail there, requiring either a defensive
+  pre-check in `_S3Base.write` / `_azure.write` or an explicit carve-out
+  in the conformance fixture record. The carve-out is the path of less
+  resistance but acknowledges the invariant doesn't hold cross-backend
+  in v1.
+
+  **Honest scope:** option (a) on both axes is the tightest end-to-end
+  answer (Dafny invariant + Python rejection at write-time, with
+  flat-NS backends gaining a defensive pre-check). Option (c) on the
+  (T) axis combined with (a)+precondition on the (C) axis is a softer
+  landing where the Dafny model gets tight but Python only documents
+  the divergence. The decision is the load-bearing piece; the diff
+  follows.
 
 ---
 
@@ -742,14 +784,17 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   so async patterns are settled. Findings inform the next release scope; no code changes
   are produced by this item itself.
 
-- [ ] **BK-235 — Record the Azure cassette for the copy/move metadata conformance tests**
+- [ ] **BK-235 — Record the Azure cassettes for new conformance tests**
   spec: — · effort: S · audience: infra.test
-  BK-195/BK-233 added `test_metadata_round_trips_through_move_copy` (sync +
-  async), but `azure_replay` self-skips it — no replay cassette exists, so
-  the Azure backend is not actually exercised by the new gate. Record the
-  cassette via `RS_TEST_LIVE_HNS=1 hatch run record-azure` against a live
-  ADLS Gen2 account (Stage-3 credentials; per TEST-009 CI does not
-  auto-record). Surfaced during BK-195/BK-233.
+  Three new conformance tests self-skip on `azure_replay` because no
+  cassette exists yet, so the Azure backend is not actually exercised by
+  the new gates: `test_metadata_round_trips_through_move_copy` (sync +
+  async, BK-195/BK-233) and `test_delete_folder_recursive_no_child_survives`
+  (sync + async, ID-184). Record the cassettes via
+  `RS_TEST_LIVE_HNS=1 hatch run record-azure` against a live ADLS Gen2
+  account (Stage-3 credentials; per TEST-009 CI does not auto-record).
+  Surfaced during BK-195/BK-233; ID-184 extended the worklist with two
+  more cases under the same recording recipe.
 
 - [ ] **BK-208 — Triage post-v0.23.0 lessons-learned into backlog items**
   spec: — · effort: M · audience: library.maintainer
