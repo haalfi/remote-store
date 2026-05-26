@@ -10085,33 +10085,48 @@
 <h3 id="be-008-write">BE-008: write()<a class="headerlink" href="#be-008-write" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write(path, content, *, overwrite=False, metadata=None) -&gt; WriteResult</code> creates or overwrites a file and returns a <code>WriteResult</code>.
 <strong>Preconditions:</strong> <code>content</code> is <code>bytes</code> or <code>BinaryIO</code>.
-<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. <code>CapabilityNotSupported</code> if a non-<code>None</code>, non-empty <code>metadata</code> mapping is passed and the backend lacks <code>USER_METADATA</code> (per WR-010 empty-mapping carve-out — <code>metadata=None</code> and <code>metadata={}</code> are both no-ops with respect to this gate).
+<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. <code>InvalidPath</code> if an ancestor of <code>path</code> exists as a regular file (file-as-directory-component — see ID-209). <code>CapabilityNotSupported</code> if a non-<code>None</code>, non-empty <code>metadata</code> mapping is passed and the backend lacks <code>USER_METADATA</code> (per WR-010 empty-mapping carve-out — <code>metadata=None</code> and <code>metadata={}</code> are both no-ops with respect to this gate).
 <strong>See also:</strong> <a href="../045-write-result/">045-write-result.md</a> (WR-001 through WR-005, WR-010 through WR-012).
 <strong>Precondition evaluation order:</strong> Backends MUST evaluate preconditions in this
-order: (1) path validity — if <code>path</code> names an existing <em>directory</em>, raises
-<code>InvalidPath</code>; (2) overwrite conflict — if the file exists and <code>overwrite=False</code>,
-raises <code>AlreadyExists</code>; (3) I/O. No later check may mask an earlier one. This
-order applies to <code>write()</code>, <code>write_atomic()</code>, <code>move()</code>, and <code>copy()</code> wherever
-analogous preconditions exist.
+order: (1) path validity — if <code>path</code> names an existing <em>directory</em> OR any
+slash-aligned ancestor of <code>path</code> is a regular file (file-as-directory-component,
+ID-209), raises <code>InvalidPath</code>; (2) overwrite conflict — if the file exists and
+<code>overwrite=False</code>, raises <code>AlreadyExists</code>; (3) I/O. No later check may mask an
+earlier one. This order applies to <code>write()</code>, <code>write_atomic()</code>, <code>move()</code>, and
+<code>copy()</code> wherever analogous preconditions exist.
 <strong>Flat-namespace exemption:</strong> Backends where the underlying storage has no
 native directory concept (e.g. S3, Azure non-HNS, SQL) are exempt from step
 (1): they cannot distinguish "path names a directory" from "path does not
-exist", so they MUST skip the type-conflict check entirely. For these backends
-the effective order is: existence check (non-existent target treated as
-writable) → overwrite conflict → I/O.
+exist", so they MUST skip the type-conflict check entirely. The file-ancestor
+rejection added by ID-209 is similarly exempt on flat-namespace backends —
+they cannot detect a file-ancestor in O(1) without an extra HEAD round trip
+on the parent chain, so the conformance gate
+(<code>test_write_under_file_ancestor_raises_invalid_path</code>) skips on flat-NS
+fixtures via <code>_skip_flat_namespace</code>. ID-211 tracks the optional HEAD
+pre-check follow-up. For these backends the effective order is: existence
+check (non-existent target treated as writable) → overwrite conflict → I/O.
 <strong>Formal coverage:</strong> <code>write()</code> is modelled in <code>sdd/formal/BackendContract.dfy</code>
 as <code>Write</code> with postconditions covering the precondition evaluation order
-(<code>IsDir → InvalidPath</code>, <code>IsFile ∧ !overwrite → AlreadyExists</code>), the WR-010
+(<code>IsDir → InvalidPath</code>, <code>!AllAncestorsTraversable → InvalidPath</code> (ID-209),
+<code>IsFile ∧ !overwrite → AlreadyExists</code>), the WR-010
 strict gate (<code>HasUserMetadata(metadata) ∧ CapUserMetadata !in capabilities →
 CapabilityNotSupported</code>, with empty-mapping carve-out encoded by
 <code>HasUserMetadata</code>), the WR-001a schema (<code>r.value.path == path ∧ r.value.size
 == |content|</code>), WR-004 (source Native iff <code>CapWriteResultNative</code>), WR-005
 (Basic source → rich fields None), WR-012 metadata echo, and WR-013
-round-trip (<code>fs[path].info.metadata</code> reflects what was stored). Verified in
-<code>MemoryBackend.dfy</code>. Python backstop: the WR-001a/004/005/012/013
-postcondition chain is exercised against every backend by
-<code>tests/backends/test_conformance.py::TestWriteResultConformance</code>. See
-ID-151.</p>
+round-trip (<code>fs[path].info.metadata</code> reflects what was stored). ID-209
+promotes well-formedness to a class invariant <code>predicate Valid()</code> on the
+<code>Backend</code> trait, with <code>requires Valid() ensures Valid()</code> on every mutating
+method (<code>Write</code>, <code>Delete</code>, <code>DeleteFolder</code>, <code>Move</code>, <code>Copy</code>); the file-ancestor
+clause on Write is what closes the loophole that would let a successful
+write break <code>Valid()</code>. Move / Copy carry the same file-ancestor clause on
+their destination paths. Verified in <code>MemoryBackend.dfy</code>. Python backstop:
+the WR-001a/004/005/012/013 postcondition chain is exercised against every
+backend by <code>tests/backends/test_conformance.py::TestWriteResultConformance</code>;
+the file-ancestor rejection is exercised by
+<code>tests/backends/conformance/test_errors.py::TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path</code>
+(sync) and its async sibling in <code>test_async_extended.py</code>. See ID-151,
+ID-184, ID-209.</p>
 <h3 id="be-009-write-creates-intermediate-directories">BE-009: write Creates Intermediate Directories<a class="headerlink" href="#be-009-write-creates-intermediate-directories" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write</code> creates any intermediate directories automatically.</p>
 <h3 id="be-010-write_atomic">BE-010: write_atomic()<a class="headerlink" href="#be-010-write_atomic" title="Permanent link">&para;</a></h3>
@@ -10153,13 +10168,15 @@ non-traversable-ancestor early-return is pinned by
 the completeness postcondition's guard widened symmetrically from
 <code>PathExists(fs, path)</code> to <code>PathExists(fs, path) &amp;&amp; AllAncestorsTraversable(fs, path)</code>,
 relaxing the implementer obligation in the same malformed-fs slice — both
-changes together keep the model satisfiable. The new disjunct is a
-defensive postcondition against fs corruption: no public <code>Backend</code> trait
-method can construct <code>path in fs &amp;&amp; !AllAncestorsTraversable(fs, path)</code>
-from a well-formed initial fs (<code>EnsureParents</code> inserts <code>DirEntry</code> for
-every slash-aligned prefix, and <code>Write</code> to a path under a file is not in
-the reachable state-space), so a compliant refinement satisfies the
-clause vacuously. Verified in <code>MemoryBackend.dfy</code>. See ID-184.</p>
+changes together keep the model satisfiable. ID-209 promoted fs
+well-formedness to a class invariant <code>predicate Valid()</code> on the <code>Backend</code>
+trait, so the <code>!AllAncestorsTraversable</code> disjunct is now a <strong>logical
+consequence</strong> of <code>Valid()</code> rather than a defensive postcondition against an
+unreachable state: a successful <code>Write</code> (or <code>Move</code>/<code>Copy</code> to a non-existent
+destination) that would otherwise insert a <code>FileEntry</code> under a file-ancestor
+is rejected pre-I/O via the new <code>!AllAncestorsTraversable(old(fs), path)</code>
+clause on those methods (see BE-008). Verified in <code>MemoryBackend.dfy</code>. See
+ID-184, ID-209.</p>
 <h3 id="be-015-list_folders">BE-015: list_folders()<a class="headerlink" href="#be-015-list_folders" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>list_folders(path)</code> returns <code>Iterator[FolderEntry]</code> of immediate subfolders.
 Each <code>FolderEntry</code> has <code>.name</code> (folder name) and <code>.path</code> (backend-relative <code>RemotePath</code>).
@@ -10169,10 +10186,10 @@ MUST NOT raise <code>NotFound</code> for missing or non-existent paths.
 <strong>Formal coverage:</strong> <code>list_folders()</code> is modelled in
 <code>sdd/formal/BackendContract.dfy</code> as <code>ListFolders</code>, with the same
 two-sided ancestor-traversability gating as BE-014 above (early-return
-disjunct plus completeness conjunction). The new disjunct is defensive
-against fs corruption rather than a behavioural gap any compliant
-refinement could reach (see BE-014). Verified in <code>MemoryBackend.dfy</code>.
-See ID-184.</p>
+disjunct plus completeness conjunction). Under ID-209's <code>Valid()</code> class
+invariant, the <code>!AllAncestorsTraversable</code> disjunct is a logical
+consequence rather than a defensive postcondition (see BE-014). Verified
+in <code>MemoryBackend.dfy</code>. See ID-184, ID-209.</p>
 <h3 id="be-016-get_file_info">BE-016: get_file_info()<a class="headerlink" href="#be-016-get_file_info" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>get_file_info(path)</code> returns <code>FileInfo</code>.
 <strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if the path names a directory (Dafny: <code>GetFileInfo: IsDir → InvalidPath</code>). See BE-021.
@@ -10190,7 +10207,7 @@ discharged structurally. Verified in <code>MemoryBackend.dfy</code>. See ID-151.
 <strong>Formal coverage:</strong> <code>get_folder_info()</code> is modelled in <code>sdd/formal/BackendContract.dfy</code> as <code>GetFolderInfo</code> with postconditions <code>IsFile → InvalidPath</code>, <code>!PathExists → NotFound</code>, <code>IsDir → Ok</code>, <code>file_count == |ChildFiles(fs, path)|</code>, and <code>total_size == SumSizes(fs, ChildFiles(fs, path))</code>. Verified in <code>MemoryBackend.dfy</code>. See ID-130, ID-134.</p>
 <h3 id="be-018-move">BE-018: move()<a class="headerlink" href="#be-018-move" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>move(src, dst, overwrite=False)</code> renames/moves a file.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, or if <code>dst</code> names an existing directory (cannot overwrite a directory with a file). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-move on a file is a no-op (Dafny: <code>Move: src == dst → Ok</code>); self-move on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
+<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, if <code>dst</code> names an existing directory (cannot overwrite a directory with a file), or if an ancestor of <code>dst</code> exists as a regular file (file-as-directory-component on dst, ID-209 — same flat-namespace exemption as BE-008). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-move on a file is a no-op (Dafny: <code>Move: src == dst → Ok</code>); self-move on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
 <strong>Metadata:</strong> <code>move()</code> preserves the source file's user metadata: after a
 successful move, <code>get_file_info(dst)</code> MUST return the same <code>metadata</code>
 mapping the source file carried before the move — the WR-013 user-metadata
@@ -10211,7 +10228,7 @@ both <code>fs[dst].content == old(fs)[src].content</code> and
 drops metadata fails to verify. Verified in <code>MemoryBackend.dfy</code>. See BK-232.</p>
 <h3 id="be-019-copy">BE-019: copy()<a class="headerlink" href="#be-019-copy" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>copy(src, dst, overwrite=False)</code> duplicates a file.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, or if <code>dst</code> names an existing directory. <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021.
+<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, if <code>dst</code> names an existing directory, or if an ancestor of <code>dst</code> exists as a regular file (file-as-directory-component on dst, ID-209 — same flat-namespace exemption as BE-008). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021.
 <strong>Metadata:</strong> <code>copy()</code> preserves the source file's user metadata: after a
 successful copy, <code>get_file_info(dst)</code> MUST return the same <code>metadata</code>
 mapping as <code>get_file_info(src)</code> — the WR-013 user-metadata round-trip,

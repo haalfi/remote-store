@@ -15958,7 +15958,11 @@ Without it, only locally computable fields are set.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <code>path</code> names a directory.</p>
+            <p>If <code>path</code> names a directory, or if an ancestor of
+<code>path</code> is a regular file (ID-209; see spec 003 § BE-008
+and spec 029 § ASYNC-008).  Flat-namespace backends cannot
+detect a file-ancestor in O(1) and skip this case — see
+ID-211.</p>
           </div>
         </li>
     </ul>
@@ -16093,7 +16097,9 @@ declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <cod
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <code>path</code> names a directory.</p>
+            <p>If <code>path</code> names a directory, or if an ancestor of
+<code>path</code> is a regular file (ID-209; see <code>write</code> and spec
+029 § ASYNC-010).</p>
           </div>
         </li>
     </ul>
@@ -16813,8 +16819,10 @@ Each raises <code>CapabilityNotSupported</code> on backends that do not declare 
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <code>src</code> names a directory or <code>dst</code> names an
-existing directory.</p>
+            <p>If <code>src</code> names a directory, <code>dst</code> names an
+existing directory, or an ancestor of <code>dst</code> is a regular
+file (ID-209; see spec 003 § BE-018 and spec 029 §
+ASYNC-018).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -16909,8 +16917,10 @@ Check <code>store.supports(Capability.ATOMIC_MOVE)</code> to query at runtime.</
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <code>src</code> names a directory or <code>dst</code> names an
-existing directory.</p>
+            <p>If <code>src</code> names a directory, <code>dst</code> names an
+existing directory, or an ancestor of <code>dst</code> is a regular
+file (ID-209; see spec 003 § BE-019 and spec 029 §
+ASYNC-019).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
