@@ -67,6 +67,25 @@ class TestReadErrorFidelity:
         with pytest.raises(NotFound, match="ec_missing_rb"):
             backend.read_bytes("ec_missing_rb.txt")
 
+    @pytest.mark.spec("BE-006")
+    @pytest.mark.spec("BE-007")
+    @pytest.mark.parametrize("method", ["read", "read_bytes"])
+    def test_read_under_file_ancestor_raises_not_found(self, backend: Backend, method: str) -> None:
+        """ID-209 round-2: a path under a file-ancestor is not in ``fs`` per
+        the Dafny model, so BE-006 / BE-007's ``!PathExists ==> NotFound``
+        applies — not the writer-side ``InvalidPath`` clause from BE-008.
+        Pre-PR LocalBackend leaked ``NotADirectoryError`` and SFTPBackend
+        (after round 1) returned ``InvalidPath``; both now return
+        ``NotFound`` matching MemoryBackend.
+        """
+        _skip_flat_namespace(
+            backend,
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+        )
+        backend.write("rufa.txt", b"file-blocking")
+        with pytest.raises(NotFound, match="rufa.txt"):
+            getattr(backend, method)("rufa.txt/child.txt")
+
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)
 class TestWriteErrorFidelity:
@@ -166,6 +185,26 @@ class TestDeleteErrorFidelity:
             backend.delete("ddir2", missing_ok=True)
         assert backend.exists("ddir2/file.txt"), "Child file was silently deleted"
 
+    @pytest.mark.spec("BE-012")
+    def test_delete_under_file_ancestor_raises_not_found(self, backend: Backend) -> None:
+        """ID-209 round-2: file-ancestor path is not in ``fs``, so BE-012's
+        ``!PathExists ==> NotFound`` applies — not the type-mismatch
+        ``InvalidPath`` clause.  Symmetric with ``read`` / ``read_bytes``.
+        """
+        _skip_flat_namespace(
+            backend,
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+        )
+        backend.write("dufa.txt", b"file-blocking")
+        with pytest.raises(NotFound, match="dufa.txt"):
+            backend.delete("dufa.txt/child.txt")
+        # missing_ok=True: file-ancestor is "missing", not "wrong type" — so the
+        # call must succeed quietly (no exception), matching the Dafny
+        # ``!PathExists ∧ missing_ok ==> Ok`` clause.
+        backend.delete("dufa.txt/child.txt", missing_ok=True)
+        # Blocker unaffected by either call.
+        assert backend.read_bytes("dufa.txt") == b"file-blocking"
+
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.DELETE), indirect=True)
 class TestDeleteFolderErrorFidelity:
@@ -260,6 +299,17 @@ class TestGetFileInfoErrorFidelity:
         """!PathExists ==> NotFound."""
         with pytest.raises(NotFound, match="ec_missing_gfi"):
             backend.get_file_info("ec_missing_gfi")
+
+    @pytest.mark.spec("BE-016")
+    def test_get_file_info_under_file_ancestor_raises_not_found(self, backend: Backend) -> None:
+        """ID-209 round-2: file-ancestor path → NotFound (read-side semantics)."""
+        _skip_flat_namespace(
+            backend,
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+        )
+        backend.write("gfufa.txt", b"file-blocking")
+        with pytest.raises(NotFound, match="gfufa.txt"):
+            backend.get_file_info("gfufa.txt/child.txt")
 
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)

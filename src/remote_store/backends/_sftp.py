@@ -697,7 +697,23 @@ class SFTPBackend(Backend):
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             self._check_not_dir(sftp_path, path)
-            f: BinaryIO = self._sftp.file(sftp_path, "r")
+            try:
+                f: BinaryIO = self._sftp.file(sftp_path, "r")
+            except OSError as exc:
+                code = getattr(exc, "errno", None)
+                if code == errno.ENOENT or code is None:
+                    # ID-209 round-2: ``code is None`` catches paramiko's
+                    # ``OSError("Failure", errno=None)`` wrapping
+                    # ``SSH_FX_FAILURE`` — which the OpenSSH-style server
+                    # returns when the path is unreachable through a file
+                    # ancestor (e.g. ``foo.txt/child.txt`` where
+                    # ``foo.txt`` is a regular file).  Per BE-006 the
+                    # contract is ``!PathExists ==> NotFound``; without
+                    # this narrow, ``_map_exception`` would fall through
+                    # to ``RemoteStoreError("Failure")`` and surface as an
+                    # opaque BE-021 leak.
+                    raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+                raise
             try:
                 raw = _ErrorMappingStream(f, self._map_exception, path)
                 return io.BufferedReader(cast(io.RawIOBase, raw))  # noqa: TC006
@@ -715,7 +731,9 @@ class SFTPBackend(Backend):
                     return bytes(f.read())
             except OSError as exc:
                 code = getattr(exc, "errno", None)
-                if code == errno.ENOENT:
+                if code == errno.ENOENT or code is None:
+                    # ID-209 round-2: see ``read`` — same SSH_FX_FAILURE
+                    # narrow for the file-ancestor read case.
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
                 raise
 
@@ -1435,15 +1453,20 @@ class SFTPBackend(Backend):
             if code == errno.EEXIST:
                 return AlreadyExists(f"Already exists: {path}", path=path, backend=self.name)
             if code == errno.ENOTDIR:
-                # ID-209: a SFTP server raises ENOTDIR when an ancestor of the
-                # target path is a regular file (sftp.mkdir / stat / open during
-                # _ensure_parent_dirs).  Map to InvalidPath rather than leaking
-                # the native OSError (BE-021).
-                return InvalidPath(
-                    f"Cannot operate — an ancestor of '{path}' exists as a file",
-                    path=path,
-                    backend=self.name,
-                )
+                # ID-209 round-2 review fix: ENOTDIR at this dispatch point
+                # only fires for read-side operations (``read`` / ``read_bytes``
+                # / ``delete`` / ``get_file_info``) walking a path whose parent
+                # chain contains a regular file — the write-side file-ancestor
+                # case is caught earlier by the explicit ``S_ISDIR`` check in
+                # ``_ensure_parent_dirs``.  Map to ``NotFound`` rather than
+                # ``InvalidPath`` to match the Dafny ``Read`` / ``Delete`` /
+                # ``GetFileInfo`` postconditions, which all say
+                # ``!PathExists(fs, path) ==> NotFound``: a path under a
+                # file-ancestor is not in ``fs``, so the contract calls for
+                # ``NotFound``, not ``InvalidPath``.  The earlier (round-1)
+                # blanket ``ENOTDIR → InvalidPath`` mapping diverged SFTP
+                # from Memory and Local on read-side operations.
+                return NotFound(f"Not found: {path}", path=path, backend=self.name)
             return RemoteStoreError(str(exc), path=path, backend=self.name)
         if isinstance(exc, paramiko.ssh_exception.IncompatiblePeer):
             # IncompatiblePeer wraps host-key / KEX / cipher / MAC negotiation

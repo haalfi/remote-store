@@ -147,7 +147,11 @@ class AsyncBackend(abc.ABC):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If ``path`` names a directory.
+            InvalidPath: If ``path`` names a directory, or if an ancestor of
+                ``path`` is a regular file (ID-209; see spec 003 § BE-008
+                and spec 029 § ASYNC-008).  Flat-namespace backends cannot
+                detect a file-ancestor in O(1) and skip this case — see
+                ID-210.
         """
 
     @abc.abstractmethod
@@ -173,7 +177,9 @@ class AsyncBackend(abc.ABC):
         Raises:
             CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If ``path`` names a directory.
+            InvalidPath: If ``path`` names a directory, or if an ancestor of
+                ``path`` is a regular file (ID-209; see ``write`` and spec
+                029 § ASYNC-010).
         """
 
     @abc.abstractmethod
@@ -286,8 +292,10 @@ class AsyncBackend(abc.ABC):
             overwrite: If ``True``, replace any existing file at *dst*.
 
         Raises:
-            InvalidPath: If ``src`` names a directory or ``dst`` names an
-                existing directory.
+            InvalidPath: If ``src`` names a directory, ``dst`` names an
+                existing directory, or an ancestor of ``dst`` is a regular
+                file (ID-209; see spec 003 § BE-018 and spec 029 §
+                ASYNC-018).
             NotFound: If ``src`` does not exist.
             AlreadyExists: If ``dst`` exists, ``src != dst``, and
                 ``overwrite`` is ``False``.
@@ -305,8 +313,10 @@ class AsyncBackend(abc.ABC):
             overwrite: If ``True``, replace any existing file at *dst*.
 
         Raises:
-            InvalidPath: If ``src`` names a directory or ``dst`` names an
-                existing directory.
+            InvalidPath: If ``src`` names a directory, ``dst`` names an
+                existing directory, or an ancestor of ``dst`` is a regular
+                file (ID-209; see spec 003 § BE-019 and spec 029 §
+                ASYNC-019).
             NotFound: If ``src`` does not exist.
             AlreadyExists: If ``dst`` exists, ``src != dst``, and
                 ``overwrite`` is ``False``.

@@ -19,7 +19,10 @@ expected_ripples:
   - CHANGELOG.md
 surprising_ripples:
   - src/remote_store/backends/_sftp.py
-review_rounds: 1
+  - src/remote_store/_backend.py
+  - src/remote_store/aio/_async_backend.py
+  - sdd/specs/029-async-store-backend-api.md
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -197,4 +200,36 @@ phases:
         section: "discovery_followups / co_shipped_items / surprising_ripples / review phase"
         read_type: reference
         extract: "Round 1 review noted the trace lacked `surprising_ripples` (the sftp_inproc verify-time failure that drove the `_ensure_parent_dirs` S_ISDIR guard fix is not in `expected_ripples` and was a genuine doc-coverage gap), `co_shipped_items` (BK-235 worklist extension), and a `review` phase. Added all three plus `review_rounds: 1`."
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception (ENOTDIR clause + read/read_bytes file-open handler)"
+        read_type: reference
+        extract: "Round 2 review flagged that the broad `errno.ENOTDIR → InvalidPath` mapping in `_map_exception` was wrong for read-side ops: it flipped `read`/`read_bytes`/`delete`/`get_file_info` on a file-ancestor path from the contract-mandated `NotFound` (Dafny `Read`/`Delete`/`GetFileInfo`: `!PathExists ==> NotFound`) to `InvalidPath` on SFTP only, while Memory and Local returned NotFound. Narrowed ENOTDIR → NotFound in `_map_exception` (matches the read-side contract). Empirical probe via the sftp_inproc fixture also revealed paramiko returns `OSError(\"Failure\", errno=None)` (SSH_FX_FAILURE) for file-ancestor file-open — `_map_exception` falls through to generic RemoteStoreError. Added explicit `code is None` handling in `read` and `read_bytes` file-open try blocks → NotFound. `delete`/`get_file_info` were not affected: paramiko returns FileNotFoundError(errno=ENOENT) for those, which the existing handlers map to NotFound."
+        outcome: misleading
+      - file: src/remote_store/backends/_local.py
+        section: "LocalBackend.read / read_bytes / delete (NotADirectoryError handler)"
+        read_type: reference
+        extract: "Round 2 review's bug investigation surfaced a pre-existing BE-021 violation in LocalBackend: read_bytes and delete on a file-ancestor path leaked native `NotADirectoryError` rather than mapping to NotFound. Round 1 only fixed the writer side. Added `except NotADirectoryError:` handlers in `read`, `read_bytes`, and `delete` that map to NotFound per BE-006/BE-007/BE-012. Verified via cross-backend probe: Memory, Local, and SFTP now all return NotFound for read-side file-ancestor paths."
+        outcome: misleading
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestReadErrorFidelity / TestDeleteErrorFidelity / TestGetFileInfoErrorFidelity"
+        read_type: reference
+        extract: "Round 2 review flagged the lack of read-side file-ancestor conformance gates. Added `test_read_under_file_ancestor_raises_not_found` (parametrised over `(read, read_bytes)`), `test_delete_under_file_ancestor_raises_not_found` (covering both `missing_ok=False` → NotFound and `missing_ok=True` → no-op), and `test_get_file_info_under_file_ancestor_raises_not_found`. Async siblings mirrored. All pass on memory / local / sftp_inproc / dafny_oracle; flat-NS skip via the existing `_skip_flat_namespace` carve-out (still under ID-210)."
+      - file: src/remote_store/backends/_local.py
+        section: "LocalBackend.open_atomic (dual-wrap mkdir + mkstemp)"
+        read_type: reference
+        extract: "Round 2 review noted `open_atomic` retained a `try` block wrapping both `parent.mkdir` and `tempfile.mkstemp` — astronomically rare uuid-name collision in `mkstemp` would surface as the file-ancestor wording. The round-1 trace entry mis-stated `open_atomic` as 'already narrowed'. Narrowed for real: mkdir gets its own try/except, mkstemp sits in a separate try/except handling PermissionError only."
+        outcome: misleading
+      - file: src/remote_store/_backend.py
+        section: "Backend ABC docstrings (write / write_atomic / open_atomic / move / copy)"
+        read_type: reference
+        extract: "Round 2 review (Consistency/Ripple) flagged the sync Backend ABC docstrings still documented only `InvalidPath: If *path* names a directory` — the canonical user-API reference for the file-ancestor InvalidPath promise was absent. Extended each docstring's Raises: block with the new clause and a pointer to spec 003 § BE-008/018/019 and ID-209/ID-210."
+      - file: src/remote_store/aio/_async_backend.py
+        section: "AsyncBackend ABC docstrings (write / write_atomic / move / copy)"
+        read_type: reference
+        extract: "Round 2 review companion to the sync docstring fix. Extended each async docstring's Raises: block with the file-ancestor InvalidPath clause and a pointer to spec 029 § ASYNC-008/010/018/019 plus the sync mirror."
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-008 / ASYNC-010 / ASYNC-018 / ASYNC-019"
+        read_type: reference
+        extract: "Round 2 review (Spec/Ripple) flagged that BE-008/018/019 got the file-ancestor clause in spec 003 but the async mirror (spec 029) was not updated. Extended ASYNC-008's Raises: with the InvalidPath clauses (both directory and file-ancestor), ASYNC-010 delegating to ASYNC-008, and ASYNC-018/019 with the file-ancestor-on-dst clause. The conformance test markers already cited both the ASYNC-* and BE-* IDs; this round closes the prose-side coverage."
         outcome: misleading

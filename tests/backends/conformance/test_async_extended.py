@@ -162,6 +162,44 @@ class TestReadErrorFidelity:
         with pytest.raises(NotFound, match="ec_missing_rb"):
             await async_backend.read_bytes("ec_missing_rb.txt")
 
+    @pytest.mark.spec("ASYNC-007")
+    @pytest.mark.spec("BE-007")
+    async def test_read_bytes_under_file_ancestor_raises_not_found(self, async_backend: AsyncBackend) -> None:
+        """ID-209 round-2: file-ancestor read-side path => NotFound (async mirror).
+
+        ``read_bytes`` is ``async def`` returning ``bytes`` (per ASYNC-007);
+        awaiting it propagates the access-side error.  The ``read``
+        counterpart returns an ``AsyncIterator[bytes]`` (per ASYNC-020),
+        which is exercised by the streaming ``read`` conformance class
+        rather than here.
+        """
+        _require(async_backend, Capability.READ, Capability.WRITE)
+        _skip_flat_namespace(
+            async_backend,
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+        )
+        await async_backend.write("rufa.txt", b"file-blocking")
+        with pytest.raises(NotFound, match="rufa.txt"):
+            await async_backend.read_bytes("rufa.txt/child.txt")
+
+    @pytest.mark.spec("ASYNC-006")
+    @pytest.mark.spec("BE-006")
+    async def test_read_under_file_ancestor_raises_not_found(self, async_backend: AsyncBackend) -> None:
+        """ID-209 round-2: ``read`` (async iterator form) for the same case.
+
+        Async ``read`` is an async-generator factory — consuming via
+        ``async for`` is the canonical way to trigger backend access.
+        Backends that validate eagerly raise on the first ``__anext__``.
+        """
+        _require(async_backend, Capability.READ, Capability.WRITE)
+        _skip_flat_namespace(
+            async_backend,
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+        )
+        await async_backend.write("rufa_stream.txt", b"file-blocking")
+        with pytest.raises(NotFound, match="rufa_stream.txt"):
+            await _drain_read(async_backend, "rufa_stream.txt/child.txt")
+
 
 class TestWriteErrorFidelity:
     """ASYNC-008 / ASYNC-010 (mirrors BE-008 / BE-010).
@@ -255,6 +293,22 @@ class TestDeleteErrorFidelity:
         with pytest.raises(InvalidPath, match="ddir2"):
             await async_backend.delete("ddir2", missing_ok=True)
         assert await async_backend.exists("ddir2/file.txt"), "child silently deleted"
+
+    @pytest.mark.spec("ASYNC-012")
+    @pytest.mark.spec("BE-012")
+    async def test_delete_under_file_ancestor_raises_not_found(self, async_backend: AsyncBackend) -> None:
+        """ID-209 round-2: file-ancestor → NotFound (read-side semantics)."""
+        _require(async_backend, Capability.DELETE, Capability.WRITE)
+        _skip_flat_namespace(
+            async_backend,
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+        )
+        await async_backend.write("dufa.txt", b"file-blocking")
+        with pytest.raises(NotFound, match="dufa.txt"):
+            await async_backend.delete("dufa.txt/child.txt")
+        # missing_ok=True: file-ancestor is "missing", not "wrong type".
+        await async_backend.delete("dufa.txt/child.txt", missing_ok=True)
+        assert await async_backend.read_bytes("dufa.txt") == b"file-blocking"
 
 
 class TestDeleteFolderErrorFidelity:
@@ -353,6 +407,19 @@ class TestGetFileInfoErrorFidelity:
         """!PathExists ==> NotFound."""
         with pytest.raises(NotFound, match="ec_missing_gfi"):
             await async_backend.get_file_info("ec_missing_gfi")
+
+    @pytest.mark.spec("ASYNC-016")
+    @pytest.mark.spec("BE-016")
+    async def test_get_file_info_under_file_ancestor_raises_not_found(self, async_backend: AsyncBackend) -> None:
+        """ID-209 round-2: file-ancestor path => NotFound (read-side semantics)."""
+        _require(async_backend, Capability.METADATA, Capability.WRITE)
+        _skip_flat_namespace(
+            async_backend,
+            "flat-namespace backends cannot detect file-ancestor in O(1) (ID-210)",
+        )
+        await async_backend.write("gfufa.txt", b"file-blocking")
+        with pytest.raises(NotFound, match="gfufa.txt"):
+            await async_backend.get_file_info("gfufa.txt/child.txt")
 
 
 class TestGetFolderInfoErrorFidelity:

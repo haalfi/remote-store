@@ -129,6 +129,14 @@ class LocalBackend(Backend):
             return open(str(full), "rb")  # noqa: SIM115
         except FileNotFoundError:
             raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
+        except NotADirectoryError:
+            # ID-209 round-2: a path under a file-ancestor (e.g. ``foo.txt/x``
+            # where ``foo.txt`` is a regular file) is not in fs, so the BE-006
+            # ``!PathExists ==> NotFound`` postcondition applies — not the
+            # writer-side ``InvalidPath`` clause from BE-008.  Symmetric with
+            # the SFTP backend's ``ENOTDIR -> NotFound`` mapping in
+            # ``_map_exception``.
+            raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
         except IsADirectoryError:
             raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name) from None
         except PermissionError:
@@ -142,6 +150,9 @@ class LocalBackend(Backend):
         try:
             return full.read_bytes()
         except FileNotFoundError:
+            raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
+        except NotADirectoryError:
+            # ID-209 round-2: see ``read`` — same NotFound mapping.
             raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
         except IsADirectoryError:
             raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name) from None
@@ -263,16 +274,23 @@ class LocalBackend(Backend):
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
         if not overwrite and full.exists():
             raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+        # ID-209 round-2: narrow the file-ancestor → InvalidPath mapping to
+        # the ``mkdir`` call alone.  A FileExistsError from ``tempfile.mkstemp``
+        # would be a (astronomically rare) uuid-name collision, not a
+        # file-ancestor case, and surfacing the file-ancestor wording for it
+        # would be misleading — same rationale as the other writers.
         try:
             full.parent.mkdir(parents=True, exist_ok=True)
-            fd, tmp_path = tempfile.mkstemp(dir=str(full.parent))
         except (NotADirectoryError, FileExistsError):
-            # ID-209: see LocalBackend.write — same mapping.
             raise InvalidPath(
                 f"Cannot write — an ancestor of '{path}' exists as a file",
                 path=path,
                 backend=self.name,
             ) from None
+        except PermissionError:
+            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        try:
+            fd, tmp_path = tempfile.mkstemp(dir=str(full.parent))
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
@@ -298,6 +316,12 @@ class LocalBackend(Backend):
         try:
             full.unlink()
         except FileNotFoundError:
+            if not missing_ok:
+                raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
+        except NotADirectoryError:
+            # ID-209 round-2: see ``read`` — file-ancestor path is not in fs,
+            # so BE-012's ``!PathExists ==> NotFound`` (or Ok under missing_ok)
+            # applies, not the type-mismatch ``InvalidPath`` clause.
             if not missing_ok:
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
         except IsADirectoryError:

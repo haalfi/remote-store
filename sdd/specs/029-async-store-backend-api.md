@@ -54,8 +54,8 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 **Invariant:** `async def write(path, content, *, overwrite=False, metadata=None) -> WriteResult` creates or overwrites a file and returns a `WriteResult`.
 **Preconditions:** `content` is `bytes` or `AsyncIterator[bytes]` (see ASYNC-021).
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out).
-**See also:** [BE-008](003-backend-adapter-contract.md); [045-write-result.md](045-write-result.md) (WR-001, WR-004, WR-010).
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `InvalidPath` if `path` names an existing directory, or if any slash-aligned ancestor of `path` is a regular file (ID-209; same flat-namespace exemption as BE-008). `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out).
+**See also:** [BE-008](003-backend-adapter-contract.md); [045-write-result.md](045-write-result.md) (WR-001, WR-004, WR-010). BE-008's precondition order — type check → file-ancestor check → overwrite conflict → I/O — applies verbatim here.
 
 ### ASYNC-009: write Creates Intermediate Directories
 
@@ -65,8 +65,8 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-010: write_atomic()
 
 **Invariant:** `async def write_atomic(path, content, *, overwrite=False, metadata=None) -> WriteResult` writes via a temporary file + atomic rename and returns a `WriteResult`.
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out).
-**See also:** [BE-010](003-backend-adapter-contract.md), [007-atomic-writes.md](007-atomic-writes.md); [045-write-result.md](045-write-result.md) (WR-001, WR-010).
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `InvalidPath` if `path` names an existing directory, or if any slash-aligned ancestor of `path` is a regular file (ID-209; delegates to ASYNC-008's clause). `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out).
+**See also:** [BE-010](003-backend-adapter-contract.md), [007-atomic-writes.md](007-atomic-writes.md); [045-write-result.md](045-write-result.md) (WR-001, WR-010). Same precondition order as ASYNC-008.
 
 ### ASYNC-011: write_atomic Capability Gate
 
@@ -111,13 +111,13 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-018: move()
 
 **Invariant:** `async def move(src, dst, *, overwrite=False)` renames/moves a file.
-**Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if `dst` exists and `overwrite=False`.
+**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory, or if any slash-aligned ancestor of `dst` is a regular file (ID-209; same flat-namespace exemption as BE-018). `AlreadyExists` if `dst` exists and `overwrite=False`.
 **See also:** [BE-018](003-backend-adapter-contract.md).
 
 ### ASYNC-019: copy()
 
 **Invariant:** `async def copy(src, dst, *, overwrite=False)` duplicates a file.
-**Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if `dst` exists and `overwrite=False`.
+**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory, or if any slash-aligned ancestor of `dst` is a regular file (ID-209; same flat-namespace exemption as BE-019). `AlreadyExists` if `dst` exists and `overwrite=False`.
 **See also:** [BE-019](003-backend-adapter-contract.md).
 
 ### ASYNC-020: Async Streaming Reads
