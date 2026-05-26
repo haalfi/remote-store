@@ -697,7 +697,25 @@ class SFTPBackend(Backend):
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             self._check_not_dir(sftp_path, path)
-            f: BinaryIO = self._sftp.file(sftp_path, "r")
+            try:
+                f: BinaryIO = self._sftp.file(sftp_path, "r")
+            except OSError as exc:
+                code = getattr(exc, "errno", None)
+                if code == errno.ENOENT:
+                    raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+                if code is None and self._has_file_ancestor(sftp_path):
+                    # ID-209 round-3: paramiko surfaces SSH_FX_FAILURE as
+                    # ``OSError("...", errno=None)`` for a wide range of
+                    # conditions (file-ancestor, quota, lock, transient I/O,
+                    # quirky servers).  The round-2 narrow ``code is None
+                    # ==> NotFound`` was too broad — it mis-classified the
+                    # non-file-ancestor cases as NotFound, masking real
+                    # failures.  Recheck with a parent-walk to confirm a
+                    # file-ancestor before mapping to NotFound; other
+                    # SSH_FX_FAILUREs fall through to the generic
+                    # RemoteStoreError mapping in ``_map_exception``.
+                    raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+                raise
             try:
                 raw = _ErrorMappingStream(f, self._map_exception, path)
                 return io.BufferedReader(cast(io.RawIOBase, raw))  # noqa: TC006
@@ -716,6 +734,11 @@ class SFTPBackend(Backend):
             except OSError as exc:
                 code = getattr(exc, "errno", None)
                 if code == errno.ENOENT:
+                    raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+                if code is None and self._has_file_ancestor(sftp_path):
+                    # ID-209 round-3: see ``read`` — file-ancestor recheck
+                    # to disambiguate generic SSH_FX_FAILURE from the
+                    # contract-relevant `!PathExists ==> NotFound` case.
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
                 raise
 
@@ -1352,8 +1375,70 @@ class SFTPBackend(Backend):
                 return  # path doesn't exist — let caller handle NotFound
             raise
 
+    def _has_file_ancestor(self, sftp_path: str) -> bool:
+        """Return True iff any slash-aligned ancestor of *sftp_path* is a regular file.
+
+        ID-209 round-3: paramiko surfaces SSH_FX_FAILURE as
+        ``OSError("...", errno=None)`` for a wide range of conditions —
+        file-ancestor, quota, lock, transient I/O, quirky servers.  When
+        a read-side caller (``read`` / ``read_bytes``) sees such an
+        error, this helper does a targeted parent-chain stat to confirm
+        whether the failure was a file-ancestor case (BE-006 /
+        BE-007's ``!PathExists ==> NotFound``) or something else (let
+        ``_map_exception`` surface as ``RemoteStoreError``).
+
+        Only fires on the slow error path, so the per-stat-per-ancestor
+        round-trip cost is paid once per failing read, not per
+        successful read.
+
+        Known limitation (ID-212): the helper walks from the absolute
+        SFTP root ``/`` rather than from ``self._base_path``, and on a
+        non-ENOENT stat error returns False conservatively (lets the
+        caller's original ``OSError(errno=None)`` fall through to
+        ``RemoteStoreError("Failure")``).  In a chrooted SFTP deployment
+        where stat on an ancestor above the chroot returns
+        ``SSH_FX_PERMISSION_DENIED``, the walk aborts on the first such
+        ancestor and a genuine file-ancestor case under the chroot is
+        mis-classified as a generic Failure rather than NotFound.  The
+        ``sftp_inproc`` conformance fixture does not exercise this
+        because it grants unrestricted local-FS access; ID-212 tracks
+        the proper fix (walk from ``self._base_path`` down, consolidating
+        with ``_ensure_parent_dirs`` whose docstring already claims this
+        but whose code does not).
+        """
+        parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else ""
+        if not parent or parent == self._base_path:
+            return False
+        parts = parent.split("/")
+        current = ""
+        for part in parts:
+            if not part:
+                current = "/"
+                continue
+            current = f"{current}/{part}" if current and current != "/" else f"/{part}"
+            try:
+                st = self._sftp.stat(current)
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    return False  # ancestor missing, not a file
+                # Opaque error walking the chain — be conservative and
+                # let the caller's original failure surface as-is.  See
+                # the chroot limitation note above and ID-212.
+                return False
+            if st.st_mode is None or not stat.S_ISDIR(st.st_mode):
+                return True  # ancestor exists and is not a directory
+        return False
+
     def _ensure_parent_dirs(self, sftp_path: str) -> None:
-        """Create parent directories for the given SFTP path if they don't exist."""
+        """Create parent directories for the given SFTP path if they don't exist.
+
+        ID-209: an existing entry along the parent chain that is a regular
+        file (not a directory) raises ``InvalidPath`` rather than letting
+        the subsequent stat/mkdir against ``file/child`` fail with a
+        generic SSH_FX_FAILURE — paramiko surfaces that as a non-OSError
+        ``SFTPError`` whose ``errno`` attribute is unset, which our
+        OSError-keyed ``_map_exception`` cannot disambiguate.
+        """
         parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else ""
         if not parent or parent == self._base_path:
             return
@@ -1366,7 +1451,7 @@ class SFTPBackend(Backend):
                 continue
             current = f"{current}/{part}" if current and current != "/" else f"/{part}"
             try:
-                self._sftp.stat(current)
+                st = self._sftp.stat(current)
             except OSError as exc:
                 if getattr(exc, "errno", None) != errno.ENOENT:
                     raise
@@ -1376,6 +1461,25 @@ class SFTPBackend(Backend):
                     # Suppress EEXIST (race condition: another client created it)
                     if getattr(mkdir_exc, "errno", None) != errno.EEXIST:
                         raise
+            else:
+                # ID-209: ancestor exists; reject if it's not a directory.
+                # `st.st_mode is None` (paramiko's representation of an
+                # unsupported / missing mode field — e.g. against some
+                # non-OpenSSH SFTP servers) is treated defensively as
+                # "not a directory" here: the entry exists, mkdir would
+                # have raised EEXIST anyway, and the subsequent walk
+                # against `<ancestor>/<next_part>` would otherwise surface
+                # an opaque ``SFTPError(SSH_FX_FAILURE)`` the errno-keyed
+                # ``_map_exception`` cannot disambiguate.  False positives
+                # against directory-typed mode-less stats are acceptable
+                # — they fail loud (InvalidPath) rather than silently
+                # leaking a native exception.
+                if st.st_mode is None or not stat.S_ISDIR(st.st_mode):
+                    raise InvalidPath(
+                        f"Cannot operate — an ancestor of '{sftp_path}' exists as a file",
+                        path=sftp_path,
+                        backend=self.name,
+                    )
 
     @contextmanager
     def _errors(self, path: str = "") -> Iterator[None]:
@@ -1407,6 +1511,21 @@ class SFTPBackend(Backend):
                 return PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name)
             if code == errno.EEXIST:
                 return AlreadyExists(f"Already exists: {path}", path=path, backend=self.name)
+            if code == errno.ENOTDIR:
+                # ID-209 round-2 review fix: ENOTDIR at this dispatch point
+                # only fires for read-side operations (``read`` / ``read_bytes``
+                # / ``delete`` / ``get_file_info``) walking a path whose parent
+                # chain contains a regular file — the write-side file-ancestor
+                # case is caught earlier by the explicit ``S_ISDIR`` check in
+                # ``_ensure_parent_dirs``.  Map to ``NotFound`` rather than
+                # ``InvalidPath`` to match the Dafny ``Read`` / ``Delete`` /
+                # ``GetFileInfo`` postconditions, which all say
+                # ``!PathExists(fs, path) ==> NotFound``: a path under a
+                # file-ancestor is not in ``fs``, so the contract calls for
+                # ``NotFound``, not ``InvalidPath``.  The earlier (round-1)
+                # blanket ``ENOTDIR → InvalidPath`` mapping diverged SFTP
+                # from Memory and Local on read-side operations.
+                return NotFound(f"Not found: {path}", path=path, backend=self.name)
             return RemoteStoreError(str(exc), path=path, backend=self.name)
         if isinstance(exc, paramiko.ssh_exception.IncompatiblePeer):
             # IncompatiblePeer wraps host-key / KEX / cipher / MAC negotiation

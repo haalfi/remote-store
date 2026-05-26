@@ -1,0 +1,256 @@
+id: ID-209
+title: "fs well-formedness as a Backend class invariant + write-under-file conformance gate"
+trigger: "ID-184 (PR #679) added a !AllAncestorsTraversable disjunct on ListFiles / ListFolders early-returns but its triggering state (path in fs && !AllAncestorsTraversable(fs, path)) was structurally unreachable from public Backend trait methods on a well-formed initial fs, so every compliant refinement satisfied it vacuously. The unreachability was load-bearing for the listing semantics yet only informal in the model and not enforced cross-backend in Python."
+source_items:
+  - ID-209
+  - ID-184
+audience:
+  - contributor.process
+  - infra.test
+  - library.maintainer
+  - user.api
+discovery_followups:
+  - ID-211
+  - ID-212
+co_shipped_items:
+  - BK-235
+expected_ripples:
+  - sdd/formal/MemoryBackend-py/module_.py
+  - sdd/specs/003-backend-adapter-contract.md
+  - CHANGELOG.md
+surprising_ripples:
+  - src/remote_store/backends/_sftp.py
+  - src/remote_store/_backend.py
+  - src/remote_store/aio/_async_backend.py
+  - sdd/specs/029-async-store-backend-api.md
+review_rounds: 4
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-209 (Formal Verification)"
+        read_type: gate
+        extract: "Two open decisions: (1) Dafny Write reacts to file-ancestor via precondition vs new error path; (2) Python conformance picks reject vs supersede vs backend-dependent. Both decided up front via AskUserQuestion: (1)(b) new error path returning InvalidPath; (2)(a) raise InvalidPath. Flat-NS strategy: option (C) carve-out + follow-up ID-211 for the HEAD pre-check."
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-184"
+        read_type: gate
+        extract: "Predecessor's framing: AllAncestorsTraversable disjunct on listings is defensive — Valid() invariant is the load-bearing move that turns it into a logical consequence rather than a vacuous postcondition."
+      - file: sdd/traces/id-184-listing-traversability.yml
+        section: "(full)"
+        read_type: gate
+        extract: "Phase ordering (orient/design/implement/verify/review) and the C+T pair shape; reuse of the same gates (dafny verify, oracle import smoke, check_formal_trace baseline, hatch run lint)."
+      - file: sdd/formal/README.md
+        section: "Verification practices, Compiled oracle as conformance gate"
+        read_type: gate
+        extract: "assert-breadcrumb / MemoryBackend-MemoryBackendMinimal parity / oracle regeneration recipe — Valid() invariant will need explicit `assert Valid()` breadcrumbs in every mutating method body; non-ghost Write body change requires oracle regeneration."
+      - file: sdd/formal/BackendContract.dfy
+        section: "Write postconditions (around line 454), AllAncestorsTraversable predicate"
+        read_type: gate
+        extract: "Existing IsDir/IsFile guards in Write postconditions plus Valid()'s `forall p in fs => AllAncestorsTraversable(fs, p)`: by Valid(), IsDir or IsFile already implies AllAncestorsTraversable, so only WR-010 + happy-path guards need tightening with `&& AllAncestorsTraversable(old(fs), path)`."
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "MemoryBackend.Write / MemoryBackendMinimal.Write"
+        read_type: gate
+        extract: "EnsureParents already short-circuits via `prefix in fs` — under the new error path it is reachable only when AllAncestorsTraversable holds, so its body needs no change. The Write method body needs one new early-return for !AllAncestorsTraversable, and the post-EnsureParents flow needs an `AncestorsTraversableCheck` to fix Valid() at proof time."
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008, BE-014, BE-015"
+        read_type: gate
+        extract: "BE-008 prose needs the file-ancestor rejection added to its precondition order. BE-014 / BE-015 Formal coverage paragraphs need to drop the 'vacuously satisfied — defensive against fs corruption' framing and replace it with 'logical consequence of the Valid() class invariant'."
+      - file: src/remote_store/backends/_memory.py
+        section: "_ensure_parents (line 512)"
+        read_type: gate
+        extract: "Already raises InvalidPath when a parent ancestor is a file — Decision 2 (a) is satisfied for MemoryBackend without any Python change."
+      - file: src/remote_store/backends/_local.py
+        section: "LocalBackend.write (line 154-187)"
+        read_type: gate
+        extract: "Ad-hoc probe showed `Path.parent.mkdir(parents=True, exist_ok=True)` raises native FileExistsError (errno EEXIST) on a file-ancestor path — currently leaks unmapped, violating BE-021. Need to catch FileExistsError / NotADirectoryError and map to InvalidPath."
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception (line 1390)"
+        read_type: gate
+        extract: "Maps OSError by errno: ENOENT / EACCES / EEXIST only. ENOTDIR (which paramiko sftp.stat/mkdir raises on a file-ancestor path) falls through to generic RemoteStoreError — need to add ENOTDIR → InvalidPath."
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture record, flat_namespace field"
+        read_type: gate
+        extract: "Existing flat_namespace field already discriminates Local/SFTP/Memory (hierarchical) from S3/Azure-flat/SQLBlob/HTTP. Reuse it as the skip key for the new test rather than adding a new field — keeps the registry tight and matches the existing _skip_flat_namespace convention."
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "Backend trait — new Valid() predicate + Write postconditions"
+        read_type: reference
+        extract: "Valid() is a predicate on the trait that reads `forall p :: p in fs ==> AllAncestorsTraversable(fs, p)`. Add `requires Valid() ensures Valid()` to Write, Delete, DeleteFolder, Move, Copy. For Write specifically: a new `// @spec BE-008` ensures `!AllAncestorsTraversable(old(fs), path) ==> r == Err(InvalidPath(path, name))`, plus tighten the WR-010 and happy-path guards by conjoining `AllAncestorsTraversable(old(fs), path)` — IsDir / IsFile guards do not need tightening because Valid() already entails AllAncestorsTraversable for any in-fs path."
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "MemoryBackend / MemoryBackendMinimal — Valid() maintenance"
+        read_type: reference
+        extract: "Constructor adds `ensures Valid()` (trivially: fs == {Root: DirEntry}). Each mutating method adds `requires Valid() ensures Valid()`. Body changes: Write gets a new AncestorsTraversableCheck early-return before the IsDir / IsFile branches; the cheap cases (Delete, DeleteFolder, Move, Copy) need only assert-breadcrumbs because removing entries cannot break Valid() (by Valid() on old(fs), no remaining path has a removed FileEntry as a slash-aligned prefix), and EnsureParents-driven insertions only add DirEntry leaves which can only improve traversability."
+      - file: src/remote_store/backends/_local.py
+        section: "LocalBackend.write / write_atomic / open_atomic"
+        read_type: reference
+        extract: "Single-call mapping pattern (matching existing IsADirectoryError → InvalidPath): wrap mkdir + open in try/except FileExistsError / NotADirectoryError → raise InvalidPath. Apply consistently to all three write paths (write, write_atomic, open_atomic) — the parent.mkdir step is shared."
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception"
+        read_type: reference
+        extract: "Add `if code == errno.ENOTDIR: return InvalidPath(...)` between the EEXIST clause and the generic RemoteStoreError fallback. ENOTDIR is the canonical 'file in path' signal from SFTP servers."
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestWriteErrorFidelity"
+        read_type: reference
+        extract: "New test slots into the existing TestWriteErrorFidelity class — same parametrize (Capability.WRITE), same `_skip_flat_namespace` pattern, `@pytest.mark.spec(\"BE-008\")` marker. Test method `test_write_under_file_ancestor_raises_invalid_path`: write `wufa.txt` then attempt `write(\"wufa.txt/child.txt\", ...)` and assert InvalidPath. The async sibling goes into test_async_extended.py::TestWriteErrorFidelity with `@pytest.mark.spec(\"ASYNC-008\")`."
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "trait Backend: Valid() predicate + Write/Move/Copy postconditions"
+        read_type: reference
+        extract: "Added `predicate Valid()` (strong form — every in-fs key's slash-aligned ancestors are DirEntries; the weak `absent OR DirEntry` form does not preserve under Write). Added `requires Valid() ensures Valid()` to Write/Delete/DeleteFolder/Move/Copy. Added new file-ancestor InvalidPath ensures on Write/Move/Copy (Move/Copy on dst-side) plus the matching `AllAncestorsTraversable` conjunct on the WR-010 and happy-path guards so the clauses stay mutually exclusive. ValidImpliesAllAncestorsTraversable lemma is the structural consequence the ID-184 listing semantics use."
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "PreserveValidAfterFileInsert / PreserveValidAfterFileRemove lemmas (MemoryBackend + MemoryBackendMinimal)"
+        read_type: reference
+        extract: "Factored Valid()-preservation into two ghost lemmas: insert (for Write/Move/Copy success paths) and remove (for Delete/Move src-removal). Inline proofs verified but timed out under Boogie's default budget once Write/Move/Copy's full postcondition piles were in scope. Both classes carry the lemmas verbatim (Dafny lacks class-to-class inheritance). EnsureParents strengthened with `requires Valid() requires AllAncestorsTraversable(fs, path)` and three new ensures (every slash-aligned ancestor is DirEntry now, no key inserted at path itself, Valid() preserved)."
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "MemoryBackend.Copy / MemoryBackendMinimal.Copy"
+        read_type: reference
+        extract: "Marked both Copy methods with `{:isolate_assertions}` after Move verified in <120s but Copy timed out at 600s. The attribute splits Copy into one VC per assertion, which makes the proof obligations small enough for Z3 to discharge each in seconds. Move did not need it because its src-removal step also collapses the IsFile(fs, src) preservation obligation Copy carries."
+        outcome: unclear
+      - file: src/remote_store/backends/_local.py
+        section: "LocalBackend.write / write_atomic / open_atomic / move / copy"
+        read_type: reference
+        extract: "Added `except (NotADirectoryError, FileExistsError):` to each writer's mkdir-bearing try block; map to InvalidPath. Probe before changes confirmed `parent.mkdir(parents=True, exist_ok=True)` raises native FileExistsError when an ancestor exists as a file (BE-021 leak)."
+      - file: src/remote_store/backends/_sftp.py
+        section: "SFTPBackend._ensure_parent_dirs + _map_exception"
+        read_type: reference
+        extract: "Two-part fix: (1) `_map_exception` adds `errno.ENOTDIR → InvalidPath` for the OSError branch; (2) `_ensure_parent_dirs` adds an explicit `S_ISDIR` check after the existing stat so a file-ancestor surfaces InvalidPath directly rather than letting the subsequent stat/mkdir against `file/child` fail with a paramiko SFTPError (non-OSError, errno-less, SSH_FX_FAILURE) that `_map_exception` cannot disambiguate. The (1) mapping is still load-bearing for ENOTDIR paths that bypass `_ensure_parent_dirs` (e.g. read/delete on a file-ancestor path)."
+        outcome: unclear
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path"
+        read_type: reference
+        extract: "Sync conformance gate added inside the existing TestWriteErrorFidelity class — same `@pytest.mark.spec(\"BE-008\")` shape, `_skip_flat_namespace` carve-out keyed by the existing per-fixture record (flat-NS backends skip pending ID-211). Reads back the original file after the failed write to confirm no superseding side effect."
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path"
+        read_type: reference
+        extract: "Async sibling — same shape, dual `@pytest.mark.spec(\"ASYNC-008\")` + `\"BE-008\"` markers (BE-008 keeps it visible to the formal-trace check; ASYNC-008 lines it up with the async siblings)."
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008, BE-014, BE-015, BE-018, BE-019"
+        read_type: reference
+        extract: "BE-008: extended precondition order (step 1 now also covers file-ancestor InvalidPath) plus the flat-namespace exemption rationale and the ID-211 cross-reference. BE-014/015: reframed the !AllAncestorsTraversable disjunct as a logical consequence of Valid() rather than a defensive postcondition. BE-018/019: added the file-ancestor-on-dst clause to Raises:."
+      - file: sdd/formal/MemoryBackend-py/module_.py
+        section: "(full)"
+        read_type: reference
+        extract: "Regenerated via `dafny build -t py sdd/formal/MemoryBackend.dfy` + `scripts/_dafny_classorder.py`. The diff covers the new file-ancestor early returns in Write/Move/Copy plus the two factored lemmas (ghost-only — erased at compile time, so no behavioural diff)."
+      - file: sdd/BACKLOG.md
+        section: "ID-211"
+        read_type: reference
+        extract: "Opened ID-211 (HEAD pre-check for flat-NS backends) as the user-nominated follow-up — most writes target the store root so the round-trip cost only applies to nested-path writes; worth measuring before shipping."
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-209 ([Unreleased])"
+        read_type: reference
+        extract: "Moved ID-209 from BACKLOG.md to a new [Unreleased] section under v0.26.0 in BACKLOG-DONE.md."
+      - file: CHANGELOG.md
+        section: "[Unreleased] Changed + Internal"
+        read_type: reference
+        extract: "Added user-facing entry under Changed (Local/SFTP error mapping change is user.api per the audience derivation) plus an Internal entry for the Dafny invariant."
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "(full)"
+        read_type: verify
+        extract: "`dafny verify sdd/formal/BackendContract.dfy sdd/formal/MemoryBackend.dfy sdd/formal/DepthCounting.dfy sdd/formal/ResourceSafety.dfy --verification-time-limit 120` → 550 verified, 0 errors."
+      - file: sdd/formal/MemoryBackend-py/module_.py
+        section: "(full)"
+        read_type: verify
+        extract: "Import smoke test `python3 -c 'import sys; sys.path.insert(0,\"sdd/formal/MemoryBackend-py\"); import module_; print(\"OK\")'` → OK."
+      - file: tests/backends/conformance/
+        section: "dafny_oracle parametrization"
+        read_type: verify
+        extract: "`hatch run pytest tests/backends/conformance/ -k dafny_oracle` → 180 passed, 6 skipped."
+      - file: tests/backends/conformance/
+        section: "(full)"
+        read_type: verify
+        extract: "`hatch run pytest tests/backends/conformance/` → 1692 passed, 320 skipped (first run flagged 1 sftp_inproc failure that drove the `_ensure_parent_dirs` S_ISDIR guard fix; second run clean)."
+      - file: scripts/check_formal_trace.py
+        section: "_BASELINE worklist"
+        read_type: verify
+        extract: "6 baselined gaps unchanged (BE-008 already tested → no new F1 from the new file-ancestor `// @spec BE-008` tag; ID-211 not yet referenced from a Dafny tag so no F3)."
+      - file: scripts/check_infra_settings.py
+        section: "(full hatch run lint)"
+        read_type: verify
+        extract: "`hatch run lint` → all 10 steps pass (ruff, test-assertions, mock-spec, test-placement, tla-no-emdash, check_formal_trace, docs-framework, gen-backlogid --check (next safe ID=211), check_rst_roles, check_infra_settings)."
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: verify
+        extract: "`hatch run gen-backlogid` updated ID counter to 209 (BACKLOG-DONE max); active BACKLOG ID-211 is the next allocated."
+  - id: review
+    name: Review
+    steps:
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestWriteErrorFidelity, TestMoveCopyErrorFidelity"
+        read_type: reference
+        extract: "Round 1 review flagged the new test exercised only `write` while the CHANGELOG / code / BE-018/19 spec prose extend the file-ancestor InvalidPath mapping to `write_atomic`, `open_atomic`, `move`, and `copy`. Parametrised the existing test over `(write, write_atomic)` (mirroring the BE-008 dir-overwrite test shape) and added `test_open_atomic_under_file_ancestor_raises_invalid_path` plus `test_destination_under_file_ancestor_raises_invalid_path` (parametrised over `(move, copy)`) — five sync test cases now back the four-method spec promise. Async siblings extended in parallel."
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_ensure_parent_dirs (line 1387-1394)"
+        read_type: reference
+        extract: "Round 1 review flagged the original `st.st_mode is not None and not S_ISDIR(...)` guard fell through to the opaque SFTPError(SSH_FX_FAILURE) for mode-less stat results (paramiko's representation against some non-OpenSSH servers). Switched to `st.st_mode is None or not S_ISDIR(st.st_mode)` and added a block comment explaining the defensive interpretation — unknown mode is treated as not-a-directory rather than left ambiguous."
+        outcome: misleading
+      - file: src/remote_store/backends/_local.py
+        section: "LocalBackend.write / write_atomic / move / copy"
+        read_type: reference
+        extract: "Round 1 review flagged the file-ancestor `except (NotADirectoryError, FileExistsError)` block wrapped both `mkdir` and the subsequent `shutil.move` / `shutil.copy2` / write call — a TOCTOU race on `dst_full.exists()` between the AlreadyExists check and the move/copy could surface as the file-ancestor wording. Narrowed the except scope to the `mkdir` call alone in all four sites; the actual I/O sits in a separate try/except that only handles PermissionError + IsADirectoryError. `open_atomic` was already narrowed."
+        outcome: misleading
+      - file: sdd/traces/id-209-fs-wellformedness.yml
+        section: "discovery_followups / co_shipped_items / surprising_ripples / review phase"
+        read_type: reference
+        extract: "Round 1 review noted the trace lacked `surprising_ripples` (the sftp_inproc verify-time failure that drove the `_ensure_parent_dirs` S_ISDIR guard fix is not in `expected_ripples` and was a genuine doc-coverage gap), `co_shipped_items` (BK-235 worklist extension), and a `review` phase. Added all three plus `review_rounds: 1`."
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception (ENOTDIR clause + read/read_bytes file-open handler)"
+        read_type: reference
+        extract: "Round 2 review flagged that the broad `errno.ENOTDIR → InvalidPath` mapping in `_map_exception` was wrong for read-side ops: it flipped `read`/`read_bytes`/`delete`/`get_file_info` on a file-ancestor path from the contract-mandated `NotFound` (Dafny `Read`/`Delete`/`GetFileInfo`: `!PathExists ==> NotFound`) to `InvalidPath` on SFTP only, while Memory and Local returned NotFound. Narrowed ENOTDIR → NotFound in `_map_exception` (matches the read-side contract). Empirical probe via the sftp_inproc fixture also revealed paramiko returns `OSError(\"Failure\", errno=None)` (SSH_FX_FAILURE) for file-ancestor file-open — `_map_exception` falls through to generic RemoteStoreError. Added explicit `code is None` handling in `read` and `read_bytes` file-open try blocks → NotFound. `delete`/`get_file_info` were not affected: paramiko returns FileNotFoundError(errno=ENOENT) for those, which the existing handlers map to NotFound."
+        outcome: misleading
+      - file: src/remote_store/backends/_local.py
+        section: "LocalBackend.read / read_bytes / delete (NotADirectoryError handler)"
+        read_type: reference
+        extract: "Round 2 review's bug investigation surfaced a pre-existing BE-021 violation in LocalBackend: read_bytes and delete on a file-ancestor path leaked native `NotADirectoryError` rather than mapping to NotFound. Round 1 only fixed the writer side. Added `except NotADirectoryError:` handlers in `read`, `read_bytes`, and `delete` that map to NotFound per BE-006/BE-007/BE-012. Verified via cross-backend probe: Memory, Local, and SFTP now all return NotFound for read-side file-ancestor paths."
+        outcome: misleading
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestReadErrorFidelity / TestDeleteErrorFidelity / TestGetFileInfoErrorFidelity"
+        read_type: reference
+        extract: "Round 2 review flagged the lack of read-side file-ancestor conformance gates. Added `test_read_under_file_ancestor_raises_not_found` (parametrised over `(read, read_bytes)`), `test_delete_under_file_ancestor_raises_not_found` (covering both `missing_ok=False` → NotFound and `missing_ok=True` → no-op), and `test_get_file_info_under_file_ancestor_raises_not_found`. Async siblings mirrored. All pass on memory / local / sftp_inproc / dafny_oracle; flat-NS skip via the existing `_skip_flat_namespace` carve-out (still under ID-211)."
+      - file: src/remote_store/backends/_local.py
+        section: "LocalBackend.open_atomic (dual-wrap mkdir + mkstemp)"
+        read_type: reference
+        extract: "Round 2 review noted `open_atomic` retained a `try` block wrapping both `parent.mkdir` and `tempfile.mkstemp` — astronomically rare uuid-name collision in `mkstemp` would surface as the file-ancestor wording. The round-1 trace entry mis-stated `open_atomic` as 'already narrowed'. Narrowed for real: mkdir gets its own try/except, mkstemp sits in a separate try/except handling PermissionError only."
+        outcome: misleading
+      - file: src/remote_store/_backend.py
+        section: "Backend ABC docstrings (write / write_atomic / open_atomic / move / copy)"
+        read_type: reference
+        extract: "Round 2 review (Consistency/Ripple) flagged the sync Backend ABC docstrings still documented only `InvalidPath: If *path* names a directory` — the canonical user-API reference for the file-ancestor InvalidPath promise was absent. Extended each docstring's Raises: block with the new clause and a pointer to spec 003 § BE-008/018/019 and ID-209/ID-211."
+      - file: src/remote_store/aio/_async_backend.py
+        section: "AsyncBackend ABC docstrings (write / write_atomic / move / copy)"
+        read_type: reference
+        extract: "Round 2 review companion to the sync docstring fix. Extended each async docstring's Raises: block with the file-ancestor InvalidPath clause and a pointer to spec 029 § ASYNC-008/010/018/019 plus the sync mirror."
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-008 / ASYNC-010 / ASYNC-018 / ASYNC-019"
+        read_type: reference
+        extract: "Round 2 review (Spec/Ripple) flagged that BE-008/018/019 got the file-ancestor clause in spec 003 but the async mirror (spec 029) was not updated. Extended ASYNC-008's Raises: with the InvalidPath clauses (both directory and file-ancestor), ASYNC-010 delegating to ASYNC-008, and ASYNC-018/019 with the file-ancestor-on-dst clause. The conformance test markers already cited both the ASYNC-* and BE-* IDs; this round closes the prose-side coverage."
+        outcome: misleading
+      - file: sdd/BACKLOG.md
+        section: "ID-211 (formerly ID-210)"
+        read_type: reference
+        extract: "Rebase race: while this PR was in review, PR #681 (ID-193 async conformance close-out) landed on master and allocated ID-210 to a parallel follow-up item (Async Dafny oracle). On rebase the follow-up this PR opens (write-under-file HEAD pre-check for flat-NS backends) was renumbered to ID-211 — the next free slot above master's. Cross-references touched across CHANGELOG.md, BACKLOG-DONE.md (ID-209 entry), spec 003, _backend.py, aio/_async_backend.py, conformance tests, and this trace. Master's ID-210 references in BACKLOG.md / BACKLOG-DONE.md / id-193 trace are intact. `gen_backlogid --check` confirms no collisions; next safe ID is 212."
+        outcome: unclear
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor helper + read / read_bytes recheck"
+        read_type: reference
+        extract: "Round 3 review (Possible Bug ×2) flagged that the round-2 narrow `code is None ==> NotFound` in `read` / `read_bytes` was too broad: paramiko surfaces `OSError(\"...\", errno=None)` for any SSH_FX_FAILURE — a catch-all that covers quota / lock / transient I/O / quirky-server cases as well as the contract-relevant file-ancestor case. The blanket mapping silently mis-classified the other cases as NotFound. Added a `_has_file_ancestor(sftp_path)` parent-chain stat-walk helper symmetric with `_ensure_parent_dirs`'s S_ISDIR walk; only fires on the slow error path. `read` / `read_bytes` now map `code is None && _has_file_ancestor` → NotFound; other SSH_FX_FAILUREs fall through to `_map_exception`'s generic `RemoteStoreError` (visible to operators as a real failure rather than hidden as NotFound). 60 file-ancestor conformance tests stay green."
+        outcome: misleading
+      - file: sdd/BACKLOG.md
+        section: "ID-211 entry PR placeholder"
+        read_type: reference
+        extract: "Round 3 review (Consistency) noted `Follow-up to ID-209 (PR ___)` still had the unfilled placeholder. Per CLAUDE.md principle 3 (`Repo describes reality at every commit`), filled with `#680`."
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor opaque-error fallback (chroot limitation)"
+        read_type: reference
+        extract: "Round 4 review (Possible) on the new `_has_file_ancestor` helper: the conservative `return False` on non-ENOENT stat errors silently mis-classifies a genuine file-ancestor case in chrooted SFTP setups where stat on an ancestor above the chroot returns `SSH_FX_PERMISSION_DENIED`. Pre-existing `_ensure_parent_dirs` shares the same walk-from-`/` pattern (its comment says walk-from-base_path but the code walks from `/`). The in-process sftp_inproc fixture does not exercise the chroot case because it grants unrestricted local-FS access. Per the reviewer's `either acknowledge or follow-up` framing, did both: tightened the `_has_file_ancestor` docstring with a `Known limitation (ID-212)` block, and opened ID-212 in BACKLOG.md to track the proper fix (refactor both walks onto `self._base_path`, add a `sftp_chroot_inproc` fixture variant exercising the restricted-permission case)."
+        outcome: misleading

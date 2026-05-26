@@ -1493,7 +1493,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 367,
+      "line": 377,
       "summary": "copy"
     },
     {
@@ -1502,7 +1502,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 257,
+      "line": 265,
       "summary": "delete"
     },
     {
@@ -1511,7 +1511,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 271,
+      "line": 279,
       "summary": "delete_folder"
     },
     {
@@ -1520,7 +1520,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 320,
+      "line": 328,
       "summary": "get_file_info"
     },
     {
@@ -1529,7 +1529,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 335,
+      "line": 343,
       "summary": "get_folder_info"
     },
     {
@@ -1538,7 +1538,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 401,
+      "line": 413,
       "summary": "glob"
     },
     {
@@ -1547,7 +1547,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 384,
+      "line": 396,
       "summary": "iter_children"
     },
     {
@@ -1556,7 +1556,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 286,
+      "line": 294,
       "summary": "list_files"
     },
     {
@@ -1565,7 +1565,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 309,
+      "line": 317,
       "summary": "list_folders"
     },
     {
@@ -1574,7 +1574,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 350,
+      "line": 358,
       "summary": "move"
     },
     {
@@ -1583,7 +1583,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 240,
+      "line": 246,
       "summary": "open_atomic"
     },
     {
@@ -1628,7 +1628,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 214,
+      "line": 218,
       "summary": "write_atomic"
     },
     {

@@ -384,6 +384,60 @@ trait Backend {
   var fs: Filesystem
 
   // ====================================================================
+  // §6.0  Class invariant: fs well-formedness  (ID-209)
+  // ====================================================================
+  // Valid() says every key in fs has all its slash-aligned ancestors
+  // *materialised* as DirEntry — strictly stronger than the
+  // AllAncestorsTraversable predicate's "absent OR DirEntry" disjunct.
+  // The strengthening is load-bearing: a weaker "absent OR DirEntry"
+  // version is broken by a Write that inserts a FileEntry at an
+  // already-absent slash-aligned ancestor of some existing key (e.g.
+  // old(fs) holds "foo/bar" with "foo" absent — both Valid() under the
+  // weak form; writing "foo" as a FileEntry then breaks
+  // AllAncestorsTraversable for "foo/bar").  The strong form rules out
+  // that edge case in old(fs), matching real backends where EnsureParents
+  // (Memory) / parent.mkdir(parents=True) (Local) / sftp mkdir-walk
+  // (SFTP) always materialises every parent directory on a successful
+  // write — see the empirical probe in ID-209's trace.
+  //
+  // Consequence for ID-184: the
+  // `!AllAncestorsTraversable(fs, path) ==> r.value == []` disjunct on
+  // ListFiles / ListFolders becomes a logical consequence of Valid()
+  // rather than a defensive postcondition against an unreachable state.
+  //
+  // Maintenance: declared as `requires Valid() ensures Valid()` on every
+  // mutating method (Write, Delete, DeleteFolder, Move, Copy).  Read-only
+  // methods (Exists, IsFileMethod, IsFolderMethod, Read, ListFiles,
+  // ListFolders, GetFileInfo, GetFolderInfo, RequireCapability) do not
+  // mutate fs, so they neither require nor must re-establish Valid() —
+  // their callers do.  Write is the load-bearing case: its new
+  // `!AllAncestorsTraversable(old(fs), path) ==> InvalidPath` clause is
+  // exactly what prevents a successful Write from inserting a FileEntry
+  // under a path whose ancestor is already a file, which is the only
+  // public-API way a refinement could break Valid() under the strong
+  // form.
+  predicate Valid()
+    reads this
+  {
+    forall p :: p in fs ==>
+      forall i: int | 0 < i < |p| - 1 && p[i] == '/' ::
+        IsDir(fs, p[..i])
+  }
+
+  // ValidImpliesAllAncestorsTraversable: a structural consequence used by
+  // the ID-184 listing semantics.  Stated once at the trait so refinements
+  // and clients can rely on it without re-deriving in each method.
+  lemma ValidImpliesAllAncestorsTraversable(p: Path)
+    requires Valid()
+    requires p in fs
+    ensures AllAncestorsTraversable(fs, p)
+  {
+    // Strong Valid() gives IsDir at every slash-aligned ancestor;
+    // IsDir implies PathExists ∧ ¬FileEntry, which is the (absent OR
+    // DirEntry) disjunct AllAncestorsTraversable demands.
+  }
+
+  // ====================================================================
   // exists(path) → bool
   // ====================================================================
   // Returns True iff path exists AND all ancestors are directories.
@@ -459,26 +513,46 @@ trait Backend {
   )
     returns (r: Result<WriteResult>)
     requires WellFormedPath(path)
+    requires Valid()
     modifies this
+    ensures Valid()
     // Gap 1 / BE-008: precondition order — type check first (directory
     // path → InvalidPath).
     // @spec BE-008
     ensures IsDir(old(fs), path)
+      ==> r == Err(InvalidPath(path, name))
+    // ID-209 / BE-008: precondition order — path-validity also covers a
+    // file-ancestor in the path.  Mutually exclusive with IsDir / IsFile
+    // (both imply path in old(fs), and Valid() then forces
+    // AllAncestorsTraversable), so this clause and the existing IsDir /
+    // overwrite-conflict / WR-010 / happy-path clauses can never
+    // contradict each other.  Closes the trait totality gap left by
+    // ID-184: Write now rejects the structurally unreachable input
+    // explicitly rather than EnsureParents'ing into a Valid()-breaking
+    // state.
+    // @spec BE-008
+    ensures !AllAncestorsTraversable(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     // Gap 1 / BE-008: precondition order — overwrite conflict second.
     // @spec BE-008
     ensures !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
       ==> r == Err(AlreadyExists(path, name))
     // WR-010 strict gate: non-empty metadata on a backend without
-    // CapUserMetadata → CapabilityNotSupported (pre-I/O).
+    // CapUserMetadata → CapabilityNotSupported (pre-I/O).  ID-209 tightens
+    // the guard with AllAncestorsTraversable so this clause stays
+    // mutually exclusive with the new file-ancestor clause above.
     // @spec WR-010
     ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+            AllAncestorsTraversable(old(fs), path) &&
             HasUserMetadata(metadata) && CapUserMetadata !in capabilities
       ==> r == Err(CapabilityNotSupported(
             CapabilityName(CapUserMetadata), name))
-    // BE-008 happy path: no error condition → must succeed.
+    // BE-008 happy path: no error condition → must succeed.  ID-209 adds
+    // the AllAncestorsTraversable conjunct for the same reason as the
+    // WR-010 guard above.
     // @spec BE-008
     ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+            AllAncestorsTraversable(old(fs), path) &&
             (!HasUserMetadata(metadata) || CapUserMetadata in capabilities)
       ==> r.Ok?
     // BE-008: written content is stored verbatim on the success path.
@@ -540,7 +614,9 @@ trait Backend {
   // missing_ok only governs the absent-path case.
   method Delete(path: Path, missing_ok: bool) returns (r: Result<()>)
     requires WellFormedPath(path)
+    requires Valid()
     modifies this
+    ensures Valid()
     // @spec BE-021
     ensures IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
@@ -563,7 +639,9 @@ trait Backend {
   method DeleteFolder(path: Path, recursive: bool, missing_ok: bool)
     returns (r: Result<()>)
     requires WellFormedPath(path)
+    requires Valid()
     modifies this
+    ensures Valid()
     // File path → InvalidPath (wrong type, symmetric with Delete on dirs).
     // @spec BE-021
     ensures IsFile(old(fs), path)
@@ -705,7 +783,9 @@ trait Backend {
     returns (r: Result<()>)
     requires WellFormedPath(src)
     requires WellFormedPath(dst)
+    requires Valid()
     modifies this
+    ensures Valid()
     // @spec BE-021
     ensures IsDir(old(fs), src)
       ==> r == Err(InvalidPath(src, name))
@@ -716,12 +796,23 @@ trait Backend {
     // @spec BE-021
     ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
+    // ID-209 / BE-018: file-ancestor in dst → InvalidPath.  Symmetric with
+    // Write's file-ancestor clause: a Move that inserts a FileEntry at dst
+    // would otherwise break Valid() in exactly the same way a Write does.
+    // Mutually exclusive with the IsDir(dst) clause above (a DirEntry at
+    // dst implies, via Valid(), that all ancestors of dst are
+    // DirEntries).
+    // @spec BE-018
+    ensures IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
+      ==> r == Err(InvalidPath(dst, name))
     // @spec BE-018
     ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
-    // BE-018 happy path: file src, dst is not a dir, no overwrite conflict.
+    // BE-018 happy path: file src, dst is not a dir, no overwrite conflict,
+    // dst's ancestors are all traversable (ID-209 conjunct).
     // @spec BE-018
     ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
+            AllAncestorsTraversable(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
     // BK-232 / WR-013: move preserves user metadata on the destination.
@@ -744,7 +835,9 @@ trait Backend {
     returns (r: Result<()>)
     requires WellFormedPath(src)
     requires WellFormedPath(dst)
+    requires Valid()
     modifies this
+    ensures Valid()
     // @spec BE-021
     ensures IsDir(old(fs), src)
       ==> r == Err(InvalidPath(src, name))
@@ -754,12 +847,20 @@ trait Backend {
     // @spec BE-021
     ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
+    // ID-209 / BE-019: file-ancestor in dst → InvalidPath.  Symmetric with
+    // Move's file-ancestor clause above and Write's file-ancestor clause,
+    // for the same Valid()-preservation reason.
+    // @spec BE-019
+    ensures IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
+      ==> r == Err(InvalidPath(dst, name))
     // @spec BE-019
     ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
-    // BE-019 happy path.
+    // BE-019 happy path.  ID-209 adds the AllAncestorsTraversable
+    // conjunct for the same reason as Move's happy-path guard.
     // @spec BE-019
     ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
+            AllAncestorsTraversable(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
     // BK-196 / WR-013: copy preserves user metadata on the destination.

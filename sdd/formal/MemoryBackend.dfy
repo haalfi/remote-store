@@ -19,12 +19,19 @@ class MemoryBackend extends Backend {
     ensures capabilities == {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
                              CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead,
                              CapWriteResultNative, CapUserMetadata}
+    ensures Valid()
   {
     name := "memory";
     capabilities := {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
                      CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead,
                      CapWriteResultNative, CapUserMetadata};
     fs := map[Root := DirEntry];
+    // ID-209: only key in the initial fs is Root ("."), whose slash-aligned
+    // ancestor set is empty by Valid()'s `0 < i < |p| - 1` bound
+    // (|"."| - 1 == 0), so the forall is vacuously true.  Dafny disallows
+    // referring to `this.Valid()` in a constructor's first division, so the
+    // post-construction Valid() is established only via the ensures clause
+    // and the verifier's structural reasoning about the constructor body.
   }
 
   method Exists(path: Path) returns (r: Result<bool>)
@@ -110,28 +117,199 @@ class MemoryBackend extends Backend {
 
   // EnsureParents: insert DirEntry for every slash-aligned ancestor of path
   // that does not already exist in fs.  Existing entries are never overwritten.
+  //
+  // ID-209: precondition strengthened — caller must have verified
+  // AllAncestorsTraversable(fs, path) before calling.  Combined with
+  // Valid(), this lets the post-condition guarantee every slash-aligned
+  // ancestor of path is now in fs as a DirEntry (the strict ensures
+  // below, no longer gated on `path[..i] !in old(fs)`), which is exactly
+  // what Write / Move / Copy need to maintain Valid() across the
+  // subsequent FileEntry insertion at path.
+  // ID-209: factored Valid()-preservation lemma for FileEntry removal.
+  // Removing a non-DirEntry key (FileEntry or absent) preserves Valid()
+  // because by Valid() of current fs, no other key has it as a
+  // slash-aligned ancestor (any such ancestor must be a DirEntry).
+  lemma {:induction false} PreserveValidAfterFileRemove(path: Path)
+    requires Valid()
+    requires !IsDir(fs, path)
+    ensures
+      var nf := map k | k in fs && k != path :: fs[k];
+      forall p :: p in nf ==>
+        forall i: int | 0 < i < |p| - 1 && p[i] == '/' :: IsDir(nf, p[..i])
+  {
+    var nf := map k | k in fs && k != path :: fs[k];
+    forall p | p in nf
+      ensures forall i: int | 0 < i < |p| - 1 && p[i] == '/' :: IsDir(nf, p[..i])
+    {
+      forall i: int | 0 < i < |p| - 1 && p[i] == '/'
+        ensures IsDir(nf, p[..i])
+      {
+        assert p in fs;
+        assert IsDir(fs, p[..i]);
+        if p[..i] == path {
+          assert IsDir(fs, path);
+          assert false;
+        }
+        assert p[..i] != path;
+        assert nf[p[..i]] == fs[p[..i]];
+      }
+    }
+  }
+
+  // ID-209: factored Valid()-preservation lemma for FileEntry insertion.
+  // Pre-state assumptions:
+  //   - Valid() of current fs (every key's slash-aligned ancestors are
+  //     DirEntries in fs).
+  //   - !IsDir(fs, path) — path is not currently a DirEntry (Write's
+  //     IsDir early-return ensures this; overwrite case keeps path as
+  //     FileEntry, absent case is also fine).
+  //   - Every slash-aligned ancestor of path is in fs as DirEntry — the
+  //     post-condition of EnsureParents(path), provided AllAncestors
+  //     Traversable was verified.
+  // Post-state claim: after `fs := fs[path := FileEntry(...)]`, Valid()
+  // still holds.  Factored out as a ghost lemma so the proof's quantifier
+  // reasoning runs in isolation rather than swimming in Write's full
+  // postcondition pile.
+  lemma {:induction false} PreserveValidAfterFileInsert(
+      path: Path, content: seq<nat>, info: FileInfo)
+    requires Valid()
+    requires !IsDir(fs, path)
+    requires forall i: int | 0 < i < |path| && path[i] == '/' ::
+      path[..i] in fs && fs[path[..i]].DirEntry?
+    ensures
+      var nf := fs[path := FileEntry(content, info)];
+      forall p :: p in nf ==>
+        forall i: int | 0 < i < |p| - 1 && p[i] == '/' :: IsDir(nf, p[..i])
+  {
+    var nf := fs[path := FileEntry(content, info)];
+    forall p | p in nf
+      ensures forall i: int | 0 < i < |p| - 1 && p[i] == '/' :: IsDir(nf, p[..i])
+    {
+      forall i: int | 0 < i < |p| - 1 && p[i] == '/'
+        ensures IsDir(nf, p[..i])
+      {
+        if p == path {
+          // p[..i] is a strict prefix of path with the slash-at-i property
+          // captured by EnsureParents' strengthened ensures.
+          assert i < |path|;
+          assert path[..i] in fs && fs[path[..i]].DirEntry?;
+          assert p[..i] == path[..i];
+          assert p[..i] != path;  // shorter length
+          assert nf[p[..i]] == fs[p[..i]];
+        } else {
+          // p was in fs (the only new key inserted is path).
+          assert p in fs;
+          // By Valid() of fs, IsDir(fs, p[..i]).  And p[..i] != path
+          // because IsDir(fs, p[..i]) but !IsDir(fs, path).
+          assert IsDir(fs, p[..i]);
+          if p[..i] == path {
+            assert IsDir(fs, path);
+            assert false;
+          }
+          assert nf[p[..i]] == fs[p[..i]];
+        }
+      }
+    }
+  }
+
   method EnsureParents(path: Path)
+    requires WellFormedPath(path)
+    requires Valid()
+    requires AllAncestorsTraversable(fs, path)
     modifies this
     ensures forall k | k in old(fs) :: k in fs && fs[k] == old(fs)[k]
-    ensures forall i | 0 < i < |path| && path[i] == '/' && path[..i] !in old(fs) ::
+    ensures forall i | 0 < i < |path| && path[i] == '/' ::
       path[..i] in fs && fs[path[..i]].DirEntry?
+    ensures forall k | k in fs && k !in old(fs) :: fs[k].DirEntry?
+    // ID-209: no new key under path itself (only strict prefixes inserted).
+    ensures path !in old(fs) ==> path !in fs
+    ensures Valid()
   {
     var i := 1;
     while i < |path|
       invariant 1 <= i <= |path|
       invariant forall k | k in old(fs) :: k in fs && fs[k] == old(fs)[k]
       invariant forall k | k in fs && k !in old(fs) :: fs[k].DirEntry?
-      invariant forall j | 0 < j < i && path[j] == '/' && path[..j] !in old(fs) ::
+      // ID-209: the strengthened ensures, accumulated across the loop —
+      // every slash-aligned ancestor up to the current i is in fs as
+      // DirEntry, regardless of whether it was already in old(fs).
+      invariant forall j | 0 < j < i && path[j] == '/' ::
         path[..j] in fs && fs[path[..j]].DirEntry?
+      // ID-209: only strict-prefix keys are inserted, so path itself
+      // is unchanged.
+      invariant path !in old(fs) ==> path !in fs
+      // ID-209: Valid() preserved at every iteration.  Inserting a
+      // DirEntry can never break Valid() because (a) the new key's
+      // ancestors are sub-prefixes of path, which are either in fs
+      // already as DirEntry (loop invariant on smaller j) or absent
+      // and traversable by AllAncestorsTraversable; (b) for any other
+      // key, ancestor traversability is monotone under DirEntry
+      // insertion.
+      invariant Valid()
     {
       if path[i] == '/' {
         var prefix := path[..i];
+        // WellFormedPath has no trailing slash, so path[|path|-1] != '/',
+        // which means i != |path|-1 here.  Combined with 1 <= i, this
+        // gives the AllAncestorsTraversable index bound `0 < i < |path|-1`.
+        assert path[|path| - 1] != '/';
+        assert i != |path| - 1;
+        assert 0 < i < |path| - 1;
         if prefix !in fs {
           assert prefix !in old(fs);
           // Different-length prefixes are distinct keys.
           assert |prefix| == i;
           assert forall j | 0 < j < i :: |path[..j]| == j && path[..j] != prefix;
+          // prefix is a strict prefix of path (|prefix| == i < |path|),
+          // so inserting prefix does not affect the path !in fs invariant.
+          assert prefix != path;
+          // ID-209 Valid() maintenance: by strong Valid() (loop invariant)
+          // and `prefix !in fs`, no existing key has prefix as a
+          // slash-aligned ancestor (else Valid() would force IsDir(fs,
+          // prefix), contradicting `prefix !in fs`).  So inserting a
+          // DirEntry at prefix cannot change any existing key's set of
+          // in-fs ancestors.
+          assert forall k :: k in fs ==>
+            forall j: int | 0 < j < |k| - 1 && k[j] == '/' :: k[..j] != prefix;
+          // The slash-aligned ancestors of prefix itself are sub-prefixes
+          // path[..j] for j < |prefix| = i, which by the loop invariant
+          // are all DirEntries in fs.  prefix[j] == path[j] for j < i
+          // since prefix == path[..i].
+          assert forall j: int | 0 < j < i :: prefix[j] == path[j];
+          assert forall j: int | 0 < j < i :: prefix[..j] == path[..j];
+          assert forall j: int | 0 < j < |prefix| - 1 && prefix[j] == '/' ::
+            IsDir(fs, prefix[..j]);
+          ghost var fs_before := fs;
           fs := fs[prefix := DirEntry];
+          // After insertion: every k in new fs has DirEntry ancestors.
+          // For k == prefix: ancestors are sub-prefixes carried over.
+          // For k != prefix: ancestors were DirEntries in fs_before, none
+          // equal to prefix (by the pre-insert assert), so unchanged.
+          assert forall k :: k in fs && k != prefix ==>
+            forall j: int | 0 < j < |k| - 1 && k[j] == '/' ::
+              k[..j] != prefix && fs[k[..j]] == fs_before[k[..j]];
+          assert Valid();
+        } else {
+          // Already in fs: by AllAncestorsTraversable(fs_entry, path) and
+          // the loop invariant fs[k] == old(fs)[k] for k in old(fs), the
+          // existing entry must be a DirEntry (a FileEntry there would
+          // break AllAncestorsTraversable at this slash-aligned index).
+          assert prefix in fs;
+          if !fs[prefix].DirEntry? {
+            assert fs[prefix].FileEntry?;
+            // From the loop invariant: new keys (k in fs && k !in old(fs))
+            // are DirEntry, so a FileEntry here means prefix is in old(fs).
+            assert prefix in old(fs);
+            assert old(fs)[prefix].FileEntry?;
+            assert !IsDir(old(fs), prefix);
+            assert PathExists(old(fs), prefix);
+            // AllAncestorsTraversable(old(fs), path) at index i, with
+            // path[i]=='/' and 0 < i < |path|-1 (proved above), requires
+            // !PathExists(old(fs), prefix) || IsDir(old(fs), prefix).
+            // Both disjuncts are false → contradiction.
+            assert !AllAncestorsTraversable(old(fs), path);
+            assert false;
+          }
         }
       }
       i := i + 1;
@@ -146,16 +324,30 @@ class MemoryBackend extends Backend {
   )
     returns (r: Result<WriteResult>)
     requires WellFormedPath(path)
+    requires Valid()
     modifies this
+    ensures Valid()
     ensures IsDir(old(fs), path)
+      ==> r == Err(InvalidPath(path, name))
+    // ID-209: new file-ancestor error path.  MemoryBackend's
+    // AncestorsTraversableCheck is the live witness — without it,
+    // EnsureParents would silently insert DirEntry at every slash-aligned
+    // ancestor of path *including* one that is already a FileEntry, which
+    // is impossible because EnsureParents short-circuits on `prefix in
+    // fs`, leaving fs in a state where the inserted FileEntry at path has
+    // a file ancestor and Valid() no longer holds.  The early return
+    // restores trait totality (Write rejects rather than corrupts).
+    ensures !AllAncestorsTraversable(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     ensures !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
       ==> r == Err(AlreadyExists(path, name))
     ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+            AllAncestorsTraversable(old(fs), path) &&
             HasUserMetadata(metadata) && CapUserMetadata !in capabilities
       ==> r == Err(CapabilityNotSupported(
             CapabilityName(CapUserMetadata), name))
     ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+            AllAncestorsTraversable(old(fs), path) &&
             (!HasUserMetadata(metadata) || CapUserMetadata in capabilities)
       ==> r.Ok?
     ensures r.Ok? ==>
@@ -197,6 +389,20 @@ class MemoryBackend extends Backend {
       r := Err(AlreadyExists(path, name));
       return;
     }
+
+    // ID-209: file-ancestor early return — see method contract above.
+    // fs has not been mutated since Write began, so AncestorsTraversableCheck
+    // observes old(fs) and its result reflects AllAncestorsTraversable(old(fs), path).
+    assert fs == old(fs);
+    var ancestors_ok := AncestorsTraversableCheck(path);
+    assert fs == old(fs);
+    assert ancestors_ok == AllAncestorsTraversable(old(fs), path);
+    if !ancestors_ok {
+      assert !AllAncestorsTraversable(old(fs), path);
+      r := Err(InvalidPath(path, name));
+      return;
+    }
+    assert AllAncestorsTraversable(old(fs), path);
 
     // WR-010 gate.  MemoryBackend declares CapUserMetadata, so this
     // branch is dead code for this refinement: it exists to satisfy
@@ -240,6 +446,13 @@ class MemoryBackend extends Backend {
       ts,                                          // last_modified: opaque witness
       stored_metadata
     );
+    // ID-209: Valid()-preservation across the FileEntry insertion is
+    // factored into PreserveValidAfterFileInsert — the inline proof was
+    // tractable but timed out under Boogie's default budget due to the
+    // size of the surrounding postcondition pile (WR-012, WR-013,
+    // WR-001a, WR-004, WR-005, BE-008).  Lemma extraction localises the
+    // quantifier reasoning.
+    PreserveValidAfterFileInsert(path, content, info);
     fs := fs[path := FileEntry(content, info)];
     assert IsFile(fs, path);
     assert fs[path].content == content;
@@ -263,7 +476,9 @@ class MemoryBackend extends Backend {
 
   method Delete(path: Path, missing_ok: bool) returns (r: Result<()>)
     requires WellFormedPath(path)
+    requires Valid()
     modifies this
+    ensures Valid()
     ensures IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(old(fs), path) && !missing_ok
@@ -281,6 +496,10 @@ class MemoryBackend extends Backend {
         r := Err(InvalidPath(path, name));
       case FileEntry(_, _) =>
         assert IsFile(old(fs), path);
+        // ID-209: removing a FileEntry preserves Valid() via the shared
+        // lemma — no remaining key has path as a slash-aligned ancestor
+        // (else path would have been a DirEntry, contradicting IsFile).
+        PreserveValidAfterFileRemove(path);
         fs := map k | k in fs && k != path :: fs[k];
         assert path !in fs;
         r := Ok(());
@@ -297,7 +516,9 @@ class MemoryBackend extends Backend {
   method DeleteFolder(path: Path, recursive: bool, missing_ok: bool)
     returns (r: Result<()>)
     requires WellFormedPath(path)
+    requires Valid()
     modifies this
+    ensures Valid()
     ensures IsFile(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(old(fs), path) && !missing_ok
@@ -340,13 +561,23 @@ class MemoryBackend extends Backend {
     }
 
     if recursive {
-      // Remove directory and all children.
+      // Remove directory and all children.  ID-209: Valid() preserved
+      // because no remaining key has path as a slash-aligned ancestor
+      // (any such key would be IsChildOf path and got removed too), and
+      // removing path's own DirEntry can only affect keys with path as
+      // an ancestor.  Other DirEntry ancestors of the surviving keys
+      // are not under `path` (by the !IsChildOf filter), so they are
+      // preserved.
       fs := map k | k in fs && k != path && !IsChildOf(k, path) :: fs[k];
     } else {
-      // Remove empty directory only.
+      // Remove empty directory only.  ID-209: HasChildren(old(fs), path)
+      // is false here, so no remaining key has path as a slash-aligned
+      // ancestor either — Valid() preserved by the same argument as the
+      // recursive branch.
       fs := map k | k in fs && k != path :: fs[k];
     }
     assert !IsDir(fs, path);
+    assert Valid();
     r := Ok(());
   }
 
@@ -555,16 +786,21 @@ class MemoryBackend extends Backend {
     returns (r: Result<()>)
     requires WellFormedPath(src)
     requires WellFormedPath(dst)
+    requires Valid()
     modifies this
+    ensures Valid()
     ensures IsDir(old(fs), src)
       ==> r == Err(InvalidPath(src, name))
     ensures !PathExists(old(fs), src)
       ==> r == Err(NotFound(src, name))
     ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
+    ensures IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
+      ==> r == Err(InvalidPath(dst, name))
     ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
     ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
+            AllAncestorsTraversable(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
     ensures r.Ok? && IsFile(old(fs), src) ==>
@@ -604,6 +840,15 @@ class MemoryBackend extends Backend {
       return;
     }
 
+    // ID-209: file-ancestor in dst → InvalidPath.
+    var dst_ancestors_ok := AncestorsTraversableCheck(dst);
+    if !dst_ancestors_ok {
+      assert !AllAncestorsTraversable(old(fs), dst);
+      r := Err(InvalidPath(dst, name));
+      return;
+    }
+    assert AllAncestorsTraversable(old(fs), dst);
+
     // AlreadyExists check.
     if dst in fs && fs[dst].FileEntry? && !overwrite {
       assert IsFile(old(fs), dst);
@@ -611,14 +856,23 @@ class MemoryBackend extends Backend {
       return;
     }
 
-    EnsureParents(dst);
     var srcEntry := fs[src];
+    EnsureParents(dst);
     // BK-232 / WR-013: thread user metadata onto the move destination.
     // BasicFileInfo would drop it — the gap this item closes.
     var newInfo := FileInfo(dst, dst, srcEntry.info.size,
                             None, None, None, srcEntry.info.metadata);
     var newEntry := FileEntry(srcEntry.content, newInfo);
-    fs := (map k | k in fs && k != src :: fs[k])[dst := newEntry];
+    // ID-209: split the combined map-comprehension-plus-insert into two
+    // explicit steps so Valid() can be re-established with the two
+    // factored lemmas.  Removing src (a FileEntry) preserves Valid() via
+    // PreserveValidAfterFileRemove; inserting at dst then uses
+    // PreserveValidAfterFileInsert.
+    PreserveValidAfterFileRemove(src);
+    fs := map k | k in fs && k != src :: fs[k];
+    assert src !in fs;
+    PreserveValidAfterFileInsert(dst, srcEntry.content, newInfo);
+    fs := fs[dst := newEntry];
     assert dst in fs;
     assert fs[dst].content == old(fs)[src].content;
     assert fs[dst].info.metadata == old(fs)[src].info.metadata;
@@ -628,20 +882,25 @@ class MemoryBackend extends Backend {
   }
 
   // Copy: directory src → InvalidPath; self-copy is no-op.
-  method Copy(src: Path, dst: Path, overwrite: bool)
+  method {:isolate_assertions} Copy(src: Path, dst: Path, overwrite: bool)
     returns (r: Result<()>)
     requires WellFormedPath(src)
     requires WellFormedPath(dst)
+    requires Valid()
     modifies this
+    ensures Valid()
     ensures IsDir(old(fs), src)
       ==> r == Err(InvalidPath(src, name))
     ensures !PathExists(old(fs), src)
       ==> r == Err(NotFound(src, name))
     ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
+    ensures IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
+      ==> r == Err(InvalidPath(dst, name))
     ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
     ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
+            AllAncestorsTraversable(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
     ensures r.Ok? && IsFile(old(fs), src) ==>
@@ -681,6 +940,15 @@ class MemoryBackend extends Backend {
       return;
     }
 
+    // ID-209: file-ancestor in dst → InvalidPath.
+    var dst_ancestors_ok := AncestorsTraversableCheck(dst);
+    if !dst_ancestors_ok {
+      assert !AllAncestorsTraversable(old(fs), dst);
+      r := Err(InvalidPath(dst, name));
+      return;
+    }
+    assert AllAncestorsTraversable(old(fs), dst);
+
     // AlreadyExists check.
     if dst in fs && fs[dst].FileEntry? && !overwrite {
       assert IsFile(old(fs), dst);
@@ -688,19 +956,19 @@ class MemoryBackend extends Backend {
       return;
     }
 
-    EnsureParents(dst);
     var srcEntry := fs[src];
+    EnsureParents(dst);
     // BK-196 / WR-013: thread user metadata onto the copy destination.
     // BasicFileInfo would drop it — the gap this item closes.
     var newInfo := FileInfo(dst, dst, srcEntry.info.size,
                             None, None, None, srcEntry.info.metadata);
+    // ID-209: Valid()-preservation via the shared lemma.  Copy doesn't
+    // remove anything, so the only state change is the dst FileEntry
+    // insertion handled by PreserveValidAfterFileInsert.
+    PreserveValidAfterFileInsert(dst, srcEntry.content, newInfo);
     fs := fs[dst := FileEntry(srcEntry.content, newInfo)];
-    assert dst in fs && fs[dst].FileEntry?;
-    assert IsFile(fs, dst);
-    assert fs[dst].content == old(fs)[src].content;
-    assert fs[dst].info.metadata == old(fs)[src].info.metadata;
-    assert src in fs && fs[src] == old(fs)[src];
-    assert IsFile(fs, src);
+    assert src != dst;
+    assert fs[src] == old(fs)[src];
     r := Ok(());
   }
 
@@ -734,11 +1002,79 @@ class MemoryBackendMinimal extends Backend {
     ensures name == "memory-minimal"
     ensures capabilities == {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
                              CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead}
+    ensures Valid()
   {
     name := "memory-minimal";
     capabilities := {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
                      CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead};
     fs := map[Root := DirEntry];
+  }
+
+  // ID-209: duplicated lemmas (Dafny lacks class-to-class inheritance).
+  // The logic is identical to MemoryBackend's PreserveValidAfterFileInsert /
+  // PreserveValidAfterFileRemove — see those for the proof discussion.
+  lemma {:induction false} PreserveValidAfterFileRemove(path: Path)
+    requires Valid()
+    requires !IsDir(fs, path)
+    ensures
+      var nf := map k | k in fs && k != path :: fs[k];
+      forall p :: p in nf ==>
+        forall i: int | 0 < i < |p| - 1 && p[i] == '/' :: IsDir(nf, p[..i])
+  {
+    var nf := map k | k in fs && k != path :: fs[k];
+    forall p | p in nf
+      ensures forall i: int | 0 < i < |p| - 1 && p[i] == '/' :: IsDir(nf, p[..i])
+    {
+      forall i: int | 0 < i < |p| - 1 && p[i] == '/'
+        ensures IsDir(nf, p[..i])
+      {
+        assert p in fs;
+        assert IsDir(fs, p[..i]);
+        if p[..i] == path {
+          assert IsDir(fs, path);
+          assert false;
+        }
+        assert p[..i] != path;
+        assert nf[p[..i]] == fs[p[..i]];
+      }
+    }
+  }
+
+  lemma {:induction false} PreserveValidAfterFileInsert(
+      path: Path, content: seq<nat>, info: FileInfo)
+    requires Valid()
+    requires !IsDir(fs, path)
+    requires forall i: int | 0 < i < |path| && path[i] == '/' ::
+      path[..i] in fs && fs[path[..i]].DirEntry?
+    ensures
+      var nf := fs[path := FileEntry(content, info)];
+      forall p :: p in nf ==>
+        forall i: int | 0 < i < |p| - 1 && p[i] == '/' :: IsDir(nf, p[..i])
+  {
+    var nf := fs[path := FileEntry(content, info)];
+    forall p | p in nf
+      ensures forall i: int | 0 < i < |p| - 1 && p[i] == '/' :: IsDir(nf, p[..i])
+    {
+      forall i: int | 0 < i < |p| - 1 && p[i] == '/'
+        ensures IsDir(nf, p[..i])
+      {
+        if p == path {
+          assert i < |path|;
+          assert path[..i] in fs && fs[path[..i]].DirEntry?;
+          assert p[..i] == path[..i];
+          assert p[..i] != path;
+          assert nf[p[..i]] == fs[p[..i]];
+        } else {
+          assert p in fs;
+          assert IsDir(fs, p[..i]);
+          if p[..i] == path {
+            assert IsDir(fs, path);
+            assert false;
+          }
+          assert nf[p[..i]] == fs[p[..i]];
+        }
+      }
+    }
   }
 
   method Exists(path: Path) returns (r: Result<bool>)
@@ -817,26 +1153,60 @@ class MemoryBackendMinimal extends Backend {
   }
 
   method EnsureParents(path: Path)
+    requires WellFormedPath(path)
+    requires Valid()
+    requires AllAncestorsTraversable(fs, path)
     modifies this
     ensures forall k | k in old(fs) :: k in fs && fs[k] == old(fs)[k]
-    ensures forall i | 0 < i < |path| && path[i] == '/' && path[..i] !in old(fs) ::
+    ensures forall i | 0 < i < |path| && path[i] == '/' ::
       path[..i] in fs && fs[path[..i]].DirEntry?
+    ensures forall k | k in fs && k !in old(fs) :: fs[k].DirEntry?
+    ensures path !in old(fs) ==> path !in fs
+    ensures Valid()
   {
     var i := 1;
     while i < |path|
       invariant 1 <= i <= |path|
       invariant forall k | k in old(fs) :: k in fs && fs[k] == old(fs)[k]
       invariant forall k | k in fs && k !in old(fs) :: fs[k].DirEntry?
-      invariant forall j | 0 < j < i && path[j] == '/' && path[..j] !in old(fs) ::
+      invariant forall j | 0 < j < i && path[j] == '/' ::
         path[..j] in fs && fs[path[..j]].DirEntry?
+      invariant path !in old(fs) ==> path !in fs
+      invariant Valid()
     {
       if path[i] == '/' {
         var prefix := path[..i];
+        assert path[|path| - 1] != '/';
+        assert i != |path| - 1;
+        assert 0 < i < |path| - 1;
         if prefix !in fs {
           assert prefix !in old(fs);
           assert |prefix| == i;
           assert forall j | 0 < j < i :: |path[..j]| == j && path[..j] != prefix;
+          assert prefix != path;
+          assert forall k :: k in fs ==>
+            forall j: int | 0 < j < |k| - 1 && k[j] == '/' :: k[..j] != prefix;
+          assert forall j: int | 0 < j < i :: prefix[j] == path[j];
+          assert forall j: int | 0 < j < i :: prefix[..j] == path[..j];
+          assert forall j: int | 0 < j < |prefix| - 1 && prefix[j] == '/' ::
+            IsDir(fs, prefix[..j]);
+          ghost var fs_before := fs;
           fs := fs[prefix := DirEntry];
+          assert forall k :: k in fs && k != prefix ==>
+            forall j: int | 0 < j < |k| - 1 && k[j] == '/' ::
+              k[..j] != prefix && fs[k[..j]] == fs_before[k[..j]];
+          assert Valid();
+        } else {
+          assert prefix in fs;
+          if !fs[prefix].DirEntry? {
+            assert fs[prefix].FileEntry?;
+            assert prefix in old(fs);
+            assert old(fs)[prefix].FileEntry?;
+            assert !IsDir(old(fs), prefix);
+            assert PathExists(old(fs), prefix);
+            assert !AllAncestorsTraversable(old(fs), path);
+            assert false;
+          }
         }
       }
       i := i + 1;
@@ -851,16 +1221,22 @@ class MemoryBackendMinimal extends Backend {
   )
     returns (r: Result<WriteResult>)
     requires WellFormedPath(path)
+    requires Valid()
     modifies this
+    ensures Valid()
     ensures IsDir(old(fs), path)
+      ==> r == Err(InvalidPath(path, name))
+    ensures !AllAncestorsTraversable(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     ensures !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
       ==> r == Err(AlreadyExists(path, name))
     ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+            AllAncestorsTraversable(old(fs), path) &&
             HasUserMetadata(metadata) && CapUserMetadata !in capabilities
       ==> r == Err(CapabilityNotSupported(
             CapabilityName(CapUserMetadata), name))
     ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+            AllAncestorsTraversable(old(fs), path) &&
             (!HasUserMetadata(metadata) || CapUserMetadata in capabilities)
       ==> r.Ok?
     ensures r.Ok? ==>
@@ -903,6 +1279,18 @@ class MemoryBackendMinimal extends Backend {
       return;
     }
 
+    // ID-209: file-ancestor early return.  See MemoryBackend.Write.
+    assert fs == old(fs);
+    var ancestors_ok := AncestorsTraversableCheck(path);
+    assert fs == old(fs);
+    assert ancestors_ok == AllAncestorsTraversable(old(fs), path);
+    if !ancestors_ok {
+      assert !AllAncestorsTraversable(old(fs), path);
+      r := Err(InvalidPath(path, name));
+      return;
+    }
+    assert AllAncestorsTraversable(old(fs), path);
+
     // WR-010 gate.  MemoryBackendMinimal does not declare CapUserMetadata,
     // so this branch executes whenever the caller passes non-empty metadata:
     // it is the concrete satisfiability witness for the CapabilityNotSupported
@@ -928,6 +1316,7 @@ class MemoryBackendMinimal extends Backend {
       None,
       stored_metadata
     );
+    PreserveValidAfterFileInsert(path, content, info);
     fs := fs[path := FileEntry(content, info)];
     assert IsFile(fs, path);
     assert fs[path].content == content;
@@ -952,7 +1341,9 @@ class MemoryBackendMinimal extends Backend {
 
   method Delete(path: Path, missing_ok: bool) returns (r: Result<()>)
     requires WellFormedPath(path)
+    requires Valid()
     modifies this
+    ensures Valid()
     ensures IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(old(fs), path) && !missing_ok
@@ -970,6 +1361,7 @@ class MemoryBackendMinimal extends Backend {
         r := Err(InvalidPath(path, name));
       case FileEntry(_, _) =>
         assert IsFile(old(fs), path);
+        PreserveValidAfterFileRemove(path);
         fs := map k | k in fs && k != path :: fs[k];
         assert path !in fs;
         r := Ok(());
@@ -986,7 +1378,9 @@ class MemoryBackendMinimal extends Backend {
   method DeleteFolder(path: Path, recursive: bool, missing_ok: bool)
     returns (r: Result<()>)
     requires WellFormedPath(path)
+    requires Valid()
     modifies this
+    ensures Valid()
     ensures IsFile(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(old(fs), path) && !missing_ok
@@ -1023,11 +1417,13 @@ class MemoryBackendMinimal extends Backend {
       return;
     }
     if recursive {
+      // ID-209: see MemoryBackend.DeleteFolder for the Valid()-preservation argument.
       fs := map k | k in fs && k != path && !IsChildOf(k, path) :: fs[k];
     } else {
       fs := map k | k in fs && k != path :: fs[k];
     }
     assert !IsDir(fs, path);
+    assert Valid();
     r := Ok(());
   }
 
@@ -1218,16 +1614,21 @@ class MemoryBackendMinimal extends Backend {
     returns (r: Result<()>)
     requires WellFormedPath(src)
     requires WellFormedPath(dst)
+    requires Valid()
     modifies this
+    ensures Valid()
     ensures IsDir(old(fs), src)
       ==> r == Err(InvalidPath(src, name))
     ensures !PathExists(old(fs), src)
       ==> r == Err(NotFound(src, name))
     ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
+    ensures IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
+      ==> r == Err(InvalidPath(dst, name))
     ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
     ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
+            AllAncestorsTraversable(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
     ensures r.Ok? && IsFile(old(fs), src) ==>
@@ -1259,19 +1660,32 @@ class MemoryBackendMinimal extends Backend {
       r := Ok(());
       return;
     }
+    // ID-209: file-ancestor in dst → InvalidPath.  See MemoryBackend.Move.
+    var dst_ancestors_ok := AncestorsTraversableCheck(dst);
+    if !dst_ancestors_ok {
+      assert !AllAncestorsTraversable(old(fs), dst);
+      r := Err(InvalidPath(dst, name));
+      return;
+    }
+    assert AllAncestorsTraversable(old(fs), dst);
     if dst in fs && fs[dst].FileEntry? && !overwrite {
       assert IsFile(old(fs), dst);
       r := Err(AlreadyExists(dst, name));
       return;
     }
-    EnsureParents(dst);
     var srcEntry := fs[src];
+    EnsureParents(dst);
     // BK-232 / WR-013: thread user metadata onto the move destination.
     // BasicFileInfo would drop it — the gap this item closes.
     var newInfo := FileInfo(dst, dst, srcEntry.info.size,
                             None, None, None, srcEntry.info.metadata);
     var newEntry := FileEntry(srcEntry.content, newInfo);
-    fs := (map k | k in fs && k != src :: fs[k])[dst := newEntry];
+    // ID-209: split into two explicit steps and use the two factored lemmas.
+    PreserveValidAfterFileRemove(src);
+    fs := map k | k in fs && k != src :: fs[k];
+    assert src !in fs;
+    PreserveValidAfterFileInsert(dst, srcEntry.content, newInfo);
+    fs := fs[dst := newEntry];
     assert dst in fs;
     assert fs[dst].content == old(fs)[src].content;
     assert fs[dst].info.metadata == old(fs)[src].info.metadata;
@@ -1280,20 +1694,25 @@ class MemoryBackendMinimal extends Backend {
     r := Ok(());
   }
 
-  method Copy(src: Path, dst: Path, overwrite: bool)
+  method {:isolate_assertions} Copy(src: Path, dst: Path, overwrite: bool)
     returns (r: Result<()>)
     requires WellFormedPath(src)
     requires WellFormedPath(dst)
+    requires Valid()
     modifies this
+    ensures Valid()
     ensures IsDir(old(fs), src)
       ==> r == Err(InvalidPath(src, name))
     ensures !PathExists(old(fs), src)
       ==> r == Err(NotFound(src, name))
     ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
+    ensures IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
+      ==> r == Err(InvalidPath(dst, name))
     ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
     ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
+            AllAncestorsTraversable(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
     ensures r.Ok? && IsFile(old(fs), src) ==>
@@ -1325,24 +1744,29 @@ class MemoryBackendMinimal extends Backend {
       r := Ok(());
       return;
     }
+    // ID-209: file-ancestor in dst → InvalidPath.  See MemoryBackend.Copy.
+    var dst_ancestors_ok := AncestorsTraversableCheck(dst);
+    if !dst_ancestors_ok {
+      assert !AllAncestorsTraversable(old(fs), dst);
+      r := Err(InvalidPath(dst, name));
+      return;
+    }
+    assert AllAncestorsTraversable(old(fs), dst);
     if dst in fs && fs[dst].FileEntry? && !overwrite {
       assert IsFile(old(fs), dst);
       r := Err(AlreadyExists(dst, name));
       return;
     }
-    EnsureParents(dst);
     var srcEntry := fs[src];
+    EnsureParents(dst);
     // BK-196 / WR-013: thread user metadata onto the copy destination.
     // BasicFileInfo would drop it — the gap this item closes.
     var newInfo := FileInfo(dst, dst, srcEntry.info.size,
                             None, None, None, srcEntry.info.metadata);
+    PreserveValidAfterFileInsert(dst, srcEntry.content, newInfo);
     fs := fs[dst := FileEntry(srcEntry.content, newInfo)];
-    assert dst in fs && fs[dst].FileEntry?;
-    assert IsFile(fs, dst);
-    assert fs[dst].content == old(fs)[src].content;
-    assert fs[dst].info.metadata == old(fs)[src].info.metadata;
-    assert src in fs && fs[src] == old(fs)[src];
-    assert IsFile(fs, src);
+    assert src != dst;
+    assert fs[src] == old(fs)[src];
     r := Ok(());
   }
 

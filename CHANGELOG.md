@@ -7,6 +7,42 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Changed
+
+- **`write` / `write_atomic` / `open_atomic` / `move` / `copy` now raise
+  `InvalidPath` when an ancestor of the target path is a regular file**
+  (ID-209, BE-008, BE-018, BE-019). Hierarchical backends previously leaked
+  native `FileExistsError` / `NotADirectoryError` (Local) and a generic
+  `RemoteStoreError` with `ENOTDIR` text (SFTP) in this case — a
+  BE-021 violation. `LocalBackend` now maps `FileExistsError` /
+  `NotADirectoryError` from `parent.mkdir(parents=True)` to
+  `InvalidPath`; `SFTPBackend._map_exception` now maps `errno.ENOTDIR`
+  to `InvalidPath`. `MemoryBackend` already raised `InvalidPath` via
+  `_ensure_parents`. Cross-backend conformance pinned by the new
+  `test_write_under_file_ancestor_raises_invalid_path` tests in
+  `test_errors.py` (sync) and `test_async_extended.py` (async).
+  Flat-namespace backends (S3, Azure non-HNS, SQLBlob, HTTP) cannot
+  detect a file-ancestor in O(1) without an extra HEAD round trip; the
+  conformance gate skips on those fixtures via `_skip_flat_namespace`,
+  and ID-211 tracks the optional HEAD pre-check follow-up.
+
+### Internal
+
+- **Backend `fs` well-formedness as a Dafny class invariant** (ID-209,
+  BE-008, BE-014, BE-015, BE-018, BE-019): `BackendContract.dfy` now
+  declares `predicate Valid()` on the `Backend` trait reading
+  `forall p :: p in fs ==> every slash-aligned ancestor of p is in fs as DirEntry`,
+  with `requires Valid() ensures Valid()` on every mutating method. The
+  new `!AllAncestorsTraversable(old(fs), path) ==> InvalidPath` clause
+  on `Write` / `Move` / `Copy` is what prevents a successful operation
+  from inserting a `FileEntry` under a file-ancestor and breaking
+  `Valid()`. ID-184's defensive `!AllAncestorsTraversable` disjunct on
+  `ListFiles` / `ListFolders` is now a logical consequence of `Valid()`
+  rather than a postcondition over an unreachable state. Both
+  `MemoryBackend` and `MemoryBackendMinimal` prove maintenance via two
+  factored ghost lemmas (`PreserveValidAfterFileInsert`,
+  `PreserveValidAfterFileRemove`); the oracle is regenerated.
+
 ## [0.26.0] - 2026-05-25
 
 ### Added

@@ -6,6 +6,68 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## [Unreleased]
+
+- [x] **ID-209 — `fs` well-formedness as a `Backend` class invariant + write-under-file conformance gate**
+  spec: BE-008, BE-014, BE-015, BE-018, BE-019 · audience: contributor.process, infra.test, library.maintainer, user.api
+  Follow-up to ID-184 (PR #679). ID-184's new
+  `!AllAncestorsTraversable(fs, path) ==> r.value == []` disjunct on
+  `ListFiles` / `ListFolders` was a defensive postcondition over a state
+  structurally unreachable from public `Backend` trait methods on a
+  well-formed initial fs — every compliant refinement satisfied it
+  vacuously. ID-209 makes the unreachability load-bearing on both
+  layers.
+  (C) Promoted well-formedness to a Dafny class invariant. The
+  `Backend` trait now declares `predicate Valid()` reading
+  `forall p :: p in fs ==> forall slash-aligned ancestor i :: IsDir(fs,
+  p[..i])` — the *strong* form (every ancestor materialised as
+  DirEntry) rather than the weak "absent OR DirEntry" form, because
+  the weak form fails under a Write that inserts at a previously-absent
+  slash-aligned ancestor of an existing key. The strong form rules
+  that edge case out of `Valid()` directly and matches every real
+  backend (Local's `parent.mkdir(parents=True)`, SFTP's mkdir-walk,
+  Memory's `EnsureParents` all materialise the chain). `requires
+  Valid() ensures Valid()` is now on every mutating method (`Write`,
+  `Delete`, `DeleteFolder`, `Move`, `Copy`). The load-bearing case
+  is the new `!AllAncestorsTraversable(old(fs), path) ==> r ==
+  Err(InvalidPath(path, name))` clause on `Write` (Decision 1 (b) —
+  asked via AskUserQuestion before any code): without it, a successful
+  `Write` could insert a `FileEntry` under a file-ancestor, breaking
+  `Valid()`. `Move` and `Copy` carry the same clause on their
+  destination path. Both `MemoryBackend` and `MemoryBackendMinimal`
+  prove maintenance via two factored ghost lemmas
+  (`PreserveValidAfterFileInsert`, `PreserveValidAfterFileRemove`)
+  that localise the quantifier reasoning — inline proofs timed out
+  under Boogie's default budget due to the size of `Write` /
+  `Move` / `Copy`'s combined postcondition piles. Spec 003 BE-008,
+  BE-014, BE-015, BE-018, BE-019 carry the matching prose; the
+  BE-014/015 Formal coverage paragraphs now frame the
+  `!AllAncestorsTraversable` disjunct as a *logical consequence* of
+  `Valid()` rather than a defensive postcondition.
+  (T) Conformance gate: write-under-file raises `InvalidPath`
+  (Decision 2 (a) — asked via AskUserQuestion before any code). On
+  hierarchical backends Local / SFTP previously leaked native
+  exceptions (`FileExistsError`, `NotADirectoryError`, SFTP-ENOTDIR)
+  for this case — empirically confirmed by ad-hoc probes during the
+  trace's orient phase, a BE-021 violation. Local's `write` /
+  `write_atomic` / `open_atomic` / `move` / `copy` now catch
+  `NotADirectoryError` / `FileExistsError` and map to `InvalidPath`;
+  SFTP's `_map_exception` adds `errno.ENOTDIR → InvalidPath` to its
+  OSError dispatch. Memory + AsyncMemory already raised `InvalidPath`
+  via `_ensure_parents`. New
+  `tests/backends/conformance/test_errors.py::TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path`
+  (sync, `BE-008`) and its async sibling
+  `tests/backends/conformance/test_async_extended.py::TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path`
+  (`ASYNC-008` + `BE-008`) pin the cross-backend contract. The
+  dafny_oracle fixture certifies the test through the new Dafny clause.
+  Flat-namespace backends (S3, Azure non-HNS, SQLBlob, HTTP) skip via
+  `_skip_flat_namespace` per the existing per-fixture record; ID-211
+  tracks the optional HEAD-pre-check follow-up the user nominated
+  during the Decision-(C) consult (most writes target the store root,
+  so the overhead only applies to nested-path writes — worth
+  measuring before shipping).
+  Trace: `sdd/traces/id-209-fs-wellformedness.yml`.
+
 ## v0.26.0
 
 - [x] **ID-193 — Async conformance extended: pattern research and implementation**
