@@ -22,7 +22,7 @@ surprising_ripples:
   - src/remote_store/_backend.py
   - src/remote_store/aio/_async_backend.py
   - sdd/specs/029-async-store-backend-api.md
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -238,3 +238,13 @@ phases:
         read_type: reference
         extract: "Rebase race: while this PR was in review, PR #681 (ID-193 async conformance close-out) landed on master and allocated ID-210 to a parallel follow-up item (Async Dafny oracle). On rebase the follow-up this PR opens (write-under-file HEAD pre-check for flat-NS backends) was renumbered to ID-211 — the next free slot above master's. Cross-references touched across CHANGELOG.md, BACKLOG-DONE.md (ID-209 entry), spec 003, _backend.py, aio/_async_backend.py, conformance tests, and this trace. Master's ID-210 references in BACKLOG.md / BACKLOG-DONE.md / id-193 trace are intact. `gen_backlogid --check` confirms no collisions; next safe ID is 212."
         outcome: unclear
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor helper + read / read_bytes recheck"
+        read_type: reference
+        extract: "Round 3 review (Possible Bug ×2) flagged that the round-2 narrow `code is None ==> NotFound` in `read` / `read_bytes` was too broad: paramiko surfaces `OSError(\"...\", errno=None)` for any SSH_FX_FAILURE — a catch-all that covers quota / lock / transient I/O / quirky-server cases as well as the contract-relevant file-ancestor case. The blanket mapping silently mis-classified the other cases as NotFound. Added a `_has_file_ancestor(sftp_path)` parent-chain stat-walk helper symmetric with `_ensure_parent_dirs`'s S_ISDIR walk; only fires on the slow error path. `read` / `read_bytes` now map `code is None && _has_file_ancestor` → NotFound; other SSH_FX_FAILUREs fall through to `_map_exception`'s generic `RemoteStoreError` (visible to operators as a real failure rather than hidden as NotFound). 60 file-ancestor conformance tests stay green."
+        outcome: misleading
+      - file: sdd/BACKLOG.md
+        section: "ID-211 entry PR placeholder"
+        read_type: reference
+        extract: "Round 3 review (Consistency) noted `Follow-up to ID-209 (PR ___)` still had the unfilled placeholder. Per CLAUDE.md principle 3 (`Repo describes reality at every commit`), filled with `#680`."
+        outcome: misleading

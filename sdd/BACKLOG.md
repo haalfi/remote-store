@@ -213,7 +213,7 @@ PR where its items share a file or proof.
 
 - [ ] **ID-211 — write-under-file HEAD pre-check for flat-namespace backends**
   spec: BE-008 · effort: M · audience: user.api, library.maintainer
-  Follow-up to ID-209 (PR ___). Decision 2 (a) landed: write/move/copy
+  Follow-up to ID-209 (PR #680). Decision 2 (a) landed: write/move/copy
   to a path under a file ancestor MUST raise `InvalidPath` cross-backend.
   Hierarchical backends (Local, SFTP, Memory) enforce this via native
   mappings; flat-namespace backends (S3, Azure non-HNS, SQLBlob, HTTP)
