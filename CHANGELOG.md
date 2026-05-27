@@ -22,11 +22,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   measurement at
   `sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md`. New
   `*_strict` conformance fixtures (`s3_moto_strict`, `sqlblob_strict`,
-  `azurite_strict`, `s3_pyarrow_moto_strict`, plus the async
-  `azurite_async_strict`) exercise the opt-in path; the async strict
-  fixture covers `AsyncAzureBackend._maybe_check_no_file_ancestor` /
+  `azurite_strict`, `s3_pyarrow_moto_strict`, `s3_pyarrow_minio_strict`,
+  plus the async `azurite_async_strict`) exercise the opt-in path; the
+  async strict fixture covers `AsyncAzureBackend._maybe_check_no_file_ancestor` /
   `_acheck_no_file_ancestor` / the SDK `get_blob_properties` closure
-  end-to-end against a real (emulated) Azure target.
+  end-to-end against a real (emulated) Azure target, and the
+  `s3_pyarrow_minio_strict` Stage-2 fixture covers the S3-PyArrow
+  opt-in against a real MinIO HTTP endpoint.
 
 ### Changed
 

@@ -15,6 +15,7 @@ opt in via ``include_strict_only=True`` at the class parametrize.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import uuid
 from typing import TYPE_CHECKING
@@ -49,11 +50,21 @@ def _factory() -> AsyncBackend:
     except Exception:
         service.close()
         raise
-    backend = AsyncAzureBackend(
-        container=container,
-        connection_string=INFRA.azurite_conn_str,
-        reject_write_under_file_ancestor=True,
-    )
+    # Construct the backend inside a guard so a failure during AsyncAzureBackend
+    # __init__ (validation error, import-path drift) doesn't leak the just-
+    # created container — _CONTAINERS registration only happens on success, so
+    # without the guard the teardown path never reaches it.
+    try:
+        backend = AsyncAzureBackend(
+            container=container,
+            connection_string=INFRA.azurite_conn_str,
+            reject_write_under_file_ancestor=True,
+        )
+    except Exception:
+        with contextlib.suppress(Exception):
+            service.delete_container(container)
+        service.close()
+        raise
     _CONTAINERS[id(backend)] = (container, service)
     return backend
 

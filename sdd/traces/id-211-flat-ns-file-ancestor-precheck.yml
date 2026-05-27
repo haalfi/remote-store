@@ -32,7 +32,9 @@ surprising_ripples:
   - src/remote_store/backends/_s3_base.py  # absorbed the file-ancestor pre-check from _s3.py + _s3_pyarrow.py (review-flagged duplication; both subclasses used identical s3fs head_object closure)
   # Round 4:
   - tests/backends/fixtures/s3_pyarrow_minio.py  # new s3_pyarrow_minio_strict variant via _make_factory; gives the S3-PyArrow opt-in path Stage-2 coverage against real MinIO (not only in-process moto)
-review_rounds: 4  # round 1 fixed 5 threads (precondition order, strict_only, lstrip, fail-open doc, ResourceNotFoundError); round 2 fixed 8 threads (async strict fixture, SQLBlob fail-open, outer-txn note, HNS docstring tightening, research § 4.3, _flat_ns TOCTOU note) and filed BK-242; round 3 fixed 4 threads (spec 003 / spec 029 HNS-deferred caveat, CHANGELOG/BACKLOG-DONE name azurite_async_strict, S3 dedup to _S3Base); round 4 fixed 4 threads (preserve original path in InvalidPath, SQLBlob SingletonThreadPool docstring, s3_pyarrow_minio_strict, narrow head_one except clauses).
+  # Round 5:
+  - tests/backends/fixtures/azurite.py  # container-leak guard on backend ctor failure (pre-existing on sync sibling; flagged in round 5)
+review_rounds: 5  # round 1 fixed 5 threads (precondition order, strict_only, lstrip, fail-open doc, ResourceNotFoundError); round 2 fixed 8 threads (async strict fixture, SQLBlob fail-open, outer-txn note, HNS docstring tightening, research § 4.3, _flat_ns TOCTOU note) and filed BK-242; round 3 fixed 4 threads (spec 003 / spec 029 HNS-deferred caveat, CHANGELOG/BACKLOG-DONE name azurite_async_strict, S3 dedup to _S3Base); round 4 fixed 4 threads (preserve original path in InvalidPath, SQLBlob SingletonThreadPool docstring, s3_pyarrow_minio_strict, narrow head_one except clauses); round 5 fixed 2 threads (CHANGELOG/BACKLOG-DONE name s3_pyarrow_minio_strict, container-leak guard on both azurite.py + azurite_async.py).
 phases:
   - id: orient
     name: Orient

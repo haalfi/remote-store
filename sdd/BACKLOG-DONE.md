@@ -44,9 +44,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `not flat_namespace` so hierarchical backends inherit native
   enforcement) keys the file-ancestor conformance gate. New strict
   fixtures `s3_moto_strict`, `s3_pyarrow_moto_strict`,
-  `sqlblob_strict`, `azurite_strict`, plus the async
-  `azurite_async_strict` (review follow-up), construct their backends
-  with the opt-in on and run the gate. Existing default-off fixtures
+  `sqlblob_strict`, `azurite_strict`, `s3_pyarrow_minio_strict`, plus
+  the async `azurite_async_strict` (all review follow-ups), construct
+  their backends with the opt-in on and run the gate. Existing
+  default-off fixtures
   continue to skip via the new `_skip_unless_rejects_file_ancestor`
   helper (replaces `_skip_flat_namespace` at the file-ancestor test
   sites). 10 new conformance test cases pass on the strict fixtures

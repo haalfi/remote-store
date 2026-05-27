@@ -11,6 +11,7 @@ introduced by BK-180.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import uuid
 from typing import TYPE_CHECKING
@@ -44,11 +45,21 @@ def _make_factory(reject_write_under_file_ancestor: bool):
         except Exception:
             service.close()
             raise
-        backend = AzureBackend(
-            container=container,
-            connection_string=INFRA.azurite_conn_str,
-            reject_write_under_file_ancestor=reject_write_under_file_ancestor,
-        )
+        # Construct the backend inside a guard so a failure during
+        # AzureBackend __init__ doesn't leak the just-created container —
+        # _CONTAINERS registration only happens on success, so without
+        # the guard the teardown path never reaches it.
+        try:
+            backend = AzureBackend(
+                container=container,
+                connection_string=INFRA.azurite_conn_str,
+                reject_write_under_file_ancestor=reject_write_under_file_ancestor,
+            )
+        except Exception:
+            with contextlib.suppress(Exception):
+                service.delete_container(container)
+            service.close()
+            raise
         _CONTAINERS[id(backend)] = (container, service)
         return backend
 
