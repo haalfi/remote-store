@@ -263,7 +263,7 @@ PR where its items share a file or proof.
   user reports the divergence on a real chroot deployment.
 
 - [ ] **ID-213 — Extend ID-209's `InvalidPath` translation to the HNS Azure backend**
-  spec: BE-008 · effort: M · audience: library.maintainer
+  spec: BE-008, BE-012, BE-014, BE-015, BE-018, BE-019 · effort: M · audience: contributor.process, infra.test, library.maintainer, user.api
   Follow-up to ID-209 (PR #680). Decision 2(a) — write/move/copy under
   a file ancestor MUST raise `InvalidPath` cross-backend — was
   implemented for Local and SFTP via native-error translation in
