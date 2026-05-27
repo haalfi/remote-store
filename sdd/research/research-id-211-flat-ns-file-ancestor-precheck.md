@@ -271,7 +271,9 @@ What landed:
    `get_blob_properties` for Azure non-HNS, `SELECT 1` for SQLBlob)
    and threads it through `write` / `write_atomic` / `open_atomic` /
    `move` / `copy`. Azure HNS short-circuits the opt-in walk because
-   `hdi_isfolder` already enforces the contract.
+   `hdi_isfolder` rejects the operation natively. (ID-213 covers an
+   orthogonal HNS-side error-class translation gap that is independent
+   of this opt-in.)
 3. New `*_strict` fixtures (`s3_moto_strict`, `s3_pyarrow_moto_strict`,
    `sqlblob_strict`, `azurite_strict`) wire the kwarg on. The existing
    default-off fixtures keep their behaviour.

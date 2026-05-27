@@ -33,8 +33,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (`head_object` on S3, `get_blob_properties` on Azure non-HNS,
   `SELECT 1` on SQLBlob) and threads it through `write` /
   `write_atomic` / `open_atomic` / `move` / `copy`. Azure HNS
-  short-circuits the walk because `hdi_isfolder` already enforces the
-  contract on that path. Spec 003 § BE-008 / BE-018 / BE-019 and spec
+  short-circuits the walk because `hdi_isfolder` rejects the operation
+  on that path (ID-213 tracks an orthogonal HNS-side error-class
+  translation gap that is independent of this opt-in). Spec 003 § BE-008
+  / BE-018 / BE-019 and spec
   029 § ASYNC-008 / ASYNC-010 / ASYNC-018 / ASYNC-019 carry the new
   prose; the docstrings on every flat-NS backend list the kwarg.
   (T) Conformance: new per-fixture flag

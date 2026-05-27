@@ -202,7 +202,9 @@ class AzureBackend(Backend):
             ``write_atomic`` / ``open_atomic`` / ``move`` / ``copy`` HEAD
             each slash-aligned ancestor of the target path on non-HNS
             accounts and raise ``InvalidPath`` on the first regular-file
-            hit (HNS accounts already enforce this via ``hdi_isfolder``).
+            hit. On HNS accounts the kwarg is a no-op: ``hdi_isfolder``
+            rejects the operation natively, independent of ID-213's
+            orthogonal HNS-side error-class translation work.
             Default ``False``: closes the ID-209 cross-backend gap for
             flat-namespace Azure but adds one HEAD per ancestor per
             nested-path write. See spec 003 § BE-008 and ID-211.
@@ -269,9 +271,10 @@ class AzureBackend(Backend):
         """
         if not self._reject_write_under_file_ancestor:
             return
-        # HNS accounts already enforce the file-ancestor contract via the
-        # existing ``hdi_isfolder`` / DataLake mkdir-walk path; the opt-in
-        # walk is the non-HNS workaround.
+        # HNS accounts already reject the operation via ``hdi_isfolder``
+        # / DataLake mkdir-walk; the opt-in walk is the non-HNS workaround.
+        # (ID-213 covers the orthogonal HNS-side error-class translation
+        # gap and is independent of this pre-check.)
         if self._hns:
             return
         from azure.core.exceptions import ResourceNotFoundError
