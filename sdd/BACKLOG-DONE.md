@@ -8,6 +8,41 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-187 — Property-based aggregate verification for `GetFolderInfo`**
+  spec: BE-017, ID-134 · audience: infra.test
+  An (O) item, Wave 0 of the Formal Verification queue. The existing
+  `TestGetFolderInfoAggregates` spot-checks `file_count` / `total_size`
+  against two hardcoded trees only; deterministic fixtures cannot reach
+  the off-by-one paths in the recursive `ChildFiles` / `SumSizes` Dafny
+  ghost functions. The new
+  `tests/test_pbt_folder_info_aggregates.py::TestGetFolderInfoAggregatesOracle`
+  generates random trees with `hypothesis` (nesting depth 0–4, 1–20
+  files, 1–10000 byte payloads), seeds the Python `MemoryBackend` and
+  the Dafny-compiled `DafnyOracleBackend` from the same `dict[str,
+  bytes]` literal, and asserts every directory-prefix aggregate agrees
+  — including root (`""`). The Dafny postcondition `file_count ==
+  |ChildFiles(fs, path)|` / `total_size == SumSizes(fs, ChildFiles(fs,
+  path))` supplies the expected aggregate that the random input forbids
+  hardcoding. Disjoint vocabularies for directory names (`d0..d5`) and
+  filenames (`f0..f5.bin`) make file-under-file conflicts structurally
+  impossible, so the strategy needs no Hypothesis-side filter.
+  Helper `build_oracle(tree: dict[str, bytes]) -> DafnyOracleBackend`
+  ships in `tests/backends/dafny/_seed.py` and is re-exported from
+  `tests/backends/dafny/__init__.py`. The seed is the source of truth;
+  the oracle is never re-derived by enumerating a live backend
+  (Safe/Unsafe-pair discipline, `sdd/formal/README.md`). Two
+  `TestSeededBreakHarness` self-tests prove that divergent seeds yield
+  divergent `total_size` and `file_count` respectively, guarding
+  against a harness bug that would leave the PBT vacuously green.
+  Surprising ripple: the existing `DafnyOracleBackend.get_folder_info`
+  built `RemotePath(path)` directly, crashing on root listing (`""`)
+  because `RemotePath` validation rejects the empty string; aligned the
+  adapter with `MemoryBackend.get_folder_info` by switching to
+  `RemotePath.from_backend_path(path)`. The pre-existing conformance
+  tests never exercised root on the oracle, which is why the latent
+  divergence reached master.
+  Trace: `sdd/traces/id-187-folder-info-pbt.yml`.
+
 - [x] **ID-209 — `fs` well-formedness as a `Backend` class invariant + write-under-file conformance gate**
   spec: BE-008, BE-014, BE-015, BE-018, BE-019 · audience: contributor.process, infra.test, library.maintainer, user.api
   Follow-up to ID-184 (PR #679). ID-184's new

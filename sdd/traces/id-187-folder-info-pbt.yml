@@ -1,0 +1,123 @@
+id: ID-187
+title: "Property-based aggregate verification for GetFolderInfo"
+trigger: "TestGetFolderInfoAggregates spot-checked file_count / total_size against two hardcoded trees; deterministic fixtures cannot reach the off-by-one paths in the Dafny ChildFiles / SumSizes recursion. Wave 0 of the Formal Verification queue picked it up as the only (O) item."
+source_items:
+  - ID-187
+  - ID-134
+audience:
+  - infra.test
+surprising_ripples:
+  - tests/backends/dafny/_helpers.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-187, Formal Verification execution-order table"
+        read_type: gate
+        extract: "Wave 0 (O) is a single item; the PBT must produce values from the verified oracle rather than certify a fixed-value test"
+        outcome: ok
+      - file: sdd/formal/README.md
+        section: "Compiled oracle as conformance gate; Safe/Unsafe pairs"
+        read_type: gate
+        extract: "The oracle is correct by construction; the Safe/Unsafe-pair discipline requires a seeded-break self-test so the harness cannot leave the PBT vacuously green"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "GetFolderInfo, ChildFiles, SumSizes, SumSizesSeq"
+        read_type: gate
+        extract: "The IsDir postcondition pins file_count == |ChildFiles(fs, path)| and total_size == SumSizes(fs, ChildFiles(fs, path)); this is the ground truth the PBT compares against"
+        outcome: ok
+      - file: tests/backends/conformance/test_metadata.py
+        section: "TestGetFolderInfoAggregates"
+        read_type: gate
+        extract: "Two hardcoded fixtures (gfa, gfr) — small trees, no recursion-depth coverage; the PBT is additive coverage breadth, not a replacement"
+        outcome: ok
+      - file: tests/backends/conformance/_helpers.py
+        section: "_seed"
+        read_type: gate
+        extract: "The dict[str, bytes] shape the conformance suite already uses; build_oracle reuses the same shape so the same literal feeds both the Python backend and the oracle without a re-derivation step"
+        outcome: ok
+      - file: tests/backends/dafny/_helpers.py
+        section: "DafnyOracleBackend.get_folder_info"
+        read_type: gate
+        extract: "Adapter wraps the compiled Dafny module; the file__count / total__size projection on the Dafny FolderInfo is straightforward, only path marshaling matters"
+        outcome: misleading
+      - file: tests/test_pbt_write_result.py
+        section: "module-level strategies, Hypothesis profile usage"
+        read_type: reference
+        extract: "Template for a sibling PBT module at tests/ root: HealthCheck/given/settings imports, module-level _SMALL_MAX / _BUG168_MAX, no inline max_examples (Hypothesis profile loads from tests/conftest.py)"
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules 9, 10, 11"
+        read_type: gate
+        extract: "Rule 10 forbids inline max_examples (use the dev/ci/nightly profiles); Rule 11 requires module-level strategies; Rule 9 requires the @given test to reach an assert on a non-rejection path"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: src/remote_store/backends/_memory.py
+        section: "write, get_folder_info"
+        read_type: reference
+        extract: "MemoryBackend.write rejects empty paths and file-under-file conflicts via InvalidPath; the strategy must avoid those. Disjoint vocabularies for directory names and filenames make the conflict structurally impossible without a Hypothesis-side filter"
+        outcome: ok
+      - file: src/remote_store/_path.py
+        section: "RemotePath.__init__, RemotePath.from_backend_path"
+        read_type: reference
+        extract: "RemotePath('') raises InvalidPath ('Path is empty after normalization'); from_backend_path returns ROOT for the empty string. The Python MemoryBackend uses the latter — surfaces a latent divergence in the oracle adapter that the existing fixtures never exercised"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/dafny/_seed.py
+        section: "build_oracle"
+        read_type: reference
+        extract: "Fresh DafnyOracleBackend seeded from the literal dict[str, bytes] tree. Docstring pins the Safe/Unsafe-pair rationale: seed from the generated tree, never by enumerating a live backend"
+        outcome: ok
+      - file: tests/backends/dafny/__init__.py
+        section: "(full)"
+        read_type: reference
+        extract: "Re-export build_oracle so the PBT imports `from tests.backends.dafny import build_oracle` and the seeding entry point sits next to the adapter"
+        outcome: ok
+      - file: tests/test_pbt_folder_info_aggregates.py
+        section: "_file_path, _file_tree, _dir_prefixes, TestGetFolderInfoAggregatesOracle, TestSeededBreakHarness"
+        read_type: reference
+        extract: "Disjoint _DIR_NAMES / _FILE_NAMES vocabularies, depth 0–4, 1–20 files, 1–10000-byte payloads; module-level strategies (TESTING.md Rule 11); spec markers BE-017 + ID-134; two seeded-break self-tests for total_size and file_count divergence"
+        outcome: ok
+      - file: tests/backends/dafny/_helpers.py
+        section: "DafnyOracleBackend.get_folder_info"
+        read_type: reference
+        extract: "Co-fixed adapter parity: RemotePath(path) → RemotePath.from_backend_path(path) so root listing on the oracle no longer crashes. Discovered by the new PBT — the existing hardcoded fixtures never exercised root on the oracle"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-017 Formal coverage"
+        read_type: reference
+        extract: "Added a sentence citing tests/test_pbt_folder_info_aggregates.py and adding ID-187 to the cross-reference list alongside ID-130 and ID-134"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Formal Verification execution-order table, ID-187 entry"
+        read_type: reference
+        extract: "Removed the ID-187 item; rewrote the Wave 0 row of the execution-order table to point at BACKLOG-DONE.md"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-187 (Unreleased)"
+        read_type: reference
+        extract: "New entry placed at the top of [Unreleased]. Records the seeded-break self-tests and the surprising adapter ripple"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/test_pbt_folder_info_aggregates.py
+        section: "TestSeededBreakHarness"
+        read_type: verify
+        extract: "Both self-tests pass; divergent seeds yield divergent total_size and divergent file_count respectively"
+        outcome: ok
+      - file: src/remote_store/backends/_memory.py
+        section: "get_folder_info (negative control)"
+        read_type: verify
+        extract: "Temporarily injected file_count + 1; PBT failed with a shrunk minimal example tree={'f0.bin': b'\\x00'} at prefix '' (root), confirming the test bites. Reverted before commit"
+        outcome: ok
+      - file: tests/test_pbt_folder_info_aggregates.py
+        section: "TestGetFolderInfoAggregatesOracle"
+        read_type: verify
+        extract: "PBT green with the oracle-adapter fix in place; 3 passed in 0.35s under the dev profile (max_examples=50)"
+        outcome: ok
