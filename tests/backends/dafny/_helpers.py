@@ -285,7 +285,7 @@ class DafnyOracleBackend(Backend):
     def get_folder_info(self, path: str) -> FolderInfo:
         dafny_fi = _raise_if_err(self._mb.GetFolderInfo(_str_to_dafny(path)))
         return FolderInfo(
-            path=RemotePath(path),
+            path=RemotePath.from_backend_path(path),
             file_count=int(dafny_fi.file__count),
             total_size=int(dafny_fi.total__size),
         )

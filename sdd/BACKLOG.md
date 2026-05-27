@@ -80,7 +80,7 @@ none of which is "run a second backend and diff the output":
 
 | Wave | Items | Notes |
 |---|---|---|
-| 0 — property-based (O) | ID-187 | Self-contained; bundles its own oracle helper |
+| 0 — property-based (O) | — | ID-187 landed; see BACKLOG-DONE.md |
 | 1 — contract + test | ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
 | 1 — test backfill (T) | ID-185, ID-210 | Conformance gaps for already-verified clauses |
 
@@ -124,34 +124,6 @@ PR where its items share a file or proof.
   listed prefix is `<= max_depth`, via a shared `_depth(prefix, path)`
   helper; the variants already carry the `DEPTH-003` and `BE-014`
   markers, so this is purely an added assertion.
-
-- [ ] **ID-187 — Property-based aggregate verification for `GetFolderInfo`**
-  spec: BE-017, ID-134 · effort: M · audience: infra.test
-  An (O) item, and the one place the oracle must produce *values* rather
-  than certify a fixed-value test. `TestGetFolderInfoAggregates`
-  spot-checks `file_count` / `total_size` against two hardcoded trees;
-  those tests are already certified by the oracle-as-fixture. The real
-  gap is coverage breadth: deterministic fixtures cannot reach the
-  off-by-one paths in recursive `ChildFiles` / `SumSizes`. Add a
-  `hypothesis` test that generates random file trees (nesting depth 0–4,
-  file count 1–20, size 1–10000 bytes), seeds both the Python
-  `MemoryBackend` and a Dafny oracle from the same generated tree, and
-  asserts `file_count` and `total_size` agree. Because the input is
-  random the expected aggregate cannot be hardcoded; the oracle's
-  `get_folder_info`, the verified `file_count == |ChildFiles|` /
-  `total_size == SumSizes` postcondition, supplies it.
-  The test needs a small helper, built as part of this item in
-  `tests/backends/dafny/`: `build_oracle(tree: dict[str, bytes]) ->
-  DafnyOracleBackend`, a fresh oracle seeded from the generated tree (the
-  `dict[str, bytes]` shape `conformance/_helpers.py::_seed` already
-  takes). Seed from the generated tree, never by enumerating a live
-  backend: re-deriving the seed through the operation under test would
-  let a buggy backend seed a matching-buggy oracle and hide the
-  divergence. Add a seeded-break self-test that builds the oracle and the
-  Python backend from deliberately divergent trees and confirms the
-  comparison fails, so a harness bug cannot leave the property-based test
-  vacuously green (the Safe/Unsafe-pair discipline in
-  `sdd/formal/README.md`).
 
 - [ ] **ID-210 — Async Dafny oracle: certify async conformance against the verified `MemoryBackend`**
   spec: ASYNC-001 — ASYNC-029 · effort: M · audience: infra.test
