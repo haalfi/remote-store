@@ -3,11 +3,12 @@
 The sync helper `_check_no_file_ancestor` is covered transitively by the
 ID-211 strict conformance fixtures (`s3_moto_strict`, `sqlblob_strict`,
 `azurite_strict`, `s3_pyarrow_moto_strict`). The async sibling
-`_acheck_no_file_ancestor` has no equivalent async strict fixture in the
-registry yet (live HNS short-circuits the pre-check via `hdi_isfolder`),
-so its walk body is exercised here with a stub `head_one` awaitable.
-Both sync and async helpers share their no-slash early exit and their
-first-file-hit short-circuit, so the cases are mirrored.
+`_acheck_no_file_ancestor` is covered end-to-end by `azurite_async_strict`
+(ID-211 review follow-up); these unit tests also exercise its walk body
+with a stub `head_one` awaitable so the no-slash early exit and the
+first-file-hit short-circuit are pinned independently of the live SDK
+closure. Both sync and async helpers share their no-slash early exit and
+their first-file-hit short-circuit, so the cases are mirrored.
 """
 
 from __future__ import annotations

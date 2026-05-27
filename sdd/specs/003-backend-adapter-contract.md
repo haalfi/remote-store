@@ -133,6 +133,15 @@ than `flat_namespace` — `s3_moto_strict` / `sqlblob_strict` /
 while the default fixtures continue to skip the gate. For default-off
 flat-NS backends the effective order is: existence check (non-existent
 target treated as writable) → overwrite conflict → I/O.
+The opt-in gate is a **start-of-call** check, not an atomic guarantee: the
+ancestor HEADs run once at entry, so a concurrent writer that creates a
+file at one of the walked ancestor keys between the walk and the data-plane
+operation can still produce the orphan-key shape the gate exists to
+prevent. Callers needing atomicity must layer a backend-level lock or CAS
+above the gate. The walk is also **fail-open** on transient probe errors
+(503, throttling, network blip) — the closure swallows non-NotFound and
+returns False so the data path proceeds; this is the documented contract
+for all backends, including SQLBlob.
 **Formal coverage:** `write()` is modelled in `sdd/formal/BackendContract.dfy`
 as `Write` with postconditions covering the precondition evaluation order
 (`IsDir → InvalidPath`, `!AllAncestorsTraversable → InvalidPath` (ID-209),

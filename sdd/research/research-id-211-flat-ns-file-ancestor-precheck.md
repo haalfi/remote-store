@@ -181,6 +181,35 @@ provider, transient connectivity. Today the only way `write()` fails
 on flat-NS backends is the write itself; under disposition (a), every
 write inherits the failure modes of N HEADs.
 
+Two further caveats specific to disposition (b) as shipped:
+
+- **Per-instance, not per-call.** The opt-in is a constructor kwarg, so
+  a layered system composing multiple `Backend` instances has no
+  introspectable signal for whether a given instance enforces the gate.
+  `Capability.WRITE` is identical on opt-in and default-off; there is
+  no `Capability.STRICT_FILE_ANCESTOR` or
+  `Backend.rejects_write_under_file_ancestor` property exposed at the
+  public surface. A consumer wrapping a strict `S3Backend` and a
+  default-off `SQLBlobBackend` in the same `Store` silently has split
+  behaviour with no way to detect the split short of reading the
+  constructor call sites. If a future iteration wants the "callers who
+  need consistency can pay for it" framing to also let those callers
+  *observe* that they got it, that needs a capability or a public
+  property, neither of which ships today.
+- **Best-effort, not atomic.** The walk's `head_one` closure swallows
+  non-`NotFound` exceptions and returns `False`. A 503 / throttling /
+  transient connectivity error on one ancestor silently disables the
+  gate for that probe; the subsequent write proceeds. The contract
+  therefore is "reject when the ancestor is *unambiguously* a file",
+  not "reject whenever the ancestor walk cannot prove the path is
+  safe". The fail-open choice keeps control-plane errors from halting
+  the data path, but the audience for an explicit opt-in is precisely
+  the audience least tolerant of silent degradation. Documented in
+  `src/remote_store/backends/_flat_ns.py` so future readers don't
+  tighten the closures without realising they'd flip the failure mode.
+  Spec 003 § BE-008 carries the same note that the gate is start-of-
+  call, not atomic.
+
 ## 5. Discussion
 
 ### 5.1 Why (a) is hard to recommend

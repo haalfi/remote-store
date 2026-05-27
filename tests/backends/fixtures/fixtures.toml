@@ -159,6 +159,24 @@ self_op_supported = true
 rejects_write_under_file_ancestor = true
 strict_only = true
 
+# ID-211 review follow-up: async sibling of azurite_strict. The sync side has
+# four strict variants exercising the gate; this is the async coverage so
+# AsyncAzureBackend._maybe_check_no_file_ancestor / _acheck_no_file_ancestor /
+# the get_blob_properties closure run end-to-end against a real (emulated)
+# Azure target rather than only the stub-callable unit tests in test_flat_ns.py.
+# No non-strict azurite_async baseline is registered: the broader async Azurite
+# emulator surface is out of scope for ID-211.
+[fixture.azurite_async_strict]
+backend   = "azure"
+stage     = 2
+kind      = "real-local"
+container = "azurite"
+is_async  = true
+flat_namespace = true
+self_op_supported = true
+rejects_write_under_file_ancestor = true
+strict_only = true
+
 [fixture.sftp_docker]
 backend   = "sftp"
 stage     = 2

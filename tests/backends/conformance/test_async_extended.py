@@ -7,10 +7,11 @@ Async sibling of the sync conformance topic files in this directory. The
 
 Flat-namespace backends (S3, Azure Blob, HTTP, SQL-blob) have no real
 directory entries and are excluded from error-fidelity tests by
-``_skip_flat_namespace``. The current registry holds only hierarchical
-async fixtures (``memory_async_native``, ``memory_async_adapted``,
-``local_async_adapted``); the helper is preserved for the day a flat-NS
-async backend is added.
+``_skip_flat_namespace``. The default async registry holds only hierarchical
+fixtures (``memory_async_native``, ``memory_async_adapted``,
+``local_async_adapted``); the flat-NS async strict variant
+(``azurite_async_strict``, ID-211 review follow-up) is opted into only by
+the file-ancestor test classes via ``include_strict_only=True``.
 
 Spec coverage: ASYNC-004, ASYNC-005, ASYNC-006, ASYNC-007, ASYNC-008,
 ASYNC-010, ASYNC-012, ASYNC-013, ASYNC-014, ASYNC-015, ASYNC-016, ASYNC-017,
@@ -35,6 +36,7 @@ from remote_store._errors import (
 )
 from remote_store._models import FileInfo, FolderEntry
 from tests.backends.conformance._helpers import _depth, _fixture_record
+from tests.backends.fixtures import fixture_params
 
 if TYPE_CHECKING:
     from remote_store.aio._async_backend import AsyncBackend
@@ -210,12 +212,24 @@ class TestReadErrorFidelity:
             await _drain_read(async_backend, "rufa_stream.txt/child.txt")
 
 
+@pytest.mark.parametrize(
+    "async_backend",
+    fixture_params(Capability.WRITE, is_async=True, include_strict_only=True),
+    indirect=True,
+)
 class TestWriteErrorFidelity:
     """ASYNC-008 / ASYNC-010 (mirrors BE-008 / BE-010).
 
     write(dir) and write_atomic(dir) ==> InvalidPath unconditionally.
     The dir check must fire BEFORE the overwrite check; ``write_atomic``
     shares BE-008 precondition order via BE-010.
+
+    Class-level parametrize uses ``include_strict_only=True`` (ID-211
+    review follow-up) so the async file-ancestor test can exercise the
+    ``azurite_async_strict`` fixture. The non-file-ancestor tests in
+    this class skip flat-NS via ``_skip_flat_namespace``, so the strict
+    variant doesn't expand those test cells; only the file-ancestor
+    cell actually runs.
     """
 
     @pytest.mark.parametrize(
@@ -654,8 +668,22 @@ class TestAsyncIterChildren:
 # ===========================================================================
 
 
+@pytest.mark.parametrize(
+    "async_backend",
+    fixture_params(Capability.WRITE, is_async=True, include_strict_only=True),
+    indirect=True,
+)
 class TestMoveCopyErrorFidelity:
-    """ASYNC-018 / ASYNC-019 (mirrors BE-018 / BE-019)."""
+    """ASYNC-018 / ASYNC-019 (mirrors BE-018 / BE-019).
+
+    Class-level parametrize uses ``include_strict_only=True`` (ID-211
+    review follow-up) so the async file-ancestor / precondition-order
+    tests can exercise the ``azurite_async_strict`` fixture. The
+    non-file-ancestor tests in this class skip flat-NS via
+    ``_skip_flat_namespace``, so the strict variant doesn't expand
+    those test cells; only the file-ancestor and missing-src cells
+    actually run.
+    """
 
     @pytest.mark.spec("ASYNC-018")
     @pytest.mark.spec("ASYNC-019")

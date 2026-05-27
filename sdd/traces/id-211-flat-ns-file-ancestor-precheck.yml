@@ -10,7 +10,8 @@ audience:
   - library.maintainer
   - infra.test
   - contributor.process
-discovery_followups: []
+discovery_followups:
+  - BK-242  # SQLBlob IN-list + head_one memoisation; surfaced in PR #686 review round 2.
 co_shipped_items: []
 expected_ripples:
   - sdd/specs/003-backend-adapter-contract.md
@@ -21,7 +22,13 @@ expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
   - tests/backends/fixtures/__init__.py
-review_rounds: 0
+  # Review-driven (PR #686):
+  - tests/backends/fixtures/azurite_async.py  # new factory for async strict fixture; ID-211 originally landed only sync strict variants
+  - sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md  # § 4.3 caveats + measurement table refreshed on a different host
+  - src/remote_store/backends/_flat_ns.py  # docstring grew TOCTOU + silent-degradation paragraphs; helper added lstrip("/")
+  - src/remote_store/backends/_sqlalchemy.py  # _head_one fail-open alignment + outer-transaction docstring note
+  - tests/backends/test_flat_ns.py  # new unit tests for sync + async helpers (close coverage gap surfaced by review)
+review_rounds: 2  # round 1 fixed 5 threads (precondition order, strict_only, lstrip, fail-open doc, ResourceNotFoundError); round 2 fixed 8 threads (async strict fixture, SQLBlob fail-open, outer-txn note, HNS docstring tightening, research § 4.3, _flat_ns TOCTOU note) and filed BK-242.
 phases:
   - id: orient
     name: Orient

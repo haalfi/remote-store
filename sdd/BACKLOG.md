@@ -894,6 +894,34 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   ID-156 cleaned up. One short README (or an addendum to `sdd/TESTING.md`,
   whichever fits the docs framework better) is enough.
 
+- [ ] **BK-242 — Flat-NS file-ancestor pre-check perf (SQLBlob IN-list, memoisation)**
+  spec: — · effort: S · audience: infra.test, library.maintainer
+  ID-211 review surfaced two perf optimisations the disposition (b)
+  opt-in didn't ship. Bundle here so they don't get lost:
+  - **SQLBlob `WHERE key IN (ancestors)`**: today `_head_one` issues one
+    `SELECT 1` per ancestor — N round trips for a depth-N path. The
+    research note (`sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md`
+    § 5.4) already flagged this; a single `SELECT key FROM table WHERE
+    key IN (:ancestors)` collapses the walk to one RTT. On in-memory
+    SQLite the win is sub-ms; on PostgreSQL/MySQL over the network at
+    depth 6 it is 6 RTTs → 1 RTT (~10-50 ms each).
+  - **`head_one` memoisation**: bulk-write workloads (`a/b/c/file-{i}.bin`
+    for i in 1..N) re-HEAD the same `a`, `a/b`, `a/b/c` ancestors N
+    times. A bounded per-instance `TTLCache(maxsize=…, ttl=…)` on the
+    closure collapses O(N×D) HEADs to ~O(D) per distinct prefix without
+    changing the contract (the TTL accepts staleness within its window).
+    Applies to S3, S3PyArrow, Azure non-HNS, and SQLBlob.
+  Both are perf optimisations that don't change the gate's contract —
+  ship behind the existing `reject_write_under_file_ancestor=True`
+  opt-in only. Includes refreshing `§ 4` / `§ 5.4` in the research note
+  with measured before/after numbers. Touches
+  `src/remote_store/backends/_flat_ns.py`,
+  `src/remote_store/backends/_sqlalchemy.py`,
+  `src/remote_store/backends/_s3.py`,
+  `src/remote_store/backends/_s3_pyarrow.py`,
+  `src/remote_store/backends/_azure.py`,
+  `src/remote_store/aio/backends/_azure.py`. Discovered in PR #686 review.
+
 - [~] **ID-018 — conda-forge publishing**
   spec: — · effort: — · audience: library.maintainer
   Recipe, CI validation, release checklist steps all done.

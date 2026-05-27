@@ -1482,7 +1482,7 @@
       "file": "src/remote_store/backends/_sqlalchemy.py",
       "id": "cls:remote_store.backends._sqlalchemy.SQLQueryBackend",
       "kind": "class",
-      "line": 951,
+      "line": 976,
       "role": "backend",
       "runtime": "sync",
       "summary": "Read-only SQL query materializer implementing a subset of the Backend contract."

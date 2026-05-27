@@ -77,9 +77,12 @@ class AsyncAzureBackend(AsyncBackend):
             ``write_atomic`` / ``move`` / ``copy`` HEAD each
             slash-aligned ancestor of the target path on non-HNS
             accounts and raise ``InvalidPath`` on the first regular-file
-            hit. On HNS accounts the kwarg is a no-op: ``hdi_isfolder``
-            rejects the operation natively, independent of ID-213's
-            orthogonal HNS-side error-class translation work.
+            hit. On HNS accounts the kwarg short-circuits: ``hdi_isfolder``
+            rejects the operation natively, **but** until ID-213 / BK-235
+            lands that native rejection surfaces as ``NotFound`` or
+            ``AlreadyExists`` rather than ``InvalidPath``. The
+            cross-backend ``InvalidPath`` contract the kwarg promises is
+            therefore *deferred* on HNS, not delivered — even when set.
             Default ``False``. See spec 003 § BE-008 / spec 029 §
             ASYNC-008 and ID-211.
     """

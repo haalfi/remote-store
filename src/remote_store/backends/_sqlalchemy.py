@@ -326,7 +326,22 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     # region: private — file-ancestor pre-check (ID-211 opt-in)
 
     def _maybe_check_no_file_ancestor(self, path: str) -> None:
-        """ID-211 opt-in walk; mirrors ``S3Backend._maybe_check_no_file_ancestor``."""
+        """ID-211 opt-in walk; mirrors ``S3Backend._maybe_check_no_file_ancestor``.
+
+        The ``_head_one`` closure opens a fresh ``_engine.connect()`` per
+        ancestor. When the helper is called from ``move``/``copy`` the
+        caller is already inside an outer ``_engine.begin()`` block; the
+        ancestor walk is intentionally outside that transaction. This is
+        benign because the walk reads ancestor *keys*, never ``dst``
+        itself, so isolation-level differences between SQLite (read
+        committed by default) and stricter backends (e.g. PostgreSQL
+        REPEATABLE READ) do not affect the gate's correctness. The cost
+        is N+1 pool checkouts on top of N selects; a future refactor
+        that wants to consolidate this should thread the outer ``conn``
+        through ``_head_one`` rather than letting the walk silently
+        share the transaction. Bulk-write callers wanting fewer round
+        trips should follow the IN-list / memoisation follow-up.
+        """
         if not self._reject_write_under_file_ancestor:
             return
         from remote_store.backends._flat_ns import _check_no_file_ancestor
@@ -334,8 +349,18 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         t = self._table
 
         def _head_one(key: str) -> bool:
-            with self._engine.connect() as conn:
-                row = conn.execute(sa.select(sa.literal(1)).where(t.c.key == key)).first()
+            # Fail-open: align with the cross-backend contract documented in
+            # _flat_ns.py — any non-NotFound probe error (OperationalError,
+            # transient pool drop, schema issue) returns False, so the walk
+            # neither rolls back the outer move/copy transaction nor flips
+            # the gate's failure mode from "best-effort gate" to "hard fail
+            # on transient probe errors". An ancestor that legitimately
+            # exists as a file still produces a row and surfaces correctly.
+            try:
+                with self._engine.connect() as conn:
+                    row = conn.execute(sa.select(sa.literal(1)).where(t.c.key == key)).first()
+            except Exception:  # noqa: BLE001 -- fail-open is the documented contract
+                return False
             return row is not None
 
         _check_no_file_ancestor(path, head_one=_head_one, backend=self.name)

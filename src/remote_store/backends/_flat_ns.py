@@ -34,6 +34,23 @@ Two contracts the call sites rely on:
   control-plane errors don't halt the data path. Tightening the
   closures to fail-closed flips this contract -- expect that to be a
   spec-amendment-class change rather than a local bug fix.
+
+  Two related properties the opt-in audience should be aware of:
+
+  - *Start-of-call check, not atomic guarantee.* The walk runs once at
+    the start of each ``write`` / ``move`` / ``copy`` call. A concurrent
+    writer that creates a file at one of the walked ancestor keys
+    *between* the walk and the data-plane operation slips past the
+    gate; the orphan-key shape the gate exists to prevent then lands
+    anyway. Callers that need an atomic "no ancestor was a file"
+    guarantee need a backend-level lock or a CAS layer above the gate.
+  - *Silent degradation under partial failure.* A walk that does five
+    successful HEADs and one swallowed transient failure is
+    indistinguishable from a clean walk by the caller. The opt-in user
+    has no signal that the gate ran in a degraded mode. Logging-at-WARN
+    on the swallow would surface this; we leave it out of this module
+    so the helper has no logger dependency, and document the
+    consequence here.
 """
 
 from __future__ import annotations
