@@ -889,14 +889,19 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   spec: — · effort: S · audience: contributor.process
   Codify two complementary feature-DoD checklists in `sdd/000-process.md`,
   derived from the v0.23.0→v0.24.0 post-release retrospective
-  (`../sandbox/post-v0.23.0-lessons-learned.md`, §5 rec 1):
+  (`../sandbox/post-v0.23.0-lessons-learned.md`, §5 recs 1, 2, 8):
   - **Contract-expanding feature** (next: any new `Capability.X`): spec/RFC
     update, capability-declaration review covering over- *and*
     under-declaration, conformance test + xfail registry landed *before*
-    first backend implementation, wrapper forwarding check (`ProxyStore`,
-    `ObservedStore`, `CachedStore`, sync adapter, oracle adapter), docs
-    ripple (`guides/`, `examples/snippets/`, `FEATURES.md`, capabilities
-    matrix).
+    first backend implementation (memo §5 rec 2, subsumed here),
+    wrapper forwarding check (`ProxyStore`, `ObservedStore`, `CachedStore`,
+    sync adapter, oracle adapter), docs ripple (`guides/`,
+    `examples/snippets/`, `FEATURES.md`, capabilities matrix). The RFC
+    scope must enumerate the conformance / PBT / Dafny extensions the
+    feature will need up front, rather than discovering them as follow-ups
+    (memo §5 rec 8; `feedback_estimation.md` 2-3x rule applied at RFC
+    time, not after the fact). ID-146 → ID-151c (eight sub-IDs over two
+    weeks for a single feature line) is the cautionary precedent.
   - **Bridge / adapter feature** (next: any future cross-layer wrapper):
     API parity test against wrapped layer, event-loop / resource lifecycle
     test, cancellation invariant test, live backend coverage (not just
@@ -914,18 +919,22 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   change, just process-documentation alignment. Folds into BK-237 if
   both ship in the same PR.
 
-- [ ] **BK-239 — Symmetric capability-declaration test (under-declaration guard)**
+- [ ] **BK-239 — Generic field-vs-capability symmetry check for `WriteResult`**
   spec: — · effort: S · audience: infra.test
-  `tests/backends/conformance/test_atomic.py` already checks
-  *over-declaration* of `WRITE_RESULT_NATIVE` (a backend that declares it
-  must populate `last_modified` etc — BK-152 follow-ups). The symmetric
-  *under-declaration* case is uncovered: a backend that quietly populates
-  `digest` or `etag` without declaring the capability is silently correct
-  in isolation but breaks `Capability`-driven branching in callers
-  (post-v0.23.0 lessons §4 Pattern 7). Add a conformance test that, for
-  each backend, asserts every field actually populated in `WriteResult`
-  is declared in the capability set. Lands before ID-127 to keep the
-  guard symmetric when a new backend joins.
+  Per-pair under-declaration guards already exist:
+  `tests/backends/conformance/test_atomic.py::test_basic_source_leaves_rich_fields_none`
+  (lines 157-168) asserts that a backend NOT declaring
+  `WRITE_RESULT_NATIVE` leaves `digest` / `etag` / `version_id` /
+  `last_modified` as `None`, and
+  `test_file_info_metadata_none_when_capability_absent` (lines 252-258)
+  does the same for `USER_METADATA`. The gap is that these checks do not
+  scale — a new field/capability pair (the next contract-expanding
+  feature) can land without a guard. Add a generic conformance assertion
+  that iterates every `WriteResult` field and verifies any populated
+  value is matched by a declared capability, so future
+  field/capability pairs inherit the symmetry automatically (post-v0.23.0
+  lessons §4 Pattern 7). Lands before ID-127 to keep the guard generic
+  when a new backend joins.
 
 - [ ] **BK-240 — Streaming-iteration counting wrapper for write paths**
   spec: SIO-003 · effort: S · audience: infra.test

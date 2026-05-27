@@ -10,6 +10,7 @@ source_items:
   - BK-208
 audience:
   - contributor.process
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -36,7 +37,8 @@ phases:
       - file: tests/backends/conformance/test_atomic.py
         section: "WRITE_RESULT_NATIVE checks"
         read_type: verify
-        extract: "(d): over-declaration is gated; symmetric under-declaration check is absent"
+        extract: "(d): initially read only WRITE_RESULT_NATIVE *over-declaration* gates and missed the existing per-pair under-declaration guards at lines 157-168 and 252-258 — review caught the framing error in round 1, and BK-239 was reworded to target the generic field-vs-capability symmetry gap"
+        outcome: misleading
       - file: tests/backends/conformance/test_streaming.py
         section: "SIO-003 (line 120-125)"
         read_type: verify
