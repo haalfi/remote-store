@@ -41,8 +41,13 @@ def test_smoke_target_collects_at_least_one_test(extra):
     if argv and argv[0] == "--import-only":
         pytest.skip(f"{extra} uses import-only smoke; no pytest collection.")
 
+    # `-p no:benchmark`: pyproject's `filterwarnings = error` promotes
+    # PytestBenchmarkWarning (fired by pytest-benchmark when xdist is
+    # auto-loaded) to INTERNALERROR (rc=3) on dev boxes where
+    # pytest-benchmark is installed. The plugin is irrelevant for
+    # --collect-only. Mirrors the parent script's flag (pyproject.toml § test).
     result = subprocess.run(
-        [sys.executable, "-m", "pytest", "--collect-only", "-q", *argv],
+        [sys.executable, "-m", "pytest", "-p", "no:benchmark", "--collect-only", "-q", *argv],
         cwd=ROOT,
         capture_output=True,
         text=True,

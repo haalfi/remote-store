@@ -10,6 +10,8 @@ the scenario. This module adds the assertion layer — no duplicated setup.
 
 from __future__ import annotations
 
+import sys
+
 import pytest
 
 from remote_store import (
@@ -591,7 +593,16 @@ class TestDagsterV2Resource:
 
 
 class TestDagsterComputeLogManager:
+    pytestmark = pytest.mark.os_sensitive
+
+    # Mirrors the skipif on tests/ext/test_dagster.py::TestComputeLogManagerEndToEnd.
+    # Upstream dagster-io/dagster#24043 closed as not-planned, so the empty-files
+    # behaviour on Windows is settled, not a transient bug.
     @pytest.mark.spec("DAG-021,DAG-022,DAG-025")
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="Dagster's FD-level compute-log capture yields empty files on Windows under execute_in_process",
+    )
     def test_demo(self):
         pytest.importorskip("dagster")
 
