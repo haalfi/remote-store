@@ -146,7 +146,16 @@ class TestStreamingConformance:
         ("callers that need to seek can rely on it"), so the test also
         exercises an actual ``seek`` round-trip — a backend whose
         ``seekable()`` returns ``True`` but whose ``seek()`` raises or
-        no-ops would slip past a flag-only assertion.
+        no-ops would slip past a flag-only assertion. The mid-stream seek
+        reads the remainder with bare ``stream.read()`` rather than a
+        sized ``read(n)``: backends whose stream is a bare ``RawIOBase``
+        (no ``BufferedReader`` layer — e.g. ``_ErrorMappingStream`` wrapping
+        s3fs) are permitted to short-read on a sized call.
+
+        Scope note: the assertion is forward-direction only. The Dafny
+        postcondition is capability-gated, so a backend silently returning
+        a seekable stream *without* declaring ``CapSeekableRead`` is not
+        in scope here (SIO-008 imposes no such obligation).
         """
         _require(backend, Capability.SEEKABLE_READ)
         payload = b"seekable data"
@@ -158,7 +167,7 @@ class TestStreamingConformance:
             stream.seek(0)
             assert stream.read() == payload
             stream.seek(4)
-            assert stream.read(4) == b"able"
+            assert stream.read() == payload[4:]
         finally:
             stream.close()
 

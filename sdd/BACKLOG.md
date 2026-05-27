@@ -925,6 +925,39 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   required — only `hatch run record-azure` against a live HNS account and
   committing the new cassette.
 
+- [ ] **BK-244 — HNS-specific conformance test for open_atomic upload/rename cleanup**
+  spec: SAW-005, SAW-011 · effort: S · audience: infra.test
+  Discovered in PR #689 review of ID-188. The new
+  `test_open_atomic_exception_cleanup` orphan-temp scan only bites the
+  *caller-exception* path, where Local (SAW-008) and SFTP (SAW-009)
+  materialise their temp before yield while Azure HNS performs upload +
+  DFS rename *after* yield (`_azure.py:670-679`). HNS's
+  `tmp_fc.delete_file()` cleanup branch at upload/rename failure has no
+  conformance coverage today; needs a failure-injection test that drives
+  the inner `try` to raise — e.g. revoke permissions, collide the temp
+  name, or short-circuit `rename_file` via patch — and asserts the
+  fixture root remains empty afterwards. Sibling of BK-243 (cassette
+  refresh) but distinct: BK-243 is the existing test's HTTP cassette;
+  this is a new test exercising a code path none of the current
+  fixtures hit.
+
+- [ ] **BK-245 — Cross-source capability-parity check (Python ↔ Dafny)**
+  spec: — · effort: S · audience: infra.test, contributor.tooling
+  Discovered in PR #689 review of ID-188. The new `CapLazyRead`
+  enum variant in `sdd/formal/BackendContract.dfy` is asserted to
+  exist for Python-side parity with `Capability.LAZY_READ`, but no
+  mechanical check enforces that claim — `check_formal_trace.py`
+  matches @spec tags, not capability-enum membership, so a future
+  drift between `Capability.<NAME>` in `_capabilities.py` and the
+  `Capability` datatype + `CapabilityName` cases in
+  `BackendContract.dfy` would silently slip through. Extend
+  `scripts/check_formal_trace.py` (or add a sibling
+  `scripts/check_capability_parity.py`) to assert
+  `{Capability.<name>.value for name in Capability} ==
+  {CapabilityName(c) for c in <dafny Capability enum>}`. The parity
+  is per-name; ordering or grouping in the Dafny enum is out of
+  scope.
+
 - [~] **ID-018 — conda-forge publishing**
   spec: — · effort: — · audience: library.maintainer
   Recipe, CI validation, release checklist steps all done.

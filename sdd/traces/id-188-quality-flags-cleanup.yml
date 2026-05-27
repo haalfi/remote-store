@@ -15,7 +15,9 @@ audience:
 co_shipped_items: []
 discovery_followups:
   - BK-243
-review_rounds: 1
+  - BK-244
+  - BK-245
+review_rounds: 2
 expected_ripples:
   # `sdd/backlogid.json` intentionally omitted: gen-backlogid tracks
   # max IDs from BACKLOG-DONE.md only (`scripts/gen_backlogid.py`); ID-188
@@ -103,7 +105,7 @@ phases:
       - file: scripts/check_formal_trace.py
         section: "_BASELINE; coverage matrix"
         read_type: verify
-        extract: "SIO-008 now reported tested; no new baseline entry needed"
+        extract: "SIO-008 moves from absent-from-D entirely (no prior Dafny tag, never an F1 violation, not in _BASELINE) to in-D-and-in-T — both the new `@spec SIO-008` Dafny tag and the new conformance marker land in the same PR, so no baseline edit is needed."
       - file: tests/backends/conformance/conftest.py
         section: "_cassette_path_for_item; missing-cassette skip hook"
         read_type: verify

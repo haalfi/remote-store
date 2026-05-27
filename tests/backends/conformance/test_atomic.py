@@ -92,18 +92,22 @@ class TestBackendOpenAtomic:
         # leaked temp from a backend's per-strategy cleanup path (see
         # spec 022 § Per-backend strategies).
         #
-        # Asymmetric coverage by backend family — the new assertion only
-        # *bites* on the strategies that materialise a temp artefact in the
-        # remote namespace on the failure path: Local (`tempfile.mkstemp`,
-        # SAW-008), SFTP (`.~tmp.{uuid}`, SAW-009), and Azure HNS (temp blob
-        # + DFS rename, SAW-011). On the buffer-then-PUT strategies — S3 /
-        # S3-pyarrow / Azure non-HNS (SAW-010 / SAW-011) and the in-process
-        # MemoryBackend / SQLBlob (SAW-012) — the failure path discards a
-        # `SpooledTemporaryFile` / `BytesIO` without ever issuing a remote
-        # write, so the assertion holds vacuously rather than exercising
-        # cleanup. The gate still catches the load-bearing regressions
-        # (Local/SFTP/HNS failing to remove their temp artefact) and
-        # consumes nothing extra on the vacuous fixtures.
+        # Asymmetric coverage on the caller-exception path — the assertion
+        # only *bites* on strategies that materialise a temp artefact in
+        # the remote namespace *before* yielding to the caller: Local
+        # (`tempfile.mkstemp` runs before yield, SAW-008) and SFTP
+        # (`.~tmp.{uuid}` opened before yield, SAW-009). The buffer-then-PUT
+        # strategies — S3 / S3-pyarrow / Azure non-HNS (SAW-010 / SAW-011),
+        # MemoryBackend / SQLBlob (SAW-012), and Azure HNS (SAW-011): the
+        # HNS upload + DFS rename happen *after* the yield, so a caller
+        # exception during the yield never creates a remote blob — discard a
+        # `SpooledTemporaryFile` / `BytesIO` without issuing a remote write,
+        # so the assertion holds vacuously rather than exercising cleanup.
+        # The gate still catches the load-bearing regressions on the two
+        # eager-temp strategies (Local SAW-008, SFTP SAW-009) and consumes
+        # nothing extra on the vacuous fixtures. HNS upload/rename-failure
+        # cleanup (SAW-011 inner branch at `_azure.py:676-679`) needs its
+        # own failure-injection test — tracked as BK-244.
         remaining = [str(fi.path) for fi in backend.list_files("", recursive=True)]
         assert remaining == [], f"orphan temp files after open_atomic failure: {remaining}"
 
