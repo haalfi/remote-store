@@ -24,7 +24,6 @@ from remote_store._errors import (
 from remote_store._models import WriteResult
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
-from remote_store.backends._flat_ns import _check_no_file_ancestor
 from remote_store.backends._s3_base import (
     _S3_CA_ENV_VARS,
     _normalize_endpoint_url,
@@ -181,24 +180,6 @@ class S3PyArrowBackend(_S3Base):
     @property
     def capabilities(self) -> CapabilitySet:
         return self.CAPABILITIES
-
-    # endregion
-
-    # region: private — file-ancestor pre-check (ID-211 opt-in)
-
-    def _maybe_check_no_file_ancestor(self, path: str) -> None:
-        """ID-211 opt-in walk; mirrors ``S3Backend._maybe_check_no_file_ancestor``."""
-        if not self._reject_write_under_file_ancestor:
-            return
-
-        def _head_one(key: str) -> bool:
-            try:
-                self._s3fs.call_s3("head_object", Bucket=self._bucket, Key=key)
-            except Exception:  # noqa: BLE001
-                return False
-            return True
-
-        _check_no_file_ancestor(path, head_one=_head_one, backend=self.name)
 
     # endregion
 

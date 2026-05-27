@@ -1446,7 +1446,7 @@
       "file": "src/remote_store/backends/_s3.py",
       "id": "cls:remote_store.backends._s3.S3Backend",
       "kind": "class",
-      "line": 41,
+      "line": 40,
       "role": "backend",
       "runtime": "sync",
       "summary": "S3-compatible object storage backend using s3fs."
@@ -1455,7 +1455,7 @@
       "file": "src/remote_store/backends/_s3_pyarrow.py",
       "id": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend",
       "kind": "class",
-      "line": 112,
+      "line": 111,
       "role": "backend",
       "runtime": "sync",
       "summary": "Hybrid S3 backend: PyArrow for reads/writes/copies, s3fs for listing/metadata."

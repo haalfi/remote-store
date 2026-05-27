@@ -18,7 +18,6 @@ from remote_store._errors import (
 from remote_store._models import WriteResult
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
-from remote_store.backends._flat_ns import _check_no_file_ancestor
 from remote_store.backends._s3_base import (
     _S3_CA_ENV_VARS,
     _normalize_endpoint_url,
@@ -109,30 +108,6 @@ class S3Backend(_S3Base):
     def _s3fs(self) -> Any:
         """Alias for the s3fs filesystem (satisfies ``_S3Base`` contract)."""
         return self._fs
-
-    # endregion
-
-    # region: private — file-ancestor pre-check (ID-211 opt-in)
-
-    def _maybe_check_no_file_ancestor(self, path: str) -> None:
-        """Run the ID-211 file-ancestor walk when the opt-in is set.
-
-        Default-off: only callers that constructed the backend with
-        ``reject_write_under_file_ancestor=True`` pay the per-write
-        HEAD walk. No-slash paths short-circuit in
-        ``_check_no_file_ancestor`` itself.
-        """
-        if not self._reject_write_under_file_ancestor:
-            return
-
-        def _head_one(key: str) -> bool:
-            try:
-                self._fs.call_s3("head_object", Bucket=self._bucket, Key=key)
-            except Exception:  # noqa: BLE001 -- any error means "not a file"
-                return False
-            return True
-
-        _check_no_file_ancestor(path, head_one=_head_one, backend=self.name)
 
     # endregion
 

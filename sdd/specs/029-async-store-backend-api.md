@@ -55,6 +55,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 **Invariant:** `async def write(path, content, *, overwrite=False, metadata=None) -> WriteResult` creates or overwrites a file and returns a `WriteResult`.
 **Preconditions:** `content` is `bytes` or `AsyncIterator[bytes]` (see ASYNC-021).
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `InvalidPath` if `path` names an existing directory, or if any slash-aligned ancestor of `path` is a regular file (ID-209; flat-namespace backends opt in via the `reject_write_under_file_ancestor` kwarg — see BE-008 for the cross-reference and ID-211 for the per-call cost). `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out).
+**Azure HNS caveat:** on HNS accounts the `AsyncAzureBackend` opt-in short-circuits the walk because `hdi_isfolder` rejects the operation in the native write path; until ID-213 / BK-235 lands, that native rejection surfaces as `NotFound`/`AlreadyExists` rather than `InvalidPath`. The cross-backend `InvalidPath` contract is therefore **deferred on HNS, not delivered** — even when the kwarg is set. Mirrors the sync caveat on BE-008.
 **See also:** [BE-008](003-backend-adapter-contract.md); [045-write-result.md](045-write-result.md) (WR-001, WR-004, WR-010). BE-008's precondition order — type check → file-ancestor check → overwrite conflict → I/O — applies verbatim here.
 
 ### ASYNC-009: write Creates Intermediate Directories

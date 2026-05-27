@@ -28,7 +28,9 @@ surprising_ripples:
   - src/remote_store/backends/_flat_ns.py  # docstring grew TOCTOU + silent-degradation paragraphs; helper added lstrip("/")
   - src/remote_store/backends/_sqlalchemy.py  # _head_one fail-open alignment + outer-transaction docstring note
   - tests/backends/test_flat_ns.py  # new unit tests for sync + async helpers (close coverage gap surfaced by review)
-review_rounds: 2  # round 1 fixed 5 threads (precondition order, strict_only, lstrip, fail-open doc, ResourceNotFoundError); round 2 fixed 8 threads (async strict fixture, SQLBlob fail-open, outer-txn note, HNS docstring tightening, research § 4.3, _flat_ns TOCTOU note) and filed BK-242.
+  # Round 3:
+  - src/remote_store/backends/_s3_base.py  # absorbed the file-ancestor pre-check from _s3.py + _s3_pyarrow.py (review-flagged duplication; both subclasses used identical s3fs head_object closure)
+review_rounds: 3  # round 1 fixed 5 threads (precondition order, strict_only, lstrip, fail-open doc, ResourceNotFoundError); round 2 fixed 8 threads (async strict fixture, SQLBlob fail-open, outer-txn note, HNS docstring tightening, research § 4.3, _flat_ns TOCTOU note) and filed BK-242; round 3 fixed 4 threads (spec 003 / spec 029 HNS-deferred caveat, CHANGELOG/BACKLOG-DONE name azurite_async_strict, S3 dedup to _S3Base).
 phases:
   - id: orient
     name: Orient

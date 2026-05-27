@@ -130,9 +130,20 @@ The conformance gate (`test_write_under_file_ancestor_raises_invalid_path`)
 keys off the per-fixture `rejects_write_under_file_ancestor` flag rather
 than `flat_namespace` — `s3_moto_strict` / `sqlblob_strict` /
 `azurite_strict` / `s3_pyarrow_moto_strict` exercise the opt-in path,
-while the default fixtures continue to skip the gate. For default-off
-flat-NS backends the effective order is: existence check (non-existent
-target treated as writable) → overwrite conflict → I/O.
+while the default fixtures continue to skip the gate. The async sibling
+`azurite_async_strict` covers `AsyncAzureBackend` end-to-end (the
+non-HNS opt-in path through `_acheck_no_file_ancestor` and the SDK
+`get_blob_properties` closure). For default-off flat-NS backends the
+effective order is: existence check (non-existent target treated as
+writable) → overwrite conflict → I/O.
+**Azure HNS caveat.** On Azure HNS accounts the kwarg short-circuits the
+walk because `hdi_isfolder` rejects the operation in the native write
+path. Until ID-213 / BK-235 lands, that native rejection surfaces as
+`NotFound` or `AlreadyExists` rather than `InvalidPath`, so the
+cross-backend `InvalidPath` contract this kwarg promises is **deferred
+on HNS, not delivered** — even when set. Flat-NS Azure (non-HNS, e.g.
+Azurite) and the other flat-NS backends deliver the contract as
+described.
 The opt-in gate is a **start-of-call** check, not an atomic guarantee: the
 ancestor HEADs run once at entry, so a concurrent writer that creates a
 file at one of the walked ancestor keys between the walk and the data-plane
