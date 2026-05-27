@@ -79,12 +79,20 @@ class TestBackendOpenAtomic:
             pass
 
     @pytest.mark.spec("SAW-004")
+    @pytest.mark.spec("SAW-005")
     @pytest.mark.spec("SQL-BLOB-023")
     def test_open_atomic_exception_cleanup(self, backend: Backend) -> None:
         with pytest.raises(RuntimeError, match="boom"), backend.open_atomic("oat_fail.txt") as f:  # noqa: PT012
             f.write(b"partial")
             raise RuntimeError("boom")
         assert not backend.exists("oat_fail.txt")
+        # ID-188 / SAW-005: assert no orphan temp artefact survives anywhere
+        # under the fixture root. The fixture is function-scoped and writes
+        # nothing before the failed open_atomic, so any residual file is a
+        # leaked temp from a backend's per-strategy cleanup path (see
+        # spec 022 § Per-backend strategies).
+        remaining = [str(fi.path) for fi in backend.list_files("", recursive=True)]
+        assert remaining == [], f"orphan temp files after open_atomic failure: {remaining}"
 
 
 _WRITE_OPS = [

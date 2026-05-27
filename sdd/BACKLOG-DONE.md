@@ -8,6 +8,46 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-188 — Resource safety: prove the quality flags, then enforce cleanup**
+  spec: SIO-001, SIO-008, SIO-009, SAW-004, SAW-005 · audience: infra.test
+  Wave 1 (C)+(T) pair landed in one PR.
+  (C) Introduced `datatype ReadStream = ReadStream(content, seekable)` in
+  `sdd/formal/BackendContract.dfy` so `Backend.Read` returns a stream model
+  rather than raw bytes; added the SIO-008 postcondition
+  `r.Ok? && CapSeekableRead in capabilities ==> r.value.seekable`; both
+  `MemoryBackend` and `MemoryBackendMinimal` refinements were updated to
+  wrap content as `ReadStream(content, true)` and re-verified
+  (`51 verified, 0 errors` on the contract; `478 verified, 0 errors` on the
+  refinement). Added `CapLazyRead` as an advisory stub variant — Dafny
+  Read materialises content, so "no I/O before first read" is a runtime
+  protocol property over the BinaryIO wrapper that the model deliberately
+  does not track; the Python conformance test `test_read_is_lazy`
+  remains the load-bearing check for SIO-009. Re-translated
+  `MemoryBackend-py/module_.py` via `dafny build -t py` and re-applied the
+  class reorder; updated `tests/backends/dafny/_helpers.py` to unmarshal
+  the new `ReadStream` shape. Added a new conformance test
+  `TestStreamingConformance::test_read_returns_seekable_stream_when_declared`
+  in `tests/backends/conformance/test_streaming.py` carrying
+  `@pytest.mark.spec("SIO-008")`, which the DafnyOracleBackend certifies
+  by construction (`io.BytesIO` is always seekable). The
+  `check_formal_trace.py` matrix now reports SIO-008 as `tested`.
+  (T) Extended `test_open_atomic_exception_cleanup` in
+  `tests/backends/conformance/test_atomic.py` with a
+  `list_files("", recursive=True)` scan after the forced failure: the
+  fixture is function-scoped and writes nothing before the failed
+  `open_atomic`, so any residual entry is an orphan temp artefact from a
+  backend's per-strategy cleanup path (see spec 022 § Per-backend
+  strategies). Added `@pytest.mark.spec("SAW-005")` alongside the
+  existing SAW-004 marker (the new clause is exactly SAW-005's
+  cleanup-on-failure obligation). The stale
+  `TestBackendOpenAtomic.test_open_atomic_exception_cleanup[azure].yaml`
+  cassette was deleted (new HTTP `list_files` request not recorded); the
+  TEST-007 missing-cassette skip hook covers the gap until the next
+  cassette refresh — tracked as BK-243.
+  Gap-table row 6 in `sdd/formal/README.md` extended to cite SIO-008
+  alongside SIO-001.
+  Trace: `sdd/traces/id-188-quality-flags-cleanup.yml`.
+
 - [x] **ID-211 — write-under-file HEAD pre-check for flat-namespace backends**
   spec: BE-008, BE-018, BE-019, ASYNC-008, ASYNC-010, ASYNC-018, ASYNC-019 · audience: user.api, library.maintainer, infra.test, contributor.process
   Follow-up to ID-209 (PR #680). ID-209 landed the cross-backend

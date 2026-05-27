@@ -127,7 +127,7 @@ class Result_Err(Result, NamedTuple('Err', [('error', Any)])):
 class Capability:
     @_dafny.classproperty
     def AllSingletonConstructors(cls):
-        return [Capability_CapRead(), Capability_CapWrite(), Capability_CapDelete(), Capability_CapList(), Capability_CapMove(), Capability_CapCopy(), Capability_CapAtomicWrite(), Capability_CapAtomicMove(), Capability_CapMetadata(), Capability_CapGlob(), Capability_CapSeekableRead(), Capability_CapWriteResultNative(), Capability_CapUserMetadata()]
+        return [Capability_CapRead(), Capability_CapWrite(), Capability_CapDelete(), Capability_CapList(), Capability_CapMove(), Capability_CapCopy(), Capability_CapAtomicWrite(), Capability_CapAtomicMove(), Capability_CapMetadata(), Capability_CapGlob(), Capability_CapSeekableRead(), Capability_CapWriteResultNative(), Capability_CapUserMetadata(), Capability_CapLazyRead()]
     @classmethod
     def default(cls, ):
         return lambda: Capability_CapRead()
@@ -172,6 +172,9 @@ class Capability:
     @property
     def is_CapUserMetadata(self) -> bool:
         return isinstance(self, Capability_CapUserMetadata)
+    @property
+    def is_CapLazyRead(self) -> bool:
+        return isinstance(self, Capability_CapLazyRead)
 
 class Capability_CapRead(Capability, NamedTuple('CapRead', [])):
     def __dafnystr__(self) -> str:
@@ -274,6 +277,14 @@ class Capability_CapUserMetadata(Capability, NamedTuple('CapUserMetadata', [])):
         return f'Capability.CapUserMetadata'
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Capability_CapUserMetadata)
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+class Capability_CapLazyRead(Capability, NamedTuple('CapLazyRead', [])):
+    def __dafnystr__(self) -> str:
+        return f'Capability.CapLazyRead'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, Capability_CapLazyRead)
     def __hash__(self) -> int:
         return super().__hash__()
 
@@ -488,6 +499,25 @@ class Entry_DirEntry(Entry, NamedTuple('DirEntry', [])):
         return super().__hash__()
 
 
+class ReadStream:
+    @classmethod
+    def default(cls, ):
+        return lambda: ReadStream_ReadStream(_dafny.Seq({}), False)
+    def __ne__(self, __o: object) -> bool:
+        return not self.__eq__(__o)
+    @property
+    def is_ReadStream(self) -> bool:
+        return isinstance(self, ReadStream_ReadStream)
+
+class ReadStream_ReadStream(ReadStream, NamedTuple('ReadStream', [('content', Any), ('seekable', Any)])):
+    def __dafnystr__(self) -> str:
+        return f'ReadStream.ReadStream({_dafny.string_of(self.content)}, {_dafny.string_of(self.seekable)})'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, ReadStream_ReadStream) and self.content == __o.content and self.seekable == __o.seekable
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+
 class Backend:
     pass
     @property
@@ -674,7 +704,10 @@ class default__:
             if source0_.is_CapWriteResultNative:
                 return _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "write_result_native"))
         if True:
-            return _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "user_metadata"))
+            if source0_.is_CapUserMetadata:
+                return _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "user_metadata"))
+        if True:
+            return _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "lazy_read"))
 
     @staticmethod
     def WriteResultFromFileInfo(info):
@@ -775,7 +808,7 @@ class MemoryBackend(Backend):
                 if True:
                     if source0_.is_FileEntry:
                         d_0_content_ = source0_.content
-                        r = Result_Ok(d_0_content_)
+                        r = Result_Ok(ReadStream_ReadStream(d_0_content_, True))
                         raise _dafny.Break("match0")
                 if True:
                     r = Result_Err(Error_InvalidPath(path, (self).name))
@@ -1215,7 +1248,7 @@ class MemoryBackendMinimal(Backend):
                 if True:
                     if source0_.is_FileEntry:
                         d_0_content_ = source0_.content
-                        r = Result_Ok(d_0_content_)
+                        r = Result_Ok(ReadStream_ReadStream(d_0_content_, True))
                         raise _dafny.Break("match0")
                 if True:
                     r = Result_Err(Error_InvalidPath(path, (self).name))

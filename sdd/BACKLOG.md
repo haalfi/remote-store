@@ -81,23 +81,11 @@ none of which is "run a second backend and diff the output":
 | Wave | Items | Notes |
 |---|---|---|
 | 0 — property-based (O) | — | ID-187 landed; see BACKLOG-DONE.md |
-| 1 — contract + test | ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
+| 1 — contract + test | ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable. ID-188 landed; see BACKLOG-DONE.md |
 | 1 — test backfill (T) | ID-210 | ID-185 landed; see BACKLOG-DONE.md |
 
 Items stay granular for tracking, but a whole wave row may ship as one
 PR where its items share a file or proof.
-
-- [ ] **ID-188 — Resource safety: prove the quality flags, then enforce cleanup**
-  spec: SIO-001, SIO-008, SIO-009, SAW-004 · effort: M · audience: infra.test
-  A (C)+(T) pair.
-  (C) Add quality-flag postconditions to `BackendContract.dfy`: if
-  `CapSeekableRead` is declared, every stream `Read` returns satisfies
-  `seekable()`; stub `CapLazyRead` as a no-I/O-before-first-read
-  advisory. Re-verify the refinement.
-  (T) One cleanup-coverage gap: `test_open_atomic_exception_cleanup` in
-  `test_atomic.py` asserts only that the target path is absent after an
-  `open_atomic` failure. Add a `list_files` scan asserting no orphan temp
-  files remain anywhere under the test prefix.
 
 - [ ] **ID-189 — Dafny `Error` variant for `ResourceLocked`**
   spec: ERR-013 · effort: S · audience: library.maintainer
@@ -921,6 +909,21 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   `src/remote_store/backends/_s3_pyarrow.py`,
   `src/remote_store/backends/_azure.py`,
   `src/remote_store/aio/backends/_azure.py`. Discovered in PR #686 review.
+
+- [ ] **BK-243 — Re-record stale Azure cassette for `test_open_atomic_exception_cleanup`**
+  spec: SAW-004, SAW-005, TEST-007 · effort: S · audience: infra.test
+  ID-188 extended `test_open_atomic_exception_cleanup` in
+  `tests/backends/conformance/test_atomic.py` with a
+  `list_files("", recursive=True)` orphan-temp-file scan. The pre-existing
+  cassette `tests/backends/cassettes/azure/TestBackendOpenAtomic.test_open_atomic_exception_cleanup[azure].yaml`
+  did not include the new HTTP `GET .../?resource=filesystem&recursive=true`
+  request, so the file was deleted in the same PR; the TEST-007
+  missing-cassette skip hook now skips the test under `azure_replay` until
+  the cassette is refreshed. Folds into the next general Azure cassette
+  refresh run (BK-235 covers the broader batch); list here so the gap is
+  not lost in case BK-235 ships before this lands. No code change
+  required — only `hatch run record-azure` against a live HNS account and
+  committing the new cassette.
 
 - [~] **ID-018 — conda-forge publishing**
   spec: — · effort: — · audience: library.maintainer

@@ -368,7 +368,7 @@ Each gap is now encoded as a machine-checkable pre/postcondition:
 | 3 | Listing on missing paths | BE-014/015 | `BackendContract.dfy` |
 | 4 | Depth-counting algorithm | DEPTH-001 | `DepthCounting.dfy` |
 | 5 | Move atomicity | BE-018 | `ResourceSafety.dfy` |
-| 6 | Acquire-then-wrap safety | SIO-001 | `ResourceSafety.dfy` |
+| 6 | Acquire-then-wrap safety; seekable-read quality flag | SIO-001, SIO-008 | `ResourceSafety.dfy`, `BackendContract.dfy` |
 | 7 | `WriteResult` field mapping + capability round-trip | WR-001a, WR-004, WR-008, WR-012, WR-013 | `BackendContract.dfy` |
 
 Gap 7 was added under ID-151 after root-cause analysis of the ID-146

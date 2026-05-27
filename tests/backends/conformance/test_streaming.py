@@ -132,6 +132,24 @@ class TestStreamingConformance:
         backend.write("partial_pos.bin", buf)
         assert backend.read_bytes("partial_pos.bin") == b"PAYLOAD"
 
+    @pytest.mark.spec("SIO-008")
+    def test_read_returns_seekable_stream_when_declared(self, backend: Backend) -> None:
+        """SEEKABLE_READ-declaring backends must return a seekable stream.
+
+        ID-188 / SIO-008: the Dafny ``Backend.Read`` postcondition obliges
+        every backend declaring ``CapSeekableRead`` to return a stream whose
+        ``seekable()`` is ``True``. The DafnyOracleBackend certifies this
+        test by construction (it wraps content in ``io.BytesIO``); real
+        backends that declare the capability must produce the same shape.
+        """
+        _require(backend, Capability.SEEKABLE_READ)
+        backend.write("seek_decl.bin", b"seekable data")
+        stream = backend.read("seek_decl.bin")
+        try:
+            assert stream.seekable() is True
+        finally:
+            stream.close()
+
 
 @pytest.mark.extended_conformance
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)

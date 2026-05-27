@@ -95,17 +95,22 @@ class MemoryBackend extends Backend {
     }
   }
 
-  method Read(path: Path) returns (r: Result<seq<nat>>)
+  method Read(path: Path) returns (r: Result<ReadStream>)
     requires WellFormedPath(path)
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
-    ensures IsFile(fs, path)      ==> r == Ok(fs[path].content)
+    ensures IsFile(fs, path)      ==> r.Ok? && r.value.content == fs[path].content
+    // ID-188 / SIO-008: MemoryBackend declares CapSeekableRead, so the
+    // seekable-true witness must hold on every successful read.
+    ensures r.Ok? && CapSeekableRead in capabilities ==> r.value.seekable
   {
     if path in fs {
       match fs[path]
       case FileEntry(content, _) =>
         assert IsFile(fs, path);
-        r := Ok(content);
+        // In-memory bytes wrap into io.BytesIO on the Python side, which
+        // is unconditionally seekable.
+        r := Ok(ReadStream(content, true));
       case DirEntry =>
         assert IsDir(fs, path);
         r := Err(InvalidPath(path, name));
@@ -1132,17 +1137,22 @@ class MemoryBackendMinimal extends Backend {
     }
   }
 
-  method Read(path: Path) returns (r: Result<seq<nat>>)
+  method Read(path: Path) returns (r: Result<ReadStream>)
     requires WellFormedPath(path)
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
-    ensures IsFile(fs, path)      ==> r == Ok(fs[path].content)
+    ensures IsFile(fs, path)      ==> r.Ok? && r.value.content == fs[path].content
+    // ID-188 / SIO-008: MemoryBackendMinimal also declares CapSeekableRead,
+    // so the same seekable-true witness must hold.
+    ensures r.Ok? && CapSeekableRead in capabilities ==> r.value.seekable
   {
     if path in fs {
       match fs[path]
       case FileEntry(content, _) =>
         assert IsFile(fs, path);
-        r := Ok(content);
+        // In-memory bytes wrap into io.BytesIO on the Python side, which
+        // is unconditionally seekable.
+        r := Ok(ReadStream(content, true));
       case DirEntry =>
         assert IsDir(fs, path);
         r := Err(InvalidPath(path, name));
