@@ -73,6 +73,13 @@ class AsyncAzureBackend(AsyncBackend):
         retry: Retry policy for transient failures.
         max_concurrency: Maximum number of parallel connections for
             uploads and downloads (default ``1`` -- sequential).
+        reject_write_under_file_ancestor: If ``True``, ``write`` /
+            ``write_atomic`` / ``move`` / ``copy`` HEAD each
+            slash-aligned ancestor of the target path on non-HNS
+            accounts and raise ``InvalidPath`` on the first regular-file
+            hit (HNS accounts already enforce this via ``hdi_isfolder``).
+            Default ``False``. See spec 003 § BE-008 / spec 029 §
+            ASYNC-008 and ID-211.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
@@ -91,6 +98,7 @@ class AsyncAzureBackend(AsyncBackend):
         client_options: dict[str, Any] | None = None,
         retry: RetryPolicy | None = None,
         max_concurrency: int = 1,
+        reject_write_under_file_ancestor: bool = False,
     ) -> None:
         validate_azure_params(container, account_name, account_url, connection_string, max_concurrency)
         self._container = container
@@ -103,6 +111,7 @@ class AsyncAzureBackend(AsyncBackend):
         self._client_options = client_options or {}
         self._retry = retry
         self._max_concurrency = max_concurrency
+        self._reject_write_under_file_ancestor = reject_write_under_file_ancestor
         # Lazy instances
         self._blob_service_instance: Any = None
         self._cc_instance: Any = None
@@ -122,6 +131,32 @@ class AsyncAzureBackend(AsyncBackend):
     def capabilities(self) -> CapabilitySet:
         """Declared capabilities of this backend."""
         return self.CAPABILITIES
+
+    # endregion
+
+    # region: private — file-ancestor pre-check (ID-211 opt-in)
+
+    async def _maybe_check_no_file_ancestor(self, path: str) -> None:
+        """Async sibling of ``AzureBackend._maybe_check_no_file_ancestor`` (ID-211)."""
+        if not self._reject_write_under_file_ancestor:
+            return
+        if await self._ensure_hns():
+            return
+        from azure.core.exceptions import ResourceNotFoundError
+
+        from remote_store.backends._flat_ns import _acheck_no_file_ancestor
+
+        async def _head_one(key: str) -> bool:
+            bc = self._blob_client(key)
+            try:
+                await bc.get_blob_properties()
+            except ResourceNotFoundError:
+                return False
+            except Exception:  # noqa: BLE001
+                return False
+            return True
+
+        await _acheck_no_file_ancestor(path, head_one=_head_one, backend=self.name)
 
     # endregion
 
@@ -453,6 +488,7 @@ class AsyncAzureBackend(AsyncBackend):
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If ``path`` names a directory.
         """
+        await self._maybe_check_no_file_ancestor(path)
         async with self._errors(path):
             bc = self._blob_client(path)
             if await self._ensure_hns():
@@ -990,6 +1026,7 @@ class AsyncAzureBackend(AsyncBackend):
         # BE-018 / ASYNC-018: self-move is a no-op (src == dst → Ok), but only
         # for files.  Directory-path inputs must still raise InvalidPath per
         # BE-021 — same contract as the non-self-op path below (line 942-943).
+        await self._maybe_check_no_file_ancestor(dst)
         if src == dst:
             async with self._errors(src):
                 src_bc = self._blob_client(src)
@@ -1060,6 +1097,7 @@ class AsyncAzureBackend(AsyncBackend):
         # BE-019 / ASYNC-019: self-copy is a no-op (src == dst → Ok), but only
         # for files.  Directory-path inputs must still raise InvalidPath per
         # BE-021 — same contract as the non-self-op path below.
+        await self._maybe_check_no_file_ancestor(dst)
         if src == dst:
             async with self._errors(src):
                 src_bc = self._blob_client(src)

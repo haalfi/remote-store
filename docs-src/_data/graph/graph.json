@@ -1410,7 +1410,7 @@
       "file": "src/remote_store/backends/_azure.py",
       "id": "cls:remote_store.backends._azure.AzureBackend",
       "kind": "class",
-      "line": 173,
+      "line": 174,
       "role": "backend",
       "runtime": "sync",
       "summary": "Azure Storage backend."
@@ -1446,7 +1446,7 @@
       "file": "src/remote_store/backends/_s3.py",
       "id": "cls:remote_store.backends._s3.S3Backend",
       "kind": "class",
-      "line": 40,
+      "line": 41,
       "role": "backend",
       "runtime": "sync",
       "summary": "S3-compatible object storage backend using s3fs."
@@ -1455,7 +1455,7 @@
       "file": "src/remote_store/backends/_s3_pyarrow.py",
       "id": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend",
       "kind": "class",
-      "line": 111,
+      "line": 112,
       "role": "backend",
       "runtime": "sync",
       "summary": "Hybrid S3 backend: PyArrow for reads/writes/copies, s3fs for listing/metadata."
@@ -1482,7 +1482,7 @@
       "file": "src/remote_store/backends/_sqlalchemy.py",
       "id": "cls:remote_store.backends._sqlalchemy.SQLQueryBackend",
       "kind": "class",
-      "line": 914,
+      "line": 949,
       "role": "backend",
       "runtime": "sync",
       "summary": "Read-only SQL query materializer implementing a subset of the Backend contract."

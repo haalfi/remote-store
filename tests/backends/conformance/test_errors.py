@@ -26,6 +26,7 @@ from tests.backends.conformance._helpers import (
     _require,
     _seed,
     _skip_flat_namespace,
+    _skip_unless_rejects_file_ancestor,
 )
 from tests.backends.fixtures import fixture_params
 
@@ -132,16 +133,12 @@ class TestWriteErrorFidelity:
         Hierarchical backends (Local, SFTP, Memory) natively reject the
         second write because EnsureParents / mkdir / sftp.mkdir cannot
         descend through a regular-file path component.  Flat-namespace
-        backends (S3, Azure non-HNS, SQLBlob, HTTP) skip via
-        ``_skip_flat_namespace`` — they cannot distinguish the case in
-        O(1) without an extra HEAD round trip and are tracked under
-        ID-211 (the HEAD-pre-check follow-up).
+        backends (S3, Azure non-HNS, SQLBlob) opt in via the ID-211
+        ``reject_write_under_file_ancestor`` kwarg; default-off fixtures
+        skip this gate, the ``*_strict`` fixture variants run it.
         """
         _require(backend, cap)
-        _skip_flat_namespace(
-            backend,
-            "flat-namespace backends cannot reject write-under-file in O(1) (ID-211)",
-        )
+        _skip_unless_rejects_file_ancestor(backend)
         seed = f"wufa_{method}.txt"
         nested = f"{seed}/child.txt"
         backend.write(seed, b"file-blocking")
@@ -155,10 +152,7 @@ class TestWriteErrorFidelity:
     def test_open_atomic_under_file_ancestor_raises_invalid_path(self, backend: Backend) -> None:
         """ID-209: ``open_atomic`` shares BE-008's precondition chain (BE-010 / SAW-001)."""
         _require(backend, Capability.ATOMIC_WRITE)
-        _skip_flat_namespace(
-            backend,
-            "flat-namespace backends cannot reject write-under-file in O(1) (ID-211)",
-        )
+        _skip_unless_rejects_file_ancestor(backend)
         backend.write("wufa_oa.txt", b"file-blocking")
         with pytest.raises(InvalidPath, match="wufa_oa.txt"), backend.open_atomic("wufa_oa.txt/child.txt") as f:
             f.write(b"under-file")
@@ -377,15 +371,12 @@ class TestMoveCopyErrorFidelity:
         """ID-209: ``!AllAncestorsTraversable(old(fs), dst)`` ==> ``InvalidPath(dst)``.
 
         Mirror of the BE-008 file-ancestor clause on the dst side of
-        move/copy.  Same flat-namespace skip rationale as the write test:
-        ID-211 tracks the optional HEAD pre-check follow-up for flat-NS
-        backends.
+        move/copy.  Flat-NS backends opt in via the ID-211
+        ``reject_write_under_file_ancestor`` kwarg; the ``*_strict``
+        fixture variants run this gate.
         """
         _require(backend, cap)
-        _skip_flat_namespace(
-            backend,
-            "flat-namespace backends cannot reject move/copy-under-file in O(1) (ID-211)",
-        )
+        _skip_unless_rejects_file_ancestor(backend)
         backend.write(f"mcua/{op}_blocker.txt", b"file-blocking")
         backend.write(f"mcua/{op}_src.txt", b"srcdata")
         with pytest.raises(InvalidPath, match=f"mcua/{op}_blocker.txt"):

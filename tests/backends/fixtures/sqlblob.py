@@ -17,15 +17,19 @@ from tests.backends.fixtures.registry import BackendFixture, register
 if TYPE_CHECKING:
     from remote_store._backend import Backend
 
-_meta = load_fixture("sqlblob")
 
+def _make_factory(reject_write_under_file_ancestor: bool):
+    def _factory() -> Backend:
+        try:
+            from remote_store.backends._sqlalchemy import SQLBlobBackend
+        except ImportError:
+            pytest.skip("sqlalchemy not installed")
+        return SQLBlobBackend(
+            url="sqlite:///:memory:",
+            reject_write_under_file_ancestor=reject_write_under_file_ancestor,
+        )
 
-def _factory() -> Backend:
-    try:
-        from remote_store.backends._sqlalchemy import SQLBlobBackend
-    except ImportError:
-        pytest.skip("sqlalchemy not installed")
-    return SQLBlobBackend(url="sqlite:///:memory:")
+    return _factory
 
 
 def _cleanup(backend: Backend) -> None:
@@ -40,11 +44,13 @@ def _capabilities() -> frozenset:
     return frozenset(SQLBlobBackend.CAPABILITIES)
 
 
-register(
-    BackendFixture(
-        factory=_factory,
-        capabilities=_capabilities(),
-        cleanup=_cleanup,
-        **_meta.to_kwargs(),
+for _name in ("sqlblob", "sqlblob_strict"):
+    _meta = load_fixture(_name)
+    register(
+        BackendFixture(
+            factory=_make_factory(_meta.rejects_write_under_file_ancestor),
+            capabilities=_capabilities(),
+            cleanup=_cleanup,
+            **_meta.to_kwargs(),
+        )
     )
-)

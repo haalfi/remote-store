@@ -81,6 +81,18 @@ class BackendFixture:
 
     Replaces the old ``_NO_SELF_OP_BACKENDS`` identity set.
     """
+    rejects_write_under_file_ancestor: bool = False
+    """True when the fixture's backend rejects write-under-file-ancestor (ID-211).
+
+    Hierarchical backends (Local, SFTP, Memory) always reject (set to True
+    via the per-family default in ``backends.toml``).  Flat-NS backends
+    (S3, Azure non-HNS, SQLBlob) only reject when the per-fixture
+    ``reject_write_under_file_ancestor`` opt-in is wired into the factory.
+    The conformance gate for the file-ancestor InvalidPath promise reads
+    this flag instead of ``flat_namespace`` so the new strict fixture
+    variants (e.g. ``s3_moto_strict``) run the gate while the default
+    fixtures continue to skip it.
+    """
     transport: Literal["http", "ssh", "fs", "memory", "sql"] = "fs"
     """Transport family of the backend.
 

@@ -116,6 +116,7 @@ def _synthetic_descriptor(
         is_async=False,
         flat_namespace=False,
         self_op_supported=True,
+        rejects_write_under_file_ancestor=True,
         transport="memory",
         live_opt_in_env=live_opt_in_env,
         live_creds_env=live_creds_env,

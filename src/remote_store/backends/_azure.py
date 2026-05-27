@@ -38,6 +38,7 @@ from remote_store.backends._azure_common import (
 from remote_store.backends._azure_common import (
     azure_path as _azure_path_fn,
 )
+from remote_store.backends._flat_ns import _check_no_file_ancestor
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -197,6 +198,14 @@ class AzureBackend(Backend):
             memory discipline; user-supplied values take precedence.
         max_concurrency: Maximum number of parallel connections for
             uploads and downloads (default ``1`` -- sequential).
+        reject_write_under_file_ancestor: If ``True``, ``write`` /
+            ``write_atomic`` / ``open_atomic`` / ``move`` / ``copy`` HEAD
+            each slash-aligned ancestor of the target path on non-HNS
+            accounts and raise ``InvalidPath`` on the first regular-file
+            hit (HNS accounts already enforce this via ``hdi_isfolder``).
+            Default ``False``: closes the ID-209 cross-backend gap for
+            flat-namespace Azure but adds one HEAD per ancestor per
+            nested-path write. See spec 003 § BE-008 and ID-211.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
@@ -214,6 +223,7 @@ class AzureBackend(Backend):
         client_options: dict[str, Any] | None = None,
         retry: RetryPolicy | None = None,
         max_concurrency: int = 1,
+        reject_write_under_file_ancestor: bool = False,
     ) -> None:
         validate_azure_params(container, account_name, account_url, connection_string, max_concurrency)
         self._container = container
@@ -226,6 +236,7 @@ class AzureBackend(Backend):
         self._client_options = client_options or {}
         self._retry = retry
         self._max_concurrency = max_concurrency
+        self._reject_write_under_file_ancestor = reject_write_under_file_ancestor
         # Lazy instances
         self._blob_service_instance: Any = None
         self._cc_instance: Any = None
@@ -243,6 +254,39 @@ class AzureBackend(Backend):
     @property
     def capabilities(self) -> CapabilitySet:
         return self.CAPABILITIES
+
+    # endregion
+
+    # region: private — file-ancestor pre-check (ID-211 opt-in)
+
+    def _maybe_check_no_file_ancestor(self, path: str) -> None:
+        """ID-211 opt-in: walk slash-aligned ancestors and reject on file hit.
+
+        Default-off. HNS accounts already reject via ``hdi_isfolder`` in
+        the existing write path; this walk fires only when the user
+        constructed the backend with the opt-in kwarg, and only on
+        non-HNS accounts where the gate is otherwise missing.
+        """
+        if not self._reject_write_under_file_ancestor:
+            return
+        # HNS accounts already enforce the file-ancestor contract via the
+        # existing ``hdi_isfolder`` / DataLake mkdir-walk path; the opt-in
+        # walk is the non-HNS workaround.
+        if self._hns:
+            return
+        from azure.core.exceptions import ResourceNotFoundError
+
+        def _head_one(key: str) -> bool:
+            bc = self._blob_client(key)
+            try:
+                bc.get_blob_properties()
+            except ResourceNotFoundError:
+                return False
+            except Exception:  # noqa: BLE001
+                return False
+            return True
+
+        _check_no_file_ancestor(path, head_one=_head_one, backend=self.name)
 
     # endregion
 
@@ -413,6 +457,7 @@ class AzureBackend(Backend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
+        self._maybe_check_no_file_ancestor(path)
         with self._errors(path):
             bc = self._blob_client(path)
             if self._hns:
@@ -557,6 +602,9 @@ class AzureBackend(Backend):
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
         if not self._hns:
             # non-HNS: buffer then PUT (atomic by nature) -- SAW-011
+            # ID-211 opt-in: pre-check up front so the caller does not write
+            # into the spooled buffer before InvalidPath fires.
+            self._maybe_check_no_file_ancestor(path)
             with self._errors(path):
                 bc = self._blob_client(path)
                 if not overwrite:
@@ -900,6 +948,7 @@ class AzureBackend(Backend):
         # BE-018: self-move is a no-op (src == dst → Ok), but only for files.
         # Directory-path inputs must still raise InvalidPath per BE-021 — same
         # contract as the non-self-op path below.
+        self._maybe_check_no_file_ancestor(dst)
         if src == dst:
             with self._errors(src):
                 src_bc = self._blob_client(src)
@@ -956,6 +1005,7 @@ class AzureBackend(Backend):
         # BE-019: self-copy is a no-op (src == dst → Ok), but only for files.
         # Directory-path inputs must still raise InvalidPath per BE-021 — same
         # contract as the non-self-op path below.
+        self._maybe_check_no_file_ancestor(dst)
         if src == dst:
             with self._errors(src):
                 src_bc = self._blob_client(src)

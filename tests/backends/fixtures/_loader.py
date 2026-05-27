@@ -92,6 +92,7 @@ class BackendDescriptor:
     transport: Transport
     flat_namespace: bool
     self_op_supported: bool
+    rejects_write_under_file_ancestor: bool
 
 
 @dataclass(frozen=True)
@@ -113,6 +114,7 @@ class FixtureDescriptor:
     is_async: bool
     flat_namespace: bool
     self_op_supported: bool
+    rejects_write_under_file_ancestor: bool
     transport: Transport
     live_opt_in_env: str | None = None
     live_creds_env: tuple[str, ...] = field(default_factory=tuple)
@@ -135,6 +137,7 @@ class FixtureDescriptor:
             "is_async": self.is_async,
             "flat_namespace": self.flat_namespace,
             "self_op_supported": self.self_op_supported,
+            "rejects_write_under_file_ancestor": self.rejects_write_under_file_ancestor,
             "transport": self.transport,
         }
 
@@ -161,10 +164,17 @@ def _parse_backend(name: str, raw: dict[str, Any]) -> BackendDescriptor:
         raise ValueError(f"backend.{name}: transport must be one of {sorted(VALID_TRANSPORTS)}, got {transport!r}")
     flat_ns = raw.get("flat_namespace", False)
     self_op = raw.get("self_op_supported", True)
+    # ID-211: family default is "rejects = not flat_ns" (hierarchical backends
+    # natively enforce the file-ancestor InvalidPath promise; flat-NS backends
+    # only enforce it when the per-fixture opt-in is wired up).
+    rejects_default = not flat_ns
+    rejects = raw.get("rejects_write_under_file_ancestor", rejects_default)
     if not isinstance(flat_ns, bool):
         raise ValueError(f"backend.{name}: flat_namespace must be bool, got {flat_ns!r}")
     if not isinstance(self_op, bool):
         raise ValueError(f"backend.{name}: self_op_supported must be bool, got {self_op!r}")
+    if not isinstance(rejects, bool):
+        raise ValueError(f"backend.{name}: rejects_write_under_file_ancestor must be bool, got {rejects!r}")
     return BackendDescriptor(
         name=name,
         sources=_require_str_list(raw.get("sources", []), where=f"backend.{name}.sources"),
@@ -172,6 +182,7 @@ def _parse_backend(name: str, raw: dict[str, Any]) -> BackendDescriptor:
         transport=transport,  # type: ignore[arg-type]
         flat_namespace=flat_ns,
         self_op_supported=self_op,
+        rejects_write_under_file_ancestor=rejects,
     )
 
 
@@ -205,10 +216,23 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
     # Per-fixture overrides merge on top of the backend-family defaults.
     flat_ns = raw.get("flat_namespace", backend.flat_namespace)
     self_op = raw.get("self_op_supported", backend.self_op_supported)
+    # ID-211: the per-fixture default for "rejects write under file ancestor"
+    # tracks the fixture's resolved ``flat_namespace``. When a fixture
+    # overrides flat_namespace (e.g. ``azurite`` flips the azure family default
+    # from false to true), the rejects default re-derives to match the
+    # override. Inherits from the backend family otherwise. The fixture can
+    # also override ``rejects_write_under_file_ancestor`` explicitly to
+    # exercise the ID-211 opt-in (e.g. ``s3_moto_strict``).
+    if "flat_namespace" in raw and "rejects_write_under_file_ancestor" not in raw:
+        rejects = not flat_ns
+    else:
+        rejects = raw.get("rejects_write_under_file_ancestor", backend.rejects_write_under_file_ancestor)
     if not isinstance(flat_ns, bool):
         raise ValueError(f"fixture.{name}: flat_namespace must be bool, got {flat_ns!r}")
     if not isinstance(self_op, bool):
         raise ValueError(f"fixture.{name}: self_op_supported must be bool, got {self_op!r}")
+    if not isinstance(rejects, bool):
+        raise ValueError(f"fixture.{name}: rejects_write_under_file_ancestor must be bool, got {rejects!r}")
 
     live_opt_in_env = raw.get("live_opt_in_env")
     if live_opt_in_env is not None and not isinstance(live_opt_in_env, str):
@@ -224,6 +248,7 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
         is_async=is_async,
         flat_namespace=flat_ns,
         self_op_supported=self_op,
+        rejects_write_under_file_ancestor=rejects,
         transport=backend.transport,
         live_opt_in_env=live_opt_in_env,
         live_creds_env=live_creds_env,

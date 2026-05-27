@@ -1,0 +1,174 @@
+id: ID-211
+title: "write-under-file HEAD pre-check for flat-namespace backends"
+trigger: "ID-209 (PR #680) landed the BE-008 / BE-018 / BE-019 file-ancestor InvalidPath conformance gate but carved out flat-namespace backends (S3, Azure non-HNS, SQLBlob, HTTP) because detecting a file-ancestor in O(1) without an extra HEAD round trip per slash-aligned ancestor is impossible on those backends. The user's nominated optimisation -- skip the gate on no-slash paths so the cost only applies to nested-path writes -- was worth measuring before deciding whether to ship the gate."
+source_items:
+  - ID-211
+  - ID-209
+  - ID-184
+audience:
+  - user.api
+  - library.maintainer
+  - infra.test
+  - contributor.process
+discovery_followups: []
+co_shipped_items: []
+expected_ripples:
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/specs/029-async-store-backend-api.md
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+surprising_ripples:
+  - tests/backends/fixtures/__init__.py
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-211"
+        read_type: gate
+        extract: "Three dispositions to evaluate (unconditional gate, opt-in kwarg, carve-out stays); user wants the measurement before deciding."
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-209 ([Unreleased])"
+        read_type: gate
+        extract: "Predecessor framing: Decision 2 (a) (raise InvalidPath) chose the contract; flat-NS Decision (C) opted for the per-fixture carve-out with ID-211 as the open follow-up."
+      - file: sdd/traces/id-209-fs-wellformedness.yml
+        section: "(full)"
+        read_type: gate
+        extract: "Decision-recording shape (AskUserQuestion before any code), the C+T pair, audience-derived CHANGELOG rule, trace structure to mirror."
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008"
+        read_type: gate
+        extract: "Flat-namespace exemption paragraph cites ID-211 as the open follow-up. Needs the disposition-after framing once ID-211 lands."
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path"
+        read_type: gate
+        extract: "ID-209's gate skips via _skip_flat_namespace on flat-NS fixtures pending ID-211; the new disposition decides whether to keep the skip or wire a fixture-level discriminator."
+      - file: tests/backends/conformance/_helpers.py
+        section: "_skip_flat_namespace"
+        read_type: gate
+        extract: "Per-fixture gate reads BackendFixture.flat_namespace; the ID-211 disposition is whether to add a second per-fixture flag for the file-ancestor case or fold it into the existing flat_namespace key."
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture / fixtures.toml"
+        read_type: gate
+        extract: "Existing per-fixture record fields and the backends.toml / fixtures.toml two-layer config. New rejects_write_under_file_ancestor flag plugs in here."
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/research/research-id-211-flat-ns-file-ancestor-precheck.py
+        section: "(new measurement harness)"
+        read_type: reference
+        extract: "Stage-1 harness: moto for S3, in-memory SQLite for SQLBlob, Azurite self-skips when no Docker. Two variants (baseline / precheck) at depths 0/1/3/6; P50/P95/P99 + mean overhead vs baseline."
+      - file: sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md
+        section: "(new research note)"
+        read_type: reference
+        extract: "Disposition table written before the decision: (a) unconditional, (b) opt-in kwarg, (c) carve-out stays. Recommendation drafted as (c); user chose (b) once the numbers were in hand."
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "(new module — _check_no_file_ancestor + _acheck_no_file_ancestor)"
+        read_type: reference
+        extract: "Shared helper avoids per-backend copies of the same slash-aligned-ancestor walk. Sync + async variants take a backend-supplied head_one callable; both short-circuit on no-slash paths (the user's O(1) optimisation)."
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_s3.py
+        section: "S3Backend.__init__ / write / write_atomic / open_atomic / move / copy"
+        read_type: reference
+        extract: "New reject_write_under_file_ancestor: bool = False kwarg; _maybe_check_no_file_ancestor wraps the helper with an s3fs head_object closure. Wired into every write-side mutator."
+      - file: src/remote_store/backends/_s3_pyarrow.py
+        section: "S3PyArrowBackend.__init__ / write / open_atomic / move / copy"
+        read_type: reference
+        extract: "Same wiring as S3Backend; uses s3fs for the HEAD walk (PyArrow C++ FS has no convenient head-by-key API)."
+      - file: src/remote_store/backends/_azure.py
+        section: "AzureBackend.__init__ / write / open_atomic / move / copy"
+        read_type: reference
+        extract: "New kwarg; _maybe_check_no_file_ancestor short-circuits on HNS (existing hdi_isfolder path already enforces the contract) and uses get_blob_properties on non-HNS. open_atomic pre-checks up front so the caller does not write into the buffer before InvalidPath fires."
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend.__init__ / write / open_atomic / move / copy"
+        read_type: reference
+        extract: "New kwarg; head_one is a single SELECT 1 by key. Pre-check fires upfront in open_atomic so the BytesIO buffer is not written before InvalidPath."
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "AsyncAzureBackend.__init__ / write / move / copy"
+        read_type: reference
+        extract: "Async sibling: _maybe_check_no_file_ancestor uses await self._ensure_hns() (a method, not the sync property) and the async _acheck_no_file_ancestor helper."
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture.rejects_write_under_file_ancestor"
+        read_type: reference
+        extract: "New per-fixture flag, defaulting to not flat_namespace so hierarchical backends keep their native enforcement. Replaces the file-ancestor uses of flat_namespace as the skip key."
+      - file: tests/backends/fixtures/_loader.py
+        section: "BackendDescriptor / FixtureDescriptor / to_kwargs"
+        read_type: reference
+        extract: "Family default for rejects = not flat_namespace; per-fixture override re-derives when the fixture flips flat_namespace (azurite case), otherwise inherits or accepts an explicit override (s3_moto_strict case)."
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "[fixture.*_strict] blocks"
+        read_type: reference
+        extract: "Four new fixtures: s3_moto_strict, s3_pyarrow_moto_strict, sqlblob_strict, azurite_strict. Each declares rejects_write_under_file_ancestor = true."
+      - file: tests/backends/fixtures/__init__.py
+        section: "_load_all._MODULE_FOR"
+        read_type: reference
+        extract: "Mapping extended so each *_strict TOML key resolves to its non-strict Python module (which now loads both fixtures via a for-loop with the kwarg threaded through a closure)."
+        outcome: unclear
+      - file: tests/backends/fixtures/s3_moto.py
+        section: "_make_factory"
+        read_type: reference
+        extract: "Per-fixture module now exposes _make_factory(reject) returning a closure that constructs the backend with the kwarg; the for-loop at module bottom registers both fixtures from a single source."
+      - file: tests/backends/fixtures/sqlblob.py
+        section: "_make_factory"
+        read_type: reference
+        extract: "Same pattern as s3_moto.py."
+      - file: tests/backends/fixtures/azurite.py
+        section: "_make_factory"
+        read_type: reference
+        extract: "Same pattern; the requires_docker mark propagates from the family loop so both azurite and azurite_strict skip cleanly without Docker."
+      - file: tests/backends/fixtures/s3_pyarrow_moto.py
+        section: "_make_factory"
+        read_type: reference
+        extract: "Same pattern."
+      - file: tests/backends/conformance/_helpers.py
+        section: "_skip_unless_rejects_file_ancestor"
+        read_type: reference
+        extract: "New helper replaces _skip_flat_namespace at the file-ancestor test sites. Skips only when the fixture's record says rejects = False — strict fixtures run the gate."
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestWriteErrorFidelity / TestMoveCopyErrorFidelity"
+        read_type: reference
+        extract: "test_write_under_file_ancestor_raises_invalid_path, test_open_atomic_under_file_ancestor_raises_invalid_path, and test_destination_under_file_ancestor_raises_invalid_path now skip via _skip_unless_rejects_file_ancestor. Docstrings updated to drop the (ID-211 pending) caveat."
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestWriteErrorFidelity / TestMoveCopyErrorFidelity (async)"
+        read_type: reference
+        extract: "Async sibling: local _skip_unless_rejects_file_ancestor helper mirrors the sync side; the file-ancestor tests gate on the same record flag."
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008 / BE-018 / BE-019"
+        read_type: reference
+        extract: "Flat-namespace exemption paragraph rewritten: cites the new opt-in kwarg, drops the 'ID-211 tracks the follow-up' placeholder, points at the research note for the per-call cost numbers. BE-018 / BE-019 Raises: clauses mirror."
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-008 / ASYNC-010 / ASYNC-018 / ASYNC-019"
+        read_type: reference
+        extract: "Async mirror: each spec section's Raises: clause notes the ID-211 opt-in on flat-namespace backends."
+      - file: CHANGELOG.md
+        section: "[Unreleased] Added / Changed"
+        read_type: reference
+        extract: "New Added entry for the kwarg (audience = user.api per the trace); the existing Changed entry for ID-209 updated to drop the 'and ID-211 tracks the follow-up' tail and replace it with the resolved opt-in."
+      - file: sdd/BACKLOG.md
+        section: "ID-211"
+        read_type: reference
+        extract: "Removed; moved to BACKLOG-DONE.md under [Unreleased]."
+      - file: sdd/BACKLOG-DONE.md
+        section: "[Unreleased] / ID-211"
+        read_type: reference
+        extract: "New entry with the C/T pair describing the opt-in landing, the research-note cross-reference, and the audience derivation."
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/conformance/
+        section: "-k under_file_ancestor"
+        read_type: verify
+        extract: "hatch run pytest tests/backends/conformance/ -k under_file_ancestor passes on every applicable fixture: hierarchical (memory, local, sftp_inproc, dafny_oracle) and the new strict (s3_moto_strict, sqlblob_strict, s3_pyarrow_moto_strict) variants. azurite_strict self-skips when Docker is absent."
+      - file: tests/backends/fixtures/test_registry.py
+        section: "(full)"
+        read_type: verify
+        extract: "Registry round-trip stays green after the BackendDescriptor / FixtureDescriptor / to_kwargs changes."
+      - file: scripts/check_infra_settings.py
+        section: "(hatch run lint)"
+        read_type: verify
+        extract: "Full lint gauntlet passes; gen_backlogid --check confirms next safe ID."

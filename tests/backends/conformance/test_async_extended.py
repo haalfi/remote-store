@@ -75,6 +75,15 @@ def _skip_flat_namespace(backend: AsyncBackend, reason: str = "flat-namespace ba
         pytest.skip(reason)
 
 
+def _skip_unless_rejects_file_ancestor(
+    backend: AsyncBackend,
+    reason: str = "fixture does not reject write-under-file-ancestor (ID-211 opt-in off)",
+) -> None:
+    """Async sibling of ``tests/backends/conformance/_helpers._skip_unless_rejects_file_ancestor``."""
+    if not _fixture_record(backend).rejects_write_under_file_ancestor:
+        pytest.skip(reason)
+
+
 async def _do_op(backend: AsyncBackend, op: str, src: str, dst: str, **kw: Any) -> None:
     await getattr(backend, op)(src, dst, **kw)
 
@@ -252,15 +261,12 @@ class TestWriteErrorFidelity:
         Mirrors the sync ``TestWriteErrorFidelity::test_write_under_file_
         ancestor_raises_invalid_path`` against the async backend surface,
         parametrised over ``write`` and ``write_atomic`` (ASYNC-008 /
-        ASYNC-010).  Flat-namespace backends skip per the same rationale
-        as the sync test — ID-211 tracks the optional HEAD-pre-check
-        follow-up.
+        ASYNC-010).  Flat-namespace backends opt into the gate via the
+        ID-211 ``reject_write_under_file_ancestor`` kwarg; default-off
+        fixtures skip this test, the ``*_strict`` fixture variants run it.
         """
         _require(async_backend, cap)
-        _skip_flat_namespace(
-            async_backend,
-            "flat-namespace backends cannot reject write-under-file in O(1) (ID-211)",
-        )
+        _skip_unless_rejects_file_ancestor(async_backend)
         seed = f"wufa_{method}.txt"
         nested = f"{seed}/child.txt"
         await async_backend.write(seed, b"file-blocking")
@@ -699,10 +705,7 @@ class TestMoveCopyErrorFidelity:
     ) -> None:
         """ID-209 async sibling: !AllAncestorsTraversable(fs, dst) => InvalidPath(dst)."""
         _require(async_backend, cap, Capability.WRITE)
-        _skip_flat_namespace(
-            async_backend,
-            "flat-namespace backends cannot reject move/copy-under-file in O(1) (ID-211)",
-        )
+        _skip_unless_rejects_file_ancestor(async_backend)
         await async_backend.write(f"mcua/{op}_blocker.txt", b"file-blocking")
         await async_backend.write(f"mcua/{op}_src.txt", b"srcdata")
         with pytest.raises(InvalidPath, match=f"mcua/{op}_blocker.txt"):

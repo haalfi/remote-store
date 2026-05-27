@@ -18,6 +18,7 @@ from remote_store._errors import (
 from remote_store._models import WriteResult
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
+from remote_store.backends._flat_ns import _check_no_file_ancestor
 from remote_store.backends._s3_base import (
     _S3_CA_ENV_VARS,
     _normalize_endpoint_url,
@@ -54,6 +55,14 @@ class S3Backend(_S3Base):
         tls_ca_bundle: Path to a PEM CA bundle file.  Falls back to
             ``AWS_CA_BUNDLE`` / ``REQUESTS_CA_BUNDLE`` / ``SSL_CERT_FILE``.
         client_options: Additional options passed to s3fs.
+        reject_write_under_file_ancestor: If ``True``, ``write`` /
+            ``write_atomic`` / ``open_atomic`` / ``move`` / ``copy`` HEAD
+            each slash-aligned ancestor of the target path and raise
+            ``InvalidPath`` on the first regular-file hit, closing the
+            ID-209 cross-backend gap that flat-namespace backends carve
+            out by default. Default ``False``: each nested-path write
+            otherwise pays one HEAD per ancestor (no-slash paths
+            short-circuit). See spec 003 § BE-008 and ID-211.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
@@ -69,6 +78,7 @@ class S3Backend(_S3Base):
         tls_ca_bundle: str | None = None,
         client_options: dict[str, Any] | None = None,
         retry: RetryPolicy | None = None,
+        reject_write_under_file_ancestor: bool = False,
     ) -> None:
         if not bucket or not bucket.strip():
             raise ValueError("bucket must be a non-empty string")
@@ -82,6 +92,7 @@ class S3Backend(_S3Base):
         self._tls_ca_bundle = resolved_tls
         self._client_options = client_options or {}
         self._retry = retry
+        self._reject_write_under_file_ancestor = reject_write_under_file_ancestor
         self._fs_instance: Any = None
 
     # region: properties
@@ -98,6 +109,30 @@ class S3Backend(_S3Base):
     def _s3fs(self) -> Any:
         """Alias for the s3fs filesystem (satisfies ``_S3Base`` contract)."""
         return self._fs
+
+    # endregion
+
+    # region: private — file-ancestor pre-check (ID-211 opt-in)
+
+    def _maybe_check_no_file_ancestor(self, path: str) -> None:
+        """Run the ID-211 file-ancestor walk when the opt-in is set.
+
+        Default-off: only callers that constructed the backend with
+        ``reject_write_under_file_ancestor=True`` pay the per-write
+        HEAD walk. No-slash paths short-circuit in
+        ``_check_no_file_ancestor`` itself.
+        """
+        if not self._reject_write_under_file_ancestor:
+            return
+
+        def _head_one(key: str) -> bool:
+            try:
+                self._fs.call_s3("head_object", Bucket=self._bucket, Key=key)
+            except Exception:  # noqa: BLE001 -- any error means "not a file"
+                return False
+            return True
+
+        _check_no_file_ancestor(path, head_one=_head_one, backend=self.name)
 
     # endregion
 
@@ -151,6 +186,7 @@ class S3Backend(_S3Base):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
+        self._maybe_check_no_file_ancestor(path)
         sdk_metadata = dict(metadata) if metadata else None
         meta_kw = {"Metadata": sdk_metadata} if sdk_metadata is not None else {}
         with self._s3fs_errors(path):
@@ -199,6 +235,7 @@ class S3Backend(_S3Base):
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
         # S3 PUT is inherently atomic -- buffer then upload (SAW-010)
+        self._maybe_check_no_file_ancestor(path)
         with self._s3fs_errors(path):
             if not overwrite and self._fs.exists(self._s3_path(path)):
                 raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
@@ -250,6 +287,7 @@ class S3Backend(_S3Base):
             return self._head_to_fileinfo(raw, path)
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        self._maybe_check_no_file_ancestor(dst)
         with self._s3fs_errors(src):
             if not self._fs.exists(self._s3_path(src)):
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
@@ -261,6 +299,7 @@ class S3Backend(_S3Base):
             self._fs.rm(self._s3_path(src))
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        self._maybe_check_no_file_ancestor(dst)
         with self._s3fs_errors(src):
             if not self._fs.exists(self._s3_path(src)):
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)

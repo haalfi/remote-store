@@ -232,6 +232,14 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         INSERT/UPDATE because BLOB columns require complete data in a
         single statement. For files larger than process memory, use a
         blob-storage backend (S3, Local, Azure) instead.
+
+    Args:
+        reject_write_under_file_ancestor: If ``True``, ``write`` /
+            ``write_atomic`` / ``open_atomic`` / ``move`` / ``copy``
+            issue one ``SELECT 1`` per slash-aligned ancestor of the
+            target path and raise ``InvalidPath`` on the first
+            regular-file hit. Default ``False``. See spec 003 § BE-008
+            and ID-211.
     """
 
     # Upper bound — runtime capabilities() may narrow for narrow-column schemas (create_table=False).
@@ -245,6 +253,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         table_name: str = "remote_store_objects",
         create_table: bool = True,
         max_blob_size: int | None = None,
+        reject_write_under_file_ancestor: bool = False,
     ) -> None:
         if not table_name:
             msg = "table_name must be a non-empty string"
@@ -256,6 +265,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         super().__init__(url=url, engine=engine)
         self._table_name = table_name
         self._max_blob_size = max_blob_size
+        self._reject_write_under_file_ancestor = reject_write_under_file_ancestor
 
         self._metadata = sa.MetaData()
 
@@ -310,6 +320,25 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     @property
     def capabilities(self) -> CapabilitySet:
         return self._capabilities
+
+    # endregion
+
+    # region: private — file-ancestor pre-check (ID-211 opt-in)
+
+    def _maybe_check_no_file_ancestor(self, path: str) -> None:
+        """ID-211 opt-in walk; mirrors ``S3Backend._maybe_check_no_file_ancestor``."""
+        if not self._reject_write_under_file_ancestor:
+            return
+        from remote_store.backends._flat_ns import _check_no_file_ancestor
+
+        t = self._table
+
+        def _head_one(key: str) -> bool:
+            with self._engine.connect() as conn:
+                row = conn.execute(sa.select(sa.literal(1)).where(t.c.key == key)).first()
+            return row is not None
+
+        _check_no_file_ancestor(path, head_one=_head_one, backend=self.name)
 
     # endregion
 
@@ -409,6 +438,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
         self._validate_path(path)
+        self._maybe_check_no_file_ancestor(path)
         # SQL BLOB columns require full materialization; streaming writes
         # are not possible.  This is by-design (ID-136).
         raw = content if isinstance(content, bytes) else content.read()
@@ -464,6 +494,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     @contextlib.contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
         self._validate_path(path)
+        # ID-211 opt-in: pre-check up front so the caller does not write into
+        # the buffer before InvalidPath fires.
+        self._maybe_check_no_file_ancestor(path)
         if not overwrite:
             with self._map_errors(path), self._engine.connect() as conn:
                 t = self._table
@@ -652,6 +685,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         self._validate_path(src)
         self._validate_path(dst)
+        self._maybe_check_no_file_ancestor(dst)
 
         if src == dst:
             # Verify source exists, then no-op
@@ -680,6 +714,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         self._validate_path(src)
         self._validate_path(dst)
+        self._maybe_check_no_file_ancestor(dst)
 
         if src == dst:
             with self._map_errors(src), self._engine.connect() as conn:

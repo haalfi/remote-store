@@ -25,29 +25,34 @@ from tests.backends.fixtures.registry import BackendFixture, register
 if TYPE_CHECKING:
     from remote_store._backend import Backend
 
-_meta = load_fixture("azurite")
-
 _LOG = logging.getLogger(__name__)
 _CONTAINERS: dict[int, tuple[str, object]] = {}
 
 
-def _factory() -> Backend:
-    if INFRA.azurite_conn_str is None:
-        pytest.skip(f"Azure SDK not installed or Azurite not reachable on {AZURITE_HOST}:{AZURITE_PORT}")
-    from azure.storage.blob import BlobServiceClient
+def _make_factory(reject_write_under_file_ancestor: bool):
+    def _factory() -> Backend:
+        if INFRA.azurite_conn_str is None:
+            pytest.skip(f"Azure SDK not installed or Azurite not reachable on {AZURITE_HOST}:{AZURITE_PORT}")
+        from azure.storage.blob import BlobServiceClient
 
-    from remote_store.backends._azure import AzureBackend
+        from remote_store.backends._azure import AzureBackend
 
-    container = f"conformance-{uuid.uuid4().hex[:8]}"
-    service = BlobServiceClient.from_connection_string(INFRA.azurite_conn_str)
-    try:
-        service.create_container(container)
-    except Exception:
-        service.close()
-        raise
-    backend = AzureBackend(container=container, connection_string=INFRA.azurite_conn_str)
-    _CONTAINERS[id(backend)] = (container, service)
-    return backend
+        container = f"conformance-{uuid.uuid4().hex[:8]}"
+        service = BlobServiceClient.from_connection_string(INFRA.azurite_conn_str)
+        try:
+            service.create_container(container)
+        except Exception:
+            service.close()
+            raise
+        backend = AzureBackend(
+            container=container,
+            connection_string=INFRA.azurite_conn_str,
+            reject_write_under_file_ancestor=reject_write_under_file_ancestor,
+        )
+        _CONTAINERS[id(backend)] = (container, service)
+        return backend
+
+    return _factory
 
 
 def _cleanup(backend: Backend) -> None:
@@ -77,12 +82,14 @@ def _capabilities() -> frozenset:
     return frozenset(AzureBackend.CAPABILITIES)
 
 
-register(
-    BackendFixture(
-        factory=_factory,
-        capabilities=_capabilities(),
-        cleanup=_cleanup,
-        marks=(pytest.mark.requires_docker,),
-        **_meta.to_kwargs(),
+for _name in ("azurite", "azurite_strict"):
+    _meta = load_fixture(_name)
+    register(
+        BackendFixture(
+            factory=_make_factory(_meta.rejects_write_under_file_ancestor),
+            capabilities=_capabilities(),
+            cleanup=_cleanup,
+            marks=(pytest.mark.requires_docker,),
+            **_meta.to_kwargs(),
+        )
     )
-)

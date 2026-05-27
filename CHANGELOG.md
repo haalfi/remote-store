@@ -7,6 +7,23 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **`reject_write_under_file_ancestor: bool = False` kwarg on flat-namespace
+  backends** (ID-211, BE-008). Opt-in pre-check on `S3Backend` /
+  `S3PyArrowBackend` / `AzureBackend` (non-HNS) / `SQLBlobBackend` and the
+  async `AsyncAzureBackend`: when enabled, `write` / `write_atomic` /
+  `open_atomic` / `move` / `copy` walk slash-aligned ancestors of the
+  destination and raise `InvalidPath` on the first regular-file hit,
+  closing the cross-backend gap that ID-209 carved out for flat-NS
+  backends. Paths with no slash short-circuit (no extra round trips)
+  so store-root writes pay nothing; nested writes pay one HEAD per
+  ancestor. Default is `False` to keep the per-call cost off hot paths;
+  measurement at
+  `sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md`. New
+  `*_strict` conformance fixtures (`s3_moto_strict`, `sqlblob_strict`,
+  `azurite_strict`, `s3_pyarrow_moto_strict`) exercise the opt-in path.
+
 ### Changed
 
 - **`write` / `write_atomic` / `open_atomic` / `move` / `copy` now raise
@@ -21,10 +38,9 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `_ensure_parents`. Cross-backend conformance pinned by the new
   `test_write_under_file_ancestor_raises_invalid_path` tests in
   `test_errors.py` (sync) and `test_async_extended.py` (async).
-  Flat-namespace backends (S3, Azure non-HNS, SQLBlob, HTTP) cannot
-  detect a file-ancestor in O(1) without an extra HEAD round trip; the
-  conformance gate skips on those fixtures via `_skip_flat_namespace`,
-  and ID-211 tracks the optional HEAD pre-check follow-up.
+  Flat-namespace backends (S3, Azure non-HNS, SQLBlob) opt in to the
+  same contract via the new ID-211 `reject_write_under_file_ancestor`
+  kwarg.
 
 ### Internal
 

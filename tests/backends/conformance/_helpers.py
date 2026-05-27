@@ -97,6 +97,27 @@ def _skip_flat_namespace(backend: object, reason: str = "flat-namespace backend"
         pytest.skip(reason)
 
 
+def _skip_unless_rejects_file_ancestor(
+    backend: object,
+    reason: str = "fixture does not reject write-under-file-ancestor (ID-211 opt-in off)",
+) -> None:
+    """Skip when the fixture's backend does not enforce the file-ancestor gate.
+
+    The ID-209 file-ancestor InvalidPath contract is mandatory on
+    hierarchical backends and opt-in on flat-NS backends (see ID-211).
+    Fixtures advertise the resolved behaviour via
+    ``BackendFixture.rejects_write_under_file_ancestor``; tests gated on
+    that promise use this helper instead of ``_skip_flat_namespace``.
+
+    Replaces the older "skip everything flat-NS" stance: the new
+    ``s3_moto_strict`` / ``azurite_strict`` / ``sqlblob_strict``
+    fixtures advertise ``rejects = True`` and run the gate; the
+    default-off fixtures continue to skip.
+    """
+    if not _fixture_record(backend).rejects_write_under_file_ancestor:
+        pytest.skip(reason)
+
+
 def _do_op(backend: object, op: str, src: str, dst: str, **kw: Any) -> None:
     """Invoke ``backend.<op>(src, dst, **kw)``."""
     getattr(backend, op)(src, dst, **kw)

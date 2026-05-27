@@ -171,29 +171,6 @@ PR where its items share a file or proof.
   `@pytest.mark.spec("BE-018")` marker. The abstract contract (BE-018,
   Gap 5) currently sidesteps intermediate states.
 
-- [ ] **ID-211 — write-under-file HEAD pre-check for flat-namespace backends**
-  spec: BE-008 · effort: M · audience: user.api, library.maintainer
-  Follow-up to ID-209 (PR #680). Decision 2 (a) landed: write/move/copy
-  to a path under a file ancestor MUST raise `InvalidPath` cross-backend.
-  Hierarchical backends (Local, SFTP, Memory) enforce this via native
-  mappings; flat-namespace backends (S3, Azure non-HNS, SQLBlob, HTTP)
-  skip the conformance gate today because detecting a file-ancestor
-  costs an extra HEAD round trip per write. (HNS Azure is *not* in this
-  item's scope — it has real directories and errors naturally, but the
-  Azure backend's `_classify` translates the error to the wrong class;
-  ID-213 covers that.) Observation from the ID-209
-  thread: most writes go to store-root paths (no ancestor to check), so
-  a cheap "skip the check when there are no slash segments" guard
-  brings the round-trip cost down to writes that explicitly target a
-  nested path. Evaluate: (a) is the HEAD pre-check worth shipping
-  unconditionally for nested-path writes on flat-NS backends; (b) does
-  it belong behind an opt-in client option; (c) does the per-fixture
-  carve-out remain the right answer and we just close ID-211 with the
-  measurement. Output: short findings note in `sdd/research/`, plus
-  whichever follow-up the disposition demands. (Note: ID-210 was
-  allocated upstream to the async Dafny oracle item that landed in PR #681
-  via a parallel rebase race; this follow-up takes the next free ID.)
-
 - [ ] **ID-212 — Harden SFTP file-ancestor detection against partial-stat-permission setups**
   spec: BE-006, BE-007 · effort: S · audience: library.maintainer
   Follow-up to ID-209 (PR #680).  The new
