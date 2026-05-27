@@ -1,11 +1,10 @@
 id: BK-208
 title: "Triage post-v0.23.0 lessons-learned into backlog items"
 trigger: >-
-  The post-v0.23.0 retrospective memo (`../sandbox/post-v0.23.0-lessons-learned.md`)
-  carried eight concrete recommendations parked under BK-208 to avoid scope
-  creep before v0.24.0. Three releases later (v0.24.0..v0.26.0) the catch-all
-  item was still pending, blocking the pattern-drift safeguard before ID-127
-  (Graph backend) lands.
+  A post-v0.23.0 retrospective memo carried eight concrete recommendations
+  parked under BK-208 to avoid scope creep before v0.24.0. Three releases
+  later (v0.24.0..v0.26.0) the catch-all item was still pending, blocking
+  the pattern-drift safeguard before ID-127 (Graph backend) lands.
 source_items:
   - BK-208
 audience:
@@ -18,11 +17,7 @@ phases:
       - file: sdd/BACKLOG.md
         section: "BK-208"
         read_type: gate
-        extract: "Confirm the six listed sub-items and the ID-127-pattern-drift framing"
-      - file: ../sandbox/post-v0.23.0-lessons-learned.md
-        section: "§5 Recommendations for after next release"
-        read_type: reference
-        extract: "Original 8 recommendations; map (a)..(f) in BK-208 onto the source items"
+        extract: "Confirm the six listed sub-items and the ID-127-pattern-drift framing; map (a)..(f) against the source memo's eight §5 recommendations (memo itself was an external retrospective, since deleted)"
   - id: audit
     name: Audit current-state of each sub-item
     steps:
