@@ -446,3 +446,70 @@ class TestCopyPostState:
         backend.copy("cpps_src.txt", "cpps_dst.txt")
         assert backend.read_bytes("cpps_src.txt") == b"data"
         assert backend.read_bytes("cpps_dst.txt") == b"data"
+
+
+# ID-191: BE-018 observable contract under a crash between copy and delete.
+# Lives in test_atomic.py with the rest of the BE-018 conformance, but is
+# *not* parametrised over fixture_params: it constructs its own in-process
+# backend and wraps it in a crash-injecting shim. The wrapper raises on the
+# delete step of a copy-then-delete move, modelling the non-atomic failure
+# window the ResourceSafety.dfy § 2.3 MoveContract excludes for backends
+# that declare atomic-move capability. No oracle certifies this test —
+# crash injection has no compiled-MemoryBackend equivalent — so the
+# `@pytest.mark.spec("BE-018")` marker is for traceability only (per
+# sdd/BACKLOG.md ID-191).
+class _CrashBetweenCopyAndDelete:
+    """Backend wrapper whose ``move()`` does ``inner.copy(); raise``.
+
+    Models the worst case of a non-atomic copy-then-delete implementation
+    where the delete step (or the rename's commit phase) fails after the
+    copy has materialised the destination. The raise is the load-bearing
+    behaviour: BE-018 prose mandates that backends MUST NOT silently
+    swallow such a failure, and the ResourceSafety.dfy § 2.3 MoveContract
+    formalises that the observable terminal state cannot be a CopyDone
+    pretending to be DeleteDone.
+    """
+
+    def __init__(self, inner: Backend) -> None:
+        self._inner = inner
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._inner, name)
+
+    def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        self._inner.copy(src, dst, overwrite=overwrite)
+        raise RuntimeError("simulated crash between copy and delete")
+
+
+class TestMoveCrashInjection:
+    """BE-018 § Atomicity: copy-then-delete crash leaves data recoverable.
+
+    Asserts the non-loss invariant: after a copy-then-delete move that
+    crashes between the two steps, the source is intact OR the destination
+    is intact — never both gone. The mock wraps a fresh in-process backend
+    rather than parametrising over the fixture set; the contract is on the
+    move *protocol*, not on any concrete backend.
+    """
+
+    @pytest.mark.spec("BE-018")
+    def test_partial_move_preserves_at_least_one_copy(self) -> None:
+        from remote_store.backends._memory import MemoryBackend
+
+        inner = MemoryBackend()
+        wrapper = _CrashBetweenCopyAndDelete(inner)
+        inner.write("crash_src.txt", b"payload")
+
+        with pytest.raises(RuntimeError, match="simulated crash"):
+            wrapper.move("crash_src.txt", "crash_dst.txt")
+
+        src_present = inner.exists("crash_src.txt")
+        dst_present = inner.exists("crash_dst.txt")
+        # The BE-018 invariant: never both gone. Discharged here on the
+        # typical copy-then-fail-on-delete shape (both still present),
+        # which is also what BE-018's prose anticipates real flat-namespace
+        # backends do on a partial failure.
+        assert src_present or dst_present
+        assert src_present, "copy-then-delete crash before delete must leave source intact"
+        assert dst_present, "crash AFTER copy materialised dst: dst should also be present"
+        assert inner.read_bytes("crash_src.txt") == b"payload"
+        assert inner.read_bytes("crash_dst.txt") == b"payload"

@@ -284,6 +284,131 @@ lemma MoveFinalStateEquivalence(
 }
 
 // ---------------------------------------------------------------------------
+// §2.3  Observable contract for atomic-move-capable backends  (ID-191)
+// ---------------------------------------------------------------------------
+//
+// §2.1 / §2.2 model the runtime `MovePhase` an implementation traverses; this
+// section models what an *atomic-move-capable backend* (CapAtomicMove in the
+// BackendContract.dfy capability set) is allowed to expose to its caller as a
+// terminal observable state.  The constraint is strictly stronger than the
+// final-state postcondition Backend.Move pins (BackendContract.dfy §6): a
+// non-atomic copy-then-delete implementation can transiently sit in CopyDone
+// (src gone, dst not yet written from the caller's perspective), but a backend
+// that *declares* atomicity must never expose that intermediate state to a
+// caller as a "completed" move.  The BE-018 prose at sdd/specs/003-... §
+// Atomicity says this in words; `MoveContract` says it in datatype.
+//
+// Honest scope: this is a contract on what the backend's *observable* terminal
+// state is, not a guarantee that no implementation bug can violate it.  An
+// atomic-rename primitive at the storage layer (os.rename, S3 CopyObject +
+// DeleteObject inside a HNS rename, Azure DFS rename) discharges this in
+// practice; non-atomic backends fall back to copy-then-delete and surface the
+// failure as a (raised) error rather than swallowing CopyDone as success.
+// The (T) leg of ID-191 lives in tests/backends/conformance/test_atomic.py
+// (TestMoveCrashInjection) — no oracle certifies it because no compiled
+// MemoryBackend backend exposes a crash-injection seam.
+
+datatype MoveContract =
+  | ObservedDeleteDone                           // success: src gone, dst exists
+  | ObservedFailed(reason: string)               // rollback: source preserved
+// note: NO ObservedCopyDone variant — that intermediate state must never be
+//       observable as a completed move to the caller of an atomic backend.
+
+// An atomic backend's observable terminal state must not be CopyDone.
+// CopyDeleteMove can sit in CopyDone when its delete step fails; an atomic
+// implementation either succeeds (DeleteDone) or rolls back (Failed).
+// @spec BE-018
+predicate ObservableForAtomicMove(phase: MovePhase)
+{
+  phase != CopyDone
+}
+
+// Project an observable runtime phase into the strict observable-contract
+// datatype.  Total over the precondition (which excludes CopyDone by
+// ObservableForAtomicMove); deliberately partial elsewhere so a CopyDone
+// observation cannot accidentally be encoded as either contract variant.
+// @spec BE-018
+function Observe(phase: MovePhase): MoveContract
+  requires ObservableForAtomicMove(phase)
+{
+  match phase
+  case DeleteDone => ObservedDeleteDone
+  case Failed(_, reason) => ObservedFailed(reason)
+  case Initial => ObservedFailed("not started")
+}
+
+// AtomicMove only ever exposes contract-observable states.  Discharged by
+// case-splitting on AtomicMove's three return branches: !srcExists → Failed,
+// dstExists && !overwrite → Failed, otherwise → DeleteDone.  CopyDone is
+// structurally absent from AtomicMove's body — it is the discriminator
+// between the atomic and the non-atomic strategies.
+// @spec BE-018
+lemma AtomicMoveNeverExposesCopyDone(
+  srcExists: bool, dstExists: bool, overwrite: bool, phase: MovePhase
+)
+  requires (!srcExists ==> phase.Failed?)
+  requires (srcExists && dstExists && !overwrite ==> phase.Failed?)
+  requires (srcExists && (!dstExists || overwrite) ==> phase == DeleteDone)
+  ensures ObservableForAtomicMove(phase)
+{
+  if !srcExists {
+    assert phase.Failed?;
+  } else if dstExists && !overwrite {
+    assert phase.Failed?;
+  } else {
+    assert phase == DeleteDone;
+  }
+  // None of the three branches yield CopyDone.
+  assert phase != CopyDone;
+}
+
+// CopyDeleteMove can expose CopyDone — exactly when the delete step fails on
+// an otherwise-eligible input.  This is the structural reason copy-then-delete
+// is a strictly weaker contract than atomic move: a backend running it MUST
+// surface the failure (raise), because returning success here would amount to
+// exposing CopyDone as a completed move.  The Python conformance leg
+// (TestMoveCrashInjection in tests/backends/conformance/test_atomic.py)
+// exercises this on a crash-injecting wrapper.
+// @spec BE-018
+lemma CopyDeleteMoveExposesCopyDoneOnDeleteFail(
+  srcExists: bool, dstExists: bool, overwrite: bool, phase: MovePhase
+)
+  requires srcExists && (!dstExists || overwrite)
+  requires phase == CopyDone  // i.e. the deleteFails branch of CopyDeleteMove
+  ensures !ObservableForAtomicMove(phase)
+{
+  assert phase == CopyDone;
+}
+
+// Source-preservation invariant: any observable contract state other than
+// success is a failed state, which by construction (Observe's domain) maps
+// only from a non-CopyDone MovePhase.  The combined chain — atomic backend
+// must satisfy ObservableForAtomicMove, Observe is defined there, so a
+// Failed observation never reflects a CopyDone runtime state — formalises
+// the BE-018 prose "Failed (rollback, source preserved)".
+// @spec BE-018
+lemma ObservedFailedPreservesSource(phase: MovePhase, contract: MoveContract)
+  requires ObservableForAtomicMove(phase)
+  requires contract == Observe(phase)
+  requires contract.ObservedFailed?
+  ensures phase != CopyDone
+  ensures phase != DeleteDone
+  ensures phase.Failed? || phase == Initial
+{
+  // contract == ObservedFailed only when phase ∈ {Failed(_,_), Initial}
+  // (Observe maps DeleteDone → ObservedDeleteDone exclusively).
+  match phase
+  case DeleteDone =>
+    assert Observe(phase) == ObservedDeleteDone;
+    assert contract == ObservedDeleteDone;
+    assert false;  // contradicts contract.ObservedFailed?
+  case Failed(_, _) =>
+    assert phase.Failed?;
+  case Initial =>
+    assert phase == Initial;
+}
+
+// ---------------------------------------------------------------------------
 // §3  Connection lifecycle  (BUG-144 pattern)
 // ---------------------------------------------------------------------------
 

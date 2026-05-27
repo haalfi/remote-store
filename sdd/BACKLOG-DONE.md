@@ -8,6 +8,51 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-191 — Move atomicity: model the observable contract, then enforce it**
+  spec: BE-018, ASYNC-018 · audience: infra.test
+  Wave 1 (C)+(T) pair, sibling of ID-188 (PR #689). Closes the BE-018
+  gap where `ResourceSafety.dfy` § 2 modelled the runtime `MovePhase`
+  an implementation traverses but had no datatype pinning the terminal
+  observable states an atomic-move-capable backend may expose to a
+  caller.
+  (C) Added `sdd/formal/ResourceSafety.dfy` § 2.3 "Observable contract
+  for atomic-move-capable backends": a new `datatype MoveContract =
+  ObservedDeleteDone | ObservedFailed(reason)` with no `CopyDone`
+  variant by construction. A `predicate ObservableForAtomicMove(phase:
+  MovePhase) { phase != CopyDone }` and a partial `function
+  Observe(phase): MoveContract` (precondition discharges on the
+  predicate; undefined at `CopyDone`) carry the projection from runtime
+  state to observable contract. Three lemmas pin the load-bearing
+  facts: `AtomicMoveNeverExposesCopyDone` (the three return branches of
+  `AtomicMove` all satisfy the predicate),
+  `CopyDeleteMoveExposesCopyDoneOnDeleteFail` (the structural reason
+  copy-then-delete is a strictly weaker contract — and the reason a
+  non-atomic backend MUST raise on partial failure rather than swallow
+  it), and `ObservedFailedPreservesSource` (a `Failed` observation
+  never reflects a `CopyDone` runtime state, formalising the BE-018
+  "rollback, source preserved" clause). Each new clause carries
+  `// @spec BE-018`. ResourceSafety.dfy: 17 verified, 0 errors (was 12;
+  +5 from the predicate + ghost function + three lemmas).
+  MemoryBackend.dfy unchanged at 478 verified, 0 errors — the change is
+  ghost-only (no `Backend` trait method signatures touched), so
+  `MemoryBackend-py/module_.py` did not need re-translation.
+  (T) Added `TestMoveCrashInjection::test_partial_move_preserves_at_least_one_copy`
+  to `tests/backends/conformance/test_atomic.py`. A local
+  `_CrashBetweenCopyAndDelete` wrapper around a fresh in-process
+  backend implements `move()` as `inner.copy(); raise RuntimeError`,
+  modelling the worst case of a non-atomic copy-then-delete where the
+  delete step fails after the copy has materialised the destination.
+  The test asserts the non-loss invariant: source intact OR destination
+  intact, never both gone — discharged here on the typical
+  copy-then-fail-on-delete shape (both still present). The class is
+  *not* parametrised over `fixture_params`: the contract is on the
+  move *protocol*, not on any concrete backend, and per BACKLOG prose
+  the oracle does not certify it (no compiled-MemoryBackend
+  crash-injection seam). The `@pytest.mark.spec("BE-018")` marker is
+  for traceability only; `check_formal_trace.py` sees no new F1 / F2
+  (BE-018 was already in D and T).
+  Trace: `sdd/traces/id-191-move-atomicity-observable-contract.yml`.
+
 - [x] **ID-188 — Resource safety: prove the quality flags, then enforce cleanup**
   spec: SIO-001, SIO-008, SIO-009, SAW-004, SAW-005 · audience: infra.test
   Wave 1 (C)+(T) pair landed in one PR.

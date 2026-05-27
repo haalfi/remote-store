@@ -81,7 +81,7 @@ none of which is "run a second backend and diff the output":
 | Wave | Items | Notes |
 |---|---|---|
 | 0 — property-based (O) | — | ID-187 landed; see BACKLOG-DONE.md |
-| 1 — contract + test | ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable. ID-188 landed; see BACKLOG-DONE.md |
+| 1 — contract + test | — | Each pairs a Dafny change with the conformance tests it makes certifiable. ID-188 landed; ID-191 landed; see BACKLOG-DONE.md |
 | 1 — test backfill (T) | ID-210 | ID-185 landed; see BACKLOG-DONE.md |
 
 Items stay granular for tracking, but a whole wave row may ship as one
@@ -141,23 +141,6 @@ PR where its items share a file or proof.
   divergence emerges that the bridge masks (analogous to how
   `SyncBackendAdapter` certifies the sync→async bridge in product code
   without a separate verified contract for it).
-
-- [ ] **ID-191 — Move atomicity: model the observable contract, then enforce it**
-  spec: BE-018, ASYNC-018 · effort: L · audience: infra.test
-  A (C)+(T) pair. `ResourceSafety.dfy` § 2 models `AtomicMove` and
-  `CopyDeleteMove` and proves `MoveFinalStateEquivalence`, but no contract
-  pins the observable intermediate states.
-  (C) Extend `ResourceSafety.dfy` with a `MoveContract` datatype encoding
-  the states an atomic-move-capable backend may expose: `DeleteDone`
-  (success) or `Failed` (rollback, source preserved), never `CopyDone`
-  (source gone, destination not yet written).
-  (T) Add a conformance test that injects a crash between copy and delete
-  (a mock backend raising on the delete step) and asserts the source is
-  intact or the destination is intact, never both gone. This test runs
-  against a crash-injecting mock rather than the oracle, so the oracle
-  does not certify it; the traceability gate still requires its
-  `@pytest.mark.spec("BE-018")` marker. The abstract contract (BE-018,
-  Gap 5) currently sidesteps intermediate states.
 
 - [ ] **ID-212 — Harden SFTP file-ancestor detection against partial-stat-permission setups**
   spec: BE-006, BE-007 · effort: S · audience: library.maintainer

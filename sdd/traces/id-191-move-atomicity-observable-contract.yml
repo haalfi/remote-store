@@ -1,0 +1,80 @@
+id: ID-191
+title: "Move atomicity: model the observable contract, then enforce it"
+trigger: |
+  Wave 1 (C)+(T) pair from the Formal Verification table, sibling of
+  ID-188 (which landed via PR #689). ResourceSafety.dfy § 2 modelled
+  the runtime MovePhase an implementation traverses (AtomicMove and
+  CopyDeleteMove), but had no datatype pinning what a backend declaring
+  atomic move may expose to its caller as a terminal observable state.
+  The BE-018 prose says it ("never both gone") but no Dafny postcondition
+  rules out a backend silently surfacing CopyDone (src gone, dst not
+  yet written) as a completed move. The conformance side similarly
+  lacked an executable encoding of the non-loss invariant under a
+  copy-then-delete crash.
+source_items:
+  - ID-191
+audience:
+  - infra.test
+co_shipped_items: []
+discovery_followups: []
+expected_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Formal Verification / Wave 1 / ID-191"
+        read_type: gate
+        extract: "Scope: (C) MoveContract datatype excluding CopyDone, (T) crash-injection conformance test (oracle does not certify)"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-018 / Atomicity, Partial failure"
+        read_type: gate
+        extract: "Non-atomic backends MUST surface partial failure; caller MUST NOT assume atomicity; source may still exist alongside destination"
+      - file: sdd/formal/ResourceSafety.dfy
+        section: "§2 AtomicMove / CopyDeleteMove / MoveFinalStateEquivalence"
+        read_type: reference
+        extract: "Existing MovePhase models runtime state; no observable-contract datatype yet"
+      - file: sdd/formal/BackendContract.dfy
+        section: "§6 Move / CapAtomicMove"
+        read_type: reference
+        extract: "Move postcondition pins only the final state, not intermediate observability; CapAtomicMove is the capability that the new contract gates on"
+  - id: design
+    name: Design the contract datatype
+    steps:
+      - file: sdd/traces/id-188-quality-flags-cleanup.yml
+        section: "phases / implement_c"
+        read_type: reference
+        extract: "Lesson 2 carry-over: ghost-only datatype + lemma additions don't require re-translating module_.py"
+      - file: sdd/formal/ResourceSafety.dfy
+        section: "§2.2 CopyDeleteMove / deleteFails branch"
+        read_type: reference
+        extract: "CopyDone is the structural discriminator between atomic and copy-then-delete; the new MoveContract must exclude it"
+  - id: implement_c
+    name: (C) Dafny contract — MoveContract datatype + lemmas
+    steps:
+      - file: sdd/formal/ResourceSafety.dfy
+        section: "§2.3 (new) — Observable contract for atomic-move-capable backends"
+        read_type: gate
+        extract: "Add MoveContract (ObservedDeleteDone | ObservedFailed); ObservableForAtomicMove predicate; Observe ghost function (partial — undefined at CopyDone); three lemmas: AtomicMoveNeverExposesCopyDone, CopyDeleteMoveExposesCopyDoneOnDeleteFail, ObservedFailedPreservesSource. All carry @spec BE-018."
+  - id: implement_t
+    name: (T) Conformance — crash-injection wrapper
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestMoveCrashInjection (new)"
+        read_type: gate
+        extract: "Local _CrashBetweenCopyAndDelete wrapper around a fresh in-process backend; move() does inner.copy + raise. Asserts non-loss invariant: src OR dst intact (never both gone). Not parametrised over fixture_params — contract is on the move *protocol*; marker @pytest.mark.spec(\"BE-018\") for traceability only (no oracle for crash injection per BACKLOG prose)."
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/formal/ResourceSafety.dfy
+        section: "(full — dafny verify)"
+        read_type: verify
+        extract: "Native dafny 4.11.0: ResourceSafety.dfy 17 verified, 0 errors (was 12; +5 from predicate + ghost function + 3 lemmas). MemoryBackend.dfy unchanged at 478 verified, 0 errors — confirms the ghost-only change does not ripple."
+      - file: scripts/check_formal_trace.py
+        section: "_BASELINE; BE-018 row"
+        read_type: verify
+        extract: "BE-018 was already in D (tagged in BackendContract.dfy) and in T (existing @pytest.mark.spec(\"BE-018\") markers in test_atomic.py); adding new @spec BE-018 tags in ResourceSafety.dfy and a new BE-018 marker on the new test class introduces no F1 / F2 violation."
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "Backlog move ID-191 → BACKLOG-DONE.md top of [Unreleased]; Wave-1 table cell updated to 'ID-191 landed; see BACKLOG-DONE.md'. backlogid.json no-op (191 < current max). Trace authored. No CHANGELOG (audience infra.test). No MemoryBackend-py/module_.py regen (ghost-only Dafny change). No Azure cassette ripple (new test fixture-independent)."
