@@ -331,16 +331,21 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         The ``_head_one`` closure opens a fresh ``_engine.connect()`` per
         ancestor. When the helper is called from ``move``/``copy`` the
         caller is already inside an outer ``_engine.begin()`` block; the
-        ancestor walk is intentionally outside that transaction. This is
-        benign because the walk reads ancestor *keys*, never ``dst``
-        itself, so isolation-level differences between SQLite (read
-        committed by default) and stricter backends (e.g. PostgreSQL
-        REPEATABLE READ) do not affect the gate's correctness. The cost
-        is N+1 pool checkouts on top of N selects; a future refactor
-        that wants to consolidate this should thread the outer ``conn``
-        through ``_head_one`` rather than letting the walk silently
-        share the transaction. Bulk-write callers wanting fewer round
-        trips should follow the IN-list / memoisation follow-up.
+        walk does not share the outer transaction's ``Connection``
+        wrapper, but **may share the underlying DBAPI connection
+        depending on pool class** — the default in-memory SQLite URL
+        uses ``SingletonThreadPool``, which returns the same DBAPI
+        connection per thread, so on that backend the walk runs inside
+        the outer transaction's read set. Network-attached SQL backends
+        (PostgreSQL with ``QueuePool``, MySQL, etc.) get a distinct
+        DBAPI connection. Either way the walk reads ancestor *keys*,
+        never ``dst`` itself, so isolation-level differences (SQLite
+        read-committed, PostgreSQL REPEATABLE READ) do not affect the
+        gate's correctness. The cost is N+1 pool checkouts on top of N
+        selects; a future refactor that wants to consolidate this
+        should thread the outer ``conn`` through ``_head_one``. Bulk-
+        write callers wanting fewer round trips should follow the
+        IN-list / memoisation follow-up (BK-242).
         """
         if not self._reject_write_under_file_ancestor:
             return
@@ -349,17 +354,19 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         t = self._table
 
         def _head_one(key: str) -> bool:
-            # Fail-open: align with the cross-backend contract documented in
-            # _flat_ns.py — any non-NotFound probe error (OperationalError,
-            # transient pool drop, schema issue) returns False, so the walk
-            # neither rolls back the outer move/copy transaction nor flips
-            # the gate's failure mode from "best-effort gate" to "hard fail
-            # on transient probe errors". An ancestor that legitimately
-            # exists as a file still produces a row and surfaces correctly.
+            # Fail-open on SQLAlchemy/DBAPI errors (OperationalError,
+            # transient pool drop, schema issue) and network OSError. The
+            # walk does not roll back the outer move/copy transaction nor
+            # flip the gate's failure mode from "best-effort gate" to "hard
+            # fail on transient probe errors". Programmer errors (TypeError,
+            # AttributeError) propagate as bugs. An ancestor that
+            # legitimately exists as a file still produces a row and
+            # surfaces correctly. See ``_flat_ns.py`` module docstring §
+            # "Fail-open ``head_one``".
             try:
                 with self._engine.connect() as conn:
                     row = conn.execute(sa.select(sa.literal(1)).where(t.c.key == key)).first()
-            except Exception:  # noqa: BLE001 -- fail-open is the documented contract
+            except (sa.exc.SQLAlchemyError, OSError):
                 return False
             return row is not None
 

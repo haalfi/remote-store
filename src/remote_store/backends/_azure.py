@@ -280,15 +280,19 @@ class AzureBackend(Backend):
         # gap and is independent of this pre-check.)
         if self._hns:
             return
-        from azure.core.exceptions import ResourceNotFoundError
+        from azure.core.exceptions import AzureError, ResourceNotFoundError
 
         def _head_one(key: str) -> bool:
+            # Fail-open on probe failures: 404 (ResourceNotFoundError) and
+            # any other Azure SDK error (HttpResponseError / ServiceRequestError
+            # — both AzureError subclasses), plus network OSError. Programmer
+            # errors (TypeError, AttributeError) propagate.
             bc = self._blob_client(key)
             try:
                 bc.get_blob_properties()
             except ResourceNotFoundError:
                 return False
-            except Exception:  # noqa: BLE001
+            except (AzureError, OSError):
                 return False
             return True
 

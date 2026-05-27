@@ -120,12 +120,19 @@ class _S3Base(Backend):
         """
         if not self._reject_write_under_file_ancestor:
             return
+        from botocore.exceptions import BotoCoreError, ClientError  # type: ignore[import-untyped]
+
         from remote_store.backends._flat_ns import _check_no_file_ancestor
 
         def _head_one(key: str) -> bool:
+            # Fail-open on probe failures (404 ClientError, network OSError,
+            # botocore-internal BotoCoreError). Programmer errors (TypeError,
+            # AttributeError) propagate — they signal an integration bug, not
+            # a probe outcome. See ``_flat_ns.py`` module docstring §
+            # "Fail-open ``head_one``" for the cross-backend contract.
             try:
                 self._s3fs.call_s3("head_object", Bucket=self._bucket, Key=key)
-            except Exception:  # noqa: BLE001 -- any error means "not a file"
+            except (ClientError, BotoCoreError, OSError):
                 return False
             return True
 

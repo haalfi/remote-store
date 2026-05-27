@@ -26,43 +26,45 @@ from tests.backends.fixtures.registry import BackendFixture, register
 if TYPE_CHECKING:
     from remote_store._backend import Backend
 
-_meta = load_fixture("s3_pyarrow_minio")
-
 _BUCKETS: dict[int, tuple[str, object]] = {}
 
 
-def _factory() -> Backend:
-    try:
-        import pyarrow  # noqa: F401
-        import s3fs  # noqa: F401
-    except ImportError:
-        pytest.skip("pyarrow/s3fs not installed")
-    if not pyarrow_ge_24():
-        pytest.skip("pyarrow < 24 uses the s3_pyarrow_moto fixture, not MinIO")
-    if INFRA.minio_url is None:
-        pytest.skip(f"MinIO not reachable on {MINIO_HOST}:{MINIO_PORT}")
-    import boto3
+def _make_factory(reject_write_under_file_ancestor: bool):
+    def _factory() -> Backend:
+        try:
+            import pyarrow  # noqa: F401
+            import s3fs  # noqa: F401
+        except ImportError:
+            pytest.skip("pyarrow/s3fs not installed")
+        if not pyarrow_ge_24():
+            pytest.skip("pyarrow < 24 uses the s3_pyarrow_moto fixture, not MinIO")
+        if INFRA.minio_url is None:
+            pytest.skip(f"MinIO not reachable on {MINIO_HOST}:{MINIO_PORT}")
+        import boto3
 
-    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
-    bucket = f"conformance-pa-{uuid.uuid4().hex[:8]}"
-    client = boto3.client(
-        "s3",
-        endpoint_url=INFRA.minio_url,
-        aws_access_key_id=MINIO_KEY,
-        aws_secret_access_key=MINIO_SECRET,
-        region_name="us-east-1",
-    )
-    client.create_bucket(Bucket=bucket)
-    backend = S3PyArrowBackend(
-        bucket=bucket,
-        key=MINIO_KEY,
-        secret=MINIO_SECRET,
-        region_name="us-east-1",
-        endpoint_url=INFRA.minio_url,
-    )
-    _BUCKETS[id(backend)] = (bucket, client)
-    return backend
+        bucket = f"conformance-pa-{uuid.uuid4().hex[:8]}"
+        client = boto3.client(
+            "s3",
+            endpoint_url=INFRA.minio_url,
+            aws_access_key_id=MINIO_KEY,
+            aws_secret_access_key=MINIO_SECRET,
+            region_name="us-east-1",
+        )
+        client.create_bucket(Bucket=bucket)
+        backend = S3PyArrowBackend(
+            bucket=bucket,
+            key=MINIO_KEY,
+            secret=MINIO_SECRET,
+            region_name="us-east-1",
+            endpoint_url=INFRA.minio_url,
+            reject_write_under_file_ancestor=reject_write_under_file_ancestor,
+        )
+        _BUCKETS[id(backend)] = (bucket, client)
+        return backend
+
+    return _factory
 
 
 def _cleanup(backend: Backend) -> None:
@@ -86,12 +88,14 @@ def _capabilities() -> frozenset:
     return frozenset(S3PyArrowBackend.CAPABILITIES)
 
 
-register(
-    BackendFixture(
-        factory=_factory,
-        capabilities=_capabilities(),
-        cleanup=_cleanup,
-        marks=(pytest.mark.requires_docker,),
-        **_meta.to_kwargs(),
+for _name in ("s3_pyarrow_minio", "s3_pyarrow_minio_strict"):
+    _meta = load_fixture(_name)
+    register(
+        BackendFixture(
+            factory=_make_factory(_meta.rejects_write_under_file_ancestor),
+            capabilities=_capabilities(),
+            cleanup=_cleanup,
+            marks=(pytest.mark.requires_docker,),
+            **_meta.to_kwargs(),
+        )
     )
-)

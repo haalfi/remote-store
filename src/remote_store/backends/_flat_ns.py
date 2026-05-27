@@ -25,15 +25,21 @@ Two contracts the call sites rely on:
   False under the fail-open semantics below) and the real file-ancestor
   on the normalised path goes undetected.
 * **Fail-open ``head_one``.** Every backend's ``head_one`` closure
-  swallows non-``NotFound`` exceptions and returns ``False`` ("treat
-  unknown state as not-a-file"). A transient HEAD failure (503,
-  throttling, network blip) therefore lets the write proceed; the
-  pre-check is best-effort, not a hard barrier. The opt-in is
-  default-off, so the choice is deliberate: users who turned the gate
-  on get the protection on a clean network path and accept that
-  control-plane errors don't halt the data path. Tightening the
-  closures to fail-closed flips this contract -- expect that to be a
-  spec-amendment-class change rather than a local bug fix.
+  swallows *environmental* probe failures and returns ``False`` ("treat
+  unknown state as not-a-file"). Each backend's closure narrows the
+  swallow to its own error shapes: S3 catches
+  ``(ClientError, BotoCoreError, OSError)``, Azure catches
+  ``(AzureError, OSError)`` (after the dedicated ``ResourceNotFoundError``
+  branch), SQLBlob catches ``(sqlalchemy.exc.SQLAlchemyError, OSError)``.
+  Programmer errors (``TypeError``, ``AttributeError``, etc.) are *not*
+  swallowed — they signal an integration bug and surface as the bug
+  they are. A transient HEAD failure (503, throttling, network blip)
+  therefore lets the write proceed; the pre-check is best-effort, not a
+  hard barrier. The opt-in is default-off, so the choice is deliberate:
+  users who turned the gate on get the protection on a clean network
+  path and accept that control-plane errors don't halt the data path.
+  Tightening the closures to fail-closed flips this contract -- expect
+  that to be a spec-amendment-class change rather than a local bug fix.
 
   Two related properties the opt-in audience should be aware of:
 
@@ -81,19 +87,21 @@ def _check_no_file_ancestor(
     every call site, so backends with the default-off setting pay
     nothing.
     """
-    # Normalise leading slashes so non-canonical inputs like "//a/b/c"
-    # walk the same ancestors that the backend's storage uses (see
-    # module docstring -- "Path normalisation").
-    path = path.lstrip("/")
-    if "/" not in path:
+    # Normalise leading slashes for the walk but keep the original
+    # caller-supplied form for the raised ``InvalidPath`` so error
+    # handlers that grep for the input path still match. See the
+    # module docstring -- "Path normalisation".
+    original_path = path
+    normalised = path.lstrip("/")
+    if "/" not in normalised:
         return
-    parts = path.split("/")
+    parts = normalised.split("/")
     for i in range(1, len(parts)):
         ancestor = "/".join(parts[:i])
         if head_one(ancestor):
             raise InvalidPath(
-                f"Cannot write under file ancestor: {ancestor!r} is a regular file (path={path!r})",
-                path=path,
+                f"Cannot write under file ancestor: {ancestor!r} is a regular file (path={original_path!r})",
+                path=original_path,
                 backend=backend,
             )
 
@@ -109,17 +117,19 @@ async def _acheck_no_file_ancestor(
     Same shape; ``head_one`` is an awaitable. Use from ``AsyncBackend``
     write/move/copy paths on flat-NS async backends.
     """
-    # Normalise leading slashes -- see ``_check_no_file_ancestor``.
-    path = path.lstrip("/")
-    if "/" not in path:
+    # Normalise leading slashes for the walk but raise with the
+    # original caller-supplied form. See ``_check_no_file_ancestor``.
+    original_path = path
+    normalised = path.lstrip("/")
+    if "/" not in normalised:
         return
-    parts = path.split("/")
+    parts = normalised.split("/")
     for i in range(1, len(parts)):
         ancestor = "/".join(parts[:i])
         if await head_one(ancestor):
             raise InvalidPath(
-                f"Cannot write under file ancestor: {ancestor!r} is a regular file (path={path!r})",
-                path=path,
+                f"Cannot write under file ancestor: {ancestor!r} is a regular file (path={original_path!r})",
+                path=original_path,
                 backend=backend,
             )
 

@@ -87,6 +87,7 @@ def _load_all() -> None:
         "sqlblob_strict": "sqlblob",
         "azurite_strict": "azurite",
         "azurite_async_strict": "azurite_async",
+        "s3_pyarrow_minio_strict": "s3_pyarrow_minio",
     }
 
     seen: set[str] = set()

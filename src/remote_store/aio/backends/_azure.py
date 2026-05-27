@@ -147,15 +147,19 @@ class AsyncAzureBackend(AsyncBackend):
             return
         if await self._ensure_hns():
             return
+        from azure.core.exceptions import AzureError
+
         from remote_store.backends._flat_ns import _acheck_no_file_ancestor
 
         async def _head_one(key: str) -> bool:
+            # Fail-open on Azure SDK errors and network OSError; programmer
+            # errors propagate. Mirrors the sync sibling's narrowed except.
             bc = self._blob_client(key)
             try:
                 await bc.get_blob_properties()
             except ResourceNotFoundError:
                 return False
-            except Exception:  # noqa: BLE001
+            except (AzureError, OSError):
                 return False
             return True
 

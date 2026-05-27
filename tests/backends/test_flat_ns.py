@@ -88,6 +88,20 @@ class TestCheckNoFileAncestorSync:
 
         assert calls == ["a", "a/b", "a/b/c"]
 
+    def test_invalid_path_preserves_original_input(self) -> None:
+        """The raised ``InvalidPath`` carries the caller-supplied input,
+        not the post-lstrip normalised form. This lets downstream error
+        handlers that grep for the original path still match.
+        """
+
+        def head_one(key: str) -> bool:
+            return key == "a"
+
+        with pytest.raises(InvalidPath, match=r"//a/b/c/leaf\.txt") as exc_info:
+            _check_no_file_ancestor("//a/b/c/leaf.txt", head_one=head_one, backend="stub")
+
+        assert exc_info.value.path == "//a/b/c/leaf.txt"
+
 
 class TestACheckNoFileAncestorAsync:
     async def test_no_slash_path_returns_without_calls(self) -> None:
@@ -149,3 +163,14 @@ class TestACheckNoFileAncestorAsync:
         await _acheck_no_file_ancestor("//a/b/c/leaf.txt", head_one=head_one, backend="stub")
 
         assert calls == ["a", "a/b", "a/b/c"]
+
+    async def test_invalid_path_preserves_original_input(self) -> None:
+        """Async sibling of ``test_invalid_path_preserves_original_input``."""
+
+        async def head_one(key: str) -> bool:
+            return key == "a"
+
+        with pytest.raises(InvalidPath, match=r"//a/b/c/leaf\.txt") as exc_info:
+            await _acheck_no_file_ancestor("//a/b/c/leaf.txt", head_one=head_one, backend="stub")
+
+        assert exc_info.value.path == "//a/b/c/leaf.txt"
