@@ -218,7 +218,10 @@ PR where its items share a file or proof.
   Hierarchical backends (Local, SFTP, Memory) enforce this via native
   mappings; flat-namespace backends (S3, Azure non-HNS, SQLBlob, HTTP)
   skip the conformance gate today because detecting a file-ancestor
-  costs an extra HEAD round trip per write. Observation from the ID-209
+  costs an extra HEAD round trip per write. (HNS Azure is *not* in this
+  item's scope — it has real directories and errors naturally, but the
+  Azure backend's `_classify` translates the error to the wrong class;
+  ID-213 covers that.) Observation from the ID-209
   thread: most writes go to store-root paths (no ancestor to check), so
   a cheap "skip the check when there are no slash segments" guard
   brings the round-trip cost down to writes that explicitly target a
@@ -258,6 +261,48 @@ PR where its items share a file or proof.
   restricted-permission case, and tighten the `_has_file_ancestor`
   docstring to drop the chroot caveat.  Promote to BK-prefix once a
   user reports the divergence on a real chroot deployment.
+
+- [ ] **ID-213 — Extend ID-209's `InvalidPath` translation to the HNS Azure backend**
+  spec: BE-008 · effort: M · audience: library.maintainer
+  Follow-up to ID-209 (PR #680). Decision 2(a) — write/move/copy under
+  a file ancestor MUST raise `InvalidPath` cross-backend — was
+  implemented for Local and SFTP via native-error translation in
+  `_classify` / per-method handlers. HNS Azure was deferred under the
+  assumption that "HNS has real directories, so the gate should pass
+  once recorded"; the BK-235 cassette-recording run against live ADLS
+  Gen2 (account `remotestorehns`, 2026-05-27) live-verified that
+  assumption and falsified it. Real HNS Azure *does* error on these
+  scenarios — no HEAD pre-check needed, which is what distinguishes
+  this from ID-211's flat-NS scope — but the SDK raises
+  `ResourceNotFoundError` / `ResourceExistsError` /
+  `HttpResponseError(404|409)`, which
+  `_azure_common.classify_azure_error` currently maps to `NotFound` /
+  `AlreadyExists` rather than `InvalidPath`. The eight failing sync
+  conformance tests:
+    - `TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path` (`write`, `write_atomic`)
+    - `TestWriteErrorFidelity::test_open_atomic_under_file_ancestor_raises_invalid_path`
+    - `TestDeleteErrorFidelity::test_delete_under_file_ancestor_raises_not_found` (expects `NotFound`, gets `AlreadyExists`)
+    - `TestMoveCopyErrorFidelity::test_destination_under_file_ancestor_raises_invalid_path` (`move`, `copy`)
+    - `TestListFilesCompleteness::test_list_files_non_traversable_ancestor_yields_empty`
+    - `TestListFoldersCompleteness::test_list_folders_non_traversable_ancestor_yields_empty`
+  Fix shape parallels ID-209's Local/SFTP patch: distinguish the
+  ancestor-is-a-file case from generic 404/409 in
+  `classify_azure_error` (ADLS Gen2 returns a specific `error_code`
+  on the response — `PathConflict` / similar — for the
+  ancestor-as-file case), then re-raise as `InvalidPath`. For the two
+  listing tests the catch site is the per-method handler, not
+  `_classify` — the natural Azure error must be swallowed so the
+  empty-list postcondition fires (mirrors Local/SFTP's
+  `NotADirectoryError` → `[]` swallow added in ID-209). Async siblings
+  in `tests/backends/conformance/test_async_extended.py` expected to
+  mirror; verify against `azure_live_async` once the sync fix lands
+  (the BK-235 recording aborted before Step 3 so the async behaviour
+  is not yet observed). Unblocks BK-235 for these eight tests; the
+  other eight self-skipping cassettes BK-235 covers record cleanly
+  today against live HNS. Parallel to ID-211 (flat-NS HEAD pre-check)
+  and ID-212 (SFTP chroot-stat hardening) — all three are ID-209
+  follow-ups along different backends' error-translation paths.
+  Discovered: BK-235 sync recording run, 2026-05-27.
 
 ---
 
@@ -805,20 +850,40 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
 - [ ] **BK-235 — Record the Azure cassettes for new conformance tests**
   spec: — · effort: S · audience: infra.test
-  Five new conformance tests self-skip on `azure_replay` because no
+  Sixteen conformance tests self-skip on `azure_replay` because no
   cassette exists yet, so the Azure backend is not actually exercised by
-  the new gates: `test_metadata_round_trips_through_move_copy` (sync +
-  async, BK-195/BK-233), `test_delete_folder_recursive_no_child_survives`
-  (sync + async, ID-184), and
-  `test_write_under_file_ancestor_raises_invalid_path` (sync + async,
-  ID-209 — HNS Azure has real directories so the gate should pass once
-  recorded; flat-NS Azurite already skips via the per-fixture
-  `flat_namespace=true` override). Record the cassettes via
-  `RS_TEST_LIVE_HNS=1 hatch run record-azure` against a live ADLS Gen2
-  account (Stage-3 credentials; per TEST-009 CI does not auto-record).
-  Surfaced during BK-195/BK-233; ID-184 extended the worklist with two
-  more cases under the same recording recipe; ID-209 extended again
-  with the write-under-file-ancestor case.
+  these gates. Record via `RS_TEST_LIVE_HNS=1 hatch run record-azure`
+  against a live ADLS Gen2 account (Stage-3 credentials; per TEST-009
+  CI does not auto-record). The recording run on 2026-05-27 (account
+  `remotestorehns`) split the worklist into two halves:
+
+  **Record-ready (8 tests, pass against live HNS):**
+  - `TestWriteResultConformance::test_metadata_round_trips_through_move_copy` (`move`, `copy`) — BK-195/BK-233
+  - `TestDeleteFolderErrorFidelity::test_delete_folder_recursive_no_child_survives` (sync) — ID-184
+  - `TestReadErrorFidelity::test_read_under_file_ancestor_raises_not_found` (`read`, `read_bytes`)
+  - `TestGetFileInfoErrorFidelity::test_get_file_info_under_file_ancestor_raises_not_found`
+  - `TestMoveCopySelfOperation::test_self_op_on_directory_raises_invalid_path` (`move`, `copy`)
+
+  **Blocked on ID-213 (8 tests, fail against live HNS — error class mismatch):**
+  - `TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path` (`write`, `write_atomic`)
+  - `TestWriteErrorFidelity::test_open_atomic_under_file_ancestor_raises_invalid_path`
+  - `TestDeleteErrorFidelity::test_delete_under_file_ancestor_raises_not_found`
+  - `TestMoveCopyErrorFidelity::test_destination_under_file_ancestor_raises_invalid_path` (`move`, `copy`)
+  - `TestListFilesCompleteness::test_list_files_non_traversable_ancestor_yields_empty`
+  - `TestListFoldersCompleteness::test_list_folders_non_traversable_ancestor_yields_empty`
+
+  Plus async siblings for both halves (the recording aborted before
+  Step 3, so async behaviour is unobserved; expected to mirror sync).
+  Surfaced during BK-195/BK-233 → ID-184 → ID-209 (each item extended
+  the worklist as new self-skipping tests landed); the 2026-05-27 run
+  revealed the worklist was bigger than the originating items
+  enumerated, and that the ID-209 assumption "HNS has real directories
+  so the gate should pass once recorded" only holds for the
+  read/get_file_info paths — not write/delete/move/copy/list under a
+  file ancestor (ID-213 tracks the fix). The `record-azure` script
+  deletes the entire cassette tree before re-recording, so the
+  record-ready half cannot ship without the blocked half also
+  recording cleanly: BK-235 lands as a single PR once ID-213 closes.
 
 - [ ] **BK-208 — Triage post-v0.23.0 lessons-learned into backlog items**
   spec: — · effort: M · audience: library.maintainer
