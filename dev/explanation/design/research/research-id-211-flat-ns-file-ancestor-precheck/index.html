@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/adrs/0011-retry-per-backend-native/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/research/research-id-211-flat-ns-file-ancestor-precheck/">
       
       
-        <link rel="prev" href="../0010-observe-proxy-pattern/">
+        <link rel="prev" href="../research-id-147b-tla-poc/">
       
       
-        <link rel="next" href="../0012-async-store-backend-api/">
+        <link rel="next" href="../research-logging-monitoring-tracing/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>0011: Retry - Per-Backend Native Configuration - remote-store</title>
+        <title>ID-211 — HEAD pre-check for flat-namespace backends - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0011-retry-per-backend-native-configuration" class="md-skip">
+        <a href="#research-id-211-head-pre-check-for-flat-namespace-backends" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              0011: Retry - Per-Backend Native Configuration
+              ID-211 — HEAD pre-check for flat-namespace backends
             
           </span>
         </div>
@@ -4808,8 +4808,6 @@
                 
   
   
-    
-  
   
   
     
@@ -4820,15 +4818,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_7" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../adrs/" class="md-nav__link ">
               
   
   
@@ -4852,7 +4850,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_8_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -4870,7 +4868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -4898,7 +4896,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -4926,7 +4924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -4954,7 +4952,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -4982,7 +4980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -5010,7 +5008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -5038,7 +5036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -5066,7 +5064,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0008-extension-architecture/" class="md-nav__link">
+      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -5094,7 +5092,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5122,7 +5120,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -5147,37 +5145,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0011: Retry - Per-Backend Native Configuration
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -5193,120 +5164,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#retrypolicy-dataclass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RetryPolicy dataclass
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#backend-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Backend mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#backendconfig-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        BackendConfig integration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scope
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -5319,7 +5176,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -5347,7 +5204,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -5375,7 +5232,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -5403,7 +5260,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -5431,7 +5288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5459,7 +5316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0017-seekable-read-on-store-api/" class="md-nav__link">
+      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
         
   
   
@@ -5487,7 +5344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
+      <a href="../../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
         
   
   
@@ -5515,7 +5372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0019-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -5543,7 +5400,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0020-orchestrate-iterative-convergence/" class="md-nav__link">
+      <a href="../../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
         
   
   
@@ -5571,7 +5428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0021-graph-sdk-choice/" class="md-nav__link">
+      <a href="../../adrs/0021-graph-sdk-choice/" class="md-nav__link">
         
   
   
@@ -5599,7 +5456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0022-graph-auth-model/" class="md-nav__link">
+      <a href="../../adrs/0022-graph-auth-model/" class="md-nav__link">
         
   
   
@@ -5627,7 +5484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0023-async-monitor-polling/" class="md-nav__link">
+      <a href="../../adrs/0023-async-monitor-polling/" class="md-nav__link">
         
   
   
@@ -5655,7 +5512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0024-resource-locked-error/" class="md-nav__link">
+      <a href="../../adrs/0024-resource-locked-error/" class="md-nav__link">
         
   
   
@@ -5683,7 +5540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0025-async-to-sync-backend-adapter/" class="md-nav__link">
+      <a href="../../adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
         
   
   
@@ -5711,7 +5568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0026-strict-gate-on-kwarg/" class="md-nav__link">
+      <a href="../../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
         
   
   
@@ -5739,7 +5596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0027-docs-bridge-single-mechanism/" class="md-nav__link">
+      <a href="../../adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
         
   
   
@@ -5767,7 +5624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
+      <a href="../../adrs/0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
         
   
   
@@ -6714,6 +6571,8 @@
                 
   
   
+    
+  
   
   
     
@@ -6724,15 +6583,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_10" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_10" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../research/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -6756,7 +6615,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_10_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_10_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_8_10">
             <span class="md-nav__icon md-icon"></span>
             
@@ -6774,7 +6633,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-agent-workflow-substrate/" class="md-nav__link">
+      <a href="../research-agent-workflow-substrate/" class="md-nav__link">
         
   
   
@@ -6802,7 +6661,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api-round2/" class="md-nav__link">
+      <a href="../research-async-store-api-round2/" class="md-nav__link">
         
   
   
@@ -6830,7 +6689,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api/" class="md-nav__link">
+      <a href="../research-async-store-api/" class="md-nav__link">
         
   
   
@@ -6858,7 +6717,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -6886,7 +6745,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-backend-contract-completeness/" class="md-nav__link">
+      <a href="../research-backend-contract-completeness/" class="md-nav__link">
         
   
   
@@ -6914,7 +6773,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-backend-setup-guides/" class="md-nav__link">
+      <a href="../research-backend-setup-guides/" class="md-nav__link">
         
   
   
@@ -6942,7 +6801,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -6970,7 +6829,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-bk-181-cassette-replay-poc/" class="md-nav__link">
+      <a href="../research-bk-181-cassette-replay-poc/" class="md-nav__link">
         
   
   
@@ -6998,7 +6857,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
+      <a href="../research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
         
   
   
@@ -7026,7 +6885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
+      <a href="../research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
         
   
   
@@ -7054,7 +6913,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-bug-prevention-beyond-testing/" class="md-nav__link">
+      <a href="../research-bug-prevention-beyond-testing/" class="md-nav__link">
         
   
   
@@ -7082,7 +6941,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-dagster-extension/" class="md-nav__link">
+      <a href="../research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -7110,7 +6969,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-depth-limited-listing/" class="md-nav__link">
+      <a href="../research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -7138,7 +6997,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-doc-content-longevity/" class="md-nav__link">
+      <a href="../research-doc-content-longevity/" class="md-nav__link">
         
   
   
@@ -7166,7 +7025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -7194,7 +7053,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-example-testing/" class="md-nav__link">
+      <a href="../research-example-testing/" class="md-nav__link">
         
   
   
@@ -7222,7 +7081,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -7250,7 +7109,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-feature-discoverability/" class="md-nav__link">
+      <a href="../research-feature-discoverability/" class="md-nav__link">
         
   
   
@@ -7278,7 +7137,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -7306,7 +7165,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-health-check/" class="md-nav__link">
+      <a href="../research-health-check/" class="md-nav__link">
         
   
   
@@ -7334,7 +7193,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-id-147-obs003-decomposition/" class="md-nav__link">
+      <a href="../research-id-147-obs003-decomposition/" class="md-nav__link">
         
   
   
@@ -7362,7 +7221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-id-147-tla-augmentation/" class="md-nav__link">
+      <a href="../research-id-147-tla-augmentation/" class="md-nav__link">
         
   
   
@@ -7390,7 +7249,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-id-147b-tla-poc/" class="md-nav__link">
+      <a href="../research-id-147b-tla-poc/" class="md-nav__link">
         
   
   
@@ -7415,10 +7274,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../research/research-id-211-flat-ns-file-ancestor-precheck/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ID-211 — HEAD pre-check for flat-namespace backends
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -7434,6 +7320,231 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-question" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Question
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Method
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-measurement-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Measurement results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Measurement results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#s3_moto-in-process-moto-http-server-no-network-rtt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        s3_moto (in-process moto HTTP server, no network RTT)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sqlblob_sqlite-in-memory-sqlite-no-network-rtt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sqlblob_sqlite (in-memory SQLite, no network RTT)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#azurite-azure-non-hns-via-docker-emulator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        azurite (Azure non-HNS via Docker emulator)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-interpretation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Interpretation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Interpretation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-the-no-slash-early-exit-is-essentially-free" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 The no-slash early exit is essentially free
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-on-nested-path-writes-the-cost-is-linear-in-depth-and-meaningful" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 On nested-path writes, the cost is linear in depth and meaningful
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-the-pre-check-has-a-behavioural-side-effect-worth-flagging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 The pre-check has a behavioural side effect worth flagging
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-discussion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Discussion
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Discussion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-why-a-is-hard-to-recommend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Why (a) is hard to recommend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-b-opt-in-a-path-through-the-cost-benefit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 (b) opt-in: a path through the cost-benefit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-c-keep-the-carve-out-matches-the-measured-cost-benefit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 (c) keep the carve-out: matches the measured cost-benefit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-architectural-alternatives-the-measurement-informs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Architectural alternatives the measurement informs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-disposition-that-landed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Disposition that landed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-reproducibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Reproducibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -7446,7 +7557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -7474,7 +7585,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -7502,7 +7613,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-openrouter-integration/" class="md-nav__link">
+      <a href="../research-openrouter-integration/" class="md-nav__link">
         
   
   
@@ -7530,7 +7641,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -7558,7 +7669,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-resolve-spec-proposal/" class="md-nav__link">
+      <a href="../research-resolve-spec-proposal/" class="md-nav__link">
         
   
   
@@ -7586,7 +7697,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-retry-policy/" class="md-nav__link">
+      <a href="../research-retry-policy/" class="md-nav__link">
         
   
   
@@ -7614,7 +7725,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-seekable-read/" class="md-nav__link">
+      <a href="../research-seekable-read/" class="md-nav__link">
         
   
   
@@ -7642,7 +7753,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-sftpgo-comparison/" class="md-nav__link">
+      <a href="../research-sftpgo-comparison/" class="md-nav__link">
         
   
   
@@ -7670,7 +7781,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -7698,7 +7809,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -7726,7 +7837,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-config/" class="md-nav__link">
+      <a href="../research-store-config/" class="md-nav__link">
         
   
   
@@ -7754,7 +7865,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -7782,7 +7893,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-testing-best-practices/" class="md-nav__link">
+      <a href="../research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -7810,7 +7921,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -9290,10 +9401,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
+  <a href="#1-question" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status
+        1. Question
       
     </span>
   </a>
@@ -9301,10 +9412,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
+  <a href="#2-method" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Context
+        2. Method
       
     </span>
   </a>
@@ -9312,22 +9423,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
+  <a href="#3-measurement-results" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decision
+        3. Measurement results
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
+    <nav class="md-nav" aria-label="3. Measurement results">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#retrypolicy-dataclass" class="md-nav__link">
+  <a href="#s3_moto-in-process-moto-http-server-no-network-rtt" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RetryPolicy dataclass
+        s3_moto (in-process moto HTTP server, no network RTT)
       
     </span>
   </a>
@@ -9335,10 +9446,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#backend-mapping" class="md-nav__link">
+  <a href="#sqlblob_sqlite-in-memory-sqlite-no-network-rtt" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Backend mapping
+        sqlblob_sqlite (in-memory SQLite, no network RTT)
       
     </span>
   </a>
@@ -9346,21 +9457,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#backendconfig-integration" class="md-nav__link">
+  <a href="#azurite-azure-non-hns-via-docker-emulator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        BackendConfig integration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scope
+        azurite (Azure non-HNS via Docker emulator)
       
     </span>
   </a>
@@ -9373,10 +9473,132 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
+  <a href="#4-interpretation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Consequences
+        4. Interpretation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Interpretation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-the-no-slash-early-exit-is-essentially-free" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 The no-slash early exit is essentially free
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-on-nested-path-writes-the-cost-is-linear-in-depth-and-meaningful" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 On nested-path writes, the cost is linear in depth and meaningful
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-the-pre-check-has-a-behavioural-side-effect-worth-flagging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 The pre-check has a behavioural side effect worth flagging
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-discussion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Discussion
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Discussion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-why-a-is-hard-to-recommend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Why (a) is hard to recommend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-b-opt-in-a-path-through-the-cost-benefit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 (b) opt-in: a path through the cost-benefit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-c-keep-the-carve-out-matches-the-measured-cost-benefit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 (c) keep the carve-out: matches the measured cost-benefit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-architectural-alternatives-the-measurement-informs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Architectural alternatives the measurement informs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-disposition-that-landed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Disposition that landed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-reproducibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Reproducibility
       
     </span>
   </a>
@@ -9400,82 +9622,554 @@
 
 
 
-<h1 id="adr-0011-retry-per-backend-native-configuration">ADR-0011: Retry - Per-Backend Native Configuration<a class="headerlink" href="#adr-0011-retry-per-backend-native-configuration" title="Permanent link">&para;</a></h1>
-<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
-<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>ID-010 requires a unified retry policy for transient backend errors.
-The SFTP backend has hardcoded tenacity retry on <code>_connect()</code> (3 attempts,
-2-10 s exponential). S3 and Azure rely on their SDK's built-in retry.
-There is no unified user-facing retry surface.</p>
-<p>Four options were evaluated in the research
-(<code>sdd/research/research-retry-policy.md</code>, section 4):</p>
-<p><strong>Option A - Unified tenacity at Store level.</strong> Wraps every Store method
-with tenacity retry. Causes retry multiplication (SDK retries x Store
-retries = excessive attempts). Wrong abstraction level.</p>
-<p><strong>Option B - Per-backend native retry configuration.</strong> A <code>RetryPolicy</code>
-dataclass maps to each backend's native retry mechanism. Replaces SDK
-defaults, no multiplication.</p>
-<p><strong>Option C - Store-level retry middleware (<code>ext/</code>).</strong> A retry proxy in
-<code>ext/retry.py</code>, similar to <code>ext.observe</code>. Additive, but stacks on top
-of SDK retry and is harder to reason about.</p>
-<p><strong>Option D - Hybrid B + C.</strong> Most complex, two configuration points.</p>
-<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Use <strong>Option B (per-backend native configuration)</strong>.</p>
+<h1 id="research-id-211-head-pre-check-for-flat-namespace-backends">Research: ID-211 — HEAD pre-check for flat-namespace backends<a class="headerlink" href="#research-id-211-head-pre-check-for-flat-namespace-backends" title="Permanent link">&para;</a></h1>
+<p><strong>Item ID:</strong> ID-211
+<strong>Date:</strong> 2026-05-26
+<strong>Measurements refreshed:</strong> 2026-05-27 (s3_moto + sqlblob_sqlite + azurite all on the same host; supersedes the original tables).
+<strong>Predecessor:</strong> ID-209 (PR #680, merged)
+<strong>Status:</strong> Implemented per disposition (b) — opt-in <code>reject_write_under_file_ancestor</code> kwarg on flat-NS backends.</p>
+<hr />
+<h2 id="1-question">1. Question<a class="headerlink" href="#1-question" title="Permanent link">&para;</a></h2>
+<p>ID-209 landed a cross-backend conformance gate that
+<code>write</code> / <code>write_atomic</code> / <code>open_atomic</code> / <code>move</code> / <code>copy</code> MUST raise
+<code>InvalidPath</code> when a slash-aligned ancestor of the destination path is
+a regular file (BE-008 / BE-018 / BE-019). Hierarchical backends
+(Local, SFTP, Memory) enforce this via their native
+<code>parent.mkdir(parents=True)</code> / <code>sftp.mkdir</code> / <code>EnsureParents</code> walks.
+Flat-namespace backends (S3, Azure non-HNS, SQLBlob, HTTP) cannot
+detect the case in O(1) — they need an extra round trip per
+slash-aligned ancestor to HEAD whether the ancestor exists as a file.
+ID-209 carved them out via <code>_skip_flat_namespace</code> on the new
+conformance tests; ID-211 follows up to decide whether the optional
+HEAD pre-check is worth shipping.</p>
+<p>The user's nominated optimisation: a path with no slash has no
+ancestor to check, so skipping the gate on no-slash paths collapses
+the cost to nested-path writes only. Most writes against a backend
+target the store root (no slash), so the worst-case cost is paid only
+when the caller deliberately writes into a nested subtree.</p>
+<p>Three dispositions to evaluate:</p>
+<ul>
+<li><strong>(a) Ship unconditional.</strong> Tighten the contract for every flat-NS
+  backend. Every nested-path write pays the HEAD walk; no-slash writes
+  are free.</li>
+<li><strong>(b) Ship as an opt-in client kwarg</strong> (e.g.
+  <code>reject_write_under_file_ancestor: bool = False</code> on each flat-NS
+  backend constructor). Default off; users who care pay for the
+  contract.</li>
+<li><strong>(c) Carve-out stays.</strong> Close ID-211 with the measurement, update
+  spec 003 BE-008 prose to cite this note in place of "tracked under
+  ID-211", and leave the conformance gate skipping on flat-NS
+  fixtures.</li>
+</ul>
+<h2 id="2-method">2. Method<a class="headerlink" href="#2-method" title="Permanent link">&para;</a></h2>
+<p>Harness: <code>sdd/research/research-id-211-flat-ns-file-ancestor-precheck.py</code>.
+For each backend in scope and each path depth in <code>{0, 1, 3, 6}</code>, time
+100 <code>write(path, 1024 bytes)</code> calls (after 10 discarded warmups)
+under two variants:</p>
+<ul>
+<li><strong><code>baseline</code></strong> — existing production <code>write()</code> only.</li>
+<li><strong><code>precheck</code></strong> — the proposed <code>_check_no_file_ancestor</code> walk
+  (one <code>HEAD</code> per slash-aligned ancestor, with the no-slash early
+  exit) followed by the existing <code>write()</code>.</li>
+</ul>
+<p>In the harness every ancestor is absent, so the walk runs to
+completion on every nested-path write. That is the worst case — a real
+<code>InvalidPath</code> hit would short circuit on the first file ancestor —
+and the published numbers are an upper bound on the per-call cost.</p>
+<p>The fixture wraps the same production code paths the conformance
+suite drives (<code>S3Backend(endpoint_url=moto)</code>, <code>SQLBlobBackend(url=
+"sqlite:///:memory:")</code>, <code>AzureBackend(connection_string=azurite)</code>).
+Azurite needs Docker — bring it up with <code>docker compose -f
+infra/docker-compose.yml up -d azurite</code> before invoking the harness
+with <code>--include azurite</code>. Real-cloud (S3 live + Azure ADLS live) is
+out of scope for the Stage-1 measurement — its per-HEAD latency is
+bounded by network RTT, and the same depth-vs-cost shape from the
+in-process numbers extrapolates linearly to whatever the user's
+account RTT looks like.</p>
+<h2 id="3-measurement-results">3. Measurement results<a class="headerlink" href="#3-measurement-results" title="Permanent link">&para;</a></h2>
+<p>Each row: 100 writes of a 1 KiB payload after 10 discarded warmups.
+"Backend" is the production write path wrapped in the harness.</p>
+<p>In <code>precheck</code>, no ancestor exists, so every slash-aligned ancestor
+HEAD runs to completion. A real <code>InvalidPath</code> hit short circuits on
+the first file ancestor, so these numbers are the upper bound on the
+gate's per-call cost.</p>
+<h3 id="s3_moto-in-process-moto-http-server-no-network-rtt">s3_moto (in-process moto HTTP server, no network RTT)<a class="headerlink" href="#s3_moto-in-process-moto-http-server-no-network-rtt" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>depth</th>
+<th>variant</th>
+<th>P50 (ms)</th>
+<th>P95 (ms)</th>
+<th>P99 (ms)</th>
+<th>mean (ms)</th>
+<th>overhead vs baseline (mean)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>baseline</td>
+<td>14.549</td>
+<td>16.285</td>
+<td>56.997</td>
+<td>15.041</td>
+<td>—</td>
+</tr>
+<tr>
+<td>0</td>
+<td>precheck</td>
+<td>14.320</td>
+<td>15.567</td>
+<td>16.103</td>
+<td>14.388</td>
+<td>-0.653 ms (-4.3%)</td>
+</tr>
+<tr>
+<td>1</td>
+<td>baseline</td>
+<td>14.267</td>
+<td>15.994</td>
+<td>17.845</td>
+<td>14.443</td>
+<td>—</td>
+</tr>
+<tr>
+<td>1</td>
+<td>precheck</td>
+<td>17.783</td>
+<td>19.642</td>
+<td>20.311</td>
+<td>17.890</td>
+<td>+3.447 ms (+23.9%)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>baseline</td>
+<td>14.540</td>
+<td>15.857</td>
+<td>16.424</td>
+<td>14.575</td>
+<td>—</td>
+</tr>
+<tr>
+<td>3</td>
+<td>precheck</td>
+<td>24.367</td>
+<td>28.417</td>
+<td>31.776</td>
+<td>24.715</td>
+<td>+10.141 ms (+69.6%)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>baseline</td>
+<td>14.508</td>
+<td>16.894</td>
+<td>18.089</td>
+<td>14.659</td>
+<td>—</td>
+</tr>
+<tr>
+<td>6</td>
+<td>precheck</td>
+<td>33.954</td>
+<td>37.449</td>
+<td>40.473</td>
+<td>34.122</td>
+<td>+19.464 ms (+132.8%)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sqlblob_sqlite-in-memory-sqlite-no-network-rtt">sqlblob_sqlite (in-memory SQLite, no network RTT)<a class="headerlink" href="#sqlblob_sqlite-in-memory-sqlite-no-network-rtt" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>depth</th>
+<th>variant</th>
+<th>P50 (ms)</th>
+<th>P95 (ms)</th>
+<th>P99 (ms)</th>
+<th>mean (ms)</th>
+<th>overhead vs baseline (mean)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>baseline</td>
+<td>0.139</td>
+<td>0.175</td>
+<td>0.206</td>
+<td>0.144</td>
+<td>—</td>
+</tr>
+<tr>
+<td>0</td>
+<td>precheck</td>
+<td>0.127</td>
+<td>0.154</td>
+<td>0.168</td>
+<td>0.129</td>
+<td>-0.015 ms (-10.7%)</td>
+</tr>
+<tr>
+<td>1</td>
+<td>baseline</td>
+<td>0.128</td>
+<td>0.148</td>
+<td>0.177</td>
+<td>0.130</td>
+<td>—</td>
+</tr>
+<tr>
+<td>1</td>
+<td>precheck</td>
+<td>0.195</td>
+<td>0.238</td>
+<td>0.411</td>
+<td>0.203</td>
+<td>+0.073 ms (+56.3%)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>baseline</td>
+<td>0.141</td>
+<td>0.197</td>
+<td>0.301</td>
+<td>0.149</td>
+<td>—</td>
+</tr>
+<tr>
+<td>3</td>
+<td>precheck</td>
+<td>0.304</td>
+<td>0.379</td>
+<td>0.593</td>
+<td>0.317</td>
+<td>+0.167 ms (+112.0%)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>baseline</td>
+<td>0.134</td>
+<td>0.156</td>
+<td>0.186</td>
+<td>0.136</td>
+<td>—</td>
+</tr>
+<tr>
+<td>6</td>
+<td>precheck</td>
+<td>0.451</td>
+<td>0.503</td>
+<td>0.532</td>
+<td>0.455</td>
+<td>+0.319 ms (+234.3%)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="azurite-azure-non-hns-via-docker-emulator">azurite (Azure non-HNS via Docker emulator)<a class="headerlink" href="#azurite-azure-non-hns-via-docker-emulator" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>depth</th>
+<th>variant</th>
+<th>P50 (ms)</th>
+<th>P95 (ms)</th>
+<th>P99 (ms)</th>
+<th>mean (ms)</th>
+<th>overhead vs baseline (mean)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>baseline</td>
+<td>7.008</td>
+<td>9.371</td>
+<td>10.679</td>
+<td>7.174</td>
+<td>—</td>
+</tr>
+<tr>
+<td>0</td>
+<td>precheck</td>
+<td>6.893</td>
+<td>10.226</td>
+<td>13.128</td>
+<td>7.174</td>
+<td>+0.000 ms (+0.0%)</td>
+</tr>
+<tr>
+<td>1</td>
+<td>baseline</td>
+<td>7.026</td>
+<td>9.393</td>
+<td>12.076</td>
+<td>7.133</td>
+<td>—</td>
+</tr>
+<tr>
+<td>1</td>
+<td>precheck</td>
+<td>8.721</td>
+<td>12.222</td>
+<td>16.050</td>
+<td>9.174</td>
+<td>+2.040 ms (+28.6%)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>baseline</td>
+<td>6.776</td>
+<td>9.511</td>
+<td>10.580</td>
+<td>6.987</td>
+<td>—</td>
+</tr>
+<tr>
+<td>3</td>
+<td>precheck</td>
+<td>11.553</td>
+<td>15.294</td>
+<td>22.806</td>
+<td>11.977</td>
+<td>+4.990 ms (+71.4%)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>baseline</td>
+<td>6.748</td>
+<td>10.809</td>
+<td>14.193</td>
+<td>7.235</td>
+<td>—</td>
+</tr>
+<tr>
+<td>6</td>
+<td>precheck</td>
+<td>16.449</td>
+<td>20.945</td>
+<td>21.551</td>
+<td>16.795</td>
+<td>+9.559 ms (+132.1%)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-interpretation">4. Interpretation<a class="headerlink" href="#4-interpretation" title="Permanent link">&para;</a></h2>
+<p>Two things stand out:</p>
+<h3 id="41-the-no-slash-early-exit-is-essentially-free">4.1 The no-slash early exit is essentially free<a class="headerlink" href="#41-the-no-slash-early-exit-is-essentially-free" title="Permanent link">&para;</a></h3>
+<p><code>depth=0</code> precheck overhead is within noise on all three backends:
+<code>-0.653 ms (-4.3%)</code> on <code>s3_moto</code>, <code>-0.015 ms (-10.7%)</code> on
+<code>sqlblob_sqlite</code>, and <code>+0.000 ms (+0.0%)</code> on <code>azurite</code>. The
+sub-millisecond deltas are jitter, not a speedup. The user's "skip
+the check when there are no slash segments" optimisation collapses
+the gate cost to <strong>zero</strong> on store-root writes, regardless of
+backend. Any disposition that includes it pays nothing for the most
+common write shape.</p>
+<h3 id="42-on-nested-path-writes-the-cost-is-linear-in-depth-and-meaningful">4.2 On nested-path writes, the cost is linear in depth and meaningful<a class="headerlink" href="#42-on-nested-path-writes-the-cost-is-linear-in-depth-and-meaningful" title="Permanent link">&para;</a></h3>
+<p>On <code>s3_moto</code>, where the HEAD round trip is purely local-process HTTP
+and so the floor on per-HEAD cost, the precheck adds:</p>
+<ul>
+<li>depth 1: +3.4 ms mean (+23.9%) — roughly one extra HEAD on a 14 ms
+  baseline.</li>
+<li>depth 3: +10.1 ms mean (+69.6%) — three extra HEADs.</li>
+<li>depth 6: +19.5 ms mean (+132.8%) — six extra HEADs; <strong>more than
+  doubles</strong> the write wall time.</li>
+</ul>
+<p>The per-HEAD increment is ~3.2 ms on moto. Real S3 typically runs at
+5–50 ms per HEAD against a regional endpoint; depth-6 nested writes
+against live S3 would land in the +30–300 ms band per write. The
+proportional cost on real S3 stays similar because the baseline write
+RTT scales with per-call latency in lockstep with the per-HEAD RTT.</p>
+<p><code>sqlblob_sqlite</code> shows the same depth-linear shape with sub-millisecond
+absolute numbers (+0.32 ms at depth 6). The proportional overhead is
+higher than the network-backed cells (+234% at depth 6) because the
+in-memory SQLite baseline is so cheap (~0.14 ms) that even a 0.05 ms
+extra <code>SELECT</code> per ancestor compounds quickly. On a real SQL backend
+served over a network the per-<code>SELECT</code> RTT lifts the absolute cost
+into the same range as S3.</p>
+<p><code>azurite</code> shows the depth-linear shape against an Azure Blob
+emulator on the same host. The per-HEAD increment is ~1.6 ms — faster
+than moto's ~3.2 ms — because the Azure SDK's <code>get_blob_properties</code>
+does less work than <code>s3fs.exists</code>'s HEAD+LIST disambiguation walk.
+Proportional overhead at depth 6 (+132%) lands in the same band as
+moto (+133%): the baseline write is correspondingly faster (~7 ms vs
+~15 ms for moto), so the ratio survives. Real Azure Blob HEAD round
+trips against a regional endpoint run ~10–50 ms; depth-6 nested
+writes would land in the +60–300 ms band per write.</p>
+<h3 id="43-the-pre-check-has-a-behavioural-side-effect-worth-flagging">4.3 The pre-check has a behavioural side effect worth flagging<a class="headerlink" href="#43-the-pre-check-has-a-behavioural-side-effect-worth-flagging" title="Permanent link">&para;</a></h3>
+<p>The HEAD walk introduces N extra control-plane calls per write that
+the user did not request. Each one is a request the user pays for
+under per-request cloud pricing (S3 <code>HEAD Object</code> ≈ $0.0004/1k), and
+each one can fail in ways the user has to reason about: rate-limit
+throttling on the parent prefix, a non-<code>NotFound</code> <code>4xx</code> from the
+provider, transient connectivity. Today the only way <code>write()</code> fails
+on flat-NS backends is the write itself; under disposition (a), every
+write inherits the failure modes of N HEADs.</p>
+<p>Two further caveats specific to disposition (b) as shipped:</p>
+<ul>
+<li><strong>Per-instance, not per-call.</strong> The opt-in is a constructor kwarg, so
+  a layered system composing multiple <code>Backend</code> instances has no
+  introspectable signal for whether a given instance enforces the gate.
+  <code>Capability.WRITE</code> is identical on opt-in and default-off; there is
+  no <code>Capability.STRICT_FILE_ANCESTOR</code> or
+  <code>Backend.rejects_write_under_file_ancestor</code> property exposed at the
+  public surface. A consumer wrapping a strict <code>S3Backend</code> and a
+  default-off <code>SQLBlobBackend</code> in the same <code>Store</code> silently has split
+  behaviour with no way to detect the split short of reading the
+  constructor call sites. If a future iteration wants the "callers who
+  need consistency can pay for it" framing to also let those callers
+  <em>observe</em> that they got it, that needs a capability or a public
+  property, neither of which ships today.</li>
+<li><strong>Best-effort, not atomic.</strong> The walk's <code>head_one</code> closure swallows
+  non-<code>NotFound</code> exceptions and returns <code>False</code>. A 503 / throttling /
+  transient connectivity error on one ancestor silently disables the
+  gate for that probe; the subsequent write proceeds. The contract
+  therefore is "reject when the ancestor is <em>unambiguously</em> a file",
+  not "reject whenever the ancestor walk cannot prove the path is
+  safe". The fail-open choice keeps control-plane errors from halting
+  the data path, but the audience for an explicit opt-in is precisely
+  the audience least tolerant of silent degradation. Documented in
+  <code>src/remote_store/backends/_flat_ns.py</code> so future readers don't
+  tighten the closures without realising they'd flip the failure mode.
+  Spec 003 § BE-008 carries the same note that the gate is start-of-
+  call, not atomic.</li>
+</ul>
+<h2 id="5-discussion">5. Discussion<a class="headerlink" href="#5-discussion" title="Permanent link">&para;</a></h2>
+<h3 id="51-why-a-is-hard-to-recommend">5.1 Why (a) is hard to recommend<a class="headerlink" href="#51-why-a-is-hard-to-recommend" title="Permanent link">&para;</a></h3>
+<p>The contract value at the boundary is real: a caller that writes
+<code>a/b/c.txt</code> after <code>write("a/b", b"file")</code> lands a key whose ancestor
+is a file and breaks the well-formedness invariant we care about
+enough to encode in the Dafny <code>Valid()</code> predicate. Hierarchical
+backends close this loophole automatically; flat-NS backends today
+let it through. Disposition (a) shrinks the cross-backend contract
+divergence, which is its appeal.</p>
+<p>The cost case against it is the table above. A 2× wall-time tax on
+deep-nested writes is meaningful on hot paths. Worse, it is paid by
+every caller regardless of whether they are actually at risk of the
+ancestor-as-file shape — most callers never write to a path whose
+ancestor they have separately written as a file, and the gate is pure
+overhead for them. The behavioural side effect (5.4 below) further
+shifts the cost-benefit against (a).</p>
+<p>The well-formedness invariant the gate enforces is <em>latent</em>: a
+caller who writes <code>a/b</code> as a file and then <code>a/b/c.txt</code> ends up with
+listings that already self-protect via the ID-184
+<code>!AllAncestorsTraversable ==&gt; []</code> clause. The fs corruption is real
+but bounded — listings hide the orphaned key, reads return <code>NotFound</code>,
+and the offending path is unreachable through normal traversal. The
+gate's defence is against a caller who is willing to lose data this
+way being told <code>InvalidPath</code> instead. Useful, but the wall-time tax
+on every other caller does not feel worth it.</p>
+<h3 id="52-b-opt-in-a-path-through-the-cost-benefit">5.2 (b) opt-in: a path through the cost-benefit<a class="headerlink" href="#52-b-opt-in-a-path-through-the-cost-benefit" title="Permanent link">&para;</a></h3>
+<p><code>AzureBackend(..., reject_write_under_file_ancestor=True)</code> (and
+analogous on S3 / SQLBlob) opens the contract to callers who want it
+without taxing those who don't. The trade is added public API surface
+on three backends, a new fixture variant per backend to exercise the
+opt-in path, and a small carve-out in spec 003 BE-008 prose noting
+the kwarg.</p>
+<p>The audience for the opt-in is narrow: a user who genuinely cares
+about cross-backend <code>InvalidPath</code> consistency on flat-NS backends.
+Realistically that audience is "the project maintainers using
+remote-store as a substrate for a layered system that depends on the
+contract" — i.e. a thin slice. Most users get no value from the
+kwarg; flagging it as a flat-NS-only foot-gun in the API reference
+also costs them attention budget.</p>
+<p>The opt-in shape also raises a per-backend coupling question: if a
+user opts in on S3 but not Azure within the same application, the
+contract becomes per-instance rather than per-call. That is workable
+but new in the public API.</p>
+<h3 id="53-c-keep-the-carve-out-matches-the-measured-cost-benefit">5.3 (c) keep the carve-out: matches the measured cost-benefit<a class="headerlink" href="#53-c-keep-the-carve-out-matches-the-measured-cost-benefit" title="Permanent link">&para;</a></h3>
+<p>The status quo is honest: the spec calls out the exemption explicitly,
+the conformance gate skips per-fixture, and ID-184's listings layer
+already hides the orphaned-key state from any traversal. Closing
+ID-211 with the measurement, the research note, and a small spec
+prose update (drop the "ID-211 tracks the optional HEAD pre-check
+follow-up" placeholder; cite the research note as the resolved
+disposition) leaves the contract divergence as documented behaviour
+rather than an open follow-up.</p>
+<p>This loses the cross-backend contract tightening on flat-NS
+backends, which is a real loss. It is hard to argue the gain is
+worth the wall-time tax measured above, and the gain is reachable
+via (b) later if a user reports the divergence.</p>
+<h3 id="54-architectural-alternatives-the-measurement-informs">5.4 Architectural alternatives the measurement informs<a class="headerlink" href="#54-architectural-alternatives-the-measurement-informs" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Move the gate into the user-facing <code>Store</code> rather than each
+  <code>Backend</code>.</strong> <code>Store.write</code> could opt-in to the gate via a Store
+  config flag and call <code>backend.exists(ancestor)</code> itself, mirroring
+  the pattern in 5.2 without forcing each backend to carry the
+  kwarg. Same cost profile, smaller public-API surface.</li>
+<li><strong>Use <code>head_object</code> directly rather than <code>_fs.exists</code>.</strong> s3fs's
+  <code>exists()</code> does <code>HEAD + LIST</code> to disambiguate "object" from
+  "prefix"; for the file-ancestor check we only care about the HEAD
+  branch. A <code>head_object</code>-only walk would halve the per-ancestor cost
+  on S3. The harness already calls <code>head_object</code> directly, so the
+  numbers above are the optimal-walk floor.</li>
+<li><strong>Batch the check on SQL backends.</strong> <code>WHERE key IN (ancestors)</code> is
+  one round trip regardless of depth. Worth doing if disposition (a)
+  or (b) lands on SQL. Out of scope for S3/Azure (no batch HEAD).</li>
+</ul>
+<h2 id="6-disposition-that-landed">6. Disposition that landed<a class="headerlink" href="#6-disposition-that-landed" title="Permanent link">&para;</a></h2>
+<p>After the measurement was in hand, the user chose <strong>disposition (b)</strong>:
+ship the pre-check as an opt-in client kwarg on each flat-NS backend.
+The reasoning: the cost is meaningful at depth and most callers will
+not opt in, but the contract value at the boundary is real for the
+callers who care, and the no-slash early exit makes default-off a
+near-zero ongoing cost. (c) was the closest runner-up; the deciding
+factor is that (b) makes the contract reachable without forcing the
+tax on everyone, and the opt-in surface is small enough to absorb.</p>
+<p>What landed:</p>
 <ol>
-<li>Backends own their transport — retry is a transport concern.</li>
-<li>The policy replaces SDK defaults, avoiding retry multiplication.</li>
-<li>Minimal API surface: one frozen dataclass, one constructor parameter.</li>
-<li>No new core dependencies — <code>tenacity</code> stays in the SFTP <code>sftp</code> extra.</li>
+<li>New shared helper <code>src/remote_store/backends/_flat_ns.py</code> exports
+   <code>_check_no_file_ancestor</code> (sync) and <code>_acheck_no_file_ancestor</code>
+   (async). Both walk the slash-aligned ancestor chain via a
+   caller-supplied <code>head_one</code> callable; both short-circuit on no-slash
+   paths.</li>
+<li><code>S3Backend</code>, <code>S3PyArrowBackend</code>, <code>AzureBackend</code>, <code>SQLBlobBackend</code>,
+   and <code>AsyncAzureBackend</code> gained a
+   <code>reject_write_under_file_ancestor: bool = False</code> constructor kwarg;
+   each constructs a backend-specific <code>head_one</code> (<code>head_object</code> for S3,
+   <code>get_blob_properties</code> for Azure non-HNS, <code>SELECT 1</code> for SQLBlob)
+   and threads it through <code>write</code> / <code>write_atomic</code> / <code>open_atomic</code> /
+   <code>move</code> / <code>copy</code>. Azure HNS short-circuits the opt-in walk because
+   <code>hdi_isfolder</code> rejects the operation natively. (ID-213 covers an
+   orthogonal HNS-side error-class translation gap that is independent
+   of this opt-in.)</li>
+<li>New <code>*_strict</code> fixtures (<code>s3_moto_strict</code>, <code>s3_pyarrow_moto_strict</code>,
+   <code>sqlblob_strict</code>, <code>azurite_strict</code>) wire the kwarg on. The existing
+   default-off fixtures keep their behaviour.</li>
+<li><code>BackendFixture.rejects_write_under_file_ancestor</code> is the new
+   per-fixture flag, defaulting to <code>not flat_namespace</code> so hierarchical
+   backends keep their native enforcement. The conformance test
+   <code>test_write_under_file_ancestor_raises_invalid_path</code> (and its
+   move/copy sibling, plus the async equivalents) now skip via
+   <code>_skip_unless_rejects_file_ancestor</code> instead of
+   <code>_skip_flat_namespace</code> — strict fixtures run the gate.</li>
+<li>Spec 003 § BE-008 / BE-018 / BE-019 and spec 029 § ASYNC-008 /
+   ASYNC-010 / ASYNC-018 / ASYNC-019 carry the new prose.</li>
+<li><code>CHANGELOG.md</code> lists the kwarg under <code>Added</code>.</li>
 </ol>
-<h3 id="retrypolicy-dataclass">RetryPolicy dataclass<a class="headerlink" href="#retrypolicy-dataclass" title="Permanent link">&para;</a></h3>
-<p>A frozen dataclass in <code>_config.py</code> with five fields:</p>
+<p>The Trace <code>audience</code> reflects the user-facing addition: <code>user.api</code>
+(the kwarg is part of every flat-NS backend's public constructor),
+<code>library.maintainer</code> (the spec/test plumbing), and
+<code>contributor.process</code> (BACKLOG hygiene).</p>
+<h2 id="7-reproducibility">7. Reproducibility<a class="headerlink" href="#7-reproducibility" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>max_attempts</code> (int, default 3): Total attempts including initial.
-  Set to 1 to disable retry.</li>
-<li><code>backoff_base</code> (float, default 1.0): Base delay in seconds.</li>
-<li><code>backoff_max</code> (float, default 60.0): Ceiling for exponential backoff.</li>
-<li><code>jitter</code> (float, default 1.0): Max random jitter per delay.</li>
-<li><code>timeout</code> (float | None, default None): Total wall-clock limit.</li>
+<li>Harness: <code>sdd/research/research-id-211-flat-ns-file-ancestor-precheck.py</code>.</li>
+<li>Run: <code>hatch run python sdd/research/research-id-211-flat-ns-file-ancestor-precheck.py</code>
+  (or <code>--include azurite</code> for the Azurite cell only).</li>
+<li>Output table: <code>tmp/id211-results.md</code> (gitignored, regenerated on
+  every run; the curated tables above are the canonical record).</li>
+<li>Stage-1 bootstrap: in-process <code>ThreadedMotoServer</code> for S3, in-memory
+  SQLite for SQLBlob. Azurite needs <code>docker compose -f
+  infra/docker-compose.yml up -d azurite</code> before invocation; the
+  harness auto-skips on an unreachable <code>127.0.0.1:10000</code>. No live
+  cloud creds required.</li>
 </ul>
-<p>A <code>RetryPolicy.disabled()</code> classmethod returns <code>RetryPolicy(max_attempts=1)</code>.</p>
-<h3 id="backend-mapping">Backend mapping<a class="headerlink" href="#backend-mapping" title="Permanent link">&para;</a></h3>
-<p>Each backend translates the policy into its native retry mechanism:</p>
-<ul>
-<li><strong>SFTP:</strong> Replaces hardcoded tenacity decorator with policy-driven
-  <code>stop_after_attempt</code>, <code>wait_exponential</code>, <code>wait_random</code>, optionally
-  <code>stop_after_delay</code>.</li>
-<li><strong>S3:</strong> Maps to <code>botocore.config.Config(retries={"max_attempts": N,
-  "mode": "standard"})</code> merged into <code>client_options</code>.</li>
-<li><strong>Azure:</strong> Maps to <code>ExponentialRetry(retry_total=N-1,
-  initial_backoff=base, random_jitter_range=jitter)</code> set as
-  <code>retry_policy</code> in client options.</li>
-<li><strong>S3-PyArrow:</strong> Maps to both PyArrow C++ side (<code>max_attempts</code>) and
-  s3fs side (same as S3).</li>
-<li><strong>Local/Memory:</strong> Do not accept <code>retry</code> parameter — TypeError if
-  provided (correct: retry is meaningless for local I/O).</li>
-</ul>
-<h3 id="backendconfig-integration">BackendConfig integration<a class="headerlink" href="#backendconfig-integration" title="Permanent link">&para;</a></h3>
-<p><code>BackendConfig</code> gains a <code>retry: RetryPolicy | None = None</code> field.
-<code>Registry._get_backend()</code> merges <code>retry</code> into <code>options</code> before
-constructing the backend. <code>from_dict()</code> parses <code>retry</code> from nested
-dicts in the config.</p>
-<h3 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h3>
-<p>The policy controls <strong>connection retry</strong> (SFTP) and <strong>SDK-level
-operation retry</strong> (S3, Azure). Application-level retry (reconnect
-mid-operation, idempotency checks) is out of scope and could be
-addressed by a future <code>ext/retry.py</code> middleware.</p>
-<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Users get a single, discoverable retry knob across all cloud backends.</li>
-<li>SFTP retry is no longer hardcoded — users can tune or disable it.</li>
-<li>S3/Azure retry is no longer buried in <code>client_options</code>.</li>
-<li>Local/Memory constructors reject <code>retry</code> with clear TypeError.</li>
-<li>Lossy mapping: the dataclass cannot express every SDK-specific knob.
-  Users who need full control still use <code>client_options</code>.</li>
-<li>Future <code>ext/retry.py</code> middleware is orthogonal and can compose with
-  backend-level retry.</li>
-</ul>
+<p>If the disposition is revisited later under real-cloud RTT
+constraints, extend the harness with a live-S3 / live-Azure factory
+keyed on <code>RS_TEST_LIVE_*</code>.</p>
 
 
 
@@ -9511,7 +10205,7 @@ addressed by a future <code>ext/retry.py</code> middleware.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../0010-observe-proxy-pattern/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 0010: Observe - Proxy Subclass Pattern">
+          <a href="../research-id-147b-tla-poc/" class="md-footer__link md-footer__link--prev" aria-label="Previous: TLA+ PoC — WriteResult Spec Consistency (ID-147b)">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -9521,20 +10215,20 @@ addressed by a future <code>ext/retry.py</code> middleware.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                0010: Observe - Proxy Subclass Pattern
+                TLA+ PoC — WriteResult Spec Consistency (ID-147b)
               </div>
             </div>
           </a>
         
         
           
-          <a href="../0012-async-store-backend-api/" class="md-footer__link md-footer__link--next" aria-label="Next: 0012: Async Store / Backend API — Hybrid Model">
+          <a href="../research-logging-monitoring-tracing/" class="md-footer__link md-footer__link--next" aria-label="Next: Logging, Monitoring &amp; Tracing for remote-store">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                0012: Async Store / Backend API — Hybrid Model
+                Logging, Monitoring & Tracing for remote-store
               </div>
             </div>
             <div class="md-footer__button md-icon">

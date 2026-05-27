@@ -7385,6 +7385,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../explanation/design/research/research-id-211-flat-ns-file-ancestor-precheck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ID-211 — HEAD pre-check for flat-namespace backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../explanation/design/research/research-logging-monitoring-tracing/" class="md-nav__link">
         
   
@@ -9340,7 +9368,8 @@ ADLS Gen2. Adapts at runtime to Hierarchical Namespace accounts.</p>
       dataclass
    (remote_store._config.RetryPolicy)" href="../../config/#remote_store.RetryPolicy">RetryPolicy</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">max_concurrency</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">reject_write_under_file_ancestor</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -9450,6 +9479,28 @@ memory discipline; user-supplied values take precedence.</p>
           <div class="doc-md-description">
             <p>Maximum number of parallel connections for
 uploads and downloads (default <code>1</code> -- sequential).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>reject_write_under_file_ancestor</code></b>
+              (<code><span title="bool">bool</span></code>, default:
+                  <code>False</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>If <code>True</code>, <code>write</code> /
+<code>write_atomic</code> / <code>open_atomic</code> / <code>move</code> / <code>copy</code> HEAD
+each slash-aligned ancestor of the target path on non-HNS
+accounts and raise <code>InvalidPath</code> on the first regular-file
+hit. On HNS accounts the kwarg short-circuits: <code>hdi_isfolder</code>
+rejects the operation natively, <strong>but</strong> until ID-213 / BK-235
+lands that native rejection surfaces as <code>NotFound</code> or
+<code>AlreadyExists</code> rather than <code>InvalidPath</code>. The
+cross-backend <code>InvalidPath</code> contract the kwarg promises is
+therefore <em>deferred</em> on HNS, not delivered — even when set.
+Default <code>False</code>: closes the ID-209 cross-backend gap for
+flat-namespace Azure but adds one HEAD per ancestor per
+nested-path write. See spec 003 § BE-008 and ID-211.</p>
           </div>
         </li>
     </ul>

@@ -7432,6 +7432,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../explanation/design/research/research-id-211-flat-ns-file-ancestor-precheck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ID-211 — HEAD pre-check for flat-namespace backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../explanation/design/research/research-logging-monitoring-tracing/" class="md-nav__link">
         
   
@@ -9585,7 +9613,8 @@ metadata, switching is safe — change the <code>type</code> in your config.</p>
   
       dataclass
    (remote_store._config.RetryPolicy)" href="../../../reference/api/config/#remote_store.RetryPolicy">RetryPolicy</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">reject_write_under_file_ancestor</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -9674,6 +9703,23 @@ declared.</p>
           –
           <div class="doc-md-description">
             <p>Additional options passed to s3fs.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>reject_write_under_file_ancestor</code></b>
+              (<code><span title="bool">bool</span></code>, default:
+                  <code>False</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>If <code>True</code>, <code>write</code> /
+<code>write_atomic</code> / <code>open_atomic</code> / <code>move</code> / <code>copy</code> HEAD
+each slash-aligned ancestor of the target path and raise
+<code>InvalidPath</code> on the first regular-file hit, closing the
+ID-209 cross-backend gap that flat-namespace backends carve
+out by default. Default <code>False</code>: each nested-path write
+otherwise pays one HEAD per ancestor (no-slash paths
+short-circuit). See spec 003 § BE-008 and ID-211.</p>
           </div>
         </li>
     </ul>

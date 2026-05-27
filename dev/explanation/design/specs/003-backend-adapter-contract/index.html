@@ -7275,6 +7275,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../research/research-id-211-flat-ns-file-ancestor-precheck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ID-211 — HEAD pre-check for flat-namespace backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
         
   
@@ -10098,13 +10126,46 @@ earlier one. This order applies to <code>write()</code>, <code>write_atomic()</c
 native directory concept (e.g. S3, Azure non-HNS, SQL) are exempt from step
 (1): they cannot distinguish "path names a directory" from "path does not
 exist", so they MUST skip the type-conflict check entirely. The file-ancestor
-rejection added by ID-209 is similarly exempt on flat-namespace backends —
-they cannot detect a file-ancestor in O(1) without an extra HEAD round trip
-on the parent chain, so the conformance gate
-(<code>test_write_under_file_ancestor_raises_invalid_path</code>) skips on flat-NS
-fixtures via <code>_skip_flat_namespace</code>. ID-211 tracks the optional HEAD
-pre-check follow-up. For these backends the effective order is: existence
-check (non-existent target treated as writable) → overwrite conflict → I/O.
+rejection added by ID-209 is similarly exempt on flat-namespace backends by
+default — they cannot detect a file-ancestor in O(1) without an extra HEAD
+round trip per slash-aligned ancestor. ID-211 ships the gate as an opt-in
+client kwarg <code>reject_write_under_file_ancestor: bool = False</code> on each
+flat-namespace backend constructor (<code>S3Backend</code>, <code>S3PyArrowBackend</code>,
+<code>AzureBackend</code>, <code>SQLBlobBackend</code>, plus the async <code>AsyncAzureBackend</code>); when
+the opt-in is set the backend walks slash-aligned ancestors, HEADing each
+one, and raises <code>InvalidPath</code> on the first file ancestor. Paths with no
+slash short-circuit (no walk, no extra round trips) so store-root writes
+pay nothing. Measurement note:
+<code>sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md</code> records the
+per-call cost vs depth on S3 (moto) and SQLBlob (sqlite); the gate is
+linear in depth and the default-off choice keeps that tax off hot paths.
+The conformance gate (<code>test_write_under_file_ancestor_raises_invalid_path</code>)
+keys off the per-fixture <code>rejects_write_under_file_ancestor</code> flag rather
+than <code>flat_namespace</code> — <code>s3_moto_strict</code> / <code>sqlblob_strict</code> /
+<code>azurite_strict</code> / <code>s3_pyarrow_moto_strict</code> exercise the opt-in path,
+while the default fixtures continue to skip the gate. The async sibling
+<code>azurite_async_strict</code> covers <code>AsyncAzureBackend</code> end-to-end (the
+non-HNS opt-in path through <code>_acheck_no_file_ancestor</code> and the SDK
+<code>get_blob_properties</code> closure). For default-off flat-NS backends the
+effective order is: existence check (non-existent target treated as
+writable) → overwrite conflict → I/O.
+<strong>Azure HNS caveat.</strong> On Azure HNS accounts the kwarg short-circuits the
+walk because <code>hdi_isfolder</code> rejects the operation in the native write
+path. Until ID-213 / BK-235 lands, that native rejection surfaces as
+<code>NotFound</code> or <code>AlreadyExists</code> rather than <code>InvalidPath</code>, so the
+cross-backend <code>InvalidPath</code> contract this kwarg promises is <strong>deferred
+on HNS, not delivered</strong> — even when set. Flat-NS Azure (non-HNS, e.g.
+Azurite) and the other flat-NS backends deliver the contract as
+described.
+The opt-in gate is a <strong>start-of-call</strong> check, not an atomic guarantee: the
+ancestor HEADs run once at entry, so a concurrent writer that creates a
+file at one of the walked ancestor keys between the walk and the data-plane
+operation can still produce the orphan-key shape the gate exists to
+prevent. Callers needing atomicity must layer a backend-level lock or CAS
+above the gate. The walk is also <strong>fail-open</strong> on transient probe errors
+(503, throttling, network blip) — the closure swallows non-NotFound and
+returns False so the data path proceeds; this is the documented contract
+for all backends, including SQLBlob.
 <strong>Formal coverage:</strong> <code>write()</code> is modelled in <code>sdd/formal/BackendContract.dfy</code>
 as <code>Write</code> with postconditions covering the precondition evaluation order
 (<code>IsDir → InvalidPath</code>, <code>!AllAncestorsTraversable → InvalidPath</code> (ID-209),
@@ -10207,7 +10268,8 @@ discharged structurally. Verified in <code>MemoryBackend.dfy</code>. See ID-151.
 <strong>Formal coverage:</strong> <code>get_folder_info()</code> is modelled in <code>sdd/formal/BackendContract.dfy</code> as <code>GetFolderInfo</code> with postconditions <code>IsFile → InvalidPath</code>, <code>!PathExists → NotFound</code>, <code>IsDir → Ok</code>, <code>file_count == |ChildFiles(fs, path)|</code>, and <code>total_size == SumSizes(fs, ChildFiles(fs, path))</code>. Verified in <code>MemoryBackend.dfy</code>. Property-based aggregate coverage against the compiled Dafny oracle lives in <code>tests/test_pbt_folder_info_aggregates.py</code>. See ID-130, ID-134, ID-187.</p>
 <h3 id="be-018-move">BE-018: move()<a class="headerlink" href="#be-018-move" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>move(src, dst, overwrite=False)</code> renames/moves a file.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, if <code>dst</code> names an existing directory (cannot overwrite a directory with a file), or if an ancestor of <code>dst</code> exists as a regular file (file-as-directory-component on dst, ID-209 — same flat-namespace exemption as BE-008). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-move on a file is a no-op (Dafny: <code>Move: src == dst → Ok</code>); self-move on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
+<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, if <code>dst</code> names an existing directory (cannot overwrite a directory with a file), or if an ancestor of <code>dst</code> exists as a regular file (file-as-directory-component on dst, ID-209 — flat-namespace backends opt in to the dst-side ancestor walk via the <code>reject_write_under_file_ancestor</code> kwarg, same shape as BE-008 / ID-211). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-move on a file is a no-op (Dafny: <code>Move: src == dst → Ok</code>); self-move on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
+<strong>Precondition order:</strong> <code>src</code>-NotFound takes priority over dst-side preconditions; specifically <code>move(missing_src, blocked_dst)</code> MUST raise <code>NotFound(src)</code> rather than <code>InvalidPath(dst)</code>. <code>LocalBackend.move</code> enforces this naturally (the <code>mkdir_parents</code> walk that catches the file-ancestor case runs after the src-exists check); flat-namespace backends running the ID-211 opt-in MUST defer the <code>_check_no_file_ancestor(dst)</code> walk until after the src-NotFound probe to match. Surfaced by the ID-211 review; pinned to remove the cross-backend ambiguity that existed under BE-018 alone.
 <strong>Metadata:</strong> <code>move()</code> preserves the source file's user metadata: after a
 successful move, <code>get_file_info(dst)</code> MUST return the same <code>metadata</code>
 mapping the source file carried before the move — the WR-013 user-metadata
@@ -10228,7 +10290,8 @@ both <code>fs[dst].content == old(fs)[src].content</code> and
 drops metadata fails to verify. Verified in <code>MemoryBackend.dfy</code>. See BK-232.</p>
 <h3 id="be-019-copy">BE-019: copy()<a class="headerlink" href="#be-019-copy" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>copy(src, dst, overwrite=False)</code> duplicates a file.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, if <code>dst</code> names an existing directory, or if an ancestor of <code>dst</code> exists as a regular file (file-as-directory-component on dst, ID-209 — same flat-namespace exemption as BE-008). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021.
+<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, if <code>dst</code> names an existing directory, or if an ancestor of <code>dst</code> exists as a regular file (file-as-directory-component on dst, ID-209 — flat-namespace backends opt in to the dst-side ancestor walk via the <code>reject_write_under_file_ancestor</code> kwarg, same shape as BE-008 / ID-211). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021.
+<strong>Precondition order:</strong> Same as BE-018 — <code>src</code>-NotFound takes priority over dst-side preconditions, so <code>copy(missing_src, blocked_dst)</code> MUST raise <code>NotFound(src)</code> rather than <code>InvalidPath(dst)</code>.
 <strong>Metadata:</strong> <code>copy()</code> preserves the source file's user metadata: after a
 successful copy, <code>get_file_info(dst)</code> MUST return the same <code>metadata</code>
 mapping as <code>get_file_info(src)</code> — the WR-013 user-metadata round-trip,

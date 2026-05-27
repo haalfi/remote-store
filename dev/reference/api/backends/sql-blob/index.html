@@ -7363,6 +7363,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../explanation/design/research/research-id-211-flat-ns-file-ancestor-precheck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ID-211 — HEAD pre-check for flat-namespace backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../explanation/design/research/research-logging-monitoring-tracing/" class="md-nav__link">
         
   
@@ -9286,7 +9314,8 @@ SQLAlchemy-supported SQL database.</p>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">table_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;remote_store_objects&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">create_table</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">max_blob_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">reject_write_under_file_ancestor</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -9310,6 +9339,26 @@ INSERT/UPDATE because BLOB columns require complete data in a
 single statement. For files larger than process memory, use a
 blob-storage backend (S3, Local, Azure) instead.</p>
 </details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>reject_write_under_file_ancestor</code></b>
+              (<code><span title="bool">bool</span></code>, default:
+                  <code>False</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>If <code>True</code>, <code>write</code> /
+<code>write_atomic</code> / <code>open_atomic</code> / <code>move</code> / <code>copy</code>
+issue one <code>SELECT 1</code> per slash-aligned ancestor of the
+target path and raise <code>InvalidPath</code> on the first
+regular-file hit. Default <code>False</code>. See spec 003 § BE-008
+and ID-211.</p>
+          </div>
+        </li>
+    </ul>
+
 
 
 
