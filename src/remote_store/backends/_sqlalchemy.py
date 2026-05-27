@@ -238,8 +238,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             ``write_atomic`` / ``open_atomic`` / ``move`` / ``copy``
             issue one ``SELECT 1`` per slash-aligned ancestor of the
             target path and raise ``InvalidPath`` on the first
-            regular-file hit. Default ``False``. See spec 003 § BE-008
-            and ID-211.
+            regular-file hit, matching the cross-backend contract that
+            hierarchical filesystems enforce natively. Default ``False``;
+            paths without slashes short-circuit.
     """
 
     # Upper bound — runtime capabilities() may narrow for narrow-column schemas (create_table=False).
@@ -323,10 +324,10 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
     # endregion
 
-    # region: private — file-ancestor pre-check (ID-211 opt-in)
+    # region: private — file-ancestor pre-check (opt-in)
 
     def _maybe_check_no_file_ancestor(self, path: str) -> None:
-        """ID-211 opt-in walk; mirrors ``S3Backend._maybe_check_no_file_ancestor``.
+        """File-ancestor walk for the opt-in; mirrors ``S3Backend._maybe_check_no_file_ancestor``.
 
         The ``_head_one`` closure opens a fresh ``_engine.connect()`` per
         ancestor. When the helper is called from ``move``/``copy`` the
@@ -342,10 +343,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         never ``dst`` itself, so isolation-level differences (SQLite
         read-committed, PostgreSQL REPEATABLE READ) do not affect the
         gate's correctness. The cost is N+1 pool checkouts on top of N
-        selects; a future refactor that wants to consolidate this
-        should thread the outer ``conn`` through ``_head_one``. Bulk-
-        write callers wanting fewer round trips should follow the
-        IN-list / memoisation follow-up (BK-242).
+        selects; bulk-write callers can collapse this to one round trip
+        via a ``WHERE key IN (ancestors)`` rewrite or per-instance
+        ``head_one`` memoisation.
         """
         if not self._reject_write_under_file_ancestor:
             return

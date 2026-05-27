@@ -202,7 +202,8 @@ class Store:
             AlreadyExists: If the file exists and *overwrite* is
                 ``False``.
             InvalidPath: If *path* is empty.
-            ValueError: If *metadata* fails shape validation (WR-011).
+            ValueError: If *metadata* fails shape validation (keys and
+                values must be ``str`` with bounded total size).
             CapabilityNotSupported: If *metadata* is non-empty and the
                 backend lacks ``USER_METADATA``.
         """
@@ -592,7 +593,7 @@ class Store:
             AlreadyExists: If *dst* exists and *overwrite* is
                 ``False``.
             InvalidPath: If *src* or *dst* is empty, or if *src* names a
-                directory (BE-018, BE-021).
+                directory.
         """
         _bk = self._backend.name
         log.debug(
@@ -626,7 +627,7 @@ class Store:
             AlreadyExists: If *dst* exists and *overwrite* is
                 ``False``.
             InvalidPath: If *src* or *dst* is empty, or if *src* names a
-                directory (BE-019, BE-021).
+                directory.
         """
         _bk = self._backend.name
         log.debug(
@@ -1061,7 +1062,7 @@ class Store:
 
 
 def _validate_metadata(metadata: Mapping[str, str] | None) -> None:
-    """Validate user metadata against WR-011 rules.
+    """Validate user metadata: keys and values are ``str`` with bounded total size.
 
     Raises:
         ValueError: On any rule violation, before any capability check.

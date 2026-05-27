@@ -562,7 +562,7 @@ required when you want to introspect the adapter.
 Wraps any `AsyncBackend` as a synchronous `Backend` by running a private
 event loop on a dedicated daemon thread for the adapter's lifetime.  See
 [Async-sync bridges](../../guides/async-sync-bridges.md) for the full
-behaviour contract and [ADR-0025](https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0025-async-to-sync-backend-adapter.md)
+behaviour contract and the [async-to-sync adapter decision record](https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0025-async-to-sync-backend-adapter.md)
 for the design rationale.
 
 ::: remote_store.AsyncBackendSyncAdapter

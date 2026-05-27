@@ -3,12 +3,12 @@
 Base class for building Store middleware. Subclass it to intercept
 specific operations while delegating the rest to the inner Store.
 
-ProxyStore is an internal delegation base by design
-([ADR-0014](../../../sdd/adrs/0014-middleware-path-1-proxy-store-stream-wrappers.md)) —
+ProxyStore is an [internal delegation base by
+design](../../../sdd/adrs/0014-middleware-path-1-proxy-store-stream-wrappers.md) —
 it centralises the private-attribute coupling that `ObservedStore` and
-`CachedStore` share. It is documented here because it is visible in
-their inheritance chain and useful for anyone building custom Store
-extensions ([ADR-0015](../../../sdd/adrs/0015-proxystore-publicly-documented.md)).
+`CachedStore` share. It is [documented publicly](../../../sdd/adrs/0015-proxystore-publicly-documented.md)
+because it is visible in their inheritance chain and useful for anyone
+building custom Store extensions.
 
 ::: remote_store.ProxyStore
 

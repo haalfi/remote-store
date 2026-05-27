@@ -291,7 +291,14 @@ def _is_prerelease(version: str) -> bool:
 
 
 def render_docs() -> str:
-    """Render ``docs-src/reference/tested-versions.md`` from the lock files."""
+    """Render ``docs-src/reference/tested-versions.md`` from the lock files.
+
+    The output is a published docs-site page, so the template prose below
+    must stay free of backlog / spec / RFC / ADR / PR-N references.
+    ``scripts/check_no_tracker_refs.py`` enforces this; a leaking token
+    in this template would surface as a lint failure on the generated
+    output rather than on the template itself — fix it here.
+    """
     extras = list_extras()
 
     buf = io.StringIO()
@@ -302,7 +309,7 @@ def render_docs() -> str:
         "most cases deliberately no ceiling (the `arrow` and "
         "`sql-query` extras carry a `pyarrow<25` ceiling — see the "
         "comment on `[project.optional-dependencies]` in `pyproject.toml`). "
-        "The drift guard (`.github/workflows/drift-guard.yml`, ID-182) "
+        "The drift guard (`.github/workflows/drift-guard.yml`) "
         "records the last known-good resolution per extra in "
         "`infra/drift-locks/` and re-resolves weekly against the latest "
         "available versions (including pre-releases) to surface silent "

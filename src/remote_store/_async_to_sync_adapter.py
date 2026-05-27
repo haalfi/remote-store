@@ -2,10 +2,7 @@
 
 Implements the sync ``Backend`` ABC by delegating to an
 ``AsyncBackend`` running on a private event loop in a dedicated
-background thread.  Mirror of
-``remote_store.aio.SyncBackendAdapter`` (ADR-0012); decision record
-for this direction is ADR-0025, invariants pinned in spec 029
-§ AsyncBackendSyncAdapter (ASYNC-080..093).
+background thread.  Mirror of ``remote_store.aio.SyncBackendAdapter``.
 """
 
 from __future__ import annotations
@@ -40,7 +37,7 @@ T = TypeVar("T")
 log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Stable message stems (spec 029 § AsyncBackendSyncAdapter)
+# Stable message stems
 # ---------------------------------------------------------------------------
 
 _RUNNING_LOOP_MSG = "AsyncBackendSyncAdapter cannot be called from a running event loop; use AsyncStore instead."
@@ -61,7 +58,7 @@ class _SyncSafeHandleProvider(Protocol):
     sync-safe native handle through ``AsyncBackendSyncAdapter.unwrap``.
 
     Mirrors ``SyncBackendAdapter.unwrap``'s exemption for wrappers that
-    provide a synchronous handle (spec 029 § ASYNC-086).
+    provide a synchronous handle.
     """
 
     def sync_safe_unwrap(self, type_hint: type[Any]) -> Any:
@@ -88,10 +85,6 @@ class AsyncBackendSyncAdapter(Backend):
 
     Args:
         async_backend: The async backend instance to wrap.
-
-    See [ADR-0025](https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0025-async-to-sync-backend-adapter.md)
-    and [spec 029](https://github.com/haalfi/remote-store/blob/master/sdd/specs/029-async-store-backend-api.md)
-    § AsyncBackendSyncAdapter for the full behaviour contract.
     """
 
     def __init__(self, async_backend: AsyncBackend) -> None:
@@ -180,13 +173,14 @@ class AsyncBackendSyncAdapter(Backend):
 
     @functools.cached_property
     def capabilities(self) -> CapabilitySet:
-        """Capabilities with ASYNC-084 translation applied.
+        """Capabilities reported by the wrapped backend, with stream-shape
+        translation applied.
 
         ``SEEKABLE_READ`` is masked off unconditionally — the chunk-pull
         stream this adapter returns is forward-only.  ``USER_METADATA``
         and ``WRITE_RESULT_NATIVE`` are forwarded from the inner async
-        backend unchanged; the ``write*()`` methods now accept and forward
-        ``metadata=`` (Phase 3c complete, ID-013b).
+        backend unchanged; the ``write*()`` methods accept and forward
+        ``metadata=``.
         """
         _MASKED = {Capability.SEEKABLE_READ}
         inner = self._async_backend.capabilities
@@ -212,8 +206,7 @@ class AsyncBackendSyncAdapter(Backend):
 
         Wrapped backends that can expose a sync-safe handle should implement
         ``_SyncSafeHandleProvider`` and return it from
-        ``_SyncSafeHandleProvider.sync_safe_unwrap``
-        (spec 029 § ASYNC-086).
+        ``_SyncSafeHandleProvider.sync_safe_unwrap``.
 
         Args:
             type_hint: The type of handle to retrieve; passed through to
@@ -287,7 +280,7 @@ class AsyncBackendSyncAdapter(Backend):
 
         Not a no-op: the probe is forwarded to the wrapped
         ``AsyncBackend``, and any connectivity error
-        it raises reaches the sync caller unchanged (spec 029 § ASYNC-093).
+        it raises reaches the sync caller unchanged.
 
         Returns:
             ``None`` on success.
@@ -315,7 +308,7 @@ class AsyncBackendSyncAdapter(Backend):
 
         The returned stream pulls one async chunk per ``read()`` call; the
         file is never fully materialised in memory.  At most one
-        ``__anext__`` is in-flight at a time (spec 029 § ASYNC-081).
+        ``__anext__`` is in-flight at a time.
 
         The stream is forward-only: ``seekable()`` returns ``False`` and no
         ``seek`` / ``tell`` / ``fileno`` methods are exposed.  Closing via
@@ -555,8 +548,7 @@ class _ChunkPullReader(io.RawIOBase):
     ``readline()``, and the context-manager protocol.
 
     Only forward reads are supported: ``seekable()`` returns ``False`` and no
-    ``seek`` / ``tell`` / ``fileno`` are exposed (spec 029 § ASYNC-081,
-    ADR-0025 § Bridged read streams).
+    ``seek`` / ``tell`` / ``fileno`` are exposed.
     """
 
     def __init__(self, adapter: AsyncBackendSyncAdapter, async_iter: AsyncGenerator[bytes, None]) -> None:
@@ -578,8 +570,7 @@ class _ChunkPullReader(io.RawIOBase):
         full buffer should wrap this stream in ``io.BufferedReader``.
 
         Raises:
-            ValueError: if the stream was explicitly closed by the caller
-                (see ASYNC-081 § Closed-stream reads).
+            ValueError: If the stream was explicitly closed by the caller.
         """
         if self.closed:
             if not self._closed_on_error:
@@ -602,8 +593,7 @@ class _ChunkPullReader(io.RawIOBase):
         """Read and return up to *size* bytes, or all remaining if *size* == -1.
 
         Raises:
-            ValueError: if the stream was explicitly closed by the caller
-                (see ASYNC-081 § Closed-stream reads).
+            ValueError: If the stream was explicitly closed by the caller.
         """
         if self.closed:
             if not self._closed_on_error:
@@ -642,7 +632,7 @@ class _ChunkPullReader(io.RawIOBase):
         """Submit one ``__anext__`` to the adapter's loop and block.
 
         Returns the next chunk, or ``None`` at EOF.  Any exception from
-        the async iterator propagates verbatim (ASYNC-087).
+        the async iterator propagates verbatim.
         """
         if self._eof:
             return None
@@ -719,8 +709,8 @@ class _AsyncIteratorBridge:
     """Sync ``Iterator`` pulling one item per ``__anext__`` call.
 
     Used for ``list_files``, ``list_folders``, ``glob``, and
-    ``iter_children`` (spec 029 § ASYNC-080).  Preserves streaming --
-    the full listing is never materialised in memory.
+    ``iter_children``.  Preserves streaming -- the full listing is
+    never materialised in memory.
 
     A best-effort ``__del__`` submits ``aclose()`` fire-and-forget when the
     iterator is GC'd before exhaustion, so backend resources are not silently
@@ -825,7 +815,7 @@ class _SpoolAndFlush:
     Clean exit rewinds the spool and submits it to the wrapped backend's
     ``write_atomic``.  On exception, the spool is dropped and the
     destination path is untouched -- the capability gate fires on
-    flush, not on entry (spec 029 § ASYNC-085).
+    flush, not on entry.
     """
 
     __slots__ = ("_adapter", "_path", "_overwrite", "_spool")

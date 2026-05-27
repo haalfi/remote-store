@@ -556,7 +556,7 @@ class AsyncStore:
             AlreadyExists: If *dst* exists and *overwrite* is
                 ``False``.
             InvalidPath: If *src* or *dst* is empty, or if *src* names a
-                directory (BE-018, BE-021).
+                directory.
         """
         _bk = self._backend.name
         log.debug(
@@ -590,7 +590,7 @@ class AsyncStore:
             AlreadyExists: If *dst* exists and *overwrite* is
                 ``False``.
             InvalidPath: If *src* or *dst* is empty, or if *src* names a
-                directory (BE-019, BE-021).
+                directory.
         """
         _bk = self._backend.name
         log.debug(

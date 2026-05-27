@@ -94,7 +94,7 @@ walkthrough of the `Backend` contract, error mapping, and capabilities.
 
 ## Adding an Extension
 
-Extensions live in `src/remote_store/ext/` and follow the contract in [ADR-0008](sdd/adrs/0008-extension-architecture.md). Full checklist:
+Extensions live in `src/remote_store/ext/` and follow the contract in the [extension architecture ADR](sdd/adrs/0008-extension-architecture.md). Full checklist:
 
 1. Write an RFC in `sdd/rfcs/`, get it accepted as a spec in `sdd/specs/`
 2. Implement in `src/remote_store/ext/<name>.py` — define `__all__`
@@ -280,8 +280,8 @@ and reconciles a single rolling GitHub issue. The workflow never edits
 `pyproject.toml` and never opens a pin-update PR — it is early warning,
 not automated remediation.
 
-When you deliberately bump a floor (e.g. `paramiko>=3.0` after BUG-204),
-refresh the baseline in the same PR:
+When you deliberately bump a floor (e.g. `paramiko>=3.0` after a
+known-breaking upstream release), refresh the baseline in the same PR:
 
 ```
 hatch run drift-check refresh-baseline <extra>     # regenerate the lock

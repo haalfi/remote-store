@@ -48,6 +48,92 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   alongside SIO-001.
   Trace: `sdd/traces/id-188-quality-flags-cleanup.yml`.
 
+- [x] **BK-246 — Strip internal tracker IDs from published docstrings and `docs-src/`; add lint gate**
+  spec: — · audience: user.api_docs, contributor.process, contributor.tooling
+  Audit on branch `claude/backlog-refs-api-docs-8o2Jq` found backlog
+  and spec IDs leaking into prose users see — Python docstrings
+  rendered onto `docs-src/reference/api/*.md` by mkdocstrings, plus a
+  handful of `docs-src/` markdown pages, plus repo-root dual-classified
+  pages. Discovered when the kwarg description for
+  `S3Backend.__init__` was found to read "closing the ID-209
+  cross-backend gap … See spec 003 § BE-008 and ID-211." Violates
+  `sdd/CONTENT-RULES.md` Rule 1 (6-month test — tracker IDs are
+  meaningless to package consumers and rot quickly) and Rule 5 (docs
+  describe the pattern, not internal coordinates).
+  Originally filed as BK-243; renumbered to BK-246 after PR #689
+  (ID-188) took BK-243, BK-244, and BK-245 for unrelated work during
+  this branch's review window.
+  (T) New `scripts/check_no_tracker_refs.py` lint gate scans every
+  docstring under `src/remote_store/` (via `ast.get_docstring`, so
+  ``#`` comments inside source are out of scope) and every `.md` under
+  `docs-src/` plus `README.md` / `FEATURES.md` / `CONTRIBUTING.md`.
+  Matches any backlog or spec coordinate via a structural
+  ``PREFIX-NNN`` pattern (so every present and future spec section
+  prefix is caught without enumeration), plus `spec NNN` ordinals,
+  internal SDD docs (`RFC-0NNN`, `ADR-0NNN` — leading-zero zero-pad,
+  so IETF `RFC-3986`-style refs stay clean), and `PR #NNN`. External
+  standards and codes (`HTTP-NNN`, `CVE-…`, `UTF-N`, `ISO-…`,
+  `IEEE-…`, `PEP-…`, `SHA-…`, `MD5-…`, `SSH-N`) are exempt via
+  `_EXTERNAL_PREFIXES`; the conda-forge staged-recipes PR reference is
+  the only line-level allowlist. Wired into `hatch run lint` and the
+  CI lint job. Out of scope: `sdd/**`, `CHANGELOG.md`,
+  `DEVELOPMENT_STORY.md`, `CLAUDE.md`, `AGENTS.md`, `tests/`,
+  `.claude/`, `docs-src/_data/`, and `#` comments inside Python
+  sources.
+  (C) Cleanup sweep — 178 leak sites across 24 files. Backend ABCs
+  (`_backend.py`, `aio/_async_backend.py`) and Store/AsyncStore Raises
+  rows rewritten to describe the file-ancestor `InvalidPath` rule
+  directly. Flat-namespace backend constructors
+  (`S3Backend`, `S3PyArrowBackend`, `AzureBackend`, `AsyncAzureBackend`,
+  `SQLBlobBackend`) get the `reject_write_under_file_ancestor` kwarg
+  prose rewritten as user-facing trade-off (per-HEAD cost, no-slash
+  short-circuit, HNS deferred-contract caveat) without any tracker
+  IDs. `AsyncBackendSyncAdapter` and its support classes
+  (`_ChunkPullReader`, `_AsyncIteratorBridge`, `_SpoolAndFlush`) lose
+  every `ASYNC-NNN` / `ADR-0025` / `spec 029` reference from module,
+  class, and method docstrings. Internal `_maybe_check_no_file_ancestor`
+  helpers on the four flat-NS backends, `_flat_ns.py` module +
+  helpers, `_sftp.py::_has_file_ancestor` + `_ensure_parent_dirs`,
+  `aio/backends/_memory.py`, `_capabilities.py`, `_proxy.py`,
+  `ext/__init__.py`, `ext/cache.py`, and `ext/dagster.py` (29 leak
+  sites across every Dagster serializer / IO manager / compute log
+  manager docstring) all rewritten. `docs-src/` markdown:
+  `explanation/architecture.md`, `explanation/graph-ir.md`,
+  `guides/async-sync-bridges.md`, `guides/backends/azure-hns-setup.md`,
+  `guides/extensions.md`, `guides/glob-pattern-matching.md`,
+  `index.md`, `reference/api/aio.md`, `reference/api/proxy.md`, and
+  `reference/migration.md` (12 BK/BUG/ID/ADR refs in section headers
+  stripped). Repo-root `CONTRIBUTING.md` and `FEATURES.md` cleaned;
+  `scripts/drift_check.py` template fixed so the generated
+  `docs-src/reference/tested-versions.md` regenerates clean. Gate
+  reports 0 violations after the sweep. `tests/scripts/
+  test_check_no_tracker_refs.py` covers the regex set, the allowlist,
+  Python/markdown scanners, the inline-comment carve-out, and includes
+  an integration guard (`test_real_repo_is_clean`) so any future leak
+  fails this test.
+  Trace: `sdd/traces/bk-246-tracker-id-cleanup.yml`.
+
+  Review (PR #690, in-PR): the original lint gate enumerated 24 spec
+  prefixes and missed about 20 active prefixes used across
+  `sdd/specs/` (S3-, AZ-, MEM-, GLOB-, CACHE-, BATCH-, RETRY-, HC-,
+  ITER-, WT-, HTTP-, STREAM-, INTEG-, DIGEST-, SEEK-, TLS-, PARQ-,
+  XW-, AW-, etc.) — the very regression class this PR was meant to
+  police. The gate was rewritten around a structural
+  ``[A-Z][A-Z0-9-]*-\d+`` pattern plus a compound-aware external-prefix
+  carve-out (`HTTP-NNN` status codes external, `HTTP-CON-NNN` spec
+  sections internal; `CVE-YYYY-NNNN` compound-aware; `RFC-`/`ADR-`
+  leading-zero pad means internal). A new
+  `test_every_spec_prefix_is_flagged` discovers prefixes from
+  `sdd/specs/*.md` at test time and asserts each is flagged, so adding
+  a new spec section without updating the regex fails the test
+  instead of silently widening the leak surface. The sweep across the
+  newly-caught prefixes added 9 fixes (S3-026 in `s3.md`, GLOB-014 in
+  `sql-blob.md`, EW-001..EW-004 in sync + async `ext/write.py`,
+  CACHE-001 in `ext/cache.py`). The `sdd/CLAUDE-REFERENCE.md`
+  ripple-check row and the BACKLOG-DONE entry above were re-written
+  in principle terms after the same enumeration concern surfaced in
+  review.
+
 - [x] **ID-211 — write-under-file HEAD pre-check for flat-namespace backends**
   spec: BE-008, BE-018, BE-019, ASYNC-008, ASYNC-010, ASYNC-018, ASYNC-019 · audience: user.api, library.maintainer, infra.test, contributor.process
   Follow-up to ID-209 (PR #680). ID-209 landed the cross-backend

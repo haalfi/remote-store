@@ -43,7 +43,6 @@ but your calling code is synchronous.
 - [API reference](../reference/api/aio.md) — `AsyncBackendSyncAdapter`, `SyncBackendAdapter`, `AsyncStore`
 - [Async guide](async.md) — `AsyncStore`, native async backends, and the
   `SyncBackendAdapter` direction
-- [ADR-0025](../../sdd/adrs/0025-async-to-sync-backend-adapter.md)
-  — decision record for `AsyncBackendSyncAdapter`
-- [spec 029 § AsyncBackendSyncAdapter](../../sdd/specs/029-async-store-backend-api.md)
-  — full invariant list (ASYNC-080…093)
+- [Async-to-sync adapter decision record](../../sdd/adrs/0025-async-to-sync-backend-adapter.md)
+- [Async backend API spec](../../sdd/specs/029-async-store-backend-api.md)
+  — `AsyncBackendSyncAdapter` invariants

@@ -102,10 +102,10 @@ class _S3Base(Backend):
 
     # endregion
 
-    # region: shared — file-ancestor pre-check (ID-211 opt-in)
+    # region: shared — file-ancestor pre-check (opt-in)
 
     def _maybe_check_no_file_ancestor(self, path: str) -> None:
-        """Run the ID-211 file-ancestor walk when the opt-in is set.
+        """Run the file-ancestor walk when the opt-in is set.
 
         Default-off: only callers that constructed the backend with
         ``reject_write_under_file_ancestor=True`` pay the per-write
@@ -191,10 +191,11 @@ class _S3Base(Backend):
         ``s3fs.S3FileSystem.set_session`` already calls
         ``aiobotocore.create_client(..., config=AioConfig(**self.config_kwargs),
         **client_kwargs)``; a parallel ``client_kwargs['config']`` would
-        duplicate the ``config=`` keyword and raise ``TypeError`` (BUG-178,
-        BUG-185).  Caller-supplied ``client_kwargs['config']`` is therefore
+        duplicate the ``config=`` keyword and raise ``TypeError`` at first
+        I/O.  Caller-supplied ``client_kwargs['config']`` is therefore
         rejected with a clear ``ValueError`` that points to the supported
-        channel — silent rewriting hid both prior bugs.
+        channel — silent rewriting hid the underlying defect twice in
+        prior releases.
 
         Retry-policy precedence: when ``retry=RetryPolicy(...)`` is passed,
         the ``retries`` entry in ``config_kwargs`` is replaced wholesale

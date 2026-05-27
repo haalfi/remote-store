@@ -1,7 +1,7 @@
 """Official extensions for remote-store.
 
 Extensions live in ``remote_store.ext.<name>`` and follow a documented
-contract (see ADR-0008):
+contract:
 
 - **Public API only** -- extensions use only the public Store / Backend
   API.  ``Store.unwrap()`` is the escape hatch for native access.
@@ -14,7 +14,7 @@ contract (see ADR-0008):
   ``remote_store.__init__`` unconditionally.  Optional-dependency
   extensions are imported from their module directly
   (``from remote_store.ext.<name> import ...``); they are *not*
-  re-exported from the top-level package (ADR-0013).
+  re-exported from the top-level package.
 
 See ``docs-src/how-to/extensions.md`` for the list of available extensions.
 """

@@ -62,7 +62,7 @@ A `Store` scopes all operations to a root path. Everything is relative.
 Switch backend without changing application code:
 
 <!-- Inline block: S3Backend can't be instantiated without credentials,
-     so this is not sourced from a snippet file. See ID-057 notes. -->
+     so this is not sourced from a snippet file. -->
 ```python
 from remote_store import Store
 from remote_store.backends import S3Backend

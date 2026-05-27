@@ -3,8 +3,6 @@
 Guarantees a populated ``WriteResult.digest`` regardless of whether the
 backend declares ``WRITE_RESULT_NATIVE``. The hash is always computed
 client-side over the bytes as they are written.
-
-Spec: EW-001..EW-004 in ``sdd/specs/046-ext-write.md``.
 """
 
 from __future__ import annotations
@@ -67,7 +65,7 @@ def write_with_hash(
 ) -> WriteResult:
     """Write *content* to *path* and return a ``WriteResult`` with a client-computed digest.
 
-    Works on every backend declaring ``Capability.WRITE`` (EW-002).
+    Works on every backend declaring ``Capability.WRITE``.
     The hash is always computed client-side regardless of
     ``WRITE_RESULT_NATIVE``.
 
@@ -118,10 +116,10 @@ def open_atomic_with_hash(
 
     **``source`` field:** Both branches always set ``source="basic"`` on
     the returned ``WriteResult``.  The metadata branch discards the
-    ``source`` returned by ``store.write_atomic()`` because EW-004 cannot
-    be honored for the no-metadata branch (``open_atomic`` returns only a
-    stream, not a ``WriteResult``), so both branches use the same value
-    for consistency.
+    ``source`` returned by ``store.write_atomic()`` because the rich-
+    source contract cannot be honored for the no-metadata branch
+    (``open_atomic`` returns only a stream, not a ``WriteResult``), so
+    both branches use the same value for consistency.
 
     Args:
         store: The Store to write to.

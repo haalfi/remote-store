@@ -42,8 +42,8 @@ class AsyncMemoryBackend(AsyncBackend):
     Note:
         ``LAZY_READ`` is included here but absent from ``MemoryBackend``
         (the sync mirror).  The sync backend buffers fully in memory; the
-        async backend can yield chunks incrementally.  The ``mirrors`` graph
-        edge does not imply capability parity — see ID-162.
+        async backend can yield chunks incrementally.  The ``mirrors``
+        graph edge between the two does not imply capability parity.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
