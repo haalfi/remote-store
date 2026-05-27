@@ -888,18 +888,16 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 - [ ] **BK-237 — Feature-type DoD checklists in `sdd/000-process.md`**
   spec: — · effort: S · audience: contributor.process
   Codify two complementary feature-DoD checklists in `sdd/000-process.md`,
-  derived from the v0.23.0→v0.24.0 post-release retrospective
-  (`../sandbox/post-v0.23.0-lessons-learned.md`, §5 recs 1, 2, 8):
+  derived from the v0.23.0→v0.24.0 post-release retrospective lessons:
   - **Contract-expanding feature** (next: any new `Capability.X`): spec/RFC
     update, capability-declaration review covering over- *and*
     under-declaration, conformance test + xfail registry landed *before*
-    first backend implementation (memo §5 rec 2, subsumed here),
-    wrapper forwarding check (`ProxyStore`, `ObservedStore`, `CachedStore`,
-    sync adapter, oracle adapter), docs ripple (`guides/`,
-    `examples/snippets/`, `FEATURES.md`, capabilities matrix). The RFC
-    scope must enumerate the conformance / PBT / Dafny extensions the
-    feature will need up front, rather than discovering them as follow-ups
-    (memo §5 rec 8; `feedback_estimation.md` 2-3x rule applied at RFC
+    first backend implementation, wrapper forwarding check (`ProxyStore`,
+    `ObservedStore`, `CachedStore`, sync adapter, oracle adapter), docs
+    ripple (`guides/`, `examples/snippets/`, `FEATURES.md`, capabilities
+    matrix). The RFC scope must enumerate the conformance / PBT / Dafny
+    extensions the feature will need up front, rather than discovering
+    them as follow-ups (`feedback_estimation.md` 2-3x rule applied at RFC
     time, not after the fact). ID-146 → ID-151c (eight sub-IDs over two
     weeks for a single feature line) is the cautionary precedent.
   - **Bridge / adapter feature** (next: any future cross-layer wrapper):
