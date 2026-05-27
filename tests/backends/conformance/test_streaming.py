@@ -141,12 +141,24 @@ class TestStreamingConformance:
         ``seekable()`` is ``True``. The DafnyOracleBackend certifies this
         test by construction (it wraps content in ``io.BytesIO``); real
         backends that declare the capability must produce the same shape.
+
+        The flag is necessary but not sufficient for the spec contract
+        ("callers that need to seek can rely on it"), so the test also
+        exercises an actual ``seek`` round-trip — a backend whose
+        ``seekable()`` returns ``True`` but whose ``seek()`` raises or
+        no-ops would slip past a flag-only assertion.
         """
         _require(backend, Capability.SEEKABLE_READ)
-        backend.write("seek_decl.bin", b"seekable data")
+        payload = b"seekable data"
+        backend.write("seek_decl.bin", payload)
         stream = backend.read("seek_decl.bin")
         try:
             assert stream.seekable() is True
+            assert stream.read() == payload
+            stream.seek(0)
+            assert stream.read() == payload
+            stream.seek(4)
+            assert stream.read(4) == b"able"
         finally:
             stream.close()
 

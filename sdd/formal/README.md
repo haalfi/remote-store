@@ -368,8 +368,9 @@ Each gap is now encoded as a machine-checkable pre/postcondition:
 | 3 | Listing on missing paths | BE-014/015 | `BackendContract.dfy` |
 | 4 | Depth-counting algorithm | DEPTH-001 | `DepthCounting.dfy` |
 | 5 | Move atomicity | BE-018 | `ResourceSafety.dfy` |
-| 6 | Acquire-then-wrap safety; seekable-read quality flag | SIO-001, SIO-008 | `ResourceSafety.dfy`, `BackendContract.dfy` |
+| 6 | Acquire-then-wrap safety | SIO-001 | `ResourceSafety.dfy` |
 | 7 | `WriteResult` field mapping + capability round-trip | WR-001a, WR-004, WR-008, WR-012, WR-013 | `BackendContract.dfy` |
+| 8 | Seekable-read quality flag | SIO-008 | `BackendContract.dfy` |
 
 Gap 7 was added under ID-151 after root-cause analysis of the ID-146
 review. Review found ~24% of the 95 comments were shaped as per-operation
@@ -390,6 +391,16 @@ actually populated" is a test-assertion and review concern, not a
 Dafny-expressible postcondition. Store-layer composition (WR-018,
 WR-019) and ext.write gating (EW-003) remain outside this layer — see
 `sdd/formal/tla/` for the cross-layer track.
+
+Gap 8 was added under ID-188. The `Read` return type widened from
+`Result<seq<nat>>` to `Result<ReadStream>` (a `ReadStream(content,
+seekable)` datatype) so the SIO-008 capability-gated postcondition
+`CapSeekableRead in capabilities ==> r.value.seekable` has a stream-
+shaped target to bind to. `CapLazyRead` was added as an advisory stub
+variant in the same change: the Dafny model materialises content as a
+`seq<nat>`, so SIO-009's "no I/O before first read" runtime protocol
+property has no enforceable postcondition here and stays load-bearing
+in Python conformance only.
 
 Error-path frame conditions (gaps 1–2: `fs == old(fs)` on error) are
 not machine-checked — the `r.Err?` discriminator taints method bodies

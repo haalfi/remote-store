@@ -15,8 +15,15 @@ audience:
 co_shipped_items: []
 discovery_followups:
   - BK-243
+review_rounds: 1
 expected_ripples:
-  - sdd/backlogid.json
+  # `sdd/backlogid.json` intentionally omitted: gen-backlogid tracks
+  # max IDs from BACKLOG-DONE.md only (`scripts/gen_backlogid.py`); ID-188
+  # is below the current max (211), so `hatch run gen-backlogid` is a
+  # no-op and the JSON is correctly unchanged. Canonicalised as
+  # `gotcha_backlogid_json_max_only` in prior traces
+  # (bk-204-sftp-host-key-chain-coverage, id-184-listing-traversability,
+  # id-190-path-wellformedness).
   - sdd/formal/MemoryBackend-py/module_.py
   - tests/backends/dafny/_helpers.py
 surprising_ripples:
