@@ -1,0 +1,107 @@
+id: ID-185
+title: "Depth-boundary conformance gap"
+trigger: "DepthCounting.dfy proves the four depth-filter properties and BackendContract.dfy:705-709 pins forall fi :: Depth(path, fi.path) <= max_depth, but the four test_list_files_recursive_max_depth variants in tests/backends/conformance/test_listing.py and the async sibling in test_async_extended.py assert only the .name set. Names can repeat across depths, so the name-set check does not directly enforce the boundary. Wave 1 (T) pure test-backfill for an already-verified clause."
+source_items:
+  - ID-185
+audience:
+  - infra.test
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-185, Formal Verification execution-order table"
+        read_type: gate
+        extract: "Wave 1 (T) gap for an already-verified clause; effort S; helper `_depth(prefix, path)` shared across the four variants; the variants already carry the DEPTH-003 and BE-014 markers"
+        outcome: ok
+      - file: sdd/specs/037-depth-limited-listing.md
+        section: "DEPTH-003 reference algorithm, comparison operator"
+        read_type: gate
+        extract: "Reference formula: depth = len(RemotePath(file_path).parent.parts) - len(RemotePath(root).parts); comparison MUST be <= (inclusive); backends with no native pruning ignore max_depth and the Store filters client-side"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "ListFiles DEPTH-003 postcondition"
+        read_type: gate
+        extract: "ensures recursive && max_depth >= 0 && r.Ok? ==> forall fi :: Depth(path, fi.path) <= max_depth — the postcondition the conformance assertion now mirrors directly"
+        outcome: ok
+      - file: sdd/formal/DepthCounting.dfy
+        section: "ImmediateChildDepthIsZero, MaxDepthZeroIsImmediate, DepthFilterIsInclusive, DepthFilterExcludesDeeper"
+        read_type: gate
+        extract: "Four lemmas already discharge the depth-filter properties; this is a pure (T) backfill — no Dafny edits, no oracle regeneration, no Docker"
+        outcome: ok
+      - file: tests/backends/conformance/test_listing.py
+        section: "TestListFilesCompleteness.test_list_files_recursive_max_depth"
+        read_type: gate
+        extract: "Four parametrize variants (depth0..depth3) over the DEPTH_TREE seed; existing assertion checks .name set only — gap the BACKLOG entry diagnoses"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestListFilesCompleteness.test_list_files_recursive_max_depth"
+        read_type: gate
+        extract: "Async sibling with identical four variants and identical name-set-only assertion, tagged ASYNC-014 — same gap, tightened in the same PR per principle 1"
+        outcome: ok
+      - file: src/remote_store/_store.py
+        section: "Store.list_files depth filter"
+        read_type: reference
+        extract: "Production reference formula: depth = len(rebased.path.parts) - 1 - base_parts with base_parts = len(RemotePath(path).parts) if path and path != '.' else 0 — the helper must agree"
+        outcome: ok
+      - file: src/remote_store/_path.py
+        section: "RemotePath.parent, RemotePath.parts"
+        read_type: reference
+        extract: "parent returns None for one-segment paths; .parts splits on '/' — the helper handles parent=None as depth 0 at root"
+        outcome: ok
+      - file: tests/backends/conformance/_helpers.py
+        section: "(full)"
+        read_type: gate
+        extract: "Established home for shared conformance helpers (_seed, _require, _skip_flat_namespace); _depth lives here so both sync and async test files import it from one place"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/conformance/_helpers.py
+        section: "_depth"
+        read_type: reference
+        extract: "New helper: depth = parent.parts - prefix.parts (prefix in {'', '.'} means root, 0 parts; one-segment path has parent=None → depth 0 at root). Docstring cites spec 037 reference algorithm and the Dafny postcondition site"
+        outcome: ok
+      - file: tests/backends/conformance/test_listing.py
+        section: "TestListFilesCompleteness.test_list_files_recursive_max_depth"
+        read_type: reference
+        extract: "Added the depth-boundary assertion `_depth('pc', f.path) <= max_depth` alongside the pre-existing name-set check; extended docstring with the ID-185 rationale; import line widened to `_depth, _require, _seed`"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestListFilesCompleteness.test_list_files_recursive_max_depth"
+        read_type: reference
+        extract: "Async sibling tightened symmetrically; user confirmed to tighten both sync and async in the same PR (open-question call in the pre-implementation plan)"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "ID-185 entry, Formal Verification execution-order table"
+        read_type: reference
+        extract: "Removed the ID-185 item; Wave 1 (T) row collapsed from `ID-185, ID-210` to just `ID-210` with the standard `landed; see BACKLOG-DONE.md` annotation — the row does not empty, so no pointer-to-DONE update beyond the annotation"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-185 (Unreleased)"
+        read_type: reference
+        extract: "New entry placed at the top of [Unreleased] above ID-187; records the spec-37 reference formula, the masking-name bite shape, and the negative-control finding (existing name-set check happens to bound depth tightly on this seed tree)"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: src/remote_store/backends/_memory.py
+        section: "_collect_files_from_snapshot, max_depth pruning"
+        read_type: verify
+        extract: "Negative control: gated the `depth >= max_depth` pruning behind `False and ...`. Sync test failed — but on the pre-existing `.name`-set check at depth0 (extra items b/c/d/e.txt), not on the new depth assertion. The seed tree's unique names per depth bound depth too tightly for gross mutations to escape the name check. Reverted the mutation"
+        outcome: misleading
+      - file: tmp/demo_depth.py
+        section: "(scratch)"
+        read_type: verify
+        extract: "Constructed `RemotePath('pc/d1/a.txt')` (depth 1 relative to 'pc'); name 'a.txt' matches the depth0 expected set, so the name-set check would pass; the new `_depth` assertion fires with `DEPTH-003 violation: pc/d1/a.txt at depth 1 > max_depth=0`. Confirms the new assertion is durable against the BACKLOG-described masking-name shape that the deterministic seed tree cannot itself exercise. Scratch file deleted before commit"
+        outcome: ok
+      - file: tests/backends/conformance/test_listing.py
+        section: "TestListFilesCompleteness"
+        read_type: verify
+        extract: "62 passed, 10 skipped — name-set + depth-boundary assertions both green across the full fixture registry"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestListFilesCompleteness"
+        read_type: verify
+        extract: "35 passed, 1 skipped — async sibling green"
+        outcome: ok
