@@ -2,6 +2,7 @@
 
 **Item ID:** ID-211
 **Date:** 2026-05-26
+**Measurements refreshed:** 2026-05-27 (s3_moto + sqlblob_sqlite + azurite all on the same host; supersedes the original tables).
 **Predecessor:** ID-209 (PR #680, merged)
 **Status:** Implemented per disposition (b) — opt-in `reject_write_under_file_ancestor` kwarg on flat-NS backends.
 
@@ -61,12 +62,14 @@ and the published numbers are an upper bound on the per-call cost.
 
 The fixture wraps the same production code paths the conformance
 suite drives (`S3Backend(endpoint_url=moto)`, `SQLBlobBackend(url=
-"sqlite:///:memory:")`). Azurite would have rounded out the Stage-1
-matrix; this environment has no Docker daemon, so it self-skipped.
-Real-cloud (S3 live + Azure ADLS live) is out of scope for the
-Stage-1 measurement — its per-HEAD latency is bounded by network
-RTT, and the same depth-vs-cost shape from the in-process numbers
-extrapolates linearly to whatever the user's account RTT looks like.
+"sqlite:///:memory:")`, `AzureBackend(connection_string=azurite)`).
+Azurite needs Docker — bring it up with `docker compose -f
+infra/docker-compose.yml up -d azurite` before invoking the harness
+with `--include azurite`. Real-cloud (S3 live + Azure ADLS live) is
+out of scope for the Stage-1 measurement — its per-HEAD latency is
+bounded by network RTT, and the same depth-vs-cost shape from the
+in-process numbers extrapolates linearly to whatever the user's
+account RTT looks like.
 
 ## 3. Measurement results
 
@@ -82,37 +85,40 @@ gate's per-call cost.
 
 | depth | variant  | P50 (ms) | P95 (ms) | P99 (ms) | mean (ms) | overhead vs baseline (mean) |
 | ----- | -------- | -------- | -------- | -------- | --------- | --------------------------- |
-|     0 | baseline |   17.382 |   27.718 |   29.421 |    18.737 | —                           |
-|     0 | precheck |   17.306 |   18.991 |   28.655 |    17.763 | -0.974 ms (-5.2%)           |
-|     1 | baseline |   17.396 |   27.362 |   60.191 |    18.522 | —                           |
-|     1 | precheck |   21.558 |   30.736 |   32.946 |    22.127 | +3.605 ms (+19.5%)          |
-|     3 | baseline |   17.598 |   27.833 |   28.911 |    18.590 | —                           |
-|     3 | precheck |   29.776 |   40.107 |   41.642 |    30.893 | +12.303 ms (+66.2%)         |
-|     6 | baseline |   18.346 |   28.484 |   29.249 |    19.550 | —                           |
-|     6 | precheck |   41.718 |   52.136 |   95.700 |    43.523 | +23.973 ms (+122.6%)        |
+|     0 | baseline |   14.549 |   16.285 |   56.997 |    15.041 | —                           |
+|     0 | precheck |   14.320 |   15.567 |   16.103 |    14.388 | -0.653 ms (-4.3%)           |
+|     1 | baseline |   14.267 |   15.994 |   17.845 |    14.443 | —                           |
+|     1 | precheck |   17.783 |   19.642 |   20.311 |    17.890 | +3.447 ms (+23.9%)          |
+|     3 | baseline |   14.540 |   15.857 |   16.424 |    14.575 | —                           |
+|     3 | precheck |   24.367 |   28.417 |   31.776 |    24.715 | +10.141 ms (+69.6%)         |
+|     6 | baseline |   14.508 |   16.894 |   18.089 |    14.659 | —                           |
+|     6 | precheck |   33.954 |   37.449 |   40.473 |    34.122 | +19.464 ms (+132.8%)        |
 
 ### sqlblob_sqlite (in-memory SQLite, no network RTT)
 
 | depth | variant  | P50 (ms) | P95 (ms) | P99 (ms) | mean (ms) | overhead vs baseline (mean) |
 | ----- | -------- | -------- | -------- | -------- | --------- | --------------------------- |
-|     0 | baseline |    0.300 |    0.448 |    0.537 |     0.315 | —                           |
-|     0 | precheck |    0.296 |    0.397 |    0.827 |     0.311 | -0.005 ms (-1.5%)           |
-|     1 | baseline |    0.291 |    0.341 |    0.380 |     0.295 | —                           |
-|     1 | precheck |    0.458 |    0.574 |    0.617 |     0.469 | +0.175 ms (+59.4%)          |
-|     3 | baseline |    0.326 |    0.443 |    0.504 |     0.337 | —                           |
-|     3 | precheck |    0.722 |    0.930 |    1.032 |     0.746 | +0.408 ms (+121.0%)         |
-|     6 | baseline |    0.298 |    0.390 |    0.406 |     0.306 | —                           |
-|     6 | precheck |    1.057 |    1.188 |    1.320 |     1.069 | +0.763 ms (+249.0%)         |
+|     0 | baseline |    0.139 |    0.175 |    0.206 |     0.144 | —                           |
+|     0 | precheck |    0.127 |    0.154 |    0.168 |     0.129 | -0.015 ms (-10.7%)          |
+|     1 | baseline |    0.128 |    0.148 |    0.177 |     0.130 | —                           |
+|     1 | precheck |    0.195 |    0.238 |    0.411 |     0.203 | +0.073 ms (+56.3%)          |
+|     3 | baseline |    0.141 |    0.197 |    0.301 |     0.149 | —                           |
+|     3 | precheck |    0.304 |    0.379 |    0.593 |     0.317 | +0.167 ms (+112.0%)         |
+|     6 | baseline |    0.134 |    0.156 |    0.186 |     0.136 | —                           |
+|     6 | precheck |    0.451 |    0.503 |    0.532 |     0.455 | +0.319 ms (+234.3%)         |
 
 ### azurite (Azure non-HNS via Docker emulator)
 
-Not measured: this environment has no Docker daemon, so the
-`azurite` factory self-skipped on the unreachable `127.0.0.1:10000`
-probe. The shape will mirror `s3_moto` (one HEAD per ancestor against
-a local HTTP server); the absolute numbers depend on Azurite's
-per-request overhead, which is in the same order of magnitude as
-moto's. Re-run the harness with `--include azurite` once Docker is
-up if the disposition turns on Azurite-specific numbers.
+| depth | variant  | P50 (ms) | P95 (ms) | P99 (ms) | mean (ms) | overhead vs baseline (mean) |
+| ----- | -------- | -------- | -------- | -------- | --------- | --------------------------- |
+|     0 | baseline |    7.008 |    9.371 |   10.679 |     7.174 | —                           |
+|     0 | precheck |    6.893 |   10.226 |   13.128 |     7.174 | +0.000 ms (+0.0%)           |
+|     1 | baseline |    7.026 |    9.393 |   12.076 |     7.133 | —                           |
+|     1 | precheck |    8.721 |   12.222 |   16.050 |     9.174 | +2.040 ms (+28.6%)          |
+|     3 | baseline |    6.776 |    9.511 |   10.580 |     6.987 | —                           |
+|     3 | precheck |   11.553 |   15.294 |   22.806 |    11.977 | +4.990 ms (+71.4%)          |
+|     6 | baseline |    6.748 |   10.809 |   14.193 |     7.235 | —                           |
+|     6 | precheck |   16.449 |   20.945 |   21.551 |    16.795 | +9.559 ms (+132.1%)         |
 
 ## 4. Interpretation
 
@@ -120,35 +126,49 @@ Two things stand out:
 
 ### 4.1 The no-slash early exit is essentially free
 
-`depth=0` precheck overhead is within noise on both backends:
-`-0.974 ms (-5.2%)` on `s3_moto` and `-0.005 ms (-1.5%)` on
-`sqlblob_sqlite`. The negative signs are jitter, not a speedup. The
-user's "skip the check when there are no slash segments" optimisation
-collapses the gate cost to **zero** on store-root writes, regardless
-of backend. Any disposition that includes it pays nothing for the
-most common write shape.
+`depth=0` precheck overhead is within noise on all three backends:
+`-0.653 ms (-4.3%)` on `s3_moto`, `-0.015 ms (-10.7%)` on
+`sqlblob_sqlite`, and `+0.000 ms (+0.0%)` on `azurite`. The
+sub-millisecond deltas are jitter, not a speedup. The user's "skip
+the check when there are no slash segments" optimisation collapses
+the gate cost to **zero** on store-root writes, regardless of
+backend. Any disposition that includes it pays nothing for the most
+common write shape.
 
 ### 4.2 On nested-path writes, the cost is linear in depth and meaningful
 
 On `s3_moto`, where the HEAD round trip is purely local-process HTTP
 and so the floor on per-HEAD cost, the precheck adds:
 
-* depth 1: +3.6 ms mean (+19.5%) — roughly one extra HEAD on a 17 ms
+* depth 1: +3.4 ms mean (+23.9%) — roughly one extra HEAD on a 14 ms
   baseline.
-* depth 3: +12.3 ms mean (+66.2%) — three extra HEADs.
-* depth 6: +24.0 ms mean (+122.6%) — six extra HEADs; **more than
+* depth 3: +10.1 ms mean (+69.6%) — three extra HEADs.
+* depth 6: +19.5 ms mean (+132.8%) — six extra HEADs; **more than
   doubles** the write wall time.
 
-The per-HEAD increment is ~4 ms on moto. Real S3 typically runs at
+The per-HEAD increment is ~3.2 ms on moto. Real S3 typically runs at
 5–50 ms per HEAD against a regional endpoint; depth-6 nested writes
 against live S3 would land in the +30–300 ms band per write. The
 proportional cost on real S3 stays similar because the baseline write
 RTT scales with per-call latency in lockstep with the per-HEAD RTT.
 
 `sqlblob_sqlite` shows the same depth-linear shape with sub-millisecond
-absolute numbers (+0.76 ms at depth 6). On a real SQL backend served
-over a network the per-`SELECT` RTT lifts the absolute cost into the
-same range as S3.
+absolute numbers (+0.32 ms at depth 6). The proportional overhead is
+higher than the network-backed cells (+234% at depth 6) because the
+in-memory SQLite baseline is so cheap (~0.14 ms) that even a 0.05 ms
+extra `SELECT` per ancestor compounds quickly. On a real SQL backend
+served over a network the per-`SELECT` RTT lifts the absolute cost
+into the same range as S3.
+
+`azurite` shows the depth-linear shape against an Azure Blob
+emulator on the same host. The per-HEAD increment is ~1.6 ms — faster
+than moto's ~3.2 ms — because the Azure SDK's `get_blob_properties`
+does less work than `s3fs.exists`'s HEAD+LIST disambiguation walk.
+Proportional overhead at depth 6 (+132%) lands in the same band as
+moto (+133%): the baseline write is correspondingly faster (~7 ms vs
+~15 ms for moto), so the ratio survives. Real Azure Blob HEAD round
+trips against a regional endpoint run ~10–50 ms; depth-6 nested
+writes would land in the +60–300 ms band per write.
 
 ### 4.3 The pre-check has a behavioural side effect worth flagging
 
@@ -296,15 +316,16 @@ The Trace `audience` reflects the user-facing addition: `user.api`
 ## 7. Reproducibility
 
 * Harness: `sdd/research/research-id-211-flat-ns-file-ancestor-precheck.py`.
-* Run: `hatch run python sdd/research/research-id-211-flat-ns-file-ancestor-precheck.py`.
-* Output table: `sdd/research/research-id-211-results.md` (regenerated
-  on every run).
+* Run: `hatch run python sdd/research/research-id-211-flat-ns-file-ancestor-precheck.py`
+  (or `--include azurite` for the Azurite cell only).
+* Output table: `tmp/id211-results.md` (gitignored, regenerated on
+  every run; the curated tables above are the canonical record).
 * Stage-1 bootstrap: in-process `ThreadedMotoServer` for S3, in-memory
-  SQLite for SQLBlob. Azurite self-skips when 127.0.0.1:10000 is
-  unreachable. No live cloud creds required.
+  SQLite for SQLBlob. Azurite needs `docker compose -f
+  infra/docker-compose.yml up -d azurite` before invocation; the
+  harness auto-skips on an unreachable `127.0.0.1:10000`. No live
+  cloud creds required.
 
 If the disposition is revisited later under real-cloud RTT
-constraints, rerun with `--include azurite` after starting Docker
-(`docker compose -f infra/docker-compose.yml up -d azurite`) and
-extend the harness with a live-S3 / live-Azure factory keyed on
-`RS_TEST_LIVE_*`.
+constraints, extend the harness with a live-S3 / live-Azure factory
+keyed on `RS_TEST_LIVE_*`.

@@ -53,8 +53,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   ancestor, sync and async); the default fixtures continue to skip.
   Measurement: `sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md`
   records the harness and the per-call cost numbers (S3-moto:
-  +24 ms / +123% mean at depth 6; SQLBlob-sqlite: sub-ms but linear
-  in depth). The default-off choice keeps that tax off hot paths.
+  +19 ms / +133% mean at depth 6; Azurite: +9.6 ms / +132% mean at
+  depth 6; SQLBlob-sqlite: sub-ms but linear in depth). The default-off
+  choice keeps that tax off hot paths.
   Trace: `sdd/traces/id-211-flat-ns-file-ancestor-precheck.yml`.
 
 - [x] **ID-185 — Depth-boundary conformance gap**
