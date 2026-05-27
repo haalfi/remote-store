@@ -22,9 +22,31 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from remote_store._capabilities import Capability
+from remote_store._path import RemotePath
 
 if TYPE_CHECKING:
     from tests.backends.fixtures.registry import BackendFixture
+
+
+def _depth(prefix: str, path: RemotePath) -> int:
+    """Depth of ``path`` relative to listing root ``prefix``.
+
+    Mirrors the spec 037 reference algorithm and the ``Depth`` ghost
+    function in ``sdd/formal/BackendContract.dfy`` (the postcondition
+    discharged at lines 705-709, proven by the four lemmas in
+    ``sdd/formal/DepthCounting.dfy``):
+
+        depth = len(parent.parts) - len(prefix_parts)
+
+    where ``prefix in {"", "."}`` means root (0 parts) and a one-segment
+    ``path`` (no parent) is depth 0 at root. Used by
+    ``TestListFilesCompleteness`` to assert the DEPTH-003 boundary
+    invariant directly, instead of only the resulting ``.name`` set.
+    """
+    base_parts = len(RemotePath(prefix).parts) if prefix and prefix != "." else 0
+    parent = path.parent
+    parent_parts = len(parent.parts) if parent is not None else 0
+    return parent_parts - base_parts
 
 
 def _fixture_record(backend: object) -> BackendFixture:

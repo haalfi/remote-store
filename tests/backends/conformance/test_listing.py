@@ -13,7 +13,7 @@ import pytest
 
 from remote_store._capabilities import Capability
 from remote_store._models import FileInfo, FolderEntry
-from tests.backends.conformance._helpers import _require, _seed
+from tests.backends.conformance._helpers import _depth, _require, _seed
 from tests.backends.fixtures import fixture_params
 
 if TYPE_CHECKING:
@@ -205,10 +205,21 @@ class TestListFilesCompleteness:
         yields identical results whether a backend prunes natively or the
         Store filters client-side. Auto-parametrised over the full fixture
         registry by tests/backends/conformance/conftest.py.
+
+        The depth-boundary assertion mirrors the Dafny postcondition at
+        ``BackendContract.dfy`` lines 705-709 directly: every returned
+        file's depth relative to the listed prefix must be ``<= max_depth``.
+        The ``.name``-set check alone does not enforce the boundary —
+        names can repeat across depths, so an off-by-one implementation
+        could return a too-deep file whose name happens to coincide with
+        an expected one (ID-185).
         """
         _seed(backend, self.DEPTH_TREE)
         files = list(backend.list_files("pc", recursive=True, max_depth=max_depth))
         assert {f.name for f in files} == expected_names
+        for f in files:
+            d = _depth("pc", f.path)
+            assert d <= max_depth, f"DEPTH-003 violation: {f.path} at depth {d} > max_depth={max_depth}"
 
     @pytest.mark.spec("BE-014")
     @pytest.mark.spec("DEPTH-003")

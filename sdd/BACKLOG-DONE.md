@@ -8,6 +8,34 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-185 — Depth-boundary conformance gap**
+  spec: DEPTH-003, BE-014 · audience: infra.test
+  Wave 1 (T) test-backfill for an already-verified clause:
+  `sdd/formal/DepthCounting.dfy` proves the four depth-filter properties
+  (`ImmediateChildDepthIsZero`, `MaxDepthZeroIsImmediate`,
+  `DepthFilterIsInclusive`, `DepthFilterExcludesDeeper`) and
+  `sdd/formal/BackendContract.dfy` lines 705-709 pin the postcondition
+  `recursive && max_depth >= 0 ==> forall fi :: Depth(path, fi.path) <= max_depth`,
+  but the four `test_list_files_recursive_max_depth` variants in
+  `tests/backends/conformance/test_listing.py` and the async sibling in
+  `tests/backends/conformance/test_async_extended.py` asserted only the
+  `.name` set. Names can repeat across depths, so a buggy implementation
+  returning a too-deep file whose name coincides with an expected one
+  (e.g. `pc/d1/a.txt` masquerading as a depth-0 child of `pc`) would
+  slip past the name-set check. The new shared helper
+  `tests/backends/conformance/_helpers.py::_depth(prefix, path)` mirrors
+  the spec 037 reference formula
+  (`len(parent.parts) - len(prefix_parts)`, with `prefix in {"", "."}`
+  meaning root); the four variants in both sync and async now assert
+  `_depth("pc", f.path) <= max_depth` for every returned file alongside
+  the pre-existing name-set check. Bite verified by a direct
+  construction during implementation (a wrong-depth file with a
+  matching name fails the depth assertion). No Dafny edits, no oracle
+  regeneration, no Docker; the variants already carry the `DEPTH-003`
+  and `BE-014` (sync) / `ASYNC-014` (async) markers, so this is purely
+  an added assertion.
+  Trace: `sdd/traces/id-185-depth-boundary-conformance-gap.yml`.
+
 - [x] **ID-187 — Property-based aggregate verification for `GetFolderInfo`**
   spec: BE-017, ID-134 · audience: infra.test
   An (O) item, Wave 0 of the Formal Verification queue. The existing

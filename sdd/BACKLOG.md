@@ -82,7 +82,7 @@ none of which is "run a second backend and diff the output":
 |---|---|---|
 | 0 — property-based (O) | — | ID-187 landed; see BACKLOG-DONE.md |
 | 1 — contract + test | ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
-| 1 — test backfill (T) | ID-185, ID-210 | Conformance gaps for already-verified clauses |
+| 1 — test backfill (T) | ID-210 | ID-185 landed; see BACKLOG-DONE.md |
 
 Items stay granular for tracking, but a whole wave row may ship as one
 PR where its items share a file or proof.
@@ -112,18 +112,6 @@ PR where its items share a file or proof.
   example), the Dafny `Error.ResourceLocked(path: Path)` variant, and its
   dispatch in `tests/backends/dafny/_helpers.py::_raise_if_err`. Track as
   a sub-task of ID-127, not standalone work today.
-
-- [ ] **ID-185 — Depth-boundary conformance gap**
-  spec: DEPTH-003, BE-014 · effort: S · audience: infra.test
-  A (T) gap for an already-verified clause: `DepthCounting.dfy` proves
-  the four depth-filter properties, but the four
-  `test_list_files_recursive_max_depth` variants in `test_listing.py`
-  assert `.name` sets only. Names can repeat across depths, so the
-  name-set check does not directly enforce the boundary. Assert the
-  invariant itself, that every returned file's depth relative to the
-  listed prefix is `<= max_depth`, via a shared `_depth(prefix, path)`
-  helper; the variants already carry the `DEPTH-003` and `BE-014`
-  markers, so this is purely an added assertion.
 
 - [ ] **ID-210 — Async Dafny oracle: certify async conformance against the verified `MemoryBackend`**
   spec: ASYNC-001 — ASYNC-029 · effort: M · audience: infra.test

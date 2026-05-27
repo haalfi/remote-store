@@ -34,7 +34,7 @@ from remote_store._errors import (
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderEntry
-from tests.backends.conformance._helpers import _fixture_record
+from tests.backends.conformance._helpers import _depth, _fixture_record
 
 if TYPE_CHECKING:
     from remote_store.aio._async_backend import AsyncBackend
@@ -508,11 +508,19 @@ class TestListFilesCompleteness:
     async def test_list_files_recursive_max_depth(
         self, async_backend: AsyncBackend, max_depth: int, expected_names: set[str]
     ) -> None:
-        """Depth filtering is inclusive (Dafny DepthFilterBoundaryInclusive)."""
+        """Depth filtering is inclusive (Dafny DepthFilterBoundaryInclusive).
+
+        Async sibling of the sync depth-boundary gate in
+        ``test_listing.py``. The ``.name``-set check alone does not
+        enforce the boundary — see ID-185 for the diagnosis.
+        """
         _require(async_backend, Capability.LIST, Capability.WRITE)
         await _seed(async_backend, self.DEPTH_TREE)
         files = [f async for f in async_backend.list_files("pc", recursive=True, max_depth=max_depth)]
         assert {f.name for f in files} == expected_names
+        for f in files:
+            d = _depth("pc", f.path)
+            assert d <= max_depth, f"DEPTH-003 violation: {f.path} at depth {d} > max_depth={max_depth}"
 
     @pytest.mark.spec("ASYNC-014")
     async def test_list_files_unlimited_depth(self, async_backend: AsyncBackend) -> None:
