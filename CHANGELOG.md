@@ -7,63 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-### Added
-
-- **`reject_write_under_file_ancestor: bool = False` kwarg on flat-namespace
-  backends** (ID-211, BE-008). Opt-in pre-check on `S3Backend` /
-  `S3PyArrowBackend` / `AzureBackend` (non-HNS) / `SQLBlobBackend` and the
-  async `AsyncAzureBackend`: when enabled, `write` / `write_atomic` /
-  `open_atomic` / `move` / `copy` walk slash-aligned ancestors of the
-  destination and raise `InvalidPath` on the first regular-file hit,
-  closing the cross-backend gap that ID-209 carved out for flat-NS
-  backends. Paths with no slash short-circuit (no extra round trips)
-  so store-root writes pay nothing; nested writes pay one HEAD per
-  ancestor. Default is `False` to keep the per-call cost off hot paths;
-  measurement at
-  `sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md`. New
-  `*_strict` conformance fixtures (`s3_moto_strict`, `sqlblob_strict`,
-  `azurite_strict`, `s3_pyarrow_moto_strict`, `s3_pyarrow_minio_strict`,
-  plus the async `azurite_async_strict`) exercise the opt-in path; the
-  async strict fixture covers `AsyncAzureBackend._maybe_check_no_file_ancestor` /
-  `_acheck_no_file_ancestor` / the SDK `get_blob_properties` closure
-  end-to-end against a real (emulated) Azure target, and the
-  `s3_pyarrow_minio_strict` Stage-2 fixture covers the S3-PyArrow
-  opt-in against a real MinIO HTTP endpoint.
-
-### Changed
-
-- **`write` / `write_atomic` / `open_atomic` / `move` / `copy` now raise
-  `InvalidPath` when an ancestor of the target path is a regular file**
-  (ID-209, BE-008, BE-018, BE-019). Hierarchical backends previously leaked
-  native `FileExistsError` / `NotADirectoryError` (Local) and a generic
-  `RemoteStoreError` with `ENOTDIR` text (SFTP) in this case — a
-  BE-021 violation. `LocalBackend` now maps `FileExistsError` /
-  `NotADirectoryError` from `parent.mkdir(parents=True)` to
-  `InvalidPath`; `SFTPBackend._map_exception` now maps `errno.ENOTDIR`
-  to `InvalidPath`. `MemoryBackend` already raised `InvalidPath` via
-  `_ensure_parents`. Cross-backend conformance pinned by the new
-  `test_write_under_file_ancestor_raises_invalid_path` tests in
-  `test_errors.py` (sync) and `test_async_extended.py` (async).
-  Flat-namespace backends (S3, Azure non-HNS, SQLBlob) opt in to the
-  same contract via the new ID-211 `reject_write_under_file_ancestor`
-  kwarg.
-
-### Internal
-
-- **Backend `fs` well-formedness as a Dafny class invariant** (ID-209,
-  BE-008, BE-014, BE-015, BE-018, BE-019): `BackendContract.dfy` now
-  declares `predicate Valid()` on the `Backend` trait reading
-  `forall p :: p in fs ==> every slash-aligned ancestor of p is in fs as DirEntry`,
-  with `requires Valid() ensures Valid()` on every mutating method. The
-  new `!AllAncestorsTraversable(old(fs), path) ==> InvalidPath` clause
-  on `Write` / `Move` / `Copy` is what prevents a successful operation
-  from inserting a `FileEntry` under a file-ancestor and breaking
-  `Valid()`. ID-184's defensive `!AllAncestorsTraversable` disjunct on
-  `ListFiles` / `ListFolders` is now a logical consequence of `Valid()`
-  rather than a postcondition over an unreachable state. Both
-  `MemoryBackend` and `MemoryBackendMinimal` prove maintenance via two
-  factored ghost lemmas (`PreserveValidAfterFileInsert`,
-  `PreserveValidAfterFileRemove`); the oracle is regenerated.
+- **ID-211 — write-under-file HEAD pre-check for flat-namespace backends**
+- **ID-209 — `fs` well-formedness as a `Backend` class invariant + write-under-file conformance gate**
 
 ## [0.26.0] - 2026-05-25
 
