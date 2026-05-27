@@ -7,10 +7,11 @@ Async sibling of the sync conformance topic files in this directory. The
 
 Flat-namespace backends (S3, Azure Blob, HTTP, SQL-blob) have no real
 directory entries and are excluded from error-fidelity tests by
-``_skip_flat_namespace``. The current registry holds only hierarchical
-async fixtures (``memory_async_native``, ``memory_async_adapted``,
-``local_async_adapted``); the helper is preserved for the day a flat-NS
-async backend is added.
+``_skip_flat_namespace``. The default async registry holds only hierarchical
+fixtures (``memory_async_native``, ``memory_async_adapted``,
+``local_async_adapted``); the flat-NS async strict variant
+(``azurite_async_strict``, ID-211 review follow-up) is opted into only by
+the file-ancestor test classes via ``include_strict_only=True``.
 
 Spec coverage: ASYNC-004, ASYNC-005, ASYNC-006, ASYNC-007, ASYNC-008,
 ASYNC-010, ASYNC-012, ASYNC-013, ASYNC-014, ASYNC-015, ASYNC-016, ASYNC-017,
@@ -35,6 +36,7 @@ from remote_store._errors import (
 )
 from remote_store._models import FileInfo, FolderEntry
 from tests.backends.conformance._helpers import _depth, _fixture_record
+from tests.backends.fixtures import fixture_params
 
 if TYPE_CHECKING:
     from remote_store.aio._async_backend import AsyncBackend
@@ -72,6 +74,15 @@ async def _seed(backend: AsyncBackend, files: dict[str, bytes]) -> None:
 def _skip_flat_namespace(backend: AsyncBackend, reason: str = "flat-namespace backend") -> None:
     """Skip test for backends without real directory entries."""
     if _fixture_record(backend).flat_namespace:
+        pytest.skip(reason)
+
+
+def _skip_unless_rejects_file_ancestor(
+    backend: AsyncBackend,
+    reason: str = "fixture does not reject write-under-file-ancestor (ID-211 opt-in off)",
+) -> None:
+    """Async sibling of ``tests/backends/conformance/_helpers._skip_unless_rejects_file_ancestor``."""
+    if not _fixture_record(backend).rejects_write_under_file_ancestor:
         pytest.skip(reason)
 
 
@@ -201,12 +212,24 @@ class TestReadErrorFidelity:
             await _drain_read(async_backend, "rufa_stream.txt/child.txt")
 
 
+@pytest.mark.parametrize(
+    "async_backend",
+    fixture_params(Capability.WRITE, is_async=True, include_strict_only=True),
+    indirect=True,
+)
 class TestWriteErrorFidelity:
     """ASYNC-008 / ASYNC-010 (mirrors BE-008 / BE-010).
 
     write(dir) and write_atomic(dir) ==> InvalidPath unconditionally.
     The dir check must fire BEFORE the overwrite check; ``write_atomic``
     shares BE-008 precondition order via BE-010.
+
+    Class-level parametrize uses ``include_strict_only=True`` (ID-211
+    review follow-up) so the async file-ancestor test can exercise the
+    ``azurite_async_strict`` fixture. The non-file-ancestor tests in
+    this class skip flat-NS via ``_skip_flat_namespace``, so the strict
+    variant doesn't expand those test cells; only the file-ancestor
+    cell actually runs.
     """
 
     @pytest.mark.parametrize(
@@ -252,15 +275,12 @@ class TestWriteErrorFidelity:
         Mirrors the sync ``TestWriteErrorFidelity::test_write_under_file_
         ancestor_raises_invalid_path`` against the async backend surface,
         parametrised over ``write`` and ``write_atomic`` (ASYNC-008 /
-        ASYNC-010).  Flat-namespace backends skip per the same rationale
-        as the sync test — ID-211 tracks the optional HEAD-pre-check
-        follow-up.
+        ASYNC-010).  Flat-namespace backends opt into the gate via the
+        ID-211 ``reject_write_under_file_ancestor`` kwarg; default-off
+        fixtures skip this test, the ``*_strict`` fixture variants run it.
         """
         _require(async_backend, cap)
-        _skip_flat_namespace(
-            async_backend,
-            "flat-namespace backends cannot reject write-under-file in O(1) (ID-211)",
-        )
+        _skip_unless_rejects_file_ancestor(async_backend)
         seed = f"wufa_{method}.txt"
         nested = f"{seed}/child.txt"
         await async_backend.write(seed, b"file-blocking")
@@ -648,8 +668,22 @@ class TestAsyncIterChildren:
 # ===========================================================================
 
 
+@pytest.mark.parametrize(
+    "async_backend",
+    fixture_params(Capability.WRITE, is_async=True, include_strict_only=True),
+    indirect=True,
+)
 class TestMoveCopyErrorFidelity:
-    """ASYNC-018 / ASYNC-019 (mirrors BE-018 / BE-019)."""
+    """ASYNC-018 / ASYNC-019 (mirrors BE-018 / BE-019).
+
+    Class-level parametrize uses ``include_strict_only=True`` (ID-211
+    review follow-up) so the async file-ancestor / precondition-order
+    tests can exercise the ``azurite_async_strict`` fixture. The
+    non-file-ancestor tests in this class skip flat-NS via
+    ``_skip_flat_namespace``, so the strict variant doesn't expand
+    those test cells; only the file-ancestor and missing-src cells
+    actually run.
+    """
 
     @pytest.mark.spec("ASYNC-018")
     @pytest.mark.spec("ASYNC-019")
@@ -699,10 +733,7 @@ class TestMoveCopyErrorFidelity:
     ) -> None:
         """ID-209 async sibling: !AllAncestorsTraversable(fs, dst) => InvalidPath(dst)."""
         _require(async_backend, cap, Capability.WRITE)
-        _skip_flat_namespace(
-            async_backend,
-            "flat-namespace backends cannot reject move/copy-under-file in O(1) (ID-211)",
-        )
+        _skip_unless_rejects_file_ancestor(async_backend)
         await async_backend.write(f"mcua/{op}_blocker.txt", b"file-blocking")
         await async_backend.write(f"mcua/{op}_src.txt", b"srcdata")
         with pytest.raises(InvalidPath, match=f"mcua/{op}_blocker.txt"):
@@ -714,6 +745,23 @@ class TestMoveCopyErrorFidelity:
             )
         assert await async_backend.read_bytes(f"mcua/{op}_blocker.txt") == b"file-blocking"
         assert await async_backend.read_bytes(f"mcua/{op}_src.txt") == b"srcdata"
+
+    @pytest.mark.spec("ASYNC-018")
+    @pytest.mark.spec("ASYNC-019")
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
+    async def test_missing_src_under_blocked_dst_raises_not_found(
+        self, async_backend: AsyncBackend, op: str, cap: Capability
+    ) -> None:
+        """ASYNC-018/019 precondition order: src-NotFound > dst-file-ancestor (ID-211 review)."""
+        _require(async_backend, cap, Capability.WRITE)
+        await async_backend.write(f"mcord/{op}_blocker.txt", b"file-blocking")
+        with pytest.raises(NotFound, match=f"mcord/{op}_missing"):
+            await _do_op(
+                async_backend,
+                op,
+                f"mcord/{op}_missing.txt",
+                f"mcord/{op}_blocker.txt/dst.txt",
+            )
 
 
 class TestMoveCopyOverwrite:

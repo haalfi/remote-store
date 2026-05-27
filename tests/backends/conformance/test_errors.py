@@ -26,6 +26,7 @@ from tests.backends.conformance._helpers import (
     _require,
     _seed,
     _skip_flat_namespace,
+    _skip_unless_rejects_file_ancestor,
 )
 from tests.backends.fixtures import fixture_params
 
@@ -88,9 +89,20 @@ class TestReadErrorFidelity:
             getattr(backend, method)("rufa.txt/child.txt")
 
 
-@pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)
+@pytest.mark.parametrize(
+    "backend",
+    fixture_params(Capability.WRITE, include_strict_only=True),
+    indirect=True,
+)
 class TestWriteErrorFidelity:
-    """BackendContract.Write postconditions: precondition ordering."""
+    """BackendContract.Write postconditions: precondition ordering.
+
+    Class-level parametrize uses ``include_strict_only=True`` (ID-211)
+    so the file-ancestor tests can exercise the ``*_strict`` fixture
+    variants. The non-file-ancestor tests in this class skip flat-NS
+    via ``_skip_flat_namespace``, so the strict variants don't expand
+    those test cells; only the file-ancestor cells actually run.
+    """
 
     @pytest.mark.spec("BE-008")
     def test_write_on_directory_raises_error(self, backend: Backend) -> None:
@@ -132,16 +144,12 @@ class TestWriteErrorFidelity:
         Hierarchical backends (Local, SFTP, Memory) natively reject the
         second write because EnsureParents / mkdir / sftp.mkdir cannot
         descend through a regular-file path component.  Flat-namespace
-        backends (S3, Azure non-HNS, SQLBlob, HTTP) skip via
-        ``_skip_flat_namespace`` — they cannot distinguish the case in
-        O(1) without an extra HEAD round trip and are tracked under
-        ID-211 (the HEAD-pre-check follow-up).
+        backends (S3, Azure non-HNS, SQLBlob) opt in via the ID-211
+        ``reject_write_under_file_ancestor`` kwarg; default-off fixtures
+        skip this gate, the ``*_strict`` fixture variants run it.
         """
         _require(backend, cap)
-        _skip_flat_namespace(
-            backend,
-            "flat-namespace backends cannot reject write-under-file in O(1) (ID-211)",
-        )
+        _skip_unless_rejects_file_ancestor(backend)
         seed = f"wufa_{method}.txt"
         nested = f"{seed}/child.txt"
         backend.write(seed, b"file-blocking")
@@ -155,10 +163,7 @@ class TestWriteErrorFidelity:
     def test_open_atomic_under_file_ancestor_raises_invalid_path(self, backend: Backend) -> None:
         """ID-209: ``open_atomic`` shares BE-008's precondition chain (BE-010 / SAW-001)."""
         _require(backend, Capability.ATOMIC_WRITE)
-        _skip_flat_namespace(
-            backend,
-            "flat-namespace backends cannot reject write-under-file in O(1) (ID-211)",
-        )
+        _skip_unless_rejects_file_ancestor(backend)
         backend.write("wufa_oa.txt", b"file-blocking")
         with pytest.raises(InvalidPath, match="wufa_oa.txt"), backend.open_atomic("wufa_oa.txt/child.txt") as f:
             f.write(b"under-file")
@@ -332,9 +337,18 @@ class TestGetFolderInfoErrorFidelity:
             backend.get_folder_info("ec_missing_gfo")
 
 
-@pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)
+@pytest.mark.parametrize(
+    "backend",
+    fixture_params(Capability.WRITE, include_strict_only=True),
+    indirect=True,
+)
 class TestMoveCopyErrorFidelity:
-    """Move/Copy error postconditions from BackendContract.dfy."""
+    """Move/Copy error postconditions from BackendContract.dfy.
+
+    Class-level parametrize uses ``include_strict_only=True`` (ID-211)
+    so the file-ancestor / precondition-order tests can exercise the
+    ``*_strict`` fixture variants.
+    """
 
     @pytest.mark.spec("BE-018")
     @pytest.mark.spec("BE-019")
@@ -377,15 +391,12 @@ class TestMoveCopyErrorFidelity:
         """ID-209: ``!AllAncestorsTraversable(old(fs), dst)`` ==> ``InvalidPath(dst)``.
 
         Mirror of the BE-008 file-ancestor clause on the dst side of
-        move/copy.  Same flat-namespace skip rationale as the write test:
-        ID-211 tracks the optional HEAD pre-check follow-up for flat-NS
-        backends.
+        move/copy.  Flat-NS backends opt in via the ID-211
+        ``reject_write_under_file_ancestor`` kwarg; the ``*_strict``
+        fixture variants run this gate.
         """
         _require(backend, cap)
-        _skip_flat_namespace(
-            backend,
-            "flat-namespace backends cannot reject move/copy-under-file in O(1) (ID-211)",
-        )
+        _skip_unless_rejects_file_ancestor(backend)
         backend.write(f"mcua/{op}_blocker.txt", b"file-blocking")
         backend.write(f"mcua/{op}_src.txt", b"srcdata")
         with pytest.raises(InvalidPath, match=f"mcua/{op}_blocker.txt"):
@@ -393,3 +404,27 @@ class TestMoveCopyErrorFidelity:
         # Blocker and source both unaffected.
         assert backend.read_bytes(f"mcua/{op}_blocker.txt") == b"file-blocking"
         assert backend.read_bytes(f"mcua/{op}_src.txt") == b"srcdata"
+
+    @pytest.mark.spec("BE-018")
+    @pytest.mark.spec("BE-019")
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
+    def test_missing_src_under_blocked_dst_raises_not_found(self, backend: Backend, op: str, cap: Capability) -> None:
+        """BE-018/BE-019 precondition order: src-NotFound > dst-file-ancestor.
+
+        Pinned by the ID-211 review after the strict flat-NS implementations
+        were observed to raise ``InvalidPath(dst)`` first, while
+        ``LocalBackend.move`` raises ``NotFound(src)`` first. The spec now
+        requires src-NotFound to take priority; this test exercises the
+        cross-backend agreement on the corner case.
+        """
+        _require(backend, cap)
+        # Seed a file-ancestor blocker, but don't create a src. Hierarchical
+        # backends never had the divergence (their ancestor check is the
+        # mkdir walk, which runs after the src probe). Flat-NS strict
+        # backends used to fire the ID-211 walk first and raise InvalidPath;
+        # they now defer it, so both classes agree on NotFound.
+        backend.write(f"mcord/{op}_blocker.txt", b"file-blocking")
+        # Flat-NS default-off backends still skip the dst-ancestor walk
+        # entirely, so they also agree on NotFound for the missing src.
+        with pytest.raises(NotFound, match=f"mcord/{op}_missing"):
+            _do_op(backend, op, f"mcord/{op}_missing.txt", f"mcord/{op}_blocker.txt/dst.txt")

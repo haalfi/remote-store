@@ -171,29 +171,6 @@ PR where its items share a file or proof.
   `@pytest.mark.spec("BE-018")` marker. The abstract contract (BE-018,
   Gap 5) currently sidesteps intermediate states.
 
-- [ ] **ID-211 — write-under-file HEAD pre-check for flat-namespace backends**
-  spec: BE-008 · effort: M · audience: user.api, library.maintainer
-  Follow-up to ID-209 (PR #680). Decision 2 (a) landed: write/move/copy
-  to a path under a file ancestor MUST raise `InvalidPath` cross-backend.
-  Hierarchical backends (Local, SFTP, Memory) enforce this via native
-  mappings; flat-namespace backends (S3, Azure non-HNS, SQLBlob, HTTP)
-  skip the conformance gate today because detecting a file-ancestor
-  costs an extra HEAD round trip per write. (HNS Azure is *not* in this
-  item's scope — it has real directories and errors naturally, but the
-  Azure backend's `_classify` translates the error to the wrong class;
-  ID-213 covers that.) Observation from the ID-209
-  thread: most writes go to store-root paths (no ancestor to check), so
-  a cheap "skip the check when there are no slash segments" guard
-  brings the round-trip cost down to writes that explicitly target a
-  nested path. Evaluate: (a) is the HEAD pre-check worth shipping
-  unconditionally for nested-path writes on flat-NS backends; (b) does
-  it belong behind an opt-in client option; (c) does the per-fixture
-  carve-out remain the right answer and we just close ID-211 with the
-  measurement. Output: short findings note in `sdd/research/`, plus
-  whichever follow-up the disposition demands. (Note: ID-210 was
-  allocated upstream to the async Dafny oracle item that landed in PR #681
-  via a parallel rebase race; this follow-up takes the next free ID.)
-
 - [ ] **ID-212 — Harden SFTP file-ancestor detection against partial-stat-permission setups**
   spec: BE-006, BE-007 · effort: S · audience: library.maintainer
   Follow-up to ID-209 (PR #680).  The new
@@ -916,6 +893,34 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   layering — so it does not repeat the conftest sprawl that BK-164 and
   ID-156 cleaned up. One short README (or an addendum to `sdd/TESTING.md`,
   whichever fits the docs framework better) is enough.
+
+- [ ] **BK-242 — Flat-NS file-ancestor pre-check perf (SQLBlob IN-list, memoisation)**
+  spec: — · effort: S · audience: infra.test, library.maintainer
+  ID-211 review surfaced two perf optimisations the disposition (b)
+  opt-in didn't ship. Bundle here so they don't get lost:
+  - **SQLBlob `WHERE key IN (ancestors)`**: today `_head_one` issues one
+    `SELECT 1` per ancestor — N round trips for a depth-N path. The
+    research note (`sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md`
+    § 5.4) already flagged this; a single `SELECT key FROM table WHERE
+    key IN (:ancestors)` collapses the walk to one RTT. On in-memory
+    SQLite the win is sub-ms; on PostgreSQL/MySQL over the network at
+    depth 6 it is 6 RTTs → 1 RTT (~10-50 ms each).
+  - **`head_one` memoisation**: bulk-write workloads (`a/b/c/file-{i}.bin`
+    for i in 1..N) re-HEAD the same `a`, `a/b`, `a/b/c` ancestors N
+    times. A bounded per-instance `TTLCache(maxsize=…, ttl=…)` on the
+    closure collapses O(N×D) HEADs to ~O(D) per distinct prefix without
+    changing the contract (the TTL accepts staleness within its window).
+    Applies to S3, S3PyArrow, Azure non-HNS, and SQLBlob.
+  Both are perf optimisations that don't change the gate's contract —
+  ship behind the existing `reject_write_under_file_ancestor=True`
+  opt-in only. Includes refreshing `§ 4` / `§ 5.4` in the research note
+  with measured before/after numbers. Touches
+  `src/remote_store/backends/_flat_ns.py`,
+  `src/remote_store/backends/_sqlalchemy.py`,
+  `src/remote_store/backends/_s3.py`,
+  `src/remote_store/backends/_s3_pyarrow.py`,
+  `src/remote_store/backends/_azure.py`,
+  `src/remote_store/aio/backends/_azure.py`. Discovered in PR #686 review.
 
 - [~] **ID-018 — conda-forge publishing**
   spec: — · effort: — · audience: library.maintainer

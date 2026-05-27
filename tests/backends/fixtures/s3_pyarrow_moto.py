@@ -21,43 +21,45 @@ from tests.backends.fixtures.registry import BackendFixture, register
 if TYPE_CHECKING:
     from remote_store._backend import Backend
 
-_meta = load_fixture("s3_pyarrow_moto")
-
 _BUCKETS: dict[int, tuple[str, object]] = {}
 
 
-def _factory() -> Backend:
-    try:
-        import pyarrow  # noqa: F401
-        import s3fs  # noqa: F401
-    except ImportError:
-        pytest.skip("pyarrow/s3fs not installed")
-    if pyarrow_ge_24():
-        pytest.skip("pyarrow >= 24 requires the s3_pyarrow_minio fixture, not moto")
-    if INFRA.moto_url is None:
-        pytest.skip("moto_server not available; required for S3-PyArrow on pyarrow < 24")
-    import boto3
+def _make_factory(reject_write_under_file_ancestor: bool):
+    def _factory() -> Backend:
+        try:
+            import pyarrow  # noqa: F401
+            import s3fs  # noqa: F401
+        except ImportError:
+            pytest.skip("pyarrow/s3fs not installed")
+        if pyarrow_ge_24():
+            pytest.skip("pyarrow >= 24 requires the s3_pyarrow_minio fixture, not moto")
+        if INFRA.moto_url is None:
+            pytest.skip("moto_server not available; required for S3-PyArrow on pyarrow < 24")
+        import boto3
 
-    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
-    bucket = f"conformance-pa-{uuid.uuid4().hex[:8]}"
-    client = boto3.client(
-        "s3",
-        endpoint_url=INFRA.moto_url,
-        aws_access_key_id="testing",
-        aws_secret_access_key="testing",
-        region_name="us-east-1",
-    )
-    client.create_bucket(Bucket=bucket)
-    backend = S3PyArrowBackend(
-        bucket=bucket,
-        key="testing",
-        secret="testing",
-        region_name="us-east-1",
-        endpoint_url=INFRA.moto_url,
-    )
-    _BUCKETS[id(backend)] = (bucket, client)
-    return backend
+        bucket = f"conformance-pa-{uuid.uuid4().hex[:8]}"
+        client = boto3.client(
+            "s3",
+            endpoint_url=INFRA.moto_url,
+            aws_access_key_id="testing",
+            aws_secret_access_key="testing",
+            region_name="us-east-1",
+        )
+        client.create_bucket(Bucket=bucket)
+        backend = S3PyArrowBackend(
+            bucket=bucket,
+            key="testing",
+            secret="testing",
+            region_name="us-east-1",
+            endpoint_url=INFRA.moto_url,
+            reject_write_under_file_ancestor=reject_write_under_file_ancestor,
+        )
+        _BUCKETS[id(backend)] = (bucket, client)
+        return backend
+
+    return _factory
 
 
 def _cleanup(backend: Backend) -> None:
@@ -73,11 +75,13 @@ def _capabilities() -> frozenset:
     return frozenset(S3PyArrowBackend.CAPABILITIES)
 
 
-register(
-    BackendFixture(
-        factory=_factory,
-        capabilities=_capabilities(),
-        cleanup=_cleanup,
-        **_meta.to_kwargs(),
+for _name in ("s3_pyarrow_moto", "s3_pyarrow_moto_strict"):
+    _meta = load_fixture(_name)
+    register(
+        BackendFixture(
+            factory=_make_factory(_meta.rejects_write_under_file_ancestor),
+            capabilities=_capabilities(),
+            cleanup=_cleanup,
+            **_meta.to_kwargs(),
+        )
     )
-)

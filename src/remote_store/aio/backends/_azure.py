@@ -73,6 +73,18 @@ class AsyncAzureBackend(AsyncBackend):
         retry: Retry policy for transient failures.
         max_concurrency: Maximum number of parallel connections for
             uploads and downloads (default ``1`` -- sequential).
+        reject_write_under_file_ancestor: If ``True``, ``write`` /
+            ``write_atomic`` / ``move`` / ``copy`` HEAD each
+            slash-aligned ancestor of the target path on non-HNS
+            accounts and raise ``InvalidPath`` on the first regular-file
+            hit. On HNS accounts the kwarg short-circuits: ``hdi_isfolder``
+            rejects the operation natively, **but** until ID-213 / BK-235
+            lands that native rejection surfaces as ``NotFound`` or
+            ``AlreadyExists`` rather than ``InvalidPath``. The
+            cross-backend ``InvalidPath`` contract the kwarg promises is
+            therefore *deferred* on HNS, not delivered — even when set.
+            Default ``False``. See spec 003 § BE-008 / spec 029 §
+            ASYNC-008 and ID-211.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
@@ -91,6 +103,7 @@ class AsyncAzureBackend(AsyncBackend):
         client_options: dict[str, Any] | None = None,
         retry: RetryPolicy | None = None,
         max_concurrency: int = 1,
+        reject_write_under_file_ancestor: bool = False,
     ) -> None:
         validate_azure_params(container, account_name, account_url, connection_string, max_concurrency)
         self._container = container
@@ -103,6 +116,7 @@ class AsyncAzureBackend(AsyncBackend):
         self._client_options = client_options or {}
         self._retry = retry
         self._max_concurrency = max_concurrency
+        self._reject_write_under_file_ancestor = reject_write_under_file_ancestor
         # Lazy instances
         self._blob_service_instance: Any = None
         self._cc_instance: Any = None
@@ -122,6 +136,34 @@ class AsyncAzureBackend(AsyncBackend):
     def capabilities(self) -> CapabilitySet:
         """Declared capabilities of this backend."""
         return self.CAPABILITIES
+
+    # endregion
+
+    # region: private — file-ancestor pre-check (ID-211 opt-in)
+
+    async def _maybe_check_no_file_ancestor(self, path: str) -> None:
+        """Async sibling of ``AzureBackend._maybe_check_no_file_ancestor`` (ID-211)."""
+        if not self._reject_write_under_file_ancestor:
+            return
+        if await self._ensure_hns():
+            return
+        from azure.core.exceptions import AzureError
+
+        from remote_store.backends._flat_ns import _acheck_no_file_ancestor
+
+        async def _head_one(key: str) -> bool:
+            # Fail-open on Azure SDK errors and network OSError; programmer
+            # errors propagate. Mirrors the sync sibling's narrowed except.
+            bc = self._blob_client(key)
+            try:
+                await bc.get_blob_properties()
+            except ResourceNotFoundError:
+                return False
+            except (AzureError, OSError):
+                return False
+            return True
+
+        await _acheck_no_file_ancestor(path, head_one=_head_one, backend=self.name)
 
     # endregion
 
@@ -453,6 +495,7 @@ class AsyncAzureBackend(AsyncBackend):
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If ``path`` names a directory.
         """
+        await self._maybe_check_no_file_ancestor(path)
         async with self._errors(path):
             bc = self._blob_client(path)
             if await self._ensure_hns():
@@ -1034,6 +1077,10 @@ class AsyncAzureBackend(AsyncBackend):
                     # Destination does not exist yet; this is valid when overwrite=True.
                     pass
 
+            # ASYNC-018 precondition order: src-NotFound (raised above by
+            # get_blob_properties) takes priority over dst-file-ancestor
+            # (matches LocalBackend.move; ID-211 review).
+            await self._maybe_check_no_file_ancestor(dst)
             if is_hns:  # pragma: no cover -- HNS only
                 src_fc = self._fs.get_file_client(_azure_path_fn(src))
                 new_name = f"{self._container}/{_azure_path_fn(dst)}"
@@ -1104,6 +1151,8 @@ class AsyncAzureBackend(AsyncBackend):
                     # Destination does not exist yet; this is valid when overwrite=True.
                     pass
 
+            # ASYNC-019 precondition order: src-NotFound before dst-file-ancestor (ID-211 review).
+            await self._maybe_check_no_file_ancestor(dst)
             await dst_bc.start_copy_from_url(src_bc.url)
 
     async def aclose(self) -> None:

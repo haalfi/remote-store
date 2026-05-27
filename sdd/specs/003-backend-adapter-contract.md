@@ -113,13 +113,46 @@ earlier one. This order applies to `write()`, `write_atomic()`, `move()`, and
 native directory concept (e.g. S3, Azure non-HNS, SQL) are exempt from step
 (1): they cannot distinguish "path names a directory" from "path does not
 exist", so they MUST skip the type-conflict check entirely. The file-ancestor
-rejection added by ID-209 is similarly exempt on flat-namespace backends —
-they cannot detect a file-ancestor in O(1) without an extra HEAD round trip
-on the parent chain, so the conformance gate
-(`test_write_under_file_ancestor_raises_invalid_path`) skips on flat-NS
-fixtures via `_skip_flat_namespace`. ID-211 tracks the optional HEAD
-pre-check follow-up. For these backends the effective order is: existence
-check (non-existent target treated as writable) → overwrite conflict → I/O.
+rejection added by ID-209 is similarly exempt on flat-namespace backends by
+default — they cannot detect a file-ancestor in O(1) without an extra HEAD
+round trip per slash-aligned ancestor. ID-211 ships the gate as an opt-in
+client kwarg `reject_write_under_file_ancestor: bool = False` on each
+flat-namespace backend constructor (`S3Backend`, `S3PyArrowBackend`,
+`AzureBackend`, `SQLBlobBackend`, plus the async `AsyncAzureBackend`); when
+the opt-in is set the backend walks slash-aligned ancestors, HEADing each
+one, and raises `InvalidPath` on the first file ancestor. Paths with no
+slash short-circuit (no walk, no extra round trips) so store-root writes
+pay nothing. Measurement note:
+`sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md` records the
+per-call cost vs depth on S3 (moto) and SQLBlob (sqlite); the gate is
+linear in depth and the default-off choice keeps that tax off hot paths.
+The conformance gate (`test_write_under_file_ancestor_raises_invalid_path`)
+keys off the per-fixture `rejects_write_under_file_ancestor` flag rather
+than `flat_namespace` — `s3_moto_strict` / `sqlblob_strict` /
+`azurite_strict` / `s3_pyarrow_moto_strict` exercise the opt-in path,
+while the default fixtures continue to skip the gate. The async sibling
+`azurite_async_strict` covers `AsyncAzureBackend` end-to-end (the
+non-HNS opt-in path through `_acheck_no_file_ancestor` and the SDK
+`get_blob_properties` closure). For default-off flat-NS backends the
+effective order is: existence check (non-existent target treated as
+writable) → overwrite conflict → I/O.
+**Azure HNS caveat.** On Azure HNS accounts the kwarg short-circuits the
+walk because `hdi_isfolder` rejects the operation in the native write
+path. Until ID-213 / BK-235 lands, that native rejection surfaces as
+`NotFound` or `AlreadyExists` rather than `InvalidPath`, so the
+cross-backend `InvalidPath` contract this kwarg promises is **deferred
+on HNS, not delivered** — even when set. Flat-NS Azure (non-HNS, e.g.
+Azurite) and the other flat-NS backends deliver the contract as
+described.
+The opt-in gate is a **start-of-call** check, not an atomic guarantee: the
+ancestor HEADs run once at entry, so a concurrent writer that creates a
+file at one of the walked ancestor keys between the walk and the data-plane
+operation can still produce the orphan-key shape the gate exists to
+prevent. Callers needing atomicity must layer a backend-level lock or CAS
+above the gate. The walk is also **fail-open** on transient probe errors
+(503, throttling, network blip) — the closure swallows non-NotFound and
+returns False so the data path proceeds; this is the documented contract
+for all backends, including SQLBlob.
 **Formal coverage:** `write()` is modelled in `sdd/formal/BackendContract.dfy`
 as `Write` with postconditions covering the precondition evaluation order
 (`IsDir → InvalidPath`, `!AllAncestorsTraversable → InvalidPath` (ID-209),
@@ -242,7 +275,8 @@ discharged structurally. Verified in `MemoryBackend.dfy`. See ID-151.
 ### BE-018: move()
 
 **Invariant:** `move(src, dst, overwrite=False)` renames/moves a file.
-**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory (cannot overwrite a directory with a file), or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst, ID-209 — same flat-namespace exemption as BE-008). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-move on a file is a no-op (Dafny: `Move: src == dst → Ok`); self-move on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
+**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory (cannot overwrite a directory with a file), or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst, ID-209 — flat-namespace backends opt in to the dst-side ancestor walk via the `reject_write_under_file_ancestor` kwarg, same shape as BE-008 / ID-211). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-move on a file is a no-op (Dafny: `Move: src == dst → Ok`); self-move on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
+**Precondition order:** `src`-NotFound takes priority over dst-side preconditions; specifically `move(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`. `LocalBackend.move` enforces this naturally (the `mkdir_parents` walk that catches the file-ancestor case runs after the src-exists check); flat-namespace backends running the ID-211 opt-in MUST defer the `_check_no_file_ancestor(dst)` walk until after the src-NotFound probe to match. Surfaced by the ID-211 review; pinned to remove the cross-backend ambiguity that existed under BE-018 alone.
 **Metadata:** `move()` preserves the source file's user metadata: after a
 successful move, `get_file_info(dst)` MUST return the same `metadata`
 mapping the source file carried before the move — the WR-013 user-metadata
@@ -265,7 +299,8 @@ drops metadata fails to verify. Verified in `MemoryBackend.dfy`. See BK-232.
 ### BE-019: copy()
 
 **Invariant:** `copy(src, dst, overwrite=False)` duplicates a file.
-**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory, or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst, ID-209 — same flat-namespace exemption as BE-008). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021.
+**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory, or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst, ID-209 — flat-namespace backends opt in to the dst-side ancestor walk via the `reject_write_under_file_ancestor` kwarg, same shape as BE-008 / ID-211). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021.
+**Precondition order:** Same as BE-018 — `src`-NotFound takes priority over dst-side preconditions, so `copy(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`.
 **Metadata:** `copy()` preserves the source file's user metadata: after a
 successful copy, `get_file_info(dst)` MUST return the same `metadata`
 mapping as `get_file_info(src)` — the WR-013 user-metadata round-trip,

@@ -74,11 +74,20 @@ def _load_all() -> None:
 
     # Per-fixture TOML key → Python module under tests.backends.fixtures
     # that registers that key. Most fixtures map 1:1; the exceptions are
-    # the async-memory and async-local entries that share a single module.
+    # the async-memory and async-local entries that share a single module,
+    # and the ID-211 strict variants whose factory module is the non-strict
+    # one (they differ only in the opt-in kwarg threaded into the
+    # backend constructor).
     _MODULE_FOR: dict[str, str] = {
         "memory_async_native": "memory_async",
         "memory_async_adapted": "memory_async",
         "local_async_adapted": "local_async",
+        "s3_moto_strict": "s3_moto",
+        "s3_pyarrow_moto_strict": "s3_pyarrow_moto",
+        "sqlblob_strict": "sqlblob",
+        "azurite_strict": "azurite",
+        "azurite_async_strict": "azurite_async",
+        "s3_pyarrow_minio_strict": "s3_pyarrow_minio",
     }
 
     seen: set[str] = set()

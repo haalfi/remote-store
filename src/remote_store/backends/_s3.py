@@ -54,6 +54,14 @@ class S3Backend(_S3Base):
         tls_ca_bundle: Path to a PEM CA bundle file.  Falls back to
             ``AWS_CA_BUNDLE`` / ``REQUESTS_CA_BUNDLE`` / ``SSL_CERT_FILE``.
         client_options: Additional options passed to s3fs.
+        reject_write_under_file_ancestor: If ``True``, ``write`` /
+            ``write_atomic`` / ``open_atomic`` / ``move`` / ``copy`` HEAD
+            each slash-aligned ancestor of the target path and raise
+            ``InvalidPath`` on the first regular-file hit, closing the
+            ID-209 cross-backend gap that flat-namespace backends carve
+            out by default. Default ``False``: each nested-path write
+            otherwise pays one HEAD per ancestor (no-slash paths
+            short-circuit). See spec 003 § BE-008 and ID-211.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
@@ -69,6 +77,7 @@ class S3Backend(_S3Base):
         tls_ca_bundle: str | None = None,
         client_options: dict[str, Any] | None = None,
         retry: RetryPolicy | None = None,
+        reject_write_under_file_ancestor: bool = False,
     ) -> None:
         if not bucket or not bucket.strip():
             raise ValueError("bucket must be a non-empty string")
@@ -82,6 +91,7 @@ class S3Backend(_S3Base):
         self._tls_ca_bundle = resolved_tls
         self._client_options = client_options or {}
         self._retry = retry
+        self._reject_write_under_file_ancestor = reject_write_under_file_ancestor
         self._fs_instance: Any = None
 
     # region: properties
@@ -151,6 +161,7 @@ class S3Backend(_S3Base):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
+        self._maybe_check_no_file_ancestor(path)
         sdk_metadata = dict(metadata) if metadata else None
         meta_kw = {"Metadata": sdk_metadata} if sdk_metadata is not None else {}
         with self._s3fs_errors(path):
@@ -199,6 +210,7 @@ class S3Backend(_S3Base):
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
         # S3 PUT is inherently atomic -- buffer then upload (SAW-010)
+        self._maybe_check_no_file_ancestor(path)
         with self._s3fs_errors(path):
             if not overwrite and self._fs.exists(self._s3_path(path)):
                 raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
@@ -257,6 +269,10 @@ class S3Backend(_S3Base):
                 return  # self-move is a no-op
             if not overwrite and self._fs.exists(self._s3_path(dst)):
                 raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
+            # BE-018 precondition order: src-NotFound takes priority over
+            # dst-file-ancestor (matches LocalBackend.move's mkdir-parent
+            # placement; ID-211 review).
+            self._maybe_check_no_file_ancestor(dst)
             self._fs.copy(self._s3_path(src), self._s3_path(dst))
             self._fs.rm(self._s3_path(src))
 
@@ -268,6 +284,8 @@ class S3Backend(_S3Base):
                 return  # self-copy is a no-op
             if not overwrite and self._fs.exists(self._s3_path(dst)):
                 raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
+            # BE-019 precondition order: src-NotFound before dst-file-ancestor (ID-211 review).
+            self._maybe_check_no_file_ancestor(dst)
             self._fs.copy(self._s3_path(src), self._s3_path(dst))
 
     def close(self) -> None:

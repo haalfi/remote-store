@@ -91,6 +91,7 @@ class _S3Base(Backend):
     _tls_ca_bundle: str | None
     _client_options: dict[str, Any]
     _retry: RetryPolicy | None
+    _reject_write_under_file_ancestor: bool
 
     # region: abstract property
 
@@ -98,6 +99,44 @@ class _S3Base(Backend):
     @abc.abstractmethod
     def _s3fs(self) -> Any:
         """Return the s3fs ``S3FileSystem`` instance."""
+
+    # endregion
+
+    # region: shared — file-ancestor pre-check (ID-211 opt-in)
+
+    def _maybe_check_no_file_ancestor(self, path: str) -> None:
+        """Run the ID-211 file-ancestor walk when the opt-in is set.
+
+        Default-off: only callers that constructed the backend with
+        ``reject_write_under_file_ancestor=True`` pay the per-write
+        HEAD walk. No-slash paths short-circuit in
+        ``_check_no_file_ancestor`` itself.
+
+        Shared on ``_S3Base`` rather than duplicated on each subclass
+        because the s3fs ``head_object`` closure is identical for
+        ``S3Backend`` and ``S3PyArrowBackend`` — the only difference
+        was the attribute name used to reach the underlying s3fs
+        instance, which the abstract ``_s3fs`` property now unifies.
+        """
+        if not self._reject_write_under_file_ancestor:
+            return
+        from botocore.exceptions import BotoCoreError, ClientError  # type: ignore[import-untyped]
+
+        from remote_store.backends._flat_ns import _check_no_file_ancestor
+
+        def _head_one(key: str) -> bool:
+            # Fail-open on probe failures (404 ClientError, network OSError,
+            # botocore-internal BotoCoreError). Programmer errors (TypeError,
+            # AttributeError) propagate — they signal an integration bug, not
+            # a probe outcome. See ``_flat_ns.py`` module docstring §
+            # "Fail-open ``head_one``" for the cross-backend contract.
+            try:
+                self._s3fs.call_s3("head_object", Bucket=self._bucket, Key=key)
+            except (ClientError, BotoCoreError, OSError):
+                return False
+            return True
+
+        _check_no_file_ancestor(path, head_one=_head_one, backend=self.name)
 
     # endregion
 

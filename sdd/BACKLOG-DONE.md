@@ -8,6 +8,58 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-211 — write-under-file HEAD pre-check for flat-namespace backends**
+  spec: BE-008, BE-018, BE-019, ASYNC-008, ASYNC-010, ASYNC-018, ASYNC-019 · audience: user.api, library.maintainer, infra.test, contributor.process
+  Follow-up to ID-209 (PR #680). ID-209 landed the cross-backend
+  `InvalidPath` contract for write/move/copy under a file ancestor but
+  carved out flat-namespace backends (S3, Azure non-HNS, SQLBlob) via
+  `_skip_flat_namespace` on the conformance gate because detecting a
+  file ancestor on those backends costs an extra HEAD round trip per
+  slash-aligned ancestor. The user nominated an O(1) optimisation —
+  skip the gate when the path has no slash — so the cost only applies
+  to nested-path writes. ID-211 measures whether shipping the gate is
+  worth it, and on what terms.
+  (C) New shared helper module `src/remote_store/backends/_flat_ns.py`
+  exports `_check_no_file_ancestor` (sync) and
+  `_acheck_no_file_ancestor` (async). Both walk the slash-aligned
+  ancestor chain via a caller-supplied `head_one` callable and
+  short-circuit on no-slash paths (the user's optimisation). Each
+  flat-namespace backend (`S3Backend`, `S3PyArrowBackend`,
+  `AzureBackend`, `SQLBlobBackend`, and the async `AsyncAzureBackend`)
+  gained a `reject_write_under_file_ancestor: bool = False`
+  constructor kwarg (Decision 2 + 3 (b), asked via AskUserQuestion
+  once the measurement was in hand). When the opt-in is set the
+  backend constructs a backend-specific `head_one` closure
+  (`head_object` on S3, `get_blob_properties` on Azure non-HNS,
+  `SELECT 1` on SQLBlob) and threads it through `write` /
+  `write_atomic` / `open_atomic` / `move` / `copy`. Azure HNS
+  short-circuits the walk because `hdi_isfolder` rejects the operation
+  on that path (ID-213 tracks an orthogonal HNS-side error-class
+  translation gap that is independent of this opt-in). Spec 003 § BE-008
+  / BE-018 / BE-019 and spec
+  029 § ASYNC-008 / ASYNC-010 / ASYNC-018 / ASYNC-019 carry the new
+  prose; the docstrings on every flat-NS backend list the kwarg.
+  (T) Conformance: new per-fixture flag
+  `BackendFixture.rejects_write_under_file_ancestor` (defaulting to
+  `not flat_namespace` so hierarchical backends inherit native
+  enforcement) keys the file-ancestor conformance gate. New strict
+  fixtures `s3_moto_strict`, `s3_pyarrow_moto_strict`,
+  `sqlblob_strict`, `azurite_strict`, `s3_pyarrow_minio_strict`, plus
+  the async `azurite_async_strict` (all review follow-ups), construct
+  their backends with the opt-in on and run the gate. Existing
+  default-off fixtures
+  continue to skip via the new `_skip_unless_rejects_file_ancestor`
+  helper (replaces `_skip_flat_namespace` at the file-ancestor test
+  sites). 10 new conformance test cases pass on the strict fixtures
+  (write / write_atomic / open_atomic / move / copy under file
+  ancestor, sync and async); the default fixtures continue to skip.
+  Measurement: `sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md`
+  records the harness and the per-call cost numbers (S3-moto:
+  +19 ms / +133% mean at depth 6; Azurite: +9.6 ms / +132% mean at
+  depth 6; SQLBlob-sqlite: sub-ms but linear in depth). The default-off
+  choice keeps that tax off hot paths.
+  Trace: `sdd/traces/id-211-flat-ns-file-ancestor-precheck.yml`.
+
 - [x] **ID-185 — Depth-boundary conformance gap**
   spec: DEPTH-003, BE-014 · audience: infra.test
   Wave 1 (T) test-backfill for an already-verified clause:
