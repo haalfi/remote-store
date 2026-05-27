@@ -53,6 +53,14 @@ datatype Capability =
   // method. CapUserMetadata is a strict gate on the `metadata=` kwarg
   // (WR-010, ADR-0026).
   | CapWriteResultNative | CapUserMetadata
+  // ID-188 / spec SIO-009: lazy-read quality flag. Stub variant — no
+  // enforceable Read postcondition. The Dafny model materialises content
+  // as `seq<nat>`; "no I/O before first read" is a runtime protocol
+  // property over the BinaryIO stream wrapper, not a property of the
+  // returned bytes the contract reasons about. Declared so the Dafny
+  // capability set tracks the Python `Capability.LAZY_READ` member at
+  // parity; load-bearing checks live in Python conformance (SIO-009).
+  | CapLazyRead
 
 // CapGlob is defined but the Glob method is intentionally excluded
 // from this contract: it is a capability-gated convenience method
@@ -149,6 +157,13 @@ datatype Entry =
   | DirEntry
 
 type Filesystem = map<Path, Entry>
+
+// ID-188 / spec SIO-008: Read returns content plus the seekability flag
+// of the BinaryIO wrapper the Python adapter will hand back. The Dafny
+// model is intentionally minimal — `seekable` tracks the single quality
+// flag the contract reasons about (CapSeekableRead). A lazy/eager flag is
+// not modelled here: see CapLazyRead's stub-variant note in §2.
+datatype ReadStream = ReadStream(content: seq<nat>, seekable: bool)
 
 predicate IsFile(fs: Filesystem, p: Path)
 {
@@ -474,16 +489,23 @@ trait Backend {
     ensures r.value == (IsDir(fs, path) && AllAncestorsTraversable(fs, path))
 
   // ====================================================================
-  // read(path) → content  (no modifies: fs unchanged)
+  // read(path) → ReadStream  (no modifies: fs unchanged)
   // ====================================================================
-  method Read(path: Path) returns (r: Result<seq<nat>>)
+  // ID-188 / spec SIO-008: Read returns a ReadStream that carries both
+  // the file content and the seekability flag of the BinaryIO wrapper
+  // the Python adapter hands back. The seekability postcondition is
+  // capability-gated: declaring CapSeekableRead obliges the refinement
+  // to produce a seekable stream on every successful read.
+  method Read(path: Path) returns (r: Result<ReadStream>)
     requires WellFormedPath(path)
     // @spec BE-021
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
     // @spec BE-006
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
     // @spec BE-006
-    ensures IsFile(fs, path)      ==> r == Ok(fs[path].content)
+    ensures IsFile(fs, path)      ==> r.Ok? && r.value.content == fs[path].content
+    // @spec SIO-008
+    ensures r.Ok? && CapSeekableRead in capabilities ==> r.value.seekable
 
   // ====================================================================
   // write(path, content, overwrite, metadata)
@@ -904,6 +926,7 @@ function CapabilityName(c: Capability): string
   case CapSeekableRead => "seekable_read"
   case CapWriteResultNative => "write_result_native"
   case CapUserMetadata => "user_metadata"
+  case CapLazyRead => "lazy_read"
 }
 
 // ---------------------------------------------------------------------------

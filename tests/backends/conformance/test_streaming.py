@@ -132,6 +132,45 @@ class TestStreamingConformance:
         backend.write("partial_pos.bin", buf)
         assert backend.read_bytes("partial_pos.bin") == b"PAYLOAD"
 
+    @pytest.mark.spec("SIO-008")
+    def test_read_returns_seekable_stream_when_declared(self, backend: Backend) -> None:
+        """SEEKABLE_READ-declaring backends must return a seekable stream.
+
+        ID-188 / SIO-008: the Dafny ``Backend.Read`` postcondition obliges
+        every backend declaring ``CapSeekableRead`` to return a stream whose
+        ``seekable()`` is ``True``. The DafnyOracleBackend certifies this
+        test by construction (it wraps content in ``io.BytesIO``); real
+        backends that declare the capability must produce the same shape.
+
+        The flag is necessary but not sufficient for the spec contract
+        ("callers that need to seek can rely on it"), so the test also
+        exercises an actual ``seek`` round-trip — a backend whose
+        ``seekable()`` returns ``True`` but whose ``seek()`` raises or
+        no-ops would slip past a flag-only assertion. The mid-stream seek
+        reads the remainder with bare ``stream.read()`` rather than a
+        sized ``read(n)``: backends whose stream is a bare ``RawIOBase``
+        (no ``BufferedReader`` layer — e.g. ``_ErrorMappingStream`` wrapping
+        s3fs) are permitted to short-read on a sized call.
+
+        Scope note: the assertion is forward-direction only. The Dafny
+        postcondition is capability-gated, so a backend silently returning
+        a seekable stream *without* declaring ``CapSeekableRead`` is not
+        in scope here (SIO-008 imposes no such obligation).
+        """
+        _require(backend, Capability.SEEKABLE_READ)
+        payload = b"seekable data"
+        backend.write("seek_decl.bin", payload)
+        stream = backend.read("seek_decl.bin")
+        try:
+            assert stream.seekable() is True
+            assert stream.read() == payload
+            stream.seek(0)
+            assert stream.read() == payload
+            stream.seek(4)
+            assert stream.read() == payload[4:]
+        finally:
+            stream.close()
+
 
 @pytest.mark.extended_conformance
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)

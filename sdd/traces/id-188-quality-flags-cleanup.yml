@@ -1,0 +1,116 @@
+id: ID-188
+title: "Resource safety: prove the quality flags, then enforce cleanup"
+trigger: |
+  Wave 1 (C)+(T) pair from the Formal Verification table: SIO-008's
+  seekable-read quality flag was specified in Markdown but not encoded
+  as a Dafny postcondition (Read returned raw seq<nat>, nothing to
+  attach `seekable()` to), and `test_open_atomic_exception_cleanup`
+  asserted only that the target path was absent after an open_atomic
+  failure — SAW-005's "temp artefact is cleaned up on failure" clause
+  had no conformance coverage.
+source_items:
+  - ID-188
+audience:
+  - infra.test
+co_shipped_items: []
+discovery_followups:
+  - BK-243
+  - BK-244
+  - BK-245
+review_rounds: 2
+expected_ripples:
+  # `sdd/backlogid.json` intentionally omitted: gen-backlogid tracks
+  # max IDs from BACKLOG-DONE.md only (`scripts/gen_backlogid.py`); ID-188
+  # is below the current max (211), so `hatch run gen-backlogid` is a
+  # no-op and the JSON is correctly unchanged. Canonicalised as
+  # `gotcha_backlogid_json_max_only` in prior traces
+  # (bk-204-sftp-host-key-chain-coverage, id-184-listing-traversability,
+  # id-190-path-wellformedness).
+  - sdd/formal/MemoryBackend-py/module_.py
+  - tests/backends/dafny/_helpers.py
+surprising_ripples:
+  - tests/backends/cassettes/azure/TestBackendOpenAtomic.test_open_atomic_exception_cleanup[azure].yaml
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Formal Verification / Wave 1"
+        read_type: gate
+        extract: "ID-188 (C)+(T) pair scope: SIO-008 postcondition + open_atomic orphan-cleanup test"
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-008, SIO-009"
+        read_type: gate
+        extract: "Seekable Read Capability invariant; Lazy Read Capability — backends declaring SEEKABLE_READ must return seekable streams"
+      - file: sdd/specs/022-streaming-atomic-writes.md
+        section: "Requirements / SAW-004, SAW-005"
+        read_type: gate
+        extract: "SAW-005 obliges temp artefact cleanup on both success and failure paths"
+      - file: sdd/formal/README.md
+        section: "Operations / Files; Compiled oracle as conformance gate"
+        read_type: reference
+        extract: "BackendContract.dfy + MemoryBackend.dfy refinement; regen path via dafny build -t py and _dafny_classorder.py"
+  - id: design
+    name: Design the postcondition shape
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "§5 Path utilities / Entry datatype; Read method"
+        read_type: reference
+        extract: "Read returns Result<seq<nat>>; no stream model exists. Adding `seekable()` postcondition requires a stream-shaped return."
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "method Read (both MemoryBackend and MemoryBackendMinimal); capabilities sets"
+        read_type: reference
+        extract: "Both refinements declare CapSeekableRead; both must satisfy the new postcondition"
+      - file: tests/backends/dafny/_helpers.py
+        section: "_ORACLE_CAPABILITIES; read() / read_bytes()"
+        read_type: reference
+        extract: "Adapter marshals seq<nat> -> bytes; needs ReadStream.content unwrapping after datatype change"
+  - id: implement_c
+    name: (C) Dafny contract + refinement
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "Capability datatype; ReadStream; method Read"
+        read_type: gate
+        extract: "Add CapLazyRead stub variant; ReadStream(content, seekable); Read returns Result<ReadStream>; @spec SIO-008 postcondition"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "method Read (both classes)"
+        read_type: gate
+        extract: "Wrap content as ReadStream(content, true) for both MemoryBackend and MemoryBackendMinimal"
+      - file: sdd/formal/MemoryBackend-py/module_.py
+        section: "(full — regenerated)"
+        read_type: verify
+        extract: "Re-translate via dafny build -t py; apply _dafny_classorder.py; import smoke-test passes"
+      - file: tests/backends/dafny/_helpers.py
+        section: "DafnyOracleBackend.read / read_bytes"
+        read_type: gate
+        extract: "Unmarshal new ReadStream — pull content off stream.content; io.BytesIO wrap continues to satisfy seekable() trivially"
+  - id: implement_t
+    name: (T) Conformance test + orphan-cleanup
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestBackendOpenAtomic::test_open_atomic_exception_cleanup"
+        read_type: gate
+        extract: "Add list_files('', recursive=True) scan post-exception; add SAW-005 marker"
+      - file: tests/backends/conformance/test_streaming.py
+        section: "TestStreamingConformance::test_read_returns_seekable_stream_when_declared"
+        read_type: gate
+        extract: "New SIO-008 conformance test gated on Capability.SEEKABLE_READ — the conformance pairing the new Dafny postcondition certifies"
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/dafny_verify.sh
+        section: "(full)"
+        read_type: verify
+        extract: "Native dafny 4.11.0 verify: BackendContract.dfy (51 verified, 0 errors); MemoryBackend.dfy (478 verified, 0 errors)"
+      - file: scripts/check_formal_trace.py
+        section: "_BASELINE; coverage matrix"
+        read_type: verify
+        extract: "SIO-008 moves from absent-from-D entirely (no prior Dafny tag, never an F1 violation, not in _BASELINE) to in-D-and-in-T — both the new `@spec SIO-008` Dafny tag and the new conformance marker land in the same PR, so no baseline edit is needed."
+      - file: tests/backends/conformance/conftest.py
+        section: "_cassette_path_for_item; missing-cassette skip hook"
+        read_type: verify
+        extract: "Deleted azure cassette triggers TEST-007 skip on azure_replay; rest of fixtures pass green"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG → BACKLOG-DONE move, backlogid.json regen, trace authored, README.md gap row updated"

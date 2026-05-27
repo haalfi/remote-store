@@ -218,11 +218,15 @@ class DafnyOracleBackend(Backend):
     # -- Type marshaling: bytes <-> Dafny Seq, str <-> Seq[CodePoint] ----------
 
     def read(self, path: str) -> io.BytesIO:
-        content = _raise_if_err(self._mb.Read(_str_to_dafny(path)))
-        return io.BytesIO(_dafny_to_bytes(content))
+        # ID-188: Dafny Read returns a ReadStream(content, seekable); the
+        # io.BytesIO wrapper is unconditionally seekable on the Python side,
+        # satisfying the SIO-008 capability-gated postcondition.
+        stream = _raise_if_err(self._mb.Read(_str_to_dafny(path)))
+        return io.BytesIO(_dafny_to_bytes(stream.content))
 
     def read_bytes(self, path: str) -> bytes:
-        return _dafny_to_bytes(_raise_if_err(self._mb.Read(_str_to_dafny(path))))
+        stream = _raise_if_err(self._mb.Read(_str_to_dafny(path)))
+        return _dafny_to_bytes(stream.content)
 
     def write(
         self,

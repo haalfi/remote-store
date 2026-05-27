@@ -79,12 +79,37 @@ class TestBackendOpenAtomic:
             pass
 
     @pytest.mark.spec("SAW-004")
+    @pytest.mark.spec("SAW-005")
     @pytest.mark.spec("SQL-BLOB-023")
     def test_open_atomic_exception_cleanup(self, backend: Backend) -> None:
         with pytest.raises(RuntimeError, match="boom"), backend.open_atomic("oat_fail.txt") as f:  # noqa: PT012
             f.write(b"partial")
             raise RuntimeError("boom")
         assert not backend.exists("oat_fail.txt")
+        # ID-188 / SAW-005: assert no orphan temp artefact survives anywhere
+        # under the fixture root. The fixture is function-scoped and writes
+        # nothing before the failed open_atomic, so any residual file is a
+        # leaked temp from a backend's per-strategy cleanup path (see
+        # spec 022 § Per-backend strategies).
+        #
+        # Asymmetric coverage on the caller-exception path — the assertion
+        # only *bites* on strategies that materialise a temp artefact in
+        # the remote namespace *before* yielding to the caller: Local
+        # (`tempfile.mkstemp` runs before yield, SAW-008) and SFTP
+        # (`.~tmp.{uuid}` opened before yield, SAW-009). The buffer-then-PUT
+        # strategies — S3 / S3-pyarrow / Azure non-HNS (SAW-010 / SAW-011),
+        # MemoryBackend / SQLBlob (SAW-012), and Azure HNS (SAW-011): the
+        # HNS upload + DFS rename happen *after* the yield, so a caller
+        # exception during the yield never creates a remote blob — discard a
+        # `SpooledTemporaryFile` / `BytesIO` without issuing a remote write,
+        # so the assertion holds vacuously rather than exercising cleanup.
+        # The gate still catches the load-bearing regressions on the two
+        # eager-temp strategies (Local SAW-008, SFTP SAW-009) and consumes
+        # nothing extra on the vacuous fixtures. HNS upload/rename-failure
+        # cleanup (SAW-011 inner branch at `_azure.py:676-679`) needs its
+        # own failure-injection test — tracked as BK-244.
+        remaining = [str(fi.path) for fi in backend.list_files("", recursive=True)]
+        assert remaining == [], f"orphan temp files after open_atomic failure: {remaining}"
 
 
 _WRITE_OPS = [
