@@ -885,17 +885,70 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   record-ready half cannot ship without the blocked half also
   recording cleanly: BK-235 lands as a single PR once ID-213 closes.
 
-- [ ] **BK-208 — Triage post-v0.23.0 lessons-learned into backlog items**
-  spec: — · effort: M · audience: library.maintainer
-  A post-v0.23.0 retrospective covers the v0.23.0→master cycle (~100 PRs, two
-  headline features: WriteResult and AsyncBackendSyncAdapter). Eight concrete
-  recommendations were deferred before v0.24.0 to avoid scope creep. Triage them
-  into proper backlog items or close each with reasoning: (a) feature-type DoD
-  checklists in `sdd/000-process.md`; (b) `guides/` and `examples/snippets/` rows
-  in the ripple-check table; (c) `filterwarnings = error` to feature-DoD; (d)
-  symmetric capability-declaration test; (e) streaming-iteration assertion;
-  (f) `tests/aio/README.md` update. Closes the pattern-drift risk before ID-127
-  Graph backend repeats conformance-lag and doc-ripple issues.
+- [ ] **BK-237 — Feature-type DoD checklists in `sdd/000-process.md`**
+  spec: — · effort: S · audience: contributor.process
+  Codify two complementary feature-DoD checklists in `sdd/000-process.md`,
+  derived from the v0.23.0→v0.24.0 post-release retrospective
+  (`../sandbox/post-v0.23.0-lessons-learned.md`, §5 rec 1):
+  - **Contract-expanding feature** (next: any new `Capability.X`): spec/RFC
+    update, capability-declaration review covering over- *and*
+    under-declaration, conformance test + xfail registry landed *before*
+    first backend implementation, wrapper forwarding check (`ProxyStore`,
+    `ObservedStore`, `CachedStore`, sync adapter, oracle adapter), docs
+    ripple (`guides/`, `examples/snippets/`, `FEATURES.md`, capabilities
+    matrix).
+  - **Bridge / adapter feature** (next: any future cross-layer wrapper):
+    API parity test against wrapped layer, event-loop / resource lifecycle
+    test, cancellation invariant test, live backend coverage (not just
+    doubles), `filterwarnings = error` clean.
+  Closes the pattern-drift risk before ID-127 Graph backend repeats the
+  conformance-lag and doc-ripple issues from ID-146. Also surfaces the
+  audit-PR pattern (PR #465) as a recommended gate.
+
+- [ ] **BK-238 — Promote `filterwarnings = error` and audit-PR to feature-DoD**
+  spec: — · effort: S · audience: contributor.process
+  `filterwarnings = error` is enabled globally (PR #495, BK-158) and the
+  audit-PR pattern (PR #465) filed 6 pre-release bugs against unreleased
+  work. Both proved high-yield in the v0.23.0→v0.24.0 cycle. Codify each
+  as a checked step in the feature-DoD landed by BK-237 — no behavior
+  change, just process-documentation alignment. Folds into BK-237 if
+  both ship in the same PR.
+
+- [ ] **BK-239 — Symmetric capability-declaration test (under-declaration guard)**
+  spec: — · effort: S · audience: infra.test
+  `tests/backends/conformance/test_atomic.py` already checks
+  *over-declaration* of `WRITE_RESULT_NATIVE` (a backend that declares it
+  must populate `last_modified` etc — BK-152 follow-ups). The symmetric
+  *under-declaration* case is uncovered: a backend that quietly populates
+  `digest` or `etag` without declaring the capability is silently correct
+  in isolation but breaks `Capability`-driven branching in callers
+  (post-v0.23.0 lessons §4 Pattern 7). Add a conformance test that, for
+  each backend, asserts every field actually populated in `WriteResult`
+  is declared in the capability set. Lands before ID-127 to keep the
+  guard symmetric when a new backend joins.
+
+- [ ] **BK-240 — Streaming-iteration counting wrapper for write paths**
+  spec: SIO-003 · effort: S · audience: infra.test
+  BUG-165 (Azure async materialized payloads), BUG-181 (HNS size
+  counting), and `gotcha_async_materialize_antipattern.md` are three
+  instances of the same defect: an `AsyncIterable[bytes]` (or
+  `Iterable[bytes]`) collected into a single `bytes` before the SDK call.
+  The type signature tolerates it, so the bug recurs. Add a conformance
+  test that wraps the iterable in a counting iterator and asserts the
+  SDK call observes >1 chunk for inputs larger than one chunk —
+  failing if the backend materialized. `test_streaming.py:120-125`
+  (SIO-003) checks BinaryIO support; this extends to the iterable
+  contract on both sync and async write paths.
+
+- [ ] **BK-241 — `tests/aio/README.md` orientation for next async backend**
+  spec: — · effort: S · audience: contributor.process, infra.test
+  Async test infra is now mature (ID-153, BK-164, ID-155, ID-156, ID-157,
+  ID-158, ID-193). The next async backend (ID-127 Graph) needs a single
+  landing page that names the conftest layout, doubles in `tests/aio/_doubles.py`,
+  the `AsyncBackendSyncAdapter` parametrization, and the live-vs-doubles
+  layering — so it does not repeat the conftest sprawl that BK-164 and
+  ID-156 cleaned up. One short README (or an addendum to `sdd/TESTING.md`,
+  whichever fits the docs framework better) is enough.
 
 - [~] **ID-018 — conda-forge publishing**
   spec: — · effort: — · audience: library.maintainer
