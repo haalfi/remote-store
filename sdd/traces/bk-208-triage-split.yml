@@ -1,0 +1,70 @@
+id: BK-208
+title: "Triage post-v0.23.0 lessons-learned into backlog items"
+trigger: >-
+  The post-v0.23.0 retrospective memo (`../sandbox/post-v0.23.0-lessons-learned.md`)
+  carried eight concrete recommendations parked under BK-208 to avoid scope
+  creep before v0.24.0. Three releases later (v0.24.0..v0.26.0) the catch-all
+  item was still pending, blocking the pattern-drift safeguard before ID-127
+  (Graph backend) lands.
+source_items:
+  - BK-208
+audience:
+  - contributor.process
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-208"
+        read_type: gate
+        extract: "Confirm the six listed sub-items and the ID-127-pattern-drift framing"
+      - file: ../sandbox/post-v0.23.0-lessons-learned.md
+        section: "§5 Recommendations for after next release"
+        read_type: reference
+        extract: "Original 8 recommendations; map (a)..(f) in BK-208 onto the source items"
+  - id: audit
+    name: Audit current-state of each sub-item
+    steps:
+      - file: sdd/000-process.md
+        section: "(full)"
+        read_type: verify
+        extract: "(a) and (c): no DoD / feature-type / filterwarnings framing exists yet"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "(b): guides/ and examples/snippets/ already cited across 8 ripple rows — sub-item already addressed"
+      - file: tests/backends/conformance/test_atomic.py
+        section: "WRITE_RESULT_NATIVE checks"
+        read_type: verify
+        extract: "(d): initially read only WRITE_RESULT_NATIVE *over-declaration* gates and missed the existing per-pair under-declaration guards at lines 157-168 and 252-258 — review caught the framing error in round 1, and BK-239 was reworded to target the generic field-vs-capability symmetry gap"
+        outcome: misleading
+      - file: tests/backends/conformance/test_streaming.py
+        section: "SIO-003 (line 120-125)"
+        read_type: verify
+        extract: "(e): BinaryIO support is asserted; no counting-wrapper guard against AsyncIterable materialisation"
+      - file: tests/aio/
+        section: "(directory listing)"
+        read_type: verify
+        extract: "(f): no README.md present; orientation page absent"
+  - id: report
+    name: Report findings + propose split
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-208"
+        read_type: reference
+        extract: "Drop (b) as already-addressed; split remaining five sub-items into BK-237..BK-241 — user approved 'Apply as drafted'"
+  - id: implement
+    name: Implement the split
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Long-horizon / Maintenance"
+        read_type: gate
+        extract: "Replace the BK-208 block with five new pending items BK-237..BK-241"
+  - id: verify
+    name: Verify
+    steps:
+      - file: pyproject.toml
+        section: "hatch run lint"
+        read_type: verify
+        extract: "Lint, traceability, gen_backlogid --check all green; next safe BK reported as 242"
