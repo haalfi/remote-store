@@ -14,6 +14,26 @@ backend-specific ``head_one`` callable (``head_object`` on S3,
 ``get_blob_properties`` on Azure, ``SELECT 1`` on SQLBlob) and threads it
 through the same walk. The walk skips on no-slash paths -- the
 user-nominated optimisation that collapses the cost to nested-path writes.
+
+Two contracts the call sites rely on:
+
+* **Path normalisation.** The walk operates on slash-aligned ancestors of
+  the normalised key, so the helper strips leading slashes before
+  splitting. A caller that bypasses ``Store``'s canonicalisation and
+  passes ``"//a/b/file"`` would otherwise see ``head_one`` invoked on
+  empty / ``"/a"`` ancestor keys -- on S3 those produce a 404 (silently
+  False under the fail-open semantics below) and the real file-ancestor
+  on the normalised path goes undetected.
+* **Fail-open ``head_one``.** Every backend's ``head_one`` closure
+  swallows non-``NotFound`` exceptions and returns ``False`` ("treat
+  unknown state as not-a-file"). A transient HEAD failure (503,
+  throttling, network blip) therefore lets the write proceed; the
+  pre-check is best-effort, not a hard barrier. The opt-in is
+  default-off, so the choice is deliberate: users who turned the gate
+  on get the protection on a clean network path and accept that
+  control-plane errors don't halt the data path. Tightening the
+  closures to fail-closed flips this contract -- expect that to be a
+  spec-amendment-class change rather than a local bug fix.
 """
 
 from __future__ import annotations
@@ -44,6 +64,10 @@ def _check_no_file_ancestor(
     every call site, so backends with the default-off setting pay
     nothing.
     """
+    # Normalise leading slashes so non-canonical inputs like "//a/b/c"
+    # walk the same ancestors that the backend's storage uses (see
+    # module docstring -- "Path normalisation").
+    path = path.lstrip("/")
     if "/" not in path:
         return
     parts = path.split("/")
@@ -68,6 +92,8 @@ async def _acheck_no_file_ancestor(
     Same shape; ``head_one`` is an awaitable. Use from ``AsyncBackend``
     write/move/copy paths on flat-NS async backends.
     """
+    # Normalise leading slashes -- see ``_check_no_file_ancestor``.
+    path = path.lstrip("/")
     if "/" not in path:
         return
     parts = path.split("/")

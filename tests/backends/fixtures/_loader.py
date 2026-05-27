@@ -115,6 +115,7 @@ class FixtureDescriptor:
     flat_namespace: bool
     self_op_supported: bool
     rejects_write_under_file_ancestor: bool
+    strict_only: bool
     transport: Transport
     live_opt_in_env: str | None = None
     live_creds_env: tuple[str, ...] = field(default_factory=tuple)
@@ -138,6 +139,7 @@ class FixtureDescriptor:
             "flat_namespace": self.flat_namespace,
             "self_op_supported": self.self_op_supported,
             "rejects_write_under_file_ancestor": self.rejects_write_under_file_ancestor,
+            "strict_only": self.strict_only,
             "transport": self.transport,
         }
 
@@ -227,12 +229,18 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
         rejects = not flat_ns
     else:
         rejects = raw.get("rejects_write_under_file_ancestor", backend.rejects_write_under_file_ancestor)
+    # ID-211 review: ``strict_only`` keeps narrow-contract fixtures out of the
+    # default conformance enumeration. Per-fixture only; no backend-family
+    # default (the strict variants are always opt-in additions).
+    strict_only = raw.get("strict_only", False)
     if not isinstance(flat_ns, bool):
         raise ValueError(f"fixture.{name}: flat_namespace must be bool, got {flat_ns!r}")
     if not isinstance(self_op, bool):
         raise ValueError(f"fixture.{name}: self_op_supported must be bool, got {self_op!r}")
     if not isinstance(rejects, bool):
         raise ValueError(f"fixture.{name}: rejects_write_under_file_ancestor must be bool, got {rejects!r}")
+    if not isinstance(strict_only, bool):
+        raise ValueError(f"fixture.{name}: strict_only must be bool, got {strict_only!r}")
 
     live_opt_in_env = raw.get("live_opt_in_env")
     if live_opt_in_env is not None and not isinstance(live_opt_in_env, str):
@@ -249,6 +257,7 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
         flat_namespace=flat_ns,
         self_op_supported=self_op,
         rejects_write_under_file_ancestor=rejects,
+        strict_only=strict_only,
         transport=backend.transport,
         live_opt_in_env=live_opt_in_env,
         live_creds_env=live_creds_env,

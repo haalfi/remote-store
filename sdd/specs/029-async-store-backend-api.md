@@ -112,12 +112,14 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 **Invariant:** `async def move(src, dst, *, overwrite=False)` renames/moves a file.
 **Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory, or if any slash-aligned ancestor of `dst` is a regular file (ID-209; flat-namespace backends opt in via the `reject_write_under_file_ancestor` kwarg per BE-008 / ID-211). `AlreadyExists` if `dst` exists and `overwrite=False`.
+**Precondition order:** Mirrors BE-018 — `src`-NotFound takes priority over dst-side preconditions; `move(missing_src, blocked_dst)` MUST raise `NotFound(src)`.
 **See also:** [BE-018](003-backend-adapter-contract.md).
 
 ### ASYNC-019: copy()
 
 **Invariant:** `async def copy(src, dst, *, overwrite=False)` duplicates a file.
 **Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory, or if any slash-aligned ancestor of `dst` is a regular file (ID-209; flat-namespace backends opt in via the `reject_write_under_file_ancestor` kwarg per BE-008 / ID-211). `AlreadyExists` if `dst` exists and `overwrite=False`.
+**Precondition order:** Mirrors BE-019 — `src`-NotFound takes priority over dst-side preconditions; `copy(missing_src, blocked_dst)` MUST raise `NotFound(src)`.
 **See also:** [BE-019](003-backend-adapter-contract.md).
 
 ### ASYNC-020: Async Streaming Reads

@@ -718,6 +718,23 @@ class TestMoveCopyErrorFidelity:
         assert await async_backend.read_bytes(f"mcua/{op}_blocker.txt") == b"file-blocking"
         assert await async_backend.read_bytes(f"mcua/{op}_src.txt") == b"srcdata"
 
+    @pytest.mark.spec("ASYNC-018")
+    @pytest.mark.spec("ASYNC-019")
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
+    async def test_missing_src_under_blocked_dst_raises_not_found(
+        self, async_backend: AsyncBackend, op: str, cap: Capability
+    ) -> None:
+        """ASYNC-018/019 precondition order: src-NotFound > dst-file-ancestor (ID-211 review)."""
+        _require(async_backend, cap, Capability.WRITE)
+        await async_backend.write(f"mcord/{op}_blocker.txt", b"file-blocking")
+        with pytest.raises(NotFound, match=f"mcord/{op}_missing"):
+            await _do_op(
+                async_backend,
+                op,
+                f"mcord/{op}_missing.txt",
+                f"mcord/{op}_blocker.txt/dst.txt",
+            )
+
 
 class TestMoveCopyOverwrite:
     """ASYNC-018 / ASYNC-019: overwrite semantics."""

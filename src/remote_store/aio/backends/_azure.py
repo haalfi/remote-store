@@ -144,8 +144,6 @@ class AsyncAzureBackend(AsyncBackend):
             return
         if await self._ensure_hns():
             return
-        from azure.core.exceptions import ResourceNotFoundError
-
         from remote_store.backends._flat_ns import _acheck_no_file_ancestor
 
         async def _head_one(key: str) -> bool:
@@ -1028,7 +1026,6 @@ class AsyncAzureBackend(AsyncBackend):
         # BE-018 / ASYNC-018: self-move is a no-op (src == dst → Ok), but only
         # for files.  Directory-path inputs must still raise InvalidPath per
         # BE-021 — same contract as the non-self-op path below (line 942-943).
-        await self._maybe_check_no_file_ancestor(dst)
         if src == dst:
             async with self._errors(src):
                 src_bc = self._blob_client(src)
@@ -1073,6 +1070,10 @@ class AsyncAzureBackend(AsyncBackend):
                     # Destination does not exist yet; this is valid when overwrite=True.
                     pass
 
+            # ASYNC-018 precondition order: src-NotFound (raised above by
+            # get_blob_properties) takes priority over dst-file-ancestor
+            # (matches LocalBackend.move; ID-211 review).
+            await self._maybe_check_no_file_ancestor(dst)
             if is_hns:  # pragma: no cover -- HNS only
                 src_fc = self._fs.get_file_client(_azure_path_fn(src))
                 new_name = f"{self._container}/{_azure_path_fn(dst)}"
@@ -1099,7 +1100,6 @@ class AsyncAzureBackend(AsyncBackend):
         # BE-019 / ASYNC-019: self-copy is a no-op (src == dst → Ok), but only
         # for files.  Directory-path inputs must still raise InvalidPath per
         # BE-021 — same contract as the non-self-op path below.
-        await self._maybe_check_no_file_ancestor(dst)
         if src == dst:
             async with self._errors(src):
                 src_bc = self._blob_client(src)
@@ -1144,6 +1144,8 @@ class AsyncAzureBackend(AsyncBackend):
                     # Destination does not exist yet; this is valid when overwrite=True.
                     pass
 
+            # ASYNC-019 precondition order: src-NotFound before dst-file-ancestor (ID-211 review).
+            await self._maybe_check_no_file_ancestor(dst)
             await dst_bc.start_copy_from_url(src_bc.url)
 
     async def aclose(self) -> None:

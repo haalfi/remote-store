@@ -70,6 +70,23 @@ class TestCheckNoFileAncestorSync:
 
         assert calls == ["a", "a/b"]
 
+    def test_leading_slash_is_normalised(self) -> None:
+        """`//a/b/c` walks the same `a`, `a/b` ancestors as `a/b/c`.
+
+        Non-canonical inputs that bypass ``Store``-side normalisation would
+        otherwise call ``head_one`` on empty / `/a` keys, which return
+        404-as-False on every backend and silently miss a real file ancestor.
+        """
+        calls: list[str] = []
+
+        def head_one(key: str) -> bool:
+            calls.append(key)
+            return False
+
+        _check_no_file_ancestor("//a/b/c/leaf.txt", head_one=head_one, backend="stub")
+
+        assert calls == ["a", "a/b", "a/b/c"]
+
 
 class TestACheckNoFileAncestorAsync:
     async def test_no_slash_path_returns_without_calls(self) -> None:
@@ -119,3 +136,15 @@ class TestACheckNoFileAncestorAsync:
             await _acheck_no_file_ancestor("a/b/c/leaf.txt", head_one=head_one, backend="stub")
 
         assert calls == ["a", "a/b"]
+
+    async def test_leading_slash_is_normalised(self) -> None:
+        """Async sibling of `TestCheckNoFileAncestorSync.test_leading_slash_is_normalised`."""
+        calls: list[str] = []
+
+        async def head_one(key: str) -> bool:
+            calls.append(key)
+            return False
+
+        await _acheck_no_file_ancestor("//a/b/c/leaf.txt", head_one=head_one, backend="stub")
+
+        assert calls == ["a", "a/b", "a/b/c"]

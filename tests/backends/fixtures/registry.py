@@ -93,6 +93,22 @@ class BackendFixture:
     variants (e.g. ``s3_moto_strict``) run the gate while the default
     fixtures continue to skip it.
     """
+    strict_only: bool = False
+    """True when this fixture exists only to exercise a narrow contract.
+
+    A ``strict_only`` fixture is excluded from the default
+    ``fixture_params()`` enumeration, so it does NOT participate in the
+    auto-parametrized conformance surface (atomic / io / listing /
+    metadata / streaming / identity). Tests that genuinely need the
+    strict variant opt in by passing ``include_strict_only=True`` to
+    ``fixture_params()`` (or by adding an explicit parametrize).
+
+    Set on the ID-211 ``*_strict`` fixtures so they exercise only the
+    three file-ancestor tests (write / open_atomic / move+copy under
+    file ancestor, plus the missing-src precondition-order test), not
+    the full conformance suite. Without this guard a strict fixture
+    would run the entire applicable surface twice on flat-NS backends.
+    """
     transport: Literal["http", "ssh", "fs", "memory", "sql"] = "fs"
     """Transport family of the backend.
 
@@ -150,7 +166,7 @@ def all_fixtures() -> list[BackendFixture]:
     return list(_FIXTURES)
 
 
-def fixtures(*caps: Capability, is_async: bool = False) -> list[BackendFixture]:
+def fixtures(*caps: Capability, is_async: bool = False, include_strict_only: bool = False) -> list[BackendFixture]:
     """Return registry entries matching ``caps`` for the active stage.
 
     Filters applied (in order):
@@ -163,6 +179,10 @@ def fixtures(*caps: Capability, is_async: bool = False) -> list[BackendFixture]:
        id-filtering. A fixture lacking any requested capability is
        absent from the returned list (no ``SKIPPED`` entry is emitted
        at runtime because the test was never parametrised over it).
+    4. ``strict_only`` fixtures are excluded unless
+       ``include_strict_only=True``. Strict variants exist to exercise
+       narrow contracts (e.g. ID-211 file-ancestor), not the full
+       conformance surface.
 
     Pass no ``caps`` to get every fixture in the requested mode and
     stage band.
@@ -170,17 +190,28 @@ def fixtures(*caps: Capability, is_async: bool = False) -> list[BackendFixture]:
     stage_cap = current_stage()
     cap_set = frozenset(caps)
     return [
-        f for f in _FIXTURES if f.stage <= stage_cap and f.is_async is is_async and cap_set.issubset(f.capabilities)
+        f
+        for f in _FIXTURES
+        if f.stage <= stage_cap
+        and f.is_async is is_async
+        and cap_set.issubset(f.capabilities)
+        and (include_strict_only or not f.strict_only)
     ]
 
 
-def fixture_params(*caps: Capability, is_async: bool = False) -> list[Any]:
+def fixture_params(*caps: Capability, is_async: bool = False, include_strict_only: bool = False) -> list[Any]:
     """Wrap ``fixtures`` results as ``pytest.param`` entries.
 
     Each entry carries the fixture's ``name`` as the parametrize id and
     its ``marks`` (e.g. ``os_sensitive`` on local). Pass directly to
     ``@pytest.mark.parametrize("backend", fixture_params(Cap.X),
     indirect=True)``.
+
+    ``include_strict_only`` opts the result into the strict-variant
+    fixtures (see ``BackendFixture.strict_only``). Default-off so the
+    default conformance surface stays narrow; tests that need the
+    strict variants (e.g. the three ID-211 file-ancestor tests) pass
+    ``include_strict_only=True`` explicitly.
 
     SFTP-Docker exclusion under xdist: the atmoz/sftp OpenSSH daemon is
     unreliable under concurrent connections from multiple xdist workers
@@ -193,7 +224,7 @@ def fixture_params(*caps: Capability, is_async: bool = False) -> list[Any]:
     is_xdist_worker = "PYTEST_XDIST_WORKER" in os.environ
     return [
         pytest.param(f, id=f.name, marks=list(f.marks))
-        for f in fixtures(*caps, is_async=is_async)
+        for f in fixtures(*caps, is_async=is_async, include_strict_only=include_strict_only)
         if not (is_xdist_worker and f.container == "sftp")
     ]
 

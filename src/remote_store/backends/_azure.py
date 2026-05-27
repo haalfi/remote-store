@@ -951,7 +951,6 @@ class AzureBackend(Backend):
         # BE-018: self-move is a no-op (src == dst → Ok), but only for files.
         # Directory-path inputs must still raise InvalidPath per BE-021 — same
         # contract as the non-self-op path below.
-        self._maybe_check_no_file_ancestor(dst)
         if src == dst:
             with self._errors(src):
                 src_bc = self._blob_client(src)
@@ -995,6 +994,10 @@ class AzureBackend(Backend):
                     # Destination does not exist yet; this is valid when overwrite=True.
                     pass
 
+            # BE-018 precondition order: src-NotFound (raised above by
+            # get_blob_properties) takes priority over dst-file-ancestor
+            # (matches LocalBackend.move; ID-211 review).
+            self._maybe_check_no_file_ancestor(dst)
             if self._hns:  # pragma: no cover -- HNS only
                 src_fc = self._fs.get_file_client(self._azure_path(src))
                 new_name = f"{self._container}/{self._azure_path(dst)}"
@@ -1008,7 +1011,6 @@ class AzureBackend(Backend):
         # BE-019: self-copy is a no-op (src == dst → Ok), but only for files.
         # Directory-path inputs must still raise InvalidPath per BE-021 — same
         # contract as the non-self-op path below.
-        self._maybe_check_no_file_ancestor(dst)
         if src == dst:
             with self._errors(src):
                 src_bc = self._blob_client(src)
@@ -1052,6 +1054,8 @@ class AzureBackend(Backend):
                     # Destination does not exist yet; this is valid when overwrite=True.
                     pass
 
+            # BE-019 precondition order: src-NotFound before dst-file-ancestor (ID-211 review).
+            self._maybe_check_no_file_ancestor(dst)
             dst_bc.start_copy_from_url(src_bc.url)
 
     def close(self) -> None:

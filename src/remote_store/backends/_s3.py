@@ -287,7 +287,6 @@ class S3Backend(_S3Base):
             return self._head_to_fileinfo(raw, path)
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        self._maybe_check_no_file_ancestor(dst)
         with self._s3fs_errors(src):
             if not self._fs.exists(self._s3_path(src)):
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
@@ -295,11 +294,14 @@ class S3Backend(_S3Base):
                 return  # self-move is a no-op
             if not overwrite and self._fs.exists(self._s3_path(dst)):
                 raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
+            # BE-018 precondition order: src-NotFound takes priority over
+            # dst-file-ancestor (matches LocalBackend.move's mkdir-parent
+            # placement; ID-211 review).
+            self._maybe_check_no_file_ancestor(dst)
             self._fs.copy(self._s3_path(src), self._s3_path(dst))
             self._fs.rm(self._s3_path(src))
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        self._maybe_check_no_file_ancestor(dst)
         with self._s3fs_errors(src):
             if not self._fs.exists(self._s3_path(src)):
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
@@ -307,6 +309,8 @@ class S3Backend(_S3Base):
                 return  # self-copy is a no-op
             if not overwrite and self._fs.exists(self._s3_path(dst)):
                 raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
+            # BE-019 precondition order: src-NotFound before dst-file-ancestor (ID-211 review).
+            self._maybe_check_no_file_ancestor(dst)
             self._fs.copy(self._s3_path(src), self._s3_path(dst))
 
     def close(self) -> None:

@@ -685,7 +685,6 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         self._validate_path(src)
         self._validate_path(dst)
-        self._maybe_check_no_file_ancestor(dst)
 
         if src == dst:
             # Verify source exists, then no-op
@@ -709,12 +708,13 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             if dst_exists:
                 conn.execute(t.delete().where(t.c.key == dst))
 
+            # BE-018 precondition order: src-NotFound before dst-file-ancestor (ID-211 review).
+            self._maybe_check_no_file_ancestor(dst)
             conn.execute(t.update().where(t.c.key == src).values(key=dst))
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         self._validate_path(src)
         self._validate_path(dst)
-        self._maybe_check_no_file_ancestor(dst)
 
         if src == dst:
             with self._map_errors(src), self._engine.connect() as conn:
@@ -740,6 +740,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             if dst_exists:
                 conn.execute(t.delete().where(t.c.key == dst))
 
+            # BE-019 precondition order: src-NotFound before dst-file-ancestor (ID-211 review).
+            self._maybe_check_no_file_ancestor(dst)
             # Single INSERT ... SELECT — no blob data transferred through Python
             col_names: list[str] = ["key", "data"]
             select_cols: list[sa.ColumnElement[Any]] = [sa.literal(dst).label("key"), t.c.data]

@@ -83,6 +83,8 @@ is_async  = false
 
 # ID-211 strict variant: same backend, opt-in pre-check on.  Exercises the
 # write-under-file-ancestor conformance gate against a flat-NS backend.
+# strict_only=true keeps it out of the default conformance enumeration
+# (only the file-ancestor tests opt in via include_strict_only=True).
 [fixture.sqlblob_strict]
 backend   = "sqlblob"
 stage     = 1
@@ -90,6 +92,7 @@ kind      = "real-local"
 container = "none"
 is_async  = false
 rejects_write_under_file_ancestor = true
+strict_only = true
 
 [fixture.s3_moto]
 backend   = "s3"
@@ -98,7 +101,8 @@ kind      = "real-local"
 container = "none"
 is_async  = false
 
-# ID-211 strict variant: same backend, opt-in pre-check on.
+# ID-211 strict variant: same backend, opt-in pre-check on. strict_only=true
+# keeps it out of the default conformance enumeration.
 [fixture.s3_moto_strict]
 backend   = "s3"
 stage     = 1
@@ -106,6 +110,7 @@ kind      = "real-local"
 container = "none"
 is_async  = false
 rejects_write_under_file_ancestor = true
+strict_only = true
 
 [fixture.s3_pyarrow_moto]
 backend   = "s3_pyarrow"
@@ -114,7 +119,8 @@ kind      = "real-local"
 container = "none"
 is_async  = false
 
-# ID-211 strict variant: same backend, opt-in pre-check on.
+# ID-211 strict variant: same backend, opt-in pre-check on. strict_only=true
+# keeps it out of the default conformance enumeration.
 [fixture.s3_pyarrow_moto_strict]
 backend   = "s3_pyarrow"
 stage     = 1
@@ -122,6 +128,7 @@ kind      = "real-local"
 container = "none"
 is_async  = false
 rejects_write_under_file_ancestor = true
+strict_only = true
 
 # ---------------------------------------------------------------------------
 # Stage 2 fixtures: real local containers
@@ -140,6 +147,7 @@ flat_namespace = true
 self_op_supported = true
 
 # ID-211 strict variant of azurite: opt-in pre-check on the flat-NS emulator.
+# strict_only=true keeps it out of the default conformance enumeration.
 [fixture.azurite_strict]
 backend   = "azure"
 stage     = 2
@@ -149,6 +157,7 @@ is_async  = false
 flat_namespace = true
 self_op_supported = true
 rejects_write_under_file_ancestor = true
+strict_only = true
 
 [fixture.sftp_docker]
 backend   = "sftp"
