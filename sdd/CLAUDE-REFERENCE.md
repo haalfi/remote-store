@@ -134,11 +134,10 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | (ID-170)                                                  |
 | **`_GATING` dict** (async)  | `src/remote_store/aio/_async_store.py` mirrors the       |
 | (key→Capability mapping     | sync constant minus `read_seekable` / `open_atomic`      |
-| in `aio/_async_store.py`)   | (no async equivalents). Static-extraction only;          |
-|                            | AsyncStore enforces capabilities inline, no runtime      |
-|                            | `_gate()` helper. Consumed by `scripts/gen_graph.py`     |
-|                            | (ID-194). Once ID-172 lands: `aio.md` admonitions        |
-|                            | verified by `hatch run gen-api-check`                    |
+| in `aio/_async_store.py`)   | (no async equivalents). Consumed at runtime by           |
+|                            | `AsyncStore._gate()` and statically by                   |
+|                            | `scripts/gen_graph.py` (ID-194). Once ID-172 lands:      |
+|                            | `aio.md` admonitions verified by `hatch run gen-api-check`|
 | **`_BACKEND_GATING` dict**  | `sdd/specs/003-backend-adapter-contract.md` (BE-gate     |
 | (key→cap-name strings       | entries), `docs-src/reference/api/backend.md` `!!! note  |
 | in `scripts/gen_graph.py`)  | "Requires …"` admonitions — verified by `hatch run       |

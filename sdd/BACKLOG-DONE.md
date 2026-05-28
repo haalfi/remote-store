@@ -14,14 +14,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   emitted method/req/gates/of edges for `Store` and `Backend`; AsyncStore
   had no edges, so any future PAGES entry for `aio.md` would have been
   vacuous and ID-172 was blocked.
-  - Added `_GATING: dict[str, Capability]` (17 entries) directly to
-    `src/remote_store/aio/_async_store.py`. Two independent constants
-    (matching the existing `_store.py` / `_BACKEND_GATING` split): each
-    module self-describes, the async surface legitimately omits
-    `read_seekable` and `open_atomic`, and the keys-match tests catch
-    drift on either side. AsyncStore enforces capabilities inline at each
-    call site — no runtime `_gate()` helper; the constant is static
-    metadata for graph-IR generation only.
+  - Added `_GATING: dict[str, Capability]` (17 entries) to
+    `src/remote_store/aio/_async_store.py`, mirroring sync `_store._GATING`
+    minus `read_seekable` / `open_atomic` (no async equivalents).
+    Placement matches sync `Store` — not the `_BACKEND_GATING` precedent —
+    because AsyncStore is the close analogue of Store (concrete class with
+    runtime enforcement), whereas Backend is an ABC with no runtime
+    gating. Initial PR-694 push placed `_GATING` in `_async_store.py`
+    without a runtime consumer and CodeQL flagged the unused global —
+    fixed by adding an `AsyncStore._gate()` helper that consumes `_GATING`
+    at runtime and refactoring every `self._backend.capabilities.require(
+    Capability.X, ...)` site to `self._gate("method")`. Conditional
+    `USER_METADATA` gates on `write` / `write_atomic` stay inline (not in
+    `_GATING`).
   - Extended `scripts/gen_graph.py` with `_async_store_gating()` helper
     and an AsyncStore method/requirement-nodes loop mirroring the sync
     Store loop. Dual-gate special case for `AsyncStore.get_folder_info`

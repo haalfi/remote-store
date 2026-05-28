@@ -13,6 +13,9 @@ expected_ripples:
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
 co_shipped_items: []
+surprising_ripples:
+  - src/remote_store/aio/_async_store.py  # _gate() helper + 17 per-method call-site refactors, added in review after CodeQL flagged _GATING as unused on the first push.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -68,11 +71,23 @@ phases:
       - file: src/remote_store/aio/_async_store.py
         section: "_GATING (new constant)"
         read_type: reference
-        extract: "Add 17-entry async _GATING mirroring sync minus read_seekable/open_atomic; static-only comment"
+        extract: "Add 17-entry async _GATING mirroring sync minus read_seekable/open_atomic"
       - file: scripts/gen_graph.py
         section: "_async_store_gating() + build_graph AsyncStore loop"
         read_type: reference
         extract: "Mirror _store_gating helper; new method/req/gates/of edges; dual-gate special case for AsyncStore.get_folder_info"
+  - id: fix
+    name: Review-driven fix
+    steps:
+      - file: src/remote_store/_store.py
+        section: "Store._gate (lines 976-982)"
+        read_type: gate
+        extract: "Sync precedent: _gate(method) reads _GATING[method] and calls capabilities.require(); each method calls self._gate(name) rather than inline require()"
+        outcome: misleading
+      - file: src/remote_store/aio/_async_store.py
+        section: "AsyncStore._gate (new) + per-method gate-call refactor"
+        read_type: reference
+        extract: "Add _gate helper; convert every inline self._backend.capabilities.require(Capability.X, ...) into self._gate('method'). Keep USER_METADATA conditional gates inline (not in _GATING). Resolves CodeQL unused-global alert"
   - id: verify
     name: Verify
     steps:
