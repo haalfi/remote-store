@@ -8,6 +8,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-247 — Migrate `ID-134` conformance markers to `BE-017` / `ASYNC-017`; drop the baseline entry**
+  spec: BE-017 · audience: infra.test, contributor.tooling
+  Leftover from ID-187. That item *added* `BE-017` / `ASYNC-017` spec
+  markers to the `GetFolderInfo` aggregate tests but left the original
+  `@pytest.mark.spec("ID-134")` backlog-ID citations in place (see the
+  ID-187 trace, implement step: "spec markers BE-017 + ID-134"). A backlog
+  ID is not a spec section, so `check_formal_trace.py` flagged each
+  citation as an F2 (`conformance-cites-unknown-spec`); the violation was
+  parked in `_BASELINE` with a note to "migrate to BE-017 when ID-187
+  lands". ID-187 landed without the migration, so the F2 never went stale
+  and the baseline comment rotted into the future tense about a shipped
+  item.
+  - Removed the 7 `@pytest.mark.spec("ID-134")` markers: 4 in
+    `tests/backends/conformance/test_metadata.py`, 2 in
+    `tests/backends/conformance/test_async_extended.py`, 1 in
+    `tests/test_pbt_folder_info_aggregates.py`. Every site retained its
+    `BE-017` / `ASYNC-017` spec-section marker, so coverage is unchanged
+    (`BE-017` still reports `tested` in the matrix). Explanatory docstrings
+    / comments naming ID-134 as provenance were left intact.
+  - Removed `(KIND_TEST_BAD_ID, "ID-134")` and its F2 comment block from
+    `_BASELINE` in `scripts/check_formal_trace.py`. The gate now reports 5
+    baselined gaps (all F1), no new or stale violations.
+  No CHANGELOG entry: audience is `infra.test` + `contributor.tooling`
+  only (no `user.*`), per the trace-schema derived rule.
+  Trace: `sdd/traces/bk-247-id134-marker-migration.yml`.
+
 - [x] **ID-172 — `check_api_docs.py` Phase 3 — `AsyncStore`/`AsyncBackend` → `aio.md`**
   spec: ASYNC-045a · audience: contributor.tooling
   Spun off from ID-171; ID-192 (aio.md rework) and ID-194 (async gate

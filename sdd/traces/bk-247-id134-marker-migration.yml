@@ -1,0 +1,66 @@
+id: BK-247
+title: "Migrate ID-134 conformance markers to BE-017 / ASYNC-017; drop the baseline entry"
+trigger: "check_formal_trace.py reported an F2 (conformance-cites-unknown-spec) for the backlog ID ID-134, parked in _BASELINE with a note to migrate the marker to BE-017 'when ID-187 lands'. ID-187 had already landed (BACKLOG-DONE.md) but added BE-017 alongside ID-134 rather than replacing it, so the F2 persisted and the baseline comment was stale."
+source_items:
+  - BK-247
+  - ID-187
+  - ID-134
+  - ID-206
+audience:
+  - infra.test
+  - contributor.tooling
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: scripts/check_formal_trace.py
+        section: "_BASELINE, F2 entry (KIND_TEST_BAD_ID, ID-134)"
+        read_type: gate
+        extract: "The ID-134 F2 is the only KIND_TEST_BAD_ID entry; baseline comment says migrate to BE-017 when ID-187 lands. Self-prune fires only when the violation goes stale, i.e. the marker is actually removed"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-187"
+        read_type: gate
+        extract: "ID-187 is done (spec: BE-017, ID-134) — confirms the 'when ID-187 lands' baseline note is in the past, so the migration is overdue not pending"
+        outcome: ok
+      - file: sdd/traces/id-187-folder-info-pbt.yml
+        section: "implement step, tests/test_pbt_folder_info_aggregates.py"
+        read_type: reference
+        extract: "ID-187 deliberately wrote 'spec markers BE-017 + ID-134' — the ID-134 citation was added alongside, never migrated; this is the leftover"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/conformance/test_metadata.py
+        section: "TestBackendMetadata, TestGetFolderInfoAggregates"
+        read_type: reference
+        extract: "Removed 4 @pytest.mark.spec(ID-134) decorators; each test keeps its BE-017 marker so the spec-section citation is unbroken"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestGetFolderInfoAggregates"
+        read_type: reference
+        extract: "Removed 2 @pytest.mark.spec(ID-134) decorators; each test keeps its ASYNC-017 marker (ASYNC-017 declared in spec 029)"
+        outcome: ok
+      - file: tests/test_pbt_folder_info_aggregates.py
+        section: "TestGetFolderInfoAggregatesOracle"
+        read_type: reference
+        extract: "Removed the ID-134 marker (this file is outside the conformance dir the gate scans, but the marker is dropped for uniformity); BE-017 retained"
+        outcome: ok
+      - file: scripts/check_formal_trace.py
+        section: "_BASELINE"
+        read_type: reference
+        extract: "Deleted (KIND_TEST_BAD_ID, ID-134) and its F2 comment block; remaining baseline entries are all F1 (KIND_UNTESTED)"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-247 ([Unreleased])"
+        read_type: reference
+        extract: "New entry at the top of [Unreleased]; records the ID-187 leftover and the no-CHANGELOG rationale"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_formal_trace.py
+        section: "(run)"
+        read_type: verify
+        extract: "Gate green: BE-017 still 'tested', conformance-cited IDs 82 -> 81, 5 baselined gaps, no new or stale violations"
+        outcome: ok

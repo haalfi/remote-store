@@ -29,7 +29,6 @@ class TestBackendMetadata:
         assert fi.size == 11
 
     @pytest.mark.spec("BE-017")
-    @pytest.mark.spec("ID-134")
     def test_get_folder_info(self, backend: Backend) -> None:
         _seed(backend, {"fi/a.txt": b"aaa", "fi/b.txt": b"bb"})
         fi = backend.get_folder_info("fi")
@@ -38,7 +37,6 @@ class TestBackendMetadata:
         assert fi.total_size == 5
 
     @pytest.mark.spec("BE-017")
-    @pytest.mark.spec("ID-134")
     def test_get_folder_info_excludes_subdirs(self, backend: Backend) -> None:
         _seed(backend, {"mix/a.txt": b"aaa", "mix/sub/b.txt": b"bb"})
         fi = backend.get_folder_info("mix")
@@ -73,7 +71,6 @@ class TestGetFolderInfoAggregates:
     """
 
     @pytest.mark.spec("BE-017")
-    @pytest.mark.spec("ID-134")
     def test_get_folder_info_file_count_and_total_size(self, backend: Backend) -> None:
         """IsDir ==> file_count == |ChildFiles|, total_size == SumSizes."""
         _seed(backend, {"gfa/a.txt": b"aaa", "gfa/b.txt": b"bb"})
@@ -82,7 +79,6 @@ class TestGetFolderInfoAggregates:
         assert fi.total_size == 5
 
     @pytest.mark.spec("BE-017")
-    @pytest.mark.spec("ID-134")
     def test_get_folder_info_counts_recursive_children(self, backend: Backend) -> None:
         """ChildFiles is the full recursive set: subdirectory files are counted."""
         _seed(backend, {"gfr/a.txt": b"aaa", "gfr/sub/b.txt": b"bb"})

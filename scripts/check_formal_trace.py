@@ -146,13 +146,6 @@ _BASELINE: frozenset[tuple[str, str]] = frozenset(
         #   divergent and excluded, tracked as BK-234. The cross-backend
         #   conformance test is a separate (T) gap surfaced by ID-190.
         (KIND_UNTESTED, "NPR-020"),
-        # -- F2: conformance markers citing an ID with no spec section.
-        #
-        # ID-134 — TestGetFolderInfoAggregates markers cite the backlog ID
-        #   ID-134 (aggregate helpers) rather than a spec section. ID-187's
-        #   backlog line pairs ID-134 with BE-017; the marker should migrate
-        #   to BE-017 when ID-187 lands.
-        (KIND_TEST_BAD_ID, "ID-134"),
     }
 )
 

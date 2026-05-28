@@ -472,7 +472,6 @@ class TestGetFolderInfoAggregates:
     """
 
     @pytest.mark.spec("ASYNC-017")
-    @pytest.mark.spec("ID-134")
     async def test_get_folder_info_file_count_and_total_size(self, async_backend: AsyncBackend) -> None:
         """IsDir ==> file_count == |ChildFiles|, total_size == SumSizes."""
         _require(async_backend, Capability.WRITE)
@@ -482,7 +481,6 @@ class TestGetFolderInfoAggregates:
         assert fi.total_size == 5
 
     @pytest.mark.spec("ASYNC-017")
-    @pytest.mark.spec("ID-134")
     async def test_get_folder_info_counts_recursive_children(self, async_backend: AsyncBackend) -> None:
         """ChildFiles is the full recursive set: subdirectory files are counted."""
         _require(async_backend, Capability.WRITE)
