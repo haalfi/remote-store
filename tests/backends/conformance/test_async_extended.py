@@ -9,9 +9,9 @@ Flat-namespace backends (S3, Azure Blob, HTTP, SQL-blob) have no real
 directory entries and are excluded from error-fidelity tests by
 ``_skip_flat_namespace``. The default async registry holds only hierarchical
 fixtures (``memory_async_native``, ``memory_async_adapted``,
-``local_async_adapted``); the flat-NS async strict variant
-(``azurite_async_strict``, ID-211 review follow-up) is opted into only by
-the file-ancestor test classes via ``include_strict_only=True``.
+``local_async_adapted``, ``dafny_oracle_async``); the flat-NS async strict
+variant (``azurite_async_strict``, ID-211 review follow-up) is opted into
+only by the file-ancestor test classes via ``include_strict_only=True``.
 
 Spec coverage: ASYNC-004, ASYNC-005, ASYNC-006, ASYNC-007, ASYNC-008,
 ASYNC-010, ASYNC-012, ASYNC-013, ASYNC-014, ASYNC-015, ASYNC-016, ASYNC-017,

@@ -5,6 +5,9 @@ source_items:
   - ID-210
 audience:
   - infra.test
+surprising_ripples:
+  - tests/backends/conformance/test_async_extended.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

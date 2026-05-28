@@ -11,7 +11,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 - [x] **ID-210 — Async Dafny oracle: certify async conformance against the verified `MemoryBackend`**
   spec: ASYNC-004, ASYNC-005, ASYNC-006, ASYNC-007, ASYNC-008, ASYNC-010,
   ASYNC-012, ASYNC-013, ASYNC-014, ASYNC-015, ASYNC-016, ASYNC-017, ASYNC-018,
-  ASYNC-019, ASYNC-020, ASYNC-024, ASYNC-029 · audience: infra.test
+  ASYNC-019, ASYNC-020, ASYNC-024, ASYNC-029, ASYNC-047 · audience: infra.test
   Wave 1 (T) test-backfill. Closes the gap spun off from ID-193 close-out:
   the sync conformance suite has parametrised `dafny_oracle` as a peer
   backend since the oracle landed, but the async suite ran only against

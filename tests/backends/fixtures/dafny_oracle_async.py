@@ -14,6 +14,14 @@ with the verified sync oracle keeps both legs honest end-to-end. Native
 async semantics that a ``to_thread``-bridged sync backend cannot express
 (concurrency ordering, mid-await cancellation) are out of scope — see the
 ID-210 backlog "Open question" for the bridged-first rationale.
+
+``cleanup=None`` matches the sibling ``memory_async_adapted`` registration:
+``SyncBackendAdapter.aclose()`` already routes to the wrapped backend's
+``close()`` for fixtures that want it, and ``DafnyOracleBackend`` inherits
+the ``Backend`` ABC's no-op close — so the sync ``dafny_oracle`` cleanup's
+BE-020-idempotency rationale does not transfer here, and reaching into
+``adapter._sync`` from a per-fixture hook would break encapsulation for no
+real teardown obligation.
 """
 
 from __future__ import annotations
@@ -35,24 +43,11 @@ def _factory() -> AsyncBackend:
     return SyncBackendAdapter(DafnyOracleBackend())
 
 
-def _cleanup(backend: AsyncBackend) -> None:
-    """Mirror the sync ``dafny_oracle`` cleanup.
-
-    ``SyncBackendAdapter.aclose`` would call ``DafnyOracleBackend.close()``,
-    but conformance teardown for sync-wrapped async fixtures runs through
-    ``cleanup`` (the adapter exposes no per-sync-close hook). Calling
-    ``close()`` on the wrapped oracle directly exercises BE-020 idempotency
-    on every parametrize iteration, matching the sync ``dafny_oracle``
-    fixture.
-    """
-    backend._sync.close()  # type: ignore[attr-defined]
-
-
 register(
     BackendFixture(
         factory=_factory,
         capabilities=frozenset(DafnyOracleBackend.CAPABILITIES),
-        cleanup=_cleanup,
+        cleanup=None,
         **_meta.to_kwargs(),
     )
 )
