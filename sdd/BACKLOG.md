@@ -655,8 +655,6 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
 ## Formal Verification
 
-*(no active items)*
-
 Dafny-section work earns its slot one of three ways: **(C)** prove a
 spec clause is internally consistent and satisfiable, **(T)** certify
 that a conformance test demands nothing the verified contract does not
@@ -669,6 +667,8 @@ Dafny-section work; file those under the relevant backend section
 
 Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 § "Three shapes of Dafny-section work: (C), (T), (O)".
+
+*(none)*
 
 ---
 
