@@ -138,7 +138,7 @@ Returned by every write method and by `head()`.
 | `etag` | `str \| None` | Backend declares `WRITE_RESULT_NATIVE` |
 | `version_id` | `str \| None` | Backend declares `WRITE_RESULT_NATIVE` (S3 versioning, Azure) |
 | `last_modified` | `datetime \| None` | Backend declares `WRITE_RESULT_NATIVE` |
-| `metadata` | `dict[str, str]` | Echo of caller's `metadata=` input (WR-012) |
+| `metadata` | `dict[str, str]` | Echo of caller's `metadata=` input |
 
 `source` signals where the rich fields came from:
 `NativeSource` = populated from the backend's write response;

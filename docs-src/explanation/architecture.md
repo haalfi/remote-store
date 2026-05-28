@@ -82,8 +82,8 @@ optional extras such as `arrow`, `otel`, or `dagster`.
 See the [Extensions guide](../guides/extensions.md) for the full list and installation
 instructions.
 
-Extensions follow the contract defined in
-[ADR-0008](../../sdd/adrs/0008-extension-architecture.md):
+Extensions follow the [extension architecture
+contract](../../sdd/adrs/0008-extension-architecture.md):
 no singleton state, no global registries, composable with the core Store API.
 
 ## Capability system
@@ -100,8 +100,8 @@ See the [Capabilities Matrix](../reference/capabilities-matrix.md) for the full 
 
 ## Configuration philosophy
 
-Configuration follows strict rules
-([ADR-0002](../../sdd/adrs/0002-config-resolution-no-merge.md)):
+Configuration follows [strict resolution
+rules](../../sdd/adrs/0002-config-resolution-no-merge.md):
 
 1. Config-as-code has absolute priority (TOML, YAML, or dict)
 2. No merging, no overrides, no magic environment variable layering

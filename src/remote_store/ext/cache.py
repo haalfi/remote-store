@@ -77,7 +77,7 @@ class CacheStats:
 
 @runtime_checkable
 class CacheBackend(Protocol):
-    """Protocol for pluggable cache backends (CACHE-001).
+    """Protocol for pluggable cache backends.
 
     Implement this protocol to provide a custom cache backend to
     ``cache(store, cache_backend=my_backend)``. The default implementation
@@ -201,9 +201,9 @@ class MemoryCache:
 def _delete_path_and_ancestors(cache: CacheBackend, path: str) -> None:
     """Delete per-path cache entries for *path* and all ancestor directories.
 
-    Fixes BUG-137: writing ``dir/file.txt`` implicitly creates ``dir``, so
-    cached ``exists``/``is_folder``/``is_file`` entries for ``dir`` must also
-    be invalidated.
+    Writing ``dir/file.txt`` implicitly creates ``dir``, so cached
+    ``exists`` / ``is_folder`` / ``is_file`` entries for ``dir`` must
+    also be invalidated.
     """
     for op in _PATH_PREFIXES:
         cache.delete((op, path))

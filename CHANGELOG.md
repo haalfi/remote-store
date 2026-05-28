@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- **BK-246 — Strip internal tracker IDs from published docstrings and `docs-src/`; add lint gate**
 - **ID-211 — write-under-file HEAD pre-check for flat-namespace backends**
 - **ID-209 — `fs` well-formedness as a `Backend` class invariant + write-under-file conformance gate**
 

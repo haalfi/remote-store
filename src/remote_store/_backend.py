@@ -208,11 +208,12 @@ class Backend(abc.ABC):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or if an ancestor of
-                *path* is a regular file (ID-209; see spec 003 § BE-008).
-                Flat-namespace backends (S3, Azure non-HNS, SQL) cannot
-                detect a file-ancestor in O(1) and skip this case — see
-                ID-211.
+            InvalidPath: If *path* names a directory, or if any slash-aligned
+                ancestor of *path* exists as a regular file. Flat-namespace
+                backends (S3, Azure non-HNS, SQL) cannot detect a file
+                ancestor in O(1) and skip the check by default; the
+                per-backend ``reject_write_under_file_ancestor`` opt-in
+                enables it.
         """
 
     @abc.abstractmethod
@@ -238,9 +239,8 @@ class Backend(abc.ABC):
         Raises:
             CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or if an ancestor of
-                *path* is a regular file (ID-209; see ``write`` and spec
-                003 § BE-008).
+            InvalidPath: If *path* names a directory, or if any slash-aligned
+                ancestor of *path* exists as a regular file (see ``write``).
         """
 
     @abc.abstractmethod
@@ -256,9 +256,8 @@ class Backend(abc.ABC):
 
         Raises:
             AlreadyExists: If *path* exists and *overwrite* is ``False``.
-            InvalidPath: If *path* names a directory, or if an ancestor of
-                *path* is a regular file (ID-209; see ``write`` and spec
-                003 § BE-008).
+            InvalidPath: If *path* names a directory, or if any slash-aligned
+                ancestor of *path* exists as a regular file (see ``write``).
             CapabilityNotSupported: If the backend lacks ``ATOMIC_WRITE``.
         """
 
@@ -368,9 +367,8 @@ class Backend(abc.ABC):
 
         Raises:
             NotFound: If ``src`` does not exist.
-            InvalidPath: If ``src`` or ``dst`` names a directory, or if an
-                ancestor of ``dst`` is a regular file (ID-209; see spec
-                003 § BE-018).
+            InvalidPath: If ``src`` or ``dst`` names a directory, or if any
+                slash-aligned ancestor of ``dst`` exists as a regular file.
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
 
@@ -387,9 +385,8 @@ class Backend(abc.ABC):
 
         Raises:
             NotFound: If ``src`` does not exist.
-            InvalidPath: If ``src`` or ``dst`` names a directory, or if an
-                ancestor of ``dst`` is a regular file (ID-209; see spec
-                003 § BE-019).
+            InvalidPath: If ``src`` or ``dst`` names a directory, or if any
+                slash-aligned ancestor of ``dst`` exists as a regular file.
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
 

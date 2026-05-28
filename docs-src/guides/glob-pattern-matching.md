@@ -4,7 +4,7 @@ The `ext.glob` module provides portable pattern matching for file listing
 across all backends. For simple name-based filtering, use
 `Store.list_files(pattern=...)` directly — it works with every backend.
 
-Three tiers of pattern matching are available (ADR-0009):
+Three [tiers of pattern matching](../../sdd/adrs/0009-glob-three-tier-design.md) are available:
 
 1. **`list_files(pattern=...)`** — `fnmatch` name filtering at the Store level
 2. **`Store.glob(pattern)`** — native backend glob, capability-gated

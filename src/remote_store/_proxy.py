@@ -4,8 +4,6 @@ Centralizes delegation boilerplate, private-attribute coupling, and
 ``child()`` propagation for proxy wrappers like ``ObservedStore`` and
 ``CachedStore``.  Subclass ``ProxyStore`` to build custom Store
 middleware — override only the methods you want to intercept.
-
-See ADR-0014 for the design rationale.
 """
 
 from __future__ import annotations

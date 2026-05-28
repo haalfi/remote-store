@@ -1,19 +1,19 @@
-"""Shared file-ancestor pre-check for flat-namespace backends (ID-211).
+"""Shared file-ancestor pre-check for flat-namespace backends.
 
 Hierarchical backends (Local, SFTP, Memory) detect a file-ancestor path on
 ``write`` / ``move`` / ``copy`` for free because their native APIs cannot
 descend through a regular-file path component (``parent.mkdir`` raises
 ``NotADirectoryError``; ``sftp.mkdir`` raises ``ENOTDIR``). Flat-namespace
 backends (S3, Azure non-HNS, SQLBlob) need an extra round trip per
-slash-aligned ancestor to spot the case. ID-209 left this exempt; ID-211
-ships the pre-check behind an opt-in client kwarg so callers that need the
-cross-backend ``InvalidPath`` promise can pay for it explicitly.
+slash-aligned ancestor to spot the case. The pre-check is offered behind
+an opt-in client kwarg so callers that need the cross-backend
+``InvalidPath`` promise can pay for it explicitly.
 
 This module is the shared shape: every flat-NS backend constructs a
 backend-specific ``head_one`` callable (``head_object`` on S3,
 ``get_blob_properties`` on Azure, ``SELECT 1`` on SQLBlob) and threads it
-through the same walk. The walk skips on no-slash paths -- the
-user-nominated optimisation that collapses the cost to nested-path writes.
+through the same walk. The walk skips on no-slash paths, so the cost is
+only paid for nested-path writes.
 
 Two contracts the call sites rely on:
 
@@ -80,7 +80,7 @@ def _check_no_file_ancestor(
     ``head_one`` returns ``True`` iff the given key exists as a regular
     file on the backend. The walk short circuits on the first file
     ancestor; a path with no slash returns immediately without any
-    backend calls (the no-slash early exit described in ID-211).
+    backend calls.
 
     The cost is O(N) backend round trips for a depth-N path with no
     file-ancestor hit. The opt-in kwarg on each flat-NS backend gates

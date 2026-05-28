@@ -77,14 +77,14 @@ class AsyncAzureBackend(AsyncBackend):
             ``write_atomic`` / ``move`` / ``copy`` HEAD each
             slash-aligned ancestor of the target path on non-HNS
             accounts and raise ``InvalidPath`` on the first regular-file
-            hit. On HNS accounts the kwarg short-circuits: ``hdi_isfolder``
-            rejects the operation natively, **but** until ID-213 / BK-235
-            lands that native rejection surfaces as ``NotFound`` or
-            ``AlreadyExists`` rather than ``InvalidPath``. The
-            cross-backend ``InvalidPath`` contract the kwarg promises is
-            therefore *deferred* on HNS, not delivered — even when set.
-            Default ``False``. See spec 003 § BE-008 / spec 029 §
-            ASYNC-008 and ID-211.
+            hit, matching the cross-backend contract that hierarchical
+            filesystems enforce natively. On HNS accounts the kwarg
+            short-circuits: ``hdi_isfolder`` rejects the operation
+            natively, but that native rejection currently surfaces as
+            ``NotFound`` or ``AlreadyExists`` rather than ``InvalidPath``.
+            The cross-backend ``InvalidPath`` contract the kwarg promises
+            is therefore *deferred* on HNS, not delivered — even when set.
+            Default ``False``.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
@@ -139,10 +139,10 @@ class AsyncAzureBackend(AsyncBackend):
 
     # endregion
 
-    # region: private — file-ancestor pre-check (ID-211 opt-in)
+    # region: private — file-ancestor pre-check (opt-in)
 
     async def _maybe_check_no_file_ancestor(self, path: str) -> None:
-        """Async sibling of ``AzureBackend._maybe_check_no_file_ancestor`` (ID-211)."""
+        """Async sibling of ``AzureBackend._maybe_check_no_file_ancestor``."""
         if not self._reject_write_under_file_ancestor:
             return
         if await self._ensure_hns():

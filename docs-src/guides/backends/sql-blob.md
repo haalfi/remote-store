@@ -121,7 +121,7 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
   which require complete data in a single statement. For files larger than
   process memory, use a blob-storage backend (S3, Local, Azure) instead.
 - `write_atomic()` delegates to `write()` — single SQL statements are inherently atomic.
-- `glob()` uses SQL-side narrowing (SQLite `GLOB` or `LIKE`) then client-side regex to enforce standard glob semantics (GLOB-014).
+- `glob()` uses SQL-side narrowing (SQLite `GLOB` or `LIKE`) then client-side regex to enforce standard glob semantics.
 
 ## SQLite Optimizations
 

@@ -1,0 +1,255 @@
+id: BK-246
+title: "Strip internal tracker IDs from published docstrings and docs-src/; add lint gate"
+trigger: >
+  User found that the kwarg description for S3Backend.__init__ (landed in
+  PR #686 / ID-211) read "closing the ID-209 cross-backend gap … See
+  spec 003 § BE-008 and ID-211" verbatim in the rendered API reference,
+  and asked for an audit of every similar leak across the public
+  docstring and docs-site surface. The audit on this branch found 178
+  leak sites across 24 files; the user then directed implementation.
+  Originally filed as BK-243; renumbered to BK-246 after PR #689
+  (ID-188) took BK-243, BK-244, and BK-245 for unrelated work during
+  this branch's review window.
+source_items:
+  - BK-246
+audience:
+  - user.api_docs
+  - contributor.process
+  - contributor.tooling
+discovery_followups: []
+co_shipped_items: []
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - sdd/CLAUDE-REFERENCE.md
+  - CHANGELOG.md
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+  - docs-src/reference/tested-versions.md
+surprising_ripples:
+  - scripts/drift_check.py
+  # Review (PR #690) round 1: the structural-regex pivot uncovered nine
+  # leak sites the original enumerated regex missed -- new files the
+  # audit had not anticipated.
+  - src/remote_store/ext/write.py
+  - src/remote_store/aio/ext/write.py
+  - docs-src/guides/backends/s3.md
+  - docs-src/guides/backends/sql-blob.md
+  # The new TestSpecPrefixDiscovery test that sweeps sdd/specs/*.md to
+  # assert every active prefix is flagged.
+  - tests/scripts/test_check_no_tracker_refs.py
+  # Review round 2: a "Possible Consistency" finding restored a richer
+  # summary on _validate_metadata that mirrors the public Store.write
+  # metadata contract -- the audit had originally simplified the
+  # docstring past what the public contract enforces.
+  - src/remote_store/_store.py
+  # Review round 2: restored a "_ensure_parent_dirs docstring claims X,
+  # code does Y" technical caveat as an inline `#` comment (kept out
+  # of the gate's scope deliberately).
+  - src/remote_store/backends/_sftp.py
+review_rounds: 2
+phases:
+  - id: audit
+    name: Audit
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules (1, 5)"
+        read_type: gate
+        extract: "6-month test and source-code-facts-stay-in-source rules"
+      - file: sdd/AUTHORING.md
+        section: "Classification markers, Directory defaults"
+        read_type: reference
+        extract: "Which files are dual vs repo-only; which surfaces reach users"
+      - file: sdd/DOCUMENTATION.md
+        section: "Content homes"
+        read_type: reference
+        extract: "Which trees are user-facing (docs-src, README, FEATURES, CONTRIBUTING)"
+      - file: src/remote_store/_async_to_sync_adapter.py
+        section: "(full)"
+        read_type: reference
+        extract: "Heaviest leaker — every method docstring cites ASYNC-NNN / spec 029"
+      - file: src/remote_store/ext/dagster.py
+        section: "(full)"
+        read_type: reference
+        extract: "Second-heaviest — every serializer/IO-manager docstring cites DAG-NNN"
+  - id: design
+    name: Design
+    steps:
+      - file: scripts/check_links.py
+        section: "(full)"
+        read_type: reference
+        extract: "Existing dual-rule lint script as structural reference for the new gate"
+      - file: tests/scripts/test_check_rst_roles.py
+        section: "(full)"
+        read_type: reference
+        extract: "Existing pattern-and-scanner test layout to mirror"
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/check_no_tracker_refs.py
+        section: "(full)"
+        read_type: gate
+        extract: "New lint gate: ast-extracted docstrings + markdown text scan with line-allowlist masking"
+      - file: tests/scripts/test_check_no_tracker_refs.py
+        section: "(full)"
+        read_type: gate
+        extract: "32 tests covering patterns, allowlist, Python/markdown scanners, comment carve-out, and integration guard against real repo"
+      - file: src/remote_store/_backend.py
+        section: "write, write_atomic, open_atomic, move, copy Raises"
+        read_type: gate
+        extract: "Rewrite file-ancestor InvalidPath clause as behaviour, drop ID-209/spec 003 § BE-NNN refs"
+      - file: src/remote_store/aio/_async_backend.py
+        section: "write, write_atomic, move, copy Raises"
+        read_type: gate
+        extract: "Same rewrite on the async ABC"
+      - file: src/remote_store/_store.py
+        section: "Store.move, Store.copy, _validate_metadata"
+        read_type: gate
+        extract: "Drop BE-018/BE-019/BE-021/WR-011 trailers"
+      - file: src/remote_store/aio/_async_store.py
+        section: "AsyncStore.move, AsyncStore.copy"
+        read_type: gate
+        extract: "Same as sync Store"
+      - file: src/remote_store/_async_to_sync_adapter.py
+        section: "module, AsyncBackendSyncAdapter, _ChunkPullReader, _AsyncIteratorBridge, _SpoolAndFlush"
+        read_type: gate
+        extract: "Strip every ASYNC-NNN / spec 029 / ADR-0025 reference from docstrings; keep behavioural text"
+      - file: src/remote_store/backends/_s3.py
+        section: "S3Backend.__init__"
+        read_type: gate
+        extract: "Rewrite reject_write_under_file_ancestor kwarg prose as cross-backend contract + cost trade-off"
+      - file: src/remote_store/backends/_s3_pyarrow.py
+        section: "S3PyArrowBackend.__init__, readline docstring"
+        read_type: gate
+        extract: "Same kwarg rewrite; drop RFC-0003 reference from readline()"
+      - file: src/remote_store/backends/_azure.py
+        section: "AzureBackend.__init__, _maybe_check_no_file_ancestor"
+        read_type: gate
+        extract: "Rewrite HNS-deferred-contract caveat without ID-213/BK-235 refs"
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "AsyncAzureBackend.__init__, _maybe_check_no_file_ancestor"
+        read_type: gate
+        extract: "Same rewrite on async sibling"
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend.__init__, _maybe_check_no_file_ancestor"
+        read_type: gate
+        extract: "Same kwarg rewrite; drop BK-242 follow-up reference"
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "module + _check_no_file_ancestor + _acheck_no_file_ancestor"
+        read_type: gate
+        extract: "Strip ID-209/ID-211 from module and function docstrings; keep behaviour"
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_maybe_check_no_file_ancestor, _build_s3fs_kwargs"
+        read_type: gate
+        extract: "Drop opt-in ID label; rewrite BUG-178/BUG-185 narrative"
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor, _ensure_parent_dirs"
+        read_type: gate
+        extract: "Drop ID-209/ID-212 docstring references"
+      - file: src/remote_store/aio/backends/_memory.py
+        section: "AsyncMemoryBackend Note"
+        read_type: gate
+        extract: "Drop ID-162 reference"
+      - file: src/remote_store/_capabilities.py
+        section: "Capability docstring"
+        read_type: gate
+        extract: "Drop SIO-009 and WR-005/WR-012 references"
+      - file: src/remote_store/_proxy.py
+        section: "module docstring"
+        read_type: gate
+        extract: "Drop ADR-0014 reference"
+      - file: src/remote_store/ext/__init__.py
+        section: "module docstring"
+        read_type: gate
+        extract: "Drop ADR-0008/ADR-0013 references"
+      - file: src/remote_store/ext/cache.py
+        section: "_delete_path_and_ancestors"
+        read_type: gate
+        extract: "Drop BUG-137 reference"
+      - file: src/remote_store/ext/dagster.py
+        section: "every docstring"
+        read_type: gate
+        extract: "29 leak sites stripped — serializer protocol, three built-in serializers, path helpers, both internal IO managers, both factory functions, DagsterStoreResource, RemoteStoreIOManager, and every RemoteStoreComputeLogManager method docstring"
+      - file: CONTRIBUTING.md
+        section: "Adding an Extension, drift-guard floor bumping"
+        read_type: gate
+        extract: "Drop ADR-0008 link text and BUG-204 reference"
+      - file: FEATURES.md
+        section: "WriteResult fields"
+        read_type: gate
+        extract: "Drop WR-012 from metadata-column note"
+      - file: docs-src/explanation/architecture.md
+        section: "Extension contract, Configuration philosophy"
+        read_type: gate
+        extract: "Drop ADR-0008 and ADR-0002 link text"
+      - file: docs-src/explanation/graph-ir.md
+        section: "(intro)"
+        read_type: gate
+        extract: "Drop RFC-0012 link text"
+      - file: docs-src/guides/async-sync-bridges.md
+        section: "See also"
+        read_type: gate
+        extract: "Drop ADR-0025 / spec 029 / ASYNC-080…093 link text"
+      - file: docs-src/guides/backends/azure-hns-setup.md
+        section: "(live HNS notes)"
+        read_type: gate
+        extract: "Drop BUG-202 from the streaming guard reference"
+      - file: docs-src/guides/extensions.md
+        section: "Extension Guarantees"
+        read_type: gate
+        extract: "Drop ADR-0008/ADR-0013 from contract header"
+      - file: docs-src/guides/glob-pattern-matching.md
+        section: "(intro)"
+        read_type: gate
+        extract: "Drop ADR-0009 from tier list intro"
+      - file: docs-src/index.md
+        section: "Inline-block HTML comment"
+        read_type: gate
+        extract: "Drop ID-057 from the snippet-source HTML comment"
+      - file: docs-src/reference/api/aio.md
+        section: "AsyncBackendSyncAdapter intro"
+        read_type: gate
+        extract: "Drop ADR-0025 link text"
+      - file: docs-src/reference/api/proxy.md
+        section: "(intro)"
+        read_type: gate
+        extract: "Drop ADR-0014/ADR-0015 link text"
+      - file: docs-src/reference/migration.md
+        section: "every version-bump heading"
+        read_type: gate
+        extract: "Strip BK-/ID-/BUG-/ADR-/CFG- ID suffixes from twelve breaking-change headings"
+      - file: scripts/drift_check.py
+        section: "tested-versions.md generator template"
+        read_type: gate
+        extract: "Drop ID-182 from the generated drift-guard description so docs-src/reference/tested-versions.md regenerates clean"
+  - id: wire
+    name: Wire
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint"
+        read_type: gate
+        extract: "Append check_no_tracker_refs.py to the lint array"
+      - file: .github/workflows/ci.yml
+        section: "lint job"
+        read_type: gate
+        extract: "Add check_no_tracker_refs.py step to the lint workflow"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Docs"
+        read_type: reference
+        extract: "Ripple-check row added in the BK filing commit already; no further edits"
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_no_tracker_refs.py
+        section: "main"
+        read_type: verify
+        extract: "Gate reports 0 violations across all in-scope surfaces"
+      - file: tests/scripts/test_check_no_tracker_refs.py
+        section: "TestMain.test_real_repo_is_clean"
+        read_type: verify
+        extract: "Integration test passes — real repo has zero leaks"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG-DONE entry, CHANGELOG stub, trace, backlogid.json regen, graph regen all done"

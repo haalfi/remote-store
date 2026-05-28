@@ -8,13 +8,13 @@ changes that require action when upgrading.
 
 ## v0.24.1 to v0.25.0
 
-**`[sftp]` extra now requires `paramiko>=3.0` (BUG-204):**
+**`[sftp]` extra now requires `paramiko>=3.0`:**
 
 The SFTP backend uses paramiko 3.0's `channel_timeout=` connect kwarg. Environments
 pinned to `paramiko<3` must upgrade. `pip install "remote-store[sftp]"` resolves the
 correct version automatically; pinned `paramiko==2.x` will now conflict.
 
-**Azure HNS error types now match the canonical mapping (BUG-190 through BUG-203, BUG-213):**
+**Azure HNS error types now match the canonical mapping:**
 
 On real ADLS Gen2 (Hierarchical Namespace) accounts, many `AzureBackend` and
 `AsyncAzureBackend` operations previously raised the wrong error type when the path
@@ -39,7 +39,7 @@ clauses will no longer fire on HNS:
 Flat-namespace blob accounts (non-HNS) and Azurite were already correct and are
 unaffected. Sync and async siblings behave identically.
 
-**`Store.move(p, p)` / `copy(p, p)` self-op error type (BK-227):**
+**`Store.move(p, p)` / `copy(p, p)` self-op error type:**
 
 Across all backends, `Store.move` / `copy` and `AsyncStore.move` / `copy` now raise
 `InvalidPath` (was `NotFound`) when the source path is a directory and `src == dst`.
@@ -54,7 +54,7 @@ to `test-cov-strict`.
 
 ## v0.24.0 to v0.24.1
 
-**S3 botocore Config options route through `config_kwargs` (BUG-185):**
+**S3 botocore Config options route through `config_kwargs`:**
 
 Pre-built `botocore.config.Config` objects are no longer accepted in
 `client_options["client_kwargs"]`. Pass the same constructor kwargs through
@@ -69,7 +69,7 @@ The new "Botocore Client Tuning" section in `docs-src/guides/backends/s3.md`
 documents proxies, retries, timeouts, and MinIO path-style addressing with
 runnable snippets. Applies to both `S3Backend` and `S3PyArrowBackend`.
 
-**Custom backends must declare `CAPABILITIES: ClassVar[CapabilitySet]` (ID-159):**
+**Custom backends must declare `CAPABILITIES: ClassVar[CapabilitySet]`:**
 
 If you maintain a custom `Backend` or `AsyncBackend` subclass, add a
 class-level `CAPABILITIES` attribute exposing the capability set without
@@ -81,7 +81,7 @@ the ClassVar is required for static extraction.
 
 ## v0.20.0 to v0.21.0
 
-**`ParquetSerializer.deserialize()` returns Arrow Table (BUG-135):**
+**`ParquetSerializer.deserialize()` returns Arrow Table:**
 
 `ParquetSerializer.deserialize()` now returns a `pyarrow.Table` instead of a
 `pandas.DataFrame`. This removes the hidden hard dependency on pandas for
@@ -98,7 +98,7 @@ the base class already returns a framework-neutral Arrow Table.
 
 ## v0.19.0 to v0.20.0
 
-**Deprecated aliases removed (BK-130):**
+**Deprecated aliases removed:**
 
 Three factory functions renamed in v0.18.0 have had their old names removed:
 
@@ -110,7 +110,7 @@ Pre-v1: removed without a deprecation cycle. Find-and-replace is sufficient.
 
 ## v0.18.0 to v0.19.0
 
-**Factory function renames (BK-010):**
+**Factory function renames:**
 
 Three ext factory functions were renamed for naming consistency.
 Old names emitted `DeprecationWarning` in v0.18.x and are removed after
@@ -122,7 +122,7 @@ v0.19.0 (see [above](#v0190-to-v0200)).
 
 ## v0.17.0 to v0.18.0
 
-**Extension imports moved (ADR-0013):**
+**Extension imports moved:**
 
 Optional-dependency extensions are no longer re-exported from
 `remote_store.__init__`. Import them directly from their extension module:
@@ -159,7 +159,7 @@ exported from `remote_store.__init__`.
 
 - `RegistryConfig.from_toml()` and `from_yaml()` are new. Existing
   `from_dict()` usage continues to work unchanged.
-- `from_dict()` now warns on unknown keys (CFG-012). If you were passing
+- `from_dict()` now warns on unknown keys. If you were passing
   extra keys silently, you will see warnings. Remove the unknown keys or
   suppress the warning.
 

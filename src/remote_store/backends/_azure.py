@@ -202,15 +202,16 @@ class AzureBackend(Backend):
             ``write_atomic`` / ``open_atomic`` / ``move`` / ``copy`` HEAD
             each slash-aligned ancestor of the target path on non-HNS
             accounts and raise ``InvalidPath`` on the first regular-file
-            hit. On HNS accounts the kwarg short-circuits: ``hdi_isfolder``
-            rejects the operation natively, **but** until ID-213 / BK-235
-            lands that native rejection surfaces as ``NotFound`` or
-            ``AlreadyExists`` rather than ``InvalidPath``. The
-            cross-backend ``InvalidPath`` contract the kwarg promises is
-            therefore *deferred* on HNS, not delivered — even when set.
-            Default ``False``: closes the ID-209 cross-backend gap for
-            flat-namespace Azure but adds one HEAD per ancestor per
-            nested-path write. See spec 003 § BE-008 and ID-211.
+            hit, matching the cross-backend contract that hierarchical
+            filesystems enforce natively. On HNS accounts the kwarg
+            short-circuits: ``hdi_isfolder`` rejects the operation
+            natively, but that native rejection currently surfaces as
+            ``NotFound`` or ``AlreadyExists`` rather than ``InvalidPath``.
+            The cross-backend ``InvalidPath`` contract the kwarg promises
+            is therefore *deferred* on HNS, not delivered — even when set.
+            Default ``False``: enabling the check adds one HEAD per
+            ancestor per nested-path write; paths without slashes
+            short-circuit.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
@@ -262,10 +263,10 @@ class AzureBackend(Backend):
 
     # endregion
 
-    # region: private — file-ancestor pre-check (ID-211 opt-in)
+    # region: private — file-ancestor pre-check (opt-in)
 
     def _maybe_check_no_file_ancestor(self, path: str) -> None:
-        """ID-211 opt-in: walk slash-aligned ancestors and reject on file hit.
+        """Walk slash-aligned ancestors and reject on file hit, if the opt-in is set.
 
         Default-off. HNS accounts already reject via ``hdi_isfolder`` in
         the existing write path; this walk fires only when the user

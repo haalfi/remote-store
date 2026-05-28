@@ -93,7 +93,10 @@ module raises a `ModuleNotFoundError` with installation instructions.
 
 ## Extension Guarantees
 
-All extensions follow the same contract (ADR-0008, ADR-0013):
+All extensions follow the same contract — see the
+[extension architecture](../../sdd/adrs/0008-extension-architecture.md)
+and [optional-extension export rules](../../sdd/adrs/0013-drop-optional-extension-reexports.md)
+ADRs for the rationale:
 
 - **Public API only** — extensions use only the public Store / Backend
   API.  They never access private internals.

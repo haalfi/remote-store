@@ -100,7 +100,7 @@ __all__ = [
 
 @runtime_checkable
 class Serializer(Protocol):
-    """Protocol for pluggable serializers (DAG-001).
+    """Protocol for pluggable serializers.
 
     Implement this to provide a custom serializer to
     ``dagster_io_manager(store, serializer=my_serializer)``.
@@ -121,7 +121,7 @@ class Serializer(Protocol):
 
 
 class PickleSerializer:
-    """Pickle-based serializer (DAG-002). Universal; opaque format."""
+    """Pickle-based serializer. Universal; opaque format."""
 
     extension: str = ".pkl"
 
@@ -135,7 +135,7 @@ class PickleSerializer:
 
 
 class JsonSerializer:
-    """JSON serializer (DAG-003). JSON-serializable objects only."""
+    """JSON serializer. JSON-serializable objects only."""
 
     extension: str = ".json"
 
@@ -149,7 +149,7 @@ class JsonSerializer:
 
 
 class ParquetSerializer:
-    """Parquet serializer via PyArrow (DAG-004). DataFrames and Arrow Tables."""
+    """Parquet serializer via PyArrow. DataFrames and Arrow Tables."""
 
     extension: str = ".parquet"
 
@@ -228,7 +228,7 @@ def _asset_path(
     *,
     partition_key: str | None = None,
 ) -> str:
-    """Derive storage path from asset key and partition (DAG-005, DAG-006, DAG-020).
+    """Derive storage path from asset key and partition.
 
     Path is ``"/".join(asset_key.path)`` plus ``"/" + partition_key`` when
     partitioned, plus the file extension.
@@ -278,7 +278,7 @@ class _RemoteStoreIOManagerImpl(IOManager):  # type: ignore[misc]
         self._serializer = serializer
 
     def handle_output(self, context: OutputContext, obj: Any) -> None:
-        """Serialize and write obj to the Store (DAG-007)."""
+        """Serialize and write obj to the Store."""
         path = _asset_path(context, self._serializer.extension)
         data = self._serializer.serialize(obj)
         self._store.write(path, data, overwrite=True)
@@ -286,7 +286,7 @@ class _RemoteStoreIOManagerImpl(IOManager):  # type: ignore[misc]
         log.debug("Wrote %d bytes to %s", len(data), path)
 
     def load_input(self, context: InputContext) -> Any:
-        """Read and deserialize from the Store (DAG-008, DAG-020).
+        """Read and deserialize from the Store.
 
         When the input context carries multiple partition keys (e.g. a
         time-window aggregation), returns ``dict[str, Any]`` mapping each
@@ -338,7 +338,7 @@ class _DatasetIOManagerImpl(IOManager):  # type: ignore[misc]
         log.debug("Wrote dataset to %s", key)
 
     def load_input(self, context: InputContext) -> Any:
-        """Read a Parquet dataset from the Store (DAG-020).
+        """Read a Parquet dataset from the Store.
 
         When the input context carries multiple partition keys, returns
         ``dict[str, Any]`` mapping each partition key to its Arrow Table.
@@ -367,7 +367,7 @@ def dagster_io_manager(
     *,
     serializer: str | Serializer = "pickle",
 ) -> IOManager:  # type: ignore[type-arg]
-    """Wrap a Store as a Dagster IOManager (DAG-011).
+    """Wrap a Store as a Dagster IOManager.
 
     Args:
         store: An existing Store instance. The caller owns its lifecycle —
@@ -386,7 +386,7 @@ def dagster_io_manager(
 
 
 def dagster_dataset_io_manager(store: Store) -> IOManager:  # type: ignore[type-arg]
-    """Wrap a Store as a Dagster IOManager using ParquetDatasetStore (DAG-017).
+    """Wrap a Store as a Dagster IOManager using ParquetDatasetStore.
 
     Unlike ``dagster_io_manager`` which serializes objects to single files,
     this manager writes Parquet datasets (multi-file with manifest) via
@@ -411,8 +411,8 @@ def _build_store(backend_type: str, backend_options: dict[str, Any], root_path: 
 
     Credential-named options (the ``_SENSITIVE_KEYS`` set shared with
     ``RegistryConfig._from_dict``) are wrapped in ``Secret`` before reaching
-    the backend constructor, so they are masked in ``repr()`` and tracebacks
-    (DAG-033). The caller's *backend_options* mapping is copied, never mutated.
+    the backend constructor, so they are masked in ``repr()`` and tracebacks.
+    The caller's *backend_options* mapping is copied, never mutated.
 
     Raises:
         ValueError: If *backend_type* is not registered, or if the backend
@@ -457,11 +457,11 @@ def _close_store(store: Store | None) -> None:
 
 
 class DagsterStoreResource(ConfigurableResource):  # type: ignore[misc,type-arg]
-    """Dagster resource that constructs a Store from config fields (DAG-012).
+    """Dagster resource that constructs a Store from config fields.
 
-    Unlike stateless utility extensions (ADR-0008), this class owns Store
-    lifecycle because it is a Dagster Resource with ``setup_for_execution``
-    / ``teardown_after_execution`` hooks.
+    Unlike stateless utility extensions, this class owns Store lifecycle
+    because it is a Dagster Resource with ``setup_for_execution`` /
+    ``teardown_after_execution`` hooks.
 
     Attributes:
         backend_type: Backend type string (e.g. ``"local"``, ``"s3"``, ``"memory"``).
@@ -506,7 +506,7 @@ class DagsterStoreResource(ConfigurableResource):  # type: ignore[misc,type-arg]
 
 
 class RemoteStoreIOManager(ConfigurableIOManagerFactory):  # type: ignore[misc,type-arg]
-    """IO manager factory that constructs a Store from config fields (DAG-015).
+    """IO manager factory that constructs a Store from config fields.
 
     Embeds backend configuration directly so the IO manager owns the full
     Store lifecycle (setup and teardown). For direct Store access in assets,
@@ -570,7 +570,7 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
     TruncatingCloudStorageComputeLogManager,
     ConfigurableClass,
 ):
-    """Captures op/step ``stdout`` / ``stderr`` to any remote-store backend (DAG-021 – DAG-033).
+    """Captures op/step ``stdout`` / ``stderr`` to any remote-store backend.
 
     A Dagster ``ComputeLogManager`` wired into ``dagster.yaml`` as an instance
     component. Logs are captured to a local staging directory at the
@@ -665,7 +665,7 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
 
     @classmethod
     def config_type(cls) -> dict[str, Any]:
-        """The ``dagster.yaml`` config schema for this manager (DAG-021)."""
+        """The ``dagster.yaml`` config schema for this manager."""
         return {
             "backend_type": StringSource,
             "backend_options": Field(Permissive(), is_required=False),
@@ -680,7 +680,7 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
     def from_config_value(
         cls, inst_data: ConfigurableClassData | None, config_value: Mapping[str, Any]
     ) -> RemoteStoreComputeLogManager:
-        """Construct a manager from a validated ``dagster.yaml`` config value (DAG-021)."""
+        """Construct a manager from a validated ``dagster.yaml`` config value."""
         return cls(inst_data=inst_data, **config_value)
 
     # -- Inherited-behaviour properties (DAG-023) ---------------------------
@@ -698,7 +698,7 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
     # -- Remote path scheme (DAG-024) ---------------------------------------
 
     def _store_path(self, log_key: Sequence[str], io_type: ComputeIOType, partial: bool = False) -> str:
-        """Derive the Store-relative path for one captured log stream (DAG-024)."""
+        """Derive the Store-relative path for one captured log stream."""
         *namespace, filebase = log_key
         filename = f"{filebase}.{IO_TYPE_EXTENSION[io_type]}"
         if partial:
@@ -708,7 +708,7 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
         return "/".join(segments)
 
     def _store_folder(self, log_key_prefix: Sequence[str]) -> str:
-        """Derive the Store-relative folder for a log-key prefix (DAG-024)."""
+        """Derive the Store-relative folder for a log-key prefix."""
         return "/".join(seg for seg in (self._prefix, "storage", *log_key_prefix) if seg)
 
     # -- Cloud-storage hooks (DAG-025 – DAG-028) ----------------------------
@@ -716,7 +716,7 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
     def _upload_file_obj(
         self, data: IO[bytes], log_key: Sequence[str], io_type: ComputeIOType, partial: bool = False
     ) -> None:
-        """Upload a captured local log file to the Store (DAG-025)."""
+        """Upload a captured local log file to the Store."""
         local_path = self._local_manager.get_captured_local_path(log_key, IO_TYPE_EXTENSION[io_type])
         if (self._skip_empty_files or partial) and os.stat(local_path).st_size == 0:
             return
@@ -729,7 +729,7 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
     def download_from_cloud_storage(
         self, log_key: Sequence[str], io_type: ComputeIOType, partial: bool = False
     ) -> None:
-        """Stream a log object from the Store into the local staging file (DAG-026)."""
+        """Stream a log object from the Store into the local staging file."""
         local_path = self._local_manager.get_captured_local_path(log_key, IO_TYPE_EXTENSION[io_type], partial=partial)
         ensure_dir(os.path.dirname(local_path))
         store_path = self._store_path(log_key, io_type, partial=partial)
@@ -737,25 +737,25 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
             shutil.copyfileobj(src, dst)
 
     def cloud_storage_has_logs(self, log_key: Sequence[str], io_type: ComputeIOType, partial: bool = False) -> bool:
-        """Return whether the Store holds a log object for this key (DAG-027)."""
+        """Return whether the Store holds a log object for this key."""
         return self._store.is_file(self._store_path(log_key, io_type, partial=partial))
 
     def display_path_for_type(  # type: ignore[override]  # base hint is `str`; `None` until capture completes (matches S3ComputeLogManager)
         self, log_key: Sequence[str], io_type: ComputeIOType
     ) -> str | None:
-        """A human-readable Store location for the Dagster UI, once capture is done (DAG-028)."""
+        """A human-readable Store location for the Dagster UI, once capture is done."""
         if not self.is_capture_complete(log_key):
             return None
         return self._store.native_path(self._store_path(log_key, io_type))
 
     def download_url_for_type(self, log_key: Sequence[str], io_type: ComputeIOType) -> str | None:
-        """No signed-URL primitive in v1 — the webserver streams logs itself (DAG-028)."""
+        """No signed-URL primitive in v1 — the webserver streams logs itself."""
         return None
 
     # -- Deletion and enumeration (DAG-029, DAG-031) ------------------------
 
     def delete_logs(self, log_key: Sequence[str] | None = None, prefix: Sequence[str] | None = None) -> None:
-        """Delete captured logs by ``log_key`` or by ``prefix``, local and remote (DAG-029).
+        """Delete captured logs by ``log_key`` or by ``prefix``, local and remote.
 
         Raises:
             CheckError: If neither *log_key* nor *prefix* is given.
@@ -773,7 +773,7 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
     def get_log_keys_for_log_key_prefix(
         self, log_key_prefix: Sequence[str], io_type: ComputeIOType
     ) -> Sequence[Sequence[str]]:
-        """Enumerate the stored log keys under a log-key prefix (DAG-031)."""
+        """Enumerate the stored log keys under a log-key prefix."""
         extension = IO_TYPE_EXTENSION[io_type]
         results: list[list[str]] = []
         for info in self._store.list_files(self._store_folder(log_key_prefix)):
@@ -788,15 +788,15 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
     # -- Subscriptions and lifecycle (DAG-030, DAG-032) ---------------------
 
     def on_subscribe(self, subscription: CapturedLogSubscription) -> None:
-        """Register a UI live-tail subscription with the polling manager (DAG-030)."""
+        """Register a UI live-tail subscription with the polling manager."""
         self._subscription_manager.add_subscription(subscription)
 
     def on_unsubscribe(self, subscription: CapturedLogSubscription) -> None:
-        """Deregister a UI live-tail subscription from the polling manager (DAG-030)."""
+        """Deregister a UI live-tail subscription from the polling manager."""
         self._subscription_manager.remove_subscription(subscription)
 
     def dispose(self) -> None:
-        """Dispose the subscription and local managers and close the Store (DAG-032)."""
+        """Dispose the subscription and local managers and close the Store."""
         self._subscription_manager.dispose()
         # super().dispose() disposes local_manager; calling it (rather than
         # self._local_manager.dispose() directly) inherits any cleanup a

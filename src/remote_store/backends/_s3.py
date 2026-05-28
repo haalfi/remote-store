@@ -57,11 +57,11 @@ class S3Backend(_S3Base):
         reject_write_under_file_ancestor: If ``True``, ``write`` /
             ``write_atomic`` / ``open_atomic`` / ``move`` / ``copy`` HEAD
             each slash-aligned ancestor of the target path and raise
-            ``InvalidPath`` on the first regular-file hit, closing the
-            ID-209 cross-backend gap that flat-namespace backends carve
-            out by default. Default ``False``: each nested-path write
-            otherwise pays one HEAD per ancestor (no-slash paths
-            short-circuit). See spec 003 § BE-008 and ID-211.
+            ``InvalidPath`` on the first regular-file hit, matching the
+            cross-backend contract that hierarchical filesystems enforce
+            natively. Default ``False``: each nested-path write otherwise
+            pays one HEAD per ancestor; paths without slashes
+            short-circuit.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES

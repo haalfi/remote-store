@@ -84,7 +84,6 @@ class Capability(enum.Enum):
       in-memory backends, SQL blob stores) do **not** declare this flag.
       Callers can use ``store.supports(Capability.LAZY_READ)`` to know
       whether partial reads avoid loading the entire file.
-      See also: spec SIO-009 in ``sdd/specs/006-streaming-io.md``.
     - ``WRITE_RESULT_NATIVE`` -- Quality flag: the backend populates the
       rich fields of the returned ``WriteResult`` (``etag``,
       ``last_modified``, ``version_id``, and where applicable
@@ -93,7 +92,7 @@ class Capability(enum.Enum):
       Backends without this flag return a ``WriteResult`` with only
       ``path`` and ``size`` populated (``source == "basic"``);
       ``metadata`` is governed independently by the ``USER_METADATA``
-      gate (WR-005, WR-012) and is not subject to this flag.
+      capability and is not subject to this flag.
       Use ``store.supports(Capability.WRITE_RESULT_NATIVE)`` to decide
       whether to call ``store.get_file_info()`` after a write if you
       need the full metadata set.

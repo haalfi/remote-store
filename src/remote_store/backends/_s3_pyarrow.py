@@ -71,7 +71,7 @@ class _PyArrowBinaryIO(io.RawIOBase):
         over-read bytes are rewound via seek().  Less efficient than
         BufferedReader for line-heavy workloads (separate read+seek per
         line vs batched internal buffer), but avoids the double-copy on
-        the dominant chunk-read path.  See RFC-0003.
+        the dominant chunk-read path.
         """
         buf = bytearray()
         while size is None or size < 0 or len(buf) < size:
@@ -133,11 +133,11 @@ class S3PyArrowBackend(_S3Base):
         reject_write_under_file_ancestor: If ``True``, ``write`` /
             ``write_atomic`` / ``open_atomic`` / ``move`` / ``copy`` HEAD
             each slash-aligned ancestor of the target path and raise
-            ``InvalidPath`` on the first regular-file hit, closing the
-            ID-209 cross-backend gap that flat-namespace backends carve
-            out by default. Default ``False``: each nested-path write
-            otherwise pays one HEAD per ancestor (no-slash paths
-            short-circuit). See spec 003 § BE-008 and ID-211.
+            ``InvalidPath`` on the first regular-file hit, matching the
+            cross-backend contract that hierarchical filesystems enforce
+            natively. Default ``False``: each nested-path write otherwise
+            pays one HEAD per ancestor; paths without slashes
+            short-circuit.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
