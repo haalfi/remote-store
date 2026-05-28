@@ -1,0 +1,100 @@
+id: ID-210
+title: "Async Dafny oracle: certify async conformance against the verified MemoryBackend"
+trigger: "The sync conformance suite parametrises `dafny_oracle` as a peer backend (`tests/backends/fixtures/dafny_oracle.py`, `is_async=false` in `tests/backends/fixtures/fixtures.toml`), so every sync conformance test the oracle passes proves the test faithfully encodes the verified contract. The async suite (`tests/backends/conformance/test_async_extended.py`) ran only against `memory_async_native`, `memory_async_adapted`, `local_async_adapted`, and the Azure async fixtures — never against the compiled `MemoryBackend` from `sdd/formal/MemoryBackend-py/`. The async-shaped contract was therefore cross-checked between two Python implementations rather than against the verified-by-construction oracle, weakening the (T) leg for async-only spec divergence. Wave 1 (T) pure test-backfill for an already-verified contract."
+source_items:
+  - ID-210
+audience:
+  - infra.test
+surprising_ripples:
+  - tests/backends/conformance/test_async_extended.py
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-210, Formal Verification execution-order table"
+        read_type: gate
+        extract: "Wave 1 (T) gap; effort M; the registry-driven conformance hook in tests/backends/conformance/conftest.py auto-parametrises a new is_async=true fixture; recommendation in the backlog text is to ship the to_thread-bridged variant first and revisit a native-async Dafny refinement only if a divergence emerges"
+        outcome: ok
+      - file: tests/backends/fixtures/dafny_oracle.py
+        section: "(full)"
+        read_type: gate
+        extract: "Existing sync oracle fixture pattern: factory returns DafnyOracleBackend(), cleanup calls backend.close() to exercise BE-020 idempotency, capabilities frozen from DafnyOracleBackend.CAPABILITIES (excludes GLOB and LAZY_READ)"
+        outcome: ok
+      - file: tests/backends/fixtures/memory_async.py
+        section: "memory_async_adapted"
+        read_type: gate
+        extract: "Existing adapted-memory pattern: `_adapted_factory` returns `SyncBackendAdapter(MemoryBackend())`; same shape applies to the oracle. The async fixture file can be modelled on this directly"
+        outcome: ok
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "[fixture.dafny_oracle], [fixture.memory_async_adapted]"
+        read_type: gate
+        extract: "Per-fixture TOML schema: backend / stage / kind / container / is_async; per-family defaults (flat_namespace=false, self_op_supported=true for `dafny`) inherit automatically from backends.toml"
+        outcome: ok
+      - file: tests/backends/conformance/conftest.py
+        section: "pytest_generate_tests, async_backend fixture"
+        read_type: gate
+        extract: "The hook iterates `fixture_params(is_async=True)` for any test taking `async_backend`. Adding a TOML entry with `is_async = true` is sufficient — no test-file edit. The `async_backend` indirect fixture attaches the BackendFixture record onto the produced instance for downstream skip helpers"
+        outcome: ok
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture, fixture_params, fixtures"
+        read_type: reference
+        extract: "`fixture_params` filters on stage <= current_stage AND is_async match AND caps subset; the new fixture is stage 1 so it lights up unconditionally for any async-conformance run"
+        outcome: ok
+      - file: src/remote_store/aio/_sync_adapter.py
+        section: "SyncBackendAdapter"
+        read_type: gate
+        extract: "Universal sync→async adapter: dispatches all I/O methods to asyncio.to_thread; streams materialise inside the worker thread and re-yield. Reusing the same adapter that already wraps MemoryBackend keeps both legs of the certification claim (oracle-verified, adapter-certified) honest"
+        outcome: ok
+      - file: tests/backends/conformance/test_sync_adapter_conformance.py
+        section: "module docstring"
+        read_type: reference
+        extract: "Spec ASYNC-030..ASYNC-035 already certify the adapter against MemoryBackend, LocalBackend, and live S3/SFTP/Azure substrates. Composing the adapter with the verified sync oracle does not introduce a new uncertified leg"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "module docstring + _require helper"
+        read_type: reference
+        extract: "Capability gating (`_require`) skips tests when the backend lacks the named caps. DafnyOracleBackend excludes GLOB and LAZY_READ so the existing helper handles capability skips without new logic"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/fixtures/dafny_oracle_async.py
+        section: "(full)"
+        read_type: reference
+        extract: "New fixture: `SyncBackendAdapter(DafnyOracleBackend())`. Cleanup reaches into `backend._sync.close()` because conformance teardown for sync-wrapped async fixtures runs through `cleanup` (the adapter exposes no per-sync-close hook), mirroring the sync `dafny_oracle._cleanup` for BE-020 idempotency on every parametrize iteration"
+        outcome: ok
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "[fixture.dafny_oracle_async]"
+        read_type: reference
+        extract: "Added with `is_async = true`; per-family `[backend.dafny]` defaults give `flat_namespace=false` and `self_op_supported=true` automatically. Comment names ID-210 and points at the ID-193 close-out gap so future readers see the framing"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "ID-210 entry, Formal Verification execution-order table"
+        read_type: reference
+        extract: "Removed the ID-210 item; Wave 1 (T) row updated from `ID-210` to `—` with both predecessors annotated (`ID-185 landed; ID-210 landed; see BACKLOG-DONE.md`)"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-210 (Unreleased)"
+        read_type: reference
+        extract: "New entry placed at the top of [Unreleased] above ID-191; records the SyncBackendAdapter composition rationale, the 96-tests-collected / 95-pass / 1-skip parity with memory_async_adapted, the explicit out-of-scope note for a native-AsyncBackend Dafny refinement, and the link to this trace"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/fixtures/dafny_oracle_async.py
+        section: "registration smoke test"
+        read_type: verify
+        extract: "Confirmed via `hatch run python` that `_load_all()` registers the fixture, `is_async=True`, capabilities mirror `DafnyOracleBackend.CAPABILITIES`, and `factory()` returns `SyncBackendAdapter(DafnyOracleBackend())`"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "[dafny_oracle_async] parametrize"
+        read_type: verify
+        extract: "Collect-only shows 96 tests parametrised over the new fixture; full run is 95 passed, 1 skipped — identical to `memory_async_adapted` so capability gating matches and no async-specific divergence is masked by the bridge in the current spec surface"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Adding a fixture"
+        read_type: verify
+        extract: "No new test file authored; the registry hook is the binding. Specs unchanged; FEATURES.md unchanged (no new backend or capability); CHANGELOG skipped per the schema's derived rule (audience is `infra.test` only)"
+        outcome: ok

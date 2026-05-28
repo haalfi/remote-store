@@ -82,7 +82,7 @@ none of which is "run a second backend and diff the output":
 |---|---|---|
 | 0 — property-based (O) | — | ID-187 landed; see BACKLOG-DONE.md |
 | 1 — contract + test | — | Each pairs a Dafny change with the conformance tests it makes certifiable. ID-188 landed; ID-191 landed; see BACKLOG-DONE.md |
-| 1 — test backfill (T) | ID-210 | ID-185 landed; see BACKLOG-DONE.md |
+| 1 — test backfill (T) | — | ID-185 landed; ID-210 landed; see BACKLOG-DONE.md |
 
 Items stay granular for tracking, but a whole wave row may ship as one
 PR where its items share a file or proof.
@@ -100,47 +100,6 @@ PR where its items share a file or proof.
   example), the Dafny `Error.ResourceLocked(path: Path)` variant, and its
   dispatch in `tests/backends/dafny/_helpers.py::_raise_if_err`. Track as
   a sub-task of ID-127, not standalone work today.
-
-- [ ] **ID-210 — Async Dafny oracle: certify async conformance against the verified `MemoryBackend`**
-  spec: ASYNC-001 — ASYNC-029 · effort: M · audience: infra.test
-  A (T) gap spun off from ID-193 close-out: the original "oracle integration
-  with async backends" phase was not in fact delivered. The sync conformance
-  suite parametrises `dafny_oracle` as a peer backend
-  (`tests/backends/fixtures/dafny_oracle.py`, `is_async=false` in
-  `tests/backends/fixtures/fixtures.toml`), so every sync conformance test the
-  oracle passes proves the test faithfully encodes the verified contract.
-  The async suite (`tests/backends/conformance/test_async_extended.py`) runs
-  against `memory_async_native`, `memory_async_adapted`, `local_async_adapted`,
-  and the Azure async fixtures — but never against the compiled `MemoryBackend`
-  from `sdd/formal/MemoryBackend-py/`. The async-shaped contract is therefore
-  cross-checked between two Python implementations (`AsyncMemoryBackend` and
-  `SyncBackendAdapter(MemoryBackend())`) rather than against the
-  verified-by-construction oracle, weakening the (T) leg for async-only spec
-  divergence.
-  Build `AsyncDafnyOracleBackend` as an `AsyncBackend` subclass that
-  delegates each method to the existing `DafnyOracleBackend` via
-  `asyncio.to_thread()` — same shape as `SyncBackendAdapter` (ASYNC-030 —
-  ASYNC-037), scoped to the oracle so the correct-by-construction property
-  the sync oracle has is preserved on the async side. Streaming methods
-  (`read`, `list_files`, `list_folders`, `iter_children`) materialise the
-  sync iterator inside the worker thread and re-yield from the async generator
-  per ASYNC-032 / ASYNC-033. Register `dafny_oracle_async` in
-  `tests/backends/fixtures/fixtures.toml` with `is_async=true` and a sibling
-  `tests/backends/fixtures/dafny_oracle_async.py`; the registry-driven
-  conformance hook in `tests/backends/conformance/conftest.py` then picks it
-  up automatically. Spec markers covered by parametrisation: ASYNC-004,
-  ASYNC-005, ASYNC-006, ASYNC-007, ASYNC-008, ASYNC-010, ASYNC-012, ASYNC-013,
-  ASYNC-014, ASYNC-015, ASYNC-016, ASYNC-017, ASYNC-018, ASYNC-019, ASYNC-020,
-  ASYNC-024, ASYNC-029, ASYNC-047 — the 18 the async extended conformance
-  suite already exercises.
-  **Open question:** whether to additionally model a native-`AsyncBackend`
-  refinement in Dafny (closing the spec-side gap that the trait today only
-  describes the sync `Backend`) or whether the `to_thread`-bridged sync
-  oracle is sufficient for T-side certification. Recommendation: ship the
-  bridged variant first; revisit the native-async refinement only if a
-  divergence emerges that the bridge masks (analogous to how
-  `SyncBackendAdapter` certifies the sync→async bridge in product code
-  without a separate verified contract for it).
 
 - [ ] **ID-212 — Harden SFTP file-ancestor detection against partial-stat-permission setups**
   spec: BE-006, BE-007 · effort: S · audience: library.maintainer
