@@ -16,10 +16,11 @@ source_items:
 audience:
   - infra.test
 co_shipped_items: []
-discovery_followups:
-  - BK-247
-expected_ripples: []
-review_rounds: 2
+discovery_followups: []
+expected_ripples:
+  - sdd/formal/MemoryBackend-py/module_.py
+  - sdd/formal/BackendContract.dfy
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -94,19 +95,34 @@ phases:
   - id: review_fix_2
     name: Review round 2 — structural binding + protocol-shape breadth
     steps:
-      - file: sdd/BACKLOG.md
-        section: "BK-247 (new)"
-        read_type: gate
-        extract: "Reviewer's principal blind-spot finding: MoveContract / ObservableForAtomicMove / lemmas are defined but never referenced from BackendContract.dfy's Backend.Move. Contract is defined, not imposed. Reviewer explicitly recommended deferring the wiring to a follow-up rather than expanding this PR's scope (the wiring requires either an include refactor between BackendContract.dfy and ResourceSafety.dfy or a ghost output threaded through Backend.Move's trait signature into both MemoryBackend variants). Filed BK-247 with the proposed shape; updated BACKLOG-DONE's ID-191 entry to honestly call out this PR as the contract-definition layer with enforcement deferred."
       - file: sdd/formal/ResourceSafety.dfy
         section: "method AtomicMoveIsObservable (new) + CopyDeleteMove postcondition tightening"
         read_type: gate
-        extract: "Two structural bindings to replace the round-1 lemmas whose parameter lists advertised method-bindings that did not exist at the proof level. (1) Replaced lemma AtomicMoveNeverExposesCopyDone with method AtomicMoveIsObservable, which actually calls AtomicMove(...) and asserts ObservableForAtomicMove on the returned phase. Postcondition drift on AtomicMove now breaks verification of this method — the proof is coupled to the body rather than to a manual mirror of the ensures. (2) Dropped lemma CopyDeleteMoveExposesCopyDoneOnDeleteFail (vestigial parameters, body reduced to a tautology); added `srcExists && (!dstExists || overwrite) && deleteFails ==> !ObservableForAtomicMove(phase)` as a postcondition on CopyDeleteMove itself, with the matching assert inside the deleteFails branch. The structural reason copy-then-delete is a strictly weaker contract is now enforced on the method that produces the state. Net verifier count: 16 verified, 0 errors (was 17; -1 method-lemma swap + -1 dropped redundant lemma + +1 new method ensures)."
+        extract: "Two structural bindings to replace the round-1 lemmas whose parameter lists advertised method-bindings that did not exist at the proof level. (1) Replaced lemma AtomicMoveNeverExposesCopyDone with method AtomicMoveIsObservable, which actually calls AtomicMove(...) and asserts ObservableForAtomicMove on the returned phase. Postcondition drift on AtomicMove now breaks verification of this method — the proof is coupled to the body rather than to a manual mirror of the ensures. (2) Dropped lemma CopyDeleteMoveExposesCopyDoneOnDeleteFail (vestigial parameters, body reduced to a tautology); added `srcExists && (!dstExists || overwrite) && deleteFails ==> !ObservableForAtomicMove(phase)` as a postcondition on CopyDeleteMove itself, with the matching assert inside the deleteFails branch."
       - file: tests/backends/conformance/test_atomic.py
         section: "_CopyDeleteCrash (renamed from _CrashBetweenCopyAndDelete) + _CRASH_POINTS parametrize"
         read_type: gate
-        extract: "Reviewer flagged the OR-disjunction as unfalsifiable: the single `copy(); raise` wrapper shape guarantees src_present=True, so the disjunction discharges solely from the left disjunct and the test mostly certifies inner.copy() (a BE-019 postcondition) rather than BE-018. Parametrised over _CRASH_POINTS = [after_copy, after_delete]: after_copy exercises the left disjunct (src intact, dst materialised); after_delete (copy + delete(src) + raise) exercises the right disjunct (src gone, dst intact). Both shapes satisfy BE-018; a buggy backend leaving both gone would fail the OR — that is the test's discriminating power. Also dropped the dead __getattr__ proxy on the wrapper (reviewer flagged: never invoked, test always uses inner.* directly), renamed the wrapper to _CopyDeleteCrash to reflect it is move-only, and documented the protocol-shape coverage explicitly in the docstring."
+        extract: "Reviewer flagged the OR-disjunction as unfalsifiable: the single `copy(); raise` wrapper shape guarantees src_present=True, so the disjunction discharges solely from the left disjunct and the test mostly certifies inner.copy() (a BE-019 postcondition) rather than BE-018. Parametrised over _CRASH_POINTS = [after_copy, after_delete]: after_copy exercises the left disjunct; after_delete (copy + delete(src) + raise) exercises the right. A buggy backend leaving both gone would fail the OR — that is the test's discriminating power. Also dropped the dead __getattr__ proxy on the wrapper, renamed to _CopyDeleteCrash to reflect it is move-only."
       - file: sdd/BACKLOG-DONE.md
         section: "ID-191 entry — spec line"
         read_type: gate
-        extract: "Reviewer flagged `spec: BE-018, ASYNC-018` as broader than what the PR actually delivers — no @spec ASYNC-018 tag in Dafny, no ASYNC marker on the test, no async-side change. Dropped ASYNC-018 from the spec line; the entry now reads `spec: BE-018 · audience: infra.test`. ASYNC-018's spec section is `See also: BE-018` — pure cross-reference — so dropping the cite from the delivered-scope line is honest about what landed without losing the cross-document linkage."
+        extract: "Dropped ASYNC-018 from the spec line; entry now reads `spec: BE-018 · audience: infra.test`. ASYNC-018's spec section is `See also: BE-018` (pure cross-reference), so dropping the cite is honest about what landed without losing the cross-document linkage."
+  - id: review_fix_3
+    name: Review round 3 — ship complete (wire the predicate into the trait)
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "include ResourceSafety.dfy; method Move ghost output + capability-gated postcondition"
+        read_type: gate
+        extract: "Reviewer round 2's principal blind-spot finding (initially deferred to BK-247) was that MoveContract / ObservableForAtomicMove were defined but never referenced from Backend.Move — the contract was defined, not imposed. 'Ship complete' overrode the deferral: wired the predicate in this PR. (a) Added `include \"ResourceSafety.dfy\"` to BackendContract.dfy — clean one-way dependency since ResourceSafety.dfy is standalone, no cycle through MemoryBackend.dfy's existing include. (b) Added `ghost phase: MovePhase` output to the Backend.Move trait signature. (c) Added two new trait postconditions: `r.Ok? ==> phase == DeleteDone` (every successful Move terminates src-gone-dst-present, regardless of capability) and `CapAtomicMove in capabilities ==> ObservableForAtomicMove(phase)` (capability-gated atomicity: declaring CapAtomicMove obliges the refinement to expose a phase excluding CopyDone and Initial). BackendContract.dfy: 51 verified, 0 errors (unchanged count; new clauses verify on the trait alone)."
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "Move (both classes) — ghost phase assignment per branch"
+        read_type: gate
+        extract: "Both MemoryBackend and MemoryBackendMinimal declare CapAtomicMove, so both must discharge ObservableForAtomicMove(phase). Threaded ghost phase output through both Move bodies: DeleteDone on the happy path (and the self-move no-op); Failed(\"initial\", <reason>) on each error path (directory src, missing src, directory dst, file-ancestor in dst, AlreadyExists conflict). MemoryBackend.dfy: 478 verified, 0 errors (unchanged count). A future S3Backend.Move that declared CapAtomicMove and assigned phase := CopyDone in any branch would now fail verification — exactly the enforcement claim BE-018 Gap 5 names."
+      - file: sdd/formal/MemoryBackend-py/module_.py
+        section: "(full — regenerated)"
+        read_type: verify
+        extract: "Re-translated via `dafny build -t py` + `scripts/_dafny_classorder.py`. The Backend.Move Python signature is unchanged (ghost outputs erase at compile time) — DafnyOracleBackend adapter needs no change. The compiled output now re-emits the newly-visible ResourceSafety datatypes (HandleState / Resource / WrapPipeline / MovePhase / MoveContract / ConnectionState) and helper methods alongside Backend / MemoryBackend / MemoryBackendMinimal because BackendContract.dfy now includes ResourceSafety.dfy. Smoke-tested: `python3 -c \"import sys; sys.path.insert(0,'sdd/formal/MemoryBackend-py'); import module_\"` succeeds; all 305 atomic + Dafny-oracle conformance tests pass against the regenerated module."
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-191 entry — enforcement claim now C-definition + C-enforcement"
+        read_type: gate
+        extract: "Rewrote the entry to drop the 'enforcement deferred to BK-247' scaffolding framing. The PR now legitimately closes BE-018 Gap 5 at both the contract-definition layer (ResourceSafety.dfy § 2.3) and the contract-enforcement layer (BackendContract.dfy's Backend.Move postcondition). BK-247 deleted from BACKLOG.md — the work it described is in this PR. discovery_followups on the trace is now empty (BK-247 absorbed); expected_ripples gained module_.py and BackendContract.dfy."

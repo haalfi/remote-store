@@ -941,38 +941,6 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   is per-name; ordering or grouping in the Dafny enum is out of
   scope.
 
-- [ ] **BK-247 — Wire `ObservableForAtomicMove` into `Backend.Move`'s postcondition**
-  spec: BE-018 · effort: M · audience: contributor.process, infra.test
-  Discovered in PR #691 review of ID-191. The Wave 1 (C) leg added
-  `MoveContract` / `ObservableForAtomicMove` / supporting lemmas to
-  `sdd/formal/ResourceSafety.dfy` § 2.3, but the new symbols are
-  referenced only inside that file. `BackendContract.dfy`'s
-  `Backend.Move` postcondition still pins only the final filesystem
-  state — there is no `CapAtomicMove in capabilities ==>
-  ObservableForAtomicMove(...)` clause — and neither `MemoryBackend`
-  nor `MemoryBackendMinimal` instantiates the predicate against their
-  own `Move` body. A refinement that declares `CapAtomicMove` and
-  exposes `CopyDone` (`src` gone, `dst` not yet written) as a
-  "completed" move cannot be flagged by Dafny verification today.
-  ID-191 closed BE-018 Gap 5 at the *contract definition* layer; this
-  item closes it at the *contract enforcement* layer.
-  The natural shape: add a `ghost phase: MovePhase` output to
-  `Backend.Move`, add `CapAtomicMove in capabilities ==>
-  ObservableForAtomicMove(phase)` to the trait's ensures, and have
-  both `MemoryBackend` variants assign `phase` from their Move body
-  (`DeleteDone` on the happy path; `Failed(...)` on each error path).
-  Cross-file dependency: either `BackendContract.dfy` starts including
-  `ResourceSafety.dfy`, or `MoveContract` / `ObservableForAtomicMove`
-  / `MovePhase` move into `BackendContract.dfy` § 2.x (cleaner: they
-  belong with the trait). Ghost outputs erase at compile time, so
-  `MemoryBackend-py/module_.py` does not need re-translation; the
-  `DafnyOracleBackend` adapter in `tests/backends/dafny/_helpers.py`
-  needs no change. The (T) leg in `tests/backends/conformance/test_atomic.py`
-  (`TestMoveCrashInjection`) does not change shape but should grow
-  another crash-point shape (e.g. `mid_delete` simulating a partial
-  delete that leaves both gone) once the wiring lets us assert the
-  contract more sharply.
-
 - [~] **ID-018 — conda-forge publishing**
   spec: — · effort: — · audience: library.maintainer
   Recipe, CI validation, release checklist steps all done.

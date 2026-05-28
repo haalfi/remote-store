@@ -26,6 +26,13 @@
 // - Happy-path postconditions use `ensures <preconditions> ==> r.Ok?`
 //   to mandate success when no error condition applies.
 
+// ID-191: the trait's Move postcondition pins `CapAtomicMove in capabilities
+// ==> ObservableForAtomicMove(phase)` on a ghost output from `ResourceSafety.dfy`
+// § 2.3.  The include makes the MovePhase / MoveContract / ObservableForAtomicMove
+// symbols visible here; the dependency is one-way (ResourceSafety.dfy is
+// standalone), so no cycle.
+include "ResourceSafety.dfy"
+
 // ---------------------------------------------------------------------------
 // §1  Error model  (maps _errors.py)
 // ---------------------------------------------------------------------------
@@ -800,9 +807,13 @@ trait Backend {
   // Gap 2: directory src → InvalidPath (not NotFound).
   // Gap 5: atomicity is backend-dependent: backends that guarantee atomic
   //   rename declare CapAtomicMove; others use copy-then-delete.
-  //   Postcondition covers only the final state, not intermediate visibility.
+  //   ID-191: a `ghost phase: MovePhase` return reflects the runtime
+  //   terminal state; CapAtomicMove-declaring refinements must satisfy
+  //   ObservableForAtomicMove(phase), excluding CopyDone and Initial.
+  //   The ghost output is erased at compile time, so module_.py and the
+  //   DafnyOracleBackend adapter are unaffected.
   method Move(src: Path, dst: Path, overwrite: bool)
-    returns (r: Result<()>)
+    returns (r: Result<()>, ghost phase: MovePhase)
     requires WellFormedPath(src)
     requires WellFormedPath(dst)
     requires Valid()
@@ -847,6 +858,22 @@ trait Backend {
       fs[dst].content == old(fs)[src].content &&
       fs[dst].info.metadata == old(fs)[src].info.metadata &&
       (src != dst ==> !PathExists(fs, src))
+    // ID-191 / BE-018 § Atomicity: every successful Move terminates in the
+    // DeleteDone phase regardless of capability — the final state is
+    // src-gone-dst-present, never CopyDone (both present) or Initial.
+    // @spec BE-018
+    ensures r.Ok? ==> phase == DeleteDone
+    // ID-191 / BE-018 § Atomicity: a backend declaring CapAtomicMove MUST
+    // expose a phase that satisfies the observable-contract predicate —
+    // ObservableForAtomicMove(phase) excludes both CopyDone (src gone, dst
+    // not yet written: the partial-state a non-atomic backend may
+    // transiently sit in) and Initial (pre-move).  A refinement that
+    // declares CapAtomicMove but tries to assign phase := CopyDone in any
+    // branch fails to verify; this is the structural binding from the §
+    // 2.3 ResourceSafety contract into the Backend trait — what closes
+    // BE-018 Gap 5 at the enforcement layer.
+    // @spec BE-018
+    ensures CapAtomicMove in capabilities ==> ObservableForAtomicMove(phase)
 
   // ====================================================================
   // copy(src, dst, overwrite)

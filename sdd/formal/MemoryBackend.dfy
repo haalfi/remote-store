@@ -787,8 +787,12 @@ class MemoryBackend extends Backend {
   }
 
   // Move: directory src → InvalidPath; missing src → NotFound.
+  // ID-191: each branch assigns the ghost `phase` output so the
+  // CapAtomicMove-gated postcondition (ObservableForAtomicMove) discharges
+  // structurally — every Failed branch reaches Failed(_, _), the happy
+  // path reaches DeleteDone, neither yields CopyDone or Initial.
   method Move(src: Path, dst: Path, overwrite: bool)
-    returns (r: Result<()>)
+    returns (r: Result<()>, ghost phase: MovePhase)
     requires WellFormedPath(src)
     requires WellFormedPath(dst)
     requires Valid()
@@ -813,11 +817,14 @@ class MemoryBackend extends Backend {
       fs[dst].content == old(fs)[src].content &&
       fs[dst].info.metadata == old(fs)[src].info.metadata &&
       (src != dst ==> !PathExists(fs, src))
+    ensures r.Ok? ==> phase == DeleteDone
+    ensures CapAtomicMove in capabilities ==> ObservableForAtomicMove(phase)
   {
     // Directory src → InvalidPath.
     if src in fs && fs[src].DirEntry? {
       assert IsDir(old(fs), src);
       r := Err(InvalidPath(src, name));
+      phase := Failed("initial", "source is a directory");
       return;
     }
 
@@ -825,6 +832,7 @@ class MemoryBackend extends Backend {
     if !(src in fs && fs[src].FileEntry?) {
       assert !PathExists(old(fs), src);
       r := Err(NotFound(src, name));
+      phase := Failed("initial", "source not found");
       return;
     }
     assert IsFile(old(fs), src);
@@ -833,6 +841,7 @@ class MemoryBackend extends Backend {
     if dst in fs && fs[dst].DirEntry? {
       assert IsDir(old(fs), dst);
       r := Err(InvalidPath(dst, name));
+      phase := Failed("initial", "destination is a directory");
       return;
     }
 
@@ -842,6 +851,7 @@ class MemoryBackend extends Backend {
       assert fs[dst].content == old(fs)[src].content;
       assert fs[dst].info.metadata == old(fs)[src].info.metadata;
       r := Ok(());
+      phase := DeleteDone;
       return;
     }
 
@@ -850,6 +860,7 @@ class MemoryBackend extends Backend {
     if !dst_ancestors_ok {
       assert !AllAncestorsTraversable(old(fs), dst);
       r := Err(InvalidPath(dst, name));
+      phase := Failed("initial", "destination has file ancestor");
       return;
     }
     assert AllAncestorsTraversable(old(fs), dst);
@@ -858,6 +869,7 @@ class MemoryBackend extends Backend {
     if dst in fs && fs[dst].FileEntry? && !overwrite {
       assert IsFile(old(fs), dst);
       r := Err(AlreadyExists(dst, name));
+      phase := Failed("initial", "destination already exists");
       return;
     }
 
@@ -884,6 +896,7 @@ class MemoryBackend extends Backend {
     assert src != dst;
     assert src !in fs;
     r := Ok(());
+    phase := DeleteDone;
   }
 
   // Copy: directory src → InvalidPath; self-copy is no-op.
@@ -1620,8 +1633,12 @@ class MemoryBackendMinimal extends Backend {
     }
   }
 
+  // ID-191: ghost phase output identical to MemoryBackend.Move; see that
+  // method for the per-branch rationale.  Both classes declare
+  // CapAtomicMove in their capability set, so both must discharge
+  // ObservableForAtomicMove(phase).
   method Move(src: Path, dst: Path, overwrite: bool)
-    returns (r: Result<()>)
+    returns (r: Result<()>, ghost phase: MovePhase)
     requires WellFormedPath(src)
     requires WellFormedPath(dst)
     requires Valid()
@@ -1646,21 +1663,26 @@ class MemoryBackendMinimal extends Backend {
       fs[dst].content == old(fs)[src].content &&
       fs[dst].info.metadata == old(fs)[src].info.metadata &&
       (src != dst ==> !PathExists(fs, src))
+    ensures r.Ok? ==> phase == DeleteDone
+    ensures CapAtomicMove in capabilities ==> ObservableForAtomicMove(phase)
   {
     if src in fs && fs[src].DirEntry? {
       assert IsDir(old(fs), src);
       r := Err(InvalidPath(src, name));
+      phase := Failed("initial", "source is a directory");
       return;
     }
     if !(src in fs && fs[src].FileEntry?) {
       assert !PathExists(old(fs), src);
       r := Err(NotFound(src, name));
+      phase := Failed("initial", "source not found");
       return;
     }
     assert IsFile(old(fs), src);
     if dst in fs && fs[dst].DirEntry? {
       assert IsDir(old(fs), dst);
       r := Err(InvalidPath(dst, name));
+      phase := Failed("initial", "destination is a directory");
       return;
     }
     if src == dst {
@@ -1668,6 +1690,7 @@ class MemoryBackendMinimal extends Backend {
       assert fs[dst].content == old(fs)[src].content;
       assert fs[dst].info.metadata == old(fs)[src].info.metadata;
       r := Ok(());
+      phase := DeleteDone;
       return;
     }
     // ID-209: file-ancestor in dst → InvalidPath.  See MemoryBackend.Move.
@@ -1675,12 +1698,14 @@ class MemoryBackendMinimal extends Backend {
     if !dst_ancestors_ok {
       assert !AllAncestorsTraversable(old(fs), dst);
       r := Err(InvalidPath(dst, name));
+      phase := Failed("initial", "destination has file ancestor");
       return;
     }
     assert AllAncestorsTraversable(old(fs), dst);
     if dst in fs && fs[dst].FileEntry? && !overwrite {
       assert IsFile(old(fs), dst);
       r := Err(AlreadyExists(dst, name));
+      phase := Failed("initial", "destination already exists");
       return;
     }
     var srcEntry := fs[src];
@@ -1702,6 +1727,7 @@ class MemoryBackendMinimal extends Backend {
     assert src != dst;
     assert src !in fs;
     r := Ok(());
+    phase := DeleteDone;
   }
 
   method {:isolate_assertions} Copy(src: Path, dst: Path, overwrite: bool)
