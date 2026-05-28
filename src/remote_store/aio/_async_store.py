@@ -12,6 +12,33 @@ from remote_store._errors import InvalidPath, NotFound
 from remote_store._models import FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 
+# Static metadata for graph-IR generation only. Unlike Store, AsyncStore has
+# no runtime ``_gate()`` helper -- capability requirements are enforced inline
+# at each method's call site. This constant is consumed by scripts/gen_graph.py.
+# Sync sibling lives in remote_store._store._GATING; the async surface omits
+# ``read_seekable`` and ``open_atomic`` (no async equivalents).
+_GATING: dict[str, Capability] = {
+    "read": Capability.READ,
+    "read_bytes": Capability.READ,
+    "read_text": Capability.READ,  # delegates to read_bytes; listed for static graph extraction
+    "write": Capability.WRITE,
+    "write_text": Capability.WRITE,  # delegates to write; listed for static graph extraction
+    "write_atomic": Capability.ATOMIC_WRITE,
+    "delete": Capability.DELETE,
+    "delete_folder": Capability.DELETE,
+    "list_files": Capability.LIST,
+    "list_folders": Capability.LIST,
+    "iter_children": Capability.LIST,
+    "glob": Capability.GLOB,
+    "move": Capability.MOVE,
+    "copy": Capability.COPY,
+    "get_file_info": Capability.METADATA,
+    # Primary gate. Depth-limited path (max_depth is not None) gates on LIST;
+    # gen_graph.py must special-case this method (mirrors sync Store).
+    "get_folder_info": Capability.METADATA,
+    "head": Capability.METADATA,
+}
+
 log = logging.getLogger(__name__)
 
 T = TypeVar("T")

@@ -1,0 +1,90 @@
+id: ID-194
+title: "gen_graph.py async gate extension"
+trigger: |
+  gen_graph.py emitted gating edges for Store and Backend but no async
+  equivalents existed for AsyncStore; check_api_docs.py had nothing to
+  compare against the aio.md page once ID-172 wires the AsyncStore page.
+source_items:
+  - ID-194
+audience:
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+co_shipped_items: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-194 (item)"
+        read_type: gate
+        extract: "Scope: add async _GATING, extend gen_graph; do NOT wire check_api_docs PAGES (ID-172)"
+      - file: src/remote_store/_store.py
+        section: "_GATING"
+        read_type: gate
+        extract: "Shape dict[str, Capability]; 19 entries; get_folder_info dual-gate special-case comment"
+      - file: src/remote_store/aio/_async_store.py
+        section: "(full)"
+        read_type: reference
+        extract: "Inventory each Capability.X.require() site; confirm no read_seekable / open_atomic on async"
+      - file: scripts/gen_graph.py
+        section: "Store gating loop (lines 358-394) and _BACKEND_GATING loop"
+        read_type: gate
+        extract: "Pattern to mirror for AsyncStore: pkg['aio']['_async_store']['AsyncStore'], method/req nodes, gates/of edges, dual-gate special case"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "AsyncStore"
+        read_type: reference
+        extract: "Confirm no centralised async gate table to mirror; spec stays untouched (matches BACKLOG spec: -)"
+        outcome: ok
+  - id: spec
+    name: Spec ripple check
+    steps:
+      - file: sdd/specs/001-store-api.md
+        section: "(full)"
+        read_type: verify
+        extract: "STORE-gate entries do not exist as a centralised table; no spec edit needed"
+        outcome: ok
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-005, ASYNC-016"
+        read_type: verify
+        extract: "Capability-gated invariants are per-method; no per-method gate table to add"
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/scripts/test_gen_graph.py
+        section: "test_backend_gating_keys_match_backend_members"
+        read_type: gate
+        extract: "Structural template for async keys-match and sync symmetry tests"
+      - file: tests/scripts/test_gen_graph.py
+        section: "test_get_folder_info_dual_gate"
+        read_type: gate
+        extract: "Template for the async get_folder_info dual-gate assertion"
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/aio/_async_store.py
+        section: "_GATING (new constant)"
+        read_type: reference
+        extract: "Add 17-entry async _GATING mirroring sync minus read_seekable/open_atomic; static-only comment"
+      - file: scripts/gen_graph.py
+        section: "_async_store_gating() + build_graph AsyncStore loop"
+        read_type: reference
+        extract: "Mirror _store_gating helper; new method/req/gates/of edges; dual-gate special case for AsyncStore.get_folder_info"
+  - id: verify
+    name: Verify
+    steps:
+      - file: docs-src/_data/graph/graph.json
+        section: "(regenerated)"
+        read_type: verify
+        extract: "Graph grew 107->142 nodes (+35) and 222->258 edges (+36); committed snapshot up to date"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / _GATING dict"
+        read_type: verify
+        extract: "Detailed checklist extended with new row for aio/_async_store.py _GATING; pre-work index annotated with two-constants note"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "Trace shipped same PR; BACKLOG -> BACKLOG-DONE moved; CHANGELOG skipped per audience rule (contributor.tooling only)"
