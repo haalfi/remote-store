@@ -233,6 +233,14 @@ method CopyDeleteMove(srcExists: bool, dstExists: bool, overwrite: bool,
   ensures !srcExists ==> phase.Failed?
   // @spec BE-018
   ensures srcExists && dstExists && !overwrite ==> phase.Failed?
+  // ID-191 / § 2.3: the deleteFails branch produces CopyDone, which the
+  // atomic-move observable contract excludes.  This structural postcondition
+  // binds the (C) contract to CopyDeleteMove's body rather than to a manual
+  // restatement in a separate lemma — postcondition drift here breaks
+  // verification of any caller that relies on the binding.
+  // @spec BE-018
+  ensures srcExists && (!dstExists || overwrite) && deleteFails
+    ==> !ObservableForAtomicMove(phase)
 {
   if !srcExists {
     phase := Failed("initial", "source not found");
@@ -251,8 +259,11 @@ method CopyDeleteMove(srcExists: bool, dstExists: bool, overwrite: bool,
 
   if deleteFails {
     // Phase 2 failed: both src and dst exist.
-    // Backend MUST report this as an error.
+    // Backend MUST report this as an error.  An atomic-move-capable backend
+    // that returns success here would be exposing CopyDone as a completed
+    // move, which the § 2.3 observable contract excludes.
     assert phase == CopyDone;
+    assert !ObservableForAtomicMove(phase);
     return;
   }
 
@@ -344,47 +355,28 @@ function Observe(phase: MovePhase): MoveContract
   case Failed(_, reason) => ObservedFailed(reason)
 }
 
-// AtomicMove only ever exposes contract-observable states.  Discharged by
-// case-splitting on AtomicMove's three return branches: !srcExists → Failed,
-// dstExists && !overwrite → Failed, otherwise → DeleteDone.  CopyDone is
-// structurally absent from AtomicMove's body — it is the discriminator
-// between the atomic and the non-atomic strategies.
+// AtomicMove only ever exposes contract-observable states.  This method is
+// the structural binding to AtomicMove: it calls the method and asserts the
+// observability invariant on its return value, so the proof breaks if
+// AtomicMove's postconditions ever drift (e.g. someone adds a branch that
+// returns CopyDone or weakens an existing ensures).  An earlier draft used
+// a lemma that mirrored AtomicMove's postconditions as preconditions over
+// an arbitrary `phase` variable — that mirror would still verify silently
+// under drift, so the binding was decorative.  Using a method that issues
+// the actual call couples the proof to AtomicMove's body.
 // @spec BE-018
-lemma AtomicMoveNeverExposesCopyDone(
-  srcExists: bool, dstExists: bool, overwrite: bool, phase: MovePhase
-)
-  requires (!srcExists ==> phase.Failed?)
-  requires (srcExists && dstExists && !overwrite ==> phase.Failed?)
-  requires (srcExists && (!dstExists || overwrite) ==> phase == DeleteDone)
+method AtomicMoveIsObservable(srcExists: bool, dstExists: bool, overwrite: bool)
+  returns (phase: MovePhase)
   ensures ObservableForAtomicMove(phase)
 {
-  if !srcExists {
-    assert phase.Failed?;
-  } else if dstExists && !overwrite {
-    assert phase.Failed?;
-  } else {
-    assert phase == DeleteDone;
-  }
-  // None of the three branches yield CopyDone.
+  phase := AtomicMove(srcExists, dstExists, overwrite);
+  // Discharged by AtomicMove's three ensures clauses:
+  //   !srcExists ==> phase.Failed?
+  //   srcExists && dstExists && !overwrite ==> phase.Failed?
+  //   srcExists && (!dstExists || overwrite) ==> phase == DeleteDone
+  // None of these branches yield CopyDone or Initial.
   assert phase != CopyDone;
-}
-
-// CopyDeleteMove can expose CopyDone — exactly when the delete step fails on
-// an otherwise-eligible input.  This is the structural reason copy-then-delete
-// is a strictly weaker contract than atomic move: a backend running it MUST
-// surface the failure (raise), because returning success here would amount to
-// exposing CopyDone as a completed move.  The Python conformance leg
-// (TestMoveCrashInjection in tests/backends/conformance/test_atomic.py)
-// exercises this on a crash-injecting wrapper.
-// @spec BE-018
-lemma CopyDeleteMoveExposesCopyDoneOnDeleteFail(
-  srcExists: bool, dstExists: bool, overwrite: bool, phase: MovePhase
-)
-  requires srcExists && (!dstExists || overwrite)
-  requires phase == CopyDone  // i.e. the deleteFails branch of CopyDeleteMove
-  ensures !ObservableForAtomicMove(phase)
-{
-  assert phase == CopyDone;
+  assert phase != Initial;
 }
 
 // Source-preservation invariant: any observable contract state other than

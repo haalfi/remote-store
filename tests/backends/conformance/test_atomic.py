@@ -458,27 +458,53 @@ class TestCopyPostState:
 # crash injection has no compiled-MemoryBackend equivalent — so the
 # `@pytest.mark.spec("BE-018")` marker is for traceability only (per
 # sdd/BACKLOG.md ID-191).
-class _CrashBetweenCopyAndDelete:
-    """Backend wrapper whose ``move()`` does ``inner.copy(); raise``.
+#
+# Two protocol shapes are exercised — see ``_CRASH_POINTS`` for the
+# enumeration. A single-shape wrapper makes BE-018's disjunction
+# unfalsifiable: a ``copy(); raise`` crash keeps the source untouched, so
+# ``src_present`` is unconditionally True and the OR discharges from the
+# left disjunct alone. Adding the ``copy(); delete(src); raise`` shape
+# exercises the right disjunct (source gone, destination intact), so the
+# OR is non-trivially discharged in both directions across the parameter
+# matrix.
 
-    Models the worst case of a non-atomic copy-then-delete implementation
-    where the delete step (or the rename's commit phase) fails after the
-    copy has materialised the destination. The raise is the load-bearing
-    behaviour: BE-018 prose mandates that backends MUST NOT silently
-    swallow such a failure, and the ResourceSafety.dfy § 2.3 MoveContract
-    formalises that the observable terminal state cannot be a CopyDone
-    pretending to be DeleteDone.
+_CRASH_POINTS = [
+    pytest.param("after_copy", id="after_copy"),
+    pytest.param("after_delete", id="after_delete"),
+]
+
+
+class _CopyDeleteCrash:
+    """Move-only wrapper that injects a crash at a configurable point.
+
+    Not a full ``Backend`` substitute: only ``move`` is implemented. Tests
+    use the inner backend directly for seeding and post-state assertions.
+
+    ``crash_point`` values:
+
+    - ``after_copy``: ``inner.copy(src, dst); raise`` — crash strictly
+      between copy success and delete start. Source is untouched, dst was
+      materialised by the copy. Discharges the left disjunct of BE-018's
+      OR (``src_present``).
+    - ``after_delete``: ``inner.copy(src, dst); inner.delete(src); raise``
+      — crash after delete succeeded but before the wrapper returns
+      success. Source is gone, dst is intact. Discharges the right
+      disjunct (``dst_present``).
+
+    Both shapes satisfy BE-018's "never both gone" invariant. A buggy
+    backend that violated the invariant (e.g. ``delete(src); raise``
+    without copying first) would leave both gone — caught by the test.
     """
 
-    def __init__(self, inner: Backend) -> None:
+    def __init__(self, inner: Backend, crash_point: str) -> None:
         self._inner = inner
-
-    def __getattr__(self, name: str) -> object:
-        return getattr(self._inner, name)
+        self._crash_point = crash_point
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         self._inner.copy(src, dst, overwrite=overwrite)
-        raise RuntimeError("simulated crash between copy and delete")
+        if self._crash_point == "after_delete":
+            self._inner.delete(src)
+        raise RuntimeError(f"simulated crash at {self._crash_point}")
 
 
 class TestMoveCrashInjection:
@@ -492,11 +518,12 @@ class TestMoveCrashInjection:
     """
 
     @pytest.mark.spec("BE-018")
-    def test_partial_move_preserves_at_least_one_copy(self) -> None:
+    @pytest.mark.parametrize("crash_point", _CRASH_POINTS)
+    def test_partial_move_preserves_at_least_one_copy(self, crash_point: str) -> None:
         from remote_store.backends._memory import MemoryBackend
 
         inner = MemoryBackend()
-        wrapper = _CrashBetweenCopyAndDelete(inner)
+        wrapper = _CopyDeleteCrash(inner, crash_point)
         inner.write("crash_src.txt", b"payload")
 
         with pytest.raises(RuntimeError, match="simulated crash"):
@@ -504,20 +531,15 @@ class TestMoveCrashInjection:
 
         src_present = inner.exists("crash_src.txt")
         dst_present = inner.exists("crash_dst.txt")
-        # BE-018 contract: never both gone. This disjunction is the
-        # load-bearing assertion — the Dafny § 2.3 MoveContract excludes
-        # ObservedCopyDone (src gone, dst not yet written) for atomic
-        # backends, and `src OR dst` is its conformance shadow.
+        # BE-018 contract: never both gone. The Dafny § 2.3 MoveContract
+        # excludes ObservedCopyDone (src gone, dst not yet written) for
+        # atomic backends; this OR is its conformance shadow. Non-trivially
+        # discharged in both directions across the _CRASH_POINTS matrix:
+        # `after_copy` carries the left disjunct, `after_delete` the right.
         assert src_present or dst_present, "BE-018: source intact OR destination intact (never both gone)"
-        # Observation on this particular wrapper shape (inner.copy() then
-        # raise before inner.delete()): both files are still present and
-        # the source data is unchanged. This is *not* the contract — a
-        # different copy-then-delete crash injection (e.g. delete(src)
-        # before raise) would still satisfy BE-018 by leaving dst intact
-        # and src gone, and this AND-shaped block would no longer hold.
-        # Keeping it documents what the wrapper produces today without
-        # masquerading as the invariant under test.
-        assert src_present
-        assert dst_present
-        assert inner.read_bytes("crash_src.txt") == b"payload"
-        assert inner.read_bytes("crash_dst.txt") == b"payload"
+        # Whichever side(s) survive, the surviving content must be intact —
+        # BE-018 forbids silent corruption alongside the non-loss invariant.
+        if src_present:
+            assert inner.read_bytes("crash_src.txt") == b"payload"
+        if dst_present:
+            assert inner.read_bytes("crash_dst.txt") == b"payload"
