@@ -8,6 +8,47 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-194 — gen_graph.py async gate extension (prereq for ID-172)**
+  spec: — · audience: contributor.tooling
+  Sibling of ID-171 (Backend gate extension). `gen_graph.py` already
+  emitted method/req/gates/of edges for `Store` and `Backend`; AsyncStore
+  had no edges, so any future PAGES entry for `aio.md` would have been
+  vacuous and ID-172 was blocked.
+  - Added `_GATING: dict[str, Capability]` (17 entries) to
+    `src/remote_store/aio/_async_store.py`, mirroring sync `_store._GATING`
+    minus `read_seekable` / `open_atomic` (no async equivalents).
+    Placement matches sync `Store` — not the `_BACKEND_GATING` precedent —
+    because AsyncStore is the close analogue of Store (concrete class with
+    runtime enforcement), whereas Backend is an ABC with no runtime
+    gating. Initial PR-694 push placed `_GATING` in `_async_store.py`
+    without a runtime consumer and CodeQL flagged the unused global —
+    fixed by adding an `AsyncStore._gate()` helper that consumes `_GATING`
+    at runtime and refactoring every `self._backend.capabilities.require(
+    Capability.X, ...)` site to `self._gate("method")`. Conditional
+    `USER_METADATA` gates on `write` / `write_atomic` stay inline (not in
+    `_GATING`).
+  - Extended `scripts/gen_graph.py` with `_async_store_gating()` helper
+    and an AsyncStore method/requirement-nodes loop mirroring the sync
+    Store loop. Dual-gate special case for `AsyncStore.get_folder_info`
+    (METADATA primary, LIST when `max_depth` is set). Graph grows
+    107 → 142 nodes (+35), 222 → 258 edges (+36).
+  - Added three new tests to `tests/scripts/test_gen_graph.py`:
+    `test_async_store_gating_keys_match_async_store_members`,
+    `test_async_store_method_nodes_emitted`,
+    `test_async_store_get_folder_info_dual_gate`. Also closed an
+    existing gap with `test_store_gating_keys_match_store_members` —
+    the runtime drift guard in `build_graph()` covered the same case
+    but a unit test fails earlier and closer to the dict.
+  - Ripple: extended both the Pre-work index row and the Detailed-checklist
+    entry for `_GATING` in `sdd/CLAUDE-REFERENCE.md` to record the
+    two-constants split and call out `aio/_async_store.py` separately.
+    No spec edit (BACKLOG `spec: —`); spec 001/029 do not contain a
+    centralised gate table to mirror, so the spec ripple was a no-op.
+  - **Remaining** (ID-194 brief): nothing — ID-194 ships the emitted
+    edges. PAGES wiring for `aio.md` and the error-hint update in
+    `check_api_docs.py` belong to ID-172 (now unblocked).
+  Trace: `sdd/traces/id-194-gen-graph-async-gate.yml`.
+
 - [x] **ID-210 — Async Dafny oracle: certify async conformance against the verified `MemoryBackend`**
   spec: ASYNC-004, ASYNC-005, ASYNC-006, ASYNC-007, ASYNC-008, ASYNC-010,
   ASYNC-012, ASYNC-013, ASYNC-014, ASYNC-015, ASYNC-016, ASYNC-017, ASYNC-018,

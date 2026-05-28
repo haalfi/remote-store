@@ -209,6 +209,12 @@ def _store_gating() -> dict[str, Any]:
     return _GATING
 
 
+def _async_store_gating() -> dict[str, Any]:
+    from remote_store.aio._async_store import _GATING
+
+    return _GATING
+
+
 # Capability-name strings for each gated Backend method.  Defined here
 # (gen_graph.py is the only consumer) to avoid an unused-variable alert in
 # _backend.py — Backend has no runtime _gate() equivalent, unlike Store.
@@ -392,6 +398,43 @@ def build_graph() -> dict[str, Any]:
     nodes.append({"id": _gfi_req2, "kind": "requirement", "mode": "all"})
     edges.append({"kind": "gates", "src": _gfi_req2, "dst": _gfi_mtd})
     edges.append({"kind": "of", "src": _gfi_req2, "dst": f"cap:{Capability.LIST.name}", "index": 0})
+
+    # --- AsyncStore method nodes + gates/of edges ---
+    async_store_cls = pkg["aio"]["_async_store"]["AsyncStore"]
+    async_gating = _async_store_gating()
+    for method_name, cap in async_gating.items():
+        if method_name not in async_store_cls.members:  # pragma: no cover
+            raise AssertionError(
+                f"async _GATING key {method_name!r} is not a Griffe member of AsyncStore; "
+                "update AsyncStore or aio/_async_store.py _GATING to keep them in sync."
+            )
+        mtd_uri = f"mtd:remote_store.aio._async_store.AsyncStore.{method_name}"
+        req_uri = f"req:remote_store.aio._async_store.AsyncStore.{method_name}.gate"
+        cap_uri = f"cap:{cap.name}"
+
+        member = async_store_cls[method_name]
+        nodes.append(
+            {
+                "id": mtd_uri,
+                "kind": "method",
+                "summary": method_name,
+                "is_abstract": "abstractmethod" in member.labels,
+                "is_async": "async" in member.labels,
+                "file": _rel_path(member.filepath),
+                "line": member.lineno or 0,
+            }
+        )
+        nodes.append({"id": req_uri, "kind": "requirement", "mode": "all"})
+
+        edges.append({"kind": "gates", "src": req_uri, "dst": mtd_uri})
+        edges.append({"kind": "of", "src": req_uri, "dst": cap_uri, "index": 0})
+
+    # Async dual gate for get_folder_info (METADATA primary; LIST when max_depth is set).
+    _a_gfi_mtd = "mtd:remote_store.aio._async_store.AsyncStore.get_folder_info"
+    _a_gfi_req2 = "req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate_depth"
+    nodes.append({"id": _a_gfi_req2, "kind": "requirement", "mode": "all"})
+    edges.append({"kind": "gates", "src": _a_gfi_req2, "dst": _a_gfi_mtd})
+    edges.append({"kind": "of", "src": _a_gfi_req2, "dst": f"cap:{Capability.LIST.name}", "index": 0})
 
     # --- Backend method nodes + gates/of edges ---
     backend_cls = pkg["_backend"]["Backend"]

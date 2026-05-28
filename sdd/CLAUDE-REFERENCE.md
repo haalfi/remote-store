@@ -44,7 +44,7 @@ Read this before starting. One line per trigger.
 | Extension                     | `__init__.py` exports (ADR-0013 rules), `pyproject` extras, README extensions table, `reference/api/extensions/*` + index + `_nav.yml`, guides, examples, CHANGELOG, BACKLOG |
 | Dependency                    | `pyproject` extras + pins, README install, docs prerequisites |
 | `CAPABILITIES` ClassVar       | `003-backend-adapter-contract.md` (BE-003), `test_capabilities.py`, `test_conformance.py`, custom-backend guide, `examples/snippets/` |
-| `_GATING` dict                | `001-store-api.md` (STORE-gate entries), `test_store.py`, guides if a method's cap docs change, `store.md` admonitions (verified by `gen-api-check`, ID-170) |
+| `_GATING` dict                | `001-store-api.md` (STORE-gate entries), `test_store.py`, guides if a method's cap docs change, `store.md` admonitions (verified by `gen-api-check`, ID-170). Two independent constants: sync in `_store.py`, async in `aio/_async_store.py` (ID-194); keep both in step with their classes |
 | `_BACKEND_GATING` dict        | `003-backend-adapter-contract.md` (BE-gate entries), `backend.md` admonitions (verified by `gen-api-check`, ID-171) |
 | `__mirror__` attribute        | Async spec (mirror invariant), `gen_graph.py` (mirrors-edge), `tests/` mirror test on add/remove |
 
@@ -132,6 +132,12 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | `docs-src/reference/api/store.md` `!!! note "Requires …"` |
 |                            | admonitions — verified by `hatch run gen-api-check`       |
 |                            | (ID-170)                                                  |
+| **`_GATING` dict** (async)  | `src/remote_store/aio/_async_store.py` mirrors the       |
+| (key→Capability mapping     | sync constant minus `read_seekable` / `open_atomic`      |
+| in `aio/_async_store.py`)   | (no async equivalents). Consumed at runtime by           |
+|                            | `AsyncStore._gate()` and statically by                   |
+|                            | `scripts/gen_graph.py` (ID-194). Once ID-172 lands:      |
+|                            | `aio.md` admonitions verified by `hatch run gen-api-check`|
 | **`_BACKEND_GATING` dict**  | `sdd/specs/003-backend-adapter-contract.md` (BE-gate     |
 | (key→cap-name strings       | entries), `docs-src/reference/api/backend.md` `!!! note  |
 | in `scripts/gen_graph.py`)  | "Requires …"` admonitions — verified by `hatch run       |

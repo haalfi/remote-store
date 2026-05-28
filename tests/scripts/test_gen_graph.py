@@ -236,6 +236,108 @@ def test_backend_gating_keys_match_backend_members(gen_graph_module):
         )
 
 
+def test_store_gating_keys_match_store_members(gen_graph_module):
+    """Every key in Store._GATING must be a real member of the Store class.
+
+    Sync sibling of ``test_backend_gating_keys_match_backend_members`` and
+    ``test_async_store_gating_keys_match_async_store_members``. The runtime
+    drift guard in build_graph() catches the same kind of bug, but a unit
+    test fails earlier and closer to where the dict is defined.
+    """
+    import griffe
+
+    from remote_store._store import _GATING as STORE_GATING
+
+    sys.path.insert(0, str(ROOT / "src"))
+    pkg = griffe.load("remote_store")
+    store_members = set(pkg["_store"]["Store"].members)
+
+    for method_name in STORE_GATING:
+        assert method_name in store_members, (
+            f"_GATING key {method_name!r} not found in Store.members — update _GATING in src/remote_store/_store.py"
+        )
+
+
+def test_async_store_gating_keys_match_async_store_members(gen_graph_module):
+    """Every key in AsyncStore._GATING must be a real member of the AsyncStore class.
+
+    Mirrors ``test_backend_gating_keys_match_backend_members``. Guards
+    against stale entries after an AsyncStore method is renamed or removed.
+    """
+    import griffe
+
+    from remote_store.aio._async_store import _GATING as ASYNC_GATING
+
+    sys.path.insert(0, str(ROOT / "src"))
+    pkg = griffe.load("remote_store")
+    async_store_members = set(pkg["aio"]["_async_store"]["AsyncStore"].members)
+
+    for method_name in ASYNC_GATING:
+        assert method_name in async_store_members, (
+            f"_GATING key {method_name!r} not found in AsyncStore.members — "
+            "update _GATING in src/remote_store/aio/_async_store.py"
+        )
+
+
+def test_async_store_method_nodes_emitted(gen_graph_module):
+    """gen_graph.py must emit method/req/gates/of edges for every AsyncStore _GATING entry.
+
+    Sibling of ``test_method_nodes_carry_introspection_fields`` (which
+    covers the generic node shape) — this test pins the existence of the
+    async-method nodes and one representative is_async=True example.
+    """
+    from remote_store.aio._async_store import _GATING as ASYNC_GATING
+
+    graph = gen_graph_module.build_graph()
+    node_ids = {n["id"] for n in graph["nodes"]}
+
+    for method_name in ASYNC_GATING:
+        mtd_uri = f"mtd:remote_store.aio._async_store.AsyncStore.{method_name}"
+        req_uri = f"req:remote_store.aio._async_store.AsyncStore.{method_name}.gate"
+        assert mtd_uri in node_ids, f"missing async method node {mtd_uri!r}"
+        assert req_uri in node_ids, f"missing async req node {req_uri!r}"
+
+    # read_bytes is a genuine `async def` -> is_async must be True.
+    read_bytes_node = next(
+        n for n in graph["nodes"] if n["id"] == "mtd:remote_store.aio._async_store.AsyncStore.read_bytes"
+    )
+    assert read_bytes_node["is_async"] is True
+    assert read_bytes_node["summary"] == "read_bytes"
+    assert read_bytes_node["file"] == "src/remote_store/aio/_async_store.py"
+
+
+def test_async_store_get_folder_info_dual_gate(gen_graph_module):
+    """AsyncStore.get_folder_info mirrors Store: METADATA (max_depth=None) and LIST (depth-limited).
+
+    Async sibling of ``test_get_folder_info_dual_gate``. Asserts both
+    req: nodes exist so a future refactor cannot silently drop one.
+    """
+    graph = gen_graph_module.build_graph()
+    gfi_mtd = "mtd:remote_store.aio._async_store.AsyncStore.get_folder_info"
+
+    gates_edges = [e for e in graph["edges"] if e["kind"] == "gates" and e["dst"] == gfi_mtd]
+    assert len(gates_edges) == 2, f"expected 2 gates edges for AsyncStore.get_folder_info, got {len(gates_edges)}"
+    sources = {e["src"] for e in gates_edges}
+    assert sources == {
+        "req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate",
+        "req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate_depth",
+    }
+
+    of_depth = [
+        e
+        for e in graph["edges"]
+        if e["kind"] == "of" and e["src"] == "req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate_depth"
+    ]
+    assert of_depth == [
+        {
+            "dst": "cap:LIST",
+            "index": 0,
+            "kind": "of",
+            "src": "req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate_depth",
+        }
+    ]
+
+
 def test_graph_json_is_up_to_date(gen_graph_module):
     """Committed graph.json must match a fresh build_graph() call.
 

@@ -12,6 +12,31 @@ from remote_store._errors import InvalidPath, NotFound
 from remote_store._models import FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 
+# Method-to-capability mapping for AsyncStore. Mirrors the sync ``_store._GATING``
+# minus ``read_seekable`` / ``open_atomic`` (no async equivalents). Consumed at
+# runtime by ``AsyncStore._gate()`` and statically by ``scripts/gen_graph.py``.
+_GATING: dict[str, Capability] = {
+    "read": Capability.READ,
+    "read_bytes": Capability.READ,
+    "read_text": Capability.READ,  # delegates to read_bytes; listed for static graph extraction
+    "write": Capability.WRITE,
+    "write_text": Capability.WRITE,  # delegates to write; listed for static graph extraction
+    "write_atomic": Capability.ATOMIC_WRITE,
+    "delete": Capability.DELETE,
+    "delete_folder": Capability.DELETE,
+    "list_files": Capability.LIST,
+    "list_folders": Capability.LIST,
+    "iter_children": Capability.LIST,
+    "glob": Capability.GLOB,
+    "move": Capability.MOVE,
+    "copy": Capability.COPY,
+    "get_file_info": Capability.METADATA,
+    # Primary gate. Depth-limited path (max_depth is not None) gates on LIST;
+    # gen_graph.py must special-case this method (mirrors sync Store).
+    "get_folder_info": Capability.METADATA,
+    "head": Capability.METADATA,
+}
+
 log = logging.getLogger(__name__)
 
 T = TypeVar("T")
@@ -74,7 +99,7 @@ class AsyncStore:
             InvalidPath: If *path* is empty, or if *path* names a directory.
         """
         log.debug("read path=%r", path, extra={"op": "read", "path": path, "backend": self._backend.name})
-        self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
+        self._gate("read")
         return self._read_chunks(self._require_file_path(path))
 
     async def _read_chunks(self, resolved: str) -> AsyncIterator[bytes]:
@@ -98,7 +123,7 @@ class AsyncStore:
         Equivalent to collecting all chunks from ``read(path)``.
         """
         log.debug("read_bytes path=%r", path, extra={"op": "read_bytes", "path": path, "backend": self._backend.name})
-        self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
+        self._gate("read_bytes")
         return await self._backend.read_bytes(self._require_file_path(path))
 
     async def read_text(self, path: str, *, encoding: str = "utf-8", errors: str = "strict") -> str:
@@ -170,7 +195,7 @@ class AsyncStore:
         if metadata:
             self._backend.capabilities.require(Capability.USER_METADATA, backend=_bk)
         log.debug("write path=%r overwrite=%r", path, overwrite, extra={"op": "write", "path": path, "backend": _bk})
-        self._backend.capabilities.require(Capability.WRITE, backend=_bk)
+        self._gate("write")
         result = await self._backend.write(
             self._require_file_path(path), content, overwrite=overwrite, metadata=metadata
         )
@@ -265,7 +290,7 @@ class AsyncStore:
             overwrite,
             extra={"op": "write_atomic", "path": path, "backend": _bk},
         )
-        self._backend.capabilities.require(Capability.ATOMIC_WRITE, backend=_bk)
+        self._gate("write_atomic")
         result = await self._backend.write_atomic(
             self._require_file_path(path), content, overwrite=overwrite, metadata=metadata
         )
@@ -294,7 +319,7 @@ class AsyncStore:
         log.debug(
             "delete path=%r missing_ok=%r", path, missing_ok, extra={"op": "delete", "path": path, "backend": _bk}
         )
-        self._backend.capabilities.require(Capability.DELETE, backend=_bk)
+        self._gate("delete")
         await self._backend.delete(self._require_file_path(path), missing_ok=missing_ok)
         log.info("delete complete path=%r", path, extra={"op": "delete", "path": path, "backend": _bk})
 
@@ -328,7 +353,7 @@ class AsyncStore:
         )
         if not path or path == ".":
             raise InvalidPath("Cannot delete the store root", path=path)
-        self._backend.capabilities.require(Capability.DELETE, backend=_bk)
+        self._gate("delete_folder")
         await self._backend.delete_folder(self._full_path(path), recursive=recursive, missing_ok=missing_ok)
         log.info("delete_folder complete path=%r", path, extra={"op": "delete_folder", "path": path, "backend": _bk})
 
@@ -380,7 +405,7 @@ class AsyncStore:
             max_depth,
             extra={"op": "list_files", "path": path, "backend": _bk},
         )
-        self._backend.capabilities.require(Capability.LIST, backend=_bk)
+        self._gate("list_files")
 
         # Determine recursion mode
         effective_recursive = max_depth > 0 if max_depth is not None else recursive
@@ -462,7 +487,7 @@ class AsyncStore:
             max_depth,
             extra={"op": "list_folders", "path": path, "backend": _bk},
         )
-        self._backend.capabilities.require(Capability.LIST, backend=_bk)
+        self._gate("list_folders")
         effective_depth = max_depth if max_depth is not None else 0
         return self._list_folders_inner(self._full_path(path), effective_depth=effective_depth, pattern=pattern)
 
@@ -500,7 +525,7 @@ class AsyncStore:
         """
         _bk = self._backend.name
         log.debug("iter_children path=%r", path, extra={"op": "iter_children", "path": path, "backend": _bk})
-        self._backend.capabilities.require(Capability.LIST, backend=_bk)
+        self._gate("iter_children")
         return self._iter_children_inner(self._full_path(path))
 
     async def _iter_children_inner(self, full_path: str) -> AsyncIterator[FileInfo | FolderEntry]:
@@ -527,7 +552,7 @@ class AsyncStore:
             CapabilityNotSupported: If the backend lacks ``GLOB``.
         """
         log.debug("glob pattern=%r", pattern, extra={"op": "glob", "path": pattern, "backend": self._backend.name})
-        self._backend.capabilities.require(Capability.GLOB, backend=self._backend.name)
+        self._gate("glob")
         full_pattern = f"{self._root}/{pattern}" if self._root else pattern
         return self._glob_inner(full_pattern)
 
@@ -562,7 +587,7 @@ class AsyncStore:
         log.debug(
             "move src=%r dst=%r overwrite=%r", src, dst, overwrite, extra={"op": "move", "path": src, "backend": _bk}
         )
-        self._backend.capabilities.require(Capability.MOVE, backend=_bk)
+        self._gate("move")
         src_path = self._require_file_path(src)
         dst_path = self._require_file_path(dst)
         if src_path == dst_path:
@@ -596,7 +621,7 @@ class AsyncStore:
         log.debug(
             "copy src=%r dst=%r overwrite=%r", src, dst, overwrite, extra={"op": "copy", "path": src, "backend": _bk}
         )
-        self._backend.capabilities.require(Capability.COPY, backend=_bk)
+        self._gate("copy")
         src_path = self._require_file_path(src)
         dst_path = self._require_file_path(dst)
         if src_path == dst_path:
@@ -654,7 +679,7 @@ class AsyncStore:
         """
         _bk = self._backend.name
         log.debug("get_file_info path=%r", path, extra={"op": "get_file_info", "path": path, "backend": _bk})
-        self._backend.capabilities.require(Capability.METADATA, backend=_bk)
+        self._gate("get_file_info")
         info = await self._backend.get_file_info(self._require_file_path(path))
         return self._rebase_file_info(info)
 
@@ -695,12 +720,13 @@ class AsyncStore:
 
         if max_depth is None:
             # Full recursive traversal via backend
-            self._backend.capabilities.require(Capability.METADATA, backend=_bk)
+            self._gate("get_folder_info")
             info = await self._backend.get_folder_info(self._full_path(path))
             return self._rebase_folder_info(info)
 
-        # Depth-limited aggregation at the Store level
-        self._backend.capabilities.require(Capability.LIST, backend=_bk)
+        # Depth-limited aggregation at the Store level.  Uses list_files gating
+        # (LIST) since the aggregation is built from list_files() calls.
+        self._gate("list_files")
         if not await self._backend.is_folder(self._full_path(path)):
             raise NotFound(
                 f"Folder not found: {path}",
@@ -744,7 +770,7 @@ class AsyncStore:
         """
         _bk = self._backend.name
         log.debug("head path=%r", path, extra={"op": "head", "path": path, "backend": _bk})
-        self._backend.capabilities.require(Capability.METADATA, backend=_bk)
+        self._gate("head")
         info = await self._backend.get_file_info(self._require_file_path(path))
         rebased = self._rebase_file_info(info)
         return WriteResult(
@@ -927,6 +953,14 @@ class AsyncStore:
     # endregion
 
     # region: private helpers
+
+    def _gate(self, method: str) -> None:
+        """Raise CapabilityNotSupported if the backend lacks the gated capability."""
+        try:
+            cap = _GATING[method]
+        except KeyError:
+            raise AssertionError(f"_gate({method!r}) called but {method!r} is not registered in _GATING") from None
+        self._backend.capabilities.require(cap, backend=self._backend.name)
 
     def _full_path(self, path: str) -> str:
         """Resolve a path that may be empty (store root) or a relative subpath.
