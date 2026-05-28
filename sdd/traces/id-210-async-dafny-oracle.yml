@@ -7,7 +7,7 @@ audience:
   - infra.test
 surprising_ripples:
   - tests/backends/conformance/test_async_extended.py
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

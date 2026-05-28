@@ -15,13 +15,18 @@ async semantics that a ``to_thread``-bridged sync backend cannot express
 (concurrency ordering, mid-await cancellation) are out of scope — see the
 ID-210 backlog "Open question" for the bridged-first rationale.
 
-``cleanup=None`` matches the sibling ``memory_async_adapted`` registration:
-``SyncBackendAdapter.aclose()`` already routes to the wrapped backend's
-``close()`` for fixtures that want it, and ``DafnyOracleBackend`` inherits
-the ``Backend`` ABC's no-op close — so the sync ``dafny_oracle`` cleanup's
-BE-020-idempotency rationale does not transfer here, and reaching into
-``adapter._sync`` from a per-fixture hook would break encapsulation for no
-real teardown obligation.
+``cleanup=None`` (no ``aclose`` either) matches the sibling
+``memory_async_adapted`` registration: this fixture wires no teardown hook,
+so the ``async_backend`` indirect fixture in
+``tests/backends/conformance/conftest.py`` invokes neither
+``fixture.aclose`` nor ``fixture.cleanup`` at parametrize teardown — and
+``DafnyOracleBackend.close()`` is therefore never executed on the async
+leg. That is intentional: ``DafnyOracleBackend`` inherits the ``Backend``
+ABC's no-op close, so the sync ``dafny_oracle`` cleanup's BE-020
+idempotency-on-every-iteration exercise has nothing to assert here; BE-020
+stays certified by the sync ``dafny_oracle`` conformance cycle only.
+Reaching into ``adapter._sync`` from a per-fixture hook would break
+encapsulation for no real teardown obligation.
 """
 
 from __future__ import annotations
