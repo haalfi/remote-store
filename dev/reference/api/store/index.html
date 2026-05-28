@@ -10788,7 +10788,8 @@ underscore; total payload must not exceed 2048 bytes.</p>
               <code><span title="ValueError">ValueError</span></code>
             –
           <div class="doc-md-description">
-            <p>If <em>metadata</em> fails shape validation (WR-011).</p>
+            <p>If <em>metadata</em> fails shape validation (keys and
+values must be <code>str</code> with bounded total size).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -11792,7 +11793,7 @@ Each raises <code>CapabilityNotSupported</code> on backends that do not declare 
             –
           <div class="doc-md-description">
             <p>If <em>src</em> or <em>dst</em> is empty, or if <em>src</em> names a
-directory (BE-018, BE-021).</p>
+directory.</p>
           </div>
         </li>
     </ul>
@@ -11886,7 +11887,7 @@ Check <code>store.supports(Capability.ATOMIC_MOVE)</code> to query this at runti
             –
           <div class="doc-md-description">
             <p>If <em>src</em> or <em>dst</em> is empty, or if <em>src</em> names a
-directory (BE-019, BE-021).</p>
+directory.</p>
           </div>
         </li>
     </ul>

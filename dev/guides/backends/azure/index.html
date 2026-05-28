@@ -10089,15 +10089,16 @@ uploads and downloads (default <code>1</code> -- sequential).</p>
 <code>write_atomic</code> / <code>open_atomic</code> / <code>move</code> / <code>copy</code> HEAD
 each slash-aligned ancestor of the target path on non-HNS
 accounts and raise <code>InvalidPath</code> on the first regular-file
-hit. On HNS accounts the kwarg short-circuits: <code>hdi_isfolder</code>
-rejects the operation natively, <strong>but</strong> until ID-213 / BK-235
-lands that native rejection surfaces as <code>NotFound</code> or
-<code>AlreadyExists</code> rather than <code>InvalidPath</code>. The
-cross-backend <code>InvalidPath</code> contract the kwarg promises is
-therefore <em>deferred</em> on HNS, not delivered — even when set.
-Default <code>False</code>: closes the ID-209 cross-backend gap for
-flat-namespace Azure but adds one HEAD per ancestor per
-nested-path write. See spec 003 § BE-008 and ID-211.</p>
+hit, matching the cross-backend contract that hierarchical
+filesystems enforce natively. On HNS accounts the kwarg
+short-circuits: <code>hdi_isfolder</code> rejects the operation
+natively, but that native rejection currently surfaces as
+<code>NotFound</code> or <code>AlreadyExists</code> rather than <code>InvalidPath</code>.
+The cross-backend <code>InvalidPath</code> contract the kwarg promises
+is therefore <em>deferred</em> on HNS, not delivered — even when set.
+Default <code>False</code>: enabling the check adds one HEAD per
+ancestor per nested-path write; paths without slashes
+short-circuit.</p>
           </div>
         </li>
     </ul>

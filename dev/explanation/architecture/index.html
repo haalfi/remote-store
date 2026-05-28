@@ -9506,8 +9506,8 @@ Some extensions are always available (no extra dependencies); others require
 optional extras such as <code>arrow</code>, <code>otel</code>, or <code>dagster</code>.</p>
 <p>See the <a href="../../guides/extensions/">Extensions guide</a> for the full list and installation
 instructions.</p>
-<p>Extensions follow the contract defined in
-<a href="../design/adrs/0008-extension-architecture/">ADR-0008</a>:
+<p>Extensions follow the <a href="../design/adrs/0008-extension-architecture/">extension architecture
+contract</a>:
 no singleton state, no global registries, composable with the core Store API.</p>
 <h2 id="capability-system">Capability system<a class="headerlink" href="#capability-system" title="Permanent link">&para;</a></h2>
 <p>Backends declare supported operations via the <code>Capability</code> enum. This enables:</p>
@@ -9520,8 +9520,8 @@ no singleton state, no global registries, composable with the core Store API.</p
 </ul>
 <p>See the <a href="../../reference/capabilities-matrix/">Capabilities Matrix</a> for the full table.</p>
 <h2 id="configuration-philosophy">Configuration philosophy<a class="headerlink" href="#configuration-philosophy" title="Permanent link">&para;</a></h2>
-<p>Configuration follows strict rules
-(<a href="../design/adrs/0002-config-resolution-no-merge/">ADR-0002</a>):</p>
+<p>Configuration follows <a href="../design/adrs/0002-config-resolution-no-merge/">strict resolution
+rules</a>:</p>
 <ol>
 <li>Config-as-code has absolute priority (TOML, YAML, or dict)</li>
 <li>No merging, no overrides, no magic environment variable layering</li>

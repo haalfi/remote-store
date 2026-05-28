@@ -9556,7 +9556,10 @@ requires Dagster.  Install the relevant extra first:</p>
 <p>If the required dependency is not installed, importing the extension
 module raises a <code>ModuleNotFoundError</code> with installation instructions.</p>
 <h2 id="extension-guarantees">Extension Guarantees<a class="headerlink" href="#extension-guarantees" title="Permanent link">&para;</a></h2>
-<p>All extensions follow the same contract (ADR-0008, ADR-0013):</p>
+<p>All extensions follow the same contract — see the
+<a href="../../explanation/design/adrs/0008-extension-architecture/">extension architecture</a>
+and <a href="../../explanation/design/adrs/0013-drop-optional-extension-reexports/">optional-extension export rules</a>
+ADRs for the rationale:</p>
 <ul>
 <li><strong>Public API only</strong> — extensions use only the public Store / Backend
   API.  They never access private internals.</li>

@@ -9388,11 +9388,11 @@ declared.</p>
             <p>If <code>True</code>, <code>write</code> /
 <code>write_atomic</code> / <code>open_atomic</code> / <code>move</code> / <code>copy</code> HEAD
 each slash-aligned ancestor of the target path and raise
-<code>InvalidPath</code> on the first regular-file hit, closing the
-ID-209 cross-backend gap that flat-namespace backends carve
-out by default. Default <code>False</code>: each nested-path write
-otherwise pays one HEAD per ancestor (no-slash paths
-short-circuit). See spec 003 § BE-008 and ID-211.</p>
+<code>InvalidPath</code> on the first regular-file hit, matching the
+cross-backend contract that hierarchical filesystems enforce
+natively. Default <code>False</code>: each nested-path write otherwise
+pays one HEAD per ancestor; paths without slashes
+short-circuit.</p>
           </div>
         </li>
     </ul>

@@ -14498,7 +14498,7 @@ Each raises <code>CapabilityNotSupported</code> on backends that do not declare 
             –
           <div class="doc-md-description">
             <p>If <em>src</em> or <em>dst</em> is empty, or if <em>src</em> names a
-directory (BE-018, BE-021).</p>
+directory.</p>
           </div>
         </li>
     </ul>
@@ -14596,7 +14596,7 @@ Check <code>store.supports(Capability.ATOMIC_MOVE)</code> to query this at runti
             –
           <div class="doc-md-description">
             <p>If <em>src</em> or <em>dst</em> is empty, or if <em>src</em> names a
-directory (BE-019, BE-021).</p>
+directory.</p>
           </div>
         </li>
     </ul>
@@ -15986,11 +15986,12 @@ Without it, only locally computable fields are set.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <code>path</code> names a directory, or if an ancestor of
-<code>path</code> is a regular file (ID-209; see spec 003 § BE-008
-and spec 029 § ASYNC-008).  Flat-namespace backends cannot
-detect a file-ancestor in O(1) and skip this case — see
-ID-211.</p>
+            <p>If <code>path</code> names a directory, or if any slash-aligned
+ancestor of <code>path</code> exists as a regular file. Flat-namespace
+backends (S3, Azure non-HNS, SQL) cannot detect a file
+ancestor in O(1) and skip the check by default; the
+per-backend <code>reject_write_under_file_ancestor</code> opt-in
+enables it.</p>
           </div>
         </li>
     </ul>
@@ -16125,9 +16126,8 @@ declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <cod
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <code>path</code> names a directory, or if an ancestor of
-<code>path</code> is a regular file (ID-209; see <code>write</code> and spec
-029 § ASYNC-010).</p>
+            <p>If <code>path</code> names a directory, or if any slash-aligned
+ancestor of <code>path</code> exists as a regular file (see <code>write</code>).</p>
           </div>
         </li>
     </ul>
@@ -16848,9 +16848,8 @@ Each raises <code>CapabilityNotSupported</code> on backends that do not declare 
             –
           <div class="doc-md-description">
             <p>If <code>src</code> names a directory, <code>dst</code> names an
-existing directory, or an ancestor of <code>dst</code> is a regular
-file (ID-209; see spec 003 § BE-018 and spec 029 §
-ASYNC-018).</p>
+existing directory, or any slash-aligned ancestor of <code>dst</code>
+exists as a regular file.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -16946,9 +16945,8 @@ Check <code>store.supports(Capability.ATOMIC_MOVE)</code> to query at runtime.</
             –
           <div class="doc-md-description">
             <p>If <code>src</code> names a directory, <code>dst</code> names an
-existing directory, or an ancestor of <code>dst</code> is a regular
-file (ID-209; see spec 003 § BE-019 and spec 029 §
-ASYNC-019).</p>
+existing directory, or any slash-aligned ancestor of <code>dst</code>
+exists as a regular file.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -18240,7 +18238,7 @@ existing directory.</p>
 <p>Wraps any <code>AsyncBackend</code> as a synchronous <code>Backend</code> by running a private
 event loop on a dedicated daemon thread for the adapter's lifetime.  See
 <a href="../../../guides/async-sync-bridges/">Async-sync bridges</a> for the full
-behaviour contract and <a href="https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0025-async-to-sync-backend-adapter.md">ADR-0025</a>
+behaviour contract and the <a href="https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0025-async-to-sync-backend-adapter.md">async-to-sync adapter decision record</a>
 for the design rationale.</p>
 
 
@@ -18281,9 +18279,6 @@ manager -- callers that need <code>__aenter__</code> semantics should use
           </div>
         </li>
     </ul>
-        <p>See <a href="https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0025-async-to-sync-backend-adapter.md">ADR-0025</a>
-and <a href="https://github.com/haalfi/remote-store/blob/master/sdd/specs/029-async-store-backend-api.md">spec 029</a>
-§ AsyncBackendSyncAdapter for the full behaviour contract.</p>
 
 
 
@@ -18346,12 +18341,13 @@ and <a href="https://github.com/haalfi/remote-store/blob/master/sdd/specs/029-as
 
     <div class="doc doc-contents ">
 
-        <p>Capabilities with ASYNC-084 translation applied.</p>
+        <p>Capabilities reported by the wrapped backend, with stream-shape
+translation applied.</p>
 <p><code>SEEKABLE_READ</code> is masked off unconditionally — the chunk-pull
 stream this adapter returns is forward-only.  <code>USER_METADATA</code>
 and <code>WRITE_RESULT_NATIVE</code> are forwarded from the inner async
-backend unchanged; the <code>write*()</code> methods now accept and forward
-<code>metadata=</code> (Phase 3c complete, ID-013b).</p>
+backend unchanged; the <code>write*()</code> methods accept and forward
+<code>metadata=</code>.</p>
 
     </div>
 
@@ -18379,8 +18375,7 @@ because async-SDK handles are bound to the adapter's private event loop
 and cannot be used safely from the caller's thread.</p>
 <p>Wrapped backends that can expose a sync-safe handle should implement
 <code>_SyncSafeHandleProvider</code> and return it from
-<code>_SyncSafeHandleProvider.sync_safe_unwrap</code>
-(spec 029 § ASYNC-086).</p>
+<code>_SyncSafeHandleProvider.sync_safe_unwrap</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -18454,7 +18449,7 @@ that support the exemption.</p>
         <p>Submit a connectivity probe to the wrapped async backend.</p>
 <p>Not a no-op: the probe is forwarded to the wrapped
 <code>AsyncBackend</code>, and any connectivity error
-it raises reaches the sync caller unchanged (spec 029 § ASYNC-093).</p>
+it raises reaches the sync caller unchanged.</p>
 
 
 <p><span class="doc-section-title">Returns:</span></p>
@@ -18519,7 +18514,7 @@ event loop.</p>
         <p>Open <em>path</em> for reading and return a forward-only chunk-pull stream.</p>
 <p>The returned stream pulls one async chunk per <code>read()</code> call; the
 file is never fully materialised in memory.  At most one
-<code>__anext__</code> is in-flight at a time (spec 029 § ASYNC-081).</p>
+<code>__anext__</code> is in-flight at a time.</p>
 <p>The stream is forward-only: <code>seekable()</code> returns <code>False</code> and no
 <code>seek</code> / <code>tell</code> / <code>fileno</code> methods are exposed.  Closing via
 the context manager or <code>close()</code> submits <code>aclose()</code> on the
@@ -18687,8 +18682,8 @@ passes with zero skips.</p>
   <summary>Note</summary>
   <p><code>LAZY_READ</code> is included here but absent from <code>MemoryBackend</code>
 (the sync mirror).  The sync backend buffers fully in memory; the
-async backend can yield chunks incrementally.  The <code>mirrors</code> graph
-edge does not imply capability parity — see ID-162.</p>
+async backend can yield chunks incrementally.  The <code>mirrors</code>
+graph edge between the two does not imply capability parity.</p>
 </details>
 
 
@@ -20133,14 +20128,14 @@ uploads and downloads (default <code>1</code> -- sequential).</p>
 <code>write_atomic</code> / <code>move</code> / <code>copy</code> HEAD each
 slash-aligned ancestor of the target path on non-HNS
 accounts and raise <code>InvalidPath</code> on the first regular-file
-hit. On HNS accounts the kwarg short-circuits: <code>hdi_isfolder</code>
-rejects the operation natively, <strong>but</strong> until ID-213 / BK-235
-lands that native rejection surfaces as <code>NotFound</code> or
-<code>AlreadyExists</code> rather than <code>InvalidPath</code>. The
-cross-backend <code>InvalidPath</code> contract the kwarg promises is
-therefore <em>deferred</em> on HNS, not delivered — even when set.
-Default <code>False</code>. See spec 003 § BE-008 / spec 029 §
-ASYNC-008 and ID-211.</p>
+hit, matching the cross-backend contract that hierarchical
+filesystems enforce natively. On HNS accounts the kwarg
+short-circuits: <code>hdi_isfolder</code> rejects the operation
+natively, but that native rejection currently surfaces as
+<code>NotFound</code> or <code>AlreadyExists</code> rather than <code>InvalidPath</code>.
+The cross-backend <code>InvalidPath</code> contract the kwarg promises
+is therefore <em>deferred</em> on HNS, not delivered — even when set.
+Default <code>False</code>.</p>
           </div>
         </li>
     </ul>

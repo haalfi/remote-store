@@ -9338,12 +9338,12 @@
 <h1 id="proxystore">ProxyStore<a class="headerlink" href="#proxystore" title="Permanent link">&para;</a></h1>
 <p>Base class for building Store middleware. Subclass it to intercept
 specific operations while delegating the rest to the inner Store.</p>
-<p>ProxyStore is an internal delegation base by design
-(<a href="../../../explanation/design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/">ADR-0014</a>) —
+<p>ProxyStore is an <a href="../../../explanation/design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/">internal delegation base by
+design</a> —
 it centralises the private-attribute coupling that <code>ObservedStore</code> and
-<code>CachedStore</code> share. It is documented here because it is visible in
-their inheritance chain and useful for anyone building custom Store
-extensions (<a href="../../../explanation/design/adrs/0015-proxystore-publicly-documented/">ADR-0015</a>).</p>
+<code>CachedStore</code> share. It is <a href="../../../explanation/design/adrs/0015-proxystore-publicly-documented/">documented publicly</a>
+because it is visible in their inheritance chain and useful for anyone
+building custom Store extensions.</p>
 
 
 <div class="doc doc-object doc-class">

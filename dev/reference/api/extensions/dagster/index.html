@@ -10233,7 +10233,7 @@ without duplicating config into dagster-aws / dagster-azure.</p>
 
 
 
-        <p>Protocol for pluggable serializers (DAG-001).</p>
+        <p>Protocol for pluggable serializers.</p>
 <p>Implement this to provide a custom serializer to
 <code>dagster_io_manager(store, serializer=my_serializer)</code>.</p>
 
@@ -10321,7 +10321,7 @@ without duplicating config into dagster-aws / dagster-azure.</p>
 
 
 
-        <p>Pickle-based serializer (DAG-002). Universal; opaque format.</p>
+        <p>Pickle-based serializer. Universal; opaque format.</p>
 
 
 
@@ -10407,7 +10407,7 @@ without duplicating config into dagster-aws / dagster-azure.</p>
 
 
 
-        <p>JSON serializer (DAG-003). JSON-serializable objects only.</p>
+        <p>JSON serializer. JSON-serializable objects only.</p>
 
 
 
@@ -10494,7 +10494,7 @@ without duplicating config into dagster-aws / dagster-azure.</p>
 
 
 
-        <p>Parquet serializer via PyArrow (DAG-004). DataFrames and Arrow Tables.</p>
+        <p>Parquet serializer via PyArrow. DataFrames and Arrow Tables.</p>
 
 
 
@@ -10582,10 +10582,10 @@ without duplicating config into dagster-aws / dagster-azure.</p>
 
 
 
-        <p>Dagster resource that constructs a Store from config fields (DAG-012).</p>
-<p>Unlike stateless utility extensions (ADR-0008), this class owns Store
-lifecycle because it is a Dagster Resource with <code>setup_for_execution</code>
-/ <code>teardown_after_execution</code> hooks.</p>
+        <p>Dagster resource that constructs a Store from config fields.</p>
+<p>Unlike stateless utility extensions, this class owns Store lifecycle
+because it is a Dagster Resource with <code>setup_for_execution</code> /
+<code>teardown_after_execution</code> hooks.</p>
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
@@ -10762,7 +10762,7 @@ constructor rejects the supplied <em>backend_options</em>.</p>
 
 
 
-        <p>IO manager factory that constructs a Store from config fields (DAG-015).</p>
+        <p>IO manager factory that constructs a Store from config fields.</p>
 <p>Embeds backend configuration directly so the IO manager owns the full
 Store lifecycle (setup and teardown). For direct Store access in assets,
 use <code>DagsterStoreResource</code> as a separate resource.</p>
@@ -10961,7 +10961,7 @@ Parquet dataset output via <code>ParquetDatasetStore</code>.</p>
 
 
 
-        <p>Captures op/step <code>stdout</code> / <code>stderr</code> to any remote-store backend (DAG-021 – DAG-033).</p>
+        <p>Captures op/step <code>stdout</code> / <code>stderr</code> to any remote-store backend.</p>
 <p>A Dagster <code>ComputeLogManager</code> wired into <code>dagster.yaml</code> as an instance
 component. Logs are captured to a local staging directory at the
 file-descriptor level, then uploaded to a <code>Store</code> the manager builds
@@ -11173,7 +11173,7 @@ capability the manager requires (<code>READ</code>, <code>WRITE</code>,
 
     <div class="doc doc-contents ">
 
-        <p>The <code>dagster.yaml</code> config schema for this manager (DAG-021).</p>
+        <p>The <code>dagster.yaml</code> config schema for this manager.</p>
 
 
     </div>
@@ -11200,7 +11200,7 @@ capability the manager requires (<code>READ</code>, <code>WRITE</code>,
 
     <div class="doc doc-contents ">
 
-        <p>Construct a manager from a validated <code>dagster.yaml</code> config value (DAG-021).</p>
+        <p>Construct a manager from a validated <code>dagster.yaml</code> config value.</p>
 
 
     </div>
@@ -11224,7 +11224,7 @@ capability the manager requires (<code>READ</code>, <code>WRITE</code>,
 
     <div class="doc doc-contents ">
 
-        <p>Stream a log object from the Store into the local staging file (DAG-026).</p>
+        <p>Stream a log object from the Store into the local staging file.</p>
 
 
     </div>
@@ -11248,7 +11248,7 @@ capability the manager requires (<code>READ</code>, <code>WRITE</code>,
 
     <div class="doc doc-contents ">
 
-        <p>Return whether the Store holds a log object for this key (DAG-027).</p>
+        <p>Return whether the Store holds a log object for this key.</p>
 
 
     </div>
@@ -11270,7 +11270,7 @@ capability the manager requires (<code>READ</code>, <code>WRITE</code>,
 
     <div class="doc doc-contents ">
 
-        <p>A human-readable Store location for the Dagster UI, once capture is done (DAG-028).</p>
+        <p>A human-readable Store location for the Dagster UI, once capture is done.</p>
 
 
     </div>
@@ -11292,7 +11292,7 @@ capability the manager requires (<code>READ</code>, <code>WRITE</code>,
 
     <div class="doc doc-contents ">
 
-        <p>No signed-URL primitive in v1 — the webserver streams logs itself (DAG-028).</p>
+        <p>No signed-URL primitive in v1 — the webserver streams logs itself.</p>
 
 
     </div>
@@ -11315,7 +11315,7 @@ capability the manager requires (<code>READ</code>, <code>WRITE</code>,
 
     <div class="doc doc-contents ">
 
-        <p>Delete captured logs by <code>log_key</code> or by <code>prefix</code>, local and remote (DAG-029).</p>
+        <p>Delete captured logs by <code>log_key</code> or by <code>prefix</code>, local and remote.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11349,7 +11349,7 @@ capability the manager requires (<code>READ</code>, <code>WRITE</code>,
 
     <div class="doc doc-contents ">
 
-        <p>Enumerate the stored log keys under a log-key prefix (DAG-031).</p>
+        <p>Enumerate the stored log keys under a log-key prefix.</p>
 
 
     </div>
@@ -11369,7 +11369,7 @@ capability the manager requires (<code>READ</code>, <code>WRITE</code>,
 
     <div class="doc doc-contents ">
 
-        <p>Register a UI live-tail subscription with the polling manager (DAG-030).</p>
+        <p>Register a UI live-tail subscription with the polling manager.</p>
 
 
     </div>
@@ -11391,7 +11391,7 @@ capability the manager requires (<code>READ</code>, <code>WRITE</code>,
 
     <div class="doc doc-contents ">
 
-        <p>Deregister a UI live-tail subscription from the polling manager (DAG-030).</p>
+        <p>Deregister a UI live-tail subscription from the polling manager.</p>
 
 
     </div>
@@ -11411,7 +11411,7 @@ capability the manager requires (<code>READ</code>, <code>WRITE</code>,
 
     <div class="doc doc-contents ">
 
-        <p>Dispose the subscription and local managers and close the Store (DAG-032).</p>
+        <p>Dispose the subscription and local managers and close the Store.</p>
 
 
     </div>
@@ -11442,7 +11442,7 @@ capability the manager requires (<code>READ</code>, <code>WRITE</code>,
 
     <div class="doc doc-contents ">
 
-        <p>Wrap a Store as a Dagster IOManager (DAG-011).</p>
+        <p>Wrap a Store as a Dagster IOManager.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11511,7 +11511,7 @@ custom object satisfying the <code>Serializer</code> protocol.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Wrap a Store as a Dagster IOManager using ParquetDatasetStore (DAG-017).</p>
+        <p>Wrap a Store as a Dagster IOManager using ParquetDatasetStore.</p>
 <p>Unlike <code>dagster_io_manager</code> which serializes objects to single files,
 this manager writes Parquet datasets (multi-file with manifest) via
 <code>ParquetDatasetStore</code>.</p>

@@ -9628,8 +9628,8 @@ and place it in your project <code>.env</code>:</p>
 <p><code>tests/backends/azure/test_live_hns.py</code> carries the <code>live</code> pytest marker
 and exercises sync HNS semantics that the conformance suite against
 <code>azure_live</code> cannot express: directory-blob <code>hdi_isfolder</code> probes,
-WriteResult etag normalisation cross-check, the <code>write_atomic</code> streaming
-guard against BUG-202, the <code>get_folder_info("")</code> HNS root carve-out,
+WriteResult etag normalisation cross-check, the <code>write_atomic</code>
+streaming-payload guard, the <code>get_folder_info("")</code> HNS root carve-out,
 and the <code>_ensure_hns()</code> exists fallback. <code>live</code>-marked tests are
 excluded by default <code>addopts</code> and have to be opted into explicitly:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span>live<span class="w"> </span>tests/backends/azure/test_live_hns.py

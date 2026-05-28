@@ -10866,11 +10866,12 @@ file. Only honoured when the backend declares <code>USER_METADATA</code>.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> names a directory, or if an ancestor of
-<em>path</em> is a regular file (ID-209; see spec 003 § BE-008).
-Flat-namespace backends (S3, Azure non-HNS, SQL) cannot
-detect a file-ancestor in O(1) and skip this case — see
-ID-211.</p>
+            <p>If <em>path</em> names a directory, or if any slash-aligned
+ancestor of <em>path</em> exists as a regular file. Flat-namespace
+backends (S3, Azure non-HNS, SQL) cannot detect a file
+ancestor in O(1) and skip the check by default; the
+per-backend <code>reject_write_under_file_ancestor</code> opt-in
+enables it.</p>
           </div>
         </li>
     </ul>
@@ -10994,9 +10995,8 @@ declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <cod
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> names a directory, or if an ancestor of
-<em>path</em> is a regular file (ID-209; see <code>write</code> and spec
-003 § BE-008).</p>
+            <p>If <em>path</em> names a directory, or if any slash-aligned
+ancestor of <em>path</em> exists as a regular file (see <code>write</code>).</p>
           </div>
         </li>
     </ul>
@@ -11075,9 +11075,8 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> names a directory, or if an ancestor of
-<em>path</em> is a regular file (ID-209; see <code>write</code> and spec
-003 § BE-008).</p>
+            <p>If <em>path</em> names a directory, or if any slash-aligned
+ancestor of <em>path</em> exists as a regular file (see <code>write</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -11792,9 +11791,8 @@ glob support override this and declare <code>Capability.GLOB</code>.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <code>src</code> or <code>dst</code> names a directory, or if an
-ancestor of <code>dst</code> is a regular file (ID-209; see spec
-003 § BE-018).</p>
+            <p>If <code>src</code> or <code>dst</code> names a directory, or if any
+slash-aligned ancestor of <code>dst</code> exists as a regular file.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -11882,9 +11880,8 @@ ancestor of <code>dst</code> is a regular file (ID-209; see spec
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <code>src</code> or <code>dst</code> names a directory, or if an
-ancestor of <code>dst</code> is a regular file (ID-209; see spec
-003 § BE-019).</p>
+            <p>If <code>src</code> or <code>dst</code> names a directory, or if any
+slash-aligned ancestor of <code>dst</code> exists as a regular file.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

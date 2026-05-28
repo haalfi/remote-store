@@ -9423,8 +9423,7 @@ Use <code>Store.supports()</code> to query at runtime.</p>
   returning.  Backends that pre-load the full file contents (e.g.
   in-memory backends, SQL blob stores) do <strong>not</strong> declare this flag.
   Callers can use <code>store.supports(Capability.LAZY_READ)</code> to know
-  whether partial reads avoid loading the entire file.
-  See also: spec SIO-009 in <code>sdd/specs/006-streaming-io.md</code>.</li>
+  whether partial reads avoid loading the entire file.</li>
 <li><code>WRITE_RESULT_NATIVE</code> -- Quality flag: the backend populates the
   rich fields of the returned <code>WriteResult</code> (<code>etag</code>,
   <code>last_modified</code>, <code>version_id</code>, and where applicable
@@ -9433,7 +9432,7 @@ Use <code>Store.supports()</code> to query at runtime.</p>
   Backends without this flag return a <code>WriteResult</code> with only
   <code>path</code> and <code>size</code> populated (<code>source == "basic"</code>);
   <code>metadata</code> is governed independently by the <code>USER_METADATA</code>
-  gate (WR-005, WR-012) and is not subject to this flag.
+  capability and is not subject to this flag.
   Use <code>store.supports(Capability.WRITE_RESULT_NATIVE)</code> to decide
   whether to call <code>store.get_file_info()</code> after a write if you
   need the full metadata set.</li>

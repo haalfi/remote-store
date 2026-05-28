@@ -10142,7 +10142,7 @@ walkthrough of the <code>Backend</code> contract, error mapping, and capabilitie
 <li>If the backend needs an extra, add it to <code>pyproject.toml</code> <code>[project.optional-dependencies]</code></li>
 </ol>
 <h2 id="adding-an-extension">Adding an Extension<a class="headerlink" href="#adding-an-extension" title="Permanent link">&para;</a></h2>
-<p>Extensions live in <code>src/remote_store/ext/</code> and follow the contract in <a href="../design/adrs/0008-extension-architecture/">ADR-0008</a>. Full checklist:</p>
+<p>Extensions live in <code>src/remote_store/ext/</code> and follow the contract in the <a href="../design/adrs/0008-extension-architecture/">extension architecture ADR</a>. Full checklist:</p>
 <ol>
 <li>Write an RFC in <code>sdd/rfcs/</code>, get it accepted as a spec in <code>sdd/specs/</code></li>
 <li>Implement in <code>src/remote_store/ext/&lt;name&gt;.py</code> — define <code>__all__</code></li>
@@ -10288,8 +10288,8 @@ smoke targets in <code>scripts/drift_smoke_map.py</code> for any extra that drif
 and reconciles a single rolling GitHub issue. The workflow never edits
 <code>pyproject.toml</code> and never opens a pin-update PR — it is early warning,
 not automated remediation.</p>
-<p>When you deliberately bump a floor (e.g. <code>paramiko&gt;=3.0</code> after BUG-204),
-refresh the baseline in the same PR:</p>
+<p>When you deliberately bump a floor (e.g. <code>paramiko&gt;=3.0</code> after a
+known-breaking upstream release), refresh the baseline in the same PR:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>hatch run drift-check refresh-baseline &lt;extra&gt;     # regenerate the lock
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>hatch run drift-check render-docs                  # regenerate the docs page
 </code></pre></div>

@@ -9481,11 +9481,11 @@
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.</p>
 <h2 id="v0241-to-v0250">v0.24.1 to v0.25.0<a class="headerlink" href="#v0241-to-v0250" title="Permanent link">&para;</a></h2>
-<p><strong><code>[sftp]</code> extra now requires <code>paramiko&gt;=3.0</code> (BUG-204):</strong></p>
+<p><strong><code>[sftp]</code> extra now requires <code>paramiko&gt;=3.0</code>:</strong></p>
 <p>The SFTP backend uses paramiko 3.0's <code>channel_timeout=</code> connect kwarg. Environments
 pinned to <code>paramiko&lt;3</code> must upgrade. <code>pip install "remote-store[sftp]"</code> resolves the
 correct version automatically; pinned <code>paramiko==2.x</code> will now conflict.</p>
-<p><strong>Azure HNS error types now match the canonical mapping (BUG-190 through BUG-203, BUG-213):</strong></p>
+<p><strong>Azure HNS error types now match the canonical mapping:</strong></p>
 <p>On real ADLS Gen2 (Hierarchical Namespace) accounts, many <code>AzureBackend</code> and
 <code>AsyncAzureBackend</code> operations previously raised the wrong error type when the path
 named a directory blob (or, conversely, a file blob where a directory was expected).
@@ -9555,7 +9555,7 @@ clauses will no longer fire on HNS:</p>
 </table>
 <p>Flat-namespace blob accounts (non-HNS) and Azurite were already correct and are
 unaffected. Sync and async siblings behave identically.</p>
-<p><strong><code>Store.move(p, p)</code> / <code>copy(p, p)</code> self-op error type (BK-227):</strong></p>
+<p><strong><code>Store.move(p, p)</code> / <code>copy(p, p)</code> self-op error type:</strong></p>
 <p>Across all backends, <code>Store.move</code> / <code>copy</code> and <code>AsyncStore.move</code> / <code>copy</code> now raise
 <code>InvalidPath</code> (was <code>NotFound</code>) when the source path is a directory and <code>src == dst</code>.
 The file no-op case is unchanged.</p>
@@ -9565,7 +9565,7 @@ The file no-op case is unchanged.</p>
 strict variant. If your tooling or CI relied on <code>test-cov</code> failing under 95% switch
 to <code>test-cov-strict</code>.</p>
 <h2 id="v0240-to-v0241">v0.24.0 to v0.24.1<a class="headerlink" href="#v0240-to-v0241" title="Permanent link">&para;</a></h2>
-<p><strong>S3 botocore Config options route through <code>config_kwargs</code> (BUG-185):</strong></p>
+<p><strong>S3 botocore Config options route through <code>config_kwargs</code>:</strong></p>
 <p>Pre-built <code>botocore.config.Config</code> objects are no longer accepted in
 <code>client_options["client_kwargs"]</code>. Pass the same constructor kwargs through
 <code>config_kwargs</code> (a plain dict) instead. The old form raised <code>TypeError</code> at
@@ -9578,7 +9578,7 @@ backend construction and a message naming the supported channel.</p>
 <p>The new "Botocore Client Tuning" section in <code>docs-src/guides/backends/s3.md</code>
 documents proxies, retries, timeouts, and MinIO path-style addressing with
 runnable snippets. Applies to both <code>S3Backend</code> and <code>S3PyArrowBackend</code>.</p>
-<p><strong>Custom backends must declare <code>CAPABILITIES: ClassVar[CapabilitySet]</code> (ID-159):</strong></p>
+<p><strong>Custom backends must declare <code>CAPABILITIES: ClassVar[CapabilitySet]</code>:</strong></p>
 <p>If you maintain a custom <code>Backend</code> or <code>AsyncBackend</code> subclass, add a
 class-level <code>CAPABILITIES</code> attribute exposing the capability set without
 requiring instantiation, and delegate the <code>capabilities</code> property to it.
@@ -9587,7 +9587,7 @@ attribute. See <code>docs-src/guides/custom-backend-guide.md</code> § "Step 3" 
 template; existing constructor-set capability logic continues to work, but
 the ClassVar is required for static extraction.</p>
 <h2 id="v0200-to-v0210">v0.20.0 to v0.21.0<a class="headerlink" href="#v0200-to-v0210" title="Permanent link">&para;</a></h2>
-<p><strong><code>ParquetSerializer.deserialize()</code> returns Arrow Table (BUG-135):</strong></p>
+<p><strong><code>ParquetSerializer.deserialize()</code> returns Arrow Table:</strong></p>
 <p><code>ParquetSerializer.deserialize()</code> now returns a <code>pyarrow.Table</code> instead of a
 <code>pandas.DataFrame</code>. This removes the hidden hard dependency on pandas for
 <code>remote-store[dagster,arrow]</code> users.</p>
@@ -9601,7 +9601,7 @@ the ClassVar is required for static extraction.</p>
 from the medallion example) continue to work but the override is now optional —
 the base class already returns a framework-neutral Arrow Table.</p>
 <h2 id="v0190-to-v0200">v0.19.0 to v0.20.0<a class="headerlink" href="#v0190-to-v0200" title="Permanent link">&para;</a></h2>
-<p><strong>Deprecated aliases removed (BK-130):</strong></p>
+<p><strong>Deprecated aliases removed:</strong></p>
 <p>Three factory functions renamed in v0.18.0 have had their old names removed:</p>
 <ul>
 <li><code>pydantic_to_registry_config()</code> → use <code>from_pydantic()</code></li>
@@ -9610,7 +9610,7 @@ the base class already returns a framework-neutral Arrow Table.</p>
 </ul>
 <p>Pre-v1: removed without a deprecation cycle. Find-and-replace is sufficient.</p>
 <h2 id="v0180-to-v0190">v0.18.0 to v0.19.0<a class="headerlink" href="#v0180-to-v0190" title="Permanent link">&para;</a></h2>
-<p><strong>Factory function renames (BK-010):</strong></p>
+<p><strong>Factory function renames:</strong></p>
 <p>Three ext factory functions were renamed for naming consistency.
 Old names emitted <code>DeprecationWarning</code> in v0.18.x and are removed after
 v0.19.0 (see <a href="#v0190-to-v0200">above</a>).</p>
@@ -9620,7 +9620,7 @@ v0.19.0 (see <a href="#v0190-to-v0200">above</a>).</p>
 <li><code>cached_store()</code> → <code>cache()</code></li>
 </ul>
 <h2 id="v0170-to-v0180">v0.17.0 to v0.18.0<a class="headerlink" href="#v0170-to-v0180" title="Permanent link">&para;</a></h2>
-<p><strong>Extension imports moved (ADR-0013):</strong></p>
+<p><strong>Extension imports moved:</strong></p>
 <p>Optional-dependency extensions are no longer re-exported from
 <code>remote_store.__init__</code>. Import them directly from their extension module:</p>
 <ul>
@@ -9662,7 +9662,7 @@ exported from <code>remote_store.__init__</code>.</p>
 <ul>
 <li><code>RegistryConfig.from_toml()</code> and <code>from_yaml()</code> are new. Existing
   <code>from_dict()</code> usage continues to work unchanged.</li>
-<li><code>from_dict()</code> now warns on unknown keys (CFG-012). If you were passing
+<li><code>from_dict()</code> now warns on unknown keys. If you were passing
   extra keys silently, you will see warnings. Remove the unknown keys or
   suppress the warning.</li>
 </ul>

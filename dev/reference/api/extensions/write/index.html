@@ -9339,7 +9339,6 @@
 <p>Guarantees a populated <code>WriteResult.digest</code> regardless of whether the
 backend declares <code>WRITE_RESULT_NATIVE</code>. The hash is always computed
 client-side over the bytes as they are written.</p>
-<p>Spec: EW-001..EW-004 in <code>sdd/specs/046-ext-write.md</code>.</p>
 
 
 
@@ -9442,7 +9441,7 @@ successfully.  <code>result</code> is <code>None</code> if the block raised.</p>
     <div class="doc doc-contents ">
 
         <p>Write <em>content</em> to <em>path</em> and return a <code>WriteResult</code> with a client-computed digest.</p>
-<p>Works on every backend declaring <code>Capability.WRITE</code> (EW-002).
+<p>Works on every backend declaring <code>Capability.WRITE</code>.
 The hash is always computed client-side regardless of
 <code>WRITE_RESULT_NATIVE</code>.</p>
 
@@ -9560,10 +9559,10 @@ finished writing — not before.  For large payloads, prefer calling
 <code>store.write()</code> directly with <code>metadata=</code>.</p>
 <p><strong><code>source</code> field:</strong> Both branches always set <code>source="basic"</code> on
 the returned <code>WriteResult</code>.  The metadata branch discards the
-<code>source</code> returned by <code>store.write_atomic()</code> because EW-004 cannot
-be honored for the no-metadata branch (<code>open_atomic</code> returns only a
-stream, not a <code>WriteResult</code>), so both branches use the same value
-for consistency.</p>
+<code>source</code> returned by <code>store.write_atomic()</code> because the rich-
+source contract cannot be honored for the no-metadata branch
+(<code>open_atomic</code> returns only a stream, not a <code>WriteResult</code>), so
+both branches use the same value for consistency.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

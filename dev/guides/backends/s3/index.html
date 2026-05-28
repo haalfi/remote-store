@@ -9923,11 +9923,11 @@ underlying <code>botocore.config.Config</code> accepts is available.</p>
 <code>config=AioConfig(**self.config_kwargs)</code> to
 <code>aiobotocore.create_client()</code>. Setting <code>client_kwargs['config']</code> in
 addition would duplicate the <code>config=</code> keyword and raise <code>TypeError:
-got multiple values for keyword argument 'config'</code>. Spec
-<a href="../../../explanation/design/specs/008-s3-backend/#s3-026">S3-026</a> pins the routing:
-every <code>Config</code> option flows through <code>client_options['config_kwargs']</code>,
-and a pre-built Config in <code>client_kwargs</code> is rejected with a clear
-<code>ValueError</code>.</p>
+got multiple values for keyword argument 'config'</code>. The
+<a href="../../../explanation/design/specs/008-s3-backend/#s3-026">S3 backend spec</a>
+pins the routing: every <code>Config</code> option flows through
+<code>client_options['config_kwargs']</code>, and a pre-built Config in
+<code>client_kwargs</code> is rejected with a clear <code>ValueError</code>.</p>
 </div>
 <h3 id="disabling-inherited-http-proxies">Disabling inherited HTTP proxies<a class="headerlink" href="#disabling-inherited-http-proxies" title="Permanent link">&para;</a></h3>
 <p>Required when the host has <code>HTTP_PROXY</code> / <code>HTTPS_PROXY</code> set in the
@@ -10293,11 +10293,11 @@ declared.</p>
             <p>If <code>True</code>, <code>write</code> /
 <code>write_atomic</code> / <code>open_atomic</code> / <code>move</code> / <code>copy</code> HEAD
 each slash-aligned ancestor of the target path and raise
-<code>InvalidPath</code> on the first regular-file hit, closing the
-ID-209 cross-backend gap that flat-namespace backends carve
-out by default. Default <code>False</code>: each nested-path write
-otherwise pays one HEAD per ancestor (no-slash paths
-short-circuit). See spec 003 § BE-008 and ID-211.</p>
+<code>InvalidPath</code> on the first regular-file hit, matching the
+cross-backend contract that hierarchical filesystems enforce
+natively. Default <code>False</code>: each nested-path write otherwise
+pays one HEAD per ancestor; paths without slashes
+short-circuit.</p>
           </div>
         </li>
     </ul>

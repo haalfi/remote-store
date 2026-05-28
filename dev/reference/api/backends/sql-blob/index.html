@@ -9353,8 +9353,9 @@ blob-storage backend (S3, Local, Azure) instead.</p>
 <code>write_atomic</code> / <code>open_atomic</code> / <code>move</code> / <code>copy</code>
 issue one <code>SELECT 1</code> per slash-aligned ancestor of the
 target path and raise <code>InvalidPath</code> on the first
-regular-file hit. Default <code>False</code>. See spec 003 § BE-008
-and ID-211.</p>
+regular-file hit, matching the cross-backend contract that
+hierarchical filesystems enforce natively. Default <code>False</code>;
+paths without slashes short-circuit.</p>
           </div>
         </li>
     </ul>

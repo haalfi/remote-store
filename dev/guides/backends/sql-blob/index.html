@@ -9823,7 +9823,7 @@ See the <a href="../../../reference/capabilities-matrix/">capabilities matrix</a
   which require complete data in a single statement. For files larger than
   process memory, use a blob-storage backend (S3, Local, Azure) instead.</li>
 <li><code>write_atomic()</code> delegates to <code>write()</code> — single SQL statements are inherently atomic.</li>
-<li><code>glob()</code> uses SQL-side narrowing (SQLite <code>GLOB</code> or <code>LIKE</code>) then client-side regex to enforce standard glob semantics (GLOB-014).</li>
+<li><code>glob()</code> uses SQL-side narrowing (SQLite <code>GLOB</code> or <code>LIKE</code>) then client-side regex to enforce standard glob semantics.</li>
 </ul>
 <h2 id="sqlite-optimizations">SQLite Optimizations<a class="headerlink" href="#sqlite-optimizations" title="Permanent link">&para;</a></h2>
 <p>When using SQLite, the backend automatically:</p>
@@ -9935,8 +9935,9 @@ blob-storage backend (S3, Local, Azure) instead.</p>
 <code>write_atomic</code> / <code>open_atomic</code> / <code>move</code> / <code>copy</code>
 issue one <code>SELECT 1</code> per slash-aligned ancestor of the
 target path and raise <code>InvalidPath</code> on the first
-regular-file hit. Default <code>False</code>. See spec 003 § BE-008
-and ID-211.</p>
+regular-file hit, matching the cross-backend contract that
+hierarchical filesystems enforce natively. Default <code>False</code>;
+paths without slashes short-circuit.</p>
           </div>
         </li>
     </ul>
