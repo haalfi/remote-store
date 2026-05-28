@@ -18,6 +18,7 @@ audience:
 co_shipped_items: []
 discovery_followups: []
 expected_ripples: []
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -78,3 +79,14 @@ phases:
         section: "Ripple-check table / Bug fix"
         read_type: verify
         extract: "Backlog move ID-191 → BACKLOG-DONE.md top of [Unreleased]; Wave-1 table cell updated to 'ID-191 landed; see BACKLOG-DONE.md'. backlogid.json no-op (191 < current max). Trace authored. No CHANGELOG (audience infra.test). No MemoryBackend-py/module_.py regen (ghost-only Dafny change). No Azure cassette ripple (new test fixture-independent)."
+  - id: review_fix
+    name: Review round 1 — sharpen contract clarity
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestMoveCrashInjection::test_partial_move_preserves_at_least_one_copy"
+        read_type: gate
+        extract: "Reviewer flagged the three-assertion stack as a tautology: the OR-disjunction was discharged trivially by the unconditional src/dst asserts following it, burying the contract behind a stronger discharge. Rewrote so the disjunction is the single contract-level assertion (with explicit BE-018 message); demoted src/dst-AND assertions to a separately-commented 'observation on this wrapper shape' block that documents what _CrashBetweenCopyAndDelete produces without masquerading as the invariant. PT018 ruff rule then required splitting the AND into two separate assert statements."
+      - file: sdd/formal/ResourceSafety.dfy
+        section: "§2.3 ObservableForAtomicMove / Observe / ObservedFailedPreservesSource"
+        read_type: gate
+        extract: "Reviewer flagged Observe(Initial) = ObservedFailed('not started') as conflating 'never started' with 'rolled back'. Tightened ObservableForAtomicMove to exclude both CopyDone AND Initial — Initial is not a terminal observable state of a completed move (neither AtomicMove nor CopyDeleteMove ever returns it). Observe is now structure-preserving over the predicate's domain ({DeleteDone, Failed(_,_)}). ObservedFailedPreservesSource simplifies to `ensures phase.Failed?` (was `phase.Failed? || phase == Initial`). Re-verifies at 17 verified, 0 errors."

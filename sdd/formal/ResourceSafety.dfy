@@ -314,19 +314,27 @@ datatype MoveContract =
 // note: NO ObservedCopyDone variant — that intermediate state must never be
 //       observable as a completed move to the caller of an atomic backend.
 
-// An atomic backend's observable terminal state must not be CopyDone.
-// CopyDeleteMove can sit in CopyDone when its delete step fails; an atomic
-// implementation either succeeds (DeleteDone) or rolls back (Failed).
+// An atomic backend's *terminal observable state* must be DeleteDone or
+// Failed — not CopyDone, not Initial.  CopyDeleteMove can sit in CopyDone
+// when its delete step fails; an atomic implementation either succeeds
+// (DeleteDone) or rolls back (Failed).  Initial is the pre-move state and
+// is excluded because the predicate characterises *post*-Move observation:
+// neither AtomicMove nor CopyDeleteMove ever returns it.  Tightening
+// against Initial keeps Observe's projection structure-preserving (each
+// observable runtime phase maps to its own contract variant rather than
+// the rollback variant absorbing the never-started state).
 // @spec BE-018
 predicate ObservableForAtomicMove(phase: MovePhase)
 {
-  phase != CopyDone
+  phase != CopyDone && phase != Initial
 }
 
 // Project an observable runtime phase into the strict observable-contract
-// datatype.  Total over the precondition (which excludes CopyDone by
-// ObservableForAtomicMove); deliberately partial elsewhere so a CopyDone
-// observation cannot accidentally be encoded as either contract variant.
+// datatype.  Total over the precondition (which excludes CopyDone and
+// Initial by ObservableForAtomicMove); deliberately partial elsewhere so a
+// CopyDone observation cannot accidentally be encoded as either contract
+// variant, and the pre-move Initial state cannot be conflated with a
+// rolled-back Failed observation.
 // @spec BE-018
 function Observe(phase: MovePhase): MoveContract
   requires ObservableForAtomicMove(phase)
@@ -334,7 +342,6 @@ function Observe(phase: MovePhase): MoveContract
   match phase
   case DeleteDone => ObservedDeleteDone
   case Failed(_, reason) => ObservedFailed(reason)
-  case Initial => ObservedFailed("not started")
 }
 
 // AtomicMove only ever exposes contract-observable states.  Discharged by
@@ -381,22 +388,22 @@ lemma CopyDeleteMoveExposesCopyDoneOnDeleteFail(
 }
 
 // Source-preservation invariant: any observable contract state other than
-// success is a failed state, which by construction (Observe's domain) maps
-// only from a non-CopyDone MovePhase.  The combined chain — atomic backend
-// must satisfy ObservableForAtomicMove, Observe is defined there, so a
-// Failed observation never reflects a CopyDone runtime state — formalises
-// the BE-018 prose "Failed (rollback, source preserved)".
+// success is a Failed state — a rollback observation reflects exactly the
+// Failed(_,_) runtime phase, never DeleteDone (excluded by Observe's
+// success branch) and never CopyDone / Initial (excluded by
+// ObservableForAtomicMove).  This formalises the BE-018 prose "Failed
+// (rollback, source preserved)" without the previous conflation between
+// never-started and rolled-back states.
 // @spec BE-018
 lemma ObservedFailedPreservesSource(phase: MovePhase, contract: MoveContract)
   requires ObservableForAtomicMove(phase)
   requires contract == Observe(phase)
   requires contract.ObservedFailed?
-  ensures phase != CopyDone
-  ensures phase != DeleteDone
-  ensures phase.Failed? || phase == Initial
+  ensures phase.Failed?
 {
-  // contract == ObservedFailed only when phase ∈ {Failed(_,_), Initial}
-  // (Observe maps DeleteDone → ObservedDeleteDone exclusively).
+  // contract == ObservedFailed only when phase is Failed(_,_):
+  //   - DeleteDone is excluded by Observe's success branch
+  //   - CopyDone and Initial are excluded by ObservableForAtomicMove
   match phase
   case DeleteDone =>
     assert Observe(phase) == ObservedDeleteDone;
@@ -404,8 +411,6 @@ lemma ObservedFailedPreservesSource(phase: MovePhase, contract: MoveContract)
     assert false;  // contradicts contract.ObservedFailed?
   case Failed(_, _) =>
     assert phase.Failed?;
-  case Initial =>
-    assert phase == Initial;
 }
 
 // ---------------------------------------------------------------------------

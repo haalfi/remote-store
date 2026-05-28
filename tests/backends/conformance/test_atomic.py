@@ -504,12 +504,20 @@ class TestMoveCrashInjection:
 
         src_present = inner.exists("crash_src.txt")
         dst_present = inner.exists("crash_dst.txt")
-        # The BE-018 invariant: never both gone. Discharged here on the
-        # typical copy-then-fail-on-delete shape (both still present),
-        # which is also what BE-018's prose anticipates real flat-namespace
-        # backends do on a partial failure.
-        assert src_present or dst_present
-        assert src_present, "copy-then-delete crash before delete must leave source intact"
-        assert dst_present, "crash AFTER copy materialised dst: dst should also be present"
+        # BE-018 contract: never both gone. This disjunction is the
+        # load-bearing assertion — the Dafny § 2.3 MoveContract excludes
+        # ObservedCopyDone (src gone, dst not yet written) for atomic
+        # backends, and `src OR dst` is its conformance shadow.
+        assert src_present or dst_present, "BE-018: source intact OR destination intact (never both gone)"
+        # Observation on this particular wrapper shape (inner.copy() then
+        # raise before inner.delete()): both files are still present and
+        # the source data is unchanged. This is *not* the contract — a
+        # different copy-then-delete crash injection (e.g. delete(src)
+        # before raise) would still satisfy BE-018 by leaving dst intact
+        # and src gone, and this AND-shaped block would no longer hold.
+        # Keeping it documents what the wrapper produces today without
+        # masquerading as the invariant under test.
+        assert src_present
+        assert dst_present
         assert inner.read_bytes("crash_src.txt") == b"payload"
         assert inner.read_bytes("crash_dst.txt") == b"payload"
