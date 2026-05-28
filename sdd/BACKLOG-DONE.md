@@ -8,6 +8,41 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-210 — Async Dafny oracle: certify async conformance against the verified `MemoryBackend`**
+  spec: ASYNC-004, ASYNC-005, ASYNC-006, ASYNC-007, ASYNC-008, ASYNC-010,
+  ASYNC-012, ASYNC-013, ASYNC-014, ASYNC-015, ASYNC-016, ASYNC-017, ASYNC-018,
+  ASYNC-019, ASYNC-020, ASYNC-024, ASYNC-029 · audience: infra.test
+  Wave 1 (T) test-backfill. Closes the gap spun off from ID-193 close-out:
+  the sync conformance suite has parametrised `dafny_oracle` as a peer
+  backend since the oracle landed, but the async suite ran only against
+  `memory_async_native`, `memory_async_adapted`, `local_async_adapted`, and
+  the Azure async fixtures — never against the compiled, verified-by-
+  construction `MemoryBackend` from `sdd/formal/MemoryBackend-py/`. The
+  async-shaped contract was therefore cross-checked between two Python
+  implementations (`AsyncMemoryBackend` and `SyncBackendAdapter(MemoryBackend())`)
+  rather than against a verified oracle, weakening the (T) leg for
+  async-only spec divergence.
+  Added a `dafny_oracle_async` fixture composing
+  `SyncBackendAdapter(DafnyOracleBackend())`, registered with
+  `is_async=true` in `tests/backends/fixtures/fixtures.toml`. The
+  registry-driven `pytest_generate_tests` hook in
+  `tests/backends/conformance/conftest.py` picks it up automatically, so
+  every test in `test_async_extended.py` (96 collected) now runs against
+  the verified oracle alongside `memory_async_*` / `local_async_adapted`
+  — 95 pass, 1 skips on capability grounds, identical to the
+  `memory_async_adapted` baseline. `SyncBackendAdapter` is itself
+  certified by `test_sync_adapter_conformance.py` (ASYNC-030..ASYNC-035),
+  so the composition `verified-by-construction sync oracle ∘ certified
+  adapter` is honest end-to-end without introducing a parallel
+  `AsyncDafnyOracleBackend` class to maintain. No `.dfy` change and no
+  re-translation: the contract is pure (T) wiring.
+  **Out of scope** (deliberately not opened as a follow-up): native-
+  `AsyncBackend` refinement in Dafny. Async-native semantics that the
+  `to_thread`-bridged sync oracle cannot express (concurrency ordering,
+  mid-await cancellation) are not currently observed in the conformance
+  suite; revisit only if a divergence emerges that the bridge masks.
+  Trace: `sdd/traces/id-210-async-dafny-oracle.yml`.
+
 - [x] **ID-191 — Move atomicity: model the observable contract, then enforce it**
   spec: BE-018 · audience: infra.test
   Wave 1 (C)+(T) pair, sibling of ID-188 (PR #689). Closes BE-018 Gap 5

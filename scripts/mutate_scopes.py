@@ -316,11 +316,18 @@ def _build() -> dict[str, Scope]:
             )
 
     # Async-extended — per backend that wires a native or adapted async
-    # implementation today (memory, local, azure). Mirrors the conformance-split
-    # ``if not f: continue`` guard so a future backend with only stage-3
-    # fixtures does not silently produce a scope with empty filter and
-    # ``_needs(f)`` expanding to ``full_needs``.
-    for backend_name in ("azure", "local", "memory"):
+    # implementation today (memory, local, azure, dafny oracle). Mirrors the
+    # conformance-split ``if not f: continue`` guard so a future backend with
+    # only stage-3 fixtures does not silently produce a scope with empty
+    # filter and ``_needs(f)`` expanding to ``full_needs``.
+    #
+    # ``dafny`` is here for the ID-210 ``dafny_oracle_async`` fixture: the
+    # compiled oracle is verified-by-construction so it has no
+    # ``src/remote_store/...`` sources to mutate; the scope targets the
+    # ``SyncBackendAdapter`` bridge that the (T) certification leans on
+    # (``_src(b)`` returns ``[]`` for backends whose sources live under
+    # ``tests/``, so the targets set reduces to ``{_SYNC_ADAPTER}``).
+    for backend_name in ("azure", "dafny", "local", "memory"):
         f = _filter_term(backend_name)
         if not f:
             continue

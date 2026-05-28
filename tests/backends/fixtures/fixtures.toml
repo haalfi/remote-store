@@ -74,6 +74,17 @@ kind      = "real-local"
 container = "none"
 is_async  = false
 
+# ID-210: async surface over the verified MemoryBackend, via SyncBackendAdapter.
+# Closes the (T) gap left when ID-193's async-oracle-integration phase didn't
+# land — the async extended conformance suite now runs against a
+# correct-by-construction oracle alongside memory_async_*.
+[fixture.dafny_oracle_async]
+backend   = "dafny"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = true
+
 [fixture.sqlblob]
 backend   = "sqlblob"
 stage     = 1
