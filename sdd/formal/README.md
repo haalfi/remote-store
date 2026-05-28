@@ -28,6 +28,39 @@ Three properties we want this layer to enforce:
 The first two are per-operation questions — **Dafny** territory. The
 third is composition — **TLA+** territory.
 
+## Three shapes of Dafny-section work: (C), (T), (O)
+
+The properties above explain why the layer exists. This subsection
+explains how a *backlog item* earns its place in the Dafny track. The
+SDD chain is `Markdown spec → @pytest.mark.spec test`. The marker is
+just a string: nothing proves a spec clause is self-consistent, and
+nothing proves the test faithfully encodes it. The Dafny layer is the
+machine-checked interlock in that chain. It earns its place three
+ways, none of which is "run a second backend and diff the output":
+
+1. **(C) A proven contract.** Dafny verifies that a clause's
+   postcondition is internally consistent and *satisfiable*, discharged
+   by the `MemoryBackend` refinement. A Markdown paragraph can silently
+   contradict itself; a verified `.dfy` postcondition cannot. A
+   contract clause that exists only in prose is unproven.
+2. **(T) The oracle certifies the test, not the backend.** The compiled
+   `MemoryBackend` is correct by construction and already runs the
+   whole conformance suite as a parametrized fixture. A green oracle on
+   a test proves the test demands nothing the verified contract does
+   not, i.e. the test faithfully encodes the spec. Running the oracle
+   as a peer backend to diff against would only test the oracle twice.
+3. **(O) The oracle as ground truth.** A deterministic test hardcodes
+   its expected value, and that literal is a better oracle than a
+   second process: readable and dependency-free. Only property-based
+   tests, with random inputs, need the verified oracle to *compute* the
+   expected value.
+
+Runtime backend gaps downstream of a Dafny-backed clause — a backend
+not honouring a verified postcondition — are spec-conformance work,
+not Dafny-section work. File them under the relevant backend section
+(SFTP, Azure, S3, etc.); the Dafny side of the contract is already
+proven.
+
 ## What we use
 
 ### Dafny
