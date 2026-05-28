@@ -279,6 +279,42 @@ def test_async_store_gating_keys_match_async_store_members(gen_graph_module):
         )
 
 
+def test_async_backend_gating_keys_match_async_backend_members(gen_graph_module):
+    """Every key in _ASYNC_BACKEND_GATING must be a real member of AsyncBackend.
+
+    Async sibling of ``test_backend_gating_keys_match_backend_members`` (ID-172).
+    Guards against stale entries after an AsyncBackend method is renamed or
+    removed; the dict lives in gen_graph.py (static-extraction only), so without
+    this test a rename would only surface at the next ``gen-graph-check`` run.
+    """
+    import griffe
+
+    sys.path.insert(0, str(ROOT / "src"))
+    pkg = griffe.load("remote_store")
+    async_backend_members = set(pkg["aio"]["_async_backend"]["AsyncBackend"].members)
+
+    for method_name in gen_graph_module._ASYNC_BACKEND_GATING:
+        assert method_name in async_backend_members, (
+            f"_ASYNC_BACKEND_GATING key {method_name!r} not found in AsyncBackend.members — "
+            "update _ASYNC_BACKEND_GATING in scripts/gen_graph.py"
+        )
+
+
+def test_async_backend_gating_mirrors_backend_minus_async_gaps(gen_graph_module):
+    """_ASYNC_BACKEND_GATING is the sync map minus methods AsyncBackend lacks.
+
+    AsyncBackend has no ``read_seekable`` / ``open_atomic`` (no async
+    equivalents); every other entry must agree with _BACKEND_GATING so the two
+    ABCs cannot drift to different capability requirements for the same method.
+    """
+    sync = gen_graph_module._BACKEND_GATING
+    async_ = gen_graph_module._ASYNC_BACKEND_GATING
+
+    assert set(sync) - set(async_) == {"read_seekable", "open_atomic"}
+    for method_name, cap in async_.items():
+        assert sync[method_name] == cap, f"{method_name}: async gate {cap!r} != sync gate {sync[method_name]!r}"
+
+
 def test_async_store_method_nodes_emitted(gen_graph_module):
     """gen_graph.py must emit method/req/gates/of edges for every AsyncStore _GATING entry.
 
@@ -304,6 +340,43 @@ def test_async_store_method_nodes_emitted(gen_graph_module):
     assert read_bytes_node["is_async"] is True
     assert read_bytes_node["summary"] == "read_bytes"
     assert read_bytes_node["file"] == "src/remote_store/aio/_async_store.py"
+
+
+def test_async_backend_method_nodes_emitted(gen_graph_module):
+    """gen_graph.py must emit method/req/gates/of edges for every _ASYNC_BACKEND_GATING entry.
+
+    Async sibling of ``test_async_store_method_nodes_emitted`` (ID-172). Pins
+    the existence of the AsyncBackend gate nodes and one representative
+    is_async=True example.
+    """
+    graph = gen_graph_module.build_graph()
+    node_ids = {n["id"] for n in graph["nodes"]}
+
+    for method_name in gen_graph_module._ASYNC_BACKEND_GATING:
+        mtd_uri = f"mtd:remote_store.aio._async_backend.AsyncBackend.{method_name}"
+        req_uri = f"req:remote_store.aio._async_backend.AsyncBackend.{method_name}.gate"
+        assert mtd_uri in node_ids, f"missing async backend method node {mtd_uri!r}"
+        assert req_uri in node_ids, f"missing async backend req node {req_uri!r}"
+
+    # read is an `async def` abstractmethod -> is_async must be True.
+    read_node = next(n for n in graph["nodes"] if n["id"] == "mtd:remote_store.aio._async_backend.AsyncBackend.read")
+    assert read_node["is_async"] is True
+    assert read_node["summary"] == "read"
+    assert read_node["file"] == "src/remote_store/aio/_async_backend.py"
+
+
+def test_async_backend_has_no_dual_gate_for_get_folder_info(gen_graph_module):
+    """AsyncBackend mirrors sync Backend: get_folder_info gates on METADATA only.
+
+    Unlike Store/AsyncStore (which dual-gate on LIST when ``max_depth`` is set),
+    the Backend ABCs carry a single METADATA gate. This pins the symmetry so a
+    future refactor cannot silently add an async-only dual gate.
+    """
+    graph = gen_graph_module.build_graph()
+    gfi_mtd = "mtd:remote_store.aio._async_backend.AsyncBackend.get_folder_info"
+
+    gates_edges = [e for e in graph["edges"] if e["kind"] == "gates" and e["dst"] == gfi_mtd]
+    assert len(gates_edges) == 1, f"expected 1 gates edge for AsyncBackend.get_folder_info, got {len(gates_edges)}"
 
 
 def test_async_store_get_folder_info_dual_gate(gen_graph_module):

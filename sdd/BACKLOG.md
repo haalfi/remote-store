@@ -54,23 +54,10 @@ and the highest ID already in this file, then take the next integer. Run
 ## Async API Verification
 
 Async API surface, conformance, and tooling. ID-192 (aio.md rework), ID-193
-(async conformance pattern), and ID-194 (gen_graph async gate extension)
-have landed (see BACKLOG-DONE.md); the verifier (ID-172) can now be wired
-to PAGES against the stabilised page.
+(async conformance pattern), ID-194 (gen_graph async gate extension), and
+ID-172 (aio.md wired into the verifier) have landed (see BACKLOG-DONE.md).
 
-**Sequence:** ID-172 → ID-173
-
-- [ ] **ID-172 — `check_api_docs.py` — `AsyncStore`/`AsyncBackend` ↔ `docs-src/reference/api/aio.md`**
-  spec: — · effort: M · audience: platform.tooling
-  Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
-  ID-192 (aio.md rework) and ID-194 (gen_graph async gate extension)
-  prerequisites have landed.
-  Add `AsyncStore` and `AsyncBackend` to `PAGES` in
-  `check_api_docs.py` pointing at `docs-src/reference/api/aio.md`.
-  `check_api_docs.py` is already wired into the `hatch run lint` script and the
-  CI lint job (landed via BK-203); adding the entries is the only remaining step.
-  Griffe traversal path (for the implementer):
-  `pkg.members["aio"].members["_async_store"].members["AsyncStore"]`
+**Sequence:** ID-173
 
 - [ ] **ID-173 — `check_api_docs.py` — `__all__` ↔ `docs-src/reference/api/index.md`**
   spec: — · effort: M · audience: platform.tooling

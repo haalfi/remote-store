@@ -8,6 +8,47 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-172 — `check_api_docs.py` Phase 3 — `AsyncStore`/`AsyncBackend` → `aio.md`**
+  spec: ASYNC-045a · audience: contributor.tooling
+  Spun off from ID-171; ID-192 (aio.md rework) and ID-194 (async gate
+  extension) prerequisites had landed. The backlog framed this as "adding
+  the [PAGES] entries is the only remaining step" — that under-estimated it.
+  Two extractor gaps surfaced on first run against `aio.md`:
+  - **Submodule public re-export.** The page uses `remote_store.aio.AsyncStore.*`,
+    which matched neither `page_class_methods` prefix (internal qname, or the
+    top-level `remote_store.<Class>` form). Replaced the hardcoded
+    `remote_store.{short_class}.` prefix with a derived public path that
+    drops `_`-prefixed module segments — sync-safe (`store.md`/`backend.md`
+    stay green) and correct for the `aio.` submodule.
+  - **Heading level.** Single-class pages put capability groups at `## H2`;
+    the multi-class `aio.md` nests them at `### H3` under each class's `## H2`,
+    so H2-only section splitting let a section-level `Requires` admonition
+    bleed across the whole class. Now splits on H2 *or* H3.
+  - **AsyncBackend was vacuous** (no async-backend gate edges in the graph).
+    Per the in-scope override decision, added `_ASYNC_BACKEND_GATING` to
+    `scripts/gen_graph.py` (mirrors `_BACKEND_GATING` minus
+    `read_seekable` / `open_atomic`; 14 entries) plus an AsyncBackend
+    method/req/gates/of emission loop. Graph: 142 → 170 nodes, 258 → 286 edges.
+    Specced as **ASYNC-045a** (referencing BE-027's table); BE-027 cross-links back.
+  - **Drift caught (the verifier earning its keep):** the `Requires
+    Capability.GLOB` note in `aio.md`'s `AsyncBackend` section sat *before*
+    `::: AsyncBackend.glob` (so it scoped to `iter_children`) — the same
+    placement bug ID-170 caught in `store.md`. Moved it after the directive.
+  - **Surprising ripple:** `docs-src/explanation/graph_viz.html` is generated
+    from `graph.json`; the gate additions made it stale (caught by
+    `test_graph_viz_html_is_up_to_date`). Regenerated via `hatch run gen-graph-viz`.
+  - Added four `PAGES` entries (AsyncStore + AsyncBackend → `aio.md`), updated
+    the error-hint to name all four gating dicts, and bumped the module
+    docstring (Phase 3). `TestLivePages` auto-covers the new entries; added
+    `test_real_graph_async_store_methods` / `test_real_graph_async_backend_methods`,
+    `aio.`-prefix + H3-scoping page tests, and gen_graph tests for the new
+    constant, its sync-mirror delta, node emission, and the METADATA-only
+    `get_folder_info` (no async-backend dual gate, matching sync Backend).
+  - **No CHANGELOG** — audience `contributor.tooling` only (per `_schema.yml`
+    derived rule). Note: the BACKLOG entry's `platform.tooling` tag was not in
+    the schema enum; corrected to `contributor.tooling`.
+  - **Remaining:** `__all__` ↔ `index.md` → ID-173 (different IR; separate PR).
+
 - [x] **ID-194 — gen_graph.py async gate extension (prereq for ID-172)**
   spec: — · audience: contributor.tooling
   Sibling of ID-171 (Backend gate extension). `gen_graph.py` already

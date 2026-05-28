@@ -238,6 +238,29 @@ _BACKEND_GATING: dict[str, str] = {
 }
 
 
+# Async counterpart of _BACKEND_GATING.  AsyncBackend mirrors the sync Backend
+# gate map minus ``read_seekable`` / ``open_atomic``, which have no async
+# equivalents (same delta the async-store _GATING applies; see the
+# CLAUDE-REFERENCE ripple-check).  Like _BACKEND_GATING this lives here
+# (graph-IR generation only) — AsyncBackend has no runtime _gate() equivalent.
+_ASYNC_BACKEND_GATING: dict[str, str] = {
+    "read": "READ",
+    "read_bytes": "READ",
+    "write": "WRITE",
+    "write_atomic": "ATOMIC_WRITE",
+    "delete": "DELETE",
+    "delete_folder": "DELETE",
+    "list_files": "LIST",
+    "list_folders": "LIST",
+    "iter_children": "LIST",
+    "glob": "GLOB",
+    "get_file_info": "METADATA",
+    "get_folder_info": "METADATA",
+    "move": "MOVE",
+    "copy": "COPY",
+}
+
+
 def build_graph() -> dict[str, Any]:
     """Build and return the full graph dict."""
     pyproject = _load_pyproject()
@@ -449,6 +472,35 @@ def build_graph() -> dict[str, Any]:
         cap_uri = f"cap:{cap_name}"
 
         member = backend_cls[method_name]
+        nodes.append(
+            {
+                "id": mtd_uri,
+                "kind": "method",
+                "summary": method_name,
+                "is_abstract": "abstractmethod" in member.labels,
+                "is_async": "async" in member.labels,
+                "file": _rel_path(member.filepath),
+                "line": member.lineno or 0,
+            }
+        )
+        nodes.append({"id": req_uri, "kind": "requirement", "mode": "all"})
+
+        edges.append({"kind": "gates", "src": req_uri, "dst": mtd_uri})
+        edges.append({"kind": "of", "src": req_uri, "dst": cap_uri, "index": 0})
+
+    # --- AsyncBackend method nodes + gates/of edges ---
+    async_backend_cls = pkg["aio"]["_async_backend"]["AsyncBackend"]
+    for method_name, cap_name in _ASYNC_BACKEND_GATING.items():
+        if method_name not in async_backend_cls.members:  # pragma: no cover
+            raise AssertionError(
+                f"_ASYNC_BACKEND_GATING key {method_name!r} is not a Griffe member of AsyncBackend; "
+                "update AsyncBackend or _ASYNC_BACKEND_GATING to keep them in sync."
+            )
+        mtd_uri = f"mtd:remote_store.aio._async_backend.AsyncBackend.{method_name}"
+        req_uri = f"req:remote_store.aio._async_backend.AsyncBackend.{method_name}.gate"
+        cap_uri = f"cap:{cap_name}"
+
+        member = async_backend_cls[method_name]
         nodes.append(
             {
                 "id": mtd_uri,

@@ -18,7 +18,8 @@ isolation.
 
 Phase 1: Store -> ``docs-src/reference/api/store.md``.
 Phase 2: Backend -> ``docs-src/reference/api/backend.md``.
-         AsyncStore/AsyncBackend and ``api/index.md`` are follow-on items.
+Phase 3: AsyncStore/AsyncBackend -> ``docs-src/reference/api/aio.md`` (ID-172).
+         ``api/index.md`` (``__all__`` parity) is a follow-on item (ID-173).
 
 Run with:
   hatch run gen-api-check
@@ -39,6 +40,8 @@ GRAPH = ROOT / "docs-src" / "_data" / "graph" / "graph.json"
 PAGES: dict[str, Path] = {
     "remote_store._store.Store": ROOT / "docs-src" / "reference" / "api" / "store.md",
     "remote_store._backend.Backend": ROOT / "docs-src" / "reference" / "api" / "backend.md",
+    "remote_store.aio._async_store.AsyncStore": ROOT / "docs-src" / "reference" / "api" / "aio.md",
+    "remote_store.aio._async_backend.AsyncBackend": ROOT / "docs-src" / "reference" / "api" / "aio.md",
 }
 
 # Admonition-title prefixes that introduce a capability requirement claim.
@@ -53,7 +56,12 @@ _REQUIRES_PREFIXES: tuple[str, ...] = (
 _CAP_RE = re.compile(r"`Capability\.(\w+)`")
 _DIRECTIVE_RE = re.compile(r"^:::\s+([\w.]+)\s*$")
 _ADMONITION_RE = re.compile(r'^!!!\s+(\w+)\s+"([^"]+)"\s*$')
-_H2_RE = re.compile(r"^##\s+(.+)$")
+# Capability groups delimit the sections that scope admonitions.  Single-class
+# pages (store.md, backend.md) use ``## H2`` group headings; the multi-class
+# aio.md nests groups as ``### H3`` under each class's ``## H2``.  Splitting on
+# H2 *or* H3 scopes admonitions to their group on both shapes -- the page H1
+# (``#``) stays in the leading section either way.
+_SECTION_RE = re.compile(r"^#{2,3}\s+(.+)$")
 
 
 # ---------------------------------------------------------------------------
@@ -104,12 +112,16 @@ def graph_class_methods(graph: dict, class_qname: str) -> dict[str, frozenset[st
 # ---------------------------------------------------------------------------
 
 
-def _split_h2_sections(lines: list[str]) -> list[list[str]]:
-    """Partition *lines* on ``## H2`` boundaries.  H1 stays in the leading section."""
+def _split_sections(lines: list[str]) -> list[list[str]]:
+    """Partition *lines* on ``## H2`` / ``### H3`` boundaries.
+
+    H1 (``#``) stays in the leading section.  See ``_SECTION_RE`` for why both
+    heading levels delimit a section.
+    """
     sections: list[list[str]] = []
     current: list[str] = []
     for line in lines:
-        if _H2_RE.match(line):
+        if _SECTION_RE.match(line):
             sections.append(current)
             current = [line]
         else:
@@ -195,17 +207,19 @@ def page_class_methods(text: str, class_qname: str) -> dict[str, frozenset[str]]
     ``Capability depends`` admonitions.  ``!!! info`` admonitions are
     intentionally excluded -- they describe quality flags, not gates.
     """
-    short_class = class_qname.rsplit(".", 1)[1]
-    # The page may use either the internal qname or the public re-export
-    # (``remote_store.Store.method``).  Match both.
+    # The page may use either the internal qname or the public re-export.  The
+    # public path drops the private (leading-underscore) module segment(s):
+    # ``remote_store._store.Store`` -> ``remote_store.Store``;
+    # ``remote_store.aio._async_store.AsyncStore`` -> ``remote_store.aio.AsyncStore``.
+    public_qname = ".".join(p for p in class_qname.split(".") if not p.startswith("_"))
     method_prefixes = (
         f"{class_qname}.",
-        f"remote_store.{short_class}.",
+        f"{public_qname}.",
     )
 
     method_caps: dict[str, set[str]] = {}
 
-    for sec_lines in _split_h2_sections(text.splitlines()):
+    for sec_lines in _split_sections(text.splitlines()):
         directives, admonitions = _parse_section(sec_lines, method_prefixes)
         if not directives:
             continue
@@ -289,9 +303,12 @@ def main() -> int:
         for e in errors:
             print(f"  - {e}", file=sys.stderr)
         print(
-            "\nFix the page, or update the relevant _GATING dict "
-            "(Store: src/remote_store/_store.py, Backend: scripts/gen_graph.py) "
-            "if the gate itself is wrong, then re-run `hatch run gen-graph`.",
+            "\nFix the page, or update the relevant gating dict if the gate "
+            "itself is wrong, then re-run `hatch run gen-graph`:\n"
+            "  Store:        _GATING in src/remote_store/_store.py\n"
+            "  AsyncStore:   _GATING in src/remote_store/aio/_async_store.py\n"
+            "  Backend:      _BACKEND_GATING in scripts/gen_graph.py\n"
+            "  AsyncBackend: _ASYNC_BACKEND_GATING in scripts/gen_graph.py",
             file=sys.stderr,
         )
         return 1

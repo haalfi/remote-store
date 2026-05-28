@@ -401,4 +401,5 @@ raising `InvalidPath`. All other operations MUST raise appropriate errors.
 | `copy` | `COPY` |
 
 **Enforcement:** Runtime capability enforcement for these methods is performed by `Store._gate()`, not by `Backend` directly. `_BACKEND_GATING` is the authoritative source for graph-IR generation only; keeping it in sync with the Backend ABC is enforced by `tests/scripts/test_gen_graph.py::test_backend_gating_keys_match_backend_members`.
+**Async counterpart:** `AsyncBackend` carries the same table minus `read_seekable` / `open_atomic` in `_ASYNC_BACKEND_GATING` — see [ASYNC-045a](029-async-store-backend-api.md).
 **See also:** `sdd/CLAUDE-REFERENCE.md` ripple-check row for `_BACKEND_GATING`.
