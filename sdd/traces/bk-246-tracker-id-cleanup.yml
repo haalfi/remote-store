@@ -39,7 +39,16 @@ surprising_ripples:
   # The new TestSpecPrefixDiscovery test that sweeps sdd/specs/*.md to
   # assert every active prefix is flagged.
   - tests/scripts/test_check_no_tracker_refs.py
-review_rounds: 1
+  # Review round 2: a "Possible Consistency" finding restored a richer
+  # summary on _validate_metadata that mirrors the public Store.write
+  # metadata contract -- the audit had originally simplified the
+  # docstring past what the public contract enforces.
+  - src/remote_store/_store.py
+  # Review round 2: restored a "_ensure_parent_dirs docstring claims X,
+  # code does Y" technical caveat as an inline `#` comment (kept out
+  # of the gate's scope deliberately).
+  - src/remote_store/backends/_sftp.py
+review_rounds: 2
 phases:
   - id: audit
     name: Audit

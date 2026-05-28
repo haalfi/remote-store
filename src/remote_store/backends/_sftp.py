@@ -1441,6 +1441,12 @@ class SFTPBackend(Backend):
         parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else ""
         if not parent or parent == self._base_path:
             return
+        # NOTE: the comment below says "walk from base_path down" but the
+        # loop actually walks from the absolute SFTP root "/". This
+        # divergence matters under chroot — see the limitation noted in
+        # _has_file_ancestor's docstring and the consolidation follow-up
+        # tracked in the backlog. Kept as-is here so the behaviour
+        # stays paired with _has_file_ancestor's walk.
         # Walk from base_path down, creating directories as needed
         parts = parent.split("/")
         current = ""

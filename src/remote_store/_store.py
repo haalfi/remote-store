@@ -1062,10 +1062,19 @@ class Store:
 
 
 def _validate_metadata(metadata: Mapping[str, str] | None) -> None:
-    """Validate user metadata: keys and values are ``str`` with bounded total size.
+    """Validate user metadata against the public ``write*`` metadata contract.
+
+    Rules (mirrored from the ``metadata:`` parameter doc on every
+    ``write*`` method):
+
+    * keys and values must both be ``str``;
+    * keys must be non-empty ASCII without a leading underscore;
+    * the combined key + value byte payload must not exceed 2048 bytes.
+
+    Runs before any capability check.
 
     Raises:
-        ValueError: On any rule violation, before any capability check.
+        ValueError: On any rule violation.
     """
     if not metadata:
         return

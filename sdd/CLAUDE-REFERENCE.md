@@ -61,7 +61,7 @@ Read this before starting. One line per trigger.
 | Docs navigation               | Per-section `_nav.yml` files, `docs-src/guides/backends/index.md`, AUTHORING Rule 1, DOCUMENTATION § Content homes |
 | API reference page            | DOCUMENTATION § API page building blocks + required sections |
 | Example script                | README examples table, generated `tutorial/examples/<slug>.md`, `tests/test_examples.py` import |
-| Tracker ID in published prose | Any backlog/spec coordinate (`PREFIX-NNN`, `spec NNN`, `RFC-NNNN`, `ADR-NNNN`, `PR #NNN`) leaking into a docstring rendered by mkdocstrings or any `.md` under `docs-src/` (plus `README.md`, `FEATURES.md`, `CONTRIBUTING.md`); CONTENT-RULES Rules 1 + 5. Out of scope: `sdd/**`, CHANGELOG, DEVELOPMENT_STORY, source `#` comments. `scripts/check_no_tracker_refs.py` enforces the contract. |
+| Tracker ID in published prose | Any backlog/spec coordinate (`PREFIX-NNN`, `spec NNN`, `RFC-NNNN`, `ADR-NNNN`, `PR #NNN`) leaking into a docstring rendered by mkdocstrings or any `.md` under `docs-src/` (plus README, FEATURES, CONTRIBUTING); CONTENT-RULES Rules 1 + 5. Out of scope: `sdd/**`, CHANGELOG, DEVELOPMENT_STORY, source `#` comments |
 
 #### Release & meta
 
@@ -167,24 +167,16 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | **Example script**         | README examples table, generated `tutorial/examples/<slug>.md` |
 |                            | `tests/test_examples.py` import                           |
 | **Tracker ID in published prose** | Any backlog or spec coordinate (`PREFIX-NNN`,      |
-| (any prose change that touches | `spec NNN`, `RFC-NNNN`, `ADR-NNNN`, `PR #NNN`) MUST NOT |
-| docstrings of public symbols | appear in prose that reaches users. Per                   |
-| or `docs-src/` markdown)    | `sdd/CONTENT-RULES.md` Rules 1 (6-month test) and 5      |
-|                            | (source-code facts stay in source); rewrite the          |
-|                            | sentence in behavioural terms and put the internal       |
-|                            | coordinate in the matching `sdd/specs/` clause or the    |
-|                            | BACKLOG entry instead. **In scope:** every docstring     |
-|                            | under `src/remote_store/` (mkdocstrings renders          |
-|                            | public symbols onto the API reference; private           |
-|                            | helpers still surface via `help()` and source browse),   |
-|                            | all `docs-src/**/*.md`, `README.md`, `FEATURES.md`,      |
-|                            | `CONTRIBUTING.md`. **Out of scope:** `sdd/**`,           |
-|                            | `CHANGELOG.md` (ID is the index key),                    |
-|                            | `DEVELOPMENT_STORY.md` (release-history narrative),      |
-|                            | `CLAUDE.md`, `AGENTS.md`, `tests/`, `.claude/`,          |
-|                            | generated artefacts under `docs-src/_data/`, and `#`     |
-|                            | comments inside source files. Enforced by                |
-|                            | `scripts/check_no_tracker_refs.py`.                      |
+| (any prose change that touches | `spec NNN`, `RFC-NNNN`, `ADR-NNNN`, `PR #NNN`) leaking |
+| docstrings of public symbols | into a docstring under `src/remote_store/` or any        |
+| or `docs-src/` markdown)    | `.md` under `docs-src/` (plus README, FEATURES,           |
+|                            | CONTRIBUTING). Per `sdd/CONTENT-RULES.md` Rules 1 +      |
+|                            | 5: rewrite the sentence in behavioural terms and put     |
+|                            | the internal coordinate in the matching `sdd/specs/`    |
+|                            | clause or the BACKLOG entry instead. Out of scope:      |
+|                            | `sdd/**`, CHANGELOG, DEVELOPMENT_STORY, agent harness   |
+|                            | files, generated artefacts under `docs-src/_data/`,     |
+|                            | and `#` comments inside source files                    |
 
 #### Release & meta
 

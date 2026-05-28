@@ -116,13 +116,15 @@ _NUMERIC_SPEC_RE = re.compile(r"\bspec \d{3,}\b")
 # Bare PR cross-references.
 _PR_RE = re.compile(r"\bPR #\d+\b")
 
-# Prefixes that match ``_TRACKER_RE`` but refer to external standards
-# or codes, not internal trackers. Keep narrow; extend only when a
-# real-world false positive appears in published prose.
+# Bare-form external prefixes that match ``_TRACKER_RE`` but refer to
+# external standards or codes, not internal trackers. Keep narrow;
+# extend only when a real-world false positive appears in published
+# prose. ``CVE`` is handled separately because its IDs are always
+# compound (``CVE-YYYY-NNNN``), so the bare form never appears -- the
+# leading-alpha branch of ``_is_internal_tracker`` covers it instead.
 _EXTERNAL_PREFIXES: frozenset[str] = frozenset(
     {
         "HTTP",  # HTTP status codes (HTTP-404)
-        "CVE",  # security advisories (CVE-YYYY-NNNN, matches the YYYY half)
         "UTF",  # text encodings (UTF-8, UTF-16, UTF-32)
         "ISO",  # ISO standards (ISO-8601, ISO-639)
         "IEEE",  # IEEE standards (IEEE-754, IEEE-802)

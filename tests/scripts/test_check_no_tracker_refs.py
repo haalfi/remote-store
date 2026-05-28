@@ -57,7 +57,7 @@ class TestPatterns:
             "CFG-012 unknown keys",
             # Prefixes the original enumerated set MISSED and that the
             # structural pattern catches. If any of these stop matching,
-            # the cleanup half of BK-245 is silently regressing.
+            # the cleanup half of BK-246 is silently regressing.
             "see S3-026 routing",
             "AZ-014 HNS contract",
             "MEM-001 memory backend",
@@ -137,10 +137,12 @@ class TestPatterns:
     def test_external_prefixes_documented(self):
         # If a new prefix is added to ``_EXTERNAL_PREFIXES`` it must be
         # exercised by ``test_non_matches`` above so the exemption is
-        # locked behind a behavioural test.
+        # locked behind a behavioural test. CVE is intentionally not
+        # listed because its IDs are always compound (``CVE-YYYY-NNNN``)
+        # and the carve-out lives in ``_is_internal_tracker``'s
+        # leading-alpha branch, not the bare-prefix set.
         exercised = {
             "HTTP",
-            "CVE",
             "UTF",
             "ISO",
             "IEEE",
@@ -283,21 +285,25 @@ class TestMain:
 
 
 # ---------------------------------------------------------------------------
-# Spec-prefix discoverability — see review on PR #690
+# Spec-prefix discoverability
 # ---------------------------------------------------------------------------
 
 
 class TestSpecPrefixDiscovery:
     """Verify every spec section ID actually used in ``sdd/specs/`` is flagged.
 
-    Pre-BK-245 the gate enumerated a closed list of 24 prefixes and missed
-    every spec ID outside it (``S3-``, ``AZ-``, ``MEM-``, ``GLOB-``,
-    ``CACHE-``, ``BATCH-``, ``XFER-``, ``RETRY-``, ``HC-``, ``ITER-``,
-    ``WT-``, ``HTTP-``, ``STREAM-``, ``INTEG-``, ``DIGEST-``, ``SEEK-``,
-    ``TLS-``, ``PARQ-``, ``XW-``, ``AW-``, ``S3PA-``, ``PA-``, ``SQL-QUERY-``,
-    etc.). The structural ``_TRACKER_RE`` plus ``_EXTERNAL_PREFIXES`` carve-out
-    is meant to catch every present and future prefix without enumeration.
-    This test sweeps ``sdd/specs/*.md`` to keep the guarantee live.
+    The structural ``_TRACKER_RE`` plus ``_EXTERNAL_PREFIXES`` carve-out
+    is meant to catch every present and future spec prefix without
+    enumeration; before this discovery test, the gate enumerated a
+    closed list of 24 prefixes and silently missed every spec ID
+    outside it (``S3-``, ``AZ-``, ``MEM-``, ``GLOB-``, ``CACHE-``,
+    ``BATCH-``, ``XFER-``, ``RETRY-``, ``HC-``, ``ITER-``, ``WT-``,
+    ``HTTP-``, ``STREAM-``, ``INTEG-``, ``DIGEST-``, ``SEEK-``, ``TLS-``,
+    ``PARQ-``, ``XW-``, ``AW-``, ``S3PA-``, ``PA-``, ``SQL-QUERY-``,
+    etc.). This test sweeps ``sdd/specs/*.md`` to keep the guarantee
+    live: adding a new spec without updating the regex (or extending
+    ``_EXTERNAL_PREFIXES`` when an external code matches the structural
+    shape) fails a test instead of silently widening the leak surface.
     """
 
     _SPECS_DIR = Path(__file__).resolve().parents[2] / "sdd" / "specs"
