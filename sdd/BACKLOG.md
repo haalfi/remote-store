@@ -51,128 +51,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ---
 
-## Formal Verification
-
-The SDD chain is `Markdown spec → @pytest.mark.spec test`. The marker is
-just a string: nothing proves a spec clause is self-consistent, and
-nothing proves the test faithfully encodes it. The Dafny layer is the
-machine-checked interlock in that chain. It earns its place three ways,
-none of which is "run a second backend and diff the output":
-
-1. **(C) A proven contract.** Dafny verifies that a clause's
-   postcondition is internally consistent and *satisfiable*, discharged
-   by the `MemoryBackend` refinement. A Markdown paragraph can silently
-   contradict itself; a verified `.dfy` postcondition cannot. A contract
-   clause that exists only in prose is unproven.
-2. **(T) The oracle certifies the test, not the backend.** The compiled
-   `MemoryBackend` is correct by construction and already runs the whole
-   conformance suite as a parametrized fixture. A green oracle on a test
-   proves the test demands nothing the verified contract does not, i.e.
-   the test faithfully encodes the spec. Running the oracle as a peer
-   backend to diff against would only test the oracle twice.
-3. **(O) The oracle as ground truth.** A deterministic test hardcodes
-   its expected value, and that literal is a better oracle than a second
-   process: readable and dependency-free. Only property-based tests, with
-   random inputs, need the verified oracle to *compute* the expected
-   value.
-
-**Execution order:**
-
-| Wave | Items | Notes |
-|---|---|---|
-| 0 — property-based (O) | — | ID-187 landed; see BACKLOG-DONE.md |
-| 1 — contract + test | — | Each pairs a Dafny change with the conformance tests it makes certifiable. ID-188 landed; ID-191 landed; see BACKLOG-DONE.md |
-| 1 — test backfill (T) | — | ID-185 landed; ID-210 landed; see BACKLOG-DONE.md |
-
-Items stay granular for tracking, but a whole wave row may ship as one
-PR where its items share a file or proof.
-
-- [ ] **ID-189 — Dafny `Error` variant for `ResourceLocked`**
-  spec: ERR-013 · effort: S · audience: library.maintainer
-  `ResourceLocked` (ERR-013, spec 005) is specified but not implemented:
-  `src/remote_store/_errors.py` has no such class, the hierarchy ends at
-  `BackendUnavailable`. The Dafny `Error` datatype omitting the variant is
-  therefore correct for the current code, not a gap. The variant becomes
-  warranted only when `ResourceLocked` is implemented, which the Graph
-  backend (ID-127, ADR-0024) requires. That change adds three coupled
-  pieces together: the `ResourceLocked` Python exception class (named
-  `ResourceLocked`, per the flat error hierarchy and spec 005's own
-  example), the Dafny `Error.ResourceLocked(path: Path)` variant, and its
-  dispatch in `tests/backends/dafny/_helpers.py::_raise_if_err`. Track as
-  a sub-task of ID-127, not standalone work today.
-
-- [ ] **ID-212 — Harden SFTP file-ancestor detection against partial-stat-permission setups**
-  spec: BE-006, BE-007 · effort: S · audience: library.maintainer
-  Follow-up to ID-209 (PR #680).  The new
-  `SFTPBackend._has_file_ancestor(sftp_path)` walks `sftp_path`'s parent
-  chain from the absolute SFTP root `/` rather than from
-  `self._base_path`, and returns `False` conservatively on any
-  non-ENOENT stat error.  In a chrooted SFTP deployment where stat on
-  an ancestor above the chroot returns `SSH_FX_PERMISSION_DENIED`, the
-  walk aborts on that ancestor and a genuine file-ancestor case under
-  the chroot is mis-classified as a generic `RemoteStoreError("Failure")`
-  rather than `NotFound` — diverging from BE-006/BE-007's
-  `!PathExists ==> NotFound` postcondition on those servers.  The
-  in-process `sftp_inproc` conformance fixture does not exercise this
-  because it grants unrestricted local-FS access.
-
-  `_ensure_parent_dirs` shares the same walk-from-root pattern (its own
-  comment says "Walk from base_path down" but the code walks from `/`),
-  so a clean fix consolidates both helpers onto `self._base_path` as
-  the walk root.  Optional second-pass: a targeted `lstat` on the
-  immediate parent only as a single-round-trip mitigation when the full
-  walk returns False on an opaque error.
-
-  Output: refactor both walks onto `self._base_path`, add a conformance
-  fixture variant (e.g. `sftp_chroot_inproc`) that exercises the
-  restricted-permission case, and tighten the `_has_file_ancestor`
-  docstring to drop the chroot caveat.  Promote to BK-prefix once a
-  user reports the divergence on a real chroot deployment.
-
-- [ ] **ID-213 — Extend ID-209's `InvalidPath` translation to the HNS Azure backend**
-  spec: BE-008, BE-012, BE-014, BE-015, BE-018, BE-019 · effort: M · audience: contributor.process, infra.test, library.maintainer, user.api
-  Follow-up to ID-209 (PR #680). Decision 2(a) — write/move/copy under
-  a file ancestor MUST raise `InvalidPath` cross-backend — was
-  implemented for Local and SFTP via native-error translation in
-  `_classify` / per-method handlers. HNS Azure was deferred under the
-  assumption that "HNS has real directories, so the gate should pass
-  once recorded"; the BK-235 cassette-recording run against live ADLS
-  Gen2 (account `remotestorehns`, 2026-05-27) live-verified that
-  assumption and falsified it. Real HNS Azure *does* error on these
-  scenarios — no HEAD pre-check needed, which is what distinguishes
-  this from ID-211's flat-NS scope — but the SDK raises
-  `ResourceNotFoundError` / `ResourceExistsError` /
-  `HttpResponseError(404|409)`, which
-  `_azure_common.classify_azure_error` currently maps to `NotFound` /
-  `AlreadyExists` rather than `InvalidPath`. The eight failing sync
-  conformance tests:
-    - `TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path` (`write`, `write_atomic`)
-    - `TestWriteErrorFidelity::test_open_atomic_under_file_ancestor_raises_invalid_path`
-    - `TestDeleteErrorFidelity::test_delete_under_file_ancestor_raises_not_found` (expects `NotFound`, gets `AlreadyExists`)
-    - `TestMoveCopyErrorFidelity::test_destination_under_file_ancestor_raises_invalid_path` (`move`, `copy`)
-    - `TestListFilesCompleteness::test_list_files_non_traversable_ancestor_yields_empty`
-    - `TestListFoldersCompleteness::test_list_folders_non_traversable_ancestor_yields_empty`
-  Fix shape parallels ID-209's Local/SFTP patch: distinguish the
-  ancestor-is-a-file case from generic 404/409 in
-  `classify_azure_error` (ADLS Gen2 returns a specific `error_code`
-  on the response — `PathConflict` / similar — for the
-  ancestor-as-file case), then re-raise as `InvalidPath`. For the two
-  listing tests the catch site is the per-method handler, not
-  `_classify` — the natural Azure error must be swallowed so the
-  empty-list postcondition fires (mirrors Local/SFTP's
-  `NotADirectoryError` → `[]` swallow added in ID-209). Async siblings
-  in `tests/backends/conformance/test_async_extended.py` expected to
-  mirror; verify against `azure_live_async` once the sync fix lands
-  (the BK-235 recording aborted before Step 3 so the async behaviour
-  is not yet observed). Unblocks BK-235 for these eight tests; the
-  other eight self-skipping cassettes BK-235 covers record cleanly
-  today against live HNS. Parallel to ID-211 (flat-NS HEAD pre-check)
-  and ID-212 (SFTP chroot-stat hardening) — all three are ID-209
-  follow-ups along different backends' error-translation paths.
-  Discovered: BK-235 sync recording run, 2026-05-27.
-
----
-
 ## Async API Verification
 
 Async API surface, conformance, and tooling. ID-192 (aio.md rework) and ID-193
@@ -247,6 +125,80 @@ Async API surface, conformance, and tooling. ID-192 (aio.md rework) and ID-193
   read at class scope so they still need a module-level patch — but
   those are algorithm-name → impl lookup tables, not security policy.
   Surfaced during BK-198 (PR 613) review.
+
+- [ ] **ID-212 — Harden SFTP file-ancestor detection against partial-stat-permission setups**
+  spec: BE-006, BE-007 · effort: S · audience: library.maintainer
+  Follow-up to ID-209 (PR #680).  The new
+  `SFTPBackend._has_file_ancestor(sftp_path)` walks `sftp_path`'s parent
+  chain from the absolute SFTP root `/` rather than from
+  `self._base_path`, and returns `False` conservatively on any
+  non-ENOENT stat error.  In a chrooted SFTP deployment where stat on
+  an ancestor above the chroot returns `SSH_FX_PERMISSION_DENIED`, the
+  walk aborts on that ancestor and a genuine file-ancestor case under
+  the chroot is mis-classified as a generic `RemoteStoreError("Failure")`
+  rather than `NotFound` — diverging from BE-006/BE-007's
+  `!PathExists ==> NotFound` postcondition on those servers.  The
+  in-process `sftp_inproc` conformance fixture does not exercise this
+  because it grants unrestricted local-FS access.
+
+  `_ensure_parent_dirs` shares the same walk-from-root pattern (its own
+  comment says "Walk from base_path down" but the code walks from `/`),
+  so a clean fix consolidates both helpers onto `self._base_path` as
+  the walk root.  Optional second-pass: a targeted `lstat` on the
+  immediate parent only as a single-round-trip mitigation when the full
+  walk returns False on an opaque error.
+
+  Output: refactor both walks onto `self._base_path`, add a conformance
+  fixture variant (e.g. `sftp_chroot_inproc`) that exercises the
+  restricted-permission case, and tighten the `_has_file_ancestor`
+  docstring to drop the chroot caveat.  Promote to BK-prefix once a
+  user reports the divergence on a real chroot deployment.
+
+---
+
+## Azure
+
+- [ ] **ID-213 — Extend ID-209's `InvalidPath` translation to the HNS Azure backend**
+  spec: BE-008, BE-012, BE-014, BE-015, BE-018, BE-019 · effort: M · audience: contributor.process, infra.test, library.maintainer, user.api
+  Follow-up to ID-209 (PR #680). Decision 2(a) — write/move/copy under
+  a file ancestor MUST raise `InvalidPath` cross-backend — was
+  implemented for Local and SFTP via native-error translation in
+  `_classify` / per-method handlers. HNS Azure was deferred under the
+  assumption that "HNS has real directories, so the gate should pass
+  once recorded"; the BK-235 cassette-recording run against live ADLS
+  Gen2 (account `remotestorehns`, 2026-05-27) live-verified that
+  assumption and falsified it. Real HNS Azure *does* error on these
+  scenarios — no HEAD pre-check needed, which is what distinguishes
+  this from ID-211's flat-NS scope — but the SDK raises
+  `ResourceNotFoundError` / `ResourceExistsError` /
+  `HttpResponseError(404|409)`, which
+  `_azure_common.classify_azure_error` currently maps to `NotFound` /
+  `AlreadyExists` rather than `InvalidPath`. The eight failing sync
+  conformance tests:
+    - `TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path` (`write`, `write_atomic`)
+    - `TestWriteErrorFidelity::test_open_atomic_under_file_ancestor_raises_invalid_path`
+    - `TestDeleteErrorFidelity::test_delete_under_file_ancestor_raises_not_found` (expects `NotFound`, gets `AlreadyExists`)
+    - `TestMoveCopyErrorFidelity::test_destination_under_file_ancestor_raises_invalid_path` (`move`, `copy`)
+    - `TestListFilesCompleteness::test_list_files_non_traversable_ancestor_yields_empty`
+    - `TestListFoldersCompleteness::test_list_folders_non_traversable_ancestor_yields_empty`
+  Fix shape parallels ID-209's Local/SFTP patch: distinguish the
+  ancestor-is-a-file case from generic 404/409 in
+  `classify_azure_error` (ADLS Gen2 returns a specific `error_code`
+  on the response — `PathConflict` / similar — for the
+  ancestor-as-file case), then re-raise as `InvalidPath`. For the two
+  listing tests the catch site is the per-method handler, not
+  `_classify` — the natural Azure error must be swallowed so the
+  empty-list postcondition fires (mirrors Local/SFTP's
+  `NotADirectoryError` → `[]` swallow added in ID-209). Async siblings
+  in `tests/backends/conformance/test_async_extended.py` expected to
+  mirror; verify against `azure_live_async` once the sync fix lands
+  (the BK-235 recording aborted before Step 3 so the async behaviour
+  is not yet observed). Unblocks BK-235 for these eight tests; the
+  other eight self-skipping cassettes BK-235 covers record cleanly
+  today against live HNS. Parallel to ID-211 (flat-NS HEAD pre-check)
+  and ID-212 (SFTP chroot-stat hardening) — all three are ID-209
+  follow-ups along different backends' error-translation paths.
+  Discovered: BK-235 sync recording run, 2026-05-27.
 
 ---
 
@@ -591,7 +543,7 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 ## New Backends
 
 - [ ] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
-  spec: GR-001..GR-057 · effort: L · audience: user.api
+  spec: GR-001..GR-057, ERR-013 · effort: L · audience: user.api
   Unified backend covering OneDrive (personal & business) and SharePoint
   document libraries via the Microsoft Graph REST API. Single `drive_id`
   parameter selects the target drive.
@@ -607,6 +559,20 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   - Spec foundation: ID-141 (ADR-0025), ID-142 (spec 029
     § AsyncBackendSyncAdapter + `tests/aio/_doubles.py`), and ID-143
     (`AsyncBackendSyncAdapter` implementation + integration suite) — all landed.
+  - **Bundled sub-task — `ResourceLocked` (ERR-013, ADR-0024):** Graph
+    triggers the only need for this error class today. Three coupled
+    pieces ship together with the backend, not separately: the
+    `ResourceLocked` Python exception class in
+    `src/remote_store/_errors.py` (named `ResourceLocked` per the flat
+    error hierarchy and spec 005's example), the
+    `Error.ResourceLocked(path: Path)` variant in
+    `sdd/formal/BackendContract.dfy` (re-translate
+    `MemoryBackend-py/module_.py`), and its dispatch in
+    `tests/backends/dafny/_helpers.py::_raise_if_err`. Formerly tracked
+    as the standalone ID-189; folded here because the Dafny variant
+    cannot land in isolation — without the runtime class to raise,
+    adding the variant alone would create a verified contract for
+    behaviour the codebase cannot exhibit.
   - Next: implementation per spec 044.
 
 - [ ] **ID-121 — CompositeStore (research complete)**
@@ -684,6 +650,25 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
   Related: ID-136 (non-lazy **write** is by-design; this item is about
   **reads** only — writes remain eager).
+
+---
+
+## Formal Verification
+
+*(no active items)*
+
+Dafny-section work earns its slot one of three ways: **(C)** prove a
+spec clause is internally consistent and satisfiable, **(T)** certify
+that a conformance test demands nothing the verified contract does not
+(via the compiled `MemoryBackend` oracle), or **(O)** supply an
+oracle-computed expected value for a property-based test. Runtime
+backend gaps downstream of a Dafny-backed clause — a backend not
+honouring a verified postcondition — are spec-conformance work, not
+Dafny-section work; file those under the relevant backend section
+(SFTP, Azure, S3, etc.).
+
+Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
+§ "Three shapes of Dafny-section work: (C), (T), (O)".
 
 ---
 
