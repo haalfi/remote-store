@@ -1014,6 +1014,96 @@
       "src": "req:remote_store._store.Store.write_text.gate"
     },
     {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.copy",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.copy.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.delete",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.delete.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.delete_folder",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.delete_folder.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.get_file_info",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.get_file_info.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.get_folder_info",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.get_folder_info",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate_depth"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.glob",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.glob.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.head",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.head.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.iter_children",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.iter_children.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.list_files",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.list_files.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.list_folders",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.list_folders.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.move",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.move.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.read",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.read.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.read_bytes",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.read_bytes.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.read_text",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.read_text.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.write",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.write.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.write_atomic",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.write_atomic.gate"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.write_text",
+      "kind": "gates",
+      "src": "req:remote_store.aio._async_store.AsyncStore.write_text.gate"
+    },
+    {
       "dst": "cls:remote_store.aio._async_backend.AsyncBackend",
       "kind": "inherits",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
@@ -1288,6 +1378,114 @@
       "index": 0,
       "kind": "of",
       "src": "req:remote_store._store.Store.write_text.gate"
+    },
+    {
+      "dst": "cap:COPY",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.copy.gate"
+    },
+    {
+      "dst": "cap:DELETE",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.delete.gate"
+    },
+    {
+      "dst": "cap:DELETE",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.delete_folder.gate"
+    },
+    {
+      "dst": "cap:METADATA",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.get_file_info.gate"
+    },
+    {
+      "dst": "cap:METADATA",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate"
+    },
+    {
+      "dst": "cap:LIST",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate_depth"
+    },
+    {
+      "dst": "cap:GLOB",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.glob.gate"
+    },
+    {
+      "dst": "cap:METADATA",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.head.gate"
+    },
+    {
+      "dst": "cap:LIST",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.iter_children.gate"
+    },
+    {
+      "dst": "cap:LIST",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.list_files.gate"
+    },
+    {
+      "dst": "cap:LIST",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.list_folders.gate"
+    },
+    {
+      "dst": "cap:MOVE",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.move.gate"
+    },
+    {
+      "dst": "cap:READ",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.read.gate"
+    },
+    {
+      "dst": "cap:READ",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.read_bytes.gate"
+    },
+    {
+      "dst": "cap:READ",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.read_text.gate"
+    },
+    {
+      "dst": "cap:WRITE",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.write.gate"
+    },
+    {
+      "dst": "cap:ATOMIC_WRITE",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.write_atomic.gate"
+    },
+    {
+      "dst": "cap:WRITE",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store.aio._async_store.AsyncStore.write_text.gate"
     }
   ],
   "nodes": [
@@ -1803,6 +2001,159 @@
       "summary": "write_text"
     },
     {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.copy",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 602,
+      "summary": "copy"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.delete",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 304,
+      "summary": "delete"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.delete_folder",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 326,
+      "summary": "delete_folder"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.get_file_info",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 667,
+      "summary": "get_file_info"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.get_folder_info",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 686,
+      "summary": "get_folder_info"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.glob",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 539,
+      "summary": "glob"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.head",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 754,
+      "summary": "head"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.iter_children",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 510,
+      "summary": "iter_children"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.list_files",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 364,
+      "summary": "list_files"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.list_folders",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 449,
+      "summary": "list_folders"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.move",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 568,
+      "summary": "move"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.read",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 84,
+      "summary": "read"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.read_bytes",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 110,
+      "summary": "read_bytes"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.read_text",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 129,
+      "summary": "read_text"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.write",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 162,
+      "summary": "write"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.write_atomic",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 248,
+      "summary": "write_atomic"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.write_text",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 205,
+      "summary": "write_text"
+    },
+    {
       "id": "pkg:remote_store",
       "kind": "package",
       "runtime": "sync",
@@ -1991,6 +2342,96 @@
     },
     {
       "id": "req:remote_store._store.Store.write_text.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.copy.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.delete.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.delete_folder.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.get_file_info.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate_depth",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.glob.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.head.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.iter_children.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.list_files.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.list_folders.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.move.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.read.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.read_bytes.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.read_text.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.write.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.write_atomic.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store.aio._async_store.AsyncStore.write_text.gate",
       "kind": "requirement",
       "mode": "all"
     },
