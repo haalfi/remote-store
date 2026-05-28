@@ -340,12 +340,44 @@ predicate ObservableForAtomicMove(phase: MovePhase)
   phase != CopyDone && phase != Initial
 }
 
+// Stand-alone anchor: the predicate excludes CopyDone at a known input.
+// Trivially verified today, but the assertion lives outside any other
+// method's body — so weakening ObservableForAtomicMove (e.g. dropping the
+// `phase != CopyDone` conjunct) breaks this lemma even when other call
+// sites continue to verify via existing ensures clauses that imply
+// `phase == CopyDone`.  Catches predicate-side drift directly rather than
+// piggybacking on call-site invariants.
+// @spec BE-018
+lemma CopyDoneIsNotObservable()
+  ensures !ObservableForAtomicMove(CopyDone)
+{
+}
+
+// Stand-alone anchor: Initial is excluded too.  Symmetric with
+// CopyDoneIsNotObservable; catches drift on the other conjunct.
+// @spec BE-018
+lemma InitialIsNotObservable()
+  ensures !ObservableForAtomicMove(Initial)
+{
+}
+
 // Project an observable runtime phase into the strict observable-contract
 // datatype.  Total over the precondition (which excludes CopyDone and
 // Initial by ObservableForAtomicMove); deliberately partial elsewhere so a
 // CopyDone observation cannot accidentally be encoded as either contract
 // variant, and the pre-move Initial state cannot be conflated with a
 // rolled-back Failed observation.
+//
+// Honest scope on the `Failed` projection: the originating-phase string
+// (the `phase` field on Failed) is dropped here, retaining only `reason`.
+// This is information-preserving for the current model because both
+// AtomicMove and CopyDeleteMove only ever produce Failed phases originating
+// at `"initial"` — their pre-flight checks (!srcExists, dstExists &&
+// !overwrite).  CopyDeleteMove's mid-protocol failure surfaces as
+// `phase := CopyDone` directly, not as Failed("after_copy", ...).  If a
+// future model extension introduces mid-protocol Failed variants, this
+// projection MUST grow an `originPhase` field on ObservedFailed to remain
+// information-preserving.
 // @spec BE-018
 function Observe(phase: MovePhase): MoveContract
   requires ObservableForAtomicMove(phase)
@@ -356,14 +388,19 @@ function Observe(phase: MovePhase): MoveContract
 }
 
 // AtomicMove only ever exposes contract-observable states.  This method is
-// the structural binding to AtomicMove: it calls the method and asserts the
-// observability invariant on its return value, so the proof breaks if
-// AtomicMove's postconditions ever drift (e.g. someone adds a branch that
-// returns CopyDone or weakens an existing ensures).  An earlier draft used
-// a lemma that mirrored AtomicMove's postconditions as preconditions over
-// an arbitrary `phase` variable — that mirror would still verify silently
-// under drift, so the binding was decorative.  Using a method that issues
-// the actual call couples the proof to AtomicMove's body.
+// a structural binding to AtomicMove's *ensures* (not its body — Dafny's
+// caller-side reasoning is over the postcondition, not the implementation):
+// any AtomicMove postcondition that no longer implies
+// `phase != CopyDone && phase != Initial` weakens what callers can
+// conclude, and AtomicMoveIsObservable will fail to verify.  Concretely
+// this catches: dropping any of AtomicMove's three ensures clauses, or
+// weakening one such that a CopyDone / Initial return value is
+// permissible.  It does NOT catch behaviour-preserving body refactors
+// (those leave the ensures unchanged), and it does NOT couple to the
+// method body itself.  Earlier drafts used a lemma that mirrored the
+// ensures manually as preconditions over an arbitrary phase — that mirror
+// would still verify silently under ensures drift, which is what motivated
+// the swap to a method-call structure.
 // @spec BE-018
 method AtomicMoveIsObservable(srcExists: bool, dstExists: bool, overwrite: bool)
   returns (phase: MovePhase)

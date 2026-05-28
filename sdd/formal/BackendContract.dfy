@@ -859,8 +859,14 @@ trait Backend {
       fs[dst].info.metadata == old(fs)[src].info.metadata &&
       (src != dst ==> !PathExists(fs, src))
     // ID-191 / BE-018 § Atomicity: every successful Move terminates in the
-    // DeleteDone phase regardless of capability — the final state is
-    // src-gone-dst-present, never CopyDone (both present) or Initial.
+    // DeleteDone phase regardless of capability.  The phase label is
+    // semantically literal for `src != dst` (final state is
+    // src-gone-dst-present); for self-move (`src == dst`) the underlying
+    // state is single-file-preserved (both technically present because they
+    // are the same path), and DeleteDone here is a *nominal* label
+    // satisfying the postcondition without modelling a distinct SelfMove
+    // variant.  Refinements assign this branch via the early `src == dst`
+    // return path; readers should not infer src-gone semantics in that case.
     // @spec BE-018
     ensures r.Ok? ==> phase == DeleteDone
     // ID-191 / BE-018 § Atomicity: a backend declaring CapAtomicMove MUST
@@ -870,8 +876,24 @@ trait Backend {
     // transiently sit in) and Initial (pre-move).  A refinement that
     // declares CapAtomicMove but tries to assign phase := CopyDone in any
     // branch fails to verify; this is the structural binding from the §
-    // 2.3 ResourceSafety contract into the Backend trait — what closes
-    // BE-018 Gap 5 at the enforcement layer.
+    // 2.3 ResourceSafety contract into the Backend trait.
+    //
+    // Honest scope: this clause closes the "declares CapAtomicMove and
+    // lies about phase" direction of BE-018 Gap 5.  It does NOT close the
+    // converse direction — a refinement that uses a runtime
+    // copy-then-delete protocol but omits CapAtomicMove from its
+    // capabilities set will satisfy this postcondition vacuously, and is
+    // free to assign `phase := DeleteDone` on success without ever
+    // modelling the CopyDone transient state.  Capability declaration
+    // remains an honour-system claim at the backend level.  The full
+    // closure of Gap 5 would require either (a) a mechanical link from
+    // implementation shape to capability declaration (out of scope for the
+    // current trait abstraction, which models the contract not the
+    // implementation strategy), or (b) a downstream conformance test that
+    // probes for partial-failure behaviour on backends that DON'T declare
+    // atomicity — which is the BACKLOG's existing "non-atomic backends
+    // MUST surface partial failure as a raise" prose, not a new Dafny
+    // postcondition.
     // @spec BE-018
     ensures CapAtomicMove in capabilities ==> ObservableForAtomicMove(phase)
 

@@ -20,7 +20,7 @@ discovery_followups: []
 expected_ripples:
   - sdd/formal/MemoryBackend-py/module_.py
   - sdd/formal/BackendContract.dfy
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -108,7 +108,7 @@ phases:
         read_type: gate
         extract: "Dropped ASYNC-018 from the spec line; entry now reads `spec: BE-018 · audience: infra.test`. ASYNC-018's spec section is `See also: BE-018` (pure cross-reference), so dropping the cite is honest about what landed without losing the cross-document linkage."
   - id: review_fix_3
-    name: Review round 3 — ship complete (wire the predicate into the trait)
+    name: Review round 3 (a) — ship complete (wire the predicate into the trait)
     steps:
       - file: sdd/formal/BackendContract.dfy
         section: "include ResourceSafety.dfy; method Move ghost output + capability-gated postcondition"
@@ -126,3 +126,18 @@ phases:
         section: "ID-191 entry — enforcement claim now C-definition + C-enforcement"
         read_type: gate
         extract: "Rewrote the entry to drop the 'enforcement deferred to BK-247' scaffolding framing. The PR now legitimately closes BE-018 Gap 5 at both the contract-definition layer (ResourceSafety.dfy § 2.3) and the contract-enforcement layer (BackendContract.dfy's Backend.Move postcondition). BK-247 deleted from BACKLOG.md — the work it described is in this PR. discovery_followups on the trace is now empty (BK-247 absorbed); expected_ripples gained module_.py and BackendContract.dfy."
+  - id: review_fix_4
+    name: Review round 3 (b) — sharpen claims, non-vacuous negative shape
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestMoveCrashInjection::test_or_assertion_catches_be018_violation (new)"
+        read_type: gate
+        extract: "Reviewer flagged the positive test as structurally tautological: the wrapper's body deterministically produces the post-state asserted, so the OR cannot fail by construction. Added a BE-018-violating shape `delete_first` (deletes src without copying — both gone) and a sibling negative test that exercises the OR against this shape and asserts AssertionError. The disjunction is now non-vacuous as an observation: the same line that the positive test discharges actually fires for a violating wrapper. Renamed _CRASH_POINTS → _CRASH_POINTS_OK to clarify the matrix scope (positive-shape only)."
+      - file: sdd/formal/BackendContract.dfy
+        section: "Backend.Move — self-move semantics + enforcement-claim scope honesty"
+        read_type: gate
+        extract: "Two prose tightenings in the Move postcondition block. (1) The `r.Ok? ==> phase == DeleteDone` clause's comment now acknowledges that for src == dst the DeleteDone label is *nominal* — the underlying state is single-file-preserved (both technically present because they are the same path), not src-gone-dst-present. No code change; the postcondition still verifies on the self-move branch. (2) The `CapAtomicMove ==> ObservableForAtomicMove(phase)` clause's comment expanded with an Honest scope: this closes only the 'declares CapAtomicMove and lies about phase' direction of BE-018 Gap 5. A backend that uses copy-then-delete at runtime but omits CapAtomicMove from its capabilities set satisfies the postcondition vacuously and is free to assign phase := DeleteDone — capability declaration remains an honour-system claim. The converse direction is out of scope for the trait abstraction."
+      - file: sdd/formal/ResourceSafety.dfy
+        section: "Stand-alone predicate anchors (CopyDoneIsNotObservable / InitialIsNotObservable) + docstring sharpening"
+        read_type: gate
+        extract: "Three sharpenings. (1) Added stand-alone lemmas CopyDoneIsNotObservable and InitialIsNotObservable that exercise ObservableForAtomicMove at known inputs — catches predicate-body weakening directly, independent of call-site invariants that already imply phase == CopyDone / Initial. Reviewer noted that the assert in CopyDeleteMove's deleteFails branch discharged trivially via the existing `phase == CopyDone` ensures, so the structural binding was weaker than claimed; the stand-alone lemmas fail noisily on `false` predicate bodies. (2) Tightened Observe's docstring with an Honest scope explaining why dropping the originating-phase string is information-preserving in the current model (all Failed phases originate at 'initial'; CopyDeleteMove's mid-protocol failure surfaces as phase := CopyDone directly, not via Failed) and what future extensions would require. (3) Tightened AtomicMoveIsObservable's docstring: the binding is to AtomicMove's ensures, not its body (Dafny caller-side reasoning uses the postcondition). Catches ensures-weakening that no longer implies the predicate; does not catch behaviour-preserving body refactors. ResourceSafety.dfy: 18 verified, 0 errors (was 16; +2 anchor lemmas)."
