@@ -233,6 +233,14 @@ method CopyDeleteMove(srcExists: bool, dstExists: bool, overwrite: bool,
   ensures !srcExists ==> phase.Failed?
   // @spec BE-018
   ensures srcExists && dstExists && !overwrite ==> phase.Failed?
+  // ID-191 / § 2.3: the deleteFails branch produces CopyDone, which the
+  // atomic-move observable contract excludes.  This structural postcondition
+  // binds the (C) contract to CopyDeleteMove's body rather than to a manual
+  // restatement in a separate lemma — postcondition drift here breaks
+  // verification of any caller that relies on the binding.
+  // @spec BE-018
+  ensures srcExists && (!dstExists || overwrite) && deleteFails
+    ==> !ObservableForAtomicMove(phase)
 {
   if !srcExists {
     phase := Failed("initial", "source not found");
@@ -251,8 +259,11 @@ method CopyDeleteMove(srcExists: bool, dstExists: bool, overwrite: bool,
 
   if deleteFails {
     // Phase 2 failed: both src and dst exist.
-    // Backend MUST report this as an error.
+    // Backend MUST report this as an error.  An atomic-move-capable backend
+    // that returns success here would be exposing CopyDone as a completed
+    // move, which the § 2.3 observable contract excludes.
     assert phase == CopyDone;
+    assert !ObservableForAtomicMove(phase);
     return;
   }
 
@@ -281,6 +292,154 @@ lemma MoveFinalStateEquivalence(
   ensures atomicPhase == copyDeletePhase
 {
   // Trivially equal: same constructor, same value.
+}
+
+// ---------------------------------------------------------------------------
+// §2.3  Observable contract for atomic-move-capable backends  (ID-191)
+// ---------------------------------------------------------------------------
+//
+// §2.1 / §2.2 model the runtime `MovePhase` an implementation traverses; this
+// section models what an *atomic-move-capable backend* (CapAtomicMove in the
+// BackendContract.dfy capability set) is allowed to expose to its caller as a
+// terminal observable state.  The constraint is strictly stronger than the
+// final-state postcondition Backend.Move pins (BackendContract.dfy §6): a
+// non-atomic copy-then-delete implementation can transiently sit in CopyDone
+// (src gone, dst not yet written from the caller's perspective), but a backend
+// that *declares* atomicity must never expose that intermediate state to a
+// caller as a "completed" move.  The BE-018 prose at sdd/specs/003-... §
+// Atomicity says this in words; `MoveContract` says it in datatype.
+//
+// Honest scope: this is a contract on what the backend's *observable* terminal
+// state is, not a guarantee that no implementation bug can violate it.  An
+// atomic-rename primitive at the storage layer (os.rename, S3 CopyObject +
+// DeleteObject inside a HNS rename, Azure DFS rename) discharges this in
+// practice; non-atomic backends fall back to copy-then-delete and surface the
+// failure as a (raised) error rather than swallowing CopyDone as success.
+// The (T) leg of ID-191 lives in tests/backends/conformance/test_atomic.py
+// (TestMoveCrashInjection) — no oracle certifies it because no compiled
+// MemoryBackend backend exposes a crash-injection seam.
+
+datatype MoveContract =
+  | ObservedDeleteDone                           // success: src gone, dst exists
+  | ObservedFailed(reason: string)               // rollback: source preserved
+// note: NO ObservedCopyDone variant — that intermediate state must never be
+//       observable as a completed move to the caller of an atomic backend.
+
+// An atomic backend's *terminal observable state* must be DeleteDone or
+// Failed — not CopyDone, not Initial.  CopyDeleteMove can sit in CopyDone
+// when its delete step fails; an atomic implementation either succeeds
+// (DeleteDone) or rolls back (Failed).  Initial is the pre-move state and
+// is excluded because the predicate characterises *post*-Move observation:
+// neither AtomicMove nor CopyDeleteMove ever returns it.  Tightening
+// against Initial keeps Observe's projection structure-preserving (each
+// observable runtime phase maps to its own contract variant rather than
+// the rollback variant absorbing the never-started state).
+// @spec BE-018
+predicate ObservableForAtomicMove(phase: MovePhase)
+{
+  phase != CopyDone && phase != Initial
+}
+
+// Stand-alone anchor: the predicate excludes CopyDone at a known input.
+// Trivially verified today, but the assertion lives outside any other
+// method's body — so weakening ObservableForAtomicMove (e.g. dropping the
+// `phase != CopyDone` conjunct) breaks this lemma even when other call
+// sites continue to verify via existing ensures clauses that imply
+// `phase == CopyDone`.  Catches predicate-side drift directly rather than
+// piggybacking on call-site invariants.
+// @spec BE-018
+lemma CopyDoneIsNotObservable()
+  ensures !ObservableForAtomicMove(CopyDone)
+{
+}
+
+// Stand-alone anchor: Initial is excluded too.  Symmetric with
+// CopyDoneIsNotObservable; catches drift on the other conjunct.
+// @spec BE-018
+lemma InitialIsNotObservable()
+  ensures !ObservableForAtomicMove(Initial)
+{
+}
+
+// Project an observable runtime phase into the strict observable-contract
+// datatype.  Total over the precondition (which excludes CopyDone and
+// Initial by ObservableForAtomicMove); deliberately partial elsewhere so a
+// CopyDone observation cannot accidentally be encoded as either contract
+// variant, and the pre-move Initial state cannot be conflated with a
+// rolled-back Failed observation.
+//
+// Honest scope on the `Failed` projection: the originating-phase string
+// (the `phase` field on Failed) is dropped here, retaining only `reason`.
+// This is information-preserving for the current model because both
+// AtomicMove and CopyDeleteMove only ever produce Failed phases originating
+// at `"initial"` — their pre-flight checks (!srcExists, dstExists &&
+// !overwrite).  CopyDeleteMove's mid-protocol failure surfaces as
+// `phase := CopyDone` directly, not as Failed("after_copy", ...).  If a
+// future model extension introduces mid-protocol Failed variants, this
+// projection MUST grow an `originPhase` field on ObservedFailed to remain
+// information-preserving.
+// @spec BE-018
+function Observe(phase: MovePhase): MoveContract
+  requires ObservableForAtomicMove(phase)
+{
+  match phase
+  case DeleteDone => ObservedDeleteDone
+  case Failed(_, reason) => ObservedFailed(reason)
+}
+
+// AtomicMove only ever exposes contract-observable states.  This method is
+// a structural binding to AtomicMove's *ensures* (not its body — Dafny's
+// caller-side reasoning is over the postcondition, not the implementation):
+// any AtomicMove postcondition that no longer implies
+// `phase != CopyDone && phase != Initial` weakens what callers can
+// conclude, and AtomicMoveIsObservable will fail to verify.  Concretely
+// this catches: dropping any of AtomicMove's three ensures clauses, or
+// weakening one such that a CopyDone / Initial return value is
+// permissible.  It does NOT catch behaviour-preserving body refactors
+// (those leave the ensures unchanged), and it does NOT couple to the
+// method body itself.  Earlier drafts used a lemma that mirrored the
+// ensures manually as preconditions over an arbitrary phase — that mirror
+// would still verify silently under ensures drift, which is what motivated
+// the swap to a method-call structure.
+// @spec BE-018
+method AtomicMoveIsObservable(srcExists: bool, dstExists: bool, overwrite: bool)
+  returns (phase: MovePhase)
+  ensures ObservableForAtomicMove(phase)
+{
+  phase := AtomicMove(srcExists, dstExists, overwrite);
+  // Discharged by AtomicMove's three ensures clauses:
+  //   !srcExists ==> phase.Failed?
+  //   srcExists && dstExists && !overwrite ==> phase.Failed?
+  //   srcExists && (!dstExists || overwrite) ==> phase == DeleteDone
+  // None of these branches yield CopyDone or Initial.
+  assert phase != CopyDone;
+  assert phase != Initial;
+}
+
+// Source-preservation invariant: any observable contract state other than
+// success is a Failed state — a rollback observation reflects exactly the
+// Failed(_,_) runtime phase, never DeleteDone (excluded by Observe's
+// success branch) and never CopyDone / Initial (excluded by
+// ObservableForAtomicMove).  This formalises the BE-018 prose "Failed
+// (rollback, source preserved)" without the previous conflation between
+// never-started and rolled-back states.
+// @spec BE-018
+lemma ObservedFailedPreservesSource(phase: MovePhase, contract: MoveContract)
+  requires ObservableForAtomicMove(phase)
+  requires contract == Observe(phase)
+  requires contract.ObservedFailed?
+  ensures phase.Failed?
+{
+  // contract == ObservedFailed only when phase is Failed(_,_):
+  //   - DeleteDone is excluded by Observe's success branch
+  //   - CopyDone and Initial are excluded by ObservableForAtomicMove
+  match phase
+  case DeleteDone =>
+    assert Observe(phase) == ObservedDeleteDone;
+    assert contract == ObservedDeleteDone;
+    assert false;  // contradicts contract.ObservedFailed?
+  case Failed(_, _) =>
+    assert phase.Failed?;
 }
 
 // ---------------------------------------------------------------------------

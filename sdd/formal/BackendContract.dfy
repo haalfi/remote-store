@@ -26,6 +26,13 @@
 // - Happy-path postconditions use `ensures <preconditions> ==> r.Ok?`
 //   to mandate success when no error condition applies.
 
+// ID-191: the trait's Move postcondition pins `CapAtomicMove in capabilities
+// ==> ObservableForAtomicMove(phase)` on a ghost output from `ResourceSafety.dfy`
+// § 2.3.  The include makes the MovePhase / MoveContract / ObservableForAtomicMove
+// symbols visible here; the dependency is one-way (ResourceSafety.dfy is
+// standalone), so no cycle.
+include "ResourceSafety.dfy"
+
 // ---------------------------------------------------------------------------
 // §1  Error model  (maps _errors.py)
 // ---------------------------------------------------------------------------
@@ -800,9 +807,13 @@ trait Backend {
   // Gap 2: directory src → InvalidPath (not NotFound).
   // Gap 5: atomicity is backend-dependent: backends that guarantee atomic
   //   rename declare CapAtomicMove; others use copy-then-delete.
-  //   Postcondition covers only the final state, not intermediate visibility.
+  //   ID-191: a `ghost phase: MovePhase` return reflects the runtime
+  //   terminal state; CapAtomicMove-declaring refinements must satisfy
+  //   ObservableForAtomicMove(phase), excluding CopyDone and Initial.
+  //   The ghost output is erased at compile time, so module_.py and the
+  //   DafnyOracleBackend adapter are unaffected.
   method Move(src: Path, dst: Path, overwrite: bool)
-    returns (r: Result<()>)
+    returns (r: Result<()>, ghost phase: MovePhase)
     requires WellFormedPath(src)
     requires WellFormedPath(dst)
     requires Valid()
@@ -847,6 +858,44 @@ trait Backend {
       fs[dst].content == old(fs)[src].content &&
       fs[dst].info.metadata == old(fs)[src].info.metadata &&
       (src != dst ==> !PathExists(fs, src))
+    // ID-191 / BE-018 § Atomicity: every successful Move terminates in the
+    // DeleteDone phase regardless of capability.  The phase label is
+    // semantically literal for `src != dst` (final state is
+    // src-gone-dst-present); for self-move (`src == dst`) the underlying
+    // state is single-file-preserved (both technically present because they
+    // are the same path), and DeleteDone here is a *nominal* label
+    // satisfying the postcondition without modelling a distinct SelfMove
+    // variant.  Refinements assign this branch via the early `src == dst`
+    // return path; readers should not infer src-gone semantics in that case.
+    // @spec BE-018
+    ensures r.Ok? ==> phase == DeleteDone
+    // ID-191 / BE-018 § Atomicity: a backend declaring CapAtomicMove MUST
+    // expose a phase that satisfies the observable-contract predicate —
+    // ObservableForAtomicMove(phase) excludes both CopyDone (src gone, dst
+    // not yet written: the partial-state a non-atomic backend may
+    // transiently sit in) and Initial (pre-move).  A refinement that
+    // declares CapAtomicMove but tries to assign phase := CopyDone in any
+    // branch fails to verify; this is the structural binding from the §
+    // 2.3 ResourceSafety contract into the Backend trait.
+    //
+    // Honest scope: this clause closes the "declares CapAtomicMove and
+    // lies about phase" direction of BE-018 Gap 5.  It does NOT close the
+    // converse direction — a refinement that uses a runtime
+    // copy-then-delete protocol but omits CapAtomicMove from its
+    // capabilities set will satisfy this postcondition vacuously, and is
+    // free to assign `phase := DeleteDone` on success without ever
+    // modelling the CopyDone transient state.  Capability declaration
+    // remains an honour-system claim at the backend level.  The full
+    // closure of Gap 5 would require either (a) a mechanical link from
+    // implementation shape to capability declaration (out of scope for the
+    // current trait abstraction, which models the contract not the
+    // implementation strategy), or (b) a downstream conformance test that
+    // probes for partial-failure behaviour on backends that DON'T declare
+    // atomicity — which is the BACKLOG's existing "non-atomic backends
+    // MUST surface partial failure as a raise" prose, not a new Dafny
+    // postcondition.
+    // @spec BE-018
+    ensures CapAtomicMove in capabilities ==> ObservableForAtomicMove(phase)
 
   // ====================================================================
   // copy(src, dst, overwrite)

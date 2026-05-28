@@ -8,6 +8,79 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-191 — Move atomicity: model the observable contract, then enforce it**
+  spec: BE-018 · audience: infra.test
+  Wave 1 (C)+(T) pair, sibling of ID-188 (PR #689). Closes BE-018 Gap 5
+  at both the contract-definition and the contract-enforcement layers:
+  a refinement that declares `CapAtomicMove` and exposes `CopyDone`
+  (src gone, dst not yet written) as a "completed" move now fails to
+  verify in Dafny.
+  (C-definition) Added `sdd/formal/ResourceSafety.dfy` § 2.3
+  "Observable contract for atomic-move-capable backends": a new
+  `datatype MoveContract = ObservedDeleteDone | ObservedFailed(reason)`
+  with no `CopyDone` variant by construction; predicate
+  `ObservableForAtomicMove(phase) { phase != CopyDone && phase !=
+  Initial }`; total `function Observe(phase): MoveContract` over the
+  predicate's domain. Two structural bindings live at the
+  runtime-state model: `method AtomicMoveIsObservable` actually calls
+  `AtomicMove` and asserts the predicate on the returned phase (so
+  postcondition drift on `AtomicMove` breaks verification);
+  `CopyDeleteMove` itself gained the postcondition `srcExists &&
+  (!dstExists || overwrite) && deleteFails ==>
+  !ObservableForAtomicMove(phase)`, with the matching assert in the
+  `deleteFails` branch, so the structural reason copy-then-delete is
+  a strictly weaker contract is enforced on the method that produces
+  the state. `ObservedFailedPreservesSource` formalises the BE-018
+  "rollback, source preserved" clause: with `Initial` excluded from
+  the predicate, a `Failed` observation is structurally bound to a
+  `Failed(_,_)` runtime phase only.
+  (C-enforcement) `sdd/formal/BackendContract.dfy` now `include`s
+  `ResourceSafety.dfy` and `Backend.Move`'s signature carries a `ghost
+  phase: MovePhase` output. Two new trait postconditions: `r.Ok? ==>
+  phase == DeleteDone` (every successful Move terminates in
+  src-gone-dst-present, regardless of capability) and `CapAtomicMove
+  in capabilities ==> ObservableForAtomicMove(phase)` (the
+  capability-gated atomicity clause — declaring CapAtomicMove obliges
+  the refinement to expose a phase that excludes CopyDone and
+  Initial). Both `MemoryBackend` and `MemoryBackendMinimal` assign
+  `phase` in every branch of their Move body (`DeleteDone` on the
+  happy path; specific `Failed("initial", ...)` reasons on each error
+  path), discharging the new postcondition structurally. A future
+  `S3Backend.Move` refinement that declared CapAtomicMove and assigned
+  `phase := CopyDone` in any branch would fail verification — exactly
+  the enforcement claim BE-018 Gap 5 names.
+  Ghost outputs erase at compile time, but re-translating
+  `sdd/formal/MemoryBackend-py/module_.py` via `dafny build -t py` (then
+  `scripts/_dafny_classorder.py`) re-emits the now-visible
+  ResourceSafety datatypes (`HandleState`, `Resource`, `WrapPipeline`,
+  `MovePhase`, `MoveContract`, `ConnectionState`) and helper methods
+  alongside `Backend` / `MemoryBackend` / `MemoryBackendMinimal`. The
+  `Backend.Move` Python signature is unchanged (ghost erased); the
+  `DafnyOracleBackend` adapter in `tests/backends/dafny/_helpers.py`
+  needs no change. All `dafny_oracle` parametrisations of the move /
+  copy conformance pass against the regenerated module.
+  Verifier totals: 554 verified, 0 errors across BackendContract.dfy
+  (51), MemoryBackend.dfy (478), ResourceSafety.dfy (16), and
+  DepthCounting.dfy (9). Each new ResourceSafety / BackendContract
+  clause carries `// @spec BE-018`.
+  (T) Added `TestMoveCrashInjection::test_partial_move_preserves_at_least_one_copy`
+  to `tests/backends/conformance/test_atomic.py`, parametrised over a
+  `_CRASH_POINTS` matrix of two protocol shapes — `after_copy`
+  (`inner.copy(src, dst); raise`) discharges the left disjunct of
+  BE-018's OR (`src_present`); `after_delete` (`inner.copy(src, dst);
+  inner.delete(src); raise`) discharges the right (`dst_present`). The
+  single contract assertion `assert src_present or dst_present` is
+  thereby non-trivially exercised from both directions — a buggy
+  backend that left both gone (e.g. `delete(src); raise` without
+  copying first) would fail it. Whichever side(s) survive, their
+  content is verified intact (BE-018 forbids silent corruption
+  alongside the non-loss invariant). The class is *not* parametrised
+  over `fixture_params`: the contract is on the move *protocol*, not
+  on any concrete backend. The `@pytest.mark.spec("BE-018")` marker is
+  for traceability only; `check_formal_trace.py` sees no new F1 / F2
+  (BE-018 was already in D and T).
+  Trace: `sdd/traces/id-191-move-atomicity-observable-contract.yml`.
+
 - [x] **ID-188 — Resource safety: prove the quality flags, then enforce cleanup**
   spec: SIO-001, SIO-008, SIO-009, SAW-004, SAW-005 · audience: infra.test
   Wave 1 (C)+(T) pair landed in one PR.

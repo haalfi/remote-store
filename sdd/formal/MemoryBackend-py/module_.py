@@ -518,6 +518,224 @@ class ReadStream_ReadStream(ReadStream, NamedTuple('ReadStream', [('content', An
         return super().__hash__()
 
 
+class HandleState:
+    @_dafny.classproperty
+    def AllSingletonConstructors(cls):
+        return [HandleState_Open(), HandleState_Wrapped(), HandleState_Closed()]
+    @classmethod
+    def default(cls, ):
+        return lambda: HandleState_Open()
+    def __ne__(self, __o: object) -> bool:
+        return not self.__eq__(__o)
+    @property
+    def is_Open(self) -> bool:
+        return isinstance(self, HandleState_Open)
+    @property
+    def is_Wrapped(self) -> bool:
+        return isinstance(self, HandleState_Wrapped)
+    @property
+    def is_Closed(self) -> bool:
+        return isinstance(self, HandleState_Closed)
+
+class HandleState_Open(HandleState, NamedTuple('Open', [])):
+    def __dafnystr__(self) -> str:
+        return f'HandleState.Open'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, HandleState_Open)
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+class HandleState_Wrapped(HandleState, NamedTuple('Wrapped', [])):
+    def __dafnystr__(self) -> str:
+        return f'HandleState.Wrapped'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, HandleState_Wrapped)
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+class HandleState_Closed(HandleState, NamedTuple('Closed', [])):
+    def __dafnystr__(self) -> str:
+        return f'HandleState.Closed'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, HandleState_Closed)
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+
+class Resource:
+    @classmethod
+    def default(cls, ):
+        return lambda: Resource_Resource(int(0), HandleState.default()())
+    def __ne__(self, __o: object) -> bool:
+        return not self.__eq__(__o)
+    @property
+    def is_Resource(self) -> bool:
+        return isinstance(self, Resource_Resource)
+
+class Resource_Resource(Resource, NamedTuple('Resource', [('id_', Any), ('state', Any)])):
+    def __dafnystr__(self) -> str:
+        return f'Resource.Resource({_dafny.string_of(self.id_)}, {_dafny.string_of(self.state)})'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, Resource_Resource) and self.id_ == __o.id_ and self.state == __o.state
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+
+class WrapPipeline:
+    @classmethod
+    def default(cls, ):
+        return lambda: WrapPipeline_WrapPipeline(_dafny.Seq({}), int(0))
+    def __ne__(self, __o: object) -> bool:
+        return not self.__eq__(__o)
+    @property
+    def is_WrapPipeline(self) -> bool:
+        return isinstance(self, WrapPipeline_WrapPipeline)
+
+class WrapPipeline_WrapPipeline(WrapPipeline, NamedTuple('WrapPipeline', [('layers', Any), ('failed__at', Any)])):
+    def __dafnystr__(self) -> str:
+        return f'WrapPipeline.WrapPipeline({_dafny.string_of(self.layers)}, {_dafny.string_of(self.failed__at)})'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, WrapPipeline_WrapPipeline) and self.layers == __o.layers and self.failed__at == __o.failed__at
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+
+class MovePhase:
+    @classmethod
+    def default(cls, ):
+        return lambda: MovePhase_Initial()
+    def __ne__(self, __o: object) -> bool:
+        return not self.__eq__(__o)
+    @property
+    def is_Initial(self) -> bool:
+        return isinstance(self, MovePhase_Initial)
+    @property
+    def is_CopyDone(self) -> bool:
+        return isinstance(self, MovePhase_CopyDone)
+    @property
+    def is_DeleteDone(self) -> bool:
+        return isinstance(self, MovePhase_DeleteDone)
+    @property
+    def is_Failed(self) -> bool:
+        return isinstance(self, MovePhase_Failed)
+
+class MovePhase_Initial(MovePhase, NamedTuple('Initial', [])):
+    def __dafnystr__(self) -> str:
+        return f'MovePhase.Initial'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, MovePhase_Initial)
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+class MovePhase_CopyDone(MovePhase, NamedTuple('CopyDone', [])):
+    def __dafnystr__(self) -> str:
+        return f'MovePhase.CopyDone'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, MovePhase_CopyDone)
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+class MovePhase_DeleteDone(MovePhase, NamedTuple('DeleteDone', [])):
+    def __dafnystr__(self) -> str:
+        return f'MovePhase.DeleteDone'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, MovePhase_DeleteDone)
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+class MovePhase_Failed(MovePhase, NamedTuple('Failed', [('phase', Any), ('reason', Any)])):
+    def __dafnystr__(self) -> str:
+        return f'MovePhase.Failed({self.phase.VerbatimString(True)}, {self.reason.VerbatimString(True)})'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, MovePhase_Failed) and self.phase == __o.phase and self.reason == __o.reason
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+
+class MoveContract:
+    @classmethod
+    def default(cls, ):
+        return lambda: MoveContract_ObservedDeleteDone()
+    def __ne__(self, __o: object) -> bool:
+        return not self.__eq__(__o)
+    @property
+    def is_ObservedDeleteDone(self) -> bool:
+        return isinstance(self, MoveContract_ObservedDeleteDone)
+    @property
+    def is_ObservedFailed(self) -> bool:
+        return isinstance(self, MoveContract_ObservedFailed)
+
+class MoveContract_ObservedDeleteDone(MoveContract, NamedTuple('ObservedDeleteDone', [])):
+    def __dafnystr__(self) -> str:
+        return f'MoveContract.ObservedDeleteDone'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, MoveContract_ObservedDeleteDone)
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+class MoveContract_ObservedFailed(MoveContract, NamedTuple('ObservedFailed', [('reason', Any)])):
+    def __dafnystr__(self) -> str:
+        return f'MoveContract.ObservedFailed({self.reason.VerbatimString(True)})'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, MoveContract_ObservedFailed) and self.reason == __o.reason
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+
+class ConnectionState:
+    @_dafny.classproperty
+    def AllSingletonConstructors(cls):
+        return [ConnectionState_Created(), ConnectionState_Connected(), ConnectionState_Abandoned(), ConnectionState_Released()]
+    @classmethod
+    def default(cls, ):
+        return lambda: ConnectionState_Created()
+    def __ne__(self, __o: object) -> bool:
+        return not self.__eq__(__o)
+    @property
+    def is_Created(self) -> bool:
+        return isinstance(self, ConnectionState_Created)
+    @property
+    def is_Connected(self) -> bool:
+        return isinstance(self, ConnectionState_Connected)
+    @property
+    def is_Abandoned(self) -> bool:
+        return isinstance(self, ConnectionState_Abandoned)
+    @property
+    def is_Released(self) -> bool:
+        return isinstance(self, ConnectionState_Released)
+
+class ConnectionState_Created(ConnectionState, NamedTuple('Created', [])):
+    def __dafnystr__(self) -> str:
+        return f'ConnectionState.Created'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, ConnectionState_Created)
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+class ConnectionState_Connected(ConnectionState, NamedTuple('Connected', [])):
+    def __dafnystr__(self) -> str:
+        return f'ConnectionState.Connected'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, ConnectionState_Connected)
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+class ConnectionState_Abandoned(ConnectionState, NamedTuple('Abandoned', [])):
+    def __dafnystr__(self) -> str:
+        return f'ConnectionState.Abandoned'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, ConnectionState_Abandoned)
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+class ConnectionState_Released(ConnectionState, NamedTuple('Released', [])):
+    def __dafnystr__(self) -> str:
+        return f'ConnectionState.Released'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, ConnectionState_Released)
+    def __hash__(self) -> int:
+        return super().__hash__()
+
 class Backend:
     pass
     @property
@@ -582,6 +800,7 @@ class Backend:
 
     def RequireCapability(self, cap):
         pass
+
 
 class default__:
     def  __init__(self):
@@ -712,6 +931,133 @@ class default__:
     @staticmethod
     def WriteResultFromFileInfo(info):
         return WriteResult_WriteResult((info).path, (info).size, (info).digest, (info).etag, Option_None(), (info).last__modified, (info).metadata, WriteSource_SidecarSource())
+
+    @staticmethod
+    def AllHandlesAccountedFor(pipeline):
+        def lambda0_(forall_var_0_):
+            d_0_i_: int = forall_var_0_
+            return not (((0) <= (d_0_i_)) and ((d_0_i_) < (len((pipeline).layers)))) or (((((pipeline).layers)[d_0_i_]).state) != (HandleState_Open()))
+
+        return _dafny.quantifier(_dafny.IntegerRange(0, len((pipeline).layers)), True, lambda0_)
+
+    @staticmethod
+    def SafeWrapInvariant(pipeline):
+        if ((pipeline).failed__at) == (-1):
+            def lambda0_(forall_var_0_):
+                d_0_i_: int = forall_var_0_
+                return not (((0) <= (d_0_i_)) and ((d_0_i_) < (len((pipeline).layers)))) or (((((pipeline).layers)[d_0_i_]).state) == (HandleState_Wrapped()))
+
+            return _dafny.quantifier(_dafny.IntegerRange(0, len((pipeline).layers)), True, lambda0_)
+        elif True:
+            def lambda1_(forall_var_1_):
+                d_1_i_: int = forall_var_1_
+                return not (((0) <= (d_1_i_)) and ((d_1_i_) < ((pipeline).failed__at))) or (((((pipeline).layers)[d_1_i_]).state) == (HandleState_Closed()))
+
+            return ((((0) <= ((pipeline).failed__at)) and (((pipeline).failed__at) <= (len((pipeline).layers)))) and (_dafny.quantifier(_dafny.IntegerRange(0, (pipeline).failed__at), True, lambda1_))) and (((pipeline).failed__at) == (len((pipeline).layers)))
+
+    @staticmethod
+    def SafeWrap(rawId, wrapperCount, failAt):
+        pipeline: WrapPipeline = WrapPipeline.default()()
+        if (failAt) == (-1):
+            d_0_layers_: _dafny.Seq
+            d_0_layers_ = _dafny.SeqWithoutIsStrInference([])
+            d_1_i_: int
+            d_1_i_ = 0
+            while (d_1_i_) <= (wrapperCount):
+                d_0_layers_ = (d_0_layers_) + (_dafny.SeqWithoutIsStrInference([Resource_Resource((rawId) + (d_1_i_), HandleState_Wrapped())]))
+                d_1_i_ = (d_1_i_) + (1)
+            pipeline = WrapPipeline_WrapPipeline(d_0_layers_, -1)
+        elif True:
+            d_2_layers_: _dafny.Seq
+            d_2_layers_ = _dafny.SeqWithoutIsStrInference([])
+            d_3_i_: int
+            d_3_i_ = 0
+            while (d_3_i_) <= (failAt):
+                d_2_layers_ = (d_2_layers_) + (_dafny.SeqWithoutIsStrInference([Resource_Resource((rawId) + (d_3_i_), HandleState_Closed())]))
+                d_3_i_ = (d_3_i_) + (1)
+            pipeline = WrapPipeline_WrapPipeline(d_2_layers_, (failAt) + (1))
+        return pipeline
+
+    @staticmethod
+    def UnsafeWrap(rawId, wrapperCount, failAt):
+        pipeline: WrapPipeline = WrapPipeline.default()()
+        d_0_layers_: _dafny.Seq
+        d_0_layers_ = _dafny.SeqWithoutIsStrInference([Resource_Resource(rawId, HandleState_Open())])
+        d_1_i_: int
+        d_1_i_ = 1
+        while (d_1_i_) <= (failAt):
+            d_0_layers_ = (d_0_layers_) + (_dafny.SeqWithoutIsStrInference([Resource_Resource((rawId) + (d_1_i_), HandleState_Wrapped())]))
+            d_1_i_ = (d_1_i_) + (1)
+        pipeline = WrapPipeline_WrapPipeline(d_0_layers_, (failAt) + (1))
+        return pipeline
+
+    @staticmethod
+    def AtomicMove(srcExists, dstExists, overwrite):
+        phase: MovePhase = MovePhase.default()()
+        if not(srcExists):
+            phase = MovePhase_Failed(_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "initial")), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "source not found")))
+        elif (dstExists) and (not(overwrite)):
+            phase = MovePhase_Failed(_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "initial")), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "destination exists")))
+        elif True:
+            phase = MovePhase_DeleteDone()
+        return phase
+
+    @staticmethod
+    def CopyDeleteMove(srcExists, dstExists, overwrite, deleteFails):
+        phase: MovePhase = MovePhase.default()()
+        if not(srcExists):
+            phase = MovePhase_Failed(_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "initial")), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "source not found")))
+            return phase
+        if (dstExists) and (not(overwrite)):
+            phase = MovePhase_Failed(_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "initial")), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "destination exists")))
+            return phase
+        phase = MovePhase_CopyDone()
+        if deleteFails:
+            return phase
+        phase = MovePhase_DeleteDone()
+        return phase
+
+    @staticmethod
+    def ObservableForAtomicMove(phase):
+        return ((phase) != (MovePhase_CopyDone())) and ((phase) != (MovePhase_Initial()))
+
+    @staticmethod
+    def Observe(phase):
+        source0_ = phase
+        if True:
+            if source0_.is_DeleteDone:
+                return MoveContract_ObservedDeleteDone()
+        if True:
+            d_0_reason_ = source0_.reason
+            return MoveContract_ObservedFailed(d_0_reason_)
+
+    @staticmethod
+    def AtomicMoveIsObservable(srcExists, dstExists, overwrite):
+        phase: MovePhase = MovePhase.default()()
+        out0_: MovePhase
+        out0_ = default__.AtomicMove(srcExists, dstExists, overwrite)
+        phase = out0_
+        return phase
+
+    @staticmethod
+    def SafeConnect(connectSucceeds):
+        state: ConnectionState = ConnectionState.default()()
+        state = ConnectionState_Created()
+        if connectSucceeds:
+            state = ConnectionState_Connected()
+        elif True:
+            state = ConnectionState_Released()
+        return state
+
+    @staticmethod
+    def UnsafeConnect(connectSucceeds):
+        state: ConnectionState = ConnectionState.default()()
+        state = ConnectionState_Created()
+        if connectSucceeds:
+            state = ConnectionState_Connected()
+        elif True:
+            state = ConnectionState_Abandoned()
+        return state
 
     @_dafny.classproperty
     def Root(instance):

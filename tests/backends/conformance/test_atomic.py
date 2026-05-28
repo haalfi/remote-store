@@ -446,3 +446,148 @@ class TestCopyPostState:
         backend.copy("cpps_src.txt", "cpps_dst.txt")
         assert backend.read_bytes("cpps_src.txt") == b"data"
         assert backend.read_bytes("cpps_dst.txt") == b"data"
+
+
+# ID-191: BE-018 observable contract — model-level encoding paired with
+# sdd/formal/ResourceSafety.dfy § 2.3 (MoveContract / ObservableForAtomicMove).
+# Lives in test_atomic.py with the rest of the BE-018 conformance, but is
+# *not* parametrised over fixture_params: it constructs its own in-process
+# backend and wraps it in a crash-injecting shim. The wrapper raises at a
+# configurable point in a copy-then-delete protocol, modelling the failure
+# windows the Dafny § 2.3 contract reasons about. No oracle certifies this
+# test (crash injection has no compiled-MemoryBackend equivalent), and no
+# parametrised backend fixture exercises it — the @pytest.mark.spec("BE-018")
+# marker is for traceability into the spec coverage matrix only (per
+# sdd/BACKLOG.md ID-191).
+#
+# Test discipline: a deterministic wrapper makes the OR assertion derivable
+# from the wrapper's own code, which is a tautology rather than a property
+# observation.  To give the test genuine discriminating power, the matrix
+# carries two BE-018-respecting shapes (after_copy, after_delete) AND one
+# BE-018-violating shape (delete_first).  The conformance test asserts the
+# OR holds on the first two; a sibling test asserts the OR *fails* on the
+# violating shape, proving that the disjunction is non-vacuous as an
+# observation: a wrapper that violated the contract WOULD be caught here.
+
+# BE-018-respecting wrapper shapes — exercised by the positive test.
+_CRASH_POINTS_OK = [
+    pytest.param("after_copy", id="after_copy"),
+    pytest.param("after_delete", id="after_delete"),
+]
+
+
+class _CopyDeleteCrash:
+    """Move-only wrapper that injects a crash at a configurable point.
+
+    Not a full ``Backend`` substitute: only ``move`` is implemented. Tests
+    use the inner backend directly for seeding and post-state assertions.
+
+    ``crash_point`` values:
+
+    - ``after_copy``: ``inner.copy(src, dst); raise`` — crash strictly
+      between copy success and delete start. Source is untouched, dst was
+      materialised by the copy. Discharges the left disjunct of BE-018's
+      OR (``src_present``). Satisfies BE-018.
+    - ``after_delete``: ``inner.copy(src, dst); inner.delete(src); raise``
+      — crash after delete succeeded but before the wrapper returns
+      success. Source is gone, dst is intact. Discharges the right
+      disjunct (``dst_present``). Satisfies BE-018.
+    - ``delete_first``: ``inner.delete(src); raise`` — delete the source
+      WITHOUT first copying it. Source is gone, dst was never written.
+      VIOLATES BE-018: both gone. Used by the negative test below to
+      prove the OR assertion is non-vacuous.
+    """
+
+    def __init__(self, inner: Backend, crash_point: str) -> None:
+        self._inner = inner
+        self._crash_point = crash_point
+
+    def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        if self._crash_point == "delete_first":
+            # BE-018-violating shape: delete src without copying.  No
+            # `overwrite` use — the inner.delete is unconditional.
+            del overwrite
+            self._inner.delete(src)
+            raise RuntimeError(f"simulated crash at {self._crash_point}")
+        self._inner.copy(src, dst, overwrite=overwrite)
+        if self._crash_point == "after_delete":
+            self._inner.delete(src)
+        raise RuntimeError(f"simulated crash at {self._crash_point}")
+
+
+class TestMoveCrashInjection:
+    """BE-018 § Atomicity: copy-then-delete crash leaves data recoverable.
+
+    Encodes the non-loss invariant — source intact OR destination intact,
+    never both gone — at the move *protocol* layer, paired with the Dafny
+    § 2.3 MoveContract that excludes ObservedCopyDone by construction.
+
+    Two positive shapes exercise the OR from both directions; one negative
+    shape (BE-018-violating) demonstrates the assertion is non-vacuous.
+    """
+
+    @pytest.mark.spec("BE-018")
+    @pytest.mark.parametrize("crash_point", _CRASH_POINTS_OK)
+    def test_partial_move_preserves_at_least_one_copy(self, crash_point: str) -> None:
+        """Positive: BE-018-respecting wrapper shapes satisfy the OR."""
+        from remote_store.backends._memory import MemoryBackend
+
+        inner = MemoryBackend()
+        wrapper = _CopyDeleteCrash(inner, crash_point)
+        inner.write("crash_src.txt", b"payload")
+
+        with pytest.raises(RuntimeError, match="simulated crash"):
+            wrapper.move("crash_src.txt", "crash_dst.txt")
+
+        src_present = inner.exists("crash_src.txt")
+        dst_present = inner.exists("crash_dst.txt")
+        # BE-018 contract: never both gone. The Dafny § 2.3 MoveContract
+        # excludes ObservedCopyDone (src gone, dst not yet written) for
+        # atomic backends; this OR is its conformance shadow. Non-trivially
+        # discharged in both directions across the _CRASH_POINTS_OK matrix:
+        # `after_copy` carries the left disjunct, `after_delete` the right.
+        assert src_present or dst_present, "BE-018: source intact OR destination intact (never both gone)"
+        # Whichever side(s) survive, the surviving content must be intact —
+        # BE-018 forbids silent corruption alongside the non-loss invariant.
+        if src_present:
+            assert inner.read_bytes("crash_src.txt") == b"payload"
+        if dst_present:
+            assert inner.read_bytes("crash_dst.txt") == b"payload"
+
+    @pytest.mark.spec("BE-018")
+    def test_or_assertion_catches_be018_violation(self) -> None:
+        """Negative: a BE-018-violating wrapper makes the OR fail.
+
+        Proves the OR is non-vacuous: a copy-then-delete protocol that
+        crashes leaving both gone (the `delete_first` shape) trips the
+        same assertion the positive test discharges. Without this case
+        the assertion is structurally tautological for the in-process
+        wrapper — the wrapper's own code determines the post-state, so
+        verifying the post-state would amount to verifying the wrapper.
+        Running the assertion against a known-bad wrapper and observing
+        it fail is what distinguishes the test from such a tautology.
+        """
+        from remote_store.backends._memory import MemoryBackend
+
+        inner = MemoryBackend()
+        wrapper = _CopyDeleteCrash(inner, "delete_first")
+        inner.write("crash_src.txt", b"payload")
+
+        with pytest.raises(RuntimeError, match="simulated crash"):
+            wrapper.move("crash_src.txt", "crash_dst.txt")
+
+        src_present = inner.exists("crash_src.txt")
+        dst_present = inner.exists("crash_dst.txt")
+        # The BE-018-violating shape: both gone.  The OR assertion that
+        # the positive test discharges would fail here — assert that it
+        # would, directly.
+        assert not src_present
+        assert not dst_present
+        # If a future change accidentally made src_present or dst_present
+        # True for delete_first, this AssertionError would bite, alerting
+        # to a wrapper-shape drift that silently weakens the negative test.
+        with pytest.raises(
+            AssertionError,
+            match="BE-018: source intact OR destination intact",
+        ):
+            assert src_present or dst_present, "BE-018: source intact OR destination intact (never both gone)"
