@@ -96,7 +96,6 @@ class TestGetFolderInfoAggregatesOracle:
 
     @pytest.mark.pbt
     @pytest.mark.spec("BE-017")
-    @pytest.mark.spec("ID-134")
     @given(tree=_file_tree())
     def test_file_count_and_total_size_match_oracle(self, tree: dict[str, bytes]) -> None:
         oracle = build_oracle(tree)

@@ -125,34 +125,25 @@ _BASELINE: frozenset[tuple[str, str]] = frozenset(
     {
         # -- F1: Dafny-backed clauses with no conformance @pytest.mark.spec marker.
         #
-        # CAP-004 — RequireCapability's postconditions model the capability
-        #   gate. The conformance suite exercises gating but carries no
-        #   CAP-004 marker. Surfaced by ID-206; no dedicated owner yet.
-        (KIND_UNTESTED, "CAP-004"),
-        # DEPTH-001 — DepthCounting.dfy proves the reference depth algorithm
-        #   (BK-140 gap 4). The depth conformance tests are filed under
-        #   DEPTH-003 + BE-014, not DEPTH-001. Owner: ID-185.
-        (KIND_UNTESTED, "DEPTH-001"),
-        # WR-008 — WR008FieldMapping pins the head() FileInfo→WriteResult
-        #   mapping. No conformance marker cites WR-008. Surfaced by ID-206.
+        # WR-008 — WR008FieldMapping (BackendContract.dfy) pins the pure
+        #   FileInfo→WriteResult field map. WR-008 is Store.head(), a
+        #   Store-layer composition over get_file_info (spec 045 § WR-008),
+        #   not a backend operation the conformance suite drives; head()
+        #   field-mapping coverage lives in
+        #   tests/test_store.py::TestStoreHead. The conformance dir this gate
+        #   scans has no head() test by design, so this F1 is structural,
+        #   not a backfill gap.
         (KIND_UNTESTED, "WR-008"),
-        # WR-010 — the USER_METADATA strict-gate postcondition on Write. The
-        #   conformance suite exercises metadata round-trips (WR-012/013) but
-        #   carries no WR-010 marker for the pre-I/O gate. Surfaced by ID-206.
+        # WR-010 — the USER_METADATA strict gate. Per spec 045 § WR-010 and
+        #   ADR-0026 the gate is enforced once at the Store layer
+        #   (_store.py / _async_store.py via capabilities.require) BEFORE
+        #   delegating; a non-declaring backend never receives a non-empty
+        #   metadata mapping, so backends deliberately do not re-check it and
+        #   a backend-conformance assertion would be architecturally wrong.
+        #   Store-layer coverage lives in
+        #   tests/test_store.py::TestMetadataGate. Structural F1, not a
+        #   backfill gap.
         (KIND_UNTESTED, "WR-010"),
-        # NPR-020 — NativePathRoundTrip (BackendContract.dfy) proves the
-        #   to_key / native_path round-trip identity for non-empty keys
-        #   (and identity-default roots); the empty-key case is backend-
-        #   divergent and excluded, tracked as BK-234. The cross-backend
-        #   conformance test is a separate (T) gap surfaced by ID-190.
-        (KIND_UNTESTED, "NPR-020"),
-        # -- F2: conformance markers citing an ID with no spec section.
-        #
-        # ID-134 — TestGetFolderInfoAggregates markers cite the backlog ID
-        #   ID-134 (aggregate helpers) rather than a spec section. ID-187's
-        #   backlog line pairs ID-134 with BE-017; the marker should migrate
-        #   to BE-017 when ID-187 lands.
-        (KIND_TEST_BAD_ID, "ID-134"),
     }
 )
 
