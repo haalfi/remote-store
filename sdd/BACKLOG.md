@@ -54,23 +54,10 @@ and the highest ID already in this file, then take the next integer. Run
 ## Async API Verification
 
 Async API surface, conformance, and tooling. ID-192 (aio.md rework), ID-193
-(async conformance pattern), ID-194 (gen_graph async gate extension), and
-ID-172 (aio.md wired into the verifier) have landed (see BACKLOG-DONE.md).
-
-**Sequence:** ID-173
-
-- [ ] **ID-173 — `check_api_docs.py` — `__all__` ↔ `docs-src/reference/api/index.md`**
-  spec: — · effort: M · audience: platform.tooling
-  Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
-  Different IR from the method-caps checker: `{symbol_name: kind}` rather
-  than `{method: caps}`; separate extractor pair, same compare pattern.
-  Sources of truth: `remote_store.__all__` (primary public API) and
-  `remote_store.backends.__all__` (secondary; e.g. `SFTPUtils`). Page side:
-  parse `[Name](page.md)` link rows in the existing tables under `## Core`,
-  `## Backends`, etc. Compare = set diff with missing/extra symbol messages.
-  Stop and confirm before implementing — this is a genuinely different IR
-  (per the Phase 1 reviewers' staged-rollout preference).
-  Page target: `docs-src/reference/api/index.md`.
+(async conformance pattern), ID-194 (gen_graph async gate extension), ID-172
+(aio.md wired into the verifier), and ID-173 (`__all__` ↔ `index.md` parity)
+have landed (see BACKLOG-DONE.md). The `check_api_docs.py` staged rollout
+(ID-170 → ID-173) is complete.
 
 - [ ] **ID-203 — Align `tests/` folder structure with `src/` package layout**
   spec: — · effort: M · audience: library.maintainer
@@ -78,10 +65,9 @@ ID-172 (aio.md wired into the verifier) have landed (see BACKLOG-DONE.md).
   subtree and other packages grow, test file placement becomes ambiguous.
   Mirror `src/` layout (e.g. `tests/aio/`, `tests/backends/`) and carve out
   `tests/scripts/` for script-level tests.
-  **Blocked on:** ID-172 + ID-173 — the async API surface must be settled
-  before reorganising the tests that cover it. ID-193 (async conformance
-  pattern) and ID-194 (gen_graph async gate) are no longer blockers — both
-  landed (see BACKLOG-DONE.md).
+  **Ready:** the ID-172 + ID-173 blockers have landed — the async API surface
+  is now settled. ID-193 (async conformance pattern) and ID-194 (gen_graph
+  async gate) also landed (see BACKLOG-DONE.md).
 
 ---
 

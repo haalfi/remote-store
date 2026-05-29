@@ -57,6 +57,57 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   only (no `user.*`), per the trace-schema derived rule.
   Trace: `sdd/traces/bk-247-id134-marker-migration.yml`.
 
+- [x] **ID-173 — `check_api_docs.py` Phase 4 — `__all__` ↔ `docs-src/reference/api/index.md`**
+  spec: — · audience: contributor.tooling
+  The staged rollout's final, deliberately-separate piece: a *different IR*
+  from the method-caps checker — `{symbol_name: kind}` rather than
+  `{method: caps}` — so it has its own extractor trio + compare run as a
+  second pass in `main()`, untangled from the `PAGES` loop. Confirmed the
+  design with the maintainer before coding (the backlog's stop-and-confirm).
+  - **Symmetric three-source surface.** The maintainer's steer was symmetry:
+    the Async section links a *third* namespace, so `remote_store.aio.__all__`
+    is treated as a co-equal source alongside `remote_store.__all__` (primary)
+    and `remote_store.backends.__all__`. `exports_symbols` walks all three.
+  - **`ext.*` exclusion.** ~33 symbols re-exported from `remote_store.ext.*`
+    are documented as *module* rows in the index Extensions section, not per
+    symbol; excluded by `__module__` prefix (not a hardcoded list).
+  - **Backend-companion exemption (explicit allowlist).** `ArrowSerializer`,
+    `ResultSerializer` (on `sql-query.md`) and `AsyncAzureBackend` (on
+    `aio.md`) are in their `__all__` but have no standalone index row — they
+    "belong to their backend" in the docs. A first cut *derived* this from
+    `:::` renders; review (PR #697) showed that masks dropped rows — ~every
+    class is `:::`-rendered on its own page, and shared multi-class pages
+    (`aio.md`, `errors.md`, `models.md`) make no robust derivation possible.
+    Shipped instead: an explicit `_INDEX_EXEMPT` frozenset of the three
+    companions, with `directive_symbols` repurposed to *police* it in `main()`
+    via `allowlist_staleness_errors` — each entry must be public, `:::`-rendered,
+    and absent from the index, so `gen-api-check` itself (not just
+    `test_allowlist_is_not_stale`) fails on a stale allowlist.
+  - **Bidirectional compare.** Unlike the coverage-only method-caps compare
+    (over-claims tolerated), this is a true set diff: MISSING (public symbol
+    with no index row and not on `_INDEX_EXEMPT`) and EXTRA (index link with
+    no backing `__all__` symbol) are both errors. `kind` enriches messages
+    only. Live surface (full extras): 53 public symbols, index green.
+  - **No drift found** — `index.md` already mirrored the public surface once
+    the `ext.*` and backend-companion rules were applied.
+  - **Environment sensitivity (new vs the static graph IR).** The exports
+    extractor imports the live packages, so optional-dependency symbols only
+    appear under a full-extras env. Like the strict coverage gate, the check
+    is correct under `hatch` / CI, not a bare-`python` sandbox; documented in
+    the module docstring and the failure hint.
+  - **Wiring:** no new wiring — the second pass rides the existing
+    `gen-api-check` (already in `hatch run lint`, `preflight`, and CI).
+    Updated the success line and split the failure hint into method-caps vs
+    index-parity guidance. 22 new tests: the extractor trio, `compare_exports`
+    (MISSING/EXTRA/exempt + the dropped-primary-row regression), and
+    `allowlist_staleness_errors`, each in isolation, plus a `TestLiveIndex`
+    round-trip.
+  - **No CHANGELOG** — audience `contributor.tooling` only (per `_schema.yml`
+    derived rule). Note: the BACKLOG entry's `platform.tooling` tag was not in
+    the schema enum; corrected to `contributor.tooling` (same fix ID-172 needed).
+  - Closes the `check_api_docs.py` staged rollout (ID-170 → ID-173). Unblocks
+    ID-203 (tests/ folder reorg), which waited on the async API surface settling.
+
 - [x] **ID-172 — `check_api_docs.py` Phase 3 — `AsyncStore`/`AsyncBackend` → `aio.md`**
   spec: ASYNC-045a · audience: contributor.tooling
   Spun off from ID-171; ID-192 (aio.md rework) and ID-194 (async gate

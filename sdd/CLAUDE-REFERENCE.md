@@ -40,7 +40,7 @@ Read this before starting. One line per trigger.
 | Store or Backend ABC          | All backend implementations, conformance tests |
 | Public method signature       | Docstring (Args/Returns/Raises), examples that call it, guides referencing it |
 | Store method                  | README Store API table + comparison count, `__init__.py` `__all__`, README examples table, `examples/`, spec, guides, CHANGELOG |
-| Public API (`__all__`)        | README Store API table, `reference/api/*.md` directive + index summary + `_nav.yml`, `examples/`, user guides; check `backends/__init__.py` `__all__` too |
+| Public API (`__all__`)        | README Store API table, `reference/api/*.md` directive + index summary + `_nav.yml`, `examples/`, user guides; check `backends/__init__.py` *and* `aio/__init__.py` `__all__` too. `index.md` parity machine-verified by `gen-api-check` (ID-173): every public symbol needs an index row (or an entry on the small `_INDEX_EXEMPT` backend-companion allowlist) |
 | Extension                     | `__init__.py` exports (ADR-0013 rules), `pyproject` extras, README extensions table, `reference/api/extensions/*` + index + `_nav.yml`, guides, examples, CHANGELOG, BACKLOG |
 | Dependency                    | `pyproject` extras + pins, README install, docs prerequisites |
 | `CAPABILITIES` ClassVar       | `003-backend-adapter-contract.md` (BE-003), `test_capabilities.py`, `test_conformance.py`, custom-backend guide, `examples/snippets/` |
@@ -108,11 +108,16 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | **Public API** (`__all__`) | README Store API table, `docs-src/reference/api/*.md` directive |
 |                            | (every `__all__` symbol needs a `:::` entry),             |
 |                            | `docs-src/reference/api/index.md` summary table (every public |
-|                            | class/function needs a row), `docs-src/reference/api/_nav.yml`, |
-|                            | `examples/`, user guides.                                 |
-|                            | **Check**: `backends/__init__.py` `__all__` too —         |
-|                            | secondary public API (e.g. `SFTPUtils`) needs its own     |
-|                            | `api/*.md` page and index entry                           |
+|                            | class/function needs a row, unless it is on the small     |
+|                            | `_INDEX_EXEMPT` backend-companion allowlist in            |
+|                            | `scripts/check_api_docs.py`, e.g. `ArrowSerializer`),     |
+|                            | `docs-src/reference/api/_nav.yml`, `examples/`, user guides. |
+|                            | **Check**: `backends/__init__.py` *and* `aio/__init__.py` |
+|                            | `__all__` too — secondary/async public API (`SFTPUtils`,  |
+|                            | `AsyncStore`) is a co-equal source. `index.md` parity is  |
+|                            | machine-verified by `hatch run gen-api-check` (ID-173),   |
+|                            | bidirectionally (missing rows *and* stale links fail);    |
+|                            | run under `hatch` so optional-dep symbols are present     |
 | **Extension**              | `__init__.py` exports (pure-Python only; optional-dep     |
 |                            | extensions are NOT re-exported — ADR-0013),               |
 |                            | `pyproject.toml` extras (if optional dep),                |
