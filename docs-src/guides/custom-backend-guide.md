@@ -325,23 +325,49 @@ code/type, and raise the appropriate remote-store error with `from exc`.
 
 ## Testing your backend
 
-remote-store ships two conformance test files that validate any backend against
-the formal `BackendContract` specification. Backends contributed to the repo
-plug into this infrastructure and run through the full suite automatically.
-Standalone backends can either reuse this suite or write focused tests against
-the same categories.
+remote-store ships a per-topic conformance suite under
+`tests/backends/conformance/` that validates any backend against the formal
+`BackendContract` specification. Backends contributed to the repo plug into
+this infrastructure and run through the full suite automatically. Standalone
+backends can either reuse this suite or write focused tests against the same
+categories.
 
 ---
 
 ### Conformance suite overview
 
-| File | Coverage | Run with |
-|---|---|---|
-| [`test_conformance.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance.py) | Basic suite: identity, capabilities, `exists`, `is_file`/`is_folder`, read, write, delete, list, streaming, glob, native path, resolution | `pytest tests/backends/test_conformance.py` |
-| [`test_conformance_extended.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance_extended.py) | Extended (Dafny-derived): error fidelity, precondition ordering, depth filtering, move/copy semantics, resource cleanup | `pytest -m extended_conformance` |
+The suite lives in
+[`tests/backends/conformance/`](https://github.com/haalfi/remote-store/tree/master/tests/backends/conformance),
+split into per-topic files that share the same parameterized `backend`
+fixture — every registered backend runs the full suite automatically.
 
-Both files share the same parameterized `backend` fixture — every registered
-backend runs the full suite automatically.
+| Topic file | Coverage | Run with |
+|---|---|---|
+| [`test_identity.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_identity.py) | Identity, capabilities, lifecycle, `resolve`, native path round-trip | `pytest tests/backends/conformance/test_identity.py` |
+| [`test_io.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_io.py) | `exists`, `is_file`/`is_folder`, read, write, delete, `to_key` round-trip | `pytest tests/backends/conformance/test_io.py` |
+| [`test_listing.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_listing.py) | `list_files`/`list_folders`, `iter_children`, glob, completeness | `pytest tests/backends/conformance/test_listing.py` |
+| [`test_atomic.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_atomic.py) | `write_atomic`, `open_atomic` (SAW-*), `WriteResult` (WR-*), move/copy semantics | `pytest tests/backends/conformance/test_atomic.py` |
+| [`test_metadata.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_metadata.py) | `get_file_info`/`get_folder_info`, `size`, `modified_at`, aggregates | `pytest tests/backends/conformance/test_metadata.py` |
+| [`test_streaming.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_streaming.py) | Streaming reads, `LAZY_READ` laziness, resource cleanup | `pytest tests/backends/conformance/test_streaming.py` |
+| [`test_errors.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_errors.py) | Typed-error fidelity across read/write/delete/move/copy paths | `pytest tests/backends/conformance/test_errors.py` |
+| [`test_check_health.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_check_health.py) | `check_health()` contract — error mapping never leaks native SDK exceptions | `pytest tests/backends/conformance/test_check_health.py` |
+
+Run the whole suite at once with `pytest tests/backends/conformance/`.
+
+**Extended (Dafny-derived) cases** — error fidelity, precondition ordering,
+depth filtering, move/copy edge semantics, resource cleanup — are not a
+separate file. They are individual tests marked
+[`@pytest.mark.extended_conformance`](https://github.com/haalfi/remote-store/tree/master/tests/backends/conformance)
+spread across the topic files above, so they run with the rest of the suite
+by default and can be selected on their own:
+
+```bash
+pytest -m extended_conformance
+```
+
+Async backends have their own extended sibling,
+[`test_async_extended.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_async_extended.py),
+which exercises the `AsyncBackend` contract (ASYNC-* mirroring BE-*).
 
 The conformance suite itself is validated by running it against a
 mathematically verified oracle compiled from the formal Dafny specification
@@ -492,10 +518,10 @@ Before a backend is considered conformant, verify:
 
 | Level | What | Command |
 |---|---|---|
-| **Basic** | All `test_conformance.py` tests pass or self-skip (declared capability missing) | `pytest tests/backends/test_conformance.py -k <backend-name>` |
-| **Extended** | All `test_conformance_extended.py` tests pass or self-skip | `pytest -m extended_conformance -k <backend-name>` |
+| **Conformance** | All `tests/backends/conformance/` tests pass or self-skip (declared capability missing) | `pytest tests/backends/conformance/ -k <backend-name>` |
+| **Extended** | All `@pytest.mark.extended_conformance` cases pass or self-skip | `pytest -m extended_conformance -k <backend-name>` |
 | **Error mapping** | Every native exception maps to a `remote_store` error — nothing leaks | Error mapping checklist above |
-| **Repr safety** | `repr(backend)` does not expose secrets | `test_repr_masks_secrets` in basic suite |
+| **Repr safety** | `repr(backend)` does not expose secrets | `pytest tests/backends/conformance/test_identity.py -k test_repr_masks_secrets` |
 
 Skips are expected and acceptable when a backend doesn't declare the relevant
 capability. Failures (not skips) in either suite are blocking.

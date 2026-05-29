@@ -3,7 +3,7 @@
 Universal tests that every Backend must satisfy regardless of capability.
 No capability filter is applied at the class level; the fixture registry
 contributes every Stage <= --stage entry. Spec markers preserved verbatim
-from the legacy ``test_conformance.py``.
+from the pre-split conformance suite.
 """
 
 from __future__ import annotations

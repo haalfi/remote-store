@@ -87,7 +87,7 @@ class TestS3PyArrowConstruction:
     """S3PA-002, S3PA-003: backend-identity strings that do not parametrize.
     Construction validation, lazy connection, endpoint-URL normalization,
     credentials-optional, and client_options are covered in
-    tests/backends/test_s3_shared.py alongside the S3 equivalents."""
+    tests/backends/s3/test_shared.py alongside the S3 equivalents."""
 
     @pytest.mark.spec("S3PA-002")
     def test_name_is_s3_pyarrow(self, s3pa_backend: Backend) -> None:
@@ -108,7 +108,7 @@ class TestS3PyArrowConstruction:
 class TestS3PyArrowTlsCaBundle:
     """TLS-006: pyarrow-specific tls_ca_file_path wiring. The shared s3fs
     control-path (accepted/missing/directory/default/verify) lives in
-    test_s3_shared.py."""
+    test_shared.py."""
 
     @pytest.mark.spec("TLS-006")
     def test_tls_ca_bundle_sets_tls_ca_file_path_on_pyarrow(self, tmp_path: Path) -> None:
@@ -265,7 +265,7 @@ class TestS3PyArrowReadPath:
 # region: Resource Management (S3PA-021)
 class TestS3PyArrowLifecycle:
     """S3PA-021: PyArrow-specific unwrap. s3fs unwrap (S3PA-021) is covered by
-    TestS3SharedUnwrap in test_s3_shared.py. Close semantics live in
+    TestS3SharedUnwrap in test_shared.py. Close semantics live in
     conformance + TestS3SharedLifecycle; wrong-type unwrap is covered by
     TestBackendUnwrap."""
 
@@ -338,7 +338,7 @@ class TestPyArrowBinaryIOMethods:
 class TestS3PyArrowRetryNonDefaultParams:
     """S3PA-026: non-default RetryPolicy on the PyArrow data path triggers a
     debug log and passes only ``max_attempts``. The parallel s3fs-control-path
-    assertions (S3-026 + S3PA-026 paired) live in test_s3_shared.py."""
+    assertions (S3-026 + S3PA-026 paired) live in test_shared.py."""
 
     def test_pa_fs_non_default_retry_triggers_debug_log(self, caplog: pytest.LogCaptureFixture) -> None:
         import logging

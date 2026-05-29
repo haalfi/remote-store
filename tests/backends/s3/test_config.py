@@ -60,7 +60,7 @@ class TestS3Construction:
     """S3-002, S3-003: backend-identity strings that do not parametrize.
     Construction validation, lazy connection, endpoint-URL normalization,
     credentials-optional, and client_options are covered in
-    tests/backends/test_s3_shared.py alongside the S3-PyArrow equivalents."""
+    tests/backends/s3/test_shared.py alongside the S3-PyArrow equivalents."""
 
     @pytest.mark.spec("S3-002")
     def test_name_is_s3(self, s3_backend: Backend) -> None:
@@ -80,7 +80,7 @@ class TestS3Construction:
 class TestS3TlsCaBundle:
     """TLS-004: AWS_CA_BUNDLE environment-variable fallback (S3-specific).
     The rest of the tls_ca_bundle contract (accepted/missing/directory/default,
-    s3fs verify wiring) is covered in test_s3_shared.py."""
+    s3fs verify wiring) is covered in test_shared.py."""
 
     @pytest.mark.spec("TLS-004")
     def test_tls_ca_bundle_env_var_missing_file_raises(self, tmp_path: Path) -> None:
@@ -100,7 +100,7 @@ class TestS3TlsCaBundle:
 class TestS3ErrorMapping:
     """S3-016, S3-017: PermissionDenied and BackendUnavailable mapping.
     S3-015 (NotFound.backend) and S3-018 (RemoteStoreError.backend) are
-    covered by TestS3SharedErrorMapping in test_s3_shared.py."""
+    covered by TestS3SharedErrorMapping in test_shared.py."""
 
     @pytest.mark.spec("S3-016")
     @pytest.mark.parametrize(
@@ -151,7 +151,7 @@ class TestS3ErrorMapping:
 class TestS3ETagAndDigest:
     """S3-023, S3-024: ETag and ContentDigest in FileInfo.
     test_get_file_info_has_etag (S3-023) and test_get_file_info_has_digest_sha256
-    (S3-024) are covered by TestS3SharedETagAndDigest in test_s3_shared.py."""
+    (S3-024) are covered by TestS3SharedETagAndDigest in test_shared.py."""
 
     @pytest.mark.spec("S3-023")
     def test_list_files_has_etag(self, s3_backend: Backend) -> None:

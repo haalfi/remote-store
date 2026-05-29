@@ -442,27 +442,6 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   and several `sdd/` research docs). Convert all non-trivial ASCII diagrams; leave simple
   inline flows (single arrows, short sequences) as text.
 
-- [ ] **ID-214 — Sweep residual pre-reorg test-path references in non-authoritative docs**
-  spec: — · effort: S · audience: user.site
-  Follow-up from ID-203 (tests/ folder reorg close-out). The authoritative
-  surfaces (CONTRIBUTING, specs 003/011/022/045, the ripple-check row,
-  `tests/conftest.py` comment) were realigned in ID-203, but the same
-  pre-reorg path drift survives elsewhere:
-  - `docs-src/guides/custom-backend-guide.md` — broken GitHub links and run
-    commands citing `tests/backends/test_conformance.py` /
-    `test_conformance_extended.py` (now the per-topic `tests/backends/conformance/`
-    directory). Needs structural rework of the two tables, not a path swap;
-    user-facing, so it carries a CHANGELOG entry.
-  - In-tree test docstrings/comments naming deleted files, e.g.
-    `tests/aio/test_async_cancellation.py`, `tests/aio/test_async_pbt_stateful.py`,
-    `tests/backends/azure/aio/test_live.py`, `tests/backends/s3/test_*.py`,
-    `tests/test_pbt_write_result.py`, `tests/test_snippets.py`,
-    `tests/backends/conformance/test_async_extended.py` (`test_sync_adapter_conformance.py`,
-    `test_azure.py`, `test_s3_shared.py`, `test_s3_options.py`, `test_conformance*.py`).
-  - The `BK-235` item body in this file references `tests/backends/test_sqlblob.py:131`.
-  Out of scope (point-in-time history): CHANGELOG, `sdd/research/`, `sdd/rfcs/`,
-  and `BACKLOG-DONE.md` mentions.
-
 ---
 
 ## API Ergonomics
@@ -600,8 +579,8 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   - Spec 040 SQL-BLOB-003 (capabilities list) and SQL-BLOB-020 (`read()`).
   - Spec 006 streaming-io — capability semantics already fit.
   - `FEATURES.md` capability matrix.
-  - `tests/backends/test_sqlblob.py:131` asserts LAZY_READ is NOT declared —
-    must split into dialect-conditional assertions.
+  - `tests/backends/sqlblob/test_config.py:148` asserts LAZY_READ is NOT
+    declared — must split into dialect-conditional assertions.
   - Behavioral test: large blob (e.g. 50 MiB) read in 4 KiB chunks with
     bounded RSS.
   - CHANGELOG, this file.

@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
 
 # ---------------------------------------------------------------------------
-# Helpers (mirror tests/backends/test_conformance_extended.py)
+# Helpers (mirror the sync conformance topic files in this directory)
 # ---------------------------------------------------------------------------
 #
 # ``flat_namespace`` and ``self_op_supported`` come from the per-fixture
@@ -294,7 +294,7 @@ class TestWriteErrorFidelity:
 class TestDeleteErrorFidelity:
     """``delete(dir_path)`` raises ``InvalidPath`` regardless of ``missing_ok``.
 
-    Mirrors ``test_conformance_extended.py::TestDeleteErrorFidelity``.
+    Mirrors ``test_errors.py::TestDeleteErrorFidelity``.
     The ``missing_ok`` flag tolerates a *missing file*, not a type mismatch.
     A directory path must raise ``InvalidPath`` unconditionally (BE-012,
     Dafny: ``Delete: IsDir -> InvalidPath`` unconditionally).

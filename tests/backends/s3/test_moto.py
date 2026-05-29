@@ -8,7 +8,7 @@ path, so a regression in the ``config_kwargs`` routing surfaces as a real
 I/O.
 
 The unit-level ``TestAiobotocoreCreateClientBoundary`` in
-``tests/backends/test_s3_options.py`` patches
+``tests/backends/s3/test_options.py`` patches
 ``aiobotocore.session.AioSession.create_client`` and asserts on the
 captured kwargs; that pins the kwarg shape. This file pins the wire-level
 behavior. The companion rejection assertion lives in

@@ -8,6 +8,67 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-214 — Sweep residual pre-reorg test-path references in non-authoritative docs**
+  spec: — · audience: user.site
+  Follow-up to ID-203, which realigned the authoritative surfaces but
+  deliberately left the same pre-reorg path drift in non-authoritative
+  places. The conformance suite was two flat files
+  (`tests/backends/test_conformance.py` + `test_conformance_extended.py`)
+  before BK-179/188/189/190 split it into per-topic files under
+  `tests/backends/conformance/` (with "extended" cases now
+  `@pytest.mark.extended_conformance` markers spread across them, plus
+  `test_async_extended.py` for async), and backends moved from flat
+  per-file homes (`test_azure.py`, `test_s3_shared.py`, …) into
+  `tests/backends/<backend>/`.
+  - **`docs-src/guides/custom-backend-guide.md` (user-facing).** Reworked the
+    two tables structurally — not a 1:1 path swap. The "Conformance suite
+    overview" now lists the eight per-topic files under
+    `tests/backends/conformance/` (identity, io, listing, atomic, metadata,
+    streaming, errors, check_health) with working GitHub links and per-file
+    run commands, explains the `@pytest.mark.extended_conformance` marker
+    mechanism (extended cases are spread across the topic files, not a
+    separate file) and the async sibling `test_async_extended.py`, and the
+    checklist table's Basic/Extended rows now point at the directory + marker.
+    The two broken `blob/master/tests/backends/test_conformance*.py` links are
+    gone.
+  - **In-tree test docstrings/comments.** Fixed deleted-file / moved-path
+    references in `tests/aio/test_async_cancellation.py`,
+    `tests/aio/test_async_pbt_stateful.py` (×2),
+    `tests/backends/azure/aio/test_live.py`,
+    `tests/backends/azure/test_live_hns.py`,
+    `tests/backends/conformance/test_async_extended.py` (×2),
+    `tests/backends/conformance/test_identity.py`,
+    `tests/backends/s3/test_config.py` (×4), `tests/backends/s3/test_moto.py`,
+    `tests/backends/s3/test_pyarrow.py` (×4), `tests/test_pbt_write_result.py`,
+    and `tests/test_snippets.py`. Each was verified by grepping the named
+    class / test for its actual current home before rewriting (e.g.
+    `TestWriteResultConformance` → `conformance/test_atomic.py`,
+    `TestDeleteErrorFidelity` → `conformance/test_errors.py`,
+    `TestAzureWriteOnHnsDirectory` → `azure/test_config.py`,
+    `test_s3_shared.py` → `s3/test_shared.py`, `test_s3_options.py` →
+    `s3/test_options.py`, `tests/aio/test_sync_adapter_conformance.py` →
+    `tests/backends/conformance/test_sync_adapter_conformance.py`).
+  - **`sdd/BACKLOG.md` item body.** The scope text attributed the
+    `tests/backends/test_sqlblob.py:131` reference to **BK-235**, but it
+    actually lives in **ID-140**'s "Ripple checks" list; corrected it there to
+    `tests/backends/sqlblob/test_config.py:148` (the live LAZY_READ-absent
+    assertion).
+  - **Two discoveries while verifying-before-swapping** (per the "don't assume
+    a path swap" rule): (1) the `test_sqlblob.py` ref was in ID-140, not BK-235
+    as scoped; (2) `tests/aio/test_async_pbt_stateful.py` named a phantom
+    `test_async_memory.py` that never existed — the dangling name was dropped
+    and its example-based negative-path coverage pointed at the real home,
+    `tests/aio/test_async_store.py` (PR #699 review corrected an initial mis-aim
+    at the abstract-contract `test_async_backend.py`).
+  - **CHANGELOG** — audience `user.site` (the guide is user-facing) ⇒ entry
+    required (per `_schema.yml` derived rule), unlike ID-203 which was
+    `infra.test`-only. Bare-name references to files that merely moved (e.g.
+    `test_sync_adapter_conformance.py` in `dafny_oracle_async.py` /
+    `test_registry.py`, the current path in `scripts/mutate_scopes.py`) were
+    left as-is; CHANGELOG / `sdd/research/` / `sdd/rfcs/` / `sdd/audits/` /
+    `sdd/traces/` / `BACKLOG-DONE.md` mentions are point-in-time history and stay.
+  Trace: `sdd/traces/id-214-test-path-refs.yml`.
+
 - [x] **ID-203 — Align `tests/` folder structure with `src/` package layout**
   spec: TEST-002, TEST-003, TEST-010 · audience: infra.test
   Closed by realization plus a doc-drift sweep. An audit (this PR) found the
