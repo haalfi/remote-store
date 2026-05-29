@@ -10430,6 +10430,7 @@ raising <code>InvalidPath</code>. All other operations MUST raise appropriate er
 </tbody>
 </table>
 <p><strong>Enforcement:</strong> Runtime capability enforcement for these methods is performed by <code>Store._gate()</code>, not by <code>Backend</code> directly. <code>_BACKEND_GATING</code> is the authoritative source for graph-IR generation only; keeping it in sync with the Backend ABC is enforced by <code>tests/scripts/test_gen_graph.py::test_backend_gating_keys_match_backend_members</code>.
+<strong>Async counterpart:</strong> <code>AsyncBackend</code> carries the same table minus <code>read_seekable</code> / <code>open_atomic</code> in <code>_ASYNC_BACKEND_GATING</code> — see <a href="../029-async-store-backend-api/">ASYNC-045a</a>.
 <strong>See also:</strong> <code>sdd/CLAUDE-REFERENCE.md</code> ripple-check row for <code>_BACKEND_GATING</code>.</p>
 
 
