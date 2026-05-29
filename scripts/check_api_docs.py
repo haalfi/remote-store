@@ -451,6 +451,37 @@ def compare_exports(
     return errors
 
 
+def allowlist_staleness_errors(
+    exempt: frozenset[str],
+    expected: dict[str, str],
+    index: set[str],
+    rendered: set[str],
+) -> list[str]:
+    """Police the ``_INDEX_EXEMPT`` allowlist so it cannot rot or hide drift.
+
+    Each exempt entry must be (1) a real public symbol, (2) genuinely absent
+    from the index (else the entry is redundant -- it now has a row), and
+    (3) actually ``:::``-rendered somewhere (else it is undocumented, not a
+    documented-elsewhere companion).  Run as part of ``main()`` so the tooling
+    gate is self-contained, not test-only.
+    """
+    errors: list[str] = []
+    src = Path("scripts/check_api_docs.py")
+    for name in sorted(exempt):
+        if name not in expected:
+            errors.append(f"{src}: `{name}` is on _INDEX_EXEMPT but not in any public `__all__` -- remove it")
+        elif name in index:
+            errors.append(
+                f"{src}: `{name}` is on _INDEX_EXEMPT but now has an index row -- remove it from the allowlist"
+            )
+        elif name not in rendered:
+            errors.append(
+                f"{src}: `{name}` is on _INDEX_EXEMPT but is not rendered via `:::` "
+                f"on any API page -- it is undocumented"
+            )
+    return errors
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -472,7 +503,9 @@ def main() -> int:
     modules = [importlib.import_module(ns) for ns in _PUBLIC_NAMESPACES]
     expected = exports_symbols(modules)
     index = index_link_symbols(INDEX_PAGE.read_text(encoding="utf-8"))
+    rendered = directive_symbols(p.read_text(encoding="utf-8") for p in API_DIR.rglob("*.md"))
     errors.extend(compare_exports(expected, index, _INDEX_EXEMPT))
+    errors.extend(allowlist_staleness_errors(_INDEX_EXEMPT, expected, index, rendered))
 
     if errors:
         print("API doc verification failed:", file=sys.stderr)

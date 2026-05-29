@@ -19,10 +19,9 @@ audience:
 discovery_followups: []
 co_shipped_items: []
 expected_ripples:
-  - sdd/backlogid.json
   - sdd/CLAUDE-REFERENCE.md
 surprising_ripples: []
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -122,3 +121,8 @@ phases:
         read_type: reference
         extract: "2nd review round: rebased onto BK-247; done-entry + both CLAUDE-REFERENCE ripple rows still described the abandoned derived design — reconciled to name the _INDEX_EXEMPT allowlist (principle 3, repo describes reality)"
         outcome: misleading
+      - file: scripts/check_api_docs.py
+        section: "allowlist_staleness_errors wired into main()"
+        read_type: reference
+        extract: "3rd review round: directive_symbols was test-only (dead in main); wired allowlist policing into main() via allowlist_staleness_errors so gen-api-check is self-contained. Also corrected the test count (18→22 after +4 staleness tests) and dropped the spurious sdd/backlogid.json from expected_ripples"
+        outcome: ok

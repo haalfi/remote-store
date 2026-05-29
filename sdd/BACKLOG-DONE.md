@@ -79,9 +79,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     class is `:::`-rendered on its own page, and shared multi-class pages
     (`aio.md`, `errors.md`, `models.md`) make no robust derivation possible.
     Shipped instead: an explicit `_INDEX_EXEMPT` frozenset of the three
-    companions, with `directive_symbols` repurposed to *police* it (each entry
-    must be public, `:::`-rendered, and absent from the index —
-    `test_allowlist_is_not_stale`).
+    companions, with `directive_symbols` repurposed to *police* it in `main()`
+    via `allowlist_staleness_errors` — each entry must be public, `:::`-rendered,
+    and absent from the index, so `gen-api-check` itself (not just
+    `test_allowlist_is_not_stale`) fails on a stale allowlist.
   - **Bidirectional compare.** Unlike the coverage-only method-caps compare
     (over-claims tolerated), this is a true set diff: MISSING (public symbol
     with no index row and not on `_INDEX_EXEMPT`) and EXTRA (index link with
@@ -97,8 +98,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   - **Wiring:** no new wiring — the second pass rides the existing
     `gen-api-check` (already in `hatch run lint`, `preflight`, and CI).
     Updated the success line and split the failure hint into method-caps vs
-    index-parity guidance. 22 new tests (extractor trio in isolation +
-    `compare_exports` MISSING/EXTRA/exempt + a `TestLiveIndex` round-trip).
+    index-parity guidance. 22 new tests: the extractor trio, `compare_exports`
+    (MISSING/EXTRA/exempt + the dropped-primary-row regression), and
+    `allowlist_staleness_errors`, each in isolation, plus a `TestLiveIndex`
+    round-trip.
   - **No CHANGELOG** — audience `contributor.tooling` only (per `_schema.yml`
     derived rule). Note: the BACKLOG entry's `platform.tooling` tag was not in
     the schema enum; corrected to `contributor.tooling` (same fix ID-172 needed).

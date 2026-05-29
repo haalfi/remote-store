@@ -683,6 +683,43 @@ class TestCompareExports:
 
 
 # ---------------------------------------------------------------------------
+# Allowlist staleness policing
+# ---------------------------------------------------------------------------
+
+
+class TestAllowlistStaleness:
+    def test_healthy_allowlist_yields_no_errors(self, mod):
+        # Public, absent from the index, and rendered -> a genuine companion.
+        expected = {"ArrowSerializer": "class"}
+        errors = mod.allowlist_staleness_errors(frozenset({"ArrowSerializer"}), expected, set(), {"ArrowSerializer"})
+        assert errors == []
+
+    def test_exempt_not_in_any_all_is_flagged(self, mod):
+        errors = mod.allowlist_staleness_errors(frozenset({"Gone"}), {}, set(), {"Gone"})
+        assert len(errors) == 1
+        assert "Gone" in errors[0]
+        assert "__all__" in errors[0]
+
+    def test_exempt_with_index_row_is_flagged_as_redundant(self, mod):
+        # If a former companion gains its own index row, the allowlist entry is
+        # now redundant and must be removed.
+        expected = {"AsyncAzureBackend": "class"}
+        errors = mod.allowlist_staleness_errors(
+            frozenset({"AsyncAzureBackend"}), expected, {"AsyncAzureBackend"}, {"AsyncAzureBackend"}
+        )
+        assert len(errors) == 1
+        assert "index row" in errors[0]
+
+    def test_exempt_not_rendered_is_flagged_as_undocumented(self, mod):
+        # An exempt symbol that is not ::: -rendered anywhere is genuinely
+        # undocumented -- the allowlist must not hide that.
+        expected = {"ResultSerializer": "class"}
+        errors = mod.allowlist_staleness_errors(frozenset({"ResultSerializer"}), expected, set(), set())
+        assert len(errors) == 1
+        assert "undocumented" in errors[0]
+
+
+# ---------------------------------------------------------------------------
 # Live index parity
 # ---------------------------------------------------------------------------
 
@@ -712,13 +749,9 @@ class TestLiveIndex:
         assert errors == [], "index.md parity drift: " + "; ".join(errors)
 
     def test_allowlist_is_not_stale(self, mod):
-        # Self-policing for _INDEX_EXEMPT: each entry must be (1) a real public
-        # symbol, (2) genuinely absent from the index (else the exemption is
-        # redundant -- it now has a row), and (3) actually rendered via ::: on
-        # some page (else it is undocumented, not a companion).  Keeps the
-        # hand-maintained allowlist honest as the surface evolves.
+        # Self-policing for _INDEX_EXEMPT, via the same function main() runs:
+        # each entry must be a real public symbol, absent from the index, and
+        # ::: -rendered somewhere.  Keeps the hand-maintained allowlist honest.
         expected, index, rendered = self._live(mod)
-        for name in mod._INDEX_EXEMPT:
-            assert name in expected, f"{name} on _INDEX_EXEMPT is not in any public __all__"
-            assert name not in index, f"{name} now has an index row; remove it from _INDEX_EXEMPT"
-            assert name in rendered, f"{name} is exempt but not rendered via ::: anywhere (undocumented)"
+        errors = mod.allowlist_staleness_errors(mod._INDEX_EXEMPT, expected, index, rendered)
+        assert errors == [], "stale _INDEX_EXEMPT: " + "; ".join(errors)
