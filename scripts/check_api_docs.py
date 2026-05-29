@@ -34,13 +34,14 @@ extractor trio and compare, run as a second pass in ``main()``:
                          rows in ``index.md`` (dotted Extensions module rows
                          are not symbols and drop out).
   directive extractor -> the set of symbols rendered via ``::: pkg.Name`` on
-                         any API page -- used to exempt backend-companion
-                         helpers (``ArrowSerializer``, ``AsyncAzureBackend``, …)
-                         that are documented on their backend's page rather than
-                         given a standalone index row.
+                         any API page -- used only to police the companion
+                         allowlist (every exempt symbol must be genuinely
+                         rendered somewhere), not to derive the exemption.
   compare             -> bidirectional set diff: every public symbol needs an
-                         index row *or* a ``:::`` render; every index link needs
-                         a backing public symbol.
+                         index row (the small ``_INDEX_EXEMPT`` allowlist of
+                         backend-companion helpers documented on another
+                         class's page aside); every index link needs a backing
+                         public symbol.
 
 The exports extractor imports the live packages, so optional-dependency symbols
 only appear when their extra is installed.  Like the strict coverage gate, this
@@ -316,7 +317,7 @@ def compare(
 # __all__ <-> index.md parity (ID-173)
 #
 # A second, independent IR from the method-caps check above: {symbol_name: kind}
-# rather than {method: caps}.  Three pure-ish extractors feed one bidirectional
+# rather than {method: caps}.  Three pure extractors feed one bidirectional
 # compare, wired as a second pass in main().
 # ---------------------------------------------------------------------------
 
@@ -327,6 +328,26 @@ _PUBLIC_NAMESPACES: tuple[str, ...] = (
     "remote_store",
     "remote_store.backends",
     "remote_store.aio",
+)
+
+# Backend-companion symbols intentionally documented on another class's page
+# (via a ``:::`` directive) rather than given a standalone ``index.md`` row.
+# They are exempt from the MISSING check; everything else public needs a row.
+#
+# Why an explicit allowlist and not a derived ``:::``-render exemption: a
+# render cannot distinguish a row-less companion from a primary class that
+# *lost* its row, because most classes (and all classes on the shared pages
+# ``aio.md`` / ``errors.md`` / ``models.md`` / ...) are ``:::``-rendered on a
+# page co-owned by siblings.  Deriving the exemption from renders would mask a
+# dropped row for any such class.  This list is small, stable, and self-policed
+# by ``TestLiveIndex`` (each entry must be public, ``:::``-rendered, and
+# genuinely absent from the index — otherwise the entry is stale and fails).
+_INDEX_EXEMPT: frozenset[str] = frozenset(
+    {
+        "ArrowSerializer",  # on backends/sql-query.md, with SQLQueryBackend
+        "ResultSerializer",  # on backends/sql-query.md, with SQLQueryBackend
+        "AsyncAzureBackend",  # on aio.md, with the other async classes
+    }
 )
 
 _LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]+\)")
@@ -341,7 +362,11 @@ def exports_symbols(modules: list) -> dict[str, str]:
     * ``__``-dunders (``__version__``) -- not documented symbols.
     * Symbols whose ``__module__`` is under ``remote_store.ext`` -- those are
       documented as *module* rows in the index Extensions section, not per
-      symbol.
+      symbol.  Note this keys on *definition* origin (``__module__``), not
+      *export* origin: a symbol defined elsewhere but re-exported only through
+      ``remote_store.ext.*`` would not be excluded.  That divergence is
+      acceptable -- such a symbol would still be public and warrant an index
+      row, and the two notions coincide for every current re-export.
     """
     result: dict[str, str] = {}
     for mod in modules:
@@ -375,9 +400,11 @@ def index_link_symbols(text: str) -> set[str]:
 def directive_symbols(texts) -> set[str]:
     """Return the set of leaf symbol names rendered via ``::: pkg.path.Name``.
 
-    Used to exempt backend-companion helpers (e.g. ``ArrowSerializer`` on
-    ``sql-query.md``, ``AsyncAzureBackend`` on ``aio.md``) that are documented
-    on their backend's page rather than given a standalone index row.
+    Used to police the ``_INDEX_EXEMPT`` allowlist: every exempt symbol must be
+    genuinely rendered somewhere in the API reference, so the exemption can
+    never hide a truly undocumented symbol.  It is deliberately *not* used to
+    derive the MISSING exemption itself -- see ``_INDEX_EXEMPT`` for why a
+    render-derived exemption would mask dropped index rows.
     """
     out: set[str] = set()
     for text in texts:
@@ -391,15 +418,17 @@ def directive_symbols(texts) -> set[str]:
 def compare_exports(
     expected: dict[str, str],
     index: set[str],
-    documented: set[str],
+    exempt: frozenset[str],
 ) -> list[str]:
     """Bidirectional parity between the public ``__all__`` surface and index.md.
 
-    * MISSING -- a public symbol with neither an index link row nor a ``:::``
-      render anywhere in the API reference.  Backend-companion helpers
-      documented on their backend's page are exempt (``documented``).
-    * EXTRA -- an index link with no backing public symbol.  A ``:::`` render
-      does *not* rescue an extra: the symbol must be in a public ``__all__``.
+    * MISSING -- a public symbol with no index link row.  Backend-companion
+      symbols on the ``exempt`` allowlist are tolerated (documented on another
+      class's page); every other public symbol must have its own row, so a
+      primary class dropped from the index *fails* here.
+    * EXTRA -- an index link with no backing public symbol.  The exempt
+      allowlist does *not* rescue an extra: the symbol must be in a public
+      ``__all__``.
 
     Both are errors -- the index must mirror the public surface in both
     directions.
@@ -407,11 +436,8 @@ def compare_exports(
     errors: list[str] = []
     rel = INDEX_PAGE.relative_to(ROOT) if INDEX_PAGE.is_absolute() else INDEX_PAGE
 
-    for name in sorted(set(expected) - index - documented):
-        errors.append(
-            f"{rel}: public {expected[name]} `{name}` has no index link row "
-            f"(and is not rendered via `:::` on any API page)"
-        )
+    for name in sorted(set(expected) - index - exempt):
+        errors.append(f"{rel}: public {expected[name]} `{name}` has no index link row")
     for name in sorted(index - set(expected)):
         errors.append(
             f"{rel}: `{name}` is linked but absent from any public `__all__` ({', '.join(_PUBLIC_NAMESPACES)})"
@@ -441,8 +467,7 @@ def main() -> int:
     modules = [importlib.import_module(ns) for ns in _PUBLIC_NAMESPACES]
     expected = exports_symbols(modules)
     index = index_link_symbols(INDEX_PAGE.read_text(encoding="utf-8"))
-    documented = directive_symbols(p.read_text(encoding="utf-8") for p in API_DIR.rglob("*.md"))
-    errors.extend(compare_exports(expected, index, documented))
+    errors.extend(compare_exports(expected, index, _INDEX_EXEMPT))
 
     if errors:
         print("API doc verification failed:", file=sys.stderr)
@@ -456,10 +481,10 @@ def main() -> int:
             "  Backend:      _BACKEND_GATING in scripts/gen_graph.py\n"
             "  AsyncBackend: _ASYNC_BACKEND_GATING in scripts/gen_graph.py\n"
             "\nindex.md parity drift (ID-173): add a missing link row to "
-            "docs-src/reference/api/index.md, or remove a stale one. A public "
-            "symbol documented on its backend's page (a `:::` directive) needs "
-            "no index row. Run under `hatch` so optional-dependency symbols are "
-            "present.",
+            "docs-src/reference/api/index.md, or remove a stale one. A genuine "
+            "backend-companion documented on another class's page can be added "
+            "to _INDEX_EXEMPT in scripts/check_api_docs.py instead. Run under "
+            "`hatch` so optional-dependency symbols are present.",
             file=sys.stderr,
         )
         return 1

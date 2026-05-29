@@ -516,10 +516,6 @@ class _FakeModule:
             setattr(self, name, obj)
 
 
-class _Cls:
-    """A class whose ``__module__`` can be spoofed for the ext-exclusion test."""
-
-
 def _obj(module: str, *, is_class: bool = True):
     if is_class:
         obj = type("Sym", (), {})
@@ -647,32 +643,41 @@ class TestCompareExports:
     def test_exact_match_yields_no_errors(self, mod):
         expected = {"Store": "class", "info": "function"}
         index = {"Store", "info"}
-        assert mod.compare_exports(expected, index, set()) == []
+        assert mod.compare_exports(expected, index, frozenset()) == []
 
     def test_missing_index_row_is_error(self, mod):
         expected = {"Store": "class"}
-        errors = mod.compare_exports(expected, set(), set())
+        errors = mod.compare_exports(expected, set(), frozenset())
         assert len(errors) == 1
         assert "Store" in errors[0]
         assert "class" in errors[0]
 
-    def test_missing_but_directive_documented_is_exempt(self, mod):
-        # Backend-companion helper: no index row, but rendered via ::: on its
-        # backend's page -> documented, not an error.
+    def test_primary_class_dropped_from_index_still_fails(self, mod):
+        # Regression for PR #697 review: a *primary* public class that loses its
+        # index row must fail MISSING even though it is ::: -rendered on its own
+        # page live.  The exemption is the explicit allowlist, NOT "rendered
+        # somewhere" -- so a class absent from _INDEX_EXEMPT is never excused.
+        expected = {"NotFound": "class"}
+        errors = mod.compare_exports(expected, set(), mod._INDEX_EXEMPT)
+        assert len(errors) == 1
+        assert "NotFound" in errors[0]
+
+    def test_allowlisted_companion_is_exempt(self, mod):
+        # Backend-companion helper on the allowlist: no index row, not an error.
         expected = {"ArrowSerializer": "class"}
-        assert mod.compare_exports(expected, set(), {"ArrowSerializer"}) == []
+        assert mod.compare_exports(expected, set(), frozenset({"ArrowSerializer"})) == []
 
     def test_extra_index_link_is_error(self, mod):
         expected: dict[str, str] = {}
-        errors = mod.compare_exports(expected, {"Ghost"}, set())
+        errors = mod.compare_exports(expected, {"Ghost"}, frozenset())
         assert len(errors) == 1
         assert "Ghost" in errors[0]
 
-    def test_directive_does_not_rescue_an_extra(self, mod):
+    def test_allowlist_does_not_rescue_an_extra(self, mod):
         # A symbol linked in the index but absent from __all__ is EXTRA even if
-        # it is ::: -rendered somewhere -- it is not part of the public surface.
+        # it is on the exempt allowlist -- it is not part of the public surface.
         expected: dict[str, str] = {}
-        errors = mod.compare_exports(expected, {"Ghost"}, {"Ghost"})
+        errors = mod.compare_exports(expected, {"Ghost"}, frozenset({"Ghost"}))
         assert len(errors) == 1
         assert "Ghost" in errors[0]
 
@@ -683,13 +688,14 @@ class TestCompareExports:
 
 
 class TestLiveIndex:
-    def test_index_mirrors_public_all(self, mod):
-        """The real index.md must mirror the real public __all__ surface.
+    """Live round-trip against the real surface.
 
-        Runs against live imports, so it is only correct in a full-extras
-        environment (hatch / CI) -- bare-python sandboxes lack optional-dep
-        symbols.  Same trade-off as the strict coverage gate.
-        """
+    Runs against live imports, so it is only correct in a full-extras
+    environment (hatch / CI) -- bare-python sandboxes lack optional-dep
+    symbols.  Same trade-off as the strict coverage gate.
+    """
+
+    def _live(self, mod):
         import remote_store
         import remote_store.aio
         import remote_store.backends
@@ -697,6 +703,22 @@ class TestLiveIndex:
         modules = [remote_store, remote_store.backends, remote_store.aio]
         expected = mod.exports_symbols(modules)
         index = mod.index_link_symbols(mod.INDEX_PAGE.read_text(encoding="utf-8"))
-        documented = mod.directive_symbols(p.read_text(encoding="utf-8") for p in mod.API_DIR.rglob("*.md"))
-        errors = mod.compare_exports(expected, index, documented)
+        rendered = mod.directive_symbols(p.read_text(encoding="utf-8") for p in mod.API_DIR.rglob("*.md"))
+        return expected, index, rendered
+
+    def test_index_mirrors_public_all(self, mod):
+        expected, index, _ = self._live(mod)
+        errors = mod.compare_exports(expected, index, mod._INDEX_EXEMPT)
         assert errors == [], "index.md parity drift: " + "; ".join(errors)
+
+    def test_allowlist_is_not_stale(self, mod):
+        # Self-policing for _INDEX_EXEMPT: each entry must be (1) a real public
+        # symbol, (2) genuinely absent from the index (else the exemption is
+        # redundant -- it now has a row), and (3) actually rendered via ::: on
+        # some page (else it is undocumented, not a companion).  Keeps the
+        # hand-maintained allowlist honest as the surface evolves.
+        expected, index, rendered = self._live(mod)
+        for name in mod._INDEX_EXEMPT:
+            assert name in expected, f"{name} on _INDEX_EXEMPT is not in any public __all__"
+            assert name not in index, f"{name} now has an index row; remove it from _INDEX_EXEMPT"
+            assert name in rendered, f"{name} is exempt but not rendered via ::: anywhere (undocumented)"

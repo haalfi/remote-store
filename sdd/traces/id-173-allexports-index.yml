@@ -22,7 +22,7 @@ expected_ripples:
   - sdd/backlogid.json
   - sdd/CLAUDE-REFERENCE.md
 surprising_ripples: []
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -89,8 +89,8 @@ phases:
       - file: scripts/check_api_docs.py
         section: "exports_symbols, index_link_symbols, directive_symbols, compare_exports, main() second pass"
         read_type: reference
-        extract: "Additive second IR + pass; three co-equal __all__ sources; ::: -derived exemption; bidirectional set diff"
-        outcome: ok
+        extract: "Additive second IR + pass; three co-equal __all__ sources; first cut derived the MISSING exemption from ::: renders across the whole API reference"
+        outcome: misleading
   - id: verify
     name: Verify (ripple-check)
     steps:
@@ -103,4 +103,17 @@ phases:
         section: "audience derived rule"
         read_type: verify
         extract: "contributor.tooling-only ⇒ no CHANGELOG; BACKLOG's platform.tooling not in enum, corrected to contributor.tooling"
+        outcome: ok
+  - id: fix
+    name: Fix (PR #697 review)
+    steps:
+      - file: scripts/check_api_docs.py
+        section: "directive_symbols scope, compare_exports MISSING arm"
+        read_type: reference
+        extract: "Review caught the MISSING arm as inert: ::: renders cover ~every class (each has its own/shared page), so the derived exemption masked dropped index rows. No robust derivation exists (shared multi-class pages aio.md/errors.md/models.md)"
+        outcome: misleading
+      - file: scripts/check_api_docs.py
+        section: "_INDEX_EXEMPT allowlist + self-policing"
+        read_type: reference
+        extract: "Replaced derived exemption with an explicit 3-symbol companion allowlist; directive_symbols repurposed to police it; added regression + allowlist-staleness tests"
         outcome: ok
