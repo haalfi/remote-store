@@ -188,6 +188,7 @@ class TestListFilesCompleteness:
         assert {f.name for f in files} == {"a.txt"}
 
     @pytest.mark.spec("BE-014")
+    @pytest.mark.spec("DEPTH-001")
     @pytest.mark.spec("DEPTH-003")
     @pytest.mark.parametrize(
         ("max_depth", "expected_names"),

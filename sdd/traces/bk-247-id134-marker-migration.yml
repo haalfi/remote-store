@@ -1,11 +1,13 @@
 id: BK-247
-title: "Migrate ID-134 conformance markers to BE-017 / ASYNC-017; drop the baseline entry"
-trigger: "check_formal_trace.py reported an F2 (conformance-cites-unknown-spec) for the backlog ID ID-134, parked in _BASELINE with a note to migrate the marker to BE-017 'when ID-187 lands'. ID-187 had already landed (BACKLOG-DONE.md) but added BE-017 alongside ID-134 rather than replacing it, so the F2 persisted and the baseline comment was stale."
+title: "Reconcile check_formal_trace baseline: migrate ID-134 marker, close CAP-004/DEPTH-001/NPR-020, correct WR-008/WR-010 comments"
+trigger: "check_formal_trace.py reported an F2 (conformance-cites-unknown-spec) for the backlog ID ID-134, parked in _BASELINE with a note to migrate the marker to BE-017 'when ID-187 lands'. ID-187 had already landed (BACKLOG-DONE.md) but added BE-017 alongside ID-134 rather than replacing it, so the F2 persisted and the baseline comment was stale. A review of the remaining baselined F1 gaps then found three (CAP-004, DEPTH-001, NPR-020) had truthful conformance behaviour that simply lacked the spec marker, and two (WR-008, WR-010) were Store-layer clauses the conformance dir cannot drive, with rotted owner comments naming already-shipped items (ID-185, ID-190)."
 source_items:
   - BK-247
   - ID-187
   - ID-134
   - ID-206
+  - ID-185
+  - ID-190
 audience:
   - infra.test
   - contributor.tooling
@@ -14,19 +16,34 @@ phases:
     name: Orient
     steps:
       - file: scripts/check_formal_trace.py
-        section: "_BASELINE, F2 entry (KIND_TEST_BAD_ID, ID-134)"
+        section: "_BASELINE"
         read_type: gate
-        extract: "The ID-134 F2 is the only KIND_TEST_BAD_ID entry; baseline comment says migrate to BE-017 when ID-187 lands. Self-prune fires only when the violation goes stale, i.e. the marker is actually removed"
+        extract: "Six baselined gaps: F2 ID-134 plus F1 CAP-004/DEPTH-001/WR-008/WR-010/NPR-020. Self-prune fires only when a violation goes stale, i.e. a marker is actually added/removed; a shipped owner item does not prune it"
         outcome: ok
       - file: sdd/BACKLOG-DONE.md
-        section: "ID-187"
+        section: "ID-187, ID-185, ID-190"
         read_type: gate
-        extract: "ID-187 is done (spec: BE-017, ID-134) — confirms the 'when ID-187 lands' baseline note is in the past, so the migration is overdue not pending"
+        extract: "ID-187/ID-185/ID-190 are all done, yet their gaps stayed parked — confirms the baseline owner comments are stale, not pending"
+        outcome: misleading
+      - file: sdd/formal/BackendContract.dfy
+        section: "RequireCapability (CAP-004), NativePathRoundTrip (NPR-020), WriteResultFromFileInfo + WR008FieldMapping (WR-008), Write WR-010 gate"
+        read_type: gate
+        extract: "CAP-004 ensures cap !in capabilities ==> Err(CapabilityNotSupported(CapabilityName(cap), name)); NPR-020 ensures ToKey(root, NativePath(root, key)) == key; WR-008 pins the pure FileInfo->WriteResult map; WR-010 is the pre-I/O USER_METADATA gate"
         outcome: ok
-      - file: sdd/traces/id-187-folder-info-pbt.yml
-        section: "implement step, tests/test_pbt_folder_info_aggregates.py"
+      - file: sdd/specs/045-write-result.md
+        section: "WR-008, WR-010"
+        read_type: gate
+        extract: "WR-008 is Store.head() (a Store-layer composition over get_file_info); WR-010 is enforced once at the Store layer before delegating, so a non-declaring backend never receives non-empty metadata — neither is a backend operation the conformance suite drives"
+        outcome: ok
+      - file: src/remote_store/_capabilities.py
+        section: "CapabilitySet.require"
         read_type: reference
-        extract: "ID-187 deliberately wrote 'spec markers BE-017 + ID-134' — the ID-134 citation was added alongside, never migrated; this is the leftover"
+        extract: "require() raises CapabilityNotSupported(capability=cap.value, ...) — the runtime analogue of the Dafny RequireCapability postcondition, the truthful target for a CAP-004 witness"
+        outcome: ok
+      - file: src/remote_store/_store.py
+        section: "USER_METADATA require gate"
+        read_type: reference
+        extract: "capabilities.require(Capability.USER_METADATA) lives in the Store, not the backend; backends deliberately do not re-check, confirming WR-010 cannot have a truthful backend-conformance assertion"
         outcome: ok
   - id: implement
     name: Implement
@@ -44,17 +61,32 @@ phases:
       - file: tests/test_pbt_folder_info_aggregates.py
         section: "TestGetFolderInfoAggregatesOracle"
         read_type: reference
-        extract: "Removed the ID-134 marker (this file is outside the conformance dir the gate scans, but the marker is dropped for uniformity); BE-017 retained"
+        extract: "Removed the ID-134 marker; BE-017 retained"
+        outcome: ok
+      - file: tests/backends/conformance/test_identity.py
+        section: "TestBackendCapabilityGate (new)"
+        read_type: reference
+        extract: "Added a new universal CAP-004 test: pick a capability the backend does not declare, assert capabilities.require(missing) raises CapabilityNotSupported with exc.capability == missing.value (self-skips a backend that declares all). The existing unwrap test was the wrong witness — it raises without going through require() and names capability='unwrap'"
+        outcome: ok
+      - file: tests/backends/conformance/test_listing.py
+        section: "TestListFilesCompleteness::test_list_files_recursive_max_depth"
+        read_type: reference
+        extract: "Added @pytest.mark.spec(DEPTH-001) next to BE-014 + DEPTH-003. The test asserts d <= max_depth for every returned file — the DEPTH-001 inclusive-boundary reference algorithm itself, not just the DEPTH-003 native/client-side equivalence"
+        outcome: ok
+      - file: tests/backends/conformance/test_identity.py
+        section: "TestBackendNativePath::test_native_path_round_trip"
+        read_type: reference
+        extract: "Added @pytest.mark.spec(NPR-020) next to BE-025. The test asserts to_key(native_path('some/key')) == 'some/key' — the NPR-020 round-trip identity for a non-empty key"
         outcome: ok
       - file: scripts/check_formal_trace.py
         section: "_BASELINE"
         read_type: reference
-        extract: "Deleted (KIND_TEST_BAD_ID, ID-134) and its F2 comment block; remaining baseline entries are all F1 (KIND_UNTESTED)"
+        extract: "Removed the ID-134 F2 entry and the CAP-004/DEPTH-001/NPR-020 F1 entries; rewrote the WR-008 and WR-010 comments to state they are structural Store-layer F1s (covered by tests/test_store.py), not backfill gaps with a pending owner"
         outcome: ok
       - file: sdd/BACKLOG-DONE.md
         section: "BK-247 ([Unreleased])"
         read_type: reference
-        extract: "New entry at the top of [Unreleased]; records the ID-187 leftover and the no-CHANGELOG rationale"
+        extract: "Broadened the BK-247 entry to record all three sub-changes: ID-134 migration, three closed F1 gaps, two corrected baseline comments"
         outcome: ok
   - id: verify
     name: Verify
@@ -62,5 +94,10 @@ phases:
       - file: scripts/check_formal_trace.py
         section: "(run)"
         read_type: verify
-        extract: "Gate green: BE-017 still 'tested', conformance-cited IDs 82 -> 81, 5 baselined gaps, no new or stale violations"
+        extract: "Gate green: CAP-004/DEPTH-001/NPR-020 now 'tested'; baseline 6 -> 2 (WR-008, WR-010 only); no new or stale violations. A first CAP-004 attempt mis-targeted a non-existent test in test_io.py and the gate caught the resulting unbaselined violation — fixed by adding the real test in test_identity.py"
+        outcome: ok
+      - file: tests/backends/conformance/test_identity.py
+        section: "(run) test_listing + test_identity"
+        read_type: verify
+        extract: "Full suite 5464 passed, 504 skipped; new CAP-004 test and the DEPTH-001/NPR-020 markers collect and pass on every fixture"
         outcome: ok

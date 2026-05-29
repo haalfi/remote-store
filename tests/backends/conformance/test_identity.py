@@ -78,10 +78,32 @@ class TestBackendUnwrap:
 
 
 @pytest.mark.parametrize("backend", fixture_params(), indirect=True)
+class TestBackendCapabilityGate:
+    """CAP-004: require() rejects an undeclared capability, naming it."""
+
+    @pytest.mark.spec("CAP-004")
+    def test_require_missing_capability_raises_with_name(self, backend: Backend) -> None:
+        """cap not in capabilities => CapabilityNotSupported(CapabilityName(cap), name).
+
+        Mirrors the Dafny ``RequireCapability`` postcondition: the error must
+        carry the offending capability's *name* (``cap.value``), not just the
+        exception type. Run against every fixture; a backend that happens to
+        declare every capability self-skips (no gate to exercise).
+        """
+        missing = next((c for c in Capability if c not in backend.capabilities), None)
+        if missing is None:
+            pytest.skip("Backend declares every capability; no gate to exercise")
+        with pytest.raises(CapabilityNotSupported) as exc_info:
+            backend.capabilities.require(missing, backend=backend.name)
+        assert exc_info.value.capability == missing.value
+
+
+@pytest.mark.parametrize("backend", fixture_params(), indirect=True)
 class TestBackendNativePath:
     """BE-025: native_path() default is identity."""
 
     @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("NPR-020")
     def test_native_path_round_trip(self, backend: Backend) -> None:
         """native_path is the inverse of to_key (NPR-020)."""
         assert backend.to_key(backend.native_path("some/key")) == "some/key"

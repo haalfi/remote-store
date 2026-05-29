@@ -8,8 +8,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
-- [x] **BK-247 — Migrate `ID-134` conformance markers to `BE-017` / `ASYNC-017`; drop the baseline entry**
-  spec: BE-017 · audience: infra.test, contributor.tooling
+- [x] **BK-247 — Reconcile `check_formal_trace.py` baseline: migrate `ID-134` marker, close CAP-004 / DEPTH-001 / NPR-020, correct WR-008 / WR-010 comments**
+  spec: BE-017, CAP-004, DEPTH-001, NPR-020 · audience: infra.test, contributor.tooling
   Leftover from ID-187. That item *added* `BE-017` / `ASYNC-017` spec
   markers to the `GetFolderInfo` aggregate tests but left the original
   `@pytest.mark.spec("ID-134")` backlog-ID citations in place (see the
@@ -19,17 +19,40 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   parked in `_BASELINE` with a note to "migrate to BE-017 when ID-187
   lands". ID-187 landed without the migration, so the F2 never went stale
   and the baseline comment rotted into the future tense about a shipped
-  item.
-  - Removed the 7 `@pytest.mark.spec("ID-134")` markers: 4 in
-    `tests/backends/conformance/test_metadata.py`, 2 in
+  item. Reviewing the remaining F1 gaps surfaced three more that lacked
+  only the marker, and two Store-layer clauses whose owner comments named
+  already-shipped items (ID-185, ID-190).
+  - **ID-134 migration.** Removed the 7 `@pytest.mark.spec("ID-134")`
+    markers: 4 in `tests/backends/conformance/test_metadata.py`, 2 in
     `tests/backends/conformance/test_async_extended.py`, 1 in
     `tests/test_pbt_folder_info_aggregates.py`. Every site retained its
     `BE-017` / `ASYNC-017` spec-section marker, so coverage is unchanged
-    (`BE-017` still reports `tested` in the matrix). Explanatory docstrings
-    / comments naming ID-134 as provenance were left intact.
-  - Removed `(KIND_TEST_BAD_ID, "ID-134")` and its F2 comment block from
-    `_BASELINE` in `scripts/check_formal_trace.py`. The gate now reports 5
-    baselined gaps (all F1), no new or stale violations.
+    (`BE-017` still reports `tested`). Provenance docstrings left intact.
+    Removed `(KIND_TEST_BAD_ID, "ID-134")` and its F2 comment from `_BASELINE`.
+  - **Closed three F1 gaps.** `CAP-004` → a new universal
+    `test_identity.py::TestBackendCapabilityGate` that picks an undeclared
+    capability and asserts `capabilities.require(missing)` raises
+    `CapabilityNotSupported` with `exc.capability == missing.value` — the
+    Dafny `RequireCapability` postcondition (error carries the capability
+    name). The existing `unwrap` test was the wrong witness: it raises
+    without going through `require()` and names `capability="unwrap"`.
+    `DEPTH-001` → marked `test_listing.py::test_list_files_recursive_max_depth`
+    (asserts `d <= max_depth` per returned file, the DEPTH-001 inclusive-boundary
+    reference algorithm). `NPR-020` → marked
+    `test_identity.py::test_native_path_round_trip` (asserts
+    `to_key(native_path("some/key")) == "some/key"`). Removed all three from
+    `_BASELINE`.
+  - **Corrected two stale baseline comments (kept baselined).** `WR-008`
+    (`Store.head()`) and `WR-010` (USER_METADATA strict gate) are both
+    Store-layer clauses the conformance dir cannot drive: `head()` is a
+    Store composition over `get_file_info` (spec 045 § WR-008), and the
+    WR-010 gate fires once in the Store *before* delegating (ADR-0026), so a
+    non-declaring backend never receives non-empty metadata and backends
+    deliberately do not re-check it. Their real coverage lives in
+    `tests/test_store.py::TestStoreHead` / `::TestMetadataGate`. Rewrote both
+    comments to state they are structural F1s, not backfill gaps with a
+    pending owner. Gate now reports **2 baselined gaps**, no new or stale
+    violations.
   No CHANGELOG entry: audience is `infra.test` + `contributor.tooling`
   only (no `user.*`), per the trace-schema derived rule.
   Trace: `sdd/traces/bk-247-id134-marker-migration.yml`.
