@@ -129,7 +129,7 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | instructions, docs prerequisites                          |
 | **`CAPABILITIES` ClassVar** | `sdd/specs/003-backend-adapter-contract.md` (BE-003),    |
 | (added/changed on a backend | `tests/test_capabilities.py` (class-attr parametrize),   |
-| or ABC)                     | `tests/backends/test_conformance.py` (subset invariant), |
+| or ABC)                     | `tests/backends/conformance/test_identity.py` (subset invariant), |
 |                            | `docs-src/guides/custom-backend-guide.md`, `examples/snippets/` |
 | **`_GATING` dict**          | `sdd/specs/001-store-api.md` (STORE-gate entries),       |
 | (key→Capability mapping     | `tests/test_store.py` (gate-fires parametrize list),     |

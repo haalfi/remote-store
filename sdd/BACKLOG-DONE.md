@@ -8,6 +8,50 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-203 — Align `tests/` folder structure with `src/` package layout**
+  spec: TEST-002, TEST-003, TEST-010 · audience: infra.test
+  Closed by realization plus a doc-drift sweep. An audit (this PR) found the
+  substantive reorg had already landed incrementally — **BK-179** (Phase 1:
+  fixture registry + reorganisation), **BK-188** (Phase A: backend-specific
+  evictions), **BK-189** (Phase B: `tests/ext/` package), **BK-190** (Phase C:
+  placement checks + spec 048 / TESTING.md). The current tree already
+  mirrors `src/remote_store/` (`tests/aio/`, `tests/ext/`, `tests/scripts/`,
+  `tests/e2e/`, `tests/backends/{conformance,fixtures,cassettes,<backend>}/`),
+  `scripts/check_test_placement.py` (rules S, B, E) passes, and no top-level
+  test imports a concrete cloud backend (only `test_examples.py`, permanently
+  grandfathered). **No files moved**; behaviour unchanged.
+  - **One structural clarification.** `tests/backends/test_flat_ns.py` is the
+    lone bare `test_*.py` directly under `tests/backends/` — a white-box unit
+    test of the shared helper `backends/_flat_ns.py` (imported by S3 /
+    Azure-flat / SQLBlob), with no single per-backend home. Left in place and
+    sanctioned by a new spec 048 TEST-010 "Shared backend helpers" clause (a
+    backends-package-level shared module maps to `tests/backends/test_<f>.py`,
+    the one place a bare test file is allowed there), restated in TESTING.md
+    § Test Subpackage Placement.
+  - **Doc-drift sweep** (refs to pre-reorg test paths the earlier phases left
+    behind, per principle 3): `CONTRIBUTING.md` (§ Adding a Backend steps 3–4
+    → `tests/backends/fixtures/` + `tests/backends/conformance/`; § Adding an
+    Extension step 6 → `tests/ext/test_<name>.py`); specs `003` (→
+    `conformance/test_identity.py`, `conformance/test_atomic.py`), `011` (→
+    `s3/test_shared.py`), `022` (→ `conformance/test_atomic.py`), `045` (×5 →
+    `conformance/test_atomic.py`); the `CAPABILITIES ClassVar` ripple-check row
+    in `sdd/CLAUDE-REFERENCE.md` (→ `conformance/test_identity.py`); and a
+    stale comment in `tests/conftest.py` naming two deleted files.
+  - **No CHANGELOG** — audience `infra.test` only (per `_schema.yml` derived
+    rule). Note: the BACKLOG entry's `library.maintainer` tag is not in the
+    schema enum; corrected to `infra.test` (same kind of tag-correction
+    ID-172 / ID-173 needed).
+  - **Discovery follow-up (ID-214).** The same pre-reorg path drift survives in
+    non-authoritative surfaces left out of this scope: the user-facing
+    `docs-src/guides/custom-backend-guide.md` (broken GitHub links to
+    `test_conformance.py` / `test_conformance_extended.py`, now a directory of
+    per-topic files — needs structural rework, user-facing so CHANGELOG-bearing),
+    several in-tree test docstrings/comments (e.g. `tests/aio/test_async_cancellation.py`,
+    `tests/backends/s3/test_*.py`, `tests/test_pbt_write_result.py`), and an
+    active `BACKLOG.md` item body. CHANGELOG / research / RFC mentions are
+    point-in-time history and stay. Spun out as ID-214.
+  Trace: `sdd/traces/id-203-tests-layout.yml`.
+
 - [x] **BK-247 — Reconcile `check_formal_trace.py` baseline: migrate `ID-134` marker, close CAP-004 / DEPTH-001 / NPR-020, correct WR-008 / WR-010 comments**
   spec: BE-017, CAP-004, DEPTH-001, NPR-020 · audience: infra.test, contributor.tooling
   Leftover from ID-187. That item *added* `BE-017` / `ASYNC-017` spec

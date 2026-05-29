@@ -14,7 +14,7 @@ This is a drop-in alternative to `S3Backend` with the same constructor signature
 > deltas (dual-library architecture, credential translation, the PyArrow read
 > path, dual `unwrap()`, and the dual error-mapping context managers) carry a
 > full body below. Tests reference both IDs per backend via per-parameter
-> `pytest.mark.spec(...)` marks (see `tests/backends/test_s3_shared.py`).
+> `pytest.mark.spec(...)` marks (see `tests/backends/s3/test_shared.py`).
 
 ### Paired IDs (delta map)
 

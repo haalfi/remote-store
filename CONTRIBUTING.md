@@ -84,8 +84,8 @@ walkthrough of the `Backend` contract, error mapping, and capabilities.
 
 1. Write a spec in `sdd/specs/` or as an addendum in `sdd/specs/backends/<name>.md`
 2. Implement `Backend` ABC in `src/remote_store/backends/_<name>.py`
-3. Add a conformance fixture in `tests/backends/conftest.py`
-4. Both conformance suites run automatically: `tests/backends/test_conformance.py` (spec-traced) and `tests/backends/test_conformance_extended.py` (Dafny-derived, `@pytest.mark.extended_conformance`). The suites are validated by a Dafny-compiled oracle — see [`sdd/formal/README.md`](sdd/formal/README.md) § Compiled Oracle
+3. Register a fixture in `tests/backends/fixtures/` (declare it in `backends.toml` / `fixtures.toml` and add a per-fixture factory module)
+4. The cross-backend conformance suite under `tests/backends/conformance/` (spec-traced per-topic files: `test_io.py`, `test_listing.py`, `test_atomic.py`, …) runs automatically against the new fixture; Dafny-derived cases carry `@pytest.mark.extended_conformance` and are validated by a Dafny-compiled oracle — see [`sdd/formal/README.md`](sdd/formal/README.md) § Compiled Oracle
 5. Add user-facing guide in `docs-src/guides/backends/<name>.md` and add to `docs-src/guides/_nav.yml`
 6. Update `docs-src/guides/backends/index.md` (Supported Backends table)
 7. Update `README.md` (Supported Backends table + Installation extras)
@@ -101,7 +101,7 @@ Extensions live in `src/remote_store/ext/` and follow the contract in the [exten
 3. Use only the public `Store` / `Backend` API (never `_backend`). Use `unwrap()` for native access
 4. Do not own Store lifecycle — never call `store.close()` or use `with store:`
 5. Let `CapabilityNotSupported` propagate — do not catch and suppress it
-6. Add tests in `tests/test_<name>.py` with `@pytest.mark.spec("ID")`
+6. Add tests in `tests/ext/test_<name>.py` with `@pytest.mark.spec("ID")`
 7. Write a user guide in `docs-src/guides/<name>.md`
 8. Add the page to `docs-src/guides/_nav.yml` (under the Extensions section)
 10. Add a runnable example in `examples/`

@@ -85,5 +85,5 @@ via the existing `around` context-manager pattern (SAW-015).
 - `InvalidPath`: empty path raises
 - Capability gating: `ATOMIC_WRITE` required
 - Observe hook: `on_write` fires after promotion, includes error on failure
-- Conformance tests: `TestBackendOpenAtomic` in `test_conformance.py`
+- Conformance tests: `TestBackendOpenAtomic` in `tests/backends/conformance/test_atomic.py`
 - Store-level tests: `test_store.py`, `test_open_atomic.py`

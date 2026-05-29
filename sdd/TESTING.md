@@ -29,6 +29,7 @@ the invariant in lookup form.
 | Async cross-cutting tests (drift guard, adapters, async Store/Backend ABC) | `tests/aio/` | `test_async_*.py` |
 | Cross-backend conformance (parametrised over the registry) | `tests/backends/conformance/` | per spec 048 TEST-002 |
 | Backend-specific tests (one home per backend, sync + per-backend `aio/`) | `tests/backends/<backend>/` | per spec 048 TEST-003 / TEST-010 |
+| Shared backend helper not owned by one backend (`src/remote_store/backends/_<x>.py`, e.g. `_flat_ns`) | `tests/backends/` root | `test_<x>.py` (the only bare test file allowed there; spec 048 TEST-010 "Shared backend helpers") |
 | Backend fixture registry + per-backend factories | `tests/backends/fixtures/` | — |
 | HTTP cassettes (BK-181 onward; HTTP-transport backends only) | `tests/backends/cassettes/<backend>/` | — |
 | End-to-end workflow tests (require Docker services) | `tests/e2e/` | — |

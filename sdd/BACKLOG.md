@@ -59,15 +59,26 @@ Async API surface, conformance, and tooling. ID-192 (aio.md rework), ID-193
 have landed (see BACKLOG-DONE.md). The `check_api_docs.py` staged rollout
 (ID-170 → ID-173) is complete.
 
-- [ ] **ID-203 — Align `tests/` folder structure with `src/` package layout**
-  spec: — · effort: M · audience: library.maintainer
-  `tests/` does not mirror the `src/remote_store/` package tree; as the `aio`
-  subtree and other packages grow, test file placement becomes ambiguous.
-  Mirror `src/` layout (e.g. `tests/aio/`, `tests/backends/`) and carve out
-  `tests/scripts/` for script-level tests.
-  **Ready:** the ID-172 + ID-173 blockers have landed — the async API surface
-  is now settled. ID-193 (async conformance pattern) and ID-194 (gen_graph
-  async gate) also landed (see BACKLOG-DONE.md).
+- [ ] **ID-214 — Sweep residual pre-reorg test-path references in non-authoritative docs**
+  spec: — · effort: S · audience: user.site
+  Follow-up from ID-203 (tests/ folder reorg close-out). The authoritative
+  surfaces (CONTRIBUTING, specs 003/011/022/045, the ripple-check row,
+  `tests/conftest.py` comment) were realigned in ID-203, but the same
+  pre-reorg path drift survives elsewhere:
+  - `docs-src/guides/custom-backend-guide.md` — broken GitHub links and run
+    commands citing `tests/backends/test_conformance.py` /
+    `test_conformance_extended.py` (now the per-topic `tests/backends/conformance/`
+    directory). Needs structural rework of the two tables, not a path swap;
+    user-facing, so it carries a CHANGELOG entry.
+  - In-tree test docstrings/comments naming deleted files, e.g.
+    `tests/aio/test_async_cancellation.py`, `tests/aio/test_async_pbt_stateful.py`,
+    `tests/backends/azure/aio/test_live.py`, `tests/backends/s3/test_*.py`,
+    `tests/test_pbt_write_result.py`, `tests/test_snippets.py`,
+    `tests/backends/conformance/test_async_extended.py` (`test_sync_adapter_conformance.py`,
+    `test_azure.py`, `test_s3_shared.py`, `test_s3_options.py`, `test_conformance*.py`).
+  - The `BK-235` item body in this file references `tests/backends/test_sqlblob.py:131`.
+  Out of scope (point-in-time history): CHANGELOG, `sdd/research/`, `sdd/rfcs/`,
+  and `BACKLOG-DONE.md` mentions.
 
 ---
 

@@ -76,7 +76,7 @@ when `CapWriteResultNative in capabilities` — that rich fields on the
 returned `WriteResult` match the stored `FileInfo`, so a subsequent
 `GetFileInfo` (and `head()` via `WriteResultFromFileInfo`) returns
 consistent fields. Verified in `MemoryBackend.dfy`. Python backstop in
-`tests/backends/test_conformance.py::TestWriteResultConformance`
+`tests/backends/conformance/test_atomic.py::TestWriteResultConformance`
 (`test_result_is_write_result_with_path_and_size`,
 `test_size_matches_written_bytes_for_streaming_input`,
 `test_native_populates_last_modified`,
@@ -116,7 +116,7 @@ declares the capability but fails to populate `source = Native` — or
 fails to populate the rich fields that the spec promises alongside it —
 does not satisfy the refinement. Verified in `MemoryBackend.dfy`. Python
 backstop in
-`tests/backends/test_conformance.py::TestWriteResultConformance::test_source_matches_write_result_native`.
+`tests/backends/conformance/test_atomic.py::TestWriteResultConformance::test_source_matches_write_result_native`.
 See ID-151.
 
 ## WR-005: Basic Source Guarantees
@@ -142,7 +142,7 @@ branch of the `Write` postcondition chain — when `CapWriteResultNative
 !in capabilities`, the returned `WriteResult` has
 `digest/etag/version_id/last_modified` pinned to `None`. Verified in
 `MemoryBackend.dfy`. Python backstop in
-`tests/backends/test_conformance.py::TestWriteResultConformance::test_basic_source_leaves_rich_fields_none`.
+`tests/backends/conformance/test_atomic.py::TestWriteResultConformance::test_basic_source_leaves_rich_fields_none`.
 See ID-151.
 
 ## WR-006: Sidecar Source
@@ -324,7 +324,7 @@ postcondition: `r.Ok? ⇒ r.value.metadata == (if HasUserMetadata(metadata)
 (WR-010). A backend that declares `CapUserMetadata` but silently drops
 the caller's mapping does not satisfy the refinement. Verified in
 `MemoryBackend.dfy`. Python backstop in
-`tests/backends/test_conformance.py::TestWriteResultConformance`
+`tests/backends/conformance/test_atomic.py::TestWriteResultConformance`
 (`test_metadata_echoed_when_gate_passes`,
 `test_metadata_is_none_when_not_passed`). See ID-151.
 
@@ -342,7 +342,7 @@ CapUserMetadata in capabilities` condition. Since `GetFileInfo`'s
 postcondition is `r.value == fs[path].info`, the round-trip is
 structural: what `Write` stores is what `GetFileInfo` returns.
 Verified in `MemoryBackend.dfy`. Python backstop in
-`tests/backends/test_conformance.py::TestWriteResultConformance`
+`tests/backends/conformance/test_atomic.py::TestWriteResultConformance`
 (`test_metadata_round_trips_via_get_file_info`,
 `test_file_info_metadata_none_when_capability_absent`). See ID-151.
 
