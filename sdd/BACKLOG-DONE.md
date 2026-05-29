@@ -71,15 +71,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   - **`ext.*` exclusion.** ~33 symbols re-exported from `remote_store.ext.*`
     are documented as *module* rows in the index Extensions section, not per
     symbol; excluded by `__module__` prefix (not a hardcoded list).
-  - **Backend-companion exemption (derived, not listed).** `ArrowSerializer`,
+  - **Backend-companion exemption (explicit allowlist).** `ArrowSerializer`,
     `ResultSerializer` (on `sql-query.md`) and `AsyncAzureBackend` (on
     `aio.md`) are in their `__all__` but have no standalone index row — they
-    "belong to their backend" in the docs. `directive_symbols` derives the
-    exemption from `:::` renders across the API reference, so it stays
-    accurate as backends change (single-source-of-truth, no stale allowlist).
+    "belong to their backend" in the docs. A first cut *derived* this from
+    `:::` renders; review (PR #697) showed that masks dropped rows — ~every
+    class is `:::`-rendered on its own page, and shared multi-class pages
+    (`aio.md`, `errors.md`, `models.md`) make no robust derivation possible.
+    Shipped instead: an explicit `_INDEX_EXEMPT` frozenset of the three
+    companions, with `directive_symbols` repurposed to *police* it (each entry
+    must be public, `:::`-rendered, and absent from the index —
+    `test_allowlist_is_not_stale`).
   - **Bidirectional compare.** Unlike the coverage-only method-caps compare
     (over-claims tolerated), this is a true set diff: MISSING (public symbol
-    with neither an index row nor a `:::` render) and EXTRA (index link with
+    with no index row and not on `_INDEX_EXEMPT`) and EXTRA (index link with
     no backing `__all__` symbol) are both errors. `kind` enriches messages
     only. Live surface (full extras): 53 public symbols, index green.
   - **No drift found** — `index.md` already mirrored the public surface once

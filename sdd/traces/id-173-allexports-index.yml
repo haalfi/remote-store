@@ -22,7 +22,7 @@ expected_ripples:
   - sdd/backlogid.json
   - sdd/CLAUDE-REFERENCE.md
 surprising_ripples: []
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -117,3 +117,8 @@ phases:
         read_type: reference
         extract: "Replaced derived exemption with an explicit 3-symbol companion allowlist; directive_symbols repurposed to police it; added regression + allowlist-staleness tests"
         outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-173 done-entry (companion-exemption + compare bullets)"
+        read_type: reference
+        extract: "2nd review round: rebased onto BK-247; done-entry + both CLAUDE-REFERENCE ripple rows still described the abandoned derived design — reconciled to name the _INDEX_EXEMPT allowlist (principle 3, repo describes reality)"
+        outcome: misleading

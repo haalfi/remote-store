@@ -388,11 +388,16 @@ def exports_symbols(modules: list) -> dict[str, str]:
 
 
 def index_link_symbols(text: str) -> set[str]:
-    """Return the set of symbol names linked as ``[Name](target)`` rows.
+    """Return the set of symbol names linked as ``[Name](target)`` in *text*.
 
     Only link texts that are bare Python identifiers count -- this drops the
     Extensions section's module rows (``[ext.arrow](...)``, ``[aio.ext.write]``)
     whose dotted text is not an identifier.
+
+    The match is whole-file by intent: every link in ``index.md`` is a table
+    row today, so there is no need to scope to tables.  If a future *prose*
+    link reused an identifier that is not a public symbol, it would surface as
+    a spurious EXTRA -- the signal to either rename it or scope this regex.
     """
     return {m.group(1) for m in _LINK_RE.finditer(text) if m.group(1).isidentifier()}
 

@@ -40,7 +40,7 @@ Read this before starting. One line per trigger.
 | Store or Backend ABC          | All backend implementations, conformance tests |
 | Public method signature       | Docstring (Args/Returns/Raises), examples that call it, guides referencing it |
 | Store method                  | README Store API table + comparison count, `__init__.py` `__all__`, README examples table, `examples/`, spec, guides, CHANGELOG |
-| Public API (`__all__`)        | README Store API table, `reference/api/*.md` directive + index summary + `_nav.yml`, `examples/`, user guides; check `backends/__init__.py` *and* `aio/__init__.py` `__all__` too. `index.md` parity machine-verified by `gen-api-check` (ID-173): every public symbol needs an index row or a `:::` render |
+| Public API (`__all__`)        | README Store API table, `reference/api/*.md` directive + index summary + `_nav.yml`, `examples/`, user guides; check `backends/__init__.py` *and* `aio/__init__.py` `__all__` too. `index.md` parity machine-verified by `gen-api-check` (ID-173): every public symbol needs an index row (or an entry on the small `_INDEX_EXEMPT` backend-companion allowlist) |
 | Extension                     | `__init__.py` exports (ADR-0013 rules), `pyproject` extras, README extensions table, `reference/api/extensions/*` + index + `_nav.yml`, guides, examples, CHANGELOG, BACKLOG |
 | Dependency                    | `pyproject` extras + pins, README install, docs prerequisites |
 | `CAPABILITIES` ClassVar       | `003-backend-adapter-contract.md` (BE-003), `test_capabilities.py`, `test_conformance.py`, custom-backend guide, `examples/snippets/` |
@@ -108,8 +108,9 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | **Public API** (`__all__`) | README Store API table, `docs-src/reference/api/*.md` directive |
 |                            | (every `__all__` symbol needs a `:::` entry),             |
 |                            | `docs-src/reference/api/index.md` summary table (every public |
-|                            | class/function needs a row, *or* a `:::` render on its     |
-|                            | backend page for a companion helper like `ArrowSerializer`), |
+|                            | class/function needs a row, unless it is on the small     |
+|                            | `_INDEX_EXEMPT` backend-companion allowlist in            |
+|                            | `scripts/check_api_docs.py`, e.g. `ArrowSerializer`),     |
 |                            | `docs-src/reference/api/_nav.yml`, `examples/`, user guides. |
 |                            | **Check**: `backends/__init__.py` *and* `aio/__init__.py` |
 |                            | `__all__` too — secondary/async public API (`SFTPUtils`,  |
