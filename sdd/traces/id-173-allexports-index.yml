@@ -1,0 +1,106 @@
+id: ID-173
+title: "check_api_docs.py — __all__ ↔ docs-src/reference/api/index.md parity"
+trigger: >
+  ID-172 wired the last method-caps PAGES entry; ID-173 is the staged
+  rollout's separate piece — a {symbol_name: kind} IR comparing the package's
+  public __all__ against the API index page, a genuinely different IR from the
+  {method: caps} checker. The backlog flagged it "stop and confirm before
+  implementing" because the set diff is not naive: extension symbols are
+  documented as module rows, and backend-companion helpers (ArrowSerializer,
+  ResultSerializer, AsyncAzureBackend) live on their backend's page, not as
+  standalone index rows.
+source_items:
+  - ID-173
+  - ID-172
+  - ID-171
+  - ID-170
+audience:
+  - contributor.tooling
+discovery_followups: []
+co_shipped_items: []
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/CLAUDE-REFERENCE.md
+surprising_ripples: []
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-173 (Async API Verification)"
+        read_type: gate
+        extract: "Different IR {symbol_name: kind}; two __all__ sources; page side = index.md link rows; stop-and-confirm"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-172, ID-171, ID-170"
+        read_type: reference
+        extract: "Two pure extractors → one canonical IR → compare; PAGES precedent; real-drift the verifier caught"
+        outcome: ok
+      - file: scripts/check_api_docs.py
+        section: "PAGES, graph_class_methods, page_class_methods, compare, main"
+        read_type: gate
+        extract: "Method-caps path to slot alongside, not entangle with; main() loops PAGES then prints errors"
+        outcome: ok
+      - file: src/remote_store/__init__.py
+        section: "__all__"
+        read_type: gate
+        extract: "69 symbols; ext.* symbols (33) re-exported but documented as module rows; __version__ dunder excluded"
+        outcome: ok
+      - file: src/remote_store/backends/__init__.py
+        section: "__all__ (conditional imports)"
+        read_type: gate
+        extract: "Grows with optional extras (3 base → 12 full); ArrowSerializer/ResultSerializer behind sql extra"
+        outcome: ok
+      - file: docs-src/reference/api/index.md
+        section: "(full — 11 H2 link-row tables)"
+        read_type: gate
+        extract: "Core..Extensions; symbol rows are bare-identifier link text; Extensions rows are dotted module names"
+        outcome: ok
+  - id: design
+    name: Design / confirm
+    steps:
+      - file: src/remote_store/aio/__init__.py
+        section: "__all__"
+        read_type: reference
+        extract: "Async section symbols come from a third namespace; symmetry → treat aio.__all__ as a co-equal source"
+        outcome: ok
+      - file: docs-src/reference/api/backends/sql-query.md
+        section: "::: ArrowSerializer / ResultSerializer"
+        read_type: reference
+        extract: "Backend-companion helpers rendered on their backend's page, no standalone index row → derive an exemption from ::: presence"
+        outcome: ok
+      - file: pyproject.toml
+        section: "optional-dependencies (dev/docs/bench), hatch default env"
+        read_type: reference
+        extract: "dev pulls all extras → __all__ complete under hatch; live-import check is correct only in full-extras env (CI/hatch), like the strict coverage gate"
+        outcome: ok
+  - id: tests
+    name: Tests (red first)
+    steps:
+      - file: tests/scripts/test_check_api_docs.py
+        section: "TestExportsSymbols, TestIndexLinkSymbols, TestDirectiveSymbols, TestCompareExports, TestLiveIndex"
+        read_type: reference
+        extract: "Each new extractor tested in isolation + live round-trip; mirrors the method-caps test layout"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/check_api_docs.py
+        section: "exports_symbols, index_link_symbols, directive_symbols, compare_exports, main() second pass"
+        read_type: reference
+        extract: "Additive second IR + pass; three co-equal __all__ sources; ::: -derived exemption; bidirectional set diff"
+        outcome: ok
+  - id: verify
+    name: Verify (ripple-check)
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check: Public API (__all__) (both presentations)"
+        read_type: verify
+        extract: "Annotate the index-summary ripple as machine-verified by gen-api-check (ID-173)"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience derived rule"
+        read_type: verify
+        extract: "contributor.tooling-only ⇒ no CHANGELOG; BACKLOG's platform.tooling not in enum, corrected to contributor.tooling"
+        outcome: ok

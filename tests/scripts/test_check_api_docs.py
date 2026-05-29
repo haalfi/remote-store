@@ -495,3 +495,208 @@ class TestLivePages:
             class_label = class_qname.rsplit(".", 1)[1]
             all_errors.extend(mod.compare(graph_ir, page_ir, class_label, page_path))
         assert all_errors == [], "API doc drift: " + "; ".join(all_errors)
+
+
+# ===========================================================================
+# __all__ <-> index.md parity (ID-173) -- a separate IR from the method-caps
+# check above: {symbol_name: kind} rather than {method: caps}.
+# ===========================================================================
+
+
+class _FakeModule:
+    """Minimal stand-in for a real module: an ``__all__`` plus attributes.
+
+    ``exports_symbols`` reads ``__all__`` and ``getattr`` only, so a fake with
+    the right attributes exercises it without importing the real package.
+    """
+
+    def __init__(self, all_names: list[str], **attrs: object) -> None:
+        self.__all__ = all_names
+        for name, obj in attrs.items():
+            setattr(self, name, obj)
+
+
+class _Cls:
+    """A class whose ``__module__`` can be spoofed for the ext-exclusion test."""
+
+
+def _obj(module: str, *, is_class: bool = True):
+    if is_class:
+        obj = type("Sym", (), {})
+        obj.__module__ = module
+        return obj
+
+    def fn() -> None:  # a routine
+        ...
+
+    fn.__module__ = module
+    return fn
+
+
+# ---------------------------------------------------------------------------
+# Exports extractor (__all__ -> {symbol_name: kind})
+# ---------------------------------------------------------------------------
+
+
+class TestExportsSymbols:
+    def test_classifies_class_and_function(self, mod):
+        m = _FakeModule(
+            ["Foo", "do_it"],
+            Foo=_obj("pkg.core", is_class=True),
+            do_it=_obj("pkg.core", is_class=False),
+        )
+        assert mod.exports_symbols([m]) == {"Foo": "class", "do_it": "function"}
+
+    def test_dunders_excluded(self, mod):
+        m = _FakeModule(["Foo", "__version__"], Foo=_obj("pkg.core"), __version__="1.0")
+        assert mod.exports_symbols([m]) == {"Foo": "class"}
+
+    def test_ext_module_symbols_excluded(self, mod):
+        # Symbols re-exported from remote_store.ext.* are documented as *module*
+        # rows in the index Extensions section, not per symbol -- excluded.
+        m = _FakeModule(
+            ["Core", "cache"],
+            Core=_obj("remote_store._store"),
+            cache=_obj("remote_store.ext.cache", is_class=False),
+        )
+        assert mod.exports_symbols([m]) == {"Core": "class"}
+
+    def test_multiple_modules_merged(self, mod):
+        a = _FakeModule(["A"], A=_obj("pkg.a"))
+        b = _FakeModule(["B"], B=_obj("pkg.backends"))
+        assert mod.exports_symbols([a, b]) == {"A": "class", "B": "class"}
+
+    def test_non_class_non_routine_is_other(self, mod):
+        # e.g. a type alias (AsyncWritableContent) -- neither class nor routine.
+        m = _FakeModule(["Alias"], Alias="bytes | AsyncIterator[bytes]")
+        assert mod.exports_symbols([m]) == {"Alias": "other"}
+
+
+# ---------------------------------------------------------------------------
+# Index link-row extractor (index.md -> {symbol names})
+# ---------------------------------------------------------------------------
+
+
+class TestIndexLinkSymbols:
+    def test_identifier_link_rows_collected(self, mod):
+        text = _page("""
+## Core
+
+| Class | Description |
+|-------|-------------|
+| [Store](store.md) | Main entry point |
+| [Registry](registry.md) | Backend registry |
+""")
+        assert mod.index_link_symbols(text) == {"Store", "Registry"}
+
+    def test_module_rows_excluded(self, mod):
+        # Extensions section rows use dotted module names as link text -- not
+        # Python identifiers, so they are not symbol rows.
+        text = _page("""
+## Extensions
+
+| Module | Description |
+|--------|-------------|
+| [ext.batch](extensions/batch.md) | Batch ops |
+| [aio.ext.write](extensions/aio-write.md) | Async write helpers |
+""")
+        assert mod.index_link_symbols(text) == set()
+
+    def test_anchor_targets_do_not_affect_symbol_name(self, mod):
+        text = _page("""
+| [RegistryConfig](config.md#remote_store.RegistryConfig) | Config |
+| [info](info.md#remote_store.info) | Introspection |
+""")
+        assert mod.index_link_symbols(text) == {"RegistryConfig", "info"}
+
+
+# ---------------------------------------------------------------------------
+# Directive extractor (::: pkg.path.Name -> {leaf symbol names})
+# ---------------------------------------------------------------------------
+
+
+class TestDirectiveSymbols:
+    def test_leaf_names_collected_across_texts(self, mod):
+        a = _page("""
+::: remote_store.backends.ArrowSerializer
+    options:
+      show_root_heading: true
+""")
+        b = _page("""
+::: remote_store.aio.AsyncAzureBackend
+""")
+        assert mod.directive_symbols([a, b]) == {"ArrowSerializer", "AsyncAzureBackend"}
+
+    def test_non_directive_lines_ignored(self, mod):
+        text = _page("""
+# Heading
+
+Some prose with ::: not-a-directive inline.
+
+::: remote_store.backends.ResultSerializer
+""")
+        assert mod.directive_symbols([text]) == {"ResultSerializer"}
+
+
+# ---------------------------------------------------------------------------
+# Exports compare (bidirectional set diff)
+# ---------------------------------------------------------------------------
+
+
+class TestCompareExports:
+    def test_exact_match_yields_no_errors(self, mod):
+        expected = {"Store": "class", "info": "function"}
+        index = {"Store", "info"}
+        assert mod.compare_exports(expected, index, set()) == []
+
+    def test_missing_index_row_is_error(self, mod):
+        expected = {"Store": "class"}
+        errors = mod.compare_exports(expected, set(), set())
+        assert len(errors) == 1
+        assert "Store" in errors[0]
+        assert "class" in errors[0]
+
+    def test_missing_but_directive_documented_is_exempt(self, mod):
+        # Backend-companion helper: no index row, but rendered via ::: on its
+        # backend's page -> documented, not an error.
+        expected = {"ArrowSerializer": "class"}
+        assert mod.compare_exports(expected, set(), {"ArrowSerializer"}) == []
+
+    def test_extra_index_link_is_error(self, mod):
+        expected: dict[str, str] = {}
+        errors = mod.compare_exports(expected, {"Ghost"}, set())
+        assert len(errors) == 1
+        assert "Ghost" in errors[0]
+
+    def test_directive_does_not_rescue_an_extra(self, mod):
+        # A symbol linked in the index but absent from __all__ is EXTRA even if
+        # it is ::: -rendered somewhere -- it is not part of the public surface.
+        expected: dict[str, str] = {}
+        errors = mod.compare_exports(expected, {"Ghost"}, {"Ghost"})
+        assert len(errors) == 1
+        assert "Ghost" in errors[0]
+
+
+# ---------------------------------------------------------------------------
+# Live index parity
+# ---------------------------------------------------------------------------
+
+
+class TestLiveIndex:
+    def test_index_mirrors_public_all(self, mod):
+        """The real index.md must mirror the real public __all__ surface.
+
+        Runs against live imports, so it is only correct in a full-extras
+        environment (hatch / CI) -- bare-python sandboxes lack optional-dep
+        symbols.  Same trade-off as the strict coverage gate.
+        """
+        import remote_store
+        import remote_store.aio
+        import remote_store.backends
+
+        modules = [remote_store, remote_store.backends, remote_store.aio]
+        expected = mod.exports_symbols(modules)
+        index = mod.index_link_symbols(mod.INDEX_PAGE.read_text(encoding="utf-8"))
+        documented = mod.directive_symbols(p.read_text(encoding="utf-8") for p in mod.API_DIR.rglob("*.md"))
+        errors = mod.compare_exports(expected, index, documented)
+        assert errors == [], "index.md parity drift: " + "; ".join(errors)
