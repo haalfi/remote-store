@@ -11,8 +11,8 @@ Azurite container so it catches real wire semantics the mocks miss:
 - USER_METADATA round-trips through the real Blob metadata header path.
 - 404 / 409 / 412 wire responses mapped through ``classify_azure_error``.
 
-**Standalone fixture** (per-test container) rather than a parametrised
-``live_azure`` fixture shared with ``tests/backends/test_azure.py``: the
+**Standalone fixture** (per-test container) rather than a fixture shared
+with the sync Azure tests under ``tests/backends/azure/``: the
 async API uses ``aclose()`` (coroutine) and async generators, so the
 fixture lifecycle and most test bodies cannot converge structurally.
 Container setup/teardown reuses the **sync** ``BlobServiceClient`` (via

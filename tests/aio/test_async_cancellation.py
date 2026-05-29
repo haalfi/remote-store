@@ -103,7 +103,7 @@ class TestReadCancellation:
     The meaningful invariant a caller relies on for backends that **do**
     hold resources across the yield (e.g. ``SyncBackendAdapter``'s
     ``finally: stream.close()``) is covered by
-    ``tests/aio/test_sync_adapter_conformance.py::test_read_closes_stream_on_early_break``.
+    ``tests/backends/conformance/test_sync_adapter_conformance.py::test_read_closes_stream_on_early_break``.
 
     What this test asserts for ``AsyncMemoryBackend``:
     - the first yielded chunk equals the full file content

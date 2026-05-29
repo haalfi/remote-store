@@ -1,0 +1,113 @@
+id: ID-214
+title: "Sweep residual pre-reorg test-path references in non-authoritative docs"
+trigger: "ID-203 close-out (PR #698) realigned the authoritative surfaces for the BK-179/188/189/190 tests/ reorg but deliberately left the same pre-reorg path drift in non-authoritative places: the user-facing custom-backend-guide.md (two tables with broken GitHub links to the deleted test_conformance.py / test_conformance_extended.py), in-tree test docstrings naming deleted/moved files, and a BACKLOG item body citing tests/backends/test_sqlblob.py:131. Spun out as ID-214 under Docs & Discoverability."
+source_items:
+  - ID-214
+  - ID-203
+audience:
+  - user.site
+  - infra.test
+discovery_followups: []
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - CHANGELOG.md
+surprising_ripples:
+  - tests/backends/conformance/test_identity.py
+  - tests/backends/azure/test_live_hns.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-214 (item) — Docs & Discoverability"
+        read_type: gate
+        extract: "Authoritative scope: custom-backend-guide.md structural rework, in-tree docstrings, the BK-235 body sqlblob ref. Out of scope: CHANGELOG, research, rfcs, BACKLOG-DONE"
+      - file: sdd/traces/id-203-tests-layout.yml
+        section: "implement + review phases"
+        read_type: reference
+        extract: "Confirmed home moves from the predecessor: test_s3_shared.py → s3/test_shared.py; TestWriteResultConformance/TestBackendOpenAtomic → conformance/test_atomic.py; conformance subset → conformance/test_identity.py. Structural template for this trace"
+      - file: sdd/traces/_schema.yml
+        section: "audience derived rule + step shape"
+        read_type: gate
+        extract: "audience user.site ⇒ CHANGELOG required (unlike ID-203 infra.test-only). Confirmed user.site is a valid enum value"
+  - id: verify_homes
+    name: Confirm current homes before swapping
+    steps:
+      - file: tests/backends/conformance/
+        section: "(git ls-files) test_io/listing/atomic/metadata/streaming/errors/identity/check_health + test_async_extended + test_sync_adapter_conformance"
+        read_type: reference
+        extract: "Per-topic file inventory for the guide table. test_sync_adapter_conformance.py lives here now (moved out of tests/aio/), so tests/aio/ paths are stale but the bare filename is still valid"
+      - file: tests/backends/conformance/test_errors.py
+        section: "class TestDeleteErrorFidelity (l.174)"
+        read_type: reference
+        extract: "test_async_extended.py 'Mirrors test_conformance_extended.py::TestDeleteErrorFidelity' → the sync class is now in test_errors.py, not a flat extended file"
+      - file: tests/backends/azure/test_config.py
+        section: "class TestAzureWriteOnHnsDirectory (l.1882)"
+        read_type: reference
+        extract: "test_live_hns.py companion ref pointed at test_azure.py; the class is now in azure/test_config.py"
+      - file: tests/backends/s3/test_shared.py
+        section: "TestS3SharedErrorMapping / ETagAndDigest / Unwrap / Lifecycle"
+        read_type: reference
+        extract: "All test_s3_shared.py class refs resolve to s3/test_shared.py; test_s3_options.py classes (TestAiobotocoreCreateClientBoundary, TestConfigKwargsRetryCollision) resolve to s3/test_options.py"
+      - file: tests/backends/sqlblob/test_config.py
+        section: "test_capabilities (l.144) LAZY_READ-absent assert (l.148)"
+        read_type: reference
+        extract: "test_sqlblob.py:131 is gone; the live 'must NOT declare LAZY_READ' assertion is sqlblob/test_config.py:148. The line number in the original ref no longer holds — verified, not blindly swapped"
+        outcome: ok
+      - file: tests/aio/test_async_pbt_stateful.py
+        section: "docstring l.77-78 — example-based suites list"
+        read_type: reference
+        extract: "Named test_async_memory.py which never existed in git history (-S / --name-only both empty). Its example-based negative-path coverage is test_async_backend.py — dropped the phantom rather than invent a target"
+        outcome: misleading
+  - id: implement
+    name: Implement edits
+    steps:
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "Testing your backend / Conformance suite overview / Conformance checklist"
+        read_type: reference
+        extract: "Structural rework: per-topic file table (8 rows) with working blob/tree links + run commands, extended_conformance marker explanation, async sibling note; checklist Basic→Conformance row points at the directory + marker"
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "l.47 helpers comment + l.297 TestDeleteErrorFidelity mirror"
+        read_type: reference
+        extract: "test_conformance_extended.py → 'sync conformance topic files in this directory' / test_errors.py"
+      - file: tests/backends/s3/test_config.py
+        section: "TestS3* docstrings (×4)"
+        read_type: reference
+        extract: "test_s3_shared.py → s3/test_shared.py (full-path then replace_all on bare name)"
+      - file: sdd/BACKLOG.md
+        section: "ID-140 Ripple checks (l.603)"
+        read_type: reference
+        extract: "tests/backends/test_sqlblob.py:131 → tests/backends/sqlblob/test_config.py:148. The scope mis-attributed this to BK-235; the live ref was in ID-140"
+        outcome: misleading
+  - id: close_out
+    name: Close out
+    steps:
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: reference
+        extract: "Added one-line ID-214 entry at top of [Unreleased] (user.site ⇒ required)"
+      - file: sdd/BACKLOG-DONE.md
+        section: "[Unreleased] — new ID-214 entry"
+        read_type: reference
+        extract: "Close-out: guide rework, in-tree sweep inventory, the ID-140-not-BK-235 correction, the phantom test_async_memory.py discovery; audience user.site"
+      - file: sdd/BACKLOG.md
+        section: "Docs & Discoverability — ID-214 removal"
+        read_type: reference
+        extract: "Removed the ID-214 item (it carried the last live stale refs in BACKLOG.md, inside its own scope text)"
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: verify
+        extract: "ID-214 → DONE makes max DONE ID 214 (was 211); ran gen-backlogid to refresh"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check — Example script, Docs navigation, Backlog item touched, CHANGELOG entry"
+        read_type: verify
+        extract: "Guide run commands updated; nav unaffected (no file added/removed); BACKLOG→DONE move + trace in-PR; CHANGELOG entry present"
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "check-links + mkdocs build --strict"
+        read_type: verify
+        extract: "New GitHub blob/tree links resolve; strict build passes"

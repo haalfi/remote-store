@@ -217,7 +217,7 @@ def _do_open_atomic(backend: AzureBackend, path: str) -> None:
 class TestAzureLiveHnsDirectoryGuard:
     """``write`` / ``write_atomic`` / ``open_atomic`` must raise ``InvalidPath`` on a real HNS directory.
 
-    Companion to ``TestAzureWriteOnHnsDirectory`` in ``test_azure.py``,
+    Companion to ``TestAzureWriteOnHnsDirectory`` in ``test_config.py``,
     which mocks ``hdi_isfolder=true`` on a fabricated ``BlobProperties``.
     These tests confirm the same precondition fires when the marker is
     set by the real ADLS Gen2 service.

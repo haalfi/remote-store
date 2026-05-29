@@ -1,6 +1,6 @@
 """Property-based tests for ``WriteResult`` size invariants (ID-151c).
 
-Companion to ``tests/backends/test_conformance.py::TestWriteResultConformance``,
+Companion to ``tests/backends/conformance/test_atomic.py::TestWriteResultConformance``,
 which exercises fixed-example WR-001a / WR-003 / WR-004 / WR-005 / WR-012 /
 WR-013 across the full conformance fixture matrix.  This module adds property
 coverage that enumerated inputs cannot: random payloads across the size
