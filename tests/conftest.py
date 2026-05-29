@@ -62,13 +62,12 @@ def _maybe_load_dotenv_for_live(config: pytest.Config) -> None:
 
 # ---------------------------------------------------------------------------
 # Shared availability / reachability helpers
-# Used by fixtures in this file (moto_server, azurite_server, sftp_server)
-# and imported directly by tests/backends/test_azure.py and
-# tests/aio/test_sync_adapter_conformance.py. tests/backends/conftest.py
-# retains its own copies of _s3_available, _azure_available,
-# _azurite_reachable, _minio_reachable, and _sftp_available to stay
-# self-contained — a subdirectory conftest importing from a parent conftest
-# is an upward import that creates the same cross-boundary problem in reverse.
+# Used by the session fixtures in this file (moto_server, azurite_server,
+# sftp_server). tests/backends/conftest.py retains its own copies of
+# _s3_available, _azure_available, _azurite_reachable, _minio_reachable,
+# and _sftp_available to stay self-contained — a subdirectory conftest
+# importing from a parent conftest is an upward import that creates the
+# same cross-boundary problem in reverse.
 # ---------------------------------------------------------------------------
 
 

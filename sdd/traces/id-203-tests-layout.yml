@@ -1,0 +1,147 @@
+id: ID-203
+title: "Align tests/ folder structure with src/ package layout"
+trigger: "BACKLOG.md carried ID-203 as open ('tests/ does not mirror src/remote_store/; mirror the layout and carve out tests/scripts/'), unblocked once the async API surface settled (ID-172 + ID-173). A pre-work audit found the substantive reorg had already landed across BK-179 (Phase 1 registry + reorg), BK-188 (Phase A backend evictions), BK-189 (Phase B tests/ext/), and BK-190 (Phase C placement checks) — the parent went stale, not undone. No files were misplaced; the residue was one bare backends-root test file with no sanctioning spec clause, plus pre-reorg path drift in authoritative docs."
+source_items:
+  - ID-203
+discovery_followups:
+  - ID-214
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  - sdd/CLAUDE-REFERENCE.md
+audience:
+  - infra.test
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-203 (item) + Async API Verification preamble"
+        read_type: gate
+        extract: "Scope: mirror src/ layout (tests/aio/, tests/backends/), carve tests/scripts/. Note in the task: tests/scripts/, tests/ext/, tests/backends/ already exist — a completion pass, not greenfield. Find what is still mis-placed before moving anything"
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-002, TEST-003, TEST-010 (Directory Layout)"
+        read_type: gate
+        extract: "Authoritative layout: each src subpackage maps 1:1 to a parallel tests/ path; backends/ is the only fan-out exemption (per-backend dirs + conformance/fixtures/cassettes infra). Diagram shows no bare test_*.py files directly under tests/backends/"
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "Lookup-form restatement of TEST-010 + the three check_test_placement rules (S, B, E). Per-subject placement table"
+      - file: scripts/check_test_placement.py
+        section: "(full) — rules S/B/E, _BACKEND_AT_ROOT_GRANDFATHERED"
+        read_type: gate
+        extract: "Rule B only applies to top-level tests/test_*.py and tests/aio/test_async_*.py; grandfather list is self-pruning and holds only test_examples.py (structural, permanent per the module note). The checker cannot shrink further"
+  - id: audit
+    name: Audit current tree vs spec (report only)
+    steps:
+      - file: tests/
+        section: "(full tree, git ls-files) vs src/remote_store/"
+        read_type: reference
+        extract: "tests/aio/, tests/ext/, tests/scripts/, tests/e2e/, tests/backends/{conformance,fixtures,cassettes,<backend>} all mirror src/. check_test_placement passes. No top-level test imports a concrete cloud backend (test_capabilities.py references backend module paths as string constants, not imports; test_examples.py is grandfathered). Conclusion: no files are misplaced"
+      - file: tests/backends/test_flat_ns.py
+        section: "(module docstring + imports)"
+        read_type: reference
+        extract: "Lone bare test_*.py directly under tests/backends/; white-box unit test of the shared helper backends/_flat_ns.py (imported by S3 / Azure-flat / SQLBlob). No single per-backend home and not registry-parametrized conformance — the one TEST-010 gap, but defensible as a backends-package-level mirror"
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-179, BK-188, BK-189, BK-190"
+        read_type: reference
+        extract: "The four phases that actually shipped the reorg. ID-203 was the parent that waited on the async surface settling and went stale — close-by-realization, mirroring the ID-193 pattern"
+      - file: CLAUDE.md
+        section: "Audits"
+        read_type: gate
+        extract: "Report findings with evidence; user decides next steps (what to fix, whether to spin items). Prescription is advisory"
+  - id: decide
+    name: Clarify scope with user
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-203 (realised state vs description)"
+        read_type: reference
+        extract: "Presented the finding (reorg already complete) and asked three questions. User chose: (1) close-out + doc sweep, no file moves; (2) leave test_flat_ns.py and add a TEST-010 clause; (3) align CONTRIBUTING + active specs"
+  - id: implement
+    name: Implement (spec clause + doc-drift sweep)
+    steps:
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-010 — new 'Shared backend helpers' clause"
+        read_type: reference
+        extract: "Added a clause: a backends-package-level shared helper (e.g. _flat_ns.py) with no per-backend home and no conformance expression maps to tests/backends/test_<f>.py — the one place a bare test file is allowed under tests/backends/. Names _flat_ns.py / tests/backends/test_flat_ns.py (ID-211) as today's sole instance"
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement (table)"
+        read_type: reference
+        extract: "Added the matching lookup row pointing at spec 048 'Shared backend helpers'"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "Conformance invariant (l.78) + WriteResult backstop (l.173)"
+        read_type: reference
+        extract: "tests/backends/test_conformance.py::TestBackendIdentity → conformance/test_identity.py; ::TestWriteResultConformance → conformance/test_atomic.py. Confirmed each class's new home by grep before rewriting"
+      - file: sdd/specs/011-s3-pyarrow-backend.md
+        section: "l.17 spec-marks reference"
+        read_type: reference
+        extract: "tests/backends/test_s3_shared.py → tests/backends/s3/test_shared.py"
+      - file: sdd/specs/022-streaming-atomic-writes.md
+        section: "l.88 conformance tests"
+        read_type: reference
+        extract: "TestBackendOpenAtomic in test_conformance.py → tests/backends/conformance/test_atomic.py"
+      - file: sdd/specs/045-write-result.md
+        section: "5 TestWriteResultConformance citations"
+        read_type: reference
+        extract: "tests/backends/test_conformance.py::TestWriteResultConformance → conformance/test_atomic.py:: (×5, single replace_all on the shared prefix)"
+      - file: CONTRIBUTING.md
+        section: "Adding a Backend (3-4), Adding an Extension (6)"
+        read_type: reference
+        extract: "Fixture registration → tests/backends/fixtures/; conformance suite → tests/backends/conformance/ per-topic files (extended cases marked @pytest.mark.extended_conformance); ext tests → tests/ext/test_<name>.py"
+      - file: tests/conftest.py
+        section: "Shared availability helpers comment (l.67-72)"
+        read_type: reference
+        extract: "Dropped the dangling 'imported directly by tests/backends/test_azure.py and tests/aio/test_sync_adapter_conformance.py' clause (both files deleted by earlier phases)"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check detailed — CAPABILITIES ClassVar row"
+        read_type: reference
+        extract: "tests/backends/test_conformance.py (subset invariant) → conformance/test_identity.py. Fixed while consulting the ripple-check; one-line swap in an active lookup doc"
+  - id: close_out
+    name: Close out ID-203 + spin ID-214
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-203 removal + new ID-214"
+        read_type: reference
+        extract: "Removed ID-203 from Async API Verification; added ID-214 (sweep residual pre-reorg path drift in custom-backend-guide.md broken links, in-tree test docstrings, the BK-235 body) as the user.site follow-up. Verified ID-213 was already taken (live HNS error-class fix) so the next free ID is 214"
+      - file: sdd/BACKLOG-DONE.md
+        section: "[Unreleased] — new ID-203 entry"
+        read_type: reference
+        extract: "Close-out entry: tied the work to BK-179/188/189/190, named the test_flat_ns clause, listed the doc-drift sweep, forwarded the residue to ID-214; audience infra.test (no CHANGELOG); corrected the library.maintainer tag (not in schema enum) to infra.test"
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: verify
+        extract: "Tracks max DONE ID per prefix. ID-203 → DONE is 203 < 211 (no change); ID-214 is active, not done. JSON stays ID=211 — gen-backlogid-check should pass"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check — Backlog item touched + CHANGELOG entry"
+        read_type: verify
+        extract: "BACKLOG → BACKLOG-DONE move and trace shipped in-PR. Audience infra.test → no CHANGELOG entry required (schema derived rule)"
+      - file: scripts/check_test_placement.py
+        section: "rules S/B/E (run)"
+        read_type: verify
+        extract: "hatch run check-test-placement still green — no files moved, so placement is unchanged"
+  - id: review
+    name: Review (PR #698 round 1)
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check — CAPABILITIES ClassVar (Pre-work index ~L46 vs Detailed checklist L132)"
+        read_type: reference
+        extract: "Review caught: the CAPABILITIES ClassVar path fix updated only the Detailed checklist row; the Pre-work index twin still abbreviated the target as test_conformance.py. The file's own L18-21 invariant requires both presentations to match — the drift fix was left half-done in the very doc enforcing the no-drift rule. Updated the Pre-work index to conformance/test_identity.py"
+        outcome: misleading
+      - file: sdd/BACKLOG.md
+        section: "Async API Verification → Docs & Discoverability"
+        read_type: reference
+        extract: "Review caught: ID-214 (generic docs path-drift hygiene) was placed under the Async API Verification epic, where it has no async tie — ID-203 belonged there, ID-214 does not. Moved ID-214 to Docs & Discoverability; the Async section had no remaining open items (epic fully delivered via BK-179/188/189/190 + the landed async items), so retired the now-empty heading + preamble per principle 3"
+      - file: CONTRIBUTING.md
+        section: "Adding an Extension (numbered list)"
+        read_type: reference
+        extract: "Review caught: the list skipped step 9 (…7, 8, 10, 11, 12). Pre-existing, fixed while the hunk was open — renumbered 10/11/12 → 9/10/11"
+      - file: tests/backends/conformance/test_atomic.py
+        section: "class TestWriteResultConformance (l.148), TestBackendOpenAtomic (l.58); test_identity.py TestBackendIdentity (l.24)"
+        read_type: verify
+        extract: "Confirmed (review verify-ask) the rewritten spec citations point at classes that actually exist at the new homes. Re-grepped authoritative surfaces: sdd/CLAUDE-REFERENCE.md:46 was the only remaining test_conformance.py reference outside the ID-214-tracked non-authoritative set"
+        outcome: ok

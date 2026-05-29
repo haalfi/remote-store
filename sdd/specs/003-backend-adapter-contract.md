@@ -75,7 +75,7 @@ for cap in cs:
 
 **Invariant:** Every concrete backend class must declare `CAPABILITIES: ClassVar[CapabilitySet]` as a class attribute assigning a non-empty `CapabilitySet`. This enables static capability extraction without instantiation (e.g. `gen_graph.py`). The `capabilities` property returns a `CapabilitySet` declaring all supported operations; for backends with a static capability set it delegates to `self.CAPABILITIES`. For backends that narrow capabilities at runtime (e.g. `SQLBlobBackend` with a narrow-column schema), `CAPABILITIES` is an upper bound and the instance `capabilities` may be a strict subset.
 
-**Conformance invariant:** `set(instance.capabilities) ⊆ set(type(instance).CAPABILITIES)` for all backends. Enforced by `tests/backends/test_conformance.py::TestBackendIdentity::test_capabilities_subset_of_class_var`.
+**Conformance invariant:** `set(instance.capabilities) ⊆ set(type(instance).CAPABILITIES)` for all backends. Enforced by `tests/backends/conformance/test_identity.py::TestBackendIdentity::test_capabilities_subset_of_class_var`.
 
 ### BE-004: exists()
 
@@ -170,7 +170,7 @@ clause on Write is what closes the loophole that would let a successful
 write break `Valid()`. Move / Copy carry the same file-ancestor clause on
 their destination paths. Verified in `MemoryBackend.dfy`. Python backstop:
 the WR-001a/004/005/012/013 postcondition chain is exercised against every
-backend by `tests/backends/test_conformance.py::TestWriteResultConformance`;
+backend by `tests/backends/conformance/test_atomic.py::TestWriteResultConformance`;
 the file-ancestor rejection is exercised by
 `tests/backends/conformance/test_errors.py::TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path`
 (sync) and its async sibling in `test_async_extended.py`. See ID-151,
