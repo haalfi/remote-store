@@ -131,6 +131,46 @@ class TestGraphClassMethods:
         ):
             assert ungated not in ir
 
+    def test_real_graph_async_store_methods(self, mod):
+        # Sanity check against the live graph: a few well-known AsyncStore methods (ID-172).
+        graph = mod._load_graph()
+        ir = mod.graph_class_methods(graph, "remote_store.aio._async_store.AsyncStore")
+        assert ir["read"] == frozenset({"READ"})
+        assert ir["write"] == frozenset({"WRITE"})
+        assert ir["write_atomic"] == frozenset({"ATOMIC_WRITE"})
+        assert ir["copy"] == frozenset({"COPY"})
+        assert ir["get_folder_info"] == frozenset({"METADATA", "LIST"})
+        # Ungated methods (exists, ping, aclose, ...) must NOT appear.
+        for ungated in ("exists", "is_file", "is_folder", "ping", "aclose", "child", "resolve"):
+            assert ungated not in ir
+
+    def test_real_graph_async_backend_methods(self, mod):
+        # Sanity check against the live graph: a few well-known AsyncBackend methods (ID-172).
+        graph = mod._load_graph()
+        ir = mod.graph_class_methods(graph, "remote_store.aio._async_backend.AsyncBackend")
+        assert ir["read"] == frozenset({"READ"})
+        assert ir["write"] == frozenset({"WRITE"})
+        assert ir["write_atomic"] == frozenset({"ATOMIC_WRITE"})
+        assert ir["glob"] == frozenset({"GLOB"})
+        assert ir["get_file_info"] == frozenset({"METADATA"})
+        # AsyncBackend mirrors sync Backend: get_folder_info is METADATA-only (no dual gate).
+        assert ir["get_folder_info"] == frozenset({"METADATA"})
+        # Ungated methods must NOT appear.
+        for ungated in (
+            "name",
+            "capabilities",
+            "exists",
+            "is_file",
+            "is_folder",
+            "resolve",
+            "check_health",
+            "aclose",
+            "unwrap",
+            "native_path",
+            "to_key",
+        ):
+            assert ungated not in ir
+
 
 # ---------------------------------------------------------------------------
 # Page extractor
@@ -320,6 +360,80 @@ class TestPageClassMethods:
         ir = mod.page_class_methods(text, "remote_store._store.Store")
         assert ir["a_method"] == frozenset({"A_CAP"})
         assert ir["b_method"] == frozenset()
+
+    def test_aio_submodule_public_prefix_matched(self, mod):
+        # aio.md uses the submodule public re-export ``remote_store.aio.AsyncStore.``,
+        # which is neither the internal qname nor the top-level re-export. The
+        # public prefix is derived by dropping ``_``-prefixed module segments (ID-172).
+        text = _page("""
+## AsyncStore
+
+### Reading
+
+!!! note "Requires `Capability.READ`"
+    All read methods raise CapabilityNotSupported.
+
+::: remote_store.aio.AsyncStore.read
+    options:
+      show_root_heading: true
+""")
+        ir = mod.page_class_methods(text, "remote_store.aio._async_store.AsyncStore")
+        assert ir == {"read": frozenset({"READ"})}
+
+    def test_h3_subsections_scope_admonitions(self, mod):
+        # On the multi-class aio.md, capability groups are H3 nested under each
+        # class's H2. A section-level note in one H3 group must NOT bleed into a
+        # sibling H3 group (ID-172). Without H3 splitting, READ would leak onto write.
+        text = _page("""
+## AsyncStore
+
+### Reading
+
+!!! note "Requires `Capability.READ`"
+    Read group only.
+
+::: remote_store.aio.AsyncStore.read
+    options:
+      show_root_heading: true
+
+### Writing
+
+!!! note "Requires `Capability.WRITE`"
+    Write group only.
+
+::: remote_store.aio.AsyncStore.write
+    options:
+      show_root_heading: true
+""")
+        ir = mod.page_class_methods(text, "remote_store.aio._async_store.AsyncStore")
+        assert ir["read"] == frozenset({"READ"})
+        assert ir["write"] == frozenset({"WRITE"})
+
+    def test_other_class_h2_section_ignored(self, mod):
+        # When checking AsyncStore, directives under a sibling class's H2
+        # (AsyncBackend) must not be attributed to AsyncStore (ID-172).
+        text = _page("""
+## AsyncStore
+
+### Reading
+
+::: remote_store.aio.AsyncStore.read
+    options:
+      show_root_heading: true
+
+## AsyncBackend
+
+### Reading
+
+!!! note "Requires `Capability.READ`"
+    AsyncBackend read.
+
+::: remote_store.aio.AsyncBackend.read
+    options:
+      show_root_heading: true
+""")
+        ir = mod.page_class_methods(text, "remote_store.aio._async_store.AsyncStore")
+        assert ir == {"read": frozenset()}
 
 
 # ---------------------------------------------------------------------------

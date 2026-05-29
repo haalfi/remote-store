@@ -443,13 +443,13 @@ counterpart.
       show_root_heading: true
       heading_level: 4
 
-!!! note "Requires `Capability.GLOB`"
-    `glob()` raises `CapabilityNotSupported` on backends that do not declare this capability.
-
 ::: remote_store.aio.AsyncBackend.glob
     options:
       show_root_heading: true
       heading_level: 4
+
+!!! note "Requires `Capability.GLOB`"
+    `glob()` raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 ### Metadata
 

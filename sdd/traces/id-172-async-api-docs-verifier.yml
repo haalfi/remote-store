@@ -1,0 +1,116 @@
+id: ID-172
+title: "check_api_docs.py Phase 3 — AsyncStore/AsyncBackend ↔ aio.md"
+trigger: >
+  ID-194 emitted AsyncStore async gate edges and ID-192 stabilised aio.md, so
+  the async API page could finally be wired into the graph-IR verifier. The
+  backlog framed it as "adding the PAGES entries is the only remaining step";
+  on first run the verifier found neither AsyncStore directive (submodule
+  re-export path) nor scoped admonitions (capability groups nested as H3).
+source_items:
+  - ID-172
+  - ID-171
+  - ID-170
+  - ID-194
+audience:
+  - contributor.tooling
+  - contributor.process
+  - infra.test
+discovery_followups: []
+co_shipped_items: []
+expected_ripples:
+  - docs-src/_data/graph/graph.json
+  - sdd/CLAUDE-REFERENCE.md
+surprising_ripples:
+  - docs-src/explanation/graph_viz.html
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-172 (Async API Verification)"
+        read_type: gate
+        extract: "Scope as stated — add AsyncStore/AsyncBackend to PAGES; 'only remaining step'"
+        outcome: misleading
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-171, ID-170"
+        read_type: reference
+        extract: "Sync sibling flow: PAGES entry + error-hint + real-graph test; Backend had no edges (vacuous) until _BACKEND_GATING added"
+        outcome: ok
+      - file: scripts/check_api_docs.py
+        section: "PAGES, page_class_methods, _split_h2_sections, error-hint"
+        read_type: gate
+        extract: "method_prefixes hardcodes remote_store.{short_class}.; sections split on H2 only"
+        outcome: ok
+      - file: docs-src/reference/api/aio.md
+        section: "(full)"
+        read_type: reference
+        extract: "Directives use remote_store.aio.AsyncStore.*; capability groups are H3 under per-class H2 (multi-class page)"
+        outcome: ok
+      - file: scripts/gen_graph.py
+        section: "_BACKEND_GATING, Backend/AsyncStore emission loops"
+        read_type: reference
+        extract: "No AsyncBackend gating exists; mirror _BACKEND_GATING loop for AsyncBackend"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/gen_graph.py
+        section: "_ASYNC_BACKEND_GATING + AsyncBackend emission loop"
+        read_type: reference
+        extract: "Mirror _BACKEND_GATING minus read_seekable/open_atomic; emit method/req/gates/of for AsyncBackend"
+        outcome: ok
+      - file: scripts/check_api_docs.py
+        section: "page_class_methods (public-prefix derivation), _split_sections (H2|H3), PAGES, error-hint"
+        read_type: reference
+        extract: "Derive public prefix by dropping _-segments; split on H2 or H3; add 4 PAGES entries"
+        outcome: ok
+      - file: docs-src/reference/api/aio.md
+        section: "AsyncBackend / Listing and Iteration"
+        read_type: reference
+        extract: "Move 'Requires Capability.GLOB' note from before ::: glob to after (drift caught by verifier — same bug ID-170 caught in store.md)"
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_gen_graph.py
+        section: "test_backend_gating_keys_match_backend_members, test_async_store_method_nodes_emitted"
+        read_type: reference
+        extract: "Pattern for gating-keys + node-emission tests to mirror for AsyncBackend"
+        outcome: ok
+      - file: tests/scripts/test_check_api_docs.py
+        section: "TestGraphClassMethods, TestPageClassMethods, TestLivePages"
+        read_type: reference
+        extract: "Add real-graph async tests + aio.-prefix and H3-scoping page tests; TestLivePages auto-covers new PAGES entries"
+        outcome: ok
+  - id: docs
+    name: Docs / spec
+    steps:
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-045 → new ASYNC-045a"
+        read_type: reference
+        extract: "Spec the AsyncBackend graph-IR gating, referencing BE-027's table (single source of truth)"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-027"
+        read_type: reference
+        extract: "Cross-link the async counterpart"
+        outcome: ok
+  - id: verify
+    name: Verify (ripple-check)
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check: _GATING, _BACKEND_GATING (both presentations)"
+        read_type: verify
+        extract: "Flip aio.md row to present-tense verified; add _ASYNC_BACKEND_GATING row"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience derived rule"
+        read_type: verify
+        extract: "contributor.tooling-only ⇒ no CHANGELOG; BACKLOG's platform.tooling not in enum, corrected to contributor.tooling"
+        outcome: ok
+      - file: docs-src/explanation/graph_viz.html
+        section: "(full)"
+        read_type: verify
+        extract: "graph_viz.html derives from graph.json — gate additions made it stale; regenerated via gen-graph-viz (test_graph_viz_html_is_up_to_date)"
+        outcome: ok

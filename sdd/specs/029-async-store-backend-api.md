@@ -256,6 +256,13 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 **Invariant:** Capability-gated methods raise `CapabilityNotSupported` before delegating if the capability is missing. For methods that return `AsyncIterator` (`read`, `list_files`, `list_folders`, `iter_children`, `glob`), validation happens eagerly on call (these are regular ``def`` methods that validate, then return an inner async generator), not lazily on first iteration.
 **See also:** [STORE-006](001-store-api.md).
 
+### ASYNC-045a: Capability-Gated Methods (Graph IR Metadata)
+
+**Invariant:** The mapping from `AsyncBackend` method names to required capability names used in the graph IR is maintained in `_ASYNC_BACKEND_GATING` in `scripts/gen_graph.py`. It mirrors the sync `_BACKEND_GATING` table ([BE-027](003-backend-adapter-contract.md)) minus `read_seekable` and `open_atomic`, which have no async equivalents (see ASYNC-046 *Deferred*). Like `_BACKEND_GATING` this is static metadata for documentation and tooling — `AsyncBackend` has no runtime `_gate()` equivalent; runtime enforcement lives in `AsyncStore._gate()` (ASYNC-045). `get_folder_info` carries a single `METADATA` gate here, matching sync Backend (the `max_depth`-conditional `LIST` dual gate is an `AsyncStore`-level refinement, not a Backend-ABC one).
+
+**Enforcement:** Keeping `_ASYNC_BACKEND_GATING` in sync with the `AsyncBackend` ABC is enforced by `tests/scripts/test_gen_graph.py::test_async_backend_gating_keys_match_async_backend_members`; agreement with the sync table is enforced by `test_async_backend_gating_mirrors_backend_minus_async_gaps`. The `aio.md` `!!! note "Requires …"` admonitions are verified against the graph IR by `hatch run gen-api-check` (ID-172).
+**See also:** [BE-027](003-backend-adapter-contract.md) for the capability table; `sdd/CLAUDE-REFERENCE.md` ripple-check row for `_ASYNC_BACKEND_GATING`.
+
 ### ASYNC-046: Full API Surface
 
 **Invariant:** `AsyncStore` exposes async equivalents of all `Store` methods: `read`, `read_bytes`, `read_text`, `write`, `write_text`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `iter_children`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `head`, `move`, `copy`, `ping`, `resolve`, `aclose`, `supports`, `to_key`, `native_path`, `unwrap`, `child`.
