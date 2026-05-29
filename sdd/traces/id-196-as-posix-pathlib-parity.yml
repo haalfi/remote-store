@@ -1,0 +1,90 @@
+id: ID-196
+title: "RemotePath.as_posix() and pathlib parity audit"
+trigger: >-
+  RemotePath.__str__ returned the POSIX-style key, but RemotePath had no
+  as_posix() method, so callers reaching for pathlib muscle memory hit
+  AttributeError and worked around it with explicit str(). The backlog also
+  asked for a parity audit of RemotePath against the pathlib.PurePath surface
+  (including __fspath__).
+source_items:
+  - ID-196
+audience:
+  - user.api
+discovery_followups:
+  - ID-215
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-196 (item)"
+        read_type: gate
+        extract: "Add as_posix() returning str(self); audit PurePath parity (__fspath__, etc.)"
+        outcome: ok
+      - file: src/remote_store/_path.py
+        section: "(full)"
+        read_type: reference
+        extract: "RemotePath has name/parent/parts/suffix + __str__; no as_posix, no __fspath__"
+        outcome: ok
+      - file: sdd/specs/010-native-path-resolution.md
+        section: "NPR-020"
+        read_type: reference
+        extract: "Backlog cited NPR-020 but NPR-020 is Backend.native_path, not a RemotePath contract"
+        outcome: misleading
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-001 -- PATH-015"
+        read_type: gate
+        extract: "RemotePath contracts live here; as_posix/PathLike belong as new PATH-NNN clauses"
+        outcome: ok
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-016, PATH-017"
+        read_type: gate
+        extract: "as_posix() is a method == str(self); RemotePath deliberately not os.PathLike, with audit-scope note"
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/test_path.py
+        section: "TestRemotePathAsPosix, TestRemotePathNotPathLike"
+        read_type: gate
+        extract: "spec-tagged PATH-016/PATH-017 tests: as_posix == str, is a method; not PathLike, os.fspath raises"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/_path.py
+        section: "as_posix"
+        read_type: reference
+        extract: "Method (not property) returning self._path; docstring free of tracker IDs"
+        outcome: ok
+  - id: docs
+    name: Docs
+    steps:
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: reference
+        extract: "user.api → CHANGELOG line required"
+        outcome: ok
+      - file: docs-src/reference/api/models.md
+        section: "::: remote_store.RemotePath"
+        read_type: verify
+        extract: "mkdocstrings auto-renders the new as_posix docstring; no manual edit"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Spec section + Public method signature"
+        read_type: verify
+        extract: "Spec section → spec-tagged tests + BACKLOG; new method → docstring only (not in __all__, absent from graph.json)"
+        outcome: ok
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: verify
+        extract: "Regen after moving ID-196 to DONE and adding ID-215"
+        outcome: ok

@@ -69,6 +69,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     `sdd/traces/` / `BACKLOG-DONE.md` mentions are point-in-time history and stay.
   Trace: `sdd/traces/id-214-test-path-refs.yml`.
 
+- [x] **ID-196 — `RemotePath.as_posix()` and pathlib parity audit**
+  spec: PATH-016, PATH-017 · audience: user.api
+  `RemotePath.__str__` already returned the POSIX-style key, but `.as_posix()`
+  raised `AttributeError`, breaking pathlib muscle memory.
+  - **`as_posix()` shipped as a method, not a property** (PATH-016). The
+    backlog sketch said "one-line property", but `pathlib.PurePath.as_posix`
+    is a *method* — the whole point is muscle memory, and a property would make
+    `p.as_posix()` raise `TypeError` (calling the returned `str`). It returns
+    `self._path` (always forward-slash); `RemotePath.ROOT.as_posix() == "."`.
+  - **`__fspath__` deliberately NOT added** (PATH-017). The backlog flagged it
+    as a parity gap, but `RemotePath` is a remote-store *key*, not a local
+    path; making it `os.PathLike` would let it slip into `open()` / `os.path.*`
+    and silently target the local filesystem. Pinned the non-goal as a testable
+    invariant (`not isinstance(p, os.PathLike)`, `os.fspath(p)` raises).
+  - **Spec correction.** The backlog cited `NPR-020`, which is
+    `Backend.native_path` — unrelated. The contract lives in the path model;
+    added `PATH-016` / `PATH-017` to `sdd/specs/004-path-model.md`.
+  - **Parity audit → ID-215.** Catalogued the remaining `PurePath` members
+    (`stem`, `suffixes`, `with_*`, `joinpath`, `parents`, `match`,
+    `relative_to`, …) as deferred candidates; recorded informatively in spec
+    004 and spun out as ID-215 rather than widening this S-sized item.
+  Trace: `sdd/traces/id-196-as-posix-pathlib-parity.yml`.
+
 - [x] **ID-203 — Align `tests/` folder structure with `src/` package layout**
   spec: TEST-002, TEST-003, TEST-010 · audience: infra.test
   Closed by realization plus a doc-drift sweep. An audit (this PR) found the
