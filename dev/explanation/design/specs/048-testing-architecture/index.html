@@ -9868,6 +9868,20 @@ exemption (cross-backend conformance, fixture registry, HTTP recordings),
 not additional source-to-test correspondences. No other source
 subpackage may break the 1:1 rule; new exemptions require a spec
 amendment.</p>
+<p><strong>Shared backend helpers.</strong> Some modules under
+<code>src/remote_store/backends/</code> (and <code>src/remote_store/aio/backends/</code>) are
+not a concrete backend but a helper shared across several — e.g.
+<code>_flat_ns.py</code>, <code>_fileinfo.py</code>, <code>_azure_common.py</code>, <code>_s3_base.py</code>. These
+have no single per-backend home. When a behaviour is expressible only as
+a white-box unit test of the helper (not as cross-backend conformance),
+the test lives at the backends package root as
+<code>tests/backends/test_&lt;f&gt;.py</code>, mirroring the way a core module
+<code>src/remote_store/_&lt;x&gt;.py</code> maps to <code>tests/test_&lt;x&gt;.py</code>. This is the one
+place a bare <code>test_*.py</code> file is permitted directly under
+<code>tests/backends/</code>. Today only <code>_flat_ns.py</code> (ID-211) carries such a test
+(<code>tests/backends/test_flat_ns.py</code>); the rule B import restriction in
+<code>check_test_placement.py</code> does not apply below the <code>tests/</code> root, so a
+helper test may import its helper module directly.</p>
 <p><strong>Top-level scope.</strong> Top-level non-backend tests
 (<code>test_store.py</code>, <code>test_path.py</code>, etc.) do not import the fixture
 registry and do not parametrise across backends. They use a single

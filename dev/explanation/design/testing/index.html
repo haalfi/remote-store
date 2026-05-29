@@ -9544,6 +9544,11 @@ the invariant in lookup form.</p>
 <td>per spec 048 TEST-003 / TEST-010</td>
 </tr>
 <tr>
+<td>Shared backend helper not owned by one backend (<code>src/remote_store/backends/_&lt;x&gt;.py</code>, e.g. <code>_flat_ns</code>)</td>
+<td><code>tests/backends/</code> root</td>
+<td><code>test_&lt;x&gt;.py</code> (the only bare test file allowed there; spec 048 TEST-010 "Shared backend helpers")</td>
+</tr>
+<tr>
 <td>Backend fixture registry + per-backend factories</td>
 <td><code>tests/backends/fixtures/</code></td>
 <td>—</td>

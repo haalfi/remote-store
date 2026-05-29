@@ -10133,8 +10133,8 @@ walkthrough of the <code>Backend</code> contract, error mapping, and capabilitie
 <ol>
 <li>Write a spec in <code>sdd/specs/</code> or as an addendum in <code>sdd/specs/backends/&lt;name&gt;.md</code></li>
 <li>Implement <code>Backend</code> ABC in <code>src/remote_store/backends/_&lt;name&gt;.py</code></li>
-<li>Add a conformance fixture in <code>tests/backends/conftest.py</code></li>
-<li>Both conformance suites run automatically: <code>tests/backends/test_conformance.py</code> (spec-traced) and <code>tests/backends/test_conformance_extended.py</code> (Dafny-derived, <code>@pytest.mark.extended_conformance</code>). The suites are validated by a Dafny-compiled oracle — see <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md"><code>sdd/formal/README.md</code></a> § Compiled Oracle</li>
+<li>Register a fixture in <code>tests/backends/fixtures/</code> (declare it in <code>backends.toml</code> / <code>fixtures.toml</code> and add a per-fixture factory module)</li>
+<li>The cross-backend conformance suite under <code>tests/backends/conformance/</code> (spec-traced per-topic files: <code>test_io.py</code>, <code>test_listing.py</code>, <code>test_atomic.py</code>, …) runs automatically against the new fixture; Dafny-derived cases carry <code>@pytest.mark.extended_conformance</code> and are validated by a Dafny-compiled oracle — see <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md"><code>sdd/formal/README.md</code></a> § Compiled Oracle</li>
 <li>Add user-facing guide in <code>docs-src/guides/backends/&lt;name&gt;.md</code> and add to <code>docs-src/guides/_nav.yml</code></li>
 <li>Update <code>docs-src/guides/backends/index.md</code> (Supported Backends table)</li>
 <li>Update <code>README.md</code> (Supported Backends table + Installation extras)</li>
@@ -10149,7 +10149,7 @@ walkthrough of the <code>Backend</code> contract, error mapping, and capabilitie
 <li>Use only the public <code>Store</code> / <code>Backend</code> API (never <code>_backend</code>). Use <code>unwrap()</code> for native access</li>
 <li>Do not own Store lifecycle — never call <code>store.close()</code> or use <code>with store:</code></li>
 <li>Let <code>CapabilityNotSupported</code> propagate — do not catch and suppress it</li>
-<li>Add tests in <code>tests/test_&lt;name&gt;.py</code> with <code>@pytest.mark.spec("ID")</code></li>
+<li>Add tests in <code>tests/ext/test_&lt;name&gt;.py</code> with <code>@pytest.mark.spec("ID")</code></li>
 <li>Write a user guide in <code>docs-src/guides/&lt;name&gt;.md</code></li>
 <li>Add the page to <code>docs-src/guides/_nav.yml</code> (under the Extensions section)</li>
 <li>Add a runnable example in <code>examples/</code></li>

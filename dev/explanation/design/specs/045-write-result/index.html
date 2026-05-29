@@ -9764,7 +9764,7 @@ when <code>CapWriteResultNative in capabilities</code> — that rich fields on t
 returned <code>WriteResult</code> match the stored <code>FileInfo</code>, so a subsequent
 <code>GetFileInfo</code> (and <code>head()</code> via <code>WriteResultFromFileInfo</code>) returns
 consistent fields. Verified in <code>MemoryBackend.dfy</code>. Python backstop in
-<code>tests/backends/test_conformance.py::TestWriteResultConformance</code>
+<code>tests/backends/conformance/test_atomic.py::TestWriteResultConformance</code>
 (<code>test_result_is_write_result_with_path_and_size</code>,
 <code>test_size_matches_written_bytes_for_streaming_input</code>,
 <code>test_native_populates_last_modified</code>,
@@ -9798,7 +9798,7 @@ declares the capability but fails to populate <code>source = Native</code> — o
 fails to populate the rich fields that the spec promises alongside it —
 does not satisfy the refinement. Verified in <code>MemoryBackend.dfy</code>. Python
 backstop in
-<code>tests/backends/test_conformance.py::TestWriteResultConformance::test_source_matches_write_result_native</code>.
+<code>tests/backends/conformance/test_atomic.py::TestWriteResultConformance::test_source_matches_write_result_native</code>.
 See ID-151.</p>
 <h2 id="wr-005-basic-source-guarantees">WR-005: Basic Source Guarantees<a class="headerlink" href="#wr-005-basic-source-guarantees" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> When <code>WriteResult.source == "basic"</code>, only <code>path</code> and <code>size</code> are
@@ -9820,7 +9820,7 @@ branch of the <code>Write</code> postcondition chain — when <code>CapWriteResu
 !in capabilities</code>, the returned <code>WriteResult</code> has
 <code>digest/etag/version_id/last_modified</code> pinned to <code>None</code>. Verified in
 <code>MemoryBackend.dfy</code>. Python backstop in
-<code>tests/backends/test_conformance.py::TestWriteResultConformance::test_basic_source_leaves_rich_fields_none</code>.
+<code>tests/backends/conformance/test_atomic.py::TestWriteResultConformance::test_basic_source_leaves_rich_fields_none</code>.
 See ID-151.</p>
 <h2 id="wr-006-sidecar-source">WR-006: Sidecar Source<a class="headerlink" href="#wr-006-sidecar-source" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>WriteResult.source == "sidecar"</code> only when the <code>WriteResult</code> is
@@ -10069,7 +10069,7 @@ postcondition: <code>r.Ok? ⇒ r.value.metadata == (if HasUserMetadata(metadata)
 (WR-010). A backend that declares <code>CapUserMetadata</code> but silently drops
 the caller's mapping does not satisfy the refinement. Verified in
 <code>MemoryBackend.dfy</code>. Python backstop in
-<code>tests/backends/test_conformance.py::TestWriteResultConformance</code>
+<code>tests/backends/conformance/test_atomic.py::TestWriteResultConformance</code>
 (<code>test_metadata_echoed_when_gate_passes</code>,
 <code>test_metadata_is_none_when_not_passed</code>). See ID-151.</p>
 <h2 id="wr-013-user-metadata-round-trip">WR-013: User Metadata Round-Trip<a class="headerlink" href="#wr-013-user-metadata-round-trip" title="Permanent link">&para;</a></h2>
@@ -10084,7 +10084,7 @@ CapUserMetadata in capabilities</code> condition. Since <code>GetFileInfo</code>
 postcondition is <code>r.value == fs[path].info</code>, the round-trip is
 structural: what <code>Write</code> stores is what <code>GetFileInfo</code> returns.
 Verified in <code>MemoryBackend.dfy</code>. Python backstop in
-<code>tests/backends/test_conformance.py::TestWriteResultConformance</code>
+<code>tests/backends/conformance/test_atomic.py::TestWriteResultConformance</code>
 (<code>test_metadata_round_trips_via_get_file_info</code>,
 <code>test_file_info_metadata_none_when_capability_absent</code>). See ID-151.</p>
 <h2 id="extwrite-invariants">ext.write invariants<a class="headerlink" href="#extwrite-invariants" title="Permanent link">&para;</a></h2>
