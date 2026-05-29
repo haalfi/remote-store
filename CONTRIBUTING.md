@@ -104,9 +104,9 @@ Extensions live in `src/remote_store/ext/` and follow the contract in the [exten
 6. Add tests in `tests/ext/test_<name>.py` with `@pytest.mark.spec("ID")`
 7. Write a user guide in `docs-src/guides/<name>.md`
 8. Add the page to `docs-src/guides/_nav.yml` (under the Extensions section)
-10. Add a runnable example in `examples/`
-11. The example docs page is auto-generated at `tutorial/examples/<slug>.md` from the module docstring via `gen_pages.py` — no manual wrapper file needed
-12. Update `CHANGELOG.md` and `sdd/BACKLOG.md` (or `sdd/BACKLOG-DONE.md`) in the same commit
+9. Add a runnable example in `examples/`
+10. The example docs page is auto-generated at `tutorial/examples/<slug>.md` from the module docstring via `gen_pages.py` — no manual wrapper file needed
+11. Update `CHANGELOG.md` and `sdd/BACKLOG.md` (or `sdd/BACKLOG-DONE.md`) in the same commit
 
 ### Export patterns
 
