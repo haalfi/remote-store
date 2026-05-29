@@ -56,8 +56,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   - **Two discoveries while verifying-before-swapping** (per the "don't assume
     a path swap" rule): (1) the `test_sqlblob.py` ref was in ID-140, not BK-235
     as scoped; (2) `tests/aio/test_async_pbt_stateful.py` named a phantom
-    `test_async_memory.py` that never existed — its example-based negative-path
-    coverage is in `test_async_backend.py`, so the dangling name was dropped.
+    `test_async_memory.py` that never existed — the dangling name was dropped
+    and its example-based negative-path coverage pointed at the real home,
+    `tests/aio/test_async_store.py` (PR #699 review corrected an initial mis-aim
+    at the abstract-contract `test_async_backend.py`).
   - **CHANGELOG** — audience `user.site` (the guide is user-facing) ⇒ entry
     required (per `_schema.yml` derived rule), unlike ID-203 which was
     `infra.test`-only. Bare-name references to files that merely moved (e.g.

@@ -74,8 +74,8 @@ class AsyncBackendModel(RuleBasedStateMachine):
     Scope: this suite covers the **happy path** of each rule's spec ID and
     the lock-step agreement between the two backends. Negative-path
     invariants (``AlreadyExists``, ``NotFound``, ``DirectoryNotEmpty``) are
-    exercised by the example-based suites — see ``test_async_backend.py`` and
-    ``tests/backends/conformance/test_sync_adapter_conformance.py``.
+    exercised by the example-based suites — see ``tests/aio/test_async_store.py``
+    and ``tests/backends/conformance/test_sync_adapter_conformance.py``.
     """
 
     def __init__(self) -> None:

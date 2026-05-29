@@ -16,6 +16,7 @@ expected_ripples:
 surprising_ripples:
   - tests/backends/conformance/test_identity.py
   - tests/backends/azure/test_live_hns.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -59,7 +60,7 @@ phases:
       - file: tests/aio/test_async_pbt_stateful.py
         section: "docstring l.77-78 — example-based suites list"
         read_type: reference
-        extract: "Named test_async_memory.py which never existed in git history (-S / --name-only both empty). Its example-based negative-path coverage is test_async_backend.py — dropped the phantom rather than invent a target"
+        extract: "Named test_async_memory.py which never existed in git history (-S / --name-only both empty). Dropped the phantom; first-pass replacement carried over test_async_backend.py from the pre-existing list without confirming it holds the negative-path coverage — PR review caught this (see review phase) and corrected it to test_async_store.py"
         outcome: misleading
   - id: implement
     name: Implement edits
@@ -111,3 +112,16 @@ phases:
         section: "check-links + mkdocs build --strict"
         read_type: verify
         extract: "New GitHub blob/tree links resolve; strict build passes"
+  - id: review
+    name: Review (PR #699 round 1)
+    steps:
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "Conformance checklist — Repr safety row (l.524)"
+        read_type: reference
+        extract: "Review caught: renaming the checklist Basic level to Conformance left the unchanged 'Repr safety' row dangling on 'in basic suite' (a removed level name) and still implying a flat test_conformance.py. Same pre-reorg residue in the table the PR edited. Pointed it at the real home: pytest tests/backends/conformance/test_identity.py -k test_repr_masks_secrets (verified test_repr_masks_secrets is at test_identity.py:53)"
+        outcome: misleading
+      - file: tests/aio/test_async_pbt_stateful.py
+        section: "docstring l.77-78 — example-based suites list"
+        read_type: reference
+        extract: "Review caught: the phantom test_async_memory.py was replaced with test_async_backend.py, but that file is the abstract AsyncBackend contract suite (0 refs to AlreadyExists/NotFound/DirectoryNotEmpty). The real async example-based negative-path coverage is tests/aio/test_async_store.py (10 matches). Corrected the pointer to test_async_store.py + test_sync_adapter_conformance.py. The one swap in the PR not checked against the symbol's true home"
+        outcome: misleading

@@ -521,7 +521,7 @@ Before a backend is considered conformant, verify:
 | **Conformance** | All `tests/backends/conformance/` tests pass or self-skip (declared capability missing) | `pytest tests/backends/conformance/ -k <backend-name>` |
 | **Extended** | All `@pytest.mark.extended_conformance` cases pass or self-skip | `pytest -m extended_conformance -k <backend-name>` |
 | **Error mapping** | Every native exception maps to a `remote_store` error — nothing leaks | Error mapping checklist above |
-| **Repr safety** | `repr(backend)` does not expose secrets | `test_repr_masks_secrets` in basic suite |
+| **Repr safety** | `repr(backend)` does not expose secrets | `pytest tests/backends/conformance/test_identity.py -k test_repr_masks_secrets` |
 
 Skips are expected and acceptable when a backend doesn't declare the relevant
 capability. Failures (not skips) in either suite are blocking.
