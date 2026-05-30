@@ -139,6 +139,37 @@ and the highest ID already in this file, then take the next integer. Run
   record-ready half cannot ship without the blocked half also
   recording cleanly: BK-235 lands as a single PR once ID-213 closes.
 
+- [ ] **BK-243 — Re-record stale Azure cassette for `test_open_atomic_exception_cleanup`**
+  spec: SAW-004, SAW-005, TEST-007 · effort: S · audience: infra.test
+  ID-188 extended `test_open_atomic_exception_cleanup` in
+  `tests/backends/conformance/test_atomic.py` with a
+  `list_files("", recursive=True)` orphan-temp-file scan. The pre-existing
+  cassette `tests/backends/cassettes/azure/TestBackendOpenAtomic.test_open_atomic_exception_cleanup[azure].yaml`
+  did not include the new HTTP `GET .../?resource=filesystem&recursive=true`
+  request, so the file was deleted in the same PR; the TEST-007
+  missing-cassette skip hook now skips the test under `azure_replay` until
+  the cassette is refreshed. Folds into the next general Azure cassette
+  refresh run (BK-235 covers the broader batch); list here so the gap is
+  not lost in case BK-235 ships before this lands. No code change
+  required — only `hatch run record-azure` against a live HNS account and
+  committing the new cassette.
+
+- [ ] **BK-244 — HNS-specific conformance test for open_atomic upload/rename cleanup**
+  spec: SAW-005, SAW-011 · effort: S · audience: infra.test
+  Discovered in PR #689 review of ID-188. The new
+  `test_open_atomic_exception_cleanup` orphan-temp scan only bites the
+  *caller-exception* path, where Local (SAW-008) and SFTP (SAW-009)
+  materialise their temp before yield while Azure HNS performs upload +
+  DFS rename *after* yield (`_azure.py:670-679`). HNS's
+  `tmp_fc.delete_file()` cleanup branch at upload/rename failure has no
+  conformance coverage today; needs a failure-injection test that drives
+  the inner `try` to raise — e.g. revoke permissions, collide the temp
+  name, or short-circuit `rename_file` via patch — and asserts the
+  fixture root remains empty afterwards. Sibling of BK-243 (cassette
+  refresh) but distinct: BK-243 is the existing test's HTTP cassette;
+  this is a new test exercising a code path none of the current
+  fixtures hit.
+
 - [ ] **ID-213 — Extend ID-209's `InvalidPath` translation to the HNS Azure backend**
   spec: BE-008, BE-012, BE-014, BE-015, BE-018, BE-019 · effort: M · audience: contributor.process, infra.test, library.maintainer, user.api
   Follow-up to ID-209 (PR #680). Decision 2(a) — write/move/copy under
@@ -770,37 +801,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `src/remote_store/backends/_s3_pyarrow.py`,
   `src/remote_store/backends/_azure.py`,
   `src/remote_store/aio/backends/_azure.py`. Discovered in PR #686 review.
-
-- [ ] **BK-243 — Re-record stale Azure cassette for `test_open_atomic_exception_cleanup`**
-  spec: SAW-004, SAW-005, TEST-007 · effort: S · audience: infra.test
-  ID-188 extended `test_open_atomic_exception_cleanup` in
-  `tests/backends/conformance/test_atomic.py` with a
-  `list_files("", recursive=True)` orphan-temp-file scan. The pre-existing
-  cassette `tests/backends/cassettes/azure/TestBackendOpenAtomic.test_open_atomic_exception_cleanup[azure].yaml`
-  did not include the new HTTP `GET .../?resource=filesystem&recursive=true`
-  request, so the file was deleted in the same PR; the TEST-007
-  missing-cassette skip hook now skips the test under `azure_replay` until
-  the cassette is refreshed. Folds into the next general Azure cassette
-  refresh run (BK-235 covers the broader batch); list here so the gap is
-  not lost in case BK-235 ships before this lands. No code change
-  required — only `hatch run record-azure` against a live HNS account and
-  committing the new cassette.
-
-- [ ] **BK-244 — HNS-specific conformance test for open_atomic upload/rename cleanup**
-  spec: SAW-005, SAW-011 · effort: S · audience: infra.test
-  Discovered in PR #689 review of ID-188. The new
-  `test_open_atomic_exception_cleanup` orphan-temp scan only bites the
-  *caller-exception* path, where Local (SAW-008) and SFTP (SAW-009)
-  materialise their temp before yield while Azure HNS performs upload +
-  DFS rename *after* yield (`_azure.py:670-679`). HNS's
-  `tmp_fc.delete_file()` cleanup branch at upload/rename failure has no
-  conformance coverage today; needs a failure-injection test that drives
-  the inner `try` to raise — e.g. revoke permissions, collide the temp
-  name, or short-circuit `rename_file` via patch — and asserts the
-  fixture root remains empty afterwards. Sibling of BK-243 (cassette
-  refresh) but distinct: BK-243 is the existing test's HTTP cassette;
-  this is a new test exercising a code path none of the current
-  fixtures hit.
 
 - [ ] **BK-245 — Cross-source capability-parity check (Python ↔ Dafny)**
   spec: — · effort: S · audience: infra.test, contributor.tooling
