@@ -446,24 +446,6 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
 ## API Ergonomics
 
-- [ ] **ID-215 — `RemotePath` deferred pathlib-parity members**
-  spec: PATH-016, PATH-017 · effort: S · audience: user.api
-  Follow-up from ID-196. That item shipped `as_posix()` (PATH-016) and pinned
-  the deliberate non-goal that `RemotePath` is **not** `os.PathLike`
-  (PATH-017). The accompanying parity audit catalogued the `pathlib.PurePath`
-  members still absent from `RemotePath`, deferred so the S-sized ID-196 stayed
-  scoped to the canonical `as_posix()` need:
-  - **Cheap, safe read accessors** complementing the existing `name` / `suffix`:
-    `stem` (name without final suffix) and `suffixes` (list of all suffixes).
-  - **Copy-with mutators:** `with_name`, `with_suffix`, `with_stem`. Each must
-    re-run normalisation/validation and reject empty results per PATH-008.
-  - **Other:** `joinpath` (n-ary `/`), `parents` (ancestor sequence),
-    `match` (glob), `relative_to` / `is_relative_to`, `is_absolute`.
-  Out of scope (meaningless for a rootless remote key): `drive`, `root`,
-  `anchor`, `as_uri`. Decide which are worth the API-surface cost before
-  implementing; each needs a `PATH-NNN` clause + spec-tagged test.
-  Surfaced during the ID-196 parity audit.
-
 - [ ] **BK-234 — Reconcile `to_key` empty-key / bare-root behaviour across backends**
   spec: NPR-005, NPR-020, NPR-021 · effort: M · audience: library.maintainer
   NPR-020 states the round-trip `to_key(native_path(k)) == k` holds "for
@@ -851,6 +833,24 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 ## Icebox
 
 Deferred indefinitely — revisit only if demand or circumstances change.
+
+- [ ] **ID-215 — `RemotePath` deferred pathlib-parity members**
+  spec: PATH-016, PATH-017 · effort: S · audience: user.api
+  Follow-up from ID-196. That item shipped `as_posix()` (PATH-016) and pinned
+  the deliberate non-goal that `RemotePath` is **not** `os.PathLike`
+  (PATH-017). The accompanying parity audit catalogued the `pathlib.PurePath`
+  members still absent from `RemotePath`:
+  - **Cheap, safe read accessors** complementing the existing `name` / `suffix`:
+    `stem` (name without final suffix) and `suffixes` (list of all suffixes).
+  - **Copy-with mutators:** `with_name`, `with_suffix`, `with_stem`. Each must
+    re-run normalisation/validation and reject empty results per PATH-008.
+  - **Other:** `joinpath` (n-ary `/`), `parents` (ancestor sequence),
+    `match` (glob), `relative_to` / `is_relative_to`, `is_absolute`.
+  Out of scope (meaningless for a rootless remote key): `drive`, `root`,
+  `anchor`, `as_uri`. No demand for any of these yet — `as_posix()` covered the
+  one concrete need. Reactivate per-member if a user hits a specific gap; each
+  would need a `PATH-NNN` clause + spec-tagged test.
+  Surfaced during the ID-196 parity audit.
 
 - [ ] **BK-139d — Implement remaining bug prevention measures from research**
   spec: — · effort: M · audience: library.maintainer
