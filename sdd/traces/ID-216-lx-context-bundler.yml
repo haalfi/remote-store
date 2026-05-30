@@ -1,0 +1,55 @@
+id: ID-216
+title: "Evaluate lx as an ad-hoc repo-context bundler for coding agents"
+trigger: "An evaluation request asked whether rasros/lx could supply ID-161's long-LLM-version need (llms-full.txt) from repo or docs content; the answer required separating the curated llms.txt deliverable from the concatenated long bundle, and grounding the verdict in this repo's MkDocs pipeline"
+source_items:
+  - ID-216
+  - ID-161
+audience:
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-161 (item)"
+        read_type: gate
+        extract: "ID-161 is the curated llms.txt file; llms-full.txt is an explicit out-of-scope follow-on — the only deliverable a bundler is a candidate for"
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: gate
+        extract: "sdd/research/research-*.md defaults to dual; no explicit marker needed"
+      - file: mkdocs.yml
+        section: "(full)"
+        read_type: reference
+        extract: "gen-files generates API pages from src, mkdocs_hooks.py (BK-171) rewrites repo links to site URLs, literate-nav sets reading order — a raw-source bundler would miss all three"
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/research/research-lx-llms-context-tooling.md
+        section: "(full)"
+        read_type: reference
+        extract: "Record the evaluation: lx wrong for curated llms.txt, weak for published llms-full.txt (prefer mkdocs-llmstxt), genuine fit is ad-hoc repo-source bundling"
+      - file: sdd/BACKLOG.md
+        section: "ID-161 (item)"
+        read_type: reference
+        extract: "Adapt the follow-on note with the MkDocs-native tooling decision and cross-link to research doc + ID-216"
+      - file: sdd/BACKLOG.md
+        section: "Docs & Discoverability"
+        read_type: reference
+        extract: "Add ID-216 for the ad-hoc repo-bundling use-case; ID prefix because it is an unevaluated DX convenience"
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: reference
+        extract: "json tracks BACKLOG-DONE max only (gen-backlogid regenerates it); active ID-216 must not bump it"
+        outcome: misleading
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: gate
+        extract: "Author this trace to ship in the same PR as the work"
