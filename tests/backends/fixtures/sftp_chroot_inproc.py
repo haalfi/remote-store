@@ -41,6 +41,14 @@ def _factory() -> Backend:
 
     # Unique root strictly below the denied boundary, so each test is isolated
     # while CHROOT_BOUNDARY stays a denied proper ancestor of base_path.
+    #
+    # Note: base_path itself is not pre-created. StubSFTPServer.open auto-creates
+    # it via os.makedirs on the first write, so this fixture exercises the
+    # stat/lstat *denial* above the chroot (what drives the base_path-relative
+    # walk) but NOT the "base_path does not pre-exist" case — real OpenSSH does
+    # not auto-create the base, and _ensure_parent_dirs short-circuits when
+    # parent == base. A future hardening pass against real chroot OpenSSH should
+    # add that coverage separately.
     base_path = f"{CHROOT_BOUNDARY}/test_{uuid.uuid4().hex[:8]}"
     return SFTPBackend(
         host="127.0.0.1",

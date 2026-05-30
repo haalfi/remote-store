@@ -15,6 +15,7 @@ expected_ripples:
   - CHANGELOG.md
 surprising_ripples:
   - tests/backends/conformance/test_errors.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -89,3 +90,11 @@ phases:
         section: "Ripple-check / Bug fix + Backend"
         read_type: verify
         extract: "BACKLOG.md -> BACKLOG-DONE.md move, CHANGELOG one-liner (user.api: error class changes on chroot servers), backlogid.json regenerated. No spec change (BE-006/BE-007 already correct; code was diverging). No capability / error-type / public-API ripple."
+  - id: review
+    name: Review
+    steps:
+      - file: tests/backends/fixtures/sftp_chroot_inproc.py
+        section: "_factory base_path construction"
+        read_type: reference
+        extract: "PR #702 review (Possible, informational): the per-test base_path is never pre-created — StubSFTPServer.open auto-creates it via os.makedirs on first write, so the fixture exercises the stat/lstat denial above the chroot but NOT the 'base_path does not pre-exist' path (real OpenSSH does not auto-create the base, and _ensure_parent_dirs short-circuits when parent == base). Added a clarifying comment at the construction site per the reviewer's request; no behaviour change, no new backlog item (out of ID-212's scope — future real-chroot-OpenSSH hardening would add that coverage separately)."
+        outcome: ok
