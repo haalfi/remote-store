@@ -1,0 +1,85 @@
+id: ID-213
+title: "Extend ID-209's InvalidPath translation to the HNS Azure backend"
+trigger: |
+  The BK-235 live-HNS recording run (2026-05-27, re-confirmed 2026-05-30)
+  found that write/write_atomic/open_atomic/delete/move/copy/list under a
+  file ancestor on a real ADLS Gen2 (HNS) account surfaced the wrong
+  cross-backend error class: the Azure SDK raises
+  ResourceNotFoundError / ResourceExistsError / HttpResponseError(404|409),
+  which classify_azure_error maps to NotFound / AlreadyExists rather than
+  the InvalidPath (or []-listing) that ID-209 established cross-backend for
+  Local and SFTP. 8 sync + 7 async conformance tests failed against live HNS.
+source_items:
+  - ID-213
+  - ID-209
+audience:
+  - user.api
+  - library.maintainer
+  - contributor.process
+  - infra.test
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-213, BK-235"
+        read_type: gate
+        extract: "failing node IDs, observed error classes, src-keyed move/copy caveat, error_code hypothesis"
+      - file: src/remote_store/backends/_azure_common.py
+        section: "classify_azure_error"
+        read_type: reference
+        extract: "current 404/409 -> NotFound/AlreadyExists mapping; the prescribed (but rejected) seam"
+        outcome: misleading
+      - file: src/remote_store/backends/_local.py
+        section: "write/delete/move/list (ID-209)"
+        read_type: reference
+        extract: "ID-209 precedent: write->InvalidPath, delete/read->NotFound, listing-> return [] -- branched per method, NOT in the classifier"
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor"
+        read_type: reference
+        extract: "SFTP detects the file-ancestor by explicit probe rather than trusting the native error code"
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_check_no_file_ancestor"
+        read_type: reference
+        extract: "existing slash-aligned ancestor walk; head_one must be HNS-aware (not hdi_isfolder), so cannot reuse the existence-only flat-NS closure"
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestWriteErrorFidelity, TestDeleteErrorFidelity, TestMoveCopyErrorFidelity"
+        read_type: gate
+        extract: "exact assertions: InvalidPath match=seed/dst, delete NotFound + missing_ok silent"
+      - file: tests/backends/conformance/test_listing.py
+        section: "non_traversable_ancestor_yields_empty"
+        read_type: gate
+        extract: "list_files/list_folders under file ancestor MUST return [], never raise"
+  - id: reproduce
+    name: Reproduce (see-it-fail, live HNS)
+    steps:
+      - file: tests/backends/conformance/test_errors.py
+        section: "live azure_live baseline"
+        read_type: verify
+        extract: |
+          Baseline (RS_TEST_LIVE_HNS=1, pre-fix): 8 sync fail with the wrong
+          class. Falsified the backlog's error_code hypothesis: classes are
+          heterogeneous (write->NotFound, write_atomic/open_atomic/delete->
+          AlreadyExists, move-dst->AlreadyExists keyed to mcua/move_src.txt,
+          copy-dst->NotFound keyed to mcua/copy_src.txt, listing->AlreadyExists)
+          and move/copy errors are keyed to SRC, not dst -- so classify_azure_error
+          is the wrong seam. Diverged to a per-method error-path ancestor probe.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "_hns_first_file_ancestor + write/write_atomic/open_atomic/delete/move/copy/list_files/list_folders"
+        read_type: reference
+        extract: "per-method error-path ancestor probe; op-specific outcome"
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "async siblings (no open_atomic)"
+        read_type: reference
+        extract: "symmetric fix on the async branch"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG move, CHANGELOG entry (user.api), failing-test-first, spec ripple BE-008/012/014/015/018/019"

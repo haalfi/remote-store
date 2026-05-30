@@ -8,6 +8,49 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-213 — Extend ID-209's `InvalidPath` translation to the HNS Azure backend**
+  spec: BE-008, BE-012, BE-014, BE-015, BE-018, BE-019 · audience: user.api, library.maintainer, contributor.process, infra.test
+  Follow-up to ID-209 (PR #680). ID-209 landed the cross-backend
+  file-ancestor contract (write/move/copy under a file ancestor →
+  `InvalidPath`; delete/read → `NotFound`; listing → `[]`) for the
+  hierarchical backends via native-error translation, and deferred HNS
+  Azure under the assumption "HNS has real directories so the gate passes
+  once recorded." The BK-235 live-HNS run (account `remotestorehns`)
+  falsified that: real ADLS Gen2 *does* error on these scenarios, but the
+  Azure SDK raises `ResourceNotFoundError` / `ResourceExistsError` /
+  `HttpResponseError(404|409)`, which `classify_azure_error` maps to
+  `NotFound` / `AlreadyExists` — the wrong cross-backend class. 8 sync +
+  7 async conformance tests failed against live HNS (the async set is one
+  smaller: no async `open_atomic` sibling).
+  - **Seam chosen: per-method error-path probe, not the classifier.** The
+    backlog prescribed discriminating a file-ancestor `error_code` inside
+    `classify_azure_error`. That seam cannot work: the same condition needs
+    three different outcomes (`InvalidPath` for write/write_atomic/
+    open_atomic/move-dst/copy-dst, `NotFound` for delete, `[]` for
+    listing), which a pure `(exc, path) → error` classifier cannot pick;
+    and the move/copy SDK error is keyed to **src** (live baseline:
+    `mcua/move_src.txt` / `mcua/copy_src.txt`) during the DFS rename, so it
+    carries no signal about the dst file-ancestor the contract names. The
+    fix detects the file ancestor explicitly (mirroring SFTP's
+    `_has_file_ancestor`) instead of trusting a native `error_code`.
+  - New `_hns_first_file_ancestor` walks the slash-aligned ancestors on the
+    *error* path (happy path pays nothing) and inspects `hdi_isfolder` so an
+    HNS directory marker is not mistaken for a file. `write` / `write_atomic`
+    / `open_atomic` / `move` / `copy` re-raise `InvalidPath` (keyed to dst
+    for move/copy); `delete` re-raises `NotFound` (and `missing_ok=True`
+    stays a quiet no-op); `list_files` / `list_folders` swallow → `[]`.
+    Applied symmetrically to sync `_azure.py` and async
+    `aio/backends/_azure.py`.
+  - Verified against live HNS (`RS_TEST_LIVE_HNS=1`, no recording): the 8
+    sync + 7 async blocked tests pass, the ready tests do not regress, and
+    the Stage-1 / local / SFTP / replay suites are untouched (the change is
+    confined to the two Azure backend files; `classify_azure_error` is
+    unchanged). HNS-only paths carry `# pragma: no cover -- HNS only` until
+    BK-235 records the cassettes that will exercise them.
+  - Unblocks BK-235 for these eight tests. Parallel to ID-211 (flat-NS HEAD
+    pre-check) and ID-212 (SFTP chroot-stat hardening) — all three are
+    ID-209 follow-ups along different backends' error-translation paths.
+
 - [x] **ID-212 — Harden SFTP file-ancestor detection against partial-stat-permission setups**
   spec: BE-006, BE-007 · audience: user.api, library.maintainer, infra.test
   Follow-up to ID-209 (PR #680). `SFTPBackend._has_file_ancestor` and

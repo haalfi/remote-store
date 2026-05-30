@@ -524,26 +524,34 @@ class AsyncAzureBackend(AsyncBackend):
             # AsyncIterable[bytes] in bounded memory; materializing would break
             # the streaming promise (SIO-003/ASYNC-021) for large payloads.
             # Size is tracked via a counting passthrough generator for async iter.
-            if isinstance(content, bytes):
-                size = len(content)
-                resp = await bc.upload_blob(
-                    content, overwrite=True, max_concurrency=self._max_concurrency, metadata=metadata or None
-                )
-            else:
-                size_ref = [0]
+            try:
+                if isinstance(content, bytes):
+                    size = len(content)
+                    resp = await bc.upload_blob(
+                        content, overwrite=True, max_concurrency=self._max_concurrency, metadata=metadata or None
+                    )
+                else:
+                    size_ref = [0]
 
-                async def _count_and_pass(src: AsyncWritableContent) -> AsyncIterator[bytes]:
-                    async for chunk in src:  # type: ignore[union-attr]
-                        size_ref[0] += len(chunk)
-                        yield chunk
+                    async def _count_and_pass(src: AsyncWritableContent) -> AsyncIterator[bytes]:
+                        async for chunk in src:  # type: ignore[union-attr]
+                            size_ref[0] += len(chunk)
+                            yield chunk
 
-                resp = await bc.upload_blob(
-                    _count_and_pass(content),
-                    overwrite=True,
-                    max_concurrency=self._max_concurrency,
-                    metadata=metadata or None,
-                )
-                size = size_ref[0]
+                    resp = await bc.upload_blob(
+                        _count_and_pass(content),
+                        overwrite=True,
+                        max_concurrency=self._max_concurrency,
+                        metadata=metadata or None,
+                    )
+                    size = size_ref[0]
+            except Exception:
+                # ID-213: on HNS a write under a file-ancestor surfaces as
+                # ResourceNotFoundError; remap to the BE-008 InvalidPath. This
+                # except is shared with non-HNS accounts, where the helper
+                # early-returns and the original error propagates unchanged.
+                await self._raise_invalid_if_hns_file_ancestor(path)
+                raise
             return _build_azure_write_result(path, size, resp if isinstance(resp, dict) else {}, metadata)
 
     async def write_atomic(
@@ -627,6 +635,9 @@ class AsyncAzureBackend(AsyncBackend):
                 except Exception:
                     with contextlib.suppress(Exception):
                         await tmp_fc.delete_file()
+                    # ID-213: HNS rejects a temp create/rename under a
+                    # file-ancestor with a 409; remap to the BE-008 InvalidPath.
+                    await self._raise_invalid_if_hns_file_ancestor(path)  # pragma: no cover -- HNS only
                     raise
             else:
                 try:
@@ -647,6 +658,9 @@ class AsyncAzureBackend(AsyncBackend):
                 except Exception:
                     with contextlib.suppress(Exception):
                         await tmp_fc.delete_file()
+                    # ID-213: HNS rejects a temp create/rename under a
+                    # file-ancestor with a 409; remap to the BE-008 InvalidPath.
+                    await self._raise_invalid_if_hns_file_ancestor(path)  # pragma: no cover -- HNS only
                     raise
 
             # BUG-173 / BUG-196: the rename above has already committed the write.
@@ -709,6 +723,13 @@ class AsyncAzureBackend(AsyncBackend):
                     raise InvalidPath(
                         f"Cannot delete — '{path}' is a directory", path=path, backend=self.name
                     ) from None
+                # ID-213: a path under a file-ancestor is "not in fs" on HNS, so
+                # BE-012's !PathExists ==> NotFound applies (not the SDK's
+                # AlreadyExists/409). missing_ok treats it as a quiet no-op.
+                if await self._ensure_hns() and await self._hns_first_file_ancestor(path) is not None:
+                    if not missing_ok:  # pragma: no cover -- HNS only
+                        raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+                    return  # pragma: no cover -- HNS only
                 raise mapped from None  # pragma: no cover
 
     async def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
@@ -804,6 +825,10 @@ class AsyncAzureBackend(AsyncBackend):
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
                         return
+                    # ID-213: listing under a file-ancestor must yield [] (BE-014),
+                    # not leak the SDK's AlreadyExists/409.
+                    if await self._hns_first_file_ancestor(path) is not None:
+                        return
                     raise mapped from None
             elif recursive:
                 async for blob in self._cc.list_blobs(name_starts_with=prefix):
@@ -846,6 +871,9 @@ class AsyncAzureBackend(AsyncBackend):
                 except Exception as exc:  # noqa: BLE001
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
+                        return
+                    # ID-213: listing under a file-ancestor must yield [] (BE-014).
+                    if await self._hns_first_file_ancestor(path) is not None:
                         return
                     raise mapped from None
             else:
@@ -1084,7 +1112,13 @@ class AsyncAzureBackend(AsyncBackend):
             if is_hns:  # pragma: no cover -- HNS only
                 src_fc = self._fs.get_file_client(_azure_path_fn(src))
                 new_name = f"{self._container}/{_azure_path_fn(dst)}"
-                await src_fc.rename_file(new_name)
+                try:
+                    await src_fc.rename_file(new_name)
+                except Exception:
+                    # ID-213: the rename failure is keyed to src, but a dst
+                    # file-ancestor must surface as InvalidPath(dst) per BE-018.
+                    await self._raise_invalid_if_hns_file_ancestor(dst)
+                    raise
             else:
                 # Server-side copy + delete.  Same-account copies complete
                 # inline; cross-account may be async (matches sync backend).
@@ -1153,7 +1187,15 @@ class AsyncAzureBackend(AsyncBackend):
 
             # ASYNC-019 precondition order: src-NotFound before dst-file-ancestor (ID-211 review).
             await self._maybe_check_no_file_ancestor(dst)
-            await dst_bc.start_copy_from_url(src_bc.url)
+            try:
+                await dst_bc.start_copy_from_url(src_bc.url)
+            except Exception:
+                # ID-213: on HNS a copy whose dst is under a file-ancestor
+                # surfaces a src-keyed error; remap to InvalidPath(dst). This
+                # except is shared with non-HNS accounts, where the helper
+                # early-returns and the original error propagates unchanged.
+                await self._raise_invalid_if_hns_file_ancestor(dst)
+                raise
 
     async def aclose(self) -> None:
         """Release all Azure SDK client resources."""
@@ -1269,6 +1311,51 @@ class AsyncAzureBackend(AsyncBackend):
     def _blob_client(self, path: str) -> Any:
         """Get an async BlobClient for the given path."""
         return self._cc.get_blob_client(_azure_path_fn(path))
+
+    async def _hns_first_file_ancestor(self, path: str) -> str | None:  # pragma: no cover -- HNS only
+        """Async sibling of ``AzureBackend._hns_first_file_ancestor``.
+
+        First slash-aligned ancestor of *path* that is a regular file on HNS
+        (``hdi_isfolder`` absent), or ``None``. HNS-only error-path probe used
+        to distinguish the file-ancestor case from a generic 404/409. Fail-open.
+        """
+        from azure.core.exceptions import AzureError
+
+        azp = _azure_path_fn(path)
+        if "/" not in azp:
+            return None
+        parts = azp.split("/")
+        for i in range(1, len(parts)):
+            ancestor = "/".join(parts[:i])
+            bc = self._cc.get_blob_client(ancestor)
+            try:
+                props = await bc.get_blob_properties()
+            except ResourceNotFoundError:
+                continue
+            except (AzureError, OSError):
+                continue  # fail-open: unknown state is not treated as a file
+            meta = getattr(props, "metadata", None) or {}
+            if not meta.get("hdi_isfolder"):
+                return ancestor
+        return None
+
+    async def _raise_invalid_if_hns_file_ancestor(self, path: str) -> None:  # pragma: no cover -- HNS only
+        """Async sibling of ``AzureBackend._raise_invalid_if_hns_file_ancestor``.
+
+        Raise ``InvalidPath`` keyed to *path* if an HNS ancestor is a regular
+        file; no-op on non-HNS or when no ancestor is a file. For move/copy the
+        SDK error is keyed to ``src``; pass ``dst`` so the error targets the
+        destination the contract names.
+        """
+        if not await self._ensure_hns():
+            return
+        ancestor = await self._hns_first_file_ancestor(path)
+        if ancestor is not None:
+            raise InvalidPath(
+                f"Cannot write under file ancestor: {ancestor!r} is a regular file (path={path!r})",
+                path=path,
+                backend=self.name,
+            ) from None
 
     @asynccontextmanager
     async def _errors(self, path: str = "") -> AsyncIterator[None]:
