@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/research/research-benchmark-suite-v2/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/research/research-lx-llms-context-tooling/">
       
       
-        <link rel="prev" href="../research-backend-setup-guides/">
+        <link rel="prev" href="../research-logging-monitoring-tracing/">
       
       
-        <link rel="next" href="../research-bk-181-cassette-replay-poc/">
+        <link rel="next" href="../research-medallion-dagster-showcase/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Benchmark Suite v2 — User-Decision Framing - remote-store</title>
+        <title>`lxas Tooling for anllms-full.txt` / Repo-Context Bundle - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#research-benchmark-suite-v2-user-decision-framing" class="md-skip">
+        <a href="#research-lx-as-tooling-for-an-llms-fulltxt-repo-context-bundle" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Benchmark Suite v2 — User-Decision Framing
+              `lxas Tooling for anllms-full.txt` / Repo-Context Bundle
             
           </span>
         </div>
@@ -6798,37 +6798,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Benchmark Suite v2 — User-Decision Framing
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -6844,381 +6817,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-problem-statement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Problem Statement
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-design-decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Design Decisions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Design Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#what-this-plan-is-not" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What this plan is NOT
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#scope-boundaries" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scope boundaries
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-not-restructure-into-3-benchmark-families" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why NOT restructure into 3 benchmark families
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-not-add-most-feature-cost-benchmarks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why NOT add most "feature cost" benchmarks
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-not-add-workflow-benchmarks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why NOT add workflow benchmarks
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-implementation-plan" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Implementation Plan
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Implementation Plan">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#phase-1-toxiproxy-expansion" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 1: Toxiproxy expansion
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Phase 1: Toxiproxy expansion">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1a-docker-infrastructure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1a. Docker infrastructure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1b-toxiproxy-module" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1b. Toxiproxy module
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1c-conftest-fixtures" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1c. Conftest fixtures
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1d-environment-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1d. Environment variables
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1e-verification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1e. Verification
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-2-reporting-and-charts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 2: Reporting and charts
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Phase 2: Reporting and charts">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#2a-chart-generation-script" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2a. Chart generation script
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2b-worth-it-verdicts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2b. "Worth it?" verdicts
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2c-user-facing-report-command" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2c. User-facing report command
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-3-readme-and-performance-guide-reframe" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 3: README and performance guide reframe
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Phase 3: README and performance guide reframe">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#3a-readme-addition" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3a. README addition
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3b-performance-guide-reframe" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3b. Performance guide reframe
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-4-selective-benchmark-additions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 4: Selective benchmark additions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Phase 4: Selective benchmark additions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#4a-seekable-read-benchmark" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4a. Seekable read benchmark
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4b-cache-hitmiss-benchmark" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4b. Cache hit/miss benchmark
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-backlog-item" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Backlog item
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Dependencies
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-estimated-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Estimated scope
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-what-was-explicitly-rejected" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. What was explicitly rejected
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See also
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -7732,10 +7330,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../research-lx-llms-context-tooling/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    `lxas Tooling for anllms-full.txt` / Repo-Context Bundle
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -7751,6 +7376,103 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-lx-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. What lx is
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-two-deliverables-lx-is-being-measured-against" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The two deliverables lx is being measured against
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-evaluation-lx-for-a-published-llms-fulltxt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Evaluation: lx for a published llms-full.txt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-better-fit-alternative-for-llms-fulltxt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Better-fit alternative for llms-full.txt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-where-lx-genuinely-shines-id-216" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Where lx genuinely shines (→ ID-216)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-dispositions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Dispositions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -9579,10 +9301,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-problem-statement" class="md-nav__link">
+  <a href="#1-what-lx-is" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Problem Statement
+        1. What lx is
       
     </span>
   </a>
@@ -9590,299 +9312,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-design-decisions" class="md-nav__link">
+  <a href="#2-the-two-deliverables-lx-is-being-measured-against" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Design Decisions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Design Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#what-this-plan-is-not" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What this plan is NOT
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#scope-boundaries" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scope boundaries
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-not-restructure-into-3-benchmark-families" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why NOT restructure into 3 benchmark families
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-not-add-most-feature-cost-benchmarks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why NOT add most "feature cost" benchmarks
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-not-add-workflow-benchmarks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why NOT add workflow benchmarks
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-implementation-plan" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Implementation Plan
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Implementation Plan">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#phase-1-toxiproxy-expansion" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 1: Toxiproxy expansion
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Phase 1: Toxiproxy expansion">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1a-docker-infrastructure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1a. Docker infrastructure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1b-toxiproxy-module" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1b. Toxiproxy module
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1c-conftest-fixtures" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1c. Conftest fixtures
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1d-environment-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1d. Environment variables
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1e-verification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1e. Verification
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-2-reporting-and-charts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 2: Reporting and charts
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Phase 2: Reporting and charts">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#2a-chart-generation-script" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2a. Chart generation script
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2b-worth-it-verdicts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2b. "Worth it?" verdicts
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2c-user-facing-report-command" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2c. User-facing report command
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-3-readme-and-performance-guide-reframe" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 3: README and performance guide reframe
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Phase 3: README and performance guide reframe">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#3a-readme-addition" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3a. README addition
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3b-performance-guide-reframe" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3b. Performance guide reframe
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-4-selective-benchmark-additions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 4: Selective benchmark additions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Phase 4: Selective benchmark additions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#4a-seekable-read-benchmark" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4a. Seekable read benchmark
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4b-cache-hitmiss-benchmark" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4b. Cache hit/miss benchmark
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-backlog-item" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Backlog item
+        2. The two deliverables lx is being measured against
       
     </span>
   </a>
@@ -9890,10 +9323,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-dependencies" class="md-nav__link">
+  <a href="#3-evaluation-lx-for-a-published-llms-fulltxt" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Dependencies
+        3. Evaluation: lx for a published llms-full.txt
       
     </span>
   </a>
@@ -9901,10 +9334,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#6-estimated-scope" class="md-nav__link">
+  <a href="#4-better-fit-alternative-for-llms-fulltxt" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. Estimated scope
+        4. Better-fit alternative for llms-full.txt
       
     </span>
   </a>
@@ -9912,10 +9345,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#7-what-was-explicitly-rejected" class="md-nav__link">
+  <a href="#5-where-lx-genuinely-shines-id-216" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. What was explicitly rejected
+        5. Where lx genuinely shines (→ ID-216)
       
     </span>
   </a>
@@ -9923,10 +9356,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
+  <a href="#6-dispositions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        See also
+        6. Dispositions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. References
       
     </span>
   </a>
@@ -9950,436 +9394,195 @@
 
 
 
-<h1 id="research-benchmark-suite-v2-user-decision-framing">Research: Benchmark Suite v2 — User-Decision Framing<a class="headerlink" href="#research-benchmark-suite-v2-user-decision-framing" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> 2026-03-24
-<strong>Backlog:</strong> ID-103 (new)
-<strong>Status:</strong> Proposed
-<strong>Scope:</strong> Redesign benchmark reporting and expand Toxiproxy coverage to reframe
-the suite around user adoption decisions rather than maintainer diagnostics.</p>
+<h1 id="research-lx-as-tooling-for-an-llms-fulltxt-repo-context-bundle">Research: <code>lx</code> as Tooling for an <code>llms-full.txt</code> / Repo-Context Bundle<a class="headerlink" href="#research-lx-as-tooling-for-an-llms-fulltxt-repo-context-bundle" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-05-30
+<strong>Context:</strong> Evaluation request against ID-161 (publish <code>llms.txt</code>). The
+question: could <a href="https://github.com/rasros/lx"><code>rasros/lx</code></a> be a sound tool to
+produce a "long LLM version" of either repo content or docs content for
+remote-store? This doc records the evaluation, separates the two distinct
+deliverables it touches, and routes the durable outcome into backlog items
+(ID-161 adapted; ID-216 created).</p>
 <hr />
-<h2 id="1-problem-statement">1. Problem Statement<a class="headerlink" href="#1-problem-statement" title="Permanent link">&para;</a></h2>
-<p>The current benchmark suite is strong at measuring raw operation cost across
-backends. It is weaker at answering the actual user question:</p>
-<blockquote>
-<p>"What am I paying for abstraction, and when does that overhead disappear
-relative to network/storage latency?"</p>
-</blockquote>
-<p>Specific gaps:</p>
-<ol>
-<li><strong>No README signal.</strong> The README mentions nothing about performance. Users
-   who care (most, for a storage abstraction) have no indication the project
-   even thinks about it.</li>
-<li><strong>Toxiproxy covers only Azure.</strong> S3 and SFTP have no latency simulation,
-   so the suite cannot show overhead collapsing under realistic RTT.</li>
-<li><strong>Tables only, no charts.</strong> The performance guide has raw tables. A chart
-   showing "overhead vs RTT" communicates in one glance what tables cannot.</li>
-<li><strong>Maintainer framing.</strong> The performance guide opens with "remote-store
-   includes a comprehensive benchmark suite" — maintainer language. Users want
-   to know: should I worry about overhead?</li>
-<li><strong>No "worth it?" verdict.</strong> Users must interpret raw numbers themselves.</li>
-</ol>
-<h2 id="2-design-decisions">2. Design Decisions<a class="headerlink" href="#2-design-decisions" title="Permanent link">&para;</a></h2>
-<h3 id="what-this-plan-is-not">What this plan is NOT<a class="headerlink" href="#what-this-plan-is-not" title="Permanent link">&para;</a></h3>
-<p>This is NOT a rewrite of the benchmark test suite. The current tests measure
-the right primitives. The changes are:</p>
-<ul>
-<li><strong>Toxiproxy expansion</strong> (infra + fixtures)</li>
-<li><strong>Better reporting</strong> (new chart generation, reframed docs)</li>
-<li><strong>README addition</strong> (one paragraph + link)</li>
-<li><strong>Selective benchmark additions</strong> (seekable, cache — only where real gaps exist)</li>
-</ul>
-<h3 id="scope-boundaries">Scope boundaries<a class="headerlink" href="#scope-boundaries" title="Permanent link">&para;</a></h3>
+<h2 id="1-what-lx-is">1. What <code>lx</code> is<a class="headerlink" href="#1-what-lx-is" title="Permanent link">&para;</a></h2>
+<p><a href="https://github.com/rasros/lx"><code>lx</code></a> is an "LLM context bundler": a CLI that
+walks directories and consolidates files into a single LLM-ready blob.</p>
 <table>
 <thead>
 <tr>
-<th>In scope</th>
-<th>Out of scope</th>
+<th>Attribute</th>
+<th>Value</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Toxiproxy for S3 + SFTP</td>
-<td>Concurrency benchmarks (separate project)</td>
+<td>Language</td>
+<td>Go</td>
 </tr>
 <tr>
-<td>4 named network profiles</td>
-<td>Cold/warm tracking (impractical)</td>
+<td>License</td>
+<td>MIT</td>
 </tr>
 <tr>
-<td>Chart generation script</td>
-<td>Interactive/JS charts</td>
+<td>Maturity</td>
+<td>48★, v1.2.0 (2026-04-20), 13 releases, single-maintainer</td>
 </tr>
 <tr>
-<td>Performance guide reframe</td>
-<td>New "workflow" benchmarks</td>
+<td>Inputs</td>
+<td>file paths, directories, URLs, archives (zip/tar/7z/rar), documents (PDF/DOCX/XLSX/PPTX)</td>
 </tr>
 <tr>
-<td>README one-paragraph addition</td>
-<td>README chart</td>
+<td>Filtering</td>
+<td>respects <code>.gitignore</code> / <code>.lxignore</code>; <code>-i</code>/<code>-e</code> include/exclude; skips binaries</td>
 </tr>
 <tr>
-<td>"Worth it?" verdicts in reports</td>
-<td>Feature-cost benchmarks (except seekable + cache)</td>
+<td>Output</td>
+<td>Markdown (default), XML (Claude-optimised), HTML, bare text</td>
 </tr>
 <tr>
-<td><code>seekable_read()</code> benchmark</td>
-<td>OTel/atomic/glob cost benchmarks (noise-level deltas)</td>
-</tr>
-<tr>
-<td>Cache hit/miss benchmark</td>
-<td>Restructuring test files into "families"</td>
+<td>Extras</td>
+<td>token estimation, tree/skeleton views, clipboard, stdin/stdout</td>
 </tr>
 </tbody>
 </table>
-<h3 id="why-not-restructure-into-3-benchmark-families">Why NOT restructure into 3 benchmark families<a class="headerlink" href="#why-not-restructure-into-3-benchmark-families" title="Permanent link">&para;</a></h3>
-<p>The proposal to split into "overhead / workload / network" families is a
-<strong>presentation concern, not a structural one.</strong> The current test files
-(<code>test_throughput.py</code>, <code>test_metadata.py</code>, etc.) organize by operation type,
-which is correct for pytest. The "family" framing belongs in reporting and
-docs, not in test file layout.</p>
-<h3 id="why-not-add-most-feature-cost-benchmarks">Why NOT add most "feature cost" benchmarks<a class="headerlink" href="#why-not-add-most-feature-cost-benchmarks" title="Permanent link">&para;</a></h3>
-<p>Most feature costs (atomic write, error mapping, path validation, OTel hooks)
-are <strong>dominated by underlying I/O</strong>. The delta is one syscall or one function
-call — ~50µs locally, invisible on network. Measuring them produces noise,
-not signal.</p>
-<p>Exceptions worth measuring:
-- <strong><code>seekable_read()</code></strong> — real spill cost (temp file materialization)
-- <strong>Cache hit/miss</strong> — real I/O skip</p>
-<h3 id="why-not-add-workflow-benchmarks">Why NOT add workflow benchmarks<a class="headerlink" href="#why-not-add-workflow-benchmarks" title="Permanent link">&para;</a></h3>
-<p>"Ingest 10,000 × 4 KB files" sounds realistic but is still synthetic. Under
-Toxiproxy (10k × 100ms RTT = 17 min for one workload), runtime explodes. The
-insight over extrapolating from primitive ops is marginal. The current suite
-already covers 50/1k/10k listings and 1KB–100MB throughput.</p>
-<hr />
-<h2 id="3-implementation-plan">3. Implementation Plan<a class="headerlink" href="#3-implementation-plan" title="Permanent link">&para;</a></h2>
-<h3 id="phase-1-toxiproxy-expansion">Phase 1: Toxiproxy expansion<a class="headerlink" href="#phase-1-toxiproxy-expansion" title="Permanent link">&para;</a></h3>
-<p><strong>Goal:</strong> Enable latency simulation for all Docker backends.</p>
-<h4 id="1a-docker-infrastructure">1a. Docker infrastructure<a class="headerlink" href="#1a-docker-infrastructure" title="Permanent link">&para;</a></h4>
-<p>Update <code>infra/docker-compose.yml</code>:</p>
-<ul>
-<li>Add <code>minio</code> proxy: toxiproxy listens on 19000, forwards to minio:9000</li>
-<li>Add <code>sftp</code> proxy: toxiproxy listens on 12222, forwards to sftp:2222</li>
-<li>Keep existing <code>azurite</code> proxy (10001 → azurite:10000)</li>
-<li>Update <code>toxiproxy.json</code> with all three proxy definitions</li>
-</ul>
-<h4 id="1b-toxiproxy-module">1b. Toxiproxy module<a class="headerlink" href="#1b-toxiproxy-module" title="Permanent link">&para;</a></h4>
-<p>Extend <code>benchmarks/_toxiproxy.py</code>:</p>
-<ul>
-<li>Support multiple proxy names (not just <code>"azurite"</code>)</li>
-<li>Add named profiles:</li>
-<li><code>clean</code> — no toxics (baseline)</li>
-<li><code>rtt20</code> — 20ms latency, 7ms jitter</li>
-<li><code>rtt50</code> — 50ms latency, 17ms jitter</li>
-<li><code>rtt100</code> — 100ms latency, 33ms jitter</li>
-<li>Add <code>apply_profile(proxy_name, profile_name)</code> function</li>
-<li>Add <code>clear_all_toxics(proxy_name)</code> function</li>
-<li>Keep existing <code>set_latency()</code> / <code>clear_latency()</code> as low-level API</li>
-</ul>
-<h4 id="1c-conftest-fixtures">1c. Conftest fixtures<a class="headerlink" href="#1c-conftest-fixtures" title="Permanent link">&para;</a></h4>
-<p>Update <code>benchmarks/conftest.py</code>:</p>
-<ul>
-<li>Add <code>--network-profile</code> CLI flag: <code>clean|rtt20|rtt50|rtt100</code> (default: clean)</li>
-<li>Add <code>s3-latency</code> and <code>sftp-latency</code> backend params (parallel to existing
-  <code>azure-latency</code>)</li>
-<li>Apply selected profile to all <code>-latency</code> backends at session start</li>
-<li>Clear toxics at session end</li>
-</ul>
-<h4 id="1d-environment-variables">1d. Environment variables<a class="headerlink" href="#1d-environment-variables" title="Permanent link">&para;</a></h4>
+<p>It is a capable, general-purpose tool. The evaluation below is about <em>fit for a
+specific job</em>, not capability in the abstract.</p>
+<h2 id="2-the-two-deliverables-lx-is-being-measured-against">2. The two deliverables <code>lx</code> is being measured against<a class="headerlink" href="#2-the-two-deliverables-lx-is-being-measured-against" title="Permanent link">&para;</a></h2>
+<p>The request conflates two things that ID-161 deliberately keeps separate:</p>
+<ol>
+<li>
+<p><strong><code>llms.txt</code></strong> — the ID-161 core deliverable. A small, <strong>hand-curated</strong>
+   discovery file (one H1, a one-paragraph summary, a short link list) per the
+   <a href="https://llmstxt.org/">llmstxt.org</a> §2 standard. There is nothing to bundle;
+   a generator is the wrong category of tool. <strong><code>lx</code> is not applicable here.</strong></p>
+</li>
+<li>
+<p><strong><code>llms-full.txt</code></strong> — the "long version": concatenated full prose of the
+   guides, for tools that prefer one large context file. ID-161 lists this as an
+   <strong>out-of-scope optional follow-on</strong> ("Worth a separate ID if demand
+   appears"). This is the only deliverable where a bundler like <code>lx</code> is even a
+   candidate.</p>
+</li>
+</ol>
+<p>So evaluating <code>lx</code> "for ID-161" really means evaluating it for a <em>future,
+separate</em> <code>llms-full.txt</code> effort, not for ID-161's exit criteria.</p>
+<h2 id="3-evaluation-lx-for-a-published-llms-fulltxt">3. Evaluation: <code>lx</code> for a published <code>llms-full.txt</code><a class="headerlink" href="#3-evaluation-lx-for-a-published-llms-fulltxt" title="Permanent link">&para;</a></h2>
+<p><code>lx</code> <em>can</em> concatenate <code>docs-src/</code> into one file. But for a <strong>published</strong>
+artifact built from this repo's docs pipeline, it is a weak fit. The pipeline
+(<code>mkdocs.yml</code>) is the reason:</p>
 <table>
 <thead>
 <tr>
-<th>Variable</th>
-<th>Default</th>
-<th>Description</th>
+<th>Pipeline element</th>
+<th>Effect on a raw-source bundler like <code>lx</code></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>BENCH_TOXIPROXY_HOST</code></td>
-<td>127.0.0.1</td>
-<td>Toxiproxy API host</td>
+<td><code>gen-files</code> + <code>scripts/gen_pages.py</code></td>
+<td>API reference pages are <strong>generated at build time</strong> from <code>src/</code>. <code>lx</code> reading <code>docs-src/</code> would <strong>omit the entire API reference.</strong></td>
 </tr>
 <tr>
-<td><code>BENCH_TOXIPROXY_API_PORT</code></td>
-<td>8474</td>
-<td>Toxiproxy API port</td>
+<td><code>scripts/mkdocs_hooks.py</code> (BK-171)</td>
+<td>Rewrites on-disk repo paths to <code>docs.remotestore.dev</code> URLs. <code>lx</code> would emit <strong>on-disk relative links</strong>, not site URLs.</td>
 </tr>
 <tr>
-<td><code>BENCH_TOXIPROXY_AZURITE_PORT</code></td>
-<td>10001</td>
-<td>Proxied Azurite port (existing)</td>
+<td><code>literate-nav</code> + <code>SUMMARY.md</code></td>
+<td>Reading order is curated. <code>lx</code> traverses filesystem/ignore order, <strong>not nav order</strong>, so a long bundle would read out of sequence without hand-maintained section args.</td>
 </tr>
 <tr>
-<td><code>BENCH_MINIO_PROXY_PORT</code></td>
-<td>19000</td>
-<td>Proxied MinIO port (new)</td>
-</tr>
-<tr>
-<td><code>BENCH_SFTP_PROXY_PORT</code></td>
-<td>12222</td>
-<td>Proxied SFTP port (new)</td>
+<td><code>mkdocstrings</code></td>
+<td>Docstring-rendered API surface lives only in the built HTML, never in <code>docs-src/</code>. Invisible to a source bundler.</td>
 </tr>
 </tbody>
 </table>
-<h4 id="1e-verification">1e. Verification<a class="headerlink" href="#1e-verification" title="Permanent link">&para;</a></h4>
+<p>Two further concerns, independent of the pipeline:</p>
 <ul>
-<li>Run existing comparative tests with <code>--backend s3-latency --network-profile rtt50</code></li>
-<li>Confirm latency is visible in results (write 1MB should show ~50ms+ increase)</li>
-<li>Run with <code>--network-profile clean</code> to confirm baseline matches direct connection</li>
+<li><strong>Standard mismatch (repo vs docs).</strong> The <code>llms-full.txt</code> convention is
+  concatenated <em>documentation prose</em>, not source code. Pointing <code>lx</code> at the
+  <em>repo</em> produces a code dump (a different artifact for a different audience).
+  Only <code>docs-src/</code> is the right target, and per the table above even that is
+  lossy.</li>
+<li><strong>Ecosystem friction / drift.</strong> Adding a Go binary to a Python/hatch +
+  pip-MkDocs build means CI install, a pinned version, and supply-chain trust in
+  a single-maintainer tool. A manual <code>lx</code> run would silently rot, violating
+  CLAUDE.md principle 3 (repo describes reality at every commit).</li>
 </ul>
-<h3 id="phase-2-reporting-and-charts">Phase 2: Reporting and charts<a class="headerlink" href="#phase-2-reporting-and-charts" title="Permanent link">&para;</a></h3>
-<p><strong>Goal:</strong> Generate user-facing charts from benchmark data + add "worth it?" verdicts.</p>
-<h4 id="2a-chart-generation-script">2a. Chart generation script<a class="headerlink" href="#2a-chart-generation-script" title="Permanent link">&para;</a></h4>
-<p>Create <code>benchmarks/charts.py</code> (or extend <code>report.py</code>):</p>
+<h2 id="4-better-fit-alternative-for-llms-fulltxt">4. Better-fit alternative for <code>llms-full.txt</code><a class="headerlink" href="#4-better-fit-alternative-for-llms-fulltxt" title="Permanent link">&para;</a></h2>
+<p>A MkDocs-native plugin solves every row of the §3 table because it operates on
+the <strong>rendered</strong> output, inside <code>mkdocs build</code>, in the existing pip ecosystem:</p>
 <ul>
-<li>Reads <code>.benchmarks/</code> JSON files (same source as <code>report.py</code>)</li>
-<li>Generates SVG charts via matplotlib to <code>docs-src/img/benchmarks/</code></li>
-<li>Add <code>hatch run bench-charts</code> command</li>
+<li><strong><a href="https://github.com/pawamoy/mkdocs-llmstxt"><code>mkdocs-llmstxt</code></a></strong> (PyPI) — by
+  pawamoy, <strong>the same author as <code>mkdocstrings</code>, which this repo already uses.</strong>
+  Emits both <code>llms.txt</code> and <code>llms-full.txt</code> (<code>full_output:</code> + <code>sections:</code>),
+  respects nav, captures generated API pages and rewritten URLs, and pins via
+  the existing docs env.</li>
+<li>Alternatives in the same niche:
+  <a href="https://pypi.org/project/mkdocs-llms-source/"><code>mkdocs-llms-source</code></a>,
+  <a href="https://github.com/noklam/mkdocs-llmstxt-md"><code>mkdocs-llmstxt-md</code></a>.</li>
 </ul>
-<p><strong>Charts to generate (3 total):</strong></p>
-<ol>
-<li><strong>Overhead % by backend</strong> — grouped bar chart</li>
-<li>X-axis: operation (write 1MB, read 1MB, exists, list 50, delete)</li>
-<li>Bars: overhead % vs raw SDK</li>
-<li>Groups: one color per backend (S3, Azure, SFTP, Local)</li>
-<li>
-<p>This answers: "what am I paying?"</p>
-</li>
-<li>
-<p><strong>Overhead vs RTT</strong> — line chart <em>(requires Phase 1 data)</em></p>
-</li>
-<li>X-axis: network profile (0ms, 20ms, 50ms, 100ms)</li>
-<li>Y-axis: overhead %</li>
-<li>Lines: one per operation category (I/O ops, metadata ops)</li>
-<li>
-<p>This is the killer chart — shows overhead collapsing under latency</p>
-</li>
-<li>
-<p><strong>Throughput by file size</strong> — line chart</p>
-</li>
-<li>X-axis: file size (1KB, 64KB, 1MB, 10MB)</li>
-<li>Y-axis: MB/s</li>
-<li>Lines: remote-store vs raw SDK, one chart per backend</li>
-<li>Shows where remote-store converges with raw SDK</li>
-</ol>
-<p><strong>Chart style:</strong> clean, minimal, no gridlines clutter. Match the project's
-visual identity. SVG for crisp rendering in docs.</p>
-<h4 id="2b-worth-it-verdicts">2b. "Worth it?" verdicts<a class="headerlink" href="#2b-worth-it-verdicts" title="Permanent link">&para;</a></h4>
-<p>Extend <code>report.py</code> comparative output to append a verdict per backend/op:</p>
+<p>If the long-version idea gathers demand, the sound path is a separate ID specced
+around <code>mkdocs-llmstxt</code>, not an external Go bundler. ID-161 stays the small
+curated file.</p>
+<h2 id="5-where-lx-genuinely-shines-id-216">5. Where <code>lx</code> genuinely shines (→ ID-216)<a class="headerlink" href="#5-where-lx-genuinely-shines-id-216" title="Permanent link">&para;</a></h2>
+<p><code>lx</code> is well-suited to a different, <strong>orthogonal</strong> job: <strong>ad-hoc, on-demand
+bundling of <em>repo</em> content</strong> to hand a coding agent (or a one-off prompt)
+whole-codebase or whole-subtree context. The XML/Claude format, token
+estimation, <code>.gitignore</code> honouring, and tree/skeleton views are exactly right
+for that developer-convenience workflow.</p>
+<p>Crucially, this use-case:</p>
+<ul>
+<li>targets <strong>source</strong>, not published docs, so the §3 pipeline concerns do not
+  apply;</li>
+<li>produces <strong>nothing committed or deployed</strong>, so drift and supply-chain-in-CI
+  concerns do not apply;</li>
+<li>is a <strong>DX tool</strong>, evaluated on local ergonomics, not on standard conformance.</li>
+</ul>
+<p>This is captured as <strong>ID-216</strong> ("Evaluate <code>lx</code> as an ad-hoc repo-context
+bundler for coding agents"). It is an <em>idea</em>, not a commitment: a thin candidate
+worth a timeboxed trial, kept deliberately distinct from the docs-site
+<code>llms.txt</code>/<code>llms-full.txt</code> lineage.</p>
+<h2 id="6-dispositions">6. Dispositions<a class="headerlink" href="#6-dispositions" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
+<th>Question</th>
 <th>Verdict</th>
-<th>Criteria</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Negligible</strong></td>
-<td>delta &lt;10% or &lt;1ms absolute</td>
+<td><code>lx</code> for ID-161 (<code>llms.txt</code>)?</td>
+<td><strong>No</strong> — that file is hand-curated; wrong tool category.</td>
 </tr>
 <tr>
-<td><strong>Moderate</strong></td>
-<td>10–50% but &lt;5ms absolute</td>
+<td><code>lx</code> for a published <code>llms-full.txt</code>?</td>
+<td><strong>Not the soundest</strong> — misses generated API pages and URL rewrites, ignores nav order, adds a Go binary to a Python build. Prefer <code>mkdocs-llmstxt</code>.</td>
 </tr>
 <tr>
-<td><strong>Visible</strong></td>
-<td>&gt;50% and &gt;5ms absolute</td>
-</tr>
-<tr>
-<td><strong>Favorable</strong></td>
-<td>remote-store faster than raw SDK</td>
+<td><code>lx</code> for ad-hoc repo→agent context?</td>
+<td><strong>Yes, plausibly</strong> — its real strength. Tracked as ID-216 for a timeboxed trial.</td>
 </tr>
 </tbody>
 </table>
-<p>Example output line:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>S3 Write 1MB: 20.1ms vs 31.6ms raw → Favorable (remote-store 1.6x faster)
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>S3 Exists:    1.4ms vs 1.3ms raw   → Negligible (+0.1ms, +8%)
-</code></pre></div></p>
-<h4 id="2c-user-facing-report-command">2c. User-facing report command<a class="headerlink" href="#2c-user-facing-report-command" title="Permanent link">&para;</a></h4>
-<p>Add <code>hatch run bench-report-user</code> that produces a condensed summary:</p>
+<p>Actions taken with this doc:</p>
 <ul>
-<li>One table per backend with verdicts</li>
-<li>Bottom-line statement per backend</li>
-<li>No maintainer detail (stddev, rounds, etc.)</li>
+<li><strong>ID-161 adapted:</strong> the follow-on note now points here and recommends the
+  MkDocs-native route for <code>llms-full.txt</code>, not an external bundler.</li>
+<li><strong>ID-216 created</strong> under Docs &amp; Discoverability for the ad-hoc bundling
+  use-case.</li>
 </ul>
-<h3 id="phase-3-readme-and-performance-guide-reframe">Phase 3: README and performance guide reframe<a class="headerlink" href="#phase-3-readme-and-performance-guide-reframe" title="Permanent link">&para;</a></h3>
-<p><strong>Goal:</strong> Surface performance story where users look first.</p>
-<h4 id="3a-readme-addition">3a. README addition<a class="headerlink" href="#3a-readme-addition" title="Permanent link">&para;</a></h4>
-<p>Add a "Performance" section after Quick Start (before Extensions/Features).
-Approximately 3 lines of prose + link. Content:</p>
-<blockquote>
-<p>remote-store adds minimal overhead on top of the native SDKs it wraps. For
-network backends (S3, Azure, SFTP), writes and reads are typically within
-5–15% of raw SDK calls; under realistic network latency, the abstraction
-cost becomes negligible. See the
-<a href="https://docs.remotestore.dev/stable/explanation/performance/">performance guide</a> for
-comparative benchmarks, methodology, and overhead analysis.</p>
-</blockquote>
-<p>No tables, no charts in README. Just the story + link.</p>
-<h4 id="3b-performance-guide-reframe">3b. Performance guide reframe<a class="headerlink" href="#3b-performance-guide-reframe" title="Permanent link">&para;</a></h4>
-<p>Restructure <code>guides/performance.md</code>:</p>
-<p><strong>Current structure:</strong>
-1. Methodology (H2)
-   - What We Measure (H3, table)
-   - Comparative Benchmarks (H3, explanation)
-2. Running Benchmarks (H2)
-   - Prerequisites (H3)
-   - Commands (H3)
-   - Sample Results (H3, table)
-3. How remote-store Compares (H2, prose)
-4. Analyzing Results (H2)
-5. Reproducing (H2)
-6. See also (H2)</p>
-<p><strong>New structure:</strong>
-1. <strong>Lead paragraph</strong> — answer the user's question upfront:
-   "remote-store wraps established Python storage libraries. The abstraction
-   adds measurable overhead for fast local operations, but for remote backends
-   under realistic network latency, the cost is typically small relative to
-   network and service time."
-2. <strong>Overhead at a glance</strong> — the overhead % chart (from 2a)
-3. <strong>What happens under real latency</strong> — the overhead vs RTT chart (from 2a),
-   with 2–3 sentences explaining the takeaway
-4. <strong>Comparative results</strong> — existing tables (keep, they're good for detail)
-5. <strong>Throughput by file size</strong> — chart (from 2a)
-6. <strong>Caveats</strong> — existing emulator/caching notes (keep, move here)
-7. <strong>Methodology</strong> — condensed (move down, users care less)
-8. <strong>Running benchmarks yourself</strong> — existing commands (move to end)
-9. <strong>See also</strong> — existing links</p>
-<p>The key change: <strong>lead with the answer, not the methodology.</strong></p>
-<h3 id="phase-4-selective-benchmark-additions">Phase 4: Selective benchmark additions<a class="headerlink" href="#phase-4-selective-benchmark-additions" title="Permanent link">&para;</a></h3>
-<p><strong>Goal:</strong> Fill the two real gaps in measurement coverage.</p>
-<h4 id="4a-seekable-read-benchmark">4a. Seekable read benchmark<a class="headerlink" href="#4a-seekable-read-benchmark" title="Permanent link">&para;</a></h4>
-<p>Add to <code>test_throughput.py</code> or new <code>test_seekable.py</code>:</p>
+<h2 id="7-references">7. References<a class="headerlink" href="#7-references" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>Store.read_seekable()</code> on backends with different seek strategies</li>
-<li>Measure: open cost, first seek latency, repeated random seeks, peak memory</li>
-<li>Compare: native seekable (local, S3-PyArrow) vs Azure <code>_AzureRangeReader</code> vs spool path (HTTP)</li>
-<li>This is directly relevant given the recent ID-102 work (<code>Store.read_seekable()</code>, <code>_AzureRangeReader</code>)</li>
-</ul>
-<h4 id="4b-cache-hitmiss-benchmark">4b. Cache hit/miss benchmark<a class="headerlink" href="#4b-cache-hitmiss-benchmark" title="Permanent link">&para;</a></h4>
-<p>Add to <code>test_throughput.py</code> or new <code>test_cache.py</code>:</p>
-<ul>
-<li>Read same file with/without <code>CachedStore</code></li>
-<li>Cold read (miss) vs warm read (hit)</li>
-<li>Measure: read latency, I/O eliminated</li>
-<li>This demonstrates real feature value</li>
-</ul>
-<hr />
-<h2 id="4-backlog-item">4. Backlog item<a class="headerlink" href="#4-backlog-item" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>- [ ] **ID-103 — Benchmark suite v2: user-decision framing**
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  Expand Toxiproxy to all Docker backends, generate overhead charts,
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  reframe performance guide for user decisions, add README performance
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  section.
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  - Research: [research-benchmark-suite-v2.md](https://github.com/haalfi/remote-store/blob/master/sdd/research/research/research-benchmark-suite-v2.md)
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>  - Phase 1: Toxiproxy expansion (docker-compose, fixtures, profiles)
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>  - Phase 2: Chart generation + &quot;worth it?&quot; verdicts in reporting
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>  - Phase 3: README section + performance guide reframe
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>  - Phase 4: seekable_read() + cache hit/miss benchmarks
-</code></pre></div>
-<h2 id="5-dependencies">5. Dependencies<a class="headerlink" href="#5-dependencies" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Phase 1 has no dependencies (can start immediately)</li>
-<li>Phase 2 chart #2 (overhead vs RTT) requires Phase 1 data</li>
-<li>Phase 2 charts #1 and #3 can use existing benchmark data</li>
-<li>Phase 3 can start in parallel with Phase 2 (prose doesn't need charts)</li>
-<li>Phase 4 is independent of all other phases</li>
-</ul>
-<h2 id="6-estimated-scope">6. Estimated scope<a class="headerlink" href="#6-estimated-scope" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Phase</th>
-<th>Files touched</th>
-<th>New code</th>
-<th>Effort</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>docker-compose.yml, toxiproxy.json, _toxiproxy.py, conftest.py</td>
-<td>~150 lines</td>
-<td>Medium</td>
-</tr>
-<tr>
-<td>2</td>
-<td>charts.py (new), report.py, pyproject.toml</td>
-<td>~200 lines</td>
-<td>Medium</td>
-</tr>
-<tr>
-<td>3</td>
-<td>README.md, guides/performance.md, docs-src/performance.md</td>
-<td>~50 lines net</td>
-<td>Small</td>
-</tr>
-<tr>
-<td>4</td>
-<td>test_seekable.py or test_throughput.py, test_cache.py</td>
-<td>~100 lines</td>
-<td>Small</td>
-</tr>
-</tbody>
-</table>
-<p>Total: ~500 lines of new/changed code. No test suite restructuring.</p>
-<h2 id="7-what-was-explicitly-rejected">7. What was explicitly rejected<a class="headerlink" href="#7-what-was-explicitly-rejected" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Idea</th>
-<th>Reason</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Restructure tests into 3 "families"</td>
-<td>Presentation concern, not structural</td>
-</tr>
-<tr>
-<td>10 workload benchmarks</td>
-<td>Synthetic, runtime explosion under latency</td>
-</tr>
-<tr>
-<td>Feature-cost benchmarks (OTel, atomic, glob)</td>
-<td>Noise-level deltas</td>
-</tr>
-<tr>
-<td>Cold/warm explicit tracking</td>
-<td>Impractical to enforce, marginal value</td>
-</tr>
-<tr>
-<td>Concurrency benchmarks</td>
-<td>Separate project, sync API</td>
-</tr>
-<tr>
-<td>8 network profiles</td>
-<td>4 is enough to make the point</td>
-</tr>
-<tr>
-<td>Interactive/JS charts</td>
-<td>Adds weight, doesn't work in README/PyPI</td>
-</tr>
-<tr>
-<td>Mermaid for benchmark charts</td>
-<td>xychart-beta too limited for grouped bars</td>
-</tr>
-<tr>
-<td>Chart in README</td>
-<td>Too much for first impression; prose + link suffices</td>
-</tr>
-<tr>
-<td>Tier A/B/C comparison classification</td>
-<td>Already handled by existing caveats</td>
-</tr>
-</tbody>
-</table>
-<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>docs-src/performance.md</code> — user-facing performance guide (reframe in Phase 3)</li>
-<li><code>benchmarks/results/comparative.md</code> — current baseline results</li>
-<li><code>benchmarks/_toxiproxy.py</code> — existing latency simulation module</li>
-<li><code>benchmarks/README.md</code> — current suite documentation</li>
+<li><a href="https://github.com/rasros/lx"><code>rasros/lx</code></a> — the tool under evaluation.</li>
+<li><a href="https://llmstxt.org/">llmstxt.org</a> — the <code>llms.txt</code> open standard.</li>
+<li><a href="https://github.com/pawamoy/mkdocs-llmstxt"><code>mkdocs-llmstxt</code></a> ·
+  <a href="https://pypi.org/project/mkdocs-llmstxt/">PyPI</a> — recommended <code>llms-full.txt</code>
+  generator.</li>
+<li><a href="https://pypi.org/project/mkdocs-llms-source/"><code>mkdocs-llms-source</code></a> ·
+  <a href="https://github.com/noklam/mkdocs-llmstxt-md"><code>mkdocs-llmstxt-md</code></a> —
+  alternatives.</li>
+<li><code>mkdocs.yml</code>, <code>scripts/gen_pages.py</code>, <code>scripts/mkdocs_hooks.py</code> — the local
+  docs pipeline this evaluation turns on.</li>
 </ul>
 
 
@@ -10416,7 +9619,7 @@ comparative benchmarks, methodology, and overhead analysis.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../research-backend-setup-guides/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Backend Setup &amp; Configuration Guides Expansion">
+          <a href="../research-logging-monitoring-tracing/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Logging, Monitoring &amp; Tracing for remote-store">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -10426,20 +9629,20 @@ comparative benchmarks, methodology, and overhead analysis.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Backend Setup & Configuration Guides Expansion
+                Logging, Monitoring & Tracing for remote-store
               </div>
             </div>
           </a>
         
         
           
-          <a href="../research-bk-181-cassette-replay-poc/" class="md-footer__link md-footer__link--next" aria-label="Next: HTTP cassette/replay layer — mechanism PoC (BK-181)">
+          <a href="../research-medallion-dagster-showcase/" class="md-footer__link md-footer__link--next" aria-label="Next: Architecture: Medallion + Dagster Showcase">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                HTTP cassette/replay layer — mechanism PoC (BK-181)
+                Architecture: Medallion + Dagster Showcase
               </div>
             </div>
             <div class="md-footer__button md-icon">
