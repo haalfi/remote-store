@@ -26,6 +26,21 @@
 # the quotes and so is not caught here. The Read-tool deny in settings.json
 # remains the primary guard; this hook is defense-in-depth for the common
 # `cat .env` / `source .env` operands.
+#
+# Latent (templates): a root-level non-secret onboarding template such as
+# `.env.example` / `.env.sample` / `.env.template` would also match the
+# `.env.` token and be blocked by both this hook and the `Read(./.env.*)`
+# deny. None exists in the repo today. If one is ever committed, give it the
+# same kind of carve-out `infra/.env` got below.
+
+# Fail closed if jq is missing: without it we cannot inspect the command,
+# and a security guard must not silently allow what it cannot check. jq is
+# already an established hook dependency (ruff-format.sh, backlog-status-
+# brake.sh), so its absence is a setup error worth surfacing loudly.
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Blocked: jq is required for the .env-access guard but is not on PATH. Install jq (an established hook dependency) and retry." >&2
+  exit 2
+fi
 
 CMD=$(jq -r '.tool_input.command // empty')
 
@@ -62,8 +77,11 @@ BEGIN {
 # Carve out the committed, non-secret `infra/.env`: neutralize that exact
 # token (forward- or back-slash) before matching, so it no longer looks
 # like a `.env` operand. A trailing `.` is excluded from the boundary so
-# `infra/.env.local` is left intact and still blocked as a secret.
-CARVED=$(printf '%s' "$STRIPPED" | sed -E 's#(^|[^A-Za-z0-9_])infra[/\]\.env($|[^A-Za-z0-9_.])#\1infra/__INFRA_ENV__\2#g')
+# `infra/.env.local` is left intact and still blocked as a secret. The
+# separator is written as an alternation `(/|\\)` rather than a bracket
+# `[/\]`, because a lone backslash inside an ERE bracket expression is
+# implementation-defined; `\\` in an alternation is portable.
+CARVED=$(printf '%s' "$STRIPPED" | sed -E 's#(^|[^A-Za-z0-9_])infra(/|\\)\.env($|[^A-Za-z0-9_.])#\1infra/__INFRA_ENV__\3#g')
 
 if printf '%s' "$CARVED" | grep -qiE '(^|[^A-Za-z0-9_])\.env([^A-Za-z0-9_]|$)'; then
   echo "Blocked: command reads a secret .env file — secret env files (.env, .env.local) are local-only and off-limits to agents. (infra/.env is exempt.) If you need a value, ask the user to export it into the session." >&2
