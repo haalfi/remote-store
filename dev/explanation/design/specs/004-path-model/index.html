@@ -8081,6 +8081,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#path-016-as_posix-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PATH-016: as_posix Method
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#path-017-not-ospathlike" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PATH-017: Not os.PathLike
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PATH-017: Not os.PathLike">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pathlib-parity-scope-informative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pathlib parity scope (informative)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -9547,6 +9586,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#path-016-as_posix-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PATH-016: as_posix Method
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#path-017-not-ospathlike" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PATH-017: Not os.PathLike
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PATH-017: Not os.PathLike">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pathlib-parity-scope-informative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pathlib parity scope (informative)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -9666,6 +9744,40 @@ accept <code>"."</code> as a root alias, so <code>str(folder_info.path)</code> c
 <a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">fi2</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_folder_info</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">fi</span><span class="o">.</span><span class="n">path</span><span class="p">))</span>
 <a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="k">assert</span> <span class="n">fi2</span><span class="o">.</span><span class="n">path</span> <span class="ow">is</span> <span class="n">RemotePath</span><span class="o">.</span><span class="n">ROOT</span>
 </code></pre></div></p>
+<h2 id="path-016-as_posix-method">PATH-016: <code>as_posix</code> Method<a class="headerlink" href="#path-016-as_posix-method" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>as_posix()</code> is a method (called with parentheses, matching
+<code>pathlib.PurePath.as_posix</code>) that returns the forward-slash path string.
+Because <code>RemotePath</code> always stores forward slashes, the result equals
+<code>str(self)</code> on every platform.
+<strong>Postconditions:</strong> <code>RemotePath("a/b").as_posix() == "a/b"</code>;
+<code>RemotePath.ROOT.as_posix() == "."</code>.
+<strong>Example:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a</span><span class="se">\\</span><span class="s2">b&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;a/b&quot;</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="o">.</span><span class="n">ROOT</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span>
+</code></pre></div></p>
+<h2 id="path-017-not-ospathlike">PATH-017: Not <code>os.PathLike</code><a class="headerlink" href="#path-017-not-ospathlike" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>RemotePath</code> deliberately does <strong>not</strong> implement <code>__fspath__</code>
+and is therefore not an <code>os.PathLike</code>. <code>RemotePath</code> is a <em>remote-store key</em>,
+not a local filesystem path; implementing <code>__fspath__</code> would let it be passed
+silently to <code>open()</code>, <code>os.path.*</code>, and similar APIs that operate on the local
+filesystem, masking a category error. Callers that need a string use
+<code>as_posix()</code> (PATH-016) or <code>str()</code>.
+<strong>Postconditions:</strong> <code>isinstance(RemotePath("a"), os.PathLike)</code> is <code>False</code>;
+<code>os.fspath(RemotePath("a"))</code> raises <code>TypeError</code>.
+<strong>Example:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="n">os</span><span class="o">.</span><span class="n">fspath</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">))</span>
+</code></pre></div></p>
+<h3 id="pathlib-parity-scope-informative">pathlib parity scope (informative)<a class="headerlink" href="#pathlib-parity-scope-informative" title="Permanent link">&para;</a></h3>
+<p><code>RemotePath</code> is a deliberately minimal subset of <code>pathlib.PurePath</code>, not a
+drop-in replacement. Beyond <code>as_posix()</code> (PATH-016), the following <code>PurePath</code>
+members are intentionally absent and tracked as deferred parity candidates:
+<code>stem</code>, <code>suffixes</code>, <code>with_name</code>, <code>with_suffix</code>, <code>with_stem</code>, <code>joinpath</code>,
+<code>parents</code>, <code>match</code>, <code>relative_to</code> / <code>is_relative_to</code>, and <code>is_absolute</code>. The
+<code>as_uri</code> and <code>drive</code> / <code>root</code> / <code>anchor</code> accessors are out of scope entirely
+(meaningless for a rootless remote key). See the backlog for the follow-up
+that may close the deferred candidates.</p>
 
 
 
