@@ -7,9 +7,7 @@ source_items:
 audience:
   - contributor.process
   - contributor.tooling
-expected_ripples:
-  - sdd/backlogid.json
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
