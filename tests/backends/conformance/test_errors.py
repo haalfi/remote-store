@@ -37,9 +37,21 @@ if TYPE_CHECKING:
 pytestmark = pytest.mark.extended_conformance
 
 
-@pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)
+@pytest.mark.parametrize(
+    "backend",
+    fixture_params(Capability.WRITE, include_strict_only=True),
+    indirect=True,
+)
 class TestReadErrorFidelity:
-    """BackendContract.Read postconditions: dir->InvalidPath, missing->NotFound."""
+    """BackendContract.Read postconditions: dir->InvalidPath, missing->NotFound.
+
+    Class-level parametrize uses ``include_strict_only=True`` so the read-side
+    file-ancestor test exercises the ``sftp_chroot_inproc`` strict variant
+    (ID-212), which reproduces a chrooted server where a stat above the chroot
+    is denied. Flat-NS strict variants skip the directory / file-ancestor
+    cases via ``_skip_flat_namespace``; the plain ``*_strict`` flat fixtures
+    only add the two missing-path cases, which they satisfy.
+    """
 
     @pytest.mark.spec("BE-006")
     def test_read_on_directory_raises_error(self, backend: Backend) -> None:

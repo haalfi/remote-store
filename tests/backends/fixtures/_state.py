@@ -86,6 +86,8 @@ class InfraState:
     minio_url: str | None = None
     sftp_inproc_port: int | None = None
     sftp_inproc_host_key: str | None = None
+    sftp_chroot_port: int | None = None
+    sftp_chroot_host_key: str | None = None
     sftp_docker_port: int | None = None
     azurite_conn_str: str | None = None
     http_server: object | None = None

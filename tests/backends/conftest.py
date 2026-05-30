@@ -35,6 +35,7 @@ def _populate_infra(
     moto_server: str | None,
     minio_server: str | None,
     sftp_server: tuple[int, str] | None,
+    sftp_chroot_server: tuple[int, str] | None,
     sftp_docker_server: int | None,
     azurite_server: str | None,
     http_server: object | None,
@@ -51,6 +52,8 @@ def _populate_infra(
     INFRA.minio_url = minio_server
     if sftp_server is not None:
         INFRA.sftp_inproc_port, INFRA.sftp_inproc_host_key = sftp_server
+    if sftp_chroot_server is not None:
+        INFRA.sftp_chroot_port, INFRA.sftp_chroot_host_key = sftp_chroot_server
     INFRA.sftp_docker_port = sftp_docker_server
     INFRA.azurite_conn_str = azurite_server
     INFRA.http_server = http_server
@@ -59,6 +62,8 @@ def _populate_infra(
     INFRA.minio_url = None
     INFRA.sftp_inproc_port = None
     INFRA.sftp_inproc_host_key = None
+    INFRA.sftp_chroot_port = None
+    INFRA.sftp_chroot_host_key = None
     INFRA.sftp_docker_port = None
     INFRA.azurite_conn_str = None
     INFRA.http_server = None

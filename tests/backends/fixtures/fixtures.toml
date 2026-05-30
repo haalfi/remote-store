@@ -67,6 +67,19 @@ kind      = "real-local"
 container = "none"
 is_async  = false
 
+# ID-212 chroot variant: same SFTP backend against a server that denies stat
+# above the chroot boundary (base_path). strict_only=true keeps it out of the
+# default conformance enumeration; the file-ancestor error-fidelity tests opt
+# in via include_strict_only=True and exercise the base_path-relative walk in
+# _has_file_ancestor / _ensure_parent_dirs against the restricted boundary.
+[fixture.sftp_chroot_inproc]
+backend     = "sftp"
+stage       = 1
+kind        = "real-local"
+container   = "none"
+is_async    = false
+strict_only = true
+
 [fixture.dafny_oracle]
 backend   = "dafny"
 stage     = 1

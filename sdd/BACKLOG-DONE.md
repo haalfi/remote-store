@@ -8,6 +8,37 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-212 — Harden SFTP file-ancestor detection against partial-stat-permission setups**
+  spec: BE-006, BE-007 · audience: user.api, library.maintainer, infra.test
+  Follow-up to ID-209 (PR #680). `SFTPBackend._has_file_ancestor` and
+  `_ensure_parent_dirs` both walked the parent chain from the absolute
+  SFTP root `/`, stat-ing every component above `self._base_path`. On a
+  chrooted / partial-permission deployment where an ancestor above the
+  chroot returns `SSH_FX_PERMISSION_DENIED`, the read walk aborted and
+  mis-classified a genuine file-ancestor case as
+  `RemoteStoreError("Failure")` instead of `NotFound` (diverging from
+  BE-006/BE-007's `!PathExists ==> NotFound`), and the write walk
+  re-raised the permission error as `PermissionDenied` so even ordinary
+  nested writes failed.
+  - Consolidated both helpers onto a shared `_base_relative_ancestor_dirs`
+    generator whose walk root is `self._base_path`: components at or above
+    the base are never probed, so the chroot boundary is never stat'd.
+    Ancestors above `base_path` are assumed to exist (the connection-time
+    root); base and below are walked exactly as before.
+  - Added the `sftp_chroot_inproc` conformance fixture (a
+    `ChrootStubSFTPServer` that denies stat at and above a boundary, with
+    the backend's `base_path` set to a unique subdirectory below it) and
+    wired the read-side `TestReadErrorFidelity` class to
+    `include_strict_only=True` so the file-ancestor read / write / move /
+    copy gates exercise the restricted-permission case. The fixture failed
+    21 error-fidelity cells before the fix and passes after.
+  - Dropped the chroot caveat from the `_has_file_ancestor` docstring and
+    fixed the misleading "walk from base_path down" comment in
+    `_ensure_parent_dirs`.
+  - The optional `lstat`-on-immediate-parent second pass from the backlog
+    note was not needed: the base-relative walk fully resolves the
+    divergence. Discovered as ID-209 round-4 review follow-up.
+
 - [x] **ID-214 — Sweep residual pre-reorg test-path references in non-authoritative docs**
   spec: — · audience: user.site
   Follow-up to ID-203, which realigned the authoritative surfaces but

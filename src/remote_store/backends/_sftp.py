@@ -1375,8 +1375,47 @@ class SFTPBackend(Backend):
                 return  # path doesn't exist — let caller handle NotFound
             raise
 
+    def _base_relative_ancestor_dirs(self, sftp_path: str) -> Iterator[str]:
+        """Yield each ancestor directory of *sftp_path*, from ``self._base_path``
+        (inclusive) down to its immediate parent.
+
+        The walk root is ``self._base_path`` — the configured, connection-time
+        root — never the absolute SFTP root ``/``.  Components at or above the
+        base are never yielded, so a chrooted SFTP deployment that returns
+        ``SSH_FX_PERMISSION_DENIED`` for an ancestor above the chroot does not
+        derail the walk.  ``_has_file_ancestor`` and ``_ensure_parent_dirs``
+        share this iteration so their walks stay paired.
+
+        When ``base_path`` is ``"/"`` there is no chroot boundary above the
+        SFTP root, so every component of *sftp_path*'s parent chain is yielded.
+        """
+        parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else ""
+        if not parent:
+            return
+        base = self._base_path
+        if base == "/":
+            current = ""
+            for part in parent.split("/"):
+                if part:
+                    current = f"{current}/{part}"
+                    yield current
+            return
+        if parent == base:
+            # Immediate parent is the base itself: no intermediate ancestors,
+            # and the base is assumed to exist (the connection-time root).
+            return
+        if not parent.startswith(base + "/"):
+            return  # defensive: path is not under base — nothing to walk
+        yield base
+        current = base
+        for part in parent[len(base) + 1 :].split("/"):
+            if part:
+                current = f"{current}/{part}"
+                yield current
+
     def _has_file_ancestor(self, sftp_path: str) -> bool:
-        """Return True iff any slash-aligned ancestor of *sftp_path* is a regular file.
+        """Return True iff any ancestor of *sftp_path* below ``self._base_path``
+        is a regular file rather than a directory.
 
         Paramiko surfaces SSH_FX_FAILURE as ``OSError("...", errno=None)``
         for a wide range of conditions — file-ancestor, quota, lock,
@@ -1387,42 +1426,22 @@ class SFTPBackend(Backend):
         NotFound" rule) or something else (let ``_map_exception``
         surface as ``RemoteStoreError``).
 
-        Only fires on the slow error path, so the per-stat-per-ancestor
-        round-trip cost is paid once per failing read, not per
-        successful read.
-
-        Known limitation: the helper walks from the absolute SFTP root
-        ``/`` rather than from ``self._base_path``, and on a non-ENOENT
-        stat error returns False conservatively (lets the caller's
-        original ``OSError(errno=None)`` fall through to
-        ``RemoteStoreError("Failure")``).  In a chrooted SFTP deployment
-        where stat on an ancestor above the chroot returns
-        ``SSH_FX_PERMISSION_DENIED``, the walk aborts on the first such
-        ancestor and a genuine file-ancestor case under the chroot is
-        mis-classified as a generic Failure rather than NotFound.  The
-        ``sftp_inproc`` conformance fixture does not exercise this
-        because it grants unrestricted local-FS access; the proper fix
-        (walk from ``self._base_path`` down, consolidating with
-        ``_ensure_parent_dirs``) is tracked in the backlog.
+        The walk starts at ``self._base_path`` (see
+        ``_base_relative_ancestor_dirs``) so it never stats an ancestor
+        above the configured root — including the chroot boundary on a
+        partial-permission SFTP deployment.  Only fires on the slow error
+        path, so the per-stat-per-ancestor round-trip cost is paid once
+        per failing read, not per successful read.
         """
-        parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else ""
-        if not parent or parent == self._base_path:
-            return False
-        parts = parent.split("/")
-        current = ""
-        for part in parts:
-            if not part:
-                current = "/"
-                continue
-            current = f"{current}/{part}" if current and current != "/" else f"/{part}"
+        for current in self._base_relative_ancestor_dirs(sftp_path):
             try:
                 st = self._sftp.stat(current)
             except OSError as exc:
                 if getattr(exc, "errno", None) == errno.ENOENT:
                     return False  # ancestor missing, not a file
-                # Opaque error walking the chain — be conservative and
-                # let the caller's original failure surface as-is.  See
-                # the chroot limitation note above and ID-212.
+                # Opaque error walking the chain (below the base) — be
+                # conservative and let the caller's original failure
+                # surface as-is.
                 return False
             if st.st_mode is None or not stat.S_ISDIR(st.st_mode):
                 return True  # ancestor exists and is not a directory
@@ -1431,6 +1450,11 @@ class SFTPBackend(Backend):
     def _ensure_parent_dirs(self, sftp_path: str) -> None:
         """Create parent directories for the given SFTP path if they don't exist.
 
+        Walks ``self._base_path`` (inclusive) down to the immediate parent via
+        ``_base_relative_ancestor_dirs``; ancestors above the base are never
+        probed, so a chrooted server that denies stat above the chroot does
+        not derail directory creation.
+
         An existing entry along the parent chain that is a regular file
         (not a directory) raises ``InvalidPath`` rather than letting the
         subsequent stat/mkdir against ``file/child`` fail with a generic
@@ -1438,23 +1462,7 @@ class SFTPBackend(Backend):
         ``SFTPError`` whose ``errno`` attribute is unset, which our
         OSError-keyed ``_map_exception`` cannot disambiguate.
         """
-        parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else ""
-        if not parent or parent == self._base_path:
-            return
-        # NOTE: the comment below says "walk from base_path down" but the
-        # loop actually walks from the absolute SFTP root "/". This
-        # divergence matters under chroot — see the limitation noted in
-        # _has_file_ancestor's docstring and the consolidation follow-up
-        # tracked in the backlog. Kept as-is here so the behaviour
-        # stays paired with _has_file_ancestor's walk.
-        # Walk from base_path down, creating directories as needed
-        parts = parent.split("/")
-        current = ""
-        for part in parts:
-            if not part:
-                current = "/"
-                continue
-            current = f"{current}/{part}" if current and current != "/" else f"/{part}"
+        for current in self._base_relative_ancestor_dirs(sftp_path):
             try:
                 st = self._sftp.stat(current)
             except OSError as exc:

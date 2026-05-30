@@ -1,0 +1,104 @@
+id: ID-212
+title: "Harden SFTP file-ancestor detection against partial-stat-permission setups"
+trigger: "ID-209 round-4 review flagged that SFTPBackend._has_file_ancestor (and the paired _ensure_parent_dirs) walk the parent chain from the absolute SFTP root '/', stat-ing every component above self._base_path. On a chrooted/partial-permission server where an ancestor above the chroot returns SSH_FX_PERMISSION_DENIED, the read walk mis-classifies a genuine file-ancestor as RemoteStoreError('Failure') instead of NotFound, and the write walk re-raises the permission error so even nested writes fail. The sftp_inproc fixture cannot reach this because it grants unrestricted local-FS access."
+source_items:
+  - ID-212
+  - ID-209
+audience:
+  - user.api
+  - infra.test
+  - library.maintainer
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - CHANGELOG.md
+surprising_ripples:
+  - tests/backends/conformance/test_errors.py
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-212 (SFTP)"
+        read_type: gate
+        extract: "Prescribed fix: consolidate _has_file_ancestor and _ensure_parent_dirs onto self._base_path as the walk root; add a sftp_chroot_inproc fixture variant; tighten the _has_file_ancestor docstring. Optional lstat-on-immediate-parent second pass — deferred."
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor (1378), _ensure_parent_dirs (1431), read/read_bytes (696-743)"
+        read_type: gate
+        extract: "Both helpers split the full sftp_path and walk from '/'; only short-circuit on parent == self._base_path. _has_file_ancestor is called solely from read/read_bytes on the code-is-None SSH_FX_FAILURE path; _ensure_parent_dirs from write/move/copy. The non-ENOENT branches differ: _has_file_ancestor returns False conservatively, _ensure_parent_dirs re-raises — so the chroot bug surfaces as NotFound-miss on read and PermissionDenied on write."
+      - file: sdd/traces/id-209-fs-wellformedness.yml
+        section: "review round 4 (chroot limitation)"
+        read_type: reference
+        extract: "ID-212 was opened from this round-4 entry; confirms the walk-from-'/' vs walk-from-base_path divergence and that _ensure_parent_dirs shares the pattern despite its 'walk from base_path down' comment."
+      - file: tests/backends/sftp/_helpers.py
+        section: "StubSFTPServer, start_sftp_server, _accept_connections"
+        read_type: gate
+        extract: "In-process paramiko server maps SFTP paths to a local temp ROOT (class attr). To simulate the chroot, subclass and override stat/lstat to return SFTP_PERMISSION_DENIED above a boundary; parameterise the server class + chroot through start_sftp_server. ROOT/CHROOT are per-class so a chroot server and the plain server can run concurrently without clobbering each other."
+      - file: tests/backends/fixtures/_loader.py
+        section: "FixtureDescriptor, strict_only parsing"
+        read_type: gate
+        extract: "fixtures.toml + backends.toml drive the registry; strict_only keeps a narrow-contract fixture out of the default enumeration (consumed only via include_strict_only=True). sftp family default flat_namespace=false ⇒ rejects_write_under_file_ancestor=true inherited, so the chroot fixture is picked up by the existing write/move/copy file-ancestor gates automatically."
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestReadErrorFidelity / TestWriteErrorFidelity / TestMoveCopyErrorFidelity"
+        read_type: gate
+        extract: "Write and MoveCopy classes already parametrise with include_strict_only=True; only the Read class (which exercises _has_file_ancestor via test_read_under_file_ancestor) did not — so wiring the read-side coverage means adding include_strict_only there."
+  - id: tests
+    name: Tests (failing first)
+    steps:
+      - file: tests/backends/sftp/_helpers.py
+        section: "ChrootStubSFTPServer + CHROOT_BOUNDARY"
+        read_type: reference
+        extract: "Added ChrootStubSFTPServer overriding stat/lstat to deny anything not strictly below CHROOT_BOUNDARY ('/restricted'); relative paths ('.', the liveness probe) pass through. Parameterised _accept_connections / start_sftp_server with server_class + chroot."
+      - file: tests/conftest.py
+        section: "sftp_chroot_server session fixture"
+        read_type: reference
+        extract: "New session fixture starting a ChrootStubSFTPServer on its own temp dir + port; pre-creates the boundary dir so per-test roots below it can be made on first write."
+      - file: tests/backends/fixtures/sftp_chroot_inproc.py
+        section: "(full)"
+        read_type: reference
+        extract: "New fixture module: base_path = '{CHROOT_BOUNDARY}/test_<uuid>' (unique per test for isolation, strictly below the denied boundary so the boundary is a denied proper ancestor). strict_only=true in fixtures.toml."
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestReadErrorFidelity parametrize"
+        read_type: reference
+        extract: "Switched the read class to include_strict_only=True so test_read_under_file_ancestor exercises the chroot fixture (and the flat *_strict fixtures, which skip the dir/file-ancestor cases). Ran -k sftp_chroot_inproc against the UNFIXED backend: 21 error-fidelity cells failed (every nested write tripped the denied /restricted), the missing-path cells passed — the expected pre-fix state."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_base_relative_ancestor_dirs + _has_file_ancestor + _ensure_parent_dirs"
+        read_type: reference
+        extract: "Added a shared generator yielding ancestors from self._base_path (inclusive) down to the immediate parent — base=='/' walks every component (no boundary above root). Rewrote both helpers onto it, preserving the ID-209 st_mode-is-None handling, EEXIST suppression, and the file-ancestor InvalidPath raise. Net effect: components at/above base_path are never stat'd, so the chroot boundary is never probed. Re-ran -k sftp_chroot_inproc: 21 passed; full conformance: 1906 passed, 422 skipped."
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor / _ensure_parent_dirs docstrings"
+        read_type: reference
+        extract: "Dropped the 'Known limitation (chroot)' block from _has_file_ancestor and the misleading 'walk from base_path down' comment that contradicted the walk-from-'/' code in _ensure_parent_dirs."
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/conformance/
+        section: "(full)"
+        read_type: verify
+        extract: "hatch run pytest tests/backends/conformance/ -> 1906 passed, 422 skipped. SFTP backend + error suite (-k sftp) -> 211 passed, 1 skipped."
+      - file: tests/backends/fixtures/test_registry.py
+        section: "(full)"
+        read_type: verify
+        extract: "Registry round-trip + layout invariants pass with the new sftp_chroot_inproc fixture (102 passed across test_registry suites)."
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Bug fix + Backend"
+        read_type: verify
+        extract: "BACKLOG.md -> BACKLOG-DONE.md move, CHANGELOG one-liner (user.api: error class changes on chroot servers). backlogid.json is a no-op: ID-212 <= the DONE-max of 214, so the move does not change the tracked max and the JSON is not touched. No spec change (BE-006/BE-007 already correct; code was diverging). No capability / error-type / public-API ripple."
+  - id: review
+    name: Review
+    steps:
+      - file: tests/backends/fixtures/sftp_chroot_inproc.py
+        section: "_factory base_path construction"
+        read_type: reference
+        extract: "PR #702 review (Possible, informational): the per-test base_path is never pre-created — StubSFTPServer.open auto-creates it via os.makedirs on first write, so the fixture exercises the stat/lstat denial above the chroot but NOT the 'base_path does not pre-exist' path (real OpenSSH does not auto-create the base, and _ensure_parent_dirs short-circuits when parent == base). Added a clarifying comment at the construction site per the reviewer's request; no behaviour change, no new backlog item (out of ID-212's scope — future real-chroot-OpenSSH hardening would add that coverage separately)."
+        outcome: ok
+      - file: sdd/traces/id-212-sftp-chroot-file-ancestor.yml
+        section: "expected_ripples"
+        read_type: reference
+        extract: "PR #702 round-2 review (Consistency, minor): expected_ripples listed sdd/backlogid.json, but the PR does not touch it — ID-212 (<= DONE-max 214) is a move, not a new allocation, so the JSON is a genuine no-op. Dropped sdd/backlogid.json from expected_ripples and corrected the verify-phase extract that claimed 'backlogid.json regenerated' (it was a no-op, not a regeneration with a diff)."
+        outcome: misleading
