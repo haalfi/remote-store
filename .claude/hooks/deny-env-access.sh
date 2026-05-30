@@ -1,0 +1,58 @@
+#!/bin/bash
+# PreToolUse: block any Bash command that reads a `.env` secrets file.
+#
+# `.env` files are local-only and must never be read by an agent (see
+# `permissions.deny` in .claude/settings.json, which covers the Read tool;
+# this hook closes the shell vector: cat/source/less/etc. against `.env`).
+#
+# Quoted strings are stripped before matching (same approach as
+# block-compound-cmds.sh) so that `.env` appearing inside an *argument*
+# — e.g. a `git commit -m "... .env ..."` message or an `echo` — does NOT
+# trip the guard; only a bare `.env` file operand does. The match requires
+# `.env` as a path token: preceded by a path boundary (start, whitespace,
+# slash, backslash, `=`) and not followed by an alphanumeric — so `.env`,
+# `./.env`, and `.env.local` are blocked while `.environment`, `.envrc`,
+# and `RS_TEST_LIVE_HNS=1 hatch run ...` pass through.
+#
+# Residual gap (accepted): `.env` hidden inside a quoted string passed to
+# an interpreter (e.g. `python -c "open('.env')"`) is stripped along with
+# the quotes and so is not caught here. The Read-tool deny in settings.json
+# remains the primary guard; this hook is defense-in-depth for the common
+# `cat .env` / `source .env` operands.
+
+CMD=$(jq -r '.tool_input.command // empty')
+
+# Strip single- and double-quoted spans so `.env` inside an argument
+# (commit messages, echo text) is ignored; only unquoted operands remain.
+STRIPPED=$(printf '%s' "$CMD" | awk '
+BEGIN {
+  in_sq = 0; in_dq = 0
+  SQ = sprintf("%c", 39); DQ = sprintf("%c", 34); BS = sprintf("%c", 92)
+}
+{
+  s = $0
+  out = ""
+  i = 1
+  n = length(s)
+  while (i <= n) {
+    c = substr(s, i, 1)
+    if (in_sq) {
+      if (c == SQ) in_sq = 0
+    } else if (in_dq) {
+      if (c == BS && i + 1 <= n) { i += 2; continue }
+      if (c == DQ) in_dq = 0
+    } else {
+      if (c == SQ) in_sq = 1
+      else if (c == DQ) in_dq = 1
+      else out = out c
+    }
+    i++
+  }
+  printf "%s\n", out
+}
+')
+
+if printf '%s' "$STRIPPED" | grep -qiE '(^|[^A-Za-z0-9_])\.env([^A-Za-z0-9_]|$)'; then
+  echo "Blocked: command reads a .env secrets file — .env is local-only and off-limits to agents. If you need a value from it, ask the user to export it into the session." >&2
+  exit 2
+fi
