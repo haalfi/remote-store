@@ -70,34 +70,6 @@ and the highest ID already in this file, then take the next integer. Run
   those are algorithm-name → impl lookup tables, not security policy.
   Surfaced during BK-198 (PR 613) review.
 
-- [ ] **ID-212 — Harden SFTP file-ancestor detection against partial-stat-permission setups**
-  spec: BE-006, BE-007 · effort: S · audience: library.maintainer
-  Follow-up to ID-209 (PR #680).  The new
-  `SFTPBackend._has_file_ancestor(sftp_path)` walks `sftp_path`'s parent
-  chain from the absolute SFTP root `/` rather than from
-  `self._base_path`, and returns `False` conservatively on any
-  non-ENOENT stat error.  In a chrooted SFTP deployment where stat on
-  an ancestor above the chroot returns `SSH_FX_PERMISSION_DENIED`, the
-  walk aborts on that ancestor and a genuine file-ancestor case under
-  the chroot is mis-classified as a generic `RemoteStoreError("Failure")`
-  rather than `NotFound` — diverging from BE-006/BE-007's
-  `!PathExists ==> NotFound` postcondition on those servers.  The
-  in-process `sftp_inproc` conformance fixture does not exercise this
-  because it grants unrestricted local-FS access.
-
-  `_ensure_parent_dirs` shares the same walk-from-root pattern (its own
-  comment says "Walk from base_path down" but the code walks from `/`),
-  so a clean fix consolidates both helpers onto `self._base_path` as
-  the walk root.  Optional second-pass: a targeted `lstat` on the
-  immediate parent only as a single-round-trip mitigation when the full
-  walk returns False on an opaque error.
-
-  Output: refactor both walks onto `self._base_path`, add a conformance
-  fixture variant (e.g. `sftp_chroot_inproc`) that exercises the
-  restricted-permission case, and tighten the `_has_file_ancestor`
-  docstring to drop the chroot caveat.  Promote to BK-prefix once a
-  user reports the divergence on a real chroot deployment.
-
 ---
 
 ## Azure

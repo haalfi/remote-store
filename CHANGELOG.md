@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- **ID-212 — Harden SFTP file-ancestor detection against partial-stat-permission (chroot) setups**
 - **ID-214 — Sweep residual pre-reorg test-path references in non-authoritative docs**
 - **ID-196 — `RemotePath.as_posix()` and pathlib parity audit**
 - **BK-246 — Strip internal tracker IDs from published docstrings and `docs-src/`; add lint gate**

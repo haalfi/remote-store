@@ -234,6 +234,53 @@ def sftp_server() -> Iterator[tuple[int, str] | None]:
     shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+@pytest.fixture(scope="session")
+def sftp_chroot_server() -> Iterator[tuple[int, str] | None]:
+    """Start an in-process chrooted SFTP server (ID-212).
+
+    Serves a temp directory but refuses to ``stat`` the ``CHROOT_BOUNDARY``
+    path and everything above it, reproducing a deployment where an ancestor
+    above the chroot returns ``SSH_FX_PERMISSION_DENIED``. The
+    ``sftp_chroot_inproc`` fixture sets the backend's ``base_path`` to a unique
+    subdirectory below the boundary so the file-ancestor walk is exercised
+    against the restricted boundary. Yields ``(port, host_key_entry)`` or
+    ``None`` when paramiko is unavailable.
+    """
+    if not _sftp_available():
+        yield None
+        return
+
+    import shutil
+    import tempfile
+
+    from tests.backends.sftp._helpers import (
+        CHROOT_BOUNDARY,
+        ChrootStubSFTPServer,
+        start_sftp_server,
+        stop_sftp_server,
+    )
+
+    tmpdir = tempfile.mkdtemp(prefix="sftp_chroot_test_")
+    # Materialise the boundary directory so per-test roots below it can be
+    # created on first write.
+    os.makedirs(os.path.join(tmpdir, *CHROOT_BOUNDARY.strip("/").split("/")), exist_ok=True)
+    thread, port, host_key, stop_event, server_socket = start_sftp_server(
+        root=tmpdir,
+        host="127.0.0.1",
+        server_class=ChrootStubSFTPServer,
+        chroot=CHROOT_BOUNDARY,
+    )
+
+    key_type = host_key.get_name()
+    key_b64 = host_key.get_base64()
+    host_key_entry = f"[127.0.0.1]:{port} {key_type} {key_b64}"
+
+    yield port, host_key_entry
+
+    stop_sftp_server(thread, stop_event, server_socket)
+    shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 @pytest.fixture(autouse=True, scope="session")
 def _close_leaked_event_loops() -> Iterator[None]:
     """Close any phantom event loops leaked by pytest-asyncio at session teardown.
