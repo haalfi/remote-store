@@ -186,7 +186,7 @@ with pytest.raises(TypeError):
 drop-in replacement. Beyond `as_posix()` (PATH-016), the following `PurePath`
 members are intentionally absent and tracked as deferred parity candidates:
 `stem`, `suffixes`, `with_name`, `with_suffix`, `with_stem`, `joinpath`,
-`parents`, `match`, `as_uri`, `relative_to` / `is_relative_to`,
-`is_absolute`, and the `drive` / `root` / `anchor` accessors (the last group
-is meaningless for a rootless remote key). See the backlog for the follow-up
-that may close these.
+`parents`, `match`, `relative_to` / `is_relative_to`, and `is_absolute`. The
+`as_uri` and `drive` / `root` / `anchor` accessors are out of scope entirely
+(meaningless for a rootless remote key). See the backlog for the follow-up
+that may close the deferred candidates.
