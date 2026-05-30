@@ -1,18 +1,25 @@
 #!/bin/bash
-# PreToolUse: block any Bash command that reads a `.env` secrets file.
+# PreToolUse: block any Bash command that reads a secret `.env` file.
 #
-# `.env` files are local-only and must never be read by an agent (see
-# `permissions.deny` in .claude/settings.json, which covers the Read tool;
-# this hook closes the shell vector: cat/source/less/etc. against `.env`).
+# Secret env files (`.env`, `.env.local`) are local-only and must never be
+# read by an agent (see `permissions.deny` in .claude/settings.json, which
+# covers the Read tool; this hook closes the shell vector: cat/source/less/
+# etc. against a secret env file).
 #
-# Quoted strings are stripped before matching (same approach as
-# block-compound-cmds.sh) so that `.env` appearing inside an *argument*
-# — e.g. a `git commit -m "... .env ..."` message or an `echo` — does NOT
-# trip the guard; only a bare `.env` file operand does. The match requires
-# `.env` as a path token: preceded by a path boundary (start, whitespace,
-# slash, backslash, `=`) and not followed by an alphanumeric — so `.env`,
-# `./.env`, and `.env.local` are blocked while `.environment`, `.envrc`,
-# and `RS_TEST_LIVE_HNS=1 hatch run ...` pass through.
+# Exception — `infra/.env`: `.gitignore` deliberately commits this one
+# (`!infra/.env`) as the non-secret single-source-of-truth for local-infra
+# ports/creds, and the benchmark/test docs direct agents to read it
+# (benchmarks/README.md). It is carved out below so `cat infra/.env` works.
+# A nested `infra/.env.local` is still treated as secret and blocked.
+#
+# Quoted strings are stripped before matching so that `.env` appearing
+# inside an *argument* — e.g. a `git commit -m "... .env ..."` message or
+# an `echo` — does NOT trip the guard; only a bare `.env` file operand
+# does. The match requires `.env` as a path token: preceded by a path
+# boundary (start, whitespace, slash, backslash, `=`) and not followed by
+# an alphanumeric — so `.env`, `./.env`, and `.env.local` are blocked while
+# `.environment`, `.envrc`, and `RS_TEST_LIVE_HNS=1 hatch run ...` pass
+# through.
 #
 # Residual gap (accepted): `.env` hidden inside a quoted string passed to
 # an interpreter (e.g. `python -c "open('.env')"`) is stripped along with
@@ -52,7 +59,13 @@ BEGIN {
 }
 ')
 
-if printf '%s' "$STRIPPED" | grep -qiE '(^|[^A-Za-z0-9_])\.env([^A-Za-z0-9_]|$)'; then
-  echo "Blocked: command reads a .env secrets file — .env is local-only and off-limits to agents. If you need a value from it, ask the user to export it into the session." >&2
+# Carve out the committed, non-secret `infra/.env`: neutralize that exact
+# token (forward- or back-slash) before matching, so it no longer looks
+# like a `.env` operand. A trailing `.` is excluded from the boundary so
+# `infra/.env.local` is left intact and still blocked as a secret.
+CARVED=$(printf '%s' "$STRIPPED" | sed -E 's#(^|[^A-Za-z0-9_])infra[/\]\.env($|[^A-Za-z0-9_.])#\1infra/__INFRA_ENV__\2#g')
+
+if printf '%s' "$CARVED" | grep -qiE '(^|[^A-Za-z0-9_])\.env([^A-Za-z0-9_]|$)'; then
+  echo "Blocked: command reads a secret .env file — secret env files (.env, .env.local) are local-only and off-limits to agents. (infra/.env is exempt.) If you need a value, ask the user to export it into the session." >&2
   exit 2
 fi
