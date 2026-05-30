@@ -148,3 +148,45 @@ assert str(fi.path) == "."
 fi2 = store.get_folder_info(str(fi.path))
 assert fi2.path is RemotePath.ROOT
 ```
+
+## PATH-016: `as_posix` Method
+
+**Invariant:** `as_posix()` is a method (called with parentheses, matching
+`pathlib.PurePath.as_posix`) that returns the forward-slash path string.
+Because `RemotePath` always stores forward slashes, the result equals
+`str(self)` on every platform.
+**Postconditions:** `RemotePath("a/b").as_posix() == "a/b"`;
+`RemotePath.ROOT.as_posix() == "."`.
+**Example:**
+```python
+assert RemotePath("a\\b").as_posix() == "a/b"
+assert RemotePath.ROOT.as_posix() == "."
+```
+
+## PATH-017: Not `os.PathLike`
+
+**Invariant:** `RemotePath` deliberately does **not** implement `__fspath__`
+and is therefore not an `os.PathLike`. `RemotePath` is a *remote-store key*,
+not a local filesystem path; implementing `__fspath__` would let it be passed
+silently to `open()`, `os.path.*`, and similar APIs that operate on the local
+filesystem, masking a category error. Callers that need a string use
+`as_posix()` (PATH-016) or `str()`.
+**Postconditions:** `isinstance(RemotePath("a"), os.PathLike)` is `False`;
+`os.fspath(RemotePath("a"))` raises `TypeError`.
+**Example:**
+```python
+import os
+with pytest.raises(TypeError):
+    os.fspath(RemotePath("a"))
+```
+
+### pathlib parity scope (informative)
+
+`RemotePath` is a deliberately minimal subset of `pathlib.PurePath`, not a
+drop-in replacement. Beyond `as_posix()` (PATH-016), the following `PurePath`
+members are intentionally absent and tracked as deferred parity candidates:
+`stem`, `suffixes`, `with_name`, `with_suffix`, `with_stem`, `joinpath`,
+`parents`, `match`, `relative_to` / `is_relative_to`, and `is_absolute`. The
+`as_uri` and `drive` / `root` / `anchor` accessors are out of scope entirely
+(meaningless for a rootless remote key). See the backlog for the follow-up
+that may close the deferred candidates.

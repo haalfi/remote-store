@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
 from remote_store._errors import InvalidPath
@@ -152,6 +154,51 @@ class TestRemotePathJoin:
     )
     def test_join(self, right: str, expected: str) -> None:
         assert RemotePath("a") / right == RemotePath(expected)
+
+
+class TestRemotePathAsPosix:
+    """PATH-016: ``as_posix`` method."""
+
+    @pytest.mark.spec("PATH-016")
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [
+            pytest.param("a/b", "a/b", id="plain"),
+            pytest.param("a\\b", "a/b", id="backslash-normalized"),
+            pytest.param("/a/b/", "a/b", id="stripped"),
+        ],
+    )
+    def test_as_posix_matches_str(self, raw: str, expected: str) -> None:
+        p = RemotePath(raw)
+        assert p.as_posix() == expected
+        assert p.as_posix() == str(p)
+
+    @pytest.mark.spec("PATH-016")
+    def test_as_posix_is_a_method(self) -> None:
+        """Called with parentheses, matching ``pathlib.PurePath.as_posix``."""
+        result = RemotePath("a/b").as_posix()
+        assert isinstance(result, str)
+
+    @pytest.mark.spec("PATH-016")
+    def test_as_posix_root(self) -> None:
+        assert RemotePath.ROOT.as_posix() == "."
+
+
+class TestRemotePathNotPathLike:
+    """PATH-017: ``RemotePath`` is deliberately not ``os.PathLike``."""
+
+    @pytest.mark.spec("PATH-017")
+    def test_not_pathlike_instance(self) -> None:
+        assert not isinstance(RemotePath("a"), os.PathLike)
+
+    @pytest.mark.spec("PATH-017")
+    def test_no_fspath_dunder(self) -> None:
+        assert not hasattr(RemotePath("a"), "__fspath__")
+
+    @pytest.mark.spec("PATH-017")
+    def test_os_fspath_rejects(self) -> None:
+        with pytest.raises(TypeError, match="os.PathLike"):
+            os.fspath(RemotePath("a"))  # type: ignore[arg-type]
 
 
 class TestRemotePathEqualityHashing:

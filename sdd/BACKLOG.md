@@ -446,16 +446,6 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
 ## API Ergonomics
 
-- [ ] **ID-196 — RemotePath.as_posix() and pathlib parity audit**
-  spec: NPR-020 · effort: S · audience: user.api
-  `RemotePath.__str__` returns the POSIX-style key, but `.as_posix()` raises
-  `AttributeError`, breaking pathlib muscle memory. `pathlib.PurePath.as_posix()`
-  is the documented, canonical way to get a forward-slash string regardless of
-  platform. Add `as_posix()` as a one-line property returning `str(self)` in
-  `src/remote_store/_path.py`, then audit `RemotePath` against the `PurePath`
-  API surface (`__fspath__`, `fspath`, etc.) to close remaining parity gaps.
-  Discovered during HNS listing test authoring; workaround was explicit `str()` conversion.
-
 - [ ] **BK-234 — Reconcile `to_key` empty-key / bare-root behaviour across backends**
   spec: NPR-005, NPR-020, NPR-021 · effort: M · audience: library.maintainer
   NPR-020 states the round-trip `to_key(native_path(k)) == k` holds "for
@@ -843,6 +833,24 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 ## Icebox
 
 Deferred indefinitely — revisit only if demand or circumstances change.
+
+- [ ] **ID-215 — `RemotePath` deferred pathlib-parity members**
+  spec: PATH-016, PATH-017 · effort: S · audience: user.api
+  Follow-up from ID-196. That item shipped `as_posix()` (PATH-016) and pinned
+  the deliberate non-goal that `RemotePath` is **not** `os.PathLike`
+  (PATH-017). The accompanying parity audit catalogued the `pathlib.PurePath`
+  members still absent from `RemotePath`:
+  - **Cheap, safe read accessors** complementing the existing `name` / `suffix`:
+    `stem` (name without final suffix) and `suffixes` (list of all suffixes).
+  - **Copy-with mutators:** `with_name`, `with_suffix`, `with_stem`. Each must
+    re-run normalisation/validation and reject empty results per PATH-008.
+  - **Other:** `joinpath` (n-ary `/`), `parents` (ancestor sequence),
+    `match` (glob), `relative_to` / `is_relative_to`, `is_absolute`.
+  Out of scope (meaningless for a rootless remote key): `drive`, `root`,
+  `anchor`, `as_uri`. No demand for any of these yet — `as_posix()` covered the
+  one concrete need. Reactivate per-member if a user hits a specific gap; each
+  would need a `PATH-NNN` clause + spec-tagged test.
+  Surfaced during the ID-196 parity audit.
 
 - [ ] **BK-139d — Implement remaining bug prevention measures from research**
   spec: — · effort: M · audience: library.maintainer

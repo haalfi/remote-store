@@ -76,6 +76,15 @@ class RemotePath:
             return ""
         return name[dot:]
 
+    def as_posix(self) -> str:
+        """Return the path as a forward-slash string.
+
+        Mirrors ``pathlib.PurePath.as_posix``. The path is always stored
+        with forward slashes, so the result is identical to ``str(self)`` on
+        every platform. ``RemotePath.ROOT.as_posix()`` returns ``"."``.
+        """
+        return self._path
+
     def __truediv__(self, other: str) -> RemotePath:
         return RemotePath(f"{self._path}/{other}")
 
