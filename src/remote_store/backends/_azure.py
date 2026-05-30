@@ -506,9 +506,11 @@ class AzureBackend(Backend):
                         counter, overwrite=True, max_concurrency=self._max_concurrency, metadata=sdk_metadata
                     )
                     size = counter.count
-            except Exception:  # pragma: no cover -- HNS only
-                # ID-213: HNS rejects a write under a file-ancestor with
-                # ResourceNotFoundError; remap to the BE-008 InvalidPath.
+            except Exception:
+                # ID-213: on HNS a write under a file-ancestor surfaces as
+                # ResourceNotFoundError; remap to the BE-008 InvalidPath. This
+                # except is shared with non-HNS accounts, where the helper
+                # early-returns and the original error propagates unchanged.
                 self._raise_invalid_if_hns_file_ancestor(path)
                 raise
             return _build_azure_write_result(path, size, resp, metadata)
@@ -1100,9 +1102,11 @@ class AzureBackend(Backend):
             self._maybe_check_no_file_ancestor(dst)
             try:
                 dst_bc.start_copy_from_url(src_bc.url)
-            except Exception:  # pragma: no cover -- HNS only
-                # ID-213: HNS rejects a copy whose dst is under a file-ancestor;
-                # the SDK error is keyed to src, so remap to InvalidPath(dst).
+            except Exception:
+                # ID-213: on HNS a copy whose dst is under a file-ancestor
+                # surfaces a src-keyed error; remap to InvalidPath(dst). This
+                # except is shared with non-HNS accounts, where the helper
+                # early-returns and the original error propagates unchanged.
                 self._raise_invalid_if_hns_file_ancestor(dst)
                 raise
 
