@@ -11,11 +11,10 @@ audience:
 expected_ripples:
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
-  - sdd/backlogid.json
   - CHANGELOG.md
 surprising_ripples:
   - tests/backends/conformance/test_errors.py
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -89,7 +88,7 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check / Bug fix + Backend"
         read_type: verify
-        extract: "BACKLOG.md -> BACKLOG-DONE.md move, CHANGELOG one-liner (user.api: error class changes on chroot servers), backlogid.json regenerated. No spec change (BE-006/BE-007 already correct; code was diverging). No capability / error-type / public-API ripple."
+        extract: "BACKLOG.md -> BACKLOG-DONE.md move, CHANGELOG one-liner (user.api: error class changes on chroot servers). backlogid.json is a no-op: ID-212 <= the DONE-max of 214, so the move does not change the tracked max and the JSON is not touched. No spec change (BE-006/BE-007 already correct; code was diverging). No capability / error-type / public-API ripple."
   - id: review
     name: Review
     steps:
@@ -98,3 +97,8 @@ phases:
         read_type: reference
         extract: "PR #702 review (Possible, informational): the per-test base_path is never pre-created — StubSFTPServer.open auto-creates it via os.makedirs on first write, so the fixture exercises the stat/lstat denial above the chroot but NOT the 'base_path does not pre-exist' path (real OpenSSH does not auto-create the base, and _ensure_parent_dirs short-circuits when parent == base). Added a clarifying comment at the construction site per the reviewer's request; no behaviour change, no new backlog item (out of ID-212's scope — future real-chroot-OpenSSH hardening would add that coverage separately)."
         outcome: ok
+      - file: sdd/traces/id-212-sftp-chroot-file-ancestor.yml
+        section: "expected_ripples"
+        read_type: reference
+        extract: "PR #702 round-2 review (Consistency, minor): expected_ripples listed sdd/backlogid.json, but the PR does not touch it — ID-212 (<= DONE-max 214) is a move, not a new allocation, so the JSON is a genuine no-op. Dropped sdd/backlogid.json from expected_ripples and corrected the verify-phase extract that claimed 'backlogid.json regenerated' (it was a no-op, not a regeneration with a diff)."
+        outcome: misleading
