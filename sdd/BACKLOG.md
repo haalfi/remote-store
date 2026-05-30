@@ -98,8 +98,12 @@ and the highest ID already in this file, then take the next integer. Run
   - `TestListFilesCompleteness::test_list_files_non_traversable_ancestor_yields_empty`
   - `TestListFoldersCompleteness::test_list_folders_non_traversable_ancestor_yields_empty`
 
-  Plus async siblings for both halves (the recording aborted before
-  Step 3, so async behaviour is unobserved; expected to mirror sync).
+  Plus async siblings for both halves — observed 2026-05-30 (the 2026-05-27
+  run had aborted before Step 3): async mirrors sync, **7 blocked / 8 ready**,
+  one fewer blocked than sync because there is no async
+  `open_atomic_under_file_ancestor` sibling. The sync 8-ready / 8-blocked
+  split was re-confirmed the same day with zero drift, observed error classes
+  included.
   Surfaced during BK-195/BK-233 → ID-184 → ID-209 (each item extended
   the worklist as new self-skipping tests landed); the 2026-05-27 run
   revealed the worklist was bigger than the originating items
@@ -174,15 +178,33 @@ and the highest ID already in this file, then take the next integer. Run
   `_classify` — the natural Azure error must be swallowed so the
   empty-list postcondition fires (mirrors Local/SFTP's
   `NotADirectoryError` → `[]` swallow added in ID-209). Async siblings
-  in `tests/backends/conformance/test_async_extended.py` expected to
-  mirror; verify against `azure_live_async` once the sync fix lands
-  (the BK-235 recording aborted before Step 3 so the async behaviour
-  is not yet observed). Unblocks BK-235 for these eight tests; the
-  other eight self-skipping cassettes BK-235 covers record cleanly
-  today against live HNS. Parallel to ID-211 (flat-NS HEAD pre-check)
-  and ID-212 (SFTP chroot-stat hardening) — all three are ID-209
-  follow-ups along different backends' error-translation paths.
-  Discovered: BK-235 sync recording run, 2026-05-27.
+  mirror sync, now observed against `azure_live_async` (2026-05-30):
+  **7 blocked** (no async `open_atomic_under_file_ancestor` sibling, so the
+  async blocked set is one smaller than sync's 8) with identical error
+  classes — `write[write]`→`NotFound`, `write[write_atomic]`→`AlreadyExists`,
+  `delete`→`AlreadyExists`, `destination[move]`→`AlreadyExists`,
+  `destination[copy]`→`NotFound`, `list_files`→`AlreadyExists`,
+  `list_folders`→`AlreadyExists`. The fix is therefore needed symmetrically
+  on the async branch (`aio/backends/_azure.py`).
+
+  Implementation caveat (observed 2026-05-30): the move/copy blocked
+  failures surface inside `self._errors(src)` during the DFS rename, keyed
+  to the **source** path, not the dst file-ancestor blocker the test asserts
+  on — so the SDK error does not arrive at a clean dst pre-check. Before
+  committing to the `classify_azure_error` + `error_code` approach above,
+  confirm the discriminating `error_code` is actually present on those
+  rename responses (sync `_azure.py:971/1031`, async `_azure.py:1045/1119`)
+  and that the re-raise targets the dst even though the error object carries
+  src. The two listing tests fail at the per-method handler (`list_files`
+  `_azure.py:797`, `list_folders` `_azure.py:830`) where the natural error
+  must be swallowed → `[]`, as noted above.
+
+  Unblocks BK-235 for these eight tests; the other eight self-skipping
+  cassettes BK-235 covers record cleanly today against live HNS. Parallel to
+  ID-211 (flat-NS HEAD pre-check) and ID-212 (SFTP chroot-stat hardening) —
+  all three are ID-209 follow-ups along different backends' error-translation
+  paths. Discovered: BK-235 sync recording run, 2026-05-27; re-confirmed with
+  zero drift and async baseline observed, 2026-05-30.
 
 - [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
   spec: — · effort: S · audience: library.maintainer, user.api
