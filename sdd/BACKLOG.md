@@ -102,6 +102,74 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Azure
 
+- [ ] **BK-235 — Record the Azure cassettes for new conformance tests**
+  spec: — · effort: S · audience: infra.test
+  Sixteen conformance tests self-skip on `azure_replay` because no
+  cassette exists yet, so the Azure backend is not actually exercised by
+  these gates. Record via `RS_TEST_LIVE_HNS=1 hatch run record-azure`
+  against a live ADLS Gen2 account (Stage-3 credentials; per TEST-009
+  CI does not auto-record). The recording run on 2026-05-27 (account
+  `remotestorehns`) split the worklist into two halves:
+
+  **Record-ready (8 tests, pass against live HNS):**
+  - `TestWriteResultConformance::test_metadata_round_trips_through_move_copy` (`move`, `copy`) — BK-195/BK-233
+  - `TestDeleteFolderErrorFidelity::test_delete_folder_recursive_no_child_survives` (sync) — ID-184
+  - `TestReadErrorFidelity::test_read_under_file_ancestor_raises_not_found` (`read`, `read_bytes`)
+  - `TestGetFileInfoErrorFidelity::test_get_file_info_under_file_ancestor_raises_not_found`
+  - `TestMoveCopySelfOperation::test_self_op_on_directory_raises_invalid_path` (`move`, `copy`)
+
+  **Blocked on ID-213 (8 tests, fail against live HNS — error class mismatch):**
+  - `TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path` (`write`, `write_atomic`)
+  - `TestWriteErrorFidelity::test_open_atomic_under_file_ancestor_raises_invalid_path`
+  - `TestDeleteErrorFidelity::test_delete_under_file_ancestor_raises_not_found`
+  - `TestMoveCopyErrorFidelity::test_destination_under_file_ancestor_raises_invalid_path` (`move`, `copy`)
+  - `TestListFilesCompleteness::test_list_files_non_traversable_ancestor_yields_empty`
+  - `TestListFoldersCompleteness::test_list_folders_non_traversable_ancestor_yields_empty`
+
+  Plus async siblings for both halves (the recording aborted before
+  Step 3, so async behaviour is unobserved; expected to mirror sync).
+  Surfaced during BK-195/BK-233 → ID-184 → ID-209 (each item extended
+  the worklist as new self-skipping tests landed); the 2026-05-27 run
+  revealed the worklist was bigger than the originating items
+  enumerated, and that the ID-209 assumption "HNS has real directories
+  so the gate should pass once recorded" only holds for the
+  read/get_file_info paths — not write/delete/move/copy/list under a
+  file ancestor (ID-213 tracks the fix). The `record-azure` script
+  deletes the entire cassette tree before re-recording, so the
+  record-ready half cannot ship without the blocked half also
+  recording cleanly: BK-235 lands as a single PR once ID-213 closes.
+
+- [ ] **BK-243 — Re-record stale Azure cassette for `test_open_atomic_exception_cleanup`**
+  spec: SAW-004, SAW-005, TEST-007 · effort: S · audience: infra.test
+  ID-188 extended `test_open_atomic_exception_cleanup` in
+  `tests/backends/conformance/test_atomic.py` with a
+  `list_files("", recursive=True)` orphan-temp-file scan. The pre-existing
+  cassette `tests/backends/cassettes/azure/TestBackendOpenAtomic.test_open_atomic_exception_cleanup[azure].yaml`
+  did not include the new HTTP `GET .../?resource=filesystem&recursive=true`
+  request, so the file was deleted in the same PR; the TEST-007
+  missing-cassette skip hook now skips the test under `azure_replay` until
+  the cassette is refreshed. Folds into the next general Azure cassette
+  refresh run (BK-235 covers the broader batch); list here so the gap is
+  not lost in case BK-235 ships before this lands. No code change
+  required — only `hatch run record-azure` against a live HNS account and
+  committing the new cassette.
+
+- [ ] **BK-244 — HNS-specific conformance test for open_atomic upload/rename cleanup**
+  spec: SAW-005, SAW-011 · effort: S · audience: infra.test
+  Discovered in PR #689 review of ID-188. The new
+  `test_open_atomic_exception_cleanup` orphan-temp scan only bites the
+  *caller-exception* path, where Local (SAW-008) and SFTP (SAW-009)
+  materialise their temp before yield while Azure HNS performs upload +
+  DFS rename *after* yield (`_azure.py:670-679`). HNS's
+  `tmp_fc.delete_file()` cleanup branch at upload/rename failure has no
+  conformance coverage today; needs a failure-injection test that drives
+  the inner `try` to raise — e.g. revoke permissions, collide the temp
+  name, or short-circuit `rename_file` via patch — and asserts the
+  fixture root remains empty afterwards. Sibling of BK-243 (cassette
+  refresh) but distinct: BK-243 is the existing test's HTTP cassette;
+  this is a new test exercising a code path none of the current
+  fixtures hit.
+
 - [ ] **ID-213 — Extend ID-209's `InvalidPath` translation to the HNS Azure backend**
   spec: BE-008, BE-012, BE-014, BE-015, BE-018, BE-019 · effort: M · audience: contributor.process, infra.test, library.maintainer, user.api
   Follow-up to ID-209 (PR #680). Decision 2(a) — write/move/copy under
@@ -143,6 +211,16 @@ and the highest ID already in this file, then take the next integer. Run
   and ID-212 (SFTP chroot-stat hardening) — all three are ID-209
   follow-ups along different backends' error-translation paths.
   Discovered: BK-235 sync recording run, 2026-05-27.
+
+- [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
+  spec: — · effort: S · audience: library.maintainer, user.api
+  The `examples/medallion_dagster/` showcase demonstrates a realistic user journey
+  combining Dagster orchestration with an Azure HNS backend, but has never executed
+  against a live ADLS Gen2 account. Run the full example end-to-end against real cloud
+  infrastructure to surface testing gaps, implementation TODOs, or edge cases that
+  conformance and unit tests miss. Async patterns are settled (ID-193 landed,
+  see BACKLOG-DONE.md). Findings inform the next release scope; no code changes
+  are produced by this item itself.
 
 ---
 
@@ -624,53 +702,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
 
-- [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
-  spec: — · effort: S · audience: library.maintainer, user.api
-  The `examples/medallion_dagster/` showcase demonstrates a realistic user journey
-  combining Dagster orchestration with an Azure HNS backend, but has never executed
-  against a live ADLS Gen2 account. Run the full example end-to-end against real cloud
-  infrastructure to surface testing gaps, implementation TODOs, or edge cases that
-  conformance and unit tests miss. Async patterns are settled (ID-193 landed,
-  see BACKLOG-DONE.md). Findings inform the next release scope; no code changes
-  are produced by this item itself.
-
-- [ ] **BK-235 — Record the Azure cassettes for new conformance tests**
-  spec: — · effort: S · audience: infra.test
-  Sixteen conformance tests self-skip on `azure_replay` because no
-  cassette exists yet, so the Azure backend is not actually exercised by
-  these gates. Record via `RS_TEST_LIVE_HNS=1 hatch run record-azure`
-  against a live ADLS Gen2 account (Stage-3 credentials; per TEST-009
-  CI does not auto-record). The recording run on 2026-05-27 (account
-  `remotestorehns`) split the worklist into two halves:
-
-  **Record-ready (8 tests, pass against live HNS):**
-  - `TestWriteResultConformance::test_metadata_round_trips_through_move_copy` (`move`, `copy`) — BK-195/BK-233
-  - `TestDeleteFolderErrorFidelity::test_delete_folder_recursive_no_child_survives` (sync) — ID-184
-  - `TestReadErrorFidelity::test_read_under_file_ancestor_raises_not_found` (`read`, `read_bytes`)
-  - `TestGetFileInfoErrorFidelity::test_get_file_info_under_file_ancestor_raises_not_found`
-  - `TestMoveCopySelfOperation::test_self_op_on_directory_raises_invalid_path` (`move`, `copy`)
-
-  **Blocked on ID-213 (8 tests, fail against live HNS — error class mismatch):**
-  - `TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path` (`write`, `write_atomic`)
-  - `TestWriteErrorFidelity::test_open_atomic_under_file_ancestor_raises_invalid_path`
-  - `TestDeleteErrorFidelity::test_delete_under_file_ancestor_raises_not_found`
-  - `TestMoveCopyErrorFidelity::test_destination_under_file_ancestor_raises_invalid_path` (`move`, `copy`)
-  - `TestListFilesCompleteness::test_list_files_non_traversable_ancestor_yields_empty`
-  - `TestListFoldersCompleteness::test_list_folders_non_traversable_ancestor_yields_empty`
-
-  Plus async siblings for both halves (the recording aborted before
-  Step 3, so async behaviour is unobserved; expected to mirror sync).
-  Surfaced during BK-195/BK-233 → ID-184 → ID-209 (each item extended
-  the worklist as new self-skipping tests landed); the 2026-05-27 run
-  revealed the worklist was bigger than the originating items
-  enumerated, and that the ID-209 assumption "HNS has real directories
-  so the gate should pass once recorded" only holds for the
-  read/get_file_info paths — not write/delete/move/copy/list under a
-  file ancestor (ID-213 tracks the fix). The `record-azure` script
-  deletes the entire cassette tree before re-recording, so the
-  record-ready half cannot ship without the blocked half also
-  recording cleanly: BK-235 lands as a single PR once ID-213 closes.
-
 - [ ] **BK-237 — Feature-type DoD checklists in `sdd/000-process.md`**
   spec: — · effort: S · audience: contributor.process
   Codify two complementary feature-DoD checklists in `sdd/000-process.md`,
@@ -770,37 +801,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `src/remote_store/backends/_s3_pyarrow.py`,
   `src/remote_store/backends/_azure.py`,
   `src/remote_store/aio/backends/_azure.py`. Discovered in PR #686 review.
-
-- [ ] **BK-243 — Re-record stale Azure cassette for `test_open_atomic_exception_cleanup`**
-  spec: SAW-004, SAW-005, TEST-007 · effort: S · audience: infra.test
-  ID-188 extended `test_open_atomic_exception_cleanup` in
-  `tests/backends/conformance/test_atomic.py` with a
-  `list_files("", recursive=True)` orphan-temp-file scan. The pre-existing
-  cassette `tests/backends/cassettes/azure/TestBackendOpenAtomic.test_open_atomic_exception_cleanup[azure].yaml`
-  did not include the new HTTP `GET .../?resource=filesystem&recursive=true`
-  request, so the file was deleted in the same PR; the TEST-007
-  missing-cassette skip hook now skips the test under `azure_replay` until
-  the cassette is refreshed. Folds into the next general Azure cassette
-  refresh run (BK-235 covers the broader batch); list here so the gap is
-  not lost in case BK-235 ships before this lands. No code change
-  required — only `hatch run record-azure` against a live HNS account and
-  committing the new cassette.
-
-- [ ] **BK-244 — HNS-specific conformance test for open_atomic upload/rename cleanup**
-  spec: SAW-005, SAW-011 · effort: S · audience: infra.test
-  Discovered in PR #689 review of ID-188. The new
-  `test_open_atomic_exception_cleanup` orphan-temp scan only bites the
-  *caller-exception* path, where Local (SAW-008) and SFTP (SAW-009)
-  materialise their temp before yield while Azure HNS performs upload +
-  DFS rename *after* yield (`_azure.py:670-679`). HNS's
-  `tmp_fc.delete_file()` cleanup branch at upload/rename failure has no
-  conformance coverage today; needs a failure-injection test that drives
-  the inner `try` to raise — e.g. revoke permissions, collide the temp
-  name, or short-circuit `rename_file` via patch — and asserts the
-  fixture root remains empty afterwards. Sibling of BK-243 (cassette
-  refresh) but distinct: BK-243 is the existing test's HTTP cassette;
-  this is a new test exercising a code path none of the current
-  fixtures hit.
 
 - [ ] **BK-245 — Cross-source capability-parity check (Python ↔ Dafny)**
   spec: — · effort: S · audience: infra.test, contributor.tooling
