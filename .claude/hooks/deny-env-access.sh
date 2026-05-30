@@ -23,9 +23,20 @@
 #
 # Residual gap (accepted): `.env` hidden inside a quoted string passed to
 # an interpreter (e.g. `python -c "open('.env')"`) is stripped along with
-# the quotes and so is not caught here. The Read-tool deny in settings.json
-# remains the primary guard; this hook is defense-in-depth for the common
-# `cat .env` / `source .env` operands.
+# the quotes and so is not caught here.
+#
+# Two layers, deliberately asymmetric. The policy is: every `.env` /
+# `.env.*` is secret EXCEPT the committed `infra/.env`. This hook is the
+# comprehensive shell-side enforcer — it blocks that whole set (including a
+# *nested* plain `.env` such as `secrets/.env`) because it can express the
+# `infra/.env` carve-out. The `permissions.deny` layer in settings.json
+# cannot: a `Read(**/.env)` rule would re-block `infra/.env` (deny is not
+# overridable by allow), so it covers only what its globs can express
+# without that regression — root `.env` / `.env.*` and any nested
+# `.env.local`. Net effect: for a nested plain `.env`, the shell vector
+# (`cat secrets/.env`) is blocked here while the Read tool is not. That gap
+# is a capability limit of deny-glob syntax, not an oversight; no such file
+# exists in the repo today.
 #
 # Latent (templates): a root-level non-secret onboarding template such as
 # `.env.example` / `.env.sample` / `.env.template` would also match the
@@ -75,13 +86,20 @@ BEGIN {
 ')
 
 # Carve out the committed, non-secret `infra/.env`: neutralize that exact
-# token (forward- or back-slash) before matching, so it no longer looks
-# like a `.env` operand. A trailing `.` is excluded from the boundary so
-# `infra/.env.local` is left intact and still blocked as a secret. The
-# separator is written as an alternation `(/|\\)` rather than a bracket
-# `[/\]`, because a lone backslash inside an ERE bracket expression is
-# implementation-defined; `\\` in an alternation is portable.
-CARVED=$(printf '%s' "$STRIPPED" | sed -E 's#(^|[^A-Za-z0-9_])infra(/|\\)\.env($|[^A-Za-z0-9_.])#\1infra/__INFRA_ENV__\3#g')
+# token before matching, so it no longer looks like a `.env` operand. A
+# trailing `.` is excluded from the boundary so `infra/.env.local` is left
+# intact and still blocked as a secret. The separator is written as an
+# alternation `(/|\\)` rather than a bracket `[/\]`, because a lone
+# backslash inside an ERE bracket expression is implementation-defined;
+# `\\` in an alternation is portable.
+#
+# The leading boundary excludes `/`, `\` and `.` (not just word chars), so
+# only a repo-root-relative `infra/.env` is exempted. A deeper path that
+# merely *ends* in `infra/.env` (e.g. `some/other/infra/.env`, or an
+# absolute / `./`-prefixed path) is NOT carved and stays blocked — erring
+# toward blocking, since such a second `infra/` dir would not be the
+# whitelisted file. Reference the exempt file as the bare `infra/.env`.
+CARVED=$(printf '%s' "$STRIPPED" | sed -E 's#(^|[^A-Za-z0-9_./\\])infra(/|\\)\.env($|[^A-Za-z0-9_.])#\1infra/__INFRA_ENV__\3#g')
 
 if printf '%s' "$CARVED" | grep -qiE '(^|[^A-Za-z0-9_])\.env([^A-Za-z0-9_]|$)'; then
   echo "Blocked: command reads a secret .env file — secret env files (.env, .env.local) are local-only and off-limits to agents. (infra/.env is exempt.) If you need a value, ask the user to export it into the session." >&2
