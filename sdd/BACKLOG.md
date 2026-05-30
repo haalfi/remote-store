@@ -393,7 +393,15 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
   **Optional follow-on (not in scope here):** `llms-full.txt` —
   concatenated full prose of all guides, for tools that prefer a single
-  large context file. Worth a separate ID if demand appears.
+  large context file. Worth a separate ID if demand appears. **Tooling
+  decision:** if pursued, generate it from the **built** site with a
+  MkDocs-native plugin (`mkdocs-llmstxt`, by the `mkdocstrings` author —
+  `full_output:` emits `llms-full.txt`), not an external source bundler. A
+  raw-source bundler would miss the `gen-files`-generated API pages and the
+  BK-171 URL rewrites, and ignore `literate-nav` order. See
+  [`research/research-lx-llms-context-tooling.md`](research/research-lx-llms-context-tooling.md).
+  The orthogonal "bundle repo source for a coding agent" use-case is ID-216,
+  not this file.
 
   **Content checklist when starting:** streaming reads (`with store.read(path) as f:`),
   `MemoryBackend` for unit testing, `store.child()` scoping, and
@@ -410,6 +418,26 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
   **Exit criteria:** `docs-src/llms.txt` committed; `GET
   https://docs.remotestore.dev/llms.txt` returns the file after next deploy.
+
+- [ ] **ID-216 — Evaluate `lx` as an ad-hoc repo-context bundler for coding agents**
+  spec: — · effort: S · audience: library.maintainer
+  [`rasros/lx`](https://github.com/rasros/lx) (Go, MIT) bundles a directory
+  tree into one LLM-ready blob (XML/Claude format, token estimation,
+  `.gitignore`-aware, tree/skeleton views). This is a **developer-convenience**
+  tool for handing a coding agent whole-codebase or whole-subtree **source**
+  context on demand — distinct from the docs-site `llms.txt`/`llms-full.txt`
+  lineage (ID-161), which targets *published docs prose*, not source. Nothing
+  here is committed or deployed, so the pipeline and supply-chain-in-CI concerns
+  that rule `lx` out for `llms-full.txt` do not apply.
+  **Scope:** timeboxed local trial — does `lx` beat a plain `git archive` /
+  bespoke script for our layout? Settle on an invocation (likely an `.lxignore`
+  plus a documented one-liner), and decide whether it earns a mention in
+  CONTRIBUTING / dev docs. Do **not** wire it into CI or the docs build.
+  **Why ID, not BK:** unevaluated DX convenience, no committed outcome.
+  Background and the full lx-vs-MkDocs-plugin analysis:
+  [`research/research-lx-llms-context-tooling.md`](research/research-lx-llms-context-tooling.md).
+  **Exit criteria:** trial run recorded; keep/drop decision noted on this item;
+  if kept, a documented invocation lands in dev docs.
 
 - [ ] **ID-180 — Stable HTML-anchor IDs across non-spec docs under `sdd/`**
   spec: — · effort: M · audience: library.maintainer
