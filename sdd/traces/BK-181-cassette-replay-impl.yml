@@ -16,7 +16,7 @@ phases:
   - id: orient
     name: Orient — read plan and all referenced artefacts
     steps:
-      - file: F:\Coding\Code\sandbox\BK-181-cassette-replay-impl-plan.md
+      - file: BK-181-cassette-replay-impl-plan.md (only tmporary)
         section: "(full)"
         read_type: gate
         extract: "executable plan: PR sequencing, central design challenges (cassette-name bridging, UUID rewrite, vcr activation scope), open decisions"
