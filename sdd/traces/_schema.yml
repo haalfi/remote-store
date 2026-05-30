@@ -74,6 +74,7 @@ properties:
         - user.site
         - user.discoverability.llm
         - user.discoverability.human
+        - library.maintainer
         - contributor.process
         - contributor.tooling
         - infra.test
@@ -99,6 +100,10 @@ properties:
       - user.discoverability.human  Outside-package signals for humans
                                     (README badges, GitHub topics, social
                                     cards).
+      - library.maintainer          Internal architecture, invariants, or
+                                    implementation choices for people
+                                    maintaining the library; not visible to
+                                    package consumers.
       - contributor.process         Repo-internal "how we work" artefacts:
                                     specs, ADRs, audits, AUTHORING,
                                     templates.
@@ -114,9 +119,9 @@ properties:
 
       Derived rule: CHANGELOG entry required iff any entry in `audience`
       starts with `user.`, or `contributor.process` introduces a new
-      user-facing framework / spec. Items tagged only `contributor.tooling`,
-      `infra.test`, `infra.ci`, or `internal.style` are not user-facing
-      and skip CHANGELOG.
+      user-facing framework / spec. Items tagged only `library.maintainer`,
+      `contributor.tooling`, `infra.test`, `infra.ci`, or `internal.style`
+      are not user-facing and skip CHANGELOG.
 
   discovery_followups:
     type: array
