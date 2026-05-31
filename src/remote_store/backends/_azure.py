@@ -1328,7 +1328,7 @@ class AzureBackend(Backend):
         """Get a BlobClient for the given path."""
         return self._cc.get_blob_client(self._azure_path(path))
 
-    def _hns_first_file_ancestor(self, path: str) -> str | None:  # pragma: no cover -- HNS only
+    def _hns_first_file_ancestor(self, path: str) -> str | None:
         """First slash-aligned ancestor of *path* that is a regular file on HNS.
 
         Returns the offending ancestor key, or ``None`` if every ancestor is a
@@ -1345,23 +1345,23 @@ class AzureBackend(Backend):
 
         azp = self._azure_path(path)
         if "/" not in azp:
-            return None
+            return None  # pragma: no cover -- HNS only
         parts = azp.split("/")
         for i in range(1, len(parts)):
             ancestor = "/".join(parts[:i])
             bc = self._cc.get_blob_client(ancestor)
             try:
                 props = bc.get_blob_properties()
-            except ResourceNotFoundError:
+            except ResourceNotFoundError:  # pragma: no cover -- HNS only
                 continue
-            except (AzureError, OSError):
+            except (AzureError, OSError):  # pragma: no cover -- HNS only
                 continue  # fail-open: unknown state is not treated as a file
             meta = getattr(props, "metadata", None) or {}
             if not meta.get("hdi_isfolder"):
                 return ancestor
-        return None
+        return None  # pragma: no cover -- HNS only
 
-    def _raise_invalid_if_hns_file_ancestor(self, path: str) -> None:  # pragma: no cover -- HNS only
+    def _raise_invalid_if_hns_file_ancestor(self, path: str) -> None:
         """Raise ``InvalidPath`` keyed to *path* if an HNS ancestor is a file.
 
         No-op on non-HNS accounts (the flat-namespace opt-in pre-check owns
@@ -1373,7 +1373,7 @@ class AzureBackend(Backend):
         contract names.
         """
         if not self._hns:
-            return
+            return  # pragma: no cover -- HNS only
         ancestor = self._hns_first_file_ancestor(path)
         if ancestor is not None:
             raise InvalidPath(

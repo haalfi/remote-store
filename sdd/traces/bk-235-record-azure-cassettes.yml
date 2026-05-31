@@ -13,12 +13,14 @@ source_items:
   - BK-195
 audience:
   - infra.test
+discovery_followups:
+  - BK-249
 co_shipped_items:
   - BK-243
 surprising_ripples:
   - sdd/specs/003-backend-adapter-contract.md
   - sdd/specs/029-async-store-backend-api.md
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -93,3 +95,8 @@ phases:
         read_type: verify
         extract: "Review caught the spec-caveat lift did not sweep the user-facing constructor docstrings (rendered via mkdocstrings on the API reference): both still said the InvalidPath contract is 'deferred on HNS, not delivered'. Aligned them with the amended BE-008/ASYNC-008; kept the async open_atomic omission. The same 'lift the caveat' phenomenon as the specs, surfaced one layer the ripple-check did not flag. Also dropped 18 now-merged `ID-213:` tracker-ID prefixes from the error-remap implementation comments (kept the behavioural why + the BE-xxx spec refs) per the repo's tracker-ID-hygiene norm; reworded the stale `(ID-213 covers the ... gap)` parenthetical that read as pending work"
         outcome: misleading
+      - file: src/remote_store/backends/_azure.py
+        section: "_hns_first_file_ancestor / _raise_invalid_if_hns_file_ancestor (+ async siblings)"
+        read_type: verify
+        extract: "Round-2 review: the two ancestor helpers' whole-`def` pragma excluded the now-replay-executed core (the InvalidPath raise + ancestor walk). Re-measured replay coverage and converted to line-level pragmas on only the genuinely-unreachable lines (slash-less early return, fail-open except clauses, trailing no-ancestor return), so coverage now locks the contract logic. Verified MISSING=[] in all four helpers under the edited pragmas. Filed BK-249 for the streaming-body file-ancestor branch the conformance test cannot reach"
+        outcome: ok

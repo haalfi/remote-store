@@ -1311,7 +1311,7 @@ class AsyncAzureBackend(AsyncBackend):
         """Get an async BlobClient for the given path."""
         return self._cc.get_blob_client(_azure_path_fn(path))
 
-    async def _hns_first_file_ancestor(self, path: str) -> str | None:  # pragma: no cover -- HNS only
+    async def _hns_first_file_ancestor(self, path: str) -> str | None:
         """Async sibling of ``AzureBackend._hns_first_file_ancestor``.
 
         First slash-aligned ancestor of *path* that is a regular file on HNS
@@ -1322,23 +1322,23 @@ class AsyncAzureBackend(AsyncBackend):
 
         azp = _azure_path_fn(path)
         if "/" not in azp:
-            return None
+            return None  # pragma: no cover -- HNS only
         parts = azp.split("/")
         for i in range(1, len(parts)):
             ancestor = "/".join(parts[:i])
             bc = self._cc.get_blob_client(ancestor)
             try:
                 props = await bc.get_blob_properties()
-            except ResourceNotFoundError:
+            except ResourceNotFoundError:  # pragma: no cover -- HNS only
                 continue
-            except (AzureError, OSError):
+            except (AzureError, OSError):  # pragma: no cover -- HNS only
                 continue  # fail-open: unknown state is not treated as a file
             meta = getattr(props, "metadata", None) or {}
             if not meta.get("hdi_isfolder"):
                 return ancestor
-        return None
+        return None  # pragma: no cover -- HNS only
 
-    async def _raise_invalid_if_hns_file_ancestor(self, path: str) -> None:  # pragma: no cover -- HNS only
+    async def _raise_invalid_if_hns_file_ancestor(self, path: str) -> None:
         """Async sibling of ``AzureBackend._raise_invalid_if_hns_file_ancestor``.
 
         Raise ``InvalidPath`` keyed to *path* if an HNS ancestor is a regular
@@ -1347,7 +1347,7 @@ class AsyncAzureBackend(AsyncBackend):
         destination the contract names.
         """
         if not await self._ensure_hns():
-            return
+            return  # pragma: no cover -- HNS only
         ancestor = await self._hns_first_file_ancestor(path)
         if ancestor is not None:
             raise InvalidPath(
