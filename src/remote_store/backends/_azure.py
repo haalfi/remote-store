@@ -385,7 +385,7 @@ class AzureBackend(Backend):
             azure_path = self._azure_path(path)
             if not azure_path:
                 return True
-            if self._hns:  # pragma: no cover -- HNS only
+            if self._hns:
                 try:
                     props = self._fs.get_directory_client(azure_path).get_directory_properties()
                     # On HNS, get_directory_properties() succeeds for both files and
@@ -450,7 +450,7 @@ class AzureBackend(Backend):
             bc = self._blob_client(path)
             downloader = bc.download_blob(max_concurrency=self._max_concurrency)
             data = bytes(downloader.readall())
-            if self._hns:  # pragma: no cover -- HNS only
+            if self._hns:
                 # BE-021: file-API operations on an HNS directory path must
                 # raise InvalidPath. download_blob() succeeds (directory marker
                 # is a 0-byte blob), so inspect response metadata post-download.
@@ -570,7 +570,7 @@ class AzureBackend(Backend):
                         tmp_fc.delete_file()
                     # ID-213: HNS rejects a temp create/rename under a
                     # file-ancestor with a 409; remap to the BE-008 InvalidPath.
-                    self._raise_invalid_if_hns_file_ancestor(path)  # pragma: no cover -- HNS only
+                    self._raise_invalid_if_hns_file_ancestor(path)
                     raise
             else:
                 # BUG-202: streaming BinaryIO. DataLake flush_data requires
@@ -692,7 +692,7 @@ class AzureBackend(Backend):
                         with contextlib.suppress(Exception):
                             tmp_fc.delete_file()
                         # ID-213: file-ancestor temp create/rename -> InvalidPath.
-                        self._raise_invalid_if_hns_file_ancestor(path)  # pragma: no cover -- HNS only
+                        self._raise_invalid_if_hns_file_ancestor(path)
                         raise
             finally:
                 buf_hns.close()
@@ -700,7 +700,7 @@ class AzureBackend(Backend):
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._errors(path):
             bc = self._blob_client(path)
-            if self._hns:  # pragma: no cover -- HNS only
+            if self._hns:
                 try:
                     props = bc.get_blob_properties()
                     blob_meta = getattr(props, "metadata", None) or {}
@@ -731,9 +731,9 @@ class AzureBackend(Backend):
                 # BE-012's !PathExists ==> NotFound applies (not the SDK's
                 # AlreadyExists/409). missing_ok treats it as a quiet no-op.
                 if self._hns and self._hns_first_file_ancestor(path) is not None:
-                    if not missing_ok:  # pragma: no cover -- HNS only
+                    if not missing_ok:
                         raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
-                    return  # pragma: no cover -- HNS only
+                    return
                 raise mapped from None  # pragma: no cover
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
@@ -920,7 +920,7 @@ class AzureBackend(Backend):
             bc = self._blob_client(path)
             props = bc.get_blob_properties()
             meta = getattr(props, "metadata", None) or {}
-            if meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+            if meta.get("hdi_isfolder"):
                 raise InvalidPath(
                     f"Cannot get file info — '{path}' exists as a directory",
                     path=path,
@@ -935,7 +935,7 @@ class AzureBackend(Backend):
             total_size = 0
             latest_modified: datetime | None = None
 
-            if self._hns:  # pragma: no cover -- HNS only
+            if self._hns:
                 # DFS get_paths exposes is_directory inline; list_blobs would
                 # silently count hdi_isfolder marker blobs as files (BUG-199).
                 # BUG-213: skip the per-path probe for the filesystem root —
@@ -994,7 +994,7 @@ class AzureBackend(Backend):
                 src_bc = self._blob_client(src)
                 src_props = src_bc.get_blob_properties()  # raises NotFound if missing
                 src_meta = getattr(src_props, "metadata", None) or {}
-                if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                if src_meta.get("hdi_isfolder"):
                     raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
             return
 
@@ -1002,14 +1002,14 @@ class AzureBackend(Backend):
             src_bc = self._blob_client(src)
             src_props = src_bc.get_blob_properties()  # raises NotFound if missing
             src_meta = getattr(src_props, "metadata", None) or {}
-            if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+            if src_meta.get("hdi_isfolder"):
                 raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
 
             dst_bc = self._blob_client(dst)
             if not overwrite:
                 try:
                     dst_props = dst_bc.get_blob_properties()
-                    if self._hns:  # pragma: no cover -- HNS only
+                    if self._hns:
                         dst_meta = getattr(dst_props, "metadata", None) or {}
                         if dst_meta.get("hdi_isfolder"):
                             raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
@@ -1060,7 +1060,7 @@ class AzureBackend(Backend):
                 src_bc = self._blob_client(src)
                 src_props = src_bc.get_blob_properties()  # raises NotFound if missing
                 src_meta = getattr(src_props, "metadata", None) or {}
-                if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                if src_meta.get("hdi_isfolder"):
                     raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
             return
 
@@ -1068,14 +1068,14 @@ class AzureBackend(Backend):
             src_bc = self._blob_client(src)
             src_props = src_bc.get_blob_properties()  # raises NotFound if missing
             src_meta = getattr(src_props, "metadata", None) or {}
-            if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+            if src_meta.get("hdi_isfolder"):
                 raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
 
             dst_bc = self._blob_client(dst)
             if not overwrite:
                 try:
                     dst_props = dst_bc.get_blob_properties()
-                    if self._hns:  # pragma: no cover -- HNS only
+                    if self._hns:
                         dst_meta = getattr(dst_props, "metadata", None) or {}
                         if dst_meta.get("hdi_isfolder"):
                             raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)

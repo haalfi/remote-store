@@ -76,10 +76,10 @@ phases:
         read_type: reference
         extract: "Move both as [x]; BK-243 co-shipped; note the ID-213 HNS-only pragma cleanup as an out-of-scope follow-up (needs strict CI coverage gate)"
       - file: src/remote_store/backends/_azure.py
-        section: "# pragma: no cover -- HNS only call sites"
-        read_type: reference
-        extract: "ID-213's pragmas now sit on replay-exercised paths; removing them is a code change needing the CI-only strict coverage gate — deliberately left for a follow-up, not bundled into the recording PR"
-        outcome: unclear
+        section: "# pragma: no cover -- HNS only (sync + aio)"
+        read_type: verify
+        extract: "Removed 28 markers (15 sync / 13 async) on file-ancestor paths the cassettes now exercise. Verified safe per-clause: coverage.py extends a block-header pragma to its whole body, so checked each removal's full excluded clause is replay-executed via before/after excluded_lines diff (caught _fs property body still uncovered → kept). Kept markers guard branches replay does not reach"
+        outcome: ok
       - file: sdd/specs/003-backend-adapter-contract.md
         section: "BE-008 (Azure HNS caveat)"
         read_type: verify

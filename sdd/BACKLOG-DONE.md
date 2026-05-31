@@ -29,10 +29,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   - Verified on replay (Stage 1): the 30 target instances pass — no longer
     self-skip; full `azure_replay` suite 292 passed / 6 legitimate semantic
     skips / 0 missing-cassette skips.
-  - Out of scope here (recording-only PR): ID-213's
-    `# pragma: no cover -- HNS only` markers on the now-replay-exercised
-    file-ancestor paths can be revisited once the strict (CI-only) coverage
-    gate confirms those lines now count.
+  - Removed 28 of ID-213's `# pragma: no cover -- HNS only` markers (15 sync /
+    13 async) on the file-ancestor paths the new cassettes now exercise under
+    `azure_replay`. Each removal was verified safe with a before/after coverage
+    diff: every line its excluded clause re-exposes is executed by replay, so
+    the strict (CI-only) 95% gate cannot regress. The remaining markers stay —
+    they guard HNS branches replay still does not reach (`_datalake_service` /
+    `_fs` client construction, partial `_hns_first_file_ancestor` walks, the
+    `delete` / metadata edge clauses).
 
 - [x] **BK-243 — Re-record stale Azure cassette for `test_open_atomic_exception_cleanup`**
   spec: SAW-004, SAW-005, TEST-007 · audience: infra.test
