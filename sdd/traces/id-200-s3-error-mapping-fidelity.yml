@@ -13,8 +13,7 @@ audience:
 discovery_followups:
   - BUG-214
   - BK-248
-expected_ripples:
-  - sdd/backlogid.json
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -80,4 +79,4 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / Backlog item lifecycle"
         read_type: verify
-        extract: "BACKLOG move pairs with backlogid.json regen; audit adds no code/spec/CHANGELOG ripple (audience library.maintainer)"
+        extract: "BACKLOG move pairs with backlogid.json regen, but it was a no-op here (gen_backlogid reads BACKLOG-DONE max only; stored ID:214 already the max, and BUG-214/BK-248 live in active BACKLOG which the generator does not read) so the file was left untouched; audit adds no code/spec/CHANGELOG ripple (audience library.maintainer)"
