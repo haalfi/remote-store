@@ -8,6 +8,35 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-200 — Audit s3fs error-mapping fidelity in `_S3Base`**
+  spec: — · audience: library.maintainer
+  Audit of the s3fs → `_S3Base._s3fs_errors` → `_classify_error` boundary
+  against the typed-error contract (S3-015..S3-018). Findings note:
+  [`research/research-s3-error-mapping-fidelity.md`](research/research-s3-error-mapping-fidelity.md),
+  with a re-runnable moto driver beside it. Five scenarios driven against a
+  moto-backed `S3Backend` (Stage 1, in-process; no Docker/AWS):
+  - **(a) missing key → `NotFound`** ✅; **(e) directory-marker ambiguity** ✅
+    (deterministic exact-key precedence, no confused mix — `is_folder` shadowing
+    the co-existing prefix recorded as a known flat-NS limitation, not a defect).
+  - **(b) 403 forbidden → `PermissionDenied`** and **(c) expired/invalid
+    credentials → `PermissionDenied`** ✅ at the mapping boundary: s3fs's
+    `translate_boto_error` maps 403 `AccessDenied`, `ExpiredToken`,
+    `InvalidAccessKeyId`, and `SignatureDoesNotMatch` all to `PermissionError`,
+    which `_s3fs_errors` maps to `PermissionDenied`. moto enforces neither
+    ACL/IAM nor credentials, so the *over-the-wire* path could not be exercised
+    in-process — carved to **BK-248** for Stage-3 (MinIO / live `s3_live`).
+  - **(d) mid-stream content failure → divergence → BUG-214.** `write` /
+    `write_atomic` raise a typed error but **commit a truncated object** (6 MB
+    delivered → 6 MB single-PUT object; 55 MB → 55 MB via a *completed*
+    multipart upload), because s3fs's `S3File.__exit__`/`close()` commits the
+    buffer regardless of the in-flight exception. Breaks the `ATOMIC_WRITE`
+    contract; server-independent, so reproducible on moto. `open_atomic`'s
+    caller-exception path is unaffected (object absent).
+  Spawned: **BUG-214** (the (d) defect, with repro), **BK-248** (Stage-3
+  natural-path confirmation of (b)/(c)). Informs **ID-202**'s boto3 error
+  mapping. No code or test change in this item (report-only audit; the failing
+  test lands with BUG-214 per the bug-fix protocol).
+
 - [x] **ID-213 — Extend ID-209's `InvalidPath` translation to the HNS Azure backend**
   spec: BE-008, BE-012, BE-014, BE-015, BE-018, BE-019 · audience: user.api, library.maintainer, contributor.process, infra.test
   Follow-up to ID-209 (PR #680). ID-209 landed the cross-backend

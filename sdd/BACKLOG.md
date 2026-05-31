@@ -163,36 +163,57 @@ Three s3fs-inherited pain points (dep-conflict cascade, 5 GB multipart cliff,
 listing-cache staleness) would not exist on a boto3-direct backend. Two
 investigations and one PoC determine whether the answer is "live with it
 and document," "tweak s3fs defaults," or "ship a third S3 lane."
-Execute in order: ID-200 informs whether ID-202 needs to also cover
-error-mapping wins. All three were surfaced as code-side flags in
+ID-200 (error-mapping audit) is **done** — see
+[BACKLOG-DONE.md](BACKLOG-DONE.md) and
+[research/research-s3-error-mapping-fidelity.md](research/research-s3-error-mapping-fidelity.md);
+it spawned BUG-214 and BK-248 (below) and feeds ID-202's error mapping. All
+three pains were surfaced as code-side flags in
 [research](research/research-backend-setup-guides.md) § 6 and carved
 out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
-- [ ] **ID-200 — Audit s3fs error-mapping fidelity in `_S3Base`**
-  spec: — · effort: S · audience: library.maintainer
-  Establish whether the s3fs → `_ErrorMappingStream` boundary in
-  `src/remote_store/backends/_s3_base.py` preserves enough signal from
-  `botocore.ClientError` to meet our typed-error contract, or whether
-  s3fs swallows / collapses cases the docs claim we surface.
-  Concretely, drive these scenarios against a moto-backed `S3Backend`
-  and record which `RemoteStoreError` subclass is raised:
-  (a) `GetObject` on a missing key → `NotFound`.
-  (b) `GetObject` on a forbidden key (403) → `PermissionDenied`, not
-      `NotFound`. This is the one most likely lost across s3fs.
-  (c) `PutObject` with an expired/invalid session token →
-      `BackendUnavailable` or `PermissionDenied`, not silent success.
-  (d) Multipart upload abort mid-stream (e.g. connection reset during
-      `write_atomic` on a >5 MB file) → typed error, not a partial
-      object left in the bucket.
-  (e) `HeadObject` on a path whose parent is a key with the same name
-      (the directory-marker ambiguity) → `InvalidPath` or `NotFound`,
-      not a confused mix.
-  Output: a short findings note pinned in `sdd/research/`, with one
-  row per scenario (target typed error, observed typed error, the
-  underlying s3fs/botocore exception). If any row diverges, open a
-  BUG-NNN; otherwise close ID-200 with the note as evidence.
-  No spec change; no new tests in this item (failing tests come from
-  the BUGs it spawns, per the bug-fix protocol).
+- [ ] **BUG-214 — S3 `write`/`write_atomic` commit a truncated object on mid-stream content failure**
+  spec: S3-010 · effort: S · audience: user.api
+  Found by the ID-200 audit (see
+  [research/research-s3-error-mapping-fidelity.md](research/research-s3-error-mapping-fidelity.md)
+  § 3(d)). When the *content source* passed to `S3Backend.write` /
+  `write_atomic` raises mid-stream, a typed error is raised **but a
+  truncated object is left in the bucket**: 6 MB delivered → a 6 MB
+  single-PUT object; 55 MB → a 55 MB object via a *completed* multipart
+  upload (s3fs write block size is 50 MB, so multipart engages only above
+  it). Root cause: `write`'s streaming branch does
+  `with self._fs.open(path, "wb") as f: f.write(chunk)`, and s3fs's
+  `S3File.__exit__` → `close()` flushes/completes the upload regardless of
+  the in-flight exception. This breaks the `ATOMIC_WRITE` contract
+  ("no reader ever sees a partial file") for `write_atomic` and leaves plain
+  `write` inconsistent (caller sees `BackendUnavailable`, yet a
+  complete-looking truncated object exists — it passes a later
+  `HeadObject`/`exists`). Server-independent; reproducible on moto in the
+  default Stage-1 suite. `open_atomic`'s caller-exception path is unaffected.
+  Fix sketch: manage the s3fs write handle explicitly and `discard()` /
+  abort the (multipart) upload on exception instead of letting `__exit__`
+  commit. Per the bug-fix protocol: failing test first (a `_Boom` content
+  stream that raises after N bytes, asserting the object is absent and no
+  multipart upload is orphaned), then the fix. `s3-pyarrow` shares `_S3Base`
+  but routes byte writes through PyArrow — check whether it has the same
+  exposure before claiming it is s3-only.
+
+- [ ] **BK-248 — Confirm S3 403 / credential-failure error mapping over the wire (Stage 3)**
+  spec: S3-016, S3-017 · effort: S · audience: library.maintainer
+  ID-200 verified rows (b) 403→`PermissionDenied` and (c) expired/invalid
+  credentials→`PermissionDenied` only at the *mapping* boundary (feeding a
+  real `botocore.ClientError` through s3fs's `translate_boto_error` and our
+  `_s3fs_errors`), because moto enforces neither ACL/IAM nor credential
+  validity in-process. Close the residual unknown over the wire: drive a real
+  403 `GetObject` and a real expired/invalid-credential `PutObject` against an
+  enforcing S3 endpoint and assert the same `PermissionDenied` (or
+  `BackendUnavailable` for connection-level failures), confirming the live
+  read/write path actually routes through `translate_boto_error` rather than
+  swallowing inside an aiobotocore streaming read. Use the existing Stage-3
+  `s3_live` fixture (`RS_TEST_LIVE_S3=1` + AWS creds) or a policy-enforcing
+  MinIO; neither runs in the default web/CI Stage-1 lane. Update
+  [research/research-s3-error-mapping-fidelity.md](research/research-s3-error-mapping-fidelity.md)
+  with the over-the-wire rows; no production-code change expected unless a row
+  diverges (then open a BUG).
 
 - [ ] **ID-201 — Spike: default `S3Backend` to `use_listings_cache=False`?**
   spec: — · effort: S · audience: user.api
