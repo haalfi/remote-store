@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB4AA27BDE5B3"'
+      - '"0x8DEBF255B492537"'
       Last-Modified:
-      - Mon, 18 May 2026 06:53:23 GMT
+      - Sun, 31 May 2026 15:00:29 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -50,6 +50,8 @@ interactions:
     body:
       string: ''
     headers:
+      Connection:
+      - close
       Content-Length:
       - '0'
       x-ms-account-kind:
@@ -121,9 +123,9 @@ interactions:
       Content-MD5:
       - fwtrsLfpUbf9KypKMmKX4Q==
       ETag:
-      - '"0x8DEB4AA281B3410"'
+      - '"0x8DEBF255B9B6AC8"'
       Last-Modified:
-      - Mon, 18 May 2026 06:53:24 GMT
+      - Sun, 31 May 2026 15:00:30 GMT
       x-ms-content-crc64:
       - cEROtbkawrk=
       x-ms-request-server-encrypted:

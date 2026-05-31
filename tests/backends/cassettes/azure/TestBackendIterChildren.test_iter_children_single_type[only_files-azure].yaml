@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB4A9B9FC5688"'
+      - '"0x8DEBF24E59CC89C"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:19 GMT
+      - Sun, 31 May 2026 14:57:12 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -121,9 +121,9 @@ interactions:
       Content-MD5:
       - ndTkYSaMgDT1yFZOFVxnpg==
       ETag:
-      - '"0x8DEB4A9BA9D16DC"'
+      - '"0x8DEBF24E5FDE694"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:20 GMT
+      - Sun, 31 May 2026 14:57:13 GMT
       x-ms-content-crc64:
       - seRUZAJnvS0=
       x-ms-request-server-encrypted:
@@ -150,8 +150,8 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=icf&recursive=false&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"1","creationTime":"134235606206519004","etag":"0x8DEB4A9BA9D16DC","expiryTime":"0","group":"$superuser","lastModified":"Mon,
-        18 May 2026 06:50:20 GMT","name":"icf/x.txt","owner":"$superuser","permissions":"rw-r-----"}]}
+      string: '{"paths":[{"contentLength":"1","creationTime":"134247130331539092","etag":"0x8DEBF24E5FDE694","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        31 May 2026 14:57:13 GMT","name":"icf/x.txt","owner":"$superuser","permissions":"rw-r-----"}]}
 
         '
     headers:

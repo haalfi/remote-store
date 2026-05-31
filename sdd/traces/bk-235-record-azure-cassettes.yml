@@ -1,0 +1,87 @@
+id: BK-235
+title: "Record the Azure cassettes for new conformance tests"
+trigger: >-
+  Sixteen conformance tests self-skipped on azure_replay for lack of a
+  cassette, so the Azure backend was never exercised by those gates. ID-213
+  (PR #706) closed the last error-class blocker, so the full batch could
+  record in a single run.
+source_items:
+  - BK-235
+  - ID-213
+  - BK-243
+  - ID-184
+  - BK-195
+audience:
+  - infra.test
+co_shipped_items:
+  - BK-243
+surprising_ripples:
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/specs/029-async-store-backend-api.md
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-235 (item), BK-243 (item)"
+        read_type: gate
+        extract: "16 self-skipping tests; record-azure deletes the whole tree → single-PR job; BK-243 folds into the same refresh"
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-213 (item)"
+        read_type: gate
+        extract: "ID-213 (PR #706) merged — the formerly-blocked 8 sync / 7 async tests now raise the correct cross-backend error live, unblocking the full batch"
+      - file: scripts/record_cassettes.py
+        section: "main / _preflight_env / _BACKENDS"
+        read_type: gate
+        extract: "5-step flow (delete → record sync → record async → scrub-verify → replay smoke); preflight validates creds BEFORE the Step-1 delete (BUG-212), so a misconfig is non-destructive; min_cassettes=200 guard"
+      - file: sdd/TESTING.md
+        section: "Cassette Refresh (HTTP-transport backends)"
+        read_type: reference
+        extract: "RS_TEST_LIVE_HNS lives in the shell not .env; TEST-009 — CI does not auto-record, a refresh is a normal PR diff"
+      - file: tests/conftest.py
+        section: "pytest_collection_modifyitems (--record vcr-mark)"
+        read_type: reference
+        extract: "azure_live items only get pytest.mark.vcr when --record is active — so plain -m live --stage=3 (no --record) hits real HTTP, which is the live dry-run seam"
+  - id: verify
+    name: Pre-flight live dry-run
+    steps:
+      - file: tests/backends/conformance/
+        section: "azure_live (sync) + azure_live_async, -m live --stage=3, no --record"
+        read_type: verify
+        extract: "Confirm all green live BEFORE the all-or-nothing delete: sync 197 passed, async 95 passed, 0 failed — destructive record is safe to run"
+  - id: implement
+    name: Record
+    steps:
+      - file: scripts/record_cassettes.py
+        section: "RS_TEST_LIVE_HNS=1 hatch run record-azure"
+        read_type: reference
+        extract: "253 deleted → 298 recorded; scrub clean (no account name); Stage-1 replay smoke 292 passed"
+      - file: tests/backends/cassettes/azure/
+        section: "git status (D/M/?? triage)"
+        read_type: reference
+        extract: "10 'deletions' are param-id-reorder renames (azure_async id moved to tail), matched by 10 new names; 243 modified are volatile ETag/Last-Modified churn — no coverage lost"
+  - id: verify_replay
+    name: Verify on replay
+    steps:
+      - file: tests/backends/conformance/
+        section: "azure_replay, the 16 target test methods + test_open_atomic_exception_cleanup, --stage=1 -rsx"
+        read_type: verify
+        extract: "30 target instances PASS (no self-skip); BK-243 cassette passes; full azure_replay suite 292 passed / 6 legitimate semantic skips / 0 missing-cassette skips"
+  - id: close
+    name: Close out
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "[Unreleased] — new BK-235 + BK-243 entries"
+        read_type: reference
+        extract: "Move both as [x]; BK-243 co-shipped; note the ID-213 HNS-only pragma cleanup as an out-of-scope follow-up (needs strict CI coverage gate)"
+      - file: src/remote_store/backends/_azure.py
+        section: "# pragma: no cover -- HNS only call sites"
+        read_type: reference
+        extract: "ID-213's pragmas now sit on replay-exercised paths; removing them is a code change needing the CI-only strict coverage gate — deliberately left for a follow-up, not bundled into the recording PR"
+        outcome: unclear
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008 (Azure HNS caveat)"
+        read_type: verify
+        extract: "Caveat said the InvalidPath contract was 'deferred on HNS, not delivered' until ID-213/BK-235 land; both now landed, so lift it — HNS re-raises InvalidPath via ID-213's native-error translation. Async mirror in 029 (ASYNC-008)"
+        outcome: misleading
