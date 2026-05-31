@@ -276,8 +276,8 @@ class AzureBackend(Backend):
             return
         # HNS accounts already reject the operation via ``hdi_isfolder``
         # / DataLake mkdir-walk; the opt-in walk is the non-HNS workaround.
-        # (ID-213 covers the orthogonal HNS-side error-class translation
-        # gap and is independent of this pre-check.)
+        # (The HNS-side error-class translation to InvalidPath happens on
+        # the operation's error path, independent of this pre-check.)
         if self._hns:
             return
         from azure.core.exceptions import AzureError, ResourceNotFoundError
@@ -506,7 +506,7 @@ class AzureBackend(Backend):
                     )
                     size = counter.count
             except Exception:
-                # ID-213: on HNS a write under a file-ancestor surfaces as
+                # On HNS a write under a file-ancestor surfaces as
                 # ResourceNotFoundError; remap to the BE-008 InvalidPath. This
                 # except is shared with non-HNS accounts, where the helper
                 # early-returns and the original error propagates unchanged.
@@ -567,7 +567,7 @@ class AzureBackend(Backend):
                 except Exception:
                     with contextlib.suppress(Exception):
                         tmp_fc.delete_file()
-                    # ID-213: HNS rejects a temp create/rename under a
+                    # HNS rejects a temp create/rename under a
                     # file-ancestor with a 409; remap to the BE-008 InvalidPath.
                     self._raise_invalid_if_hns_file_ancestor(path)
                     raise
@@ -597,7 +597,7 @@ class AzureBackend(Backend):
                 except Exception:
                     with contextlib.suppress(Exception):
                         tmp_fc.delete_file()
-                    # ID-213: HNS rejects a temp create/rename under a
+                    # HNS rejects a temp create/rename under a
                     # file-ancestor with a 409; remap to the BE-008 InvalidPath.
                     self._raise_invalid_if_hns_file_ancestor(path)  # pragma: no cover -- HNS only
                     raise
@@ -690,7 +690,7 @@ class AzureBackend(Backend):
                     except Exception:
                         with contextlib.suppress(Exception):
                             tmp_fc.delete_file()
-                        # ID-213: file-ancestor temp create/rename -> InvalidPath.
+                        # File-ancestor temp create/rename -> InvalidPath.
                         self._raise_invalid_if_hns_file_ancestor(path)
                         raise
             finally:
@@ -726,7 +726,7 @@ class AzureBackend(Backend):
                     raise InvalidPath(
                         f"Cannot delete — '{path}' is a directory", path=path, backend=self.name
                     ) from None
-                # ID-213: a path under a file-ancestor is "not in fs" on HNS, so
+                # A path under a file-ancestor is "not in fs" on HNS, so
                 # BE-012's !PathExists ==> NotFound applies (not the SDK's
                 # AlreadyExists/409). missing_ok treats it as a quiet no-op.
                 if self._hns and self._hns_first_file_ancestor(path) is not None:
@@ -816,7 +816,7 @@ class AzureBackend(Backend):
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
                         return
-                    # ID-213: listing under a file-ancestor must yield [] (BE-014),
+                    # Listing under a file-ancestor must yield [] (BE-014),
                     # not leak the SDK's AlreadyExists/409.
                     if self._hns_first_file_ancestor(path) is not None:
                         return
@@ -853,7 +853,7 @@ class AzureBackend(Backend):
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
                         return
-                    # ID-213: listing under a file-ancestor must yield [] (BE-014).
+                    # Listing under a file-ancestor must yield [] (BE-014).
                     if self._hns_first_file_ancestor(path) is not None:
                         return
                     raise mapped from None
@@ -1041,7 +1041,7 @@ class AzureBackend(Backend):
                 try:
                     src_fc.rename_file(new_name)
                 except Exception:
-                    # ID-213: the rename failure is keyed to src, but a dst
+                    # The rename failure is keyed to src, but a dst
                     # file-ancestor must surface as InvalidPath(dst) per BE-018.
                     self._raise_invalid_if_hns_file_ancestor(dst)
                     raise
@@ -1102,7 +1102,7 @@ class AzureBackend(Backend):
             try:
                 dst_bc.start_copy_from_url(src_bc.url)
             except Exception:
-                # ID-213: on HNS a copy whose dst is under a file-ancestor
+                # On HNS a copy whose dst is under a file-ancestor
                 # surfaces a src-keyed error; remap to InvalidPath(dst). This
                 # except is shared with non-HNS accounts, where the helper
                 # early-returns and the original error propagates unchanged.

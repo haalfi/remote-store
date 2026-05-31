@@ -545,7 +545,7 @@ class AsyncAzureBackend(AsyncBackend):
                     )
                     size = size_ref[0]
             except Exception:
-                # ID-213: on HNS a write under a file-ancestor surfaces as
+                # On HNS a write under a file-ancestor surfaces as
                 # ResourceNotFoundError; remap to the BE-008 InvalidPath. This
                 # except is shared with non-HNS accounts, where the helper
                 # early-returns and the original error propagates unchanged.
@@ -634,7 +634,7 @@ class AsyncAzureBackend(AsyncBackend):
                 except Exception:
                     with contextlib.suppress(Exception):
                         await tmp_fc.delete_file()
-                    # ID-213: HNS rejects a temp create/rename under a
+                    # HNS rejects a temp create/rename under a
                     # file-ancestor with a 409; remap to the BE-008 InvalidPath.
                     await self._raise_invalid_if_hns_file_ancestor(path)
                     raise
@@ -657,7 +657,7 @@ class AsyncAzureBackend(AsyncBackend):
                 except Exception:
                     with contextlib.suppress(Exception):
                         await tmp_fc.delete_file()
-                    # ID-213: HNS rejects a temp create/rename under a
+                    # HNS rejects a temp create/rename under a
                     # file-ancestor with a 409; remap to the BE-008 InvalidPath.
                     await self._raise_invalid_if_hns_file_ancestor(path)  # pragma: no cover -- HNS only
                     raise
@@ -722,7 +722,7 @@ class AsyncAzureBackend(AsyncBackend):
                     raise InvalidPath(
                         f"Cannot delete — '{path}' is a directory", path=path, backend=self.name
                     ) from None
-                # ID-213: a path under a file-ancestor is "not in fs" on HNS, so
+                # A path under a file-ancestor is "not in fs" on HNS, so
                 # BE-012's !PathExists ==> NotFound applies (not the SDK's
                 # AlreadyExists/409). missing_ok treats it as a quiet no-op.
                 if await self._ensure_hns() and await self._hns_first_file_ancestor(path) is not None:
@@ -824,7 +824,7 @@ class AsyncAzureBackend(AsyncBackend):
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
                         return
-                    # ID-213: listing under a file-ancestor must yield [] (BE-014),
+                    # Listing under a file-ancestor must yield [] (BE-014),
                     # not leak the SDK's AlreadyExists/409.
                     if await self._hns_first_file_ancestor(path) is not None:
                         return
@@ -871,7 +871,7 @@ class AsyncAzureBackend(AsyncBackend):
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
                         return
-                    # ID-213: listing under a file-ancestor must yield [] (BE-014).
+                    # Listing under a file-ancestor must yield [] (BE-014).
                     if await self._hns_first_file_ancestor(path) is not None:
                         return
                     raise mapped from None
@@ -1114,7 +1114,7 @@ class AsyncAzureBackend(AsyncBackend):
                 try:
                     await src_fc.rename_file(new_name)
                 except Exception:
-                    # ID-213: the rename failure is keyed to src, but a dst
+                    # The rename failure is keyed to src, but a dst
                     # file-ancestor must surface as InvalidPath(dst) per BE-018.
                     await self._raise_invalid_if_hns_file_ancestor(dst)
                     raise
@@ -1189,7 +1189,7 @@ class AsyncAzureBackend(AsyncBackend):
             try:
                 await dst_bc.start_copy_from_url(src_bc.url)
             except Exception:
-                # ID-213: on HNS a copy whose dst is under a file-ancestor
+                # On HNS a copy whose dst is under a file-ancestor
                 # surfaces a src-keyed error; remap to InvalidPath(dst). This
                 # except is shared with non-HNS accounts, where the helper
                 # early-returns and the original error propagates unchanged.

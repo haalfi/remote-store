@@ -91,5 +91,5 @@ phases:
       - file: src/remote_store/backends/_azure.py
         section: "AzureBackend.__init__ reject_write_under_file_ancestor docstring (+ async sibling ~l.76)"
         read_type: verify
-        extract: "Review caught the spec-caveat lift did not sweep the user-facing constructor docstrings (rendered via mkdocstrings on the API reference): both still said the InvalidPath contract is 'deferred on HNS, not delivered'. Aligned them with the amended BE-008/ASYNC-008; kept the async open_atomic omission. The same 'lift the caveat' phenomenon as the specs, surfaced one layer the ripple-check did not flag"
+        extract: "Review caught the spec-caveat lift did not sweep the user-facing constructor docstrings (rendered via mkdocstrings on the API reference): both still said the InvalidPath contract is 'deferred on HNS, not delivered'. Aligned them with the amended BE-008/ASYNC-008; kept the async open_atomic omission. The same 'lift the caveat' phenomenon as the specs, surfaced one layer the ripple-check did not flag. Also dropped 18 now-merged `ID-213:` tracker-ID prefixes from the error-remap implementation comments (kept the behavioural why + the BE-xxx spec refs) per the repo's tracker-ID-hygiene norm; reworded the stale `(ID-213 covers the ... gap)` parenthetical that read as pending work"
         outcome: misleading
