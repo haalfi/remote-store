@@ -1,0 +1,83 @@
+id: ID-200
+title: "Audit s3fs error-mapping fidelity in _S3Base"
+trigger: >-
+  ID-200 asked whether the s3fs -> _S3Base._s3fs_errors -> _classify_error
+  boundary preserves enough botocore.ClientError signal to meet the typed-error
+  contract, or whether s3fs collapses cases the docs claim we surface. Needed an
+  evidence-backed findings note, one row per scenario, run against a moto-backed
+  S3Backend in an environment with no Docker and no live AWS.
+source_items:
+  - ID-200
+audience:
+  - library.maintainer
+discovery_followups:
+  - BUG-214
+  - BK-248
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-200 (S3 Client-Implementation Strategy)"
+        read_type: gate
+        extract: "Five scenarios, target typed error per row, report-only output"
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_s3fs_errors, _classify_error"
+        read_type: gate
+        extract: "Mapping boundary: FileNotFoundError->NotFound, PermissionError->PermissionDenied, else _classify_by_message"
+      - file: src/remote_store/_errors.py
+        section: "_classify_by_message"
+        read_type: reference
+        extract: "Message heuristic only runs for exceptions s3fs did not translate to OSError subclasses"
+      - file: src/remote_store/backends/_s3.py
+        section: "write (streaming branch), write_atomic, open_atomic"
+        read_type: reference
+        extract: "write streams via `with self._fs.open(...) as f`; write_atomic delegates to write; open_atomic buffers then writes post-yield"
+      - file: tests/backends/s3/test_moto.py
+        section: "moto_bucket fixture, TestS3ControlPathMoto"
+        read_type: reference
+        extract: "ThreadedMotoServer + boto3 bucket setup as the probe harness template"
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tmp/id200_probe.py
+        section: "(full)"
+        read_type: verify
+        extract: "Drive all five scenarios against moto; (a) NotFound, (e) deterministic file precedence both confirmed"
+      - file: src/remote_store/_stream.py
+        section: "default_block_size (via s3fs)"
+        read_type: reference
+        extract: "s3fs S3FileSystem.default_block_size=50 MB, so the scenario's >5 MB premise mis-states the multipart threshold"
+        outcome: misleading
+      - file: tmp/id200_probe_d.py
+        section: "(full)"
+        read_type: verify
+        extract: "(d) write/write_atomic commit a truncated object (6 MB single-PUT, 55 MB completed multipart); open_atomic caller-exc path safe"
+  - id: report
+    name: Report
+    steps:
+      - file: sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md
+        section: "header / structure"
+        read_type: reference
+        extract: "Research-note house style (Item ID / Date / Method header, findings table)"
+      - file: sdd/research/research-s3-error-mapping-fidelity.md
+        section: "(full)"
+        read_type: verify
+        extract: "Findings note: per-scenario table + (d) divergence detail; pins the committed probe"
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-200 ([Unreleased])"
+        read_type: verify
+        extract: "Close ID-200 with note as evidence; record spawned BUG-214 + BK-248"
+      - file: sdd/BACKLOG.md
+        section: "BUG-214, BK-248 (S3 Client-Implementation Strategy)"
+        read_type: verify
+        extract: "Open BUG-214 (truncated-commit defect) and BK-248 (Stage-3 natural-path confirmation)"
+  - id: verify
+    name: Verify ripples
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item lifecycle"
+        read_type: verify
+        extract: "BACKLOG move pairs with backlogid.json regen; audit adds no code/spec/CHANGELOG ripple (audience library.maintainer)"
