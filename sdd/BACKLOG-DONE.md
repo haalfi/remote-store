@@ -47,9 +47,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     added an `s3_pyarrow_live` fixture (the S3-PyArrow sibling of `s3_live`) so
     the conformance test runs against real AWS for *both* backends at
     `RS_TEST_LIVE_S3=1 ... --stage=3 -m live`. Both pass.
-  - Azure replay self-skips the new conformance test until its cassette is
-    recorded on the next `record-azure` run (Azure `write_atomic` buffers, so
-    it is safe by construction).
+  - Azure coverage included in-PR: the new conformance test's one missing
+    cassette was recorded via a **targeted** `pytest --stage=3 --record -m live`
+    run against live HNS (not the all-or-nothing `record-azure` tree-wipe, which
+    would churn ~298 cassettes), then scrub-verified
+    (`record_cassettes.py --backend azure --verify-only`: 299 cassettes checked,
+    account name absent) and confirmed on Stage-1 replay. Azure `write_atomic`
+    buffers, so it satisfies AW-001 by construction.
 
 - [x] **BK-235 — Record the Azure cassettes for new conformance tests**
   spec: — · audience: infra.test

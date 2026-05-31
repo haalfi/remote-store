@@ -111,3 +111,7 @@ phases:
         section: "(full)"
         read_type: verify
         extract: "Regenerate after the BACKLOG-DONE move"
+      - file: scripts/record_cassettes.py
+        section: "main (--verify-only)"
+        read_type: verify
+        extract: "Recorder is all-or-nothing -> record the one azure cassette via targeted pytest --record, then --verify-only scrub-checks all 299 cassettes (account name absent) + Stage-1 replay"
