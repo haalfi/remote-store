@@ -15,6 +15,7 @@ import pytest
 from remote_store._capabilities import Capability
 from remote_store._errors import AlreadyExists, InvalidPath, NotFound
 from remote_store._models import WriteResult
+from tests._helpers import FailingContentReader
 from tests.backends.conformance._helpers import (
     _MOVE_COPY_PARAMS,
     _do_op,
@@ -52,6 +53,37 @@ class TestBackendWriteAtomic:
         backend.write_atomic("atomic3.txt", b"first")
         with pytest.raises(AlreadyExists):
             backend.write_atomic("atomic3.txt", b"second", overwrite=False)
+
+    @pytest.mark.spec("AW-001")
+    @pytest.mark.spec("S3-010")
+    def test_write_atomic_content_failure_leaves_no_partial(self, backend: Backend) -> None:
+        """AW-001: a mid-stream *content* failure must commit nothing.
+
+        When the content source raises partway through ``write_atomic``, the
+        target must stay absent and no orphan artefact may survive under the
+        fixture root -- the "no partial content is ever visible" postcondition.
+
+        Regression for BUG-214: the two S3 backends committed a truncated
+        object on this path (the s3fs backend because its file handle's
+        ``close()`` ran on the exception path; the PyArrow backend because its
+        output stream commits on close and cannot be aborted). The fixes abort
+        the in-flight s3fs upload and buffer the PyArrow ``write_atomic`` before
+        any upload. Rides every ``ATOMIC_WRITE`` fixture, including the live S3
+        fixtures at ``--stage=3`` (the real-AWS confirmation per TESTING.md).
+
+        Plain ``write`` is intentionally excluded: it is non-atomic (AW-007) and
+        may leave a partial object on failure, like the local backend.
+        """
+        key = "aw/atomic-content-failure.bin"
+        # 256 KiB delivered before the hard failure: enough to push past the
+        # default write block on buffer-then-upload backends while keeping the
+        # live-account data transfer negligible.
+        content = FailingContentReader.buffered(256 * 1024)
+        with pytest.raises(Exception):  # noqa: B017 -- backends map the failure to varied types
+            backend.write_atomic(key, content, overwrite=True)
+        assert not backend.exists(key)
+        remaining = [str(fi.path) for fi in backend.list_files("", recursive=True)]
+        assert remaining == [], f"orphan artefact after write_atomic content failure: {remaining}"
 
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.ATOMIC_WRITE), indirect=True)

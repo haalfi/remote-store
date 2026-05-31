@@ -130,32 +130,6 @@ three pains were surfaced as code-side flags in
 [research](research/research-backend-setup-guides.md) § 6 and carved
 out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
-- [ ] **BUG-214 — S3 `write`/`write_atomic` commit a truncated object on mid-stream content failure**
-  spec: S3-010 · effort: S · audience: user.api
-  Found by the ID-200 audit (see
-  [research/research-s3-error-mapping-fidelity.md](research/research-s3-error-mapping-fidelity.md)
-  § 3(d)). When the *content source* passed to `S3Backend.write` /
-  `write_atomic` raises mid-stream, a typed error is raised **but a
-  truncated object is left in the bucket**: 6 MB delivered → a 6 MB
-  single-PUT object; 55 MB → a 55 MB object via a *completed* multipart
-  upload (s3fs write block size is 50 MB, so multipart engages only above
-  it). Root cause: `write`'s streaming branch does
-  `with self._fs.open(path, "wb") as f: f.write(chunk)`, and s3fs's
-  `S3File.__exit__` → `close()` flushes/completes the upload regardless of
-  the in-flight exception. This breaks the `ATOMIC_WRITE` contract
-  ("no reader ever sees a partial file") for `write_atomic` and leaves plain
-  `write` inconsistent (caller sees `BackendUnavailable`, yet a
-  complete-looking truncated object exists — it passes a later
-  `HeadObject`/`exists`). Server-independent; reproducible on moto in the
-  default Stage-1 suite. `open_atomic`'s caller-exception path is unaffected.
-  Fix sketch: manage the s3fs write handle explicitly and `discard()` /
-  abort the (multipart) upload on exception instead of letting `__exit__`
-  commit. Per the bug-fix protocol: failing test first (a `_Boom` content
-  stream that raises after N bytes, asserting the object is absent and no
-  multipart upload is orphaned), then the fix. `s3-pyarrow` shares `_S3Base`
-  but routes byte writes through PyArrow — check whether it has the same
-  exposure before claiming it is s3-only.
-
 - [ ] **BK-248 — Confirm S3 403 / credential-failure error mapping over the wire (Stage 3)**
   spec: S3-016, S3-017 · effort: S · audience: library.maintainer
   ID-200 verified rows (b) 403→`PermissionDenied` and (c) expired/invalid

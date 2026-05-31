@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import io
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
@@ -24,7 +24,7 @@ from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
 from remote_store._errors import NotFound  # noqa: E402
 from tests._helpers import MINIO_KEY as _MINIO_KEY  # noqa: E402
 from tests._helpers import MINIO_SECRET as _MINIO_SECRET  # noqa: E402
-from tests._helpers import pyarrow_ge_24  # noqa: E402
+from tests._helpers import FailingContentReader, pyarrow_ge_24  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -496,6 +496,80 @@ class TestS3PyArrowCredentialMasking:
         backend = S3PyArrowBackend(bucket="b", key=Secret("AKID"), secret=Secret("SK"))
         assert backend._key == "AKID"  # internal: no public observable (repr shows '***' for raw strings too)
         assert backend._secret == "SK"  # internal: no public observable
+
+
+# endregion
+
+
+# region: BUG-214 -- write_atomic() atomicity: buffer-before-open fix
+
+
+class TestBug214WriteAtomicity:
+    """BUG-214: write_atomic() must not open an S3 output stream if content fails.
+
+    PyArrow's output stream has no abort()/discard(), so ``write_atomic``
+    buffers the content fully *before* opening the upload: a mid-stream content
+    failure then happens entirely in memory, ``open_output_stream`` is never
+    called, and no partial object can be committed -- satisfying AW-001
+    ("no partial content is ever visible") / S3PA-013.
+
+    This is the fast, S3-free guard on the buffer-first *mechanism*; the
+    cross-backend "no partial object" contract (including real AWS via
+    ``s3_pyarrow_live`` at ``--stage=3``) is asserted by
+    ``conformance/test_atomic.py::TestBackendWriteAtomic
+    ::test_write_atomic_content_failure_leaves_no_partial``.
+
+    Plain ``write`` deliberately keeps streaming (non-atomic per AW-007, may
+    leave a partial object on failure like the local backend), so it is *not*
+    asserted here.
+    """
+
+    @staticmethod
+    def _spied_backend() -> tuple[Any, Any]:
+        """Return a backend with mock _pa_fs/_s3fs injected, plus the _pa_fs spy.
+
+        The mocks stop any real S3 connection and let the test assert that the
+        PyArrow output stream is never opened on the failure path.
+        """
+        from unittest.mock import MagicMock
+
+        import s3fs as s3fs_module
+        from pyarrow.fs import S3FileSystem as PyArrowS3FileSystem
+
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        backend = S3PyArrowBackend(bucket="test-bucket", key="k", secret="s")
+        mock_pa_fs = MagicMock(spec=PyArrowS3FileSystem)
+        mock_s3fs = MagicMock(spec=s3fs_module.S3FileSystem)
+        mock_s3fs.exists.return_value = False
+        backend._pa_fs_instance = mock_pa_fs
+        backend._s3fs_instance = mock_s3fs
+        return backend, mock_pa_fs
+
+    def test_open_output_stream_never_called_when_content_fails_immediately(self) -> None:
+        """Guard: open_output_stream must NOT be called when content fails on first read.
+
+        Pre-fix (``write_atomic`` delegated straight to streaming ``write``):
+        ``open_output_stream`` IS called before any content.read(), so the spy
+        records the call and this test fails. Post-fix: the stream is fully
+        buffered before the output stream opens, so a read() failure never
+        reaches the upload.
+        """
+        backend, mock_pa_fs = self._spied_backend()
+        with pytest.raises(Exception):  # noqa: B017 -- key assertion is assert_not_called below
+            backend.write_atomic("dest/file.bin", FailingContentReader.buffered(0), overwrite=True)
+        mock_pa_fs.open_output_stream.assert_not_called()
+
+    def test_open_output_stream_never_called_when_content_fails_mid_stream(self) -> None:
+        """Guard: open_output_stream stays uncalled even when content fails mid-stream.
+
+        The source delivers a few bytes successfully then raises; the
+        buffer-first fix still prevents any S3 upload from starting.
+        """
+        backend, mock_pa_fs = self._spied_backend()
+        with pytest.raises(Exception):  # noqa: B017 -- key assertion is assert_not_called below
+            backend.write_atomic("dest/mid.bin", FailingContentReader.buffered(10), overwrite=True)
+        mock_pa_fs.open_output_stream.assert_not_called()
 
 
 # endregion

@@ -172,13 +172,28 @@ class S3Backend(_S3Base):
                 size = len(content)
             else:
                 size = 0
-                with self._fs.open(self._s3_path(path), "wb", **meta_kw) as f:
+                f = self._fs.open(self._s3_path(path), "wb", **meta_kw)
+                try:
                     while True:
                         chunk = content.read(_COPY_BUFSIZE)
                         if not chunk:
                             break
                         f.write(chunk)
                         size += len(chunk)
+                except BaseException:
+                    # BUG-214: the content source failed mid-stream. Letting
+                    # s3fs's ``S3File.__exit__`` -> ``close()`` run would flush
+                    # the buffer / complete the in-flight multipart upload,
+                    # committing a truncated but complete-looking object and
+                    # breaking the S3-010 / AW-001 atomicity contract.
+                    # ``discard()`` aborts any multipart upload and drops the
+                    # buffer; setting ``closed`` stops ``__del__`` from
+                    # re-initiating an upload through a force-flush.
+                    f.discard()
+                    f.closed = True
+                    raise
+                else:
+                    f.close()
             raw = self._fs.call_s3("head_object", Bucket=self._bucket, Key=path, ChecksumMode="ENABLED")
         etag_raw: str | None = raw.get("ETag")
         etag = etag_raw.strip('"').lower() if etag_raw else None

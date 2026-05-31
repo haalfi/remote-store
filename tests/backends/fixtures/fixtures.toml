@@ -266,6 +266,20 @@ live_creds_env  = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_RE
 # Inherits flat_namespace=true, self_op_supported=true from [backend.s3].
 # Per-call bucket creation (rs-conformance-<uuid>) makes RS_TEST_LIVE_S3_BUCKET redundant.
 
+# S3-PyArrow sibling of s3_live: same real-AWS gating and per-call
+# rs-conformance-<uuid> bucket, but exercises the PyArrow C++ S3 data path
+# (always-multipart) against real AWS rather than moto/MinIO. Added with
+# BUG-214 so the PyArrow write_atomic abort path is confirmed on real S3.
+[fixture.s3_pyarrow_live]
+backend   = "s3_pyarrow"
+stage     = 3
+kind      = "real-live"
+container = "none"
+is_async  = false
+live_opt_in_env = "RS_TEST_LIVE_S3"
+live_creds_env  = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_REGION"]
+# Inherits flat_namespace=true, self_op_supported=true from [backend.s3_pyarrow].
+
 # ---------------------------------------------------------------------------
 # Replay fixtures: HTTP cassette playback (TEST-007). Stage 1, zero-network.
 # ---------------------------------------------------------------------------

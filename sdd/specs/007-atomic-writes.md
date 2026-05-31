@@ -38,3 +38,4 @@ Atomic writes ensure that a file is either fully written or not written at all. 
 
 **Invariant:** The core never falls back to non-atomic writes if atomic writes are unavailable.
 **Postconditions:** If the caller requests `write_atomic` and the backend lacks the capability, the operation fails. The caller must explicitly choose `write` as an alternative.
+**Note (non-atomic `write` failure semantics):** `write` makes no atomicity guarantee. If the content source raises partway through, a backend MAY leave a partial object at the target — the local backend leaves the partially-written file, and S3-PyArrow may leave a truncated object. Only `write_atomic` guarantees "no partial content is ever visible" (AW-001). Callers that need all-or-nothing must use `write_atomic`. (The s3fs `S3Backend` happens to abort and clean up its `write` too (see S3-010), but that is a backend convenience, not a contract `write` callers may rely on.)
