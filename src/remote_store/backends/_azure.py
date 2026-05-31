@@ -205,10 +205,9 @@ class AzureBackend(Backend):
             hit, matching the cross-backend contract that hierarchical
             filesystems enforce natively. On HNS accounts the kwarg
             short-circuits: ``hdi_isfolder`` rejects the operation
-            natively, but that native rejection currently surfaces as
-            ``NotFound`` or ``AlreadyExists`` rather than ``InvalidPath``.
-            The cross-backend ``InvalidPath`` contract the kwarg promises
-            is therefore *deferred* on HNS, not delivered — even when set.
+            natively, and the backend detects the file ancestor on that
+            rejection and re-raises it as ``InvalidPath``, so HNS delivers
+            the cross-backend contract with or without the kwarg set.
             Default ``False``: enabling the check adds one HEAD per
             ancestor per nested-path write; paths without slashes
             short-circuit.

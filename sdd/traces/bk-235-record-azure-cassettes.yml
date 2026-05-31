@@ -18,7 +18,7 @@ co_shipped_items:
 surprising_ripples:
   - sdd/specs/003-backend-adapter-contract.md
   - sdd/specs/029-async-store-backend-api.md
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -84,4 +84,12 @@ phases:
         section: "BE-008 (Azure HNS caveat)"
         read_type: verify
         extract: "Caveat said the InvalidPath contract was 'deferred on HNS, not delivered' until ID-213/BK-235 land; both now landed, so lift it — HNS re-raises InvalidPath via ID-213's native-error translation. Async mirror in 029 (ASYNC-008)"
+        outcome: misleading
+  - id: review
+    name: Review fixups
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "AzureBackend.__init__ reject_write_under_file_ancestor docstring (+ async sibling ~l.76)"
+        read_type: verify
+        extract: "Review caught the spec-caveat lift did not sweep the user-facing constructor docstrings (rendered via mkdocstrings on the API reference): both still said the InvalidPath contract is 'deferred on HNS, not delivered'. Aligned them with the amended BE-008/ASYNC-008; kept the async open_atomic omission. The same 'lift the caveat' phenomenon as the specs, surfaced one layer the ripple-check did not flag"
         outcome: misleading
