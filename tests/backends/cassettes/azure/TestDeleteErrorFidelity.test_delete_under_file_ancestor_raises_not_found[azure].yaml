@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB4AA09BE4FA4"'
+      - '"0x8DEBF24AAAF6DAE"'
       Last-Modified:
-      - Mon, 18 May 2026 06:52:33 GMT
+      - Sun, 31 May 2026 14:55:33 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -77,7 +77,7 @@ interactions:
       x-ms-version:
       - '2026-04-06'
     method: HEAD
-    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/mcdd/copy_src.txt
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/dufa.txt
   response:
     body:
       string: ''
@@ -92,7 +92,7 @@ interactions:
       code: 404
       message: The specified blob does not exist.
 - request:
-    body: src
+    body: file-blocking
     headers:
       Accept:
       - application/xml
@@ -101,7 +101,7 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '3'
+      - '13'
       Content-Type:
       - application/octet-stream
       User-Agent:
@@ -111,7 +111,7 @@ interactions:
       x-ms-version:
       - '2026-04-06'
     method: PUT
-    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/mcdd/copy_src.txt
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/dufa.txt
   response:
     body:
       string: ''
@@ -119,13 +119,13 @@ interactions:
       Content-Length:
       - '0'
       Content-MD5:
-      - JdkCwkKDq4z7rFTfoQGtMQ==
+      - Qxf/irlZMiQNQidF+v9MwQ==
       ETag:
-      - '"0x8DEB4AA0A1D2030"'
+      - '"0x8DEBF24AAFE4318"'
       Last-Modified:
-      - Mon, 18 May 2026 06:52:34 GMT
+      - Sun, 31 May 2026 14:55:34 GMT
       x-ms-content-crc64:
-      - nZ3ur031YcA=
+      - upF+dtJY2VY=
       x-ms-request-server-encrypted:
       - 'true'
       x-ms-version:
@@ -147,7 +147,7 @@ interactions:
       x-ms-version:
       - '2026-04-06'
     method: HEAD
-    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/mcdd/copy_dstdir/file.txt
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/dufa.txt/child.txt
   response:
     body:
       string: ''
@@ -162,7 +162,7 @@ interactions:
       code: 404
       message: The specified blob does not exist.
 - request:
-    body: x
+    body: null
     headers:
       Accept:
       - application/xml
@@ -171,38 +171,30 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '1'
-      Content-Type:
-      - application/octet-stream
+      - '0'
       User-Agent:
       - azsdk-python-replay
-      x-ms-blob-type:
-      - BlockBlob
       x-ms-version:
       - '2026-04-06'
-    method: PUT
-    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/mcdd/copy_dstdir/file.txt
+    method: DELETE
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/dufa.txt/child.txt
   response:
     body:
-      string: ''
+      string: "\uFEFF<?xml version=\"1.0\" encoding=\"utf-8\"?><Error><Code>OperationNotAllowedInCurrentState</Code><Message>The
+        requested operation is not allowed in the current state of the entity.\nRequestId:SCRUBBED\nTime:SCRUBBED</Message></Error>"
     headers:
       Content-Length:
-      - '0'
-      Content-MD5:
-      - ndTkYSaMgDT1yFZOFVxnpg==
-      ETag:
-      - '"0x8DEB4AA0A559634"'
-      Last-Modified:
-      - Mon, 18 May 2026 06:52:34 GMT
-      x-ms-content-crc64:
-      - seRUZAJnvS0=
-      x-ms-request-server-encrypted:
-      - 'true'
+      - '276'
+      Content-Type:
+      - application/xml
+      x-ms-error-code:
+      - OperationNotAllowedInCurrentState
       x-ms-version:
       - '2026-04-06'
     status:
-      code: 201
-      message: Created
+      code: 409
+      message: The requested operation is not allowed in the current state of the
+        entity.
 - request:
     body: null
     headers:
@@ -217,7 +209,7 @@ interactions:
       x-ms-version:
       - '2026-04-06'
     method: HEAD
-    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/mcdd/copy_src.txt
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/dufa.txt
   response:
     body:
       string: ''
@@ -225,15 +217,15 @@ interactions:
       Accept-Ranges:
       - bytes
       Content-Length:
-      - '3'
+      - '13'
       Content-MD5:
-      - JdkCwkKDq4z7rFTfoQGtMQ==
+      - Qxf/irlZMiQNQidF+v9MwQ==
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEB4AA0A1D2030"'
+      - '"0x8DEBF24AAFE4318"'
       Last-Modified:
-      - Mon, 18 May 2026 06:52:34 GMT
+      - Sun, 31 May 2026 14:55:34 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -243,7 +235,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Mon, 18 May 2026 06:52:34 GMT
+      - Sun, 31 May 2026 14:55:34 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
@@ -277,7 +269,69 @@ interactions:
       x-ms-version:
       - '2026-04-06'
     method: HEAD
-    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/mcdd/copy_dstdir
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/dufa.txt/child.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Transfer-Encoding:
+      - chunked
+      x-ms-error-code:
+      - BlobNotFound
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 404
+      message: The specified blob does not exist.
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-04-06'
+    method: DELETE
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/dufa.txt/child.txt
+  response:
+    body:
+      string: "\uFEFF<?xml version=\"1.0\" encoding=\"utf-8\"?><Error><Code>OperationNotAllowedInCurrentState</Code><Message>The
+        requested operation is not allowed in the current state of the entity.\nRequestId:SCRUBBED\nTime:SCRUBBED</Message></Error>"
+    headers:
+      Content-Length:
+      - '276'
+      Content-Type:
+      - application/xml
+      x-ms-error-code:
+      - OperationNotAllowedInCurrentState
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 409
+      message: The requested operation is not allowed in the current state of the
+        entity.
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-04-06'
+    method: HEAD
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/dufa.txt
   response:
     body:
       string: ''
@@ -285,35 +339,37 @@ interactions:
       Accept-Ranges:
       - bytes
       Content-Length:
-      - '0'
+      - '13'
+      Content-MD5:
+      - Qxf/irlZMiQNQidF+v9MwQ==
+      Content-Type:
+      - application/octet-stream
       ETag:
-      - '"0x8DEB4AA0A5248D8"'
+      - '"0x8DEBF24AAFE4318"'
       Last-Modified:
-      - Mon, 18 May 2026 06:52:34 GMT
+      - Sun, 31 May 2026 14:55:34 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
       - 'true'
       x-ms-acl:
-      - user::rwx,group::r-x,other::---
+      - user::rw-,group::r--,other::---
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Mon, 18 May 2026 06:52:34 GMT
+      - Sun, 31 May 2026 14:55:34 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
       - available
       x-ms-lease-status:
       - unlocked
-      x-ms-meta-hdi_isfolder:
-      - 'true'
       x-ms-owner:
       - $superuser
       x-ms-permissions:
-      - rwxr-x---
+      - rw-r-----
       x-ms-resource-type:
-      - directory
+      - file
       x-ms-server-encrypted:
       - 'true'
       x-ms-version:
@@ -321,6 +377,70 @@ interactions:
     status:
       code: 200
       message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/dufa.txt
+  response:
+    body:
+      string: file-blocking
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '13'
+      Content-Range:
+      - bytes 0-12/13
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DEBF24AAFE4318"'
+      Last-Modified:
+      - Sun, 31 May 2026 14:55:34 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - Qxf/irlZMiQNQidF+v9MwQ==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Sun, 31 May 2026 14:55:34 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
 - request:
     body: null
     headers:

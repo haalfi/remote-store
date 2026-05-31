@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB4A9C1AE42D7"'
+      - '"0x8DEBF24EBFE201B"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:32 GMT
+      - Sun, 31 May 2026 14:57:23 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -121,9 +121,9 @@ interactions:
       Content-MD5:
       - DMF1ucDxtqgxw5niaXcmYQ==
       ETag:
-      - '"0x8DEB4A9C213D230"'
+      - '"0x8DEBF24EC4E47D8"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:33 GMT
+      - Sun, 31 May 2026 14:57:23 GMT
       x-ms-content-crc64:
       - PPzLtEWEL4w=
       x-ms-request-server-encrypted:
@@ -191,9 +191,9 @@ interactions:
       Content-MD5:
       - kutf/uauL+w61xx3dTFXjw==
       ETag:
-      - '"0x8DEB4A9C25239D0"'
+      - '"0x8DEBF24EC8AB19C"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:33 GMT
+      - Sun, 31 May 2026 14:57:24 GMT
       x-ms-content-crc64:
       - t2eV5B2VnA0=
       x-ms-request-server-encrypted:
@@ -261,9 +261,9 @@ interactions:
       Content-MD5:
       - SooI8J03tzeVZJA4QItfMw==
       ETag:
-      - '"0x8DEB4A9C287EECC"'
+      - '"0x8DEBF24ECB97F14"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:33 GMT
+      - Sun, 31 May 2026 14:57:24 GMT
       x-ms-content-crc64:
       - zu6g1NVl8nI=
       x-ms-request-server-encrypted:
@@ -331,9 +331,9 @@ interactions:
       Content-MD5:
       - gnfgkQ11AZW0SHl2FuCRrQ==
       ETag:
-      - '"0x8DEB4A9C2CAABD4"'
+      - '"0x8DEBF24ECFC0920"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:34 GMT
+      - Sun, 31 May 2026 14:57:24 GMT
       x-ms-content-crc64:
       - ysO/HP6RIzo=
       x-ms-request-server-encrypted:
@@ -401,9 +401,9 @@ interactions:
       Content-MD5:
       - 4WcXl8UuFfdjOAtF6EHsMg==
       ETag:
-      - '"0x8DEB4A9C3012264"'
+      - '"0x8DEBF24ED335250"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:34 GMT
+      - Sun, 31 May 2026 14:57:25 GMT
       x-ms-content-crc64:
       - s0qKLDZhTUU=
       x-ms-request-server-encrypted:
@@ -430,15 +430,15 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=pc&recursive=true&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"1","creationTime":"134235606331740720","etag":"0x8DEB4A9C213D230","expiryTime":"0","group":"$superuser","lastModified":"Mon,
-        18 May 2026 06:50:33 GMT","name":"pc/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134235606335503640","etag":"0x8DEB4A9C24D4164","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Mon,
-        18 May 2026 06:50:33 GMT","name":"pc/d1","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134235606335830480","etag":"0x8DEB4A9C25239D0","expiryTime":"0","group":"$superuser","lastModified":"Mon,
-        18 May 2026 06:50:33 GMT","name":"pc/d1/b.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"1","creationTime":"134235606339350220","etag":"0x8DEB4A9C287EECC","expiryTime":"0","group":"$superuser","lastModified":"Mon,
-        18 May 2026 06:50:33 GMT","name":"pc/d1/c.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134235606343493644","etag":"0x8DEB4A9C2C72A00","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Mon,
-        18 May 2026 06:50:34 GMT","name":"pc/d1/d2","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134235606343723988","etag":"0x8DEB4A9C2CAABD4","expiryTime":"0","group":"$superuser","lastModified":"Mon,
-        18 May 2026 06:50:34 GMT","name":"pc/d1/d2/d.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134235606347061152","etag":"0x8DEB4A9C2FD99E4","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Mon,
-        18 May 2026 06:50:34 GMT","name":"pc/d1/d2/d3","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134235606347293284","etag":"0x8DEB4A9C3012264","expiryTime":"0","group":"$superuser","lastModified":"Mon,
-        18 May 2026 06:50:34 GMT","name":"pc/d1/d2/d3/e.txt","owner":"$superuser","permissions":"rw-r-----"}]}
+      string: '{"paths":[{"contentLength":"1","creationTime":"134247130437470168","etag":"0x8DEBF24EC4E47D8","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        31 May 2026 14:57:23 GMT","name":"pc/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134247130441195996","etag":"0x8DEBF24EC8723C4","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Sun,
+        31 May 2026 14:57:24 GMT","name":"pc/d1","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134247130441429404","etag":"0x8DEBF24EC8AB19C","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        31 May 2026 14:57:24 GMT","name":"pc/d1/b.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"1","creationTime":"134247130444496660","etag":"0x8DEBF24ECB97F14","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        31 May 2026 14:57:24 GMT","name":"pc/d1/c.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134247130448679528","etag":"0x8DEBF24ECF95498","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Sun,
+        31 May 2026 14:57:24 GMT","name":"pc/d1/d2","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134247130448857376","etag":"0x8DEBF24ECFC0920","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        31 May 2026 14:57:24 GMT","name":"pc/d1/d2/d.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134247130452197748","etag":"0x8DEBF24ED2F042C","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Sun,
+        31 May 2026 14:57:25 GMT","name":"pc/d1/d2/d3","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134247130452480592","etag":"0x8DEBF24ED335250","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        31 May 2026 14:57:25 GMT","name":"pc/d1/d2/d3/e.txt","owner":"$superuser","permissions":"rw-r-----"}]}
 
         '
     headers:

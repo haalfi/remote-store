@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB4A9BBB61FB6"'
+      - '"0x8DEBF24E70E9350"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:22 GMT
+      - Sun, 31 May 2026 14:57:14 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -121,9 +121,9 @@ interactions:
       Content-MD5:
       - DMF1ucDxtqgxw5niaXcmYQ==
       ETag:
-      - '"0x8DEB4A9BC1B6C28"'
+      - '"0x8DEBF24E769B078"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:23 GMT
+      - Sun, 31 May 2026 14:57:15 GMT
       x-ms-content-crc64:
       - PPzLtEWEL4w=
       x-ms-request-server-encrypted:
@@ -191,9 +191,9 @@ interactions:
       Content-MD5:
       - kutf/uauL+w61xx3dTFXjw==
       ETag:
-      - '"0x8DEB4A9BC52E550"'
+      - '"0x8DEBF24E79B1444"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:23 GMT
+      - Sun, 31 May 2026 14:57:15 GMT
       x-ms-content-crc64:
       - t2eV5B2VnA0=
       x-ms-request-server-encrypted:
@@ -220,9 +220,9 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=g&recursive=false&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"1","creationTime":"134235606231575592","etag":"0x8DEB4A9BC1B6C28","expiryTime":"0","group":"$superuser","lastModified":"Mon,
-        18 May 2026 06:50:23 GMT","name":"g/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"1","creationTime":"134235606235211088","etag":"0x8DEB4A9BC52E550","expiryTime":"0","group":"$superuser","lastModified":"Mon,
-        18 May 2026 06:50:23 GMT","name":"g/b.csv","owner":"$superuser","permissions":"rw-r-----"}]}
+      string: '{"paths":[{"contentLength":"1","creationTime":"134247130355380344","etag":"0x8DEBF24E769B078","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        31 May 2026 14:57:15 GMT","name":"g/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"1","creationTime":"134247130358617156","etag":"0x8DEBF24E79B1444","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        31 May 2026 14:57:15 GMT","name":"g/b.csv","owner":"$superuser","permissions":"rw-r-----"}]}
 
         '
     headers:

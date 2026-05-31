@@ -1,0 +1,102 @@
+id: BK-235
+title: "Record the Azure cassettes for new conformance tests"
+trigger: >-
+  Sixteen conformance tests self-skipped on azure_replay for lack of a
+  cassette, so the Azure backend was never exercised by those gates. ID-213
+  (PR #706) closed the last error-class blocker, so the full batch could
+  record in a single run.
+source_items:
+  - BK-235
+  - ID-213
+  - BK-243
+  - ID-184
+  - BK-195
+audience:
+  - infra.test
+discovery_followups:
+  - BK-249
+co_shipped_items:
+  - BK-243
+surprising_ripples:
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/specs/029-async-store-backend-api.md
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-235 (item), BK-243 (item)"
+        read_type: gate
+        extract: "16 self-skipping tests; record-azure deletes the whole tree → single-PR job; BK-243 folds into the same refresh"
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-213 (item)"
+        read_type: gate
+        extract: "ID-213 (PR #706) merged — the formerly-blocked 8 sync / 7 async tests now raise the correct cross-backend error live, unblocking the full batch"
+      - file: scripts/record_cassettes.py
+        section: "main / _preflight_env / _BACKENDS"
+        read_type: gate
+        extract: "5-step flow (delete → record sync → record async → scrub-verify → replay smoke); preflight validates creds BEFORE the Step-1 delete (BUG-212), so a misconfig is non-destructive; min_cassettes=200 guard"
+      - file: sdd/TESTING.md
+        section: "Cassette Refresh (HTTP-transport backends)"
+        read_type: reference
+        extract: "RS_TEST_LIVE_HNS lives in the shell not .env; TEST-009 — CI does not auto-record, a refresh is a normal PR diff"
+      - file: tests/conftest.py
+        section: "pytest_collection_modifyitems (--record vcr-mark)"
+        read_type: reference
+        extract: "azure_live items only get pytest.mark.vcr when --record is active — so plain -m live --stage=3 (no --record) hits real HTTP, which is the live dry-run seam"
+  - id: verify
+    name: Pre-flight live dry-run
+    steps:
+      - file: tests/backends/conformance/
+        section: "azure_live (sync) + azure_live_async, -m live --stage=3, no --record"
+        read_type: verify
+        extract: "Confirm all green live BEFORE the all-or-nothing delete: sync 197 passed, async 95 passed, 0 failed — destructive record is safe to run"
+  - id: implement
+    name: Record
+    steps:
+      - file: scripts/record_cassettes.py
+        section: "RS_TEST_LIVE_HNS=1 hatch run record-azure"
+        read_type: reference
+        extract: "253 deleted → 298 recorded; scrub clean (no account name); Stage-1 replay smoke 292 passed"
+      - file: tests/backends/cassettes/azure/
+        section: "git status (D/M/?? triage)"
+        read_type: reference
+        extract: "10 'deletions' are param-id-reorder renames (azure_async id moved to tail), matched by 10 new names; 243 modified are volatile ETag/Last-Modified churn — no coverage lost"
+  - id: verify_replay
+    name: Verify on replay
+    steps:
+      - file: tests/backends/conformance/
+        section: "azure_replay, the 16 target test methods + test_open_atomic_exception_cleanup, --stage=1 -rsx"
+        read_type: verify
+        extract: "30 target instances PASS (no self-skip); BK-243 cassette passes; full azure_replay suite 292 passed / 6 legitimate semantic skips / 0 missing-cassette skips"
+  - id: close
+    name: Close out
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "[Unreleased] — new BK-235 + BK-243 entries"
+        read_type: reference
+        extract: "Move both as [x]; BK-243 co-shipped; note the ID-213 HNS-only pragma cleanup as an out-of-scope follow-up (needs strict CI coverage gate)"
+      - file: src/remote_store/backends/_azure.py
+        section: "# pragma: no cover -- HNS only (sync + aio)"
+        read_type: verify
+        extract: "Removed 28 markers (15 sync / 13 async) on file-ancestor paths the cassettes now exercise. Verified safe per-clause: coverage.py extends a block-header pragma to its whole body, so checked each removal's full excluded clause is replay-executed via before/after excluded_lines diff (caught _fs property body still uncovered → kept). Kept markers guard branches replay does not reach"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008 (Azure HNS caveat)"
+        read_type: verify
+        extract: "Caveat said the InvalidPath contract was 'deferred on HNS, not delivered' until ID-213/BK-235 land; both now landed, so lift it — HNS re-raises InvalidPath via ID-213's native-error translation. Async mirror in 029 (ASYNC-008)"
+        outcome: misleading
+  - id: review
+    name: Review fixups
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "AzureBackend.__init__ reject_write_under_file_ancestor docstring (+ async sibling ~l.76)"
+        read_type: verify
+        extract: "Review caught the spec-caveat lift did not sweep the user-facing constructor docstrings (rendered via mkdocstrings on the API reference): both still said the InvalidPath contract is 'deferred on HNS, not delivered'. Aligned them with the amended BE-008/ASYNC-008; kept the async open_atomic omission. The same 'lift the caveat' phenomenon as the specs, surfaced one layer the ripple-check did not flag. Also dropped 18 now-merged `ID-213:` tracker-ID prefixes from the error-remap implementation comments (kept the behavioural why + the BE-xxx spec refs) per the repo's tracker-ID-hygiene norm; reworded the stale `(ID-213 covers the ... gap)` parenthetical that read as pending work"
+        outcome: misleading
+      - file: src/remote_store/backends/_azure.py
+        section: "_hns_first_file_ancestor / _raise_invalid_if_hns_file_ancestor (+ async siblings)"
+        read_type: verify
+        extract: "Round-2 review: the two ancestor helpers' whole-`def` pragma excluded the now-replay-executed core (the InvalidPath raise + ancestor walk). Re-measured replay coverage and converted to line-level pragmas on only the genuinely-unreachable lines (slash-less early return, fail-open except clauses, trailing no-ancestor return), so coverage now locks the contract logic. Verified MISSING=[] in all four helpers under the edited pragmas. Filed BK-249 for the streaming-body file-ancestor branch the conformance test cannot reach"
+        outcome: ok

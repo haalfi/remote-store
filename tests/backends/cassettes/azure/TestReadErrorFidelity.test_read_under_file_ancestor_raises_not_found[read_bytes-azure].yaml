@@ -1,0 +1,197 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-04-06'
+    method: PUT
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      ETag:
+      - '"0x8DEBF24A483A9A2"'
+      Last-Modified:
+      - Sun, 31 May 2026 14:55:23 GMT
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      x-ms-account-kind:
+      - StorageV2
+      x-ms-is-hns-enabled:
+      - 'true'
+      x-ms-sku-name:
+      - Standard_LRS
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-04-06'
+    method: HEAD
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/rufa.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Transfer-Encoding:
+      - chunked
+      x-ms-error-code:
+      - BlobNotFound
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 404
+      message: The specified blob does not exist.
+- request:
+    body: file-blocking
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/octet-stream
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-version:
+      - '2026-04-06'
+    method: PUT
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/rufa.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      Content-MD5:
+      - Qxf/irlZMiQNQidF+v9MwQ==
+      ETag:
+      - '"0x8DEBF24A4CB9160"'
+      Last-Modified:
+      - Sun, 31 May 2026 14:55:23 GMT
+      x-ms-content-crc64:
+      - upF+dtJY2VY=
+      x-ms-request-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/rufa.txt/child.txt
+  response:
+    body:
+      string: "\uFEFF<?xml version=\"1.0\" encoding=\"utf-8\"?><Error><Code>BlobNotFound</Code><Message>The
+        specified blob does not exist.\nRequestId:SCRUBBED\nTime:SCRUBBED</Message></Error>"
+    headers:
+      Content-Length:
+      - '215'
+      Content-Type:
+      - application/xml
+      x-ms-error-code:
+      - BlobNotFound
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 404
+      message: The specified blob does not exist.
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-04-06'
+    method: DELETE
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 202
+      message: Accepted
+version: 1

@@ -80,10 +80,9 @@ class AsyncAzureBackend(AsyncBackend):
             hit, matching the cross-backend contract that hierarchical
             filesystems enforce natively. On HNS accounts the kwarg
             short-circuits: ``hdi_isfolder`` rejects the operation
-            natively, but that native rejection currently surfaces as
-            ``NotFound`` or ``AlreadyExists`` rather than ``InvalidPath``.
-            The cross-backend ``InvalidPath`` contract the kwarg promises
-            is therefore *deferred* on HNS, not delivered — even when set.
+            natively, and the backend detects the file ancestor on that
+            rejection and re-raises it as ``InvalidPath``, so HNS delivers
+            the cross-backend contract with or without the kwarg set.
             Default ``False``.
     """
 
@@ -462,7 +461,7 @@ class AsyncAzureBackend(AsyncBackend):
             bc = self._blob_client(path)
             downloader = await bc.download_blob(max_concurrency=self._max_concurrency)
             data = bytes(await downloader.readall())
-            if await self._ensure_hns():  # pragma: no cover -- HNS only
+            if await self._ensure_hns():
                 # BE-021: file-API operations on an HNS directory path must
                 # raise InvalidPath. download_blob() succeeds (directory marker
                 # is a 0-byte blob), so inspect response metadata post-download.
@@ -546,7 +545,7 @@ class AsyncAzureBackend(AsyncBackend):
                     )
                     size = size_ref[0]
             except Exception:
-                # ID-213: on HNS a write under a file-ancestor surfaces as
+                # On HNS a write under a file-ancestor surfaces as
                 # ResourceNotFoundError; remap to the BE-008 InvalidPath. This
                 # except is shared with non-HNS accounts, where the helper
                 # early-returns and the original error propagates unchanged.
@@ -635,9 +634,9 @@ class AsyncAzureBackend(AsyncBackend):
                 except Exception:
                     with contextlib.suppress(Exception):
                         await tmp_fc.delete_file()
-                    # ID-213: HNS rejects a temp create/rename under a
+                    # HNS rejects a temp create/rename under a
                     # file-ancestor with a 409; remap to the BE-008 InvalidPath.
-                    await self._raise_invalid_if_hns_file_ancestor(path)  # pragma: no cover -- HNS only
+                    await self._raise_invalid_if_hns_file_ancestor(path)
                     raise
             else:
                 try:
@@ -658,7 +657,7 @@ class AsyncAzureBackend(AsyncBackend):
                 except Exception:
                     with contextlib.suppress(Exception):
                         await tmp_fc.delete_file()
-                    # ID-213: HNS rejects a temp create/rename under a
+                    # HNS rejects a temp create/rename under a
                     # file-ancestor with a 409; remap to the BE-008 InvalidPath.
                     await self._raise_invalid_if_hns_file_ancestor(path)  # pragma: no cover -- HNS only
                     raise
@@ -696,7 +695,7 @@ class AsyncAzureBackend(AsyncBackend):
         """
         async with self._errors(path):
             bc = self._blob_client(path)
-            if await self._ensure_hns():  # pragma: no cover -- HNS only
+            if await self._ensure_hns():
                 try:
                     props = await bc.get_blob_properties()
                     blob_meta = getattr(props, "metadata", None) or {}
@@ -723,13 +722,13 @@ class AsyncAzureBackend(AsyncBackend):
                     raise InvalidPath(
                         f"Cannot delete — '{path}' is a directory", path=path, backend=self.name
                     ) from None
-                # ID-213: a path under a file-ancestor is "not in fs" on HNS, so
+                # A path under a file-ancestor is "not in fs" on HNS, so
                 # BE-012's !PathExists ==> NotFound applies (not the SDK's
                 # AlreadyExists/409). missing_ok treats it as a quiet no-op.
                 if await self._ensure_hns() and await self._hns_first_file_ancestor(path) is not None:
-                    if not missing_ok:  # pragma: no cover -- HNS only
+                    if not missing_ok:
                         raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
-                    return  # pragma: no cover -- HNS only
+                    return
                 raise mapped from None  # pragma: no cover
 
     async def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
@@ -825,7 +824,7 @@ class AsyncAzureBackend(AsyncBackend):
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
                         return
-                    # ID-213: listing under a file-ancestor must yield [] (BE-014),
+                    # Listing under a file-ancestor must yield [] (BE-014),
                     # not leak the SDK's AlreadyExists/409.
                     if await self._hns_first_file_ancestor(path) is not None:
                         return
@@ -872,7 +871,7 @@ class AsyncAzureBackend(AsyncBackend):
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
                         return
-                    # ID-213: listing under a file-ancestor must yield [] (BE-014).
+                    # Listing under a file-ancestor must yield [] (BE-014).
                     if await self._hns_first_file_ancestor(path) is not None:
                         return
                     raise mapped from None
@@ -968,7 +967,7 @@ class AsyncAzureBackend(AsyncBackend):
             bc = self._blob_client(path)
             props = await bc.get_blob_properties()
             meta = getattr(props, "metadata", None) or {}
-            if meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+            if meta.get("hdi_isfolder"):
                 raise InvalidPath(
                     f"Cannot get file info — '{path}' exists as a directory",
                     path=path,
@@ -995,7 +994,7 @@ class AsyncAzureBackend(AsyncBackend):
             total_size = 0
             latest_modified: datetime | None = None
 
-            if await self._ensure_hns():  # pragma: no cover -- HNS only
+            if await self._ensure_hns():
                 # DFS get_paths exposes is_directory inline; list_blobs would
                 # silently count hdi_isfolder marker blobs as files (BUG-199).
                 # BUG-213: skip the per-path probe for the filesystem root —
@@ -1066,7 +1065,7 @@ class AsyncAzureBackend(AsyncBackend):
                 src_bc = self._blob_client(src)
                 src_props = await src_bc.get_blob_properties()  # raises NotFound if missing
                 src_meta = getattr(src_props, "metadata", None) or {}
-                if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                if src_meta.get("hdi_isfolder"):
                     raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
             return
 
@@ -1074,7 +1073,7 @@ class AsyncAzureBackend(AsyncBackend):
             src_bc = self._blob_client(src)
             src_props = await src_bc.get_blob_properties()  # raises NotFound if missing
             src_meta = getattr(src_props, "metadata", None) or {}
-            if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+            if src_meta.get("hdi_isfolder"):
                 raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
 
             dst_bc = self._blob_client(dst)
@@ -1082,7 +1081,7 @@ class AsyncAzureBackend(AsyncBackend):
             if not overwrite:
                 try:
                     dst_props = await dst_bc.get_blob_properties()
-                    if is_hns:  # pragma: no cover -- HNS only
+                    if is_hns:
                         dst_meta = getattr(dst_props, "metadata", None) or {}
                         if dst_meta.get("hdi_isfolder"):
                             raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
@@ -1115,7 +1114,7 @@ class AsyncAzureBackend(AsyncBackend):
                 try:
                     await src_fc.rename_file(new_name)
                 except Exception:
-                    # ID-213: the rename failure is keyed to src, but a dst
+                    # The rename failure is keyed to src, but a dst
                     # file-ancestor must surface as InvalidPath(dst) per BE-018.
                     await self._raise_invalid_if_hns_file_ancestor(dst)
                     raise
@@ -1146,7 +1145,7 @@ class AsyncAzureBackend(AsyncBackend):
                 src_bc = self._blob_client(src)
                 src_props = await src_bc.get_blob_properties()  # raises NotFound if missing
                 src_meta = getattr(src_props, "metadata", None) or {}
-                if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                if src_meta.get("hdi_isfolder"):
                     raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
             return
 
@@ -1154,7 +1153,7 @@ class AsyncAzureBackend(AsyncBackend):
             src_bc = self._blob_client(src)
             src_props = await src_bc.get_blob_properties()  # raises NotFound if missing
             src_meta = getattr(src_props, "metadata", None) or {}
-            if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+            if src_meta.get("hdi_isfolder"):
                 raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
 
             dst_bc = self._blob_client(dst)
@@ -1162,7 +1161,7 @@ class AsyncAzureBackend(AsyncBackend):
             if not overwrite:
                 try:
                     dst_props = await dst_bc.get_blob_properties()
-                    if is_hns:  # pragma: no cover -- HNS only
+                    if is_hns:
                         dst_meta = getattr(dst_props, "metadata", None) or {}
                         if dst_meta.get("hdi_isfolder"):
                             raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
@@ -1190,7 +1189,7 @@ class AsyncAzureBackend(AsyncBackend):
             try:
                 await dst_bc.start_copy_from_url(src_bc.url)
             except Exception:
-                # ID-213: on HNS a copy whose dst is under a file-ancestor
+                # On HNS a copy whose dst is under a file-ancestor
                 # surfaces a src-keyed error; remap to InvalidPath(dst). This
                 # except is shared with non-HNS accounts, where the helper
                 # early-returns and the original error propagates unchanged.
@@ -1312,7 +1311,7 @@ class AsyncAzureBackend(AsyncBackend):
         """Get an async BlobClient for the given path."""
         return self._cc.get_blob_client(_azure_path_fn(path))
 
-    async def _hns_first_file_ancestor(self, path: str) -> str | None:  # pragma: no cover -- HNS only
+    async def _hns_first_file_ancestor(self, path: str) -> str | None:
         """Async sibling of ``AzureBackend._hns_first_file_ancestor``.
 
         First slash-aligned ancestor of *path* that is a regular file on HNS
@@ -1323,23 +1322,23 @@ class AsyncAzureBackend(AsyncBackend):
 
         azp = _azure_path_fn(path)
         if "/" not in azp:
-            return None
+            return None  # pragma: no cover -- HNS only
         parts = azp.split("/")
         for i in range(1, len(parts)):
             ancestor = "/".join(parts[:i])
             bc = self._cc.get_blob_client(ancestor)
             try:
                 props = await bc.get_blob_properties()
-            except ResourceNotFoundError:
+            except ResourceNotFoundError:  # pragma: no cover -- HNS only
                 continue
-            except (AzureError, OSError):
+            except (AzureError, OSError):  # pragma: no cover -- HNS only
                 continue  # fail-open: unknown state is not treated as a file
             meta = getattr(props, "metadata", None) or {}
             if not meta.get("hdi_isfolder"):
                 return ancestor
-        return None
+        return None  # pragma: no cover -- HNS only
 
-    async def _raise_invalid_if_hns_file_ancestor(self, path: str) -> None:  # pragma: no cover -- HNS only
+    async def _raise_invalid_if_hns_file_ancestor(self, path: str) -> None:
         """Async sibling of ``AzureBackend._raise_invalid_if_hns_file_ancestor``.
 
         Raise ``InvalidPath`` keyed to *path* if an HNS ancestor is a regular
@@ -1348,7 +1347,7 @@ class AsyncAzureBackend(AsyncBackend):
         destination the contract names.
         """
         if not await self._ensure_hns():
-            return
+            return  # pragma: no cover -- HNS only
         ancestor = await self._hns_first_file_ancestor(path)
         if ancestor is not None:
             raise InvalidPath(

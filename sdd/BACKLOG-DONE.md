@@ -8,6 +8,46 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-235 — Record the Azure cassettes for new conformance tests**
+  spec: — · audience: infra.test
+  Sixteen conformance tests self-skipped on `azure_replay` for lack of a
+  cassette, so the Azure backend was never exercised by those gates. With
+  ID-213 (PR #706) closing the last error-class gap, all sixteen pass against
+  live HNS, so the whole batch recorded in one
+  `RS_TEST_LIVE_HNS=1 hatch run record-azure` run against the live ADLS Gen2
+  account `remotestorehns` (2026-05-31).
+  - **Pre-flight live dry-run (no `--record`) first**, because `record-azure`
+    deletes the entire cassette tree at Step 1 (all-or-nothing): sync 197
+    passed / async 95 passed / 0 failed against live HNS confirmed the
+    destructive delete was safe to run.
+  - The run refreshed the full conformance suite: 253 cassettes deleted →
+    298 recorded (scrub-verified clean — no account name survived). Net 55
+    new (the 16 target tests' sync/async/param variants, 10 param-id-reorder
+    renames where the `azure_async` fixture id moved to the tail of the param
+    id, and BK-243's regenerated cassette), 243 refreshed (volatile `ETag` /
+    `Last-Modified` churn), 10 stale old-order names dropped.
+  - Verified on replay (Stage 1): the 30 target instances pass — no longer
+    self-skip; full `azure_replay` suite 292 passed / 6 legitimate semantic
+    skips / 0 missing-cassette skips.
+  - Removed 28 of ID-213's `# pragma: no cover -- HNS only` markers (15 sync /
+    13 async) on the file-ancestor paths the new cassettes now exercise under
+    `azure_replay`. Each removal was verified safe with a before/after coverage
+    diff: every line its excluded clause re-exposes is executed by replay, so
+    the strict (CI-only) 95% gate cannot regress. The remaining markers stay —
+    they guard HNS branches replay still does not reach (`_datalake_service` /
+    `_fs` client construction, partial `_hns_first_file_ancestor` walks, the
+    `delete` / metadata edge clauses).
+
+- [x] **BK-243 — Re-record stale Azure cassette for `test_open_atomic_exception_cleanup`**
+  spec: SAW-004, SAW-005, TEST-007 · audience: infra.test
+  Co-shipped with BK-235's full cassette refresh. ID-188 had extended
+  `test_open_atomic_exception_cleanup` with a `list_files("", recursive=True)`
+  orphan-temp scan that the old cassette did not cover, so the cassette was
+  deleted and the test self-skipped under `azure_replay`. The BK-235
+  `record-azure` run regenerated
+  `TestBackendOpenAtomic.test_open_atomic_exception_cleanup[azure].yaml`; the
+  test now passes on replay (Stage 1). No code change.
+
 - [x] **ID-200 — Audit s3fs error-mapping fidelity in `_S3Base`**
   spec: — · audience: library.maintainer
   Audit of the s3fs → `_S3Base._s3fs_errors` → `_classify_error` boundary

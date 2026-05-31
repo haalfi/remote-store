@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB4A9BE63BFD4"'
+      - '"0x8DEBF24E9829932"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:26 GMT
+      - Sun, 31 May 2026 14:57:19 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -121,9 +121,9 @@ interactions:
       Content-MD5:
       - DMF1ucDxtqgxw5niaXcmYQ==
       ETag:
-      - '"0x8DEB4A9BECE046C"'
+      - '"0x8DEBF24E9CE9540"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:27 GMT
+      - Sun, 31 May 2026 14:57:19 GMT
       x-ms-content-crc64:
       - PPzLtEWEL4w=
       x-ms-request-server-encrypted:
@@ -191,9 +191,9 @@ interactions:
       Content-MD5:
       - kutf/uauL+w61xx3dTFXjw==
       ETag:
-      - '"0x8DEB4A9BF1ABB98"'
+      - '"0x8DEBF24EA02C114"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:28 GMT
+      - Sun, 31 May 2026 14:57:19 GMT
       x-ms-content-crc64:
       - t2eV5B2VnA0=
       x-ms-request-server-encrypted:
@@ -261,9 +261,9 @@ interactions:
       Content-MD5:
       - SooI8J03tzeVZJA4QItfMw==
       ETag:
-      - '"0x8DEB4A9BF6FE234"'
+      - '"0x8DEBF24EA394598"'
       Last-Modified:
-      - Mon, 18 May 2026 06:50:28 GMT
+      - Sun, 31 May 2026 14:57:20 GMT
       x-ms-content-crc64:
       - zu6g1NVl8nI=
       x-ms-request-server-encrypted:
@@ -290,12 +290,12 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=gf&recursive=true&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"1","creationTime":"134235606276834412","etag":"0x8DEB4A9BECE046C","expiryTime":"0","group":"$superuser","lastModified":"Mon,
-        18 May 2026 06:50:27 GMT","name":"gf/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134235606281176556","etag":"0x8DEB4A9BF104858","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Mon,
-        18 May 2026 06:50:28 GMT","name":"gf/sub","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134235606281862040","etag":"0x8DEB4A9BF1ABB98","expiryTime":"0","group":"$superuser","lastModified":"Mon,
-        18 May 2026 06:50:28 GMT","name":"gf/sub/b.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134235606287079984","etag":"0x8DEB4A9BF6A5C70","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Mon,
-        18 May 2026 06:50:28 GMT","name":"gf/sub/deep","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134235606287442484","etag":"0x8DEB4A9BF6FE234","expiryTime":"0","group":"$superuser","lastModified":"Mon,
-        18 May 2026 06:50:28 GMT","name":"gf/sub/deep/c.txt","owner":"$superuser","permissions":"rw-r-----"}]}
+      string: '{"paths":[{"contentLength":"1","creationTime":"134247130395546944","etag":"0x8DEBF24E9CE9540","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        31 May 2026 14:57:19 GMT","name":"gf/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134247130398775672","etag":"0x8DEBF24E9FFDBE8","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Sun,
+        31 May 2026 14:57:19 GMT","name":"gf/sub","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134247130398966036","etag":"0x8DEBF24EA02C114","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        31 May 2026 14:57:19 GMT","name":"gf/sub/b.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134247130402370688","etag":"0x8DEBF24EA36B6F0","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Sun,
+        31 May 2026 14:57:20 GMT","name":"gf/sub/deep","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134247130402538904","etag":"0x8DEBF24EA394598","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        31 May 2026 14:57:20 GMT","name":"gf/sub/deep/c.txt","owner":"$superuser","permissions":"rw-r-----"}]}
 
         '
     headers:
