@@ -110,8 +110,8 @@ spec tracing). Applies to all new or changed tests.
 
 ## GitHub operations
 
-PR workflows are codified as skills: `/pr`, `/review-pr`, `/fix-pr`. Use those instead of ad-hoc `gh` commands.
-Use `/review-pr` for PR reviews, not the built-in `/review` CLI command.
+PR workflows are codified as skills: `/pr`, `/rvw-pr`, `/fix-pr`. Use those instead of ad-hoc `gh` commands.
+Use `/rvw-pr` for PR reviews, not the built-in `/review` CLI command.
 
 For lookup tables, detailed procedures, and repo layout see `sdd/CLAUDE-REFERENCE.md`.
 

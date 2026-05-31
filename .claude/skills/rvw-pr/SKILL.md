@@ -1,5 +1,5 @@
 ---
-name: review-pr
+name: rvw-pr
 description: Post inline review comments on a GitHub PR. Find real issues only.
 disable-model-invocation: true
 context: fork
