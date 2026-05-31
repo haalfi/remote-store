@@ -10148,10 +10148,9 @@ accounts and raise <code>InvalidPath</code> on the first regular-file
 hit, matching the cross-backend contract that hierarchical
 filesystems enforce natively. On HNS accounts the kwarg
 short-circuits: <code>hdi_isfolder</code> rejects the operation
-natively, but that native rejection currently surfaces as
-<code>NotFound</code> or <code>AlreadyExists</code> rather than <code>InvalidPath</code>.
-The cross-backend <code>InvalidPath</code> contract the kwarg promises
-is therefore <em>deferred</em> on HNS, not delivered — even when set.
+natively, and the backend detects the file ancestor on that
+rejection and re-raises it as <code>InvalidPath</code>, so HNS delivers
+the cross-backend contract with or without the kwarg set.
 Default <code>False</code>: enabling the check adds one HEAD per
 ancestor per nested-path write; paths without slashes
 short-circuit.</p>
