@@ -206,6 +206,9 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         "ASYNC-061",  # 029 — read_seekable() deferral
         "ASYNC-062",  # 029 — open_atomic() deferral
         "RET-015",  # 025 — graph retry mapping (rides the Graph backend)
+        # Optional-dependency / packaging declarations (pyproject extras).
+        "PA-023",  # 014 — pyarrow optional extra declaration
+        "CFG-014",  # 021 — toml/yaml/pydantic optional extras declaration
         # --- BK-252 disposition: audit-015 held rows reclassified type-(d) ---
         # Design principles / architectural constraints (no runtime behavior to mark).
         "GLOB-015",  # 018 — ext.glob: no backend coupling (public Store API only)
@@ -241,9 +244,6 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         "SQL-BLOB-071",  # 040 — connection pooling (SQLAlchemy default, no custom config)
         "SQL-QUERY-090",  # 041 — query execution (full materialization; streaming deferred)
         "SQL-QUERY-091",  # 041 — serialization overhead (full copy; zero-copy/ADBC deferred)
-        # Optional-dependency / packaging declarations (pyproject extras).
-        "PA-023",  # 014 — pyarrow optional extra declaration
-        "CFG-014",  # 021 — toml/yaml/pydantic optional extras declaration
         # Moved to ext.write (spec 046 EW-001..004) per ADR-0008. The spec-045
         # WR-014..017 headings are cross-reference stubs kept for traceability; the
         # real behavior is marked under EW-* (tests/ext/test_write.py), so a WR-*
