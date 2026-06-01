@@ -155,6 +155,39 @@ the two shipped S3 backends and must keep their conformance green, so it is
 deliberately **not** done in the PoC: it is work the **Ship** path would
 absorb, not speculative churn a **Reject** would waste.
 
+## 4a. Known cross-lane differences and caveats (record before Ship)
+
+Surfaced in PR review. None block the Park PoC; each is a Ship-promotion item.
+
+- **Borrowed spec marks.** The lane marks the s3fs-lane error IDs
+  (`S3-015`/`016`/`018`) directly. `S3-018`'s postcondition literally names
+  `backend == "s3"`, and `S3-017` covers *connection* errors only — so the 5xx
+  → `BackendUnavailable` rows are intentionally left **unmarked** (no spec
+  clause maps server 5xx responses). Borrowing is acceptable for a test-only
+  Park; a Ship promotion needs a dedicated `S3B-*` spec block (or generalized
+  `S3-018` postconditions), mirroring how the pyarrow lane created
+  `S3PA-018`/`S3PA-019` that *reference* the `S3-*` IDs.
+- **`read()` GetObject amplification.** Each `_S3RangeReader.readinto` is one
+  ranged `GetObject`. `read()` wraps it in a 1 MiB `BufferedReader`, so a
+  sequential consume issues ~1 GET per MiB rather than ~1 GET per 8 KiB
+  `readall()` chunk; random `read_at` (PyArrow column pruning) is still one GET
+  per seek+read. Bulk sequential reads should prefer `read_bytes` (single GET).
+  The s3fs lane returns a block-buffered `S3File`; the boto3 lane is now
+  buffered for sequential reads but keeps the per-range cost for random access.
+- **Exact-key overwrite / collision check.** The `overwrite=False` and
+  dst-collision guards in `write` / `open_atomic` / `move` / `copy` use an
+  exact-key HEAD, not a prefix-exists probe. So `write("a/b")` when only
+  `a/b/c` exists proceeds here, whereas the s3fs lane raises `AlreadyExists`
+  (its `exists()` is `True` for a prefix). The boto3 behavior is arguably more
+  correct for a flat namespace (a prefix is not an object), and no conformance
+  test covers write-over-prefix — but it is a behavioral divergence a Ship
+  promotion would expose to users migrating from the `s3` lane.
+- **`copy` / `move` > 5 GB.** `copy_object` is a single-part server-side copy,
+  which S3 caps at 5 GB; larger objects need a multipart copy
+  (`UploadPartCopy`), which the s3fs lane's `copy` handles internally. So the
+  headline >5 GB *upload* win (via `TransferConfig`) does **not** extend to the
+  *copy* path — a Ship promotion needs multipart-copy support for parity.
+
 ## 5. Reproduction
 
 ```

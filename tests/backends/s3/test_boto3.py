@@ -107,6 +107,35 @@ def _make_backend(endpoint: str, bucket: str) -> S3Boto3Backend:
     )
 
 
+class _RaisingClient:
+    """Stub boto3 client whose every call raises a fabricated exception.
+
+    Injected into ``backend._client_instance`` (the same fixture-injection the
+    s3fs lane uses for ``_fs_instance``) so the error-mapping rows moto cannot
+    reproduce (403 / credential / 5xx) are driven through the **public**
+    ``read_bytes`` / ``get_file_info`` surface rather than calling the private
+    ``_classify_error`` directly -- TESTING.md Rule 8 (tests survive renames).
+    """
+
+    def __init__(self, exc: Exception, *, head_response: dict | None = None) -> None:
+        self._exc = exc
+        self._head_response = head_response
+
+    def get_object(self, **_kwargs: object) -> object:
+        raise self._exc
+
+    def head_object(self, **_kwargs: object) -> object:
+        if self._head_response is not None:
+            return self._head_response
+        raise self._exc
+
+
+def _backend_raising(exc: Exception) -> S3Boto3Backend:
+    backend = _make_backend("http://localhost:1", "b")
+    backend._client_instance = _RaisingClient(exc)
+    return backend
+
+
 @pytest.mark.spec("S3-010")
 class TestBug214MidStreamFailure:
     """A mid-stream content failure must not commit a truncated object.
@@ -162,13 +191,16 @@ class TestBug214MidStreamFailure:
 
 
 class TestClientErrorClassification:
-    """``_classify_error`` keys on the botocore ``Error.Code`` (ID-200).
+    """Error mapping pinned through the PUBLIC ``read_bytes`` surface (ID-200).
 
-    moto cannot produce a real 403, so the 403 / credential rows are pinned
-    at the mapping boundary by feeding realistic ``ClientError``s through the
-    classifier -- the same technique the ID-200 audit used for the s3fs lane
-    (research doc rows (b)/(c)). Every typed error carries ``backend ==
-    's3-boto3'`` per S3-018.
+    moto enforces neither IAM nor credential validity, so the 403 / credential
+    and 5xx rows are unreachable in-process (ID-200 rows (b)/(c)). A
+    ``_RaisingClient`` injected for the call makes ``read_bytes`` surface the
+    fabricated exception through ``_boto_errors`` -> ``_classify_error``,
+    exercising the mapping boundary without calling the private classifier
+    (TESTING.md Rule 8). The 404 row is covered over the real moto wire by
+    ``TestNotFoundOverTheWire``. Every typed error carries
+    ``backend == "s3-boto3"``.
     """
 
     def _client_error(self, code: str, status: int):
@@ -178,16 +210,6 @@ class TestClientErrorClassification:
             {"Error": {"Code": code, "Message": code}, "ResponseMetadata": {"HTTPStatusCode": status}},
             "GetObject",
         )
-
-    @pytest.mark.spec("S3-015")
-    @pytest.mark.parametrize(("code", "status"), [("NoSuchKey", 404), ("NoSuchBucket", 404), ("404", 404)])
-    def test_not_found_codes_map_to_not_found(self, code: str, status: int) -> None:
-        from remote_store._errors import NotFound
-
-        backend = _make_backend("http://localhost:1", "b")
-        mapped = backend._classify_error(self._client_error(code, status), "k")
-        assert isinstance(mapped, NotFound)
-        assert mapped.backend == "s3-boto3"
 
     @pytest.mark.spec("S3-016", "S3-018")
     @pytest.mark.parametrize(
@@ -202,33 +224,55 @@ class TestClientErrorClassification:
     def test_permission_codes_map_to_permission_denied(self, code: str, status: int) -> None:
         from remote_store._errors import PermissionDenied
 
-        backend = _make_backend("http://localhost:1", "b")
-        mapped = backend._classify_error(self._client_error(code, status), "k")
-        assert isinstance(mapped, PermissionDenied)
-        assert mapped.backend == "s3-boto3"
+        backend = _backend_raising(self._client_error(code, status))
+        with pytest.raises(PermissionDenied) as exc_info:
+            backend.read_bytes("k")
+        assert exc_info.value.backend == "s3-boto3"
 
-    @pytest.mark.spec("S3-017")
+    # No @pytest.mark.spec: S3-017 covers *connection* errors only
+    # (008-s3-backend.md:151); no spec clause maps HTTP 5xx server responses to
+    # BackendUnavailable. The mapping is intentional but unspecced -- a Ship
+    # promotion adds the clause (or a dedicated S3B-* ID) before marking.
     @pytest.mark.parametrize(
         ("code", "status"), [("InternalError", 500), ("ServiceUnavailable", 503), ("SlowDown", 503)]
     )
     def test_server_codes_map_to_backend_unavailable(self, code: str, status: int) -> None:
         from remote_store._errors import BackendUnavailable
 
-        backend = _make_backend("http://localhost:1", "b")
-        mapped = backend._classify_error(self._client_error(code, status), "k")
-        assert isinstance(mapped, BackendUnavailable)
-        assert mapped.backend == "s3-boto3"
+        backend = _backend_raising(self._client_error(code, status))
+        with pytest.raises(BackendUnavailable) as exc_info:
+            backend.read_bytes("k")
+        assert exc_info.value.backend == "s3-boto3"
 
     @pytest.mark.spec("S3-017")
-    def test_botocore_endpoint_error_maps_to_backend_unavailable(self) -> None:
+    def test_endpoint_connection_error_maps_backend_unavailable(self) -> None:
         from botocore.exceptions import EndpointConnectionError
 
         from remote_store._errors import BackendUnavailable
 
-        backend = _make_backend("http://localhost:1", "b")
-        mapped = backend._classify_error(EndpointConnectionError(endpoint_url="http://x"), "k")
-        assert isinstance(mapped, BackendUnavailable)
-        assert mapped.backend == "s3-boto3"
+        backend = _backend_raising(EndpointConnectionError(endpoint_url="http://x"))
+        with pytest.raises(BackendUnavailable) as exc_info:
+            backend.read_bytes("k")
+        assert exc_info.value.backend == "s3-boto3"
+
+    def test_unknown_client_error_code_maps_to_base_error(self) -> None:
+        """An unrecognised ClientError code falls through to the base RemoteStoreError."""
+        from remote_store._errors import RemoteStoreError
+
+        backend = _backend_raising(self._client_error("TeapotError", 418))
+        with pytest.raises(RemoteStoreError) as exc_info:
+            backend.read_bytes("k")
+        assert type(exc_info.value) is RemoteStoreError  # base type, not a subtype
+        assert exc_info.value.backend == "s3-boto3"
+
+    def test_non_botocore_exception_maps_via_message(self) -> None:
+        """A non-botocore exception routes through the shared message classifier."""
+        from remote_store._errors import RemoteStoreError
+
+        backend = _backend_raising(RuntimeError("mystery failure"))
+        with pytest.raises(RemoteStoreError) as exc_info:
+            backend.read_bytes("k")
+        assert exc_info.value.backend == "s3-boto3"
 
 
 class TestNotFoundOverTheWire:
@@ -257,6 +301,58 @@ class TestNotFoundOverTheWire:
             with pytest.raises(NotFound) as exc_info:
                 backend.get_file_info("does/not/exist.txt")
             assert exc_info.value.backend == "s3-boto3"
+        finally:
+            backend.close()
+
+
+class TestS3Boto3Lifecycle:
+    """Construction-path coverage + s3fs-lane parity for the retry policy."""
+
+    def test_retry_policy_round_trips(self, moto_bucket: tuple[str, str]) -> None:
+        """A RetryPolicy maps to botocore and the backend still round-trips.
+
+        Mirrors the s3fs lane's ``test_lifecycle_with_retry_policy``. The
+        non-default ``backoff_base`` exercises the "only max_attempts is
+        mappable" debug branch in ``_build_boto_config``.
+        """
+        from remote_store._config import RetryPolicy
+        from remote_store.backends._s3_boto3 import S3Boto3Backend
+
+        endpoint, bucket = moto_bucket
+        backend = S3Boto3Backend(
+            bucket=bucket,
+            endpoint_url=endpoint,
+            key="testing",
+            secret="testing",
+            region_name="us-east-1",
+            retry=RetryPolicy(max_attempts=5, backoff_base=2.0),
+        )
+        try:
+            backend.write("retry/probe.txt", b"hello", overwrite=True)
+            assert backend.read_bytes("retry/probe.txt") == b"hello"
+        finally:
+            backend.delete("retry/probe.txt", missing_ok=True)
+            backend.close()
+
+    def test_unwrap_returns_boto_client(self) -> None:
+        """``unwrap(BaseClient)`` returns the native boto3 S3 client (S3-020 shape)."""
+        from botocore.client import BaseClient
+
+        backend = _make_backend("http://localhost:1", "b")
+        try:
+            assert isinstance(backend.unwrap(BaseClient), BaseClient)
+        finally:
+            backend.close()
+
+    def test_malformed_checksum_yields_no_digest(self) -> None:
+        """A non-decodable checksum field is swallowed; ``digest`` is ``None``."""
+        backend = _make_backend("http://localhost:1", "b")
+        backend._client_instance = _RaisingClient(
+            AssertionError("unused"),
+            head_response={"ContentLength": 0, "ChecksumSHA256": "abc"},  # bad base64
+        )
+        try:
+            assert backend.get_file_info("k").digest is None
         finally:
             backend.close()
 

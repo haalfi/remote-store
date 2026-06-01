@@ -12,10 +12,20 @@ audience:
   - library.maintainer
   - infra.test
 expected_ripples:
-  - docs-src/reference/tested-versions.md
+  - pyproject.toml
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
 surprising_ripples:
+  # The ripple-check "Backend" row names src/_registry.py; the test-only path
+  # instead touched the declarative test-fixture registry (TOML + alias map) and
+  # the per-family capability-classification lists in the conformance suite.
   - tests/backends/conformance/test_identity.py
-review_rounds: 0
+  - tests/backends/fixtures/backends.toml
+  - tests/backends/fixtures/fixtures.toml
+  - tests/backends/fixtures/__init__.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

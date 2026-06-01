@@ -1890,7 +1890,7 @@
       "file": "src/remote_store/backends/_s3_boto3.py",
       "id": "cls:remote_store.backends._s3_boto3.S3Boto3Backend",
       "kind": "class",
-      "line": 191,
+      "line": 197,
       "role": "backend",
       "runtime": "sync",
       "summary": "S3-compatible backend using boto3 directly (no s3fs / pyarrow)."

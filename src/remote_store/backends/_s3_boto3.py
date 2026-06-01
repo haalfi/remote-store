@@ -86,6 +86,12 @@ log = logging.getLogger(__name__)
 # read() returns a Range-backed seekable stream (see _S3RangeReader).
 _ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.ATOMIC_MOVE})
 
+# read() wraps the per-call Range reader in a BufferedReader of this size so a
+# sequential consume issues one GetObject per buffer rather than one per
+# RawIOBase.readall() chunk (8 KiB). Random read_at via PyArrow still costs one
+# ranged GET per seek+read; bulk sequential reads should prefer read_bytes.
+_READ_BUFFER_SIZE = 1024 * 1024
+
 # Error codes that map to PermissionDenied regardless of HTTP status. ExpiredToken
 # is HTTP 400 (ID-200 § 3(c)) yet still a credential failure, so we key on the code.
 _PERMISSION_CODES = frozenset(
@@ -323,7 +329,11 @@ class S3Boto3Backend(Backend):
             head = self._client.head_object(Bucket=self._bucket, Key=path)
             size = int(head.get("ContentLength", 0) or 0)
             reader = _S3RangeReader(self._client, self._bucket, path, size)
-            stream = _safe_wrap(reader, lambda s: _ErrorMappingStream(s, self._classify_error, path))
+            stream = _safe_wrap(
+                reader,
+                lambda s: _ErrorMappingStream(s, self._classify_error, path),
+                lambda s: io.BufferedReader(s, buffer_size=_READ_BUFFER_SIZE),
+            )
             return cast(BinaryIO, stream)  # noqa: TC006
 
     def read_bytes(self, path: str) -> bytes:
