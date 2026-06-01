@@ -7,7 +7,7 @@ HTTP/HTTPS URLs. It treats an HTTP endpoint as a read-only file store,
 enabling the same `Store` interface and extension composability (`ext.cache`,
 `ext.transfer`, `ext.observe`, `ext.batch`) as other backends.
 
-**Capability set:** `{READ, METADATA}`
+**Capability set:** `{READ, METADATA, LAZY_READ}`
 
 **Primary use cases:** government open data portals, dataset registries,
 static file servers, CDN-hosted assets, package archives, public APIs
