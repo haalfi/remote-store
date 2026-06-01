@@ -55,13 +55,17 @@ class TestBackendWriteAtomic:
             backend.write_atomic("atomic3.txt", b"second", overwrite=False)
 
     @pytest.mark.spec("AW-001")
+    @pytest.mark.spec("AW-004")
     @pytest.mark.spec("S3-010")
     def test_write_atomic_content_failure_leaves_no_partial(self, backend: Backend) -> None:
-        """AW-001: a mid-stream *content* failure must commit nothing.
+        """AW-001 / AW-004: a mid-stream *content* failure must commit nothing.
 
         When the content source raises partway through ``write_atomic``, the
-        target must stay absent and no orphan artefact may survive under the
-        fixture root -- the "no partial content is ever visible" postcondition.
+        target must stay absent (AW-001, "no partial content is ever visible")
+        and no orphan artefact may survive under the fixture root (AW-004, "no
+        orphaned temporary files are left behind"). This is the strongest
+        cross-backend exercise of AW-004's cleanup clause: local/SFTP temp-file
+        removal, the s3fs ``discard()`` abort, and the PyArrow buffer-before-open.
 
         Regression for BUG-214: the two S3 backends committed a truncated
         object on this path (the s3fs backend because its file handle's
