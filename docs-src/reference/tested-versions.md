@@ -15,7 +15,7 @@ _Captured 2026-05-25 on Python 3.13._
 
 ## `[azure]`
 
-_Captured 2026-05-25 on Python 3.13._
+_Captured 2026-06-01 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -24,11 +24,11 @@ _Captured 2026-05-25 on Python 3.13._
 
 ## `[dagster]`
 
-_Captured 2026-05-25 on Python 3.13._
+_Captured 2026-06-01 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `dagster` | `1.13.6` |
+| `dagster` | `1.13.7` |
 
 ## `[httpx]`
 
@@ -56,7 +56,7 @@ _Captured 2026-05-25 on Python 3.13._
 
 ## `[requests]`
 
-_Captured 2026-05-25 on Python 3.13._
+_Captured 2026-06-01 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -65,7 +65,7 @@ _Captured 2026-05-25 on Python 3.13._
 
 ## `[s3]`
 
-_Captured 2026-05-25 on Python 3.13._
+_Captured 2026-06-01 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -73,7 +73,7 @@ _Captured 2026-05-25 on Python 3.13._
 
 ## `[s3-pyarrow]`
 
-_Captured 2026-05-25 on Python 3.13._
+_Captured 2026-06-01 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
