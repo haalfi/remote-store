@@ -1,0 +1,74 @@
+id: BK-248
+title: "Confirm S3 403 / credential-failure error mapping over the wire (Stage 3)"
+trigger: >
+  ID-200 verified rows (b) 403->PermissionDenied and (c) invalid-credentials->
+  PermissionDenied only at the mapping boundary (synthesised botocore
+  ClientError fed through s3fs translate_boto_error + _s3fs_errors), because
+  moto enforces neither IAM nor credential validity. The residual unknown was
+  whether a live 403 routes through translate_boto_error rather than being
+  swallowed inside an aiobotocore streaming read.
+source_items:
+  - BK-248
+  - ID-200
+audience:
+  - library.maintainer
+  - infra.test
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-248 (S3 Client-Implementation Strategy)"
+        read_type: gate
+        extract: "Scope: drive a real 403 GetObject + invalid-cred PutObject against enforcing S3; assert PermissionDenied; no code change unless a row diverges"
+      - file: sdd/research/research-s3-error-mapping-fidelity.md
+        section: "3 (b), 3 (c), 4 Disposition"
+        read_type: reference
+        extract: "Both AccessDenied and InvalidAccessKeyId/SignatureDoesNotMatch translate to s3fs PermissionError; over-the-wire confirmation is the open residual"
+      - file: src/remote_store/backends/_s3.py
+        section: "read, read_bytes, write"
+        read_type: reference
+        extract: "read_bytes->cat_file eager inside _s3fs_errors; read->open+_ErrorMappingStream lazy; write->pipe_file inside _s3fs_errors"
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_s3fs_errors, _classify_error"
+        read_type: reference
+        extract: "PermissionError branch (line 415, pragma no-cover under moto) is where a translated 403 lands; _ErrorMappingStream routes through _classify_by_message instead -> the suspected swallow path"
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream"
+        read_type: reference
+        extract: "Catches OSError subclasses (PermissionError is one) and maps via _classify_error -> _classify_by_message, which needs '403'/'accessdenied' in the message text"
+      - file: tests/backends/azure/test_live_hns.py
+        section: "(full)"
+        read_type: reference
+        extract: "Precedent for a backend-specific, module-gated Stage-3 live test file (pytest.mark.live + opt-in env skipif + require_*_live_credentials)"
+  - id: tests
+    name: Live test
+    steps:
+      - file: tests/backends/fixtures/_live_env.py
+        section: "require_s3_live_credentials"
+        read_type: reference
+        extract: "Fail-loud accessor for the three AWS creds; lazy .env backstop; reused by the new standalone file"
+      - file: tests/backends/s3/test_live_error_mapping.py
+        section: "(full)"
+        read_type: reference
+        extract: "New Stage-3 file; invalid-credential S3Backend drives a real 403 on read_bytes, streaming read, and write -> PermissionDenied (S3-016, S3-018)"
+  - id: verify
+    name: Verify ripples
+    steps:
+      - file: tests/backends/s3/test_live_error_mapping.py
+        section: "(full)"
+        read_type: verify
+        extract: "RS_TEST_LIVE_S3=1 hatch run pytest -m live: 3 passed against real AWS; live 403 routes through translate_boto_error, no production-code change"
+      - file: sdd/research/research-s3-error-mapping-fidelity.md
+        section: "Status, 3 (b)/(c) Over the wire, 4 Disposition, 6"
+        read_type: verify
+        extract: "Record over-the-wire confirmation; document empirical AccessDenied-vs-404 finding (out-of-scope bucket returns 404 NoSuchBucket, not 403, so the distinct AccessDenied code is not separately exercised)"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "Audience library.maintainer/infra.test -> CHANGELOG skipped (derived rule); specs S3-016/017/018 unchanged; pragma no-cover on _s3_base.py:415 kept (Stage-1 gate never hits it)"
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: verify
+        extract: "BACKLOG->BACKLOG-DONE move is a no-op for the JSON: BK max is already 253 > 248, and the generator reads only BACKLOG-DONE max"

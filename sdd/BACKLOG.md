@@ -95,28 +95,10 @@ and document," "tweak s3fs defaults," or "ship a third S3 lane."
 ID-200 (error-mapping audit) is **done** — see
 [BACKLOG-DONE.md](BACKLOG-DONE.md) and
 [research/research-s3-error-mapping-fidelity.md](research/research-s3-error-mapping-fidelity.md);
-it spawned BUG-214 and BK-248 (below) and feeds ID-202's error mapping. All
+it spawned BUG-214 and BK-248 (both done) and feeds ID-202's error mapping. All
 three pains were surfaced as code-side flags in
 [research](research/research-backend-setup-guides.md) § 6 and carved
 out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
-
-- [ ] **BK-248 — Confirm S3 403 / credential-failure error mapping over the wire (Stage 3)**
-  spec: S3-016, S3-017 · effort: S · audience: library.maintainer
-  ID-200 verified rows (b) 403→`PermissionDenied` and (c) expired/invalid
-  credentials→`PermissionDenied` only at the *mapping* boundary (feeding a
-  real `botocore.ClientError` through s3fs's `translate_boto_error` and our
-  `_s3fs_errors`), because moto enforces neither ACL/IAM nor credential
-  validity in-process. Close the residual unknown over the wire: drive a real
-  403 `GetObject` and a real expired/invalid-credential `PutObject` against an
-  enforcing S3 endpoint and assert the same `PermissionDenied` (or
-  `BackendUnavailable` for connection-level failures), confirming the live
-  read/write path actually routes through `translate_boto_error` rather than
-  swallowing inside an aiobotocore streaming read. Use the existing Stage-3
-  `s3_live` fixture (`RS_TEST_LIVE_S3=1` + AWS creds) or a policy-enforcing
-  MinIO; neither runs in the default web/CI Stage-1 lane. Update
-  [research/research-s3-error-mapping-fidelity.md](research/research-s3-error-mapping-fidelity.md)
-  with the over-the-wire rows; no production-code change expected unless a row
-  diverges (then open a BUG).
 
 - [ ] **ID-201 — Spike: default `S3Backend` to `use_listings_cache=False`?**
   spec: — · effort: S · audience: user.api

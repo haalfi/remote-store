@@ -4,7 +4,7 @@
 **Date:** 2026-05-31
 **Method:** moto-backed `S3Backend` (Stage 1, in-process `ThreadedMotoServer`); no Docker, no live AWS.
 **Probe:** [`research-s3-error-mapping-fidelity.py`](research-s3-error-mapping-fidelity.py) (throwaway driver, re-runnable via `hatch run python sdd/research/research-s3-error-mapping-fidelity.py`).
-**Status:** Audit complete for the moto-reproducible surface. One divergence → **BUG-214**. Natural-path (over-the-wire) confirmation of rows (b)/(c) deferred to Stage 3 → **BK-248**.
+**Status:** Audit complete. moto-reproducible surface verified; one divergence → **BUG-214** (fixed). Over-the-wire confirmation of rows (b)/(c) completed under **BK-248** against real AWS S3 (`tests/backends/s3/test_live_error_mapping.py`, `RS_TEST_LIVE_S3=1`) — see § 3(b)/(c) "Over the wire" and § 6.
 
 ---
 
@@ -52,6 +52,31 @@ The residual unknown is over-the-wire: that a live S3 403 on the `GetObject`
 read path actually routes through `translate_boto_error` (rather than being
 swallowed inside an aiobotocore streaming read) — see BK-248.
 
+**Over the wire (BK-248).** Confirmed against real AWS S3. A read with a
+bogus access key / secret yields a genuine 403 (`InvalidAccessKeyId` /
+`SignatureDoesNotMatch`), and both `read_bytes` (→ `cat_file`) and `read`
+(→ `open` + stream) raise `PermissionDenied` with `backend == "s3"`. The
+"swallowed inside an aiobotocore streaming read" worry does **not**
+materialise: s3fs issues an eager HEAD/GET *inside* the `_s3fs_errors`
+context (both `cat_file` and `open`), so the 403 is caught by the context
+manager and mapped before any stream is handed back — it never reaches the
+`_ErrorMappingStream` wrapper. The streaming-read classifier
+(`_classify_by_message`, used by `_ErrorMappingStream`) is therefore not on
+the auth-failure path at all.
+
+A distinct `AccessDenied` (valid credentials, forbidden resource) was *not*
+separately exercised. The single-credential `s3_live` IAM user has full
+access within its `rs-conformance-*` grant, and targeting a bucket *outside*
+the grant returns **404 `NoSuchBucket`** (→ `NotFound`), not 403 — S3 reports
+a non-existent bucket as 404 to a credentialed caller regardless of IAM
+(empirically confirmed during BK-248). Because `translate_boto_error` keys on
+the 403 error *code* identically for `AccessDenied` and the invalid-credential
+codes, the credential-failure 403 confirms the same mapping boundary the
+`AccessDenied` row would. Provisioning an existing-but-forbidden bucket
+(second restricted credential, or a bucket policy `Deny`) is the only way to
+exercise the `AccessDenied` code itself and is out of scope for the current
+`s3_live` setup.
+
 ### (c) Expired / invalid credentials → `PermissionDenied`
 **moto accepts any credentials, so this too is not naturally reproducible.**
 Running the three realistic botocore `ClientError`s through the same real
@@ -67,8 +92,12 @@ All three satisfy the target (`BackendUnavailable` **or** `PermissionDenied`);
 none is a silent success. Note `ExpiredToken` is HTTP **400**, yet s3fs keys on
 the *error code* and still yields `PermissionError` — so our earlier worry that
 it would fall through to a bare `RemoteStoreError` via the message heuristic was
-wrong (the heuristic never runs; s3fs translates first). Over-the-wire
-confirmation deferred to BK-248.
+wrong (the heuristic never runs; s3fs translates first).
+
+**Over the wire (BK-248).** Confirmed: a `PutObject` (`write` →
+`pipe_file`) with invalid credentials raises a real 403 over the wire and
+maps to `PermissionDenied` with `backend == "s3"`, matching the read-path
+result in § 3(b).
 
 ### (d) Mid-stream failure → typed error **but truncated object committed**  ❌
 This is the divergence. When the *content source* raises mid-stream during
@@ -130,10 +159,17 @@ not a typed-error defect — recorded here, not escalated.
 - **(d)** opens **BUG-214** — `write`/`write_atomic` commit a truncated object
   when the content source fails mid-stream. Reproducible on moto; failing test +
   fix belong to BUG-214 per the bug-fix protocol.
-- **(b)/(c)** pass at the mapping boundary but could not be exercised
-  over-the-wire on moto (no IAM enforcement, no credential validation).
-  **BK-248** confirms the natural path against an enforcing S3 (MinIO or live
-  AWS via the `s3_live` Stage-3 fixture) once that environment is available.
+- **(b)/(c)** pass at the mapping boundary, and the natural path is now
+  confirmed over the wire against real AWS by **BK-248**
+  (`tests/backends/s3/test_live_error_mapping.py`): an invalid-credential 403
+  maps to `PermissionDenied` on `read_bytes`, streaming `read`, and `write`.
+  The streaming-read swallow risk does not materialise — s3fs's eager HEAD/GET
+  inside `_s3fs_errors` catches the 403 before any stream is returned. A
+  distinct `AccessDenied` error code (valid creds, forbidden resource) is not
+  exercised because the `s3_live` IAM user cannot provision an
+  existing-but-forbidden bucket; an out-of-scope bucket returns 404, not 403.
+  s3fs translates `AccessDenied` and the invalid-credential codes identically,
+  so the boundary is the same.
 - **(a)/(e)** pass; no action.
 - **ID-202** (boto3-direct lane) should reuse this note: its `ClientError`
   → typed-error mapping must (i) preserve the 403/credential → `PermissionDenied`
@@ -150,3 +186,21 @@ Drives all five scenarios against a fresh in-process moto server and prints,
 per scenario, the observed typed error and the underlying exception. The (d)
 rows additionally report the committed object size and any orphaned multipart
 uploads.
+
+## 6. Over-the-wire confirmation (BK-248)
+
+The credential/permission rows (b)/(c) are confirmed against real AWS S3 by
+`tests/backends/s3/test_live_error_mapping.py` (Stage 3, opt-in):
+
+```
+RS_TEST_LIVE_S3=1 hatch run pytest -m live tests/backends/s3/test_live_error_mapping.py
+```
+
+The suite constructs an `S3Backend` with a bogus access key / secret and
+asserts that the resulting live 403 maps to `PermissionDenied` on the read
+(`read_bytes` and streaming `read`) and write (`write`) paths, with
+`backend == "s3"`. Result: all paths pass — the live 403 routes through
+`s3fs.translate_boto_error` → `_s3fs_errors`, and the eager HEAD/GET means the
+streaming-read wrapper is never on the auth-failure path. No production-code
+change was needed. See § 3(b)/(c) "Over the wire" for the `AccessDenied`-vs-404
+caveat.
