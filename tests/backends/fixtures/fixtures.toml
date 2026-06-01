@@ -154,6 +154,26 @@ is_async  = false
 rejects_write_under_file_ancestor = true
 strict_only = true
 
+# ID-202 PoC: boto3-direct S3 lane against in-process moto. Same Stage-1
+# real-local shape as s3_moto; exercises the full conformance surface.
+[fixture.s3_boto3_moto]
+backend   = "s3_boto3"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = false
+
+# ID-202 / ID-211 strict variant: file-ancestor opt-in on. strict_only=true
+# keeps it out of the default conformance enumeration.
+[fixture.s3_boto3_moto_strict]
+backend   = "s3_boto3"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = false
+rejects_write_under_file_ancestor = true
+strict_only = true
+
 # ---------------------------------------------------------------------------
 # Stage 2 fixtures: real local containers
 # ---------------------------------------------------------------------------

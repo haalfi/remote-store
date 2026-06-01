@@ -1,0 +1,81 @@
+id: ID-202
+title: "PoC: s3-boto3 backend lane alongside s3 and s3-pyarrow"
+trigger: "Three s3fs-inherited S3 pains (aiobotocore dep-pin cascade, >5 GB multipart-restart, fsspec listing-cache staleness) cannot be fixed from our side; a boto3-direct backend would have none of them, so a PoC is needed to decide whether a third S3 lane justifies its maintenance cost"
+source_items:
+  - ID-202
+  - ID-200
+# Test-only PoC: the lane is not registered / not in FEATURES / not in __all__,
+# so nothing user-facing shipped — dominant audience is maintainer + test infra,
+# and CHANGELOG is correctly skipped. The user.api framing (and its CHANGELOG
+# entry) attaches when a Ship verdict promotes the lane.
+audience:
+  - library.maintainer
+  - infra.test
+expected_ripples:
+  - docs-src/reference/tested-versions.md
+surprising_ripples:
+  - tests/backends/conformance/test_identity.py
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-202"
+        read_type: gate
+        extract: "PoC scope: standalone S3Boto3Backend, s3-boto3 extra (boto3 only, no aiobotocore), capability parity minus ATOMIC_MOVE, TransferConfig multipart, ClientError-code error mapping, three decision axes, Ship/Park/Reject"
+      - file: sdd/research/research-s3-error-mapping-fidelity.md
+        section: "4 (Disposition), 6"
+        read_type: gate
+        extract: "ID-200 contract for the boto3 lane: preserve 403/credential->PermissionDenied and 404->NotFound rows; must NOT inherit the BUG-214 (d) truncated-commit defect"
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_S3Base (full)"
+        read_type: reference
+        extract: "Reusable surface is the SDK-agnostic free functions (_normalize_endpoint_url, _resolve_tls_ca_bundle, _validate_tls_ca_bundle) and HeadObject->FileInfo helpers; the class methods (list_*, get_folder_info) are s3fs-coupled via self._s3fs.ls and cannot be reused directly"
+        outcome: ok
+      - file: src/remote_store/backends/_s3.py
+        section: "S3Backend (full)"
+        read_type: reference
+        extract: "Method-by-method reference for the s3fs lane: write overwrite-check, write_atomic delegates to write, open_atomic buffers, move=copy+rm precondition order, unwrap exposes native handle"
+      - file: legacy/sam-services-snapshot/src/app/handler/s3/store.py
+        section: "S3Store (full)"
+        read_type: reference
+        extract: "Origin prior art for boto3 control-path: paginated list_objects_v2 with Delimiter, CommonPrefixes->folders, head_object stat, copy_object copy/move, delete_objects batch"
+      - file: legacy/sam-services-snapshot/src/app/handler/s3/bucket_handler.py
+        section: "S3Error.from_boto"
+        read_type: reference
+        extract: "Origin error classification by Error.Code + HTTP status (NoSuchKey/404->NotFound, 401/403->forbidden, 5xx->server) — informs the _classify_error override"
+      - file: src/remote_store/backends/_azure.py
+        section: "_AzureRangeReader, _ALL_CAPABILITIES"
+        read_type: reference
+        extract: "Range-request seekable RawIOBase pattern reused for boto3 get_object Range reads; Azure precedent for an S3-family lane that DROPS SEEKABLE_READ — but parity with S3Backend means declaring it, so the boto3 lane needs a real Range reader"
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/_backend.py
+        section: "Backend (abstract methods)"
+        read_type: gate
+        extract: "Full set of abstract methods the standalone backend must implement; iter_children/glob/read_seekable/resolve have usable defaults"
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_check_no_file_ancestor"
+        read_type: reference
+        extract: "Opt-in file-ancestor walk reused for reject_write_under_file_ancestor parity; head_one closure fail-open on (ClientError, BotoCoreError, OSError)"
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream, _safe_wrap"
+        read_type: reference
+        extract: "Wrap the Range reader so post-context OSError reads map to typed errors; range reader re-raises non-OSError as OSError"
+      - file: tests/backends/fixtures/s3_moto.py
+        section: "(full)"
+        read_type: reference
+        extract: "Fixture factory shape to mirror for s3_boto3_moto; load_fixture + register from backends.toml/fixtures.toml declarative facts"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A new backend"
+        read_type: verify
+        extract: "Confirm the test-only scope: backend module + extra + fixtures, deliberately NOT touching _registry.py / _info.py / backends/__init__.__all__ / FEATURES.md until a Ship verdict"
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: verify
+        extract: "hatch run lint + Stage-1 conformance for s3_boto3_moto (+ strict) must be green before the research write-up"

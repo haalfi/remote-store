@@ -189,7 +189,7 @@ class TestAtomicMoveCapability:
     """
 
     _DECLARES = {"local", "memory", "dafny", "sqlblob"}
-    _DOES_NOT_DECLARE = {"s3", "s3_pyarrow", "azure", "sftp", "http"}
+    _DOES_NOT_DECLARE = {"s3", "s3_pyarrow", "s3_boto3", "azure", "sftp", "http"}
 
     @pytest.mark.spec("CAP-001")
     @pytest.mark.parametrize("fixture", _atomic_move_canonical_fixtures())
@@ -226,7 +226,7 @@ def _seekable_canonical_fixtures() -> list[Any]:
 class TestSeekableCapability:
     """SEEK-001: backends that always return seekable streams declare SEEKABLE_READ."""
 
-    _DECLARES = {"local", "memory", "s3", "s3_pyarrow", "sftp", "sqlblob", "dafny"}
+    _DECLARES = {"local", "memory", "s3", "s3_pyarrow", "s3_boto3", "sftp", "sqlblob", "dafny"}
     _DOES_NOT_DECLARE = {"azure", "http"}
 
     @pytest.mark.spec("SEEK-001")

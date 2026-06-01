@@ -125,52 +125,6 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   No code change in this item beyond throwaway measurement scripts;
   the chosen path becomes a new BK-NNN.
 
-- [ ] **ID-202 — PoC: `s3-boto3` backend lane alongside `s3` and `s3-pyarrow`**
-  spec: — · effort: L · audience: user.api
-  Three of the s3fs-inherited pains we cannot fix from our side are
-  (1) the aiobotocore-driven dep-pin cascade against user-installed
-  `boto3`, (2) the >5 GB multipart-restart bug (s3fs-fuse #1936), and
-  (3) the fsspec listing-cache staleness handled by ID-201. A boto3-
-  direct backend has none of these. Build a PoC to decide whether the
-  maintenance cost justifies a third S3 lane.
-  Scope of the PoC:
-  - New backend class `S3Boto3Backend` under
-    `src/remote_store/backends/_s3_boto3.py`, sharing `_S3Base` where
-    sensible (path normalisation, endpoint URL handling, TLS bundle
-    resolution) and diverging where s3fs-specific assumptions leak
-    (filesystem-shape walks, cache invalidation calls).
-  - New extra `s3-boto3 = ["boto3>=1.34"]`, no `aiobotocore`.
-  - Capability parity with `S3Backend` (all caps except
-    `ATOMIC_MOVE`), verified by running the conformance suite against
-    `S3Boto3Backend` under moto.
-  - Multipart upload via `boto3.s3.transfer.TransferConfig`, with an
-    explicit smoke test at 5 GB + 1 byte to prove the cliff is gone.
-    Run only in `bench` / `live` gates, not in `hatch run all`.
-  - Typed-error mapping built from `ClientError.response['Error']
-    ['Code']` directly, citing the findings from ID-200.
-  Decide on three axes and record the answer in
-  `sdd/research/`:
-  (a) **User value**: do the three retired pains justify a second
-      install path? Net new users gained vs choice-paralysis cost.
-  (b) **Maintenance cost**: lines of code in `_s3_boto3.py` beyond
-      what `_S3Base` factors out, plus test matrix expansion under
-      `hatch run test` and conformance runtime.
-  (c) **Interop loss**: which downstream extensions
-      (`ext.arrow`, `ext.parquet`, `ext.dagster`) break or degrade
-      without the fsspec-shaped backend underneath, and whether they
-      can be bridged.
-  Three exit dispositions:
-  - **Ship**: promote PoC to `BK-NNN` for hardening, docs, and
-    inclusion in `FEATURES.md`. Mark `s3` and `s3-boto3` as peers,
-    not default-and-alternate.
-  - **Park**: keep PoC branch alive but do not merge; revisit if
-    s3fs upstream stalls on the 5 GB / listing-cache issues.
-  - **Reject**: archive findings as the rationale for not splitting
-    the S3 surface; document the boto3 escape hatch via
-    `Store.unwrap()` and `s3-pyarrow` instead.
-  Out of scope: an async variant (`AsyncS3Boto3Backend`) — folded
-  into a follow-up if ID-202 ships.
-
 ---
 
 ## Lint / CI Completeness
