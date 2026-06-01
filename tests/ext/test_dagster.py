@@ -42,7 +42,6 @@ def store() -> Store:
 class TestSerializerRoundtrips:
     """DAG-002, DAG-003: Pickle and JSON roundtrips."""
 
-    @pytest.mark.spec("DAG-001")
     @pytest.mark.parametrize(
         "serializer",
         [
@@ -327,6 +326,7 @@ class TestCustomSerializer:
     """DAG-009: Custom serializer protocol."""
 
     @pytest.mark.spec("DAG-009")
+    @pytest.mark.spec("DAG-001")
     def test_custom_serializer(self, store: Store) -> None:
         custom = _ReverseSerializer()
         assert isinstance(custom, Serializer)

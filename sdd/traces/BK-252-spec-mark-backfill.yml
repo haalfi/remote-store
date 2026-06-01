@@ -16,7 +16,7 @@ source_items:
   - BK-250
 audience:
   - library.maintainer
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -118,7 +118,7 @@ phases:
       - file: tests/ext/test_observe.py
         section: "test_hook_fires_for_operation (OBS-003a), test_store_event_write_result_populated_on_success (OBS-015)"
         read_type: reference
-        extract: "hook-to-op mapping + write_result-in-StoreEvent; WR-006 on head-sidecar, DAG-001 on serializer roundtrip, GLOB-017/019 + SAW-009 on glob/atomic conformance"
+        extract: "hook-to-op mapping + write_result-in-StoreEvent; WR-006 on head-sidecar, DAG-001 on test_custom_serializer (isinstance(_, Serializer) + .extension -- the runtime_checkable Protocol shape, moved off test_roundtrip in review), GLOB-017/019 + SAW-009 on glob/atomic conformance"
       - file: sdd/specs/045-write-result.md
         section: "WR-014..017"
         read_type: gate
