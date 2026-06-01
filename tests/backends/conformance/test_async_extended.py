@@ -263,13 +263,15 @@ class TestWriteErrorFidelity:
                 "write_atomic",
                 Capability.ATOMIC_WRITE,
                 id="write_atomic",
-                marks=pytest.mark.spec("ASYNC-010"),
+                marks=[
+                    pytest.mark.spec("ASYNC-010"),
+                    pytest.mark.spec("SAW-005"),
+                    pytest.mark.spec("SAW-011"),
+                ],
             ),
         ],
     )
     @pytest.mark.spec("BE-008")
-    @pytest.mark.spec("SAW-005")
-    @pytest.mark.spec("SAW-011")
     async def test_write_under_file_ancestor_raises_invalid_path(
         self, async_backend: AsyncBackend, method: str, cap: Capability
     ) -> None:
