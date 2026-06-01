@@ -6,8 +6,7 @@ Usage::
     hatch run record-azure
     python scripts/record_cassettes.py --backend azure
     python scripts/record_cassettes.py --backend azure --verify-only
-    python scripts/record_cassettes.py --backend azure \
-        --node "tests/backends/conformance/test_errors.py::TestX::test_y[azure_live]"
+    python scripts/record_cassettes.py --backend azure --node "<nodeid>[azure_live]"
 
 Steps (all backends):
     1. Delete existing cassettes for the backend.

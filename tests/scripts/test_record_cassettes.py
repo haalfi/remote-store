@@ -149,14 +149,20 @@ class TestPreflightEnvGuard:
 
         Pins the source order: a future edit that moves the delete back
         above the preflight would re-introduce BUG-212.
+
+        Targets the full ``"Step 1 — delete"`` section marker, not a bare
+        ``"Step 1"`` substring: the ``--node`` help text and the single-mode
+        ``"Step 1-3"`` section header both contain ``"Step 1"`` and appear
+        before the preflight call, so the loose substring would match those
+        instead of the destructive delete loop.
         """
         import inspect
 
         src = inspect.getsource(rc.main)
         preflight_pos = src.find("_preflight_env(")
-        delete_pos = src.find("Step 1")
+        delete_pos = src.find("Step 1 — delete")
         assert preflight_pos >= 0, "main() must call _preflight_env"
-        assert delete_pos >= 0, "main() must contain 'Step 1' section marker"
+        assert delete_pos >= 0, "main() must contain the 'Step 1 — delete' section marker"
         assert preflight_pos < delete_pos, (
             "_preflight_env must run BEFORE Step 1 delete (BUG-212); "
             "putting it after re-introduces the wipe-on-misconfig regression"
