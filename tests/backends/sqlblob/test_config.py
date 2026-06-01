@@ -729,6 +729,7 @@ class TestGlobToLike:
 class TestHealthCheckFailure:
     """Test check_health when the database is unreachable."""
 
+    @pytest.mark.spec("PING-009")
     def test_check_health_failure(self) -> None:
         from unittest.mock import patch
 

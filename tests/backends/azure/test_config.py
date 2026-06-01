@@ -639,6 +639,58 @@ class TestAzureReadResourceSafety:
         assert created_raw[0].closed
 
 
+class TestAzureReadForwardOnly:
+    """SEEK-007: AzureBackend.read() returns the chunked forward-only stream,
+    not the seekable range reader (which is reserved for read_seekable())."""
+
+    @pytest.mark.spec("SEEK-007")
+    def test_read_returns_non_seekable_stream(self) -> None:
+        backend = _make_backend()
+        backend._hns_enabled = False
+        cc = MagicMock(spec=ContainerClient)
+        backend._cc_instance = cc
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+        bc = MagicMock(spec=BlobClient)
+        cc.get_blob_client.return_value = bc
+        downloader = MagicMock(spec=StorageStreamDownloader)
+        downloader.chunks.return_value = iter([b"hello"])
+        bc.download_blob.return_value = downloader
+
+        stream = backend.read("file.txt")
+        try:
+            assert stream.seekable() is False  # forward-only: read() is unchanged
+            assert stream.read() == b"hello"
+        finally:
+            stream.close()
+
+
+class TestAzureNonHnsFolderMarkers:
+    """AZ-010: on a non-HNS account, write() creates only the blob -- no folder
+    marker blobs for the intermediate path segments (same as S3-008)."""
+
+    @pytest.mark.spec("AZ-010")
+    def test_non_hns_write_creates_no_folder_markers(self) -> None:
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = _make_backend()
+        backend._hns_enabled = False
+        cc = MagicMock(spec=ContainerClient)
+        backend._cc_instance = cc
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")  # target does not exist
+        cc.get_blob_client.return_value = bc
+
+        backend.write("a/b/c.txt", b"data")
+
+        # Exactly one upload: the leaf blob. No marker blobs are PUT for "a/"/"a/b/".
+        bc.upload_blob.assert_called_once()
+        # And no blob client was ever requested for a folder-marker (trailing-slash) key.
+        for call in cc.get_blob_client.call_args_list:
+            key = call.args[0] if call.args else call.kwargs.get("blob")
+            assert not str(key).endswith("/")
+
+
 # =============================================================================
 # HNS code path mock tests
 # =============================================================================

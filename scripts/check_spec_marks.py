@@ -95,7 +95,13 @@ BK-252 work) forces that ID's baseline entry out in the same change.
 Baseline *growth* is NOT blocked mechanically — a new violation can be
 parked by editing ``_BASELINE``. That edit is visible in review and is
 the point where a human must refuse new debt; the check cannot make that
-judgement. The printed violation list is the worklist for BK-252.
+judgement.
+
+BK-252 has since **drained ``_BASELINE`` to empty**: every shipped spec
+ID is now either marked (behavior backfilled or newly tested) or
+allowlisted (type-(d) design/meta/perf, or a moved-to-EW stub). The gate
+is therefore a hard zero-tolerance check now — any new shipped ID without
+a mark or allowlist entry fails immediately.
 
 CI enforcement. Exit code 0 = ok; 1 = violations found.
 """
@@ -200,6 +206,53 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         "ASYNC-061",  # 029 — read_seekable() deferral
         "ASYNC-062",  # 029 — open_atomic() deferral
         "RET-015",  # 025 — graph retry mapping (rides the Graph backend)
+        # --- BK-252 disposition: audit-015 held rows reclassified type-(d) ---
+        # Design principles / architectural constraints (no runtime behavior to mark).
+        "GLOB-015",  # 018 — ext.glob: no backend coupling (public Store API only)
+        "CAP-007",  # 003 — quality-flag capabilities (declaring gates no method)
+        "ASYNC-043",  # 029 — AsyncStore delegation (adds no I/O logic of its own)
+        "ASYNC-077",  # 029 — AsyncAzure shared helpers (_azure_common code organization)
+        "HTTP-TR-001",  # 032 — HttpTransport protocol interface definition
+        "AZ-007",  # 012 — Azure single-container scope (no cross-container API exists)
+        "NPR-018",  # 010 — to_key not gated by a Capability (no NATIVE_PATH_RESOLUTION)
+        "NPR-009",  # 010 — future backends implement to_key (forward-looking)
+        "NPR-017",  # 010 — RemotePath invariants preserved (PATH-001..014 remain in force)
+        "NPR-019",  # 010 — backward compatibility (listing fix is a bug-fix, not a behavior change)
+        "MEM-026",  # 013 — atomicity scope (no multi-op transaction; matches all backends)
+        "RES-001",  # 043 — resolution opacity (problem-statement section, not an invariant)
+        "CFG-007",  # 002 — config-as-code priority, no env-var merge (ADR-0002 design policy)
+        "AW-006",  # 007 — Local write_atomic mechanism (mkstemp + os.replace; behavior is AW-001)
+        # Meta / process / spec-update sections.
+        "RTXT-002",  # 028 — read_text: no Backend ABC change (Store-level convenience only)
+        "RTXT-003",  # 028 — read_text added to the STORE-008 API surface
+        "WTXT-002",  # 030 — write_text: no Backend ABC change
+        "WTXT-003",  # 030 — write_text added to the STORE-008 API surface
+        "ITER-003",  # 027 — iter_children added to the STORE-008 API surface
+        "MEM-030",  # 013 — must pass conformance with zero skips (testing-process)
+        "MEM-031",  # 013 — recommendation: replace LocalBackend fixture with MemoryBackend
+        "MEM-032",  # 013 — recommendation: keep dedicated LocalBackend tests
+        # Performance-characteristic tables / data-structure rationale (prose, no behavior).
+        "MEM-040",  # 013 — complexity summary table
+        "MEM-041",  # 013 — memory overhead per entry table
+        "MEM-042",  # 013 — scaling envelope
+        "MEM-DS-001",  # 013 — why not a flat dict (rationale)
+        "MEM-DS-003",  # 013 — why bytearray over bytes (rationale)
+        "MEM-DS-004",  # 013 — slots=True (rationale)
+        "SQL-BLOB-070",  # 040 — blob size guidelines (Performance section)
+        "SQL-BLOB-071",  # 040 — connection pooling (SQLAlchemy default, no custom config)
+        "SQL-QUERY-090",  # 041 — query execution (full materialization; streaming deferred)
+        "SQL-QUERY-091",  # 041 — serialization overhead (full copy; zero-copy/ADBC deferred)
+        # Optional-dependency / packaging declarations (pyproject extras).
+        "PA-023",  # 014 — pyarrow optional extra declaration
+        "CFG-014",  # 021 — toml/yaml/pydantic optional extras declaration
+        # Moved to ext.write (spec 046 EW-001..004) per ADR-0008. The spec-045
+        # WR-014..017 headings are cross-reference stubs kept for traceability; the
+        # real behavior is marked under EW-* (tests/ext/test_write.py), so a WR-*
+        # mark would be a duplicate of the EW-* coverage, not new debt.
+        "WR-014",  # 045 — moved to EW-001 (write_with_hash returns digest)
+        "WR-015",  # 045 — moved to EW-002 (write_with_hash works on every WRITE backend)
+        "WR-016",  # 045 — moved to EW-003 (open_atomic_with_hash requires ATOMIC_WRITE)
+        "WR-017",  # 045 — moved to EW-004 (open_atomic_with_hash exposes result after exit)
     }
 )
 
@@ -445,72 +498,13 @@ def compute_violations(
 # Adding a new gap fails the gate until fixed — the baseline is not a
 # place to park new debt.
 # ---------------------------------------------------------------------------
-_BASELINE: frozenset[tuple[str, str]] = frozenset(
-    {
-        # -- drift: shipped spec IDs whose @pytest.mark.spec backfill is owed
-        #    (BK-252). Each is a behavior tested under a sibling/parent mark
-        #    (type-b) or a genuine untested gap (type-a); see audit-015. BK-252
-        #    removes entries as it backfills, which forces the matching line out
-        #    of this set (a stale baseline entry fails the gate).
-        (KIND_DRIFT, "ASYNC-043"),
-        (KIND_DRIFT, "ASYNC-074"),
-        (KIND_DRIFT, "ASYNC-077"),
-        (KIND_DRIFT, "AW-002"),
-        (KIND_DRIFT, "AW-005"),
-        (KIND_DRIFT, "AW-006"),
-        (KIND_DRIFT, "AW-007"),
-        (KIND_DRIFT, "AZ-007"),
-        (KIND_DRIFT, "AZ-010"),
-        (KIND_DRIFT, "BE-011"),
-        (KIND_DRIFT, "CAP-007"),
-        (KIND_DRIFT, "CFG-007"),
-        (KIND_DRIFT, "CFG-014"),
-        (KIND_DRIFT, "GLOB-015"),
-        (KIND_DRIFT, "HTTP-TR-001"),
-        (KIND_DRIFT, "ITER-002"),
-        (KIND_DRIFT, "ITER-003"),
-        (KIND_DRIFT, "MEM-001"),
-        (KIND_DRIFT, "MEM-005"),
-        (KIND_DRIFT, "MEM-026"),
-        (KIND_DRIFT, "MEM-030"),
-        (KIND_DRIFT, "MEM-031"),
-        (KIND_DRIFT, "MEM-032"),
-        (KIND_DRIFT, "MEM-040"),
-        (KIND_DRIFT, "MEM-041"),
-        (KIND_DRIFT, "MEM-042"),
-        (KIND_DRIFT, "MEM-DS-001"),
-        (KIND_DRIFT, "MEM-DS-003"),
-        (KIND_DRIFT, "MEM-DS-004"),
-        (KIND_DRIFT, "NPR-007"),
-        (KIND_DRIFT, "NPR-009"),
-        (KIND_DRIFT, "NPR-017"),
-        (KIND_DRIFT, "NPR-018"),
-        (KIND_DRIFT, "NPR-019"),
-        (KIND_DRIFT, "PA-023"),
-        (KIND_DRIFT, "PA-026"),
-        (KIND_DRIFT, "PING-009"),
-        (KIND_DRIFT, "RES-001"),
-        (KIND_DRIFT, "RTXT-002"),
-        (KIND_DRIFT, "RTXT-003"),
-        (KIND_DRIFT, "S3-001"),
-        (KIND_DRIFT, "S3PA-001"),
-        (KIND_DRIFT, "S3PA-007"),
-        (KIND_DRIFT, "SAW-010"),
-        (KIND_DRIFT, "SEEK-007"),
-        (KIND_DRIFT, "SQL-BLOB-070"),
-        (KIND_DRIFT, "SQL-BLOB-071"),
-        (KIND_DRIFT, "SQL-QUERY-090"),
-        (KIND_DRIFT, "SQL-QUERY-091"),
-        (KIND_DRIFT, "STORE-007"),
-        (KIND_DRIFT, "STORE-010"),
-        (KIND_DRIFT, "WR-014"),
-        (KIND_DRIFT, "WR-015"),
-        (KIND_DRIFT, "WR-016"),
-        (KIND_DRIFT, "WR-017"),
-        (KIND_DRIFT, "WTXT-002"),
-        (KIND_DRIFT, "WTXT-003"),
-    }
-)
+# BK-252 drained this to empty: every shipped spec ID is now either marked
+# (its behavior backfilled or newly tested) or allowlisted above (type-(d)
+# design/meta/perf, or a moved-to-EW stub). A new violation therefore has no
+# baseline to hide behind — it fails the gate immediately, which is the
+# end state this whole effort was driving toward. Park genuinely
+# pre-existing debt here only with a reviewed justification.
+_BASELINE: frozenset[tuple[str, str]] = frozenset()
 
 
 # ---------------------------------------------------------------------------

@@ -16,6 +16,8 @@ source_items:
   - BK-250
 audience:
   - library.maintainer
+surprising_ripples:
+  - sdd/specs/029-async-store-backend-api.md  # ASYNC-074 spec text was stale (said "materialize"; code streams the AsyncIterator straight to upload_blob per BUG-165) — found while writing the type-(a) test, corrected here
 review_rounds: 4
 phases:
   - id: orient
@@ -150,3 +152,23 @@ phases:
         section: "(full)"
         read_type: verify
         extract: "Gate: 159 -> 57 violations, 784 mark-cited IDs, all remaining baselined (exit 0); pytest group-5 files 678 passed"
+  - id: disposition
+    name: Disposition of the 57 residual rows (close BK-252)
+    steps:
+      - file: scripts/check_spec_marks.py
+        section: "_ALLOWLIST_DESIGN (BK-252 disposition block)"
+        read_type: reference
+        extract: "Allowlisted 36 rows: 32 type-(d) design/meta/perf (incl. CFG-007, AW-006 reclassified) + 4 moved-to-EW WR-014..017 stubs. Drained from _BASELINE."
+      - file: tests/test_store.py
+        section: "TestStoreEquality/ThreadSafety/CapabilityGates"
+        read_type: reference
+        extract: "New type-(a) tests: STORE-007/010, BE-011 (+ AW-002/AW-007 same raise), ITER-002; plus MEM-001/005, PA-026, AW-005, S3-001/NPR-007, S3PA-001/007, PING-009, SAW-010, SEEK-007, AZ-010, ASYNC-074 across their files"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-074"
+        read_type: verify
+        outcome: misleading
+        extract: "Writing the ASYNC-074 test reproduced the actual behavior: write() streams the AsyncIterator straight to upload_blob (BUG-165), it does NOT materialize. Spec text was stale; corrected to 'Content Streaming' before marking."
+      - file: scripts/check_spec_marks.py
+        section: "_BASELINE (now empty)"
+        read_type: verify
+        extract: "Final: _BASELINE drained to frozenset(); gate reports 0 violations ('spec <-> mark traceability is complete'). 803 mark-cited IDs. BK-252 done."

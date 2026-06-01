@@ -19,6 +19,7 @@ boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
 
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
 from remote_store._errors import BackendUnavailable, PermissionDenied  # noqa: E402
+from remote_store.backends._s3 import S3Backend  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -41,8 +42,6 @@ def s3_backend(moto_server: str) -> Iterator[Backend]:
         region_name=REGION,
     )
     client.create_bucket(Bucket=bucket)
-
-    from remote_store.backends._s3 import S3Backend
 
     backend = S3Backend(
         bucket=bucket,
@@ -76,6 +75,25 @@ class TestS3Construction:
             else:
                 assert caps.supports(cap), f"Missing capability: {cap.value}"
 
+    @pytest.mark.spec("S3-001")
+    def test_constructor_accepts_documented_params(self) -> None:
+        # Construction is lazy (no network): a required bucket plus the optional
+        # connection parameters from the S3-001 signature are all accepted.
+        b = S3Backend(
+            bucket="my-bucket",
+            endpoint_url="http://localhost:9000",
+            key="k",
+            secret="s",
+            region_name="us-west-2",
+        )
+        assert b.name == "s3"
+
+    @pytest.mark.spec("NPR-007")
+    def test_to_key_strips_bucket_prefix(self) -> None:
+        b = S3Backend(bucket="my-bucket")
+        assert b.to_key("my-bucket/data/file.txt") == "data/file.txt"
+        assert b.to_key("data/file.txt") == "data/file.txt"  # no prefix -> unchanged
+
 
 class TestS3TlsCaBundle:
     """TLS-004: AWS_CA_BUNDLE environment-variable fallback (S3-specific).
@@ -84,7 +102,6 @@ class TestS3TlsCaBundle:
 
     @pytest.mark.spec("TLS-004")
     def test_tls_ca_bundle_env_var_missing_file_raises(self, tmp_path: Path) -> None:
-        from remote_store.backends._s3 import S3Backend
 
         with (
             patch.dict("os.environ", {"AWS_CA_BUNDLE": "/no/such/env.pem"}, clear=False),
@@ -111,7 +128,6 @@ class TestS3ErrorMapping:
         ],
     )
     def test_permission_denied_mapping(self, s3_backend: Backend, message: str) -> None:
-        from remote_store.backends._s3 import S3Backend
 
         assert isinstance(s3_backend, S3Backend)
         with (
@@ -133,7 +149,6 @@ class TestS3ErrorMapping:
         ],
     )
     def test_backend_unavailable_mapping(self, s3_backend: Backend, message: str) -> None:
-        from remote_store.backends._s3 import S3Backend
 
         assert isinstance(s3_backend, S3Backend)
         with (
@@ -215,8 +230,6 @@ class TestS3ETagAndDigest:
         """_info_to_fileinfo handles various ETag key forms correctly."""
         from datetime import datetime, timezone
 
-        from remote_store.backends._s3 import S3Backend
-
         backend = object.__new__(S3Backend)
         info_dict.setdefault("LastModified", datetime(2024, 1, 1, tzinfo=timezone.utc))
         info_dict.setdefault("name", "bucket/file.txt")
@@ -226,7 +239,6 @@ class TestS3ETagAndDigest:
     @pytest.mark.spec("S3-024")
     def test_digest_from_head_response_no_algorithm(self) -> None:
         """Returns None when no known checksum keys are present."""
-        from remote_store.backends._s3 import S3Backend
 
         backend = object.__new__(S3Backend)
         raw = {"ContentLength": 5, "ETag": '"abc"'}
@@ -239,8 +251,6 @@ class TestS3ETagAndDigest:
         import hashlib
 
         import boto3
-
-        from remote_store.backends._s3 import S3Backend
 
         content = b"listed"
         b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
@@ -273,7 +283,6 @@ class TestS3ETagAndDigest:
         import hashlib
 
         from remote_store._models import ContentDigest
-        from remote_store.backends._s3 import S3Backend
 
         content = b"test"
         b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
@@ -299,7 +308,6 @@ class TestS3WriteResult:
     @pytest.mark.spec("WR-012")
     def test_write_metadata_passed_to_sdk(self, s3_backend: Backend) -> None:
         """Metadata kwarg reaches the S3 object (verified via HeadObject)."""
-        from remote_store.backends._s3 import S3Backend
 
         assert isinstance(s3_backend, S3Backend)
         s3_backend.write("meta.txt", b"x", metadata={"env": "test"})
@@ -316,7 +324,6 @@ class TestS3WriteResult:
 @pytest.mark.spec("RET-011")
 def test_s3_accepts_retry() -> None:
     from remote_store._config import RetryPolicy
-    from remote_store.backends._s3 import S3Backend
 
     rp = RetryPolicy(max_attempts=10)
     assert S3Backend(bucket="b", retry=rp)._retry is rp
@@ -325,7 +332,6 @@ def test_s3_accepts_retry() -> None:
 @pytest.mark.spec("RET-011")
 def test_s3_retry_botocore_config() -> None:
     from remote_store._config import RetryPolicy
-    from remote_store.backends._s3 import S3Backend
 
     backend = S3Backend(bucket="b", retry=RetryPolicy(max_attempts=7))
     # S3-026 / BUG-185: the merged Config flows to s3fs as config_kwargs (a dict),
@@ -345,7 +351,6 @@ class TestS3CredentialMasking:
     """AF-008: S3Backend repr masks sensitive fields and accepts Secret wrappers."""
 
     def test_masks_set_secrets(self) -> None:
-        from remote_store.backends._s3 import S3Backend
 
         backend = S3Backend(bucket="b", key="AKID", secret="SK", endpoint_url="http://x")
         r = repr(backend)
@@ -357,7 +362,6 @@ class TestS3CredentialMasking:
             assert visible in r
 
     def test_shows_none_for_unset_secrets(self) -> None:
-        from remote_store.backends._s3 import S3Backend
 
         backend = S3Backend(bucket="b")
         r = repr(backend)
@@ -367,7 +371,6 @@ class TestS3CredentialMasking:
     @pytest.mark.spec("SEC-004")
     def test_accepts_secret_wrapper(self) -> None:
         from remote_store._config import Secret
-        from remote_store.backends._s3 import S3Backend
 
         backend = S3Backend(bucket="b", key=Secret("AKID"), secret=Secret("SK"))
         assert backend._key == "AKID"  # internal: no public observable (repr shows '***' for raw strings too)

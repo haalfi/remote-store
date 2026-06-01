@@ -8,6 +8,33 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-252 — Bulk spec-mark backfill + full disposition (audit-015 traceability)**
+  spec: — · effort: L · audience: library.maintainer
+  Closed the spec ↔ test traceability debt audit-015 surfaced and BK-251 gated.
+  `scripts/check_spec_marks.py`'s `_BASELINE` started at **159** shipped-but-unmarked
+  spec IDs and is now **drained to empty** — the gate reports "spec ↔ mark traceability
+  is complete" (0 violations, 803 mark-cited IDs).
+  - **Backfill (102 marks, 5 grouped PRs #724/#726/#727).** Type-(b) labels stamped
+    onto the tests that already exercise each behavior, across backend-restatement
+    (AZ/S3/S3PA), core-API/paths (STORE/NPR/BE/CAP/MEM), text/stream/iter/pyarrow,
+    extensions (BATCH/OBS/SAW/DAG/WR/GLOB), and HTTP/Async/SQL. Reviewer caught and
+    fixed several mark-placement slips (BE-011→hold, BE-023/DAG-001/HTTP-TR-002/003
+    relocated) — verify-against-the-named-test, not rubber-stamp.
+  - **Disposition (final PR).** The 57 residual rows were resolved, not deferred:
+    **36 allowlisted** into `_ALLOWLIST_DESIGN` (32 type-(d) design/meta/perf —
+    incl. CFG-007/AW-006 reclassified — plus the 4 `WR-014..017` moved-to-`EW-001..004`
+    cross-reference stubs, ADR-0008), and **21 genuine type-(a) coverage gaps closed
+    with new tests** (STORE-007/010, BE-011 [+AW-002/007], ITER-002, MEM-001/005,
+    PA-026, AW-005, S3-001/NPR-007, S3PA-001/007, PING-009, SAW-010, SEEK-007, AZ-010,
+    ASYNC-074).
+  - **Spec defect found & fixed (ASYNC-074).** Writing the ASYNC-074 test reproduced
+    the real behavior: non-HNS `write()` streams the `AsyncIterator` straight to
+    `upload_blob` (BUG-165, bounded memory) — it does **not** materialize to bytes as
+    the spec claimed. Corrected spec 029 ("Content Streaming") before marking; see
+    `gotcha_async_materialize_antipattern`.
+  The gate is now a hard zero-tolerance check: any new shipped spec ID without a mark
+  or allowlist entry fails CI immediately.
+
 - [x] **BK-248 — Confirm S3 403 / credential-failure error mapping over the wire (Stage 3)**
   spec: S3-016, S3-018 · effort: S · audience: library.maintainer, infra.test
   (Scoped as S3-016/S3-017 when opened; the verified surface is the

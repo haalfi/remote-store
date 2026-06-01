@@ -411,9 +411,10 @@ Native async Azure backend using `azure.storage.blob.aio` and `azure.storage.fil
 **Invariant:** `move()` uses atomic `rename_file()` on HNS accounts, or server-side `start_copy_from_url()` + delete on non-HNS. `copy()` uses `start_copy_from_url()` on both.
 **See also:** [012-azure-backend.md](012-azure-backend.md) (AZ-011, AZ-012).
 
-### ASYNC-074: Content Materialization
+### ASYNC-074: Content Streaming
 
-**Invariant:** `write()` and `write_atomic()` materialize `AsyncIterator[bytes]` to `bytes` before calling `upload_blob()` / `upload_data()`. The Azure SDK async upload methods do not support streaming from an `AsyncIterator`.
+**Invariant:** `write()` and `write_atomic()` pass an `AsyncIterator[bytes]` payload **straight to** `upload_blob()` / `upload_data()` — the Blob SDK streams an `AsyncIterable[bytes]` in bounded memory, so the content is **not** collected into `bytes` first. A `_count_and_pass` wrapper forwards each chunk while tracking the byte count for the `WriteResult`.
+**Rationale (BUG-165):** materializing a large `AsyncIterator` to `bytes` before upload would defeat the bounded-memory guarantee of async streaming. The earlier "materialize first" approach was reverted; see `gotcha_async_materialize_antipattern`.
 
 ### ASYNC-075: check_health() Override
 

@@ -457,6 +457,30 @@ class TestAsyncAzureReadWrite:
         await backend.write("file.txt", b"data", overwrite=True)
         assert bc.upload_blob.call_count == 1
 
+    @pytest.mark.spec("ASYNC-074")
+    async def test_non_hns_streams_async_iterator_to_upload(self) -> None:
+        """ASYNC-074 / BUG-165: a non-HNS write passes the AsyncIterator straight
+        to upload_blob (streamed in bounded memory, not collected into bytes
+        first). upload_blob receives an async iterable, and its chunks reconstruct
+        the full payload."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        bc.upload_blob = AsyncMock()
+
+        async def payload():  # type: ignore[no-untyped-def]
+            yield b"hello "
+            yield b"world"
+
+        await backend.write("file.txt", payload())
+
+        bc.upload_blob.assert_awaited_once()
+        forwarded = bc.upload_blob.await_args.args[0]
+        assert hasattr(forwarded, "__aiter__")  # streamed, not a materialized bytes blob
+        collected = b"".join([chunk async for chunk in forwarded])
+        assert collected == b"hello world"
+
     @pytest.mark.spec("ASYNC-020")
     @pytest.mark.spec("ASYNC-072")
     async def test_write_atomic_non_hns(self) -> None:

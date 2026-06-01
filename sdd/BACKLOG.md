@@ -553,49 +553,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Maintenance / Long-horizon
 
-- [~] **BK-252 — Bulk spec-mark backfill (~127 type-(b) labels)**
-  spec: — · effort: L · audience: library.maintainer
-  The mechanical slice of audit-015: ~127 invariants whose behavior is already tested
-  (largely via cross-backend conformance under sibling marks) but lack the
-  spec-file-specific `@pytest.mark.spec(...)`. Backfill per spec-cluster — Azure (012)
-  is the cleanest start (every `AZ-*` rides a `BE-*`/`GLOB-*` test). Both gates have landed
-  (see BACKLOG-DONE.md): **BK-251** (the `check_spec_marks.py` gate, whose `_BASELINE` is the
-  worklist and shrinks as marks land) and the **BK-250** `STORE-015` renumber (`glob()` is now
-  `STORE-018`, an ordinary drift row this item backfills). Verify each mark against the named
-  test before stamping; do not rubber-stamp. See the addendum's type-(b) caveats
-  (`SQL-QUERY-061/063` ride shared-base coverage; `GLOB-019` depends on fixture liveness).
-  Landing in grouped clusters on one branch (159 baselined → backfill per cluster). **All 5 clusters
-  backfilled (groups 1-2 merged in #724; groups 3-4 in #726; group 5 in progress):** 102 marks landed
-  (gate 159 → 57, 784 mark-cited IDs) across backend-restatement (AZ/S3/S3PA), core-API/paths
-  (STORE/NPR/BE/CAP/MEM), text/stream/iter/pyarrow (SIO/RTXT/WTXT/ITER/SEEK/PA), extensions
-  (BATCH/OBS/SAW/DAG/WR/GLOB), and HTTP/Async/SQL (HTTP-\*, ASYNC-\*, SQL-\*). The mechanical type-(b)
-  backfill is **complete**; the remaining **57 baselined rows need a disposition decision** (NOT
-  type-(b) backfills): 53 held-for-disposition across clusters + 4 `AW-002/005/006/007` (atomic-write
-  IDs never clustered). They are design/meta/perf statements, protocol shapes, moved-`EW` stubs, or
-  have no test asserting the specific clause — type-(d) allowlist / de-registration / new-test
-  candidates. The held set:
-  `AZ-007`/`S3-001`/`S3PA-001`/`MEM-001`/`MEM-005` (constructor/scope/registration, no canonical
-  assertion); `AZ-010`/`S3PA-007`/`NPR-007` (sub-clause unasserted: non-HNS no-folder-marker /
-  s3→pyarrow credential translation / S3 prefix-stripping); `STORE-007`/`STORE-010`/`CAP-007`/`BE-011`/`ITER-002`
-  (thread-safety/immutability, equality, quality-flag principle, and the `write_atomic` /
-  `iter_children` capability-gate raise-when-absent branches — no test exercises the clause);
-  `NPR-009`/`017`/`018`/`019`, `RTXT-002`/`003`, `WTXT-002`/`003`, `ITER-003`
-  (future-backends / no-Backend-ABC-change / STORE-008-surface / backward-compat — design/meta);
-  `SEEK-007`/`PA-023`/`PA-026`/`CFG-007`/`CFG-014`/`GLOB-015`/`SAW-010`/`PING-009`/`RES-001`
-  (azure-read-unchanged / optional-extra / no-backend-coupling / S3-buffer-mechanism /
-  check_health-error-classification / resolution-opacity-problem-statement — design or no asserting
-  test); `WR-014`/`015`/`016`/`017` (**moved** to spec 046 `EW-001..004` per ADR-0008 — the spec-045
-  entries are cross-reference stubs; real coverage is under `EW-*` marks, so these need
-  de-registration or allowlisting, not a `WR-*` mark);
-  `MEM-026`/`030`/`031`/`032`/`040`/`041`/`042`/`DS-001`/`DS-003`/`DS-004`
-  (atomicity-scope, conformance/fixture recommendations, perf tables, data-structure rationale);
-  `HTTP-TR-001` (HttpTransport protocol shape — no structural assertion); `ASYNC-043`/`077`
-  (delegation / shared-helpers code-org — design), `ASYNC-074` (non-HNS AsyncIterator materialization —
-  untested); `SQL-BLOB-070`/`071`, `SQL-QUERY-090`/`091` (Performance-section blob-size / pooling /
-  query-execution / serialization-overhead — perf/design); `AW-002`/`005`/`006`/`007` (atomic-write
-  capability-gate / intermediate-dirs / mkstemp+replace / no-fallback — never clustered; verify before
-  any backfill). **Next step is a maintainer call on this set, not more backfilling.**
-
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer
   First revisit ticket for the informational `verify-tla` job landed under
