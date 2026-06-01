@@ -425,14 +425,13 @@ class TestHttpLifecycle:
 class TestHttpTransportDetection:
     """HTTP-016: Transport auto-detection."""
 
-    @pytest.mark.spec("HTTP-TR-002")
+    @pytest.mark.spec("HTTP-TR-003")
     def test_urllib_is_default(self, httpserver: HTTPServer) -> None:
         """HTTP-016: urllib is the baseline fallback."""
         httpserver.expect_request("/detect/test.txt").respond_with_data(b"ok")
         b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/detect/"), http_client="urllib")
         assert b.read_bytes("test.txt") == b"ok"
 
-    @pytest.mark.spec("HTTP-TR-003")
     def test_invalid_http_client_raises(self) -> None:
         """Unknown http_client raises ValueError."""
         with pytest.raises(ValueError, match="Unknown http_client"):
@@ -1036,6 +1035,7 @@ class TestHttpTransportAutoDetection:
         except ImportError:
             pytest.skip(f"{client} not installed")
 
+    @pytest.mark.spec("HTTP-TR-002")
     def test_auto_detect_falls_back_to_urllib(self) -> None:
         """Auto-detection eventually falls back to urllib."""
         from unittest.mock import patch

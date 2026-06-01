@@ -16,7 +16,7 @@ source_items:
   - BK-250
 audience:
   - library.maintainer
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -130,7 +130,7 @@ phases:
       - file: tests/backends/http/test_config.py
         section: "ReadOnlyHttpBackend tests (HTTP-CON-002/PATH/READ/EXIST/META/UNSUP/ERR/HEALTH/LIFE/CRED/RETRY/TR-002/003)"
         read_type: reference
-        extract: "23 HTTP-* ride the dedicated http tests beside BE-*/NPR-*/SIO-* siblings; HTTP-TR-001 held (HttpTransport protocol shape, no structural assertion)"
+        extract: "23 HTTP-* ride the dedicated http tests beside BE-*/NPR-*/SIO-* siblings; HTTP-TR-001 held (HttpTransport protocol shape, no structural assertion). TR-002 (auto-detect precedence) on test_auto_detect_falls_back_to_urllib and TR-003 (explicit override) on test_urllib_is_default -- swapped off the wrong homes in review (TR-002 was on the explicit-urllib test, TR-003 on an unknown-name ValueError test)"
       - file: tests/backends/azure/aio/test_config.py
         section: "ASYNC-070/071/072/073/076/078/079 (Phase-2 AsyncAzure restatements)"
         read_type: reference
