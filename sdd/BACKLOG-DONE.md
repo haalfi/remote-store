@@ -8,6 +8,33 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-249 — Parametrize the file-ancestor write conformance test over body type**
+  spec: BE-008 · effort: S · audience: infra.test
+  Surfaced in PR #708 (BK-235) review:
+  `TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path`
+  (`conformance/test_errors.py` + async sibling in `test_async_extended.py`)
+  passed only a `bytes` body. Azure HNS `write_atomic` keeps *separate*
+  `except` blocks per body type, so the streaming `else:` branch's
+  file-ancestor remap (sync `_azure.py:602`, async `aio/backends/_azure.py:662`)
+  was unreachable by any recordable test and carried a
+  `# pragma: no cover -- HNS only`.
+  - **Resolution — parametrize over body type.** Added a `body_kind` axis
+    (`bytes`, `stream`) to both tests; the stream body is an `io.BytesIO`
+    (sync) / async generator (async). The streaming temp `create_file` under a
+    file parent fails before the body is read, so an unread stream suffices.
+  - **Scope note:** non-atomic `write` funnels both body types through *one*
+    shared `except` (sync `_azure.py:508`), already covered by the bytes test —
+    only `write_atomic` had the gap. The `write`-stream cell is therefore
+    redundant for coverage but kept for the full `(method × body)` grid.
+  - **Cassettes:** the 4 existing bytes cassettes were renamed in place
+    (`[write-azure]` → `[write-bytes-azure]`, …) since the seed stays
+    method-keyed; the 4 new stream cassettes were recorded against live HNS via
+    targeted single-node `record_cassettes.py --node …[azure_live]` /
+    `…[azure_live_async]` (no tree-wipe), scrub-verified clean, replay-confirmed.
+  - **Pragmas dropped:** both `# pragma: no cover -- HNS only` removed; replay of
+    the stream cassettes now executes sync `:602` / async `:662` (verified via
+    coverage). No production-code change.
+
 - [x] **BK-250 — Spec-traceability audit (audit-015): correctness gaps + spec defects**
   spec: STORE-018, HTTP-CON-003, HTTP-CON-004, S3-012, BATCH-023, SAW-015 · effort: M · audience: library.maintainer, user.api_docs, contributor.process, infra.test
   The "something is actually wrong or missing" slice of audit-015 (its

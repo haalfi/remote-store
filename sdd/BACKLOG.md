@@ -74,20 +74,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Azure
 
-- [ ] **BK-249 — Parametrize the file-ancestor write conformance test over body type**
-  spec: BE-008 · effort: S · audience: infra.test
-  `TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path`
-  in `tests/backends/conformance/test_errors.py` (and its async sibling in
-  `test_async_extended.py`) passes only a `bytes` body, so the streaming
-  `else:` branch of Azure HNS `write` / `write_atomic` under a file ancestor
-  (sync `_azure.py` ~602, async `aio/backends/_azure.py` ~662) is unreachable
-  by any recordable test and therefore still carries a
-  `# pragma: no cover -- HNS only`. Parametrize the test over body type
-  (`bytes` plus a stream / `AsyncIterable[bytes]`) so the streaming
-  file-ancestor path becomes conformance-enforced; then drop that kept pragma
-  and record the cassette for it. Pre-existing gap surfaced in PR #708
-  (BK-235) review; the bytes branch is already covered and enforced.
-
 - [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
   spec: — · effort: S · audience: library.maintainer, user.api
   The `examples/medallion_dagster/` showcase demonstrates a realistic user journey

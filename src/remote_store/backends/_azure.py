@@ -599,7 +599,7 @@ class AzureBackend(Backend):
                         tmp_fc.delete_file()
                     # HNS rejects a temp create/rename under a
                     # file-ancestor with a 409; remap to the BE-008 InvalidPath.
-                    self._raise_invalid_if_hns_file_ancestor(path)  # pragma: no cover -- HNS only
+                    self._raise_invalid_if_hns_file_ancestor(path)
                     raise
             # BUG-173: the rename above has already committed the write.  A
             # post-commit read failure (network blip, eventual consistency,

@@ -659,7 +659,7 @@ class AsyncAzureBackend(AsyncBackend):
                         await tmp_fc.delete_file()
                     # HNS rejects a temp create/rename under a
                     # file-ancestor with a 409; remap to the BE-008 InvalidPath.
-                    await self._raise_invalid_if_hns_file_ancestor(path)  # pragma: no cover -- HNS only
+                    await self._raise_invalid_if_hns_file_ancestor(path)
                     raise
 
             # BUG-173 / BUG-196: the rename above has already committed the write.
