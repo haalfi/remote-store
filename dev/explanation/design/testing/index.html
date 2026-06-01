@@ -9843,6 +9843,15 @@ deliberate so a default <code>hatch run test</code> never touches a real account
 sync and async fixtures against a live ADLS Gen2 account, verifies no credentials
 survived scrubbing, and runs a Stage 1 replay smoke test. Pass <code>--verify-only</code> to
 skip recording and re-run only the verification steps.</p>
+<p>To record or refresh a <strong>single</strong> cassette without the all-or-nothing tree-wipe,
+pass <code>--node</code> with the live-variant node id (<code>hatch run</code> forwards the flag, or
+call the script directly):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nv">RS_TEST_LIVE_HNS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>hatch<span class="w"> </span>run<span class="w"> </span>record-azure<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>--node<span class="w"> </span><span class="s2">&quot;tests/backends/conformance/test_errors.py::TestX::test_y[azure_live]&quot;</span>
+</code></pre></div>
+<p>This skips the Step-1 delete and the min-cassette guard, records only the named
+test, then runs the same scrub-verify + Stage 1 replay over the whole corpus.
+Use it for a focused PR diff: every other cassette's volatile headers stay put.</p>
 <p>Per <a href="../specs/048-testing-architecture/#test-009-cassette-refresh-is-explicit">TEST-009</a>:
 CI does not auto-record; a refresh is a normal PR diff.</p>
 <h3 id="cassette-first-bug-investigation">Cassette-First Bug Investigation<a class="headerlink" href="#cassette-first-bug-investigation" title="Permanent link">&para;</a></h3>
@@ -9859,13 +9868,13 @@ test against the <code>&lt;backend&gt;_replay</code> (and <code>&lt;backend&gt;_
 fixture. No credentials, no network, no Docker. For Azure HNS bugs the
 cassette already exists for every conformance test that was active
 when <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">BK-181</a> landed.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span><span class="s2">&quot;&lt;nodeid&gt;[azure_replay]&quot;</span><span class="w"> </span>-v<span class="w"> </span>--tb<span class="o">=</span>short
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span><span class="s2">&quot;&lt;nodeid&gt;[azure_replay]&quot;</span><span class="w"> </span>-v<span class="w"> </span>--tb<span class="o">=</span>short
 </code></pre></div>
 <p>If the test is already marked <code>xfail(strict=False)</code> against real-Azure
 fixture ids (the BK-180 follow-up parked confirmed defects this way
 to keep CI green), pytest reports <code>XFAIL</code> and you cannot see the
 assertion. Force the underlying failure with <code>--runxfail</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span><span class="s2">&quot;&lt;nodeid&gt;[azure_replay]&quot;</span><span class="w"> </span>--runxfail<span class="w"> </span>-v<span class="w"> </span>--tb<span class="o">=</span>short
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span><span class="s2">&quot;&lt;nodeid&gt;[azure_replay]&quot;</span><span class="w"> </span>--runxfail<span class="w"> </span>-v<span class="w"> </span>--tb<span class="o">=</span>short
 </code></pre></div>
 <p>The xfail roster lives at the top of
 <a href="https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/conftest.py"><code>tests/backends/conformance/conftest.py</code></a>;
@@ -9892,7 +9901,7 @@ HTTP call the cassette does not already contain?</p>
 <tr>
 <td>Adds, removes, or reorders SDK calls</td>
 <td>Insufficient</td>
-<td>Refresh cassette via <code>hatch run record-azure</code> (needs Stage 3 live access), then resume on the new cassette</td>
+<td>Refresh the cassette (needs Stage 3 live access), then resume on the new one. Use <code>hatch run record-azure --node "&lt;nodeid[azure_live]&gt;"</code> for a single test to avoid churning the whole corpus, or plain <code>hatch run record-azure</code> to re-record everything</td>
 </tr>
 </tbody>
 </table>
@@ -9909,8 +9918,8 @@ nodeid without <code>--runxfail</code>. Green = the fix is consistent with the
 recorded wire behaviour.</p>
 <p><strong>Step 5 — Final verification on live.</strong> Run the test against the
 <code>&lt;backend&gt;_live</code> / <code>&lt;backend&gt;_live_async</code> fixture before merge:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nv">RS_TEST_LIVE_HNS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>hatch<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span><span class="s2">&quot;&lt;nodeid&gt;[azure_live]&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span>--stage<span class="o">=</span><span class="m">3</span><span class="w"> </span>-m<span class="w"> </span>live<span class="w"> </span>-v<span class="w"> </span>--tb<span class="o">=</span>short
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nv">RS_TEST_LIVE_HNS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>hatch<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span><span class="s2">&quot;&lt;nodeid&gt;[azure_live]&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span>--stage<span class="o">=</span><span class="m">3</span><span class="w"> </span>-m<span class="w"> </span>live<span class="w"> </span>-v<span class="w"> </span>--tb<span class="o">=</span>short
 </code></pre></div>
 <p>Live is the source of truth; the cassette is only a faithful recording
 of a single trajectory. Account-config variance, eventual consistency,
