@@ -69,30 +69,49 @@ falling back to `gh` for GraphQL-only flows. Repo: `haalfi/remote-store`.
 6. **Branch hygiene.** Never on `master`; never piggyback unrelated work. Create
    a dedicated branch off `origin/master`, e.g. `drift-refresh-<YYYY-MM-DD>`.
 
-7. **Refresh (Python 3.13 only).** The lock records `# python: X.Y` and the
-   resolution is Python-specific; the workflow runner is 3.13. Assert
-   `python --version` is 3.13 before resolving — abort with instructions if not.
-   For each approved extra:
-   `hatch run drift-check refresh-baseline <extra>`
-   then once: `hatch run drift-check render-docs`.
-   (`refresh-baseline all` exists but only re-baseline the approved set.)
+7. **Refresh — match the resolution host, not just the Python version.** A lock
+   is both Python- **and OS-specific**: the workflow resolves on **Linux 3.13**,
+   and a resolve on another platform pulls platform-conditional deps the CI
+   re-resolve never sees (`colorama` via click/tqdm and `pywin32` on Windows,
+   etc.). Commit a non-Linux resolve and the *next* CI run diffs its Linux
+   resolution against your lock, flags those packages as "removed" drift, and the
+   rolling issue never clears. So choose the source by host:
+
+   - **Not on Linux 3.13 (canonical path) — use the run's candidate artifacts.**
+     The workflow uploads a Linux-resolved freeze per extra for exactly this:
+     `gh run download <run-id> --repo haalfi/remote-store --pattern 'candidate-baseline-*' --dir <tmp>`
+     (the `<run-id>` is the issue's **Last run**). For each approved extra, write
+     `infra/drift-locks/<extra>.txt` as the lock header
+     (`# extra:` / `# python: 3.13` / `# captured: <today>` / regenerate line, a
+     blank line) followed by the artifact's freeze **sorted by package name**
+     (the part before `==`, so `dagster` precedes `dagster-pipes`) — matching
+     `scripts/drift_check.py::write_lock` exactly.
+   - **On Linux 3.13 (matches the runner) — local resolve is fine.** Assert
+     `python --version` is 3.13, then per approved extra:
+     `hatch run drift-check refresh-baseline <extra>`.
+
+   Either way, once the locks are written run `hatch run drift-check render-docs`.
 
 8. **Verify the diff.** `git diff infra/drift-locks docs-src/reference/tested-versions.md`:
    - only the approved extras' locks changed;
-   - the package deltas match the issue's rows (the lock may also show *newer*
-     stable/pre-release than the snapshot — refresh re-resolves with `--pre`, so
-     expect the latest at refresh time, not the issue's exact frozen versions);
+   - the package deltas match the issue's rows. The candidate-artifact path
+     matches the snapshot exactly (same run); a later local `refresh-baseline`
+     re-resolves with `--pre` and may show *newer* stable/pre-release than the
+     snapshot — expect the latest at refresh time, not the frozen versions;
    - each refreshed lock's `# captured:` advanced.
    Then `hatch run drift-check render-docs --check` (also a `preflight` gate) to
    confirm the docs page is in sync.
 
 9. **CHANGELOG / trace.** A pure baseline + tested-versions refresh is
    infra-and-generated-docs only: no CHANGELOG entry, and a routine refresh
-   neither implements nor closes ID-182, so no trace. Add a CHANGELOG entry only
-   if this refresh accompanies a deliberate `pyproject.toml` floor bump.
+   neither implements nor closes the drift-guard item, so no trace. Add a
+   CHANGELOG entry only if this refresh accompanies a deliberate
+   `pyproject.toml` floor bump.
 
-10. **Commit** the locks + regenerated docs together:
-    `ID-182: refresh drift baselines (<extras>)`.
+10. **Commit** the locks + regenerated docs together. Prefix the subject with
+    the drift-guard backlog item ID (named in the `drift-guard.yml` header and
+    `infra/drift-locks/README.md`), per CLAUDE.md § Backlog:
+    `<id>: refresh drift baselines (<extras>)`.
 
 11. **PR.** Hand off to `/pr`. In the body, list the accepted bumps per extra and
     **reference** the rolling issue (`Refs #<n>`) — do **not** `Closes` it. The
