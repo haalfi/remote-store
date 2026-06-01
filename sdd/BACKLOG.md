@@ -603,12 +603,12 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 - [ ] **BK-250 — Follow up on spec-traceability audit (audit-015)**
   spec: — · effort: M · audience: library.maintainer
-  `sdd/audits/audit-015-spec-traceability.md` found ~226 IDs across 48 spec files with
-  no `@pytest.mark.spec` coverage. Two distinct effort tiers: (a) "test exists, mark
-  absent" — low-effort label backfill (~half the findings); (b) "no test at all" —
-  requires writing new tests before marking. Additionally, STORE-015 is a spec defect
-  (two distinct invariants share one ID) that must be renumbered before it can be marked
-  or traced; this is a separate action from the bulk mark-backfill work.
+  See `sdd/audits/audit-015-spec-traceability.md` for the full count by category.
+  Two actionable effort tiers: (b) "test exists, mark absent" — low-effort label
+  backfill; (a) "no test at all" — requires new test coverage first. Additionally,
+  STORE-015 is a type-(c) spec defect (two distinct invariants share one ID) that must
+  be renumbered before it can be marked; this is a separate action from the bulk
+  mark-backfill work.
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer

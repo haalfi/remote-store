@@ -5,7 +5,7 @@
 **Scope:** All 48 spec files in `sdd/specs/` — every numbered spec ID in every file.
 **Method:** For each spec file, all invariant IDs were extracted by reading the file.
 Each ID was then searched across the entire `tests/` tree for a matching
-`@pytest.mark.spec("ID")` decorator. Findings fall into three categories:
+`@pytest.mark.spec("ID")` decorator. Findings fall into four categories:
 
 - **(a) No test at all:** the behavior has no coverage and no mark — higher effort,
   requires writing new tests before adding marks.
@@ -13,6 +13,12 @@ Each ID was then searched across the entire `tests/` tree for a matching
   parent ID but the spec-file-specific ID is not applied — low-effort label backfill.
 - **(c) Spec defect:** the spec file itself is the root problem (e.g. duplicate ID,
   out-of-sequence numbering) — cannot be marked or traced until the spec is repaired.
+- **(d) Meta / architectural:** the invariant describes a design constraint, dependency
+  rule, or process obligation rather than a testable runtime behavior — not mark-able.
+
+**Total:** 226 IDs in the table. Of these: 13 are type (d) (not actionable as mark
+work); 1 is type (c) (spec defect requiring renumber before it can be marked); the
+remaining 212 are type (a) or (b) and actionable.
 
 ---
 
@@ -21,7 +27,7 @@ Each ID was then searched across the entire `tests/` tree for a matching
 | Spec | ID | Invariant summary | Finding |
 |------|----|-------------------|---------|
 | 001 | STORE-007 | Thread Safety | No mark, no test |
-| 001 | STORE-009 | Context manager / resource management | Test exists (`test_coverage_gaps.py:83`); mark absent |
+| 001 | STORE-009 | Context manager / resource management | Test exists (`tests/test_coverage_gaps.py::TestStoreBehavior::test_context_manager`); mark absent |
 | 001 | STORE-010 | Store equality | No mark, no test |
 | 001 | STORE-011 | Store.to_key | Tests use NPR marks; STORE-011 absent |
 | 001 | STORE-014 | list_files(pattern=) | Tests use GLOB-001; STORE-014 absent |
@@ -33,11 +39,11 @@ Each ID was then searched across the entire `tests/` tree for a matching
 | 003 | BE-023 | Backend.to_key | Tests use NPR-003..005; BE-023 absent |
 | 003 | BE-024 | Backend.glob | Tests use GLOB-004; BE-024 absent |
 | 003 | BE-026 | iter_children | Tests use ITER-004/005; BE-026 absent |
-| 003 | BE-027 | \_BACKEND\_GATING graph IR metadata | Test exists (`test_gen_graph.py:219`); no BE-027 mark |
+| 003 | BE-027 | \_BACKEND\_GATING graph IR metadata | Test exists (`tests/scripts/test_gen_graph.py::test_backend_gating_keys_match_backend_members`); no BE-027 mark |
 | 005 | ERR-013 | ResourceLocked | No test; class absent from source entirely |
 | 006 | SIO-004 | No partial reads on error | No mark, no test |
-| 006 | SIO-005 | Cancellation propagation | Test exists (`aio/test_async_cancellation.py`); SIO-005 absent |
-| 006 | SIO-006 | No framework dependencies | No mark, no test (design principle) |
+| 006 | SIO-005 | Cancellation propagation | Test exists (`tests/aio/test_async_cancellation.py`); SIO-005 absent |
+| 006 | SIO-006 | No framework dependencies | No mark (d: design principle — not test-markable) |
 | 006 | SIO-007 | read_text convenience | Tests use RTXT-001; SIO-007 absent |
 | 007 | AW-002 | Capability gate | No mark, no test |
 | 007 | AW-004 | Cleanup on failure | Tests use SAW-004/005; AW-004 absent |
@@ -51,15 +57,15 @@ Each ID was then searched across the entire `tests/` tree for a matching
 | 008 | S3-013 | move Via Copy + Delete | No mark, no test |
 | 008 | S3-014 | copy Via S3 Server-Side Copy | No mark, no test |
 | 010 | NPR-002 | Store.to_key as public helper | No mark, no test |
-| 010 | NPR-006 | LocalBackend.to_key | Test exists (`local/test_config.py`); NPR-006 absent |
+| 010 | NPR-006 | LocalBackend.to_key | Test exists (`tests/backends/local/test_config.py::TestLocalBackendToKeyRoot`); NPR-006 absent |
 | 010 | NPR-007 | S3Backend.to_key | Test exists; NPR-007 absent |
-| 010 | NPR-008 | SFTPBackend.to_key | Test exists (`sftp/test_config.py::TestSFTPToKey`); NPR-008 absent |
+| 010 | NPR-008 | SFTPBackend.to_key | Test exists (`tests/backends/sftp/test_config.py::TestSFTPToKey`); NPR-008 absent |
 | 010 | NPR-011 | Store.to_key composition | Test exists; NPR-011 absent |
 | 010 | NPR-015 | list_folders store-relative names | No mark, no test |
 | 010 | NPR-021 | Backend.native_path contract | Test exists (marked BE-025 only); NPR-021 absent |
 | 010 | NPR-022 | Store.native_path | Test exists (marked STORE-015 only); NPR-022 absent |
 | 011 | S3PA-001 | Constructor Parameters | No mark, no test |
-| 011 | S3PA-006 | Dual-Library Architecture | No mark, no test |
+| 011 | S3PA-006 | Dual-Library Architecture | No mark (d: architectural decision — not test-markable) |
 | 011 | S3PA-007 | Credential Translation | No mark, no test |
 | 011 | S3PA-008 | Virtual Folder Semantics | No mark, no test |
 | 011 | S3PA-014 | Copy Via PyArrow | No mark, no test |
@@ -88,9 +94,9 @@ Each ID was then searched across the entire `tests/` tree for a matching
 | 014 | PA-005 | Root Path Is Empty String | No mark |
 | 014 | PA-023 | Optional Dependency | No mark |
 | 014 | PA-026 | Conformance Across Backends | No mark |
-| 016 | BATCH-010 | batch_copy error collection | Test exists as parametrized case (`test_batch.py:163`); BATCH-010 absent |
-| 016 | BATCH-013 | batch_copy empty input | Test exists as parametrized case (`test_batch.py:264`); BATCH-013 absent |
-| 016 | BATCH-017 | batch_exists empty input | Test exists as parametrized case (`test_batch.py:264`); BATCH-017 absent |
+| 016 | BATCH-010 | batch_copy error collection | Test exists (`tests/ext/test_batch.py::test_error_continues`); BATCH-010 absent |
+| 016 | BATCH-013 | batch_copy empty input | Test exists (`tests/ext/test_batch.py::test_empty_paths`); BATCH-013 absent |
+| 016 | BATCH-017 | batch_exists empty input | Test exists (`tests/ext/test_batch.py::test_empty_paths`); BATCH-017 absent |
 | 016 | BATCH-023 | Concurrent result ordering | No mark, no test |
 | 016 | BATCH-024 | Concurrent error semantics | No mark, no test |
 | 016 | BATCH-025 | Concurrent empty input | No mark, no test |
@@ -110,13 +116,13 @@ Each ID was then searched across the entire `tests/` tree for a matching
 | 027 | ITER-003 | STORE-008 Update | No mark |
 | 027 | ITER-005 | Backend Overrides | Docstring in `test_listing.py`; no mark |
 | 027 | ITER-006 | ext.observe integration | No mark |
-| 027 | ITER-008 | Spec Updates (meta) | No mark |
+| 027 | ITER-008 | Spec Updates (meta) | No mark (d: meta section — not test-markable) |
 | 028 | RTXT-002..004 | No Backend ABC change, STORE-008 update, ext.cache integration | No marks |
-| 028 | RTXT-006 | Spec Updates (meta) | No mark |
+| 028 | RTXT-006 | Spec Updates (meta) | No mark (d: meta section — not test-markable) |
 | 029 | ASYNC-043 | Delegation | No mark |
 | 029 | ASYNC-045a | Capability-Gated Methods Graph IR | No mark |
 | 029 | ASYNC-052f | head() | No mark |
-| 029 | ASYNC-056 | No New Dependencies | No mark |
+| 029 | ASYNC-056 | No New Dependencies | No mark (d: architectural constraint — not test-markable) |
 | 029 | ASYNC-061 | read_seekable() Deferral | No mark |
 | 029 | ASYNC-062 | open_atomic() Deferral | No mark |
 | 029 | ASYNC-070..079 | AsyncAzureBackend specifics (dual-mode, lazy init, write strategy, move/copy, content materialization, check_health, capabilities, shared helpers, cleanup, error mapping) | No marks |
@@ -150,11 +156,11 @@ Each ID was then searched across the entire `tests/` tree for a matching
 | 043 | RES-001 | Resolution Opacity | No mark |
 | 044 | GR-001..057 | Entire Graph backend spec (~55 IDs: constructor, auth, path, read, write, upload session, delete, move, copy, error mapping, retry, file hashes, drive identity, credential masking, to_key, unwrap, close, client options) | No marks anywhere |
 | 045 | WR-006 | Sidecar Source | No mark |
-| 047 | DOCFRAME-005 | Bridge Replaces Not Augments | No mark |
-| 047 | DOCFRAME-006 | Strict Build, Strict Links | No mark |
-| 047 | DOCFRAME-007 | Nav and URL Alignment | No mark |
-| 048 | TEST-002 | Conformance is Cross-Backend Spine | No mark |
-| 048 | TEST-003 | Backend-Specific Tests Isolated Per Backend | No mark |
-| 048 | TEST-007 | HTTP Cassette and Replay Layer | No mark |
-| 048 | TEST-008 | Replay Scope is HTTP-Transport Only | No mark |
-| 048 | TEST-009 | Cassette Refresh is Explicit | No mark |
+| 047 | DOCFRAME-005 | Bridge Replaces Not Augments | No mark (d: doc framework principle — not test-markable) |
+| 047 | DOCFRAME-006 | Strict Build, Strict Links | No mark (d: build constraint — not test-markable) |
+| 047 | DOCFRAME-007 | Nav and URL Alignment | No mark (d: docs nav rule — not test-markable) |
+| 048 | TEST-002 | Conformance is Cross-Backend Spine | No mark (d: testing-process spec — not test-markable) |
+| 048 | TEST-003 | Backend-Specific Tests Isolated Per Backend | No mark (d: testing-process spec — not test-markable) |
+| 048 | TEST-007 | HTTP Cassette and Replay Layer | No mark (d: testing-process spec — not test-markable) |
+| 048 | TEST-008 | Replay Scope is HTTP-Transport Only | No mark (d: testing-process spec — not test-markable) |
+| 048 | TEST-009 | Cassette Refresh is Explicit | No mark (d: testing-process spec — not test-markable) |
