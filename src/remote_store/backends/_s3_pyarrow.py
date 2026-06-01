@@ -276,8 +276,34 @@ class S3PyArrowBackend(_S3Base):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
-        # S3 PUT is inherently atomic (S3PA-013)
-        return self.write(path, content, overwrite=overwrite, metadata=metadata)
+        # BUG-214 / S3PA-013: PyArrow's output stream exposes no abort()/
+        # discard(), so a direct streaming write that fails mid-content would
+        # finalise a truncated multipart upload and commit a broken object --
+        # violating AW-001 ("no partial content is ever visible"). Buffer the
+        # content fully BEFORE any upload begins: a read() failure then happens
+        # off the wire, leaving no S3 object. Bytes are already materialised, so
+        # they delegate directly. Plain ``write`` stays a true stream (it is
+        # non-atomic per AW-007 and may leave a partial object on failure, same
+        # as the local backend). Mirrors the buffer-then-write ``open_atomic``.
+        if isinstance(content, bytes):
+            return self.write(path, content, overwrite=overwrite, metadata=metadata)
+        self._maybe_check_no_file_ancestor(path)
+        with self._s3fs_errors(path):
+            if not overwrite and self._s3fs.exists(self._s3_path(path)):
+                raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+        buf: tempfile.SpooledTemporaryFile[bytes] = tempfile.SpooledTemporaryFile(  # noqa: SIM115
+            max_size=8 * 1024 * 1024,
+        )
+        try:
+            while True:
+                chunk = content.read(_COPY_BUFSIZE)
+                if not chunk:
+                    break
+                buf.write(chunk)
+            buf.seek(0)
+            return self.write(path, cast(BinaryIO, buf), overwrite=overwrite, metadata=metadata)  # noqa: TC006
+        finally:
+            buf.close()
 
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:

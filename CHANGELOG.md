@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- **BUG-214 — S3 `write_atomic` no longer commits a truncated object when the content source fails mid-stream.** Both S3 backends previously left a complete-looking but truncated object on a mid-stream content failure, breaking the `ATOMIC_WRITE` contract (no partial content ever visible): `S3Backend` (s3fs) because `S3File.close()` ran on the exception path, and `S3PyArrowBackend` because PyArrow's output stream commits on close and cannot be aborted. `S3Backend` now `discard()`s the in-flight upload (aborting any multipart upload) on failure; `S3PyArrowBackend.write_atomic` now buffers the content fully before opening the upload. Plain `write` remains non-atomic (it may leave a partial object on failure, like the local backend). Confirmed against real AWS S3 (new `s3_pyarrow_live` Stage-3 fixture).
 - **ID-213 — Translate HNS Azure write/delete/move/copy/list under a file ancestor to the cross-backend `InvalidPath` / `NotFound` / empty-listing**
 - **ID-212 — Harden SFTP file-ancestor detection against partial-stat-permission (chroot) setups**
 - **ID-214 — Sweep residual pre-reorg test-path references in non-authoritative docs**

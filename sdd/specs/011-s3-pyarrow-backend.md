@@ -133,6 +133,8 @@ See [S3-009](008-s3-backend.md#s3-009-folder-lifecycle-tied-to-contents).
 
 See [S3-010](008-s3-backend.md#s3-010-atomic-write-via-s3-put). `write()` and `write_atomic()` use `pyarrow.fs.S3FileSystem.open_output_stream()` for data transfer; existence checks go through s3fs.
 
+**Atomicity on mid-stream content failure:** PyArrow's output stream cannot be aborted once opened (it exposes no `discard()`/abort, unlike `s3fs`), so the S3-010 abort strategy does not transfer. Instead `write_atomic` buffers the content in full *before* opening the output stream — a content-source failure then occurs before any upload begins, leaving no object and satisfying AW-001. Plain `write` streams directly and is **non-atomic** (AW-007): a mid-stream content failure may leave a truncated object, the same best-effort behaviour as the local backend's `write`. This is the one place `write` and `write_atomic` diverge on this backend (elsewhere `write_atomic` delegates to `write`).
+
 ### S3PA-014: Copy Via PyArrow
 
 See [S3-014](008-s3-backend.md#s3-014-copy-via-s3-server-side-copy). Uses `pyarrow.fs.S3FileSystem.copy_file()` for the server-side copy; existence checks go through s3fs.

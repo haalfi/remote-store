@@ -107,6 +107,7 @@ assert backend.is_folder("dir") is False  # folder vanishes
 **Invariant:** `write_atomic` is implemented identically to `write` — as a direct S3 PUT.
 **Rationale:** S3 PUT is inherently atomic. From a reader's perspective, the object transitions from non-existent (or old content) to new content in a single operation. No partial content is ever visible. The temp-file + rename pattern used by local backends is unnecessary and would add latency (extra PUT + COPY + DELETE).
 **Postconditions:** Satisfies AW-001's postcondition: "No partial content is ever visible."
+**Mid-stream content failure:** If the *content source* raises partway through a streaming write, the in-flight upload is aborted rather than committed — `s3fs`'s `S3File.discard()` aborts any multipart upload and drops the buffer, so no truncated object is left in the bucket and no multipart upload is orphaned. Without this, `S3File.__exit__` → `close()` would flush the buffer / complete the multipart upload and commit a complete-looking but truncated object, breaking the postcondition above. The abort applies to both `write` and `write_atomic`; `write` is non-atomic per AW-007 but on this backend cleans up for free via the shared path.
 
 ### S3-011: delete_folder Recursive
 

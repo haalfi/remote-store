@@ -1,4 +1,4 @@
-"""S3 control-path moto coverage -- covers BK-166, S3-026, S3PA-026.
+"""S3 control-path moto coverage -- covers BK-166, S3-026, S3PA-026, BUG-214.
 
 Wire-level coverage for BUG-178/BUG-185: drives the full backend lifecycle
 through the real ``s3fs`` + ``aiobotocore`` stack with ``moto`` standing in
@@ -71,7 +71,7 @@ import pytest
 
 from tests._helpers import MINIO_KEY as _MINIO_KEY
 from tests._helpers import MINIO_SECRET as _MINIO_SECRET
-from tests._helpers import pyarrow_ge_24
+from tests._helpers import FailingContentReader, pyarrow_ge_24
 
 pytest.importorskip("s3fs")
 pytest.importorskip("aiobotocore")
@@ -329,3 +329,115 @@ class TestS3ControlPathMoto:
             assert exc_info.value.backend == backend.name
         finally:
             backend.close()
+
+
+_MB = 1024 * 1024
+
+
+@pytest.mark.spec("S3-010")
+class TestBug214MidStreamFailure:
+    """BUG-214: a mid-stream content failure must not commit a truncated object.
+
+    When the *content source* passed to ``S3Backend.write`` / ``write_atomic``
+    raises part-way through, s3fs's ``S3File.__exit__`` -> ``close()`` would
+    otherwise flush the buffer (single PUT) or complete the in-flight multipart
+    upload, leaving a complete-looking but truncated object -- a violation of
+    the ATOMIC_WRITE contract (S3-010 / AW-001). The fix ``discard()``s the
+    handle on the exception path instead of committing.
+
+    Both regimes are covered because s3fs only switches to multipart above its
+    50 MB default block size: 6 MB exercises the single-PUT path, 55 MB the
+    completed-multipart path. ``write_atomic`` delegates to ``write``, so it
+    rides the same fix; both are asserted to leave neither an object nor an
+    orphaned multipart upload.
+
+    s3fs-only (uses ``moto_bucket`` directly): the s3-pyarrow data path cannot
+    run on moto (pyarrow >= 24 needs MinIO) and is covered in ``test_pyarrow``.
+    """
+
+    @pytest.mark.parametrize("op", ["write", "write_atomic"])
+    @pytest.mark.parametrize(
+        ("fill", "regime"),
+        [(6 * _MB, "single-put"), (55 * _MB, "multipart")],
+    )
+    def test_no_truncated_object_on_mid_stream_failure(
+        self,
+        moto_bucket: tuple[str, str],
+        op: str,
+        fill: int,
+        regime: str,
+    ) -> None:
+        import boto3
+
+        from remote_store._errors import RemoteStoreError
+        from remote_store.backends._s3 import S3Backend
+
+        endpoint, bucket = moto_bucket
+        key = f"bug214/{op}-{regime}.bin"
+        backend = S3Backend(
+            bucket=bucket,
+            endpoint_url=endpoint,
+            key="testing",
+            secret="testing",
+            region_name="us-east-1",
+        )
+        client = boto3.client(
+            "s3",
+            endpoint_url=endpoint,
+            aws_access_key_id="testing",
+            aws_secret_access_key="testing",
+            region_name="us-east-1",
+        )
+        try:
+            # The mid-stream ConnectionResetError surfaces as a typed
+            # RemoteStoreError via ``_s3fs_errors`` -> ``_classify_error``.
+            with pytest.raises(RemoteStoreError):
+                getattr(backend, op)(key, FailingContentReader.buffered(fill), overwrite=True)
+
+            # No truncated object was committed ...
+            listed = client.list_objects_v2(Bucket=bucket, Prefix=key).get("Contents", [])
+            assert [obj["Key"] for obj in listed if obj["Key"] == key] == []
+            # ... and no multipart upload was left orphaned.
+            uploads = client.list_multipart_uploads(Bucket=bucket).get("Uploads", [])
+            assert [up for up in uploads if up["Key"] == key] == []
+        finally:
+            backend.close()
+            client.close()
+
+    def test_discard_failure_preserves_original_error(self) -> None:
+        """A failing ``discard()`` must not mask the content error nor skip ``closed``.
+
+        ``discard()`` makes a live ``AbortMultipartUpload`` call, so it can fail
+        on its own (network blip, server error). The cleanup path swallows that
+        so the ORIGINAL mid-stream content failure still propagates, and sets
+        ``closed`` regardless so a failed abort cannot leave ``__del__`` free to
+        re-commit a truncated object (S3-010 / AW-001). Injected s3fs mocks keep
+        the test off the wire.
+        """
+        from unittest.mock import MagicMock
+
+        import s3fs
+        from s3fs.core import S3File
+
+        from remote_store._errors import RemoteStoreError
+        from remote_store.backends._s3 import S3Backend
+
+        backend = S3Backend(bucket="b", key="testing", secret="testing", region_name="us-east-1")
+        fake_file = MagicMock(spec=S3File)
+        fake_file.discard.side_effect = RuntimeError("RS214-abort-sentinel: AbortMultipartUpload blew up")
+        mock_fs = MagicMock(spec=s3fs.S3FileSystem)
+        mock_fs.exists.return_value = False
+        mock_fs.open.return_value = fake_file
+        backend._fs_instance = mock_fs
+
+        with pytest.raises(RemoteStoreError) as excinfo:
+            backend.write("k.bin", FailingContentReader.buffered(10), overwrite=True)
+
+        # The original content failure surfaces, not the abort failure ...
+        assert "simulated mid-stream content failure" in str(excinfo.value)
+        assert "RS214-abort-sentinel" not in str(excinfo.value)
+        # ... the abort was attempted ...
+        fake_file.discard.assert_called_once()
+        # ... and ``closed`` was set despite ``discard()`` raising, so ``__del__``
+        # cannot re-commit.
+        assert fake_file.closed is True

@@ -1,0 +1,117 @@
+id: BUG-214
+title: "S3 write_atomic commits a truncated object on mid-stream content failure"
+trigger: >
+  The ID-200 error-mapping audit (§ 3(d)) found that when a content source
+  passed to a streaming S3 write raised mid-stream, the backend left a
+  complete-looking but truncated object instead of nothing, breaking the
+  ATOMIC_WRITE contract. The failing test + fix were deferred to BUG-214 per
+  the bug-fix protocol.
+source_items:
+  - BUG-214
+  - ID-200
+audience:
+  - user.api
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 4
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-s3-error-mapping-fidelity.md
+        section: "3 (d), 4 Disposition"
+        read_type: reference
+        extract: "Reproduction (6 MB single-PUT, 55 MB multipart) and the discard()/abort fix sketch"
+      - file: sdd/specs/007-atomic-writes.md
+        section: "AW-001, AW-004, AW-007"
+        read_type: gate
+        extract: "write_atomic owes 'no partial visible'; write is the non-atomic alternative (AW-007) -> plain-write truncation is a non-defect"
+      - file: src/remote_store/backends/_s3.py
+        section: "write (streaming branch)"
+        read_type: reference
+        extract: "with self._fs.open(...) as f -> S3File.__exit__/close() commits on the exception path"
+      - file: src/remote_store/backends/_s3_pyarrow.py
+        section: "write, write_atomic, open_atomic"
+        read_type: reference
+        extract: "out.close() in finally commits truncated; PyArrow has no abort(); open_atomic already buffers via SpooledTemporaryFile"
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestBackendWriteAtomic"
+        read_type: reference
+        extract: "Add cross-backend test_write_atomic_content_failure_leaves_no_partial; rides every ATOMIC_WRITE fixture incl. s3_live / s3_pyarrow_live at stage 3"
+      - file: tests/backends/s3/test_moto.py
+        section: "TestBug214MidStreamFailure"
+        read_type: reference
+        extract: "s3fs single-PUT + 55 MB multipart + orphan-MPU mechanism; confirmed 4/4 fail without the fix on moto"
+      - file: tests/backends/s3/test_pyarrow.py
+        section: "TestBug214WriteAtomicity"
+        read_type: reference
+        extract: "Guard: open_output_stream never called on content failure; fails pre-fix (stream opened before read)"
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_s3.py
+        section: "write (streaming branch)"
+        read_type: reference
+        extract: "Explicit handle; on exception f.discard() + f.closed=True then re-raise (neutralise __del__ re-commit)"
+      - file: src/remote_store/backends/_s3_pyarrow.py
+        section: "write_atomic"
+        read_type: reference
+        extract: "Buffer content to SpooledTemporaryFile before opening the upload; plain write left streaming"
+      - file: tests/_helpers.py
+        section: "FailingContentReader"
+        read_type: reference
+        extract: "Shared mid-stream-failure reader; dedupes the per-file _Boom copies"
+      - file: tests/backends/fixtures/s3_pyarrow_live.py
+        section: "(full)"
+        read_type: reference
+        extract: "New Stage-3 fixture mirroring s3_live so the PyArrow data path is confirmed on real AWS"
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "fixture.s3_pyarrow_live"
+        read_type: reference
+        extract: "Declare the new real-live fixture (backend=s3_pyarrow, RS_TEST_LIVE_S3 opt-in)"
+  - id: docs
+    name: Docs and backlog
+    steps:
+      - file: sdd/specs/008-s3-backend.md
+        section: "S3-010"
+        read_type: reference
+        extract: "Document the mid-stream abort (discard()) for write/write_atomic"
+      - file: sdd/specs/011-s3-pyarrow-backend.md
+        section: "S3PA-013"
+        read_type: reference
+        extract: "Document write_atomic buffer-before-open; plain write non-atomic (AW-007)"
+      - file: sdd/specs/007-atomic-writes.md
+        section: "AW-007"
+        read_type: reference
+        extract: "Add explicit non-atomic write failure-semantics note"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: reference
+        extract: "Fixed entry (audience user.api)"
+      - file: sdd/BACKLOG-DONE.md
+        section: "[Unreleased]"
+        read_type: reference
+        extract: "Close BUG-214 with the plain-write non-defect reasoning + real-AWS confirmation"
+  - id: verify
+    name: Verify ripples
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG move + CHANGELOG + failing-test-first satisfied; backends touched -> spec ripple swept (S3-010 / S3PA-013 / AW-007)"
+      - file: sdd/TESTING.md
+        section: "Final verification on live"
+        read_type: gate
+        extract: "Stage-3 run RS_TEST_LIVE_S3=1 ... --stage=3 -m live for s3_live + s3_pyarrow_live; both pass on real AWS"
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: verify
+        extract: "Regenerate after the BACKLOG-DONE move"
+      - file: scripts/record_cassettes.py
+        section: "main (--verify-only)"
+        read_type: verify
+        extract: "Recorder is all-or-nothing -> record the one azure cassette via targeted pytest --record, then --verify-only scrub-checks all 299 cassettes (account name absent) + Stage-1 replay"

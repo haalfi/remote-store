@@ -8,6 +8,53 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BUG-214 — S3 `write_atomic` commits a truncated object on mid-stream content failure**
+  spec: S3-010, S3PA-013, AW-001, AW-007 · effort: S · audience: user.api
+  Found by the ID-200 audit (see
+  [research/research-s3-error-mapping-fidelity.md](research/research-s3-error-mapping-fidelity.md)
+  § 3(d)). When the *content source* passed to a streaming `write` /
+  `write_atomic` raised mid-stream, both S3 backends left a complete-looking
+  but truncated object: `S3Backend` because s3fs's `S3File.__exit__` →
+  `close()` flushes/completes the upload regardless of the in-flight
+  exception; `S3PyArrowBackend` because PyArrow's output stream commits on
+  `close()` and cannot be aborted.
+  - **Fix (s3fs):** the streaming branch manages the handle explicitly and on
+    any exception calls `discard()` (aborts the multipart upload / drops the
+    buffer) and neutralises the handle so `__del__` cannot re-commit, then
+    re-raises (S3-010). Covers `write` and the delegating `write_atomic`, both
+    the single-PUT (≤50 MB) and completed-multipart regimes.
+  - **Fix (s3-pyarrow):** PyArrow has no abort primitive, so `write_atomic`
+    now buffers the content fully (a `SpooledTemporaryFile`, mirroring
+    `open_atomic`) *before* opening the output stream — a content failure
+    happens before any upload begins (S3PA-013). Plain `write` keeps streaming.
+  - **Scope refinement — plain `write` truncation is a non-defect.** The audit
+    framed the truncated object on plain `write` as part of the bug, but per
+    AW-007 `write` is the non-atomic alternative and the local backend also
+    leaves a partial file on a mid-stream failure. Only `write_atomic` owes
+    AW-001 ("no partial content is ever visible"). So plain `write` was left
+    streaming (s3fs cleans up for free via the shared `discard()` path;
+    s3-pyarrow may leave a partial, like local). Documented on S3-010 /
+    S3PA-013 / AW-007.
+  - **Tests:** the mid-stream-failure-no-partial assertion landed as a
+    cross-backend conformance test
+    (`conformance/test_atomic.py::TestBackendWriteAtomic`,
+    AW-001/S3-010) that rides every `ATOMIC_WRITE` fixture; an s3fs moto test
+    (`test_moto.py::TestBug214MidStreamFailure`) pins the single-PUT +
+    multipart + orphan-MPU mechanism; a pyarrow guard
+    (`test_pyarrow.py::TestBug214WriteAtomicity`) pins the buffer-before-open
+    mechanism without S3. All confirmed failing-first then passing.
+  - **Confirmed on real AWS S3** (per CONTRIBUTING.md / TESTING.md Stage-3):
+    added an `s3_pyarrow_live` fixture (the S3-PyArrow sibling of `s3_live`) so
+    the conformance test runs against real AWS for *both* backends at
+    `RS_TEST_LIVE_S3=1 ... --stage=3 -m live`. Both pass.
+  - Azure coverage included in-PR: the new conformance test's one missing
+    cassette was recorded via a **targeted** `pytest --stage=3 --record -m live`
+    run against live HNS (not the all-or-nothing `record-azure` tree-wipe, which
+    would churn ~298 cassettes), then scrub-verified
+    (`record_cassettes.py --backend azure --verify-only`: 299 cassettes checked,
+    account name absent) and confirmed on Stage-1 replay. Azure `write_atomic`
+    buffers, so it satisfies AW-001 by construction.
+
 - [x] **BK-235 — Record the Azure cassettes for new conformance tests**
   spec: — · audience: infra.test
   Sixteen conformance tests self-skipped on `azure_replay` for lack of a
