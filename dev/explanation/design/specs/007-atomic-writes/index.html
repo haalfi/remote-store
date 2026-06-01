@@ -9467,7 +9467,8 @@
 <strong>Postconditions:</strong> <code>os.replace</code> is atomic on POSIX systems. On Windows it is atomic if the source and destination are on the same volume.</p>
 <h2 id="aw-007-atomicity-is-never-assumed">AW-007: Atomicity is Never Assumed<a class="headerlink" href="#aw-007-atomicity-is-never-assumed" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> The core never falls back to non-atomic writes if atomic writes are unavailable.
-<strong>Postconditions:</strong> If the caller requests <code>write_atomic</code> and the backend lacks the capability, the operation fails. The caller must explicitly choose <code>write</code> as an alternative.</p>
+<strong>Postconditions:</strong> If the caller requests <code>write_atomic</code> and the backend lacks the capability, the operation fails. The caller must explicitly choose <code>write</code> as an alternative.
+<strong>Note (non-atomic <code>write</code> failure semantics):</strong> <code>write</code> makes no atomicity guarantee. If the content source raises partway through, a backend MAY leave a partial object at the target — the local backend leaves the partially-written file, and S3-PyArrow may leave a truncated object. Only <code>write_atomic</code> guarantees "no partial content is ever visible" (AW-001). Callers that need all-or-nothing must use <code>write_atomic</code>. (The s3fs <code>S3Backend</code> happens to abort and clean up its <code>write</code> too (see S3-010), but that is a backend convenience, not a contract <code>write</code> callers may rely on.)</p>
 
 
 
