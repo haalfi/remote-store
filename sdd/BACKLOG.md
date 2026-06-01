@@ -601,14 +601,43 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Long-horizon / Maintenance
 
-- [ ] **BK-250 — Follow up on spec-traceability audit (audit-015)**
+- [ ] **BK-250 — Spec-traceability audit (audit-015): correctness gaps + spec defects**
+  spec: STORE-015, HTTP-CON-003, HTTP-CON-004, S3-012, BATCH-023, SAW-015 · effort: M · audience: library.maintainer
+  The "something is actually wrong or missing" slice of audit-015, scoped by its
+  [verified addendum](audits/audit-015-spec-traceability.md#verified-addendum-2026-06-01).
+  Three sub-tasks, each test-first per process principle 6:
+  - **(a) 5 untested behaviors** — write the missing tests: `S3-012` (S3/S3PA
+    non-recursive `delete_folder` on a non-empty folder raises `DirectoryNotEmpty`;
+    currently skipped via `_skip_flat_namespace` — highest value), `BATCH-023`
+    (sequential order preserved / concurrent non-deterministic), `SAW-015` (ext.otel
+    span over `open_atomic`), `HTTP-CON-003` / `HTTP-CON-004` (name + capability set).
+  - **(c) STORE-015 renumber** — two distinct invariants share one ID (native_path +
+    glob); renumber before either can be marked. Unblocks the BK-252 backfill.
+  - **HTTP-CON-004 code/spec divergence** — `HttpBackend` declares `LAZY_READ` but
+    spec 032 lists `{READ, METADATA}`. Resolve the conflict (principle 5:
+    spec wins unless `LAZY_READ` is intended) as part of the HTTP-CON-004 test.
+  The ~57 unbuilt-Graph IDs (`GR-*`, `ERR-013`) are owned by ID-127, not this item.
+
+- [ ] **BK-251 — Spec-mark CI gate (`check_spec_marks.py`)**
   spec: — · effort: M · audience: library.maintainer
-  See `sdd/audits/audit-015-spec-traceability.md` for the full count by category.
-  Two actionable effort tiers: (b) "test exists, mark absent" — low-effort label
-  backfill; (a) "no test at all" — requires new test coverage first. Additionally,
-  STORE-015 is a type-(c) spec defect (two distinct invariants share one ID) that must
-  be renumbered before it can be marked; this is a separate action from the bulk
-  mark-backfill work.
+  Root-cause fix for the traceability drift audit-015 exposed: nothing enforces that a
+  shipped spec ID carries a test mark, so marks rot (the audit found a stale `HTTP-001`
+  and the duplicate `STORE-015`). Add `scripts/check_spec_marks.py` mapping every
+  shipped spec ID to its `@pytest.mark.spec(...)` and failing on unmarked/stale IDs;
+  dual-wire into the `lint` script and the lint CI job (per the check-script
+  convention). Needs an allowlist for type-(d) IDs (design/meta/deferred) and for
+  implementation-pending backends absent from `FEATURES.md` (the Graph/ID-127
+  exclusion). Land before BK-252 so the backfill is ratcheted, not re-accumulated.
+
+- [ ] **BK-252 — Bulk spec-mark backfill (~127 type-(b) labels)**
+  spec: — · effort: L · audience: library.maintainer
+  The mechanical slice of audit-015: ~127 invariants whose behavior is already tested
+  (largely via cross-backend conformance under sibling marks) but lack the
+  spec-file-specific `@pytest.mark.spec(...)`. Backfill per spec-cluster — Azure (012)
+  is the cleanest start (every `AZ-*` rides a `BE-*`/`GLOB-*` test). Gated by **BK-251**
+  (the gate) and the **BK-250** STORE-015 renumber. Verify each mark against the named
+  test before stamping; do not rubber-stamp. See the addendum's type-(b) caveats
+  (`SQL-QUERY-061/063` ride shared-base coverage; `GLOB-019` depends on fixture liveness).
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer

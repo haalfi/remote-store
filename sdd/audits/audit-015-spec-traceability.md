@@ -20,6 +20,12 @@ Each ID was then searched across the entire `tests/` tree for a matching
 work); 1 is type (c) (spec defect requiring renumber before it can be marked); the
 remaining 212 are type (a) or (b) and actionable.
 
+> **Superseded by the [Verified addendum](#verified-addendum-2026-06-01).** This
+> first-pass split did not separate (a) from (b). Verification resolves the 212 into
+> **5** genuine coverage gaps (a), **~127** label backfills (b), and **~33**
+> not-actionable rows (deferred/design-only, plus the ~57 unbuilt-Graph IDs owned by
+> ID-127). Read the addendum, not this line, for the actionable counts.
+
 ---
 
 ## Findings
@@ -164,3 +170,74 @@ remaining 212 are type (a) or (b) and actionable.
 | 048 | TEST-007 | HTTP Cassette and Replay Layer | No mark (d: testing-process spec — not test-markable) |
 | 048 | TEST-008 | Replay Scope is HTTP-Transport Only | No mark (d: testing-process spec — not test-markable) |
 | 048 | TEST-009 | Cassette Refresh is Explicit | No mark (d: testing-process spec — not test-markable) |
+
+---
+
+## Verified addendum (2026-06-01)
+
+The original table classified rows by *mark presence* and used inconsistent wording
+("No mark, no test" vs. bare "No mark"), which left the actionable count ambiguous:
+212 rows were reported as "type (a) or (b)" without a split between them. This
+addendum resolves that ambiguity. Every row not already proven type (b) ("test
+exists" / "tests use X") was re-verified by reading the invariant text and searching
+the entire `tests/` tree for **any** test that exercises the behavior, marked or not.
+
+**Method:** per ID — read the invariant, grep the test tree for the behavior (method
+names, class names, keywords; not just the literal ID), classify as A (no test
+anywhere), B (tested under a different/absent mark), or D (not a runtime-testable
+behavior: design principle, meta/process section, or explicitly deferred feature).
+
+### Revised totals
+
+| Category | Count | Meaning |
+|----------|-------|---------|
+| **(a) Untested shipped behavior** | **5** | The real coverage debt — table below |
+| (b) Tested, mark absent | ~127 | Label gap; behavior runs (largely via cross-backend conformance under sibling marks) |
+| (d) Not runtime-testable | ~33 | Design principles, meta/process sections, and **deferred** features (TLS Phase 2, ext.parquet Dagster-v2, async `read_seekable`/`open_atomic` deferrals, graph retry) — more than the 13 the first pass tagged, because several bare "No mark" rows are deferred or design-only |
+| Implementation-pending (Graph) | ~57 | Spec 044 `GR-001..GR-057` + `ERR-013` describe `GraphBackend`, which is **not implemented** (absent from source and `FEATURES.md`). Owned by backlog **ID-127**; tests and marks land when the backend is built. Not traceability debt. |
+| (c) Spec defect | 1 | `STORE-015` duplicate ID (unchanged from first pass) |
+
+The first pass's "212 actionable" therefore resolves to **5 genuine coverage gaps**,
+**~127 mechanical label backfills**, and **~33 not-actionable** rows that were
+deferred/design-only or belong to the unbuilt Graph backend.
+
+### (a) The 5 untested shipped behaviors
+
+| Spec | ID | Untested behavior | Evidence / note |
+|------|----|-------------------|-----------------|
+| 008 / 011 | S3-012 | S3 & S3-PyArrow non-recursive `delete_folder` on a **non-empty** folder must raise `DirectoryNotEmpty` | Code raises it (`_s3.py:270`), but `tests/backends/conformance/test_errors.py::...::test_delete_folder_non_recursive_non_empty_raises` calls `_skip_flat_namespace`, skipping S3 and S3PA. SQLBlob has a dedicated test (`SQL-BLOB-025`); S3/S3PA have none. **Highest-severity gap** (data-safety guard). |
+| 032 | HTTP-CON-004 | `HttpBackend.capabilities == {READ, METADATA}` | No test asserts the set (conformance checks type + absence of ATOMIC_MOVE/SEEKABLE_READ only). **Also a code/spec divergence:** the implementation declares `{READ, METADATA, LAZY_READ}` (`_http.py:41`). Resolve the conflict (per process principle 5, the spec is authoritative unless `LAZY_READ` is intended) before writing the test. |
+| 022 | SAW-015 | `ext.otel` span over the `open_atomic` lifecycle | `tests/ext/test_otel.py` asserts spans for read/write/exists/delete only. The `around`-hook plumbing for `open_atomic` is exercised via `ext.observe`, but no otel-span assertion exists. |
+| 016 | BATCH-023 | Sequential batch preserves input order; concurrent order is non-deterministic | All concurrent multi-item tests in `tests/ext/test_batch.py` assert via `set(...)`, so ordering is never pinned. |
+| 032 | HTTP-CON-003 | `HttpBackend.name == "http"` (literal) | Conformance asserts only that `name` is a non-empty string. Trivial. |
+
+### Partial sub-clause gaps (within otherwise-covered invariants)
+
+Not full type (a), but flagged for completeness — these invariants are covered except
+for one clause:
+
+- **STORE-007** — share-across-threads is tested (CHILD-010 concurrency test); the *immutability* clause has no dedicated test (Store is not a frozen dataclass).
+- **PA-005** — root-as-empty-string mapping is tested; *file ops on root raising `FileNotFoundError`* is not.
+- **HTTP-TR-002** — auto-detect + urllib fallback is tested; the *httpx-before-requests preference ordering* is not directly asserted.
+- **HTTP-TR-003** — explicit transport override is tested; the *ImportError-when-library-missing* branch is `pytest.skip`-ped, never asserted.
+
+### Caveats on the type-(b) verdicts
+
+- **SQL-QUERY-061 / SQL-QUERY-063** ride entirely on shared-base coverage via
+  `SqlBlobBackend` tests; there is no `sqlquery` conformance fixture and no
+  `SqlQueryBackend`-specific close / PRAGMA assertion. The weakest type-(b) rows.
+- **GLOB-019** is type (b) only when `s3_pyarrow_moto` is live in the conformance run;
+  under `pyarrow>=24` / moto-unavailable skips, the native S3-PyArrow glob path is not
+  exercised.
+- **SAW-009 / SAW-011** are exercised both by the `fixture_params(Capability.ATOMIC_WRITE)`-parametrized
+  conformance success path *and* backend-specific assertions (SFTP `.~tmp` cleanup,
+  Azure `rename_file.assert_called_once`); **SAW-010**'s S3 buffer mechanism is
+  exercised but not mechanism-asserted (closest is the test that a stream failure
+  mid-write leaves no truncated object).
+
+### Discovery follow-up
+
+`HTTP-CON-004` surfaced a **code/spec divergence** not visible to the first pass:
+`HttpBackend` declares `LAZY_READ` in its capability set while spec 032 lists only
+`{READ, METADATA}`. This is a type-(c)-flavoured defect (the spec and code disagree)
+and must be resolved as part of, or before, writing the HTTP-CON-004 test.
