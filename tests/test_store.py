@@ -617,6 +617,7 @@ class TestStoreHead:
         return Store(backend=MemoryBackend(), root_path="data")
 
     @pytest.mark.spec("WR-008")
+    @pytest.mark.spec("WR-006")
     def test_head_returns_sidecar_write_result(self, store: Store) -> None:
         from remote_store._models import WriteResult
 

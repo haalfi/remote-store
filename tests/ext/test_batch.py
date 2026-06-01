@@ -181,6 +181,8 @@ def test_sequential_preserves_input_order() -> None:
     ],
 )
 @pytest.mark.spec("BATCH-004")
+@pytest.mark.spec("BATCH-010")
+@pytest.mark.spec("BATCH-024")
 def test_error_continues(
     concurrent: bool,
     func_factory: Any,
@@ -282,6 +284,9 @@ def test_delete_missing_ok(concurrent: bool) -> None:
     ],
 )
 @pytest.mark.spec("BATCH-007")
+@pytest.mark.spec("BATCH-013")
+@pytest.mark.spec("BATCH-017")
+@pytest.mark.spec("BATCH-025")
 def test_empty_paths(store: Store, func: Any, args: list[Any], check: Any, concurrent: bool) -> None:
     assert check(func(store, args, concurrent=concurrent))
 

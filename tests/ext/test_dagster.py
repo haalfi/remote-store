@@ -42,6 +42,7 @@ def store() -> Store:
 class TestSerializerRoundtrips:
     """DAG-002, DAG-003: Pickle and JSON roundtrips."""
 
+    @pytest.mark.spec("DAG-001")
     @pytest.mark.parametrize(
         "serializer",
         [

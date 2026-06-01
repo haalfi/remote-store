@@ -84,6 +84,7 @@ class TestListFilesPattern:
 
     @pytest.mark.spec("GLOB-001")
     @pytest.mark.spec("STORE-014")
+    @pytest.mark.spec("GLOB-017")
     @pytest.mark.parametrize(
         ("folder", "pattern", "recursive", "expected"),
         [

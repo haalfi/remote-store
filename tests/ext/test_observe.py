@@ -147,6 +147,7 @@ _ALL_HOOK_CASES = [
 
 
 @pytest.mark.spec("OBS-003")
+@pytest.mark.spec("OBS-003a")
 @pytest.mark.spec("RTXT-004")
 @pytest.mark.spec("ITER-006")
 @pytest.mark.parametrize(("hook", "setup_files", "call", "expected_op"), _ALL_HOOK_CASES)
@@ -681,6 +682,7 @@ def test_observed_write_returns_write_result() -> None:
         ("write_atomic", ("f.bin", b"hello")),
     ],
 )
+@pytest.mark.spec("OBS-015")
 def test_store_event_write_result_populated_on_success(method: str, args: tuple[object, ...]) -> None:
     store = _make_store()
     events: list[StoreEvent] = []

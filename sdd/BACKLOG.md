@@ -564,10 +564,11 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `STORE-018`, an ordinary drift row this item backfills). Verify each mark against the named
   test before stamping; do not rubber-stamp. See the addendum's type-(b) caveats
   (`SQL-QUERY-061/063` ride shared-base coverage; `GLOB-019` depends on fixture liveness).
-  Landing in grouped clusters on one branch (159 baselined → backfill per cluster). **Groups 1-3
-  done (groups 1-2 merged in #724; group 3 in progress):** 54 marks landed (gate 159 → 105, 736
+  Landing in grouped clusters on one branch (159 baselined → backfill per cluster). **Groups 1-4
+  done (groups 1-2 merged in #724; groups 3-4 in progress):** 66 marks landed (gate 159 → 93, 748
   mark-cited IDs) across backend-restatement (AZ/S3/S3PA), core-API/paths (STORE/NPR/BE/CAP/MEM),
-  and text/stream/iter/pyarrow (SIO/RTXT/WTXT/ITER/SEEK/PA). **35 rows held for a
+  text/stream/iter/pyarrow (SIO/RTXT/WTXT/ITER/SEEK/PA), and extensions
+  (BATCH/OBS/SAW/DAG/WR/GLOB). **45 rows held for a
   disposition call** — they are
   design/meta/perf statements or have no test that asserts the specific clause, so they are
   type-(d) allowlist candidates rather than backfills:
@@ -578,8 +579,13 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `iter_children` capability-gate raise-when-absent branches — no test exercises the clause);
   `NPR-009`/`017`/`018`/`019`, `RTXT-002`/`003`, `WTXT-002`/`003`, `ITER-003`
   (future-backends / no-Backend-ABC-change / STORE-008-surface / backward-compat — design/meta);
-  `SEEK-007`/`PA-023`/`PA-026` (azure-read-unchanged / optional-extra / cross-backend-conformance —
-  no asserting test); `MEM-026`/`030`/`031`/`032`/`040`/`041`/`042`/`DS-001`/`DS-003`/`DS-004`
+  `SEEK-007`/`PA-023`/`PA-026`/`CFG-007`/`CFG-014`/`GLOB-015`/`SAW-010`/`PING-009`/`RES-001`
+  (azure-read-unchanged / optional-extra / no-backend-coupling / S3-buffer-mechanism /
+  check_health-error-classification / resolution-opacity-problem-statement — design or no asserting
+  test); `WR-014`/`015`/`016`/`017` (**moved** to spec 046 `EW-001..004` per ADR-0008 — the spec-045
+  entries are cross-reference stubs; real coverage is under `EW-*` marks, so these need
+  de-registration or allowlisting, not a `WR-*` mark);
+  `MEM-026`/`030`/`031`/`032`/`040`/`041`/`042`/`DS-001`/`DS-003`/`DS-004`
   (atomicity-scope, conformance/fixture recommendations, perf tables, data-structure rationale).
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**

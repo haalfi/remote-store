@@ -118,6 +118,7 @@ class TestBackendGlob:
     """GLOB-004/018/019/020: glob conformance across backends."""
 
     @pytest.mark.spec("GLOB-018")
+    @pytest.mark.spec("GLOB-019")
     @pytest.mark.parametrize(
         ("seeds", "pattern", "expected"),
         [
