@@ -22,7 +22,7 @@ expected_ripples:
 surprising_ripples:
   - sdd/BACKLOG.md
   - docs-src/reference/api/backends/http.md
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

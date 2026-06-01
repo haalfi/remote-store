@@ -582,7 +582,6 @@ _BASELINE: frozenset[tuple[str, str]] = frozenset(
         (KIND_DRIFT, "S3PA-008"),
         (KIND_DRIFT, "S3PA-014"),
         (KIND_DRIFT, "S3PA-015"),
-        (KIND_DRIFT, "S3PA-016"),
         (KIND_DRIFT, "SAW-009"),
         (KIND_DRIFT, "SAW-010"),
         (KIND_DRIFT, "SEEK-007"),

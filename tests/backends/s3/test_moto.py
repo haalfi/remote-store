@@ -331,6 +331,7 @@ class TestS3ControlPathMoto:
             backend.close()
 
     @pytest.mark.spec("S3-012")
+    @pytest.mark.spec("S3PA-016")
     def test_delete_folder_non_recursive_non_empty_raises(
         self,
         backend_cls: str,
@@ -344,8 +345,10 @@ class TestS3ControlPathMoto:
         S3-PyArrow -- both flat-namespace -- never exercise the guard there.
         This pins it for both: the ``s3-pyarrow`` parametrize id drives the
         same s3fs control path (``S3PyArrowBackend.delete_folder`` delegates to
-        s3fs, see module docstring). SQLBlob has its own check
-        (``SQL-BLOB-025``); this closes the S3/S3PA gap.
+        s3fs, see module docstring) -- which is exactly what ``S3PA-016``
+        ("Delete Via s3fs") claims, so that run carries the ``S3PA-016``
+        sibling mark. SQLBlob has its own check (``SQL-BLOB-025``); this closes
+        the S3/S3PA gap.
         """
         from remote_store._errors import DirectoryNotEmpty
 
