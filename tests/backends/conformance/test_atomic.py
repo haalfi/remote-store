@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from remote_store._capabilities import Capability
-from remote_store._errors import AlreadyExists, InvalidPath, NotFound
+from remote_store._errors import AlreadyExists, InvalidPath, NotFound, RemoteStoreError
 from remote_store._models import WriteResult
 from tests._helpers import FailingContentReader
 from tests.backends.conformance._helpers import (
@@ -84,7 +84,12 @@ class TestBackendWriteAtomic:
         # default write block on buffer-then-upload backends while keeping the
         # live-account data transfer negligible.
         content = FailingContentReader.buffered(256 * 1024)
-        with pytest.raises(Exception):  # noqa: B017 -- backends map the failure to varied types
+        # The reader raises ConnectionResetError; backends either map it to a
+        # RemoteStoreError or let it (a ConnectionError) propagate. Asserting
+        # that union -- rather than bare Exception -- means an early/wrong-type
+        # failure (TypeError, AssertionError) before the content is touched
+        # can't silently satisfy the atomicity assertions below.
+        with pytest.raises((RemoteStoreError, ConnectionError)):
             backend.write_atomic(key, content, overwrite=True)
         assert not backend.exists(key)
         remaining = [str(fi.path) for fi in backend.list_files("", recursive=True)]
