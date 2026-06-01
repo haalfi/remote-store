@@ -324,17 +324,36 @@ class S3Boto3Backend(Backend):
 
     # region: read
 
+    def _open_range_stream(self, path: str) -> Any:
+        """HEAD for size, then a Range reader wrapped in error mapping.
+
+        The returned ``_ErrorMappingStream`` is seekable and unbuffered: each
+        ``readinto`` is exactly one ranged ``GetObject``. ``read`` adds a
+        ``BufferedReader`` on top for sequential efficiency; ``read_seekable``
+        returns this bare stream (see its docstring).
+        """
+        head = self._client.head_object(Bucket=self._bucket, Key=path)
+        size = int(head.get("ContentLength", 0) or 0)
+        reader = _S3RangeReader(self._client, self._bucket, path, size)
+        return _safe_wrap(reader, lambda s: _ErrorMappingStream(s, self._classify_error, path))
+
     def read(self, path: str) -> BinaryIO:
+        # BufferedReader batches a sequential consume into ~1 GET per
+        # _READ_BUFFER_SIZE rather than one per RawIOBase.readall() chunk.
         with self._boto_errors(path):
-            head = self._client.head_object(Bucket=self._bucket, Key=path)
-            size = int(head.get("ContentLength", 0) or 0)
-            reader = _S3RangeReader(self._client, self._bucket, path, size)
-            stream = _safe_wrap(
-                reader,
-                lambda s: _ErrorMappingStream(s, self._classify_error, path),
-                lambda s: io.BufferedReader(s, buffer_size=_READ_BUFFER_SIZE),
-            )
-            return cast(BinaryIO, stream)  # noqa: TC006
+            inner = self._open_range_stream(path)
+            buffered = _safe_wrap(inner, lambda s: io.BufferedReader(s, buffer_size=_READ_BUFFER_SIZE))
+            return cast(BinaryIO, buffered)  # noqa: TC006
+
+    def read_seekable(self, path: str) -> BinaryIO:
+        # No BufferedReader (unlike read()): PyArrow's random read_at seeks
+        # before each read, and BufferedReader invalidates its buffer on seek --
+        # turning each small read_at into a full _READ_BUFFER_SIZE GetObject and
+        # refetching overlapping ranges. Returning the bare Range reader keeps
+        # each read_at to one ranged GET. Matches the Azure / S3PyArrow "no
+        # BufferedReader on the seekable path" contract.
+        with self._boto_errors(path):
+            return cast(BinaryIO, self._open_range_stream(path))  # noqa: TC006
 
     def read_bytes(self, path: str) -> bytes:
         with self._boto_errors(path):

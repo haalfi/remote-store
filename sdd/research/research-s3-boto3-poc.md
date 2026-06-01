@@ -167,13 +167,17 @@ Surfaced in PR review. None block the Park PoC; each is a Ship-promotion item.
   Park; a Ship promotion needs a dedicated `S3B-*` spec block (or generalized
   `S3-018` postconditions), mirroring how the pyarrow lane created
   `S3PA-018`/`S3PA-019` that *reference* the `S3-*` IDs.
-- **`read()` GetObject amplification.** Each `_S3RangeReader.readinto` is one
-  ranged `GetObject`. `read()` wraps it in a 1 MiB `BufferedReader`, so a
+- **`read()` vs `read_seekable()` buffering.** Each `_S3RangeReader.readinto`
+  is one ranged `GetObject`. `read()` wraps it in a 1 MiB `BufferedReader`, so a
   sequential consume issues ~1 GET per MiB rather than ~1 GET per 8 KiB
-  `readall()` chunk; random `read_at` (PyArrow column pruning) is still one GET
-  per seek+read. Bulk sequential reads should prefer `read_bytes` (single GET).
-  The s3fs lane returns a block-buffered `S3File`; the boto3 lane is now
-  buffered for sequential reads but keeps the per-range cost for random access.
+  `readall()` chunk; bulk sequential reads should still prefer `read_bytes`
+  (single GET). `read_seekable()` — the path PyArrow's random `read_at` uses
+  (`ext.arrow` Tier-3 → `pa.PythonFile`) — is deliberately **not** buffered: a
+  `BufferedReader` invalidates its buffer on every `seek()`, so each small
+  `read_at` would otherwise pay a full 1 MiB GET and refetch overlapping ranges.
+  The override returns the bare Range reader, keeping each `read_at` to one GET
+  of the requested range. This matches the Azure / S3PyArrow "no `BufferedReader`
+  on the seekable path" contract (`_azure.py` `read_seekable`).
 - **Exact-key overwrite / collision check.** The `overwrite=False` and
   dst-collision guards in `write` / `open_atomic` / `move` / `copy` use an
   exact-key HEAD, not a prefix-exists probe. So `write("a/b")` when only

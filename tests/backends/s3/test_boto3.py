@@ -356,6 +356,29 @@ class TestS3Boto3Lifecycle:
         finally:
             backend.close()
 
+    def test_read_seekable_is_unbuffered_and_seeks(self, moto_bucket: tuple[str, str]) -> None:
+        """``read_seekable`` returns a seekable, **unbuffered** Range stream.
+
+        PyArrow's random ``read_at`` consumes this path; a ``BufferedReader``
+        here would pay a full-buffer GET per seek (Azure / S3PyArrow contract),
+        so the override must not be buffered. Also verifies a seek+read.
+        """
+        endpoint, bucket = moto_bucket
+        backend = _make_backend(endpoint, bucket)
+        try:
+            backend.write("seek/probe.bin", bytes(range(256)) * 8, overwrite=True)
+            stream = backend.read_seekable("seek/probe.bin")
+            try:
+                assert stream.seekable()
+                assert not isinstance(stream, io.BufferedReader)
+                assert stream.seek(100) == 100
+                assert stream.read(4) == bytes([100, 101, 102, 103])
+            finally:
+                stream.close()
+        finally:
+            backend.delete("seek/probe.bin", missing_ok=True)
+            backend.close()
+
 
 # ---------------------------------------------------------------------------
 # Opt-in live tests (never run in `hatch run all`).
