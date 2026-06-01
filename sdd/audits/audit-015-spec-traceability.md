@@ -5,9 +5,14 @@
 **Scope:** All 48 spec files in `sdd/specs/` — every numbered spec ID in every file.
 **Method:** For each spec file, all invariant IDs were extracted by reading the file.
 Each ID was then searched across the entire `tests/` tree for a matching
-`@pytest.mark.spec("ID")` decorator. Gaps fall into two categories: (a) the ID
-has no mark anywhere in the suite; (b) a test exercises the behavior but uses a
-sibling or parent ID instead of the spec-file-specific one.
+`@pytest.mark.spec("ID")` decorator. Findings fall into three categories:
+
+- **(a) No test at all:** the behavior has no coverage and no mark — higher effort,
+  requires writing new tests before adding marks.
+- **(b) Test exists, mark absent:** a test exercises the behavior under a sibling or
+  parent ID but the spec-file-specific ID is not applied — low-effort label backfill.
+- **(c) Spec defect:** the spec file itself is the root problem (e.g. duplicate ID,
+  out-of-sequence numbering) — cannot be marked or traced until the spec is repaired.
 
 ---
 
@@ -20,7 +25,7 @@ sibling or parent ID instead of the spec-file-specific one.
 | 001 | STORE-010 | Store equality | No mark, no test |
 | 001 | STORE-011 | Store.to_key | Tests use NPR marks; STORE-011 absent |
 | 001 | STORE-014 | list_files(pattern=) | Tests use GLOB-001; STORE-014 absent |
-| 001 | STORE-015 | **Spec ID collision** | Two distinct invariants share STORE-015 (native_path and glob); STORE-014 appears between them out of sequence |
+| 001 | STORE-015 | **Spec ID collision (type c)** | Two distinct invariants share STORE-015 (native_path and glob); STORE-014 appears between them out of sequence — spec defect, cannot be marked until renumbered |
 | 001 | STORE-016 | Depth-limited listing | Tests use DEPTH-001; STORE-016 absent |
 | 002 | CFG-007 | Config priority / no env-var merge | No mark, no test |
 | 003 | CAP-007 | Quality-flag capabilities | No mark, no test |
@@ -41,7 +46,6 @@ sibling or parent ID instead of the spec-file-specific one.
 | 007 | AW-007 | No fallback to non-atomic | No mark, no test |
 | 008 | S3-001 | Constructor Parameters | No mark, no test |
 | 008 | S3-006 | Virtual Folder Semantics | No mark, no test |
-| 008 | S3-010 | Atomic Write Via S3 PUT | No mark on master (marks exist only in unmerged PR 710) |
 | 008 | S3-011 | delete_folder Recursive | No mark, no test |
 | 008 | S3-012 | delete_folder Non-Recursive | No mark, no test |
 | 008 | S3-013 | move Via Copy + Delete | No mark, no test |
@@ -58,7 +62,6 @@ sibling or parent ID instead of the spec-file-specific one.
 | 011 | S3PA-006 | Dual-Library Architecture | No mark, no test |
 | 011 | S3PA-007 | Credential Translation | No mark, no test |
 | 011 | S3PA-008 | Virtual Folder Semantics | No mark, no test |
-| 011 | S3PA-013 | Write Via PyArrow / mid-stream failure atomicity | No mark anywhere; S3PA-013 appears in docstring only |
 | 011 | S3PA-014 | Copy Via PyArrow | No mark, no test |
 | 011 | S3PA-015 | Move Via Hybrid | No mark, no test |
 | 011 | S3PA-016 | Delete Via s3fs | No mark, no test |
