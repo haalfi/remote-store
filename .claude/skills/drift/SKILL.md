@@ -6,7 +6,8 @@ argument-hint: "[issue number]"
 ---
 
 Act on the `[drift-guard]` rolling issue: decide which extras are safe to
-re-baseline, refresh those locks, and open the PR.
+re-baseline, refresh those locks, and prepare a pushed branch for the user to
+open the PR via `/pr`.
 
 **Authority (do not duplicate — read these):**
 - `.github/workflows/drift-guard.yml` header — refresh procedure + the three
@@ -113,18 +114,24 @@ falling back to `gh` for GraphQL-only flows. Repo: `haalfi/remote-store`.
     `infra/drift-locks/README.md`), per CLAUDE.md § Backlog:
     `<id>: refresh drift baselines (<extras>)`.
 
-11. **PR.** Hand off to `/pr`. In the body, list the accepted bumps per extra and
-    **reference** the rolling issue (`Refs #<n>`) — do **not** `Closes` it. The
-    workflow owns the issue lifecycle: it auto-closes on the next run that
-    resolves clean. To close promptly after merge, offer to re-resolve via
+11. **Stop for the user to open the PR.** Push the branch, then **stop — do not
+    run `/pr` automatically.** PR creation is user-initiated in this repo. Report
+    the prepared state so the user can review and invoke `/pr` themselves:
+    - the branch and its commits;
+    - the per-extra refresh outcome, plus any held extras with reasons and any
+      follow-up from step 3;
+    - the harness fix, if one was needed to turn a red smoke green.
+
+    Flag for the eventual PR body: list the accepted bumps per extra and
+    **reference** the rolling issue with `Refs #<n>` — never `Closes`. The
+    workflow owns the issue lifecycle and auto-closes it on the next run that
+    resolves clean. To close promptly after merge, the user can re-resolve via
     `gh workflow run drift-guard.yml --repo haalfi/remote-store` (the workflow is
     on `master`, so dispatch resolves fine).
-
-12. **Report** the PR URL, the held extras with reasons, and any follow-up
-    proposed in step 3.
 
 ## Rules
 
 - Per-extra gating is non-negotiable: green smoke is the licence to refresh.
-- This skill refreshes locks and opens a PR. It never edits `pyproject.toml`
-  floors, never merges, and never closes the rolling issue by hand.
+- This skill prepares the refresh (locks, docs, any harness fix) and stops at a
+  pushed branch; the user opens the PR via `/pr`. It never edits
+  `pyproject.toml` floors, never merges, and never closes the rolling issue by hand.
