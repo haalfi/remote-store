@@ -613,9 +613,10 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
     span over `open_atomic`), `HTTP-CON-003` / `HTTP-CON-004` (name + capability set).
   - **(c) STORE-015 renumber** — two distinct invariants share one ID (native_path +
     glob); renumber before either can be marked. Unblocks the BK-252 backfill.
-  - **HTTP-CON-004 code/spec divergence** — `HttpBackend` declares `LAZY_READ` but
-    spec 032 lists `{READ, METADATA}`. Resolve the conflict (principle 5:
-    spec wins unless `LAZY_READ` is intended) as part of the HTTP-CON-004 test.
+  - **HTTP-CON-004 capability divergence** — `ReadOnlyHttpBackend`'s runtime constant
+    declares `LAZY_READ` but its docstring and spec 032 list `{READ, METADATA}`
+    (three-way disagreement; `LAZY_READ` looks accidental). Resolve toward the spec
+    (principle 5) as part of the HTTP-CON-004 test.
   The ~57 unbuilt-Graph IDs (`GR-*`, `ERR-013`) are owned by ID-127, not this item.
 
 - [ ] **BK-251 — Spec-mark CI gate (`check_spec_marks.py`)**

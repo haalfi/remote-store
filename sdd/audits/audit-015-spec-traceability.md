@@ -21,10 +21,11 @@ work); 1 is type (c) (spec defect requiring renumber before it can be marked); t
 remaining 212 are type (a) or (b) and actionable.
 
 > **Superseded by the [Verified addendum](#verified-addendum-2026-06-01).** This
-> first-pass split did not separate (a) from (b). Verification resolves the 212 into
-> **5** genuine coverage gaps (a), **~127** label backfills (b), and **~33**
-> not-actionable rows (deferred/design-only, plus the ~57 unbuilt-Graph IDs owned by
-> ID-127). Read the addendum, not this line, for the actionable counts.
+> first-pass split did not separate (a) from (b), and over-counted "actionable".
+> Verification resolves the 212 into **5** genuine coverage gaps (a), **~127** label
+> backfills (b), and the rest not actionable as mark work (deferred/design-only
+> invariants plus the ~57 unbuilt-Graph IDs owned by ID-127). Read the addendum, not
+> this line, for the actionable counts.
 
 ---
 
@@ -197,19 +198,21 @@ behavior: design principle, meta/process section, or explicitly deferred feature
 | Implementation-pending (Graph) | ~57 | Spec 044 `GR-001..GR-057` + `ERR-013` describe `GraphBackend`, which is **not implemented** (absent from source and `FEATURES.md`). Owned by backlog **ID-127**; tests and marks land when the backend is built. Not traceability debt. |
 | (c) Spec defect | 1 | `STORE-015` duplicate ID (unchanged from first pass) |
 
-The first pass's "212 actionable" therefore resolves to **5 genuine coverage gaps**,
-**~127 mechanical label backfills**, and **~33 not-actionable** rows that were
-deferred/design-only or belong to the unbuilt Graph backend.
+The first pass's "212 actionable" therefore over-counted. Verification resolves it
+into **5 genuine coverage gaps** (a), **~127 mechanical label backfills** (b), and
+**~77 rows that are not actionable as mark work** — ~20 additional deferred/design-only
+invariants (on top of the 13 the first pass already tagged type-(d)) plus the ~57
+unbuilt-Graph IDs owned by ID-127.
 
 ### (a) The 5 untested shipped behaviors
 
 | Spec | ID | Untested behavior | Evidence / note |
 |------|----|-------------------|-----------------|
 | 008 / 011 | S3-012 | S3 & S3-PyArrow non-recursive `delete_folder` on a **non-empty** folder must raise `DirectoryNotEmpty` | Code raises it (`_s3.py:270`), but `tests/backends/conformance/test_errors.py::...::test_delete_folder_non_recursive_non_empty_raises` calls `_skip_flat_namespace`, skipping S3 and S3PA. SQLBlob has a dedicated test (`SQL-BLOB-025`); S3/S3PA have none. **Highest-severity gap** (data-safety guard). |
-| 032 | HTTP-CON-004 | `HttpBackend.capabilities == {READ, METADATA}` | No test asserts the set (conformance checks type + absence of ATOMIC_MOVE/SEEKABLE_READ only). **Also a code/spec divergence:** the implementation declares `{READ, METADATA, LAZY_READ}` (`_http.py:41`). Resolve the conflict (per process principle 5, the spec is authoritative unless `LAZY_READ` is intended) before writing the test. |
+| 032 | HTTP-CON-004 | `ReadOnlyHttpBackend.capabilities == {READ, METADATA}` | No test asserts the set (conformance checks type + absence of ATOMIC_MOVE/SEEKABLE_READ only). **Three-way divergence:** the runtime constant declares `{READ, METADATA, LAZY_READ}` (`_http.py:41`), but both the class docstring (`_http.py:215`) and spec 032 list `{READ, METADATA}` — `LAZY_READ` looks like an accidental addition, not an intended capability, which makes the spec-wins resolution (principle 5) the obvious one. Fix before writing the test. |
 | 022 | SAW-015 | `ext.otel` span over the `open_atomic` lifecycle | `tests/ext/test_otel.py` asserts spans for read/write/exists/delete only. The `around`-hook plumbing for `open_atomic` is exercised via `ext.observe`, but no otel-span assertion exists. |
 | 016 | BATCH-023 | Sequential batch preserves input order; concurrent order is non-deterministic | All concurrent multi-item tests in `tests/ext/test_batch.py` assert via `set(...)`, so ordering is never pinned. |
-| 032 | HTTP-CON-003 | `HttpBackend.name == "http"` (literal) | Conformance asserts only that `name` is a non-empty string. Trivial. |
+| 032 | HTTP-CON-003 | `ReadOnlyHttpBackend.name == "http"` (literal) | Conformance asserts only that `name` is a non-empty string. Trivial. |
 
 ### Partial sub-clause gaps (within otherwise-covered invariants)
 
@@ -237,7 +240,9 @@ for one clause:
 
 ### Discovery follow-up
 
-`HTTP-CON-004` surfaced a **code/spec divergence** not visible to the first pass:
-`HttpBackend` declares `LAZY_READ` in its capability set while spec 032 lists only
-`{READ, METADATA}`. This is a type-(c)-flavoured defect (the spec and code disagree)
-and must be resolved as part of, or before, writing the HTTP-CON-004 test.
+`HTTP-CON-004` surfaced a **three-way capability divergence** not visible to the first
+pass: the runtime constant `_CAPABILITIES` (`_http.py:41`) declares
+`{READ, METADATA, LAZY_READ}`, while the `ReadOnlyHttpBackend` docstring (`_http.py:215`)
+and spec 032 both list only `{READ, METADATA}`. The code is internally inconsistent —
+`LAZY_READ` looks like an accidental addition — which makes the spec-wins resolution
+(principle 5) the obvious one. Resolve as part of, or before, writing the HTTP-CON-004 test.
