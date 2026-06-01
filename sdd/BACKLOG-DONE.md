@@ -8,6 +8,41 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-248 — Confirm S3 403 / credential-failure error mapping over the wire (Stage 3)**
+  spec: S3-016, S3-018 · effort: S · audience: library.maintainer, infra.test
+  (Scoped as S3-016/S3-017 when opened; the verified surface is the
+  PermissionDenied mapping (S3-016) and no-native-leakage (S3-018). The
+  S3-017 connection-level/`BackendUnavailable` fallback was never the residual
+  unknown and is not exercised here.)
+  ID-200 verified rows (b) 403→`PermissionDenied` and (c) invalid-credentials→
+  `PermissionDenied` only at the *mapping* boundary (moto enforces neither IAM
+  nor credential validity). Confirmed the natural path over the wire against
+  real AWS via a new Stage-3 file
+  (`tests/backends/s3/test_live_error_mapping.py`, `RS_TEST_LIVE_S3=1`).
+  - **Result — all paths map to `PermissionDenied`.** An `S3Backend` built with
+    a bogus access key / secret produces a real 403
+    (`InvalidAccessKeyId`/`SignatureDoesNotMatch`) on `read_bytes`, streaming
+    `read`, and `write`; each maps to `PermissionDenied` (`backend == "s3"`).
+    The "swallowed inside an aiobotocore streaming read" worry (ID-200) does
+    **not** materialise: s3fs issues an eager HEAD/GET *inside* `_s3fs_errors`,
+    so the 403 is caught and mapped before any stream is returned — it never
+    reaches the `_ErrorMappingStream` wrapper.
+  - **Empirical finding — `AccessDenied` vs 404.** A distinct `AccessDenied`
+    (valid creds, forbidden resource) was *not* separately exercised: the
+    single-credential `s3_live` IAM user cannot provision an
+    existing-but-forbidden bucket, and targeting a bucket *outside* its
+    `rs-conformance-*` grant returns **404 `NoSuchBucket`** (→ `NotFound`), not
+    403 — S3 reports a non-existent bucket as 404 to a credentialed caller
+    regardless of IAM. `s3fs.translate_boto_error` keys on the 403 code
+    identically for `AccessDenied` and the invalid-credential codes, so the
+    credential-failure 403 confirms the same boundary.
+  - **No production-code change.** No row diverged, so no BUG was opened. The
+    `# pragma: no cover` on `_s3_base.py`'s `PermissionError` branch is kept —
+    the Stage-1 coverage gate never reaches it; only the live run does.
+  Research note (§ 3(b)/(c), § 6) updated; trace
+  `sdd/traces/bk-248-s3-error-mapping-over-the-wire.yml`. `backlogid.json`
+  unchanged (BK max already 253 > 248).
+
 - [x] **BK-249 — Parametrize the file-ancestor write conformance test over body type**
   spec: BE-008 · effort: S · audience: infra.test
   Surfaced in PR #708 (BK-235) review:
