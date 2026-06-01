@@ -147,6 +147,8 @@ _ALL_HOOK_CASES = [
 
 
 @pytest.mark.spec("OBS-003")
+@pytest.mark.spec("RTXT-004")
+@pytest.mark.spec("ITER-006")
 @pytest.mark.parametrize(("hook", "setup_files", "call", "expected_op"), _ALL_HOOK_CASES)
 def test_hook_fires_for_operation(
     hook: str,

@@ -465,6 +465,7 @@ class TestStoreReadText:
     """RTXT-001: read_text() convenience method."""
 
     @pytest.mark.spec("RTXT-001")
+    @pytest.mark.spec("SIO-007")
     def test_read_text_utf8_default(self, store: Store) -> None:
         store.write("greet.txt", b"Hello, world!")
         assert store.read_text("greet.txt") == "Hello, world!"
@@ -518,6 +519,7 @@ class TestStoreWriteText:
     """WTXT-001: write_text() convenience method."""
 
     @pytest.mark.spec("WTXT-001")
+    @pytest.mark.spec("WTXT-006")
     def test_write_text_utf8_default(self, store: Store) -> None:
         store.write_text("greet.txt", "Hello, world!")
         assert store.read_text("greet.txt") == "Hello, world!"

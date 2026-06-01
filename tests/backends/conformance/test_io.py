@@ -85,6 +85,7 @@ class TestBackendRead:
 
     @pytest.mark.spec("BE-006")
     @pytest.mark.spec("BE-007")
+    @pytest.mark.spec("SIO-004")
     @pytest.mark.parametrize(
         "method",
         [pytest.param("read", id="read_stream"), pytest.param("read_bytes", id="read_bytes")],

@@ -117,6 +117,7 @@ class TestConstruction:
 
 class TestPathNormalization:
     @pytest.mark.spec("PA-006")
+    @pytest.mark.spec("PA-005")
     @pytest.mark.parametrize(
         ("raw", "expected"),
         [

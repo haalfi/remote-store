@@ -73,6 +73,7 @@ class TestBackendIterChildren:
 
     @pytest.mark.spec("ITER-004")
     @pytest.mark.spec("BE-026")
+    @pytest.mark.spec("ITER-005")
     def test_iter_children(self, backend: Backend) -> None:
         _require(backend, Capability.WRITE)
         _seed(backend, {"ic/a.txt": b"a", "ic/b.txt": b"b", "ic/sub/c.txt": b"c"})
