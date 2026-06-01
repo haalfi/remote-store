@@ -60,10 +60,12 @@ instead of appending.
 ### HTTP-CON-004: Capability Declaration
 
 **Invariant:** `capabilities` returns `CapabilitySet({Capability.READ,
-Capability.METADATA})`.
+Capability.METADATA, Capability.LAZY_READ})`.
 **Rationale:** HTTP endpoints are read-only. No reliable server-side
 mechanism exists for LIST, MOVE, COPY, DELETE, or WRITE operations across
-arbitrary HTTP servers.
+arbitrary HTTP servers. `LAZY_READ` is declared because `read()` returns a
+live streamed response body (urllib's response, or `requests`/`httpx` with
+`stream=True`) rather than pre-loading the full file into memory.
 
 ---
 

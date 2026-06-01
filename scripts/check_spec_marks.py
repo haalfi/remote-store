@@ -438,8 +438,10 @@ def compute_violations(
 #
 # This list MUST shrink and MUST NOT grow. Each entry is a (kind, spec_id)
 # pair. Backfilling a mark (BK-252) makes its drift entry stale, which
-# fails the gate until the entry is removed in the same PR. Renumbering
-# STORE-015 (BK-250) makes the duplicate entry stale the same way.
+# fails the gate until the entry is removed in the same PR — the same
+# shrink-only contract that forced out the STORE-015 duplicate entry when
+# BK-250 renumbered the second invariant to STORE-018 (now an ordinary
+# drift row, its GLOB-* coverage still owed a spec-file mark by BK-252).
 # Adding a new gap fails the gate until fixed — the baseline is not a
 # place to park new debt.
 # ---------------------------------------------------------------------------
@@ -482,7 +484,6 @@ _BASELINE: frozenset[tuple[str, str]] = frozenset(
         (KIND_DRIFT, "BATCH-010"),
         (KIND_DRIFT, "BATCH-013"),
         (KIND_DRIFT, "BATCH-017"),
-        (KIND_DRIFT, "BATCH-023"),
         (KIND_DRIFT, "BATCH-024"),
         (KIND_DRIFT, "BATCH-025"),
         (KIND_DRIFT, "BE-011"),
@@ -498,8 +499,6 @@ _BASELINE: frozenset[tuple[str, str]] = frozenset(
         (KIND_DRIFT, "GLOB-017"),
         (KIND_DRIFT, "GLOB-019"),
         (KIND_DRIFT, "HTTP-CON-002"),
-        (KIND_DRIFT, "HTTP-CON-003"),
-        (KIND_DRIFT, "HTTP-CON-004"),
         (KIND_DRIFT, "HTTP-CRED-001"),
         (KIND_DRIFT, "HTTP-ERR-001"),
         (KIND_DRIFT, "HTTP-ERR-002"),
@@ -576,7 +575,6 @@ _BASELINE: frozenset[tuple[str, str]] = frozenset(
         (KIND_DRIFT, "S3-001"),
         (KIND_DRIFT, "S3-006"),
         (KIND_DRIFT, "S3-011"),
-        (KIND_DRIFT, "S3-012"),
         (KIND_DRIFT, "S3-013"),
         (KIND_DRIFT, "S3-014"),
         (KIND_DRIFT, "S3PA-001"),
@@ -587,7 +585,6 @@ _BASELINE: frozenset[tuple[str, str]] = frozenset(
         (KIND_DRIFT, "S3PA-016"),
         (KIND_DRIFT, "SAW-009"),
         (KIND_DRIFT, "SAW-010"),
-        (KIND_DRIFT, "SAW-015"),
         (KIND_DRIFT, "SEEK-007"),
         (KIND_DRIFT, "SIO-004"),
         (KIND_DRIFT, "SIO-005"),
@@ -606,6 +603,10 @@ _BASELINE: frozenset[tuple[str, str]] = frozenset(
         (KIND_DRIFT, "STORE-011"),
         (KIND_DRIFT, "STORE-014"),
         (KIND_DRIFT, "STORE-016"),
+        # STORE-018: glob() -- renumbered from the second STORE-015 (BK-250).
+        # The behavior is tested under GLOB-* marks; the spec-file-specific
+        # mark is owed to BK-252, same as STORE-014 / STORE-016.
+        (KIND_DRIFT, "STORE-018"),
         (KIND_DRIFT, "WR-006"),
         (KIND_DRIFT, "WR-014"),
         (KIND_DRIFT, "WR-015"),
@@ -614,10 +615,6 @@ _BASELINE: frozenset[tuple[str, str]] = frozenset(
         (KIND_DRIFT, "WTXT-002"),
         (KIND_DRIFT, "WTXT-003"),
         (KIND_DRIFT, "WTXT-006"),
-        # -- duplicate: STORE-015 names two distinct invariants (native_path +
-        #    glob). BK-250 renumbers it; that makes this entry stale and removes
-        #    it. Until then the gate cannot unambiguously attribute a mark.
-        (KIND_DUPLICATE, "STORE-015"),
     }
 )
 

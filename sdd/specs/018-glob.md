@@ -19,7 +19,7 @@ a negated character class.
 **Module (extension):** `src/remote_store/ext/glob.py`
 **Dependencies:** None (pure Python, always available)
 **Related:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
-(CAP-001, BE-024), [001-store-api.md](001-store-api.md) (STORE-014, STORE-015),
+(CAP-001, BE-024), [001-store-api.md](001-store-api.md) (STORE-014, STORE-018),
 BK-002, ID-007, [ADR-0009](../adrs/0009-glob-three-tier-design.md).
 
 ---

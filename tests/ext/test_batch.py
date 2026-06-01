@@ -138,6 +138,26 @@ def test_copy_all(concurrent: bool) -> None:
 
 
 # ---------------------------------------------------------------------------
+# BATCH-023: Result ordering (sequential preserves input order)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec("BATCH-023")
+def test_sequential_preserves_input_order() -> None:
+    """BATCH-023: with ``concurrent=False``, ``succeeded`` preserves input order.
+
+    Uses a deliberately unsorted input (``c, a, b``) so a result that merely
+    coincides with sorted/seed order would not pass -- ``succeeded`` must be
+    the exact input tuple, not just the same set. The concurrent ordering is
+    non-deterministic (thread completion order) and so is asserted only as a
+    set elsewhere (BATCH-003); this pins the deterministic sequential half.
+    """
+    order = ("c.txt", "a.txt", "b.txt")
+    result = batch_delete(_fresh(order), list(order), concurrent=False)
+    assert result.succeeded == order
+
+
+# ---------------------------------------------------------------------------
 # BATCH-004 / BATCH-010: Error collection (continues on failure)
 # ---------------------------------------------------------------------------
 

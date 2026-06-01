@@ -303,7 +303,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-053: glob()
 
 **Invariant:** `glob(pattern)` is capability-gated on `Capability.GLOB`. Pattern is relative to the store root; `AsyncStore` prepends `root_path` before delegating. Returned `FileInfo.path` values are store-relative.
-**See also:** [STORE-015](001-store-api.md), [018-glob.md](018-glob.md).
+**See also:** [STORE-018](001-store-api.md), [018-glob.md](018-glob.md).
 
 ### ASYNC-054: child()
 

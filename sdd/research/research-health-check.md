@@ -291,7 +291,7 @@ In `test_conformance.py`, add:
 
 **Traceability Markers:**
 - PING-001 through PING-NNN for spec requirements
-- Store method: STORE-016 (verify at spec authoring; note: STORE-015 is duplicated in spec 001-store-api.md — assigned to both `native_path()` and `glob()`)
+- Store method: STORE-016 (verify at spec authoring; historical note: STORE-015 was once duplicated in spec 001-store-api.md across `native_path()` and `glob()` — resolved under BK-250, `glob()` is now STORE-018)
 - Backend method: BE-026 (next available; BE-025 is `native_path()`)
 
 ---

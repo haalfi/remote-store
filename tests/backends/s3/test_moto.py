@@ -330,6 +330,48 @@ class TestS3ControlPathMoto:
         finally:
             backend.close()
 
+    @pytest.mark.spec("S3-012")
+    def test_delete_folder_non_recursive_non_empty_raises(
+        self,
+        backend_cls: str,
+        request: pytest.FixtureRequest,
+    ) -> None:
+        """S3-012: non-recursive ``delete_folder`` on a non-empty prefix raises ``DirectoryNotEmpty``.
+
+        The data-safety guard mirrors local ``rmdir`` semantics. The shared
+        conformance test (``test_errors.py::...::test_delete_folder_non_recursive_non_empty_raises``)
+        skips flat-namespace backends via ``_skip_flat_namespace``, so S3 and
+        S3-PyArrow -- both flat-namespace -- never exercise the guard there.
+        This pins it for both: the ``s3-pyarrow`` parametrize id drives the
+        same s3fs control path (``S3PyArrowBackend.delete_folder`` delegates to
+        s3fs, see module docstring). SQLBlob has its own check
+        (``SQL-BLOB-025``); this closes the S3/S3PA gap.
+        """
+        from remote_store._errors import DirectoryNotEmpty
+
+        endpoint, bucket, key_cred, secret = _resolve_s3_backend(backend_cls, request)
+        cls = _load(backend_cls)
+        prefix = f"dne/{cls.__name__}"
+        key = f"{prefix}/child.txt"
+        backend = cls(
+            bucket=bucket,
+            endpoint_url=endpoint,
+            key=key_cred,
+            secret=secret,
+            region_name="us-east-1",
+            client_options=_FULL_CLIENT_OPTIONS,
+        )
+        try:
+            backend.write(key, b"keep me", overwrite=True)
+            with pytest.raises(DirectoryNotEmpty, match=prefix) as exc_info:
+                backend.delete_folder(prefix, recursive=False)
+            assert exc_info.value.backend == backend.name
+            # The guard must not have deleted the child object.
+            assert backend.exists(key)
+        finally:
+            backend.delete(key, missing_ok=True)
+            backend.close()
+
 
 _MB = 1024 * 1024
 
