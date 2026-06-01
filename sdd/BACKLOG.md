@@ -564,11 +564,18 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `STORE-018`, an ordinary drift row this item backfills). Verify each mark against the named
   test before stamping; do not rubber-stamp. See the addendum's type-(b) caveats
   (`SQL-QUERY-061/063` ride shared-base coverage; `GLOB-019` depends on fixture liveness).
-  Landing in 5 grouped PRs (159 baselined → backfill per cluster). **PR 1 (backend-restatement,
-  in progress):** 18 of 23 marks landed (gate 159 → 141); 5 rows held for a disposition call —
-  `AZ-007`/`S3-001`/`S3PA-001` (umbrella constructor-scope invariants, no single canonical test)
-  and `AZ-010`/`S3PA-007` (no test directly asserts the sub-clause: non-HNS no-folder-marker /
-  s3→pyarrow credential translation). Candidates for type-(d) allowlist or a partial-coverage note.
+  Landing in grouped clusters on one branch (159 baselined → backfill per cluster). **Groups 1-2
+  done (in progress):** 47 marks landed (gate 159 → 112) across backend-restatement (AZ/S3/S3PA)
+  and core-API/paths (STORE/NPR/BE/CAP/MEM). **25 rows held for a disposition call** — they are
+  design/meta/perf statements or have no test that asserts the specific clause, so they are
+  type-(d) allowlist candidates rather than backfills:
+  `AZ-007`/`S3-001`/`S3PA-001`/`MEM-001`/`MEM-005` (constructor/scope/registration, no canonical
+  assertion); `AZ-010`/`S3PA-007`/`NPR-007` (sub-clause unasserted: non-HNS no-folder-marker /
+  s3→pyarrow credential translation / S3 prefix-stripping); `STORE-007`/`STORE-010`/`CAP-007`
+  (thread-safety/immutability, equality, quality-flag principle — no test); `NPR-009`/`017`/`018`/
+  `019` (future-backends / RemotePath-preserved / no-new-capability / backward-compat — design);
+  `MEM-026`/`030`/`031`/`032`/`040`/`041`/`042`/`DS-001`/`DS-003`/`DS-004` (atomicity-scope,
+  conformance/fixture recommendations, perf tables, data-structure rationale).
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer

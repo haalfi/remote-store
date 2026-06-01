@@ -75,6 +75,7 @@ class TestListFilesMaxDepth:
         assert len(recursive) == 5
 
     @pytest.mark.spec("DEPTH-001")
+    @pytest.mark.spec("STORE-016")
     def test_max_depth_zero(self, store: Store) -> None:
         """max_depth=0 returns only files directly in path."""
         files = sorted(str(f.path) for f in store.list_files("d", max_depth=0))

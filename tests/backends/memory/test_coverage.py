@@ -273,6 +273,7 @@ class TestMemoryListingCorrectness:
             pass
 
     @pytest.mark.spec("BK-123")
+    @pytest.mark.spec("MEM-025")
     def test_concurrent_write_and_listing_no_deadlock(self, mb: MemoryBackend) -> None:
         """Concurrent writes + listings must not deadlock."""
 

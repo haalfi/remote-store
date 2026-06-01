@@ -987,6 +987,7 @@ class TestSFTPToKey:
             pytest.param("/data", "/other/file.txt", "/other/file.txt", id="no-match"),
         ],
     )
+    @pytest.mark.spec("NPR-008")
     def test_to_key(self, base_path: str, native_path: str, expected: str) -> None:
         backend = SFTPBackend(host="dummy", base_path=base_path, host_key_policy="auto")
         assert backend.to_key(native_path) == expected

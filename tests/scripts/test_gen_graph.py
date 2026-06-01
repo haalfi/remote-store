@@ -216,6 +216,7 @@ def test_mirrors_edge_carries_capability_delta(gen_graph_module):
             assert d[key] == sorted(d[key]), f"{key} not sorted in {mirror_edge}"
 
 
+@pytest.mark.spec("BE-027")
 def test_backend_gating_keys_match_backend_members(gen_graph_module):
     """Every key in _BACKEND_GATING must be a real member of the Backend class.
 

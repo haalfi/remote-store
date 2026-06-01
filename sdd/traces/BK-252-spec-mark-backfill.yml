@@ -60,14 +60,44 @@ phases:
         section: "test_get_folder_info (AZ-024)"
         read_type: reference
         extract: "get_folder_info aggregate rides BE-017"
+  - id: classify_core
+    name: Classify core-API/paths cluster (group 2)
+    steps:
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-001..042, MEM-DS-001..006"
+        read_type: gate
+        extract: "Split MEM worklist: 12 testable backfills vs type-(d) design/meta/perf (MEM-026/030/031/032/040/041/042, DS-001/003/004) -- allowlist candidates, not backfills"
+      - file: sdd/specs/010-native-path-resolution.md
+        section: "NPR-002..022"
+        read_type: gate
+        extract: "NPR-009/017/018/019 are design/forward-looking (future backends, no-new-capability, backward-compat); NPR-002/006/008/011/015/021/022 testable; NPR-007 held (no test asserts S3 prefix-strip)"
+      - file: sdd/audits/audit-015-spec-traceability.md
+        section: "STORE-007/009/010, BE-011/023/024/026/027, CAP-007 rows"
+        read_type: reference
+        extract: "STORE-009 (test_context_manager) + BE-027 (test_gen_graph) ARE tested (Explore agent wrongly said NO-TEST); STORE-007/010 + CAP-007 genuinely untested -> held"
+  - id: implement_core
+    name: Backfill core-API/paths marks (group 2)
+    steps:
+      - file: tests/backends/conformance/test_identity.py
+        section: "MEM-002/003/004/018/019/020, NPR-021"
+        read_type: reference
+        extract: "MEM identity marks ride BE-002/003/020/022 + repr test; NPR-021 on native_path-empty test"
+      - file: tests/test_store.py
+        section: "TestStoreToKey, TestStoreNativePath (STORE-011/NPR-002/NPR-011/NPR-022)"
+        read_type: reference
+        extract: "Store.to_key + native_path marks ride NPR-010/STORE-015"
+      - file: tests/test_glob.py
+        section: "STORE-014, NPR-015, STORE-018"
+        read_type: reference
+        extract: "list_files(pattern) / list_folders names / Store.glob ride GLOB-001/STORE-017"
   - id: verify
     name: Gate + prune
     steps:
       - file: scripts/check_spec_marks.py
-        section: "_BASELINE (AZ/S3/S3PA blocks)"
+        section: "_BASELINE (all cluster blocks)"
         read_type: verify
-        extract: "Pruned the 18 landed IDs; kept 5 held rows (AZ-007, AZ-010, S3-001, S3PA-001, S3PA-007) baselined"
+        extract: "Groups 1-2: pruned 47 landed IDs; kept 25 held rows baselined (type-(d)/no-assertion candidates)"
       - file: tests/backends/conformance/test_io.py
         section: "(full)"
         read_type: verify
-        extract: "Gate: 159 -> 141 violations, 700 mark-cited IDs, all remaining baselined (exit 0)"
+        extract: "Gate: 159 -> 112 violations, 729 mark-cited IDs, all remaining baselined (exit 0); pytest memory/local green"

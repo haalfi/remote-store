@@ -51,6 +51,7 @@ class TestBackendFileFolder:
     @pytest.mark.spec("AZ-009")
     @pytest.mark.spec("S3-006")
     @pytest.mark.spec("S3PA-008")
+    @pytest.mark.spec("MEM-DS-006")
     def test_is_folder(self, backend: Backend) -> None:
         backend.write("dir/a.txt", b"data")
         assert backend.is_folder("dir") is True
@@ -77,6 +78,7 @@ class TestBackendRead:
 
     @pytest.mark.spec("BE-007")
     @pytest.mark.spec("SQL-BLOB-021")
+    @pytest.mark.spec("MEM-011")
     def test_read_bytes(self, backend: Backend) -> None:
         backend.write("file.txt", b"content")
         assert backend.read_bytes("file.txt") == b"content"
@@ -192,6 +194,7 @@ class TestBackendToKey:
     """NPR-003 through NPR-008: to_key reverse path resolution."""
 
     @pytest.mark.spec("NPR-003")
+    @pytest.mark.spec("BE-023")
     def test_to_key_exists(self, backend: Backend) -> None:
         assert hasattr(backend, "to_key")
         assert callable(backend.to_key)
@@ -201,6 +204,7 @@ class TestBackendToKey:
         assert backend.to_key("some/path") == backend.to_key("some/path")
 
     @pytest.mark.spec("NPR-005")
+    @pytest.mark.spec("MEM-017")
     def test_to_key_passthrough_for_relative(self, backend: Backend) -> None:
         """Relative paths with no matching prefix pass through unchanged."""
         assert isinstance(backend.to_key("some/path"), str)

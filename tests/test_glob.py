@@ -83,6 +83,7 @@ class TestListFilesPattern:
     """GLOB-001: list_files pattern parameter with fnmatch filtering."""
 
     @pytest.mark.spec("GLOB-001")
+    @pytest.mark.spec("STORE-014")
     @pytest.mark.parametrize(
         ("folder", "pattern", "recursive", "expected"),
         [
@@ -162,6 +163,7 @@ class TestListFoldersPattern:
     """STORE-017: list_folders pattern parameter with fnmatch filtering."""
 
     @pytest.mark.spec("STORE-017")
+    @pytest.mark.spec("NPR-015")
     @pytest.mark.parametrize(
         ("folder", "pattern", "expected_names"),
         [
@@ -238,6 +240,7 @@ class TestTier2NativeGlob:
             pytest.param("*.xyz", [], id="no_matches"),
         ],
     )
+    @pytest.mark.spec("STORE-018")
     def test_local_glob_patterns(self, pop_local: Store, pattern: str, expected: list[str]) -> None:
         results = sorted(str(f.path) for f in pop_local.glob(pattern))
         assert results == expected
