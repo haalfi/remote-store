@@ -268,6 +268,8 @@ class TestWriteErrorFidelity:
         ],
     )
     @pytest.mark.spec("BE-008")
+    @pytest.mark.spec("SAW-005")
+    @pytest.mark.spec("SAW-011")
     async def test_write_under_file_ancestor_raises_invalid_path(
         self, async_backend: AsyncBackend, method: str, cap: Capability
     ) -> None:
@@ -279,6 +281,15 @@ class TestWriteErrorFidelity:
         ASYNC-010).  Flat-namespace backends opt into the gate via the
         ID-211 ``reject_write_under_file_ancestor`` kwarg; default-off
         fixtures skip this test, the ``*_strict`` fixture variants run it.
+
+        BK-244 / SAW-005, SAW-011: also assert no orphan temp survives. The
+        async store exposes no ``open_atomic``, so ``write_atomic`` is the
+        async analog of the sync ``open_atomic`` cleanup branch: on HNS its
+        temp ``upload_data`` under a file parent fails, driving
+        ``aio/backends/_azure.py`` ``except Exception`` -> ``tmp_fc.delete_file()``
+        -> ``_raise_invalid_if_hns_file_ancestor``. As on the sync side the
+        temp is never committed (temp and final share a parent), so the scan
+        confirms the no-leak invariant rather than a real orphan removal.
         """
         _require(async_backend, cap)
         _skip_unless_rejects_file_ancestor(async_backend)
@@ -288,6 +299,8 @@ class TestWriteErrorFidelity:
         with pytest.raises(InvalidPath, match=seed):
             await getattr(async_backend, method)(nested, b"under-file")
         assert await async_backend.read_bytes(seed) == b"file-blocking"
+        remaining = [str(fi.path) async for fi in async_backend.list_files("", recursive=True)]
+        assert remaining == [seed], f"orphan temp after async {method} file-ancestor failure: {remaining}"
 
 
 @pytest.mark.spec("ASYNC-012")

@@ -74,22 +74,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Azure
 
-- [ ] **BK-244 — HNS-specific conformance test for open_atomic upload/rename cleanup**
-  spec: SAW-005, SAW-011 · effort: S · audience: infra.test
-  Discovered in PR #689 review of ID-188. The new
-  `test_open_atomic_exception_cleanup` orphan-temp scan only bites the
-  *caller-exception* path, where Local (SAW-008) and SFTP (SAW-009)
-  materialise their temp before yield while Azure HNS performs upload +
-  DFS rename *after* yield (`_azure.py:670-679`). HNS's
-  `tmp_fc.delete_file()` cleanup branch at upload/rename failure has no
-  conformance coverage today; needs a failure-injection test that drives
-  the inner `try` to raise — e.g. revoke permissions, collide the temp
-  name, or short-circuit `rename_file` via patch — and asserts the
-  fixture root remains empty afterwards. Sibling of BK-243 (cassette
-  refresh) but distinct: BK-243 is the existing test's HTTP cassette;
-  this is a new test exercising a code path none of the current
-  fixtures hit.
-
 - [ ] **BK-249 — Parametrize the file-ancestor write conformance test over body type**
   spec: BE-008 · effort: S · audience: infra.test
   `TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path`

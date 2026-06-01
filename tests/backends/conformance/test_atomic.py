@@ -147,9 +147,13 @@ class TestBackendOpenAtomic:
         # so the assertion holds vacuously rather than exercising cleanup.
         # The gate still catches the load-bearing regressions on the two
         # eager-temp strategies (Local SAW-008, SFTP SAW-009) and consumes
-        # nothing extra on the vacuous fixtures. HNS upload/rename-failure
-        # cleanup (SAW-011 inner branch at `_azure.py:676-679`) needs its
-        # own failure-injection test — tracked as BK-244.
+        # nothing extra on the vacuous fixtures. HNS upload-failure cleanup
+        # (SAW-011 inner branch at `_azure.py` `except Exception` ->
+        # `delete_file()`) is exercised by the real file-ancestor test
+        # `test_errors.py::TestWriteErrorFidelity::
+        # test_open_atomic_under_file_ancestor_raises_invalid_path` (BK-244),
+        # whose orphan-temp scan asserts the same no-leak invariant on the
+        # HNS upload-under-file-ancestor path.
         remaining = [str(fi.path) for fi in backend.list_files("", recursive=True)]
         assert remaining == [], f"orphan temp files after open_atomic failure: {remaining}"
 
