@@ -38,8 +38,14 @@ cost, interop loss — and record one of **Ship / Park / Reject**.
   404 → `NotFound`; 403 and the credential codes (`AccessDenied`,
   `InvalidAccessKeyId`, `SignatureDoesNotMatch`, `ExpiredToken`) →
   `PermissionDenied`; 5xx / endpoint errors → `BackendUnavailable`.
-- **Extra** `s3-boto3 = ["boto3>=1.34"]` — a single dependency, no
-  `aiobotocore`.
+- **Extra (proposed, not landed)** `s3-boto3 = ["boto3>=1.34"]` — a single
+  dependency, no `aiobotocore`. Deliberately *not* declared in `pyproject.toml`
+  yet: declaring it would surface `pip install remote-store[s3-boto3]` in the
+  generated user-facing `FEATURES.md` / tested-versions docs, advertising an
+  install path for a backend that is not registered (a config `type =
+  "s3-boto3"` would not resolve). The lane's tests run on the `boto3` already
+  present in the dev/bench environments; the extra lands with the Ship
+  increment (§ 6).
 - **Conformance fixtures** `s3_boto3_moto` (+ `s3_boto3_moto_strict` for the
   file-ancestor opt-in), wired through the declarative `backends.toml` /
   `fixtures.toml` registry and instantiated directly (no public backend
@@ -189,7 +195,8 @@ docs/wiring/async increment rather than a from-scratch rebuild whenever a
 trigger fires.
 
 **If the user chooses Ship instead**, the increment is: the `_S3Base`
-refactor in § 4, public wiring (`_registry.py`, `_info._BACKEND_EXTRAS`,
+refactor in § 4, declaring the `s3-boto3` extra in `pyproject.toml` (with its
+drift-lock baseline), public wiring (`_registry.py`, `_info._BACKEND_EXTRAS`,
 `backends/__init__.__all__`, regenerated `FEATURES.md`), an
 `AsyncS3Boto3Backend`, a `guides/backends/` page positioning the three lanes
 as peers, and a user-facing CHANGELOG entry — each a follow-up `BK-NNN`.

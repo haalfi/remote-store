@@ -556,6 +556,84 @@
       "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:COPY",
+      "kind": "declares",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:DELETE",
+      "kind": "declares",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:GLOB",
+      "kind": "declares",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:LAZY_READ",
+      "kind": "declares",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:LIST",
+      "kind": "declares",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:METADATA",
+      "kind": "declares",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:MOVE",
+      "kind": "declares",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:READ",
+      "kind": "declares",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:SEEKABLE_READ",
+      "kind": "declares",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:USER_METADATA",
+      "kind": "declares",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:WRITE",
+      "kind": "declares",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:WRITE_RESULT_NATIVE",
+      "kind": "declares",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:ATOMIC_WRITE",
+      "kind": "declares",
       "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
     },
     {
@@ -1211,6 +1289,11 @@
     {
       "dst": "cls:remote_store._backend.Backend",
       "kind": "inherits",
+      "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
+    },
+    {
+      "dst": "cls:remote_store._backend.Backend",
+      "kind": "inherits",
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
     },
     {
@@ -1802,6 +1885,15 @@
       "role": "backend",
       "runtime": "sync",
       "summary": "S3-compatible object storage backend using s3fs."
+    },
+    {
+      "file": "src/remote_store/backends/_s3_boto3.py",
+      "id": "cls:remote_store.backends._s3_boto3.S3Boto3Backend",
+      "kind": "class",
+      "line": 191,
+      "role": "backend",
+      "runtime": "sync",
+      "summary": "S3-compatible backend using boto3 directly (no s3fs / pyarrow)."
     },
     {
       "file": "src/remote_store/backends/_s3_pyarrow.py",

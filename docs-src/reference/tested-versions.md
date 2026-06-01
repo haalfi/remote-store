@@ -71,10 +71,6 @@ _Captured 2026-06-01 on Python 3.13._
 |---|---|
 | `s3fs` | `2026.4.0` |
 
-## `[s3-boto3]`
-
-_First population pending. Run `hatch run drift-check refresh-baseline s3-boto3` on the primary Python and commit the generated `infra/drift-locks/s3-boto3.txt`._
-
 ## `[s3-pyarrow]`
 
 _Captured 2026-06-01 on Python 3.13._
@@ -118,7 +114,3 @@ _Captured 2026-05-25 on Python 3.13._
 |---|---|
 | `pyyaml` | `6.0.3` |
 
-
----
-
-_Sections marked "first population pending" will fill in once a maintainer runs `hatch run drift-check refresh-baseline <extra>` and commits the generated `infra/drift-locks/<extra>.txt`._

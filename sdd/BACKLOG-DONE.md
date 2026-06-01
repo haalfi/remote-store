@@ -47,9 +47,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Built `S3Boto3Backend` (`src/remote_store/backends/_s3_boto3.py`): a standalone,
   boto3-only S3 backend (no `s3fs` / `aiobotocore` / `pyarrow`) with capability
   parity to `S3Backend` minus `ATOMIC_MOVE`, a `get_object` Range-backed seekable
-  reader, and `ClientError`-code → typed-error mapping per ID-200. Extra
-  `s3-boto3 = ["boto3>=1.34"]`; moto conformance fixtures `s3_boto3_moto`
-  (+ strict). Full Stage-1 conformance passes; a mid-stream-abort test proves the
+  reader, and `ClientError`-code → typed-error mapping per ID-200. The
+  `s3-boto3 = ["boto3>=1.34"]` extra is **proposed, not declared** — declaring it
+  would advertise `pip install remote-store[s3-boto3]` in the generated
+  `FEATURES.md` for an unregistered backend, so it is deferred to Ship; the tests
+  run on the `boto3` already in the dev env. moto conformance fixtures
+  `s3_boto3_moto` (+ strict). Full Stage-1 conformance passes; a mid-stream-abort test proves the
   lane does **not** inherit the BUG-214 truncated-commit defect (abort by
   construction). Three-axis analysis and the disposition live in
   [research-s3-boto3-poc.md](research/research-s3-boto3-poc.md).
