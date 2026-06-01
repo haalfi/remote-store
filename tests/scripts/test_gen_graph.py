@@ -280,6 +280,7 @@ def test_async_store_gating_keys_match_async_store_members(gen_graph_module):
         )
 
 
+@pytest.mark.spec("ASYNC-045a")
 def test_async_backend_gating_keys_match_async_backend_members(gen_graph_module):
     """Every key in _ASYNC_BACKEND_GATING must be a real member of AsyncBackend.
 

@@ -99,6 +99,7 @@ class TestHttpRead:
     """HTTP-001, HTTP-002: read operations."""
 
     @pytest.mark.spec("SIO-001")
+    @pytest.mark.spec("HTTP-READ-001")
     def test_read_returns_streaming_binary(self, backend: ReadOnlyHttpBackend) -> None:
         """HTTP-001: read() returns streaming BinaryIO, chunked read works."""
         stream = backend.read("hello.txt")
@@ -120,6 +121,7 @@ class TestHttpRead:
         stream.close()
 
     @pytest.mark.spec("BE-007")
+    @pytest.mark.spec("HTTP-READ-002")
     def test_read_bytes(self, backend: ReadOnlyHttpBackend) -> None:
         """HTTP-002: read_bytes() returns full content."""
         assert backend.read_bytes("hello.txt") == b"hello world"
@@ -141,6 +143,7 @@ class TestHttpExists:
     """HTTP-003: exists(), is_file(), is_folder()."""
 
     @pytest.mark.spec("BE-004")
+    @pytest.mark.spec("HTTP-EXIST-001")
     def test_exists_true(self, backend: ReadOnlyHttpBackend) -> None:
         """HTTP-003: exists() returns True for 200."""
         assert backend.exists("hello.txt") is True
@@ -151,12 +154,14 @@ class TestHttpExists:
         assert backend.exists("nonexistent.txt") is False
 
     @pytest.mark.spec("BE-005")
+    @pytest.mark.spec("HTTP-EXIST-002")
     def test_is_file(self, backend: ReadOnlyHttpBackend) -> None:
         """is_file() matches exists() for HTTP resources."""
         assert backend.is_file("hello.txt") is True
         assert backend.is_file("nonexistent.txt") is False
 
     @pytest.mark.spec("BE-005")
+    @pytest.mark.spec("HTTP-EXIST-003")
     def test_is_folder_always_false(self, backend: ReadOnlyHttpBackend) -> None:
         """HTTP-017: is_folder() always returns False."""
         assert backend.is_folder("hello.txt") is False
@@ -168,6 +173,7 @@ class TestHttpMetadata:
     """HTTP-004, HTTP-005: get_file_info()."""
 
     @pytest.mark.spec("BE-016")
+    @pytest.mark.spec("HTTP-META-001")
     def test_get_file_info_maps_headers(self, backend: ReadOnlyHttpBackend) -> None:
         """HTTP-004: get_file_info() maps headers to FileInfo fields."""
         fi = backend.get_file_info("hello.txt")
@@ -180,6 +186,7 @@ class TestHttpMetadata:
         assert "headers" in fi.extra
 
     @pytest.mark.spec("BE-016")
+    @pytest.mark.spec("HTTP-META-003")
     def test_get_file_info_missing_headers(self, backend: ReadOnlyHttpBackend) -> None:
         """HTTP-005: Missing Content-Length/Last-Modified handled gracefully."""
         fi = backend.get_file_info("no-headers.txt")
@@ -196,6 +203,7 @@ class TestHttpMetadata:
             backend.get_file_info("nonexistent.txt")
 
     @pytest.mark.spec("BE-017")
+    @pytest.mark.spec("HTTP-META-002")
     def test_get_folder_info_always_not_found(self, backend: ReadOnlyHttpBackend) -> None:
         """get_folder_info() always raises NotFound."""
         with pytest.raises(NotFound):
@@ -214,6 +222,7 @@ class TestHttpErrorMapping:
             pytest.param(500, "broken.txt", BackendUnavailable, id="500-backend-unavailable"),
         ],
     )
+    @pytest.mark.spec("HTTP-ERR-001")
     def test_http_status_error_mapping(self, httpserver: HTTPServer, status: int, path: str, error_type: type) -> None:
         httpserver.expect_request(f"/err/{path}", method="GET").respond_with_data(b"", status=status)
         b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/err/"), http_client="urllib")
@@ -225,6 +234,7 @@ class TestHttpPaths:
     """HTTP-007, HTTP-008, HTTP-009: path handling."""
 
     @pytest.mark.spec("NPR-003")
+    @pytest.mark.spec("HTTP-PATH-002")
     def test_native_path_returns_full_url(self, backend: ReadOnlyHttpBackend) -> None:
         """HTTP-007: native_path() returns full URL."""
         url = backend.native_path("population/2024.csv")
@@ -232,6 +242,7 @@ class TestHttpPaths:
         assert url.startswith("http://")
 
     @pytest.mark.spec("NPR-003")
+    @pytest.mark.spec("HTTP-PATH-003")
     def test_to_key_strips_base_url(self, backend: ReadOnlyHttpBackend) -> None:
         """HTTP-008: to_key() strips base_url prefix."""
         url = backend.native_path("data/file.csv")
@@ -239,11 +250,13 @@ class TestHttpPaths:
         assert key == "data/file.csv"
 
     @pytest.mark.spec("NPR-003")
+    @pytest.mark.spec("HTTP-PATH-004")
     def test_native_path_round_trip(self, backend: ReadOnlyHttpBackend) -> None:
         """Round-trip: to_key(native_path(key)) == key."""
         key = "some/nested/path.txt"
         assert backend.to_key(backend.native_path(key)) == key
 
+    @pytest.mark.spec("HTTP-PATH-001")
     def test_path_with_special_characters(self, httpserver: HTTPServer) -> None:
         """HTTP-009: Special characters are URL-encoded."""
         from werkzeug.wrappers import Response as WerkzeugResponse
@@ -306,6 +319,7 @@ class TestHttpCustomHeaders:
 class TestHttpTimeout:
     """HTTP-012: Timeout raises BackendUnavailable."""
 
+    @pytest.mark.spec("HTTP-ERR-002")
     def test_timeout_raises_backend_unavailable(self, httpserver: HTTPServer) -> None:
         """HTTP-012: Connection timeout raises BackendUnavailable."""
         import threading
@@ -335,6 +349,7 @@ class TestHttpHealthCheck:
     """HTTP-013: check_health()."""
 
     @pytest.mark.spec("BE-020")
+    @pytest.mark.spec("HTTP-HEALTH-001")
     def test_check_health_success(self, httpserver: HTTPServer) -> None:
         """HTTP-013: check_health() sends HEAD to base_url."""
         httpserver.expect_request("/health/", method="HEAD").respond_with_data(b"", status=200)
@@ -366,6 +381,7 @@ class TestHttpUnsupportedOperations:
             pytest.param("copy", ("a.txt", "b.txt"), id="copy"),
         ],
     )
+    @pytest.mark.spec("HTTP-UNSUP-001")
     def test_unsupported_op_raises(self, backend: ReadOnlyHttpBackend, method: str, args: tuple) -> None:
         with pytest.raises(CapabilityNotSupported):
             getattr(backend, method)(*args)
@@ -387,12 +403,14 @@ class TestHttpLifecycle:
     """HTTP-015: close() and transport."""
 
     @pytest.mark.spec("BE-020")
+    @pytest.mark.spec("HTTP-LIFE-001")
     def test_close_is_callable(self, backend: ReadOnlyHttpBackend) -> None:
         """HTTP-015: close() is callable and safe."""
         backend.close()
         result = backend.close()  # Double-close is safe
         assert result is None
 
+    @pytest.mark.spec("HTTP-LIFE-002")
     def test_unwrap_urllib_transport(self, backend: ReadOnlyHttpBackend) -> None:
         """unwrap(UrllibTransport) returns the transport."""
         transport = backend.unwrap(UrllibTransport)
@@ -407,12 +425,14 @@ class TestHttpLifecycle:
 class TestHttpTransportDetection:
     """HTTP-016: Transport auto-detection."""
 
+    @pytest.mark.spec("HTTP-TR-002")
     def test_urllib_is_default(self, httpserver: HTTPServer) -> None:
         """HTTP-016: urllib is the baseline fallback."""
         httpserver.expect_request("/detect/test.txt").respond_with_data(b"ok")
         b = ReadOnlyHttpBackend(base_url=httpserver.url_for("/detect/"), http_client="urllib")
         assert b.read_bytes("test.txt") == b"ok"
 
+    @pytest.mark.spec("HTTP-TR-003")
     def test_invalid_http_client_raises(self) -> None:
         """Unknown http_client raises ValueError."""
         with pytest.raises(ValueError, match="Unknown http_client"):
@@ -422,6 +442,7 @@ class TestHttpTransportDetection:
 class TestHttpConstructor:
     """Constructor validation and normalization."""
 
+    @pytest.mark.spec("HTTP-CON-002")
     def test_trailing_slash_normalization(self) -> None:
         """base_url gets trailing slash added if missing."""
         b = ReadOnlyHttpBackend(base_url="http://example.com/data", http_client="urllib")
@@ -556,6 +577,7 @@ class TestHttpxStreamAdapter:
         b = ReadOnlyHttpBackend(base_url="https://example.com/", http_client="urllib")
         assert b.native_path("") == "https://example.com/"
 
+    @pytest.mark.spec("HTTP-CRED-001")
     def test_repr_masks_headers(self) -> None:
         """AF-008: repr masks header values."""
         b = ReadOnlyHttpBackend(
@@ -586,6 +608,7 @@ class TestHttpxStreamAdapter:
 class TestHttpRetry:
     """HTTP-RETRY-001: Retry with backoff and Retry-After."""
 
+    @pytest.mark.spec("HTTP-RETRY-001")
     def test_retry_on_transient_status(self, httpserver: HTTPServer) -> None:
         """Transient 503 is retried and succeeds on next attempt."""
         from werkzeug.wrappers import Response as WerkzeugResponse

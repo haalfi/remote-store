@@ -124,14 +124,29 @@ phases:
         read_type: gate
         outcome: misleading
         extract: "WR-014..017 are 'Moved to EW-001..004' cross-reference stubs (ADR-0008) -- phantom declarations the gate flags as drift but cannot be WR-marked; held for de-registration/allowlist, not backfill"
+  - id: implement_http_async_sql
+    name: Backfill HTTP/Async/SQL marks (group 5)
+    steps:
+      - file: tests/backends/http/test_config.py
+        section: "ReadOnlyHttpBackend tests (HTTP-CON-002/PATH/READ/EXIST/META/UNSUP/ERR/HEALTH/LIFE/CRED/RETRY/TR-002/003)"
+        read_type: reference
+        extract: "23 HTTP-* ride the dedicated http tests beside BE-*/NPR-*/SIO-* siblings; HTTP-TR-001 held (HttpTransport protocol shape, no structural assertion)"
+      - file: tests/backends/azure/aio/test_config.py
+        section: "ASYNC-070/071/072/073/076/078/079 (Phase-2 AsyncAzure restatements)"
+        read_type: reference
+        extract: "ASYNC-070..079 ride the async-azure tests carrying ASYNC-001..024 marks (like AZ-* rode BE-*); ASYNC-045a on test_gen_graph, ASYNC-052f on async head; held: ASYNC-043 (delegation design), 074 (non-HNS materialization untested), 077 (shared-helpers code-org)"
+      - file: tests/backends/sqlblob/test_config.py
+        section: "test_close_owned_engine (SQL-QUERY-061), test_sqlite_wal_mode (SQL-QUERY-063)"
+        read_type: reference
+        extract: "SQL-QUERY-061/063 ride the SqlBlob shared-base close/WAL tests (inherited _SQLAlchemyBaseBackend); SQL-BLOB-011 on custom-table, SQL-QUERY-010 on read-not-found; held: SQL-BLOB-070/071 + SQL-QUERY-090/091 (Performance-section perf/design)"
   - id: verify
     name: Gate + prune
     steps:
       - file: scripts/check_spec_marks.py
         section: "_BASELINE (all cluster blocks)"
         read_type: verify
-        extract: "Groups 1-4: pruned 66 landed IDs cumulative; kept 45 held rows baselined (type-(d)/no-assertion: design/meta, capability-gate raises, perf tables, moved-EW stubs)"
+        extract: "Groups 1-5 (all clusters): pruned 102 landed IDs cumulative; kept 57 baselined (53 held-for-disposition across clusters + 4 AW-* never grouped) -- type-(d)/no-assertion: design/meta, capability-gate raises, perf tables, moved-EW stubs, protocol shapes"
       - file: tests/backends/conformance/test_io.py
         section: "(full)"
         read_type: verify
-        extract: "Gate: 159 -> 93 violations, 748 mark-cited IDs, all remaining baselined (exit 0); pytest memory/local green"
+        extract: "Gate: 159 -> 57 violations, 784 mark-cited IDs, all remaining baselined (exit 0); pytest group-5 files 678 passed"
