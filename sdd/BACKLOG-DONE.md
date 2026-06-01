@@ -8,6 +8,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-251 — Spec-mark CI gate (`check_spec_marks.py`)**
+  spec: — · effort: M · audience: library.maintainer, contributor.tooling
+  Root-cause gate for the traceability drift audit-015 exposed. `scripts/check_spec_marks.py`
+  maps every spec ID declared in `sdd/specs/` (headings + `ID`-column requirement tables) to
+  its `@pytest.mark.spec(...)` usage across the whole `tests/` tree, and fails on three modes:
+  **drift** (a shipped, non-allowlisted spec ID no mark cites), **stale** (a mark citing an ID
+  no spec declares — the audit's `HTTP-001`), and **duplicate** (an ID declared twice — the
+  `STORE-015` collision). Dual-wired into the `lint` script and the lint CI job.
+  - **Baseline, not big-bang.** Mirrors `check_formal_trace.py`: a checked-in `_BASELINE` of
+    the 166 violations known at landing (165 drift owed to BK-252, plus the `STORE-015`
+    duplicate owed to BK-250). A violation outside the baseline fails (new drift); a stale
+    baseline entry fails (the gap closed) — so the baseline self-prunes as BK-252/BK-250 land.
+  - **Allowlist.** Two classes of declared ID are excused from drift: type-(d) design/meta/
+    deferred IDs (seeded from the audit addendum's (d) rows — TLS Phase 2, ext.parquet
+    Dagster-v2, async `read_seekable`/`open_atomic` deferrals, graph retry, doc-framework and
+    testing-process principles), and implementation-pending Graph IDs (`GR-*`, `ERR-013`) owned
+    by ID-127 and absent from `FEATURES.md`.
+  - **Non-spec marker namespaces.** `@pytest.mark.spec(...)` is used repo-wide for backlog
+    provenance (`BK-/BUG-/ID-/AF-/BL-/UC-NNN`) and docs-framework gate codes (`G-01..G-07`);
+    both are excluded from the stale check (they cite real tracked artifacts, not spec
+    sections). The extractor also splits comma-joined ID strings (`spec("DAG-002,DAG-003")`).
+  - **One genuine stale fixed in-PR:** `tests/test_examples.py` cited a non-existent `HTTP-001`;
+    repointed to `HTTP-CON-001`, the construction section the HTTP demo exercises.
+  - Test-first guard at `tests/scripts/test_check_spec_marks.py` (extractors, drift/stale/dup,
+    allowlist, comma-split, namespace exclusions, baseline shrink, repo-is-green).
+
 - [x] **BUG-214 — S3 `write_atomic` commits a truncated object on mid-stream content failure**
   spec: S3-010, S3PA-013, AW-001, AW-007 · effort: S · audience: user.api
   Found by the ID-200 audit (see

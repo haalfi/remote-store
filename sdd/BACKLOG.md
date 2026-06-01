@@ -619,24 +619,14 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
     (principle 5) as part of the HTTP-CON-004 test.
   The ~57 unbuilt-Graph IDs (`GR-*`, `ERR-013`) are owned by ID-127, not this item.
 
-- [ ] **BK-251 — Spec-mark CI gate (`check_spec_marks.py`)**
-  spec: — · effort: M · audience: library.maintainer
-  Root-cause fix for the traceability drift audit-015 exposed: nothing enforces that a
-  shipped spec ID carries a test mark, so marks rot (the audit found a stale `HTTP-001`
-  and the duplicate `STORE-015`). Add `scripts/check_spec_marks.py` mapping every
-  shipped spec ID to its `@pytest.mark.spec(...)` and failing on unmarked/stale IDs;
-  dual-wire into the `lint` script and the lint CI job (per the check-script
-  convention). Needs an allowlist for type-(d) IDs (design/meta/deferred) and for
-  implementation-pending backends absent from `FEATURES.md` (the Graph/ID-127
-  exclusion). Land before BK-252 so the backfill is ratcheted, not re-accumulated.
-
 - [ ] **BK-252 — Bulk spec-mark backfill (~127 type-(b) labels)**
   spec: — · effort: L · audience: library.maintainer
   The mechanical slice of audit-015: ~127 invariants whose behavior is already tested
   (largely via cross-backend conformance under sibling marks) but lack the
   spec-file-specific `@pytest.mark.spec(...)`. Backfill per spec-cluster — Azure (012)
   is the cleanest start (every `AZ-*` rides a `BE-*`/`GLOB-*` test). Gated by **BK-251**
-  (the gate) and the **BK-250** STORE-015 renumber. Verify each mark against the named
+  (the gate, landed — see BACKLOG-DONE.md; its `_BASELINE` is the worklist and shrinks as
+  marks land) and the **BK-250** STORE-015 renumber. Verify each mark against the named
   test before stamping; do not rubber-stamp. See the addendum's type-(b) caveats
   (`SQL-QUERY-061/063` ride shared-base coverage; `GLOB-019` depends on fixture liveness).
 
