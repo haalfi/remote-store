@@ -21,12 +21,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     fixed several mark-placement slips (BE-011→hold, BE-023/DAG-001/HTTP-TR-002/003
     relocated) — verify-against-the-named-test, not rubber-stamp.
   - **Disposition (final PR).** The 57 residual rows were resolved, not deferred:
-    **36 allowlisted** into `_ALLOWLIST_DESIGN` (32 type-(d) design/meta/perf —
-    incl. CFG-007/AW-006 reclassified — plus the 4 `WR-014..017` moved-to-`EW-001..004`
-    cross-reference stubs, ADR-0008), and **21 genuine type-(a) coverage gaps closed
+    **35 allowlisted** into `_ALLOWLIST_DESIGN` (31 type-(d) design/meta/perf —
+    incl. CFG-007 reclassified — plus the 4 `WR-014..017` moved-to-`EW-001..004`
+    cross-reference stubs, ADR-0008), and **22 genuine type-(a) coverage gaps closed
     with new tests** (STORE-007/010, BE-011 [+AW-002/007], ITER-002, MEM-001/005,
-    PA-026, AW-005, S3-001/NPR-007, S3PA-001/007, PING-009, SAW-010, SEEK-007, AZ-010,
-    ASYNC-074).
+    PA-026, AW-005, AW-006, S3-001/NPR-007, S3PA-001/007, PING-009, SAW-010, SEEK-007,
+    AZ-010, ASYNC-074). AW-006 (Local `mkstemp`+`os.replace`) was first allowlisted,
+    then moved to a real mechanism test in review.
   - **Spec defect found & fixed (ASYNC-074).** Writing the ASYNC-074 test reproduced
     the real behavior: non-HNS `write()` streams the `AsyncIterator` straight to
     `upload_blob` (BUG-165, bounded memory) — it does **not** materialize to bytes as

@@ -221,7 +221,6 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         "MEM-026",  # 013 — atomicity scope (no multi-op transaction; matches all backends)
         "RES-001",  # 043 — resolution opacity (problem-statement section, not an invariant)
         "CFG-007",  # 002 — config-as-code priority, no env-var merge (ADR-0002 design policy)
-        "AW-006",  # 007 — Local write_atomic mechanism (mkstemp + os.replace; behavior is AW-001)
         # Meta / process / spec-update sections.
         "RTXT-002",  # 028 — read_text: no Backend ABC change (Store-level convenience only)
         "RTXT-003",  # 028 — read_text added to the STORE-008 API surface

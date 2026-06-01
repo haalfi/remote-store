@@ -18,7 +18,7 @@ audience:
   - library.maintainer
 surprising_ripples:
   - sdd/specs/029-async-store-backend-api.md  # ASYNC-074 spec text was stale (said "materialize"; code streams the AsyncIterator straight to upload_blob per BUG-165) — found while writing the type-(a) test, corrected here
-review_rounds: 4
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
@@ -158,11 +158,11 @@ phases:
       - file: scripts/check_spec_marks.py
         section: "_ALLOWLIST_DESIGN (BK-252 disposition block)"
         read_type: reference
-        extract: "Allowlisted 36 rows: 32 type-(d) design/meta/perf (incl. CFG-007, AW-006 reclassified) + 4 moved-to-EW WR-014..017 stubs. Drained from _BASELINE."
+        extract: "Allowlisted 35 rows: 31 type-(d) design/meta/perf (incl. CFG-007 reclassified) + 4 moved-to-EW WR-014..017 stubs. (AW-006 was first allowlisted, then moved to a real mark in #728 review -- its mkstemp+os.replace mechanism is directly testable.) Drained from _BASELINE."
       - file: tests/test_store.py
         section: "TestStoreEquality/ThreadSafety/CapabilityGates"
         read_type: reference
-        extract: "New type-(a) tests: STORE-007/010, BE-011 (+ AW-002/AW-007 same raise), ITER-002; plus MEM-001/005, PA-026, AW-005, S3-001/NPR-007, S3PA-001/007, PING-009, SAW-010, SEEK-007, AZ-010, ASYNC-074 across their files"
+        extract: "New type-(a) tests (22): STORE-007/010, BE-011 (+ AW-002/AW-007 same raise), ITER-002; plus MEM-001/005, PA-026, AW-005, AW-006 (Local mkstemp+os.replace, added in review), S3-001/NPR-007, S3PA-001/007, PING-009, SAW-010, SEEK-007, AZ-010, ASYNC-074 across their files"
       - file: sdd/specs/029-async-store-backend-api.md
         section: "ASYNC-074"
         read_type: verify
@@ -171,4 +171,4 @@ phases:
       - file: scripts/check_spec_marks.py
         section: "_BASELINE (now empty)"
         read_type: verify
-        extract: "Final: _BASELINE drained to frozenset(); gate reports 0 violations ('spec <-> mark traceability is complete'). 803 mark-cited IDs. BK-252 done."
+        extract: "Final: _BASELINE drained to frozenset(); gate reports 0 violations ('spec <-> mark traceability is complete'). 804 mark-cited IDs. BK-252 done."
