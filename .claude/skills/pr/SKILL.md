@@ -35,7 +35,7 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
 
 2c. **Coverage gate:** Check `git diff origin/<BASE>...HEAD --name-only` for files under `src/`, `tests/`, or `examples/`.
     - If any match: run `hatch run test-cov-strict` (enforces 95%; needs Azurite running locally — see CLAUDE.md § Coverage gate). If it fails, stop and report which files are below threshold. Do **not** create the PR until coverage passes.
-    - If none match (docs/config-only): skip coverage.
+    - If none match (docs/config-only): run `hatch run test`. A `scripts/`-only diff lands here, yet scripts have guard tests under `tests/scripts/` (e.g. source-order assertions) that the strict-coverage trigger never fires for — so still run the suite. If it fails, stop and report.
 
 2d. **Trace gate:** Extract backlog IDs from `git log origin/<BASE>..HEAD --format=%s`
     using the pattern `^([A-Z]+-\d+[a-z]?)[:\s]` against each subject — the ID
