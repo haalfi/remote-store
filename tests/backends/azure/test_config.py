@@ -559,6 +559,7 @@ class TestAzureDeleteFolderPerformance:
     """BUG-157: non-HNS delete_folder should not materialize all blobs for existence check."""
 
     @pytest.mark.spec("BE-021")
+    @pytest.mark.spec("AZ-016")
     def test_delete_folder_non_recursive_stops_after_first_blob(self) -> None:
         """Non-recursive delete_folder should stop iterating after finding one blob."""
         backend = _make_backend()
@@ -658,6 +659,7 @@ class TestAzureHNSPaths:
         backend._fs_instance = MagicMock(spec=FileSystemClient)
         return backend
 
+    @pytest.mark.spec("AZ-012")
     def test_exists_checks_directory_on_hns(self) -> None:
         from azure.core.exceptions import ResourceNotFoundError
 
@@ -684,6 +686,7 @@ class TestAzureHNSPaths:
         backend._fs_instance.get_directory_client.return_value = dc
         assert backend.exists("missing") is False
 
+    @pytest.mark.spec("AZ-008")
     def test_is_folder_uses_directory_client_on_hns(self) -> None:
         backend = self._make_hns_backend()
         dc = MagicMock(spec=DataLakeDirectoryClient)
@@ -695,6 +698,8 @@ class TestAzureHNSPaths:
         dc.get_directory_properties.assert_called_once()
 
     @pytest.mark.spec("BE-005")
+    @pytest.mark.spec("AZ-013")
+    @pytest.mark.spec("AZ-036")
     def test_is_folder_returns_false_for_file_path_on_hns(self) -> None:
         """BUG-203: is_folder must return False when the path is a file, not a directory.
 
@@ -711,6 +716,8 @@ class TestAzureHNSPaths:
         assert backend.is_folder("a.txt") is False
 
     @pytest.mark.spec("BE-005")
+    @pytest.mark.spec("AZ-013")
+    @pytest.mark.spec("AZ-036")
     def test_is_file_returns_false_for_hns_directory_blob(self) -> None:
         """BUG-203 (symmetric): is_file must return False for an HNS directory path.
 
@@ -725,6 +732,7 @@ class TestAzureHNSPaths:
         backend._cc_instance.get_blob_client.return_value = bc
         assert backend.is_file("a-dir") is False
 
+    @pytest.mark.spec("AZ-017")
     def test_move_uses_rename_on_hns(self) -> None:
         backend = self._make_hns_backend()
         # src blob exists
@@ -1451,6 +1459,7 @@ class TestAzureGlob:
 
     @_needs_azurite
     @pytest.mark.spec("GLOB-020")
+    @pytest.mark.spec("AZ-019")
     def test_glob_star_csv(self, azure_backend: Backend) -> None:
         self._populate(azure_backend)
         results = sorted(str(f.path) for f in azure_backend.glob("*.csv"))
@@ -1465,6 +1474,7 @@ class TestAzureGlob:
 
     @_needs_azurite
     @pytest.mark.spec("GLOB-020")
+    @pytest.mark.spec("AZ-019")
     def test_glob_subdirectory(self, azure_backend: Backend) -> None:
         self._populate(azure_backend)
         results = sorted(str(f.path) for f in azure_backend.glob("data/*.csv"))

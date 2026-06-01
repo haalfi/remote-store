@@ -553,7 +553,7 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Maintenance / Long-horizon
 
-- [ ] **BK-252 — Bulk spec-mark backfill (~127 type-(b) labels)**
+- [~] **BK-252 — Bulk spec-mark backfill (~127 type-(b) labels)**
   spec: — · effort: L · audience: library.maintainer
   The mechanical slice of audit-015: ~127 invariants whose behavior is already tested
   (largely via cross-backend conformance under sibling marks) but lack the
@@ -564,6 +564,11 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `STORE-018`, an ordinary drift row this item backfills). Verify each mark against the named
   test before stamping; do not rubber-stamp. See the addendum's type-(b) caveats
   (`SQL-QUERY-061/063` ride shared-base coverage; `GLOB-019` depends on fixture liveness).
+  Landing in 5 grouped PRs (159 baselined → backfill per cluster). **PR 1 (backend-restatement,
+  in progress):** 18 of 23 marks landed (gate 159 → 141); 5 rows held for a disposition call —
+  `AZ-007`/`S3-001`/`S3PA-001` (umbrella constructor-scope invariants, no single canonical test)
+  and `AZ-010`/`S3PA-007` (no test directly asserts the sub-clause: non-HNS no-folder-marker /
+  s3→pyarrow credential translation). Candidates for type-(d) allowlist or a partial-coverage note.
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer

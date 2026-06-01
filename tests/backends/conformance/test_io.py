@@ -48,6 +48,9 @@ class TestBackendFileFolder:
         assert backend.is_folder("a.txt") is False
 
     @pytest.mark.spec("BE-005")
+    @pytest.mark.spec("AZ-009")
+    @pytest.mark.spec("S3-006")
+    @pytest.mark.spec("S3PA-008")
     def test_is_folder(self, backend: Backend) -> None:
         backend.write("dir/a.txt", b"data")
         assert backend.is_folder("dir") is True
@@ -145,6 +148,8 @@ class TestBackendDelete:
 
     @pytest.mark.spec("BE-013")
     @pytest.mark.spec("SFTP-016")
+    @pytest.mark.spec("AZ-015")
+    @pytest.mark.spec("S3-011")
     def test_delete_folder_recursive(self, backend: Backend) -> None:
         _require(backend, Capability.WRITE)
         _seed(backend, {"dir2/a.txt": b"a", "dir2/sub/b.txt": b"b"})

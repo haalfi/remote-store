@@ -29,6 +29,7 @@ class TestBackendMetadata:
         assert fi.size == 11
 
     @pytest.mark.spec("BE-017")
+    @pytest.mark.spec("AZ-024")
     def test_get_folder_info(self, backend: Backend) -> None:
         _seed(backend, {"fi/a.txt": b"aaa", "fi/b.txt": b"bb"})
         fi = backend.get_folder_info("fi")

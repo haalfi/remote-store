@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=./_schema.yml
+id: BK-252
+title: "Bulk spec-mark backfill (type-(b) labels)"
+trigger: >-
+  The BK-251 gate (scripts/check_spec_marks.py) baselined 159 shipped spec
+  IDs whose behavior is already tested under sibling/parent marks but which
+  carry no spec-file-specific @pytest.mark.spec(...). The baseline is the
+  worklist; each backfilled mark must self-prune its baseline entry. This
+  trace covers PR 1 of 5: the backend-restatement cluster (AZ-*, S3-*,
+  S3PA-*) whose IDs ride cross-backend conformance / azure-specific tests.
+source_items:
+  - BK-252
+  - BK-251
+  - BK-250
+audience:
+  - library.maintainer
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-252"
+        read_type: gate
+        extract: "Worklist = check_spec_marks.py _BASELINE; Azure cleanest start; verify each mark, do not rubber-stamp"
+      - file: sdd/audits/audit-015-spec-traceability.md
+        section: "Verified addendum / Findings (012, 008, 011 rows)"
+        read_type: reference
+        extract: "Per-ID riding-mark map (AZ-012 rides BE-004, AZ-013 BE-005, AZ-019 GLOB-020, etc.); type-(b) caveats"
+      - file: scripts/check_spec_marks.py
+        section: "_BASELINE drift entries (AZ-/S3-/S3PA-)"
+        read_type: gate
+        extract: "23 backend-restatement IDs baselined; pruning a landed ID's entry is mandatory (self-prune contract)"
+  - id: classify
+    name: Confirm placement convention
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "test_write_atomic_content_failure_leaves_no_partial, test_copy"
+        read_type: gate
+        extract: "Precedent: cross-backend conformance tests stack backend-specific marks (AW-001+S3-010+S3PA-013; BE-019+SFTP-019+SQL-BLOB-032)"
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths, TestAzureGlob"
+        read_type: reference
+        extract: "Azure-specific mock-HNS tests already carry BE-005/BE-018/GLOB-020; honest home for HNS-conditional AZ-* (AZ-008/012/013/036)"
+  - id: implement
+    name: Backfill marks
+    steps:
+      - file: tests/backends/azure/test_config.py
+        section: "AZ-008, AZ-012, AZ-013, AZ-016, AZ-017, AZ-019, AZ-036"
+        read_type: reference
+        extract: "Stamped AZ HNS-conditional + glob marks on the azure tests that directly assert each branch"
+      - file: tests/backends/conformance/test_io.py
+        section: "test_is_folder (AZ-009/S3-006/S3PA-008), test_delete_folder_recursive (AZ-015/S3-011)"
+        read_type: reference
+        extract: "Virtual-folder + recursive-delete marks ride BE-005/BE-013 (run for s3/s3pa/azure fixtures)"
+      - file: tests/backends/conformance/test_atomic.py
+        section: "test_move (AZ-?/S3-013/S3PA-015), test_copy (AZ-018/S3-014/S3PA-014)"
+        read_type: reference
+        extract: "Move/copy mechanism marks ride BE-018/BE-019"
+      - file: tests/backends/conformance/test_metadata.py
+        section: "test_get_folder_info (AZ-024)"
+        read_type: reference
+        extract: "get_folder_info aggregate rides BE-017"
+  - id: verify
+    name: Gate + prune
+    steps:
+      - file: scripts/check_spec_marks.py
+        section: "_BASELINE (AZ/S3/S3PA blocks)"
+        read_type: verify
+        extract: "Pruned the 18 landed IDs; kept 5 held rows (AZ-007, AZ-010, S3-001, S3PA-001, S3PA-007) baselined"
+      - file: tests/backends/conformance/test_io.py
+        section: "(full)"
+        read_type: verify
+        extract: "Gate: 159 -> 141 violations, 700 mark-cited IDs, all remaining baselined (exit 0)"
