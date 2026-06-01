@@ -260,6 +260,7 @@ class TestRead:
         assert table.num_rows == 1
         assert table.column("total").to_pylist()[0] == 450.0
 
+    @pytest.mark.spec("SQL-QUERY-010")
     def test_read_not_found(self, backend: SQLQueryBackend) -> None:
         with pytest.raises(NotFound, match="No query registered"):
             backend.read("nonexistent.parquet")

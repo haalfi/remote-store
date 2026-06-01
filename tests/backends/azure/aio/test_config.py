@@ -151,6 +151,7 @@ class TestAsyncAzureConstruction:
         assert backend.name == "async-azure"
 
     @pytest.mark.spec("ASYNC-003")
+    @pytest.mark.spec("ASYNC-076")
     def test_capabilities_include_all_except_seekable_read(self) -> None:
         caps = _make_backend().capabilities
         # Behavioral: verify capabilities answer supports() correctly (not just type)
@@ -209,6 +210,7 @@ class TestAsyncAzureConstruction:
         assert backend.name == "async-azure"
 
     @pytest.mark.spec("ASYNC-001")
+    @pytest.mark.spec("ASYNC-071")
     def test_lazy_connection(self) -> None:
         """Construction must not make network calls."""
         backend = _make_backend(container="any-container", account_name="nonexistent")
@@ -232,6 +234,7 @@ class TestAsyncAzureHNSDetection:
             pytest.param(None, Exception("network error"), False, id="detection-failure-fallback"),
         ],
     )
+    @pytest.mark.spec("ASYNC-070")
     async def test_hns_detection(self, ret: Any, side_eff: Any, expected: bool) -> None:
         backend = _make_backend()
         mock_client = AsyncMock(spec=BlobServiceClient)
@@ -306,6 +309,7 @@ class TestAsyncAzureErrorMapping:
             ),
         ],
     )
+    @pytest.mark.spec("ASYNC-079")
     def test_classify_direct(self, exc_factory: Any, expected_type: type) -> None:
         mapped = classify_azure_error(exc_factory(), "file.txt", "async-azure")
         assert isinstance(mapped, expected_type)
@@ -454,6 +458,7 @@ class TestAsyncAzureReadWrite:
         assert bc.upload_blob.call_count == 1
 
     @pytest.mark.spec("ASYNC-020")
+    @pytest.mark.spec("ASYNC-072")
     async def test_write_atomic_non_hns(self) -> None:
         """Non-HNS write_atomic delegates to write (PUT is atomic)."""
         backend, cc, bc = _setup_non_hns_backend()
@@ -714,6 +719,7 @@ class TestAsyncAzureMoveAndCopy:
     """ASYNC-018/019: move and copy operations."""
 
     @pytest.mark.spec("ASYNC-018")
+    @pytest.mark.spec("ASYNC-073")
     async def test_move_non_hns(self) -> None:
         """Non-HNS move: copy_from_url + delete."""
         backend, cc, bc = _setup_non_hns_backend()
@@ -2364,6 +2370,7 @@ class TestAsyncAzureCloseCredential:
     """aclose() cleans up credential resources."""
 
     @pytest.mark.spec("ASYNC-001")
+    @pytest.mark.spec("ASYNC-078")
     async def test_close_closes_credential(self) -> None:
         backend = _make_backend()
         mock_cred = MagicMock(spec=["close"])

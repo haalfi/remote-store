@@ -871,6 +871,7 @@ class TestAsyncStoreHead:
     def async_store(self) -> AsyncStore:
         return AsyncStore(AsyncMemoryBackend(), root_path="data")
 
+    @pytest.mark.spec("ASYNC-052f")
     async def test_head_returns_sidecar_write_result(self, async_store: AsyncStore) -> None:
         from remote_store._models import WriteResult
 

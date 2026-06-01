@@ -129,6 +129,7 @@ class TestConstruction:
             SQLBlobBackend(url="sqlite:///:memory:", engine=engine)
         engine.dispose()
 
+    @pytest.mark.spec("SQL-BLOB-011")
     def test_custom_table_name(self) -> None:
         b = SQLBlobBackend(url="sqlite:///:memory:", table_name="my_table")
         assert "my_table" in repr(b)
@@ -433,6 +434,7 @@ def test_check_health(backend: SQLBlobBackend) -> None:
 
 
 @pytest.mark.spec("SQL-BLOB-041")
+@pytest.mark.spec("SQL-QUERY-061")
 def test_close_owned_engine() -> None:
     # SQL-BLOB-041: close() on an owned engine calls Engine.dispose(), which
     # swaps the connection pool with a fresh one. Probing post-close behaviour
@@ -477,6 +479,7 @@ def test_unwrap_wrong_type(backend: SQLBlobBackend) -> None:
 
 
 @pytest.mark.spec("SQL-BLOB-043")
+@pytest.mark.spec("SQL-QUERY-063")
 def test_sqlite_wal_mode(tmp_path: object) -> None:
     db_path = pathlib.Path(str(tmp_path)) / "test.db"
     b = SQLBlobBackend(url=f"sqlite:///{db_path}")

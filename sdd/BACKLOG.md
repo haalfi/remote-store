@@ -564,14 +564,16 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `STORE-018`, an ordinary drift row this item backfills). Verify each mark against the named
   test before stamping; do not rubber-stamp. See the addendum's type-(b) caveats
   (`SQL-QUERY-061/063` ride shared-base coverage; `GLOB-019` depends on fixture liveness).
-  Landing in grouped clusters on one branch (159 baselined → backfill per cluster). **Groups 1-4
-  done (groups 1-2 merged in #724; groups 3-4 in progress):** 66 marks landed (gate 159 → 93, 748
-  mark-cited IDs) across backend-restatement (AZ/S3/S3PA), core-API/paths (STORE/NPR/BE/CAP/MEM),
-  text/stream/iter/pyarrow (SIO/RTXT/WTXT/ITER/SEEK/PA), and extensions
-  (BATCH/OBS/SAW/DAG/WR/GLOB). **45 rows held for a
-  disposition call** — they are
-  design/meta/perf statements or have no test that asserts the specific clause, so they are
-  type-(d) allowlist candidates rather than backfills:
+  Landing in grouped clusters on one branch (159 baselined → backfill per cluster). **All 5 clusters
+  backfilled (groups 1-2 merged in #724; groups 3-4 in #726; group 5 in progress):** 102 marks landed
+  (gate 159 → 57, 784 mark-cited IDs) across backend-restatement (AZ/S3/S3PA), core-API/paths
+  (STORE/NPR/BE/CAP/MEM), text/stream/iter/pyarrow (SIO/RTXT/WTXT/ITER/SEEK/PA), extensions
+  (BATCH/OBS/SAW/DAG/WR/GLOB), and HTTP/Async/SQL (HTTP-\*, ASYNC-\*, SQL-\*). The mechanical type-(b)
+  backfill is **complete**; the remaining **57 baselined rows need a disposition decision** (NOT
+  type-(b) backfills): 53 held-for-disposition across clusters + 4 `AW-002/005/006/007` (atomic-write
+  IDs never clustered). They are design/meta/perf statements, protocol shapes, moved-`EW` stubs, or
+  have no test asserting the specific clause — type-(d) allowlist / de-registration / new-test
+  candidates. The held set:
   `AZ-007`/`S3-001`/`S3PA-001`/`MEM-001`/`MEM-005` (constructor/scope/registration, no canonical
   assertion); `AZ-010`/`S3PA-007`/`NPR-007` (sub-clause unasserted: non-HNS no-folder-marker /
   s3→pyarrow credential translation / S3 prefix-stripping); `STORE-007`/`STORE-010`/`CAP-007`/`BE-011`/`ITER-002`
@@ -586,7 +588,13 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   entries are cross-reference stubs; real coverage is under `EW-*` marks, so these need
   de-registration or allowlisting, not a `WR-*` mark);
   `MEM-026`/`030`/`031`/`032`/`040`/`041`/`042`/`DS-001`/`DS-003`/`DS-004`
-  (atomicity-scope, conformance/fixture recommendations, perf tables, data-structure rationale).
+  (atomicity-scope, conformance/fixture recommendations, perf tables, data-structure rationale);
+  `HTTP-TR-001` (HttpTransport protocol shape — no structural assertion); `ASYNC-043`/`077`
+  (delegation / shared-helpers code-org — design), `ASYNC-074` (non-HNS AsyncIterator materialization —
+  untested); `SQL-BLOB-070`/`071`, `SQL-QUERY-090`/`091` (Performance-section blob-size / pooling /
+  query-execution / serialization-overhead — perf/design); `AW-002`/`005`/`006`/`007` (atomic-write
+  capability-gate / intermediate-dirs / mkstemp+replace / no-fallback — never clustered; verify before
+  any backfill). **Next step is a maintainer call on this set, not more backfilling.**
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer
