@@ -15,7 +15,7 @@ If `$ARGUMENTS` is empty, the no-args fallback above must have resolved a
 PR number first; use that resolved value below. Do not call the API with
 an empty `pullNumber`.
 
-Call `pull_request_read` with `method: "get"`, `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: <resolved PR number>`. If `state` is `CLOSED` or the PR is merged, stop and ask the user — do not fix stale or typo'd PR numbers.
+Read the PR state via `gh pr view <resolved PR number> --repo haalfi/remote-store --json state,title` (fall back to `pull_request_read` with `method: "get"`, `owner: "haalfi"`, `repo: "remote-store"` when `gh` is unavailable). If `state` is `CLOSED` or the PR is merged, stop and ask the user — do not fix stale or typo'd PR numbers.
 
 ## Step 1: Prepare branch and fetch comments
 
@@ -29,8 +29,12 @@ If approved: `git rebase origin/master` then immediately
 plain fast-forward. Do not rebase silently — `--force-with-lease` is
 destructive to anyone tracking the branch.
 
-For all GitHub API calls in this skill (reading PR data, posting comments, resolving threads),
-use the configured GitHub MCP server. Fall back to `gh api graphql` for thread resolve/unresolve.
+Read PR **content** (diff, files, body) via `gh` CLI when available; read review
+**feedback with resolution state** (the four comment sources below) via the
+GitHub MCP server — content-only `gh` reads miss `isResolved`/`isOutdated`. Post
+comments and resolve threads via MCP, falling back to `gh api graphql` for the
+thread-resolve gap. This split is identical in the main session and any forked
+PR skill — see `sdd/CLAUDE-REFERENCE.md` § GitHub PR I/O split.
 
 **Fetch comments after any rebase, not before.** Line numbers and the
 `isOutdated` flag are computed against the PR's current HEAD; comments

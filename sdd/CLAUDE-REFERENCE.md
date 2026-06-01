@@ -247,6 +247,29 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 
 ---
 
+## GitHub PR I/O split
+
+When reading or writing PR data — in the main session **or** inside a forked PR
+skill (`/rvw-pr`, `/fix-pr`) — split by direction and tool availability. The
+fork-vs-main distinction does **not** change the read tool; the only axis that
+does is whether `gh` is on `PATH`.
+
+| Direction | Tool |
+|-----------|------|
+| Read PR **content** (diff, changed files, body, state) | `gh` CLI (`gh pr view`, `gh pr diff`, `gh pr view --json …`) **when available**; fall back to MCP `pull_request_read` when `gh` is absent (e.g. claude.ai/code) |
+| Read review **feedback with resolution state** (`isResolved`/`isOutdated`) | MCP dual-fetch (`get_review_comments` + `get_comments`) — content-only `gh` reads miss resolution state |
+| **Write** (post review, inline comments) | MCP (`pull_request_review_write`, `add_comment_to_pending_review`) |
+| Resolve/unresolve **threads** | MCP where available; `gh api graphql` mutation for the resolve gap |
+| Search **local repo code** | `Grep` / `Glob` / `Read` — never Bash, never Python |
+| Read **any** PR data via Python | never |
+
+**Why `gh`-preferred for content reads:** quick, skips the MCP round-trip, needs
+no approval prompt. **Why MCP for writes:** posts without an approval prompt and
+avoids the temp-JSON + `gh api --input` dance the no-pipes/no-redirect hook
+forces on CLI writes. Identical in main session and forks.
+
+---
+
 ## Local toolchain
 
 `session-init.sh` auto-installs on Linux+root (claude.ai/code). On-prem: warn only.

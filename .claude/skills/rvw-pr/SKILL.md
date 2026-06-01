@@ -4,13 +4,13 @@ description: Post inline review comments on a GitHub PR. Find real issues only.
 disable-model-invocation: true
 context: fork
 argument-hint: "[PR number] [optional context]"
-allowed-tools: Read, Grep, Glob, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_pull_requests, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
-# Intentional: no Edit, Write, or Bash — review is read-only auditing only
+allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_pull_requests, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
+# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads only (never for fixing or filesystem scouting).
 ---
 
 ## ROLE: You are a REVIEWER. You are NOT an author. You do NOT fix anything.
 
-**IMPORTANT — no local filesystem scouting.** Do NOT use Bash. Do NOT attempt to read or locate memory files, home directories, or project paths. The review context is fully self-contained: GitHub API for the PR, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
+**IMPORTANT — no local filesystem scouting.** Use Bash **only** for `gh` CLI reads of PR content (Steps 0–1); never to fix, write, or locate memory files, home directories, or project paths. The review context is fully self-contained: the PR via `gh`/MCP, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
 
 Your only valuable output is review insights. The only artifact you create is comments on the PR. Findings go in a comment — bugs, gaps, deferrals, follow-ups. Anything else is out of scope for a reviewer.
 
@@ -26,13 +26,13 @@ If `$ARGUMENTS` is empty, the no-args fallback above must have resolved a
 PR number first; use that resolved value below. Do not call the API with
 an empty `pullNumber`.
 
-Call `pull_request_read` with `method: "get"`, `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: <resolved PR number>`. If `state` is `CLOSED` or the PR is merged, stop and ask the user — do not review stale or typo'd PR numbers.
+Read the PR state via `gh pr view <resolved PR number> --repo haalfi/remote-store --json state,title,isDraft` (fall back to `pull_request_read` with `method: "get"`, `owner: "haalfi"`, `repo: "remote-store"` when `gh` is unavailable). If `state` is `CLOSED` or the PR is merged, stop and ask the user — do not review stale or typo'd PR numbers.
 
 ## Step 1: Gather context
 
-For all GitHub API calls in this skill, use the GitHub MCP server tools listed in `allowed-tools`.
+Read PR **content** via `gh` CLI when available; fall back to MCP when `gh` is absent. Use MCP only for the write/post path (Step 4). This split is identical to the main session — see `sdd/CLAUDE-REFERENCE.md` § GitHub PR I/O split. The fork is not an exception.
 
-Use `pull_request_read` with `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: $ARGUMENTS`. Read every changed file **in full** — you need surrounding context.
+Read the diff via `gh pr diff $ARGUMENTS --repo haalfi/remote-store` (fall back to `pull_request_read` when `gh` is unavailable). Read every changed file **in full** for surrounding context — from the local checkout via `Read`, or `gh pr view $ARGUMENTS --json files` / `get_file_contents` for the PR-head version.
 
 ## Step 2: Analyze
 
@@ -44,7 +44,7 @@ Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Con
 
 **Ripple check:** Read `sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist. For each triggered row, verify targets are addressed. File `Ripple:` comments for gaps.
 
-**Search discipline:** Use `Grep` and `Glob` for all local codebase searches. Use `Read` for full file reads. Never use `Bash` or Python scripts to search — only the dedicated search tools.
+**Search discipline:** Use `Grep` and `Glob` for all local codebase searches. Use `Read` for full file reads. Never use `Bash` or Python scripts to search local code — Bash is permitted **only** for `gh` PR-content reads (Steps 0–1).
 
 **Content-rules check (prose changes only):** Apply `sdd/CONTENT-RULES.md`. File findings under `Consistency:`.
 
