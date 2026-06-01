@@ -6181,6 +6181,78 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#verified-addendum-2026-06-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verified addendum (2026-06-01)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Verified addendum (2026-06-01)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#revised-totals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revised totals
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-the-5-untested-shipped-behaviors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        (a) The 5 untested shipped behaviors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#partial-sub-clause-gaps-within-otherwise-covered-invariants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Partial sub-clause gaps (within otherwise-covered invariants)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caveats-on-the-type-b-verdicts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caveats on the type-(b) verdicts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#discovery-follow-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Discovery follow-up
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -9301,6 +9373,78 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#verified-addendum-2026-06-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verified addendum (2026-06-01)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Verified addendum (2026-06-01)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#revised-totals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revised totals
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-the-5-untested-shipped-behaviors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        (a) The 5 untested shipped behaviors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#partial-sub-clause-gaps-within-otherwise-covered-invariants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Partial sub-clause gaps (within otherwise-covered invariants)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caveats-on-the-type-b-verdicts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caveats on the type-(b) verdicts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#discovery-follow-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Discovery follow-up
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -9338,6 +9482,14 @@ Each ID was then searched across the entire <code>tests/</code> tree for a match
 <p><strong>Total:</strong> 226 IDs in the table. Of these: 13 are type (d) (not actionable as mark
 work); 1 is type (c) (spec defect requiring renumber before it can be marked); the
 remaining 212 are type (a) or (b) and actionable.</p>
+<blockquote>
+<p><strong>Superseded by the <a href="#verified-addendum-2026-06-01">Verified addendum</a>.</strong> This
+first-pass split did not separate (a) from (b), and over-counted "actionable".
+Verification resolves the 212 into <strong>5</strong> genuine coverage gaps (a), <strong>~127</strong> label
+backfills (b), and the rest not actionable as mark work (deferred/design-only
+invariants plus the ~57 unbuilt-Graph IDs owned by ID-127). Read the addendum, not
+this line, for the actionable counts.</p>
+</blockquote>
 <hr />
 <h2 id="findings">Findings<a class="headerlink" href="#findings" title="Permanent link">&para;</a></h2>
 <table>
@@ -10180,6 +10332,133 @@ remaining 212 are type (a) or (b) and actionable.</p>
 </tr>
 </tbody>
 </table>
+<hr />
+<h2 id="verified-addendum-2026-06-01">Verified addendum (2026-06-01)<a class="headerlink" href="#verified-addendum-2026-06-01" title="Permanent link">&para;</a></h2>
+<p>The original table classified rows by <em>mark presence</em> and used inconsistent wording
+("No mark, no test" vs. bare "No mark"), which left the actionable count ambiguous:
+212 rows were reported as "type (a) or (b)" without a split between them. This
+addendum resolves that ambiguity. Every row not already proven type (b) ("test
+exists" / "tests use X") was re-verified by reading the invariant text and searching
+the entire <code>tests/</code> tree for <strong>any</strong> test that exercises the behavior, marked or not.</p>
+<p><strong>Method:</strong> per ID — read the invariant, grep the test tree for the behavior (method
+names, class names, keywords; not just the literal ID), classify as A (no test
+anywhere), B (tested under a different/absent mark), or D (not a runtime-testable
+behavior: design principle, meta/process section, or explicitly deferred feature).</p>
+<h3 id="revised-totals">Revised totals<a class="headerlink" href="#revised-totals" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Count</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>(a) Untested shipped behavior</strong></td>
+<td><strong>5</strong></td>
+<td>The real coverage debt — table below</td>
+</tr>
+<tr>
+<td>(b) Tested, mark absent</td>
+<td>~127</td>
+<td>Label gap; behavior runs (largely via cross-backend conformance under sibling marks)</td>
+</tr>
+<tr>
+<td>(d) Not runtime-testable</td>
+<td>~33</td>
+<td>Design principles, meta/process sections, and <strong>deferred</strong> features (TLS Phase 2, ext.parquet Dagster-v2, async <code>read_seekable</code>/<code>open_atomic</code> deferrals, graph retry) — more than the 13 the first pass tagged, because several bare "No mark" rows are deferred or design-only</td>
+</tr>
+<tr>
+<td>Implementation-pending (Graph)</td>
+<td>~57</td>
+<td>Spec 044 <code>GR-001..GR-057</code> + <code>ERR-013</code> describe <code>GraphBackend</code>, which is <strong>not implemented</strong> (absent from source and <code>FEATURES.md</code>). Owned by backlog <strong>ID-127</strong>; tests and marks land when the backend is built. Not traceability debt.</td>
+</tr>
+<tr>
+<td>(c) Spec defect</td>
+<td>1</td>
+<td><code>STORE-015</code> duplicate ID (unchanged from first pass)</td>
+</tr>
+</tbody>
+</table>
+<p>The first pass's "212 actionable" therefore over-counted. Verification resolves it
+into <strong>5 genuine coverage gaps</strong> (a), <strong>~127 mechanical label backfills</strong> (b), and
+<strong>~77 rows that are not actionable as mark work</strong> — ~20 additional deferred/design-only
+invariants (on top of the 13 the first pass already tagged type-(d)) plus the ~57
+unbuilt-Graph IDs owned by ID-127.</p>
+<h3 id="a-the-5-untested-shipped-behaviors">(a) The 5 untested shipped behaviors<a class="headerlink" href="#a-the-5-untested-shipped-behaviors" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Spec</th>
+<th>ID</th>
+<th>Untested behavior</th>
+<th>Evidence / note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>008 / 011</td>
+<td>S3-012</td>
+<td>S3 &amp; S3-PyArrow non-recursive <code>delete_folder</code> on a <strong>non-empty</strong> folder must raise <code>DirectoryNotEmpty</code></td>
+<td>Code raises it (<code>_s3.py:270</code>), but <code>tests/backends/conformance/test_errors.py::...::test_delete_folder_non_recursive_non_empty_raises</code> calls <code>_skip_flat_namespace</code>, skipping S3 and S3PA. SQLBlob has a dedicated test (<code>SQL-BLOB-025</code>); S3/S3PA have none. <strong>Highest-severity gap</strong> (data-safety guard).</td>
+</tr>
+<tr>
+<td>032</td>
+<td>HTTP-CON-004</td>
+<td><code>ReadOnlyHttpBackend.capabilities == {READ, METADATA}</code></td>
+<td>No test asserts the set (conformance checks type + absence of ATOMIC_MOVE/SEEKABLE_READ only). <strong>Three-way divergence:</strong> the runtime constant declares <code>{READ, METADATA, LAZY_READ}</code> (<code>_http.py:41</code>), but both the class docstring (<code>_http.py:215</code>) and spec 032 list <code>{READ, METADATA}</code> — <code>LAZY_READ</code> looks like an accidental addition, not an intended capability, which makes the spec-wins resolution (principle 5) the obvious one. Fix before writing the test.</td>
+</tr>
+<tr>
+<td>022</td>
+<td>SAW-015</td>
+<td><code>ext.otel</code> span over the <code>open_atomic</code> lifecycle</td>
+<td><code>tests/ext/test_otel.py</code> asserts spans for read/write/exists/delete only. The <code>around</code>-hook plumbing for <code>open_atomic</code> is exercised via <code>ext.observe</code>, but no otel-span assertion exists.</td>
+</tr>
+<tr>
+<td>016</td>
+<td>BATCH-023</td>
+<td>Sequential batch preserves input order; concurrent order is non-deterministic</td>
+<td>All concurrent multi-item tests in <code>tests/ext/test_batch.py</code> assert via <code>set(...)</code>, so ordering is never pinned.</td>
+</tr>
+<tr>
+<td>032</td>
+<td>HTTP-CON-003</td>
+<td><code>ReadOnlyHttpBackend.name == "http"</code> (literal)</td>
+<td>Conformance asserts only that <code>name</code> is a non-empty string. Trivial.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="partial-sub-clause-gaps-within-otherwise-covered-invariants">Partial sub-clause gaps (within otherwise-covered invariants)<a class="headerlink" href="#partial-sub-clause-gaps-within-otherwise-covered-invariants" title="Permanent link">&para;</a></h3>
+<p>Not full type (a), but flagged for completeness — these invariants are covered except
+for one clause:</p>
+<ul>
+<li><strong>STORE-007</strong> — share-across-threads is tested (CHILD-010 concurrency test); the <em>immutability</em> clause has no dedicated test (Store is not a frozen dataclass).</li>
+<li><strong>PA-005</strong> — root-as-empty-string mapping is tested; <em>file ops on root raising <code>FileNotFoundError</code></em> is not.</li>
+<li><strong>HTTP-TR-002</strong> — auto-detect + urllib fallback is tested; the <em>httpx-before-requests preference ordering</em> is not directly asserted.</li>
+<li><strong>HTTP-TR-003</strong> — explicit transport override is tested; the <em>ImportError-when-library-missing</em> branch is <code>pytest.skip</code>-ped, never asserted.</li>
+</ul>
+<h3 id="caveats-on-the-type-b-verdicts">Caveats on the type-(b) verdicts<a class="headerlink" href="#caveats-on-the-type-b-verdicts" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>SQL-QUERY-061 / SQL-QUERY-063</strong> ride entirely on shared-base coverage via
+  <code>SqlBlobBackend</code> tests; there is no <code>sqlquery</code> conformance fixture and no
+  <code>SqlQueryBackend</code>-specific close / PRAGMA assertion. The weakest type-(b) rows.</li>
+<li><strong>GLOB-019</strong> is type (b) only when <code>s3_pyarrow_moto</code> is live in the conformance run;
+  under <code>pyarrow&gt;=24</code> / moto-unavailable skips, the native S3-PyArrow glob path is not
+  exercised.</li>
+<li><strong>SAW-009 / SAW-011</strong> are exercised both by the <code>fixture_params(Capability.ATOMIC_WRITE)</code>-parametrized
+  conformance success path <em>and</em> backend-specific assertions (SFTP <code>.~tmp</code> cleanup,
+  Azure <code>rename_file.assert_called_once</code>); <strong>SAW-010</strong>'s S3 buffer mechanism is
+  exercised but not mechanism-asserted (closest is the test that a stream failure
+  mid-write leaves no truncated object).</li>
+</ul>
+<h3 id="discovery-follow-up">Discovery follow-up<a class="headerlink" href="#discovery-follow-up" title="Permanent link">&para;</a></h3>
+<p><code>HTTP-CON-004</code> surfaced a <strong>three-way capability divergence</strong> not visible to the first
+pass: the runtime constant <code>_CAPABILITIES</code> (<code>_http.py:41</code>) declares
+<code>{READ, METADATA, LAZY_READ}</code>, while the <code>ReadOnlyHttpBackend</code> docstring (<code>_http.py:215</code>)
+and spec 032 both list only <code>{READ, METADATA}</code>. The code is internally inconsistent —
+<code>LAZY_READ</code> looks like an accidental addition — which makes the spec-wins resolution
+(principle 5) the obvious one. Resolve as part of, or before, writing the HTTP-CON-004 test.</p>
 
 
 
