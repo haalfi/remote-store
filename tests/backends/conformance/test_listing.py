@@ -73,6 +73,7 @@ class TestBackendIterChildren:
 
     @pytest.mark.spec("ITER-004")
     @pytest.mark.spec("BE-026")
+    @pytest.mark.spec("ITER-005")
     def test_iter_children(self, backend: Backend) -> None:
         _require(backend, Capability.WRITE)
         _seed(backend, {"ic/a.txt": b"a", "ic/b.txt": b"b", "ic/sub/c.txt": b"c"})
@@ -117,6 +118,7 @@ class TestBackendGlob:
     """GLOB-004/018/019/020: glob conformance across backends."""
 
     @pytest.mark.spec("GLOB-018")
+    @pytest.mark.spec("GLOB-019")
     @pytest.mark.parametrize(
         ("seeds", "pattern", "expected"),
         [

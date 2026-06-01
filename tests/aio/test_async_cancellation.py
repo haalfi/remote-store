@@ -54,6 +54,7 @@ def backend() -> AsyncMemoryBackend:
 class TestWriteCancellation:
     """A cancelled write must not leave a partial file."""
 
+    @pytest.mark.spec("SIO-005")
     async def test_cancel_mid_write_leaves_no_file(self, backend: AsyncMemoryBackend) -> None:
         first, release = asyncio.Event(), asyncio.Event()
         task = asyncio.create_task(backend.write("f.txt", _blocking_chunks(first, release)))

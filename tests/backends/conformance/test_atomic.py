@@ -123,6 +123,7 @@ class TestBackendOpenAtomic:
 
     @pytest.mark.spec("SAW-004")
     @pytest.mark.spec("SAW-005")
+    @pytest.mark.spec("SAW-009")
     @pytest.mark.spec("SQL-BLOB-023")
     def test_open_atomic_exception_cleanup(self, backend: Backend) -> None:
         with pytest.raises(RuntimeError, match="boom"), backend.open_atomic("oat_fail.txt") as f:  # noqa: PT012

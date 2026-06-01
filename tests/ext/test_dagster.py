@@ -326,6 +326,7 @@ class TestCustomSerializer:
     """DAG-009: Custom serializer protocol."""
 
     @pytest.mark.spec("DAG-009")
+    @pytest.mark.spec("DAG-001")
     def test_custom_serializer(self, store: Store) -> None:
         custom = _ReverseSerializer()
         assert isinstance(custom, Serializer)

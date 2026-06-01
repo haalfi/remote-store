@@ -16,7 +16,7 @@ source_items:
   - BK-250
 audience:
   - library.maintainer
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -93,14 +93,45 @@ phases:
         section: "STORE-014, NPR-015, STORE-018"
         read_type: reference
         extract: "list_files(pattern) / list_folders names / Store.glob ride GLOB-001/STORE-017"
+  - id: implement_text
+    name: Backfill text/stream/iter/pyarrow marks (group 3)
+    steps:
+      - file: sdd/specs/028-read-text.md
+        section: "RTXT-002/003, WTXT-002/003, ITER-002/003, PA-023/026, SEEK-007"
+        read_type: gate
+        extract: "9 held: design/meta rows (no-ABC-change, STORE-008-update), ITER-002 capability-gate raise (no test, like BE-011), PA-023/026 + SEEK-007 (no test asserts the clause)"
+      - file: tests/ext/test_observe.py
+        section: "test_hook_fires_for_operation (RTXT-004, ITER-006)"
+        read_type: reference
+        extract: "read_text/iter_children observe-hook ops ride the OBS-003 parametrized case"
+      - file: tests/test_store.py
+        section: "TestStoreReadText / TestStoreWriteText (SIO-007, WTXT-006)"
+        read_type: reference
+        extract: "read_text-via-read_bytes (SIO-007) and write_text/read_text round-trip (WTXT-006) ride RTXT-001/WTXT-001; SIO-004 on conformance read-not-found, SIO-005 on async cancellation, ITER-005 on test_iter_children, PA-005 on test_normalize_path"
+  - id: implement_ext
+    name: Backfill extensions marks (group 4)
+    steps:
+      - file: tests/ext/test_batch.py
+        section: "test_error_continues, test_empty_paths (BATCH-010/013/017/024/025)"
+        read_type: reference
+        extract: "Concurrent-parametrized batch tests cover both sequential (010/013/017) and concurrent (024/025) error/empty clauses in one test each"
+      - file: tests/ext/test_observe.py
+        section: "test_hook_fires_for_operation (OBS-003a), test_store_event_write_result_populated_on_success (OBS-015)"
+        read_type: reference
+        extract: "hook-to-op mapping + write_result-in-StoreEvent; WR-006 on head-sidecar, DAG-001 on test_custom_serializer (isinstance(_, Serializer) + .extension -- the runtime_checkable Protocol shape, moved off test_roundtrip in review), GLOB-017/019 + SAW-009 on glob/atomic conformance"
+      - file: sdd/specs/045-write-result.md
+        section: "WR-014..017"
+        read_type: gate
+        outcome: misleading
+        extract: "WR-014..017 are 'Moved to EW-001..004' cross-reference stubs (ADR-0008) -- phantom declarations the gate flags as drift but cannot be WR-marked; held for de-registration/allowlist, not backfill"
   - id: verify
     name: Gate + prune
     steps:
       - file: scripts/check_spec_marks.py
         section: "_BASELINE (all cluster blocks)"
         read_type: verify
-        extract: "Groups 1-2: pruned 46 landed IDs; kept 26 held rows baselined (type-(d)/no-assertion candidates, incl. BE-011 reverted in review)"
+        extract: "Groups 1-4: pruned 66 landed IDs cumulative; kept 45 held rows baselined (type-(d)/no-assertion: design/meta, capability-gate raises, perf tables, moved-EW stubs)"
       - file: tests/backends/conformance/test_io.py
         section: "(full)"
         read_type: verify
-        extract: "Gate: 159 -> 113 violations, 728 mark-cited IDs, all remaining baselined (exit 0); pytest memory/local green"
+        extract: "Gate: 159 -> 93 violations, 748 mark-cited IDs, all remaining baselined (exit 0); pytest memory/local green"

@@ -564,20 +564,29 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `STORE-018`, an ordinary drift row this item backfills). Verify each mark against the named
   test before stamping; do not rubber-stamp. See the addendum's type-(b) caveats
   (`SQL-QUERY-061/063` ride shared-base coverage; `GLOB-019` depends on fixture liveness).
-  Landing in grouped clusters on one branch (159 baselined → backfill per cluster). **Groups 1-2
-  done (in progress):** 46 marks landed (gate 159 → 113, 728 mark-cited IDs) across
-  backend-restatement (AZ/S3/S3PA) and core-API/paths (STORE/NPR/BE/CAP/MEM). **26 rows held for a
+  Landing in grouped clusters on one branch (159 baselined → backfill per cluster). **Groups 1-4
+  done (groups 1-2 merged in #724; groups 3-4 in progress):** 66 marks landed (gate 159 → 93, 748
+  mark-cited IDs) across backend-restatement (AZ/S3/S3PA), core-API/paths (STORE/NPR/BE/CAP/MEM),
+  text/stream/iter/pyarrow (SIO/RTXT/WTXT/ITER/SEEK/PA), and extensions
+  (BATCH/OBS/SAW/DAG/WR/GLOB). **45 rows held for a
   disposition call** — they are
   design/meta/perf statements or have no test that asserts the specific clause, so they are
   type-(d) allowlist candidates rather than backfills:
   `AZ-007`/`S3-001`/`S3PA-001`/`MEM-001`/`MEM-005` (constructor/scope/registration, no canonical
   assertion); `AZ-010`/`S3PA-007`/`NPR-007` (sub-clause unasserted: non-HNS no-folder-marker /
-  s3→pyarrow credential translation / S3 prefix-stripping); `STORE-007`/`STORE-010`/`CAP-007`/`BE-011`
-  (thread-safety/immutability, equality, quality-flag principle, and the `write_atomic`
-  capability-gate raise-when-absent branch — no test exercises the clause); `NPR-009`/`017`/`018`/
-  `019` (future-backends / RemotePath-preserved / no-new-capability / backward-compat — design);
-  `MEM-026`/`030`/`031`/`032`/`040`/`041`/`042`/`DS-001`/`DS-003`/`DS-004` (atomicity-scope,
-  conformance/fixture recommendations, perf tables, data-structure rationale).
+  s3→pyarrow credential translation / S3 prefix-stripping); `STORE-007`/`STORE-010`/`CAP-007`/`BE-011`/`ITER-002`
+  (thread-safety/immutability, equality, quality-flag principle, and the `write_atomic` /
+  `iter_children` capability-gate raise-when-absent branches — no test exercises the clause);
+  `NPR-009`/`017`/`018`/`019`, `RTXT-002`/`003`, `WTXT-002`/`003`, `ITER-003`
+  (future-backends / no-Backend-ABC-change / STORE-008-surface / backward-compat — design/meta);
+  `SEEK-007`/`PA-023`/`PA-026`/`CFG-007`/`CFG-014`/`GLOB-015`/`SAW-010`/`PING-009`/`RES-001`
+  (azure-read-unchanged / optional-extra / no-backend-coupling / S3-buffer-mechanism /
+  check_health-error-classification / resolution-opacity-problem-statement — design or no asserting
+  test); `WR-014`/`015`/`016`/`017` (**moved** to spec 046 `EW-001..004` per ADR-0008 — the spec-045
+  entries are cross-reference stubs; real coverage is under `EW-*` marks, so these need
+  de-registration or allowlisting, not a `WR-*` mark);
+  `MEM-026`/`030`/`031`/`032`/`040`/`041`/`042`/`DS-001`/`DS-003`/`DS-004`
+  (atomicity-scope, conformance/fixture recommendations, perf tables, data-structure rationale).
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer
