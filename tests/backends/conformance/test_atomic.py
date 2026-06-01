@@ -36,7 +36,6 @@ class TestBackendWriteAtomic:
 
     @pytest.mark.spec("BE-010")
     @pytest.mark.spec("SQL-BLOB-023")
-    @pytest.mark.spec("BE-011")
     @pytest.mark.spec("MEM-013")
     def test_write_atomic_creates_file(self, backend: Backend) -> None:
         backend.write_atomic("atomic.txt", b"atomic content")

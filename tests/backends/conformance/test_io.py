@@ -194,7 +194,6 @@ class TestBackendToKey:
     """NPR-003 through NPR-008: to_key reverse path resolution."""
 
     @pytest.mark.spec("NPR-003")
-    @pytest.mark.spec("BE-023")
     def test_to_key_exists(self, backend: Backend) -> None:
         assert hasattr(backend, "to_key")
         assert callable(backend.to_key)
@@ -205,6 +204,7 @@ class TestBackendToKey:
 
     @pytest.mark.spec("NPR-005")
     @pytest.mark.spec("MEM-017")
+    @pytest.mark.spec("BE-023")
     def test_to_key_passthrough_for_relative(self, backend: Backend) -> None:
         """Relative paths with no matching prefix pass through unchanged."""
         assert isinstance(backend.to_key("some/path"), str)

@@ -6,14 +6,17 @@ trigger: >-
   IDs whose behavior is already tested under sibling/parent marks but which
   carry no spec-file-specific @pytest.mark.spec(...). The baseline is the
   worklist; each backfilled mark must self-prune its baseline entry. This
-  trace covers PR 1 of 5: the backend-restatement cluster (AZ-*, S3-*,
-  S3PA-*) whose IDs ride cross-backend conformance / azure-specific tests.
+  trace covers the first PR, which ships two clusters: the backend-restatement
+  cluster (AZ-*, S3-*, S3PA-*) and the core-API/paths cluster
+  (STORE/NPR/BE/CAP/MEM), whose IDs ride cross-backend conformance,
+  backend-specific, and azure-specific tests.
 source_items:
   - BK-252
   - BK-251
   - BK-250
 audience:
   - library.maintainer
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
