@@ -40,6 +40,8 @@ from tests.backends.conformance._helpers import _depth, _fixture_record
 from tests.backends.fixtures import fixture_params
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from remote_store.aio._async_backend import AsyncBackend
 
 
@@ -255,6 +257,7 @@ class TestWriteErrorFidelity:
         with pytest.raises(InvalidPath, match=dir_path):
             await getattr(async_backend, method)(dir_path, b"data", overwrite=overwrite)
 
+    @pytest.mark.parametrize("body_kind", ["bytes", "stream"])
     @pytest.mark.parametrize(
         ("method", "cap"),
         [
@@ -273,7 +276,7 @@ class TestWriteErrorFidelity:
     )
     @pytest.mark.spec("BE-008")
     async def test_write_under_file_ancestor_raises_invalid_path(
-        self, async_backend: AsyncBackend, method: str, cap: Capability
+        self, async_backend: AsyncBackend, method: str, cap: Capability, body_kind: str
     ) -> None:
         """ID-209 async sibling: !AllAncestorsTraversable(fs, path) => InvalidPath.
 
@@ -292,14 +295,28 @@ class TestWriteErrorFidelity:
         -> ``_raise_invalid_if_hns_file_ancestor``. As on the sync side the
         temp is never committed (temp and final share a parent), so the scan
         confirms the no-leak invariant rather than a real orphan removal.
+
+        BK-249: also parametrised over the body type (``bytes`` vs an
+        ``AsyncIterable[bytes]``).  Azure HNS ``write_atomic`` takes a separate
+        ``except`` block per body type, so only the streaming case reaches the
+        ``else:`` branch's file-ancestor remap (``aio/backends/_azure.py``
+        ``create_file`` of the temp under a file parent -> 409 ->
+        ``_raise_invalid_if_hns_file_ancestor``).  The streaming temp create
+        fails before the generator is iterated, so an un-iterated generator is
+        sufficient.
         """
         _require(async_backend, cap)
         _skip_unless_rejects_file_ancestor(async_backend)
         seed = f"wufa_{method}.txt"
         nested = f"{seed}/child.txt"
         await async_backend.write(seed, b"file-blocking")
+
+        async def _under_file_stream() -> AsyncIterator[bytes]:
+            yield b"under-file"
+
+        body = _under_file_stream() if body_kind == "stream" else b"under-file"
         with pytest.raises(InvalidPath, match=seed):
-            await getattr(async_backend, method)(nested, b"under-file")
+            await getattr(async_backend, method)(nested, body)
         assert await async_backend.read_bytes(seed) == b"file-blocking"
         remaining = [str(fi.path) async for fi in async_backend.list_files("", recursive=True)]
         assert remaining == [seed], f"orphan temp after async {method} file-ancestor failure: {remaining}"

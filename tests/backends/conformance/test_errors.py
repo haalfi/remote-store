@@ -8,6 +8,7 @@ identity-based skipping for backends with no real directory entries.
 from __future__ import annotations
 
 import contextlib
+import io
 from typing import TYPE_CHECKING
 
 import pytest
@@ -132,6 +133,7 @@ class TestWriteErrorFidelity:
         with pytest.raises(InvalidPath, match="wdir2"):
             backend.write("wdir2", b"data", overwrite=True)
 
+    @pytest.mark.parametrize("body_kind", ["bytes", "stream"])
     @pytest.mark.parametrize(
         ("method", "cap"),
         [
@@ -145,7 +147,7 @@ class TestWriteErrorFidelity:
         ],
     )
     def test_write_under_file_ancestor_raises_invalid_path(
-        self, backend: Backend, method: str, cap: Capability
+        self, backend: Backend, method: str, cap: Capability, body_kind: str
     ) -> None:
         """ID-209: !AllAncestorsTraversable(old(fs), path) ==> InvalidPath.
 
@@ -159,14 +161,23 @@ class TestWriteErrorFidelity:
         backends (S3, Azure non-HNS, SQLBlob) opt in via the ID-211
         ``reject_write_under_file_ancestor`` kwarg; default-off fixtures
         skip this gate, the ``*_strict`` fixture variants run it.
+
+        BK-249: also parametrised over the body type (``bytes`` vs a
+        streaming ``BinaryIO``).  Azure HNS ``write_atomic`` takes a separate
+        ``except`` block per body type, so only the streaming case reaches the
+        ``else:`` branch's file-ancestor remap (``_azure.py`` ``create_file``
+        of the temp under a file parent -> 409 -> ``_raise_invalid_if_hns_
+        file_ancestor``).  The streaming temp create fails before any read, so
+        an unread ``BytesIO`` is sufficient.
         """
         _require(backend, cap)
         _skip_unless_rejects_file_ancestor(backend)
         seed = f"wufa_{method}.txt"
         nested = f"{seed}/child.txt"
         backend.write(seed, b"file-blocking")
+        body = io.BytesIO(b"under-file") if body_kind == "stream" else b"under-file"
         with pytest.raises(InvalidPath, match=seed):
-            getattr(backend, method)(nested, b"under-file")
+            getattr(backend, method)(nested, body)
         # Original file unaffected.
         assert backend.read_bytes(seed) == b"file-blocking"
 

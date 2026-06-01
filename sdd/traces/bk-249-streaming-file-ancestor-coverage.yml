@@ -1,0 +1,92 @@
+id: BK-249
+title: "Parametrize the file-ancestor write conformance test over body type"
+trigger: |
+  PR #708 (BK-235) review noted that test_write_under_file_ancestor_raises_invalid_path
+  passes only a bytes body, so the streaming else: branch of Azure HNS write_atomic
+  under a file ancestor (sync _azure.py ~602, async aio/backends/_azure.py ~662) is
+  unreachable by any recordable test and still carries a "# pragma: no cover -- HNS only".
+source_items:
+  - BK-249
+  - BK-235
+audience:
+  - infra.test
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-249"
+        read_type: gate
+        extract: "parametrize write file-ancestor test over body type; drop the kept streaming pragma; record cassette; spec BE-008"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "write_atomic (HNS bytes vs streaming else, 555-603)"
+        read_type: reference
+        extract: "bytes and stream have SEPARATE except blocks; only the streaming except (602) carries the uncovered remap"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "write (HNS shared except, 496-514)"
+        read_type: reference
+        extract: "non-atomic write funnels both body types through ONE except, already covered by the bytes test -> no gap there; only write_atomic needs the stream case"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "write_atomic streaming else (641-663)"
+        read_type: reference
+        extract: "async sibling of the gap: create_file of the temp under a file parent -> 409 -> _raise_invalid_if_hns_file_ancestor (662)"
+        outcome: ok
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestWriteErrorFidelity.test_write_under_file_ancestor_raises_invalid_path (135-171)"
+        read_type: reference
+        extract: "existing (method, cap) parametrize + _skip_unless_rejects_file_ancestor; seed is method-keyed"
+        outcome: ok
+      - file: src/remote_store/_types.py
+        section: "WritableContent / AsyncWritableContent"
+        read_type: reference
+        extract: "sync stream = BinaryIO (io.BytesIO); async stream = AsyncIterator[bytes] (async generator)"
+        outcome: ok
+      - file: tests/backends/conformance/conftest.py
+        section: "_REPLAY_TO_RECORD_SUFFIX (73-82), missing-cassette skip hook"
+        read_type: gate
+        extract: "azure_replay->azure name mapping; absent cassette SKIPS (not fails) -> drop pragma only after recording"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/conformance/test_errors.py
+        section: "test_write_under_file_ancestor_raises_invalid_path"
+        read_type: reference
+        extract: "add body_kind axis (bytes, stream); stream = io.BytesIO; keep seed method-keyed so bytes cassettes survive rename"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "test_write_under_file_ancestor_raises_invalid_path"
+        read_type: reference
+        extract: "same body_kind axis; stream via local async generator; keep no-orphan assertion"
+        outcome: ok
+      - file: tests/backends/cassettes/azure/
+        section: "write(_atomic) file-ancestor cassettes"
+        read_type: reference
+        extract: "composed id is [method-body_kind-azure]; git mv 4 bytes cassettes; record 4 stream cassettes via record-azure --node (single-cassette mode)"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "write_atomic streaming except (602)"
+        read_type: reference
+        extract: "drop '# pragma: no cover -- HNS only' once the stream cassette drives the line"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "write_atomic streaming except (662)"
+        read_type: reference
+        extract: "drop the matching async pragma"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / infra.test change"
+        read_type: verify
+        extract: "BACKLOG->BACKLOG-DONE, trace shipped same PR, CHANGELOG skipped (infra.test), gen-backlogid"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "coverage of 602 / async 662"
+        read_type: verify
+        extract: "replay of the new stream cassettes executes the formerly-pragma'd lines; strict gate stays >=95%"
+        outcome: ok
