@@ -17,7 +17,7 @@ sibling or parent ID instead of the spec-file-specific one.
 |------|----|-------------------|---------|
 | 001 | STORE-007 | Thread Safety | No mark, no test |
 | 001 | STORE-009 | Context manager / resource management | Test exists (`test_coverage_gaps.py:83`); mark absent |
-| 001 | STORE-010 | Store equality | No dedicated test |
+| 001 | STORE-010 | Store equality | No mark, no test |
 | 001 | STORE-011 | Store.to_key | Tests use NPR marks; STORE-011 absent |
 | 001 | STORE-014 | list_files(pattern=) | Tests use GLOB-001; STORE-014 absent |
 | 001 | STORE-015 | **Spec ID collision** | Two distinct invariants share STORE-015 (native_path and glob); STORE-014 appears between them out of sequence |
@@ -32,11 +32,9 @@ sibling or parent ID instead of the spec-file-specific one.
 | 005 | ERR-013 | ResourceLocked | No test; class absent from source entirely |
 | 006 | SIO-004 | No partial reads on error | No mark, no test |
 | 006 | SIO-005 | Cancellation propagation | Test exists (`aio/test_async_cancellation.py`); SIO-005 absent |
-| 006 | SIO-006 | No framework dependencies | Design principle; no test |
+| 006 | SIO-006 | No framework dependencies | No mark, no test (design principle) |
 | 006 | SIO-007 | read_text convenience | Tests use RTXT-001; SIO-007 absent |
-| 007 | AW-001 | Atomic semantics (conformance) | Conformance tests use BE-010; AW-001 absent from conformance suite |
 | 007 | AW-002 | Capability gate | No mark, no test |
-| 007 | AW-003 | Overwrite semantics (conformance) | Conformance tests use BE-010; AW-003 absent |
 | 007 | AW-004 | Cleanup on failure | Tests use SAW-004/005; AW-004 absent |
 | 007 | AW-005 | Intermediate directories for write_atomic | No mark, no test |
 | 007 | AW-006 | Local mkstemp + os.replace | No mark, no test |
@@ -110,7 +108,8 @@ sibling or parent ID instead of the spec-file-specific one.
 | 027 | ITER-005 | Backend Overrides | Docstring in `test_listing.py`; no mark |
 | 027 | ITER-006 | ext.observe integration | No mark |
 | 027 | ITER-008 | Spec Updates (meta) | No mark |
-| 028 | RTXT-002..006 | No Backend ABC change, STORE-008 update, ext integration | No marks |
+| 028 | RTXT-002..004 | No Backend ABC change, STORE-008 update, ext.cache integration | No marks |
+| 028 | RTXT-006 | Spec Updates (meta) | No mark |
 | 029 | ASYNC-043 | Delegation | No mark |
 | 029 | ASYNC-045a | Capability-Gated Methods Graph IR | No mark |
 | 029 | ASYNC-052f | head() | No mark |
@@ -118,7 +117,8 @@ sibling or parent ID instead of the spec-file-specific one.
 | 029 | ASYNC-061 | read_seekable() Deferral | No mark |
 | 029 | ASYNC-062 | open_atomic() Deferral | No mark |
 | 029 | ASYNC-070..079 | AsyncAzureBackend specifics (dual-mode, lazy init, write strategy, move/copy, content materialization, check_health, capabilities, shared helpers, cleanup, error mapping) | No marks |
-| 030 | WTXT-002..006 | No Backend ABC change, STORE-008 update, ext integration | No marks |
+| 030 | WTXT-002..003 | No Backend ABC change, STORE-008 update | No marks |
+| 030 | WTXT-006 | Symmetric with read_text | No mark |
 | 031 | DAG-001 | Serializer Protocol | No mark |
 | 032 | HTTP-CON-001..004 | Construction | No marks (test_examples.py uses stale `HTTP-001`; tests use BE/NPR/SIO marks) |
 | 032 | HTTP-TR-001..003 | Transport protocol | No marks |
