@@ -16,7 +16,7 @@ source_items:
   - BK-250
 audience:
   - library.maintainer
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -99,8 +99,8 @@ phases:
       - file: scripts/check_spec_marks.py
         section: "_BASELINE (all cluster blocks)"
         read_type: verify
-        extract: "Groups 1-2: pruned 47 landed IDs; kept 25 held rows baselined (type-(d)/no-assertion candidates)"
+        extract: "Groups 1-2: pruned 46 landed IDs; kept 26 held rows baselined (type-(d)/no-assertion candidates, incl. BE-011 reverted in review)"
       - file: tests/backends/conformance/test_io.py
         section: "(full)"
         read_type: verify
-        extract: "Gate: 159 -> 112 violations, 729 mark-cited IDs, all remaining baselined (exit 0); pytest memory/local green"
+        extract: "Gate: 159 -> 113 violations, 728 mark-cited IDs, all remaining baselined (exit 0); pytest memory/local green"
