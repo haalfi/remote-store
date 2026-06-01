@@ -15,6 +15,7 @@ expected_ripples:
   - .github/workflows/ci.yml
   - pyproject.toml
   - sdd/backlogid.json
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

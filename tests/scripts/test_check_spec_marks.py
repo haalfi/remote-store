@@ -18,6 +18,7 @@ mechanism in ``main()``:
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 from pathlib import Path
 
@@ -163,6 +164,26 @@ class TestAllowlist:
 
     def test_ordinary_shipped_id_not_allowlisted(self) -> None:
         assert is_allowlisted("BE-014") is False
+
+
+# ---------------------------------------------------------------------------
+# Schema sync — backlog prefixes mirror sdd/traces/_schema.yml
+# ---------------------------------------------------------------------------
+
+
+class TestSchemaSync:
+    def test_backlog_prefixes_match_trace_schema(self) -> None:
+        # The backlog/process prefix set excluded from the stale check must
+        # stay identical to the trace-id pattern in sdd/traces/_schema.yml.
+        # This is the mechanical link that keeps the two copies in sync: add
+        # a prefix to the schema and this fails until _BACKLOG_ID_PREFIXES
+        # follows (and vice versa). Closes the hand-mirror drift risk.
+        schema = (_SCRIPT.parents[1] / "sdd" / "traces" / "_schema.yml").read_text(encoding="utf-8")
+        # Every `^(A|B|...)-[0-9]` alternation in the schema; the trace `id`
+        # pattern is the superset that includes UC (UC- traces are id-only).
+        alternations = re.findall(r"\^\(([A-Z|]+)\)-\[0-9\]", schema)
+        id_prefixes = next(a.split("|") for a in alternations if "UC" in a.split("|"))
+        assert set(_mod._BACKLOG_ID_PREFIXES) == set(id_prefixes)
 
 
 # ---------------------------------------------------------------------------

@@ -110,20 +110,28 @@ _HEADING_RE = re.compile(rf"^#+[ \t]+({_SPEC_ID})(?: \([^)]*\))?:")
 _TABLE_ROW_RE = re.compile(rf"^\|[ \t]*({_SPEC_ID})[ \t]*\|")
 _ID_TABLE_HEADER_RE = re.compile(r"^\|[ \t]*ID[ \t]*\|", re.IGNORECASE)
 
+# Backlog / process item prefixes — the authoritative trace-id prefix set
+# from the ``id`` pattern in ``sdd/traces/_schema.yml`` (``BK-167a`` etc.).
+# It is duplicated here (a lint script must not parse YAML at import time),
+# but the copy is NOT hand-maintained blind: ``test_backlog_prefixes_match_
+# trace_schema`` in ``tests/scripts/test_check_spec_marks.py`` extracts the
+# schema's pattern and fails if this tuple drifts from it, so a new prefix
+# added to the schema forces this tuple to follow (and vice versa).
+_BACKLOG_ID_PREFIXES: tuple[str, ...] = ("BK", "BUG", "ID", "AF", "BL", "UC")
+
 # Marker namespaces this gate does NOT govern. ``@pytest.mark.spec(...)``
 # is used repo-wide as a general traceability marker citing IDs from
 # several namespaces, not only ``sdd/specs/`` sections:
-#   * backlog / process items (``BK-``, ``BUG-``, ``ID-``, ``AF-``,
-#     ``BL-``, ``UC-NNN``) — a sanctioned provenance convention (a test
-#     tagged with the item that introduced it); the prefix set mirrors
-#     ``sdd/traces/_schema.yml``.
+#   * backlog / process items (``_BACKLOG_ID_PREFIXES`` above) — a
+#     sanctioned provenance convention (a test tagged with the item that
+#     introduced it).
 #   * docs-framework gate codes (``G-01``..``G-07``) — defined in spec
 #     047 and ``scripts/check_docs_framework.py``, cited alongside the
 #     ``DOCFRAME-NNN`` section a docs-framework test traces to.
 # A mark citing one of these is not a stale spec reference, so it is
 # excluded from the stale check. No spec family uses these prefixes, so
 # the exclusion cannot mask a real spec-section typo.
-_NON_SPEC_MARK_RE = re.compile(r"^(?:BK|BUG|ID|AF|BL|UC)-\d+[a-z]?$|^G-\d+$")
+_NON_SPEC_MARK_RE = re.compile(rf"^(?:{'|'.join(_BACKLOG_ID_PREFIXES)})-\d+[a-z]?$|^G-\d+$")
 
 # Violation kinds. Stable strings — they key the baseline below.
 KIND_DRIFT = "shipped-spec-id-unmarked"
