@@ -114,6 +114,13 @@ dev = [
   "pytest-xdist>=3.5",
   "hypothesis>=6.0",
   "moto[server,s3]>=5.2.0",
+  # vcrpy (pulled by pytest-recording) 8.1.1 references
+  # `aiohttp.streams.AsyncStreamReaderMixin`, which exists only in aiohttp 3.13.x
+  # (added in 3.13, removed in 3.14). aiobotocore allows aiohttp>=3.12,<4, so
+  # without this cap a fresh resolve pulled aiohttp 3.14.0 and every test crashed
+  # at collection on the vcr aiohttp-stub import (test-only; the published package
+  # has no aiohttp constraint). Lift once vcrpy supports aiohttp 3.14.
+  "aiohttp>=3.13,<3.14",
   # Type checking & linting
   "mypy",
   "ruff",
