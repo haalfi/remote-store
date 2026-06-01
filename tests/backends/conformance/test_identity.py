@@ -31,11 +31,13 @@ class TestBackendIdentity:
         assert isinstance(backend, BackendABC)
 
     @pytest.mark.spec("BE-002")
+    @pytest.mark.spec("MEM-002")
     def test_name_is_string(self, backend: Backend) -> None:
         assert isinstance(backend.name, str)
         assert len(backend.name) > 0
 
     @pytest.mark.spec("BE-003")
+    @pytest.mark.spec("MEM-003")
     def test_capabilities_is_capabilityset(self, backend: Backend) -> None:
         assert isinstance(backend.capabilities, CapabilitySet)
 
@@ -45,6 +47,7 @@ class TestBackendIdentity:
         cls = type(backend)
         assert set(backend.capabilities) <= set(cls.CAPABILITIES)
 
+    @pytest.mark.spec("MEM-004")
     def test_repr_returns_string(self, backend: Backend) -> None:
         r = repr(backend)
         assert isinstance(r, str)
@@ -62,6 +65,7 @@ class TestBackendLifecycle:
     """BE-020: close is callable."""
 
     @pytest.mark.spec("BE-020")
+    @pytest.mark.spec("MEM-018")
     def test_close_is_callable(self, backend: Backend) -> None:
         result = backend.close()
         assert result is None
@@ -72,6 +76,8 @@ class TestBackendUnwrap:
     """BE-022: unwrap raises by default."""
 
     @pytest.mark.spec("BE-022")
+    @pytest.mark.spec("MEM-019")
+    @pytest.mark.spec("MEM-020")
     def test_unwrap_raises_by_default(self, backend: Backend) -> None:
         with pytest.raises(CapabilityNotSupported):
             backend.unwrap(str)
@@ -109,6 +115,7 @@ class TestBackendNativePath:
         assert backend.to_key(backend.native_path("some/key")) == "some/key"
 
     @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("NPR-021")
     def test_native_path_empty_returns_root(self, backend: Backend) -> None:
         """native_path('') returns the backend's root (NPR-021)."""
         assert isinstance(backend.native_path(""), str)

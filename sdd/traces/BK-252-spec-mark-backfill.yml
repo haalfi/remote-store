@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=./_schema.yml
+id: BK-252
+title: "Bulk spec-mark backfill (type-(b) labels)"
+trigger: >-
+  The BK-251 gate (scripts/check_spec_marks.py) baselined 159 shipped spec
+  IDs whose behavior is already tested under sibling/parent marks but which
+  carry no spec-file-specific @pytest.mark.spec(...). The baseline is the
+  worklist; each backfilled mark must self-prune its baseline entry. This
+  trace covers the first PR, which ships two clusters: the backend-restatement
+  cluster (AZ-*, S3-*, S3PA-*) and the core-API/paths cluster
+  (STORE/NPR/BE/CAP/MEM), whose IDs ride cross-backend conformance,
+  backend-specific, and azure-specific tests.
+source_items:
+  - BK-252
+  - BK-251
+  - BK-250
+audience:
+  - library.maintainer
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-252"
+        read_type: gate
+        extract: "Worklist = check_spec_marks.py _BASELINE; Azure cleanest start; verify each mark, do not rubber-stamp"
+      - file: sdd/audits/audit-015-spec-traceability.md
+        section: "Verified addendum / Findings (012, 008, 011 rows)"
+        read_type: reference
+        extract: "Per-ID riding-mark map (AZ-012 rides BE-004, AZ-013 BE-005, AZ-019 GLOB-020, etc.); type-(b) caveats"
+      - file: scripts/check_spec_marks.py
+        section: "_BASELINE drift entries (AZ-/S3-/S3PA-)"
+        read_type: gate
+        extract: "23 backend-restatement IDs baselined; pruning a landed ID's entry is mandatory (self-prune contract)"
+  - id: classify
+    name: Confirm placement convention
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "test_write_atomic_content_failure_leaves_no_partial, test_copy"
+        read_type: gate
+        extract: "Precedent: cross-backend conformance tests stack backend-specific marks (AW-001+S3-010+S3PA-013; BE-019+SFTP-019+SQL-BLOB-032)"
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths, TestAzureGlob"
+        read_type: reference
+        extract: "Azure-specific mock-HNS tests already carry BE-005/BE-018/GLOB-020; honest home for HNS-conditional AZ-* (AZ-008/012/013/036)"
+  - id: implement
+    name: Backfill marks
+    steps:
+      - file: tests/backends/azure/test_config.py
+        section: "AZ-008, AZ-012, AZ-013, AZ-016, AZ-017, AZ-019, AZ-036"
+        read_type: reference
+        extract: "Stamped AZ HNS-conditional + glob marks on the azure tests that directly assert each branch"
+      - file: tests/backends/conformance/test_io.py
+        section: "test_is_folder (AZ-009/S3-006/S3PA-008), test_delete_folder_recursive (AZ-015/S3-011)"
+        read_type: reference
+        extract: "Virtual-folder + recursive-delete marks ride BE-005/BE-013 (run for s3/s3pa/azure fixtures)"
+      - file: tests/backends/conformance/test_atomic.py
+        section: "test_move (AZ-?/S3-013/S3PA-015), test_copy (AZ-018/S3-014/S3PA-014)"
+        read_type: reference
+        extract: "Move/copy mechanism marks ride BE-018/BE-019"
+      - file: tests/backends/conformance/test_metadata.py
+        section: "test_get_folder_info (AZ-024)"
+        read_type: reference
+        extract: "get_folder_info aggregate rides BE-017"
+  - id: classify_core
+    name: Classify core-API/paths cluster (group 2)
+    steps:
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-001..042, MEM-DS-001..006"
+        read_type: gate
+        extract: "Split MEM worklist: 12 testable backfills vs type-(d) design/meta/perf (MEM-026/030/031/032/040/041/042, DS-001/003/004) -- allowlist candidates, not backfills"
+      - file: sdd/specs/010-native-path-resolution.md
+        section: "NPR-002..022"
+        read_type: gate
+        extract: "NPR-009/017/018/019 are design/forward-looking (future backends, no-new-capability, backward-compat); NPR-002/006/008/011/015/021/022 testable; NPR-007 held (no test asserts S3 prefix-strip)"
+      - file: sdd/audits/audit-015-spec-traceability.md
+        section: "STORE-007/009/010, BE-011/023/024/026/027, CAP-007 rows"
+        read_type: reference
+        extract: "STORE-009 (test_context_manager) + BE-027 (test_gen_graph) ARE tested (Explore agent wrongly said NO-TEST); STORE-007/010 + CAP-007 genuinely untested -> held"
+  - id: implement_core
+    name: Backfill core-API/paths marks (group 2)
+    steps:
+      - file: tests/backends/conformance/test_identity.py
+        section: "MEM-002/003/004/018/019/020, NPR-021"
+        read_type: reference
+        extract: "MEM identity marks ride BE-002/003/020/022 + repr test; NPR-021 on native_path-empty test"
+      - file: tests/test_store.py
+        section: "TestStoreToKey, TestStoreNativePath (STORE-011/NPR-002/NPR-011/NPR-022)"
+        read_type: reference
+        extract: "Store.to_key + native_path marks ride NPR-010/STORE-015"
+      - file: tests/test_glob.py
+        section: "STORE-014, NPR-015, STORE-018"
+        read_type: reference
+        extract: "list_files(pattern) / list_folders names / Store.glob ride GLOB-001/STORE-017"
+  - id: verify
+    name: Gate + prune
+    steps:
+      - file: scripts/check_spec_marks.py
+        section: "_BASELINE (all cluster blocks)"
+        read_type: verify
+        extract: "Groups 1-2: pruned 46 landed IDs; kept 26 held rows baselined (type-(d)/no-assertion candidates, incl. BE-011 reverted in review)"
+      - file: tests/backends/conformance/test_io.py
+        section: "(full)"
+        read_type: verify
+        extract: "Gate: 159 -> 113 violations, 728 mark-cited IDs, all remaining baselined (exit 0); pytest memory/local green"

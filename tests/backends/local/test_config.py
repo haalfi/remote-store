@@ -208,6 +208,7 @@ class TestLocalWriteOnDirectory:
 class TestLocalBackendToKeyRoot:
     """to_key() returns empty string for the root path (line 83)."""
 
+    @pytest.mark.spec("NPR-006")
     def test_to_key_root_returns_empty_string(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             backend = LocalBackend(root=tmp)

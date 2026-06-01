@@ -72,6 +72,7 @@ class TestBackendIterChildren:
     """ITER-004, ITER-005: iter_children() combined file and folder listing."""
 
     @pytest.mark.spec("ITER-004")
+    @pytest.mark.spec("BE-026")
     def test_iter_children(self, backend: Backend) -> None:
         _require(backend, Capability.WRITE)
         _seed(backend, {"ic/a.txt": b"a", "ic/b.txt": b"b", "ic/sub/c.txt": b"c"})
@@ -151,6 +152,7 @@ class TestBackendGlob:
         assert sorted(str(f.path) for f in backend.glob(pattern)) == expected
 
     @pytest.mark.spec("GLOB-004")
+    @pytest.mark.spec("BE-024")
     def test_glob_yields_fileinfo_only(self, backend: Backend) -> None:
         _seed(
             backend,

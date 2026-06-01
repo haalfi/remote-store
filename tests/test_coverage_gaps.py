@@ -80,6 +80,7 @@ class TestStoreBehavior:
         result = Store(backend=mem_backend, root_path="data").close()
         assert result is None
 
+    @pytest.mark.spec("STORE-009")
     def test_context_manager(self, mem_backend: MemoryBackend) -> None:
         with Store(backend=mem_backend, root_path="data") as store:
             store.write("a.txt", b"data")

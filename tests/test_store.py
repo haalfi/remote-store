@@ -401,6 +401,9 @@ class TestStoreToKey:
         return Store(backend=LocalBackend(root=str(tmp_path)), root_path="data"), real_tmp
 
     @pytest.mark.spec("NPR-010")
+    @pytest.mark.spec("NPR-002")
+    @pytest.mark.spec("NPR-011")
+    @pytest.mark.spec("STORE-011")
     def test_to_key_strips_root(self, local_store: tuple[Store, str]) -> None:
         s, real_tmp = local_store
         assert s.to_key(f"{real_tmp}/data/reports/q1.csv") == "reports/q1.csv"
@@ -440,6 +443,7 @@ class TestStoreNativePath:
     """STORE-015: Store.native_path() composition."""
 
     @pytest.mark.spec("STORE-015")
+    @pytest.mark.spec("NPR-022")
     @pytest.mark.parametrize(
         ("root_path", "child", "key", "expected"),
         [

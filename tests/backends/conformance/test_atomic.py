@@ -36,6 +36,7 @@ class TestBackendWriteAtomic:
 
     @pytest.mark.spec("BE-010")
     @pytest.mark.spec("SQL-BLOB-023")
+    @pytest.mark.spec("MEM-013")
     def test_write_atomic_creates_file(self, backend: Backend) -> None:
         backend.write_atomic("atomic.txt", b"atomic content")
         assert backend.read_bytes("atomic.txt") == b"atomic content"
@@ -336,6 +337,8 @@ class TestBackendMoveCopy:
     @pytest.mark.spec("BE-018")
     @pytest.mark.spec("SFTP-018")
     @pytest.mark.spec("SQL-BLOB-031")
+    @pytest.mark.spec("S3-013")
+    @pytest.mark.spec("S3PA-015")
     def test_move(self, backend: Backend) -> None:
         _require(backend, Capability.MOVE)
         backend.write("mv_src.txt", b"data")
@@ -346,6 +349,10 @@ class TestBackendMoveCopy:
     @pytest.mark.spec("BE-019")
     @pytest.mark.spec("SFTP-019")
     @pytest.mark.spec("SQL-BLOB-032")
+    @pytest.mark.spec("AZ-018")
+    @pytest.mark.spec("S3-014")
+    @pytest.mark.spec("S3PA-014")
+    @pytest.mark.spec("MEM-016b")
     def test_copy(self, backend: Backend) -> None:
         _require(backend, Capability.COPY)
         backend.write("cp_src.txt", b"data")

@@ -553,7 +553,7 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Maintenance / Long-horizon
 
-- [ ] **BK-252 — Bulk spec-mark backfill (~127 type-(b) labels)**
+- [~] **BK-252 — Bulk spec-mark backfill (~127 type-(b) labels)**
   spec: — · effort: L · audience: library.maintainer
   The mechanical slice of audit-015: ~127 invariants whose behavior is already tested
   (largely via cross-backend conformance under sibling marks) but lack the
@@ -564,6 +564,20 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `STORE-018`, an ordinary drift row this item backfills). Verify each mark against the named
   test before stamping; do not rubber-stamp. See the addendum's type-(b) caveats
   (`SQL-QUERY-061/063` ride shared-base coverage; `GLOB-019` depends on fixture liveness).
+  Landing in grouped clusters on one branch (159 baselined → backfill per cluster). **Groups 1-2
+  done (in progress):** 46 marks landed (gate 159 → 113, 728 mark-cited IDs) across
+  backend-restatement (AZ/S3/S3PA) and core-API/paths (STORE/NPR/BE/CAP/MEM). **26 rows held for a
+  disposition call** — they are
+  design/meta/perf statements or have no test that asserts the specific clause, so they are
+  type-(d) allowlist candidates rather than backfills:
+  `AZ-007`/`S3-001`/`S3PA-001`/`MEM-001`/`MEM-005` (constructor/scope/registration, no canonical
+  assertion); `AZ-010`/`S3PA-007`/`NPR-007` (sub-clause unasserted: non-HNS no-folder-marker /
+  s3→pyarrow credential translation / S3 prefix-stripping); `STORE-007`/`STORE-010`/`CAP-007`/`BE-011`
+  (thread-safety/immutability, equality, quality-flag principle, and the `write_atomic`
+  capability-gate raise-when-absent branch — no test exercises the clause); `NPR-009`/`017`/`018`/
+  `019` (future-backends / RemotePath-preserved / no-new-capability / backward-compat — design);
+  `MEM-026`/`030`/`031`/`032`/`040`/`041`/`042`/`DS-001`/`DS-003`/`DS-004` (atomicity-scope,
+  conformance/fixture recommendations, perf tables, data-structure rationale).
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer
