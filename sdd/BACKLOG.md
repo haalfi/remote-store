@@ -599,7 +599,7 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ---
 
-## Long-horizon / Maintenance
+## Maintenance / Long-horizon
 
 - [ ] **BK-250 — Spec-traceability audit (audit-015): correctness gaps + spec defects**
   spec: STORE-015, HTTP-CON-003, HTTP-CON-004, S3-012, BATCH-023, SAW-015 · effort: M · audience: library.maintainer
