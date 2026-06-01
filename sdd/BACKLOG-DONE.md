@@ -8,6 +8,54 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-253 — Disable Hypothesis per-example deadline in test profiles**
+  spec: — · effort: S · audience: infra.test
+  Surfaced during BK-244 verification: `test_pbt_properties.py::TestConfigFromDict::test_backend_types_preserved`
+  failed once under `hatch run test-cov-s1` (pytest `-n auto` + coverage) yet
+  passed on every isolated re-run, including 1000 examples — the signature of a
+  Hypothesis wall-clock **deadline** flake, not a logic defect (the property is
+  sound: `RegistryConfig.from_dict` samples `type` from the valid set and stores
+  it verbatim). The `dev` profile (`tests/conftest.py`) set only
+  `max_examples=50`, leaving the default 200 ms per-example deadline enabled; CPU
+  contention under the standard parallel + coverage gate makes a trivial example
+  exceed it and raise `DeadlineExceeded`. Fix: add `deadline=None` to all three
+  profiles (`dev` / `ci` / `nightly`). PBTs here assert behaviour, not latency —
+  performance is covered by `benchmarks/`. No production-code change.
+
+- [x] **BK-244 — HNS open_atomic / write_atomic upload-failure cleanup: orphan-temp coverage**
+  spec: SAW-005, SAW-011 · effort: S · audience: infra.test
+  Discovered in PR #689 review of ID-188: the `test_open_atomic_exception_cleanup`
+  orphan scan only bites the *caller-exception* path, leaving the Azure HNS
+  upload-failure cleanup branch (`except Exception` → `tmp_fc.delete_file()` →
+  `_raise_invalid_if_hns_file_ancestor`) without an asserted no-leak guarantee.
+  - **Resolution — strengthen the existing real file-ancestor tests, no mocking.**
+    The backlog sketch proposed a mock/patch-based failure-injection test, but
+    that violates TESTING.md Rule 5/6 (don't mock third-party SDK internals).
+    Investigation found the HNS cleanup branch is *already* driven against live
+    HNS + replay by the file-ancestor conformance tests (azure inherits
+    `rejects_write_under_file_ancestor=true` via `flat_namespace=false`); they
+    only lacked the orphan scan.
+  - **Sync:** added an orphan-`.~tmp.*` scan plus SAW-005/SAW-011 marks to
+    `conformance/test_errors.py::TestWriteErrorFidelity::test_open_atomic_under_file_ancestor_raises_invalid_path`.
+    Re-pointed the stale `test_atomic.py` comment that tracked this as BK-244.
+  - **Async:** the async store exposes no `open_atomic`, so `write_atomic` is the
+    analog; added the same scan + marks to
+    `conformance/test_async_extended.py::TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path`
+    (covers `write` and `write_atomic`).
+  - **Honest caveat:** the temp upload under a file parent fails *before* the temp
+    is committed (temp and final share a parent), so the scan confirms the
+    no-leak invariant rather than exercising removal of a committed orphan — the
+    committed-temp-then-rename-fails path has no deterministic real-backend
+    trigger. Documented in both test docstrings.
+  - **Cassettes:** the new `list_files` request was recorded against live HNS via
+    targeted single-node `record_cassettes.py --node …[azure_live]` /
+    `…[azure_live_async]` (no tree-wipe), scrub-verified (299 cassettes clean),
+    and confirmed on Stage-1 replay. All confirmed failing-first (cassette miss)
+    then passing.
+  - **Discovery:** the async `write_atomic` HNS cleanup unit test
+    (`tests/backends/azure/aio/test_config.py::…test_write_atomic_hns_cleans_up_on_failure`)
+    mocks `DataLakeFileClient` and asserts `delete_file.call_count` — a latent
+    TESTING.md Rule 5 violation, noted for a separate decision (not fixed here).
 - [x] **BK-251 — Spec-mark CI gate (`check_spec_marks.py`)**
   spec: — · effort: M · audience: library.maintainer, contributor.tooling
   Root-cause gate for the traceability drift audit-015 exposed. `scripts/check_spec_marks.py`

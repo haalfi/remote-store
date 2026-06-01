@@ -172,14 +172,30 @@ class TestWriteErrorFidelity:
 
     @pytest.mark.spec("BE-008")
     @pytest.mark.spec("SAW-001")
+    @pytest.mark.spec("SAW-005")
+    @pytest.mark.spec("SAW-011")
     def test_open_atomic_under_file_ancestor_raises_invalid_path(self, backend: Backend) -> None:
-        """ID-209: ``open_atomic`` shares BE-008's precondition chain (BE-010 / SAW-001)."""
+        """ID-209: ``open_atomic`` shares BE-008's precondition chain (BE-010 / SAW-001).
+
+        BK-244 / SAW-005, SAW-011: also assert the failed ``open_atomic`` leaves
+        no orphan temp under the root. For Azure HNS this drives the temp-upload
+        cleanup branch (``_azure.py`` ``except Exception`` -> ``tmp_fc.delete_file()``
+        -> ``_raise_invalid_if_hns_file_ancestor``): the temp ``upload_data`` under
+        a file parent fails, so the only surviving entry must be the seed file.
+        On every rejecting backend (Local / SFTP / Memory and the ``*_strict``
+        flat-NS fixtures) the InvalidPath fires before any temp is committed, so
+        the scan holds rather than exercising a real orphan removal -- the
+        committed-temp-then-rename-fails path has no deterministic real trigger
+        (temp and final share a parent).
+        """
         _require(backend, Capability.ATOMIC_WRITE)
         _skip_unless_rejects_file_ancestor(backend)
         backend.write("wufa_oa.txt", b"file-blocking")
         with pytest.raises(InvalidPath, match="wufa_oa.txt"), backend.open_atomic("wufa_oa.txt/child.txt") as f:
             f.write(b"under-file")
         assert backend.read_bytes("wufa_oa.txt") == b"file-blocking"
+        remaining = [str(fi.path) for fi in backend.list_files("", recursive=True)]
+        assert remaining == ["wufa_oa.txt"], f"orphan temp after open_atomic file-ancestor failure: {remaining}"
 
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.DELETE, Capability.WRITE), indirect=True)

@@ -1,0 +1,78 @@
+id: BK-244
+title: "HNS-specific conformance test for open_atomic upload/rename cleanup"
+trigger: |
+  PR #689 review of ID-188 noted that the new test_open_atomic_exception_cleanup
+  orphan-temp scan only bites the caller-exception path; the Azure HNS
+  upload/rename-failure cleanup branch (delete_file) had no asserted coverage.
+source_items:
+  - BK-244
+audience:
+  - infra.test
+discovery_followups:
+  - BK-253
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-244"
+        read_type: gate
+        extract: "open_atomic HNS cleanup branch needs orphan-temp coverage; spec SAW-005/SAW-011"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "open_atomic (HNS branch ~681-697)"
+        read_type: reference
+        extract: "except Exception -> delete_file + _raise_invalid_if_hns_file_ancestor is the target branch"
+        outcome: ok
+      - file: tests/backends/conformance/test_atomic.py
+        section: "test_open_atomic_exception_cleanup (comment block 131-152)"
+        read_type: reference
+        extract: "comment says HNS cleanup needs its own failure-injection test, tracked as BK-244"
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules 5, 6, 8"
+        read_type: gate
+        extract: "don't mock third-party internals; prefer real dependencies; tests survive refactoring -> mock approach rejected"
+        outcome: ok
+      - file: tests/backends/conformance/test_errors.py
+        section: "test_open_atomic_under_file_ancestor_raises_invalid_path (175)"
+        read_type: reference
+        extract: "a real file-ancestor open_atomic test already exists and drives the HNS cleanup branch; only the orphan scan is missing"
+        outcome: ok
+      - file: tests/backends/fixtures/_loader.py
+        section: "_parse_backend / _parse_fixture (rejects_default = not flat_ns)"
+        read_type: reference
+        extract: "azure_live/replay inherit rejects_write_under_file_ancestor=True via flat_namespace=false derivation -> existing test runs on HNS today"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "write_atomic HNS cleanup (627-639); _async_store no open_atomic"
+        read_type: reference
+        extract: "async has no open_atomic; the async analog is write_atomic's temp+rename+delete_file branch, driven by the async file-ancestor test"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/conformance/test_errors.py
+        section: "test_open_atomic_under_file_ancestor_raises_invalid_path"
+        read_type: reference
+        extract: "add orphan-.~tmp.* scan after InvalidPath assert; add SAW-005/SAW-011 marks"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "test_write_under_file_ancestor_raises_invalid_path"
+        read_type: reference
+        extract: "async sibling: add orphan scan for write/write_atomic params; SAW-005/SAW-011 marks"
+        outcome: ok
+      - file: tests/backends/cassettes/azure/
+        section: "open_atomic + write(_atomic) file-ancestor cassettes"
+        read_type: reference
+        extract: "new list_files request requires re-recording the affected azure/azure_async cassettes via record-azure --node"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / infra.test change"
+        read_type: verify
+        extract: "BACKLOG->BACKLOG-DONE, trace shipped same PR, CHANGELOG skipped (infra.test)"
+        outcome: ok
