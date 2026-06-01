@@ -8,6 +8,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-253 — Disable Hypothesis per-example deadline in test profiles**
+  spec: — · effort: S · audience: infra.test
+  Surfaced during BK-244 verification: `test_pbt_properties.py::TestConfigFromDict::test_backend_types_preserved`
+  failed once under `hatch run test-cov-s1` (pytest `-n auto` + coverage) yet
+  passed on every isolated re-run, including 1000 examples — the signature of a
+  Hypothesis wall-clock **deadline** flake, not a logic defect (the property is
+  sound: `RegistryConfig.from_dict` samples `type` from the valid set and stores
+  it verbatim). The `dev` profile (`tests/conftest.py`) set only
+  `max_examples=50`, leaving the default 200 ms per-example deadline enabled; CPU
+  contention under the standard parallel + coverage gate makes a trivial example
+  exceed it and raise `DeadlineExceeded`. Fix: add `deadline=None` to all three
+  profiles (`dev` / `ci` / `nightly`). PBTs here assert behaviour, not latency —
+  performance is covered by `benchmarks/`. No production-code change.
+
 - [x] **BK-244 — HNS open_atomic / write_atomic upload-failure cleanup: orphan-temp coverage**
   spec: SAW-005, SAW-011 · effort: S · audience: infra.test
   Discovered in PR #689 review of ID-188: the `test_open_atomic_exception_cleanup`

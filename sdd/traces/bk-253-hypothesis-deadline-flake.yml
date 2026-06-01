@@ -1,0 +1,43 @@
+id: BK-253
+title: "Disable Hypothesis per-example deadline in test profiles (xdist + coverage flake)"
+trigger: |
+  During BK-244 verification, tests/test_pbt_properties.py::TestConfigFromDict::
+  test_backend_types_preserved failed once under `hatch run test-cov-s1`
+  (pytest -n auto + coverage) but passed on every isolated re-run including
+  1000 examples — the signature of a Hypothesis wall-clock deadline flake, not
+  a logic defect.
+source_items:
+  - BK-253
+  - BK-244
+audience:
+  - infra.test
+phases:
+  - id: diagnose
+    name: Diagnose
+    steps:
+      - file: tests/test_pbt_properties.py
+        section: "TestConfigFromDict.test_backend_types_preserved"
+        read_type: reference
+        extract: "no per-test @settings; property is sound (type sampled from valid set, stored verbatim) -> failure is not a counterexample"
+        outcome: ok
+      - file: tests/conftest.py
+        section: "Hypothesis profiles (register_profile dev/ci/nightly)"
+        read_type: gate
+        extract: "dev profile sets only max_examples=50; default 200ms deadline left enabled -> trips under -n auto + coverage contention"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/conftest.py
+        section: "settings.register_profile dev/ci/nightly"
+        read_type: reference
+        extract: "add deadline=None to all three profiles; PBTs assert behaviour not latency (perf lives in benchmarks/)"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/test_pbt_properties.py
+        section: "TestConfigFromDict (full class)"
+        read_type: verify
+        extract: "pbt suite green under the standard gate after deadline=None"
+        outcome: ok

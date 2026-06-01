@@ -325,9 +325,14 @@ def _close_leaked_event_loops() -> Iterator[None]:
 
 # -- Hypothesis profiles (dev=50, ci=100, nightly=1000) --
 # Activate via HYPOTHESIS_PROFILE env var (e.g. HYPOTHESIS_PROFILE=ci).
-settings.register_profile("dev", max_examples=50)
-settings.register_profile("ci", max_examples=100, suppress_health_check=[HealthCheck.too_slow])
-settings.register_profile("nightly", max_examples=1000, suppress_health_check=[HealthCheck.too_slow])
+# deadline=None on every profile: the default 200ms per-example deadline is
+# wall-clock and unreliable under the standard gate (pytest -n auto + coverage
+# tracing), where CPU contention makes a trivial example exceed 200ms and
+# raises DeadlineExceeded — a pure timing flake, not a logic defect. PBTs here
+# assert behaviour, not latency; performance lives in benchmarks/.
+settings.register_profile("dev", max_examples=50, deadline=None)
+settings.register_profile("ci", max_examples=100, deadline=None, suppress_health_check=[HealthCheck.too_slow])
+settings.register_profile("nightly", max_examples=1000, deadline=None, suppress_health_check=[HealthCheck.too_slow])
 settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "dev"))
 
 
