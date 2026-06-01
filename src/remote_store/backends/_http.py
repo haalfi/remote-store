@@ -212,8 +212,10 @@ def _make_httpx_transport(*, verify_ssl: bool, max_redirects: int) -> HttpTransp
 class ReadOnlyHttpBackend(Backend):
     """Read-only backend for HTTP/HTTPS URLs.
 
-    Treats an HTTP endpoint as a file store with ``{READ, METADATA}``
-    capabilities. Write, delete, list, move, and copy operations raise
+    Treats an HTTP endpoint as a file store with
+    ``{READ, METADATA, LAZY_READ}`` capabilities (``read()`` streams the
+    response body lazily rather than buffering the whole file). Write,
+    delete, list, move, and copy operations raise
     ``CapabilityNotSupported``.
 
     Args:

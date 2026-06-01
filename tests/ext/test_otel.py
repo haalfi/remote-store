@@ -148,6 +148,27 @@ class TestSpanConventions:
         assert span.attributes.get("error.type") == "NotFound"
         assert any(e.name == "exception" for e in span.events)
 
+    @pytest.mark.spec("SAW-015")
+    def test_open_atomic_span_covers_full_lifecycle(self, otel_env: dict[str, Any]) -> None:
+        """SAW-015: a single ``store.open_atomic`` span wraps the open-write-promote lifecycle.
+
+        The ``around`` hook opens the span on enter and closes it on context
+        exit -- after the write is promoted to the final key -- so the whole
+        atomic write is one span, not one-per-inner-op. Asserting the payload
+        is readable afterwards confirms promotion happened inside the span's
+        extent.
+        """
+        obs, env = _observed(otel_env)
+        with obs.open_atomic("atomic.txt") as f:
+            f.write(b"promote me")
+        spans = env["span_exporter"].get_finished_spans()
+        assert len(spans) == 1
+        assert spans[0].name == "store.open_atomic"
+        assert spans[0].status.status_code != StatusCode.ERROR
+        attrs = dict(spans[0].attributes or {})
+        assert attrs["remote_store.operation"] == "open_atomic"
+        assert obs.read_bytes("atomic.txt") == b"promote me"
+
     @pytest.mark.spec("OBS-012")
     def test_multiple_operations_create_multiple_spans(self, otel_env: dict[str, Any]) -> None:
         obs, env = _observed(otel_env)

@@ -8,6 +8,35 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-250 — Spec-traceability audit (audit-015): correctness gaps + spec defects**
+  spec: STORE-018, HTTP-CON-003, HTTP-CON-004, S3-012, BATCH-023, SAW-015 · effort: M · audience: library.maintainer, user.api_docs, contributor.process, infra.test
+  The "something is actually wrong or missing" slice of audit-015 (its
+  [verified addendum](audits/audit-015-spec-traceability.md#verified-addendum-2026-06-01)).
+  - **(a) 5 untested behaviors — tests added, all run green.** `S3-012` (S3 + S3-PyArrow
+    non-recursive `delete_folder` on a non-empty folder raises `DirectoryNotEmpty`, in
+    `tests/backends/s3/test_moto.py` — the cross-backend conformance test skips it via
+    `_skip_flat_namespace`); `HTTP-CON-003` / `HTTP-CON-004` (`ReadOnlyHttpBackend` name +
+    capability set, in `tests/backends/http/test_config.py`); `SAW-015` (`ext.otel` span
+    over the `open_atomic` lifecycle, in `tests/ext/test_otel.py`); `BATCH-023` (sequential
+    batch preserves input order, in `tests/ext/test_batch.py`). Each is a coverage gap, not a
+    code bug — the behaviors already held, so the tests pass on first run.
+  - **HTTP-CON-004 divergence resolved *toward the code*, not the spec (user-confirmed).**
+    The audit hypothesised `LAZY_READ` was an accidental addition to the runtime constant and
+    prescribed removing it. Verification falsified that: `read()` returns a live streamed
+    response body on every transport (urllib; `requests`/`httpx` with `stream=True`), and
+    `FEATURES.md` + the capability matrix + the HTTP guide all already declare `LAZY_READ`.
+    The flag is truthful; the stale outliers were spec 032 (HTTP-CON-004) and the
+    `ReadOnlyHttpBackend` docstring, both corrected to `{READ, METADATA, LAZY_READ}`. (Audit
+    prescription is advisory; diverged per the re-verify-against-code convention.)
+  - **(c) STORE-015 renumber.** Spec 001 declared `STORE-015` twice (native_path + glob).
+    Kept `native_path` = `STORE-015` (its `NPR-022` test mark rides it); renumbered `glob()`
+    → `STORE-018`. Updated the glob cross-refs (spec 018-glob.md, spec 029 ASYNC-053).
+  - **BK-251 baseline ratchet.** Removed the 5 now-marked drift entries and the
+    `(KIND_DUPLICATE, STORE-015)` entry from `check_spec_marks.py::_BASELINE`; added
+    `(KIND_DRIFT, STORE-018)` — `glob()`'s GLOB-* coverage still owes a spec-file mark
+    (BK-252). Gate green: `main() == 0`.
+  The ~57 unbuilt-Graph IDs (`GR-*`, `ERR-013`) remain owned by ID-127.
+
 - [x] **BK-253 — Disable Hypothesis per-example deadline in test profiles**
   spec: — · effort: S · audience: infra.test
   Surfaced during BK-244 verification: `test_pbt_properties.py::TestConfigFromDict::test_backend_types_preserved`

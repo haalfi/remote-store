@@ -68,6 +68,33 @@ def backend(httpserver_with_files: HTTPServer) -> ReadOnlyHttpBackend:
     )
 
 
+class TestHttpConstruction:
+    """HTTP-CON-003, HTTP-CON-004: backend identity and capability declaration."""
+
+    @pytest.mark.spec("HTTP-CON-003")
+    def test_name_is_http(self) -> None:
+        """HTTP-CON-003: the ``name`` property is the literal ``"http"``."""
+        b = ReadOnlyHttpBackend(base_url="http://example.com/", http_client="urllib")
+        assert b.name == "http"
+
+    @pytest.mark.spec("HTTP-CON-004")
+    def test_capabilities_are_read_metadata_lazy(self) -> None:
+        """HTTP-CON-004: capabilities are exactly ``{READ, METADATA, LAZY_READ}``.
+
+        ``LAZY_READ`` is included because ``read()`` returns a live streamed
+        response body (not a pre-loaded ``BytesIO``) on every transport --
+        urllib, requests (``stream=True``), and httpx (``iter_bytes``). The
+        flag is therefore truthful, matching ``FEATURES.md`` and the
+        capability matrix; spec 032 and the class docstring were corrected
+        to list it (BK-250 / audit-015).
+        """
+        from remote_store._capabilities import Capability
+
+        b = ReadOnlyHttpBackend(base_url="http://example.com/", http_client="urllib")
+        # CapabilitySet has no __eq__ (identity-compared); compare contents.
+        assert set(b.capabilities) == {Capability.READ, Capability.METADATA, Capability.LAZY_READ}
+
+
 class TestHttpRead:
     """HTTP-001, HTTP-002: read operations."""
 

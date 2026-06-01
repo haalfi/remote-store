@@ -585,32 +585,15 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Maintenance / Long-horizon
 
-- [ ] **BK-250 — Spec-traceability audit (audit-015): correctness gaps + spec defects**
-  spec: STORE-015, HTTP-CON-003, HTTP-CON-004, S3-012, BATCH-023, SAW-015 · effort: M · audience: library.maintainer
-  The "something is actually wrong or missing" slice of audit-015, scoped by its
-  [verified addendum](audits/audit-015-spec-traceability.md#verified-addendum-2026-06-01).
-  Three sub-tasks, each test-first per process principle 6:
-  - **(a) 5 untested behaviors** — write the missing tests: `S3-012` (S3/S3PA
-    non-recursive `delete_folder` on a non-empty folder raises `DirectoryNotEmpty`;
-    currently skipped via `_skip_flat_namespace` — highest value), `BATCH-023`
-    (sequential order preserved / concurrent non-deterministic), `SAW-015` (ext.otel
-    span over `open_atomic`), `HTTP-CON-003` / `HTTP-CON-004` (name + capability set).
-  - **(c) STORE-015 renumber** — two distinct invariants share one ID (native_path +
-    glob); renumber before either can be marked. Unblocks the BK-252 backfill.
-  - **HTTP-CON-004 capability divergence** — `ReadOnlyHttpBackend`'s runtime constant
-    declares `LAZY_READ` but its docstring and spec 032 list `{READ, METADATA}`
-    (three-way disagreement; `LAZY_READ` looks accidental). Resolve toward the spec
-    (principle 5) as part of the HTTP-CON-004 test.
-  The ~57 unbuilt-Graph IDs (`GR-*`, `ERR-013`) are owned by ID-127, not this item.
-
 - [ ] **BK-252 — Bulk spec-mark backfill (~127 type-(b) labels)**
   spec: — · effort: L · audience: library.maintainer
   The mechanical slice of audit-015: ~127 invariants whose behavior is already tested
   (largely via cross-backend conformance under sibling marks) but lack the
   spec-file-specific `@pytest.mark.spec(...)`. Backfill per spec-cluster — Azure (012)
-  is the cleanest start (every `AZ-*` rides a `BE-*`/`GLOB-*` test). Gated by **BK-251**
-  (the gate, landed — see BACKLOG-DONE.md; its `_BASELINE` is the worklist and shrinks as
-  marks land) and the **BK-250** STORE-015 renumber. Verify each mark against the named
+  is the cleanest start (every `AZ-*` rides a `BE-*`/`GLOB-*` test). Both gates have landed
+  (see BACKLOG-DONE.md): **BK-251** (the `check_spec_marks.py` gate, whose `_BASELINE` is the
+  worklist and shrinks as marks land) and the **BK-250** `STORE-015` renumber (`glob()` is now
+  `STORE-018`, an ordinary drift row this item backfills). Verify each mark against the named
   test before stamping; do not rubber-stamp. See the addendum's type-(b) caveats
   (`SQL-QUERY-061/063` ride shared-base coverage; `GLOB-019` depends on fixture liveness).
 

@@ -1,7 +1,8 @@
 # ReadOnlyHttpBackend
 
 API reference for `ReadOnlyHttpBackend` — read-only access to files over
-HTTP/HTTPS. Supports `READ` and `METADATA` capabilities only.
+HTTP/HTTPS. Supports `READ`, `METADATA`, and `LAZY_READ` capabilities only
+(`read()` streams lazily; write, delete, list, move, and copy are unsupported).
 
 ::: remote_store.backends.ReadOnlyHttpBackend
     options:

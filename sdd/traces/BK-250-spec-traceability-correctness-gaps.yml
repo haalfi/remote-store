@@ -1,0 +1,139 @@
+id: BK-250
+title: "Spec-traceability audit (audit-015): correctness gaps + spec defects"
+trigger: >-
+  audit-015's verified addendum split the traceability debt into 5 untested
+  shipped behaviors (type-a), ~127 label backfills (type-b, owned by BK-252),
+  and 1 spec defect (the STORE-015 duplicate ID). BK-250 owns the type-a tests
+  and the type-c renumber; it must also clear the matching BK-251 baseline rows
+  in the same PR (the gate fails on a stale baseline entry).
+source_items:
+  - BK-250
+audience:
+  - library.maintainer
+  - infra.test
+  - user.api_docs
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - scripts/check_spec_marks.py
+  - sdd/specs/018-glob.md
+  - sdd/specs/029-async-store-backend-api.md
+  - CHANGELOG.md
+surprising_ripples:
+  - sdd/BACKLOG.md
+  - docs-src/reference/api/backends/http.md
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BK-250"
+        read_type: gate
+        extract: "Scope: type-a tests + STORE-015 renumber; Graph IDs out of scope (ID-127)"
+        outcome: ok
+      - file: sdd/audits/audit-015-spec-traceability.md
+        section: "Verified addendum (2026-06-01) — (a) the 5 untested behaviors"
+        read_type: gate
+        extract: "The 5 type-a IDs with evidence; HTTP-CON-004 three-way capability divergence"
+        outcome: ok
+      - file: scripts/check_spec_marks.py
+        section: "_BASELINE"
+        read_type: gate
+        extract: "Which drift/duplicate rows must be removed as each ID is marked / renumbered"
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Audits"
+        read_type: gate
+        extract: "Audit diagnosis authoritative, prescription advisory — re-verify each gap against code"
+        outcome: ok
+  - id: reproduce
+    name: Verify gaps against the code
+    steps:
+      - file: src/remote_store/backends/_s3.py
+        section: "delete_folder (non-recursive branch)"
+        read_type: verify
+        extract: "Code already raises DirectoryNotEmpty; the gap is coverage, not a bug"
+        outcome: ok
+      - file: tests/backends/conformance/test_errors.py
+        section: "test_delete_folder_non_recursive_non_empty_raises (_skip_flat_namespace)"
+        read_type: verify
+        extract: "Confirmed S3/S3PA are skipped there; SQLBlob has SQL-BLOB-025, S3/S3PA have none"
+        outcome: ok
+      - file: src/remote_store/backends/_http.py
+        section: "_CAPABILITIES, ReadOnlyHttpBackend.read, transports"
+        read_type: verify
+        extract: >-
+          read() returns a live streamed body on all 3 transports (urllib resp;
+          requests/httpx stream=True) — LAZY_READ is truthful, NOT accidental.
+          Falsifies the audit hypothesis; resolution must go toward the code.
+        outcome: misleading
+      - file: FEATURES.md
+        section: "Capability matrix (http row)"
+        read_type: verify
+        extract: "FEATURES.md + capability matrix + http guide already declare LAZY_READ — corroborates the code"
+        outcome: ok
+      - file: sdd/specs/001-store-api.md
+        section: "STORE-013..STORE-017"
+        read_type: verify
+        extract: "STORE-015 declared twice (native_path + glob); native_path mark rides NPR-022 → keep 015, rename glob"
+        outcome: ok
+  - id: tests
+    name: Add the 5 missing tests
+    steps:
+      - file: tests/backends/s3/test_moto.py
+        section: "TestS3ControlPathMoto (S3-012)"
+        read_type: reference
+        extract: "Parametrized S3 + S3PA moto/MinIO harness — ideal home for the S3-012 guard test"
+        outcome: ok
+      - file: tests/backends/http/test_config.py
+        section: "TestHttpConstruction (HTTP-CON-003, HTTP-CON-004)"
+        read_type: reference
+        extract: "name=='http' and capabilities=={READ,METADATA,LAZY_READ}; compare set() — CapabilitySet has no __eq__"
+        outcome: ok
+      - file: tests/ext/test_otel.py
+        section: "TestSpanConventions (SAW-015)"
+        read_type: reference
+        extract: "Single store.open_atomic span over open-write-promote; assert payload readable after"
+        outcome: ok
+      - file: tests/ext/test_batch.py
+        section: "test_sequential_preserves_input_order (BATCH-023)"
+        read_type: reference
+        extract: "Unsorted input (c,a,b) so succeeded must equal the exact tuple, not just the set"
+        outcome: ok
+  - id: implement
+    name: Spec/docstring correction + STORE-015 renumber + baseline ratchet
+    steps:
+      - file: sdd/specs/032-http-backend.md
+        section: "HTTP-CON-004"
+        read_type: reference
+        extract: "Correct capability set to {READ, METADATA, LAZY_READ} with streaming rationale"
+        outcome: ok
+      - file: src/remote_store/backends/_http.py
+        section: "ReadOnlyHttpBackend docstring"
+        read_type: reference
+        extract: "Docstring now lists LAZY_READ (user.api_docs surface)"
+        outcome: ok
+      - file: sdd/specs/001-store-api.md
+        section: "STORE-018 (was second STORE-015): glob()"
+        read_type: reference
+        extract: "glob() renumbered to STORE-018; native_path keeps STORE-015"
+        outcome: ok
+      - file: scripts/check_spec_marks.py
+        section: "_BASELINE"
+        read_type: reference
+        extract: "Remove 5 drift rows + STORE-015 duplicate; add STORE-018 drift (glob mark owed to BK-252)"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_spec_marks.py
+        section: "main() against the real repo"
+        read_type: verify
+        extract: "Gate green (160 baselined gaps, 0 new/stale) — baseline ratchet consistent"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix + Quoted-identifier rename"
+        read_type: verify
+        extract: "STORE-015 rename ripple: glob cross-refs in spec 018 + spec 029 updated; CHANGELOG for user.api_docs"
+        outcome: ok
