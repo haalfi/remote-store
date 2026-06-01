@@ -356,6 +356,10 @@ class TestS3Boto3Lifecycle:
         finally:
             backend.close()
 
+    # No @pytest.mark.spec: this pins the S3 analogue of SEEK-006 (Azure Range
+    # Reader Override) on a lane that SEEK-004 still classifies as a read()
+    # passthrough; the boto3-lane axiom (a future S3B-* referencing SEEK-006)
+    # does not exist yet. See research-s3-boto3-poc.md § 4a.
     def test_read_seekable_is_unbuffered_and_seeks(self, moto_bucket: tuple[str, str]) -> None:
         """``read_seekable`` returns a seekable, **unbuffered** Range stream.
 

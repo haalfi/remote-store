@@ -167,6 +167,18 @@ Surfaced in PR review. None block the Park PoC; each is a Ship-promotion item.
   Park; a Ship promotion needs a dedicated `S3B-*` spec block (or generalized
   `S3-018` postconditions), mirroring how the pyarrow lane created
   `S3PA-018`/`S3PA-019` that *reference* the `S3-*` IDs.
+- **Seekable-read spec classification.** The `read_seekable()` override below
+  is the S3 analogue of **SEEK-006** ("Azure Range Reader Override") — a bare
+  unbuffered `_ErrorMappingStream(_S3RangeReader(...))`, matching that axiom's
+  postconditions. But **SEEK-004** ("Passthrough for Seekable Backends") still
+  lists S3 among the backends that "return the `read()` stream directly", which
+  is no longer true for this lane (`read()` returns a `BufferedReader`;
+  `read_seekable()` returns a different, unbuffered instance). The spec is
+  silent on the boto3 lane. A Ship promotion needs an `S3B-*` axiom referencing
+  SEEK-006 (mirroring `S3PA-018/019 → S3-*`) and a SEEK-004 amendment that drops
+  the boto3 lane from the passthrough list. The targeted test
+  (`test_read_seekable_is_unbuffered_and_seeks`) is left unmarked for the same
+  reason as the 5xx rows — its axiom does not yet exist.
 - **`read()` vs `read_seekable()` buffering.** Each `_S3RangeReader.readinto`
   is one ranged `GetObject`. `read()` wraps it in a 1 MiB `BufferedReader`, so a
   sequential consume issues ~1 GET per MiB rather than ~1 GET per 8 KiB
