@@ -104,6 +104,7 @@ jobs:
       - run: python scripts/check_test_placement.py tests
       - run: python scripts/check_tla_no_emdash.py
       - run: python scripts/check_formal_trace.py
+      - run: python scripts/check_spec_marks.py
       - run: python scripts/check_docs_framework.py
       - run: python scripts/check_rst_roles.py
       - run: python scripts/check_infra_settings.py

@@ -1,0 +1,96 @@
+id: BK-251
+title: "Spec-mark CI gate (check_spec_marks.py)"
+trigger: "audit-015 found spec-to-test mark drift with no enforcement: a shipped spec ID could lose (or never grow) its @pytest.mark.spec, a marker could cite an ID no spec declares (stale HTTP-001), and a duplicate ID (STORE-015) sat undetected. BK-251 builds the mechanical gate."
+source_items:
+  - BK-251
+  - BK-250
+audience:
+  - contributor.tooling
+  - library.maintainer
+co_shipped_items: []
+discovery_followups: []
+surprising_ripples:
+  - tests/test_examples.py
+expected_ripples:
+  - .github/workflows/ci.yml
+  - pyproject.toml
+  - sdd/backlogid.json
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-251 (item)"
+        read_type: gate
+        extract: "Scope: map shipped spec IDs to marks; fail on unmarked/stale; allowlist type-d + Graph; land before BK-252 as a ratchet"
+      - file: sdd/audits/audit-015-spec-traceability.md
+        section: "Verified addendum (2026-06-01)"
+        read_type: gate
+        extract: "Verified ID categories: 5 type-a, ~127 type-b, ~33 type-d (design/meta/deferred), ~57 Graph (ID-127), 1 type-c (STORE-015 dup). Seeds the allowlist (d) rows."
+      - file: CLAUDE.md
+        section: "Coverage gate, Bug-fix protocol"
+        read_type: gate
+        extract: "test-first per 000-process Rule 6; tests/scripts/ placement; check-script dual-wire convention"
+  - id: reference
+    name: Reference
+    steps:
+      - file: scripts/check_formal_trace.py
+        section: "_BASELINE, extract_*, main"
+        read_type: reference
+        extract: "Reuse the shrink-only checked-in baseline pattern and the AST marker-anchor extraction (decorator / marks= / pytestmark)"
+      - file: tests/scripts/test_check_formal_trace.py
+        section: "(full)"
+        read_type: reference
+        extract: "Guard-test shape: importlib-load the script, unit-test each extractor + compute + main baseline mechanics, plus a repo-is-green test"
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Trace schema; audience derived-rule (tooling/maintainer skip CHANGELOG)"
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_check_spec_marks.py
+        section: "(full)"
+        read_type: gate
+        extract: "Write failing unit tests first (drift/stale/dup, comma-split, backlog+gate-code exclusion, baseline shrink); see them fail before implementing"
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/check_spec_marks.py
+        section: "extract_declared_specs, extract_test_specs, compute_violations, _BASELINE"
+        read_type: gate
+        extract: "S = declared sections (headings + ID-tables, with per-ID locations for dup detection); T = marks across all of tests/ (split comma-joined ID strings); drift/stale/dup; checked-in baseline of 165 drift + 1 dup"
+  - id: fix
+    name: Fix
+    steps:
+      - file: tests/test_examples.py
+        section: "TestHttpBackend.test_demo"
+        read_type: gate
+        extract: "Replace the stale @pytest.mark.spec(\"HTTP-001\") (no such section in spec 032) with HTTP-CON-001, the construction section the demo exercises — clears the one genuine stale mark so no stale entry needs baselining"
+  - id: wire
+    name: Wire
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint"
+        read_type: gate
+        extract: "Add check_spec_marks.py to the lint script list, beside check_formal_trace"
+      - file: .github/workflows/ci.yml
+        section: "lint job"
+        read_type: gate
+        extract: "Add the check_spec_marks.py run step, beside check_formal_trace (dual-wire per check-script convention)"
+  - id: verify
+    name: Verify
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint"
+        read_type: verify
+        extract: "Confirm check_spec_marks.py is in the lint list (dev loop), beside check_formal_trace"
+      - file: .github/workflows/ci.yml
+        section: "lint job"
+        read_type: verify
+        extract: "Confirm the matching CI run step exists — dual-wired, not lint-only, so the gate runs in CI"
+      - file: scripts/check_spec_marks.py
+        section: "main"
+        read_type: verify
+        extract: "Gate runs green against the checked-in _BASELINE (166 known gaps); the repo-is-green guard test pins this"

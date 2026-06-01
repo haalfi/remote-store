@@ -522,7 +522,7 @@ class TestParquetDataset:
 
 
 class TestHttpBackend:
-    @pytest.mark.spec("HTTP-001")
+    @pytest.mark.spec("HTTP-CON-001")
     def test_demo(self):
         pytest.importorskip("pytest_httpserver", reason="pytest-httpserver not installed")
 
