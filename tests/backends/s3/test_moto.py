@@ -403,3 +403,41 @@ class TestBug214MidStreamFailure:
         finally:
             backend.close()
             client.close()
+
+    def test_discard_failure_preserves_original_error(self) -> None:
+        """A failing ``discard()`` must not mask the content error nor skip ``closed``.
+
+        ``discard()`` makes a live ``AbortMultipartUpload`` call, so it can fail
+        on its own (network blip, server error). The cleanup path swallows that
+        so the ORIGINAL mid-stream content failure still propagates, and sets
+        ``closed`` regardless so a failed abort cannot leave ``__del__`` free to
+        re-commit a truncated object (S3-010 / AW-001). Injected s3fs mocks keep
+        the test off the wire.
+        """
+        from unittest.mock import MagicMock
+
+        import s3fs
+        from s3fs.core import S3File
+
+        from remote_store._errors import RemoteStoreError
+        from remote_store.backends._s3 import S3Backend
+
+        backend = S3Backend(bucket="b", key="testing", secret="testing", region_name="us-east-1")
+        fake_file = MagicMock(spec=S3File)
+        fake_file.discard.side_effect = RuntimeError("RS214-abort-sentinel: AbortMultipartUpload blew up")
+        mock_fs = MagicMock(spec=s3fs.S3FileSystem)
+        mock_fs.exists.return_value = False
+        mock_fs.open.return_value = fake_file
+        backend._fs_instance = mock_fs
+
+        with pytest.raises(RemoteStoreError) as excinfo:
+            backend.write("k.bin", FailingContentReader.buffered(10), overwrite=True)
+
+        # The original content failure surfaces, not the abort failure ...
+        assert "simulated mid-stream content failure" in str(excinfo.value)
+        assert "RS214-abort-sentinel" not in str(excinfo.value)
+        # ... the abort was attempted ...
+        fake_file.discard.assert_called_once()
+        # ... and ``closed`` was set despite ``discard()`` raising, so ``__del__``
+        # cannot re-commit.
+        assert fake_file.closed is True

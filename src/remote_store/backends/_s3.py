@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import tempfile
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from typing import TYPE_CHECKING, Any, BinaryIO, ClassVar, TypeVar, cast
 
 from remote_store._backend import _COPY_BUFSIZE
@@ -189,7 +189,14 @@ class S3Backend(_S3Base):
                     # ``discard()`` aborts any multipart upload and drops the
                     # buffer; setting ``closed`` stops ``__del__`` from
                     # re-initiating an upload through a force-flush.
-                    f.discard()
+                    #
+                    # ``discard()`` makes a live ``AbortMultipartUpload`` call,
+                    # so it can itself fail (network blip, server error). Swallow
+                    # that so the ORIGINAL content failure propagates -- and set
+                    # ``closed`` regardless, so a failed abort still cannot leave
+                    # ``__del__`` free to re-commit a truncated object.
+                    with suppress(Exception):
+                        f.discard()
                     f.closed = True
                     raise
                 else:

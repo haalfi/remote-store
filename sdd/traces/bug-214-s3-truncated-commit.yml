@@ -14,7 +14,7 @@ audience:
   - infra.test
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

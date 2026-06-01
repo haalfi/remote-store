@@ -504,6 +504,7 @@ class TestS3PyArrowCredentialMasking:
 # region: BUG-214 -- write_atomic() atomicity: buffer-before-open fix
 
 
+@pytest.mark.spec("S3PA-013")
 class TestBug214WriteAtomicity:
     """BUG-214: write_atomic() must not open an S3 output stream if content fails.
 
