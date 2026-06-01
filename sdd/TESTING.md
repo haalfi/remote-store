@@ -183,6 +183,19 @@ sync and async fixtures against a live ADLS Gen2 account, verifies no credential
 survived scrubbing, and runs a Stage 1 replay smoke test. Pass `--verify-only` to
 skip recording and re-run only the verification steps.
 
+To record or refresh a **single** cassette without the all-or-nothing tree-wipe,
+pass `--node` with the live-variant node id (`hatch run` forwards the flag, or
+call the script directly):
+
+```bash
+RS_TEST_LIVE_HNS=1 hatch run record-azure \
+  --node "tests/backends/conformance/test_errors.py::TestX::test_y[azure_live]"
+```
+
+This skips the Step-1 delete and the min-cassette guard, records only the named
+test, then runs the same scrub-verify + Stage 1 replay over the whole corpus.
+Use it for a focused PR diff: every other cassette's volatile headers stay put.
+
 Per [TEST-009](specs/048-testing-architecture.md#test-009-cassette-refresh-is-explicit):
 CI does not auto-record; a refresh is a normal PR diff.
 
@@ -230,7 +243,7 @@ HTTP call the cassette does not already contain?
 | Fix shape | Cassette sufficiency | Action |
 |-----------|---------------------|--------|
 | In-process filter / mapping over data the SDK already returns | Sufficient | Proceed to step 3 |
-| Adds, removes, or reorders SDK calls | Insufficient | Refresh cassette via `hatch run record-azure` (needs Stage 3 live access), then resume on the new cassette |
+| Adds, removes, or reorders SDK calls | Insufficient | Refresh the cassette (needs Stage 3 live access), then resume on the new one. Use `hatch run record-azure --node "<nodeid[azure_live]>"` for a single test to avoid churning the whole corpus, or plain `hatch run record-azure` to re-record everything |
 
 The decision is mechanical: list the SDK calls the fix introduces, grep
 the cassette `interactions:` list for matching `method` + `uri`

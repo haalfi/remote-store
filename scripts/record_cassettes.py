@@ -6,6 +6,7 @@ Usage::
     hatch run record-azure
     python scripts/record_cassettes.py --backend azure
     python scripts/record_cassettes.py --backend azure --verify-only
+    python scripts/record_cassettes.py --backend azure --node "<nodeid>[azure_live]"
 
 Steps (all backends):
     1. Delete existing cassettes for the backend.
@@ -16,6 +17,15 @@ Steps (all backends):
 
 Pass ``--verify-only`` to skip steps 1-3 and re-run only 4-5 (useful after
 a partial failure or when checking an existing cassette set).
+
+Pass ``--node SELECTOR`` to record a *single* cassette without the
+all-or-nothing tree-wipe: steps 1-3 are replaced by one targeted
+``pytest --stage=3 --record`` run for the given node (no Step-1 delete, no
+min-cassette guard), then the whole-dir scrub-verify + replay (steps 4-5)
+run unchanged. ``SELECTOR`` is a pytest node id (or path) and must name the
+*live* variant of the test, e.g. ``...::test_y[azure_live]`` or
+``...::test_y[azure_live_async]``. Use this to add or refresh one cassette
+without churning every other file's volatile headers.
 """
 
 from __future__ import annotations
@@ -171,19 +181,61 @@ def main() -> None:
         metavar="BACKEND",
         help=f"backend to record: {', '.join(_BACKENDS)}",
     )
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--verify-only",
         action="store_true",
         help="skip recording; run only scrub-verify + replay smoke test (steps 4-5)",
+    )
+    mode.add_argument(
+        "--node",
+        metavar="NODEID",
+        help=(
+            "record a single cassette: pytest node selector for the live test variant "
+            "(e.g. path::Class::test[azure_live]); skips the tree-wipe (Step 1) and the "
+            "min-cassette guard, then runs scrub-verify + replay (steps 4-5)"
+        ),
     )
     opts = parser.parse_args()
 
     cfg = _BACKENDS[opts.backend]
     cassette_dir: Path = cfg["cassette_dir"]
+    single = opts.node is not None
 
+    # Single mode records against live too, so it runs the recording preflight
+    # (opt-in flag + cred validation). It performs no Step-1 delete, so the
+    # BUG-212 wipe-before-validate hazard does not apply, but failing fast on
+    # missing credentials is still correct.
     _preflight_env(cfg, verify_only=opts.verify_only)
 
-    if not opts.verify_only:
+    if single:
+        _section("Step 1-3 — record single cassette (no tree-wipe)")
+        before = {f.name: f.stat().st_mtime for f in cassette_dir.glob("*.yaml")}
+        # The node selector replaces both the -k filter and the conformance-dir
+        # positional. -m live overrides the default addopts "-m 'not live'".
+        _run(
+            sys.executable,
+            "-m",
+            "pytest",
+            "--stage=3",
+            "--record",
+            "-m",
+            "live",
+            opts.node,
+            "--tb=short",
+            "-q",
+        )
+        new = sorted(f.name for f in cassette_dir.glob("*.yaml") if f.name not in before)
+        modified = sorted(
+            f.name for f in cassette_dir.glob("*.yaml") if f.name in before and f.stat().st_mtime > before[f.name]
+        )
+        if new:
+            print(f"  New cassette(s): {', '.join(new)}")
+        if modified:
+            print(f"  Refreshed in place: {', '.join(modified)}")
+        if not new and not modified:
+            print("  No cassette file changed — check the node selector named a recordable live test.")
+    elif not opts.verify_only:
         _section("Step 1 — delete existing cassettes")
         deleted = 0
         for f in cassette_dir.glob("*.yaml"):
@@ -223,7 +275,7 @@ def main() -> None:
             "-q",
         )
 
-    if not opts.verify_only:
+    if not opts.verify_only and not single:
         min_expected = cfg.get("min_cassettes", 0)
         recorded = len(list(cassette_dir.glob("*.yaml")))
         if recorded < min_expected:
