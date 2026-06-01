@@ -69,7 +69,7 @@ class TestParquetSerializer:
     @pytest.mark.spec("DAG-004")
     def test_roundtrip_pandas(self, store: Store) -> None:
         """Roundtrip with a pandas DataFrame returns Arrow Table."""
-        import pyarrow as pa
+        pa = pytest.importorskip("pyarrow")
 
         pandas = pytest.importorskip("pandas")
         mgr = dagster_io_manager(store, serializer="parquet")
@@ -91,7 +91,7 @@ class TestParquetSerializer:
     @pytest.mark.spec("DAG-004")
     def test_roundtrip_arrow(self, store: Store) -> None:
         """Roundtrip with a PyArrow Table returns Arrow Table."""
-        import pyarrow as pa
+        pa = pytest.importorskip("pyarrow")
 
         mgr = dagster_io_manager(store, serializer="parquet")
 
@@ -111,8 +111,8 @@ class TestParquetSerializer:
     @pytest.mark.spec("DAG-004")
     def test_serialize_arrow_table(self) -> None:
         """Serialize a PyArrow Table directly."""
-        import pyarrow as pa
-        import pyarrow.parquet as pq
+        pa = pytest.importorskip("pyarrow")
+        pq = pytest.importorskip("pyarrow.parquet")
 
         serializer = ParquetSerializer()
         table = pa.table([pa.array([1, 2, 3]), pa.array(["x", "y", "z"])], names=["a", "b"])
@@ -129,13 +129,13 @@ class TestParquetSerializer:
     @pytest.mark.spec("DAG-004")
     def test_serialize_polars_like(self) -> None:
         """Serialize an object with to_arrow() (Polars-like)."""
-        import pyarrow as pa
-        import pyarrow.parquet as pq
+        pa = pytest.importorskip("pyarrow")
+        pq = pytest.importorskip("pyarrow.parquet")
 
         table = pa.table([pa.array([10, 20])], names=["val"])
 
         # Mock a Polars-like DataFrame with to_arrow()
-        import polars as pl
+        pl = pytest.importorskip("polars")
 
         polars_like = mock.MagicMock(spec=pl.DataFrame)
         polars_like.to_arrow.return_value = table
@@ -153,6 +153,7 @@ class TestParquetSerializer:
     @pytest.mark.spec("DAG-004")
     def test_serialize_unsupported_type(self) -> None:
         """Serializing an unsupported type raises TypeError."""
+        pytest.importorskip("pyarrow")
         serializer = ParquetSerializer()
         with pytest.raises(TypeError, match="ParquetSerializer expects a DataFrame, got str"):
             serializer.serialize("not a dataframe")
@@ -162,8 +163,8 @@ class TestParquetSerializer:
         """Deserialize returns a PyArrow Table (not pandas)."""
         import io
 
-        import pyarrow as pa
-        import pyarrow.parquet as pq
+        pa = pytest.importorskip("pyarrow")
+        pq = pytest.importorskip("pyarrow.parquet")
 
         table = pa.table([pa.array([1, 2, 3])], names=["col"])
         buf = io.BytesIO()

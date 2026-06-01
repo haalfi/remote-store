@@ -187,11 +187,36 @@ expected_ripples:
 #    immediately and only the pre-existing noisy files are silenced.
 review_rounds: 6
 
+# Operational firing (2026-06-01, run 26755583418 -> rolling issue #718).
+# First real weekly drift across azure/dagster/requests/s3/s3-pyarrow. Two
+# learnings, both the same family as round 5 ("smoke-install does not match
+# what the smoke targets transitively need to execute"):
+#  26. The dagster smoke went red while the other four were green — but not
+#      from the dagster 1.13.6->1.13.7 / grpcio rc1->stable bump. The cause:
+#      tests/ext/test_dagster.py::TestParquetSerializer hard-imported pyarrow
+#      (and polars), which the [dagster]-only smoke env does not install, so
+#      6 tests errored with ModuleNotFoundError regardless of the drift. The
+#      rest of the file already guards pyarrow with pytest.importorskip; only
+#      this DAG-004 class was written with bare imports. Brought it in line
+#      (the file's own pattern) so the smoke skips the [arrow]-gated capability
+#      and validates what [dagster] actually ships. Confirmed in CI by the
+#      6-failed / 6-skipped split — the 6 skipped were the already-guarded
+#      siblings. Attributed here (not to the dagster ext trace) because
+#      ID-182's smoke is the code that unmasked the latent gap.
+#  27. Baselines were refreshed from the run's `candidate-baseline-<extra>`
+#      artifacts (Linux-resolved), NOT a local `refresh-baseline`, because the
+#      maintainer was on Windows: a Windows resolve injects platform-only deps
+#      (colorama via click/tqdm, pywin32) that the Linux CI re-resolve never
+#      sees, which would leave the rolling issue showing phantom "removed"
+#      drift and never clear. The workflow's candidate-baseline upload step
+#      exists for exactly this; the /drift skill now encodes the OS caveat.
+
 surprising_ripples:
   - scripts/check_infra_settings.py
   - scripts/drift_report.py
   - tests/scripts/test_drift_check.py
   - tests/scripts/test_drift_smoke_map.py
+  - tests/ext/test_dagster.py  # operational firing #26: pyarrow-hardimport smoke gap
 
 phases:
   - id: orient
