@@ -4826,6 +4826,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#verify-signatures-locally-one-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify signatures locally (one-time)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9946,6 +9957,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#verify-signatures-locally-one-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify signatures locally (one-time)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10332,6 +10354,17 @@ Settings &gt; SSH and GPG keys &gt; New SSH key &gt; Key type: <strong>Signing K
 (via <code>Set-Service ssh-agent -StartupType Automatic</code> in an elevated PowerShell)
 for persistence across sessions.</p>
 <p>Verify with <code>echo "test" | git commit-tree HEAD^{tree} -S</code> — a commit hash without passphrase prompt means signing works.</p>
+<h3 id="verify-signatures-locally-one-time">Verify signatures locally (one-time)<a class="headerlink" href="#verify-signatures-locally-one-time" title="Permanent link">&para;</a></h3>
+<p>Producing signatures and <em>verifying</em> them locally are separate steps. Without an
+allowed-signers file, <code>git log --show-signature</code> (and <code>%G?</code>) reports <code>N</code> for your
+own SSH-signed commits — they are signed, but Git has nothing to verify against.
+To make local verification resolve to <code>G</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>git<span class="w"> </span>config<span class="w"> </span>user.email<span class="k">)</span><span class="s2"> </span><span class="k">$(</span>cat<span class="w"> </span>~/.ssh/&lt;your-key&gt;.pub<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.ssh/allowed_signers
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>gpg.ssh.allowedSignersFile<span class="w"> </span>~/.ssh/allowed_signers
+</code></pre></div>
+<p>This is purely local; GitHub verifies independently regardless. Note: commits
+merged via GitHub's squash button are re-signed with GitHub's own key and show
+<code>E</code> locally ("no public key") — that is expected, not a failure.</p>
 <h2 id="code-style">Code Style<a class="headerlink" href="#code-style" title="Permanent link">&para;</a></h2>
 <p>See <a href="../design/design/"><code>sdd/DESIGN.md</code></a> for the full code style conventions.</p>
 <ul>
@@ -10374,8 +10407,8 @@ and reconciles a single rolling GitHub issue. The workflow never edits
 not automated remediation.</p>
 <p>When you deliberately bump a floor (e.g. <code>paramiko&gt;=3.0</code> after a
 known-breaking upstream release), refresh the baseline in the same PR:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>hatch run drift-check refresh-baseline &lt;extra&gt;     # regenerate the lock
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>hatch run drift-check render-docs                  # regenerate the docs page
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>hatch run drift-check refresh-baseline &lt;extra&gt;     # regenerate the lock
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>hatch run drift-check render-docs                  # regenerate the docs page
 </code></pre></div>
 <p>Then commit <code>infra/drift-locks/&lt;extra&gt;.txt</code> and
 <code>docs-src/reference/tested-versions.md</code>. Run on Python 3.13 (matching the
@@ -10446,9 +10479,9 @@ workflow's runner) so the lock is comparable.</p>
 <h3 id="how-to-bump">How to bump<a class="headerlink" href="#how-to-bump" title="Permanent link">&para;</a></h3>
 <p>Version is managed with <a href="https://github.com/callowayproject/bump-my-version"><code>bump-my-version</code></a>. It modifies the files listed in <code>[[tool.bumpversion.files]]</code> in <code>pyproject.toml</code> in-place without committing or tagging. The release checklist below handles the commit and tag lifecycle.</p>
 <p>Quick reference for the command syntax:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w">   </span><span class="c1"># 0.4.1 → 0.4.2</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w">   </span><span class="c1"># 0.4.1 → 0.5.0</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w">   </span><span class="c1"># 0.4.1 → 1.0.0</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w">   </span><span class="c1"># 0.4.1 → 0.4.2</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w">   </span><span class="c1"># 0.4.1 → 0.5.0</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w">   </span><span class="c1"># 0.4.1 → 1.0.0</span>
 </code></pre></div>
 <h2 id="consistency-checklists">Consistency Checklists<a class="headerlink" href="#consistency-checklists" title="Permanent link">&para;</a></h2>
 <p>Documentation, examples, and metadata live in many places. Use these to keep them in sync.</p>
