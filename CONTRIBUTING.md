@@ -231,6 +231,22 @@ for persistence across sessions.
 
 Verify with `echo "test" | git commit-tree HEAD^{tree} -S` — a commit hash without passphrase prompt means signing works.
 
+### Verify signatures locally (one-time)
+
+Producing signatures and *verifying* them locally are separate steps. Without an
+allowed-signers file, `git log --show-signature` (and `%G?`) reports `N` for your
+own SSH-signed commits — they are signed, but Git has nothing to verify against.
+To make local verification resolve to `G`:
+
+```bash
+echo "$(git config user.email) $(cat ~/.ssh/<your-key>.pub)" >> ~/.ssh/allowed_signers
+git config --global gpg.ssh.allowedSignersFile ~/.ssh/allowed_signers
+```
+
+This is purely local; GitHub verifies independently regardless. Note: commits
+merged via GitHub's squash button are re-signed with GitHub's own key and show
+`E` locally ("no public key") — that is expected, not a failure.
+
 ## Code Style
 
 See [`sdd/DESIGN.md`](sdd/DESIGN.md) for the full code style conventions.
