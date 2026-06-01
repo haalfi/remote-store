@@ -9562,10 +9562,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#async-074-content-materialization" class="md-nav__link">
+  <a href="#async-074-content-streaming" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ASYNC-074: Content Materialization
+        ASYNC-074: Content Streaming
       
     </span>
   </a>
@@ -11266,10 +11266,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#async-074-content-materialization" class="md-nav__link">
+  <a href="#async-074-content-streaming" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ASYNC-074: Content Materialization
+        ASYNC-074: Content Streaming
       
     </span>
   </a>
@@ -11781,8 +11781,9 @@ semantics.</p>
 <h3 id="async-073-move-and-copy">ASYNC-073: Move and Copy<a class="headerlink" href="#async-073-move-and-copy" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>move()</code> uses atomic <code>rename_file()</code> on HNS accounts, or server-side <code>start_copy_from_url()</code> + delete on non-HNS. <code>copy()</code> uses <code>start_copy_from_url()</code> on both.
 <strong>See also:</strong> <a href="../012-azure-backend/">012-azure-backend.md</a> (AZ-011, AZ-012).</p>
-<h3 id="async-074-content-materialization">ASYNC-074: Content Materialization<a class="headerlink" href="#async-074-content-materialization" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write()</code> and <code>write_atomic()</code> materialize <code>AsyncIterator[bytes]</code> to <code>bytes</code> before calling <code>upload_blob()</code> / <code>upload_data()</code>. The Azure SDK async upload methods do not support streaming from an <code>AsyncIterator</code>.</p>
+<h3 id="async-074-content-streaming">ASYNC-074: Content Streaming<a class="headerlink" href="#async-074-content-streaming" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>write()</code> and <code>write_atomic()</code> pass an <code>AsyncIterator[bytes]</code> payload <strong>straight to</strong> <code>upload_blob()</code> / <code>upload_data()</code> — the Blob SDK streams an <code>AsyncIterable[bytes]</code> in bounded memory, so the content is <strong>not</strong> collected into <code>bytes</code> first. A <code>_count_and_pass</code> wrapper forwards each chunk while tracking the byte count for the <code>WriteResult</code>.
+<strong>Rationale (BUG-165):</strong> materializing a large <code>AsyncIterator</code> to <code>bytes</code> before upload would defeat the bounded-memory guarantee of async streaming. The earlier "materialize first" approach was reverted; see <code>gotcha_async_materialize_antipattern</code>.</p>
 <h3 id="async-075-check_health-override">ASYNC-075: check_health() Override<a class="headerlink" href="#async-075-check_health-override" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>check_health()</code> probes the container (non-HNS: <code>get_container_properties()</code>) or filesystem (HNS: <code>get_file_system_properties()</code>).
 <strong>Raises:</strong> <code>PermissionDenied</code> if credentials are invalid. <code>NotFound</code> if the container does not exist. <code>BackendUnavailable</code> if the backend cannot be reached.</p>
