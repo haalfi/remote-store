@@ -8105,10 +8105,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#store-015-glob" class="md-nav__link">
+  <a href="#store-018-glob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        STORE-015: glob()
+        STORE-018: glob()
       
     </span>
   </a>
@@ -9821,10 +9821,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#store-015-glob" class="md-nav__link">
+  <a href="#store-018-glob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        STORE-015: glob()
+        STORE-018: glob()
       
     </span>
   </a>
@@ -10029,7 +10029,7 @@
 <p><strong>Invariant:</strong> <code>list_files(path, *, recursive=False, pattern=None)</code> accepts an optional <code>pattern</code> keyword. When set, files whose name does not match the pattern (via <code>fnmatch.fnmatch</code>) are excluded from results. Filtering is applied at the Store level after path rebasing.
 <strong>Rationale:</strong> Covers the common "give me the CSVs" use case without new capabilities or extensions.
 <strong>See also:</strong> <a href="../018-glob/">018-glob.md</a> (GLOB-001).</p>
-<h3 id="store-015-glob">STORE-015: glob()<a class="headerlink" href="#store-015-glob" title="Permanent link">&para;</a></h3>
+<h3 id="store-018-glob">STORE-018: glob()<a class="headerlink" href="#store-018-glob" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>glob(pattern)</code> matches files against a glob pattern. Capability-gated on <code>Capability.GLOB</code>. Pattern is relative to the store root; Store prepends <code>root_path</code> before delegating to <code>Backend.glob()</code>. Returned <code>FileInfo.path</code> values are store-relative (same rebasing as <code>list_files</code>).
 <strong>Raises:</strong> <code>CapabilityNotSupported</code> if the backend lacks <code>GLOB</code>.
 <strong>Rationale:</strong> Like <code>unwrap()</code>, gives opt-in direct access to native backend capabilities. For portable pattern matching, use <code>list_files(pattern=…)</code> or <code>ext.glob.glob_files()</code>.

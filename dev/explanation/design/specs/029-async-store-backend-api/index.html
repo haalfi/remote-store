@@ -11710,7 +11710,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.</p>
 <strong>See also:</strong> <a href="../001-store-api/">STORE-014</a>, <a href="../018-glob/">018-glob.md</a> (GLOB-001).</p>
 <h3 id="async-053-glob">ASYNC-053: glob()<a class="headerlink" href="#async-053-glob" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>glob(pattern)</code> is capability-gated on <code>Capability.GLOB</code>. Pattern is relative to the store root; <code>AsyncStore</code> prepends <code>root_path</code> before delegating. Returned <code>FileInfo.path</code> values are store-relative.
-<strong>See also:</strong> <a href="../001-store-api/">STORE-015</a>, <a href="../018-glob/">018-glob.md</a>.</p>
+<strong>See also:</strong> <a href="../001-store-api/">STORE-018</a>, <a href="../018-glob/">018-glob.md</a>.</p>
 <h3 id="async-054-child">ASYNC-054: child()<a class="headerlink" href="#async-054-child" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>child(subpath) -&gt; AsyncStore</code>. Returns a new <code>AsyncStore</code> scoped to a subfolder. Same semantics as <code>Store.child()</code>: shared backend identity, composed root path, no-op <code>aclose()</code>, supports chaining.
 <strong>See also:</strong> <a href="../015-store-child/">015-store-child.md</a> (CHILD-001 through CHILD-011).</p>

@@ -10077,8 +10077,10 @@ individual files normally. A failing health check does not necessarily mean
 
 
         <p>Read-only backend for HTTP/HTTPS URLs.</p>
-<p>Treats an HTTP endpoint as a file store with <code>{READ, METADATA}</code>
-capabilities. Write, delete, list, move, and copy operations raise
+<p>Treats an HTTP endpoint as a file store with
+<code>{READ, METADATA, LAZY_READ}</code> capabilities (<code>read()</code> streams the
+response body lazily rather than buffering the whole file). Write,
+delete, list, move, and copy operations raise
 <code>CapabilityNotSupported</code>.</p>
 
 

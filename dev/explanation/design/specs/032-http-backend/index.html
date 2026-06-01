@@ -10382,7 +10382,7 @@
 HTTP/HTTPS URLs. It treats an HTTP endpoint as a read-only file store,
 enabling the same <code>Store</code> interface and extension composability (<code>ext.cache</code>,
 <code>ext.transfer</code>, <code>ext.observe</code>, <code>ext.batch</code>) as other backends.</p>
-<p><strong>Capability set:</strong> <code>{READ, METADATA}</code></p>
+<p><strong>Capability set:</strong> <code>{READ, METADATA, LAZY_READ}</code></p>
 <p><strong>Primary use cases:</strong> government open data portals, dataset registries,
 static file servers, CDN-hosted assets, package archives, public APIs
 serving files.</p>
@@ -10422,10 +10422,12 @@ instead of appending.</p>
 <p><strong>Invariant:</strong> <code>name</code> property returns <code>"http"</code>.</p>
 <h3 id="http-con-004-capability-declaration">HTTP-CON-004: Capability Declaration<a class="headerlink" href="#http-con-004-capability-declaration" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>capabilities</code> returns <code>CapabilitySet({Capability.READ,
-Capability.METADATA})</code>.
+Capability.METADATA, Capability.LAZY_READ})</code>.
 <strong>Rationale:</strong> HTTP endpoints are read-only. No reliable server-side
 mechanism exists for LIST, MOVE, COPY, DELETE, or WRITE operations across
-arbitrary HTTP servers.</p>
+arbitrary HTTP servers. <code>LAZY_READ</code> is declared because <code>read()</code> returns a
+live streamed response body (urllib's response, or <code>requests</code>/<code>httpx</code> with
+<code>stream=True</code>) rather than pre-loading the full file into memory.</p>
 <hr />
 <h2 id="transport-abstraction">Transport Abstraction<a class="headerlink" href="#transport-abstraction" title="Permanent link">&para;</a></h2>
 <h3 id="http-tr-001-transport-protocol">HTTP-TR-001: Transport Protocol<a class="headerlink" href="#http-tr-001-transport-protocol" title="Permanent link">&para;</a></h3>

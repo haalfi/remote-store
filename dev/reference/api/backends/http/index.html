@@ -9665,7 +9665,8 @@
 
 <h1 id="readonlyhttpbackend">ReadOnlyHttpBackend<a class="headerlink" href="#readonlyhttpbackend" title="Permanent link">&para;</a></h1>
 <p>API reference for <code>ReadOnlyHttpBackend</code> — read-only access to files over
-HTTP/HTTPS. Supports <code>READ</code> and <code>METADATA</code> capabilities only.</p>
+HTTP/HTTPS. Supports <code>READ</code>, <code>METADATA</code>, and <code>LAZY_READ</code> capabilities only
+(<code>read()</code> streams lazily; write, delete, list, move, and copy are unsupported).</p>
 
 
 <div class="doc doc-object doc-class">
@@ -9699,8 +9700,10 @@ HTTP/HTTPS. Supports <code>READ</code> and <code>METADATA</code> capabilities on
 
 
         <p>Read-only backend for HTTP/HTTPS URLs.</p>
-<p>Treats an HTTP endpoint as a file store with <code>{READ, METADATA}</code>
-capabilities. Write, delete, list, move, and copy operations raise
+<p>Treats an HTTP endpoint as a file store with
+<code>{READ, METADATA, LAZY_READ}</code> capabilities (<code>read()</code> streams the
+response body lazily rather than buffering the whole file). Write,
+delete, list, move, and copy operations raise
 <code>CapabilityNotSupported</code>.</p>
 
 
