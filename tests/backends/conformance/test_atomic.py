@@ -57,6 +57,7 @@ class TestBackendWriteAtomic:
     @pytest.mark.spec("AW-001")
     @pytest.mark.spec("AW-004")
     @pytest.mark.spec("S3-010")
+    @pytest.mark.spec("S3PA-013")
     def test_write_atomic_content_failure_leaves_no_partial(self, backend: Backend) -> None:
         """AW-001 / AW-004: a mid-stream *content* failure must commit nothing.
 
