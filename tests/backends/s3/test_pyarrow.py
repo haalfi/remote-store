@@ -22,6 +22,7 @@ boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
 
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
 from remote_store._errors import NotFound  # noqa: E402
+from remote_store.backends._s3_pyarrow import S3PyArrowBackend  # noqa: E402
 from tests._helpers import MINIO_KEY as _MINIO_KEY  # noqa: E402
 from tests._helpers import MINIO_SECRET as _MINIO_SECRET  # noqa: E402
 from tests._helpers import FailingContentReader, pyarrow_ge_24  # noqa: E402
@@ -58,8 +59,6 @@ def s3pa_backend(moto_server: str | None, minio_server: str | None) -> Iterator[
         region_name=REGION,
     )
     client.create_bucket(Bucket=bucket)
-
-    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
     backend = S3PyArrowBackend(
         bucket=bucket,
@@ -105,6 +104,59 @@ class TestS3PyArrowConstruction:
                 assert caps.supports(cap), f"Missing capability: {cap.value}"
 
 
+class TestS3PyArrowCredentialTranslation:
+    """S3PA-001, S3PA-007: constructor parameters + per-library credential translation.
+
+    Construction is lazy (no network); the credential test captures the kwargs the
+    backend passes to ``pyarrow.fs.S3FileSystem`` rather than connecting.
+    """
+
+    @pytest.mark.spec("S3PA-001")
+    def test_constructor_accepts_documented_params(self) -> None:
+        b = S3PyArrowBackend(
+            bucket="my-bucket",
+            endpoint_url="http://localhost:9000",
+            key="k",
+            secret="s",
+            region_name="us-west-2",
+        )
+        assert b.name == "s3-pyarrow"
+
+    @pytest.mark.spec("S3PA-007")
+    def test_credentials_translated_to_pyarrow(self) -> None:
+        with patch("pyarrow.fs.S3FileSystem") as mock_pa:
+            b = S3PyArrowBackend(
+                bucket="b",
+                key="ACCESS",
+                secret="SECRET",
+                region_name="us-west-2",
+                endpoint_url="http://localhost:9000",
+            )
+            _ = b._pa_fs  # trigger lazy PyArrow S3FileSystem construction
+        kwargs = mock_pa.call_args.kwargs
+        # s3-style key/secret are translated to PyArrow's access_key/secret_key,
+        # region, and endpoint_override + scheme (S3PA-007 PyArrow column).
+        assert kwargs["access_key"] == "ACCESS"
+        assert kwargs["secret_key"] == "SECRET"
+        assert kwargs["region"] == "us-west-2"
+        assert kwargs["endpoint_override"] == "localhost:9000"
+        assert kwargs["scheme"] == "http"
+
+    @pytest.mark.spec("S3PA-007")
+    def test_credentials_translated_to_s3fs(self) -> None:
+        b = S3PyArrowBackend(
+            bucket="b",
+            key="ACCESS",
+            secret="SECRET",
+            endpoint_url="http://localhost:9000",
+        )
+        # s3fs uses key/secret/endpoint_url (S3PA-007 s3fs column).
+        s3fs_kwargs = b._build_s3fs_kwargs()
+        assert s3fs_kwargs["key"] == "ACCESS"
+        assert s3fs_kwargs["secret"] == "SECRET"
+        assert s3fs_kwargs["endpoint_url"] == "http://localhost:9000"
+
+
 class TestS3PyArrowTlsCaBundle:
     """TLS-006: pyarrow-specific tls_ca_file_path wiring. The shared s3fs
     control-path (accepted/missing/directory/default/verify) lives in
@@ -112,7 +164,6 @@ class TestS3PyArrowTlsCaBundle:
 
     @pytest.mark.spec("TLS-006")
     def test_tls_ca_bundle_sets_tls_ca_file_path_on_pyarrow(self, tmp_path: Path) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
         cert = tmp_path / "ca.pem"
         cert.write_text("fake cert")
@@ -131,7 +182,6 @@ class TestS3PyArrowTlsCaBundle:
     @pytest.mark.spec("TLS-006")
     def test_tls_ca_bundle_does_not_override_explicit_tls_ca_file_path(self, tmp_path: Path) -> None:
         """setdefault ensures a pre-existing tls_ca_file_path wins."""
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
         cert = tmp_path / "ca.pem"
         cert.write_text("fake cert")
@@ -345,7 +395,6 @@ class TestS3PyArrowRetryNonDefaultParams:
         from unittest.mock import MagicMock, patch
 
         from remote_store._config import RetryPolicy
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
         backend = S3PyArrowBackend(
             bucket="test-bucket",
@@ -400,7 +449,6 @@ class TestS3PyArrowMinIOSentinel:
 @pytest.mark.spec("RET-013")
 def test_s3_pyarrow_accepts_retry() -> None:
     from remote_store._config import RetryPolicy
-    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
     rp = RetryPolicy(max_attempts=4)
     assert S3PyArrowBackend(bucket="b", retry=rp)._retry is rp
@@ -411,7 +459,6 @@ def test_s3_pyarrow_retry_strategy() -> None:
     from unittest.mock import patch
 
     from remote_store._config import RetryPolicy
-    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
     backend = S3PyArrowBackend(bucket="b", retry=RetryPolicy(max_attempts=9))
     with patch("pyarrow.fs.S3FileSystem") as mock_s3fs:
@@ -443,8 +490,6 @@ def test_s3_pyarrow_health(side_effect: Exception | None, expected: type[Excepti
     from pyarrow.fs import FileInfo as PyArrowFileInfo
     from pyarrow.fs import S3FileSystem as PyArrowS3FileSystem
 
-    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
     pa_mock = MagicMock(spec=PyArrowS3FileSystem)
     if side_effect is not None:
         pa_mock.get_file_info.side_effect = side_effect
@@ -471,7 +516,6 @@ class TestS3PyArrowCredentialMasking:
     """AF-008: S3PyArrowBackend repr masks sensitive fields and accepts Secret wrappers."""
 
     def test_masks_set_secrets(self) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
         backend = S3PyArrowBackend(bucket="b", key="AKID", secret="SK")
         r = repr(backend)
@@ -481,7 +525,6 @@ class TestS3PyArrowCredentialMasking:
             assert masked in r
 
     def test_shows_none_for_unset_secrets(self) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
         backend = S3PyArrowBackend(bucket="b")
         r = repr(backend)
@@ -491,7 +534,6 @@ class TestS3PyArrowCredentialMasking:
     @pytest.mark.spec("SEC-004")
     def test_accepts_secret_wrapper(self) -> None:
         from remote_store._config import Secret
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
         backend = S3PyArrowBackend(bucket="b", key=Secret("AKID"), secret=Secret("SK"))
         assert backend._key == "AKID"  # internal: no public observable (repr shows '***' for raw strings too)
@@ -536,8 +578,6 @@ class TestBug214WriteAtomicity:
 
         import s3fs as s3fs_module
         from pyarrow.fs import S3FileSystem as PyArrowS3FileSystem
-
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
         backend = S3PyArrowBackend(bucket="test-bucket", key="k", secret="s")
         mock_pa_fs = MagicMock(spec=PyArrowS3FileSystem)

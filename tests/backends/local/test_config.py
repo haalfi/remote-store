@@ -279,3 +279,32 @@ class TestLocalBackendOpenAtomicPermission:
                 backend.open_atomic("file.txt"),
             ):
                 pass
+
+
+class TestLocalBackendWriteAtomicMechanism:
+    """AW-006: LocalBackend.write_atomic() implements atomicity via
+    ``tempfile.mkstemp`` in the target directory + ``os.replace`` (the
+    write_atomic twin of the open_atomic SAW-008 mechanism)."""
+
+    @pytest.mark.spec("AW-006")
+    def test_write_atomic_uses_mkstemp_in_target_dir(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from remote_store.backends import _local as local_mod
+
+        real_mkstemp = local_mod.tempfile.mkstemp
+        calls: list[dict[str, object]] = []
+
+        def _tracking_mkstemp(*args: object, **kwargs: object) -> tuple[int, str]:
+            calls.append(dict(kwargs))
+            return real_mkstemp(*args, **kwargs)  # type: ignore[arg-type]
+
+        with tempfile.TemporaryDirectory() as root:
+            backend = LocalBackend(root=root)
+            monkeypatch.setattr(local_mod.tempfile, "mkstemp", _tracking_mkstemp)
+            backend.write_atomic("sub/file.txt", b"atomic data")
+            # os.replace happened (final content is visible, temp is gone).
+            assert backend.read_bytes("sub/file.txt") == b"atomic data"
+            assert not any(p.name.startswith("tmp") for p in (Path(root) / "sub").iterdir())
+
+        # write_atomic created its temp via mkstemp in the *target* directory.
+        assert calls, "write_atomic did not use tempfile.mkstemp"
+        assert "dir" in calls[0], "mkstemp was not given the target directory"

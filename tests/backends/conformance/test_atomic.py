@@ -41,6 +41,12 @@ class TestBackendWriteAtomic:
         backend.write_atomic("atomic.txt", b"atomic content")
         assert backend.read_bytes("atomic.txt") == b"atomic content"
 
+    @pytest.mark.spec("AW-005")
+    def test_write_atomic_creates_intermediate_dirs(self, backend: Backend) -> None:
+        """AW-005: write_atomic creates intermediate directories, same as write (BE-009)."""
+        backend.write_atomic("aw/deep/dir/file.txt", b"deep atomic")
+        assert backend.read_bytes("aw/deep/dir/file.txt") == b"deep atomic"
+
     @pytest.mark.spec("BE-010")
     @pytest.mark.spec("SFTP-015")
     def test_write_atomic_overwrite(self, backend: Backend) -> None:
@@ -103,7 +109,13 @@ class TestBackendOpenAtomic:
 
     @pytest.mark.spec("SAW-003")
     @pytest.mark.spec("SQL-BLOB-023")
+    @pytest.mark.spec("SAW-010")
     def test_open_atomic_creates_file(self, backend: Backend) -> None:
+        # SAW-010: for the S3 / S3-PyArrow fixtures this drives the
+        # SpooledTemporaryFile-buffer-then-PUT streaming-atomic mechanism end to
+        # end (write into the buffer, single PUT on context exit). The buffer
+        # internals are not separately asserted (the audit-015 addendum's
+        # "exercised, not mechanism-asserted" note); the success path is.
         with backend.open_atomic("oat.txt") as f:
             f.write(b"streaming atomic")
         assert backend.read_bytes("oat.txt") == b"streaming atomic"

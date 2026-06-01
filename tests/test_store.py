@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING
 
 import pytest
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
 from remote_store._capabilities import Capability
@@ -802,3 +804,101 @@ class TestMetadataGate:
 
             assert isinstance(result, WriteResult)
             assert result.size == 1
+
+
+class TestStoreEquality:
+    """STORE-010: two Stores are equal iff they share the same backend instance and root."""
+
+    @pytest.mark.spec("STORE-010")
+    def test_equal_same_backend_and_root(self) -> None:
+        backend = MemoryBackend()
+        assert Store(backend=backend, root_path="data") == Store(backend=backend, root_path="data")
+
+    @pytest.mark.spec("STORE-010")
+    def test_not_equal_different_root(self) -> None:
+        backend = MemoryBackend()
+        assert Store(backend=backend, root_path="data") != Store(backend=backend, root_path="other")
+
+    @pytest.mark.spec("STORE-010")
+    def test_not_equal_different_backend_instance(self) -> None:
+        # Same root, but distinct backend instances — not equal (identity, not value).
+        assert Store(backend=MemoryBackend(), root_path="data") != Store(backend=MemoryBackend(), root_path="data")
+
+    @pytest.mark.spec("STORE-010")
+    def test_equal_stores_hash_equal(self) -> None:
+        backend = MemoryBackend()
+        a = Store(backend=backend, root_path="data")
+        b = Store(backend=backend, root_path="data")
+        assert hash(a) == hash(b)
+        assert len({a, b}) == 1
+
+
+class TestStoreThreadSafety:
+    """STORE-007: a single Store is safe to share across threads.
+
+    Exercises the share-across-threads clause via concurrent reads on one shared
+    Store (MemoryBackend serializes under a single lock, MEM-025). The companion
+    *immutability* clause of STORE-007 is by-convention — Store exposes no public
+    mutators and is not a frozen dataclass — so it has no raise to assert here.
+    """
+
+    @pytest.mark.spec("STORE-007")
+    def test_shared_store_concurrent_reads(self) -> None:
+        import threading
+
+        store = Store(backend=MemoryBackend(), root_path="data")
+        for i in range(20):
+            store.write(f"f{i}.txt", f"data-{i}".encode())
+
+        results: dict[int, bytes] = {}
+        errors: list[Exception] = []
+
+        def reader(idx: int) -> None:
+            try:
+                results[idx] = store.read_bytes(f"f{idx}.txt")
+            except Exception as exc:  # noqa: BLE001
+                errors.append(exc)
+
+        threads = [threading.Thread(target=reader, args=(i,)) for i in range(20)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert not errors
+        assert all(results[i] == f"data-{i}".encode() for i in range(20))
+
+
+class TestStoreCapabilityGates:
+    """BE-011, ITER-002: capability-gated methods raise before delegating.
+
+    Enforcement lives in ``Store._gate()`` (Backend does not gate directly, see
+    _backend.py); the backend contract is therefore exercised through ``Store``.
+    """
+
+    @staticmethod
+    @contextlib.contextmanager
+    def _store_without(capability: Capability) -> Iterator[Store]:
+        from unittest.mock import patch
+
+        from remote_store._capabilities import CapabilitySet
+
+        backend = MemoryBackend()
+        caps = CapabilitySet(set(backend.capabilities) - {capability})
+        with patch.object(type(backend), "capabilities", new_callable=lambda: property(lambda _: caps)):
+            yield Store(backend=backend, root_path="data")
+
+    @pytest.mark.spec("BE-011")
+    @pytest.mark.spec("AW-002")
+    @pytest.mark.spec("AW-007")
+    def test_write_atomic_requires_atomic_write(self) -> None:
+        # AW-002 (capability gate, checked before I/O) and AW-007 (never falls
+        # back to a non-atomic write) are the same observable behaviour: the
+        # call raises rather than silently degrading.
+        with self._store_without(Capability.ATOMIC_WRITE) as store, pytest.raises(CapabilityNotSupported):
+            store.write_atomic("f.txt", b"x")
+
+    @pytest.mark.spec("ITER-002")
+    def test_iter_children_requires_list(self) -> None:
+        with self._store_without(Capability.LIST) as store, pytest.raises(CapabilityNotSupported):
+            list(store.iter_children(""))

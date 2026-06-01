@@ -893,6 +893,28 @@ class TestIntegration:
         result = pq.read_table("test.parquet", filesystem=result_fs)
         assert result.equals(table)
 
+    @pytest.mark.spec("PA-026")
+    @pytest.mark.parametrize("backend_kind", ["memory", "local"])
+    def test_parquet_round_trip_across_backends(self, backend_kind: str, tmp_path: Any) -> None:
+        """PA-026: the adapter works with any conformant backend, no backend-specific paths.
+
+        The same parquet write/read round-trip drives MemoryBackend (Tier 2/3
+        buffered) and LocalBackend (Tier 1 native) identically through the
+        handler.
+        """
+        store = (
+            Store(backend=MemoryBackend())
+            if backend_kind == "memory"
+            else Store(backend=LocalBackend(root=str(tmp_path)))
+        )
+        try:
+            result_fs = pyarrow_fs(store)
+            table = pa.table({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
+            pq.write_table(table, "x.parquet", filesystem=result_fs)
+            assert pq.read_table("x.parquet", filesystem=result_fs).equals(table)
+        finally:
+            store.close()
+
     @pytest.mark.spec("PA-025")
     def test_pandas_round_trip(self, local_store: Store) -> None:
         pd = pytest.importorskip("pandas")

@@ -496,6 +496,33 @@ class TestMemoryCopyMetadataRoundTrip:
         infos = {str(info.path): info for info in mb.list_files("", recursive=True)}
         assert infos["b/dst.txt"].metadata == {"k": "v"}
 
+
+class TestMemoryConstruction:
+    """MEM-001: a fresh MemoryBackend starts empty; O(1) repr counters at zero."""
+
+    @pytest.mark.spec("MEM-001")
+    def test_fresh_backend_is_empty(self) -> None:
+        mb = MemoryBackend()
+        assert repr(mb) == "MemoryBackend(files=0, folders=0)"
+        assert list(mb.list_files("")) == []
+
+    @pytest.mark.spec("MEM-001")
+    def test_counters_increment_on_write(self) -> None:
+        mb = MemoryBackend()
+        mb.write("c.txt", b"x")  # top-level file: no intermediate folders created
+        assert repr(mb) == "MemoryBackend(files=1, folders=0)"
+
+
+class TestMemoryRegistration:
+    """MEM-005: the 'memory' backend type is registered unconditionally."""
+
+    @pytest.mark.spec("MEM-005")
+    def test_memory_registered(self) -> None:
+        from remote_store._registry import _BACKEND_FACTORIES, _register_builtin_backends
+
+        _register_builtin_backends()
+        assert _BACKEND_FACTORIES.get("memory") is MemoryBackend
+
     @pytest.mark.spec("BE-019", "WR-013")
     def test_copy_with_no_metadata_yields_none(self, mb: MemoryBackend) -> None:
         mb.write("src.txt", b"x")
