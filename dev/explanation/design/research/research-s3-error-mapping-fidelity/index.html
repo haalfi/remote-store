@@ -7704,6 +7704,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#6-over-the-wire-confirmation-bk-248" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Over-the-wire confirmation (BK-248)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -9511,6 +9522,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#6-over-the-wire-confirmation-bk-248" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Over-the-wire confirmation (BK-248)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -9533,7 +9555,7 @@
 <strong>Date:</strong> 2026-05-31
 <strong>Method:</strong> moto-backed <code>S3Backend</code> (Stage 1, in-process <code>ThreadedMotoServer</code>); no Docker, no live AWS.
 <strong>Probe:</strong> <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/research-s3-error-mapping-fidelity.py"><code>research-s3-error-mapping-fidelity.py</code></a> (throwaway driver, re-runnable via <code>hatch run python sdd/research/research-s3-error-mapping-fidelity.py</code>).
-<strong>Status:</strong> Audit complete for the moto-reproducible surface. One divergence → <strong>BUG-214</strong>. Natural-path (over-the-wire) confirmation of rows (b)/(c) deferred to Stage 3 → <strong>BK-248</strong>.</p>
+<strong>Status:</strong> Audit complete. moto-reproducible surface verified; one divergence → <strong>BUG-214</strong> (fixed). Over-the-wire confirmation of rows (b)/(c) completed under <strong>BK-248</strong> against real AWS S3 (<code>tests/backends/s3/test_live_error_mapping.py</code>, <code>RS_TEST_LIVE_S3=1</code>) — see § 3(b)/(c) "Over the wire" and § 6.</p>
 <hr />
 <h2 id="1-question">1. Question<a class="headerlink" href="#1-question" title="Permanent link">&para;</a></h2>
 <p>Does the s3fs → <code>_S3Base._s3fs_errors</code> → <code>_classify_error</code> boundary in
@@ -9618,6 +9640,29 @@ s3fs's own translator and our real <code>_s3fs_errors</code>:</p>
 The residual unknown is over-the-wire: that a live S3 403 on the <code>GetObject</code>
 read path actually routes through <code>translate_boto_error</code> (rather than being
 swallowed inside an aiobotocore streaming read) — see BK-248.</p>
+<p><strong>Over the wire (BK-248).</strong> Confirmed against real AWS S3. A read with a
+bogus access key / secret yields a genuine 403 (<code>InvalidAccessKeyId</code> /
+<code>SignatureDoesNotMatch</code>), and both <code>read_bytes</code> (→ <code>cat_file</code>) and <code>read</code>
+(→ <code>open</code> + stream) raise <code>PermissionDenied</code> with <code>backend == "s3"</code>. The
+"swallowed inside an aiobotocore streaming read" worry does <strong>not</strong>
+materialise: s3fs issues an eager HEAD/GET <em>inside</em> the <code>_s3fs_errors</code>
+context (both <code>cat_file</code> and <code>open</code>), so the 403 is caught by the context
+manager and mapped before any stream is handed back — it never reaches the
+<code>_ErrorMappingStream</code> wrapper. The streaming-read classifier
+(<code>_classify_by_message</code>, used by <code>_ErrorMappingStream</code>) is therefore not on
+the auth-failure path at all.</p>
+<p>A distinct <code>AccessDenied</code> (valid credentials, forbidden resource) was <em>not</em>
+separately exercised. The single-credential <code>s3_live</code> IAM user has full
+access within its <code>rs-conformance-*</code> grant, and targeting a bucket <em>outside</em>
+the grant returns <strong>404 <code>NoSuchBucket</code></strong> (→ <code>NotFound</code>), not 403 — S3 reports
+a non-existent bucket as 404 to a credentialed caller regardless of IAM
+(empirically confirmed during BK-248). Because <code>translate_boto_error</code> keys on
+the 403 error <em>code</em> identically for <code>AccessDenied</code> and the invalid-credential
+codes, the credential-failure 403 confirms the same mapping boundary the
+<code>AccessDenied</code> row would. Provisioning an existing-but-forbidden bucket
+(second restricted credential, or a bucket policy <code>Deny</code>) is the only way to
+exercise the <code>AccessDenied</code> code itself and is out of scope for the current
+<code>s3_live</code> setup.</p>
 <h3 id="c-expired-invalid-credentials-permissiondenied">(c) Expired / invalid credentials → <code>PermissionDenied</code><a class="headerlink" href="#c-expired-invalid-credentials-permissiondenied" title="Permanent link">&para;</a></h3>
 <p><strong>moto accepts any credentials, so this too is not naturally reproducible.</strong>
 Running the three realistic botocore <code>ClientError</code>s through the same real
@@ -9656,8 +9701,11 @@ path:</p>
 none is a silent success. Note <code>ExpiredToken</code> is HTTP <strong>400</strong>, yet s3fs keys on
 the <em>error code</em> and still yields <code>PermissionError</code> — so our earlier worry that
 it would fall through to a bare <code>RemoteStoreError</code> via the message heuristic was
-wrong (the heuristic never runs; s3fs translates first). Over-the-wire
-confirmation deferred to BK-248.</p>
+wrong (the heuristic never runs; s3fs translates first).</p>
+<p><strong>Over the wire (BK-248).</strong> Confirmed: a <code>PutObject</code> (<code>write</code> →
+<code>pipe_file</code>) with invalid credentials raises a real 403 over the wire and
+maps to <code>PermissionDenied</code> with <code>backend == "s3"</code>, matching the read-path
+result in § 3(b).</p>
 <h3 id="d-mid-stream-failure-typed-error-but-truncated-object-committed">(d) Mid-stream failure → typed error <strong>but truncated object committed</strong>  ❌<a class="headerlink" href="#d-mid-stream-failure-typed-error-but-truncated-object-committed" title="Permanent link">&para;</a></h3>
 <p>This is the divergence. When the <em>content source</em> raises mid-stream during
 <code>write()</code> / <code>write_atomic()</code>, a typed error <strong>is</strong> raised, but a <strong>truncated
@@ -9736,10 +9784,17 @@ not a typed-error defect — recorded here, not escalated.</p>
 <li><strong>(d)</strong> opens <strong>BUG-214</strong> — <code>write</code>/<code>write_atomic</code> commit a truncated object
   when the content source fails mid-stream. Reproducible on moto; failing test +
   fix belong to BUG-214 per the bug-fix protocol.</li>
-<li><strong>(b)/(c)</strong> pass at the mapping boundary but could not be exercised
-  over-the-wire on moto (no IAM enforcement, no credential validation).
-  <strong>BK-248</strong> confirms the natural path against an enforcing S3 (MinIO or live
-  AWS via the <code>s3_live</code> Stage-3 fixture) once that environment is available.</li>
+<li><strong>(b)/(c)</strong> pass at the mapping boundary, and the natural path is now
+  confirmed over the wire against real AWS by <strong>BK-248</strong>
+  (<code>tests/backends/s3/test_live_error_mapping.py</code>): an invalid-credential 403
+  maps to <code>PermissionDenied</code> on <code>read_bytes</code>, streaming <code>read</code>, and <code>write</code>.
+  The streaming-read swallow risk does not materialise — s3fs's eager HEAD/GET
+  inside <code>_s3fs_errors</code> catches the 403 before any stream is returned. A
+  distinct <code>AccessDenied</code> error code (valid creds, forbidden resource) is not
+  exercised because the <code>s3_live</code> IAM user cannot provision an
+  existing-but-forbidden bucket; an out-of-scope bucket returns 404, not 403.
+  s3fs translates <code>AccessDenied</code> and the invalid-credential codes identically,
+  so the boundary is the same.</li>
 <li><strong>(a)/(e)</strong> pass; no action.</li>
 <li><strong>ID-202</strong> (boto3-direct lane) should reuse this note: its <code>ClientError</code>
   → typed-error mapping must (i) preserve the 403/credential → <code>PermissionDenied</code>
@@ -9753,6 +9808,19 @@ not a typed-error defect — recorded here, not escalated.</p>
 per scenario, the observed typed error and the underlying exception. The (d)
 rows additionally report the committed object size and any orphaned multipart
 uploads.</p>
+<h2 id="6-over-the-wire-confirmation-bk-248">6. Over-the-wire confirmation (BK-248)<a class="headerlink" href="#6-over-the-wire-confirmation-bk-248" title="Permanent link">&para;</a></h2>
+<p>The credential/permission rows (b)/(c) are confirmed against real AWS S3 by
+<code>tests/backends/s3/test_live_error_mapping.py</code> (Stage 3, opt-in):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>RS_TEST_LIVE_S3=1 hatch run pytest -m live tests/backends/s3/test_live_error_mapping.py
+</code></pre></div>
+<p>The suite constructs an <code>S3Backend</code> with a bogus access key / secret and
+asserts that the resulting live 403 maps to <code>PermissionDenied</code> on the read
+(<code>read_bytes</code> and streaming <code>read</code>) and write (<code>write</code>) paths, with
+<code>backend == "s3"</code>. Result: all paths pass — the live 403 routes through
+<code>s3fs.translate_boto_error</code> → <code>_s3fs_errors</code>, and the eager HEAD/GET means the
+streaming-read wrapper is never on the auth-failure path. No production-code
+change was needed. See § 3(b)/(c) "Over the wire" for the <code>AccessDenied</code>-vs-404
+caveat.</p>
 
 
 
