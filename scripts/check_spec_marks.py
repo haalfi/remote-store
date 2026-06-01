@@ -22,7 +22,7 @@ spec ↔ mark wiring mechanically checkable across two sources:
       ``pytestmark`` assignment. A bare ``pytest.mark.spec(...)``
       expression that decorates nothing is dead code and is ignored.
 
-Three failure modes:
+Five failure modes:
 
   drift  — a *shipped* spec ID (declared in S, not allowlisted) that no
            marker cites (not in T). The marks rotted, or a new spec
@@ -32,6 +32,15 @@ Three failure modes:
   dup    — a spec ID declared more than once in the spec tree (the
            ``STORE-015`` collision: two distinct invariants, one ID).
            A duplicate cannot be unambiguously marked or traced.
+  allowlist-stale — an enumerated allowlist entry (below) that no longer
+           earns its place: its spec section was renamed/removed, or it
+           grew a real mark and is now testable. Gives the allowlist the
+           same shrink-only self-pruning the baseline has.
+  heading-no-colon — an ID-shaped heading ``_HEADING_RE`` cannot parse
+           because it lacks the trailing colon. Such a line declares
+           nothing and cites nothing, so without this check the ID would
+           silently fall out of S with no signal — the one structural
+           blind spot in the parse.
 
 Scope — what this check does and does not prove
 -----------------------------------------------
@@ -62,8 +71,12 @@ Two classes of declared spec ID are excused from the drift rule:
 
 An allowlisted ID is excused from *drift* only. It is still checked for
 duplicate declaration, and a marker citing it is still valid (it is
-declared). Removing an ID from the allowlist (because it became
-testable) is the explicit point at which it must grow a mark.
+declared). When an enumerated allowlist ID becomes testable (grows a
+mark) or its spec section disappears, the *allowlist-stale* mode above
+fails the gate until the entry is removed — so the allowlist cannot rot
+silently, the same shrink-only contract the baseline has. (The ``GR-*``
+*prefix* is exempt: it covers the whole unbuilt Graph family and is
+removed as a unit by ID-127 when the backend lands, not per ID.)
 
 Landing strategy — checked-in baseline
 --------------------------------------
@@ -110,6 +123,16 @@ _HEADING_RE = re.compile(rf"^#+[ \t]+({_SPEC_ID})(?: \([^)]*\))?:")
 _TABLE_ROW_RE = re.compile(rf"^\|[ \t]*({_SPEC_ID})[ \t]*\|")
 _ID_TABLE_HEADER_RE = re.compile(r"^\|[ \t]*ID[ \t]*\|", re.IGNORECASE)
 
+# A heading that *starts* with a spec-shaped ID, regardless of whether the
+# trailing colon ``_HEADING_RE`` requires is present. Used only to catch
+# the gate's one structural blind spot: a heading-form declaration written
+# without the colon (``### BE-099 Some Behavior``) parses as neither a
+# declaration (S has no entry) nor a citation, so the ID would silently
+# stop being tracked. A line matching this but NOT ``_HEADING_RE`` is such
+# an unparseable declaration. The parenthetical form is parsed by
+# ``_HEADING_RE``, so it is not falsely flagged.
+_HEADING_ID_RE = re.compile(rf"^#+[ \t]+({_SPEC_ID})\b")
+
 # Backlog / process item prefixes — the authoritative trace-id prefix set
 # from the ``id`` pattern in ``sdd/traces/_schema.yml`` (``BK-167a`` etc.).
 # It is duplicated here (a lint script must not parse YAML at import time),
@@ -137,6 +160,8 @@ _NON_SPEC_MARK_RE = re.compile(rf"^(?:{'|'.join(_BACKLOG_ID_PREFIXES)})-\d+[a-z]
 KIND_DRIFT = "shipped-spec-id-unmarked"
 KIND_STALE = "mark-cites-unknown-spec"
 KIND_DUPLICATE = "spec-id-declared-twice"
+KIND_ALLOWLIST_STALE = "allowlist-entry-stale"
+KIND_HEADING_NO_COLON = "spec-heading-missing-colon"
 
 # ---------------------------------------------------------------------------
 # Allowlist — declared IDs that legitimately carry no @pytest.mark.spec.
@@ -185,6 +210,15 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
 # enumerating 57 IDs.
 _ALLOWLIST_PENDING_PREFIXES: tuple[str, ...] = ("GR-",)
 _ALLOWLIST_PENDING_IDS: frozenset[str] = frozenset({"ERR-013"})
+
+# The enumerated (non-prefix) allowlist — every explicitly named excused
+# ID. These get the same shrink-only self-pruning the baseline enforces:
+# an entry that no longer earns its place (the spec section was renamed /
+# removed, or the ID grew a real mark and is now testable) is flagged so
+# it cannot rot silently. The ``GR-*`` *prefix* is excluded from this
+# self-prune: it is a coarse exclusion for the whole unbuilt Graph family,
+# removed as a unit by ID-127 when the backend lands, not per ID.
+_ENUMERATED_ALLOWLIST: frozenset[str] = _ALLOWLIST_DESIGN | _ALLOWLIST_PENDING_IDS
 
 
 def is_allowlisted(spec_id: str) -> bool:
@@ -240,6 +274,31 @@ def extract_declared_specs(specs_dir: Path) -> dict[str, list[str]]:
                 if row is not None:
                     declared.setdefault(row.group(1), []).append(f"{path}:{lineno}")
     return declared
+
+
+def extract_undeclared_id_headings(specs_dir: Path) -> dict[str, list[str]]:
+    """Map each ID-shaped heading that ``_HEADING_RE`` cannot parse to its sites.
+
+    A heading that starts with a spec-shaped ID but lacks the trailing
+    colon (``### BE-099 Some Behavior``) is almost certainly a declaration
+    the author meant to make, yet it lands in neither S (no colon → not
+    matched) nor any citation, so the ID silently stops being tracked.
+    This surfaces that one structural blind spot. The parenthetical form
+    (``## EW-001 (was WR-014): ...``) is parsed by ``_HEADING_RE`` and is
+    therefore not flagged.
+    """
+    undeclared: dict[str, list[str]] = {}
+    for path in sorted(specs_dir.glob("*.md")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError) as exc:  # pragma: no cover - defensive
+            sys.stderr.write(f"Skipping {path}: {type(exc).__name__}\n")
+            continue
+        for lineno, line in enumerate(text.splitlines(), 1):
+            id_heading = _HEADING_ID_RE.match(line)
+            if id_heading is not None and _HEADING_RE.match(line) is None:
+                undeclared.setdefault(id_heading.group(1), []).append(f"{path}:{lineno}")
+    return undeclared
 
 
 # ---------------------------------------------------------------------------
@@ -335,13 +394,28 @@ def extract_test_specs(tests_dir: Path) -> dict[str, list[str]]:
 def compute_violations(
     declared: dict[str, list[str]],
     marks: dict[str, list[str]],
+    undeclared_headings: dict[str, list[str]] | None = None,
+    allowlist: frozenset[str] = frozenset(),
 ) -> list[tuple[str, str]]:
     """Return the sorted list of ``(kind, spec_id)`` violations.
 
-    drift — a declared, non-allowlisted spec ID with no marker.
-    stale — a marker citing an ID with no spec section.
-    dup   — a spec ID declared more than once.
+    drift           — a declared, non-allowlisted spec ID with no marker.
+    stale           — a marker citing an ID with no spec section.
+    dup             — a spec ID declared more than once.
+    allowlist-stale — an ``allowlist`` ID that no longer earns its place:
+                      its spec section is gone (dead weight) or it grew a
+                      real mark (now testable, no longer excused). Gives
+                      the allowlist the same self-pruning the baseline has.
+                      ``allowlist`` is the *enumerated* excused set only;
+                      ``main`` passes ``_ENUMERATED_ALLOWLIST`` (the
+                      ``GR-*`` prefix is deliberately excluded — it is
+                      removed as a unit, not per ID). It defaults empty so
+                      the core-mode unit tests stay isolated from it.
+    heading-no-colon — an ID-shaped heading ``_HEADING_RE`` cannot parse
+                      (no colon); an unparseable declaration the gate would
+                      otherwise track silently as nothing.
     """
+    undeclared_headings = undeclared_headings or {}
     violations: set[tuple[str, str]] = set()
     for spec_id, sites in declared.items():
         if len(sites) > 1:
@@ -351,6 +425,11 @@ def compute_violations(
     for spec_id in marks:
         if spec_id not in declared and not _NON_SPEC_MARK_RE.match(spec_id):
             violations.add((KIND_STALE, spec_id))
+    for spec_id in allowlist:
+        if spec_id not in declared or spec_id in marks:
+            violations.add((KIND_ALLOWLIST_STALE, spec_id))
+    for spec_id in undeclared_headings:
+        violations.add((KIND_HEADING_NO_COLON, spec_id))
     return sorted(violations)
 
 
@@ -552,6 +631,8 @@ _KIND_LABEL = {
     KIND_DRIFT: "shipped spec ID with no @pytest.mark.spec marker (drift)",
     KIND_STALE: "@pytest.mark.spec marker cites an unknown spec ID (stale)",
     KIND_DUPLICATE: "spec ID declared more than once (duplicate)",
+    KIND_ALLOWLIST_STALE: "allowlist entry no longer earns its place (dead or now-marked)",
+    KIND_HEADING_NO_COLON: "ID-shaped heading without a colon — unparseable declaration",
 }
 
 
@@ -559,15 +640,31 @@ def _print_violations(
     violations: list[tuple[str, str]],
     declared: dict[str, list[str]],
     marks: dict[str, list[str]],
+    undeclared_headings: dict[str, list[str]],
 ) -> None:
     """Print each violation grouped by kind, with source locations."""
-    for kind in (KIND_DRIFT, KIND_STALE, KIND_DUPLICATE):
+    for kind in (
+        KIND_DRIFT,
+        KIND_STALE,
+        KIND_DUPLICATE,
+        KIND_ALLOWLIST_STALE,
+        KIND_HEADING_NO_COLON,
+    ):
         rows = [v for v in violations if v[0] == kind]
         if not rows:
             continue
         print(f"{_KIND_LABEL[kind]}:")
         for _, spec_id in rows:
-            locations = marks.get(spec_id, []) if kind == KIND_STALE else declared.get(spec_id, [])
+            if kind == KIND_STALE:
+                locations = marks.get(spec_id, [])
+            elif kind == KIND_HEADING_NO_COLON:
+                locations = undeclared_headings.get(spec_id, [])
+            elif kind == KIND_ALLOWLIST_STALE:
+                # An allowlist-stale ID is either gone from S (no location)
+                # or now marked; show whichever explains it.
+                locations = marks.get(spec_id) or declared.get(spec_id, ["(no spec section)"])
+            else:
+                locations = declared.get(spec_id, [])
             shown = ", ".join(locations[:3]) + (" ..." if len(locations) > 3 else "")
             print(f"  {spec_id}: {shown}")
         print()
@@ -577,22 +674,26 @@ def main(
     specs_dir: Path | None = None,
     tests_dir: Path | None = None,
     baseline: frozenset[tuple[str, str]] | None = None,
+    allowlist: frozenset[str] | None = None,
 ) -> int:
     specs_dir = specs_dir or ROOT / "sdd" / "specs"
     tests_dir = tests_dir or ROOT / "tests"
     if baseline is None:
         baseline = _BASELINE
+    if allowlist is None:
+        allowlist = _ENUMERATED_ALLOWLIST
 
     declared = extract_declared_specs(specs_dir)
     marks = extract_test_specs(tests_dir)
-    violations = compute_violations(declared, marks)
+    undeclared_headings = extract_undeclared_id_headings(specs_dir)
+    violations = compute_violations(declared, marks, undeclared_headings, allowlist)
 
     print("spec <-> mark traceability gate (BK-251)")
     print(f"  declared spec sections : {len(declared)}")
     print(f"  mark-cited spec IDs    : {len(marks)}")
     print(f"  violations             : {len(violations)}")
     print()
-    _print_violations(violations, declared, marks)
+    _print_violations(violations, declared, marks, undeclared_headings)
 
     violation_set = set(violations)
     new = sorted(violation_set - baseline)

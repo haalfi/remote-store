@@ -38,12 +38,15 @@ def _load_module():
 _mod = _load_module()
 extract_declared_specs = _mod.extract_declared_specs
 extract_test_specs = _mod.extract_test_specs
+extract_undeclared_id_headings = _mod.extract_undeclared_id_headings
 is_allowlisted = _mod.is_allowlisted
 compute_violations = _mod.compute_violations
 main = _mod.main
 KIND_DRIFT = _mod.KIND_DRIFT
 KIND_STALE = _mod.KIND_STALE
 KIND_DUPLICATE = _mod.KIND_DUPLICATE
+KIND_ALLOWLIST_STALE = _mod.KIND_ALLOWLIST_STALE
+KIND_HEADING_NO_COLON = _mod.KIND_HEADING_NO_COLON
 
 
 # ---------------------------------------------------------------------------
@@ -91,6 +94,34 @@ class TestExtractDeclaredSpecs:
         (tmp_path / "001.md").write_text("### STORE-015: native_path()\n\n### STORE-015: glob()\n", encoding="utf-8")
         declared = extract_declared_specs(tmp_path)
         assert len(declared["STORE-015"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# Unparseable headings — the colon-less blind spot
+# ---------------------------------------------------------------------------
+
+
+class TestExtractUndeclaredIdHeadings:
+    def test_colonless_id_heading_flagged(self, tmp_path: Path) -> None:
+        # An ID-shaped heading without the trailing colon parses as neither
+        # a declaration nor a citation — the blind spot this surfaces.
+        (tmp_path / "003.md").write_text("### BE-099 Some Behavior\n", encoding="utf-8")
+        found = extract_undeclared_id_headings(tmp_path)
+        assert set(found) == {"BE-099"}
+        assert found["BE-099"][0].endswith("003.md:1")
+
+    def test_colon_heading_not_flagged(self, tmp_path: Path) -> None:
+        (tmp_path / "003.md").write_text("### BE-014: list_files()\n", encoding="utf-8")
+        assert extract_undeclared_id_headings(tmp_path) == {}
+
+    def test_parenthetical_colon_heading_not_flagged(self, tmp_path: Path) -> None:
+        # The paren-then-colon form (spec 046) is parsed by _HEADING_RE.
+        (tmp_path / "046.md").write_text("## EW-001 (was WR-014): write_with_hash\n", encoding="utf-8")
+        assert extract_undeclared_id_headings(tmp_path) == {}
+
+    def test_non_id_heading_not_flagged(self, tmp_path: Path) -> None:
+        (tmp_path / "x.md").write_text("## Overview of the design\n", encoding="utf-8")
+        assert extract_undeclared_id_headings(tmp_path) == {}
 
 
 # ---------------------------------------------------------------------------
@@ -255,6 +286,42 @@ class TestComputeViolations:
         )
         assert violations == [(KIND_DRIFT, "BE-004"), (KIND_DRIFT, "BE-019")]
 
+    def test_allowlist_entry_undeclared_is_stale(self) -> None:
+        # An allowlisted ID whose spec section vanished is dead weight.
+        violations = compute_violations(
+            declared={},
+            marks={},
+            allowlist=frozenset({"SIO-006"}),
+        )
+        assert violations == [(KIND_ALLOWLIST_STALE, "SIO-006")]
+
+    def test_allowlist_entry_now_marked_is_stale(self) -> None:
+        # An allowlisted ID that grew a real mark is testable now — it no
+        # longer needs excusing and must leave the allowlist.
+        violations = compute_violations(
+            declared={"SIO-006": ["s:1"]},
+            marks={"SIO-006": ["t:1"]},
+            allowlist=frozenset({"SIO-006"}),
+        )
+        assert violations == [(KIND_ALLOWLIST_STALE, "SIO-006")]
+
+    def test_allowlist_entry_declared_and_unmarked_is_clean(self) -> None:
+        # The healthy state: declared, unmarked, excused — no violation.
+        violations = compute_violations(
+            declared={"SIO-006": ["s:1"]},
+            marks={},
+            allowlist=frozenset({"SIO-006"}),
+        )
+        assert violations == []
+
+    def test_colonless_heading_is_a_violation(self) -> None:
+        violations = compute_violations(
+            declared={},
+            marks={},
+            undeclared_headings={"BE-099": ["s:1"]},
+        )
+        assert violations == [(KIND_HEADING_NO_COLON, "BE-099")]
+
 
 # ---------------------------------------------------------------------------
 # main() — baseline mechanics
@@ -272,13 +339,17 @@ def _make_repo(tmp_path: Path, *, specs: str, tests: str) -> dict[str, Path]:
 
 
 class TestMain:
+    # Synthetic-repo tests pass allowlist=frozenset() to isolate the core
+    # modes from the real _ENUMERATED_ALLOWLIST (whose IDs are not declared
+    # in these tiny specs dirs). test_repo_invocation_is_green exercises the
+    # real allowlist via the default.
     def test_clean_tree_passes(self, tmp_path: Path) -> None:
         dirs = _make_repo(
             tmp_path,
             specs="### BE-014: list_files()\n",
             tests='import pytest\n\n\n@pytest.mark.spec("BE-014")\ndef t(): ...\n',
         )
-        assert main(**dirs, baseline=frozenset()) == 0
+        assert main(**dirs, baseline=frozenset(), allowlist=frozenset()) == 0
 
     def test_unbaselined_drift_fails(self, tmp_path: Path) -> None:
         dirs = _make_repo(
@@ -286,7 +357,7 @@ class TestMain:
             specs="### BE-014: list_files()\n",
             tests="import pytest\n",
         )
-        assert main(**dirs, baseline=frozenset()) == 1
+        assert main(**dirs, baseline=frozenset(), allowlist=frozenset()) == 1
 
     def test_baselined_drift_passes(self, tmp_path: Path) -> None:
         dirs = _make_repo(
@@ -295,7 +366,7 @@ class TestMain:
             tests="import pytest\n",
         )
         baseline = frozenset({(KIND_DRIFT, "BE-014")})
-        assert main(**dirs, baseline=baseline) == 0
+        assert main(**dirs, baseline=baseline, allowlist=frozenset()) == 0
 
     def test_stale_baseline_entry_fails(self, tmp_path: Path) -> None:
         # The ID IS marked now, but the baseline still lists it as a gap.
@@ -305,7 +376,7 @@ class TestMain:
             tests='import pytest\n\n\n@pytest.mark.spec("BE-014")\ndef t(): ...\n',
         )
         baseline = frozenset({(KIND_DRIFT, "BE-014")})
-        assert main(**dirs, baseline=baseline) == 1
+        assert main(**dirs, baseline=baseline, allowlist=frozenset()) == 1
 
     def test_stale_mark_is_not_baselineable_silently(self, tmp_path: Path) -> None:
         # A stale-mark violation outside the baseline fails the gate.
@@ -316,9 +387,20 @@ class TestMain:
         )
         # BE-014 drift is baselined; the stale HTTP-001 is not — still fails.
         baseline = frozenset({(KIND_DRIFT, "BE-014")})
-        assert main(**dirs, baseline=baseline) == 1
+        assert main(**dirs, baseline=baseline, allowlist=frozenset()) == 1
+
+    def test_unbaselined_allowlist_stale_fails(self, tmp_path: Path) -> None:
+        # An allowlisted ID that grew a real mark (now testable) fails the
+        # gate unless baselined — the allowlist's own self-pruning.
+        dirs = _make_repo(
+            tmp_path,
+            specs="### SIO-006: no framework deps\n",
+            tests='import pytest\n\n\n@pytest.mark.spec("SIO-006")\ndef t(): ...\n',
+        )
+        assert main(**dirs, baseline=frozenset(), allowlist=frozenset({"SIO-006"})) == 1
 
     def test_repo_invocation_is_green(self) -> None:
-        # The real repo must pass against the checked-in _BASELINE — the
-        # gate is wired into the lint job and may not fail on master.
+        # The real repo must pass against the checked-in _BASELINE with the
+        # real allowlist — the gate is wired into the lint job and may not
+        # fail on master.
         assert main() == 0
