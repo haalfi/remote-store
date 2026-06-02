@@ -1,0 +1,98 @@
+id: BK-234
+title: "Reconcile to_key empty-key / bare-root behaviour across backends"
+trigger: >-
+  NPR-020 claimed to_key(native_path(k)) == k "for all valid keys", but for the
+  empty key it contradicted NPR-005: native_path("") returns the bare root
+  (NPR-021), and to_key of the bare root was returned unchanged on S3/Azure
+  (root, not "") while Local/SFTP special-cased it to "". The NPR-001 round-trip
+  invariant therefore failed on the S3/Azure family for the empty key. ID-190's
+  NativePathRoundTrip lemma had carved the case out for this reason.
+source_items:
+  - BK-234
+  - ID-190
+audience:
+  - user.api
+  - contributor.process
+  - library.maintainer
+  - infra.test
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-234 (item)"
+        read_type: gate
+        extract: "Decide-the-contract framing: align backends vs. exclude empty key"
+        outcome: ok
+      - file: sdd/specs/010-native-path-resolution.md
+        section: "NPR-005, NPR-020, NPR-021, NPR-001"
+        read_type: gate
+        extract: "Round-trip is the spec's primary motivation; NPR-005/NPR-020 disagree on the empty key"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "ToKey, NativePathRoundTrip"
+        read_type: reference
+        extract: "Lemma precondition key != '' || root == '' encodes the existing carve-out"
+        outcome: ok
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/backends/conformance/test_identity.py
+        section: "TestBackendNativePath::test_native_path_round_trip"
+        read_type: gate
+        extract: "Round-trip only tested 'some/key'; parametrise over ['some/key', ''] to expose the defect"
+        outcome: ok
+  - id: implement
+    name: Align the four divergent backends
+    steps:
+      - file: src/remote_store/backends/_s3_base.py
+        section: "to_key"
+        read_type: reference
+        extract: "Add bare-bucket -> '' branch (covers S3Backend + S3PyArrowBackend)"
+        outcome: ok
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "to_key"
+        read_type: reference
+        extract: "Add bare-bucket -> '' branch (boto3 has its own to_key, parked/wheel-excluded but conformance-green)"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "to_key"
+        read_type: reference
+        extract: "Add bare-container -> '' branch (sync)"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "to_key"
+        read_type: reference
+        extract: "Add bare-container -> '' branch (async mirror)"
+        outcome: ok
+  - id: spec
+    name: Reconcile the spec and formal model
+    steps:
+      - file: sdd/specs/010-native-path-resolution.md
+        section: "NPR-005"
+        read_type: reference
+        extract: "Document the bare-root -> '' rule as the inverse of NPR-021; NPR-020 'for all valid keys' now true"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "ToKey, NativePathRoundTrip"
+        read_type: reference
+        extract: "Add bare-root branch to ToKey; drop the lemma precondition so the round-trip holds unconditionally"
+        outcome: ok
+  - id: verify
+    name: Verify and ship-complete
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "(full)"
+        read_type: verify
+        extract: "scripts/dafny_verify.sh — 51 verified, 0 errors with the strengthened lemma"
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "user.api change -> CHANGELOG required; entry trimmed to ID + title per maintainer preference"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / specs, backends, formal"
+        read_type: verify
+        extract: "Swept BACKLOG/BACKLOG-DONE, spec 010, Dafny, conformance; per-backend re-assertion intentionally omitted (BK-255 precedent)"
+        outcome: ok

@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-234 — Reconcile `to_key` empty-key / bare-root behaviour across backends**
+  spec: NPR-005, NPR-020, NPR-021 · effort: M · audience: library.maintainer
+  Resolved **toward a universal round-trip** (option A): all rooted backends now
+  special-case the bare native root to the empty key `""`, so
+  `to_key(native_path(k)) == k` (NPR-001 / NPR-020) holds for `k == ""` as well
+  as every non-empty key. Previously `S3Backend` (`_s3_base.py`, shared by s3fs +
+  PyArrow), `S3Boto3Backend` (`_s3_boto3.py`), and `AzureBackend` (`_azure.py`
+  sync + `aio/backends/_azure.py`) returned the bare bucket/container unchanged,
+  while `LocalBackend` / `SFTPBackend` already special-cased it to `""` — so the
+  invariant failed only on the S3/Azure family.
+  - **Fix:** added the bare-root → `""` branch to the four divergent `to_key`
+    implementations; Local/SFTP unchanged.
+  - **Spec:** NPR-005 now defines the bare-root → `""` rule (the inverse of
+    NPR-021's `native_path("")` → root); NPR-020's "for all valid keys" claim is
+    now true unmodified.
+  - **Formal:** `BackendContract.dfy` `ToKey` gained the bare-root branch and
+    `NativePathRoundTrip` dropped its `key != "" || root == ""` precondition —
+    the lemma now holds unconditionally (verified, 51/0).
+  - **Test:** the conformance `test_native_path_round_trip` is parametrised over
+    `["some/key", ""]`, exercising the empty key across the full fixture registry
+    (the cross-backend home per BK-255 — no per-backend re-assertion added).
+  - Surfaced during ID-190 review.
+
 - [x] **BK-258 — Residual branch coverage for `AsyncBackendSyncAdapter`**
   spec: ASYNC-080, ASYNC-083, ASYNC-085, ASYNC-088 · effort: S · audience: infra.test, library.maintainer
   `src/remote_store/_async_to_sync_adapter.py` was the worst-covered module

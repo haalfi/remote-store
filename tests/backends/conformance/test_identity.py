@@ -110,9 +110,15 @@ class TestBackendNativePath:
 
     @pytest.mark.spec("BE-025")
     @pytest.mark.spec("NPR-020")
-    def test_native_path_round_trip(self, backend: Backend) -> None:
-        """native_path is the inverse of to_key (NPR-020)."""
-        assert backend.to_key(backend.native_path("some/key")) == "some/key"
+    @pytest.mark.parametrize("key", ["some/key", ""], ids=["nested", "empty"])
+    def test_native_path_round_trip(self, backend: Backend, key: str) -> None:
+        """native_path is the inverse of to_key for all valid keys (NPR-020).
+
+        The empty key round-trips through the bare backend root: native_path('')
+        is the root (NPR-021) and to_key of the bare root is '' (NPR-005). See
+        BK-234 for the cross-backend reconciliation.
+        """
+        assert backend.to_key(backend.native_path(key)) == key
 
     @pytest.mark.spec("BE-025")
     @pytest.mark.spec("NPR-021")
