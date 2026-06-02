@@ -743,17 +743,13 @@ class TestStoreWriteText:
 
 
 class TestListFilesDepthFilter:
-    """STORE-depth-filter: list_files depth filter trims results beyond max_depth."""
+    """STORE-depth-filter: list_files depth filter trims results beyond max_depth.
 
-    @pytest.mark.spec("STORE-012")
-    def test_depth_filter_trims_files_beyond_max_depth(self, store: Store) -> None:
-        """list_files with max_depth skips files at depth > max_depth."""
-        store.write("a/b/shallow.txt", b"x")
-        store.write("a/b/c/deep.txt", b"x")
-        files = list(store.list_files("a", max_depth=1))
-        names = {f.name for f in files}
-        assert "shallow.txt" in names
-        assert "deep.txt" not in names
+    The Store-level max_depth trimming invariant is owned by
+    ``tests/test_depth_listing.py::TestListFilesMaxDepth`` (STORE-016 /
+    DEPTH-001). The remaining ``test_write_text_roundtrip`` is misfiled here
+    (it exercises write_text, not depth filtering); BK-256 relocates it.
+    """
 
     @pytest.mark.spec("WTXT-001")
     def test_write_text_roundtrip(self, store: Store) -> None:

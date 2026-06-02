@@ -8,8 +8,9 @@ out under BK-218 (BK-191 slice 3/6), each to a per-backend file:
 the S3 base signature check -> `tests/backends/s3/test_depth_listing.py`,
 and the Azure signature check -> `tests/backends/azure/test_depth_listing.py`.
 The cross-protocol DEPTH-003 result invariant is owned by
-`tests/backends/conformance/test_listing.py::TestListFilesCompleteness`
-(and, for Azure behaviourally, `tests/backends/azure/test_config.py::test_list_files_max_depth`).
+`tests/backends/conformance/test_listing.py::TestListFilesCompleteness`,
+which parametrises `list_files(max_depth=…)` over the full fixture registry
+(the Azurite fixture covers Azure behaviourally at Stage 2).
 """
 
 from __future__ import annotations
@@ -130,8 +131,15 @@ class TestListFilesMaxDepth:
         assert files == ["lvl1/one.txt", "root.txt"]
 
     @pytest.mark.spec("DEPTH-001")
+    @pytest.mark.spec("STORE-012")
     def test_max_depth_child_store(self) -> None:
-        """max_depth works correctly with child stores (path rebasing)."""
+        """max_depth works correctly with child stores (path rebasing).
+
+        STORE-012 (round-trip path invariant): the returned ``FileInfo.path``
+        values are store-relative — the child's ``root_path`` is stripped, so
+        ``sub/a.txt`` (not ``root/sub/a.txt``) comes back, directly usable as
+        input to other Store methods.
+        """
         parent = Store(backend=MemoryBackend())
         parent.write("root/sub/a.txt", b"a")
         parent.write("root/sub/deep/b.txt", b"b")
@@ -232,43 +240,21 @@ def _seed_backend(backend: MemoryBackend | LocalBackend) -> None:
 
 
 class TestMemoryBackendNativeDepth:
-    """DEPTH-003: MemoryBackend.list_files(max_depth=N) prunes DFS."""
+    """DEPTH-003: MemoryBackend.list_files recursive=False ignores max_depth.
+
+    The recursive=True depth-cutoff result invariant (max_depth 0/1/2/None
+    over a nested tree) is owned by
+    ``tests/backends/conformance/test_listing.py::TestListFilesCompleteness::test_list_files_recursive_max_depth``,
+    parametrised over the registry (the memory fixture included). The sliver
+    kept here is the one shape conformance does not cover: ``recursive=False``
+    makes ``max_depth`` a no-op (only immediate children, regardless of N).
+    """
 
     @pytest.fixture
     def backend(self) -> MemoryBackend:
         b = MemoryBackend()
         _seed_backend(b)
         return b
-
-    @pytest.mark.spec("DEPTH-003")
-    def test_max_depth_none_ignores(self, backend: MemoryBackend) -> None:
-        """max_depth=None preserves existing recursive behavior."""
-        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=None))
-        assert len(files) == 5
-
-    @pytest.mark.spec("DEPTH-003")
-    def test_max_depth_zero(self, backend: MemoryBackend) -> None:
-        """max_depth=0 with recursive=True returns only immediate files."""
-        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=0))
-        assert files == ["a.txt"]
-
-    @pytest.mark.spec("DEPTH-003")
-    def test_max_depth_one(self, backend: MemoryBackend) -> None:
-        """max_depth=1 includes files in immediate subfolders."""
-        files = sorted(str(f.path) for f in backend.list_files("d", recursive=True, max_depth=1))
-        assert files == ["d/a.txt", "d/sub1/b.txt", "d/sub2/c.txt"]
-
-    @pytest.mark.spec("DEPTH-003")
-    def test_max_depth_two(self, backend: MemoryBackend) -> None:
-        """max_depth=2 includes files up to 2 levels deep."""
-        files = sorted(str(f.path) for f in backend.list_files("d", recursive=True, max_depth=2))
-        assert files == ["d/a.txt", "d/sub1/b.txt", "d/sub1/deep/d.txt", "d/sub2/c.txt"]
-
-    @pytest.mark.spec("DEPTH-003")
-    def test_max_depth_exceeds_tree(self, backend: MemoryBackend) -> None:
-        """max_depth larger than tree returns all files."""
-        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=100))
-        assert len(files) == 5
 
     @pytest.mark.spec("DEPTH-003")
     def test_max_depth_without_recursive(self, backend: MemoryBackend) -> None:
@@ -279,43 +265,20 @@ class TestMemoryBackendNativeDepth:
 
 @pytest.mark.os_sensitive
 class TestLocalBackendNativeDepth:
-    """DEPTH-003: LocalBackend.list_files(max_depth=N) uses os.walk depth cutoff."""
+    """DEPTH-003: LocalBackend.list_files recursive=False ignores max_depth.
+
+    The recursive=True ``os.walk`` depth-cutoff result invariant is owned by
+    the registry-parametrised conformance test (see
+    ``TestMemoryBackendNativeDepth`` above; the ``local`` fixture is in the
+    same enumeration). The sliver kept here is the ``recursive=False``
+    no-op shape, which conformance does not exercise.
+    """
 
     @pytest.fixture
     def backend(self, tmp_path: Path) -> LocalBackend:
         b = LocalBackend(root=str(tmp_path))
         _seed_backend(b)
         return b
-
-    @pytest.mark.spec("DEPTH-003")
-    def test_max_depth_none_ignores(self, backend: LocalBackend) -> None:
-        """max_depth=None preserves existing recursive behavior."""
-        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=None))
-        assert len(files) == 5
-
-    @pytest.mark.spec("DEPTH-003")
-    def test_max_depth_zero(self, backend: LocalBackend) -> None:
-        """max_depth=0 with recursive=True returns only immediate files."""
-        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=0))
-        assert files == ["a.txt"]
-
-    @pytest.mark.spec("DEPTH-003")
-    def test_max_depth_one(self, backend: LocalBackend) -> None:
-        """max_depth=1 includes files in immediate subfolders."""
-        files = sorted(str(f.path) for f in backend.list_files("d", recursive=True, max_depth=1))
-        assert files == ["d/a.txt", "d/sub1/b.txt", "d/sub2/c.txt"]
-
-    @pytest.mark.spec("DEPTH-003")
-    def test_max_depth_two(self, backend: LocalBackend) -> None:
-        """max_depth=2 includes files up to 2 levels deep."""
-        files = sorted(str(f.path) for f in backend.list_files("d", recursive=True, max_depth=2))
-        assert files == ["d/a.txt", "d/sub1/b.txt", "d/sub1/deep/d.txt", "d/sub2/c.txt"]
-
-    @pytest.mark.spec("DEPTH-003")
-    def test_max_depth_exceeds_tree(self, backend: LocalBackend) -> None:
-        """max_depth larger than tree returns all files."""
-        files = sorted(f.name for f in backend.list_files("d", recursive=True, max_depth=100))
-        assert len(files) == 5
 
     @pytest.mark.spec("DEPTH-003")
     def test_max_depth_without_recursive(self, backend: LocalBackend) -> None:

@@ -2,9 +2,10 @@
 
 The behavioural DEPTH-003 invariant for Azure (`list_files(max_depth=…)`
 returns files at depth <= N) is owned by
-`tests/backends/azure/test_config.py::test_list_files_max_depth`, which
-runs against the Azurite emulator at Stage 2. Per spec 037 DEPTH-003,
-Azure has no native pruning -- it accepts the parameter and the
+`tests/backends/conformance/test_listing.py::TestListFilesCompleteness::test_list_files_recursive_max_depth`,
+which parametrises depth filtering over the full fixture registry; the
+Azurite fixture covers Azure behaviourally at Stage 2. Per spec 037
+DEPTH-003, Azure has no native pruning -- it accepts the parameter and the
 Store-level client-side filter does the work.
 
 This file pins the Stage-1 signature contract: `AzureBackend.list_files`
