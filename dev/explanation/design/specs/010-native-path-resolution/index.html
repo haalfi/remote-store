@@ -10101,6 +10101,11 @@ on relative keys) inherit the default unchanged.</p>
 It does not validate path safety — that is <code>RemotePath</code>'s responsibility. If
 the input path does not start with the backend's root, the backend returns the
 input unchanged (best-effort).</p>
+<p><strong>Bare root:</strong> The bare backend root (the root itself, with no trailing key)
+maps to the empty key <code>""</code>. This is the inverse of <code>native_path("")</code> returning
+the bare root (NPR-021), so the round-trip <code>to_key(native_path(k)) == k</code> holds
+for <code>k == ""</code> as well as every non-empty key. All backends with a native root
+(Local, SFTP, S3, Azure) special-case the bare root to <code>""</code>; see BK-234.</p>
 <h3 id="npr-006-localbackendto_key">NPR-006: LocalBackend.to_key<a class="headerlink" href="#npr-006-localbackendto_key" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>LocalBackend.to_key(native_path)</code> strips the backend's
 filesystem root directory.
@@ -10117,6 +10122,7 @@ currently scattered across listing methods.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">)</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;my-bucket/data/file.txt&quot;</span><span class="p">)</span>   <span class="c1"># → &quot;data/file.txt&quot;</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;data/file.txt&quot;</span><span class="p">)</span>             <span class="c1"># → &quot;data/file.txt&quot; (no prefix, unchanged)</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">)</span>                 <span class="c1"># → &quot;&quot; (bare bucket is the root, BK-234)</span>
 </code></pre></div>
 <strong>Postconditions:</strong> Replaces the existing <code>_rel_path()</code> helper with a public,
 contract-backed method.</p>
