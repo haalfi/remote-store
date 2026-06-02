@@ -15,7 +15,7 @@ audience:
   - contributor.process
 co_shipped_items:
   - BK-238
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -81,3 +81,7 @@ phases:
         section: "expected_ripples"
         read_type: verify
         extract: "Review: expected_ripples listed sdd/backlogid.json, but moving sub-max BK IDs to DONE is a no-op for that file and the diff never touched it — removed the false ripple per the schema's 'no ideal-but-untrue entries' rule"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 2, 5"
+        read_type: gate
+        extract: "Second review round flagged two inline wrapper/adapter enumerations as staleness candidates — de-enumerated: wrapper-forwarding now points at src/remote_store/ext/ as the home rather than naming ObservedStore/CachedStore, and the bridge 'use when' dropped its parenthetical list (source-code facts stay in source)"

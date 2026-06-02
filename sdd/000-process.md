@@ -84,9 +84,11 @@ Store method, or error class.
 - [ ] **Conformance test + xfail registry landed _before_ the first backend
   implementation**, so backends move themselves off the xfail list against a
   contract that already exists.
-- [ ] **Wrapper forwarding verified** through every wrapping layer:
-  `ProxyStore`, `ObservedStore`, `CachedStore`, and the sync and oracle
-  adapters.
+- [ ] **Wrapper forwarding verified** — every `Store`-wrapping layer forwards
+  the new surface. The wrapping layers are the `ProxyStore` base, the wrappers
+  under `src/remote_store/ext/`, and the sync and oracle adapters; consult
+  those locations rather than a fixed class list, which drifts as wrappers are
+  added.
 - [ ] **Docs ripple swept** — every guide, snippet, and reference surface the
   new contract appears in.
 - [ ] **Audit pass run against the unreleased work** as a pre-merge gate.
@@ -94,8 +96,7 @@ Store method, or error class.
 #### Bridge / adapter feature
 
 Use when the change introduces a cross-layer wrapper — anything that adapts
-one Store or backend surface onto another (sync↔async adapters, oracle
-adapters, caching or observing proxies).
+one `Store` or backend surface onto another.
 
 - [ ] **API-parity test against the wrapped layer** — the bridge exposes the
   contract it wraps.
