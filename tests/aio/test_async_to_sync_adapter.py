@@ -1483,3 +1483,11 @@ class TestCloseDrainsPendingTasks:
         matched = [r for r in caplog.records if "close timed out" in r.message]
         assert matched, "expected a close-timeout warning when the drain cannot finish"
         assert all(r.levelno == logging.WARNING for r in matched)
+
+        # close() schedules loop.stop but its own join times out, leaving the
+        # never-completing task on the loop. Join the daemon thread here so the
+        # loop reaches its close() (and destroys the abandoned task) at a
+        # controlled point, rather than deferring teardown to GC / interpreter
+        # shutdown where it could leak across tests under xdist.
+        adapter._thread.join(timeout=5.0)  # internal: no public observable for the loop thread
+        assert not adapter._thread.is_alive(), "loop thread did not stop after close timeout"
