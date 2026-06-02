@@ -65,37 +65,31 @@ completion workflow, and section structure. See its "How this file works" header
 
 ### Feature-type Definition of Done
 
-Rule 6's feature workflow (SPEC → TEST → IMPLEMENT → VALIDATE → DOCS) says
-*what order*; the two checklists below say *when a feature is actually done*.
-Pick the row that matches the change and treat the boxes as gates, not
-suggestions. Both were distilled from the v0.23.0→v0.24.0 retrospective,
-where a single feature line (ID-146 → ID-151c) sprawled into eight sub-IDs
-over two weeks because the conformance, doc-ripple, and scope-estimation work
-was discovered after the fact instead of enumerated up front.
+Rule 6 gives a feature's lifecycle order; the two checklists below give its
+exit criteria. Pick the row that matches the change and treat each box as a
+gate, not a suggestion. For why each gate exists, see the originating backlog
+item BK-237 and its trace.
 
 #### Contract-expanding feature
 
-Use when the change adds or widens a public contract. The canonical trigger
-is a new `Capability.X`, but any new Store method or error class qualifies.
+Use when the change adds or widens a public contract — a new `Capability`,
+Store method, or error class.
 
-- [ ] **Spec / RFC updated**, and the RFC scope **enumerates the conformance,
-  PBT, and Dafny extensions the feature will need up front** — apply the
-  memory `feedback_estimation.md` 2-3× rule at RFC time, not as a string of
-  follow-ups discovered later.
-- [ ] **Capability declaration reviewed for both over- *and* under-declaration**:
-  a backend that claims a capability it does not honour is as wrong as one
-  that omits a capability it does.
+- [ ] **Spec / RFC updated**, with the conformance, property-based, and
+  formal-proof work the feature needs scoped up front in the RFC, not
+  discovered as a string of follow-ups.
+- [ ] **Capability declaration reviewed for both over- and under-declaration**:
+  claiming a capability a backend does not honour is as wrong as omitting one
+  it does.
 - [ ] **Conformance test + xfail registry landed _before_ the first backend
-  implementation** — the contract is proven against the suite first, then
-  backends move themselves off the xfail list.
-- [ ] **Wrapper forwarding verified** across every layer that must pass the
-  new surface through: `ProxyStore`, `ObservedStore`, `CachedStore`, the sync
-  adapter, and the oracle adapter.
-- [ ] **Docs ripple swept**: `docs-src/guides/`, `examples/snippets/`,
-  `FEATURES.md`, and the capabilities matrix.
-- [ ] **Audit-PR gate** run against the unreleased work — the audit-PR pattern
-  (PR #465) filed six pre-release bugs against in-flight v0.23.0→v0.24.0 work;
-  treat a focused audit pass as a recommended gate before the feature is done.
+  implementation**, so backends move themselves off the xfail list against a
+  contract that already exists.
+- [ ] **Wrapper forwarding verified** through every wrapping layer:
+  `ProxyStore`, `ObservedStore`, `CachedStore`, and the sync and oracle
+  adapters.
+- [ ] **Docs ripple swept** — every guide, snippet, and reference surface the
+  new contract appears in.
+- [ ] **Audit pass run against the unreleased work** as a pre-merge gate.
 
 #### Bridge / adapter feature
 
@@ -104,16 +98,14 @@ one Store or backend surface onto another (sync↔async adapters, oracle
 adapters, caching or observing proxies).
 
 - [ ] **API-parity test against the wrapped layer** — the bridge exposes the
-  same contract it wraps, proven rather than assumed.
-- [ ] **Event-loop / resource-lifecycle test** — loops, connections, and
-  handles are created and torn down without leaks.
+  contract it wraps.
+- [ ] **Event-loop and resource-lifecycle test** — loops, connections, and
+  handles are torn down without leaks.
 - [ ] **Cancellation-invariant test** — cancelling mid-operation leaves no
   half-state and raises the right error.
-- [ ] **Live-backend coverage**, not just doubles — the bridge is exercised
-  against at least one real backend, since doubles hide loop and lifecycle
-  bugs.
-- [ ] **`filterwarnings = error` clean** — the suite passes under the global
-  error-on-warning policy (configured in `pyproject.toml` `[tool.pytest.ini_options]`).
+- [ ] **Live-backend coverage**, not just doubles.
+- [ ] **`filterwarnings = error`-clean suite** under the global policy in
+  `pyproject.toml`.
 
 ### Document types
 

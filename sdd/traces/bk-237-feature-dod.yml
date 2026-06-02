@@ -15,8 +15,7 @@ audience:
   - contributor.process
 co_shipped_items:
   - BK-238
-expected_ripples:
-  - sdd/backlogid.json
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -70,3 +69,15 @@ phases:
         section: "hatch run lint / gen-backlogid"
         read_type: verify
         extract: "Lint + traceability + backlogid --check green after moving items to BACKLOG-DONE.md"
+  - id: review
+    name: Address review (content-rules)
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1, 3, 4"
+        read_type: gate
+        extract: "PR #739 review flagged the whole DoD section: the first-draft prose carried point-in-time retrospective narrative and pseudo-precise figures (failing the 6-month test and the no-pseudo-precise-values rule) and cited the non-repo memory feedback_estimation.md. Rewrote to principle-first prescriptive gates; dropped the war-story, the figures, and the memory citation"
+        outcome: misleading
+      - file: sdd/traces/bk-237-feature-dod.yml
+        section: "expected_ripples"
+        read_type: verify
+        extract: "Review: expected_ripples listed sdd/backlogid.json, but moving sub-max BK IDs to DONE is a no-op for that file and the diff never touched it — removed the false ripple per the schema's 'no ideal-but-untrue entries' rule"
