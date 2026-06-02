@@ -125,33 +125,46 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   No code change in this item beyond throwaway measurement scripts;
   the chosen path becomes a new BK-NNN.
 
-  **Partial measurement — moto, 2026-06-02 (#1, #2 only).** Via the
+  **Partial measurement — 2026-06-02 (#1, #2 done; #3 pending).** Via the
   `benchmarks/` `s3-nocache` lane (s3fs `S3Backend` with
-  `client_options={"use_listings_cache": False}`) vs cached `s3`, run with
-  `hatch run pytest benchmarks/test_listing.py benchmarks/test_metadata.py
-  --infra moto --backend s3,s3-nocache,s3-boto3`. moto is loopback HTTP, so
-  these are **library-overhead** figures (no real RTT), not the real-S3 grid.
-  Bench-suite sizes (50-file flat, 200-file hierarchy), not the 100/1 000/
-  10 000 grid yet. Mean ms, cache-on (`s3`) vs cache-off (`s3-nocache`),
-  boto3 lane for reference:
+  `client_options={"use_listings_cache": False}`) vs cached `s3` and the
+  `s3-boto3` lane, run across all three tiers with `--infra
+  moto|docker|cloud --backend s3,s3-nocache,s3-boto3` on
+  `test_listing.py`/`test_metadata.py`. Bench-suite sizes (50-file flat,
+  200-file hierarchy), not the 100/1 000/10 000 grid. Mean ms. moto is
+  loopback (library-overhead only); MinIO is a local socket; cloud is real
+  AWS (`RS_TEST_LIVE_S3=1`, ephemeral `rs-conformance-bench-*` buckets).
 
-  | op | `s3` (cache on) | `s3-nocache` (off) | `s3-boto3` |
+  `s3-nocache` (cache off) vs cached `s3`, by tier:
+
+  | op | moto off / on | MinIO off / on | AWS off / on |
   |---|---|---|---|
-  | `list_files` (50) | 0.16 | 9.8 | 23.8 |
-  | `iter_children` | 0.11 | 6.9 | 20.8 |
-  | `list_files` non-recursive (200) | 0.09 | 6.8 | 20.9 |
-  | `list_files` recursive (200) | 1.1 | 70 | 174 |
-  | `get_folder_info` (large dir) | 0.8 | 79 | 50 |
-  | `get_file_info` / `exists` (HEAD) | 3.7 | 3.8 | 11–12 |
+  | `list_files` (50) | 9.8 / 0.16 | 4.6 / 0.16 | 38 / 0.26 |
+  | `iter_children` | 6.9 / 0.11 | 3.0 / 0.11 | 34 / 0.16 |
+  | `list_files` recursive (200) | 70 / 1.1 | 28 / 0.93 | 393 / 1.1 |
+  | `get_folder_info` (large) | 79 / 0.8 | 30 / 0.6 | 467 / 0.8 |
 
-  Interim read (moto only): the dircache is the whole listing story —
-  disabling it costs ~60–90x on a flat list in-process (0.1 → ~7 ms). Pure
-  HEAD ops (`get_file_info`, `exists`) are cache-independent. Cache-neutral,
-  s3fs still out-lists the boto3 lane ~2.4–3x, except `get_folder_info` on a
-  large dir, where boto3's pagination wins. **Not yet measured:** real-S3
-  latency at the 100/1 000/10 000 grid (where RTT dominates and compresses
-  these ratios) and #3 staleness frequency — both needed before choosing
-  (a)/(b)/(c).
+  Fresh-vs-fresh, `s3-nocache` vs `s3-boto3` (cache removed from the picture):
+
+  | op | moto | MinIO | AWS |
+  |---|---|---|---|
+  | `list_files` (50) | 9.8 / 23.8 | 4.6 / 4.2 | 38 / 40 |
+  | `iter_children` | 6.9 / 20.8 | 3.0 / 2.9 | 34 / 36 |
+  | recursive (200) | 70 / 174 | 28 / 27 | 393 / 400 |
+  | `get_folder_info` (large) | 79 / 50 | 30 / 12.5 | 467 / 83 |
+  | `get_file_info`/`exists` | 3.8 / 11–12 | 1.4 / 1.3 | 27 / 27 |
+
+  Read (#1, #2): (i) the moto "s3fs is 2.4–3x faster" gap is a pure
+  library-CPU artifact — it vanishes on MinIO and on AWS the fresh lanes are
+  **at parity** for flat lists, recursive lists, and single-object metadata
+  (all RTT-bound, ~equal call counts). (ii) The s3fs **dircache is the only
+  real speed differentiator**: on AWS it turns a 38 ms flat list into 0.26 ms
+  and a 393 ms recursive walk into ~1 ms (150–360x) — the precise cost of
+  disabling it. (iii) For aggregate scans the boto3 lane's single flat
+  `list_objects_v2` **beats** fresh s3fs's per-prefix walk, and real RTT
+  widens it: `get_folder_info` 83 vs 467 ms on AWS (5.6x). **Still needed
+  before (a)/(b)/(c):** #3 staleness frequency (write-then-list across two
+  `Store` instances) — the correctness side the latency numbers can't settle.
 
 ---
 

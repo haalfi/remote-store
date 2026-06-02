@@ -84,13 +84,21 @@ docker compose -f infra/docker-compose.yml down -v
 
 ### Cloud mode
 
-Runs against real cloud services. Set environment variables first:
+Runs against real cloud services.
+
+**S3 family (`s3`, `s3-nocache`, `s3-boto3`)** reuses the Stage-3 live-test
+wiring: credentials come from a local `.env` (loaded via
+`load_dotenv(override=False)`, only in cloud mode), and the run is gated on the
+`RS_TEST_LIVE_S3=1` opt-in — the same `AWS_ACCESS_KEY_ID` /
+`AWS_SECRET_ACCESS_KEY` / `AWS_DEFAULT_REGION` the `s3_live` fixture uses. Each
+S3 test provisions an ephemeral `rs-conformance-bench-<id>` bucket (matching the
+`s3_live` IAM policy, which scopes `CreateBucket` to `rs-conformance-*`) and
+deletes it on teardown. Set `BENCH_S3_BUCKET` only if you have a dedicated
+pre-existing bucket to reuse instead.
 
 ```bash
-# S3
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
-export BENCH_S3_BUCKET=my-bench-bucket
+# S3: put AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_DEFAULT_REGION in .env, then:
+RS_TEST_LIVE_S3=1 hatch run bench-cloud -- --backend s3,s3-nocache,s3-boto3
 
 # Azure
 export AZURE_STORAGE_CONNECTION_STRING=...

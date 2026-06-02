@@ -247,10 +247,28 @@ AZURE_MAX_CONCURRENCY = int(os.environ.get("BENCH_AZURE_MAX_CONCURRENCY", "1"))
 # Cloud config (used when --infra cloud)
 # ---------------------------------------------------------------------------
 
+# Pull credentials from a local ``.env`` the same way the Stage-3 live tests do
+# (tests.conftest._maybe_load_dotenv_for_live -> load_dotenv(override=False)).
+# Guarded to cloud mode so a normal docker/moto run never reads ``.env``.
+if _CLOUD_MODE:
+    try:
+        from dotenv import load_dotenv  # noqa: PLC0415
+
+        load_dotenv(override=False)
+    except ImportError:
+        pass
+
 CLOUD_S3_BUCKET = os.environ.get("BENCH_S3_BUCKET", "")
 CLOUD_S3_KEY = os.environ.get("AWS_ACCESS_KEY_ID", "")
 CLOUD_S3_SECRET = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
 CLOUD_S3_REGION = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
+
+# Stage-3 S3 opt-in: RS_TEST_LIVE_S3=1 plus AWS creds (mirrors the s3_live
+# fixture gating). When BENCH_S3_BUCKET is unset, cloud S3 provisions an
+# ephemeral ``rs-conformance-bench-<tag>`` bucket per the s3_live IAM policy.
+_RS_LIVE_S3 = os.environ.get("RS_TEST_LIVE_S3") == "1"
+_S3_CLOUD_OK = _RS_LIVE_S3 and bool(CLOUD_S3_KEY) and bool(CLOUD_S3_SECRET)
+_S3_CLOUD_REASON = "cloud S3 needs RS_TEST_LIVE_S3=1 and AWS creds (from .env); see benchmarks/README.md"
 
 CLOUD_AZURE_CONN_STR = os.environ.get("AZURE_STORAGE_CONNECTION_STRING", "")
 CLOUD_AZURE_CONTAINER = os.environ.get("BENCH_AZURE_CONTAINER", "")
@@ -323,9 +341,9 @@ def _moto_available() -> bool:
 # ---------------------------------------------------------------------------
 
 if _CLOUD_MODE:
-    _s3_skip = pytest.mark.skipif(not CLOUD_S3_BUCKET, reason="BENCH_S3_BUCKET not set for cloud mode")
-    _pa_skip = pytest.mark.skipif(not CLOUD_S3_BUCKET, reason="BENCH_S3_BUCKET not set for cloud mode")
-    _boto3_skip = pytest.mark.skipif(not CLOUD_S3_BUCKET, reason="BENCH_S3_BUCKET not set for cloud mode")
+    _s3_skip = pytest.mark.skipif(not _S3_CLOUD_OK, reason=_S3_CLOUD_REASON)
+    _pa_skip = pytest.mark.skipif(not _S3_CLOUD_OK, reason=_S3_CLOUD_REASON)
+    _boto3_skip = pytest.mark.skipif(not _S3_CLOUD_OK, reason=_S3_CLOUD_REASON)
     _sftp_skip = pytest.mark.skipif(not CLOUD_SFTP_HOST, reason="BENCH_SFTP_HOST not set for cloud mode")
     _azure_skip = pytest.mark.skipif(
         not CLOUD_AZURE_CONN_STR or not CLOUD_AZURE_CONTAINER,
@@ -471,9 +489,27 @@ def _s3_setup(infra: str, moto_url: str | None, tag: str, name: str) -> tuple[An
     import boto3
 
     if infra == "cloud":
-        bucket = CLOUD_S3_BUCKET
-        client = boto3.client("s3", region_name=CLOUD_S3_REGION)
-        return client, bucket, {"bucket": bucket, "region_name": CLOUD_S3_REGION}, False
+        # Creds come from the Stage-3 .env (loaded above) via the default chain.
+        client = boto3.client(
+            "s3",
+            aws_access_key_id=CLOUD_S3_KEY or None,
+            aws_secret_access_key=CLOUD_S3_SECRET or None,
+            region_name=CLOUD_S3_REGION,
+        )
+        backend_kwargs = {"bucket": "", "region_name": CLOUD_S3_REGION}
+        if CLOUD_S3_BUCKET:
+            # Reuse a caller-provided dedicated bucket; only empty it on teardown.
+            backend_kwargs["bucket"] = CLOUD_S3_BUCKET
+            return client, CLOUD_S3_BUCKET, backend_kwargs, False
+        # No fixed bucket: provision an ephemeral rs-conformance-* bucket, matching
+        # the s3_live fixture (the IAM policy scopes CreateBucket to that prefix).
+        bucket = f"rs-conformance-bench-{tag}"
+        create_kwargs: dict[str, Any] = {"Bucket": bucket}
+        if CLOUD_S3_REGION != "us-east-1":
+            create_kwargs["CreateBucketConfiguration"] = {"LocationConstraint": CLOUD_S3_REGION}
+        client.create_bucket(**create_kwargs)
+        backend_kwargs["bucket"] = bucket
+        return client, bucket, backend_kwargs, True
 
     if infra == "moto":
         if moto_url is None:
@@ -544,8 +580,6 @@ def bench_backend(request: pytest.FixtureRequest, moto_url: str | None) -> Itera
     elif request.param == "s3":
         from remote_store.backends._s3 import S3Backend
 
-        if cloud and not CLOUD_S3_BUCKET:
-            pytest.skip("BENCH_S3_BUCKET not set for cloud mode")
         client, bucket, kw, owns = _s3_setup(infra, moto_url, tag, "s3")
         b = S3Backend(**kw)
         yield b
@@ -557,8 +591,6 @@ def bench_backend(request: pytest.FixtureRequest, moto_url: str | None) -> Itera
         # fresh list_* every call, for an apples-to-apples compare vs s3-boto3.
         from remote_store.backends._s3 import S3Backend
 
-        if cloud and not CLOUD_S3_BUCKET:
-            pytest.skip("BENCH_S3_BUCKET not set for cloud mode")
         client, bucket, kw, owns = _s3_setup(infra, moto_url, tag, "s3nc")
         b = S3Backend(**kw, client_options={"use_listings_cache": False})
         yield b
@@ -568,8 +600,6 @@ def bench_backend(request: pytest.FixtureRequest, moto_url: str | None) -> Itera
     elif request.param == "s3-boto3":
         from remote_store.backends._s3_boto3 import S3Boto3Backend
 
-        if cloud and not CLOUD_S3_BUCKET:
-            pytest.skip("BENCH_S3_BUCKET not set for cloud mode")
         client, bucket, kw, owns = _s3_setup(infra, moto_url, tag, "s3-boto3")
         b = S3Boto3Backend(**kw)
         yield b
@@ -579,8 +609,6 @@ def bench_backend(request: pytest.FixtureRequest, moto_url: str | None) -> Itera
     elif request.param == "s3-pyarrow":
         from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
-        if cloud and not CLOUD_S3_BUCKET:
-            pytest.skip("BENCH_S3_BUCKET not set for cloud mode")
         client, bucket, kw, owns = _s3_setup(infra, moto_url, tag, "pa")
         b = S3PyArrowBackend(**kw)
         yield b
