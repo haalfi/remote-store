@@ -5161,6 +5161,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-40-finishing-the-file-ancestor-contract-v0270" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 40: Finishing the File-Ancestor Contract (v0.27.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10411,6 +10422,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-40-finishing-the-file-ancestor-contract-v0270" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 40: Finishing the File-Ancestor Contract (v0.27.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11043,6 +11065,12 @@
 <p><strong>The user-facing addition: <code>RemoteStoreComputeLogManager</code>.</strong> ID-208 covered Dagster's second storage extension point — the IO manager landed in v0.21.0; this release adds the compute log manager. It is a Dagster <em>instance</em> component, configured in <code>dagster.yaml</code>, that captures op/step <code>stdout</code> / <code>stderr</code> and persists it to any remote-store backend. The implementation subclasses Dagster's <code>TruncatingCloudStorageComputeLogManager</code> and builds its own <code>Store</code> from <code>backend_type</code> + <code>backend_options</code> via the shared <code>_build_store</code>. RFC-0014's open question OQ6 was resolved during implementation: <code>_build_store</code> now <code>Secret</code>-wraps credential-named options (DAG-033), which retroactively masks credentials for the v2 <code>DagsterStoreResource</code> / <code>RemoteStoreIOManager</code> too. The Dagster API paths were verified against the installed <code>dagster</code> 1.13.5; the RFC's assumed import paths needed correcting. RFC-0014 → implementation took one PR.</p>
 <p><strong>Drift-guard arrived for real.</strong> ID-182 wired the scheduled CI drift guard for unbounded <code>[&lt;extra&gt;]</code> floors that had been a research item since BUG-204 (paramiko's silent upgrade breakage). The workflow re-resolves each <code>remote-store[&lt;extra&gt;]</code> weekly with <code>pip install --upgrade --pre</code>, diffs against <code>infra/drift-locks/&lt;extra&gt;.txt</code>, and runs smoke targets for any drifted extra. A single rolling GitHub issue is created / updated / auto-closed by <code>scripts/drift_report.py</code> — early warning, not automated remediation. The companion user-facing page (<code>docs-src/reference/tested-versions.md</code>) records the upper-bound transitive versions CI was last green against per extra; users now have a direct answer to "what should I pin against?" The first scheduled run after landing surfaced a real signal (the artifact-action Node 20 deprecation, fixed in a follow-up) and a docs gap that BK-236's <code>check_docs_site_links</code> lint gate (DOCFRAME-009) closed in the same release. DOCFRAME-009 itself turned two README links and a guide link from "PyPI ships broken links" to "broken links fail CI offline."</p>
 <p><strong>The lesson, captured as <code>feedback_dafny_spec_test_interlock.md</code>:</strong> the value of a formal layer is not "second backend to diff against" but "machine-checked interlock between spec and test." The compiled oracle (run as a conformance fixture) certifies that tests demand nothing the contract does not — it is the (T) side. The contract postconditions, verified against the <code>MemoryBackend</code> refinement, certify that a spec clause is self-consistent and satisfiable — it is the (C) side. ID-206 made the (C)/(T) coverage measurable; BK-196/BK-232/BK-195/BK-233 demonstrated the pattern on a real defect.</p>
+<h3 id="phase-40-finishing-the-file-ancestor-contract-v0270">Phase 40: Finishing the File-Ancestor Contract (v0.27.0)<a class="headerlink" href="#phase-40-finishing-the-file-ancestor-contract-v0270" title="Permanent link">&para;</a></h3>
+<p>v0.27.0 had one story worth telling at length and a few fixes that rode along. The long one began in the formal layer and ended in four different backends' error-handling code: a single Dafny invariant that, once it was made to actually hold, forced a cross-backend correctness wave nobody had scheduled.</p>
+<p><strong>A vacuous postcondition became a class invariant, and the invariant started naming bugs.</strong> v0.26.0's ID-184 had added an <code>AllAncestorsTraversable</code> disjunct to the Dafny listing postconditions, but the state it guarded — a file sitting where a directory belongs in a backend's filesystem model — was structurally unreachable from the public <code>Backend</code> trait, so every backend satisfied it by doing nothing. A verified guard that proves nothing is decoration. ID-209 promoted well-formedness to a <code>Valid()</code> class invariant, <code>requires Valid() ensures Valid()</code> on every mutating method, which turned the disjunct from a hopeful comment into a logical consequence. The instant the invariant had to hold, it pointed at a bug the vacuous version had hidden in plain sight: <code>LocalBackend</code> and <code>SFTPBackend</code> leaked raw <code>FileExistsError</code> / <code>NotADirectoryError</code> / SFTP <code>ENOTDIR</code> when a write descended through an existing file — a typed-error-contract violation that had been shipping for releases. The model did not prove the code correct; it refused to verify until the code stopped being wrong.</p>
+<p><strong>The same contract had to be re-proven four times, once per backend's reality.</strong> This is the part a changelog entry flattens into a single line and loses. Closing ID-209's carve-outs was not one fix applied four times; it was four investigations that happened to converge. Azure HNS (ID-213) raised the wrong typed error <em>and</em> keyed its move/copy failure to the source path during the DFS rename, so the destination file-ancestor the contract names carried no signal at all — the obvious seam, the error classifier, was the wrong seam, and only a per-method ancestor probe could read <code>hdi_isfolder</code> to tell a directory marker from a file. SFTP (ID-212) was walking the parent chain from the absolute root, so on a chrooted server a permission-denied ancestor <em>above</em> the chroot masked the real case; the fix was to stop looking where the backend is not allowed to see, and walk from <code>base_path</code> down. The flat-namespace backends (ID-211) have no native notion of a file-ancestor at all, so enforcing it costs a HEAD per ancestor — shipped as an opt-in flag with measured numbers (~+9–19 ms at depth 6) rather than a silent tax on every write. One contract, four native realities.</p>
+<p><strong>A tracker ID in the rendered docs became a permanent CI gate.</strong> The smaller story this release is the one that generalizes furthest. A reader of the published API reference hit a docstring that said "See spec 003 § BE-008 and ID-211" — internal backlog coordinates that mean nothing outside the repo and rot the moment the ticket closes. The reflex fix is to delete the offending line; the durable fix is to make the leak impossible to reintroduce. BK-246 did both: an audit found 178 such references across 24 files (mkdocstrings-rendered docstrings, guides, the docs site), each rewritten as behaviour-first prose, and a new <code>check_no_tracker_refs</code> lint gate — dual-wired into <code>hatch run lint</code> and the CI lint job — now fails the build on any backlog/spec/ADR/RFC coordinate that escapes into a user-facing surface. It joins the lineage of v0.23.0's CONTENT-RULES and v0.24.1's API-docs drift checks: every documentation rule this project trusts is one a machine enforces, because a rule a human has to remember is a rule that eventually slips. The same release's spec-side audit (BK-250) closed the matching gap from the other direction, turning five shipped-but-untested behaviours into conformance tests and resolving the HTTP <code>LAZY_READ</code> capability question <em>toward the code</em> — the flag was always truthful; only the spec clause and docstring had under-listed it.</p>
+<p><strong>The lesson:</strong> a formal invariant earns its keep not by certifying that code is correct but by refusing to hold when it is not. ID-209's <code>Valid()</code> was worthless while it was vacuous and invaluable the moment it became load-bearing, because that is when it began naming real bugs in real backends. And the corollary the four follow-ups taught: a cross-backend contract is portable only in intent. Each backend honours it through its own native errors, costs, and blind spots — so "extend the contract to backend X" is always a fresh investigation, never a copy of the last one.</p>
 <h2 id="reproducing-this-workflow">Reproducing This Workflow<a class="headerlink" href="#reproducing-this-workflow" title="Permanent link">&para;</a></h2>
 <p>If you want to try this approach on your own project:</p>
 <ol>
