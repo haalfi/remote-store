@@ -2418,6 +2418,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#directory-listing-cache-off-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Directory-listing cache (off by default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#data-lake-pattern-few-root-folders-deep-nesting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9798,6 +9809,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#directory-listing-cache-off-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Directory-listing cache (off by default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#data-lake-pattern-few-root-folders-deep-nesting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10230,23 +10252,45 @@ round-trip through <code>get_file_info()</code> in <code>FileInfo.metadata</code
 <p>See the <a href="../../../explanation/performance/#comparative-results">performance guide</a> for benchmark results.
 Listing is dominated by S3 API round-trip latency, not file count. Connection pooling
 is automatic; successive calls reuse connections.</p>
+<h3 id="directory-listing-cache-off-by-default">Directory-listing cache (off by default)<a class="headerlink" href="#directory-listing-cache-off-by-default" title="Permanent link">&para;</a></h3>
+<p>The S3 backend disables the underlying s3fs directory-listing cache by
+default, so every listing call reflects the current state of the bucket.</p>
+<p>s3fs caches directory listings in a cache that <strong>never expires</strong>: once a
+prefix has been listed, s3fs serves later listings of that prefix from memory
+until the process restarts. For a single reader that never writes, that saves
+a round trip on repeated listings. But for any store shared by more than one
+writer — two processes, two <code>Store</code> instances, or another tool writing to the
+same bucket — a write made elsewhere is then <strong>permanently invisible</strong> to a
+reader that has already listed the prefix. Fresh listings cost one bounded
+round trip; the default favours correctness.</p>
+<p>Re-enable the cache when you have a single-writer (or read-only) workload and
+want to avoid repeated listing round trips:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;use_listings_cache&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="p">)</span>
+</code></pre></div>
+<p><code>client_options["use_listings_cache"]</code> takes precedence over the default, so
+passing <code>True</code> restores the s3fs caching behaviour (and <code>False</code> is a harmless
+no-op). The <a href="../../cache/"><code>ext.cache</code></a> extension is the portable,
+backend-agnostic alternative when you want caching with explicit invalidation.</p>
 <h3 id="data-lake-pattern-few-root-folders-deep-nesting">Data Lake Pattern (Few Root Folders, Deep Nesting)<a class="headerlink" href="#data-lake-pattern-few-root-folders-deep-nesting" title="Permanent link">&para;</a></h3>
 <p>If you have few root-level folders (e.g., <code>/bronze</code>, <code>/silver</code>, <code>/gold</code>) with deeply nested structures:</p>
 <p><strong>To explore the structure:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># ✓ Shallow listing to see root tiers</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_folders</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">):</span>  <span class="c1"># bronze/, silver/, gold/</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">folder</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># ✓ Shallow listing to see root tiers</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_folders</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">):</span>  <span class="c1"># bronze/, silver/, gold/</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">folder</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </code></pre></div></p>
 <p><strong>To process a specific tier incrementally:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># ✓ Depth-limited listing to explore one branch without full recursion</span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="c1"># Gets files up to 3 levels deep under bronze/</span>
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># ✓ Depth-limited listing to explore one branch without full recursion</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="c1"># Gets files up to 3 levels deep under bronze/</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 </code></pre></div></p>
 <p><strong>Only if you need all files across all depths:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># ✓ Full recursive listing (streaming, memory-efficient despite size)</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># ✓ Full recursive listing (streaming, memory-efficient despite size)</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 </code></pre></div></p>
 <p><strong>Characteristics:</strong>
 - <code>max_depth=0</code>: Direct children only (equivalent to non-recursive)

@@ -8630,6 +8630,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3pa-027-directory-listing-cache-defaults-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3PA-027: Directory-listing cache defaults off
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10146,6 +10157,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3pa-027-directory-listing-cache-defaults-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3PA-027: Directory-listing cache defaults off
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10267,6 +10289,10 @@ full body below. Tests reference both IDs per backend via per-parameter
 <td>S3PA-026 config_kwargs + RetryPolicy</td>
 <td>S3-026</td>
 </tr>
+<tr>
+<td>S3PA-027 Listings cache defaults off</td>
+<td>S3-027</td>
+</tr>
 </tbody>
 </table>
 <p>Full-body deltas (unique to S3-PyArrow): <strong>S3PA-002, S3PA-003, S3PA-006,
@@ -10384,6 +10410,8 @@ S3PA-007, S3PA-012, S3PA-021</strong>.</p>
 <p>See <a href="../008-s3-backend/#s3-022-default-credential-chain">S3-022</a>.</p>
 <h3 id="s3pa-026-config_kwargs-is-the-only-config-channel-client_kwargsconfig-is-rejected">S3PA-026: config_kwargs is the only Config channel; client_kwargs['config'] is rejected<a class="headerlink" href="#s3pa-026-config_kwargs-is-the-only-config-channel-client_kwargsconfig-is-rejected" title="Permanent link">&para;</a></h3>
 <p>See <a href="../008-s3-backend/#s3-026">S3-026</a>. Applies to the s3fs control path only; the PyArrow data path (<code>_pa_fs</code>) is unaffected.</p>
+<h3 id="s3pa-027-directory-listing-cache-defaults-off">S3PA-027: Directory-listing cache defaults off<a class="headerlink" href="#s3pa-027-directory-listing-cache-defaults-off" title="Permanent link">&para;</a></h3>
+<p>See <a href="../008-s3-backend/#s3-027">S3-027</a>. Listing runs through the s3fs control path (S3PA-017), so the off-by-default cache applies identically; the PyArrow data path (<code>_pa_fs</code>) is unaffected.</p>
 
 
 

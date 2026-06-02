@@ -8540,6 +8540,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3-027" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3-027: Directory-listing cache defaults off
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10134,6 +10145,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3-027" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3-027: Directory-listing cache defaults off
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10275,6 +10297,7 @@ via the paired-ID map at the top of 011.</p>
 <h3 id="s3-021-client-options-passthrough">S3-021: Client Options Passthrough<a class="headerlink" href="#s3-021-client-options-passthrough" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The <code>client_options</code> dict is merged into the s3fs configuration, allowing advanced settings (custom SSL, proxy, timeouts, etc.).
 <strong>Postconditions:</strong> Explicit constructor parameters (<code>endpoint_url</code>, <code>key</code>, <code>secret</code>, <code>region_name</code>) take precedence over keys in <code>client_options</code>.</p>
+<p>For the listings-cache default the builder injects during this merge (a precedence rule in the opposite direction — <code>client_options</code> overrides our default), see <a href="#s3-027">S3-027</a>.</p>
 <h3 id="s3-022-default-credential-chain">S3-022: Default Credential Chain<a class="headerlink" href="#s3-022-default-credential-chain" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> When <code>key</code> and <code>secret</code> are not provided, the backend falls back to the standard AWS credential chain (environment variables <code>AWS_ACCESS_KEY_ID</code> / <code>AWS_SECRET_ACCESS_KEY</code>, <code>~/.aws/credentials</code>, IAM role, etc.).
 <strong>Rationale:</strong> Follows the principle of least surprise for AWS users.</p>
@@ -10354,6 +10377,14 @@ argument 'config'</code> (BUG-178, BUG-185).</p>
   to keep caller-supplied retry knobs.
 - Caller-supplied fields outside <code>retries</code> (e.g. <code>connect_timeout</code>,
   <code>read_timeout</code>, <code>s3.addressing_style</code>, <code>proxies</code>) are preserved.</p>
+<p><strong>Scope:</strong> Applies to both <code>S3Backend</code> and <code>S3PyArrowBackend</code> (both use the <code>_S3Base._build_s3fs_kwargs()</code> builder).</p>
+<h3 id="s3-027">S3-027: Directory-listing cache defaults off<a class="headerlink" href="#s3-027" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>_build_s3fs_kwargs()</code> injects <code>use_listings_cache=False</code> as a default. Caller-supplied <code>client_options["use_listings_cache"]</code> takes precedence — the s3fs directory-listing cache is opt-in, not on by default.</p>
+<p><strong>Why:</strong> s3fs caches directory listings in a <code>DirCache</code> that defaults to <code>listings_expiry_time=None</code>, so a listed directory is never re-fetched until <code>invalidate_cache()</code>. For a multi-writer <code>Store</code>, a write from a second instance is then <strong>permanently invisible</strong> to the first — breaking the "a listing shows what's there" model. The only benefit the cache buys is repeated-list latency when nothing writes in between; the fresh-list cost is one bounded round trip.</p>
+<p><strong>Rules:</strong>
+- Absent any caller value, the kwargs handed to <code>s3fs.S3FileSystem</code> carry <code>use_listings_cache=False</code>.
+- A caller passing <code>client_options={"use_listings_cache": True}</code> (or <code>False</code>) keeps their value unchanged (<code>setdefault</code> semantics, matching <code>anon</code>).
+- Callers who want caching re-enable it via <code>client_options</code> or the <code>ext.cache</code> extension.</p>
 <p><strong>Scope:</strong> Applies to both <code>S3Backend</code> and <code>S3PyArrowBackend</code> (both use the <code>_S3Base._build_s3fs_kwargs()</code> builder).</p>
 
 

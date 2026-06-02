@@ -9802,8 +9802,11 @@ fsspec, see the Detailed Comparative Tables section on the
   absolute predictions of cloud performance.</li>
 <li><strong>Listing anomalies.</strong> Some fsspec implementations (s3fs, adlfs) show
   sub-100us listing times that reflect client-side caching, not real
-  storage-layer performance. Similarly, raw boto3 listing without caching
-  is slower than remote-store's cached s3fs path.</li>
+  storage-layer performance. <code>S3Backend</code> defaults this directory-listing
+  cache off (fresh listings every call), so those sub-100us numbers appear
+  only when the cache is explicitly re-enabled via
+  <code>client_options={"use_listings_cache": True}</code>; with the default, the s3fs
+  path issues a fresh listing like raw boto3.</li>
 <li><strong>Delete overhead.</strong> 2-3x vs raw SDK across all backends is expected
   from the error-mapping layer and not an optimization target.</li>
 <li><strong>Streaming reads keep memory constant</strong> regardless of file size.</li>
