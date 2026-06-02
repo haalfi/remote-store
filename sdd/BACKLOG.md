@@ -282,8 +282,9 @@ and the highest ID already in this file, then take the next integer. Run
   **Three code-side flags surfaced** (NOT guide work) — see research doc
   § 6: `s3fs` typed-error mapping fidelity; `S3Backend`
   `use_listings_cache` default; third S3 lane (`s3-boto3` direct)
-  viability. Now tracked as **ID-200 / ID-201 / ID-202** in the
-  S3 Client-Implementation Strategy section.
+  viability. Tracked as **ID-200 / ID-201 / ID-202** — all complete;
+  see [BACKLOG-DONE.md](BACKLOG-DONE.md) (ID-201's disposition shipped
+  as BK-257).
 
   **Sequencing (dogfood-cost ordered, see research § 7):**
   Phase 1 (zero new setup) = §3.3 + §3.7 + §3.4;
