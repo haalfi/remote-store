@@ -47,7 +47,7 @@ from remote_store.ext.streams import ChecksumReader, ChecksumWriter, ProgressRea
 from remote_store.ext.transfer import download, transfer, upload
 from remote_store.ext.write import HashingAtomicWriter, open_atomic_with_hash, write_with_hash
 
-__version__ = "0.26.0"
+__version__ = "0.27.0"
 
 logging.getLogger("remote_store").addHandler(logging.NullHandler())
 
