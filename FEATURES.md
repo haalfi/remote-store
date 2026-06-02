@@ -1,5 +1,5 @@
 <!-- doc: dual dest=reference/FEATURES.md -->
-# Features — remote-store v0.26.0
+# Features — remote-store v0.27.0
 
 Authoritative snapshot of what remote-store delivers in this version.
 Updated each release. **This is the single reference for the package's feature surface.**

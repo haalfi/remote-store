@@ -7,17 +7,108 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- **BK-234 — Reconcile `to_key` empty-key / bare-root behaviour across backends**
-- **BK-257 — Default the s3fs S3 lanes (`s3`, `s3-pyarrow`) to `use_listings_cache=False`**
-- **BK-250 — Spec-traceability correctness gaps + `STORE-015` spec defect (audit-015 follow-up).** Added the five missing tests audit-015 flagged as untested shipped behavior: S3 and S3-PyArrow non-recursive `delete_folder` on a non-empty folder raises `DirectoryNotEmpty` (the data-safety guard the cross-backend conformance suite skips for flat-namespace backends); `ReadOnlyHttpBackend` name and capability declaration; an `ext.otel` span over the `open_atomic` lifecycle; and sequential-batch input-order preservation. The flagged HTTP capability divergence resolved **in favor of the code**: `read()` returns a live streamed body on every transport (urllib / `requests` / `httpx`), so the long-standing `LAZY_READ` flag is truthful — spec 032 (HTTP-CON-004) and the `ReadOnlyHttpBackend` docstring now document it (the flag was already declared and honored; only the docs under-listed it). Renumbered the duplicate `STORE-015` so each invariant has a unique ID (`glob()` → `STORE-018`).
-- **BUG-214 — S3 `write_atomic` no longer commits a truncated object when the content source fails mid-stream.** Both S3 backends previously left a complete-looking but truncated object on a mid-stream content failure, breaking the `ATOMIC_WRITE` contract (no partial content ever visible): `S3Backend` (s3fs) because `S3File.close()` ran on the exception path, and `S3PyArrowBackend` because PyArrow's output stream commits on close and cannot be aborted. `S3Backend` now `discard()`s the in-flight upload (aborting any multipart upload) on failure; `S3PyArrowBackend.write_atomic` now buffers the content fully before opening the upload. Plain `write` remains non-atomic (it may leave a partial object on failure, like the local backend). Confirmed against real AWS S3 (new `s3_pyarrow_live` Stage-3 fixture).
-- **ID-213 — Translate HNS Azure write/delete/move/copy/list under a file ancestor to the cross-backend `InvalidPath` / `NotFound` / empty-listing**
-- **ID-212 — Harden SFTP file-ancestor detection against partial-stat-permission (chroot) setups**
-- **ID-214 — Sweep residual pre-reorg test-path references in non-authoritative docs**
-- **ID-196 — `RemotePath.as_posix()` and pathlib parity audit**
-- **BK-246 — Strip internal tracker IDs from published docstrings and `docs-src/`; add lint gate**
-- **ID-211 — write-under-file HEAD pre-check for flat-namespace backends**
-- **ID-209 — `fs` well-formedness as a `Backend` class invariant + write-under-file conformance gate**
+## [0.27.0] - 2026-06-02
+
+### Added
+
+- **`RemotePath.as_posix()`** (ID-196): `RemotePath` now offers `as_posix()`,
+  returning the forward-slash key string (identical to `str(path)`), so pathlib
+  muscle memory works instead of raising `AttributeError`. It is a method, not a
+  property, matching `pathlib.PurePath`. `RemotePath` remains deliberately **not**
+  `os.PathLike`: it is a remote-store key, not a local path, so `os.fspath()`
+  still raises, which keeps keys from silently slipping into `open()` or
+  `os.path.*` and targeting the local filesystem.
+
+- **Opt-in write-under-file-ancestor rejection for flat-namespace backends**
+  (ID-211): `S3Backend`, `S3PyArrowBackend`, `AzureBackend` (non-HNS),
+  `SQLBlobBackend`, and async `AsyncAzureBackend` gain a
+  `reject_write_under_file_ancestor: bool = False` constructor option. When
+  enabled, `write` / `write_atomic` / `open_atomic` / `move` / `copy` reject a
+  path that descends through an existing file with `InvalidPath`, matching the
+  hierarchical backends' native behaviour. It is off by default because detection
+  costs one HEAD request per slash-aligned ancestor (measured ~+9–19 ms at depth
+  6 on S3-moto / Azurite); a path with no slash skips the check entirely.
+
+### Changed
+
+- **`to_key()` of a bare backend root now returns the empty key `""` on every
+  backend** (BK-234): `S3Backend`, `S3PyArrowBackend`, and `AzureBackend` (sync +
+  async) previously returned the bare bucket/container unchanged, while
+  `LocalBackend` / `SFTPBackend` already mapped it to `""`. The round-trip
+  `to_key(native_path(k)) == k` now holds for the empty key on all backends, not
+  only for non-empty keys.
+
+- **The s3fs S3 lanes (`s3`, `s3-pyarrow`) default to `use_listings_cache=False`**
+  (BK-257): fresh directory listings are now the default. s3fs's `DirCache` never
+  expires, so a cached listing was permanently blind to writes from other clients
+  (100% silent cross-writer staleness); the fresh-list cost is one bounded round
+  trip. Re-enable the cache explicitly with
+  `client_options={"use_listings_cache": True}`, or use `ext.cache` for caching
+  with explicit invalidation.
+
+- **`LocalBackend` and `SFTPBackend` raise `InvalidPath` for a write/move/copy
+  whose path descends through an existing file** (ID-209): previously they leaked
+  native exceptions (`FileExistsError`, `NotADirectoryError`, SFTP `ENOTDIR`) for
+  this case (read/delete under a file ancestor map to `NotFound`). The
+  cross-backend file-ancestor contract is now backed by a `Valid()` class
+  invariant in the Dafny model and a conformance gate certified through the
+  compiled oracle.
+
+### Fixed
+
+- **S3 `write_atomic` no longer commits a truncated object when the content
+  source fails mid-stream** (BUG-214): both S3 backends previously left a
+  complete-looking but truncated object on a mid-stream content failure, breaking
+  the `ATOMIC_WRITE` contract. `S3Backend` (s3fs) now `discard()`s the in-flight
+  upload (aborting any multipart upload), and `S3PyArrowBackend` buffers the
+  content fully before opening the upload. Plain `write` remains non-atomic (it
+  may leave a partial object on failure, like the local backend). Confirmed
+  against real AWS S3 for both backends.
+
+- **Azure HNS operations under a file ancestor raise the correct cross-backend
+  error class** (ID-213): on a real ADLS Gen2 (HNS) account, `write` /
+  `write_atomic` / `open_atomic` / `move` / `copy` / `delete` / `list_*` under a
+  file ancestor surfaced `NotFound` / `AlreadyExists` (the raw Azure SDK mapping)
+  instead of the cross-backend `InvalidPath` / `NotFound` / empty-listing. A
+  per-method ancestor probe (mirroring SFTP) now returns the contract-correct
+  class; `classify_azure_error` is unchanged. Applied to sync and async Azure.
+
+- **SFTP file-ancestor detection on chrooted / partial-permission servers**
+  (ID-212): `SFTPBackend` walked the parent chain from the absolute SFTP root,
+  stat-ing components above its `base_path`. On a server where an ancestor above
+  the chroot returns `SSH_FX_PERMISSION_DENIED`, a genuine file-ancestor read was
+  misclassified as a generic failure instead of `NotFound`, and nested writes
+  failed with `PermissionDenied`. Both helpers now walk from `base_path` only, so
+  the restricted ancestors are never probed.
+
+### Documentation
+
+- **`custom-backend-guide.md` conformance-suite references updated for the
+  per-topic test layout** (ID-214): the guide's two test tables linked to the
+  deleted flat `test_conformance.py` / `test_conformance_extended.py`. They now
+  list the eight per-topic files under `tests/backends/conformance/`, explain the
+  `@pytest.mark.extended_conformance` marker, and link the async sibling.
+  In-tree test docstrings naming moved files were swept in the same pass.
+
+- **Internal tracker IDs stripped from published docstrings and `docs-src/`**
+  (BK-246): backlog / spec / ADR / RFC coordinates (e.g. "See spec 003 § BE-008
+  and ID-211") were leaking into the rendered API reference and the docs site.
+  178 references across 24 files were rewritten as behaviour-first prose, and a
+  new `check_no_tracker_refs` lint gate (wired into `hatch run lint` and CI)
+  prevents regressions.
+
+### Internal
+
+- **Spec-traceability correctness gaps closed** (BK-250): added the five tests
+  audit-015 flagged as untested shipped behaviour (S3 / S3-PyArrow non-recursive
+  `delete_folder` on a non-empty folder raises `DirectoryNotEmpty`;
+  `ReadOnlyHttpBackend` name and capability set; an `ext.otel` span over the
+  `open_atomic` lifecycle; sequential-batch input-order preservation). The
+  flagged HTTP capability divergence resolved **toward the code**: `read()`
+  returns a live streamed body on every transport (urllib / `requests` /
+  `httpx`), so the `LAZY_READ` flag is truthful; spec 032 (HTTP-CON-004) and the
+  `ReadOnlyHttpBackend` docstring were corrected to document it. The duplicate
+  `STORE-015` ID was renumbered (`glob()` → `STORE-018`).
 
 ## [0.26.0] - 2026-05-25
 

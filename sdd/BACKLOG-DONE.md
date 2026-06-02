@@ -6,7 +6,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## [Unreleased]
+## v0.27.0
 
 - [x] **BK-237 — Feature-type DoD checklists in `sdd/000-process.md`**
   spec: — · effort: S · audience: contributor.process

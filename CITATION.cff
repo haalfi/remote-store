@@ -5,8 +5,8 @@ abstract: >-
   Write file storage code once. Run it against local files,
   S3, SFTP, or Azure.
 type: software
-version: 0.26.0
-date-released: 2026-05-25
+version: 0.27.0
+date-released: 2026-06-02
 license: MIT
 repository-code: https://github.com/haalfi/remote-store
 url: https://docs.remotestore.dev/
