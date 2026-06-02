@@ -252,6 +252,12 @@ all = ["preflight", "lint", "format-check", "typecheck", "test-cov-s1", "example
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/remote_store"]
+# ID-202 PoC `_s3_boto3` is parked test-only: conformance-green and kept in the
+# tree, but deliberately not registered/advertised. Exclude it from the built
+# wheel so the parked lane is never importable from an installed package, not
+# even via its private path. Tests/benchmarks import it from the editable src
+# tree, so they are unaffected; promotion to a shipped lane drops this line.
+exclude = ["src/remote_store/backends/_s3_boto3.py"]
 
 [tool.mypy]
 strict = true
