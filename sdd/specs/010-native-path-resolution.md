@@ -90,6 +90,12 @@ It does not validate path safety — that is `RemotePath`'s responsibility. If
 the input path does not start with the backend's root, the backend returns the
 input unchanged (best-effort).
 
+**Bare root:** The bare backend root (the root itself, with no trailing key)
+maps to the empty key `""`. This is the inverse of `native_path("")` returning
+the bare root (NPR-021), so the round-trip `to_key(native_path(k)) == k` holds
+for `k == ""` as well as every non-empty key. All backends with a native root
+(Local, SFTP, S3, Azure) special-case the bare root to `""`; see BK-234.
+
 ### NPR-006: LocalBackend.to_key
 
 **Invariant:** `LocalBackend.to_key(native_path)` strips the backend's
@@ -111,6 +117,7 @@ currently scattered across listing methods.
 backend = S3Backend(bucket="my-bucket")
 backend.to_key("my-bucket/data/file.txt")   # → "data/file.txt"
 backend.to_key("data/file.txt")             # → "data/file.txt" (no prefix, unchanged)
+backend.to_key("my-bucket")                 # → "" (bare bucket is the root, BK-234)
 ```
 **Postconditions:** Replaces the existing `_rel_path()` helper with a public,
 contract-backed method.

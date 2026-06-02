@@ -320,8 +320,8 @@ ghost predicate WellFormedPath(s: string)
 // BE-025).  `root` is the backend's native prefix — a filesystem root,
 // an S3 bucket, an SFTP base_path; the empty root models the
 // identity-default backends (MemoryBackend, the plain Backend ABC).
-// NativePathRoundTrip in §8 proves the round-trip identity; see that
-// lemma for the empty-key carve-out.
+// NativePathRoundTrip in §8 proves the round-trip identity, which holds
+// for every key including the empty key (BK-234).
 
 // native_path(key): prepend the backend root to a relative key.  An
 // empty key resolves to the root itself (NPR-021).
@@ -332,17 +332,18 @@ ghost function NativePath(root: string, key: string): string
   else root + "/" + key
 }
 
-// to_key(native): strip the backend root prefix (NPR-005).  Only a
-// `root + "/"` prefix is stripped; any other path — the bare root
-// included — is returned unchanged (best-effort).  This is the NPR-005
-// contract and matches S3Backend / AzureBackend exactly; LocalBackend /
-// SFTPBackend additionally special-case the bare root to "", an extra
-// branch beyond NPR-005 that this model deliberately omits (see BK-234).
+// to_key(native): strip the backend root prefix (NPR-005).  A `root + "/"`
+// prefix is stripped to the trailing key; the bare root (no trailing key)
+// maps to "" — the inverse of native_path("") returning the root (NPR-021).
+// Any other path is returned unchanged (best-effort).  BK-234 aligned all
+// rooted backends (Local, SFTP, S3, Azure) on this bare-root branch so the
+// round-trip holds for the empty key too.
 ghost function ToKey(root: string, native: string): string
 {
   if root == "" then native
   else if |native| > |root| && native[..|root| + 1] == root + "/"
     then native[|root| + 1..]
+  else if native == root then ""
   else native
 }
 
@@ -1149,33 +1150,30 @@ lemma MoveIsNotNoop(
   assert oldFs != newFs;
 }
 
-// NPR-020: native_path is a right inverse of to_key for a non-empty key
-// (and, trivially, for the identity-default backends, where root == "").
-// to_key then strips exactly the `root + "/"` that native_path
-// prepended, recovering the key.  This backend-level identity is the
-// base case future Store-Backend composition reasoning builds on:
-// Store.to_key / Store.native_path (NPR-010, STORE-012) layer the store
-// root_path on top of it.
+// NPR-020: native_path is a right inverse of to_key for every key.  For a
+// non-empty key, to_key strips exactly the `root + "/"` that native_path
+// prepended, recovering the key.  For the empty key, native_path("")
+// resolves to the bare root (NPR-021) and to_key of the bare root is ""
+// (NPR-005, BK-234 bare-root branch), so the identity holds there too.  The
+// identity-default backends (root == "") satisfy it trivially.  This
+// backend-level identity is the base case future Store-Backend composition
+// reasoning builds on: Store.to_key / Store.native_path (NPR-010, STORE-012)
+// layer the store root_path on top of it.
 //
-// The empty key is out of scope by design, not omission.  native_path("")
-// resolves to the bare root (NPR-021), and to_key of the bare root is
-// backend-divergent: NPR-005 — and S3Backend / AzureBackend — return it
-// unchanged, while LocalBackend / SFTPBackend special-case it to "".
-// NPR-020's "for all valid keys" wording and NPR-005 therefore disagree
-// on the empty key.  ToKey here follows NPR-005, so the lemma states the
-// precondition under which the round-trip genuinely holds rather than
-// adding an unsanctioned to_key branch to force a universal claim.  The
-// cross-backend divergence is tracked as BK-234.
+// BK-234 reconciled NPR-005 and NPR-020's "for all valid keys" wording by
+// aligning all rooted backends (Local, SFTP, S3, Azure) on the bare-root →
+// "" branch, so the lemma now holds unconditionally — no empty-key carve-out.
 lemma NativePathRoundTrip(root: string, key: string)
-  requires key != "" || root == ""
   // @spec NPR-020
   ensures ToKey(root, NativePath(root, key)) == key
 {
   if root == "" {
     assert NativePath(root, key) == key;
     assert ToKey(root, key) == key;
+  } else if key == "" {
+    assert NativePath(root, key) == root;
+    assert ToKey(root, root) == "";
   } else {
-    assert key != "";
     var native := NativePath(root, key);
     assert native == root + "/" + key;
     assert |root + "/"| == |root| + 1;

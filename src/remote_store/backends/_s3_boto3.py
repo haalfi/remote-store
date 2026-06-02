@@ -273,6 +273,9 @@ class S3Boto3Backend(Backend):
         prefix = f"{self._bucket}/"
         if native_path.startswith(prefix):
             return native_path[len(prefix) :]
+        if native_path == self._bucket:
+            # Bare bucket is the root; its key is "" (NPR-005, BK-234).
+            return ""
         return native_path
 
     def resolve(self, path: str) -> ResolutionPlan:

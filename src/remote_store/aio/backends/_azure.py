@@ -288,6 +288,9 @@ class AsyncAzureBackend(AsyncBackend):
         prefix = f"{self._container}/"
         if native_path.startswith(prefix):
             return native_path[len(prefix) :]
+        if native_path == self._container:
+            # Bare container is the root; its key is "" (NPR-005, BK-234).
+            return ""
         return native_path
 
     def native_path(self, path: str) -> str:

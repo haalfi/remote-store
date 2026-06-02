@@ -337,24 +337,6 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
 ## API Ergonomics
 
-- [ ] **BK-234 — Reconcile `to_key` empty-key / bare-root behaviour across backends**
-  spec: NPR-005, NPR-020, NPR-021 · effort: M · audience: library.maintainer
-  NPR-020 states the round-trip `to_key(native_path(k)) == k` holds "for
-  all valid keys", but for the empty key it contradicts NPR-005. For
-  `k == ""`, `native_path("")` returns the bare root (NPR-021); NPR-005
-  then says `to_key` returns a path that does not start with `root + "/"`
-  unchanged, so `to_key(root) == root`, not `""`. The backends split:
-  `S3Backend.to_key` (`_s3_base.py`) and `AzureBackend.to_key`
-  (`_azure.py`) follow NPR-005 and return the bare bucket/container;
-  `LocalBackend.to_key` and `SFTPBackend.to_key` special-case the bare
-  root to `""`. So `to_key(native_path("")) == ""` on Local/SFTP but
-  `== root` on S3/Azure — the NPR-001 round-trip invariant fails on
-  S3/Azure for the empty key. Decide the contract (amend NPR-005 / NPR-020
-  so they agree, then align the four backends) or rule the empty key out
-  of the round-trip's domain. ID-190's `NativePathRoundTrip` lemma
-  excludes the empty-key / non-empty-root case for this reason. Surfaced
-  during ID-190 review.
-
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
   spec: RES-100 · effort: M · audience: user.api
   `ext.cache` derives cache keys from `ResolutionPlan` fields instead of
