@@ -1,0 +1,76 @@
+id: BK-258
+title: "Residual branch coverage for AsyncBackendSyncAdapter"
+trigger: |
+  AsyncBackendSyncAdapter (_async_to_sync_adapter.py) was the worst-covered
+  module at 87% — 48 uncovered lines spanning the _submit / listing-bridge
+  close-race, the _ChunkPullReader.readinto data path, stream close
+  idempotency + aclose-error swallowing, _aclose_best_effort's failure
+  handler, _SpoolAndFlush re-exit, and the close() drain loop with pending
+  loop tasks. Several other uncovered lines were genuine race/dead guards.
+source_items:
+  - BK-258
+audience:
+  - infra.test
+  - library.maintainer
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: src/remote_store/_async_to_sync_adapter.py
+        section: "_submit (152-165), readinto (564-590), _pull_chunk (631-662), _ChunkPullReader.close (669-700), _AsyncIteratorBridge (737-785), _SpoolAndFlush.__exit__ (833-850), close drain loop (479-504), _drain_tasks / _snapshot_tasks (858-872)"
+        read_type: gate
+        extract: "classify each uncovered line: real-but-untested branch vs race/dead guard; map to the double that can drive it"
+        outcome: ok
+      - file: tests/aio/test_async_to_sync_adapter.py
+        section: "TestStreamingRead::test_close_race_stream_subsequent_read_returns_empty, TestCloseSemantics, TestAbandonedIteratorGC"
+        read_type: reference
+        extract: "stop-loop-without-closing-flag technique for the close-race; existing close()/drain coverage so new drain tests are complementary, not duplicative"
+        outcome: ok
+      - file: tests/aio/_doubles.py
+        section: "_HangingAsyncBackend, _RaisingAsyncBackend, (full)"
+        read_type: reference
+        extract: "existing doubles cover hang/raise; aclose-raising read generator and the drain-with-pending-task path need test-local doubles / scheduled tasks instead"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_memory.py
+        section: "read (117-138)"
+        read_type: reference
+        extract: "read yields a single chunk; aclose only runs the finally once the generator is started, so the aclose-error test must pull one byte before close"
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules 1, 3, 5, 7"
+        read_type: gate
+        extract: "match= on every raises; private access only with 'internal:' note; don't mock stdlib (drove the pragma-vs-monkeypatch call for the race guards); parametrize/no copy-paste"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "ID prefixes, Assigning a new ID, Maintenance / Long-horizon"
+        read_type: gate
+        extract: "id BK-258 after rebase (master added an unrelated active BK-257; renumbered to next safe ID); infra.test coverage work fits the maintenance section; create-and-complete in one change goes straight to BACKLOG-DONE"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/_async_to_sync_adapter.py
+        section: "Protocol stub (66), _pull_chunk _eof guard (637), drain-loop except branches (491/499), _snapshot_tasks except (870)"
+        read_type: reference
+        extract: "mark the five genuine race/dead lines `# pragma: no cover` with a per-line justification rather than testing them"
+        outcome: ok
+      - file: tests/aio/test_async_to_sync_adapter.py
+        section: "BK-258 block: TestSubmitCloseRace, TestListingBridgeCloseRace, TestReadIntoDataPath, TestStreamCloseEdges, TestAcloseBestEffortFailure, TestSpoolAndFlushReExit, TestCloseDrainsPendingTasks"
+        read_type: reference
+        extract: "seven classes + _stop_loop_without_closing_flag helper; fake-loop bridge for the aclose-best-effort submit failure; scheduled loop tasks for the drain-clean and drain-timeout paths"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: src/remote_store/_async_to_sync_adapter.py
+        section: "term-missing coverage run"
+        read_type: verify
+        extract: "principle 6: ran `pytest --cov=remote_store._async_to_sync_adapter --cov-report=term-missing` — module reaches 100% (pragmas exclude the five guards); 142 tests pass"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / infra.test change"
+        read_type: verify
+        extract: "BACKLOG-DONE entry + trace shipped same commit; CHANGELOG skipped (infra.test, BK-223/254 precedent); gen-backlogid bumps JSON to 258"
+        outcome: ok

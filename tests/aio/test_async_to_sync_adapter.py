@@ -15,7 +15,11 @@ from typing import Any
 
 import pytest
 
-from remote_store._async_to_sync_adapter import AsyncBackendSyncAdapter, _SyncSafeHandleProvider
+from remote_store._async_to_sync_adapter import (
+    AsyncBackendSyncAdapter,
+    _AsyncIteratorBridge,
+    _SyncSafeHandleProvider,
+)
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import BackendUnavailable, CapabilityNotSupported, NotFound
 from remote_store._models import FileInfo, FolderEntry, WriteResult
@@ -1259,3 +1263,223 @@ class TestAdapterWriteResult:
         assert isinstance(result, WriteResult)
         assert result.metadata == {"k": "v"}
         adapter.close()
+
+
+# ---------------------------------------------------------------------------
+# BK-258 — coverage hardening for residual adapter branches
+#
+# These exercise behavioural branches the original suite left untested:
+# the _submit / listing-bridge close-race, the readinto() data path, stream
+# close idempotency + aclose-error swallowing, _aclose_best_effort's failure
+# handler, _SpoolAndFlush re-exit, and the close() drain loop when the private
+# loop still has pending tasks. The remaining gaps (Protocol stub, _pull_chunk's
+# redundant _eof guard, _snapshot_tasks' iteration-race except, and the two
+# drain-loop race/dead branches) are marked `# pragma: no cover` in the source
+# with a justification rather than propped up by brittle stdlib monkeypatching.
+# ---------------------------------------------------------------------------
+
+
+def _stop_loop_without_closing_flag(adapter: AsyncBackendSyncAdapter) -> None:
+    """Stop and close the adapter's private loop while leaving ``_closed`` False.
+
+    Reproduces the TOCTOU window in the adapter's ``close()`` docstring: a
+    caller that passes ``_guard()`` (closed flag still False, no running loop on
+    its own thread) but then hits ``run_coroutine_threadsafe`` on a loop that
+    has already stopped. Mirrors the setup of
+    ``TestStreamingRead::test_close_race_stream_subsequent_read_returns_empty``.
+    """
+    loop = adapter._loop  # internal: no public observable for the private loop
+    loop.call_soon_threadsafe(loop.stop)
+    adapter._thread.join(timeout=5.0)  # internal: no public observable for the loop thread
+    loop.close()
+
+
+class TestSubmitCloseRace:
+    """``_submit`` re-raises the canonical closed message on the close-race."""
+
+    @pytest.mark.spec("ASYNC-083")
+    def test_scalar_submit_close_race_raises_closed(self, recwarn: pytest.WarningsRecorder) -> None:
+        adapter, _ = _make_memory_adapter()
+        _stop_loop_without_closing_flag(adapter)
+
+        with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
+            adapter.exists("x")
+
+        # The coroutine built before the guard must be closed on the race path,
+        # otherwise CPython emits "coroutine was never awaited".
+        gc.collect()
+        leaks = [
+            w for w in recwarn.list if issubclass(w.category, RuntimeWarning) and "never awaited" in str(w.message)
+        ]
+        assert leaks == [], f"close-race leaked coroutine: {leaks[0].message if leaks else ''}"
+        adapter.close()
+
+
+class TestListingBridgeCloseRace:
+    """``_AsyncIteratorBridge.__next__`` close-race raises closed, then stops."""
+
+    @pytest.mark.spec("ASYNC-080", "ASYNC-083")
+    def test_next_close_race_raises_then_stop_iteration(self) -> None:
+        adapter, _ = _populated_adapter()
+        bridge = adapter.list_files("")
+        _stop_loop_without_closing_flag(adapter)
+
+        with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
+            next(bridge)
+        # The race handler sets _done, so the iterator is exhausted afterwards.
+        with pytest.raises(StopIteration):
+            next(bridge)
+        adapter.close()
+
+
+class TestReadIntoDataPath:
+    """``_ChunkPullReader.readinto`` fills caller buffers across pull + buffer."""
+
+    def setup_method(self) -> None:
+        self.adapter, _ = _make_memory_adapter()
+        self.adapter.write("f.txt", b"hello world")
+
+    def teardown_method(self) -> None:
+        self.adapter.close()
+
+    @pytest.mark.spec("ASYNC-081")
+    def test_readinto_reconstructs_content_in_small_buffers(self) -> None:
+        # 4-byte buffers force both the "pull a fresh chunk" and the
+        # "serve the buffered remainder" branches, plus the EOF zero-return.
+        out = bytearray()
+        with self.adapter.read("f.txt") as stream:
+            while True:
+                buf = bytearray(4)
+                n = stream.readinto(buf)
+                if not n:
+                    break
+                out.extend(buf[:n])
+        assert bytes(out) == b"hello world"
+
+    @pytest.mark.spec("ASYNC-081")
+    def test_readinto_zero_length_buffer_returns_zero(self) -> None:
+        with self.adapter.read("f.txt") as stream:
+            assert stream.readinto(bytearray(0)) == 0
+
+    @pytest.mark.spec("ASYNC-081")
+    def test_readinto_via_buffered_reader(self) -> None:
+        # io.BufferedReader is the canonical consumer of RawIOBase.readinto.
+        with self.adapter.read("f.txt") as raw:
+            reader = io.BufferedReader(raw)
+            assert reader.read() == b"hello world"
+
+
+class TestStreamCloseEdges:
+    """Stream ``close()`` is idempotent and swallows a raising ``aclose()``."""
+
+    @pytest.mark.spec("ASYNC-081")
+    def test_close_is_idempotent(self) -> None:
+        adapter, _ = _make_memory_adapter()
+        adapter.write("f.txt", b"data")
+        stream = adapter.read("f.txt")
+        stream.close()
+        stream.close()  # second close hits the already-closed fast path
+        assert stream.closed is True
+        adapter.close()
+
+    @pytest.mark.spec("ASYNC-081")
+    def test_close_swallows_and_logs_aclose_error(self, caplog: pytest.LogCaptureFixture) -> None:
+        class _AcloseRaisingBackend(AsyncMemoryBackend):
+            async def read(self, path: str):  # type: ignore[override]
+                try:
+                    yield b"data"
+                finally:
+                    raise RuntimeError("aclose boom")
+
+        adapter = AsyncBackendSyncAdapter(_AcloseRaisingBackend())
+        adapter.write("f.txt", b"data")
+        stream = adapter.read("f.txt")
+        # Pull one byte so the generator is suspended at its yield; aclose()
+        # then throws GeneratorExit into it and the finally raises.
+        assert stream.read(1) == b"d"
+        with caplog.at_level(logging.DEBUG, logger="remote_store._async_to_sync_adapter"):
+            stream.close()  # must not raise even though aclose() does
+        assert stream.closed is True
+        assert any("stream aclose raised" in r.message for r in caplog.records)
+        adapter.close()
+
+
+class TestAcloseBestEffortFailure:
+    """``_aclose_best_effort`` swallows a failed submit and closes the coroutine."""
+
+    @pytest.mark.spec("ASYNC-080")
+    def test_submit_failure_is_swallowed_and_coro_closed(self, recwarn: pytest.WarningsRecorder) -> None:
+        # Drive the bridge at our own boundary with a degenerate loop whose
+        # is_running() is True but which cannot accept a coroutine, so
+        # run_coroutine_threadsafe raises and the handler must close the coro.
+        class _FakeLoop:
+            def is_running(self) -> bool:
+                return True
+
+        class _FakeAdapter:
+            _loop = _FakeLoop()
+
+        async def _gen():
+            yield b"x"
+
+        bridge = _AsyncIteratorBridge(_FakeAdapter(), _gen())  # type: ignore[arg-type]
+        bridge._aclose_best_effort()  # must not raise
+
+        gc.collect()
+        leaks = [
+            w for w in recwarn.list if issubclass(w.category, RuntimeWarning) and "never awaited" in str(w.message)
+        ]
+        assert leaks == [], f"_aclose_best_effort leaked coroutine: {leaks[0].message if leaks else ''}"
+
+
+class TestSpoolAndFlushReExit:
+    """``_SpoolAndFlush.__exit__`` is a no-op once the spool is consumed."""
+
+    @pytest.mark.spec("ASYNC-085")
+    def test_second_exit_does_not_rewrite(self) -> None:
+        adapter, _ = _make_memory_adapter()
+        cm = adapter.open_atomic("out.txt")
+        spool = cm.__enter__()
+        spool.write(b"once")
+        cm.__exit__(None, None, None)  # flushes spool -> backend, clears _spool
+        cm.__exit__(None, None, None)  # _spool is None -> early return, no rewrite
+        assert adapter.read_bytes("out.txt") == b"once"
+        adapter.close()
+
+
+class TestCloseDrainsPendingTasks:
+    """``close()`` drains in-flight loop tasks before stopping the loop."""
+
+    @pytest.mark.spec("ASYNC-088")
+    def test_close_drains_quick_background_task(self) -> None:
+        adapter, _ = _make_memory_adapter()
+        done = threading.Event()
+
+        async def _bg() -> None:
+            await asyncio.sleep(0.1)
+            done.set()
+
+        # Schedule a task that is still pending when close() snapshots the loop,
+        # so the drain loop runs _drain_tasks() and waits for it to finish.
+        asyncio.run_coroutine_threadsafe(_bg(), adapter._loop)  # internal: private loop
+        adapter.close(timeout=5.0)
+        assert done.is_set(), "close() did not drain the pending background task"
+
+    @pytest.mark.spec("ASYNC-088")
+    def test_close_drain_timeout_logs_warning_with_hanging_task(self, caplog: pytest.LogCaptureFixture) -> None:
+        adapter, _ = _make_memory_adapter()
+        started = threading.Event()
+
+        async def _hang() -> None:
+            started.set()
+            await asyncio.Event().wait()  # never returns
+
+        asyncio.run_coroutine_threadsafe(_hang(), adapter._loop)  # internal: private loop
+        assert started.wait(timeout=2.0), "background task never started"
+
+        with caplog.at_level(logging.WARNING, logger="remote_store._async_to_sync_adapter"):
+            adapter.close(timeout=0.2)
+
+        matched = [r for r in caplog.records if "close timed out" in r.message]
+        assert matched, "expected a close-timeout warning when the drain cannot finish"
+        assert all(r.levelno == logging.WARNING for r in matched)

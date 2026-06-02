@@ -8,6 +8,28 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-258 — Residual branch coverage for `AsyncBackendSyncAdapter`**
+  spec: ASYNC-080, ASYNC-083, ASYNC-085, ASYNC-088 · effort: S · audience: infra.test, library.maintainer
+  `src/remote_store/_async_to_sync_adapter.py` was the worst-covered module
+  (87%). Closed the gap with seven focused test classes in
+  `tests/aio/test_async_to_sync_adapter.py` (BK-258 block) covering the
+  genuine-but-untested branches: the `_submit` and `_AsyncIteratorBridge`
+  close-race (loop stopped after `_guard`, canonical `_CLOSED_MSG`, no leaked
+  coroutine); the `_ChunkPullReader.readinto` data path including the
+  `io.BufferedReader` consumer; stream `close()` idempotency and its
+  debug-logged swallow of a raising `aclose()`; `_aclose_best_effort`'s
+  submit-failure handler; `_SpoolAndFlush.__exit__` re-exit no-op; and the
+  `close()` drain loop with pending loop tasks (clean drain + drain-timeout
+  warning, exercising `_drain_tasks`). The five remaining lines are genuine
+  race/dead guards marked `# pragma: no cover` with a justification each — the
+  `_SyncSafeHandleProvider` Protocol stub, `_pull_chunk`'s redundant `_eof`
+  guard (both public callers gate on `_eof` first), `_snapshot_tasks`'
+  "Set changed size" iteration-race except, and the two drain-loop branches
+  (loop-stops-mid-submit race; `_drain_tasks` cannot raise under
+  `gather(return_exceptions=True)`). Chosen over brittle stdlib monkeypatching
+  per TESTING.md Rule 5. No behaviour change — tests + pragmas only; CHANGELOG
+  skipped per infra.test (BK-223/BK-254 precedent).
+
 - [x] **BK-255 — Trim cross-backend invariants re-asserted outside conformance**
   spec: — · effort: S · audience: infra.test
   Removed per-backend and root tests that re-assert a cross-backend invariant

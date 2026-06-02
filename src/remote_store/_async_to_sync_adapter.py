@@ -63,7 +63,7 @@ class _SyncSafeHandleProvider(Protocol):
 
     def sync_safe_unwrap(self, type_hint: type[Any]) -> Any:
         """Return a sync-safe native handle for *type_hint*."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover -- Protocol stub; structural interface, body never executed
 
 
 # ---------------------------------------------------------------------------
@@ -488,7 +488,7 @@ class AsyncBackendSyncAdapter(Backend):
             drain_coro = _drain_tasks()
             try:
                 drain_fut = asyncio.run_coroutine_threadsafe(drain_coro, self._loop)
-            except RuntimeError:
+            except RuntimeError:  # pragma: no cover -- race: loop stopped between snapshot and submit
                 drain_coro.close()
                 break
             try:
@@ -496,7 +496,7 @@ class AsyncBackendSyncAdapter(Backend):
             except concurrent.futures.TimeoutError:
                 drain_timed_out = True
                 break
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001  # pragma: no cover -- _drain_tasks gathers with return_exceptions=True, cannot raise
                 log.warning(
                     "AsyncBackendSyncAdapter: task drain raised during shutdown",
                     exc_info=True,
@@ -634,7 +634,7 @@ class _ChunkPullReader(io.RawIOBase):
         Returns the next chunk, or ``None`` at EOF.  Any exception from
         the async iterator propagates verbatim.
         """
-        if self._eof:
+        if self._eof:  # pragma: no cover -- defensive: read()/readinto() gate on _eof before calling
             return None
         self._adapter._guard()
         coro = self._iter.__anext__()
@@ -867,7 +867,7 @@ def _snapshot_tasks(loop: asyncio.AbstractEventLoop) -> list[str]:
     """Return ``repr()`` strings for any tasks still outstanding on *loop*."""
     try:
         tasks = asyncio.all_tasks(loop)
-    except RuntimeError:
+    except RuntimeError:  # pragma: no cover -- "Set changed size during iteration" race under a live loop
         return []
     return [repr(t) for t in tasks if not t.done()]
 
