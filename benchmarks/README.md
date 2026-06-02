@@ -137,19 +137,21 @@ throughput. Use moto for the cheap, deterministic library-cost floor; use Docker
 (`remote_store` target), so a `--backend s3,s3-boto3` run isolates the
 **transport** difference, Store API held constant.
 
-Read listing/metadata numbers with the cache in mind: s3fs serves repeated
-`list_*` / `iter_children` calls from an in-process directory cache (fast, but
-can be stale), whereas the boto3 lane issues a fresh `list_objects_v2` every
-time (slower, always current). The benchmark surfaces that trade-off rather than
-a pure speed verdict.
+Read listing/metadata numbers with the cache in mind: with the s3fs directory
+cache enabled, repeated `list_*` / `iter_children` calls are served from an
+in-process cache (fast, but can be stale), whereas a fresh listing issues a
+`list_objects_v2` every time (slower, always current). The benchmark surfaces
+that trade-off rather than a pure speed verdict.
 
-For a **cache-neutral** comparison, the `s3-nocache` lane is the s3fs
-`S3Backend` built with `client_options={"use_listings_cache": False}` (the
-ID-201 override): it issues a fresh listing every call, like the boto3 lane.
-So `--backend s3-nocache,s3-boto3` isolates the listing *mechanism* (s3fs/
-aiobotocore vs. boto3) with neither side cached, while `--backend s3,s3-nocache`
-shows what the dircache is worth. Note the raw `s3fs` comparative target is
-*not* cache-disabled — it represents s3fs as typically used.
+`S3Backend` defaults the dircache **off** (BK-257), so the benchmark fixes each
+lane explicitly: the `s3` lane opts the cache back ON
+(`client_options={"use_listings_cache": True}`) to represent the cached path,
+while the `s3-nocache` lane forces it OFF — matching both the default and the
+boto3 lane's fresh-every-call behaviour. So `--backend s3-nocache,s3-boto3`
+isolates the listing *mechanism* (s3fs/aiobotocore vs. boto3) with neither side
+cached, while `--backend s3,s3-nocache` shows what the dircache is worth. Note
+the raw `s3fs` comparative target is *not* cache-disabled — it represents s3fs
+as typically used.
 
 ## Speed Tiers
 

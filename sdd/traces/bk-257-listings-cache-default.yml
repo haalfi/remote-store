@@ -17,7 +17,17 @@ audience:
 # pre-PR rebase landed BK-258 (#736) first, raising DONE-max to 258. BK-257 <= 258
 # then makes gen_backlogid a no-op (gotcha_backlogid_json_max_only) and the rebase
 # dropped the file from this commit — a rebase-residue reversal worth recording.
-review_rounds: 0
+surprising_ripples:
+  # PR review caught two doc/benchmark surfaces the ripple-check table did not
+  # flag for an S3 default-flip. The benchmark `s3` vs `s3-nocache` lanes became
+  # behaviourally identical (both cache-off) once the default flipped, and two
+  # docs asserted the s3fs path was cached by default. A "backend default value
+  # changes" trigger has no ripple-check row pointing at benchmarks/ or the
+  # performance explanation doc — these are the analytically valuable misses.
+  - benchmarks/conftest.py
+  - benchmarks/README.md
+  - docs-src/explanation/performance.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

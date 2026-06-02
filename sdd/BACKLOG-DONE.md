@@ -79,6 +79,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   - **Docs / CHANGELOG:** new "Directory-listing cache (off by default)"
     subsection in `guides/backends/s3.md`; `[Unreleased]` stub. Pre-v1 minor
     behaviour change.
+  - **Ripple (PR review):** the default-flip made the benchmark `s3` and
+    `s3-nocache` lanes behaviourally identical and left two docs asserting the
+    s3fs path was cached by default. Reconciled in the same PR — the `s3`
+    benchmark lane now opts the cache back on explicitly (`benchmarks/conftest.py`,
+    `benchmarks/README.md`), and the `docs-src/explanation/performance.md`
+    listing caveat now states the cache is off by default.
 
 - [x] **BK-255 — Trim cross-backend invariants re-asserted outside conformance**
   spec: — · effort: S · audience: infra.test
