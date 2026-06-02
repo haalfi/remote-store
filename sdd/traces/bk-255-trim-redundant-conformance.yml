@@ -21,7 +21,8 @@ expected_ripples:
 surprising_ripples:
   - scripts/check_formal_trace.py
   - scripts/check_spec_marks.py
-review_rounds: 0
+  - sdd/audits/audit-014-grandfathered-tests-allow-list.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -112,4 +113,9 @@ phases:
         section: "Ripple-check table / infra.test change"
         read_type: verify
         extract: "BACKLOG->BACKLOG-DONE same commit; trace shipped same PR; CHANGELOG skipped (infra.test, BK-223 precedent); net line reduction (-126); both spec-mark gates green"
+        outcome: ok
+      - file: sdd/audits/audit-014-grandfathered-tests-allow-list.md
+        section: "tests/test_depth_listing.py disposition / Shipped (BK-218) item (b)"
+        read_type: verify
+        extract: "review round 1 caught a missed ripple: the BK-218 'Shipped' record still named the deleted azure test_list_files_max_depth as the live Azure DEPTH-003 carrier. Added a BK-255 forward-pointer annotation (audit docs are annotated not rewritten — audit-015 'Superseded by' precedent); left the BACKLOG-DONE BK-218 ledger entry as append-only history superseded by the BK-255 done-entry"
         outcome: ok
