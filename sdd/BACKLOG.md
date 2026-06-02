@@ -132,12 +132,15 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
 - [ ] **ID-179 — Trace schema validator: wire `audience` field check into `hatch run lint`**
   spec: — · effort: S · audience: library.maintainer
-  `sdd/traces/_schema.yml` declares `audience` as `required` but no
-  validator runs it. Add `scripts/check_traces.py` that jsonschema-validates
-  every `sdd/traces/[!_]*.yml` against the schema. Wire into the existing
+  `sdd/traces/_schema.yml` declares `audience` as `required`, but BK-193
+  deliberately left that field as an authoring convention — enforced "on the
+  next aggregator run," not at commit time — rather than wiring a gate (no
+  aggregator exists yet, so nothing validates it today). Add
+  `scripts/check_traces.py` that jsonschema-validates every
+  `sdd/traces/[!_]*.yml` against the schema. Wire into the existing
   `hatch run lint` script list and into the lint CI job. Per
-  `feedback_check_scripts_dual_wire`. Closes the convention-vs-enforcement
-  gap left open by BK-193. No priority while trace authoring is still
+  `feedback_check_scripts_dual_wire`. Promotes BK-193's convention to
+  mechanical enforcement. No priority while trace authoring is still
   ad-hoc; promote to BK-prefix when trace volume justifies enforcement.
 
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
@@ -229,13 +232,11 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   `ext.integrity`/`ext.partition`/`ext.transfer` use-case examples are the
   known gaps in how external tools currently discover remote-store.
 
-  **Sequence — start after all of:**
-  - ID-174 (docs reorg): final source URLs must be stable before the link list is written.
-  - ID-172 + ID-173 (aio verifiers): `aio.md` and `index.md` must accurately
-    reflect the async API before they are linked as authoritative reference.
-  - ID-192 (aio.md rework): landed — `aio.md` structural rework is in place; required for ID-172 to close (see BACKLOG-DONE.md).
-  - ID-193 (async conformance): landed — async extended conformance pattern is
-    in place (see BACKLOG-DONE.md).
+  **Sequence — prerequisites met (all landed, see BACKLOG-DONE.md):**
+  ID-174 (docs reorg, stable source URLs), ID-172 + ID-173 (aio verifiers:
+  `aio.md` and `index.md` now reflect the async API), ID-192 (aio.md rework),
+  and ID-193 (async conformance) have all shipped. Nothing gates this item;
+  the link list can be written against the current stable docs.
 
   **Exit criteria:** `docs-src/llms.txt` committed; `GET
   https://docs.remotestore.dev/llms.txt` returns the file after next deploy.
@@ -415,8 +416,10 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   LIST (deduplicated), writes to primary tier only.
   - [Research](research/research-sqlalchemy-backend.md#52-compositestore-id-120)
     (anchor uses historical ID-120 from research doc; now ID-121 after swap)
-  - Depends on: unified `resolve()` → `ResolutionPlan` (ID-120); at least two
-    working backends to be useful; pairs well with ID-119
+  - Depends on: unified `resolve()` → `ResolutionPlan` (ID-120) — **satisfied**:
+    `Store.resolve()` ships and returns a `ResolutionPlan` (see BACKLOG-DONE.md).
+    Remaining: at least two working backends to be useful; pairs well with ID-119.
+    Now unblocked; awaiting only its own spec/design.
   - Next: design as separate spec — backend-agnostic, useful independently
 
 - [ ] **ID-140 — SQLBlob lazy reads for SQLite & PostgreSQL**
