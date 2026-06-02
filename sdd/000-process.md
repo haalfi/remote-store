@@ -63,6 +63,51 @@ Completed items live in [`sdd/BACKLOG-DONE.md`](BACKLOG-DONE.md).
 `BACKLOG.md` is the single source of truth for ID prefixes, status conventions,
 completion workflow, and section structure. See its "How this file works" header.
 
+### Feature-type Definition of Done
+
+Rule 6 gives a feature's lifecycle order; the two checklists below give its
+exit criteria. Pick the row that matches the change and treat each box as a
+gate, not a suggestion. For why each gate exists, see the originating backlog
+item BK-237 and its trace.
+
+#### Contract-expanding feature
+
+Use when the change adds or widens a public contract — a new `Capability`,
+Store method, or error class.
+
+- [ ] **Spec / RFC updated**, with the conformance, property-based, and
+  formal-proof work the feature needs scoped up front in the RFC, not
+  discovered as a string of follow-ups.
+- [ ] **Capability declaration reviewed for both over- and under-declaration**:
+  claiming a capability a backend does not honour is as wrong as omitting one
+  it does.
+- [ ] **Conformance test + xfail registry landed _before_ the first backend
+  implementation**, so backends move themselves off the xfail list against a
+  contract that already exists.
+- [ ] **Wrapper forwarding verified** — every `Store`-wrapping layer forwards
+  the new surface. The wrapping layers are the `ProxyStore` base, the wrappers
+  under `src/remote_store/ext/`, and the sync and oracle adapters; consult
+  those locations rather than a fixed class list, which drifts as wrappers are
+  added.
+- [ ] **Docs ripple swept** — every guide, snippet, and reference surface the
+  new contract appears in.
+- [ ] **Audit pass run against the unreleased work** as a pre-merge gate.
+
+#### Bridge / adapter feature
+
+Use when the change introduces a cross-layer wrapper — anything that adapts
+one `Store` or backend surface onto another.
+
+- [ ] **API-parity test against the wrapped layer** — the bridge exposes the
+  contract it wraps.
+- [ ] **Event-loop and resource-lifecycle test** — loops, connections, and
+  handles are torn down without leaks.
+- [ ] **Cancellation-invariant test** — cancelling mid-operation leaves no
+  half-state and raises the right error.
+- [ ] **Live-backend coverage**, not just doubles.
+- [ ] **`filterwarnings = error`-clean suite** under the global policy in
+  `pyproject.toml`.
+
 ### Document types
 
 Five document categories live under `sdd/`. Each has a clear purpose and lifecycle:
