@@ -8,11 +8,17 @@ from typing import TYPE_CHECKING
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
     from pathlib import Path
 
 from remote_store._capabilities import Capability
-from remote_store._errors import AlreadyExists, CapabilityNotSupported, InvalidPath, NotFound
+from remote_store._errors import (
+    AlreadyExists,
+    CapabilityNotSupported,
+    DirectoryNotEmpty,
+    InvalidPath,
+    NotFound,
+)
 from remote_store._models import FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store._store import Store
@@ -235,6 +241,181 @@ class TestStoreSamePathOps:
         store.write("dir/file.txt", b"x")
         with pytest.raises(InvalidPath, match=r"directory: dir"):
             getattr(store, op)("dir", "dir")
+
+
+# BK-254: documented Store raises that were verified only against the raw
+# Backend (tests/backends/conformance/test_errors.py), never through a Store.
+# Store is a thin delegator, so these pin the contract at the consumer surface;
+# the same-path move/copy edge cases live in TestStoreSamePathOps above, the
+# empty/"." path shape in tests/test_coverage_gaps.py::test_empty_path_rejected,
+# and read_text/read_seekable NotFound in TestStoreReadText / test_seekable.py.
+# Each case carries the backend-contract clause it surfaces (BE-* from
+# sdd/formal/BackendContract.dfy) alongside STORE-008 (the Store API surface),
+# mirroring TestStoreSamePathOps' dual STORE-008a/BE-* tagging.
+
+
+def _seed(store: Store, *paths: str) -> None:
+    for path in paths:
+        store.write(path, b"x")
+
+
+_DELEGATED_RAISE_CASES = [
+    # 1. move/copy cross-path NotFound (missing src) and AlreadyExists
+    #    (existing dst, overwrite=False) — distinct src != dst.
+    pytest.param(
+        (),
+        lambda s: s.move("dr_src.txt", "dr_dst.txt"),
+        NotFound,
+        "dr_src.txt",
+        marks=pytest.mark.spec("BE-018"),
+        id="move-missing-src-NotFound",
+    ),
+    pytest.param(
+        (),
+        lambda s: s.copy("dr_src.txt", "dr_dst.txt"),
+        NotFound,
+        "dr_src.txt",
+        marks=pytest.mark.spec("BE-019"),
+        id="copy-missing-src-NotFound",
+    ),
+    pytest.param(
+        ("dr_src.txt", "dr_dst.txt"),
+        lambda s: s.move("dr_src.txt", "dr_dst.txt"),
+        AlreadyExists,
+        "dr_dst.txt",
+        marks=pytest.mark.spec("BE-018"),
+        id="move-dst-exists-AlreadyExists",
+    ),
+    pytest.param(
+        ("dr_src.txt", "dr_dst.txt"),
+        lambda s: s.copy("dr_src.txt", "dr_dst.txt"),
+        AlreadyExists,
+        "dr_dst.txt",
+        marks=pytest.mark.spec("BE-019"),
+        id="copy-dst-exists-AlreadyExists",
+    ),
+    # 2. delete_folder: DirectoryNotEmpty (non-recursive on non-empty),
+    #    NotFound, and file-target InvalidPath.
+    pytest.param(
+        ("dne/a.txt", "dne/b.txt"),
+        lambda s: s.delete_folder("dne", recursive=False),
+        DirectoryNotEmpty,
+        "dne",
+        marks=pytest.mark.spec("BE-013"),
+        id="delete_folder-non_empty-DirectoryNotEmpty",
+    ),
+    pytest.param(
+        (),
+        lambda s: s.delete_folder("dfmissing"),
+        NotFound,
+        "dfmissing",
+        marks=pytest.mark.spec("BE-013"),
+        id="delete_folder-missing-NotFound",
+    ),
+    pytest.param(
+        ("dffile.txt",),
+        lambda s: s.delete_folder("dffile.txt"),
+        InvalidPath,
+        "dffile",
+        marks=pytest.mark.spec("BE-013"),
+        id="delete_folder-file_target-InvalidPath",
+    ),
+    # 3. read / read_bytes NotFound (only read_text / read_seekable have it today).
+    pytest.param(
+        (),
+        lambda s: s.read("rmissing.txt"),
+        NotFound,
+        "rmissing",
+        marks=pytest.mark.spec("BE-006"),
+        id="read-missing-NotFound",
+    ),
+    pytest.param(
+        (),
+        lambda s: s.read_bytes("rbmissing.txt"),
+        NotFound,
+        "rbmissing",
+        marks=pytest.mark.spec("BE-007"),
+        id="read_bytes-missing-NotFound",
+    ),
+    # 4. get_file_info NotFound; get_folder_info NotFound on the max_depth=None
+    #    branch (delegates straight to backend.get_folder_info, distinct from
+    #    the depth branch covered in tests/test_depth_listing.py).
+    pytest.param(
+        (),
+        lambda s: s.get_file_info("gfimissing.txt"),
+        NotFound,
+        "gfimissing",
+        marks=pytest.mark.spec("BE-016"),
+        id="get_file_info-missing-NotFound",
+    ),
+    pytest.param(
+        (),
+        lambda s: s.get_folder_info("gfomissing"),
+        NotFound,
+        "gfomissing",
+        marks=pytest.mark.spec("BE-017"),
+        id="get_folder_info-missing-NotFound-default-branch",
+    ),
+    # 5. InvalidPath-on-directory ("path names a directory") for the
+    #    file-targeted ops read / read_bytes / delete / get_file_info — only the
+    #    empty / "." path shape is asserted at Store today.
+    pytest.param(
+        ("adir/file.txt",),
+        lambda s: s.read("adir"),
+        InvalidPath,
+        "adir",
+        marks=pytest.mark.spec("BE-006"),
+        id="read-directory-InvalidPath",
+    ),
+    pytest.param(
+        ("adir/file.txt",),
+        lambda s: s.read_bytes("adir"),
+        InvalidPath,
+        "adir",
+        marks=pytest.mark.spec("BE-007"),
+        id="read_bytes-directory-InvalidPath",
+    ),
+    pytest.param(
+        ("adir/file.txt",),
+        lambda s: s.delete("adir"),
+        InvalidPath,
+        "adir",
+        marks=pytest.mark.spec("BE-012"),
+        id="delete-directory-InvalidPath",
+    ),
+    pytest.param(
+        ("adir/file.txt",),
+        lambda s: s.get_file_info("adir"),
+        InvalidPath,
+        "adir",
+        marks=pytest.mark.spec("BE-016"),
+        id="get_file_info-directory-InvalidPath",
+    ),
+]
+
+
+class TestStoreDelegatedRaises:
+    """STORE-008: documented Store raises proven at the consumer surface (BK-254).
+
+    Store delegates each of these to the backend; the conformance suite already
+    pins the backend-contract postconditions (BE-*) on the raw Backend. These
+    cases prove the same raises survive the Store delegation path (path
+    validation, root prefixing, capability gating) for a real MemoryBackend.
+    """
+
+    @pytest.mark.spec("STORE-008")
+    @pytest.mark.parametrize(("seed", "call", "exc", "match"), _DELEGATED_RAISE_CASES)
+    def test_delegated_raise(
+        self,
+        store: Store,
+        seed: tuple[str, ...],
+        call: Callable[[Store], object],
+        exc: type[Exception],
+        match: str,
+    ) -> None:
+        _seed(store, *seed)
+        with pytest.raises(exc, match=match):
+            call(store)
 
 
 class TestStoreIterChildren:

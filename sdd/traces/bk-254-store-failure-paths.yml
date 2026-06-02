@@ -1,0 +1,82 @@
+id: BK-254
+title: "Store-level failure-path coverage for delegated raises"
+trigger: |
+  Test-suite consumer-driven review found several documented Store raises
+  (move/copy cross-path NotFound + AlreadyExists, delete_folder
+  DirectoryNotEmpty/NotFound/file-target InvalidPath, read/read_bytes NotFound,
+  get_file_info/get_folder_info NotFound, file-targeted InvalidPath-on-directory)
+  verified only against the raw Backend in conformance/test_errors.py, never
+  through a Store. Store is a thin delegator, so the contract was unpinned at
+  the consumer surface.
+source_items:
+  - BK-254
+audience:
+  - infra.test
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-254"
+        read_type: gate
+        extract: "five raise-groups to pin through Store; one parametrized test; MemoryBackend substrate; skip CHANGELOG (infra.test)"
+        outcome: ok
+      - file: sdd/specs/001-store-api.md
+        section: "STORE-008, STORE-008a"
+        read_type: gate
+        extract: "STORE-008 = full API surface (umbrella spec id); STORE-008a already owns the same-path move/copy edge cases"
+        outcome: ok
+      - file: src/remote_store/_store.py
+        section: "move/copy (580-647), delete_folder (376-409), get_folder_info (706-771), read/read_bytes (75-113)"
+        read_type: reference
+        extract: "confirm delegation path; get_folder_info max_depth=None delegates to backend.get_folder_info, the depth branch is separate Store-level code"
+        outcome: ok
+      - file: tests/backends/conformance/test_errors.py
+        section: "BE-006/007/012/013/016/017/018/019 raise cases"
+        read_type: reference
+        extract: "raw-Backend coverage + the exact BE-* clause each raise maps to; reuse as the per-case spec marks"
+        outcome: ok
+      - file: tests/test_store.py
+        section: "TestStoreSamePathOps, TestStoreFullAPI, TestStoreReadText"
+        read_type: reference
+        extract: "same-path cases already covered; dual STORE-008a/BE-* tagging is the precedent; read_text NotFound + invalid-path already pinned"
+        outcome: ok
+      - file: tests/test_coverage_gaps.py
+        section: "test_empty_path_rejected (_EMPTY_PATH_CASES)"
+        read_type: reference
+        extract: "only the empty / '.' path shape is asserted at Store today — the directory shape is the gap"
+        outcome: ok
+      - file: tests/test_seekable.py
+        section: "TestErrorPropagation.test_not_found_propagates"
+        read_type: reference
+        extract: "read_seekable NotFound already pinned; only read/read_bytes lack the Store-level NotFound"
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules 1, 6, 7; Ruff PT011"
+        read_type: gate
+        extract: "every pytest.raises needs match=; prefer real MemoryBackend; parametrize over copy-paste"
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/_store.py
+        section: "move/copy/delete_folder/read/read_bytes/get_file_info/get_folder_info raises"
+        read_type: verify
+        extract: "principle 6: drove all 15 (method, bad-precondition) cases through a real Store(MemoryBackend) in a throwaway script before writing — each raised the expected type with the store-relative path in the message"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/test_store.py
+        section: "TestStoreDelegatedRaises, _DELEGATED_RAISE_CASES"
+        read_type: reference
+        extract: "one parametrized (seed, call, exc, match) test; 15 cases; STORE-008 on the method, per-case BE-* via pytest.param marks"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / infra.test change"
+        read_type: verify
+        extract: "BACKLOG->BACKLOG-DONE same commit, trace shipped same PR, CHANGELOG skipped (infra.test, BK-223 precedent), gen-backlogid no-op (id <= DONE max)"
+        outcome: ok

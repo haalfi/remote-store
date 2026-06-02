@@ -647,30 +647,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   is per-name; ordering or grouping in the Dafny enum is out of
   scope.
 
-- [ ] **BK-254 — Store-level failure-path coverage for delegated raises**
-  spec: STORE-008 · effort: S · audience: infra.test
-  Several documented `Store` raises are verified today only against the raw
-  `Backend` in `tests/backends/conformance/test_errors.py`, never through a
-  `Store`. A consumer hits these via `Store`, so the contract should be
-  pinned at that surface. Add one parametrized Store-level error test
-  (MemoryBackend substrate) covering:
-  - `move` / `copy` cross-path `NotFound` (missing src) and `AlreadyExists`
-    (existing dst, no overwrite) — distinct src/dst, not the same-path edge
-    cases already in `tests/test_store.py::TestStoreSamePathOps`.
-  - `delete_folder` `DirectoryNotEmpty` (non-recursive on non-empty),
-    `NotFound`, and file-target `InvalidPath`.
-  - `read` / `read_bytes` `NotFound` (only `read_text` / `read_seekable` have
-    it at Store today).
-  - `get_file_info` `NotFound`; `get_folder_info` `NotFound` on the
-    `max_depth=None` branch (the depth branch is covered; the default branch
-    delegates from different code).
-  - `InvalidPath`-on-directory for file-targeted ops (`read` / `read_bytes` /
-    `delete` / `get_file_info`) — only the empty / `.` path shape is asserted
-    at Store today.
-  Judgment call: `Store` is a thin delegator, so this is contract-proof at
-  the consumer surface, not new behaviour. Surfaced in the test-suite
-  consumer-driven review.
-
 - [ ] **BK-255 — Trim cross-backend invariants re-asserted outside conformance**
   spec: — · effort: S · audience: infra.test
   Conformance auto-parametrises every cross-backend invariant over the full

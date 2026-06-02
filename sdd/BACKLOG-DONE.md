@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-254 — Store-level failure-path coverage for delegated raises**
+  spec: STORE-008 · effort: S · audience: infra.test
+  Several documented `Store` raises were verified only against the raw
+  `Backend` in `tests/backends/conformance/test_errors.py`, never through a
+  `Store`. Added one parametrized test
+  (`tests/test_store.py::TestStoreDelegatedRaises`, MemoryBackend substrate,
+  15 `(method, bad-precondition) -> expected-raise` cases) pinning the
+  contract at the consumer surface: `move`/`copy` cross-path `NotFound`
+  (missing src) and `AlreadyExists` (existing dst, no overwrite);
+  `delete_folder` `DirectoryNotEmpty` / `NotFound` / file-target `InvalidPath`;
+  `read` / `read_bytes` `NotFound`; `get_file_info` `NotFound` and
+  `get_folder_info` `NotFound` on the `max_depth=None` delegating branch;
+  `InvalidPath`-on-directory for `read` / `read_bytes` / `delete` /
+  `get_file_info`. Each case carries `STORE-008` plus the backend-contract
+  clause it surfaces (`BE-006/007/012/013/016/017/018/019`), mirroring
+  `TestStoreSamePathOps`' dual tagging. No behaviour change — `Store` is a thin
+  delegator, so this is contract-proof, not new behaviour. CHANGELOG skipped
+  per infra.test (BK-223 precedent).
+
 - [x] **BK-252 — Bulk spec-mark backfill + full disposition (audit-015 traceability)**
   spec: — · effort: L · audience: library.maintainer
   Closed the spec ↔ test traceability debt audit-015 surfaced and BK-251 gated.
