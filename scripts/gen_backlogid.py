@@ -52,7 +52,8 @@ def _max_numeric(ids: set[str]) -> int:
 def _generate() -> int:
     done_ids = _extract_ids(BACKLOG_DONE.read_text(encoding="utf-8"), "x")
     max_done = {p: _max_numeric(done_ids[p]) for p in _PREFIXES}
-    ID_FILE.write_text(json.dumps(max_done, indent=2) + "\n", encoding="utf-8")
+    # newline="\n": force LF; text-mode write on Windows emits CRLF and churns the eol=lf JSON.
+    ID_FILE.write_text(json.dumps(max_done, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"Updated {ID_FILE.relative_to(ROOT)}")
     return 0
 
