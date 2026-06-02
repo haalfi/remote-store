@@ -115,12 +115,12 @@ hatch run bench-cloud
 
 ### moto mode (S3 family only)
 
-Runs the S3-family lanes (`s3`, `s3-boto3`) against an in-process
+Runs the S3-family lanes (`s3`, `s3-nocache`, `s3-boto3`) against an in-process
 [moto](https://github.com/getmoto/moto) server. No Docker, no credentials, no
 network: the server is started for the session and torn down after.
 
 ```bash
-hatch run bench-moto -- --backend s3,s3-boto3
+hatch run bench-moto -- --backend s3,s3-nocache,s3-boto3
 ```
 
 **What it measures, and what it does not.** moto is a loopback-HTTP mock, so
