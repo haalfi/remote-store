@@ -210,6 +210,9 @@ bench-save-full = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-autos
 bench-compare = "pytest benchmarks/ -v --benchmark-sort=mean --benchmark-compare"
 bench-cloud = 'pytest benchmarks/ -v --infra cloud --benchmark-sort=mean -m "not standard and not full"'
 bench-cloud-standard = 'pytest benchmarks/ -v --infra cloud --benchmark-sort=mean -m "not full"'
+# In-process moto (S3 family only; measures client-library overhead, not real throughput)
+bench-moto = 'pytest benchmarks/ -v --infra moto --benchmark-sort=mean -m "not standard and not full"'
+bench-moto-standard = 'pytest benchmarks/ -v --infra moto --benchmark-sort=mean -m "not full"'
 bench-report = "python benchmarks/report.py"
 bench-report-compare = "python benchmarks/report.py --compare"
 bench-report-json = "python benchmarks/report.py --json"
@@ -249,6 +252,9 @@ all = ["preflight", "lint", "format-check", "typecheck", "test-cov-s1", "example
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/remote_store"]
+# Parked ID-202 PoC: keep it out of the wheel so it is never importable from an
+# installed package (editable-src tests/benchmarks still see it).
+exclude = ["src/remote_store/backends/_s3_boto3.py"]
 
 [tool.mypy]
 strict = true

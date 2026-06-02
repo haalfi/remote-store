@@ -52,6 +52,10 @@ class S3fsTarget(BenchTarget):
     def list_files(self, prefix: str) -> list[str]:
         return self._fs.ls(self._full(prefix), detail=False)
 
+    def iter_children(self, prefix: str) -> list[str]:
+        # s3fs `ls` already returns immediate files + subdirs in one combined listing.
+        return self._fs.ls(self._full(prefix), detail=False)
+
     def invalidate_cache(self) -> None:
         self._fs.invalidate_cache()
 

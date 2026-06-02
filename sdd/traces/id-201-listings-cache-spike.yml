@@ -1,0 +1,92 @@
+id: ID-201
+title: "Spike: default S3Backend to use_listings_cache=False?"
+trigger: "s3fs keeps a directory-listing cache whose invalidation is undocumented upstream (fsspec #324); for Store-shape workloads it surfaces as stale list_files/iter_children after a cross-process write. The spike must measure list/metadata latency cache-on vs cache-off and cross-instance staleness, then output one of (a) default the cache off, (b) keep+document, (c) a refresh() API"
+source_items:
+  - ID-201
+  - ID-202
+# Measurement spike: it ships benchmark infrastructure + the disposition, not
+# user-facing code. The user.api recommendation (flip the S3Backend default) is
+# deferred to the follow-up BK-257, which is where its CHANGELOG entry attaches —
+# mirroring how ID-202's user.api framing waits for a Ship verdict. So this trace
+# is infra.test + contributor.process + library.maintainer, and CHANGELOG is
+# correctly skipped (no audience entry starts with user.).
+audience:
+  - infra.test
+  - contributor.process
+  - library.maintainer
+discovery_followups:
+  # The chosen disposition (a) became this item; born from the measurements.
+  - BK-257
+# sdd/backlogid.json did NOT ripple: the moved ID-201 and the new active BK-257
+# are both <= the DONE-max BK (254 from upstream #733), so gen_backlogid is a
+# no-op (see memory gotcha_backlogid_json_max_only). Omitted by design.
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-201"
+        read_type: gate
+        extract: "Spike scope: measure (1) list_files + (2) iter_children latency cache-on vs cache-off, (3) cross-instance write-then-list staleness frequency; output an (a)/(b)/(c) recommendation; no code change beyond throwaway scripts, chosen path becomes a new BK-NNN"
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_build_s3fs_kwargs, _client_options"
+        read_type: gate
+        extract: "client_options deep-copies into s3fs.S3FileSystem(**kwargs), so client_options={'use_listings_cache': False} is the existing override that implements option (a) — confirms the spike's central lever is reachable without code change"
+      - file: benchmarks/conftest.py
+        section: "bench_backend, bench_target, _build_target_params"
+        read_type: reference
+        extract: "Where S3-family lanes are wired (docker/cloud infra, RemoteStoreTarget); the seam to add s3-boto3 + s3-nocache lanes and a moto tier without disturbing the existing s3/s3-pyarrow paths"
+      - file: benchmarks/targets/_protocol.py
+        section: "BenchTarget"
+        read_type: reference
+        extract: "Protocol is deliberately scoped to basic byte ops (list_folders/iter_children are bench_backend-only) — so iter_children goes on just the three S3-relevant targets, not the whole protocol"
+      - file: sdd/research/research-s3-boto3-poc.md
+        section: "3a, 4a, 6"
+        read_type: reference
+        extract: "ID-202 Park disposition + cross-lane caveats: the boto3 lane keeps no listing cache (every list_* is a fresh list_objects_v2) and get_folder_info is a single flat scan — the exact behaviours the cache measurement contrasts against"
+  - id: wire
+    name: Wire benchmark lanes
+    steps:
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "S3Boto3Backend.__init__, list_files, iter_children"
+        read_type: reference
+        extract: "Constructor kwargs match S3Backend; listing builds FileInfo straight from the list_objects_v2 page with no per-object HEAD — so the boto3 lane is a fair fresh-listing baseline against s3-nocache"
+      - file: tests/conftest.py
+        section: "moto_server"
+        read_type: reference
+        extract: "ThreadedMotoServer free-port + 127.0.0.1 pattern (avoids the 0.0.0.0 Windows-connect failure); mirrored in the bench moto_url session fixture"
+      - file: tests/backends/fixtures/_live_env.py
+        section: "_load_dotenv_backstop, require_s3_live_credentials"
+        read_type: reference
+        extract: "Stage-3 loads creds via load_dotenv(override=False) and gates on AWS_ACCESS_KEY_ID/SECRET/DEFAULT_REGION — the bench cloud path adopts the same dotenv load (cloud mode only) instead of demanding a pre-set BENCH_S3_BUCKET"
+      - file: tests/backends/fixtures/s3_live.py
+        section: "_factory"
+        read_type: reference
+        extract: "Ephemeral rs-conformance-<uuid> bucket creation with CreateBucketConfiguration LocationConstraint off us-east-1 — replicated for the bench cloud S3 setup to match the IAM (CreateBucket scoped to rs-conformance-*)"
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "s3_live (live_opt_in_env, live_creds_env)"
+        read_type: reference
+        extract: "RS_TEST_LIVE_S3=1 opt-in is a runtime flag (not in .env); the bench cloud S3 lanes gate on it plus creds, matching Stage-3"
+  - id: measure
+    name: Measure
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: verify
+        extract: "bench-moto / bench-cloud invocations and the -m tier filters; the three tiers (moto loopback, MinIO socket, real AWS) plus a throwaway staleness probe produce the #1/#2/#3 data recorded under ID-201"
+  - id: verify
+    name: Verify and dispose
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Completing work, ID prefixes"
+        read_type: gate
+        extract: "Fully-done spike -> delete from BACKLOG, add to BACKLOG-DONE as [x] in the same commit; next safe BK is 257 after the rebase (254/255/256 taken upstream)"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "Confirm the spike's scope: bench infra + backlog disposition only; no src/_registry.py / FEATURES / __all__ touch, and the user.api default-flip stays deferred to BK-257"
+      - file: sdd/traces/_schema.yml
+        section: "audience (derived CHANGELOG rule)"
+        read_type: verify
+        extract: "No audience entry starts with user. and contributor.process introduces no new framework -> CHANGELOG correctly skipped for the spike, consistent with the commits"

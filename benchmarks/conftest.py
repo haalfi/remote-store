@@ -36,8 +36,12 @@ def pytest_addoption(parser: Any) -> None:
     parser.addoption(
         "--infra",
         default="docker",
-        choices=["docker", "cloud"],
-        help="Infrastructure mode: 'docker' (default) uses local containers, 'cloud' uses real services.",
+        choices=["docker", "cloud", "moto"],
+        help=(
+            "Infrastructure mode: 'docker' (default) uses local containers, "
+            "'cloud' uses real services, 'moto' uses an in-process moto server "
+            "(S3 family only; measures client-library overhead, not real throughput)."
+        ),
     )
     parser.addoption(
         "--backend",
@@ -75,17 +79,20 @@ def pytest_addoption(parser: Any) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _is_cloud_mode() -> bool:
+def _infra_mode() -> str:
+    """Resolve the ``--infra`` value at collection time (for skip-mark evaluation)."""
     argv = sys.argv
     for i, arg in enumerate(argv):
-        if arg == "--infra=cloud":
-            return True
-        if arg == "--infra" and i + 1 < len(argv) and argv[i + 1] == "cloud":
-            return True
-    return False
+        if arg.startswith("--infra="):
+            return arg.split("=", 1)[1]
+        if arg == "--infra" and i + 1 < len(argv):
+            return argv[i + 1]
+    return "docker"
 
 
-_CLOUD_MODE = _is_cloud_mode()
+_INFRA_MODE = _infra_mode()
+_CLOUD_MODE = _INFRA_MODE == "cloud"
+_MOTO_MODE = _INFRA_MODE == "moto"
 
 
 # ---------------------------------------------------------------------------
@@ -240,10 +247,28 @@ AZURE_MAX_CONCURRENCY = int(os.environ.get("BENCH_AZURE_MAX_CONCURRENCY", "1"))
 # Cloud config (used when --infra cloud)
 # ---------------------------------------------------------------------------
 
+# Pull credentials from a local ``.env`` the same way the Stage-3 live tests do
+# (tests.conftest._maybe_load_dotenv_for_live -> load_dotenv(override=False)).
+# Guarded to cloud mode so a normal docker/moto run never reads ``.env``.
+if _CLOUD_MODE:
+    try:
+        from dotenv import load_dotenv  # noqa: PLC0415
+
+        load_dotenv(override=False)
+    except ImportError:
+        pass
+
 CLOUD_S3_BUCKET = os.environ.get("BENCH_S3_BUCKET", "")
 CLOUD_S3_KEY = os.environ.get("AWS_ACCESS_KEY_ID", "")
 CLOUD_S3_SECRET = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
 CLOUD_S3_REGION = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
+
+# Stage-3 S3 opt-in: RS_TEST_LIVE_S3=1 plus AWS creds (mirrors the s3_live
+# fixture gating). When BENCH_S3_BUCKET is unset, cloud S3 provisions an
+# ephemeral ``rs-conformance-bench-<tag>`` bucket per the s3_live IAM policy.
+_RS_LIVE_S3 = os.environ.get("RS_TEST_LIVE_S3") == "1"
+_S3_CLOUD_OK = _RS_LIVE_S3 and bool(CLOUD_S3_KEY) and bool(CLOUD_S3_SECRET)
+_S3_CLOUD_REASON = "cloud S3 needs RS_TEST_LIVE_S3=1 and AWS creds (from .env); see benchmarks/README.md"
 
 CLOUD_AZURE_CONN_STR = os.environ.get("AZURE_STORAGE_CONNECTION_STRING", "")
 CLOUD_AZURE_CONTAINER = os.environ.get("BENCH_AZURE_CONTAINER", "")
@@ -292,23 +317,53 @@ def _s3_pyarrow_available() -> bool:
     return _port_open(MINIO_HOST, MINIO_PORT)
 
 
+def _boto3_available() -> bool:
+    """boto3 importable and MinIO reachable (Docker mode for the s3-boto3 lane)."""
+    try:
+        import boto3  # noqa: F401
+    except ImportError:
+        return False
+    return _port_open(MINIO_HOST, MINIO_PORT)
+
+
+def _moto_available() -> bool:
+    """boto3 + moto server importable (moto mode, no Docker needed)."""
+    try:
+        import boto3  # noqa: F401
+        from moto.moto_server.threaded_moto_server import ThreadedMotoServer  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
 # ---------------------------------------------------------------------------
 # pytest.param entries with cloud-aware skip markers
 # ---------------------------------------------------------------------------
 
 if _CLOUD_MODE:
-    _s3_skip = pytest.mark.skipif(not CLOUD_S3_BUCKET, reason="BENCH_S3_BUCKET not set for cloud mode")
-    _pa_skip = pytest.mark.skipif(not CLOUD_S3_BUCKET, reason="BENCH_S3_BUCKET not set for cloud mode")
+    _s3_skip = pytest.mark.skipif(not _S3_CLOUD_OK, reason=_S3_CLOUD_REASON)
+    _pa_skip = pytest.mark.skipif(not _S3_CLOUD_OK, reason=_S3_CLOUD_REASON)
+    _boto3_skip = pytest.mark.skipif(not _S3_CLOUD_OK, reason=_S3_CLOUD_REASON)
     _sftp_skip = pytest.mark.skipif(not CLOUD_SFTP_HOST, reason="BENCH_SFTP_HOST not set for cloud mode")
     _azure_skip = pytest.mark.skipif(
         not CLOUD_AZURE_CONN_STR or not CLOUD_AZURE_CONTAINER,
         reason="AZURE_STORAGE_CONNECTION_STRING / BENCH_AZURE_CONTAINER not set for cloud mode",
     )
+elif _MOTO_MODE:
+    # moto mode is S3-family only and runs in-process (no Docker / no cloud creds).
+    _moto_reason = "moto/boto3 not installed for moto mode"
+    _s3_skip = pytest.mark.skipif(not _moto_available(), reason=_moto_reason)
+    _boto3_skip = pytest.mark.skipif(not _moto_available(), reason=_moto_reason)
+    # S3-PyArrow needs MinIO on modern pyarrow (moto server insufficient); skip it here.
+    _pa_skip = pytest.mark.skip(reason="s3-pyarrow unsupported in moto mode (needs MinIO); use --infra docker")
+    _sftp_skip = pytest.mark.skip(reason="moto mode is S3-only")
+    _azure_skip = pytest.mark.skip(reason="moto mode is S3-only")
 else:
     _s3_skip = pytest.mark.skipif(not _minio_available(), reason="MinIO not reachable or s3fs not installed")
     _pa_skip = pytest.mark.skipif(
         not _s3_pyarrow_available(), reason="MinIO not reachable or pyarrow/s3fs not installed"
     )
+    _boto3_skip = pytest.mark.skipif(not _boto3_available(), reason="MinIO not reachable or boto3 not installed")
     _sftp_skip = pytest.mark.skipif(
         not _sftp_docker_available(), reason="SFTP container not reachable or paramiko not installed"
     )
@@ -320,6 +375,8 @@ _toxiproxy_skip = pytest.mark.skipif(not _toxiproxy_available(), reason="Toxipro
 
 _local_param = pytest.param("local", id="local")
 _s3_param = pytest.param("s3", id="s3-minio", marks=_s3_skip)
+_s3_nocache_param = pytest.param("s3-nocache", id="s3-nocache-minio", marks=_s3_skip)
+_s3_boto3_param = pytest.param("s3-boto3", id="s3-boto3-minio", marks=_boto3_skip)
 _s3_pyarrow_param = pytest.param("s3-pyarrow", id="s3-pyarrow-minio", marks=_pa_skip)
 _sftp_param = pytest.param("sftp", id="sftp-docker", marks=_sftp_skip)
 _azure_param = pytest.param("azure", id="azure-azurite", marks=_azure_skip)
@@ -388,6 +445,106 @@ def _sftp_cleanup(
 
 
 # ---------------------------------------------------------------------------
+# moto server (in-process; --infra moto only)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="session")
+def moto_url() -> Iterator[str | None]:
+    """Start an in-process moto S3 server for ``--infra moto``; ``None`` otherwise.
+
+    Server mode (not ``mock_aws()``) so the s3fs/aiobotocore ``s3`` lane works
+    the same way it does in the test suite (see ``tests/conftest.py``).
+    """
+    if not _MOTO_MODE:
+        yield None
+        return
+    try:
+        from moto.moto_server.threaded_moto_server import ThreadedMotoServer
+    except ImportError:
+        yield None
+        return
+    with socket.socket() as sock:
+        sock.bind(("", 0))
+        port = sock.getsockname()[1]
+    server = ThreadedMotoServer(port=port, verbose=False)
+    server.start()
+    yield f"http://127.0.0.1:{port}"
+    server.stop()
+
+
+# ---------------------------------------------------------------------------
+# Shared S3-family connection setup (s3 / s3-pyarrow / s3-boto3 x docker/cloud/moto)
+# ---------------------------------------------------------------------------
+
+
+def _s3_setup(infra: str, moto_url: str | None, tag: str, name: str) -> tuple[Any, str, dict[str, Any], bool]:
+    """Resolve S3 connection config for one infra mode.
+
+    Returns ``(client, bucket, backend_kwargs, owns_bucket)`` where *client* is a
+    boto3 S3 client for bucket create/cleanup, *backend_kwargs* are passed to any
+    S3-family backend constructor, and *owns_bucket* is ``True`` when we created an
+    ephemeral bucket (delete on teardown) vs. reusing a dedicated cloud bucket.
+    """
+    import boto3
+
+    if infra == "cloud":
+        # Creds come from the Stage-3 .env (loaded above) via the default chain.
+        client = boto3.client(
+            "s3",
+            aws_access_key_id=CLOUD_S3_KEY or None,
+            aws_secret_access_key=CLOUD_S3_SECRET or None,
+            region_name=CLOUD_S3_REGION,
+        )
+        backend_kwargs = {"bucket": "", "region_name": CLOUD_S3_REGION}
+        if CLOUD_S3_BUCKET:
+            # Reuse a caller-provided dedicated bucket; only empty it on teardown.
+            backend_kwargs["bucket"] = CLOUD_S3_BUCKET
+            return client, CLOUD_S3_BUCKET, backend_kwargs, False
+        # No fixed bucket: provision an ephemeral rs-conformance-* bucket, matching
+        # the s3_live fixture (the IAM policy scopes CreateBucket to that prefix).
+        bucket = f"rs-conformance-bench-{tag}"
+        create_kwargs: dict[str, Any] = {"Bucket": bucket}
+        if CLOUD_S3_REGION != "us-east-1":
+            create_kwargs["CreateBucketConfiguration"] = {"LocationConstraint": CLOUD_S3_REGION}
+        client.create_bucket(**create_kwargs)
+        backend_kwargs["bucket"] = bucket
+        return client, bucket, backend_kwargs, True
+
+    if infra == "moto":
+        if moto_url is None:
+            pytest.skip("moto server not available")
+        endpoint = moto_url
+    else:  # docker (MinIO)
+        endpoint = MINIO_ENDPOINT
+    key, secret = (MINIO_ACCESS_KEY, MINIO_SECRET_KEY) if infra != "moto" else ("testing", "testing")
+    bucket = f"bench-{name}-{tag}"
+    client = boto3.client(
+        "s3",
+        endpoint_url=endpoint,
+        aws_access_key_id=key,
+        aws_secret_access_key=secret,
+        region_name="us-east-1",
+    )
+    client.create_bucket(Bucket=bucket)
+    backend_kwargs = {
+        "bucket": bucket,
+        "key": key,
+        "secret": secret,
+        "region_name": "us-east-1",
+        "endpoint_url": endpoint,
+    }
+    return client, bucket, backend_kwargs, True
+
+
+def _s3_teardown(client: Any, bucket: str, owns_bucket: bool) -> None:
+    """Delete all objects, and the bucket itself when we created it."""
+    _paginated_delete_s3(client, bucket)
+    if owns_bucket:
+        client.delete_bucket(Bucket=bucket)
+
+
+# ---------------------------------------------------------------------------
 # Backend fixture
 # ---------------------------------------------------------------------------
 
@@ -396,6 +553,8 @@ def _sftp_cleanup(
     params=[
         _local_param,
         _s3_param,
+        _s3_nocache_param,
+        _s3_boto3_param,
         _s3_pyarrow_param,
         _sftp_param,
         _azure_param,
@@ -404,13 +563,14 @@ def _sftp_cleanup(
         _sftp_latency_param,
     ]
 )
-def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
+def bench_backend(request: pytest.FixtureRequest, moto_url: str | None) -> Iterator[Backend]:
     """Yield a fresh backend instance for each parameterized backend type.
 
     When ``--infra cloud`` is passed, uses real cloud credentials from env vars
-    instead of Docker containers.
+    instead of Docker containers; ``--infra moto`` uses an in-process moto server.
     """
-    cloud = request.config.getoption("--infra") == "cloud"
+    infra = request.config.getoption("--infra")
+    cloud = infra == "cloud"
     tag = uuid.uuid4().hex[:8]
 
     if request.param == "local":
@@ -418,77 +578,42 @@ def bench_backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
             yield LocalBackend(root=tmp)
 
     elif request.param == "s3":
-        import boto3
-
         from remote_store.backends._s3 import S3Backend
 
-        if cloud:
-            if not CLOUD_S3_BUCKET:
-                pytest.skip("BENCH_S3_BUCKET not set for cloud mode")
-            bucket = CLOUD_S3_BUCKET
-            client = boto3.client("s3", region_name=CLOUD_S3_REGION)
-            b = S3Backend(bucket=bucket, region_name=CLOUD_S3_REGION)
-            yield b
-            b.close()
-            # Cleanup: delete all objects (bucket should be dedicated to benchmarks)
-            _paginated_delete_s3(client, bucket)
-        else:
-            bucket = f"bench-s3-{tag}"
-            client = boto3.client(
-                "s3",
-                endpoint_url=MINIO_ENDPOINT,
-                aws_access_key_id=MINIO_ACCESS_KEY,
-                aws_secret_access_key=MINIO_SECRET_KEY,
-                region_name="us-east-1",
-            )
-            client.create_bucket(Bucket=bucket)
-            b = S3Backend(
-                bucket=bucket,
-                key=MINIO_ACCESS_KEY,
-                secret=MINIO_SECRET_KEY,
-                region_name="us-east-1",
-                endpoint_url=MINIO_ENDPOINT,
-            )
-            yield b
-            b.close()
-            _paginated_delete_s3(client, bucket)
-            client.delete_bucket(Bucket=bucket)
+        client, bucket, kw, owns = _s3_setup(infra, moto_url, tag, "s3")
+        b = S3Backend(**kw)
+        yield b
+        b.close()
+        _s3_teardown(client, bucket, owns)
+
+    elif request.param == "s3-nocache":
+        # s3fs S3Backend with the directory-listing cache disabled (ID-201):
+        # fresh list_* every call, for an apples-to-apples compare vs s3-boto3.
+        from remote_store.backends._s3 import S3Backend
+
+        client, bucket, kw, owns = _s3_setup(infra, moto_url, tag, "s3nc")
+        b = S3Backend(**kw, client_options={"use_listings_cache": False})
+        yield b
+        b.close()
+        _s3_teardown(client, bucket, owns)
+
+    elif request.param == "s3-boto3":
+        from remote_store.backends._s3_boto3 import S3Boto3Backend
+
+        client, bucket, kw, owns = _s3_setup(infra, moto_url, tag, "s3-boto3")
+        b = S3Boto3Backend(**kw)
+        yield b
+        b.close()
+        _s3_teardown(client, bucket, owns)
 
     elif request.param == "s3-pyarrow":
-        import boto3
-
         from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
-        if cloud:
-            if not CLOUD_S3_BUCKET:
-                pytest.skip("BENCH_S3_BUCKET not set for cloud mode")
-            bucket = CLOUD_S3_BUCKET
-            client = boto3.client("s3", region_name=CLOUD_S3_REGION)
-            b = S3PyArrowBackend(bucket=bucket, region_name=CLOUD_S3_REGION)
-            yield b
-            b.close()
-            _paginated_delete_s3(client, bucket)
-        else:
-            bucket = f"bench-pa-{tag}"
-            client = boto3.client(
-                "s3",
-                endpoint_url=MINIO_ENDPOINT,
-                aws_access_key_id=MINIO_ACCESS_KEY,
-                aws_secret_access_key=MINIO_SECRET_KEY,
-                region_name="us-east-1",
-            )
-            client.create_bucket(Bucket=bucket)
-            b = S3PyArrowBackend(
-                bucket=bucket,
-                key=MINIO_ACCESS_KEY,
-                secret=MINIO_SECRET_KEY,
-                region_name="us-east-1",
-                endpoint_url=MINIO_ENDPOINT,
-            )
-            yield b
-            b.close()
-            _paginated_delete_s3(client, bucket)
-            client.delete_bucket(Bucket=bucket)
+        client, bucket, kw, owns = _s3_setup(infra, moto_url, tag, "pa")
+        b = S3PyArrowBackend(**kw)
+        yield b
+        b.close()
+        _s3_teardown(client, bucket, owns)
 
     elif request.param == "sftp":
         from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
@@ -691,6 +816,13 @@ def _build_target_params() -> list[Any]:
     params.append(pytest.param(("s3", "boto3_raw"), id="s3-boto3_raw", marks=_s3_skip))
     params.append(pytest.param(("s3", "s3fs"), id="s3-s3fs", marks=_s3_skip))
 
+    # S3 with the s3fs listing cache disabled (ID-201) -- fresh list_* every call.
+    params.append(pytest.param(("s3-nocache", "remote_store"), id="s3-nocache-remote_store", marks=_s3_skip))
+
+    # S3-boto3 (boto3-direct lane via Store; head-to-head vs the s3fs `s3` lane)
+    params.append(pytest.param(("s3-boto3", "remote_store"), id="s3-boto3-remote_store", marks=_boto3_skip))
+    params.append(pytest.param(("s3-boto3", "boto3_raw"), id="s3-boto3-boto3_raw", marks=_boto3_skip))
+
     # S3-PyArrow (MinIO / cloud)
     params.append(pytest.param(("s3-pyarrow", "remote_store"), id="s3-pyarrow-remote_store", marks=_pa_skip))
     params.append(pytest.param(("s3-pyarrow", "boto3_raw"), id="s3-pyarrow-boto3_raw", marks=_pa_skip))
@@ -768,18 +900,19 @@ def _build_target_params() -> list[Any]:
 
 
 @pytest.fixture(params=_build_target_params())
-def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
+def bench_target(request: pytest.FixtureRequest, moto_url: str | None) -> Iterator[Any]:
     """Yield a BenchTarget for comparative benchmarks.
 
     Each parametrization is a ``(backend_type, target_kind)`` pair.
     Test IDs look like ``test_write[s3-remote_store]``.
 
-    Supports both Docker and cloud (``--infra cloud``) modes.
+    Supports Docker, cloud (``--infra cloud``), and moto (``--infra moto``) modes.
     """
     from benchmarks.targets._remote_store import RemoteStoreTarget
 
     backend_type, target_kind = request.param
-    cloud = request.config.getoption("--infra") == "cloud"
+    infra = request.config.getoption("--infra")
+    cloud = infra == "cloud"
     tag = uuid.uuid4().hex[:8]
 
     if backend_type == "local":
@@ -795,50 +928,26 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
 
                 yield LocalFsspecTarget(root=tmp)
 
-    elif backend_type in ("s3", "s3-pyarrow"):
-        import boto3
-
-        if cloud:
-            bucket = CLOUD_S3_BUCKET
-            client = boto3.client("s3", region_name=CLOUD_S3_REGION)
-        else:
-            bucket = f"bench-tgt-{tag}"
-            client = boto3.client(
-                "s3",
-                endpoint_url=MINIO_ENDPOINT,
-                aws_access_key_id=MINIO_ACCESS_KEY,
-                aws_secret_access_key=MINIO_SECRET_KEY,
-                region_name="us-east-1",
-            )
-            client.create_bucket(Bucket=bucket)
+    elif backend_type in ("s3", "s3-nocache", "s3-boto3", "s3-pyarrow"):
+        client, bucket, kw, owns = _s3_setup(infra, moto_url, tag, "tgt")
+        # s3fs raw target wants endpoint/key/secret broken out (absent => cloud default creds).
+        s3fs_kwargs = {k: kw[k] for k in ("endpoint_url", "key", "secret") if k in kw}
         try:
             if target_kind == "remote_store":
-                if backend_type == "s3":
+                if backend_type in ("s3", "s3-nocache"):
                     from remote_store.backends._s3 import S3Backend
 
-                    if cloud:
-                        b = S3Backend(bucket=bucket, region_name=CLOUD_S3_REGION)
-                    else:
-                        b = S3Backend(
-                            bucket=bucket,
-                            key=MINIO_ACCESS_KEY,
-                            secret=MINIO_SECRET_KEY,
-                            region_name="us-east-1",
-                            endpoint_url=MINIO_ENDPOINT,
-                        )
+                    # s3-nocache disables the s3fs directory-listing cache (ID-201).
+                    extra = {"client_options": {"use_listings_cache": False}} if backend_type == "s3-nocache" else {}
+                    b: Backend = S3Backend(**kw, **extra)
+                elif backend_type == "s3-boto3":
+                    from remote_store.backends._s3_boto3 import S3Boto3Backend
+
+                    b = S3Boto3Backend(**kw)
                 else:
                     from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
-                    if cloud:
-                        b = S3PyArrowBackend(bucket=bucket, region_name=CLOUD_S3_REGION)
-                    else:
-                        b = S3PyArrowBackend(
-                            bucket=bucket,
-                            key=MINIO_ACCESS_KEY,
-                            secret=MINIO_SECRET_KEY,
-                            region_name="us-east-1",
-                            endpoint_url=MINIO_ENDPOINT,
-                        )
+                    b = S3PyArrowBackend(**kw)
                 t = RemoteStoreTarget(b)
                 yield t
                 t.close()
@@ -849,21 +958,11 @@ def bench_target(request: pytest.FixtureRequest) -> Iterator[Any]:
             elif target_kind == "s3fs":
                 from benchmarks.targets._fsspec import S3fsTarget
 
-                if cloud:
-                    t = S3fsTarget(bucket=bucket)  # type: ignore[assignment]
-                else:
-                    t = S3fsTarget(  # type: ignore[assignment]
-                        bucket=bucket,
-                        endpoint_url=MINIO_ENDPOINT,
-                        key=MINIO_ACCESS_KEY,
-                        secret=MINIO_SECRET_KEY,
-                    )
+                t = S3fsTarget(bucket=bucket, **s3fs_kwargs)  # type: ignore[assignment]
                 yield t
                 t.close()
         finally:
-            _paginated_delete_s3(client, bucket)
-            if not cloud:
-                client.delete_bucket(Bucket=bucket)
+            _s3_teardown(client, bucket, owns)
 
     elif backend_type == "sftp":
         if cloud:

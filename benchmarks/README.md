@@ -37,6 +37,8 @@ hatch run bench-report-comparative
 |---------|---------------|-------------|---------|--------|
 | Local | - | LocalBackend | pathlib | fsspec.local |
 | S3 | MinIO :19100 | S3Backend | boto3 | s3fs |
+| S3 (no cache) | MinIO :19100 | S3Backend (`use_listings_cache=False`) | - | - |
+| S3-boto3 | MinIO :19100 | S3Boto3Backend | boto3 | - |
 | S3-PyArrow | MinIO :19100 | S3PyArrowBackend | - | - |
 | SFTP | OpenSSH :2222 | SFTPBackend | paramiko | sshfs |
 | Azure | Azurite :10000 | AzureBackend | azure-storage-blob | adlfs |
@@ -82,13 +84,21 @@ docker compose -f infra/docker-compose.yml down -v
 
 ### Cloud mode
 
-Runs against real cloud services. Set environment variables first:
+Runs against real cloud services.
+
+**S3 family (`s3`, `s3-nocache`, `s3-boto3`)** reuses the Stage-3 live-test
+wiring: credentials come from a local `.env` (loaded via
+`load_dotenv(override=False)`, only in cloud mode), and the run is gated on the
+`RS_TEST_LIVE_S3=1` opt-in — the same `AWS_ACCESS_KEY_ID` /
+`AWS_SECRET_ACCESS_KEY` / `AWS_DEFAULT_REGION` the `s3_live` fixture uses. Each
+S3 test provisions an ephemeral `rs-conformance-bench-<id>` bucket (matching the
+`s3_live` IAM policy, which scopes `CreateBucket` to `rs-conformance-*`) and
+deletes it on teardown. Set `BENCH_S3_BUCKET` only if you have a dedicated
+pre-existing bucket to reuse instead.
 
 ```bash
-# S3
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
-export BENCH_S3_BUCKET=my-bench-bucket
+# S3: put AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_DEFAULT_REGION in .env, then:
+RS_TEST_LIVE_S3=1 hatch run bench-cloud -- --backend s3,s3-nocache,s3-boto3
 
 # Azure
 export AZURE_STORAGE_CONNECTION_STRING=...
@@ -102,6 +112,44 @@ export BENCH_SFTP_KEY_FILE=~/.ssh/id_rsa
 
 hatch run bench-cloud
 ```
+
+### moto mode (S3 family only)
+
+Runs the S3-family lanes (`s3`, `s3-nocache`, `s3-boto3`) against an in-process
+[moto](https://github.com/getmoto/moto) server. No Docker, no credentials, no
+network: the server is started for the session and torn down after.
+
+```bash
+hatch run bench-moto -- --backend s3,s3-nocache,s3-boto3
+```
+
+**What it measures, and what it does not.** moto is a loopback-HTTP mock, so
+these numbers isolate **client-library overhead** (s3fs/aiobotocore layering vs.
+plain boto3, plus the s3fs directory cache) — they are **not** real-world
+throughput. Use moto for the cheap, deterministic library-cost floor; use Docker
+(MinIO) and cloud for numbers that include real network and storage behaviour.
+`sftp` / `azure` / `s3-pyarrow` are skipped in moto mode.
+
+### The `s3` vs `s3-boto3` comparison
+
+`s3` is the s3fs-backed `S3Backend`; `s3-boto3` is the boto3-direct
+`S3Boto3Backend` (the ID-202 lane). Both run through the same Store API
+(`remote_store` target), so a `--backend s3,s3-boto3` run isolates the
+**transport** difference, Store API held constant.
+
+Read listing/metadata numbers with the cache in mind: s3fs serves repeated
+`list_*` / `iter_children` calls from an in-process directory cache (fast, but
+can be stale), whereas the boto3 lane issues a fresh `list_objects_v2` every
+time (slower, always current). The benchmark surfaces that trade-off rather than
+a pure speed verdict.
+
+For a **cache-neutral** comparison, the `s3-nocache` lane is the s3fs
+`S3Backend` built with `client_options={"use_listings_cache": False}` (the
+ID-201 override): it issues a fresh listing every call, like the boto3 lane.
+So `--backend s3-nocache,s3-boto3` isolates the listing *mechanism* (s3fs/
+aiobotocore vs. boto3) with neither side cached, while `--backend s3,s3-nocache`
+shows what the dircache is worth. Note the raw `s3fs` comparative target is
+*not* cache-disabled — it represents s3fs as typically used.
 
 ## Speed Tiers
 
@@ -192,6 +240,8 @@ hatch run bench -- --backend s3-latency --network-profile rtt50 \
 | `hatch run bench-compare` | Compare saved runs | Before/after |
 | `hatch run bench-cloud` | Quick on real infra | Cloud perf testing |
 | `hatch run bench-cloud-standard` | Standard on real infra | Cloud deep testing |
+| `hatch run bench-moto` | Quick on in-process moto (S3 family) | Library-overhead floor, no Docker |
+| `hatch run bench-moto-standard` | Standard on in-process moto (S3 family) | Wider library-overhead profile |
 | `hatch run bench-report` | Summary table from saved JSON | Quick overview |
 | `hatch run bench-report-compare` | Latest vs previous saved run | Spot regressions |
 | `hatch run bench-report-json` | Machine-readable JSON | CI / scripting |

@@ -100,30 +100,21 @@ three pains were surfaced as code-side flags in
 [research](research/research-backend-setup-guides.md) § 6 and carved
 out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
-- [ ] **ID-201 — Spike: default `S3Backend` to `use_listings_cache=False`?**
-  spec: — · effort: S · audience: user.api
-  `s3fs` keeps a directory-listing cache whose invalidation is
-  undocumented upstream (fsspec/filesystem_spec #324). For `Store`-shape
-  workloads this surfaces as stale `list_files` / `iter_children`
-  results after writes from another process. Spike whether disabling
-  the cache by default is the right trade.
-  Measure on a moto bucket and on a real S3 bucket if creds available:
-  (1) `list_files` latency with cache on vs off at 100 / 1 000 /
-      10 000 keys per prefix, hot vs cold;
-  (2) `iter_children` latency at the same sizes;
-  (3) frequency of stale results in a write-then-list loop across two
-      `Store` instances pointed at the same bucket.
-  Output one of three recommendations:
-  (a) flip default to `use_listings_cache=False`, document the perf
-      delta, expose a `client_options` override for users who need the
-      cache;
-  (b) keep current default, add a docs section in
-      `guides/backends/s3.md` explaining the cache and the override;
-  (c) expose a first-class `Store`-level `refresh()` / invalidation
-      API if the measurements show the cache is too valuable to drop
-      but staleness is too costly to leave silent.
-  No code change in this item beyond throwaway measurement scripts;
-  the chosen path becomes a new BK-NNN.
+- [ ] **BK-257 — Default the s3fs S3 lanes to `use_listings_cache=False`**
+  spec: — · effort: M · audience: user.api
+  ID-201's spike chose disposition **(a)**: the s3fs directory-listing cache
+  is 100% stale across writers and permanently so (no expiry), while its only
+  benefit is repeated-list latency *when nothing writes in between*. Make
+  fresh listings the default; keep the cache as an opt-in.
+  Measurements and rationale: ID-201 in [BACKLOG-DONE.md](BACKLOG-DONE.md).
+  - Default `use_listings_cache=False` in `_s3_base`'s s3fs-kwargs builder,
+    only when the caller did not set it via `client_options` (precedence test).
+  - Applies to both `s3` and `s3-pyarrow` (`_S3Base`); `ext.cache` stays the
+    path for callers who want caching.
+  - Docs: `guides/backends/s3.md` — the new default, how to re-enable, the
+    staleness rationale. CHANGELOG (user-facing behaviour change; pre-v1
+    minor). Tests: default-is-fresh, `client_options` override re-enables the
+    cache, and a staleness regression (old default stale → new default fresh).
 
 ---
 

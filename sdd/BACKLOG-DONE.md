@@ -58,6 +58,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   The gate is now a hard zero-tolerance check: any new shipped spec ID without a mark
   or allowlist entry fails CI immediately.
 
+- [x] **ID-201 — Spike: default `S3Backend` to `use_listings_cache=False`?**
+  spec: — · effort: S · audience: user.api
+  Measured the s3fs directory-listing-cache trade (fsspec #324) for `Store`-shape
+  workloads across moto / MinIO / real AWS, using the `benchmarks/` `s3` (cached)
+  vs `s3-nocache` (`use_listings_cache=False`) vs `s3-boto3` lanes plus a throwaway
+  staleness probe. **Disposition: (a)** — default the cache off with a
+  `client_options` override. Spawned **BK-257** (implementation).
+
+  Latency (#1/#2): the cache is the only real speed differentiator — on AWS it
+  turns a 38 ms flat list into 0.26 ms and a 393 ms recursive walk into ~1 ms
+  (150–360x). Fresh-vs-fresh, s3fs and the boto3 lane are at parity for flat /
+  recursive lists and single-object metadata (RTT-bound); the boto3 lane's single
+  flat `list_objects_v2` beats fresh s3fs on `get_folder_info` (83 vs 467 ms AWS).
+  The moto "s3fs 2.4–3x faster" gap was a library-CPU artifact (gone on a real
+  network).
+
+  Staleness (#3): with the default cache a write from a second instance is **100%
+  invisible and permanently so** (25/25, moto + MinIO) — s3fs `DirCache` defaults
+  to `listings_expiry_time=None`, so a listed directory never re-fetches until
+  `invalidate_cache()`. cached+invalidate, `s3-nocache`, and `s3-boto3` are all
+  0/25. Rationale for (a): the cache buys repeated-list latency only when nothing
+  writes in between, against 100% silent cross-instance staleness that breaks the
+  "a listing shows what's there" model for a multi-writer Store; the fresh-list
+  cost is one bounded RTT (the boto3 lane already pays it and stays competitive),
+  and cache-wanters opt in via `client_options` / `ext.cache`.
+
 - [x] **ID-202 — PoC: `s3-boto3` backend lane alongside `s3` and `s3-pyarrow`**
   spec: — · effort: L · audience: library.maintainer, infra.test
   (Opened as `audience: user.api`; the PoC landed **test-only** — not registered,
