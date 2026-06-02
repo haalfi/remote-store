@@ -393,6 +393,10 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   - Spec foundation: ID-141 (ADR-0025), ID-142 (spec 029
     § AsyncBackendSyncAdapter + `tests/aio/_doubles.py`), and ID-143
     (`AsyncBackendSyncAdapter` implementation + integration suite) — all landed.
+  - Prerequisites (process/test, should land first): BK-237 (feature-DoD
+    checklists), BK-239 (generic field↔capability symmetry guard), and
+    BK-241 (`tests/aio/README.md` orientation) each name this backend as
+    the trigger they must precede — land them before starting implementation.
   - **Bundled sub-task — `ResourceLocked` (ERR-013, ADR-0024):** Graph
     triggers the only need for this error class today. Three coupled
     pieces ship together with the backend, not separately: the
@@ -418,7 +422,8 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
     (anchor uses historical ID-120 from research doc; now ID-121 after swap)
   - Depends on: unified `resolve()` → `ResolutionPlan` (ID-120) — **satisfied**:
     `Store.resolve()` ships and returns a `ResolutionPlan` (see BACKLOG-DONE.md).
-    Remaining: at least two working backends to be useful; pairs well with ID-119.
+    Remaining: at least two working backends to be useful; pairs well with
+    ID-119 (landed) — so both conditions are already met.
     Now unblocked; awaiting only its own spec/design.
   - Next: design as separate spec — backend-agnostic, useful independently
 
