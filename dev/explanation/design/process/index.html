@@ -4882,6 +4882,45 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#feature-type-definition-of-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature-type Definition of Done
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Feature-type Definition of Done">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#contract-expanding-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contract-expanding feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bridge-adapter-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bridge / adapter feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#document-types" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9467,6 +9506,45 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#feature-type-definition-of-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature-type Definition of Done
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Feature-type Definition of Done">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#contract-expanding-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contract-expanding feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bridge-adapter-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bridge / adapter feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#document-types" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9559,6 +9637,47 @@ no subdirectory split is used while the tooling-spec count is small.</p>
 Completed items live in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md"><code>sdd/BACKLOG-DONE.md</code></a>.</p>
 <p><code>BACKLOG.md</code> is the single source of truth for ID prefixes, status conventions,
 completion workflow, and section structure. See its "How this file works" header.</p>
+<h3 id="feature-type-definition-of-done">Feature-type Definition of Done<a class="headerlink" href="#feature-type-definition-of-done" title="Permanent link">&para;</a></h3>
+<p>Rule 6 gives a feature's lifecycle order; the two checklists below give its
+exit criteria. Pick the row that matches the change and treat each box as a
+gate, not a suggestion. For why each gate exists, see the originating backlog
+item BK-237 and its trace.</p>
+<h4 id="contract-expanding-feature">Contract-expanding feature<a class="headerlink" href="#contract-expanding-feature" title="Permanent link">&para;</a></h4>
+<p>Use when the change adds or widens a public contract — a new <code>Capability</code>,
+Store method, or error class.</p>
+<ul>
+<li>[ ] <strong>Spec / RFC updated</strong>, with the conformance, property-based, and
+  formal-proof work the feature needs scoped up front in the RFC, not
+  discovered as a string of follow-ups.</li>
+<li>[ ] <strong>Capability declaration reviewed for both over- and under-declaration</strong>:
+  claiming a capability a backend does not honour is as wrong as omitting one
+  it does.</li>
+<li>[ ] <strong>Conformance test + xfail registry landed <em>before</em> the first backend
+  implementation</strong>, so backends move themselves off the xfail list against a
+  contract that already exists.</li>
+<li>[ ] <strong>Wrapper forwarding verified</strong> — every <code>Store</code>-wrapping layer forwards
+  the new surface. The wrapping layers are the <code>ProxyStore</code> base, the wrappers
+  under <code>src/remote_store/ext/</code>, and the sync and oracle adapters; consult
+  those locations rather than a fixed class list, which drifts as wrappers are
+  added.</li>
+<li>[ ] <strong>Docs ripple swept</strong> — every guide, snippet, and reference surface the
+  new contract appears in.</li>
+<li>[ ] <strong>Audit pass run against the unreleased work</strong> as a pre-merge gate.</li>
+</ul>
+<h4 id="bridge-adapter-feature">Bridge / adapter feature<a class="headerlink" href="#bridge-adapter-feature" title="Permanent link">&para;</a></h4>
+<p>Use when the change introduces a cross-layer wrapper — anything that adapts
+one <code>Store</code> or backend surface onto another.</p>
+<ul>
+<li>[ ] <strong>API-parity test against the wrapped layer</strong> — the bridge exposes the
+  contract it wraps.</li>
+<li>[ ] <strong>Event-loop and resource-lifecycle test</strong> — loops, connections, and
+  handles are torn down without leaks.</li>
+<li>[ ] <strong>Cancellation-invariant test</strong> — cancelling mid-operation leaves no
+  half-state and raises the right error.</li>
+<li>[ ] <strong>Live-backend coverage</strong>, not just doubles.</li>
+<li>[ ] <strong><code>filterwarnings = error</code>-clean suite</strong> under the global policy in
+  <code>pyproject.toml</code>.</li>
+</ul>
 <h3 id="document-types">Document types<a class="headerlink" href="#document-types" title="Permanent link">&para;</a></h3>
 <p>Five document categories live under <code>sdd/</code>. Each has a clear purpose and lifecycle:</p>
 <table>
