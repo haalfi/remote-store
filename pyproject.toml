@@ -316,6 +316,15 @@ warn_unused_ignores = false
 module = "remote_store.backends._sqlalchemy"
 warn_unused_ignores = false
 
+# ID-202 PoC: `_s3_boto3` carries `# type: ignore[import-untyped]` on its
+# boto3 / botocore import lines. Stub presence drifts by version — botocore
+# ships `py.typed` (the ignore becomes unused) while `boto3` / `boto3.s3.transfer`
+# remain untyped (the ignore is active). Same version-drift shape as the
+# pyarrow block above; the per-module override is the finest scope available.
+[[tool.mypy.overrides]]
+module = "remote_store.backends._s3_boto3"
+warn_unused_ignores = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]

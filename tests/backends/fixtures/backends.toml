@@ -37,6 +37,14 @@ transport = "http"
 flat_namespace    = true
 self_op_supported = true
 
+# ID-202 PoC: boto3-direct S3 lane (no s3fs/pyarrow). Same flat-NS / self-op
+# shape as the other S3 families; the boto3 data path is the only divergence.
+[backend.s3_boto3]
+sources   = ["src/remote_store/backends/_s3_boto3.py"]
+transport = "http"
+flat_namespace    = true
+self_op_supported = true
+
 [backend.sftp]
 sources   = ["src/remote_store/backends/_sftp.py"]
 transport = "ssh"

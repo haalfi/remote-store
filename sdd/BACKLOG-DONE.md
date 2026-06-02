@@ -38,6 +38,36 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   The gate is now a hard zero-tolerance check: any new shipped spec ID without a mark
   or allowlist entry fails CI immediately.
 
+- [x] **ID-202 — PoC: `s3-boto3` backend lane alongside `s3` and `s3-pyarrow`**
+  spec: — · effort: L · audience: library.maintainer, infra.test
+  (Opened as `audience: user.api`; the PoC landed **test-only** — not registered,
+  not in `FEATURES.md`, not in `__all__` — so nothing user-facing shipped and the
+  dominant audience is maintainer + test infra. The `user.api` framing and a
+  CHANGELOG entry attach if a future Ship verdict promotes the lane.)
+  Built `S3Boto3Backend` (`src/remote_store/backends/_s3_boto3.py`): a standalone,
+  boto3-only S3 backend (no `s3fs` / `aiobotocore` / `pyarrow`) with capability
+  parity to `S3Backend` minus `ATOMIC_MOVE`, a `get_object` Range-backed seekable
+  reader, and `ClientError`-code → typed-error mapping per ID-200. The
+  `s3-boto3 = ["boto3>=1.34"]` extra is **proposed, not declared** — declaring it
+  would advertise `pip install remote-store[s3-boto3]` in the generated
+  `FEATURES.md` for an unregistered backend, so it is deferred to Ship; the tests
+  run on the `boto3` already in the dev env. moto conformance fixtures
+  `s3_boto3_moto` (+ strict). Full Stage-1 conformance passes; a mid-stream-abort test proves the
+  lane does **not** inherit the BUG-214 truncated-commit defect (abort by
+  construction). Three-axis analysis and the disposition live in
+  [research-s3-boto3-poc.md](research/research-s3-boto3-poc.md).
+  - **Disposition: Park as test-only.** The lane is viable and correct, but for
+    today's users `s3` / `s3-pyarrow` cover the same surface, so promoting a third
+    install path now buys mostly choice-paralysis and a doubled per-backend
+    maintenance footprint (`_S3Base`'s listing/metadata methods are s3fs-coupled,
+    so the lane is ~625 standalone LOC). Interop loss is minimal: extensions ride
+    the `Store` API, and `ext.arrow`'s native-PyArrow Tier-1 probe falls back
+    gracefully (the `s3` lane lacks it too), so the boto3 lane is on par with `s3`.
+  - **Revisit triggers** (would reopen as a Ship `BK-NNN`): s3fs upstream stalls on
+    the >5 GB (#1936) or listing-cache (#324) issues, or the aiobotocore dep-pin
+    cascade bites a real user. A Ship increment would add the `_S3Base` refactor,
+    public wiring, an `AsyncS3Boto3Backend`, a backend guide, and a CHANGELOG entry.
+
 - [x] **BK-248 — Confirm S3 403 / credential-failure error mapping over the wire (Stage 3)**
   spec: S3-016, S3-018 · effort: S · audience: library.maintainer, infra.test
   (Scoped as S3-016/S3-017 when opened; the verified surface is the

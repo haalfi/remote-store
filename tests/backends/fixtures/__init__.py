@@ -83,6 +83,7 @@ def _load_all() -> None:
         "memory_async_adapted": "memory_async",
         "local_async_adapted": "local_async",
         "s3_moto_strict": "s3_moto",
+        "s3_boto3_moto_strict": "s3_boto3_moto",
         "s3_pyarrow_moto_strict": "s3_pyarrow_moto",
         "sqlblob_strict": "sqlblob",
         "azurite_strict": "azurite",
