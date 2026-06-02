@@ -86,38 +86,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ---
 
-## S3 Client-Implementation Strategy
-
-Three s3fs-inherited pain points (dep-conflict cascade, 5 GB multipart cliff,
-listing-cache staleness) would not exist on a boto3-direct backend. Two
-investigations and one PoC determine whether the answer is "live with it
-and document," "tweak s3fs defaults," or "ship a third S3 lane."
-ID-200 (error-mapping audit) is **done** — see
-[BACKLOG-DONE.md](BACKLOG-DONE.md) and
-[research/research-s3-error-mapping-fidelity.md](research/research-s3-error-mapping-fidelity.md);
-it spawned BUG-214 and BK-248 (both done) and feeds ID-202's error mapping. All
-three pains were surfaced as code-side flags in
-[research](research/research-backend-setup-guides.md) § 6 and carved
-out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
-
-- [ ] **BK-257 — Default the s3fs S3 lanes to `use_listings_cache=False`**
-  spec: — · effort: M · audience: user.api
-  ID-201's spike chose disposition **(a)**: the s3fs directory-listing cache
-  is 100% stale across writers and permanently so (no expiry), while its only
-  benefit is repeated-list latency *when nothing writes in between*. Make
-  fresh listings the default; keep the cache as an opt-in.
-  Measurements and rationale: ID-201 in [BACKLOG-DONE.md](BACKLOG-DONE.md).
-  - Default `use_listings_cache=False` in `_s3_base`'s s3fs-kwargs builder,
-    only when the caller did not set it via `client_options` (precedence test).
-  - Applies to both `s3` and `s3-pyarrow` (`_S3Base`); `ext.cache` stays the
-    path for callers who want caching.
-  - Docs: `guides/backends/s3.md` — the new default, how to re-enable, the
-    staleness rationale. CHANGELOG (user-facing behaviour change; pre-v1
-    minor). Tests: default-is-fresh, `client_options` override re-enables the
-    cache, and a staleness regression (old default stale → new default fresh).
-
----
-
 ## Lint / CI Completeness
 
 
@@ -314,8 +282,9 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   **Three code-side flags surfaced** (NOT guide work) — see research doc
   § 6: `s3fs` typed-error mapping fidelity; `S3Backend`
   `use_listings_cache` default; third S3 lane (`s3-boto3` direct)
-  viability. Now tracked as **ID-200 / ID-201 / ID-202** in the
-  S3 Client-Implementation Strategy section.
+  viability. Tracked as **ID-200 / ID-201 / ID-202** — all complete;
+  see [BACKLOG-DONE.md](BACKLOG-DONE.md) (ID-201's disposition shipped
+  as BK-257).
 
   **Sequencing (dogfood-cost ordered, see research § 7):**
   Phase 1 (zero new setup) = §3.3 + §3.7 + §3.4;

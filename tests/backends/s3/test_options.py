@@ -13,6 +13,14 @@ pytest.importorskip("s3fs", reason="s3fs not installed")
 pytest.importorskip("botocore", reason="botocore not installed")
 
 
+def _load_backend_cls(dotted: str) -> type:
+    """Import a ``module:Class`` dotted backend reference."""
+    import importlib
+
+    module_path, cls_name = dotted.split(":")
+    return getattr(importlib.import_module(module_path), cls_name)
+
+
 @pytest.mark.parametrize(
     "backend_cls",
     [
@@ -39,13 +47,6 @@ class TestConfigKwargsRetryCollision:
     policy) through a single merged ``opts['config_kwargs']`` dict.
     """
 
-    def _load_backend_cls(self, dotted: str) -> type:
-        module_path, cls_name = dotted.split(":")
-        import importlib
-
-        mod = importlib.import_module(module_path)
-        return getattr(mod, cls_name)
-
     def test_config_kwargs_routed_to_s3fs_config_kwargs(self, backend_cls: str) -> None:
         """BUG-185: config_kwargs + RetryPolicy must route through opts['config_kwargs'].
 
@@ -60,7 +61,7 @@ class TestConfigKwargsRetryCollision:
 
         from remote_store._config import RetryPolicy
 
-        cls = self._load_backend_cls(backend_cls)
+        cls = _load_backend_cls(backend_cls)
         backend = cls(
             bucket="mybucket",
             client_options={
@@ -104,7 +105,7 @@ class TestConfigKwargsRetryCollision:
         """
         from unittest.mock import patch
 
-        cls = self._load_backend_cls(backend_cls)
+        cls = _load_backend_cls(backend_cls)
         backend = cls(
             bucket="mybucket",
             client_options={
@@ -145,7 +146,7 @@ class TestConfigKwargsRetryCollision:
         """
         import botocore.config
 
-        cls = self._load_backend_cls(backend_cls)
+        cls = _load_backend_cls(backend_cls)
         backend = cls(
             bucket="mybucket",
             client_options={
@@ -174,7 +175,7 @@ class TestConfigKwargsRetryCollision:
 
         from remote_store._config import RetryPolicy
 
-        cls = self._load_backend_cls(backend_cls)
+        cls = _load_backend_cls(backend_cls)
         backend = cls(
             bucket="mybucket",
             client_options={
@@ -325,5 +326,62 @@ class TestAiobotocoreCreateClientBoundary:
             assert cfg.retries["mode"] == "standard"
             assert cfg.s3 == {"addressing_style": "path"}
             assert cfg.proxies == {"http": None, "https": None}
+        finally:
+            backend.close()
+
+
+@pytest.mark.parametrize(
+    "backend_cls",
+    [
+        pytest.param(
+            "remote_store.backends._s3:S3Backend",
+            id="s3",
+            marks=pytest.mark.spec("S3-027"),
+        ),
+        pytest.param(
+            "remote_store.backends._s3_pyarrow:S3PyArrowBackend",
+            id="s3-pyarrow",
+            marks=pytest.mark.spec("S3PA-027"),
+        ),
+    ],
+)
+class TestListingsCacheDefault:
+    """S3-027 / S3PA-027: the s3fs directory-listing cache is off by default.
+
+    s3fs caches directory listings in a ``DirCache`` that never expires
+    (``listings_expiry_time=None``), so a cached listing is permanently blind
+    to a write from another instance. The shared builder must therefore default
+    ``use_listings_cache=False`` while leaving the value untouched when the
+    caller supplied it via ``client_options`` (opt-in caching).
+    """
+
+    def test_default_is_fresh(self, backend_cls: str) -> None:
+        """No ``client_options`` → builder hands s3fs ``use_listings_cache=False``."""
+        from unittest.mock import patch
+
+        cls = _load_backend_cls(backend_cls)
+        backend = cls(bucket="mybucket")
+        try:
+            with patch("s3fs.S3FileSystem") as mock_cls:
+                _ = backend._s3fs
+            call_kwargs = mock_cls.call_args.kwargs
+            assert call_kwargs["use_listings_cache"] is False
+        finally:
+            backend.close()
+
+    def test_client_options_override_re_enables_cache(self, backend_cls: str) -> None:
+        """``client_options={'use_listings_cache': True}`` takes precedence (opt-in)."""
+        from unittest.mock import patch
+
+        cls = _load_backend_cls(backend_cls)
+        backend = cls(
+            bucket="mybucket",
+            client_options={"use_listings_cache": True},
+        )
+        try:
+            with patch("s3fs.S3FileSystem") as mock_cls:
+                _ = backend._s3fs
+            call_kwargs = mock_cls.call_args.kwargs
+            assert call_kwargs["use_listings_cache"] is True
         finally:
             backend.close()

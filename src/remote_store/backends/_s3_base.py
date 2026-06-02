@@ -265,6 +265,11 @@ class _S3Base(Backend):
             client_kwargs = opts.setdefault("client_kwargs", {})
             client_kwargs.setdefault("verify", self._tls_ca_bundle)
         opts.setdefault("anon", False)
+        # S3-027: default the s3fs directory-listing cache off. The DirCache
+        # never expires (listings_expiry_time=None), so a cached listing is
+        # permanently blind to a cross-writer write; setdefault keeps any
+        # caller-supplied client_options['use_listings_cache'] (opt-in caching).
+        opts.setdefault("use_listings_cache", False)
         return opts
 
     # endregion

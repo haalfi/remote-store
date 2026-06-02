@@ -937,8 +937,12 @@ def bench_target(request: pytest.FixtureRequest, moto_url: str | None) -> Iterat
                 if backend_type in ("s3", "s3-nocache"):
                     from remote_store.backends._s3 import S3Backend
 
-                    # s3-nocache disables the s3fs directory-listing cache (ID-201).
-                    extra = {"client_options": {"use_listings_cache": False}} if backend_type == "s3-nocache" else {}
+                    # The two lanes force the s3fs directory-listing cache to
+                    # opposite settings so `--backend s3,s3-nocache` measures
+                    # what the dircache is worth. Post-BK-257 the S3Backend
+                    # default is cache-off, so the `s3` lane must opt the cache
+                    # back ON explicitly (it no longer represents the default).
+                    extra = {"client_options": {"use_listings_cache": backend_type == "s3"}}
                     b: Backend = S3Backend(**kw, **extra)
                 elif backend_type == "s3-boto3":
                     from remote_store.backends._s3_boto3 import S3Boto3Backend

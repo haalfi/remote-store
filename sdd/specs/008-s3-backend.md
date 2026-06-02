@@ -179,6 +179,8 @@ assert backend.is_folder("dir") is False  # folder vanishes
 **Invariant:** The `client_options` dict is merged into the s3fs configuration, allowing advanced settings (custom SSL, proxy, timeouts, etc.).
 **Postconditions:** Explicit constructor parameters (`endpoint_url`, `key`, `secret`, `region_name`) take precedence over keys in `client_options`.
 
+For the listings-cache default the builder injects during this merge (a precedence rule in the opposite direction — `client_options` overrides our default), see [S3-027](#s3-027).
+
 ### S3-022: Default Credential Chain
 
 **Invariant:** When `key` and `secret` are not provided, the backend falls back to the standard AWS credential chain (environment variables `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`, `~/.aws/credentials`, IAM role, etc.).
@@ -272,5 +274,18 @@ argument 'config'` (BUG-178, BUG-185).
   to keep caller-supplied retry knobs.
 - Caller-supplied fields outside `retries` (e.g. `connect_timeout`,
   `read_timeout`, `s3.addressing_style`, `proxies`) are preserved.
+
+**Scope:** Applies to both `S3Backend` and `S3PyArrowBackend` (both use the `_S3Base._build_s3fs_kwargs()` builder).
+
+### S3-027: Directory-listing cache defaults off { #s3-027 }
+
+**Invariant:** `_build_s3fs_kwargs()` injects `use_listings_cache=False` as a default. Caller-supplied `client_options["use_listings_cache"]` takes precedence — the s3fs directory-listing cache is opt-in, not on by default.
+
+**Why:** s3fs caches directory listings in a `DirCache` that defaults to `listings_expiry_time=None`, so a listed directory is never re-fetched until `invalidate_cache()`. For a multi-writer `Store`, a write from a second instance is then **permanently invisible** to the first — breaking the "a listing shows what's there" model. The only benefit the cache buys is repeated-list latency when nothing writes in between; the fresh-list cost is one bounded round trip.
+
+**Rules:**
+- Absent any caller value, the kwargs handed to `s3fs.S3FileSystem` carry `use_listings_cache=False`.
+- A caller passing `client_options={"use_listings_cache": True}` (or `False`) keeps their value unchanged (`setdefault` semantics, matching `anon`).
+- Callers who want caching re-enable it via `client_options` or the `ext.cache` extension.
 
 **Scope:** Applies to both `S3Backend` and `S3PyArrowBackend` (both use the `_S3Base._build_s3fs_kwargs()` builder).
