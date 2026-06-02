@@ -336,9 +336,10 @@ and the highest ID already in this file, then take the next integer. Run
     § AsyncBackendSyncAdapter + `tests/aio/_doubles.py`), and ID-143
     (`AsyncBackendSyncAdapter` implementation + integration suite) — all landed.
   - Prerequisites (process/test, should land first): BK-237 (feature-DoD
-    checklists), BK-239 (generic field↔capability symmetry guard), and
-    BK-241 (`tests/aio/README.md` orientation) each name this backend as
-    the trigger they must precede — land them before starting implementation.
+    checklists) landed — see `sdd/000-process.md` § Feature-type Definition
+    of Done. BK-239 (generic field↔capability symmetry guard) and BK-241
+    (`tests/aio/README.md` orientation) each name this backend as the trigger
+    they must precede — land them before starting implementation.
   - **Bundled sub-task — `ResourceLocked` (ERR-013, ADR-0024):** Graph
     triggers the only need for this error class today. Three coupled
     pieces ship together with the backend, not separately: the
@@ -471,38 +472,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   the successor ticket is linked here; if promoted, `verify-tla` joins the
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
-
-- [ ] **BK-237 — Feature-type DoD checklists in `sdd/000-process.md`**
-  spec: — · effort: S · audience: contributor.process
-  Codify two complementary feature-DoD checklists in `sdd/000-process.md`,
-  derived from the v0.23.0→v0.24.0 post-release retrospective lessons:
-  - **Contract-expanding feature** (next: any new `Capability.X`): spec/RFC
-    update, capability-declaration review covering over- *and*
-    under-declaration, conformance test + xfail registry landed *before*
-    first backend implementation, wrapper forwarding check (`ProxyStore`,
-    `ObservedStore`, `CachedStore`, sync adapter, oracle adapter), docs
-    ripple (`guides/`, `examples/snippets/`, `FEATURES.md`, capabilities
-    matrix). The RFC scope must enumerate the conformance / PBT / Dafny
-    extensions the feature will need up front, rather than discovering
-    them as follow-ups (`feedback_estimation.md` 2-3x rule applied at RFC
-    time, not after the fact). ID-146 → ID-151c (eight sub-IDs over two
-    weeks for a single feature line) is the cautionary precedent.
-  - **Bridge / adapter feature** (next: any future cross-layer wrapper):
-    API parity test against wrapped layer, event-loop / resource lifecycle
-    test, cancellation invariant test, live backend coverage (not just
-    doubles), `filterwarnings = error` clean.
-  Closes the pattern-drift risk before ID-127 Graph backend repeats the
-  conformance-lag and doc-ripple issues from ID-146. Also surfaces the
-  audit-PR pattern (PR #465) as a recommended gate.
-
-- [ ] **BK-238 — Promote `filterwarnings = error` and audit-PR to feature-DoD**
-  spec: — · effort: S · audience: contributor.process
-  `filterwarnings = error` is enabled globally (PR #495, BK-158) and the
-  audit-PR pattern (PR #465) filed 6 pre-release bugs against unreleased
-  work. Both proved high-yield in the v0.23.0→v0.24.0 cycle. Codify each
-  as a checked step in the feature-DoD landed by BK-237 — no behavior
-  change, just process-documentation alignment. Folds into BK-237 if
-  both ship in the same PR.
 
 - [ ] **BK-239 — Generic field-vs-capability symmetry check for `WriteResult`**
   spec: — · effort: S · audience: infra.test

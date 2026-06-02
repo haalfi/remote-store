@@ -1,0 +1,72 @@
+id: BK-237
+title: "Feature-type DoD checklists in sdd/000-process.md"
+trigger: >-
+  The v0.23.0→v0.24.0 retrospective (parked under BK-208, split into
+  BK-237..BK-241) showed a single feature line (ID-146 → ID-151c) sprawling
+  into eight sub-IDs over two weeks because conformance, doc-ripple, and
+  scope-estimation work was discovered after the fact. No written feature-DoD
+  gate existed in sdd/000-process.md, and ID-127 (Graph backend) names BK-237
+  as a prerequisite it must precede.
+source_items:
+  - BK-237
+  - BK-238
+  - BK-208
+audience:
+  - contributor.process
+co_shipped_items:
+  - BK-238
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-237, BK-238"
+        read_type: gate
+        extract: "Two checklists to codify (contract-expanding + bridge/adapter); BK-238 folds in filterwarnings=error + audit-PR per 'same PR' note"
+      - file: sdd/BACKLOG.md
+        section: "ID-127 (Prerequisites)"
+        read_type: reference
+        extract: "BK-237 named as a prerequisite that must land before Graph-backend implementation starts"
+  - id: design
+    name: Locate placement and house style
+    steps:
+      - file: sdd/000-process.md
+        section: "Rules / Guides"
+        read_type: gate
+        extract: "Rule 6 feature workflow (SPEC→TEST→IMPLEMENT→VALIDATE→DOCS) is the order; new DoD section extends it under Guides, after Backlog, before Document types"
+      - file: CONTRIBUTING.md
+        section: "Release (Phase 0-5 checklists)"
+        read_type: reference
+        extract: "House checklist style: GitHub task-lists with bold lead-ins and inline-code references"
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options] filterwarnings"
+        read_type: reference
+        extract: "Confirm filterwarnings = error is the configured global policy to cite accurately in the bridge checklist"
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/000-process.md
+        section: "Feature-type Definition of Done"
+        read_type: gate
+        extract: "Add the two checklists; cite memory feedback_estimation.md (2-3x rule), ID-146 → ID-151c precedent, and the audit-PR pattern (PR #465) as named references rather than restated bodies"
+      - file: sdd/BACKLOG.md
+        section: "BK-237, BK-238, ID-127"
+        read_type: gate
+        extract: "Remove BK-237/BK-238 blocks; update ID-127 prerequisite line to record BK-237 landed"
+      - file: sdd/BACKLOG-DONE.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: "Add BK-237 (owner) and BK-238 (folded) as [x]; note no CHANGELOG (contributor.process, not user-facing)"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "Only BACKLOG.md references BK-237/BK-238 (ID-127 prereq, BK-238 fold note); both updated. No code/spec/CHANGELOG ripple for a docs-only contributor.process change"
+      - file: pyproject.toml
+        section: "hatch run lint / gen-backlogid"
+        read_type: verify
+        extract: "Lint + traceability + backlogid --check green after moving items to BACKLOG-DONE.md"

@@ -8,6 +8,38 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-237 — Feature-type DoD checklists in `sdd/000-process.md`**
+  spec: — · effort: S · audience: contributor.process
+  Added a **Feature-type Definition of Done** guide section to
+  `sdd/000-process.md` with two complementary checklists distilled from the
+  v0.23.0→v0.24.0 retrospective, so the next contract-expanding feature and
+  the next bridge/adapter wrapper follow a written gate instead of
+  rediscovering the ID-146 → ID-151c sprawl (eight sub-IDs over two weeks).
+  - **Contract-expanding feature** (trigger: new `Capability.X`, Store method,
+    or error class): spec/RFC update with conformance/PBT/Dafny extensions
+    enumerated up front (`feedback_estimation.md` 2-3× rule at RFC time),
+    capability over- *and* under-declaration review, conformance test + xfail
+    registry landed before the first backend, wrapper-forwarding check
+    (`ProxyStore`, `ObservedStore`, `CachedStore`, sync adapter, oracle
+    adapter), docs ripple (`docs-src/guides/`, `examples/snippets/`,
+    `FEATURES.md`, capabilities matrix), and the audit-PR gate.
+  - **Bridge / adapter feature** (trigger: any cross-layer wrapper): API-parity,
+    event-loop/lifecycle, and cancellation-invariant tests, live-backend
+    coverage, and a `filterwarnings = error`-clean suite.
+  - **Co-shipped BK-238** (Promote `filterwarnings = error` and audit-PR to
+    feature-DoD): the audit-PR pattern (PR #465) and the global
+    `filterwarnings = error` policy are now explicit checked steps in the two
+    checklists above, per BK-238's "folds into BK-237 if both ship in the same
+    PR." Docs-only, no behavior change; no CHANGELOG entry (contributor.process,
+    not a user-facing framework).
+  - Unblocks the BK-237 prerequisite gate ahead of ID-127 (Graph backend).
+
+- [x] **BK-238 — Promote `filterwarnings = error` and audit-PR to feature-DoD**
+  spec: — · effort: S · audience: contributor.process
+  Folded into **BK-237** (shipped same PR): both `filterwarnings = error` and
+  the audit-PR pattern (PR #465) are now checked steps in the Feature-type
+  Definition of Done in `sdd/000-process.md`. See the BK-237 entry above.
+
 - [x] **BK-234 — Reconcile `to_key` empty-key / bare-root behaviour across backends**
   spec: NPR-005, NPR-020, NPR-021 · effort: M · audience: library.maintainer
   Resolved **toward a universal round-trip** (option A): all rooted backends now
