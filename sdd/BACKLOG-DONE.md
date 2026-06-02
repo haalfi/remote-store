@@ -53,6 +53,33 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   per TESTING.md Rule 5. No behaviour change — tests + pragmas only; CHANGELOG
   skipped per infra.test (BK-223/BK-254 precedent).
 
+- [x] **BK-257 — Default the s3fs S3 lanes to `use_listings_cache=False`**
+  spec: S3-027, S3PA-027 · effort: M · audience: user.api
+  Implemented ID-201's disposition **(a)**: `_S3Base._build_s3fs_kwargs()` now
+  injects `use_listings_cache=False` via `opts.setdefault(...)` (the same idiom
+  as the `anon` default), so both s3fs lanes (`s3`, `s3-pyarrow`) get fresh
+  listings by default. s3fs's `DirCache` never expires
+  (`listings_expiry_time=None`), so a cached listing is permanently blind to a
+  cross-writer write — 100% silent staleness (ID-201). `setdefault` preserves
+  caller precedence: `client_options={"use_listings_cache": True}` re-enables
+  caching; `ext.cache` stays the portable, explicit-invalidation path.
+  - **Spec:** new atomic invariant **S3-027** in `008-s3-backend.md` with a
+    pointer from S3-021 (the listings default is a precedence rule in the
+    opposite direction — `client_options` overrides our injected default — so
+    it earns its own ID rather than a compound S3-021 postcondition).
+    `011-s3-pyarrow-backend.md` inherits it as **S3PA-027**.
+  - **Tests:** `test_options.py::TestListingsCacheDefault` pins the kwarg shape
+    (default-fresh + `client_options` override) for both backends;
+    `test_moto.py::TestListingsCacheStalenessMoto` is the wire-level regression
+    (cache-off reader sees a cross-instance write; opt-in cache reproduces the
+    stale read). The moto test must force `skip_instance_cache=True`: fsspec
+    caches `S3FileSystem` by kwargs, so two same-config backends would otherwise
+    share one `DirCache` and the writer's own write would invalidate the
+    reader's cache, masking the staleness the test exists to pin.
+  - **Docs / CHANGELOG:** new "Directory-listing cache (off by default)"
+    subsection in `guides/backends/s3.md`; `[Unreleased]` stub. Pre-v1 minor
+    behaviour change.
+
 - [x] **BK-255 — Trim cross-backend invariants re-asserted outside conformance**
   spec: — · effort: S · audience: infra.test
   Removed per-backend and root tests that re-assert a cross-backend invariant

@@ -39,6 +39,7 @@ This is a drop-in alternative to `S3Backend` with the same constructor signature
 | S3PA-023 Endpoint URL Normalization   | S3-025                                 |
 | S3PA-024 Default Credential Chain     | S3-022                                 |
 | S3PA-026 config_kwargs + RetryPolicy  | S3-026                                 |
+| S3PA-027 Listings cache defaults off  | S3-027                                 |
 
 Full-body deltas (unique to S3-PyArrow): **S3PA-002, S3PA-003, S3PA-006,
 S3PA-007, S3PA-012, S3PA-021**.
@@ -207,3 +208,7 @@ See [S3-022](008-s3-backend.md#s3-022-default-credential-chain).
 ### S3PA-026: config_kwargs is the only Config channel; client_kwargs['config'] is rejected
 
 See [S3-026](008-s3-backend.md#s3-026). Applies to the s3fs control path only; the PyArrow data path (`_pa_fs`) is unaffected.
+
+### S3PA-027: Directory-listing cache defaults off
+
+See [S3-027](008-s3-backend.md#s3-027). Listing runs through the s3fs control path (S3PA-017), so the off-by-default cache applies identically; the PyArrow data path (`_pa_fs`) is unaffected.

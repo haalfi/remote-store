@@ -486,3 +486,102 @@ class TestBug214MidStreamFailure:
         # ... and ``closed`` was set despite ``discard()`` raising, so ``__del__``
         # cannot re-commit.
         assert fake_file.closed is True
+
+
+@pytest.mark.spec("S3-027")
+@pytest.mark.spec("S3PA-027")
+class TestListingsCacheStalenessMoto:
+    """S3-027: with the cache off, a cross-instance write is visible on re-list.
+
+    The wire-level companion to ``test_options.py::TestListingsCacheDefault``
+    (which pins the kwarg shape). Two independent backend instances point at
+    the same bucket, each with its own s3fs ``S3FileSystem`` and therefore its
+    own ``DirCache``. The reader lists a prefix (priming its cache), a *second*
+    instance writes a new key under that prefix, and the reader lists again:
+
+    - default (cache off): the new key is visible — the staleness is gone.
+    - opt-in cache on: the reader stays blind to the write, reproducing the
+      pre-flip default. This is the regression contrast — same scenario, the
+      cache flag is the only difference.
+
+    s3fs-only (uses ``moto_bucket`` / ``S3Backend`` directly): listing is the
+    shared s3fs control path for both backends (S3PA-017), so the off-by-default
+    cache applies identically to ``s3-pyarrow`` — hence the ``S3PA-027`` mark —
+    and the s3-pyarrow data path cannot run on moto anyway (pyarrow >= 24 needs
+    MinIO; see the BUG-214 class).
+
+    ``skip_instance_cache=True`` is mandatory on every instance here:
+    ``fsspec`` caches ``S3FileSystem`` instances by their kwargs, so two
+    identically-configured backends in one process would otherwise share a
+    single filesystem object (and its ``DirCache``) — the writer's own write
+    would invalidate the cache the reader reads, hiding the staleness this test
+    exists to pin. Forcing distinct instances reproduces the real two-process
+    scenario ID-201 measured, leaving ``use_listings_cache`` as the only
+    variable between the two cases.
+    """
+
+    def _make_backend(self, endpoint: str, bucket: str, **client_options: Any):  # noqa: ANN202
+        from remote_store.backends._s3 import S3Backend
+
+        # skip_instance_cache: see class docstring — distinct fsspec instances
+        # are required to reproduce cross-process staleness in one test process.
+        return S3Backend(
+            bucket=bucket,
+            endpoint_url=endpoint,
+            key="testing",
+            secret="testing",
+            region_name="us-east-1",
+            client_options={"skip_instance_cache": True, **client_options},
+        )
+
+    def test_default_off_sees_cross_instance_write(self, moto_bucket: tuple[str, str]) -> None:
+        """Default (cache off): the reader sees a write made by another instance."""
+        endpoint, bucket = moto_bucket
+        prefix = f"stale-fresh/{uuid.uuid4().hex[:8]}"
+        sentinel = f"{prefix}/seed.txt"
+        fresh = f"{prefix}/added-later.txt"
+        reader = self._make_backend(endpoint, bucket)
+        writer = self._make_backend(endpoint, bucket)
+        try:
+            writer.write(sentinel, b"seed", overwrite=True)
+            # Prime the reader's listing for the prefix.
+            primed = {str(i.path) for i in reader.list_files(prefix)}
+            assert primed == {sentinel}
+
+            writer.write(fresh, b"added", overwrite=True)
+
+            after = {str(i.path) for i in reader.list_files(prefix)}
+            assert after == {sentinel, fresh}, "cache-off reader must see the cross-instance write"
+        finally:
+            writer.delete(sentinel, missing_ok=True)
+            writer.delete(fresh, missing_ok=True)
+            reader.close()
+            writer.close()
+
+    def test_opt_in_cache_reproduces_staleness(self, moto_bucket: tuple[str, str]) -> None:
+        """Opt-in cache on (the pre-flip default): the reader stays stale.
+
+        Pins the regression contrast: re-enabling the cache via
+        ``client_options`` reproduces the permanently-stale listing the flip
+        was made to avoid.
+        """
+        endpoint, bucket = moto_bucket
+        prefix = f"stale-cached/{uuid.uuid4().hex[:8]}"
+        sentinel = f"{prefix}/seed.txt"
+        fresh = f"{prefix}/added-later.txt"
+        reader = self._make_backend(endpoint, bucket, use_listings_cache=True)
+        writer = self._make_backend(endpoint, bucket)
+        try:
+            writer.write(sentinel, b"seed", overwrite=True)
+            primed = {str(i.path) for i in reader.list_files(prefix)}
+            assert primed == {sentinel}
+
+            writer.write(fresh, b"added", overwrite=True)
+
+            after = {str(i.path) for i in reader.list_files(prefix)}
+            assert after == {sentinel}, "cache-on reader is permanently blind to the cross-instance write"
+        finally:
+            writer.delete(sentinel, missing_ok=True)
+            writer.delete(fresh, missing_ok=True)
+            reader.close()
+            writer.close()

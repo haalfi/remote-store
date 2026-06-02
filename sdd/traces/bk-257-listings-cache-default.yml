@@ -1,0 +1,96 @@
+id: BK-257
+title: "Default the s3fs S3 lanes to use_listings_cache=False"
+trigger: "ID-201's spike chose disposition (a): the s3fs directory-listing cache is 100% stale across writers and permanently so (listings_expiry_time=None), while its only benefit is repeated-list latency when nothing writes in between. Make fresh listings the default for both s3fs lanes (s3, s3-pyarrow); keep the cache opt-in via client_options / ext.cache."
+source_items:
+  - BK-257
+  - ID-201
+# user.api leads (a runtime behaviour change visible to callers) -> CHANGELOG
+# required and written. library.maintainer + contributor.process cover the new
+# S3-027 invariant; infra.test covers the unit + moto regression tests.
+audience:
+  - user.api
+  - library.maintainer
+  - contributor.process
+  - infra.test
+# sdd/backlogid.json did NOT ripple in the merged commit. It briefly looked like
+# it would (pre-rebase the DONE-max was 255, so BK-257 bumped it to 257), but the
+# pre-PR rebase landed BK-258 (#736) first, raising DONE-max to 258. BK-257 <= 258
+# then makes gen_backlogid a no-op (gotcha_backlogid_json_max_only) and the rebase
+# dropped the file from this commit — a rebase-residue reversal worth recording.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-257"
+        read_type: gate
+        extract: "Scope: default use_listings_cache=False in _build_s3fs_kwargs only when the caller did not set it via client_options (precedence test); applies to both _S3Base subclasses; docs + CHANGELOG + staleness regression test required"
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-201"
+        read_type: reference
+        extract: "Measurements + rationale for (a): 100% silent cross-instance staleness (25/25 moto+MinIO) vs one bounded-RTT fresh list; cache-wanters opt in via client_options / ext.cache"
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_build_s3fs_kwargs"
+        read_type: gate
+        extract: "opts is a deepcopy of client_options; opts.setdefault('anon', False) is the existing default-injection idiom, so opts.setdefault('use_listings_cache', False) gives exact caller precedence for free"
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/008-s3-backend.md
+        section: "S3-021, S3-026"
+        read_type: gate
+        extract: "S3-021 governs client_options passthrough/precedence (explicit params > client_options). The listings-cache default is a precedence rule in the OPPOSITE direction (client_options > our injected default) -> separate atomic invariant S3-027, with a pointer from S3-021, rather than a compound second postcondition (Dafny conciseness/uniqueness lesson)"
+      - file: sdd/specs/011-s3-pyarrow-backend.md
+        section: "Inherited-invariant table, S3PA-026 stub"
+        read_type: reference
+        extract: "Inherited S3PA IDs carry a table row plus a short See-S3-NNN body stub; add S3PA-027 -> S3-027 the same way (listing is the s3fs control path per S3PA-017, so the cache default applies identically)"
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/backends/s3/test_options.py
+        section: "TestConfigKwargsRetryCollision"
+        read_type: reference
+        extract: "Reuse the dual-backend parametrize + patch('s3fs.S3FileSystem') / mock_cls.call_args.kwargs idiom for the kwarg-shape tests; mark new tests spec('S3-027') / spec('S3PA-027')"
+      - file: tests/backends/s3/test_moto.py
+        section: "moto_bucket fixture, TestBug214MidStreamFailure"
+        read_type: reference
+        extract: "Wire-level moto pattern for the staleness regression; s3fs-only via moto_bucket/S3Backend (pyarrow data path can't run on moto), carrying both S3-027 and S3PA-027 marks since listing is shared control-path s3fs"
+      - file: tests/backends/s3/test_moto.py
+        section: "TestListingsCacheStalenessMoto (new)"
+        read_type: verify
+        extract: "First cut of the default-off staleness test PASSED pre-fix for the wrong reason: fsspec caches S3FileSystem by kwargs, so two same-config backends shared one instance and the writer's own write invalidated the shared DirCache. Fixed by forcing skip_instance_cache=True on every instance, isolating use_listings_cache as the only variable; then default-off failed pre-fix as required"
+        outcome: misleading
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_build_s3fs_kwargs (use_listings_cache setdefault)"
+        read_type: gate
+        extract: "One line: opts.setdefault('use_listings_cache', False) alongside the anon default. Verification gotcha: the .venv editable install resolves remote_store from the MAIN repo src, so worktree edits are only exercised by prepending the worktree src via PYTHONPATH (generalises gotcha_hatch_worktree_config to pytest imports)"
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/guides/backends/s3.md
+        section: "Listing Strategies and Performance / Directory-listing cache (off by default)"
+        read_type: reference
+        extract: "New subsection: the new default, why (permanent cross-writer staleness), how to re-enable (client_options use_listings_cache=True), ext.cache as the portable alternative"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: reference
+        extract: "User-facing pre-v1 minor behaviour change entry for BK-257"
+  - id: verify
+    name: Verify and dispose
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Spec section, Bug fix"
+        read_type: verify
+        extract: "Bounded ripple: spec + tests + behaviour/docs/CHANGELOG; no __all__ / _registry / FEATURES / capability-matrix / graph touch since the public signature (client_options) is unchanged"
+      - file: sdd/traces/_schema.yml
+        section: "audience (derived CHANGELOG rule)"
+        read_type: verify
+        extract: "user.api leads -> CHANGELOG required; confirms the entry is mandatory not optional"
+      - file: sdd/BACKLOG.md
+        section: "Completing work"
+        read_type: gate
+        extract: "Fully-done item -> delete from BACKLOG, add to BACKLOG-DONE as [x] in the same commit"
