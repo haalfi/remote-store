@@ -8,6 +8,47 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BK-255 — Trim cross-backend invariants re-asserted outside conformance**
+  spec: — · effort: S · audience: infra.test
+  Removed per-backend and root tests that re-assert a cross-backend invariant
+  conformance already parametrises over the fixture registry, gated on
+  zero coverage loss (BK-014 style: `_memory`/`_local`/`_azure`/`_store`
+  term-missing identical before and after, captured with Azurite up so the
+  Azure deletion's counterpart actually executed). Net **−126 lines**.
+  - **Deleted (fully redundant):** the five
+    `tests/backends/memory/test_coverage.py::TestMemoryListingCorrectness`
+    listing tests (kept MEM-025 deadlock + BK-006 open_atomic);
+    `tests/backends/azure/test_config.py::TestAzureIntegration::test_list_files_max_depth`
+    (Azurite); `tests/test_store.py::TestListFilesDepthFilter::test_depth_filter_trims_files_beyond_max_depth`.
+  - **Trimmed to the named slivers:** `TestMemoryWriteResult` → the
+    `source == "native"` pin; `TestMemoryCopyMetadataRoundTrip` → the two
+    `list_files`-projection metadata tests; `TestMemoryBackendNativeDepth` /
+    `TestLocalBackendNativeDepth` → `test_max_depth_without_recursive`
+    (recursive=False ignores max_depth, not in conformance);
+    `TestStoreOpenAtomicMemory` → the empty-path `InvalidPath` sliver.
+  - **Regression breadcrumbs preserved.** Conformance markers may cite only
+    real spec IDs (`scripts/check_formal_trace.py` F2), so the BK-123
+    (memory lock-reduction) and the deleted Azure test's BUG-155 breadcrumbs
+    moved to conformance **docstrings**, not markers. Deleting the only test
+    citing STORE-012 and SAW-012 would have orphaned two declared specs
+    (`check_spec_marks` zero-tolerance), so those **real** marks relocated:
+    STORE-012 onto `test_depth_listing.py`'s child-store path test (the
+    round-trip-path invariant it genuinely exercises) and SAW-012 onto
+    conformance `test_open_atomic_creates_file` (memory buffer-then-commit).
+  - **Doc ripple.** Repointed the stale "owned by …
+    azure/test_config.py::test_list_files_max_depth" back-reference in
+    `tests/test_depth_listing.py` and the "owns the Azure behavioural
+    invariant" claim in `tests/backends/azure/test_depth_listing.py` at the
+    conformance owner. The backlog also named `tests/backends/s3/test_depth_listing.py`,
+    but that file already pointed at the conformance owner — no Azure
+    back-reference to fix. The backlog's "BUG-201" was a mislabel: the
+    deleted Azure test's breadcrumb is BUG-155 (BUG-201 is the unrelated
+    self-op short-circuit).
+  - **Out of scope (BK-256).** The deletion leaves the misfiled
+    `test_write_text_roundtrip` alone in `TestListFilesDepthFilter`; BK-256
+    owns relocating it (left in place, flagged in a class docstring).
+  CHANGELOG skipped per infra.test (BK-223 precedent).
+
 - [x] **BK-254 — Store-level failure-path coverage for delegated raises**
   spec: STORE-004, STORE-008 · effort: S · audience: infra.test
   Several documented `Store` raises were verified only against the raw

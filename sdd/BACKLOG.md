@@ -638,47 +638,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   is per-name; ordering or grouping in the Dafny enum is out of
   scope.
 
-- [ ] **BK-255 — Trim cross-backend invariants re-asserted outside conformance**
-  spec: — · effort: S · audience: infra.test
-  Conformance auto-parametrises every cross-backend invariant over the full
-  fixture registry; several per-backend and root tests re-assert the same
-  invariant on a backend that already has a conformance fixture (memory,
-  local, azurite). Gate every deletion on zero coverage loss (TESTING.md
-  Rule 7 / BK-014 precedent). Address the partial redundancies too, but
-  carefully — preserve the listed slivers.
-  - **Fully redundant (delete):**
-    - `tests/backends/memory/test_coverage.py::TestMemoryListingCorrectness`
-      listing tests (`test_list_files_non_recursive` / `_recursive` /
-      `test_list_folders` / `test_iter_children_mixed` /
-      `test_list_files_empty_dir`) — covered by `conformance/test_listing.py`
-      on the memory fixture. **Keep** `test_concurrent_write_and_listing_no_deadlock`
-      (MEM-025).
-    - `tests/backends/azure/test_config.py::TestAzureIntegration::test_list_files_max_depth`
-      (Azurite) — covered by `conformance/test_listing.py::TestListFilesCompleteness::test_list_files_recursive_max_depth`.
-    - `tests/test_store.py::TestListFilesDepthFilter::test_depth_filter_trims_files_beyond_max_depth`
-      — covered by `test_depth_listing.py::TestListFilesMaxDepth`.
-  - **Partial (trim, keep the sliver):**
-    - `tests/backends/memory/test_coverage.py::TestMemoryWriteResult` /
-      `TestMemoryCopyMetadataRoundTrip` — keep the `source == "native"` pin
-      and the list-projection slivers; drop the WR-001 / 003 / 012 / 013
-      duplicates.
-    - `tests/test_depth_listing.py::TestMemoryBackendNativeDepth` /
-      `TestLocalBackendNativeDepth` — keep `test_max_depth_without_recursive`
-      (recursive=False ignores max_depth, not in conformance); drop the rest.
-    - `tests/test_open_atomic.py::TestStoreOpenAtomicMemory` success /
-      exception / exists trio — keep the Local os_sensitive cases and
-      `TestObserveOpenAtomic`.
-  - **Marker relocation (same PR):** move the `BK-123` / `BUG-201` regression
-    `spec` markers onto the conformance test that now owns the invariant so
-    the regression breadcrumb is not lost.
-  - **Doc ripple (same PR, ship-complete):** the "owned by …
-    azure/test_config.py::test_list_files_max_depth" back-references in
-    `tests/test_depth_listing.py` and `tests/backends/s3/test_depth_listing.py`,
-    and the stale "owns the Azure behavioural invariant" claim in
-    `tests/backends/azure/test_depth_listing.py`, go wrong once the Azurite
-    depth test is removed — repoint them at the conformance owner.
-  Surfaced in the test-suite redundancy review.
-
 - [ ] **BK-256 — Test hygiene: real restricted backend + misfiled test**
   spec: — · effort: S · audience: infra.test
   Two cleanups from the test-suite review, independent of BK-255's deletions:

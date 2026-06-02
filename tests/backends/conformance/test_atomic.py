@@ -110,6 +110,7 @@ class TestBackendOpenAtomic:
     @pytest.mark.spec("SAW-003")
     @pytest.mark.spec("SQL-BLOB-023")
     @pytest.mark.spec("SAW-010")
+    @pytest.mark.spec("SAW-012")
     def test_open_atomic_creates_file(self, backend: Backend) -> None:
         # SAW-010: for the S3 / S3-PyArrow fixtures this drives the
         # SpooledTemporaryFile-buffer-then-PUT streaming-atomic mechanism end to

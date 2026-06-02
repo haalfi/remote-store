@@ -109,38 +109,16 @@ class TestStoreOpenAtomicLocal:
 
 
 class TestStoreOpenAtomicMemory:
-    """SAW-012: MemoryBackend open_atomic()."""
+    """SAW-012: MemoryBackend open_atomic() Store-level empty-path rejection.
 
-    @pytest.mark.spec("SAW-012")
-    def test_success_path(self, memory_store: Store) -> None:
-        with memory_store.open_atomic("out.txt") as f:
-            f.write(b"memory data")
-        assert memory_store.read_bytes("out.txt") == b"memory data"
-
-    @pytest.mark.spec("SAW-004")
-    def test_exception_path(self, memory_store: Store) -> None:
-        with pytest.raises(RuntimeError, match="boom"), memory_store.open_atomic("fail.txt") as f:  # noqa: PT012
-            f.write(b"partial")
-            raise RuntimeError("boom")
-        assert memory_store.exists("fail.txt") is False
-
-    @pytest.mark.spec("SAW-006")
-    @pytest.mark.parametrize(
-        ("overwrite", "expect_error"),
-        [
-            pytest.param(False, True, id="already_exists"),
-            pytest.param(True, False, id="overwrite"),
-        ],
-    )
-    def test_exists_handling(self, memory_store: Store, overwrite: bool, expect_error: bool) -> None:
-        memory_store.write("target.txt", b"old")
-        if expect_error:
-            with pytest.raises(AlreadyExists), memory_store.open_atomic("target.txt"):
-                pass
-        else:
-            with memory_store.open_atomic("target.txt", overwrite=True) as f:
-                f.write(b"new")
-            assert memory_store.read_bytes("target.txt") == b"new"
+    The success / exception-cleanup / exists-handling behaviour on the memory
+    fixture is owned by
+    ``tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic``
+    (registry-parametrised; MemoryBackend declares ATOMIC_WRITE), and the
+    Store-level delegation is exercised by ``TestStoreOpenAtomicLocal`` above.
+    The kept sliver is the empty-path InvalidPath check at the Store seam for
+    the in-memory backend.
+    """
 
     @pytest.mark.spec("SAW-007")
     def test_invalid_path_empty(self, memory_store: Store) -> None:

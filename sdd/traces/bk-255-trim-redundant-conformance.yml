@@ -1,0 +1,121 @@
+id: BK-255
+title: "Trim cross-backend invariants re-asserted outside conformance"
+trigger: |
+  Test-suite redundancy review found that conformance
+  (tests/backends/conformance/) auto-parametrises every cross-backend
+  invariant over the full fixture registry, so several per-backend and root
+  tests re-assert the SAME invariant on a backend that already has a
+  conformance fixture (memory, local, azurite): the memory listing-correctness
+  tests, the Azurite max_depth test, the Store depth-filter test, and the
+  per-backend native-depth / open_atomic / WriteResult duplicates. Each is a
+  candidate for deletion gated on zero coverage loss (TESTING.md Rule 7 /
+  BK-014 precedent).
+source_items:
+  - BK-255
+audience:
+  - infra.test
+discovery_followups: []
+co_shipped_items: []
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  - scripts/check_formal_trace.py
+  - scripts/check_spec_marks.py
+  - sdd/audits/audit-014-grandfathered-tests-allow-list.md
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-255"
+        read_type: gate
+        extract: "fully-redundant deletions + partial trims with named slivers; marker relocation; doc ripple; zero coverage loss gate; skip CHANGELOG (infra.test); BK-256 is a sibling (don't fold)"
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rule 7 (test economy); Test code economy (BK-014)"
+        read_type: gate
+        extract: "delete only after coverage-verified; maximize behavioural coverage per line; surviving tests still assert"
+        outcome: ok
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "fixture.memory, fixture.local, fixture.azurite"
+        read_type: gate
+        extract: "memory/local are Stage-1 (always run); azurite is Stage-2 (needs the emulator) — the azure deletion's conformance counterpart only executes with Azurite up"
+        outcome: ok
+      - file: src/remote_store/backends/_memory.py
+        section: "_ALL_CAPABILITIES"
+        read_type: reference
+        extract: "MemoryBackend declares all capabilities except GLOB/LAZY_READ, so every conformance subsumer (LIST, ATOMIC_WRITE, USER_METADATA, WRITE_RESULT_NATIVE) parametrises over the memory fixture"
+        outcome: ok
+      - file: tests/backends/conformance/test_listing.py
+        section: "TestBackendListing, TestBackendIterChildren, TestListFilesCompleteness"
+        read_type: reference
+        extract: "owns list_files/list_folders/iter_children + recursive max_depth over the registry — subsumes the memory listing tests and the Azurite max_depth test"
+        outcome: ok
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestBackendOpenAtomic, TestWriteResultConformance"
+        read_type: reference
+        extract: "open_atomic create/overwrite/already-exists/exception-cleanup + WriteResult field contract over the registry — subsumes the memory open_atomic trio and the WR-001/003/012/013 memory duplicates; source is checked only conditionally (the native pin is the sliver to keep)"
+        outcome: ok
+  - id: verify
+    name: Verify (coverage baseline)
+    steps:
+      - file: tests/backends/memory/test_coverage.py
+        section: "term-missing for _memory/_local/_azure/_store, Azurite up"
+        read_type: verify
+        extract: "BK-014 proof: captured Missing lines BEFORE deletions (_memory 100%, _store 473/980-981, stable _azure/_local sets); re-ran AFTER — identical, zero new uncovered lines"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/memory/test_coverage.py
+        section: "TestMemoryListingCorrectness, TestMemoryWriteResult, TestMemoryCopyMetadataRoundTrip"
+        read_type: reference
+        extract: "deleted the 5 listing tests (kept MEM-025 deadlock + BK-006 open_atomic); trimmed WriteResult to the source=='native' pin; kept the two list_files-projection metadata slivers"
+        outcome: ok
+      - file: tests/test_depth_listing.py
+        section: "TestMemoryBackendNativeDepth, TestLocalBackendNativeDepth"
+        read_type: reference
+        extract: "kept only test_max_depth_without_recursive (recursive=False ignores max_depth — not in conformance); repointed the stale azure back-reference at the conformance owner"
+        outcome: ok
+      - file: tests/test_open_atomic.py
+        section: "TestStoreOpenAtomicMemory"
+        read_type: reference
+        extract: "dropped the success/exception/exists trio (conformance + TestStoreOpenAtomicLocal cover it); kept the empty-path InvalidPath sliver"
+        outcome: ok
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureIntegration.test_list_files_max_depth"
+        read_type: reference
+        extract: "deleted; conformance test_list_files_recursive_max_depth runs on the Azurite fixture (verified executing, not skipped, with the emulator up)"
+        outcome: ok
+      - file: tests/test_store.py
+        section: "TestListFilesDepthFilter"
+        read_type: reference
+        extract: "deleted test_depth_filter_trims_files_beyond_max_depth; left the misfiled test_write_text_roundtrip in place per the BK-256 coordination note, flagging the oddly-shaped class for BK-256"
+        outcome: ok
+  - id: fix
+    name: Fix (regression-breadcrumb ripples)
+    steps:
+      - file: scripts/check_formal_trace.py
+        section: "F2 conformance-cites-unknown-spec"
+        read_type: verify
+        extract: "SURPRISE: relocating BK-123 / BUG-155 as @pytest.mark.spec onto conformance tests tripped F2 — conformance markers may only cite real spec IDs (unlike check_spec_marks, which exempts backlog provenance). Moved the breadcrumbs to conformance docstrings instead"
+        outcome: misleading
+      - file: scripts/check_spec_marks.py
+        section: "drift (shipped-spec-id-unmarked)"
+        read_type: verify
+        extract: "SURPRISE: deleting the only test citing STORE-012 and SAW-012 orphaned two declared specs (zero-tolerance gate). Relocated STORE-012 onto test_depth_listing's child-store path test (round-trip invariant) and SAW-012 onto conformance test_open_atomic_creates_file (memory buffer-then-commit)"
+        outcome: misleading
+  - id: ripple
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / infra.test change"
+        read_type: verify
+        extract: "BACKLOG->BACKLOG-DONE same commit; trace shipped same PR; CHANGELOG skipped (infra.test, BK-223 precedent); net line reduction (-126); both spec-mark gates green"
+        outcome: ok
+      - file: sdd/audits/audit-014-grandfathered-tests-allow-list.md
+        section: "tests/test_depth_listing.py disposition / Shipped (BK-218) item (b)"
+        read_type: verify
+        extract: "review round 1 caught a missed ripple: the BK-218 'Shipped' record still named the deleted azure test_list_files_max_depth as the live Azure DEPTH-003 carrier. Added a BK-255 forward-pointer annotation (audit docs are annotated not rewritten — audit-015 'Superseded by' precedent); left the BACKLOG-DONE BK-218 ledger entry as append-only history superseded by the BK-255 done-entry"
+        outcome: ok

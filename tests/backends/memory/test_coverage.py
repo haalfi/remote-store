@@ -8,7 +8,6 @@ import io
 import pytest
 
 from remote_store._errors import DirectoryNotEmpty, InvalidPath, NotFound
-from remote_store._models import WriteResult
 from remote_store.backends._memory import MemoryBackend
 
 
@@ -223,48 +222,16 @@ def test_move_source_parent_is_file(mb: MemoryBackend) -> None:
 
 
 class TestMemoryListingCorrectness:
-    """BK-123 M-3/M-4/M-5: listing methods return correct results after refactor."""
+    """BK-123 M-3/M-4/M-5: listing concurrency invariant after lock-reduction refactor.
 
-    @pytest.mark.spec("BK-123")
-    def test_list_files_non_recursive(self, mb: MemoryBackend) -> None:
-        mb.write("top.txt", b"t")
-        mb.write("sub/nested.txt", b"n")
-        files = list(mb.list_files(""))
-        names = {f.name for f in files}
-        assert names == {"top.txt"}
-
-    @pytest.mark.spec("BK-123")
-    def test_list_files_recursive(self, mb: MemoryBackend) -> None:
-        mb.write("a/1.txt", b"one")
-        mb.write("a/b/2.txt", b"two")
-        mb.write("a/b/c/3.txt", b"three")
-        files = list(mb.list_files("a", recursive=True))
-        names = {f.name for f in files}
-        assert names == {"1.txt", "2.txt", "3.txt"}
-
-    @pytest.mark.spec("BK-123")
-    def test_list_folders(self, mb: MemoryBackend) -> None:
-        mb.write("d1/a.txt", b"a")
-        mb.write("d2/b.txt", b"b")
-        mb.write("root.txt", b"r")
-        folders = list(mb.list_folders(""))
-        names = {f.name for f in folders}
-        assert names == {"d1", "d2"}
-
-    @pytest.mark.spec("BK-123")
-    def test_iter_children_mixed(self, mb: MemoryBackend) -> None:
-        mb.write("file.txt", b"f")
-        mb.write("dir/child.txt", b"c")
-        children = list(mb.iter_children(""))
-        names = {c.name for c in children}
-        assert names == {"file.txt", "dir"}
-        assert len(children) == 2
-
-    @pytest.mark.spec("BK-123")
-    def test_list_files_empty_dir(self, mb: MemoryBackend) -> None:
-        """Listing a non-existent path yields nothing (no error)."""
-        files = list(mb.list_files("nonexistent"))
-        assert files == []
+    The per-method listing-result correctness (``list_files`` non-recursive /
+    recursive, ``list_folders``, ``iter_children``, missing-path-yields-empty)
+    is owned by ``tests/backends/conformance/test_listing.py``, which carries
+    the BK-123 provenance marker and runs against the memory fixture. What is
+    *not* in conformance is the concurrent-write-and-list deadlock guard
+    (MEM-025) below, the BK-123 lock-reduction refactor's load-bearing
+    invariant.
+    """
 
     @pytest.mark.spec("BK-006")
     def test_open_atomic_empty_path_raises_invalid_path(self, mb: MemoryBackend) -> None:
@@ -424,63 +391,35 @@ class TestMemoryReadConcurrency:
 
 
 class TestMemoryWriteResult:
-    """MemoryBackend.write/write_atomic return a valid WriteResult (source='native')."""
+    """MemoryBackend pins ``source == 'native'`` on its WriteResult.
 
-    @pytest.mark.spec("WR-001")
+    The cross-backend WriteResult field contract (isinstance, path, size,
+    streaming size, metadata echo, metadata round-trip) is owned by
+    ``tests/backends/conformance/test_atomic.py::TestWriteResultConformance``,
+    parametrised over the registry (memory included). That suite checks
+    ``source`` only *conditionally* on ``WRITE_RESULT_NATIVE``; this sliver
+    keeps the backend-specific hard pin that MemoryBackend declares the
+    capability and therefore reports ``source == 'native'`` on both write
+    paths.
+    """
+
     @pytest.mark.spec("WR-004")
-    def test_write_returns_write_result(self, mb: MemoryBackend) -> None:
-        from remote_store._path import RemotePath
-
-        result = mb.write("f.txt", b"hello")
-        assert isinstance(result, WriteResult)
+    @pytest.mark.parametrize("op", ["write", "write_atomic"])
+    def test_source_is_native(self, mb: MemoryBackend, op: str) -> None:
+        result = getattr(mb, op)("f.txt", b"data")
         assert result.source == "native"
-        assert result.path == RemotePath("f.txt")
-        assert result.size == 5
-
-    @pytest.mark.spec("WR-003")
-    @pytest.mark.parametrize(("payload", "expected_size"), [(b"hello world", 11), (b"", 0)])
-    def test_write_size(self, mb: MemoryBackend, payload: bytes, expected_size: int) -> None:
-        result = mb.write("f.txt", payload)
-        assert result.size == expected_size
-
-    @pytest.mark.spec("WR-003")
-    @pytest.mark.parametrize(("payload", "expected_size"), [(b"streamed", 8), (b"", 0)])
-    def test_write_binaryio_size(self, mb: MemoryBackend, payload: bytes, expected_size: int) -> None:
-        import io
-
-        result = mb.write("f.txt", io.BytesIO(payload))
-        assert result.size == expected_size
-
-    @pytest.mark.spec("WR-001")
-    def test_write_atomic_returns_write_result(self, mb: MemoryBackend) -> None:
-        from remote_store._path import RemotePath
-
-        result = mb.write_atomic("f.txt", b"data")
-        assert isinstance(result, WriteResult)
-        assert result.source == "native"
-        assert result.path == RemotePath("f.txt")
-        assert result.size == 4
-
-    @pytest.mark.spec("WR-012")
-    def test_write_metadata_echoed(self, mb: MemoryBackend) -> None:
-        result = mb.write("f.txt", b"x", metadata={"env": "test"})
-        assert result.metadata == {"env": "test"}
-
-    @pytest.mark.spec("WR-013")
-    def test_write_metadata_survives_roundtrip(self, mb: MemoryBackend) -> None:
-        mb.write("f.txt", b"x", metadata={"k": "v"})
-        info = mb.get_file_info("f.txt")
-        assert info.metadata == {"k": "v"}
 
 
 class TestMemoryCopyMetadataRoundTrip:
-    """BK-192 / BE-019 / WR-013: copy() preserves user metadata on the destination."""
+    """BK-192 / BE-019 / WR-013: copy() metadata visible via the list_files projection.
 
-    @pytest.mark.spec("BE-019", "WR-013")
-    def test_copy_preserves_metadata_via_get_file_info(self, mb: MemoryBackend) -> None:
-        mb.write("src.txt", b"x", metadata={"k": "v"})
-        mb.copy("src.txt", "dst.txt")
-        assert mb.get_file_info("dst.txt").metadata == {"k": "v"}
+    The get_file_info round-trip after copy is owned by
+    ``test_atomic.py::TestWriteResultConformance::test_metadata_round_trips_through_move_copy``
+    (registry-parametrised, memory included). What conformance does *not*
+    assert is that the copied metadata also surfaces through the
+    ``list_files`` FileInfo projection (non-recursive and recursive) — the
+    slivers kept here.
+    """
 
     @pytest.mark.spec("BE-019", "WR-013")
     def test_copy_preserves_metadata_via_list_files_non_recursive(self, mb: MemoryBackend) -> None:

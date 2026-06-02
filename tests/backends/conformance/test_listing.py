@@ -22,7 +22,13 @@ if TYPE_CHECKING:
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.LIST, Capability.WRITE), indirect=True)
 class TestBackendListing:
-    """BE-014 through BE-015: listing operations."""
+    """BE-014 through BE-015: listing operations.
+
+    Regression home for BK-123 (memory lock-reduction refactor): the
+    per-method listing-result correctness that ``tests/backends/memory/
+    test_coverage.py`` formerly re-asserted on the memory backend is the
+    cross-backend invariant exercised here over the full fixture registry.
+    """
 
     @pytest.mark.spec("BE-014")
     @pytest.mark.parametrize(
@@ -69,7 +75,13 @@ class TestBackendListing:
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.LIST), indirect=True)
 class TestBackendIterChildren:
-    """ITER-004, ITER-005: iter_children() combined file and folder listing."""
+    """ITER-004, ITER-005: iter_children() combined file and folder listing.
+
+    Regression home for BK-123 (memory lock-reduction refactor): the
+    mixed file/folder ``iter_children`` correctness formerly re-asserted on
+    the memory backend in ``tests/backends/memory/test_coverage.py`` is the
+    cross-backend invariant exercised here over the full fixture registry.
+    """
 
     @pytest.mark.spec("ITER-004")
     @pytest.mark.spec("BE-026")
@@ -209,7 +221,10 @@ class TestListFilesCompleteness:
         This is the cross-protocol DEPTH-003 invariant: the depth cutoff
         yields identical results whether a backend prunes natively or the
         Store filters client-side. Auto-parametrised over the full fixture
-        registry by tests/backends/conformance/conftest.py.
+        registry by tests/backends/conformance/conftest.py — including the
+        Azurite fixture, so this is the regression home for BUG-155 (Azure
+        ``list_files`` must honour ``max_depth``), formerly re-asserted in
+        ``tests/backends/azure/test_config.py::test_list_files_max_depth``.
 
         The depth-boundary assertion mirrors the Dafny postcondition at
         ``BackendContract.dfy`` lines 705-709 directly: every returned

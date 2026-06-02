@@ -1470,25 +1470,6 @@ class TestAzureIntegration:
         assert not isinstance(stream, io.BytesIO)
         stream.close()
 
-    @pytest.mark.spec("BE-021")
-    @pytest.mark.spec("DEPTH-003")
-    @pytest.mark.parametrize(
-        ("max_depth", "expected"),
-        [
-            pytest.param(0, {"a.txt"}, id="depth-0"),
-            pytest.param(1, {"a.txt", "b.txt"}, id="depth-1"),
-            pytest.param(None, {"a.txt", "b.txt", "c.txt"}, id="unlimited"),
-        ],
-    )
-    def test_list_files_max_depth(self, azure_backend: Backend, max_depth: int | None, expected: set[str]) -> None:
-        """BUG-155: list_files respects max_depth (DEPTH-003; Azure filters client-side, no native pruning)."""
-        azure_backend.write("md/a.txt", b"a")
-        azure_backend.write("md/sub/b.txt", b"b")
-        azure_backend.write("md/sub/deep/c.txt", b"c")
-        files = list(azure_backend.list_files("md", recursive=True, max_depth=max_depth))
-        names = {f.name for f in files}
-        assert names == expected
-
     @_needs_azurite
     def test_unwrap_filesystem_client(self, azure_backend: Backend) -> None:
         fs = azure_backend.unwrap(FileSystemClient)
