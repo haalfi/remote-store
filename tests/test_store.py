@@ -243,15 +243,12 @@ class TestStoreSamePathOps:
             getattr(store, op)("dir", "dir")
 
 
-# BK-254: documented Store raises that were verified only against the raw
-# Backend (tests/backends/conformance/test_errors.py), never through a Store.
-# Store is a thin delegator, so these pin the contract at the consumer surface;
-# the same-path move/copy edge cases live in TestStoreSamePathOps above, the
-# empty/"." path shape in tests/test_coverage_gaps.py::test_empty_path_rejected,
-# and read_text/read_seekable NotFound in TestStoreReadText / test_seekable.py.
-# Each case carries the backend-contract clause it surfaces (BE-* from
-# sdd/formal/BackendContract.dfy) alongside STORE-008 (the Store API surface),
-# mirroring TestStoreSamePathOps' dual STORE-008a/BE-* tagging.
+# BK-254: documented Store raises previously asserted only against the raw
+# Backend (conformance/test_errors.py), never through a Store. Store delegates
+# I/O unchanged (STORE-004), so these pin the same raises at the consumer
+# surface — distinct from the same-path (TestStoreSamePathOps) and empty/"."
+# (test_coverage_gaps.py) shapes already covered. Method-level STORE-004 /
+# STORE-008 applies to every case; each param adds the backend clause (BE-*).
 
 
 def _seed(store: Store, *paths: str) -> None:
@@ -395,15 +392,17 @@ _DELEGATED_RAISE_CASES = [
 
 
 class TestStoreDelegatedRaises:
-    """STORE-008: documented Store raises proven at the consumer surface (BK-254).
+    """STORE-004 / STORE-008: documented Store raises proven at the consumer surface (BK-254).
 
-    Store delegates each of these to the backend; the conformance suite already
-    pins the backend-contract postconditions (BE-*) on the raw Backend. These
-    cases prove the same raises survive the Store delegation path (path
-    validation, root prefixing, capability gating) for a real MemoryBackend.
+    Store delegates I/O to the backend unchanged (STORE-004); the conformance
+    suite already pins the backend-contract postconditions (BE-*) on the raw
+    Backend. These cases prove the same raises survive the Store delegation path
+    (path validation, root prefixing, capability gating) for a real
+    MemoryBackend. The Store-API marks (STORE-004, STORE-008) sit on the method
+    so they apply to all 15 cases; each param adds the BE-* clause it surfaces.
     """
 
-    @pytest.mark.spec("STORE-008")
+    @pytest.mark.spec("STORE-004", "STORE-008")
     @pytest.mark.parametrize(("seed", "call", "exc", "match"), _DELEGATED_RAISE_CASES)
     def test_delegated_raise(
         self,

@@ -22,10 +22,10 @@ phases:
         extract: "five raise-groups to pin through Store; one parametrized test; MemoryBackend substrate; skip CHANGELOG (infra.test)"
         outcome: ok
       - file: sdd/specs/001-store-api.md
-        section: "STORE-008, STORE-008a"
+        section: "STORE-004, STORE-008, STORE-008a"
         read_type: gate
-        extract: "STORE-008 = full API surface (umbrella spec id); STORE-008a already owns the same-path move/copy edge cases"
-        outcome: ok
+        extract: "STORE-004 (delegation) is the behavioural Store-API clause these raises prove; STORE-008 = full API surface; STORE-008a already owns the same-path move/copy edge cases"
+        outcome: unclear
       - file: src/remote_store/_store.py
         section: "move/copy (580-647), delete_folder (376-409), get_folder_info (706-771), read/read_bytes (75-113)"
         read_type: reference
@@ -70,7 +70,7 @@ phases:
       - file: tests/test_store.py
         section: "TestStoreDelegatedRaises, _DELEGATED_RAISE_CASES"
         read_type: reference
-        extract: "one parametrized (seed, call, exc, match) test; 15 cases; STORE-008 on the method, per-case BE-* via pytest.param marks"
+        extract: "one parametrized (seed, call, exc, match) test; 15 cases; method-level STORE-004 + STORE-008 (added in review), per-case BE-* via pytest.param marks"
         outcome: ok
   - id: verify
     name: Verify
@@ -80,3 +80,4 @@ phases:
         read_type: verify
         extract: "BACKLOG->BACKLOG-DONE same commit, trace shipped same PR, CHANGELOG skipped (infra.test, BK-223 precedent), gen-backlogid no-op (id <= DONE max)"
         outcome: ok
+review_rounds: 1
