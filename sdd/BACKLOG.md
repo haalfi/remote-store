@@ -162,9 +162,42 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   and a 393 ms recursive walk into ~1 ms (150–360x) — the precise cost of
   disabling it. (iii) For aggregate scans the boto3 lane's single flat
   `list_objects_v2` **beats** fresh s3fs's per-prefix walk, and real RTT
-  widens it: `get_folder_info` 83 vs 467 ms on AWS (5.6x). **Still needed
-  before (a)/(b)/(c):** #3 staleness frequency (write-then-list across two
-  `Store` instances) — the correctness side the latency numbers can't settle.
+  widens it: `get_folder_info` 83 vs 467 ms on AWS (5.6x).
+
+  **#3 staleness — 2026-06-02 (moto + MinIO, throwaway script).** A reader
+  primes a listing, a raw-boto3 writer (a second "process") adds an object
+  out-of-band, the reader re-lists. Stale = the new object is absent. 25
+  trials, identical on moto and MinIO (it is purely a client-cache property,
+  so backend-agnostic):
+
+  | reader | stale rate |
+  |---|---|
+  | `s3` cached (default) | **25/25 (100%)** |
+  | `s3` cached + `invalidate_cache()` | 0/25 |
+  | `s3-nocache` (`use_listings_cache=False`) | 0/25 |
+  | `s3-boto3` | 0/25 |
+
+  Read (#3): staleness with the default cache is **not probabilistic — it is
+  total and permanent**. s3fs's `DirCache` defaults to
+  `listings_expiry_time=None`, so once a directory is listed the entry never
+  expires; an out-of-band write is invisible until an explicit
+  `invalidate_cache()`. So a `Store`-shape workload with two writers on one
+  bucket gets a hard "lists never see each other's writes" guarantee, not an
+  occasional glitch.
+
+  **Recommendation (advisory; user picks, chosen path becomes a new BK-NNN):**
+  lean **(a)** — default `use_listings_cache=False`, expose a `client_options`
+  override to re-enable. Rationale across #1–#3: the cache's only benefit is
+  repeated-list latency (150–360x) *when nothing writes in between*; its cost
+  is 100% silent staleness across instances, which contradicts the citizen-dev
+  mental model ("a listing shows what's there") for a multi-writer Store. The
+  fresh-list price is bounded (one RTT per list; the boto3 lane already pays it
+  and is competitive-to-faster), and users who need cached listings can opt in
+  via `client_options` or the `ext.cache` layer. (b) keep-and-document leaves
+  the 100% trap armed for an audience that won't read the caveat; (c) a
+  `refresh()` API helps only callers who know to call it — same discoverability
+  gap as (b). All three measurement legs (#1/#2/#3) are now done; the item
+  awaits the user's (a)/(b)/(c) call.
 
 ---
 
