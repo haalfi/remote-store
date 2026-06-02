@@ -79,6 +79,16 @@ class Boto3RawTarget(BenchTarget):
                 files.append(obj["Key"])
         return files
 
+    def iter_children(self, prefix: str) -> list[str]:
+        """Immediate children (files + subfolders) via a single delimited walk."""
+        pfx = prefix.rstrip("/") + "/" if prefix else ""
+        paginator = self._client.get_paginator("list_objects_v2")
+        names: list[str] = []
+        for page in paginator.paginate(Bucket=self._bucket, Prefix=pfx, Delimiter="/"):
+            names.extend(cp["Prefix"] for cp in page.get("CommonPrefixes", []))
+            names.extend(obj["Key"] for obj in page.get("Contents", []))
+        return names
+
 
 class ParamikoRawTarget(BenchTarget):
     """Direct paramiko SFTP calls."""

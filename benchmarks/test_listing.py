@@ -39,6 +39,34 @@ class TestListPerformance:
 
 
 # ---------------------------------------------------------------------------
+# Comparative: iter_children (immediate files + subfolders)
+# ---------------------------------------------------------------------------
+
+
+class TestIterChildrenComparative:
+    """Comparative iter_children speed (bench_target).
+
+    Isolates the listing *mechanism*: the Store API's combined files+folders
+    walk vs. s3fs's single ``ls`` vs. boto3's delimited ``list_objects_v2``.
+    Only targets exposing ``iter_children`` participate (remote_store, boto3_raw,
+    s3fs); others skip. Populating happens after the skip guard so non-supporting
+    targets pay no setup.
+    """
+
+    def test_iter_children(self, bench_target: BenchTarget, benchmark: Any) -> None:
+        iter_children = getattr(bench_target, "iter_children", None)
+        if iter_children is None:
+            pytest.skip(f"{bench_target.label} has no iter_children")
+        directory = f"iterchild/{uuid.uuid4().hex[:8]}"
+        for i in range(25):
+            bench_target.write(f"{directory}/file_{i:04d}.txt", b"x")
+        for d in range(5):
+            bench_target.write(f"{directory}/sub_{d}/child.txt", b"x")
+        bench_target.invalidate_cache()
+        benchmark(iter_children, directory)
+
+
+# ---------------------------------------------------------------------------
 # Comparative: large listing (1000 files)
 # ---------------------------------------------------------------------------
 
@@ -208,6 +236,15 @@ class TestDirectoryScalePerformance:
             assert len(folders) == 5
 
         benchmark(_list)
+
+    def test_iter_children_at_root(self, bench_backend: Backend, benchmark: Any) -> None:
+        """Iterate the 25 immediate children (20 files + 5 subfolders) at root."""
+
+        def _iter() -> None:
+            children = list(bench_backend.iter_children(self._root))
+            assert len(children) == 25
+
+        benchmark(_iter)
 
     def test_exists_deep_path(self, bench_backend: Backend, benchmark: Any) -> None:
         """Check existence of a file at the deepest nesting level."""

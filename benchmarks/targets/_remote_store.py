@@ -35,6 +35,9 @@ class RemoteStoreTarget(BenchTarget):
     def list_files(self, prefix: str) -> list[str]:
         return [fi.path for fi in self._backend.list_files(prefix)]
 
+    def iter_children(self, prefix: str) -> list[str]:
+        return [str(c.path) for c in self._backend.iter_children(prefix)]
+
     def invalidate_cache(self) -> None:
         fs = getattr(self._backend, "_fs", None)
         if fs is not None and hasattr(fs, "invalidate_cache"):
