@@ -424,7 +424,6 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
     `Store.resolve()` ships and returns a `ResolutionPlan` (see BACKLOG-DONE.md).
     Remaining: at least two working backends to be useful; pairs well with
     ID-119 (landed) — so both conditions are already met.
-    Now unblocked; awaiting only its own spec/design.
   - Next: design as separate spec — backend-agnostic, useful independently
 
 - [ ] **ID-140 — SQLBlob lazy reads for SQLite & PostgreSQL**
