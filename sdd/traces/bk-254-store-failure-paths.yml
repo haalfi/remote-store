@@ -80,4 +80,4 @@ phases:
         read_type: verify
         extract: "BACKLOG->BACKLOG-DONE same commit, trace shipped same PR, CHANGELOG skipped (infra.test, BK-223 precedent), gen-backlogid no-op (id <= DONE max)"
         outcome: ok
-review_rounds: 1
+review_rounds: 2

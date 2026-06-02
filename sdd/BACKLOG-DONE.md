@@ -9,7 +9,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ## [Unreleased]
 
 - [x] **BK-254 — Store-level failure-path coverage for delegated raises**
-  spec: STORE-008 · effort: S · audience: infra.test
+  spec: STORE-004, STORE-008 · effort: S · audience: infra.test
   Several documented `Store` raises were verified only against the raw
   `Backend` in `tests/backends/conformance/test_errors.py`, never through a
   `Store`. Added one parametrized test
@@ -21,9 +21,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `read` / `read_bytes` `NotFound`; `get_file_info` `NotFound` and
   `get_folder_info` `NotFound` on the `max_depth=None` delegating branch;
   `InvalidPath`-on-directory for `read` / `read_bytes` / `delete` /
-  `get_file_info`. Each case carries `STORE-008` plus the backend-contract
-  clause it surfaces (`BE-006/007/012/013/016/017/018/019`), mirroring
-  `TestStoreSamePathOps`' dual tagging. No behaviour change — `Store` is a thin
+  `get_file_info`. Each case carries the Store-API marks `STORE-004` /
+  `STORE-008` (method-level) plus the backend-contract clause it surfaces
+  (`BE-006/007/012/013/016/017/018/019`), mirroring `TestStoreSamePathOps`'
+  dual Store-API/`BE-*` tagging. No behaviour change — `Store` is a thin
   delegator, so this is contract-proof, not new behaviour. CHANGELOG skipped
   per infra.test (BK-223 precedent).
 
