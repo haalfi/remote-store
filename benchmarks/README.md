@@ -37,6 +37,7 @@ hatch run bench-report-comparative
 |---------|---------------|-------------|---------|--------|
 | Local | - | LocalBackend | pathlib | fsspec.local |
 | S3 | MinIO :19100 | S3Backend | boto3 | s3fs |
+| S3 (no cache) | MinIO :19100 | S3Backend (`use_listings_cache=False`) | - | - |
 | S3-boto3 | MinIO :19100 | S3Boto3Backend | boto3 | - |
 | S3-PyArrow | MinIO :19100 | S3PyArrowBackend | - | - |
 | SFTP | OpenSSH :2222 | SFTPBackend | paramiko | sshfs |
@@ -133,6 +134,14 @@ Read listing/metadata numbers with the cache in mind: s3fs serves repeated
 can be stale), whereas the boto3 lane issues a fresh `list_objects_v2` every
 time (slower, always current). The benchmark surfaces that trade-off rather than
 a pure speed verdict.
+
+For a **cache-neutral** comparison, the `s3-nocache` lane is the s3fs
+`S3Backend` built with `client_options={"use_listings_cache": False}` (the
+ID-201 override): it issues a fresh listing every call, like the boto3 lane.
+So `--backend s3-nocache,s3-boto3` isolates the listing *mechanism* (s3fs/
+aiobotocore vs. boto3) with neither side cached, while `--backend s3,s3-nocache`
+shows what the dircache is worth. Note the raw `s3fs` comparative target is
+*not* cache-disabled — it represents s3fs as typically used.
 
 ## Speed Tiers
 

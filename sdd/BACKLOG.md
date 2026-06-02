@@ -125,6 +125,34 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   No code change in this item beyond throwaway measurement scripts;
   the chosen path becomes a new BK-NNN.
 
+  **Partial measurement — moto, 2026-06-02 (#1, #2 only).** Via the
+  `benchmarks/` `s3-nocache` lane (s3fs `S3Backend` with
+  `client_options={"use_listings_cache": False}`) vs cached `s3`, run with
+  `hatch run pytest benchmarks/test_listing.py benchmarks/test_metadata.py
+  --infra moto --backend s3,s3-nocache,s3-boto3`. moto is loopback HTTP, so
+  these are **library-overhead** figures (no real RTT), not the real-S3 grid.
+  Bench-suite sizes (50-file flat, 200-file hierarchy), not the 100/1 000/
+  10 000 grid yet. Mean ms, cache-on (`s3`) vs cache-off (`s3-nocache`),
+  boto3 lane for reference:
+
+  | op | `s3` (cache on) | `s3-nocache` (off) | `s3-boto3` |
+  |---|---|---|---|
+  | `list_files` (50) | 0.16 | 9.8 | 23.8 |
+  | `iter_children` | 0.11 | 6.9 | 20.8 |
+  | `list_files` non-recursive (200) | 0.09 | 6.8 | 20.9 |
+  | `list_files` recursive (200) | 1.1 | 70 | 174 |
+  | `get_folder_info` (large dir) | 0.8 | 79 | 50 |
+  | `get_file_info` / `exists` (HEAD) | 3.7 | 3.8 | 11–12 |
+
+  Interim read (moto only): the dircache is the whole listing story —
+  disabling it costs ~60–90x on a flat list in-process (0.1 → ~7 ms). Pure
+  HEAD ops (`get_file_info`, `exists`) are cache-independent. Cache-neutral,
+  s3fs still out-lists the boto3 lane ~2.4–3x, except `get_folder_info` on a
+  large dir, where boto3's pagination wins. **Not yet measured:** real-S3
+  latency at the 100/1 000/10 000 grid (where RTT dominates and compresses
+  these ratios) and #3 staleness frequency — both needed before choosing
+  (a)/(b)/(c).
+
 ---
 
 ## Lint / CI Completeness

@@ -357,6 +357,7 @@ _toxiproxy_skip = pytest.mark.skipif(not _toxiproxy_available(), reason="Toxipro
 
 _local_param = pytest.param("local", id="local")
 _s3_param = pytest.param("s3", id="s3-minio", marks=_s3_skip)
+_s3_nocache_param = pytest.param("s3-nocache", id="s3-nocache-minio", marks=_s3_skip)
 _s3_boto3_param = pytest.param("s3-boto3", id="s3-boto3-minio", marks=_boto3_skip)
 _s3_pyarrow_param = pytest.param("s3-pyarrow", id="s3-pyarrow-minio", marks=_pa_skip)
 _sftp_param = pytest.param("sftp", id="sftp-docker", marks=_sftp_skip)
@@ -516,6 +517,7 @@ def _s3_teardown(client: Any, bucket: str, owns_bucket: bool) -> None:
     params=[
         _local_param,
         _s3_param,
+        _s3_nocache_param,
         _s3_boto3_param,
         _s3_pyarrow_param,
         _sftp_param,
@@ -546,6 +548,19 @@ def bench_backend(request: pytest.FixtureRequest, moto_url: str | None) -> Itera
             pytest.skip("BENCH_S3_BUCKET not set for cloud mode")
         client, bucket, kw, owns = _s3_setup(infra, moto_url, tag, "s3")
         b = S3Backend(**kw)
+        yield b
+        b.close()
+        _s3_teardown(client, bucket, owns)
+
+    elif request.param == "s3-nocache":
+        # s3fs S3Backend with the directory-listing cache disabled (ID-201):
+        # fresh list_* every call, for an apples-to-apples compare vs s3-boto3.
+        from remote_store.backends._s3 import S3Backend
+
+        if cloud and not CLOUD_S3_BUCKET:
+            pytest.skip("BENCH_S3_BUCKET not set for cloud mode")
+        client, bucket, kw, owns = _s3_setup(infra, moto_url, tag, "s3nc")
+        b = S3Backend(**kw, client_options={"use_listings_cache": False})
         yield b
         b.close()
         _s3_teardown(client, bucket, owns)
@@ -773,6 +788,9 @@ def _build_target_params() -> list[Any]:
     params.append(pytest.param(("s3", "boto3_raw"), id="s3-boto3_raw", marks=_s3_skip))
     params.append(pytest.param(("s3", "s3fs"), id="s3-s3fs", marks=_s3_skip))
 
+    # S3 with the s3fs listing cache disabled (ID-201) -- fresh list_* every call.
+    params.append(pytest.param(("s3-nocache", "remote_store"), id="s3-nocache-remote_store", marks=_s3_skip))
+
     # S3-boto3 (boto3-direct lane via Store; head-to-head vs the s3fs `s3` lane)
     params.append(pytest.param(("s3-boto3", "remote_store"), id="s3-boto3-remote_store", marks=_boto3_skip))
     params.append(pytest.param(("s3-boto3", "boto3_raw"), id="s3-boto3-boto3_raw", marks=_boto3_skip))
@@ -882,16 +900,18 @@ def bench_target(request: pytest.FixtureRequest, moto_url: str | None) -> Iterat
 
                 yield LocalFsspecTarget(root=tmp)
 
-    elif backend_type in ("s3", "s3-boto3", "s3-pyarrow"):
+    elif backend_type in ("s3", "s3-nocache", "s3-boto3", "s3-pyarrow"):
         client, bucket, kw, owns = _s3_setup(infra, moto_url, tag, "tgt")
         # s3fs raw target wants endpoint/key/secret broken out (absent => cloud default creds).
         s3fs_kwargs = {k: kw[k] for k in ("endpoint_url", "key", "secret") if k in kw}
         try:
             if target_kind == "remote_store":
-                if backend_type == "s3":
+                if backend_type in ("s3", "s3-nocache"):
                     from remote_store.backends._s3 import S3Backend
 
-                    b: Backend = S3Backend(**kw)
+                    # s3-nocache disables the s3fs directory-listing cache (ID-201).
+                    extra = {"client_options": {"use_listings_cache": False}} if backend_type == "s3-nocache" else {}
+                    b: Backend = S3Backend(**kw, **extra)
                 elif backend_type == "s3-boto3":
                     from remote_store.backends._s3_boto3 import S3Boto3Backend
 
