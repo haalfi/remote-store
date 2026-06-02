@@ -100,104 +100,21 @@ three pains were surfaced as code-side flags in
 [research](research/research-backend-setup-guides.md) § 6 and carved
 out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
-- [ ] **ID-201 — Spike: default `S3Backend` to `use_listings_cache=False`?**
-  spec: — · effort: S · audience: user.api
-  `s3fs` keeps a directory-listing cache whose invalidation is
-  undocumented upstream (fsspec/filesystem_spec #324). For `Store`-shape
-  workloads this surfaces as stale `list_files` / `iter_children`
-  results after writes from another process. Spike whether disabling
-  the cache by default is the right trade.
-  Measure on a moto bucket and on a real S3 bucket if creds available:
-  (1) `list_files` latency with cache on vs off at 100 / 1 000 /
-      10 000 keys per prefix, hot vs cold;
-  (2) `iter_children` latency at the same sizes;
-  (3) frequency of stale results in a write-then-list loop across two
-      `Store` instances pointed at the same bucket.
-  Output one of three recommendations:
-  (a) flip default to `use_listings_cache=False`, document the perf
-      delta, expose a `client_options` override for users who need the
-      cache;
-  (b) keep current default, add a docs section in
-      `guides/backends/s3.md` explaining the cache and the override;
-  (c) expose a first-class `Store`-level `refresh()` / invalidation
-      API if the measurements show the cache is too valuable to drop
-      but staleness is too costly to leave silent.
-  No code change in this item beyond throwaway measurement scripts;
-  the chosen path becomes a new BK-NNN.
-
-  **Partial measurement — 2026-06-02 (#1, #2 done; #3 pending).** Via the
-  `benchmarks/` `s3-nocache` lane (s3fs `S3Backend` with
-  `client_options={"use_listings_cache": False}`) vs cached `s3` and the
-  `s3-boto3` lane, run across all three tiers with `--infra
-  moto|docker|cloud --backend s3,s3-nocache,s3-boto3` on
-  `test_listing.py`/`test_metadata.py`. Bench-suite sizes (50-file flat,
-  200-file hierarchy), not the 100/1 000/10 000 grid. Mean ms. moto is
-  loopback (library-overhead only); MinIO is a local socket; cloud is real
-  AWS (`RS_TEST_LIVE_S3=1`, ephemeral `rs-conformance-bench-*` buckets).
-
-  `s3-nocache` (cache off) vs cached `s3`, by tier:
-
-  | op | moto off / on | MinIO off / on | AWS off / on |
-  |---|---|---|---|
-  | `list_files` (50) | 9.8 / 0.16 | 4.6 / 0.16 | 38 / 0.26 |
-  | `iter_children` | 6.9 / 0.11 | 3.0 / 0.11 | 34 / 0.16 |
-  | `list_files` recursive (200) | 70 / 1.1 | 28 / 0.93 | 393 / 1.1 |
-  | `get_folder_info` (large) | 79 / 0.8 | 30 / 0.6 | 467 / 0.8 |
-
-  Fresh-vs-fresh, `s3-nocache` vs `s3-boto3` (cache removed from the picture):
-
-  | op | moto | MinIO | AWS |
-  |---|---|---|---|
-  | `list_files` (50) | 9.8 / 23.8 | 4.6 / 4.2 | 38 / 40 |
-  | `iter_children` | 6.9 / 20.8 | 3.0 / 2.9 | 34 / 36 |
-  | recursive (200) | 70 / 174 | 28 / 27 | 393 / 400 |
-  | `get_folder_info` (large) | 79 / 50 | 30 / 12.5 | 467 / 83 |
-  | `get_file_info`/`exists` | 3.8 / 11–12 | 1.4 / 1.3 | 27 / 27 |
-
-  Read (#1, #2): (i) the moto "s3fs is 2.4–3x faster" gap is a pure
-  library-CPU artifact — it vanishes on MinIO and on AWS the fresh lanes are
-  **at parity** for flat lists, recursive lists, and single-object metadata
-  (all RTT-bound, ~equal call counts). (ii) The s3fs **dircache is the only
-  real speed differentiator**: on AWS it turns a 38 ms flat list into 0.26 ms
-  and a 393 ms recursive walk into ~1 ms (150–360x) — the precise cost of
-  disabling it. (iii) For aggregate scans the boto3 lane's single flat
-  `list_objects_v2` **beats** fresh s3fs's per-prefix walk, and real RTT
-  widens it: `get_folder_info` 83 vs 467 ms on AWS (5.6x).
-
-  **#3 staleness — 2026-06-02 (moto + MinIO, throwaway script).** A reader
-  primes a listing, a raw-boto3 writer (a second "process") adds an object
-  out-of-band, the reader re-lists. Stale = the new object is absent. 25
-  trials, identical on moto and MinIO (it is purely a client-cache property,
-  so backend-agnostic):
-
-  | reader | stale rate |
-  |---|---|
-  | `s3` cached (default) | **25/25 (100%)** |
-  | `s3` cached + `invalidate_cache()` | 0/25 |
-  | `s3-nocache` (`use_listings_cache=False`) | 0/25 |
-  | `s3-boto3` | 0/25 |
-
-  Read (#3): staleness with the default cache is **not probabilistic — it is
-  total and permanent**. s3fs's `DirCache` defaults to
-  `listings_expiry_time=None`, so once a directory is listed the entry never
-  expires; an out-of-band write is invisible until an explicit
-  `invalidate_cache()`. So a `Store`-shape workload with two writers on one
-  bucket gets a hard "lists never see each other's writes" guarantee, not an
-  occasional glitch.
-
-  **Recommendation (advisory; user picks, chosen path becomes a new BK-NNN):**
-  lean **(a)** — default `use_listings_cache=False`, expose a `client_options`
-  override to re-enable. Rationale across #1–#3: the cache's only benefit is
-  repeated-list latency (150–360x) *when nothing writes in between*; its cost
-  is 100% silent staleness across instances, which contradicts the citizen-dev
-  mental model ("a listing shows what's there") for a multi-writer Store. The
-  fresh-list price is bounded (one RTT per list; the boto3 lane already pays it
-  and is competitive-to-faster), and users who need cached listings can opt in
-  via `client_options` or the `ext.cache` layer. (b) keep-and-document leaves
-  the 100% trap armed for an audience that won't read the caveat; (c) a
-  `refresh()` API helps only callers who know to call it — same discoverability
-  gap as (b). All three measurement legs (#1/#2/#3) are now done; the item
-  awaits the user's (a)/(b)/(c) call.
+- [ ] **BK-257 — Default the s3fs S3 lanes to `use_listings_cache=False`**
+  spec: — · effort: M · audience: user.api
+  ID-201's spike chose disposition **(a)**: the s3fs directory-listing cache
+  is 100% stale across writers and permanently so (no expiry), while its only
+  benefit is repeated-list latency *when nothing writes in between*. Make
+  fresh listings the default; keep the cache as an opt-in.
+  Measurements and rationale: ID-201 in [BACKLOG-DONE.md](BACKLOG-DONE.md).
+  - Default `use_listings_cache=False` in `_s3_base`'s s3fs-kwargs builder,
+    only when the caller did not set it via `client_options` (precedence test).
+  - Applies to both `s3` and `s3-pyarrow` (`_S3Base`); `ext.cache` stays the
+    path for callers who want caching.
+  - Docs: `guides/backends/s3.md` — the new default, how to re-enable, the
+    staleness rationale. CHANGELOG (user-facing behaviour change; pre-v1
+    minor). Tests: default-is-fresh, `client_options` override re-enables the
+    cache, and a staleness regression (old default stale → new default fresh).
 
 ---
 
