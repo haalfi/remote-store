@@ -75,16 +75,21 @@ GraphBackend(
   WR-004 — no post-write `HEAD` round trip needed (see GR-018, GR-019).
 - `ATOMIC_MOVE` is withheld because Graph move may go async (GR-027);
   atomicity is not guaranteed.
-- `SEEKABLE_READ` is withheld because the Graph content stream is
-  forward-only. `Store.read_seekable()` uses the default spool
-  fallback (ADR-0017). A native `Backend.read_seekable()` override
-  built on `Range` reads over `@microsoft.graph.downloadUrl` was
-  considered and declined: SharePoint-backed drives have been
+- `SEEKABLE_READ` is withheld. The Graph content stream is
+  forward-only. Sync `Store.read_seekable()` synthesises a seekable
+  stream via the spool fallback at the Store layer (ADR-0017);
+  `AsyncStore` has no `read_seekable` (ASYNC-061), so there is no
+  async surface to declare against. A `Range`-backed implementation
+  over `@microsoft.graph.downloadUrl` was considered as a future
+  optimisation and declined: SharePoint-backed drives have been
   observed to return the full body (or a non-`416` `4xx`) in
-  response to `Range`, so declaring `SEEKABLE_READ` would
-  advertise a guarantee the backend cannot honour (see GR-015,
-  GR-017).
-- `GLOB` is withheld; callers use `ext.glob` over `list_files`.
+  response to `Range`, so declaring `SEEKABLE_READ` would advertise
+  a guarantee the backend cannot honour (see GR-015, GR-017).
+- `GLOB` is withheld. Sync callers reach the backend via
+  `AsyncBackendSyncAdapter` (ADR-0025) and use `ext.glob` over
+  `list_files` (the extension takes a sync `Store`). Async callers
+  compose pattern matching over `list_files` themselves until an
+  async equivalent of `ext.glob` lands as a separate backlog item.
 - `USER_METADATA` is withheld. Graph exposes per-item user properties
   only on SharePoint-backed drives (via `driveItem.listItem.fields`,
   scoped to a backing site list); personal OneDrive has no equivalent
@@ -244,12 +249,14 @@ full `GraphBackend` first.
 
 ### GR-012: read()
 
-**Invariant:** `read(path)` returns `BinaryIO` per BE-006.
-Internally, the async backend wraps `httpx.AsyncClient.stream`
-(chunked byte iterator over `@microsoft.graph.downloadUrl`) in a
-`BinaryIO` adapter per the sync-wrapper pattern in ADR-0012. The
-public return type is `BinaryIO`; no exotic return type is
-permitted.
+**Invariant:** `async def read(path)` returns `AsyncIterator[bytes]`
+per ASYNC-006 (the `AsyncBackend` ABC contract). The backend streams
+the response body from `@microsoft.graph.downloadUrl` via
+`httpx.AsyncClient.stream`, yielding chunks as they arrive. Sync
+callers reach the backend through `AsyncBackendSyncAdapter`
+(ADR-0025), which converts the async iterator to a `BinaryIO` via
+the spool-and-pump pattern; that conversion is the adapter's
+responsibility, not the backend's.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if
 the path names a directory (per BE-021).
 
@@ -266,8 +273,8 @@ from the Graph `driveItem` body. Field mapping:
 - `driveItem.file.mimeType` → `FileInfo.content_type`
 - `driveItem.file.hashes` → `FileInfo.extra["graph.file.hashes"]`
   per GR-049
-- `FileInfo.metadata` is left as the empty mapping (`USER_METADATA`
-  is not declared — GR-003)
+- `FileInfo.metadata` is `None` (`USER_METADATA` is not declared —
+  GR-003; the `Mapping[str, str] | None` default per WR-013 applies)
 - `FileInfo.digest` is left `None`; the canonical-digest selection
   among Graph's three hash variants is reserved for a future
   `ext.integrity` fast-path (GR-049)
@@ -295,10 +302,12 @@ directly, yielding `FileInfo` for `file`-faceted items and `FolderEntry`
 for `folder`-faceted items in the order Graph returns them.
 **Missing-path behavior:** Matches BE-014, BE-015, BE-026 — yields
 nothing for non-existent paths, never raises `NotFound`.
-**`recursive` and `pattern`:** `AsyncBackend.list_files` does not accept
-`max_depth` or `pattern` (ASYNC-039, ASYNC-052b); the optional `recursive`
-flag, when true, walks `/children` per folder. Depth- and pattern-limited
-listing is composed at `AsyncStore` level.
+**`recursive`, `max_depth`, `pattern`:** `AsyncBackend.list_files`
+accepts `recursive` and `max_depth` (ASYNC-014) but no `pattern`;
+`AsyncBackend.list_folders` does not accept `max_depth` (ASYNC-015).
+Pattern-limited listing is composed at `AsyncStore` level (ASYNC-052).
+The Graph backend honours `recursive` and `max_depth` by short-circuiting
+the recursive `/children` walk at the configured depth.
 
 ### GR-015: Range Download via `@microsoft.graph.downloadUrl`
 
@@ -316,12 +325,17 @@ backends in particular). When the server returns the full entity
 (`200 OK` to a `Range` request) or rejects the range with `416`
 outside the valid extent, the backend falls back to the spool
 strategy rather than pretending to stream. When the fallback
-fires, the backend emits a `graph.read.range_fallback = True`
-attribute on the `ext.observe` event for the surrounding read
-operation. Tests assert against the observed event rather than
-on backend-internal state — `FileInfo` carries only contract
-fields and the `graph.file.hashes` bag from GR-049, no
-test-oracle branches.
+fires, the backend logs a WARNING with the `graph.read.range_fallback`
+marker and sets
+`FileInfo.extra["graph.read.range_fallback"] = True` on any
+`FileInfo` returned for the same item within the operation context.
+The `extra` channel is the v0.27.0 supported surface for
+backend-specific signal (see GR-049 for `graph.file.hashes`);
+`ext.observe` is **not** used as a delivery channel — OBS-015 of
+spec 019 explicitly prohibits backend-side injection into
+`StoreEvent.metadata`, and the proxy emits no start event during
+`read`. Tests assert against the WARNING log record (always
+reachable) and against `FileInfo.extra`.
 **Rationale:** The `/content` endpoint returns `302` redirecting to
 the download URL, and only the download URL honours `Range`
 reliably. The download URL is pre-signed; no `Authorization` header
@@ -371,8 +385,9 @@ streaming mid-file.
 
 ### GR-018: Small-File Write (<= 4 MiB)
 
-**Invariant:** `write(path, content, *, overwrite=False, metadata=None)
--> WriteResult` (BE-008) with content size <= 4 MiB uses
+**Invariant:** `async def write(path, content, *, overwrite=False,
+metadata=None) -> WriteResult` (BE-008 / ASYNC-008; content typed
+per ASYNC-021) with content size <= 4 MiB uses
 `PUT /drives/{drive_id}/root:{encoded_path}:/content`.
 **Postconditions:**
 - Intermediate folders are created automatically (matches BE-009);
@@ -425,14 +440,14 @@ tuning knob in v1.
 ### GR-019: Large-File Write via Upload Session
 
 **Invariant:** `write(path, content, *, overwrite=False, metadata=None)
--> WriteResult` (BE-008) with content size > 4 MiB opens an upload
-session via `POST createUploadSession` and uploads chunks to the
-returned session URL.
+-> WriteResult` (BE-008 / ASYNC-008) with content size > 4 MiB opens
+an upload session via `POST createUploadSession` and uploads chunks to
+the returned session URL.
 **Content shape:** `AsyncBackend.write` accepts `AsyncWritableContent =
-bytes | AsyncIterator[bytes]` (spec 029). The size-detection branch is
-therefore binary:
-- `bytes` / `bytearray`: total is `len(content)`; the session is opened
-  with the true total and chunks are sliced from the in-memory buffer.
+bytes | AsyncIterator[bytes]` (ASYNC-021). The size-detection branch
+is therefore binary:
+- `bytes`: total is `len(content)`; the session is opened with the
+  true total and chunks are sliced from the in-memory buffer.
 - `AsyncIterator[bytes]`: total is unknown until the iterator is drained.
   Graph's upload-session `PUT` requires `Content-Range: bytes
   {start}-{end}/{total}` with a known total (`bytes X-Y/*` is rejected),
@@ -441,26 +456,26 @@ therefore binary:
   then opens the session and replays chunks from the spool. Callers
   that already know the size and want to avoid the spool pass `bytes`.
 
-There is no separate `content_length` keyword on `Backend.write()`
-(BE-008); inferring size from the input is the only mechanism.
+There is no separate `content_length` keyword on `AsyncBackend.write()`
+(ASYNC-008); inferring size from the input is the only mechanism.
 
-- **Spool-file location:** When an on-disk spill occurs, the temporary
-  file is written to the current working directory rather than the
-  system temp dir. This matches the project convention for spooling
-  large transfers (cross-drive / small-`TMPDIR` environments,
-  particularly Windows, where the system temp volume may lack space
-  for multi-GiB uploads). The implementation passes an explicit `dir=`
-  to `SpooledTemporaryFile`; the policy is owned by this spec, not by
-  `tempfile` defaults. **The documentation-phase guide for this
-  backend must note this placement** so callers running from read-only
-  or small-capacity working directories can redirect the spool
-  explicitly.
+- **Spool-file location:** When an on-disk spill occurs, the backend
+  uses `SpooledTemporaryFile()` with no explicit `dir=` — system temp,
+  matching every other spool site in the codebase
+  (`_backend.py`, `_async_to_sync_adapter.py`, `_azure.py`, `_s3.py`,
+  `_s3_pyarrow.py`, `ext/arrow.py`). Cross-drive / small-`TMPDIR`
+  redirection is the caller's `TMPDIR` (or platform-specific equivalent)
+  to set, not a per-backend policy. **The documentation-phase guide for
+  this backend must note `TMPDIR` redirection** so callers running on
+  small-capacity temp volumes (Windows, restricted containers) can plan
+  accordingly.
 - **Spool-spill observability:** When an on-disk spill occurs, the
-  backend emits a `graph.upload.spool_dir` attribute on the `ext.observe`
-  start event for the surrounding `write()` (carrying the absolute path
-  of the spool directory used). Tests assert against the observed event,
-  not against backend-internal state — `FileInfo` and `WriteResult`
-  remain free of test-oracle fields.
+  backend logs a DEBUG record with the marker
+  `graph.upload.spool_spilled` carrying the spool path. The DEBUG
+  channel is the supported v0.27.0 mechanism for backend-internal
+  diagnostics; tests assert against the log record (via `caplog`).
+  `ext.observe` is not used — OBS-015 prohibits backend-side
+  injection into `StoreEvent.metadata`.
 
 **Postconditions:**
 - The upload is atomic on commit: the item becomes visible only
@@ -544,11 +559,12 @@ permissions; permission failures surface as `PermissionDenied`.
 
 ### GR-040: write_atomic()
 
-**Invariant:** `write_atomic(path, content, *, overwrite=False,
-metadata=None) -> WriteResult` (BE-010) delegates to the same path as
-`write`: small files use `PUT /content` (atomic at the service); large
-files use upload sessions (atomic on commit). No temporary file is
-created client-side.
+**Invariant:** `async def write_atomic(path, content, *,
+overwrite=False, metadata=None) -> WriteResult` (BE-010 / ASYNC-010;
+content typed per ASYNC-021) delegates to the same path as `write`:
+small files use `PUT /content` (atomic at the service); large files
+use upload sessions (atomic on commit). No temporary file is created
+client-side.
 **Rationale:** Graph's own write paths already provide the
 no-partial-content guarantee (AW-001); a client-side temp-rename
 dance would add latency without strengthening the contract. The
@@ -605,7 +621,7 @@ monitor URL.
 
 **Invariant:** The backend polls the monitor URL from GR-025 (and
 GR-027) using a backend-local poller in
-`src/remote_store/backends/_graph/_monitor.py` (or as a private
+`src/remote_store/backends/_graph_monitor.py` (or as a private
 function inside `_graph.py` if it stays small). Not a shared facility
 in v1 — see ADR-0023 for the reality-check that turned the earlier
 shared-helper design backend-local.
@@ -630,16 +646,19 @@ shared-helper design backend-local.
   ceiling (e.g. `asyncio.timeout(...)` for async callers, thread-level
   cancellation for sync). The documentation-phase guide for this
   backend must call this out.
-- On `copy_timeout` expiry the poller raises
-  `BackendUnavailable(context={"monitor_url": str, "poll_count": int,
-  "last_status": str})`. `last_status` is one of the literal strings
-  `"pending"` (terminal poll returned a still-running status),
-  `"5xx"` (last response was a transient server error treated as
-  pending per below), or `"parse-error"` (last response could not
-  be classified by the `status_parser`). Tests assert against this
-  closed value set. The server-side operation is **not** cancelled
-  (Graph monitor URLs have no public cancel endpoint); the caller
-  is expected to check the final state out-of-band if needed.
+- On `copy_timeout` expiry the poller raises `BackendUnavailable`
+  whose message embeds the monitor URL, the poll count, and a
+  `last_status` token from a closed set: `"pending"` (terminal poll
+  returned a still-running status), `"5xx"` (last response was a
+  transient server error treated as pending per below), or
+  `"parse-error"` (last response could not be classified by the
+  `status_parser`). Tests assert against the message text. (A
+  `RemoteStoreError.context` carrier was considered as a structured
+  alternative but is not part of spec 005 today; introducing it is
+  out of scope for ID-127 and tracked separately if a backend ever
+  needs it.) The server-side operation is **not** cancelled (Graph
+  monitor URLs have no public cancel endpoint); the caller is
+  expected to check the final state out-of-band if needed.
 - `Retry-After` on poll responses overrides the computed interval
   when larger.
 - `5xx` responses during polling are treated as `pending`, not
@@ -652,14 +671,14 @@ shared-helper design backend-local.
   values map to `BackendUnavailable`.
 - Cancellation propagates `asyncio.CancelledError`.
 
-**Single-event contract for `ext.observe`:** The internal polling
-loop is not observable to `ext.observe`. `Store.copy()` and
-`Store.move()` emit one start/end event pair regardless of how many
-polls ran. Poll count and total duration may surface as event
-attributes (e.g. `graph.copy.poll_count`,
-`graph.copy.duration_ms`) but no intermediate `polling` events are
-emitted. See ADR-0023: the poller is an implementation technique,
-not a Store-level concept.
+**`ext.observe` interaction:** `Store.copy()` and `Store.move()` emit
+one event in `finally` per OBS-015; the internal polling loop is not
+observable. The backend does **not** inject per-poll attributes into
+`StoreEvent.metadata` — OBS-015 prohibits backend-side metadata
+injection, and the proxy builds metadata at the proxy layer before
+the inner call. Poll-count and duration diagnostics are emitted as
+DEBUG log records carrying the marker `graph.copy.poll_complete`;
+`caplog` is the test channel.
 
 ### GR-027: Move (May-Be-Async)
 
@@ -674,17 +693,18 @@ GR-018's BE-008 precondition discrimination (including the
 ancestor-as-file case, ID-209).
 **Atomicity:** Not declared — `ATOMIC_MOVE` is not in the capability
 set (GR-003).
-**Metadata preservation (BE-018, WR-013):** Graph's `PATCH driveItem`
+**Metadata preservation (BE-018):** Graph's `PATCH driveItem`
 preserves the item's identity — `id`, `eTag`, and any user-supplied
 property bag on the underlying `listItem` survive the move. The
 backend issues no compensating writes; `get_file_info(dst).metadata`
 returns whatever `get_file_info(src).metadata` would have returned
-before the move. This contract is vacuous in v1 (the backend does not
-declare `USER_METADATA`, so `metadata` is always the empty mapping),
-but the invariant is asserted here so the conformance suite for
-WR-013-move passes without a Graph-specific carve-out, and so a
-future revision that declares `USER_METADATA` for SharePoint-backed
-drives does not also have to revisit move semantics.
+before the move. Since the backend does not declare `USER_METADATA`,
+the BE-018 metadata-preservation conformance test skips on Graph
+without a backend-specific carve-out; the WR-013 round-trip is
+satisfied vacuously by the `metadata = None` postcondition (GR-013).
+The invariant is asserted here so a future revision that declares
+`USER_METADATA` for SharePoint-backed drives does not have to
+revisit move semantics.
 
 ### GR-044: Self-Move and Self-Copy
 
@@ -808,22 +828,22 @@ no native retry); see RET-015.
   backend does not auto-retry or auto-resume. Caller retry is the
   caller's decision; if it chooses to retry, the session URL and
   `nextExpectedRanges` discipline (GR-023) still apply. The
-  unfinished session URL is surfaced via
-  `exc.context["session_url"]` so callers (and tests) can resume
-  without re-deriving it; `exc.context["next_expected_ranges"]`
-  carries the last-known range list from the most recent successful
-  chunk response.
+  unfinished session URL and last-known `nextExpectedRanges` list
+  are included in the exception message text so callers (and tests)
+  can resume without re-deriving them. (Spec 005 has no structured
+  `RemoteStoreError.context` surface today; adding one is out of
+  scope for ID-127.)
 
 ### GR-054: 507 insufficientStorage / quotaLimitReached
 
 **Invariant:** HTTP `507 insufficientStorage`, and any response
 carrying `error.code == "quotaLimitReached"`, map to
-`BackendUnavailable` with context fields naming the quota whenever
-Graph returns them (e.g. `quota.total`, `quota.used`,
-`quota.remaining`, `quota.state`).
+`BackendUnavailable` whose message text names the quota whenever
+Graph returns it (e.g. `quota.total`, `quota.used`, `quota.remaining`,
+`quota.state`).
 **Postconditions:** Not retryable by the default policy — the
 condition does not clear on short-term retry. Callers diagnose via
-the context fields and react at their own cadence.
+the message text and react at their own cadence.
 **Upstream limits:** Graph enforces a documented maximum single-file
 size of 250 GiB per upload session for OneDrive and SharePoint
 drives (smaller on consumer OneDrive). The backend does not
@@ -915,11 +935,13 @@ the `quickXorHash`, `sha1Hash`, and `sha256Hash` values from Graph's
 
 ### GR-050: Drive-Id as Store Identity
 
-**Invariant:** `drive_id` is immutable after construction. The
-backend's identity (for `ext.cache` key derivation and similar
-consumers) includes `drive_id`.
+**Invariant:** `drive_id` is immutable after construction.
 **Postconditions:** Changing the target drive requires constructing
-a new backend.
+a new backend. `drive_id` is reserved as a component of any future
+identity-derived consumer (e.g. a `cache_key`-discipline `ext.cache`
+revision per ID-123 — `ext.cache` in v0.27.0 builds plain
+`(op, path[, …])` tuples and does not yet derive keys from backend
+identity).
 
 ---
 
@@ -964,19 +986,18 @@ custom Graph calls.
 ### GR-035: Credential Masking
 
 **Invariant:** The `Authorization` header is redacted from any log
-output, error message context, or debug dump produced by the
-backend. Token values never appear in exception messages or
-logging records.
+output, error message, or debug dump produced by the backend. Token
+values never appear in exception messages or logging records.
 **Observable surface (test anchors):**
-- The `Authorization` header value is replaced with the literal
-  string `"***"` in `RemoteStoreError.context` whenever headers or
-  request metadata appear there.
 - Any DEBUG-level log record the backend emits that includes
   headers replaces the `Authorization` value with `"***"` before
   formatting.
-- The raw bearer token never appears in `str(exc)`, `repr(exc)`,
-  `exc.context`, or any backend-emitted log record at any level.
-**Postconditions:** Satisfies AF-008.
+- The raw bearer token never appears in `str(exc)`, `repr(exc)`, or
+  any backend-emitted log record at any level — the backend never
+  passes the header into an exception message.
+**Postconditions:** Satisfies AF-008 (extended to a per-request
+header rather than just backend `__repr__`; this goes beyond the
+HTTP backend's `repr`-only precedent in HTTP-CRED-001).
 
 ---
 
@@ -1031,9 +1052,11 @@ entirely. See RET-015.
 
 Some invariants cannot be validated against `respx` fixtures because
 they depend on Graph service-imposed behaviour that the mock does
-not reproduce. These IDs require a real tenant (credentials gated by
-`GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`, `GRAPH_CLIENT_SECRET`,
-`GRAPH_DRIVE_ID`) and are marked `@pytest.mark.integration`:
+not reproduce. These IDs require a real tenant. The gate is
+two-layered (matching the Azure live-test pattern): `RS_TEST_LIVE_GRAPH=1`
+**plus** the four credential env vars `GRAPH_TENANT_ID`,
+`GRAPH_CLIENT_ID`, `GRAPH_CLIENT_SECRET`, `GRAPH_DRIVE_ID`. Either
+layer missing → skip cleanly. Marked `@pytest.mark.integration`:
 
 - **GR-007** — device-code flow end-to-end. MSAL's device-code
   handshake cannot be meaningfully mocked at the protocol layer.

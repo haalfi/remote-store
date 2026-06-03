@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+Accepted. Revised 2026-06-03 (in-place, per user override of the
+project's normally-immutable ADR rule — see CHANGELOG `[Unreleased]`).
 
 ## Context
 

@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+Accepted. Revised 2026-06-03 (in-place, per user override of the
+project's normally-immutable ADR rule — see CHANGELOG `[Unreleased]`).
 
 ## Context
 
@@ -49,10 +50,11 @@ rule (ERR-008): one level deep, no intermediate categories.
   on reality check: Graph does not surface the lock holder, no
   other backend emits this condition today, and adding a field "in
   case" violates the project's no-speculative-API rule. A future
-  backend that genuinely surfaces the holder can either widen this
-  class (with a covering spec amendment) or carry the value in
-  `RemoteStoreError.context["lock_owner"]` — the context dict is the
-  designated place for backend-specific signal.
+  backend that genuinely surfaces the holder widens this class via
+  a covering spec amendment. (Spec 005 has no structured
+  `RemoteStoreError.context` surface today; routing extras through
+  `.context["lock_owner"]` is not available as a fallback and is
+  not part of this decision.)
 - **Retry guidance.** Not safely retried by the default retry policy
   — RET-015 classifies `ResourceLocked` as terminal. Callers may
   retry at their own cadence.
@@ -69,10 +71,14 @@ when added.
 
 `ResourceLocked` is unreachable from any backend other than Graph in
 v1, so the runtime class, the spec 005 entry (ERR-013), the Dafny
-`Error.ResourceLocked(path: Path)` variant, and its dispatch in
-`tests/backends/dafny/_helpers.py::_raise_if_err` all ship together
-with the Graph backend implementation, not separately. Spec 005
-already records ERR-013 at RFC acceptance; the runtime class and
+`Error.ResourceLocked(path: string, backend: string)` variant
+(matching the `(path: string, backend: string)` shape every other
+non-`BackendUnavailable` variant uses in
+`sdd/formal/BackendContract.dfy`, so `_raise_if_err` can dispatch it
+through the existing `err.path` / `err.backend` reader), and its
+dispatch in `tests/backends/dafny/_helpers.py::_raise_if_err` all
+ship together with the Graph backend implementation, not separately.
+Spec 005 records ERR-013 at RFC acceptance; the runtime class and
 Dafny variant land in the same PR as `_graph.py`. See ID-127 in
 `sdd/BACKLOG.md` for the bundled-sub-task note.
 

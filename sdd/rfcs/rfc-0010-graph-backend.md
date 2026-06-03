@@ -67,7 +67,9 @@ gap is the point of this RFC.
 **Optional extra:** `pip install "remote-store[graph]"`
 **Dependencies:** see ADR-0021 for the locked dependency set.
 **Spec:** `sdd/specs/044-graph-backend.md` (GR-001 through GR-057,
-contiguous; topic-grouped by section order)
+grouped by topic, with later additions slotted under the section
+they belong to rather than appended at the end — IDs are
+allocation-order, not section-order)
 
 The backend name is `"graph"` rather than `"onedrive"` or `"sharepoint"`
 because a single instance can target any of those services depending on
@@ -181,7 +183,7 @@ spool-and-flush pattern over `write_atomic` (ASYNC-085).
 synthesised `open_atomic` exposes the same atomicity guarantee to
 sync `Store` callers without backend-specific work. The pattern
 parallel for this implementation is `AsyncAzureBackend`
-(`src/remote_store/aio/backends/_async_azure.py`), not the sync
+(`src/remote_store/aio/backends/_azure.py`), not the sync
 `AzureBackend`; sync Azure solves a different problem (wrapping the
 sync Azure SDK) and is the wrong reference shape for a native-async
 backend.
@@ -193,10 +195,11 @@ header pointing to a monitor URL. The client polls that URL until the
 operation completes or fails. Move is synchronous in most cases but
 can also go async; both reuse the same poller.
 
-The polling logic lives **backend-local** in the Graph package
-(`src/remote_store/backends/_graph/_monitor.py`, or inline in
-`_graph.py` while it stays small). ADR-0023 records the reality
-check: an earlier draft proposed a shared
+The polling logic lives **backend-local** in
+`src/remote_store/backends/_graph_monitor.py` (sibling-file form,
+matching `_graph_http.py` / `_graph_transfer.py` / `_graph_auth.py`),
+or inline in `_graph.py` while it stays small. ADR-0023 records the
+reality check: an earlier draft proposed a shared
 `backends/_async_monitor.py` on the premise that Azure cross-account
 copy would reuse it, but `AsyncAzureBackend.copy` ships in v0.27.0
 without any polling, and there is no second consumer today. The
@@ -352,16 +355,30 @@ overlap; the items below are additions, not substitutes.
   chunking (small, exact boundary, large, retry, resume, abort), and
   `@microsoft.graph.downloadUrl` range reads (including URL expiry
   mid-read).
-- **`WriteResult` conformance** — the shared `TestWriteResultConformance`
-  suite (WR-001a / 004 / 005 / 012 / 013) runs against `GraphBackend`
-  unmodified; both the small-file and upload-session paths populate
-  the rich fields from the `driveItem` response (GR-018, GR-019).
+- **`WriteResult` conformance.** `TestWriteResultConformance` in
+  `tests/backends/conformance/test_atomic.py` is sync-fixtured today
+  (via `fixture_params(Capability.WRITE)`, default `is_async=False`);
+  it cannot host a native-async backend without modification, and
+  the async sister in `test_async_extended.py` covers only WR-013.
+  Pick one and ship it with the impl PR-set: (a) land an async
+  `TestWriteResultConformance` parametrised over async fixtures so
+  WR-001a / 004 / 005 / 012 / 013 exist for `AsyncBackend` before
+  Graph plugs in, or (b) register a sync fixture entry that wraps
+  `GraphBackend` in `AsyncBackendSyncAdapter` to consume the existing
+  sync suite. Either way, both the small-file and upload-session
+  paths populate the rich fields from the `driveItem` response
+  (GR-018, GR-019).
 - **`USER_METADATA` strict-gate test** — non-empty `metadata=` raises
   `CapabilityNotSupported` per WR-010; empty mapping and `None` are
   no-ops (GR-003).
-- **Integration tests** gated by `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
-  `GRAPH_CLIENT_SECRET`, `GRAPH_DRIVE_ID`. Skip cleanly when unset.
-  Gate pattern mirrors Azure integration tests.
+- **Integration tests** gated by `RS_TEST_LIVE_GRAPH=1` **plus** the
+  four credential env vars `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
+  `GRAPH_CLIENT_SECRET`, `GRAPH_DRIVE_ID`. Skip cleanly when either
+  layer is missing. This mirrors the Azure pattern at
+  `tests/backends/fixtures/fixtures.toml` and `_live_env.py`:
+  secret-presence alone is deliberately not enough to opt into live
+  runs, so a CI box with leaked creds does not silently exercise
+  the live suite.
 - **Capability matrix test** asserting that declared capabilities
   match the matrix in GR-003 and that unsupported capabilities raise
   `CapabilityNotSupported` where applicable.

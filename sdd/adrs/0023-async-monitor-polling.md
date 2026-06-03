@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+Accepted. Revised 2026-06-03 (in-place, per user override of the
+project's normally-immutable ADR rule — see CHANGELOG `[Unreleased]`).
 
 ## Context
 
@@ -26,10 +27,11 @@ shape (`UploadId` + `complete-multipart-upload`, not a monitor URL).
 ## Decision
 
 Ship the polling logic **backend-local** in
-`src/remote_store/backends/_graph/_monitor.py` (or as a private
-function inside `_graph.py` if it stays under ~100 lines). It is part
-of the Graph backend, not a shared facility. No public API surface
-and no Store-level capability is introduced.
+`src/remote_store/backends/_graph_monitor.py` (sibling-file form,
+matching `_graph_http.py` / `_graph_transfer.py` / `_graph_auth.py`),
+or inline in `_graph.py` if it stays under ~100 lines. It is part of
+the Graph backend, not a shared facility. No public API surface and
+no Store-level capability is introduced.
 
 If and when a second backend genuinely needs the same shape — measured
 in a follow-up implementation, not predicted here — a hoisting ADR

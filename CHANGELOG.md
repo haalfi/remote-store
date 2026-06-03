@@ -7,47 +7,68 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-### Changed
+### Internal
 
-- **Microsoft Graph backend SDD refresh** (ID-127): refreshed
-  `sdd/specs/044-graph-backend.md` and `sdd/rfcs/rfc-0010-graph-backend.md`
-  to track contract drift accumulated since RFC acceptance (May 2026).
-  Spec amendments — GR-003 declares `WRITE_RESULT_NATIVE` and explicitly
-  withholds `USER_METADATA` with rationale (Graph property bag is
-  SharePoint-only); GR-013 pins the `driveItem` → `FileInfo` field
-  mapping (including `lastModifiedDateTime` → `modified_at`); GR-014
-  folds in `iter_children()` as a single-`/children`-call override of
-  BE-026; GR-018 / GR-019 / GR-040 take `metadata=` kwarg, return
-  `WriteResult` per BE-008 / BE-010 / WR-001..WR-013, and apply the
-  WR-010 strict gate; GR-019's size-detection branch is rewritten
-  around `AsyncWritableContent = bytes | AsyncIterator[bytes]` (not
-  `BinaryIO`); GR-018 spells out file-ancestor (ID-209) handling
-  through Graph's native 409; GR-027 pins WR-013 metadata preservation
-  on move; GR-036a adds the `native_path()` override (BE-025); spool
-  observability and SharePoint range-fallback signalling moved off
-  `FileInfo.extra` test-oracle fields onto `ext.observe` event
-  attributes. RFC amendments — `AsyncAzureBackend` named as the
-  pattern parallel (not sync `_azure.py`); `open_atomic` synthesis via
-  ASYNC-085 cross-referenced; test plan layered on top of BK-237's
-  contract-expanding-feature DoD; ID-173 `__all__` ↔ `index.md`
-  parity called out in documentation deliverables. ADR-0021 through
-  ADR-0024 — accepted as initial design but never reality-checked
-  against the v0.27.0 codebase — rewritten in place rather than
-  superseded, since none had been implemented against. ADR-0021
-  tightens the `httpx`-dependency framing (optional extra, not core)
-  and pins the `graph` extra at `httpx` + `msal` + `platformdirs`.
-  ADR-0022 fixes the broken ADR-0002 cross-reference (the relevant
-  architecture ADR is ADR-0001), adds the missing `_SENSITIVE_KEYS`
-  story for `client_secret` / `client_certificate`, and grounds
-  credential masking in the actual `Secret` / `SecretRedactionFilter`
-  mechanisms (SEC-001..SEC-007, AF-008). ADR-0023 drops the speculative
-  shared-helper design — there is no second consumer in v0.27.0
-  (`AsyncAzureBackend.copy` ships without polling) — and goes
-  backend-local under `backends/_graph_monitor.py`, with a documented
-  hoist path if a real second consumer arrives. ADR-0024 strips the
-  speculative `lock_owner` attribute reservation and routes any future
-  per-backend lock-holder signal through
-  `RemoteStoreError.context["lock_owner"]` instead. No runtime changes.
+- **Graph backend SDD refresh — spec 044** (ID-127): GR-003 declares
+  `WRITE_RESULT_NATIVE` and explicitly withholds `USER_METADATA` with
+  rationale (Graph property bag is SharePoint-only); GR-013 pins the
+  `driveItem` → `FileInfo` field mapping (`lastModifiedDateTime` →
+  `modified_at`; `FileInfo.metadata` is `None`, not "empty mapping");
+  GR-014 folds in `iter_children()` as a single-`/children`-call
+  override of BE-026 and corrects the `AsyncBackend.list_files`
+  invariant (it does accept `max_depth` per ASYNC-014); GR-018 / GR-019
+  / GR-040 take `metadata=` kwarg, return `WriteResult` per BE-008 /
+  ASYNC-008 (and 010 / 021) plus WR-001..WR-013, and apply the WR-010
+  strict gate; GR-019 size-detection rewritten around
+  `AsyncWritableContent = bytes | AsyncIterator[bytes]`; GR-018 spells
+  out file-ancestor (ID-209) handling through Graph's native 409;
+  GR-027 cites BE-018 for metadata preservation on move; GR-036a adds
+  the `native_path()` override (BE-025).
+
+- **Graph backend SDD refresh — RFC-0010** (ID-127): `AsyncAzureBackend`
+  in `aio/backends/_azure.py` named as the pattern parallel (not the
+  sync `_azure.py`); `open_atomic` synthesis via ASYNC-085
+  cross-referenced; test plan layered on BK-237's contract-expanding
+  DoD with corrected `TestWriteResultConformance` framing (the
+  existing suite is sync-fixtured; impl PR must either add an async
+  parametrisation or wrap via `AsyncBackendSyncAdapter`); integration
+  gate widened to two layers (`RS_TEST_LIVE_GRAPH=1` plus the four
+  credential env vars), mirroring the Azure live-test pattern; ID-173
+  `__all__` ↔ `index.md` parity called out in documentation
+  deliverables; section-ordering overpromise dropped (IDs are
+  allocation-order, not section-order).
+
+- **Graph backend SDD refresh — ADR-0021 / ADR-0022** (ID-127):
+  rewritten in place per user override of the normally-immutable
+  ADR rule; revision marker added under `## Status` on both. ADR-0021
+  tightens the `httpx`-dependency framing (optional extra for
+  `ReadOnlyHttpBackend`, not core) and pins the `graph` extra at
+  `httpx` + `msal` + `platformdirs`. ADR-0022 fixes the broken
+  ADR-0002 cross-reference (the relevant architecture ADR is
+  ADR-0001), adds the `_SENSITIVE_KEYS` widening story for
+  `client_secret` / `client_certificate` (spec 020 SEC-003
+  forward-noted), and grounds credential masking in the actual
+  `Secret` / `SecretRedactionFilter` mechanisms (SEC-001..SEC-007,
+  AF-008).
+
+- **Graph backend SDD refresh — ADR-0023 / ADR-0024** (ID-127):
+  rewritten in place per the same override; revision marker added.
+  ADR-0023 drops the speculative shared-helper design — there is no
+  second consumer in v0.27.0 (`AsyncAzureBackend.copy` ships without
+  polling) — and goes backend-local in
+  `src/remote_store/backends/_graph_monitor.py` (sibling-file form,
+  matching `_graph_http.py` / `_graph_transfer.py`), with a
+  documented hoist path if a real second consumer arrives. ADR-0024
+  strips the speculative `lock_owner` attribute reservation; spec 005
+  ERR-013 co-amended to match. References to a fictional
+  `RemoteStoreError.context` channel removed across spec 044 (GR-026,
+  GR-035, GR-045, GR-054) and ADR-0022 / ADR-0024 — Graph signal
+  rides in exception message text and DEBUG log records; backend
+  observability uses `FileInfo.extra` (namespaced) and `caplog` for
+  diagnostics, not `ext.observe` (OBS-015 prohibits backend-side
+  injection into `StoreEvent.metadata`).
+
+- **No runtime changes** — pure SDD refresh.
 
 ## [0.27.0] - 2026-06-02
 

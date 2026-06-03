@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+Accepted. Revised 2026-06-03 (in-place, per user override of the
+project's normally-immutable ADR rule — see CHANGELOG `[Unreleased]`).
 
 ## Context
 
@@ -87,10 +88,11 @@ Two concrete mechanisms cover credential leakage:
   SFTP credentials. The amendment ships with the implementation PR.
 - **`Authorization` header redaction at the request boundary.** The
   bearer token is replaced with the literal `"***"` in any
-  `RemoteStoreError.context` payload, in any DEBUG-level log record
-  emitted by the backend, and in `repr()` / `str()` of any exception
-  the backend raises (GR-035). `SecretRedactionFilter` (SEC-007)
-  catches the path where headers are logged via `record.args`.
+  DEBUG-level log record emitted by the backend, and never appears
+  in `repr()` / `str()` of any exception the backend raises (GR-035).
+  `SecretRedactionFilter` (SEC-007) catches the path where headers
+  are logged via `record.args`. The backend does not pass the header
+  into exception messages.
 
 ### Config loader responsibility
 

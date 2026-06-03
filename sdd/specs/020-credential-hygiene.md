@@ -43,6 +43,10 @@ instead of hitting the `__setattr__` override.
 `_SENSITIVE_KEYS` (`key`, `secret`, `password`, `account_key`, `sas_token`,
 `connection_string`) inside `Secret()`. Non-string values (e.g., `None`,
 credential objects) are left unchanged.
+**Forward note:** Extended at ID-127 (Graph backend) implementation to
+add `"client_secret"` and `"client_certificate"` so config-loaded
+Graph backends inherit the same auto-wrap protection
+(ADR-0022 § Credential masking).
 
 ### SEC-004: Backend Secret Acceptance
 

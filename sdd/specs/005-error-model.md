@@ -112,10 +112,10 @@ or process and the operation cannot proceed.
 backing resource is held by another session (for example, an Office
 co-authoring session, a SharePoint checked-out document, or a
 concurrent upload session on the same item).
-**Postconditions:** `path` and `backend` attributes are set. An
-optional `lock_owner: str | None` attribute is reserved for backends
-that can surface the holder; it is `None` when the backend cannot
-determine ownership.
+**Postconditions:** `path` and `backend` attributes are set. No
+additional fields — a future backend that genuinely surfaces the
+lock holder widens this class via a covering spec amendment
+(ADR-0024 § Attributes).
 **Retry guidance:** Not treated as transient by the default retry
 policy. Callers decide their own retry cadence, if any.
 **Example:**
