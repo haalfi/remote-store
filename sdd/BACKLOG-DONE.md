@@ -79,7 +79,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     `TestAsyncAzureNoMaterialization` (async non-HNS) and
     `TestAzureNoMaterialization` (sync non-HNS + sync HNS). Future SDK-streaming
     backends reuse the helper by pointing their mocked SDK call at the
-    collectors. Plan: `sdd/research/research-bk-240-streaming-iteration-counting.md`.
+    collectors.
   - infra.test only → no CHANGELOG entry (derived rule).
 
 - [x] **BK-239 — Generic field-vs-capability symmetry check for `WriteResult`**
