@@ -86,3 +86,14 @@ phases:
         section: "Ripple-check table"
         read_type: verify
         extract: "infra.test-only audience: no CHANGELOG required; BACKLOG -> BACKLOG-DONE + backlogid.json"
+  - id: review
+    name: Review follow-ups
+    steps:
+      - file: sdd/DESIGN.md
+        section: "5 (Code Organisation Comments)"
+        read_type: gate
+        extract: "Headlines use the '# ---' box divider, not '# ==='; converted the added section headings in both Azure test files to comply"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1-2 (6-month test; principles over enumerations)"
+        read_type: gate
+        extract: "Rewrote the _materialization_guard.py module docstring to lead with purpose and drop the BUG-165/181/194 narrative to a one-line regression-context reference"

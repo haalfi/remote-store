@@ -1,30 +1,20 @@
-"""Reusable write-path materialization guard (BK-240; SIO-003, ASYNC-021).
+"""Reusable guard: a write path must stream its input to the SDK, not materialize it.
 
-BUG-165, BUG-181, and BUG-194 were three faces of one defect: a write path
-collapsed an ``AsyncIterator[bytes]`` / ``BinaryIO`` into a single ``bytes``
-before the SDK call, defeating the bounded-memory streaming promise. The type
-signature tolerates it (``upload_blob(b"".join(...))`` type-checks exactly like
-``upload_blob(src)``), so the bug recurs.
+A backend wrapping a streaming SDK can collapse an ``AsyncIterator[bytes]`` /
+``BinaryIO`` into one ``bytes`` before the SDK call without any signature change
+(``upload_blob(b"".join(...))`` type-checks like ``upload_blob(src)``), silently
+breaking the bounded-memory promise (SIO-003 / ASYNC-021).
 
-The earlier per-path guards checked "the forwarded argument is an async
-iterable" plus a payload reconstruction. That misses the subtle variant a
-future refactor is most likely to introduce: materialize, then re-emit the
-joined bytes as a *single-chunk* async generator. Such a wrapper still has
-``__aiter__`` and still reconstructs the same payload, so the old guard passes
-while bounded memory is already broken.
+The discriminator is *chunk-boundary preservation at the SDK boundary*: a
+faithful stream forwards N chunks as N chunks, while any materialization
+collapses N>1 chunks into one. The helpers here stand in for the backend's SDK
+call (Azure ``upload_blob`` / ``append_data``), record the chunks it observed,
+and let a test assert that sequence matches what the caller supplied — a check
+only possible at the SDK boundary, since a black-box write cannot see chunk
+boundaries. A new SDK-streaming backend reuses them by pointing its mocked SDK
+call at the same collectors.
 
-The robust, path-agnostic discriminator is **chunk-boundary preservation at the
-SDK boundary**: the SDK must observe the same chunk sequence the caller
-supplied. A faithful stream forwards N chunks as N chunks; *any* materialization
-collapses N>1 input chunks into one. Asserting ``observed == supplied`` with
-``len(supplied) > 1`` therefore rejects every materialization variant (join to
-bytes, or join then re-emit as one chunk) while passing a true stream-through.
-
-The helpers here are intentionally backend-shaped (they mirror the Azure SDK's
-``upload_blob`` / ``append_data`` surfaces) because the discriminator can only
-be observed where the backend hands the payload to its SDK; a black-box write
-against a real backend cannot see chunk boundaries. A future SDK-streaming
-backend reuses these by pointing its mocked SDK call at the same collectors.
+Regression context: BUG-165, BUG-181, BUG-194.
 """
 
 from __future__ import annotations
