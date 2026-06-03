@@ -1,0 +1,75 @@
+id: BK-245
+title: "Cross-source capability-parity check (Python ↔ Dafny)"
+trigger: |
+  PR #689 review of ID-188 noted the new CapLazyRead variant in
+  sdd/formal/BackendContract.dfy is asserted to mirror Python's
+  Capability.LAZY_READ, but no mechanical check enforces that claim:
+  check_formal_trace.py matches @spec tags, not capability-enum
+  membership, so a future Capability.<NAME> ↔ Dafny Capability /
+  CapabilityName drift would slip through silently.
+source_items:
+  - BK-245
+  - ID-188
+audience:
+  - infra.test
+  - contributor.tooling
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-245"
+        read_type: gate
+        extract: "assert {Capability.<name>.value} == {CapabilityName(c)}; parity is per-name; ordering out of scope; extend check_formal_trace.py OR add sibling check_capability_parity.py"
+        outcome: ok
+      - file: src/remote_store/_capabilities.py
+        section: "Capability enum (101-120)"
+        read_type: reference
+        extract: "14 members, NAME = \"value\" string assignments; the .value strings are the cross-language identity"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "§2 Capability datatype (55-70), §7 CapabilityName (963-980)"
+        read_type: reference
+        extract: "CapabilityName(c) maps each variant to the same string as the Python .value; datatype↔CapabilityName agreement already Dafny-verified, so only the string set needs cross-language parsing"
+        outcome: ok
+      - file: scripts/check_formal_trace.py
+        section: "(full)"
+        read_type: reference
+        extract: "matches @spec tags only, no capability notion; pure AST/regex with injectable main() paths — the pattern to mirror in a sibling gate"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/check_capability_parity.py
+        section: "(new)"
+        read_type: reference
+        extract: "AST-parse Capability enum values + regex-parse CapabilityName case strings; compare sets symmetrically (no package import); main() returns 1 on mismatch or empty parse"
+        outcome: ok
+      - file: tests/scripts/test_check_capability_parity.py
+        section: "(new)"
+        read_type: reference
+        extract: "importlib loader like test_check_formal_trace; live parity tripwire + synthetic python-only / dafny-only mismatch + empty-parse guard"
+        outcome: ok
+      - file: pyproject.toml
+        section: "lint script list (159)"
+        read_type: reference
+        extract: "add python scripts/check_capability_parity.py alongside the other check_*.py gates"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "lint job gate steps (after 106)"
+        read_type: reference
+        extract: "add - run: python scripts/check_capability_parity.py"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / contributor.tooling change"
+        read_type: verify
+        extract: "BACKLOG→BACKLOG-DONE same commit, trace shipped same PR, CHANGELOG skipped (infra.test + contributor.tooling, not user-facing), gen-backlogid"
+        outcome: ok
+      - file: scripts/check_capability_parity.py
+        section: "live run"
+        read_type: verify
+        extract: "exit 0 at HEAD (14 names parity); temporary synthetic member drives exit 1 with the offending name"
+        outcome: ok

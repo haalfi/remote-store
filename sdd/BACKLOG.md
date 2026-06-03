@@ -514,23 +514,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `src/remote_store/backends/_azure.py`,
   `src/remote_store/aio/backends/_azure.py`. Discovered in PR #686 review.
 
-- [ ] **BK-245 — Cross-source capability-parity check (Python ↔ Dafny)**
-  spec: — · effort: S · audience: infra.test, contributor.tooling
-  Discovered in PR #689 review of ID-188. The new `CapLazyRead`
-  enum variant in `sdd/formal/BackendContract.dfy` is asserted to
-  exist for Python-side parity with `Capability.LAZY_READ`, but no
-  mechanical check enforces that claim — `check_formal_trace.py`
-  matches @spec tags, not capability-enum membership, so a future
-  drift between `Capability.<NAME>` in `_capabilities.py` and the
-  `Capability` datatype + `CapabilityName` cases in
-  `BackendContract.dfy` would silently slip through. Extend
-  `scripts/check_formal_trace.py` (or add a sibling
-  `scripts/check_capability_parity.py`) to assert
-  `{Capability.<name>.value for name in Capability} ==
-  {CapabilityName(c) for c in <dafny Capability enum>}`. The parity
-  is per-name; ordering or grouping in the Dafny enum is out of
-  scope.
-
 - [ ] **BK-256 — Test hygiene: real restricted backend + misfiled test**
   spec: — · effort: S · audience: infra.test
   Two cleanups from the test-suite review, independent of BK-255's deletions:
