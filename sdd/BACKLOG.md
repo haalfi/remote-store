@@ -336,11 +336,10 @@ and the highest ID already in this file, then take the next integer. Run
     § AsyncBackendSyncAdapter + `tests/aio/_doubles.py`), and ID-143
     (`AsyncBackendSyncAdapter` implementation + integration suite) — all landed.
   - Prerequisites (process/test, should land first): BK-237 (feature-DoD
-    checklists) landed — see `sdd/000-process.md` § Feature-type Definition
-    of Done. BK-239 (generic field↔capability symmetry guard) landed
-    (see BACKLOG-DONE.md). BK-241 (`tests/aio/README.md` orientation)
-    names this backend as the trigger it must precede — land it before
-    starting implementation.
+    checklists), BK-239 (generic field↔capability symmetry guard), and
+    BK-241 (`tests/aio/README.md` orientation) all landed — see
+    `sdd/000-process.md` § Feature-type Definition of Done and
+    BACKLOG-DONE.md.
   - **Bundled sub-task — `ResourceLocked` (ERR-013, ADR-0024):** Graph
     triggers the only need for this error class today. Three coupled
     pieces ship together with the backend, not separately: the
@@ -486,16 +485,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   failing if the backend materialized. `test_streaming.py:120-125`
   (SIO-003) checks BinaryIO support; this extends to the iterable
   contract on both sync and async write paths.
-
-- [ ] **BK-241 — `tests/aio/README.md` orientation for next async backend**
-  spec: — · effort: S · audience: contributor.process, infra.test
-  Async test infra is now mature (ID-153, BK-164, ID-155, ID-156, ID-157,
-  ID-158, ID-193). The next async backend (ID-127 Graph) needs a single
-  landing page that names the conftest layout, doubles in `tests/aio/_doubles.py`,
-  the `AsyncBackendSyncAdapter` parametrization, and the live-vs-doubles
-  layering — so it does not repeat the conftest sprawl that BK-164 and
-  ID-156 cleaned up. One short README (or an addendum to `sdd/TESTING.md`,
-  whichever fits the docs framework better) is enough.
 
 - [ ] **BK-242 — Flat-NS file-ancestor pre-check perf (SQLBlob IN-list, memoisation)**
   spec: — · effort: S · audience: infra.test, library.maintainer

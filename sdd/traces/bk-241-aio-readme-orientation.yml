@@ -1,0 +1,84 @@
+id: BK-241
+title: "tests/aio/README.md orientation for next async backend"
+trigger: |
+  Async test infra had matured (ID-153, BK-164, ID-155..158, ID-193) but
+  tests/aio/ had no landing page. The next async backend (ID-127 Graph) would
+  have to re-derive the conftest layout, the _doubles.py failure doubles, the
+  two opposite-direction adapters, and the live-vs-doubles layering from the
+  source — the same sprawl BK-164 and ID-156 had just cleaned up. BK-241 and
+  BK-239 are named in ID-127's prerequisites as gates to land first.
+source_items:
+  - BK-241
+  - ID-127
+  - BK-164
+  - ID-156
+audience:
+  - contributor.process
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-241 (item); ID-127 Prerequisites; Completing work; ID prefixes"
+        read_type: gate
+        extract: "scope = one short landing page naming conftest/doubles/adapter/live-vs-doubles; README-or-TESTING choice left open; create-and-complete in one change goes straight to BACKLOG-DONE; ID-127 line cross-references BK-241 as a gate to update"
+        outcome: ok
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?; Directory defaults; Classification markers"
+        read_type: gate
+        extract: "a tests/aio/README.md is 'anything else' -> needs an explicit marker; internal test-infra orientation -> repo-only; every relative link must resolve on-disk (Rule 3)"
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Principles (4 single source of truth)"
+        read_type: gate
+        extract: "link to authorities, don't copy them — drove the thin index shape over a TESTING.md section that would duplicate spec 048 and rot"
+        outcome: ok
+      - file: tests/aio/conftest.py
+        section: "(full)"
+        read_type: reference
+        extract: "fixtures to name: async_backend native/adapted, async_store, native_memory, native_store, RestrictedAsyncBackend; the adapted leg uses SyncBackendAdapter(MemoryBackend())"
+        outcome: ok
+      - file: tests/aio/_doubles.py
+        section: "module docstring (1-20)"
+        read_type: reference
+        extract: "_HangingAsyncBackend / _RaisingAsyncBackend exist for adapter failure paths only (TESTING.md Rule 6); they target AsyncBackendSyncAdapter, the async->sync adapter"
+        outcome: ok
+      - file: tests/backends/fixtures/memory_async.py
+        section: "(full)"
+        read_type: reference
+        extract: "two registry entries memory_async_native / memory_async_adapted = the live layer the doc must contrast with the doubles; the fixture-registration template for step 3 of the checklist"
+        outcome: ok
+      - file: tests/aio/test_async_backend.py
+        section: "TestAsyncBackendMirror (146-183)"
+        read_type: reference
+        extract: "__mirror__ is the ID-159 sync-peer contract — checklist step 2"
+        outcome: ok
+      - file: tests/aio/test_async_drift.py
+        section: "module docstring (1-12)"
+        read_type: reference
+        extract: "drift guard enforces sync<->async method parity; pairs with the mirror check in the checklist"
+        outcome: ok
+  - id: docs
+    name: Docs
+    steps:
+      - file: tests/aio/README.md
+        section: "(new file)"
+        read_type: reference
+        extract: "thin repo-only index: authorities table, what-lives-here, the two adapters and their opposite directions, live-vs-doubles, add-a-backend checklist"
+        outcome: ok
+      - file: examples/medallion_dagster/README.md
+        section: "marker line (2)"
+        read_type: reference
+        extract: "marker placement precedent — HTML comment immediately under the H1"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / infra.test change"
+        read_type: verify
+        extract: "BACKLOG-DONE entry + trace ship same commit; ID-127 prerequisite line updated to mark BK-241 landed; CHANGELOG skipped (contributor.process + infra.test, not a new user-facing framework/spec; BK-258 precedent); gen-backlogid leaves JSON at 258"
+        outcome: ok

@@ -8,6 +8,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-241 — `tests/aio/README.md` orientation for next async backend**
+  spec: — · effort: S · audience: contributor.process, infra.test
+  Added [`tests/aio/README.md`](../tests/aio/README.md), a thin repo-only
+  landing page so the next async backend (ID-127 Graph) does not re-derive the
+  async test layout and repeat the conftest sprawl BK-164 and ID-156 cleaned up.
+  It is a **map, not a copy**: an authorities table (spec 029, spec 048,
+  ADR-0025, `sdd/TESTING.md`) plus four short sections — what lives in
+  `tests/aio/`, the two opposite-direction adapters (`SyncBackendAdapter`
+  sync→async vs `AsyncBackendSyncAdapter` async→sync, the standing confusion),
+  the live-vs-doubles layering (registry fixtures vs `_doubles.py` failure
+  paths), and an add-a-backend checklist that links the fixture/test templates.
+  - Chose the standalone README over a `sdd/TESTING.md` section: orientation is
+    a different genre from TESTING.md's authoritative rules, it belongs where a
+    contributor lands (`cd tests/aio`), and keeping it a thin linking index
+    avoids duplicating spec 048 (principle 4).
+  - No CHANGELOG entry: `contributor.process` + `infra.test`, and the README is
+    not a new user-facing framework or spec (BK-258 precedent).
+  - Completes the ID-127 (Graph) process/test prerequisite gate; with BK-239
+    also landed, both gates ahead of the Graph backend are now clear.
+
 - [x] **BK-239 — Generic field-vs-capability symmetry check for `WriteResult`**
   spec: WR-001a, WR-005, WR-012 · effort: S · audience: infra.test
   The two existing per-pair under-declaration guards on the `WriteResult`
