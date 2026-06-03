@@ -8,6 +8,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-245 — Cross-source capability-parity check (Python ↔ Dafny)**
+  spec: — · effort: S · audience: infra.test, contributor.tooling
+  Added `scripts/check_capability_parity.py`, a sibling to
+  `check_formal_trace.py`, asserting
+  `{c.value for c in Capability} == {CapabilityName(c) for c in <Dafny Capability>}`.
+  `check_formal_trace.py` matches `@spec` tags, not capability-enum
+  membership, so the `CapLazyRead` ↔ `Capability.LAZY_READ` parity ID-188
+  added on a comment alone (PR #689) had no mechanical guard; a future
+  `Capability.<NAME>` drift between `_capabilities.py` and the Dafny
+  `Capability` datatype / `CapabilityName` cases would have slipped through.
+  - Two checks, both parsed from source (AST for the Python enum, scoped
+    regexes for the Dafny datatype and `CapabilityName` arms — no package
+    import, no Dafny toolchain): (1) Dafny-internal, every `Capability`
+    datatype variant has a `CapabilityName` arm and vice versa; (2)
+    cross-language, the arm strings equal the Python `.value` set. The gate
+    fails on a mismatch *or* an empty parse of any source. Parity is
+    per-name; Dafny datatype ordering/grouping is out of scope.
+  - Check (1) makes the gate self-contained: a variant added without an arm
+    is otherwise caught only by Dafny's exhaustive-match verification, which
+    runs in the path-gated `verify-formal` CI job, not `lint`. To fire on a
+    `BackendContract.dfy`-only change (FORMAL_PAT, not CODE_PAT), the gate is
+    wired into both the `lint` and `verify-formal` CI jobs.
+  - Runs in `hatch run lint`; covered by
+    `tests/scripts/test_check_capability_parity.py`.
+  - No CHANGELOG entry (infra.test + contributor.tooling, not user-facing).
+
 - [x] **BK-241 — `tests/aio/README.md` orientation for next async backend**
   spec: — · effort: S · audience: contributor.process, infra.test
   Added [`tests/aio/README.md`](../tests/aio/README.md), a thin repo-only

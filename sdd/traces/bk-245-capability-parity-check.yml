@@ -1,0 +1,123 @@
+id: BK-245
+title: "Cross-source capability-parity check (Python ↔ Dafny)"
+trigger: |
+  PR #689 review of ID-188 noted the new CapLazyRead variant in
+  sdd/formal/BackendContract.dfy is asserted to mirror Python's
+  Capability.LAZY_READ, but no mechanical check enforces that claim:
+  check_formal_trace.py matches @spec tags, not capability-enum
+  membership, so a future Capability.<NAME> ↔ Dafny Capability /
+  CapabilityName drift would slip through silently.
+source_items:
+  - BK-245
+  - ID-188
+audience:
+  - infra.test
+  - contributor.tooling
+review_rounds: 3
+surprising_ripples:
+  # The rebase onto post-0.27.0 master auto-merged cleanly but left the
+  # BACKLOG-DONE entry under `## v0.27.0` even though master had introduced a
+  # `## Unreleased` section (BK-239/BK-241) — git's region merge cannot know
+  # the entry belongs in the newer section. Caught in PR #744 review, not by
+  # any gate.
+  - sdd/BACKLOG-DONE.md
+  # Round 3: the lint job (where the gate lives) is path-gated on CODE_PAT,
+  # which excludes sdd/formal — so a BackendContract.dfy-only change never ran
+  # the parity gate. The gate had to be wired into verify-formal (FORMAL_PAT)
+  # as well. The same gap silently affects check_formal_trace.py and
+  # check_spec_marks.py, which also read sdd/formal & sdd/specs from the lint
+  # job; flagged, not fixed here.
+  - .github/workflows/ci.yml
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-245"
+        read_type: gate
+        extract: "assert {Capability.<name>.value} == {CapabilityName(c)}; parity is per-name; ordering out of scope; extend check_formal_trace.py OR add sibling check_capability_parity.py"
+        outcome: ok
+      - file: src/remote_store/_capabilities.py
+        section: "Capability enum (101-120)"
+        read_type: reference
+        extract: "14 members, NAME = \"value\" string assignments; the .value strings are the cross-language identity"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "§2 Capability datatype (55-70), §7 CapabilityName (963-980)"
+        read_type: reference
+        extract: "CapabilityName(c) maps each variant to the same string as the Python .value; datatype↔CapabilityName agreement already Dafny-verified, so only the string set needs cross-language parsing"
+        outcome: ok
+      - file: scripts/check_formal_trace.py
+        section: "(full)"
+        read_type: reference
+        extract: "matches @spec tags only, no capability notion; pure AST/regex with injectable main() paths — the pattern to mirror in a sibling gate"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/check_capability_parity.py
+        section: "(new)"
+        read_type: reference
+        extract: "AST-parse Capability enum values + regex-parse CapabilityName case strings; compare sets symmetrically (no package import); main() returns 1 on mismatch or empty parse"
+        outcome: ok
+      - file: tests/scripts/test_check_capability_parity.py
+        section: "(new)"
+        read_type: reference
+        extract: "importlib loader like test_check_formal_trace; live parity tripwire + synthetic python-only / dafny-only mismatch + empty-parse guard"
+        outcome: ok
+      - file: pyproject.toml
+        section: "lint script list (159)"
+        read_type: reference
+        extract: "add python scripts/check_capability_parity.py alongside the other check_*.py gates"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "lint job gate steps (after 106)"
+        read_type: reference
+        extract: "add - run: python scripts/check_capability_parity.py"
+        outcome: ok
+  - id: fix
+    name: Fix (PR #744 review)
+    steps:
+      - file: scripts/check_capability_parity.py
+        section: "extract_dafny_capabilities / _capability_name_body"
+        read_type: reference
+        extract: "review flagged the file-wide case-arm regex as brittle: a future second `match c` helper over Capability would leak arms (over-collection the empty-parse guard misses). Slice CapabilityName's brace-delimited body first, then scan — assumption now enforced by construction"
+        outcome: ok
+      - file: tests/scripts/test_check_capability_parity.py
+        section: "test_ignores_arms_in_a_second_helper, test_absent_function_yields_empty"
+        read_type: reference
+        extract: "pin the body-scoping: arms in a second helper do not leak; absent CapabilityName yields empty (caught by main's empty-parse guard)"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "## Unreleased vs ## v0.27.0"
+        read_type: reference
+        extract: "round 2: reviewer flagged the entry sat under released v0.27.0. fcc0289 (Release v0.27.0) precedes this work; master's BK-239/BK-241 had added a `## Unreleased` section the rebase merge did not move the entry into. Moved BK-245 to the top of Unreleased (newest-first)"
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 1 (6-month test), Rule 4 (one copy per fact)"
+        read_type: gate
+        extract: "round 2: reviewer flagged the module docstring. Trimmed the PR #689 / ID-188 / check_formal_trace history (which lives in this trace + the BACKLOG entry) down to the durable invariant, mechanism, and exit contract"
+        outcome: ok
+      - file: scripts/check_capability_parity.py
+        section: "_capability_datatype_variants / extract_dafny_capability_arms / main"
+        read_type: reference
+        extract: "round 3: reviewer's elevated observation — the gate parsed only CapabilityName arms, leaving the datatype-variant drift class to Dafny's exhaustive-match verification. Added a second check (datatype variants == arm variants) so the gate is self-contained, plus the cross-language name check"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup filter (CODE_PAT vs FORMAL_PAT), verify-formal job"
+        read_type: gate
+        extract: "round 3: lint runs on CODE_PAT (excludes sdd/formal), so a BackendContract.dfy-only change never ran the gate. Wired the parity check into verify-formal (FORMAL_PAT) too so it fires whenever either source changes"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / contributor.tooling change"
+        read_type: verify
+        extract: "BACKLOG→BACKLOG-DONE same commit, trace shipped same PR, CHANGELOG skipped (infra.test + contributor.tooling, not user-facing), gen-backlogid"
+        outcome: ok
+      - file: scripts/check_capability_parity.py
+        section: "live run"
+        read_type: verify
+        extract: "exit 0 at HEAD (14 names parity); temporary synthetic member drives exit 1 with the offending name"
+        outcome: ok
