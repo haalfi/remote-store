@@ -1,0 +1,490 @@
+<!-- doc: repo-only -->
+# ID-127 Plan — Microsoft Graph Backend Implementation Roadmap
+
+> **Temporary artefact. Delete when ID-127 closes.** This plan is a
+> point-in-time decomposition of the implementation, not a living
+> contract. The authoritative baseline is spec
+> [044](../specs/044-graph-backend.md), [RFC-0010](../rfcs/rfc-0010-graph-backend.md),
+> and ADRs [0021](../adrs/0021-graph-sdk-choice.md)..[0024](../adrs/0024-resource-locked-error.md).
+> When those and this plan disagree, the spec/ADR wins and this file is
+> wrong (principle 5). On ID-127 close, this file is removed in the same
+> PR that moves ID-127 to `BACKLOG-DONE.md`.
+
+## Purpose
+
+Decompose the Graph backend into a sequence of **independently
+reviewable, independently mergeable PRs**, each small enough that a
+reviewer can hold the whole change in their head. There is no separate
+verification gate: **each PR is the verification step**. Every step
+below names a commit-message / PR-body tag (e.g. `GR-CORE`) that the
+implementing PR must cite.
+
+The backend is built as a contract-expanding feature (BK-237 DoD,
+000-process.md § Feature-type Definition of Done). The shape of the
+roadmap follows that DoD: the conformance contract and test spine land
+**before** the first backend implementation, so the backend moves
+itself off an xfail registry against a contract that already exists.
+
+## Sequencing at a glance
+
+```
+GR-SPINE ──► GR-CONTRACT ──► GR-CORE ──┬─► GR-READ ──┐
+ (1)            (2)            (3)      ├─► GR-WRITE ─┼─► GR-DOCS-E2E ──► GR-DONE
+                                       └─► GR-MUTATE ┘     (7)             (8)
+                                          (4/5/6)
+```
+
+GR-READ / GR-WRITE / GR-MUTATE all depend on GR-CORE and are mutually
+independent (they fill in disjoint method bodies and clear disjoint
+conformance slices); they may merge in any order or in parallel.
+
+## Where the spec-obligated work lands
+
+The merged PR #747 surfaced eight items that must be explicitly owned.
+This table is the index so none is buried; each is also called out as a
+named acceptance criterion in its owning step.
+
+| Obligated item | Owning step |
+|---|---|
+| Cassette-spine generalisation (per-backend dir, id-alias, **bearer-token scrub**, record script, httpx-streaming-replay) | **GR-SPINE (1)** |
+| Async `TestWriteResultConformance` decision | **GR-CONTRACT (2)** |
+| `_SENSITIVE_KEYS` widening (`client_secret`, `client_certificate`) | **GR-CORE (3)** |
+| `ResourceLocked` bundle (runtime + Dafny variant + `_raise_if_err`) | **GR-CORE (3)** |
+| `__all__` ↔ `index.md` parity (ID-173) for the four public symbols | **GR-CORE (3)** |
+| Setup guide `graph-setup.md` | **GR-DOCS-E2E (7)** |
+| e2e wiring into `test_async_streaming_integrity.py` | **GR-DOCS-E2E (7)** |
+| BK-237 contract-expanding-feature DoD umbrella checklist | **GR-DONE (8)** |
+
+## Cross-cutting decisions made here
+
+- **Cassette spine lands FIRST (before the backend).** The scrub layer
+  is security-critical: a recorded cassette captured before a Graph-aware
+  scrub list exists would leak a live `Authorization: Bearer` token into
+  a committed file. The spine must exist before any `--record` run. It
+  also de-risks the unproven httpx-streaming-replay path before backend
+  ops depend on it. See GR-SPINE risk note for the documented fallback.
+- **Async `TestWriteResultConformance`: option (a).** Land an
+  async-parametrised `TestWriteResultConformance` so WR-001a / 004 / 005
+  / 012 / 013 exist for `AsyncBackend` (validated against the existing
+  `AsyncMemory` / `AsyncAzure` fixtures) before Graph plugs in. Option
+  (b) — wrapping `GraphBackend` in `AsyncBackendSyncAdapter` for the sync
+  suite — is rejected: it would test the adapter's spool-and-pump
+  conversion rather than the backend's native `driveItem`-from-response
+  population, which is the actual GR-018 / GR-019 contract.
+- **Capabilities declared up front, operations move off xfail
+  incrementally.** GR-CORE declares the full GR-003 capability set and
+  registers Graph in the conformance fixture registry with the
+  operation slices xfail'd. GR-READ / GR-WRITE / GR-MUTATE each clear
+  their own slices. This is exactly the DoD "move off the xfail list"
+  pattern.
+
+---
+
+## Step 1 — GR-SPINE: generalise the cassette replay spine
+
+**Scope.** Make the Azure-hardcoded Stage-1 replay machinery
+backend-generic so a `graph_replay` fixture can plug in later, with a
+Graph-aware (bearer-token) scrub layer in place before any cassette is
+recorded.
+
+**Files touched.**
+- `tests/backends/conformance/conftest.py` (`vcr_cassette_dir`:
+  per-backend dispatch instead of unconditional `CASSETTE_DIR_AZURE`;
+  extend `_CASSETTE_ID_ALIASES`).
+- `tests/backends/fixtures/registry.py` (generalise the
+  `_AZURE_REAL_FIXTURE_IDS` set and missing-cassette → skip hook to
+  recognise `graph_*` ids).
+- `tests/backends/fixtures/_cassettes.py` (add a Graph scrub profile:
+  redact `Authorization: Bearer`, drop/redact the pre-signed
+  `@microsoft.graph.downloadUrl` host + query, scrub `client-request-id`
+  / correlation headers; introduce `CASSETTE_DIR_GRAPH`).
+- `tests/backends/fixtures/graph_replay_async.py` (new — httpx-streaming
+  replay shim, mirroring `azure_replay_async.py`).
+- `scripts/record_cassettes.py` (add a `graph` entry to `_BACKENDS`).
+
+**Spec IDs covered.** TEST-007 (per-backend cassette dirs), TEST-009
+(record recipe), ADR-0028 (Stage-1 replay recipe). No GR-* behaviour yet.
+
+**Acceptance criteria.**
+- `vcr_cassette_dir` returns `cassettes/graph/` for a `graph_*` fixture
+  id and still `cassettes/azure/` for Azure ids (unit test on the
+  dispatch helper).
+- A scrub-layer unit test feeds a synthetic cassette carrying a fake
+  `Bearer` token and a `downloadUrl` and asserts neither survives the
+  scrub. **This is the security gate for the step.**
+- `python scripts/record_cassettes.py --list` (or equivalent) shows the
+  `graph` backend.
+- The streaming shim replays a synthetic chunked `httpx.AsyncClient.stream()`
+  cassette round-trip (proves the mechanism before GR-012/GR-015 need it).
+- `hatch run lint` clean; existing Azure replay tests still pass
+  (no regression in the generalised dispatch).
+
+**Dependencies.** None.
+
+**Risk / surprises.** The httpx-streaming-replay path is **unproven**
+(RFC-0010 § Test plan): vcrpy 8.1.1 needed a bespoke transport shim for
+Azure async, and whether it can capture/replay `httpx.AsyncClient.stream()`
+is open; `respx` has no record mode. **If the streaming shim cannot be
+made to work**, fall back per RFC: shrink Stage-1-replay to the
+non-streaming operations and run GR-012 / GR-015 (and the round-trip)
+at Stage 3 only — and say so explicitly in this PR. That fallback does
+not block later steps (respx unit tests still cover request construction
+for streaming ops).
+
+---
+
+## Step 2 — GR-CONTRACT: async conformance contract before the backend
+
+**Scope.** Land the async conformance surface Graph will move onto:
+an async `TestWriteResultConformance`, a capability-matrix assertion,
+and the `USER_METADATA` strict-gate test — all validated against
+existing async fixtures, with no Graph code yet.
+
+**Files touched.**
+- `tests/backends/conformance/test_async_extended.py` (or a new
+  `test_async_atomic.py`): async-parametrised `TestWriteResultConformance`
+  covering WR-001a / 004 / 005 / 012 / 013 for `AsyncBackend`.
+- `tests/backends/conformance/` capability-matrix test (assert declared
+  set matches a per-backend expected set; unsupported capabilities raise
+  `CapabilityNotSupported`).
+- `USER_METADATA` strict-gate test (non-empty `metadata=` →
+  `CapabilityNotSupported`; `{}` / `None` are no-ops) at the Store layer.
+- `tests/backends/fixtures/registry.py` / `fixtures.toml` if an xfail /
+  expected-capability registry entry shape needs to exist for backends
+  to register against.
+
+**Spec IDs covered.** WR-001a/004/005/010/011/012/013, ASYNC-008/010/021,
+GR-003 (matrix shape, exercised by existing backends here; Graph slots in
+at GR-CORE).
+
+**Acceptance criteria.**
+- New async `TestWriteResultConformance` passes against `AsyncMemory`
+  and `AsyncAzure` (proves the contract is real before Graph exists).
+- Capability-matrix and metadata-gate tests pass against existing
+  backends.
+- `filterwarnings = error` suite stays clean.
+- `hatch run lint` clean.
+
+**Dependencies.** None hard; pairs naturally after GR-SPINE.
+
+**Risk / surprises.** Option (a) modifies a **shared** conformance class,
+so every async backend must satisfy the newly-asserted WR slices — if
+`AsyncAzure` does not already populate a rich field the async suite now
+checks, that is a pre-existing gap this step surfaces (record it, do not
+silently weaken the assertion — principle 7). May force a small
+`AsyncAzure` follow-up; flag it rather than absorb it.
+
+---
+
+## Step 3 — GR-CORE: `_graph` sub-package public surface + foundation
+
+**Scope.** Land the full public API surface and request/error foundation
+of the backend with operation bodies stubbed and their conformance
+slices xfail'd: construction, capabilities, addressing, HTTP+error
+mapping, auth, utils, masking, `ResourceLocked` bundle.
+
+**Files touched.**
+- `src/remote_store/aio/backends/_graph/` (new sub-package):
+  `__init__.py`, `backend.py` (construction GR-001/004/005, name GR-002,
+  capability decl GR-003, `to_key`/`native_path` GR-036/036a, `unwrap`
+  GR-037, `close` GR-051 baseline, addressing GR-009/010, stubbed ops),
+  `http.py` (httpx wrapper, pagination GR-016, error-mapping table
+  GR-028..034/045/054/055/046, masking GR-035), `auth.py` (`GraphAuth`
+  GR-006/007/008), `utils.py` (`GraphUtils.resolve_drive_id` /
+  `aresolve_drive_id` GR-057).
+- `src/remote_store/aio/backends/__init__.py` (guarded re-export of
+  `GraphBackend`, `GraphAuth`, `GraphUtils`).
+- `src/remote_store/_errors.py` (`ResourceLocked` class + `__all__`).
+- `src/remote_store/_config.py` (`_SENSITIVE_KEYS` += `client_secret`,
+  `client_certificate`).
+- `sdd/formal/BackendContract.dfy` (`Error.ResourceLocked(path, backend)`
+  variant) + re-translated `sdd/formal/MemoryBackend-py/module_.py` +
+  `tests/backends/dafny/_helpers.py::_raise_if_err` dispatch.
+- `docs-src/reference/api/index.md` (parity entries for the four
+  symbols) ; `pyproject.toml` (`graph` extra per ADR-0021) ;
+  `FEATURES.md` (Graph row, capability columns per GR-003).
+- `tests/backends/fixtures/fixtures.toml` (register `graph_replay` /
+  `graph_live` fixtures; xfail registry for unimplemented op slices).
+
+**Spec IDs covered.** GR-001..GR-011, GR-016, GR-028..GR-037, GR-045,
+GR-050..GR-057, ERR-013, RET-015 (mapping table), SEC-003.
+
+**Acceptance criteria.**
+- **`_SENSITIVE_KEYS` widening** (named obligation): config-loaded Graph
+  backends auto-wrap `client_secret` / `client_certificate`; test asserts
+  it, plus no regression for other backends' keys.
+- **`ResourceLocked` bundle** (named obligation): runtime class, Dafny
+  variant, and `_raise_if_err` dispatch land **together**; Dafny suite
+  re-verifies; an error-class unit test covers ERR-013 (construction,
+  `path`/`backend`, `__all__` membership, flat-hierarchy parent).
+- **`__all__` ↔ `index.md` parity** (named obligation): `check_api_docs.py`
+  passes with `GraphBackend`, `GraphAuth`, `GraphUtils`, `ResourceLocked`
+  present in both `__all__` and `index.md`, in the **same commit** as the
+  `__all__` additions (hard CI gate).
+- Credential masking: a bearer token never appears in `str`/`repr` of any
+  raised error or in any backend log record at any level (GR-035 anchors).
+- `import remote_store` works without the `graph` extra installed (guarded
+  import); capability-matrix test passes for Graph.
+- respx unit tests for `GraphUtils.resolve_drive_id` (all three target
+  shapes) and the error-mapping table pass.
+- `hatch run lint` clean.
+
+**Dependencies.** GR-SPINE (fixture registry shape), GR-CONTRACT
+(capability-matrix + metadata-gate contract to register against).
+
+**Risk / surprises.** The Dafny re-translation requires the Dafny
+toolchain to regenerate `MemoryBackend-py/module_.py`; if it is not
+available in the dev/CI environment, the variant + dispatch must still
+land as a hand-checked translation matching the existing variant shape —
+flag the toolchain status in the PR. ADR-0024 packaging note: see
+*Alignment notes* below.
+
+---
+
+## Step 4 — GR-READ: read, list, metadata, range download
+
+**Scope.** Implement all read-path operations and clear their conformance
+slices.
+
+**Files touched.** `src/remote_store/aio/backends/_graph/backend.py`
+(`read` GR-012, `get_file_info` GR-013, `list_files`/`list_folders`/
+`iter_children` GR-014), `transfer.py` (range-download driver GR-015,
+downloadUrl expiry+eTag re-fetch GR-017, `416` mapping GR-055), retry
+honouring GR-047/048 on the read path; `file.hashes` → `FileInfo.extra`
+GR-049. Tests under `tests/backends/` (respx unit + Stage-1 replay where
+streaming-replay is available; integration markers for GR-* listed
+integration-only).
+
+**Spec IDs covered.** GR-012..GR-017, GR-046 (read/list/range slices),
+GR-049, GR-055; GR-047/048 on read.
+
+**Acceptance criteria.**
+- Graph moves off xfail for READ / LIST / METADATA / LAZY_READ
+  conformance slices.
+- respx tests cover pagination across ≥2 pages (incl. empty `value` +
+  `nextLink`), missing/ malformed `nextLink` → `BackendUnavailable`,
+  downloadUrl expiry mid-read with eTag-unchanged resume and eTag-changed
+  → `BackendUnavailable`, SharePoint range-fallback (WARNING marker +
+  `FileInfo.extra["graph.read.range_fallback"]`).
+- `read`/`get_file_info` on a folder → `InvalidPath`; missing path on
+  list → yields nothing (never raises).
+- `hatch run lint` clean; `filterwarnings = error` clean.
+
+**Dependencies.** GR-CORE.
+
+**Risk / surprises.** SharePoint range behaviour is the unstable area
+(GR-015/GR-017): the fallback-to-spool path is asserted via log + `extra`
+because the backend has no `StoreEvent` handle (OBS layering). If
+streaming-replay (GR-SPINE) was deferred, the streaming slices run
+Stage-3-only and the respx unit layer carries the request-construction
+assertions.
+
+---
+
+## Step 5 — GR-WRITE: small write, upload session, write_atomic
+
+**Scope.** Implement the write path and clear its conformance slices,
+including the native `WriteResult` population both async-conformance
+classes from GR-CONTRACT now check.
+
+**Files touched.** `backend.py` (`write` GR-018/019, `write_atomic`
+GR-040, auto-mkdir GR-039, BE-008 409 discrimination), `transfer.py`
+(upload-session driver: alignment GR-020, chunk PUT GR-021, retry
+GR-022, resume from `nextExpectedRanges` GR-023, abort GR-024, token
+expiry mid-session GR-038, spool for unknown-length iterators with
+`graph.upload.spool_spilled` DEBUG marker), `http.py` (`423`→
+`ResourceLocked` mid-session GR-045). Tests as above.
+
+**Spec IDs covered.** GR-018..GR-024, GR-038..GR-040, GR-045 (write
+path), GR-046 (write slices), WR-001..WR-013 for Graph, GR-054.
+
+**Acceptance criteria.**
+- Graph moves off xfail for WRITE / ATOMIC_WRITE / WRITE_RESULT_NATIVE
+  conformance slices; both small-file and upload-session paths populate
+  `WriteResult` rich fields (`size`/`etag`/`last_modified`/`version_id`)
+  from the `driveItem` response, `source="native"`, `digest=None`.
+- respx tests cover exact-320-KiB-boundary chunking, mid-session
+  retry/resume, abort (`DELETE {sessionUrl}`), `409` discrimination
+  (target-folder / ancestor-file / file-exists), spool spill marker.
+- `metadata=` strict gate verified at Store layer (CapabilityNotSupported);
+  `{}`/`None` no-op.
+- Stage-1 cassette records one representative round-trip; the 10 MiB
+  round-trip is Stage-3-only.
+- `hatch run lint` clean; `filterwarnings = error` clean.
+
+**Dependencies.** GR-CORE (GR-READ optional but the 10 MiB round-trip
+test needs read-back, so order GR-READ → GR-WRITE if validating it here).
+
+**Risk / surprises.** Unknown-length `AsyncIterator` forces a spool pass
+(Graph requires a known total in `Content-Range`); the spool uses system
+temp (no `dir=`) — `TMPDIR` redirection is a documentation obligation
+(GR-019), tracked in GR-DOCS-E2E. Chunk-alignment (GR-020) is
+integration-only — respx accepts any `Content-Range`.
+
+---
+
+## Step 6 — GR-MUTATE: delete, copy, move, monitor poller
+
+**Scope.** Implement delete / move / copy and the backend-local monitor
+poller; clear the mutate conformance slices.
+
+**Files touched.** `backend.py` (`delete` GR-041, `delete_folder`
+GR-042/043, `copy` GR-025, `move` GR-027, self-op short-circuit GR-044,
+cross-drive vacuous GR-056), `monitor.py` (new — poller per ADR-0023 /
+GR-026, `parse_graph_monitor_response`). Tests as above.
+
+**Spec IDs covered.** GR-025..GR-027, GR-041..GR-044, GR-046 (mutate
+slices), GR-056.
+
+**Acceptance criteria.**
+- Graph moves off xfail for DELETE / MOVE / COPY conformance slices.
+- respx tests cover copy `202`→monitor poll success and failure
+  (error.code mapped via the standard table; unknown → `BackendUnavailable`),
+  `copy_timeout` expiry → `BackendUnavailable` with monitor URL + poll
+  count + `last_status` token, `Retry-After` precedence, transient-5xx-as-
+  pending, cancellation propagation, sync move + may-be-async move,
+  self-copy/self-move single-GET short-circuit, `delete_folder(recursive=
+  False)` non-empty → `DirectoryNotEmpty`.
+- Poller `graph.copy.poll_complete` DEBUG marker asserted via `caplog`.
+- `close()` cancels pending pollers + aborts in-flight sessions (GR-051).
+- `hatch run lint` clean; `filterwarnings = error` clean.
+
+**Dependencies.** GR-CORE.
+
+**Risk / surprises.** `copy_timeout=None` is unbounded-by-design and
+unsafe by default (GR-026) — a documentation obligation (GR-DOCS-E2E),
+not a code default. End-to-end monitor polling against a real `202` is
+integration-only (GR-026).
+
+---
+
+## Step 7 — GR-DOCS-E2E: guides, examples, and e2e wiring
+
+**Scope.** Ship the user-facing documentation and wire Graph into the
+hand-built e2e async streaming chain.
+
+**Files touched.**
+- `docs-src/guides/backends/graph.md` (new — usage, config, capability
+  notes; must call out `TMPDIR` redirection (GR-019) and the unbounded
+  `copy_timeout=None` caveat (GR-026)).
+- `docs-src/guides/backends/graph-setup.md` (new — modelled on
+  `azure-hns-setup.md`: Entra app registration, redirect URIs,
+  client-secret vs certificate, admin-consent URL, `AADSTS*` errors,
+  `GraphUtils.resolve_drive_id` snippets, token-cache location).
+- `docs-src/guides/backends/_nav.yml`, `index.md` (nav entries).
+- `examples/graph-backend.md` or the module docstring rendered by
+  `gen_pages.py`; README backends line + Quick Start snippet (optional).
+- `tests/e2e/conftest.py` (two-layer-gate Graph credential plumbing).
+- `tests/e2e/test_async_streaming_integrity.py` (conditional Graph hop
+  alongside the `if _async_azure_available():` branch; `LAZY_READ`
+  chunk-exemption handling if range-fallback fires).
+
+**Spec IDs covered.** Documentation deliverables (RFC § Documentation
+deliverables); e2e streaming integrity (SHA-256 across hops + lazy-read
+chunking). No new GR-* behaviour.
+
+**Acceptance criteria.**
+- `graph-setup.md` (named obligation) present, self-consistent, and
+  parity-clean against the API reference; both guides resolve all
+  on-disk links (AUTHORING Rule 3) and pass the docs-framework check.
+- e2e wiring (named obligation): the Graph hop is gated on the same
+  two-layer gate as `graph_live` and **skips cleanly** when creds/Azurite
+  are absent; with both present, the integrity and lazy-read-chunking
+  assertions cover the Graph hop.
+- `FEATURES.md` / README backend lines mention Graph.
+- `hatch run lint` clean.
+
+**Dependencies.** GR-READ + GR-WRITE (streaming behaviour the e2e chain
+exercises); GR-CORE (auth/utils for cred plumbing).
+
+**Risk / surprises.** The e2e chain has **no registration seam** — it is
+built by hand in the test body, so wiring is non-trivial (cred plumbing
++ conditional hop + `LAZY_READ` exemption), not a plug-in. If Graph's
+range-fallback (GR-015) materialises during the run, the lazy-read
+chunking assertion (`count > 1`, `max_chunk < file_size`) needs the
+documented exemption or it will flap.
+
+---
+
+## Step 8 — GR-DONE: BK-237 DoD umbrella + close-out
+
+**Scope.** Verify every box of the contract-expanding-feature DoD against
+the assembled backend, land the Stage-3 authoritative tier, and close
+ID-127.
+
+**Files touched.** `tests/backends/fixtures/fixtures.toml` /
+`_live_env.py` (`graph_live` two-layer gate finalised: `RS_TEST_LIVE_GRAPH=1`
++ `GRAPH_TENANT_ID`/`GRAPH_CLIENT_ID`/`GRAPH_CLIENT_SECRET`/`GRAPH_DRIVE_ID`),
+any `@pytest.mark.integration` tests not already landed (GR-007/020/026/
+034/054 + 10 MiB round-trip), `CHANGELOG.md`, `sdd/BACKLOG.md` →
+`sdd/BACKLOG-DONE.md` (move ID-127 incl. the bundled `ResourceLocked`
+sub-task), `sdd/backlogid.json` (`hatch run gen-backlogid`),
+`sdd/traces/ID-127-*.yml` (final), **delete this plan file**.
+
+**Spec IDs covered.** Integration-only set (GR-007, GR-020, GR-026,
+GR-034, GR-054); traceability sweep over every GR-NNN.
+
+**Acceptance criteria (BK-237 contract-expanding-feature DoD — each a
+gate).**
+- [ ] Spec / RFC up to date; conformance + property + formal work was
+  scoped up front (it was — spec 044 / RFC-0010), not discovered as
+  follow-ups.
+- [ ] Capability declaration reviewed for **both** over- and
+  under-declaration against GR-003.
+- [ ] Conformance test + xfail registry landed before the first backend
+  impl (GR-CONTRACT) and Graph is fully off the xfail list now.
+- [ ] Wrapper forwarding verified — `ProxyStore`, `ext/` wrappers, and
+  the sync + oracle adapters all forward the Graph surface
+  (`ResourceLocked` propagates through each).
+- [ ] Docs ripple swept — every guide, snippet, reference, `FEATURES.md`,
+  README the contract appears in.
+- [ ] Audit pass run against the unreleased work as a pre-merge gate.
+- [ ] Every GR-NNN traceable to ≥1 `@pytest.mark.spec("GR-NNN")` test.
+- [ ] `graph_live` Stage-3 fixture skips cleanly without the two-layer
+  gate; the four integration-only invariants run there.
+- [ ] `hatch run all` (Stage-1 local gate) clean; strict coverage gate
+  is CI-only per CLAUDE.md.
+- [ ] ID-127 moved to `BACKLOG-DONE.md` and **this plan file deleted** in
+  the same PR.
+
+**Dependencies.** All prior steps.
+
+**Risk / surprises.** The audit pass may surface honest gaps (e.g. an
+over-declared capability slice that passes conformance vacuously); per
+the audit protocol, report and let the user decide — do not silently
+patch. Live-tier validation depends on a real M365 tenant being
+available; if not, the integration markers stay skip-clean and the
+Stage-3 assertions are deferred to whoever has tenant access (record it).
+
+---
+
+## Alignment notes (read before implementing GR-CORE)
+
+- **ADR-0024 packaging wording.** ADR-0024 § Bundled implementation says
+  the `ResourceLocked` runtime class + Dafny variant "land in the same PR
+  as the Graph sub-package (`aio/backends/_graph/`)." This plan lands them
+  in **GR-CORE**, which *is* the PR that creates the `_graph` sub-package —
+  so the ADR's binding coupling (runtime class, Dafny variant, and
+  dispatch ship **together**, never the variant alone) is preserved.
+  GR-CORE intentionally carries the public surface and foundation but
+  not the operation bodies; that is a finer decomposition than ADR-0024
+  contemplated, not a contradiction of it. If a reviewer prefers strict
+  "one Graph PR" packaging, GR-CORE..GR-MUTATE collapse into that single
+  PR without any change to *what* lands — only *how finely* it is split.
+  This is a packaging interpretation, **not** a spec amendment.
+
+## Spec follow-ups
+
+None identified during planning. Spec 044, RFC-0010, and ADRs
+0021..0024 are internally consistent and sufficient to implement against;
+the only ADR-vs-plan nuance is the packaging interpretation recorded
+under *Alignment notes*, which does not require a spec change. If
+implementation surfaces a genuine spec drift, record it here and stop
+(do not silently amend the baseline).
+
+## Non-goals for this roadmap
+
+- No item-id addressing (GR-011 deferred), no native-async observe/otel,
+  no `ext.integrity` Graph fast-path (GR-049), no cross-drive ops
+  (GR-056), no `open_atomic` on the session (GR-040 follow-up). All are
+  out of scope per RFC-0010 § Non-goals / Open Questions.
