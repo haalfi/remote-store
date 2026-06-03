@@ -47,7 +47,13 @@ from remote_store._errors import (  # noqa: E402
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, WriteResult  # noqa: E402
-from remote_store.backends._azure import AzureBackend, _AzureBinaryIO  # noqa: E402
+from remote_store.backends._azure import AzureBackend, _AzureBinaryIO, _ByteCountingIO  # noqa: E402
+from tests.backends.azure._materialization_guard import (  # noqa: E402
+    FULL_PAYLOAD,
+    ReadSizeSpy,
+    chunks_from_append_calls,
+    collect_sync_upload,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -689,6 +695,118 @@ class TestAzureNonHnsFolderMarkers:
         for call in cc.get_blob_client.call_args_list:
             key = call.args[0] if call.args else call.kwargs.get("blob")
             assert not str(key).endswith("/")
+
+
+# ---------------------------------------------------------------------------
+# Materialization guard (BK-240; SIO-003)
+# ---------------------------------------------------------------------------
+
+
+class TestAzureNoMaterialization:
+    """BK-240: sync write paths must not collapse a BinaryIO into one ``bytes``.
+
+    Sibling of the async guard in ``aio/test_config.py``. Two shapes:
+
+    * non-HNS ``write`` forwards a *readable stream* (``_ByteCountingIO``) to
+      ``upload_blob`` and lets the SDK pull from it; materialization would
+      forward raw ``bytes`` instead. The SDK owns the ``read(N)`` sizing here,
+      so the caller's chunk boundaries are not observable the way they are on
+      the async-iterator / ``append_data`` paths — "stream, not bytes" alone
+      would still pass a read-then-rewrap regression
+      (``upload_blob(io.BytesIO(content.read()))``), which fully materializes
+      yet forwards a readable. We close that variant by pinning the forwarded
+      object to the ``_ByteCountingIO`` passthrough wrapper identity: a rewrap
+      forwards a plain ``BytesIO``, not the backend's counting wrapper.
+    * HNS ``write_atomic`` drives the DFS append protocol — one ``append_data``
+      call per ``_AZURE_BLOCK_SIZE`` chunk; materialization would read the
+      whole payload in one ``content.read()`` and issue a single append (which
+      the reconstruction-only BUG-202 guard would still accept).
+    """
+
+    @pytest.mark.spec("SIO-003")
+    def test_non_hns_write_forwards_stream_not_bytes(self) -> None:
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = _make_backend()
+        backend._hns_enabled = False
+        cc = MagicMock(spec=ContainerClient)
+        backend._cc_instance = cc
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        cc.get_blob_client.return_value = bc
+
+        observed: list[bytes] = []
+        forwarded: list[object] = []
+
+        def _upload(data, **_kwargs):  # noqa: ANN001, ANN202
+            forwarded.append(data)
+            observed.extend(collect_sync_upload(data, block=4))
+            return {}
+
+        bc.upload_blob.side_effect = _upload
+
+        backend.write("file.bin", io.BytesIO(FULL_PAYLOAD))
+
+        bc.upload_blob.assert_called_once()
+        # collect_sync_upload already rejected a materialized bytes payload; the
+        # SDK pulled the stream incrementally and the bytes round-trip intact.
+        assert len(observed) > 1, "SDK should read the stream in multiple chunks"
+        assert b"".join(observed) == FULL_PAYLOAD
+        # Pin the forwarded object to the backend's passthrough counting wrapper.
+        # A read-then-rewrap materialization (upload_blob(io.BytesIO(content.read())))
+        # forwards a plain BytesIO and would slip past "stream, not bytes"; the
+        # _ByteCountingIO identity closes that variant (BUG-194 shape, sync path).
+        assert isinstance(forwarded[0], _ByteCountingIO), (
+            f"upload_blob received {type(forwarded[0]).__name__}, not the "
+            "_ByteCountingIO passthrough wrapper: the write path materialized "
+            "and re-emitted its BinaryIO input rather than streaming it through."
+        )
+
+    @pytest.mark.spec("SIO-003")
+    def test_hns_write_atomic_appends_multiple_chunks(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from azure.core.exceptions import ResourceNotFoundError
+
+        from remote_store.backends import _azure as _azure_mod
+
+        # Force >1 block for the 35-byte payload so a single-append
+        # materialization is distinguishable from the per-chunk stream.
+        monkeypatch.setattr(_azure_mod, "_AZURE_BLOCK_SIZE", 10)
+
+        backend = _make_backend()
+        backend._hns_enabled = True
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+        backend._cc_instance = MagicMock(spec=ContainerClient)
+        backend._datalake_service_instance = MagicMock(spec=DataLakeServiceClient)
+        backend._fs_instance = MagicMock(spec=FileSystemClient)
+
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        backend._cc_instance.get_blob_client.return_value = bc
+        tmp_fc = MagicMock(spec=DataLakeFileClient)
+        tmp_fc.get_file_properties.return_value = MagicMock(
+            spec=["etag", "last_modified"], etag=None, last_modified=None
+        )
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+
+        source = ReadSizeSpy(io.BytesIO(FULL_PAYLOAD))
+        backend.write_atomic("dir/stream.bin", source)
+
+        # upload_data must NOT be called for streaming input (would re-introduce
+        # the BUG-202 MissingRequiredQueryParameter regression).
+        tmp_fc.upload_data.assert_not_called()
+        observed = chunks_from_append_calls(tmp_fc.append_data)
+        assert len(observed) > 1, "streaming HNS write must append per chunk, not once"
+        assert b"".join(observed) == FULL_PAYLOAD
+        # The bounded-memory discriminator for a BinaryIO source: every read pulls
+        # one _AZURE_BLOCK_SIZE block, never a single unbounded read(-1). A
+        # read-all + re-chunk materialization (unbounded read, then small appends)
+        # would still satisfy the two assertions above but records size == -1 here.
+        assert source.read_sizes, "backend never read the source"
+        assert all(size == _azure_mod._AZURE_BLOCK_SIZE for size in source.read_sizes), (
+            f"sync HNS write issued an unbounded read (sizes={source.read_sizes}); "
+            "a bounded-memory stream reads one _AZURE_BLOCK_SIZE block at a time"
+        )
 
 
 # =============================================================================

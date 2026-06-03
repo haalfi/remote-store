@@ -61,6 +61,11 @@ from remote_store.backends._azure_common import (  # noqa: E402
     resolve_credential,
     validate_azure_params,
 )
+from tests.backends.azure._materialization_guard import (  # noqa: E402
+    assert_streamed_not_materialized,
+    async_chunks,
+    collect_async_upload,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -542,6 +547,45 @@ class TestAsyncAzureReadWrite:
 
         call_kwargs = bc.upload_blob.call_args[1]
         assert call_kwargs.get("metadata") == {"k": "v"}
+
+
+# ---------------------------------------------------------------------------
+# Materialization guard (BK-240; SIO-003, ASYNC-021)
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncAzureNoMaterialization:
+    """BK-240: the write path must not collapse an AsyncIterator to one chunk.
+
+    ``test_non_hns_streams_async_iterator_to_upload`` already rejects a plain
+    join-to-bytes (the forwarded arg loses ``__aiter__``). This closes the
+    subtler variant a future refactor is most likely to reach for: join the
+    chunks, then re-emit the result as a *single-chunk* async generator. That
+    wrapper still has ``__aiter__`` and still reconstructs the payload, so the
+    older guard passes while bounded memory is already broken. The chunk-count
+    discriminator catches it because the join collapses 3 chunks into 1.
+    """
+
+    @pytest.mark.spec("ASYNC-021", "SIO-003")
+    async def test_non_hns_preserves_chunk_boundaries(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+
+        observed: list[bytes] = []
+
+        async def _upload(data, **_kwargs):  # noqa: ANN001, ANN202
+            observed.extend(await collect_async_upload(data))
+            return {}
+
+        bc.upload_blob = AsyncMock(side_effect=_upload)
+
+        await backend.write("file.txt", async_chunks())
+
+        bc.upload_blob.assert_awaited_once()
+        # The SDK must observe the supplied chunk sequence unchanged; a collapse
+        # to one chunk would mean the backend materialized before forwarding.
+        assert len(observed) > 1, "upload_blob observed a collapsed (materialized) payload"
+        assert_streamed_not_materialized(observed)
 
 
 # =============================================================================

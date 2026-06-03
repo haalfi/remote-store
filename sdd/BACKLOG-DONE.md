@@ -54,6 +54,34 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   - Completes the ID-127 (Graph) process/test prerequisite gate; with BK-239
     also landed, both gates ahead of the Graph backend are now clear.
 
+- [x] **BK-240 — Streaming-iteration counting wrapper for write paths**
+  spec: SIO-003, ASYNC-021 · effort: S · audience: infra.test
+  BUG-165 (Azure async materialized payloads), BUG-181 (HNS size counting),
+  and BUG-194 (`gotcha_async_materialize_antipattern`) were three faces of one
+  defect: a write path collapsed an `AsyncIterator[bytes]` / `BinaryIO` into a
+  single `bytes` before the SDK call. The type signature tolerates it, so it
+  recurred; each recurrence was caught only by an ad-hoc per-path assertion.
+  - **Discriminator:** chunk-boundary preservation at the SDK boundary. A
+    faithful stream forwards N chunks as N chunks; *any* materialization (join
+    to bytes, or join then re-emit as one chunk) collapses N>1 chunks into one.
+    The plan's initial peak-memory probe was dropped — it cannot run in the
+    Stage-1 no-container pass and is confounded by the Azure SDK's own
+    multi-MiB block buffering; the SDK-boundary chunk count is what the backlog
+    actually described and is robust.
+  - **Closes a real hole:** the existing async non-HNS guard
+    (`hasattr(forwarded, "__aiter__")` + payload reconstruction) passes a
+    materialize-then-re-emit-as-one-chunk wrapper; sync non-HNS had no
+    stream-vs-bytes guard; sync HNS reconstructed but never asserted `>1`
+    append. (Async HNS already asserted `append_data.await_count == 2`.)
+  - **Lands:** reusable `tests/backends/azure/_materialization_guard.py`
+    (`MULTI_CHUNK`, `async_chunks`, `collect_async_upload`, `collect_sync_upload`,
+    `chunks_from_append_calls`, `assert_streamed_not_materialized`) +
+    `TestAsyncAzureNoMaterialization` (async non-HNS) and
+    `TestAzureNoMaterialization` (sync non-HNS + sync HNS). Future SDK-streaming
+    backends reuse the helper by pointing their mocked SDK call at the
+    collectors.
+  - infra.test only → no CHANGELOG entry (derived rule).
+
 - [x] **BK-239 — Generic field-vs-capability symmetry check for `WriteResult`**
   spec: WR-001a, WR-005, WR-012 · effort: S · audience: infra.test
   The two existing per-pair under-declaration guards on the `WriteResult`
