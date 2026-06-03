@@ -43,10 +43,17 @@ Stage-1 cost.
 
 GR-READ / GR-WRITE / GR-MUTATE all depend on GR-CORE and are mutually
 independent (they fill in disjoint method bodies and clear disjoint
-conformance slices); they may merge in any order or in parallel.
+conformance slices); they may merge in any order or in parallel — with
+**one soft ordering caveat**: GR-MUTATE's full `close()` acceptance
+(GR-051) cannot exercise the *upload-session abort* half until GR-WRITE's
+session driver exists, so that one assertion is split (see GR-MUTATE /
+GR-WRITE) and the combined `close()` is pinned in GR-DONE.
 GR-WRITE additionally realises the async `WriteResult` contract authored
 in GR-CONTRACT — transitively pulled in via GR-CORE, but a direct
-semantic dependency worth scheduling against.
+semantic dependency worth scheduling against. The diagram routes all
+three of GR-READ/WRITE/MUTATE into GR-DOCS-E2E as "all backend ops
+complete" sequencing; the e2e streaming-integrity *test* itself only
+needs READ + WRITE (see GR-DOCS-E2E Dependencies).
 
 ## Where the spec-obligated work lands
 
@@ -268,6 +275,13 @@ mapping, auth, utils, masking, `ResourceLocked` bundle.
 - `src/remote_store/_errors.py` (`ResourceLocked` class + `__all__`).
 - `src/remote_store/_config.py` (`_SENSITIVE_KEYS` += `client_secret`,
   `client_certificate`).
+- `sdd/specs/031-ext-dagster.md` (**ripple — third consumer**):
+  `ext/dagster.py::_build_store` *imports* `_SENSITIVE_KEYS` (no code
+  change needed), but spec 031 § DAG-033 **hard-enumerates the literal
+  key set in prose**, which the widening leaves stale. Per principle 4
+  (single source of truth), repoint that enumeration at
+  `_config._SENSITIVE_KEYS` rather than re-listing keys, so the next
+  widening never desyncs again.
 - `sdd/formal/BackendContract.dfy` (`Error.ResourceLocked(path, backend)`
   variant) + re-translated `sdd/formal/MemoryBackend-py/module_.py` +
   `tests/backends/dafny/_helpers.py::_raise_if_err` dispatch.
@@ -280,12 +294,20 @@ mapping, auth, utils, masking, `ResourceLocked` bundle.
   registry for unimplemented op slices).
 
 **Spec IDs covered.** GR-001..GR-011, GR-016, GR-028..GR-037, GR-045,
-GR-050..GR-057, ERR-013, RET-015 (mapping table), SEC-003.
+GR-050..GR-053, GR-057, ERR-013, RET-015 (mapping table), SEC-003,
+DAG-033 (ripple). The error-mapping *table* GR-CORE's `http.py` authors
+covers 054/055/046 as code, but those IDs' behaviour + test ownership
+sits in GR-WRITE (GR-054), GR-READ (GR-055), and GR-MUTATE (GR-056) —
+so they are deliberately **not** claimed in this range, keeping one
+unambiguous owner per ID for GR-DONE's traceability sweep.
 
 **Acceptance criteria.**
 - **`_SENSITIVE_KEYS` widening** (named obligation): config-loaded Graph
   backends auto-wrap `client_secret` / `client_certificate`; test asserts
-  it, plus no regression for other backends' keys.
+  it, plus no regression for other backends' keys. Dagster masking
+  (`ext/dagster.py`) inherits the widening automatically (it imports the
+  set); spec 031 § DAG-033's prose enumeration is updated in the same
+  commit (repointed at the single source per principle 4).
 - **`ResourceLocked` bundle** (named obligation): runtime class, Dafny
   variant, and `_raise_if_err` dispatch land **together**; Dafny suite
   re-verifies; an error-class unit test covers ERR-013 (construction,
@@ -374,7 +396,8 @@ expiry mid-session GR-038, spool for unknown-length iterators with
 `ResourceLocked` mid-session GR-045). Tests as above.
 
 **Spec IDs covered.** GR-018..GR-024, GR-038..GR-040, GR-045 (write
-path), GR-046 (write slices), WR-001..WR-013 for Graph, GR-054.
+path), GR-046 (write slices), GR-051 (session-abort half), WR-001..WR-013
+for Graph, GR-054.
 
 **Acceptance criteria.**
 - Graph moves off xfail for WRITE / ATOMIC_WRITE / WRITE_RESULT_NATIVE
@@ -386,6 +409,12 @@ path), GR-046 (write slices), WR-001..WR-013 for Graph, GR-054.
   (target-folder / ancestor-file / file-exists), spool spill marker.
 - `metadata=` strict gate verified at Store layer (CapabilityNotSupported);
   `{}`/`None` no-op.
+- **`close()` upload-session-abort half (GR-051):** with the session
+  driver now present, `close()` issues best-effort `DELETE {sessionUrl}`
+  for any in-flight session (mirrors GR-024); test asserts the abort
+  fires and that `close()` never raises on cleanup. (The poller-cancel
+  half of GR-051 is owned by GR-MUTATE; the combined assertion is pinned
+  in GR-DONE.)
 - **Reality-checked against the live tenant** (GR-FOUNDATION): small and
   upload-session writes run green at Stage 3, including the real chunk
   alignment (GR-020) that respx cannot enforce; the 10 MiB round-trip is
@@ -420,7 +449,7 @@ cross-drive vacuous GR-056), `monitor.py` (new — poller per ADR-0023 /
 GR-026, `parse_graph_monitor_response`). Tests as above.
 
 **Spec IDs covered.** GR-025..GR-027, GR-041..GR-044, GR-046 (mutate
-slices), GR-056.
+slices), GR-051 (poller-cancel half), GR-056.
 
 **Acceptance criteria.**
 - Graph moves off xfail for DELETE / MOVE / COPY conformance slices.
@@ -432,7 +461,12 @@ slices), GR-056.
   self-copy/self-move single-GET short-circuit, `delete_folder(recursive=
   False)` non-empty → `DirectoryNotEmpty`.
 - Poller `graph.copy.poll_complete` DEBUG marker asserted via `caplog`.
-- `close()` cancels pending pollers + aborts in-flight sessions (GR-051).
+- **`close()` poller-cancel half (GR-051):** `close()` cancels pending
+  monitor pollers cooperatively; test asserts cancellation without leak.
+  The *upload-session abort* half of GR-051 is owned by GR-WRITE (it needs
+  the session driver), so this step does **not** assert it — avoiding a
+  hidden dependency on GR-WRITE. The combined fully-assembled `close()`
+  (pollers **and** sessions) is verified in GR-DONE.
 - **Reality-checked against the live tenant** (GR-FOUNDATION): copy
   `202`→monitor polling runs end-to-end at Stage 3 against a genuine
   monitor URL (GR-026); a representative run is cassetted back.
@@ -484,8 +518,12 @@ across hops + lazy-read chunking). No new GR-* behaviour.
 - `FEATURES.md` / README backend lines mention Graph.
 - `hatch run lint` clean.
 
-**Dependencies.** GR-READ + GR-WRITE (streaming behaviour the e2e chain
-exercises); GR-CORE (auth/utils for cred plumbing).
+**Dependencies.** GR-READ + GR-WRITE (the streaming behaviour the e2e
+chain exercises); GR-CORE (auth/utils for cred plumbing). **GR-MUTATE is
+*not* a functional prerequisite** — the streaming-integrity test only
+reads and writes across hops, never moves/copies/deletes. The diagram
+routes GR-MUTATE in as "all backend ops complete" sequencing, not as an
+e2e-test dependency.
 
 **Risk / surprises.** The e2e chain has **no registration seam** — it is
 built by hand in the test body, so wiring is non-trivial (cred plumbing
@@ -512,13 +550,25 @@ sub-task), `sdd/backlogid.json` (`hatch run gen-backlogid`),
 `sdd/traces/ID-127-*.yml` (final), **delete this plan file**.
 
 **Spec IDs covered.** Integration-only set (GR-007, GR-020, GR-026,
-GR-034, GR-054); traceability sweep over every GR-NNN.
+GR-034, GR-054); GR-051 (combined `close()`); traceability sweep over
+every GR-NNN.
 
 **Acceptance criteria (BK-237 contract-expanding-feature DoD — each a
 gate).**
-- [ ] Spec / RFC up to date; conformance + property + formal work was
-  scoped up front (it was — spec 044 / RFC-0010), not discovered as
-  follow-ups.
+- [ ] Spec / RFC up to date; the **conformance + formal** work the
+  feature needs was scoped up front (spec 044 / RFC-0010 § Test plan:
+  respx unit, Stage-1 replay, Stage-3 live, conformance matrix, Dafny
+  oracle), not discovered as follow-ups. **Property-based testing: N/A
+  for Graph** — neither spec 044 nor RFC-0010 calls for it; there is no
+  value-space invariant beyond what the conformance matrix already
+  covers. Recorded here as a deliberate up-front decision, not a
+  discovered-late gap (which is exactly what this DoD box guards against).
+- [ ] **Combined `close()` (GR-051) verified against a fully-assembled
+  backend** — cancels pending monitor pollers (GR-MUTATE half) **and**
+  aborts in-flight upload sessions via `DELETE {sessionUrl}` (GR-WRITE
+  half), never raising on cleanup. This is the one assertion no single
+  op-step owns end-to-end (CORE has the baseline, WRITE the sessions,
+  MUTATE the pollers), so GR-DONE pins it.
 - [ ] Capability declaration reviewed for **both** over- and
   under-declaration against GR-003.
 - [ ] Conformance test + xfail registry landed before the first backend
