@@ -44,6 +44,9 @@ Stage-1 cost.
 GR-READ / GR-WRITE / GR-MUTATE all depend on GR-CORE and are mutually
 independent (they fill in disjoint method bodies and clear disjoint
 conformance slices); they may merge in any order or in parallel.
+GR-WRITE additionally realises the async `WriteResult` contract authored
+in GR-CONTRACT — transitively pulled in via GR-CORE, but a direct
+semantic dependency worth scheduling against.
 
 ## Where the spec-obligated work lands
 
@@ -389,8 +392,14 @@ path), GR-046 (write slices), WR-001..WR-013 for Graph, GR-054.
   Stage-3-only and Stage-1 records one representative round-trip.
 - `hatch run lint` clean; `filterwarnings = error` clean.
 
-**Dependencies.** GR-CORE (GR-READ optional but the 10 MiB round-trip
-test needs read-back, so order GR-READ → GR-WRITE if validating it here).
+**Dependencies.** GR-CORE **and GR-CONTRACT** — the async
+`WriteResult` slices this step clears (WR-001a/004/005/012/013 for
+`AsyncBackend`, `WRITE_RESULT_NATIVE` from the `driveItem` response) only
+exist once GR-CONTRACT's async `TestWriteResultConformance` has landed.
+The chain is transitively satisfied via GR-CORE (which depends on
+GR-CONTRACT), but the coupling is named here so the step schedules
+correctly. GR-READ is optional, but the 10 MiB round-trip test needs
+read-back, so order GR-READ → GR-WRITE if validating it here.
 
 **Risk / surprises.** Unknown-length `AsyncIterator` forces a spool pass
 (Graph requires a known total in `Content-Range`); the spool uses system
