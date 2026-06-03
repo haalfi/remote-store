@@ -169,9 +169,22 @@ The async→sync direction is decided in **ADR-0025**: a new
 thread, submits coroutines via `asyncio.run_coroutine_threadsafe`,
 fails fast when invoked from a running loop, and does not depend on
 `nest_asyncio`. It must preserve the flat capability set and all
-error mappings unchanged. Tracked as **ID-141** in `sdd/BACKLOG.md`;
-that ADR must land before (or together with) the Graph implementation
-PR.
+error mappings unchanged. ID-141 (ADR), ID-142 (spec 029
+§ AsyncBackendSyncAdapter), and ID-143 (implementation + integration
+suite) have **landed**; the bridge is ready for `GraphBackend` to
+consume on day one.
+
+`open_atomic()` has no async equivalent on `AsyncBackend` (ASYNC-062);
+`AsyncBackendSyncAdapter` synthesises it for sync callers via the
+spool-and-flush pattern over `write_atomic` (ASYNC-085).
+`GraphBackend` therefore implements only `write_atomic` (GR-040); the
+synthesised `open_atomic` exposes the same atomicity guarantee to
+sync `Store` callers without backend-specific work. The pattern
+parallel for this implementation is `AsyncAzureBackend`
+(`src/remote_store/aio/backends/_async_azure.py`), not the sync
+`AzureBackend`; sync Azure solves a different problem (wrapping the
+sync Azure SDK) and is the wrong reference shape for a native-async
+backend.
 
 ### Async monitor-URL polling
 
@@ -305,12 +318,25 @@ Tracked here so the implementation run does not lose them:
 - `guides/backends/graph.md` — primary backend guide.
 - `examples/graph-backend.md` or the corresponding module docstring
   rendered by `gen_pages.py`.
-- `FEATURES.md` row for Graph (capabilities, extras, status).
+- `FEATURES.md` row for Graph (capabilities, extras, status); the
+  capability columns must match GR-003, including `WRITE_RESULT_NATIVE`
+  and the explicit absence of `USER_METADATA`.
+- `__all__` ↔ `index.md` parity (ID-173): every public symbol added by
+  this work (`GraphBackend`, `GraphAuth`, `resolve_drive_id`,
+  `ResourceLocked`) must appear in the rendered API reference. The
+  `check_api_docs.py` parity check is a hard CI gate; the
+  implementation PR ships the docs entries in the same commit as the
+  `__all__` additions.
 - README backends line and Quick Start snippet (optional).
 - Docstrings on `GraphBackend`, `GraphAuth`, `resolve_drive_id`, and
   public helpers.
 
 ### Test plan
+
+This plan is the Graph-specific overlay on the **contract-expanding
+feature** Definition of Done (000-process.md § Feature-type Definition
+of Done — owned by BK-237). The DoD checklist takes precedence on any
+overlap; the items below are additions, not substitutes.
 
 - **Unit tests** via `respx` (httpx mock transport) covering every
   operation, every error-code mapping, pagination across multiple
@@ -318,6 +344,13 @@ Tracked here so the implementation run does not lose them:
   chunking (small, exact boundary, large, retry, resume, abort), and
   `@microsoft.graph.downloadUrl` range reads (including URL expiry
   mid-read).
+- **`WriteResult` conformance** — the shared `TestWriteResultConformance`
+  suite (WR-001a / 004 / 005 / 012 / 013) runs against `GraphBackend`
+  unmodified; both the small-file and upload-session paths populate
+  the rich fields from the `driveItem` response (GR-018, GR-019).
+- **`USER_METADATA` strict-gate test** — non-empty `metadata=` raises
+  `CapabilityNotSupported` per WR-010; empty mapping and `None` are
+  no-ops (GR-003).
 - **Integration tests** gated by `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
   `GRAPH_CLIENT_SECRET`, `GRAPH_DRIVE_ID`. Skip cleanly when unset.
   Gate pattern mirrors Azure integration tests.
@@ -385,13 +418,21 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
   implementation phase.
 - **Extras.** New `graph` extra in `pyproject.toml`. See ADR-0021 for
   the locked dependency set.
-- **Spec 005 (errors).** Amended in this PR to add ERR-013
-  `ResourceLocked`.
-- **Spec 025 (retry).** Amended in this PR to add RET-015 Graph retry
-  mapping.
-- **Capabilities.** No new capabilities; existing flags used as
-  declared.
-- **ADRs.** ADR-0021, ADR-0022, ADR-0023, ADR-0024 all new.
+- **Spec 005 (errors).** Amended at RFC acceptance to add ERR-013
+  `ResourceLocked`. The runtime class (`remote_store._errors.ResourceLocked`)
+  and Dafny variant ship with the backend implementation per the
+  ID-127 bundled-sub-task note in `sdd/BACKLOG.md`.
+- **Spec 025 (retry).** Amended at RFC acceptance to add RET-015 Graph
+  retry mapping.
+- **Spec 045 (`WriteResult`).** Graph honours WR-001..WR-013 unchanged;
+  `WRITE_RESULT_NATIVE` is declared (GR-003), `source="native"` on both
+  small-file and upload-session paths (GR-018, GR-019). No amendment
+  to spec 045 required.
+- **Capabilities.** `WRITE_RESULT_NATIVE` declared; `USER_METADATA`
+  withheld with rationale (GR-003). No new capability defined.
+- **ADRs.** ADR-0021, ADR-0022, ADR-0023, ADR-0024 all accepted at
+  RFC acceptance. ADR-0025 (`AsyncBackendSyncAdapter`) is the
+  prerequisite bridge — landed under ID-141.
 
 ## Open Questions
 

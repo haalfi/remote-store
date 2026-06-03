@@ -7,6 +7,33 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Changed
+
+- **Microsoft Graph backend SDD refresh** (ID-127): refreshed
+  `sdd/specs/044-graph-backend.md` and `sdd/rfcs/rfc-0010-graph-backend.md`
+  to track contract drift accumulated since RFC acceptance (May 2026).
+  Spec amendments — GR-003 declares `WRITE_RESULT_NATIVE` and explicitly
+  withholds `USER_METADATA` with rationale (Graph property bag is
+  SharePoint-only); GR-013 pins the `driveItem` → `FileInfo` field
+  mapping (including `lastModifiedDateTime` → `modified_at`); GR-014
+  folds in `iter_children()` as a single-`/children`-call override of
+  BE-026; GR-018 / GR-019 / GR-040 take `metadata=` kwarg, return
+  `WriteResult` per BE-008 / BE-010 / WR-001..WR-013, and apply the
+  WR-010 strict gate; GR-019's size-detection branch is rewritten
+  around `AsyncWritableContent = bytes | AsyncIterator[bytes]` (not
+  `BinaryIO`); GR-018 spells out file-ancestor (ID-209) handling
+  through Graph's native 409; GR-027 pins WR-013 metadata preservation
+  on move; GR-036a adds the `native_path()` override (BE-025); spool
+  observability and SharePoint range-fallback signalling moved off
+  `FileInfo.extra` test-oracle fields onto `ext.observe` event
+  attributes. RFC amendments — `AsyncAzureBackend` named as the
+  pattern parallel (not sync `_azure.py`); `open_atomic` synthesis via
+  ASYNC-085 cross-referenced; test plan layered on top of BK-237's
+  contract-expanding-feature DoD; ID-173 `__all__` ↔ `index.md`
+  parity called out in documentation deliverables. ADR-0021..ADR-0024
+  stand unchanged (Accepted; superseding ADRs would be needed for any
+  real change). No runtime changes.
+
 ## [0.27.0] - 2026-06-02
 
 ### Added

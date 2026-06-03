@@ -61,13 +61,18 @@ GraphBackend(
 
 **Invariant:** `GraphBackend` declares the capabilities `READ`,
 `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `METADATA`, `ATOMIC_WRITE`,
-`LAZY_READ`. It does not declare `GLOB`, `ATOMIC_MOVE`, or
-`SEEKABLE_READ`.
+`LAZY_READ`, and `WRITE_RESULT_NATIVE`. It does not declare `GLOB`,
+`ATOMIC_MOVE`, `SEEKABLE_READ`, or `USER_METADATA`.
 **Rationale:**
 - `ATOMIC_WRITE`: small-file `PUT /content` is service-side atomic;
   upload sessions are atomic on commit (see GR-018, GR-019).
 - `LAZY_READ`: range reads target `@microsoft.graph.downloadUrl`
   (GR-015) and do not materialise the full file.
+- `WRITE_RESULT_NATIVE`: both `PUT /content` and the final upload-session
+  chunk response return a full `driveItem` body carrying `size`, `eTag`,
+  `lastModifiedDateTime`, and (for SharePoint-backed drives)
+  version identifiers. `WriteResult` is populated from that response per
+  WR-004 — no post-write `HEAD` round trip needed (see GR-018, GR-019).
 - `ATOMIC_MOVE` is withheld because Graph move may go async (GR-027);
   atomicity is not guaranteed.
 - `SEEKABLE_READ` is withheld because the Graph content stream is
@@ -80,9 +85,24 @@ GraphBackend(
   advertise a guarantee the backend cannot honour (see GR-015,
   GR-017).
 - `GLOB` is withheld; callers use `ext.glob` over `list_files`.
+- `USER_METADATA` is withheld. Graph exposes per-item user properties
+  only on SharePoint-backed drives (via `driveItem.listItem.fields`,
+  scoped to a backing site list); personal OneDrive has no equivalent
+  surface. Declaring `USER_METADATA` would advertise a behaviour that
+  varies by drive backing — the exact dishonest-declaration failure
+  mode the project guards against. Callers that need the SharePoint
+  property bag reach it through `unwrap(httpx.AsyncClient)` (GR-037).
+  WR-010's strict gate therefore raises `CapabilityNotSupported` on
+  any non-empty `metadata=` passed to `write` / `write_atomic`.
 
 Async monitor polling for `copy` and may-be-async `move` is a
 backend-internal technique, not a capability — see ADR-0023.
+
+`open_atomic()` is not declared by `AsyncBackend` (it has no async
+equivalent — ASYNC-062); sync callers receive it via
+`AsyncBackendSyncAdapter`, which synthesises it as spool-and-flush
+over `write_atomic` (ASYNC-085). `head()` is synthesised by `Store`
+from `get_file_info()` (GR-013); no backend method is required.
 
 ### GR-004: Lazy Connection
 
@@ -236,19 +256,49 @@ the path names a directory (per BE-021).
 ### GR-013: get_file_info()
 
 **Invariant:** `get_file_info(path)` returns a `FileInfo` populated
-from the Graph `driveItem` metadata (`name`, `size`,
-`lastModifiedDateTime`, `eTag`).
-**Postconditions:** ETag is stripped of outer quotes and lowercased.
+from the Graph `driveItem` body. Field mapping:
+- `driveItem.name` → `FileInfo.name`
+- `driveItem.size` → `FileInfo.size`
+- `driveItem.lastModifiedDateTime` (RFC 3339 string) → parsed to
+  `datetime` → `FileInfo.modified_at`
+- `driveItem.eTag` → `FileInfo.etag` (stripped of outer quotes and
+  lowercased)
+- `driveItem.file.mimeType` → `FileInfo.content_type`
+- `driveItem.file.hashes` → `FileInfo.extra["graph.file.hashes"]`
+  per GR-049
+- `FileInfo.metadata` is left as the empty mapping (`USER_METADATA`
+  is not declared — GR-003)
+- `FileInfo.digest` is left `None`; the canonical-digest selection
+  among Graph's three hash variants is reserved for a future
+  `ext.integrity` fast-path (GR-049)
+
+**Postconditions:** Used unchanged by `Store.head()`, which wraps
+`get_file_info` to produce a `WriteResult` with `source="sidecar"`
+per WR-006 — no Graph-specific work is required.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if
 the path names a folder.
 
-### GR-014: list_files() and list_folders()
+### GR-014: list_files(), list_folders(), iter_children()
 
-**Invariant:** `list_files(path, recursive=False)` and
-`list_folders(path)` call `/children` on the target item and filter
-the results by `folder` presence.
-**Missing-path behavior:** Matches BE-014 and BE-015 — yields nothing
-for non-existent paths, never raises `NotFound`.
+**Invariant:** `list_files(path, recursive=False)` returns
+`AsyncIterator[FileInfo]`, `list_folders(path)` returns
+`AsyncIterator[FolderEntry]`, and `iter_children(path)` returns
+`AsyncIterator[FileInfo | FolderEntry]` per BE-014, BE-015, BE-026 (and
+their async ASYNC-* equivalents in spec 029). All three are backed by
+`GET /drives/{drive_id}/root:{encoded_path}:/children`, which interleaves
+file items (carrying the `file` facet) and folder items (carrying the
+`folder` facet) in one response.
+**`iter_children` override:** The backend overrides the default
+`BE-026` implementation (which would chain `list_files` + `list_folders`
+and double the round-trips) to consume the shared `/children` response
+directly, yielding `FileInfo` for `file`-faceted items and `FolderEntry`
+for `folder`-faceted items in the order Graph returns them.
+**Missing-path behavior:** Matches BE-014, BE-015, BE-026 — yields
+nothing for non-existent paths, never raises `NotFound`.
+**`recursive` and `pattern`:** `AsyncBackend.list_files` does not accept
+`max_depth` or `pattern` (ASYNC-039, ASYNC-052b); the optional `recursive`
+flag, when true, walks `/children` per folder. Depth- and pattern-limited
+listing is composed at `AsyncStore` level.
 
 ### GR-015: Range Download via `@microsoft.graph.downloadUrl`
 
@@ -266,11 +316,12 @@ backends in particular). When the server returns the full entity
 (`200 OK` to a `Range` request) or rejects the range with `416`
 outside the valid extent, the backend falls back to the spool
 strategy rather than pretending to stream. When the fallback
-fires, the backend sets
-`FileInfo.extra["graph.read.range_fallback"] = True` on any
-`FileInfo` instance subsequently returned for the same item in
-the operation context, so unit tests can assert the branch was
-exercised without reaching into private helpers.
+fires, the backend emits a `graph.read.range_fallback = True`
+attribute on the `ext.observe` event for the surrounding read
+operation. Tests assert against the observed event rather than
+on backend-internal state — `FileInfo` carries only contract
+fields and the `graph.file.hashes` bag from GR-049, no
+test-oracle branches.
 **Rationale:** The `/content` endpoint returns `302` redirecting to
 the download URL, and only the download URL honours `Range`
 reliably. The download URL is pre-signed; no `Authorization` header
@@ -320,28 +371,49 @@ streaming mid-file.
 
 ### GR-018: Small-File Write (<= 4 MiB)
 
-**Invariant:** `write(path, content, overwrite=False)` with content
-size <= 4 MiB uses `PUT /drives/{drive_id}/root:{encoded_path}:/content`.
+**Invariant:** `write(path, content, *, overwrite=False, metadata=None)
+-> WriteResult` (BE-008) with content size <= 4 MiB uses
+`PUT /drives/{drive_id}/root:{encoded_path}:/content`.
 **Postconditions:**
 - Intermediate folders are created automatically (matches BE-009);
   Graph creates missing parent folders implicitly on path-based
   writes.
 - The write is atomic at the service level.
+- The returned `WriteResult` carries `source="native"` (WR-004) with
+  `size`, `etag`, `last_modified`, and `version_id` populated from the
+  `driveItem` body Graph returns in the `200 OK` response. `digest` is
+  left `None` until a future extension selects a canonical hash from
+  `driveItem.file.hashes` (see GR-049). `metadata` echoes the caller's
+  input mapping when one is supplied (WR-012), `None` otherwise.
+**`metadata=` gate:** Per WR-010, a non-`None`, non-empty `metadata=`
+raises `CapabilityNotSupported` because `GraphBackend` does not declare
+`USER_METADATA` (GR-003). `metadata=None` and `metadata={}` are no-ops.
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`.
-`InvalidPath` if the path names a folder.
+`InvalidPath` if the path names a folder, or if a slash-aligned ancestor
+of `path` is a regular file (BE-008 ID-209 clause).
 **BE-008 precondition discrimination:** Graph is not a flat
 namespace — folders are first-class `driveItem`s with a `folder`
-facet. BE-008's precondition order (path validity → overwrite
-conflict → I/O) applies in full; Graph's `409 nameAlreadyExists`
-alone is not sufficient to choose between `AlreadyExists` and
-`InvalidPath`. The backend inspects the 409 response body: when
-`error.details` (or the returned `driveItem` on
-`@microsoft.graph.conflictBehavior=fail`) carries the `folder`
-facet (or an `itemType`/`item.folder` discriminator naming a
-folder), the existing item is a folder and the backend raises
-`InvalidPath`. Otherwise the existing item is a file and the
-backend raises `AlreadyExists`. This rule applies equally to
-GR-019, GR-025 (copy), and GR-027 (move) destinations.
+facet, and the service rejects path traversal through a file item
+natively. The ID-211 opt-in `reject_write_under_file_ancestor` kwarg
+therefore does **not** apply to `GraphBackend`; ancestor-as-file
+rejection is delivered by Graph's own `409 nameAlreadyExists`
+(carrying a `file`-faceted ancestor in `error.details`) without an
+explicit pre-walk. BE-008's precondition order (path validity →
+overwrite conflict → I/O) applies in full; Graph's
+`409 nameAlreadyExists` alone is not sufficient to discriminate the
+outcomes. The backend inspects the 409 response body:
+- when `error.details` (or the returned `driveItem` on
+  `@microsoft.graph.conflictBehavior=fail`) carries the `folder` facet
+  on the **target** name, the existing item is a folder and the backend
+  raises `InvalidPath`;
+- when the conflict is on an **ancestor** carrying the `file` facet
+  (file-as-directory-component, ID-209), the backend raises
+  `InvalidPath` regardless of `overwrite`;
+- otherwise the existing item is a file at the target name and the
+  backend raises `AlreadyExists`.
+
+This rule applies equally to GR-019, GR-025 (copy), and GR-027 (move)
+destinations.
 **Note on the 4 MiB threshold:** Graph documents the
 `PUT .../content` endpoint as suitable for files up to ~4 MiB and
 recommends upload sessions beyond that. In practice the endpoint
@@ -352,51 +424,59 @@ tuning knob in v1.
 
 ### GR-019: Large-File Write via Upload Session
 
-**Invariant:** `write(path, content, overwrite=False)` with content
-size > 4 MiB opens an upload session via `POST createUploadSession`
-and uploads chunks to the returned session URL.
-**Size requirement:** Graph's upload-session `PUT` requires a
-`Content-Range: bytes {start}-{end}/{total}` header with a known
-total. `Content-Range: bytes X-Y/*` is rejected by Graph and is not
-used. Consequently:
-- For known-size inputs the session carries the true total. The
-  backend recognises the size from any of: a `bytes`/`bytearray`
-  payload (`len(content)`); an open file with a real `fileno()` plus
-  `os.fstat().st_size`; a `BinaryIO` whose current `tell()` plus
-  remaining bytes is computable via `seek(0, SEEK_END)` followed by
-  restoring the original position (only when `content.seekable()` is
-  true); or a copy-path source whose `FileInfo.size` is already
-  known.
-- For streams of unknown size that exceed the small-upload threshold,
-  the backend spools the payload to a `SpooledTemporaryFile` (matching
-  the pattern used by the SharePoint-Azure-Write / SAW path) to
-  determine the total length before opening the session. Callers that
-  want to avoid the spool must hand the backend a content object that
-  falls into one of the known-size categories above (typically a
-  seekable `BinaryIO` or an in-memory `bytes` buffer); there is no
-  separate `content_length` keyword on `Backend.write()` (BE-008).
+**Invariant:** `write(path, content, *, overwrite=False, metadata=None)
+-> WriteResult` (BE-008) with content size > 4 MiB opens an upload
+session via `POST createUploadSession` and uploads chunks to the
+returned session URL.
+**Content shape:** `AsyncBackend.write` accepts `AsyncWritableContent =
+bytes | AsyncIterator[bytes]` (spec 029). The size-detection branch is
+therefore binary:
+- `bytes` / `bytearray`: total is `len(content)`; the session is opened
+  with the true total and chunks are sliced from the in-memory buffer.
+- `AsyncIterator[bytes]`: total is unknown until the iterator is drained.
+  Graph's upload-session `PUT` requires `Content-Range: bytes
+  {start}-{end}/{total}` with a known total (`bytes X-Y/*` is rejected),
+  so the backend spools the iterator to a `SpooledTemporaryFile`,
+  records the final length once the iterator is exhausted, and only
+  then opens the session and replays chunks from the spool. Callers
+  that already know the size and want to avoid the spool pass `bytes`.
+
+There is no separate `content_length` keyword on `Backend.write()`
+(BE-008); inferring size from the input is the only mechanism.
+
 - **Spool-file location:** When an on-disk spill occurs, the temporary
   file is written to the current working directory rather than the
-  system temp dir. This follows the project-wide convention for
-  temporary-file placement (cross-drive / small-`TMPDIR` environments,
+  system temp dir. This matches the project convention for spooling
+  large transfers (cross-drive / small-`TMPDIR` environments,
   particularly Windows, where the system temp volume may lack space
-  for multi-GiB uploads). The policy is owned by this spec, not
-  `tempfile` defaults; the implementation passes an explicit `dir=`.
-  **The documentation-phase guide for this backend must note this
-  placement** so callers running from read-only or small-capacity
-  working directories can redirect the spool explicitly.
-  **Test oracle:** when an on-disk spill occurs, the backend sets
-  `FileInfo.extra["graph.upload.spool_dir"]` on the `FileInfo`
-  returned by the resulting `write()` call (or the next
-  `get_file_info()` for the same path) to the absolute path of the
-  spool directory used. Callers and tests can assert against this
-  field; in-memory uploads (`SpooledTemporaryFile` never spills)
-  leave the field unset.
+  for multi-GiB uploads). The implementation passes an explicit `dir=`
+  to `SpooledTemporaryFile`; the policy is owned by this spec, not by
+  `tempfile` defaults. **The documentation-phase guide for this
+  backend must note this placement** so callers running from read-only
+  or small-capacity working directories can redirect the spool
+  explicitly.
+- **Spool-spill observability:** When an on-disk spill occurs, the
+  backend emits a `graph.upload.spool_dir` attribute on the `ext.observe`
+  start event for the surrounding `write()` (carrying the absolute path
+  of the spool directory used). Tests assert against the observed event,
+  not against backend-internal state — `FileInfo` and `WriteResult`
+  remain free of test-oracle fields.
+
 **Postconditions:**
 - The upload is atomic on commit: the item becomes visible only
   after the final chunk succeeds.
+- The returned `WriteResult` carries `source="native"` (WR-004) with
+  `size`, `etag`, `last_modified`, and (where present) `version_id`
+  populated from the `driveItem` body Graph returns in the **final**
+  chunk's `201 Created` / `200 OK` response. `digest` is left `None`
+  per GR-049. `metadata` echoes the caller's input mapping when one is
+  supplied (WR-012), `None` otherwise.
 - On unrecoverable failure, the session is deleted as a best-effort
   cleanup (GR-024).
+
+**`metadata=` gate:** Identical to GR-018 — a non-`None`, non-empty
+`metadata=` raises `CapabilityNotSupported` per WR-010 because
+`USER_METADATA` is not declared (GR-003).
 
 ### GR-020: Chunk Size Alignment
 
@@ -464,13 +544,23 @@ permissions; permission failures surface as `PermissionDenied`.
 
 ### GR-040: write_atomic()
 
-**Invariant:** `write_atomic(path, content, overwrite=False)`
-delegates to the same path as `write`: small files use `PUT /content`
-(atomic at the service); large files use upload sessions (atomic on
-commit). No temporary file is created client-side.
+**Invariant:** `write_atomic(path, content, *, overwrite=False,
+metadata=None) -> WriteResult` (BE-010) delegates to the same path as
+`write`: small files use `PUT /content` (atomic at the service); large
+files use upload sessions (atomic on commit). No temporary file is
+created client-side.
 **Rationale:** Graph's own write paths already provide the
 no-partial-content guarantee (AW-001); a client-side temp-rename
-dance would add latency without strengthening the contract.
+dance would add latency without strengthening the contract. The
+`WriteResult` shape (WR-001..WR-005, WR-012) and the WR-010
+`metadata=` gate are inherited verbatim from GR-018 / GR-019.
+**`open_atomic()`:** Not implemented by the backend.
+`AsyncBackendSyncAdapter` synthesises it for sync callers as
+spool-and-flush over `write_atomic` (ASYNC-085); no Graph-specific
+override is taken in v1. A future revision could back `open_atomic`
+on the upload session directly (the session URL admits incremental
+`PUT` per chunk without the spool) — captured as a known follow-up,
+not in scope here.
 
 ---
 
@@ -575,9 +665,22 @@ the source item with a new `parentReference` and optional new
 cross-drive moves may return `202 Accepted`, in which case the
 backend reuses the GR-026 poller.
 **Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if
-`dst` exists and `overwrite=False`. `InvalidPath` per BE-021.
+`dst` exists and `overwrite=False`. `InvalidPath` per BE-021 and
+GR-018's BE-008 precondition discrimination (including the
+ancestor-as-file case, ID-209).
 **Atomicity:** Not declared — `ATOMIC_MOVE` is not in the capability
 set (GR-003).
+**Metadata preservation (BE-018, WR-013):** Graph's `PATCH driveItem`
+preserves the item's identity — `id`, `eTag`, and any user-supplied
+property bag on the underlying `listItem` survive the move. The
+backend issues no compensating writes; `get_file_info(dst).metadata`
+returns whatever `get_file_info(src).metadata` would have returned
+before the move. This contract is vacuous in v1 (the backend does not
+declare `USER_METADATA`, so `metadata` is always the empty mapping),
+but the invariant is asserted here so the conformance suite for
+WR-013-move passes without a Graph-specific carve-out, and so a
+future revision that declares `USER_METADATA` for SharePoint-backed
+drives does not also have to revisit move semantics.
 
 ### GR-044: Self-Move and Self-Copy
 
@@ -821,10 +924,30 @@ a new backend.
 ### GR-036: to_key()
 
 **Invariant:** `to_key(native_path)` strips the
-`/drives/{drive_id}/root:` prefix (if present) from a native Graph
-path and returns the remaining key.
+`/drives/{drive_id}/root:` prefix (and the trailing `:` delimiter, if
+present) from a native Graph path and returns the remaining
+backend-relative key.
 **Postconditions:** Pure, deterministic, total (per BE-023). Inputs
-without the prefix are returned unchanged.
+without the prefix are returned unchanged. The empty key (the drive
+root) round-trips through `to_key(native_path(""))` per BK-234.
+
+### GR-036a: native_path()
+
+**Invariant:** `native_path(key)` returns
+`/drives/{drive_id}/root:{encoded_key}:` — the path-addressed metadata
+endpoint form per GR-009 — with each segment of `key` percent-encoded
+per GR-010. The empty key returns `/drives/{drive_id}/root:` (no
+trailing colon delimiter; this is Graph's drive-root form). The
+inverse of GR-036: `backend.to_key(backend.native_path(k)) == k` for
+every valid key (BE-025).
+**Postconditions:** Pure, deterministic, total. The returned string is
+usable as the URL path component of any Graph item-by-path metadata
+request (content endpoints append `/content` or `:/content`; the helper
+covers the metadata form only — content composition is the caller's
+responsibility).
+**Rationale:** Graph clearly has a native path form, so the BE-025
+identity default would be a poor fit; backends with a native root
+**must** override (BE-025).
 
 ### GR-037: unwrap()
 
