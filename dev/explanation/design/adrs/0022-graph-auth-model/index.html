@@ -5595,6 +5595,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#config-loader-responsibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config loader responsibility
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5645,7 +5656,7 @@
   <span class="md-ellipsis">
     
   
-    0023: Async Monitor-URL Polling as a Shared Backend-Local Module
+    0023: Async Monitor-URL Polling — Backend-Local in _graph
   
 
     
@@ -9490,6 +9501,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#config-loader-responsibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config loader responsibility
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9536,16 +9558,22 @@
 
 <h1 id="adr-0022-microsoft-graph-auth-model-dual-flows-behind-a-token-provider-protocol">ADR-0022: Microsoft Graph Auth Model — Dual Flows Behind a Token-Provider Protocol<a class="headerlink" href="#adr-0022-microsoft-graph-auth-model-dual-flows-behind-a-token-provider-protocol" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
+<p>Accepted. Revised 2026-06-03 in place rather than superseded — by
+the time the rewrite landed the ADR was unimplemented against, so
+there was no caller state to preserve and a superseding ADR would
+have added a level of indirection without aiding any reader. Per
+project rule, materially-changing ADRs would normally be superseded;
+this one was a user-authorised exception scoped to the four Graph
+ADRs (0021..0024).</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>The Graph backend (ID-127, RFC-0010) has to work in two distinct
 operating environments:</p>
 <ul>
-<li><strong>Daemon / service processes</strong> with no human at the keyboard, using an
-  app registration plus client secret or certificate. OAuth 2.0
+<li><strong>Daemon / service processes</strong> with no human at the keyboard, using
+  an app registration plus client secret or certificate. OAuth 2.0
   client-credentials flow.</li>
-<li><strong>Interactive CLI / notebook sessions</strong> where a human can complete a
-  login in a browser, typically using OAuth 2.0 device-code flow.</li>
+<li><strong>Interactive CLI / notebook sessions</strong> where a human can complete
+  a login in a browser, typically using OAuth 2.0 device-code flow.</li>
 </ul>
 <p>Both flows ultimately produce a bearer token that the backend attaches
 to every Graph request as an <code>Authorization: Bearer …</code> header. The
@@ -9553,7 +9581,7 @@ backend does not care which flow produced the token — it only needs to
 be able to obtain a current one.</p>
 <p>Other credential sources (managed identity, workload identity, cached
 Azure CLI login) are out of scope for v1 but are likely to surface
-later.</p>
+later through user-supplied providers.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>The backend depends on a <strong>token-provider callable</strong>, not a concrete
 auth class. Two variants cover sync and async call sites:</p>
@@ -9561,13 +9589,13 @@ auth class. Two variants cover sync and async call sites:</p>
 <li><code>Callable[[], str]</code> — synchronous provider.</li>
 <li><code>Callable[[], Awaitable[str]]</code> — async provider.</li>
 </ul>
-<p>A built-in helper, <code>GraphAuth</code>, wraps MSAL and implements both client-
-credentials and device-code flows, exposing the result as one of the
-two callables. Users who already have another way to obtain a token
-(managed identity, corporate auth broker, custom refresh strategy)
-substitute their own callable. The backend does not couple to MSAL
-through the constructor signature — only through the optional default
-helper.</p>
+<p>A built-in helper, <code>GraphAuth</code>, wraps MSAL and implements both
+client-credentials and device-code flows, exposing the result as one
+of the two callables. Users who already have another way to obtain a
+token (managed identity, corporate auth broker, custom refresh
+strategy) substitute their own callable. The backend does not couple
+to MSAL through the constructor signature — only through the optional
+default helper.</p>
 <h3 id="flows-covered-by-graphauth">Flows covered by <code>GraphAuth</code><a class="headerlink" href="#flows-covered-by-graphauth" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Client-credentials.</strong> <code>tenant_id</code>, <code>client_id</code>, and
@@ -9579,25 +9607,48 @@ helper.</p>
   MSAL caches the resulting refresh token.</li>
 </ul>
 <h3 id="token-caching">Token caching<a class="headerlink" href="#token-caching" title="Permanent link">&para;</a></h3>
-<p>MSAL's <code>SerializableTokenCache</code> is serialized to a file in the user's
-config directory, resolved via <code>platformdirs.user_config_dir("remote-store")</code>.
-Users can override the path or disable persistent caching by passing a
+<p>MSAL's <code>SerializableTokenCache</code> is serialized to a file under
+<code>platformdirs.user_config_dir("remote-store")</code>. Users can override the
+path or disable persistent caching by passing a
 <code>SerializableTokenCache</code> directly or by supplying their own callable.</p>
 <p><code>platformdirs</code> is a runtime dependency of the built-in <code>GraphAuth</code>
-implementation (see ADR-0021 for the full <code>graph</code> extra dependency set).
-Callers that supply their own provider and never instantiate <code>GraphAuth</code>
-do not load <code>platformdirs</code> at import time (standard lazy-import pattern
-for <code>ext/*</code>, applied here to the <code>backends/_graph_auth</code> module).</p>
+implementation (see ADR-0021 for the full <code>graph</code> extra dependency
+set). Callers that supply their own provider and never instantiate
+<code>GraphAuth</code> do not load <code>platformdirs</code> at import time (standard
+lazy-import pattern, applied here to the
+<code>aio/backends/_graph/auth</code> module).</p>
 <h3 id="what-the-backend-does-with-the-provider">What the backend does with the provider<a class="headerlink" href="#what-the-backend-does-with-the-provider" title="Permanent link">&para;</a></h3>
 <p>The provider is called lazily: no token acquisition happens in
 <code>__init__</code>. The backend invokes the callable on first request and on
-<code>401 InvalidAuthenticationToken</code> responses (one-shot refresh + retry).
-Results are not cached inside the backend — MSAL (or the user-supplied
-provider) owns the lifetime policy.</p>
+<code>401 InvalidAuthenticationToken</code> responses (one-shot refresh + retry,
+per GR-029). Results are not cached inside the backend — MSAL (or the
+user-supplied provider) owns the lifetime policy.</p>
 <h3 id="credential-masking">Credential masking<a class="headerlink" href="#credential-masking" title="Permanent link">&para;</a></h3>
-<p><code>Authorization</code> headers are redacted anywhere request or response
-metadata surfaces in logs, error messages, or debug dumps, following
-AF-008 rules.</p>
+<p>Two concrete mechanisms cover credential leakage:</p>
+<ul>
+<li><strong><code>Secret</code> wrapper at config and <code>__repr__</code>.</strong> <code>GraphAuth</code> accepts
+  <code>client_secret: str | Secret</code>, calls <code>.reveal()</code> internally per
+  SEC-004, and exposes a <code>__repr__</code> that masks the secret per AF-008.
+  <code>client_secret</code> is <strong>not</strong> in the default <code>_SENSITIVE_KEYS</code> set
+  (SEC-003) — <code>RegistryConfig.from_dict()</code> therefore does <strong>not</strong>
+  auto-wrap it. The implementation amends <code>_SENSITIVE_KEYS</code> to add
+  <code>"client_secret"</code> (and <code>"client_certificate"</code>) so config-loaded
+  Graph backends inherit the same auto-wrap protection as S3 / Azure /
+  SFTP credentials. The amendment ships with the implementation PR.</li>
+<li><strong><code>Authorization</code> header redaction at the request boundary.</strong> The
+  bearer token is replaced with the literal <code>"***"</code> in any
+  DEBUG-level log record emitted by the backend, and never appears
+  in <code>repr()</code> / <code>str()</code> of any exception the backend raises (GR-035).
+  <code>SecretRedactionFilter</code> (SEC-007) catches the path where headers
+  are logged via <code>record.args</code>. The backend does not pass the header
+  into exception messages.</li>
+</ul>
+<h3 id="config-loader-responsibility">Config loader responsibility<a class="headerlink" href="#config-loader-responsibility" title="Permanent link">&para;</a></h3>
+<p>When the registry constructs a Graph backend from TOML / YAML / dict
+config (per the Registry → Backends architecture in ADR-0001), it
+builds a default <code>GraphAuth</code> from the config fields and passes its
+callable into the backend. User-supplied callables are not expressible
+in static config and only apply to direct construction.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Testability.</strong> Unit tests stub the callable with a lambda
@@ -9613,22 +9664,24 @@ AF-008 rules.</p>
 <li><strong>Two callable shapes to maintain.</strong> Sync and async variants must
   both be supported. The backend is async-native (ADR-0012), so the
   async shape is primary; the sync shape exists so sync-facing
-  wrapper code can reuse the same <code>GraphAuth</code> instance without an
-  event loop.</li>
-<li><strong>Config-loader responsibility.</strong> When the Registry constructs a
-  Graph backend from YAML/JSON config (ADR-0002), it builds a
-  default <code>GraphAuth</code> from the config fields and passes its callable
-  into the backend. User-supplied callables are not expressible in
-  config and only apply to direct construction.</li>
+  wrapper code can reuse the same <code>GraphAuth</code> instance without
+  an event loop.</li>
+<li><strong><code>_SENSITIVE_KEYS</code> widens.</strong> The amendment to add
+  <code>"client_secret"</code> (and <code>"client_certificate"</code>) is a one-line
+  config change with no behavioural impact on other backends
+  (their config keys do not collide).</li>
 </ul>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
 <li>RFC-0010: Microsoft Graph Backend (auth section)</li>
-<li><code>sdd/specs/044-graph-backend.md</code> (GR-006 through GR-008)</li>
+<li><code>sdd/specs/044-graph-backend.md</code> (GR-006 through GR-008, GR-029,
+  GR-035)</li>
+<li><code>sdd/specs/020-credential-hygiene.md</code> (SEC-001 through SEC-008)</li>
+<li>ADR-0001: Architecture — Store, Registry, Backends</li>
 <li>ADR-0012: Async Store / Backend API</li>
+<li>AF-008: backend <code>__repr__</code> credential masking</li>
 <li>MSAL Python token cache:
   https://learn.microsoft.com/entra/msal/python/msal.token_cache</li>
-<li>AF-008: credential masking</li>
 </ul>
 
 
@@ -9682,13 +9735,13 @@ AF-008 rules.</p>
         
         
           
-          <a href="../0023-async-monitor-polling/" class="md-footer__link md-footer__link--next" aria-label="Next: 0023: Async Monitor-URL Polling as a Shared Backend-Local Module">
+          <a href="../0023-async-monitor-polling/" class="md-footer__link md-footer__link--next" aria-label="Next: 0023: Async Monitor-URL Polling — Backend-Local in _graph">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                0023: Async Monitor-URL Polling as a Shared Backend-Local Module
+                0023: Async Monitor-URL Polling — Backend-Local in _graph
               </div>
             </div>
             <div class="md-footer__button md-icon">

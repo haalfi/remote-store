@@ -5595,7 +5595,7 @@
   <span class="md-ellipsis">
     
   
-    0023: Async Monitor-URL Polling as a Shared Backend-Local Module
+    0023: Async Monitor-URL Polling — Backend-Local in _graph
   
 
     
@@ -9436,72 +9436,86 @@
 
 <h1 id="adr-0021-microsoft-graph-sdk-choice-httpx-msal">ADR-0021: Microsoft Graph SDK Choice — <code>httpx</code> + <code>msal</code><a class="headerlink" href="#adr-0021-microsoft-graph-sdk-choice-httpx-msal" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
+<p>Accepted. Revised 2026-06-03 in place rather than superseded — by
+the time the rewrite landed the ADR was unimplemented against, so
+there was no caller state to preserve and a superseding ADR would
+have added a level of indirection without aiding any reader. Per
+project rule, materially-changing ADRs would normally be superseded;
+this one was a user-authorised exception scoped to the four Graph
+ADRs (0021..0024).</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>ID-127 adds a Microsoft Graph backend covering OneDrive (personal and
-business), SharePoint document libraries, and Teams files. Before writing
-the backend, the transport and auth-library choice has to be locked in.
-Three credible options exist:</p>
+business), SharePoint document libraries, and Teams files. Three
+credible options exist for the HTTP transport and auth library:</p>
 <ol>
 <li><strong>Direct REST via <code>httpx</code> + <code>msal</code>.</strong> Call the Graph HTTP surface
    ourselves; use Microsoft's MSAL library for token acquisition and
    caching.</li>
-<li><strong><code>msgraph-sdk</code> (Kiota-generated).</strong> Microsoft's official Python SDK
-   for Graph. Generated from the Graph OpenAPI description via Kiota.
-   Async-only client. Transitive dependency on <code>kiota-abstractions</code>,
-   <code>kiota-http</code>, <code>kiota-authentication-azure</code>, and <code>azure-identity</code>.</li>
+<li><strong><code>msgraph-sdk</code> (Kiota-generated).</strong> Microsoft's official Python
+   SDK for Graph. Async-only client. Transitive dependency on
+   <code>kiota-abstractions</code>, <code>kiota-http</code>, <code>kiota-authentication-azure</code>,
+   and <code>azure-identity</code>.</li>
 <li><strong><code>Office365-REST-Python-Client</code>.</strong> Third-party library that mixes
    Graph and legacy SharePoint REST patterns.</li>
 </ol>
-<p>The surface we need is narrow: a dozen Graph endpoints covering item
-metadata, children listing, range download via <code>@microsoft.graph.downloadUrl</code>,
-small-file <code>PUT /content</code>, resumable upload sessions, async copy with
-monitor-URL polling, and delete. The non-trivial work — upload-session
-chunking with resume, async-operation polling, URL-expiry-mid-read
-handling — is not carried by any of these SDKs; we have to write it
-regardless.</p>
-<p><code>httpx</code> is already a runtime option in the project for the HTTP backend
-extra. <code>msal</code> is Microsoft's supported auth library, lightweight,
-stable, and used by <code>azure-identity</code> internally.</p>
+<p>The surface this backend needs is narrow: a dozen Graph endpoints
+covering item metadata, children listing, range download via
+<code>@microsoft.graph.downloadUrl</code>, small-file <code>PUT /content</code>, resumable
+upload sessions, async copy with monitor-URL polling, and delete. The
+non-trivial work — upload-session chunking with resume, async-operation
+polling, URL-expiry-mid-read handling — is not carried by any of these
+SDKs; the backend has to write it regardless.</p>
+<p><code>httpx</code> is already in the project as an <strong>optional</strong> runtime
+dependency: <code>pip install remote-store[httpx]</code> selects it as the HTTP
+adapter for <code>ReadOnlyHttpBackend</code>. It is not in the base install and
+no other backend pulls it transitively. <code>msal</code> is Microsoft's
+supported auth library, lightweight, stable, and used by
+<code>azure-identity</code> internally.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>Build the backend on <code>httpx</code> (async client) plus <code>msal</code> for token
 acquisition and cache serialization.</p>
-<p>The <code>graph</code> optional extra installs <code>httpx</code>, <code>msal</code>, and
-<code>platformdirs</code> (the latter used by the built-in <code>GraphAuth</code> for
-resolving the MSAL token-cache path; see ADR-0022). The backend
-constructs an <code>httpx.AsyncClient</code> internally and treats Graph as a
-narrow REST surface with hand-written request helpers, pagination, and
-error mapping.</p>
-<p><code>msgraph-sdk</code> is explicitly rejected. <code>Office365-REST-Python-Client</code> is
-out of scope (legacy SharePoint REST is not a goal — see RFC-0010).</p>
+<p>The <code>graph</code> optional extra pins:</p>
+<ul>
+<li><code>httpx</code> — async HTTP transport.</li>
+<li><code>msal</code> — token acquisition (used by the built-in <code>GraphAuth</code> helper).</li>
+<li><code>platformdirs</code> — resolves the MSAL token-cache path under
+  <code>user_config_dir("remote-store")</code>; consumed only by <code>GraphAuth</code> and
+  imported lazily so callers supplying their own token-provider
+  callable never load it (see ADR-0022).</li>
+</ul>
+<p>The backend constructs an <code>httpx.AsyncClient</code> internally and treats
+Graph as a narrow REST surface with hand-written request helpers,
+pagination, and error mapping.</p>
+<p><code>msgraph-sdk</code> is explicitly rejected. <code>Office365-REST-Python-Client</code>
+is out of scope (legacy SharePoint REST is not a goal — see RFC-0010).</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Narrow dependency footprint.</strong> <code>httpx</code> + <code>msal</code> is lighter than
-  <code>msgraph-sdk</code> + Kiota runtime + <code>azure-identity</code>. The existing
-  HTTP backend already pulls <code>httpx</code>, so users combining the two pay
-  for it once.</li>
-<li><strong>Full control of request layer.</strong> Error mapping, retry, <code>Retry-After</code>
-  handling, and monitor-URL polling are written directly against
-  <code>httpx.Response</code> and raw status codes. No Kiota-shaped abstractions
-  in the way.</li>
+<li><strong>Narrow dependency footprint.</strong> <code>httpx</code> + <code>msal</code> + <code>platformdirs</code>
+  is lighter than <code>msgraph-sdk</code> + Kiota runtime + <code>azure-identity</code>.
+  <code>httpx</code> is not in the base install — users who install only the
+  <code>graph</code> extra pay for it once; users who already had
+  <code>remote-store[httpx]</code> for <code>ReadOnlyHttpBackend</code> pay for nothing
+  extra.</li>
+<li><strong>Full control of request layer.</strong> Error mapping, retry,
+  <code>Retry-After</code> handling, and monitor-URL polling are written
+  directly against <code>httpx.Response</code> and raw status codes. No
+  Kiota-shaped abstractions in the way.</li>
 <li><strong>Async-native fit.</strong> <code>httpx.AsyncClient</code> is the transport; the
-  backend implements <code>AsyncBackend</code> per ADR-0012. No forced
-  adaptation layer.</li>
-<li><strong>Maintenance responsibility stays with us.</strong> The cost of not using
-  <code>msgraph-sdk</code> is that we maintain the request layer ourselves as
-  the Graph surface evolves. The surface touched here is stable
-  (drives/items endpoints are part of the v1.0 API), so ongoing churn
-  is expected to be low.</li>
-<li><strong>Future revisit point.</strong> If the backend later grows to cover
-  a materially broader Graph surface (mail, calendar, Teams messages,
-  groups), re-evaluating <code>msgraph-sdk</code> becomes reasonable. A new ADR
-  would supersede this one.</li>
+  backend implements <code>AsyncBackend</code> per ADR-0012. Sync callers
+  bridge through <code>AsyncBackendSyncAdapter</code> (ADR-0025) — already
+  landed and the conformance suite is parameterised for it.</li>
+<li><strong>Maintenance responsibility stays with us.</strong> The Graph drives /
+  items v1.0 surface is stable; ongoing churn is expected to be low.
+  If the backend later grows to cover a materially broader Graph
+  surface (mail, calendar, Teams messages, groups), <code>msgraph-sdk</code>
+  becomes worth re-evaluating. A new ADR would supersede this one.</li>
 </ul>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
 <li>RFC-0010: Microsoft Graph Backend (SDK evaluation section)</li>
 <li><code>sdd/specs/044-graph-backend.md</code></li>
 <li>ADR-0012: Async Store / Backend API</li>
+<li>ADR-0025: Async-to-Sync Backend Adapter</li>
 <li><code>httpx</code> project: https://www.python-httpx.org/</li>
 <li>MSAL for Python: https://learn.microsoft.com/entra/msal/python/</li>
 <li>Microsoft Graph v1.0 reference:

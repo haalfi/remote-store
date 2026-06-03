@@ -5493,7 +5493,7 @@
   <span class="md-ellipsis">
     
   
-    0023: Async Monitor-URL Polling as a Shared Backend-Local Module
+    0023: Async Monitor-URL Polling — Backend-Local in _graph
   
 
     
@@ -5630,10 +5630,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#spec-005-amendment" class="md-nav__link">
+  <a href="#bundled-implementation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Spec 005 amendment
+        Bundled implementation
       
     </span>
   </a>
@@ -9458,10 +9458,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#spec-005-amendment" class="md-nav__link">
+  <a href="#bundled-implementation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Spec 005 amendment
+        Bundled implementation
       
     </span>
   </a>
@@ -9514,10 +9514,18 @@
 
 <h1 id="adr-0024-resourcelocked-error-type">ADR-0024: <code>ResourceLocked</code> Error Type<a class="headerlink" href="#adr-0024-resourcelocked-error-type" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
+<p>Accepted. Revised 2026-06-03 in place rather than superseded — by
+the time the rewrite landed the ADR was unimplemented against, so
+there was no caller state to preserve and a superseding ADR would
+have added a level of indirection without aiding any reader. The
+rewrite is material (it dropped the speculative <code>lock_owner</code>
+attribute reservation and triggered the spec 005 ERR-013
+co-amendment); a future audit reading this file should note that the
+supersession discipline was traded for in-place clarity, scoped to
+the four Graph ADRs (0021..0024).</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>Microsoft Graph returns HTTP <code>423 Locked</code> with an error code of
-<code>resourceLocked</code> when an item is held by another session: typical
+<code>resourceLocked</code> when an item is held by another session — typical
 causes are an open co-authoring session in the Office clients, a
 checked-out document in SharePoint, or an in-progress upload session
 on the same item. The condition is:</p>
@@ -9526,7 +9534,7 @@ on the same item. The condition is:</p>
   authorised; the resource itself is temporarily unavailable.</li>
 <li><strong>Not a throttling problem.</strong> There is no <code>Retry-After</code> promise,
   and the condition may last seconds, minutes, or indefinitely.</li>
-<li><strong>Not a "resource missing" problem.</strong> The item exists.</li>
+<li><strong>Not "resource missing".</strong> The item exists.</li>
 <li><strong>Retryable with caution.</strong> A short bounded retry may succeed, but
   blind exponential retry could wait forever.</li>
 </ul>
@@ -9538,26 +9546,32 @@ on the same item. The condition is:</p>
   responsive.</li>
 <li><code>RemoteStoreError</code> (generic) — loses the actionable signal.</li>
 </ul>
-<p>No other backend in the project today emits 423 or an equivalent
-condition, so the error type did not exist. With Graph, it does.</p>
+<p>No other backend in the project today emits <code>423</code> or an equivalent
+condition, so the error type does not exist yet. With Graph, it does.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Add <code>ResourceLocked</code> as a new concrete error type in the project's
-error hierarchy, defined in <code>remote_store._errors</code> next to the other
-canonical errors. It inherits directly from <code>RemoteStoreError</code>
-(flat hierarchy per ERR-008).</p>
+<p>Add <code>ResourceLocked</code> as a new concrete error type in
+<code>src/remote_store/_errors.py</code>, alongside the other canonical errors.
+It inherits directly from <code>RemoteStoreError</code> per the flat hierarchy
+rule (ERR-008): one level deep, no intermediate categories.</p>
 <h3 id="semantics">Semantics<a class="headerlink" href="#semantics" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Meaning.</strong> The target resource exists and the caller is
   authorised, but the resource is currently locked by another
   session or process and the operation cannot proceed right now.</li>
-<li><strong>Attributes.</strong> Standard <code>path</code> and <code>backend</code> attributes (ERR-001);
-  no new required fields. An optional <code>lock_owner: str | None</code> field
-  is reserved for future backends that can surface who holds the
-  lock — Graph does not expose this today, so it remains <code>None</code>.</li>
-<li><strong>Retry guidance.</strong> Not safely retried by the standard retry
-  policy (RET-015 classifies <code>ResourceLocked</code> as terminal). Callers
-  may retry at their own cadence.
-  Documented alongside the error.</li>
+<li><strong>Attributes.</strong> Standard <code>path</code> and <code>backend</code> per the existing
+  error constructor pattern (ERR-001). No new fields. Earlier
+  drafts reserved an optional <code>lock_owner: str | None</code> — dropped
+  on reality check: Graph does not surface the lock holder, no
+  other backend emits this condition today, and adding a field "in
+  case" violates the project's no-speculative-API rule. A future
+  backend that genuinely surfaces the holder widens this class via
+  a covering spec amendment. (Spec 005 has no structured
+  <code>RemoteStoreError.context</code> surface today; routing extras through
+  <code>.context["lock_owner"]</code> is not available as a fallback and is
+  not part of this decision.)</li>
+<li><strong>Retry guidance.</strong> Not safely retried by the default retry policy
+  — RET-015 classifies <code>ResourceLocked</code> as terminal. Callers may
+  retry at their own cadence.</li>
 </ul>
 <h3 id="mapped-conditions">Mapped conditions<a class="headerlink" href="#mapped-conditions" title="Permanent link">&para;</a></h3>
 <ul>
@@ -9566,30 +9580,42 @@ canonical errors. It inherits directly from <code>RemoteStoreError</code>
 <p>Future backends that emit equivalent conditions (SharePoint REST
 check-out, SMB lock conflicts, WebDAV <code>423</code>) map to the same type
 when added.</p>
-<h3 id="spec-005-amendment">Spec 005 amendment<a class="headerlink" href="#spec-005-amendment" title="Permanent link">&para;</a></h3>
-<p>Spec <code>005-error-model.md</code> adds ERR-013 describing <code>ResourceLocked</code>.
-The rationale for adding the new type lives in this ADR; the spec
-records only the contract.</p>
+<h3 id="bundled-implementation">Bundled implementation<a class="headerlink" href="#bundled-implementation" title="Permanent link">&para;</a></h3>
+<p><code>ResourceLocked</code> is unreachable from any backend other than Graph in
+v1, so the runtime class, the spec 005 entry (ERR-013), the Dafny
+<code>Error.ResourceLocked(path: string, backend: string)</code> variant
+(matching the <code>(path: string, backend: string)</code> shape every other
+non-<code>BackendUnavailable</code> variant uses in
+<code>sdd/formal/BackendContract.dfy</code>, so <code>_raise_if_err</code> can dispatch it
+through the existing <code>err.path</code> / <code>err.backend</code> reader), and its
+dispatch in <code>tests/backends/dafny/_helpers.py::_raise_if_err</code> all
+ship together with the Graph backend implementation, not separately.
+Spec 005 records ERR-013 at RFC acceptance; the runtime class and
+Dafny variant land in the same PR as the Graph sub-package
+(<code>aio/backends/_graph/</code>). See ID-127 in <code>sdd/BACKLOG.md</code> for the
+bundled-sub-task note.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Honest error signal.</strong> Graph callers can distinguish "locked
-  right now" from "permission denied" or "service unavailable" and
-  react appropriately (e.g. surface a user-visible "this file is
-  open in Word, close it and retry" message).</li>
-<li><strong>Hierarchy growth.</strong> The flat error hierarchy gains one member.
-  <code>__all__</code> of <code>remote_store</code> gains <code>ResourceLocked</code>.</li>
+<li><strong>Honest error signal.</strong> Graph callers distinguish "locked right
+  now" from "permission denied" or "service unavailable" and react
+  appropriately (e.g. surface a user-visible "this file is open in
+  Word, close it and retry" message).</li>
+<li><strong>Hierarchy growth, one member.</strong> ERR-008's flat shape is
+  preserved. <code>remote_store.__all__</code> gains <code>ResourceLocked</code>.</li>
 <li><strong>Retry-policy interaction.</strong> The default retry policy does not
-  treat <code>ResourceLocked</code> as transient. Documented in the policy
-  reference.</li>
-<li><strong>Future-proofing.</strong> The error exists for other backends without
-  requiring a new ADR if they ever need it.</li>
+  treat <code>ResourceLocked</code> as transient. Documented in spec 025
+  (RET-015).</li>
+<li><strong>Future-proofing without speculation.</strong> The error exists for any
+  future backend that genuinely needs it; the class stays minimal
+  until a real second consumer arrives.</li>
 <li><strong>No supersession.</strong> This ADR does not supersede or deprecate any
   prior ADR.</li>
 </ul>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>sdd/specs/005-error-model.md</code> (ERR-013)</li>
-<li><code>sdd/specs/044-graph-backend.md</code> (GR-028 through GR-033)</li>
+<li><code>sdd/specs/005-error-model.md</code> (ERR-008 flat hierarchy, ERR-013)</li>
+<li><code>sdd/specs/025-retry-policy.md</code> (RET-015)</li>
+<li><code>sdd/specs/044-graph-backend.md</code> (GR-045)</li>
 <li>RFC-0010: Microsoft Graph Backend (error mapping section)</li>
 </ul>
 
@@ -9627,7 +9653,7 @@ records only the contract.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../0023-async-monitor-polling/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 0023: Async Monitor-URL Polling as a Shared Backend-Local Module">
+          <a href="../0023-async-monitor-polling/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 0023: Async Monitor-URL Polling — Backend-Local in _graph">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -9637,7 +9663,7 @@ records only the contract.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                0023: Async Monitor-URL Polling as a Shared Backend-Local Module
+                0023: Async Monitor-URL Polling — Backend-Local in _graph
               </div>
             </div>
           </a>

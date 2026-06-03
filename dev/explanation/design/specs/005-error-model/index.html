@@ -5491,7 +5491,7 @@
   <span class="md-ellipsis">
     
   
-    0023: Async Monitor-URL Polling as a Shared Backend-Local Module
+    0023: Async Monitor-URL Polling — Backend-Local in _graph
   
 
     
@@ -9692,10 +9692,10 @@ or process and the operation cannot proceed.
 backing resource is held by another session (for example, an Office
 co-authoring session, a SharePoint checked-out document, or a
 concurrent upload session on the same item).
-<strong>Postconditions:</strong> <code>path</code> and <code>backend</code> attributes are set. An
-optional <code>lock_owner: str | None</code> attribute is reserved for backends
-that can surface the holder; it is <code>None</code> when the backend cannot
-determine ownership.
+<strong>Postconditions:</strong> <code>path</code> and <code>backend</code> attributes are set. No
+additional fields — a future backend that genuinely surfaces the
+lock holder widens this class via a covering spec amendment
+(ADR-0024 § Attributes).
 <strong>Retry guidance:</strong> Not treated as transient by the default retry
 policy. Callers decide their own retry cadence, if any.
 <strong>Example:</strong>
