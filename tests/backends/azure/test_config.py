@@ -47,7 +47,7 @@ from remote_store._errors import (  # noqa: E402
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, WriteResult  # noqa: E402
-from remote_store.backends._azure import AzureBackend, _AzureBinaryIO  # noqa: E402
+from remote_store.backends._azure import AzureBackend, _AzureBinaryIO, _ByteCountingIO  # noqa: E402
 from tests.backends.azure._materialization_guard import (  # noqa: E402
     FULL_PAYLOAD,
     chunks_from_append_calls,
@@ -708,7 +708,14 @@ class TestAzureNoMaterialization:
 
     * non-HNS ``write`` forwards a *readable stream* (``_ByteCountingIO``) to
       ``upload_blob`` and lets the SDK pull from it; materialization would
-      forward raw ``bytes`` instead.
+      forward raw ``bytes`` instead. The SDK owns the ``read(N)`` sizing here,
+      so the caller's chunk boundaries are not observable the way they are on
+      the async-iterator / ``append_data`` paths — "stream, not bytes" alone
+      would still pass a read-then-rewrap regression
+      (``upload_blob(io.BytesIO(content.read()))``), which fully materializes
+      yet forwards a readable. We close that variant by pinning the forwarded
+      object to the ``_ByteCountingIO`` passthrough wrapper identity: a rewrap
+      forwards a plain ``BytesIO``, not the backend's counting wrapper.
     * HNS ``write_atomic`` drives the DFS append protocol — one ``append_data``
       call per ``_AZURE_BLOCK_SIZE`` chunk; materialization would read the
       whole payload in one ``content.read()`` and issue a single append (which
@@ -729,8 +736,10 @@ class TestAzureNoMaterialization:
         cc.get_blob_client.return_value = bc
 
         observed: list[bytes] = []
+        forwarded: list[object] = []
 
         def _upload(data, **_kwargs):  # noqa: ANN001, ANN202
+            forwarded.append(data)
             observed.extend(collect_sync_upload(data, block=4))
             return {}
 
@@ -743,6 +752,15 @@ class TestAzureNoMaterialization:
         # SDK pulled the stream incrementally and the bytes round-trip intact.
         assert len(observed) > 1, "SDK should read the stream in multiple chunks"
         assert b"".join(observed) == FULL_PAYLOAD
+        # Pin the forwarded object to the backend's passthrough counting wrapper.
+        # A read-then-rewrap materialization (upload_blob(io.BytesIO(content.read())))
+        # forwards a plain BytesIO and would slip past "stream, not bytes"; the
+        # _ByteCountingIO identity closes that variant (BUG-194 shape, sync path).
+        assert isinstance(forwarded[0], _ByteCountingIO), (
+            f"upload_blob received {type(forwarded[0]).__name__}, not the "
+            "_ByteCountingIO passthrough wrapper: the write path materialized "
+            "and re-emitted its BinaryIO input rather than streaming it through."
+        )
 
     @pytest.mark.spec("SIO-003")
     def test_hns_write_atomic_appends_multiple_chunks(self, monkeypatch: pytest.MonkeyPatch) -> None:
