@@ -1,0 +1,88 @@
+id: BK-240
+title: "Streaming-iteration counting wrapper for write paths"
+trigger: >
+  BUG-165 / BUG-181 / BUG-194 were three instances of one defect: a write path
+  collapsed an AsyncIterator[bytes] or BinaryIO into a single bytes before the
+  SDK call. The type signature tolerates it, so it recurred. Existing per-path
+  guards checked "forwarded is an async iterable" + payload reconstruction, but
+  miss the materialize-then-re-emit-as-one-chunk variant.
+source_items:
+  - BK-240
+  - BUG-165
+  - BUG-181
+  - BUG-194
+audience:
+  - infra.test
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-240 (item)"
+        read_type: gate
+        extract: "Counting iterator that asserts the SDK observes >1 chunk; fail if materialized"
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-003"
+        read_type: gate
+        extract: "Write accepts BinaryIO | bytes; BinaryIO read from current position to EOF"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-021"
+        read_type: gate
+        extract: "AsyncWritableContent = bytes | AsyncIterator[bytes]; iterator consumed to EOF"
+  - id: design
+    name: Design the discriminator
+    steps:
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "write (non-HNS upload_blob, lines 525-549)"
+        read_type: reference
+        extract: "_count_and_pass forwards the AsyncIterator straight to upload_blob (BUG-165 fix site)"
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "write_atomic HNS (append_data loop, lines 644-666)"
+        read_type: reference
+        extract: "HNS drives create_file -> append_data per chunk -> flush_data (BUG-194 fix site)"
+      - file: src/remote_store/backends/_azure.py
+        section: "write (non-HNS, lines 500-510) + _ByteCountingIO"
+        read_type: reference
+        extract: "Sync non-HNS wraps BinaryIO in _ByteCountingIO and forwards it to upload_blob"
+      - file: tests/backends/azure/aio/test_config.py
+        section: "test_non_hns_streams_async_iterator_to_upload (460), test_write_atomic_hns_streaming_uses_dfs_append_protocol (1474)"
+        read_type: reference
+        extract: >
+          Async non-HNS guard only checks hasattr(__aiter__)+reconstruct (misses
+          rejoin-to-one-chunk). Async HNS already asserts append_data.await_count==2.
+        outcome: unclear
+      - file: tests/backends/azure/test_config.py
+        section: "test_write_atomic_hns_streaming_uses_dfs_append_protocol (971); TestAzureMaxConcurrency"
+        read_type: reference
+        extract: >
+          Sync HNS reconstructs payload but never asserts >1 append; sync non-HNS
+          has no stream-vs-bytes guard at all (the real gaps).
+  - id: tests
+    name: Implement the guard
+    steps:
+      - file: tests/backends/azure/_materialization_guard.py
+        section: "(full)"
+        read_type: reference
+        extract: >
+          New reusable guard: MULTI_CHUNK payload, async_chunks producer, and
+          assertions that the SDK observes the same chunk boundaries (collapse
+          to one chunk == materialization).
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureNoMaterialization"
+        read_type: reference
+        extract: "Async non-HNS: assert upload_blob observes the supplied chunk sequence unchanged"
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureNoMaterialization"
+        read_type: reference
+        extract: "Sync non-HNS: upload_blob gets a readable stream (not bytes); sync HNS: >1 append + reconstruct"
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/azure/_materialization_guard.py
+        section: "assert_streamed_not_materialized"
+        read_type: verify
+        extract: "Confirmed the guard fails against a deliberately-materializing stub and passes against production code"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "infra.test-only audience: no CHANGELOG required; BACKLOG -> BACKLOG-DONE + backlogid.json"

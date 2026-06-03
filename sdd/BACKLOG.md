@@ -473,19 +473,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
 
-- [ ] **BK-240 — Streaming-iteration counting wrapper for write paths**
-  spec: SIO-003 · effort: S · audience: infra.test
-  BUG-165 (Azure async materialized payloads), BUG-181 (HNS size
-  counting), and `gotcha_async_materialize_antipattern.md` are three
-  instances of the same defect: an `AsyncIterable[bytes]` (or
-  `Iterable[bytes]`) collected into a single `bytes` before the SDK call.
-  The type signature tolerates it, so the bug recurs. Add a conformance
-  test that wraps the iterable in a counting iterator and asserts the
-  SDK call observes >1 chunk for inputs larger than one chunk —
-  failing if the backend materialized. `test_streaming.py:120-125`
-  (SIO-003) checks BinaryIO support; this extends to the iterable
-  contract on both sync and async write paths.
-
 - [ ] **BK-242 — Flat-NS file-ancestor pre-check perf (SQLBlob IN-list, memoisation)**
   spec: — · effort: S · audience: infra.test, library.maintainer
   ID-211 review surfaced two perf optimisations the disposition (b)
