@@ -367,6 +367,11 @@ jobs:
           dafny verify sdd/formal/MemoryBackend.dfy
           dafny verify sdd/formal/DepthCounting.dfy
           dafny verify sdd/formal/ResourceSafety.dfy
+      # Also runs in the lint job (CODE_PAT). Wired here too so a
+      # BackendContract.dfy-only change (FORMAL_PAT, not CODE_PAT) still checks
+      # Python ↔ Dafny capability parity. Stdlib-only; system python3 suffices.
+      - name: Check Python-Dafny capability parity
+        run: python3 scripts/check_capability_parity.py
 
   # INFORMATIONAL: TLA+ model checks for the live informal layer under
   # sdd/formal/tla/. Not in the gate below by design — see

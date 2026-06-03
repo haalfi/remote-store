@@ -2,10 +2,11 @@
 
 Exercises the BK-245 Python ↔ Dafny capability-parity gate:
 
-P — ``Capability`` enum ``.value`` extraction (AST).
-D — Dafny ``CapabilityName`` arm extraction (regex).
-The mismatch report and the ``main()`` exit contract, including the
-live-source parity tripwire and the empty-parse guard.
+P  — ``Capability`` enum ``.value`` extraction (AST).
+Dv — Dafny ``Capability`` datatype variant extraction (scoped regex).
+Da — Dafny ``CapabilityName`` arm extraction (scoped regex).
+Both checks in ``main()`` (Dafny-internal variant↔arm, cross-language
+name parity), the empty-parse guards, and the live-source tripwire.
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ def _load_module():
 _mod = _load_module()
 extract_python_capabilities = _mod.extract_python_capabilities
 extract_dafny_capabilities = _mod.extract_dafny_capabilities
+extract_dafny_capability_variants = _mod.extract_dafny_capability_variants
 compute_mismatch = _mod.compute_mismatch
 main = _mod.main
 
@@ -136,6 +138,60 @@ class TestExtractDafnyCapabilities:
 
 
 # ---------------------------------------------------------------------------
+# Source D — Dafny Capability datatype variants
+# ---------------------------------------------------------------------------
+
+
+class TestExtractDafnyCapabilityVariants:
+    def test_collects_pipe_variants_across_lines_and_comments(self, tmp_path: Path) -> None:
+        dfy = tmp_path / "Contract.dfy"
+        dfy.write_text(
+            "datatype Capability =\n"
+            "  | CapRead | CapWrite | CapDelete\n"
+            "  // CapWriteResultNative is a quality flag (prose, not a variant)\n"
+            "  | CapWriteResultNative\n"
+            "  | CapLazyRead\n"
+            "\n"
+            "// CapGlob mentioned in a trailing comment must not count\n"
+            "type CapabilitySet = set<Capability>\n",
+            encoding="utf-8",
+        )
+        # Multi-per-line and across-line variants collected; the prose mention
+        # of CapWriteResultNative in the comment is harmless (it is also a real
+        # variant), but CapGlob (comment only) and CapabilitySet (the alias)
+        # must not leak in.
+        assert extract_dafny_capability_variants(dfy) == {
+            "CapRead",
+            "CapWrite",
+            "CapDelete",
+            "CapWriteResultNative",
+            "CapLazyRead",
+        }
+
+    def test_other_datatype_constructors_do_not_leak(self, tmp_path: Path) -> None:
+        dfy = tmp_path / "Contract.dfy"
+        dfy.write_text(
+            "datatype Error =\n"
+            "  | NotFound(path: string)\n"
+            "  | CapabilityNotSupported(capability: string)\n"
+            "\n"
+            "datatype Capability =\n"
+            "  | CapRead | CapWrite\n"
+            "\n"
+            "type CapabilitySet = set<Capability>\n",
+            encoding="utf-8",
+        )
+        # The Error datatype's CapabilityNotSupported constructor sits in a
+        # different datatype and must not be read as a Capability variant.
+        assert extract_dafny_capability_variants(dfy) == {"CapRead", "CapWrite"}
+
+    def test_absent_datatype_yields_empty(self, tmp_path: Path) -> None:
+        dfy = tmp_path / "Contract.dfy"
+        dfy.write_text("function CapabilityName(c: Capability): string\n{\n}\n", encoding="utf-8")
+        assert extract_dafny_capability_variants(dfy) == set()
+
+
+# ---------------------------------------------------------------------------
 # Mismatch + main()
 # ---------------------------------------------------------------------------
 
@@ -158,9 +214,19 @@ def _write_python(tmp_path: Path, values: list[str]) -> Path:
 
 
 def _write_dafny(tmp_path: Path, values: list[str]) -> Path:
-    arms = "".join(f'  case Cap{i} => "{v}"\n' for i, v in enumerate(values))
+    # Emit a datatype whose variants match the CapabilityName arms 1:1, so the
+    # Dafny-internal check passes and these fixtures exercise the cross-language
+    # check. Tests that need a datatype/arm mismatch use _write_dafny_doc.
+    variants = [f"Cap{i}" for i in range(len(values))]
+    return _write_dafny_doc(tmp_path, variants, list(zip(variants, values, strict=True)))
+
+
+def _write_dafny_doc(tmp_path: Path, variants: list[str], arms: list[tuple[str, str]]) -> Path:
+    datatype = "datatype Capability =\n" + "".join(f"  | {v}\n" for v in variants)
+    arm_lines = "".join(f'  case {v} => "{s}"\n' for v, s in arms)
+    fn = f"function CapabilityName(c: Capability): string\n{{\n  match c\n{arm_lines}}}\n"
     dfy = tmp_path / "Contract.dfy"
-    dfy.write_text(f"function CapabilityName(c: Capability): string\n{{\n  match c\n{arms}}}\n", encoding="utf-8")
+    dfy.write_text(f"{datatype}\n{fn}", encoding="utf-8")
     return dfy
 
 
@@ -199,3 +265,31 @@ class TestMain:
         dfy.write_text("// no arms here\n", encoding="utf-8")
         assert main(capabilities_py=py, contract_dfy=dfy) == 1
         assert "no CapabilityName arms parsed" in capsys.readouterr().out
+
+    def test_missing_datatype_fails(self, tmp_path: Path, capsys) -> None:
+        py = _write_python(tmp_path, ["read"])
+        dfy = tmp_path / "Contract.dfy"
+        dfy.write_text(
+            'function CapabilityName(c: Capability): string\n{\n  match c\n  case CapRead => "read"\n}\n',
+            encoding="utf-8",
+        )
+        assert main(capabilities_py=py, contract_dfy=dfy) == 1
+        assert "no Capability datatype variants parsed" in capsys.readouterr().out
+
+    def test_datatype_variant_without_arm_fails(self, tmp_path: Path, capsys) -> None:
+        # A datatype variant with no CapabilityName arm — the drift class the
+        # gate previously left to Dafny's separately-gated verification.
+        py = _write_python(tmp_path, ["read"])
+        dfy = _write_dafny_doc(tmp_path, ["CapRead", "CapWrite"], [("CapRead", "read")])
+        assert main(capabilities_py=py, contract_dfy=dfy) == 1
+        out = capsys.readouterr().out
+        assert "datatype variant with no CapabilityName arm" in out
+        assert "CapWrite" in out
+
+    def test_arm_without_datatype_variant_fails(self, tmp_path: Path, capsys) -> None:
+        py = _write_python(tmp_path, ["read", "ghost"])
+        dfy = _write_dafny_doc(tmp_path, ["CapRead"], [("CapRead", "read"), ("CapGhost", "ghost")])
+        assert main(capabilities_py=py, contract_dfy=dfy) == 1
+        out = capsys.readouterr().out
+        assert "CapabilityName arm with no datatype variant" in out
+        assert "CapGhost" in out

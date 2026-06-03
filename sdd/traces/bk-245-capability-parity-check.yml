@@ -13,7 +13,7 @@ source_items:
 audience:
   - infra.test
   - contributor.tooling
-review_rounds: 2
+review_rounds: 3
 surprising_ripples:
   # The rebase onto post-0.27.0 master auto-merged cleanly but left the
   # BACKLOG-DONE entry under `## v0.27.0` even though master had introduced a
@@ -21,6 +21,13 @@ surprising_ripples:
   # the entry belongs in the newer section. Caught in PR #744 review, not by
   # any gate.
   - sdd/BACKLOG-DONE.md
+  # Round 3: the lint job (where the gate lives) is path-gated on CODE_PAT,
+  # which excludes sdd/formal — so a BackendContract.dfy-only change never ran
+  # the parity gate. The gate had to be wired into verify-formal (FORMAL_PAT)
+  # as well. The same gap silently affects check_formal_trace.py and
+  # check_spec_marks.py, which also read sdd/formal & sdd/specs from the lint
+  # job; flagged, not fixed here.
+  - .github/workflows/ci.yml
 phases:
   - id: orient
     name: Orient
@@ -90,6 +97,16 @@ phases:
         section: "Rule 1 (6-month test), Rule 4 (one copy per fact)"
         read_type: gate
         extract: "round 2: reviewer flagged the module docstring. Trimmed the PR #689 / ID-188 / check_formal_trace history (which lives in this trace + the BACKLOG entry) down to the durable invariant, mechanism, and exit contract"
+        outcome: ok
+      - file: scripts/check_capability_parity.py
+        section: "_capability_datatype_variants / extract_dafny_capability_arms / main"
+        read_type: reference
+        extract: "round 3: reviewer's elevated observation — the gate parsed only CapabilityName arms, leaving the datatype-variant drift class to Dafny's exhaustive-match verification. Added a second check (datatype variants == arm variants) so the gate is self-contained, plus the cross-language name check"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup filter (CODE_PAT vs FORMAL_PAT), verify-formal job"
+        read_type: gate
+        extract: "round 3: lint runs on CODE_PAT (excludes sdd/formal), so a BackendContract.dfy-only change never ran the gate. Wired the parity check into verify-formal (FORMAL_PAT) too so it fires whenever either source changes"
         outcome: ok
   - id: verify
     name: Verify
