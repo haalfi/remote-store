@@ -28,11 +28,18 @@ itself off an xfail registry against a contract that already exists.
 ## Sequencing at a glance
 
 ```
-GR-SPINE ──► GR-CONTRACT ──► GR-CORE ──┬─► GR-READ ──┐
- (1)            (2)            (3)      ├─► GR-WRITE ─┼─► GR-DOCS-E2E ──► GR-DONE
-                                       └─► GR-MUTATE ┘     (7)             (8)
-                                          (4/5/6)
+GR-FOUNDATION ──► GR-CONTRACT ──► GR-CORE ──┬─► GR-READ ──┐
+   (1)               (2)            (3)      ├─► GR-WRITE ─┼─► GR-DOCS-E2E ──► GR-DONE
+                                            └─► GR-MUTATE ┘     (7)             (8)
+                                               (4/5/6)
 ```
+
+A **real, Graph-enabled M365 tenant provisioned in Step 1 underlies
+every later step** — each backend step is reality-checked against the
+live (Stage 3) tier, the authoritative tier for Graph (no emulator
+exists; RFC-0010 § Test plan), and Stage-3 discoveries are cassetted
+back into `graph_replay` so default CI catches the regression at
+Stage-1 cost.
 
 GR-READ / GR-WRITE / GR-MUTATE all depend on GR-CORE and are mutually
 independent (they fill in disjoint method bodies and clear disjoint
@@ -46,23 +53,45 @@ named acceptance criterion in its owning step.
 
 | Obligated item | Owning step |
 |---|---|
-| Cassette-spine generalisation (per-backend dir, id-alias, **bearer-token scrub**, record script, httpx-streaming-replay) | **GR-SPINE (1)** |
+| Cassette-spine generalisation (per-backend dir, id-alias, **bearer-token scrub**, record script, httpx-streaming-replay) | **GR-FOUNDATION (1)** |
+| Setup guide `graph-setup.md` (doubles as the live-provisioning runbook) | **GR-FOUNDATION (1)** |
 | Async `TestWriteResultConformance` decision | **GR-CONTRACT (2)** |
 | `_SENSITIVE_KEYS` widening (`client_secret`, `client_certificate`) | **GR-CORE (3)** |
 | `ResourceLocked` bundle (runtime + Dafny variant + `_raise_if_err`) | **GR-CORE (3)** |
 | `__all__` ↔ `index.md` parity (ID-173) for the four public symbols | **GR-CORE (3)** |
-| Setup guide `graph-setup.md` | **GR-DOCS-E2E (7)** |
 | e2e wiring into `test_async_streaming_integrity.py` | **GR-DOCS-E2E (7)** |
 | BK-237 contract-expanding-feature DoD umbrella checklist | **GR-DONE (8)** |
 
+(The usage guide `graph.md`, examples, and README line are ordinary
+deliverables, not part of the surfaced eight; they land in GR-DOCS-E2E.)
+
 ## Cross-cutting decisions made here
 
-- **Cassette spine lands FIRST (before the backend).** The scrub layer
-  is security-critical: a recorded cassette captured before a Graph-aware
-  scrub list exists would leak a live `Authorization: Bearer` token into
-  a committed file. The spine must exist before any `--record` run. It
-  also de-risks the unproven httpx-streaming-replay path before backend
-  ops depend on it. See GR-SPINE risk note for the documented fallback.
+- **Reality-check against a real tenant from the very beginning.**
+  Step 1 provisions a real Graph-enabled M365 tenant + app registration
+  + target drive (via the `graph-setup.md` runbook it also writes), so
+  every later step is validated against the live Graph API, not only
+  respx replay. This matches the RFC's own statement that Stage 3 is the
+  authoritative tier for Graph. The live (Stage 3) tier is the
+  reality-check substrate; Stage-1 `graph_replay` cassettes are recorded
+  *from* those live runs so default CI catches regressions cheaply.
+- **Setup guide is front-loaded and dogfooded.** `graph-setup.md` is
+  written in Step 1 and walked end-to-end to provision the tenant —
+  satisfying the self-validated / proven authoring contract — because
+  onboarding is the single largest UX hurdle and provisioning gates
+  every live reality-check. The *usage* guide `graph.md` stays late
+  (GR-DOCS-E2E): its capability/usage prose depends on the API surface
+  that lands in steps 4–6.
+- **Cassette spine lands FIRST (before the backend), alongside the live
+  credentials.** The scrub layer is security-critical: a cassette
+  recorded before a Graph-aware scrub list exists would leak a live
+  `Authorization: Bearer` token into a committed file. Landing the scrub
+  and the live credentials together means the moment recording is
+  possible, leaking is not. The spine also de-risks the unproven
+  httpx-streaming-replay path before backend ops depend on it — and
+  because live works from Step 1, that proof uses a **real** recorded
+  stream, not a synthetic one. See GR-FOUNDATION risk note for the
+  documented fallback.
 - **Async `TestWriteResultConformance`: option (a).** Land an
   async-parametrised `TestWriteResultConformance` so WR-001a / 004 / 005
   / 012 / 013 exist for `AsyncBackend` (validated against the existing
@@ -80,22 +109,41 @@ named acceptance criterion in its owning step.
 
 ---
 
-## Step 1 — GR-SPINE: generalise the cassette replay spine
+## Step 1 — GR-FOUNDATION: live tenant, setup guide, and cassette spine
 
-**Scope.** Make the Azure-hardcoded Stage-1 replay machinery
-backend-generic so a `graph_replay` fixture can plug in later, with a
-Graph-aware (bearer-token) scrub layer in place before any cassette is
-recorded.
+**Scope.** Stand up the substrate that makes every later step
+reality-checkable against the real Graph API: provision a live
+Graph-enabled M365 tenant (documented as the `graph-setup.md` runbook),
+land the two-layer live-credential plumbing, and generalise the
+Azure-hardcoded Stage-1 replay machinery with a Graph-aware
+(bearer-token) scrub layer so cassettes can be recorded from live
+without leaking secrets. No backend code yet.
 
 **Files touched.**
+- `docs-src/guides/backends/graph-setup.md` (new — onboarding/provisioning
+  runbook modelled on `azure-hns-setup.md`: M365 Developer Program (or
+  paid tenant), Entra app registration, redirect URIs, client-secret vs
+  certificate, admin-consent URL, scopes, `AADSTS*` errors, token-cache
+  location, plus a copy-pasteable **verification snippet** — raw httpx
+  token + `GET /me/drive` / site / channel — that proves all three
+  `resolve_drive_id` target shapes against the live tenant).
+- `docs-src/guides/backends/_nav.yml`, `index.md` (nav entry for the
+  setup guide).
+- `tests/backends/fixtures/_live_env.py` (Graph two-layer gate:
+  `RS_TEST_LIVE_GRAPH=1` **plus** `GRAPH_TENANT_ID` / `GRAPH_CLIENT_ID` /
+  `GRAPH_CLIENT_SECRET` / `GRAPH_DRIVE_ID`; emulator-style guard N/A but
+  mirror the Azure helper shape).
+- `tests/backends/fixtures/fixtures.toml` (`graph_live` / `graph_replay`
+  fixture *entries* in the Azure shape — the conformance fixture *factory*
+  that instantiates a backend is deferred to GR-CORE).
 - `tests/backends/conformance/conftest.py` (`vcr_cassette_dir`:
   per-backend dispatch instead of unconditional `CASSETTE_DIR_AZURE`;
-  extend `_CASSETTE_ID_ALIASES`).
+  extend `_CASSETTE_ID_ALIASES` for `graph_*`).
 - `tests/backends/fixtures/registry.py` (generalise the
   `_AZURE_REAL_FIXTURE_IDS` set and missing-cassette → skip hook to
   recognise `graph_*` ids).
-- `tests/backends/fixtures/_cassettes.py` (add a Graph scrub profile:
-  redact `Authorization: Bearer`, drop/redact the pre-signed
+- `tests/backends/fixtures/_cassettes.py` (Graph scrub profile: redact
+  `Authorization: Bearer`, drop/redact the pre-signed
   `@microsoft.graph.downloadUrl` host + query, scrub `client-request-id`
   / correlation headers; introduce `CASSETTE_DIR_GRAPH`).
 - `tests/backends/fixtures/graph_replay_async.py` (new — httpx-streaming
@@ -103,33 +151,53 @@ recorded.
 - `scripts/record_cassettes.py` (add a `graph` entry to `_BACKENDS`).
 
 **Spec IDs covered.** TEST-007 (per-backend cassette dirs), TEST-009
-(record recipe), ADR-0028 (Stage-1 replay recipe). No GR-* behaviour yet.
+(record recipe), ADR-0028 (Stage-1 replay recipe); documentation
+deliverable `graph-setup.md` (RFC § Documentation deliverables). No GR-*
+runtime behaviour yet.
 
 **Acceptance criteria.**
+- **Live provisioning is real and dogfooded (named obligation):** the
+  `graph-setup.md` verification snippet runs against the provisioned
+  tenant and resolves a `drive_id` for at least one target shape; the
+  PR records the dogfood evidence (a trace/artifact, secrets redacted).
+- **`graph-setup.md` (named obligation)** present, parity-clean against
+  the API reference, all on-disk links resolve (AUTHORING Rule 3), and
+  the docs-framework check passes.
+- The Graph two-layer live gate skips cleanly when either layer is
+  missing (unit test), mirroring the Azure pattern; real
+  `GRAPH_CLIENT_SECRET` lives only in the gitignored `.env`, never
+  committed.
 - `vcr_cassette_dir` returns `cassettes/graph/` for a `graph_*` fixture
-  id and still `cassettes/azure/` for Azure ids (unit test on the
-  dispatch helper).
-- A scrub-layer unit test feeds a synthetic cassette carrying a fake
-  `Bearer` token and a `downloadUrl` and asserts neither survives the
-  scrub. **This is the security gate for the step.**
+  id and still `cassettes/azure/` for Azure ids (unit test).
+- A scrub-layer unit test feeds a cassette carrying a fake `Bearer`
+  token and a `downloadUrl` and asserts neither survives the scrub.
+  **This is the security gate for the step.**
 - `python scripts/record_cassettes.py --list` (or equivalent) shows the
   `graph` backend.
-- The streaming shim replays a synthetic chunked `httpx.AsyncClient.stream()`
-  cassette round-trip (proves the mechanism before GR-012/GR-015 need it).
-- `hatch run lint` clean; existing Azure replay tests still pass
-  (no regression in the generalised dispatch).
+- The streaming shim replays a chunked `httpx.AsyncClient.stream()`
+  cassette round-trip — ideally a **real** recorded stream against the
+  live tenant — proving the mechanism before GR-012/GR-015 need it.
+- `hatch run lint` clean; existing Azure replay tests still pass.
 
-**Dependencies.** None.
+**Dependencies.** None (this is the substrate).
 
-**Risk / surprises.** The httpx-streaming-replay path is **unproven**
-(RFC-0010 § Test plan): vcrpy 8.1.1 needed a bespoke transport shim for
-Azure async, and whether it can capture/replay `httpx.AsyncClient.stream()`
-is open; `respx` has no record mode. **If the streaming shim cannot be
-made to work**, fall back per RFC: shrink Stage-1-replay to the
-non-streaming operations and run GR-012 / GR-015 (and the round-trip)
-at Stage 3 only — and say so explicitly in this PR. That fallback does
-not block later steps (respx unit tests still cover request construction
-for streaming ops).
+**Risk / surprises.**
+- **Tenant access is the gating prerequisite.** Client-credentials needs
+  a tenant admin to grant admin consent for `Files.ReadWrite.All` /
+  `Sites.ReadWrite.All`. The free Microsoft 365 Developer Program (E5
+  sandbox) is the standard path; a paid tenant needs elevated rights
+  (cf. ID-199's Azure-access gating). **If no tenant can be provisioned**,
+  the live reality-check is unavailable: later steps fall back to
+  respx-only validation, the setup guide cannot be dogfood-verified
+  (mark it `[~]` and defer the walk-through to whoever has access), and
+  this is called out explicitly — do not fake the dogfood evidence.
+- **httpx-streaming-replay is unproven** (RFC-0010 § Test plan): vcrpy
+  8.1.1 needed a bespoke transport shim for Azure async, and whether it
+  can capture/replay `httpx.AsyncClient.stream()` is open; `respx` has
+  no record mode. **If the streaming shim cannot be made to work**, fall
+  back per RFC: shrink Stage-1-replay to non-streaming operations and run
+  GR-012 / GR-015 (and the round-trip) at Stage 3 only — say so in the
+  PR. Does not block later steps (respx still covers request construction).
 
 ---
 
@@ -165,7 +233,7 @@ at GR-CORE).
 - `filterwarnings = error` suite stays clean.
 - `hatch run lint` clean.
 
-**Dependencies.** None hard; pairs naturally after GR-SPINE.
+**Dependencies.** None hard; pairs naturally after GR-FOUNDATION.
 
 **Risk / surprises.** Option (a) modifies a **shared** conformance class,
 so every async backend must satisfy the newly-asserted WR slices — if
@@ -203,8 +271,10 @@ mapping, auth, utils, masking, `ResourceLocked` bundle.
 - `docs-src/reference/api/index.md` (parity entries for the four
   symbols) ; `pyproject.toml` (`graph` extra per ADR-0021) ;
   `FEATURES.md` (Graph row, capability columns per GR-003).
-- `tests/backends/fixtures/fixtures.toml` (register `graph_replay` /
-  `graph_live` fixtures; xfail registry for unimplemented op slices).
+- `tests/backends/fixtures/fixtures.toml` / `registry.py` (the
+  conformance fixture *factory* that instantiates `GraphBackend` for the
+  `graph_live` / `graph_replay` entries declared in GR-FOUNDATION; xfail
+  registry for unimplemented op slices).
 
 **Spec IDs covered.** GR-001..GR-011, GR-016, GR-028..GR-037, GR-045,
 GR-050..GR-057, ERR-013, RET-015 (mapping table), SEC-003.
@@ -229,8 +299,10 @@ GR-050..GR-057, ERR-013, RET-015 (mapping table), SEC-003.
   shapes) and the error-mapping table pass.
 - `hatch run lint` clean.
 
-**Dependencies.** GR-SPINE (fixture registry shape), GR-CONTRACT
-(capability-matrix + metadata-gate contract to register against).
+**Dependencies.** GR-FOUNDATION (fixture entries + live gate + scrub
+spine; first live reality-check of `resolve_drive_id` happens here),
+GR-CONTRACT (capability-matrix + metadata-gate contract to register
+against).
 
 **Risk / surprises.** The Dafny re-translation requires the Dafny
 toolchain to regenerate `MemoryBackend-py/module_.py`; if it is not
@@ -268,6 +340,9 @@ GR-049, GR-055; GR-047/048 on read.
   `FileInfo.extra["graph.read.range_fallback"]`).
 - `read`/`get_file_info` on a folder → `InvalidPath`; missing path on
   list → yields nothing (never raises).
+- **Reality-checked against the live tenant** (GR-FOUNDATION): the
+  read/list/range paths run green at Stage 3, and a representative live
+  run is cassetted back into `graph_replay`.
 - `hatch run lint` clean; `filterwarnings = error` clean.
 
 **Dependencies.** GR-CORE.
@@ -275,7 +350,7 @@ GR-049, GR-055; GR-047/048 on read.
 **Risk / surprises.** SharePoint range behaviour is the unstable area
 (GR-015/GR-017): the fallback-to-spool path is asserted via log + `extra`
 because the backend has no `StoreEvent` handle (OBS layering). If
-streaming-replay (GR-SPINE) was deferred, the streaming slices run
+streaming-replay (GR-FOUNDATION) was deferred, the streaming slices run
 Stage-3-only and the respx unit layer carries the request-construction
 assertions.
 
@@ -308,8 +383,10 @@ path), GR-046 (write slices), WR-001..WR-013 for Graph, GR-054.
   (target-folder / ancestor-file / file-exists), spool spill marker.
 - `metadata=` strict gate verified at Store layer (CapabilityNotSupported);
   `{}`/`None` no-op.
-- Stage-1 cassette records one representative round-trip; the 10 MiB
-  round-trip is Stage-3-only.
+- **Reality-checked against the live tenant** (GR-FOUNDATION): small and
+  upload-session writes run green at Stage 3, including the real chunk
+  alignment (GR-020) that respx cannot enforce; the 10 MiB round-trip is
+  Stage-3-only and Stage-1 records one representative round-trip.
 - `hatch run lint` clean; `filterwarnings = error` clean.
 
 **Dependencies.** GR-CORE (GR-READ optional but the 10 MiB round-trip
@@ -347,6 +424,9 @@ slices), GR-056.
   False)` non-empty → `DirectoryNotEmpty`.
 - Poller `graph.copy.poll_complete` DEBUG marker asserted via `caplog`.
 - `close()` cancels pending pollers + aborts in-flight sessions (GR-051).
+- **Reality-checked against the live tenant** (GR-FOUNDATION): copy
+  `202`→monitor polling runs end-to-end at Stage 3 against a genuine
+  monitor URL (GR-026); a representative run is cassetted back.
 - `hatch run lint` clean; `filterwarnings = error` clean.
 
 **Dependencies.** GR-CORE.
@@ -360,33 +440,34 @@ integration-only (GR-026).
 
 ## Step 7 — GR-DOCS-E2E: guides, examples, and e2e wiring
 
-**Scope.** Ship the user-facing documentation and wire Graph into the
+**Scope.** Ship the usage-facing documentation (the provisioning guide
+`graph-setup.md` already landed in GR-FOUNDATION) and wire Graph into the
 hand-built e2e async streaming chain.
 
 **Files touched.**
 - `docs-src/guides/backends/graph.md` (new — usage, config, capability
   notes; must call out `TMPDIR` redirection (GR-019) and the unbounded
-  `copy_timeout=None` caveat (GR-026)).
-- `docs-src/guides/backends/graph-setup.md` (new — modelled on
-  `azure-hns-setup.md`: Entra app registration, redirect URIs,
-  client-secret vs certificate, admin-consent URL, `AADSTS*` errors,
-  `GraphUtils.resolve_drive_id` snippets, token-cache location).
-- `docs-src/guides/backends/_nav.yml`, `index.md` (nav entries).
+  `copy_timeout=None` caveat (GR-026); links across to the Step-1
+  `graph-setup.md` for onboarding).
+- `docs-src/guides/backends/_nav.yml`, `index.md` (nav entry for the
+  usage guide).
 - `examples/graph-backend.md` or the module docstring rendered by
   `gen_pages.py`; README backends line + Quick Start snippet (optional).
-- `tests/e2e/conftest.py` (two-layer-gate Graph credential plumbing).
+- `tests/e2e/conftest.py` (Graph credential plumbing reusing the
+  GR-FOUNDATION two-layer gate).
 - `tests/e2e/test_async_streaming_integrity.py` (conditional Graph hop
   alongside the `if _async_azure_available():` branch; `LAZY_READ`
   chunk-exemption handling if range-fallback fires).
 
 **Spec IDs covered.** Documentation deliverables (RFC § Documentation
-deliverables); e2e streaming integrity (SHA-256 across hops + lazy-read
-chunking). No new GR-* behaviour.
+deliverables — usage guide / examples); e2e streaming integrity (SHA-256
+across hops + lazy-read chunking). No new GR-* behaviour.
 
 **Acceptance criteria.**
-- `graph-setup.md` (named obligation) present, self-consistent, and
-  parity-clean against the API reference; both guides resolve all
-  on-disk links (AUTHORING Rule 3) and pass the docs-framework check.
+- `graph.md` usage guide present, parity-clean against the API
+  reference; resolves all on-disk links (AUTHORING Rule 3) and passes the
+  docs-framework check. (`graph-setup.md` already shipped + dogfooded in
+  GR-FOUNDATION; this step only confirms the cross-link resolves.)
 - e2e wiring (named obligation): the Graph hop is gated on the same
   two-layer gate as `graph_live` and **skips cleanly** when creds/Azurite
   are absent; with both present, the integrity and lazy-read-chunking
@@ -413,9 +494,9 @@ the assembled backend, land the Stage-3 authoritative tier, and close
 ID-127.
 
 **Files touched.** `tests/backends/fixtures/fixtures.toml` /
-`_live_env.py` (`graph_live` two-layer gate finalised: `RS_TEST_LIVE_GRAPH=1`
-+ `GRAPH_TENANT_ID`/`GRAPH_CLIENT_ID`/`GRAPH_CLIENT_SECRET`/`GRAPH_DRIVE_ID`),
-any `@pytest.mark.integration` tests not already landed (GR-007/020/026/
+`_live_env.py` (confirm the `graph_live` two-layer gate established in
+GR-FOUNDATION is complete and exercised across all op steps), any
+`@pytest.mark.integration` tests not already landed (GR-007/020/026/
 034/054 + 10 MiB round-trip), `CHANGELOG.md`, `sdd/BACKLOG.md` →
 `sdd/BACKLOG-DONE.md` (move ID-127 incl. the bundled `ResourceLocked`
 sub-task), `sdd/backlogid.json` (`hatch run gen-backlogid`),
@@ -441,7 +522,9 @@ gate).**
 - [ ] Audit pass run against the unreleased work as a pre-merge gate.
 - [ ] Every GR-NNN traceable to ≥1 `@pytest.mark.spec("GR-NNN")` test.
 - [ ] `graph_live` Stage-3 fixture skips cleanly without the two-layer
-  gate; the four integration-only invariants run there.
+  gate; the four integration-only invariants run there — and, because the
+  tenant was live from GR-FOUNDATION, every prior step was already
+  reality-checked at Stage 3, not validated for the first time here.
 - [ ] `hatch run all` (Stage-1 local gate) clean; strict coverage gate
   is CI-only per CLAUDE.md.
 - [ ] ID-127 moved to `BACKLOG-DONE.md` and **this plan file deleted** in
