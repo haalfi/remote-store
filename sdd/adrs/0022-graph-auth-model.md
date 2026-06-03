@@ -2,18 +2,24 @@
 
 ## Status
 
-Accepted
+Accepted. Revised 2026-06-03 in place rather than superseded — by
+the time the rewrite landed the ADR was unimplemented against, so
+there was no caller state to preserve and a superseding ADR would
+have added a level of indirection without aiding any reader. Per
+project rule, materially-changing ADRs would normally be superseded;
+this one was a user-authorised exception scoped to the four Graph
+ADRs (0021..0024).
 
 ## Context
 
 The Graph backend (ID-127, RFC-0010) has to work in two distinct
 operating environments:
 
-- **Daemon / service processes** with no human at the keyboard, using an
-  app registration plus client secret or certificate. OAuth 2.0
+- **Daemon / service processes** with no human at the keyboard, using
+  an app registration plus client secret or certificate. OAuth 2.0
   client-credentials flow.
-- **Interactive CLI / notebook sessions** where a human can complete a
-  login in a browser, typically using OAuth 2.0 device-code flow.
+- **Interactive CLI / notebook sessions** where a human can complete
+  a login in a browser, typically using OAuth 2.0 device-code flow.
 
 Both flows ultimately produce a bearer token that the backend attaches
 to every Graph request as an `Authorization: Bearer …` header. The
@@ -22,7 +28,7 @@ be able to obtain a current one.
 
 Other credential sources (managed identity, workload identity, cached
 Azure CLI login) are out of scope for v1 but are likely to surface
-later.
+later through user-supplied providers.
 
 ## Decision
 
@@ -32,13 +38,13 @@ auth class. Two variants cover sync and async call sites:
 - `Callable[[], str]` — synchronous provider.
 - `Callable[[], Awaitable[str]]` — async provider.
 
-A built-in helper, `GraphAuth`, wraps MSAL and implements both client-
-credentials and device-code flows, exposing the result as one of the
-two callables. Users who already have another way to obtain a token
-(managed identity, corporate auth broker, custom refresh strategy)
-substitute their own callable. The backend does not couple to MSAL
-through the constructor signature — only through the optional default
-helper.
+A built-in helper, `GraphAuth`, wraps MSAL and implements both
+client-credentials and device-code flows, exposing the result as one
+of the two callables. Users who already have another way to obtain a
+token (managed identity, corporate auth broker, custom refresh
+strategy) substitute their own callable. The backend does not couple
+to MSAL through the constructor signature — only through the optional
+default helper.
 
 ### Flows covered by `GraphAuth`
 
@@ -52,30 +58,54 @@ helper.
 
 ### Token caching
 
-MSAL's `SerializableTokenCache` is serialized to a file in the user's
-config directory, resolved via `platformdirs.user_config_dir("remote-store")`.
-Users can override the path or disable persistent caching by passing a
+MSAL's `SerializableTokenCache` is serialized to a file under
+`platformdirs.user_config_dir("remote-store")`. Users can override the
+path or disable persistent caching by passing a
 `SerializableTokenCache` directly or by supplying their own callable.
 
 `platformdirs` is a runtime dependency of the built-in `GraphAuth`
-implementation (see ADR-0021 for the full `graph` extra dependency set).
-Callers that supply their own provider and never instantiate `GraphAuth`
-do not load `platformdirs` at import time (standard lazy-import pattern
-for `ext/*`, applied here to the `backends/_graph_auth` module).
+implementation (see ADR-0021 for the full `graph` extra dependency
+set). Callers that supply their own provider and never instantiate
+`GraphAuth` do not load `platformdirs` at import time (standard
+lazy-import pattern, applied here to the
+`aio/backends/_graph/auth` module).
 
 ### What the backend does with the provider
 
 The provider is called lazily: no token acquisition happens in
 `__init__`. The backend invokes the callable on first request and on
-`401 InvalidAuthenticationToken` responses (one-shot refresh + retry).
-Results are not cached inside the backend — MSAL (or the user-supplied
-provider) owns the lifetime policy.
+`401 InvalidAuthenticationToken` responses (one-shot refresh + retry,
+per GR-029). Results are not cached inside the backend — MSAL (or the
+user-supplied provider) owns the lifetime policy.
 
 ### Credential masking
 
-`Authorization` headers are redacted anywhere request or response
-metadata surfaces in logs, error messages, or debug dumps, following
-AF-008 rules.
+Two concrete mechanisms cover credential leakage:
+
+- **`Secret` wrapper at config and `__repr__`.** `GraphAuth` accepts
+  `client_secret: str | Secret`, calls `.reveal()` internally per
+  SEC-004, and exposes a `__repr__` that masks the secret per AF-008.
+  `client_secret` is **not** in the default `_SENSITIVE_KEYS` set
+  (SEC-003) — `RegistryConfig.from_dict()` therefore does **not**
+  auto-wrap it. The implementation amends `_SENSITIVE_KEYS` to add
+  `"client_secret"` (and `"client_certificate"`) so config-loaded
+  Graph backends inherit the same auto-wrap protection as S3 / Azure /
+  SFTP credentials. The amendment ships with the implementation PR.
+- **`Authorization` header redaction at the request boundary.** The
+  bearer token is replaced with the literal `"***"` in any
+  DEBUG-level log record emitted by the backend, and never appears
+  in `repr()` / `str()` of any exception the backend raises (GR-035).
+  `SecretRedactionFilter` (SEC-007) catches the path where headers
+  are logged via `record.args`. The backend does not pass the header
+  into exception messages.
+
+### Config loader responsibility
+
+When the registry constructs a Graph backend from TOML / YAML / dict
+config (per the Registry → Backends architecture in ADR-0001), it
+builds a default `GraphAuth` from the config fields and passes its
+callable into the backend. User-supplied callables are not expressible
+in static config and only apply to direct construction.
 
 ## Consequences
 
@@ -92,19 +122,21 @@ AF-008 rules.
 - **Two callable shapes to maintain.** Sync and async variants must
   both be supported. The backend is async-native (ADR-0012), so the
   async shape is primary; the sync shape exists so sync-facing
-  wrapper code can reuse the same `GraphAuth` instance without an
-  event loop.
-- **Config-loader responsibility.** When the Registry constructs a
-  Graph backend from YAML/JSON config (ADR-0002), it builds a
-  default `GraphAuth` from the config fields and passes its callable
-  into the backend. User-supplied callables are not expressible in
-  config and only apply to direct construction.
+  wrapper code can reuse the same `GraphAuth` instance without
+  an event loop.
+- **`_SENSITIVE_KEYS` widens.** The amendment to add
+  `"client_secret"` (and `"client_certificate"`) is a one-line
+  config change with no behavioural impact on other backends
+  (their config keys do not collide).
 
 ## References
 
 - RFC-0010: Microsoft Graph Backend (auth section)
-- `sdd/specs/044-graph-backend.md` (GR-006 through GR-008)
+- `sdd/specs/044-graph-backend.md` (GR-006 through GR-008, GR-029,
+  GR-035)
+- `sdd/specs/020-credential-hygiene.md` (SEC-001 through SEC-008)
+- ADR-0001: Architecture — Store, Registry, Backends
 - ADR-0012: Async Store / Backend API
+- AF-008: backend `__repr__` credential masking
 - MSAL Python token cache:
   https://learn.microsoft.com/entra/msal/python/msal.token_cache
-- AF-008: credential masking
