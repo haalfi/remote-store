@@ -1,0 +1,72 @@
+id: BK-239
+title: "Generic field-vs-capability symmetry check for WriteResult"
+trigger: >-
+  Two per-pair under-declaration guards in test_atomic.py
+  (test_basic_source_leaves_rich_fields_none for the rich fields,
+  test_file_info_metadata_none_when_capability_absent for metadata) did not
+  scale: the next contract-expanding feature (ID-127 Graph) could add a
+  field/capability pair without a matching guard. A generic, self-extending
+  symmetry assertion was needed before that backend joins.
+source_items:
+  - BK-239
+audience:
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-239"
+        read_type: gate
+        extract: "Confirm the gap framing (per-pair guards do not scale) and the ID-127 precede-by-landing constraint"
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestWriteResultConformance (WR-005 / WR-012 guards)"
+        read_type: gate
+        extract: "Locate the two per-pair guards the generic check generalises; reuse _WRITE_OPS and _require"
+        outcome: ok
+  - id: classify
+    name: Classify field-vs-capability mapping
+    steps:
+      - file: src/remote_store/_models.py
+        section: "class WriteResult"
+        read_type: gate
+        extract: "Enumerate the 8 fields: path/size/source unconditional, digest/etag/version_id/last_modified rich, metadata"
+      - file: sdd/specs/045-write-result.md
+        section: "WR-001a, WR-005, WR-012"
+        read_type: gate
+        extract: "Normative field schema and gating: rich fields → WRITE_RESULT_NATIVE (WR-005), metadata → USER_METADATA (WR-012)"
+      - file: src/remote_store/_capabilities.py
+        section: "WRITE_RESULT_NATIVE, USER_METADATA"
+        read_type: reference
+        extract: "Capability enum members used as the map values"
+  - id: tests
+    name: Add the generic guard + completeness check
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "_FIELD_CAPABILITY + test_field_capability_map_covers_every_write_result_field + test_populated_field_implies_declared_capability"
+        read_type: gate
+        extract: "Single field→capability map, dataclasses.fields completeness pin, per-backend populated→declared assertion; metadata exercised where USER_METADATA declared"
+  - id: docs
+    name: Update spec backstops + backlog + trace
+    steps:
+      - file: sdd/specs/045-write-result.md
+        section: "WR-001a / WR-005 / WR-012 Python backstop"
+        read_type: reference
+        extract: "Name the new tests in the formal-coverage backstop lists (principle 3, repo describes reality)"
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: reference
+        extract: "Move BK-239 to done under a new Unreleased section; no CHANGELOG (infra.test)"
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "BK-239 tests"
+        read_type: verify
+        extract: "Ran the two tests green across all backends; broke the map deliberately to watch both guards bite (principle 6) before restoring"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "Test + spec touch: backlog moved, gen-backlogid current, lint/traceability green; no code or CHANGELOG ripple for an infra.test guard"

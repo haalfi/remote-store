@@ -80,7 +80,11 @@ consistent fields. Verified in `MemoryBackend.dfy`. Python backstop in
 (`test_result_is_write_result_with_path_and_size`,
 `test_size_matches_written_bytes_for_streaming_input`,
 `test_native_populates_last_modified`,
-`test_write_result_rich_fields_match_file_info`). See ID-151.
+`test_write_result_rich_fields_match_file_info`). The field set itself is
+pinned to this schema by the module-level
+`test_field_capability_map_covers_every_write_result_field` (BK-239), which
+fails if a new `WriteResult` field lands without a capability classification.
+See ID-151.
 
 ## WR-002: WriteResult.path Is Store-Relative
 
@@ -142,7 +146,10 @@ branch of the `Write` postcondition chain — when `CapWriteResultNative
 !in capabilities`, the returned `WriteResult` has
 `digest/etag/version_id/last_modified` pinned to `None`. Verified in
 `MemoryBackend.dfy`. Python backstop in
-`tests/backends/conformance/test_atomic.py::TestWriteResultConformance::test_basic_source_leaves_rich_fields_none`.
+`tests/backends/conformance/test_atomic.py::TestWriteResultConformance::test_basic_source_leaves_rich_fields_none`,
+generalised to every backend by
+`test_populated_field_implies_declared_capability` (BK-239), which asserts
+each populated rich field implies the `WRITE_RESULT_NATIVE` capability.
 See ID-151.
 
 ## WR-006: Sidecar Source
@@ -326,7 +333,9 @@ the caller's mapping does not satisfy the refinement. Verified in
 `MemoryBackend.dfy`. Python backstop in
 `tests/backends/conformance/test_atomic.py::TestWriteResultConformance`
 (`test_metadata_echoed_when_gate_passes`,
-`test_metadata_is_none_when_not_passed`). See ID-151.
+`test_metadata_is_none_when_not_passed`,
+`test_populated_field_implies_declared_capability` — the latter asserts a
+populated `metadata` field implies `USER_METADATA` (BK-239)). See ID-151.
 
 ## WR-013: User Metadata Round-Trip
 

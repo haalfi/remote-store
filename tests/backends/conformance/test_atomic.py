@@ -7,6 +7,7 @@ overwrite, self-op, and post-state.
 
 from __future__ import annotations
 
+import dataclasses
 import io
 from typing import TYPE_CHECKING
 
@@ -178,6 +179,25 @@ _WRITE_OPS = [
     pytest.param("write_atomic", Capability.ATOMIC_WRITE, id="write_atomic"),
 ]
 
+# WriteResult field → capability that must be declared for the field to carry a
+# non-None value (BK-239). ``None`` marks the unconditionally-populated fields
+# (``path``/``size`` per WR-001a, ``source`` per WR-004). The rich fields are
+# gated by WRITE_RESULT_NATIVE (WR-005) and ``metadata`` by USER_METADATA
+# (WR-012). ``test_field_capability_map_covers_every_write_result_field`` pins
+# this dict to ``dataclasses.fields(WriteResult)``, so a new field cannot land
+# without being classified here — that completeness check is what lets future
+# field/capability pairs inherit the symmetry guard automatically.
+_FIELD_CAPABILITY: dict[str, Capability | None] = {
+    "path": None,
+    "size": None,
+    "source": None,
+    "digest": Capability.WRITE_RESULT_NATIVE,
+    "etag": Capability.WRITE_RESULT_NATIVE,
+    "version_id": Capability.WRITE_RESULT_NATIVE,
+    "last_modified": Capability.WRITE_RESULT_NATIVE,
+    "metadata": Capability.USER_METADATA,
+}
+
 # name → (reason, strict).  Add an entry when a WRITE_RESULT_NATIVE backend
 # temporarily returns last_modified=None from write() (e.g. new declaration lag).
 _LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {}
@@ -203,6 +223,18 @@ _MOVE_COPY_META_PARAMS = [
         marks=[pytest.mark.spec("WR-013"), pytest.mark.spec("BE-018")],
     ),
 ]
+
+
+@pytest.mark.spec("WR-001a")
+def test_field_capability_map_covers_every_write_result_field() -> None:
+    """BK-239: the field→capability map must classify every WriteResult field.
+
+    Backend-independent guard. Adding a field to ``WriteResult`` without an
+    entry in ``_FIELD_CAPABILITY`` fails here, forcing the author to declare
+    the capability that gates it. This is the mechanism by which the generic
+    symmetry assertion below inherits new field/capability pairs automatically.
+    """
+    assert {f.name for f in dataclasses.fields(WriteResult)} == set(_FIELD_CAPABILITY)
 
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)
@@ -252,6 +284,32 @@ class TestWriteResultConformance:
         assert result.etag is None
         assert result.version_id is None
         assert result.last_modified is None
+
+    @pytest.mark.spec("WR-005")
+    @pytest.mark.spec("WR-012")
+    @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
+    def test_populated_field_implies_declared_capability(self, backend: Backend, op: str, cap: Capability) -> None:
+        """BK-239: generic field↔capability symmetry over every WriteResult field.
+
+        Generalises the two per-pair under-declaration guards
+        (``test_basic_source_leaves_rich_fields_none`` for the rich fields,
+        ``test_file_info_metadata_none_when_capability_absent`` for metadata):
+        for every populated field, the capability that gates it
+        (``_FIELD_CAPABILITY``) MUST be declared. Runs on all WRITE backends,
+        not only the basic-source ones, so a backend that populates a gated
+        field without declaring its capability fails regardless of direction.
+        """
+        _require(backend, cap)
+        # Exercise the metadata→USER_METADATA branch non-vacuously where the
+        # gate permits; metadata stays None (and the branch is vacuous) on
+        # backends that do not declare it.
+        meta = {"author": "symmetry"} if backend.capabilities.supports(Capability.USER_METADATA) else None
+        result = getattr(backend, op)(f"wr/{op}-symmetry.txt", b"data", metadata=meta)
+        for name, required in _FIELD_CAPABILITY.items():
+            if required is not None and getattr(result, name) is not None:
+                assert backend.capabilities.supports(required), (
+                    f"{backend.name} populated WriteResult.{name} without declaring {required.name}"
+                )
 
     @pytest.mark.spec("WR-001a")
     @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
