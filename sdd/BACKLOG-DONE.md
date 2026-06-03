@@ -8,6 +8,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-256 — Test hygiene: real restricted backend + misfiled test**
+  spec: — · effort: S · audience: infra.test
+  Two independent cleanups from the test-suite review (sibling to BK-255).
+  - **Real restricted backend.** Three capability-gate tests in
+    `tests/test_store.py` built ad-hoc `MagicMock(spec=Backend)` backends
+    instead of using the canonical `make_restricted_store` helper in
+    `tests/conftest.py`: `test_supports_atomic_move_false_when_backend_lacks_it`,
+    `test_head_requires_metadata_capability`,
+    `test_metadata_validation_before_capability_check`. Rewrote each onto
+    `make_restricted_store(exclude={...})` — consistent with
+    `tests/test_open_atomic.py` and TESTING.md Rule 6 (prefer real
+    dependencies). `test_head_maps_all_fields` stays on a mock because it
+    injects a fully-populated `FileInfo` via `get_file_info.return_value`,
+    which `MemoryBackend` can't reproduce.
+  - **Relocate misfiled test.** Moved `test_write_text_roundtrip` from
+    `TestListFilesDepthFilter` into `TestStoreWriteText` (the existing
+    WTXT-001 owner). Deleted the now-empty `TestListFilesDepthFilter` class —
+    the BK-255 docstring breadcrumb's only purpose was flagging the misfile
+    for this item.
+  CHANGELOG skipped per infra.test (BK-255 precedent).
+
 - [x] **BK-245 — Cross-source capability-parity check (Python ↔ Dafny)**
   spec: — · effort: S · audience: infra.test, contributor.tooling
   Added `scripts/check_capability_parity.py`, a sibling to

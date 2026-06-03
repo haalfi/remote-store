@@ -501,21 +501,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `src/remote_store/backends/_azure.py`,
   `src/remote_store/aio/backends/_azure.py`. Discovered in PR #686 review.
 
-- [ ] **BK-256 — Test hygiene: real restricted backend + misfiled test**
-  spec: — · effort: S · audience: infra.test
-  Two cleanups from the test-suite review, independent of BK-255's deletions:
-  - Replace `MagicMock(spec=Backend)` with the real `make_restricted_store`
-    helper (`tests/conftest.py`) for the capability-gate assertions in
-    `tests/test_store.py` (`test_supports_atomic_move_false_when_backend_lacks_it`,
-    `test_head_requires_metadata_capability`,
-    `test_metadata_validation_before_capability_check`) — consistent with
-    `test_open_atomic.py` and TESTING.md Rule 6 (prefer real dependencies).
-    Leave `test_head_maps_all_fields` on a mock; it injects a fully-populated
-    `FileInfo`, which is the point.
-  - Move the stray `test_write_text_roundtrip` out of
-    `tests/test_store.py::TestListFilesDepthFilter` — it exercises write_text,
-    not depth filtering, and is misfiled.
-
 - [~] **ID-018 — conda-forge publishing**
   spec: — · effort: — · audience: library.maintainer
   Recipe, CI validation, release checklist steps all done.
