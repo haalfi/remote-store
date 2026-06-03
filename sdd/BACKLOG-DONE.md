@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-245 — Cross-source capability-parity check (Python ↔ Dafny)**
+  spec: — · effort: S · audience: infra.test, contributor.tooling
+  Added `scripts/check_capability_parity.py`, a sibling to
+  `check_formal_trace.py`, asserting
+  `{c.value for c in Capability} == {CapabilityName(c) for c in <Dafny Capability>}`.
+  `check_formal_trace.py` matches `@spec` tags, not capability-enum
+  membership, so the `CapLazyRead` ↔ `Capability.LAZY_READ` parity ID-188
+  added on a comment alone (PR #689) had no mechanical guard; a future
+  `Capability.<NAME>` drift between `_capabilities.py` and the Dafny
+  `Capability` datatype / `CapabilityName` cases would have slipped through.
+  - Both sides are parsed from source (AST for the Python enum values, a
+    brace-scoped regex for the Dafny `CapabilityName` arms) — no package
+    import, no Dafny toolchain — and the gate fails on a mismatch *or* an
+    empty parse. Parity is per-name; Dafny datatype ordering/grouping is out
+    of scope (its datatype ↔ `CapabilityName` agreement is already Dafny-verified).
+  - Wired into `hatch run lint` and the CI `lint` job beside
+    `check_formal_trace.py`; covered by `tests/scripts/test_check_capability_parity.py`.
+  - No CHANGELOG entry (infra.test + contributor.tooling, not user-facing).
+
 - [x] **BK-241 — `tests/aio/README.md` orientation for next async backend**
   spec: — · effort: S · audience: contributor.process, infra.test
   Added [`tests/aio/README.md`](../tests/aio/README.md), a thin repo-only
@@ -55,25 +74,6 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     of ID-127 (Graph backend) so the guard is generic when a new backend joins.
 
 ## v0.27.0
-
-- [x] **BK-245 — Cross-source capability-parity check (Python ↔ Dafny)**
-  spec: — · effort: S · audience: infra.test, contributor.tooling
-  Added `scripts/check_capability_parity.py`, a sibling to
-  `check_formal_trace.py`, asserting
-  `{c.value for c in Capability} == {CapabilityName(c) for c in <Dafny Capability>}`.
-  `check_formal_trace.py` matches `@spec` tags, not capability-enum
-  membership, so the `CapLazyRead` ↔ `Capability.LAZY_READ` parity ID-188
-  added on a comment alone (PR #689) had no mechanical guard; a future
-  `Capability.<NAME>` drift between `_capabilities.py` and the Dafny
-  `Capability` datatype / `CapabilityName` cases would have slipped through.
-  - Both sides are parsed from source (AST for the Python enum values, regex
-    for the Dafny `CapabilityName` arms) — no package import, no Dafny
-    toolchain — and the gate fails on a mismatch *or* an empty parse. Parity
-    is per-name; Dafny datatype ordering/grouping is out of scope (its
-    datatype ↔ `CapabilityName` agreement is already Dafny-verified).
-  - Wired into `hatch run lint` and the CI `lint` job beside
-    `check_formal_trace.py`; covered by `tests/scripts/test_check_capability_parity.py`.
-  - No CHANGELOG entry (infra.test + contributor.tooling, not user-facing).
 
 - [x] **BK-237 — Feature-type DoD checklists in `sdd/000-process.md`**
   spec: — · effort: S · audience: contributor.process

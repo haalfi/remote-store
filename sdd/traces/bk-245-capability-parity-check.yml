@@ -13,7 +13,14 @@ source_items:
 audience:
   - infra.test
   - contributor.tooling
-review_rounds: 1
+review_rounds: 2
+surprising_ripples:
+  # The rebase onto post-0.27.0 master auto-merged cleanly but left the
+  # BACKLOG-DONE entry under `## v0.27.0` even though master had introduced a
+  # `## Unreleased` section (BK-239/BK-241) — git's region merge cannot know
+  # the entry belongs in the newer section. Caught in PR #744 review, not by
+  # any gate.
+  - sdd/BACKLOG-DONE.md
 phases:
   - id: orient
     name: Orient
@@ -73,6 +80,16 @@ phases:
         section: "test_ignores_arms_in_a_second_helper, test_absent_function_yields_empty"
         read_type: reference
         extract: "pin the body-scoping: arms in a second helper do not leak; absent CapabilityName yields empty (caught by main's empty-parse guard)"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "## Unreleased vs ## v0.27.0"
+        read_type: reference
+        extract: "round 2: reviewer flagged the entry sat under released v0.27.0. fcc0289 (Release v0.27.0) precedes this work; master's BK-239/BK-241 had added a `## Unreleased` section the rebase merge did not move the entry into. Moved BK-245 to the top of Unreleased (newest-first)"
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 1 (6-month test), Rule 4 (one copy per fact)"
+        read_type: gate
+        extract: "round 2: reviewer flagged the module docstring. Trimmed the PR #689 / ID-188 / check_formal_trace history (which lives in this trace + the BACKLOG entry) down to the durable invariant, mechanism, and exit contract"
         outcome: ok
   - id: verify
     name: Verify

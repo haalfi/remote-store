@@ -1,37 +1,27 @@
 #!/usr/bin/env python3
 """Cross-source capability-parity check: Python ↔ Dafny (BK-245).
 
-The ``Capability`` enum lives in two places that must agree name-for-name:
+The set of capability names must be identical on both sides of the model:
 
-  P — ``Capability`` in ``src/remote_store/_capabilities.py`` (the runtime
-      source of truth), keyed on each member's string ``.value``.
-  D — the ``Capability`` datatype in ``sdd/formal/BackendContract.dfy``,
-      surfaced through the ``CapabilityName(c)`` helper that maps every
-      variant to the same string ``.value`` the Python enum uses.
+  P — the ``Capability`` enum in ``src/remote_store/_capabilities.py``,
+      keyed on each member's string ``.value``.
+  D — the ``CapabilityName`` helper in ``sdd/formal/BackendContract.dfy``,
+      which maps every ``Capability`` datatype variant to that same string.
 
-``check_formal_trace.py`` (ID-206) makes the spec ↔ Dafny ↔ test wiring
-mechanical, but it matches ``@spec`` tags, not capability-enum membership:
-a future drift between ``Capability.<NAME>`` and the Dafny ``Capability`` /
-``CapabilityName`` cases would slip through silently. PR #689 (ID-188)
-added ``CapLazyRead`` for parity with ``Capability.LAZY_READ`` on the
-strength of a comment alone. This gate turns that comment into an assertion:
+This gate asserts they match name-for-name::
 
     {c.value for c in Capability} == {CapabilityName(c) for c in Capability}
 
-Scope. The parity is per *name* (the ``.value`` string). Ordering and
-grouping of the Dafny datatype are deliberately out of scope — only the
-set of capability names must match. The Dafny datatype ↔ ``CapabilityName``
-internal agreement is already guaranteed by Dafny's exhaustive-match
-verification, so this gate parses ``CapabilityName`` for the names and does
-not re-derive them from the datatype.
+so a capability added on one side but not the other fails the lint gate
+rather than drifting silently. Parity is per name only: the Dafny datatype's
+ordering and grouping are out of scope, and its datatype ↔ ``CapabilityName``
+agreement is enforced separately by Dafny's exhaustive-match verification.
 
-Both sides are parsed from source (AST for Python, regex for the Dafny
-``case`` arms) rather than imported — symmetric with ``check_formal_trace``
-and free of any package-import or Dafny-toolchain dependency, so it runs in
-``hatch run lint`` and CI like the other ``check_*.py`` gates.
-
-CI enforcement. Exit code 0 = parity; 1 = mismatch (or a parse that found
-no capabilities on either side — a sign the source shape moved).
+Both sides are parsed from source — AST for the Python enum, a brace-scoped
+regex for the ``CapabilityName`` arms — so the gate needs no package import
+and no Dafny toolchain, and runs in ``hatch run lint`` like the other
+``check_*.py`` gates. Exit code 0 = parity; 1 = a mismatch, or a parse that
+found no capabilities on either side (a sign the source shape moved).
 """
 
 from __future__ import annotations
