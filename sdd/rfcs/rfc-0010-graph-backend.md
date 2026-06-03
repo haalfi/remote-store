@@ -12,8 +12,7 @@ SharePoint document libraries, and Teams files (which are SharePoint
 document libraries under the hood). The backend targets a single
 `drive_id` per instance and addresses items by path. It uses `httpx` as
 the HTTP transport, `msal` for token acquisition, and native async I/O
-throughout. A sync-facing wrapper keeps the backend usable from
-synchronous code paths.
+throughout.
 
 ## Motivation
 
@@ -36,8 +35,7 @@ gap is the point of this RFC.
 - Path-based addressing against a single `drive_id`.
 - Both daemon (client-credentials) and interactive (device-code) auth
   flows in v1.
-- Native async implementation per ADR-0012, with a sync-facing wrapper
-  so existing sync callers and extensions keep working.
+- Native async implementation per ADR-0012.
 - Honest capability declarations. Where Graph's semantics differ from
   the ideal Store contract, the backend says so rather than pretending.
 - Round-trip large-file transfers via resumable upload sessions with
@@ -155,38 +153,22 @@ The backend does not repeat the resolution on each call.
 ### Async posture
 
 The backend implements `AsyncBackend` natively (ADR-0012). All I/O
-operations are `async def`, backed by `httpx.AsyncClient`.
-
-Sync callers are supported through a wrapper rather than a second
-implementation:
-
-- **`AsyncStore`** consumes `GraphBackend` directly — no wrapping.
-- **Sync `Store`** wraps the async backend via an async-to-sync
-  adapter that runs operations on a private event loop. This is the
-  mirror image of `SyncBackendAdapter` (which wraps sync into async).
-
-ADR-0012 specifies only the sync→async direction (`SyncBackendAdapter`).
-The async→sync direction is decided in **ADR-0025**: a new
-`AsyncBackendSyncAdapter` owns a private event loop on a dedicated
-thread, submits coroutines via `asyncio.run_coroutine_threadsafe`,
-fails fast when invoked from a running loop, and does not depend on
-`nest_asyncio`. It must preserve the flat capability set and all
-error mappings unchanged. ID-141 (ADR), ID-142 (spec 029
-§ AsyncBackendSyncAdapter), and ID-143 (implementation + integration
-suite) have **landed**; the bridge is ready for `GraphBackend` to
-consume on day one.
+operations are `async def`, backed by `httpx.AsyncClient`. The
+pattern parallel for this implementation is `AsyncAzureBackend`
+(`src/remote_store/aio/backends/_azure.py`), not the sync
+`AzureBackend` — sync Azure wraps the sync Azure SDK, which is the
+wrong reference shape for a native-async backend.
 
 `open_atomic()` has no async equivalent on `AsyncBackend` (ASYNC-062);
-`AsyncBackendSyncAdapter` synthesises it for sync callers via the
-spool-and-flush pattern over `write_atomic` (ASYNC-085).
-`GraphBackend` therefore implements only `write_atomic` (GR-040); the
-synthesised `open_atomic` exposes the same atomicity guarantee to
-sync `Store` callers without backend-specific work. The pattern
-parallel for this implementation is `AsyncAzureBackend`
-(`src/remote_store/aio/backends/_azure.py`), not the sync
-`AzureBackend`; sync Azure solves a different problem (wrapping the
-sync Azure SDK) and is the wrong reference shape for a native-async
-backend.
+`GraphBackend` therefore implements only `write_atomic` (GR-040) and
+ships no Graph-specific `open_atomic` surface.
+
+The sync-side story is **out of scope for this RFC.** Sync callers
+reach any `AsyncBackend` through the existing `AsyncBackendSyncAdapter`
+(ADR-0025, ASYNC-080..093), which also synthesises `open_atomic` via
+spool-and-flush over `write_atomic` (ASYNC-085). Graph plugs into
+that bridge unchanged; no Graph-specific sync code is part of this
+proposal.
 
 ### Async monitor-URL polling
 
@@ -456,8 +438,7 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
 - **Capabilities.** `WRITE_RESULT_NATIVE` declared; `USER_METADATA`
   withheld with rationale (GR-003). No new capability defined.
 - **ADRs.** ADR-0021, ADR-0022, ADR-0023, ADR-0024 all accepted at
-  RFC acceptance. ADR-0025 (`AsyncBackendSyncAdapter`) is the
-  prerequisite bridge — landed under ID-141.
+  RFC acceptance.
 
 ## Open Questions
 
