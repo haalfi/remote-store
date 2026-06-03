@@ -46,7 +46,8 @@ credential objects) are left unchanged.
 **Forward note:** Extended at ID-127 (Graph backend) implementation to
 add `"client_secret"` and `"client_certificate"` so config-loaded
 Graph backends inherit the same auto-wrap protection
-(ADR-0022 § Credential masking).
+([RFC-0010](../rfcs/rfc-0010-graph-backend.md) §Auth,
+[ADR-0022](../adrs/0022-graph-auth-model.md) §Credential masking).
 
 ### SEC-004: Backend Secret Acceptance
 

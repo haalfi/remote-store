@@ -79,8 +79,9 @@ through the existing `err.path` / `err.backend` reader), and its
 dispatch in `tests/backends/dafny/_helpers.py::_raise_if_err` all
 ship together with the Graph backend implementation, not separately.
 Spec 005 records ERR-013 at RFC acceptance; the runtime class and
-Dafny variant land in the same PR as `_graph.py`. See ID-127 in
-`sdd/BACKLOG.md` for the bundled-sub-task note.
+Dafny variant land in the same PR as the Graph sub-package
+(`aio/backends/_graph/`). See ID-127 in `sdd/BACKLOG.md` for the
+bundled-sub-task note.
 
 ## Consequences
 

@@ -201,14 +201,19 @@ across every backend. Item-id mode is deferred to a future RFC; this
 spec ID reserves the contract slot so a later addition can reference
 `GR-011` as the point of extension.
 
-### GR-057: `resolve_drive_id` Helper
+### GR-057: `GraphUtils.resolve_drive_id` Helper
 
-**Invariant:** The public helper `resolve_drive_id(target, *,
-token_provider, http_client=None) -> str` resolves a drive id from
-one of three target shapes and returns the opaque Graph
-`drive.id` string for use as `GraphBackend(drive_id=...)`. It is a
-sync function; internally it runs an async resolution under a
-private event loop (per ADR-0012 sync-wrapper pattern).
+**Invariant:** The public helper
+`GraphUtils.resolve_drive_id(target, *, token_provider,
+http_client=None) -> str` resolves a drive id from one of three
+target shapes and returns the opaque Graph `drive.id` string for
+use as `GraphBackend(drive_id=...)`. `GraphUtils` is a namespace
+class with `@staticmethod` helpers, mirroring `SFTPUtils` (see
+`src/remote_store/backends/_sftp.py`). The method is a sync
+entry point; internally it runs an async resolution under a
+private event loop (per ADR-0012 sync-wrapper pattern). An
+async counterpart `GraphUtils.aresolve_drive_id(...)` is provided
+for callers already in an async context.
 
 **Accepted target shapes:**
 
@@ -239,9 +244,13 @@ private event loop (per ADR-0012 sync-wrapper pattern).
 hand — they have a SharePoint URL, a Teams channel, or just "my
 OneDrive". Exposing the three accepted shapes as one helper keeps
 the `GraphBackend` constructor contract simple (`drive_id: str`)
-while providing an ergonomic on-ramp. The helper is separate from
-the backend so it is testable and usable without instantiating a
-full `GraphBackend` first.
+while providing an ergonomic on-ramp. The helper lives in a
+namespace class (`GraphUtils`, per SFTPUtils precedent) rather than
+on the backend itself so it is testable and usable without
+instantiating a full `GraphBackend` first, and so future Graph
+configuration helpers (token-cache inspection, scope-resolution
+probes, etc.) have a designated home that doesn't crowd the public
+top-level namespace.
 
 ---
 
@@ -621,9 +630,9 @@ monitor URL.
 
 **Invariant:** The backend polls the monitor URL from GR-025 (and
 GR-027) using a backend-local poller in
-`src/remote_store/backends/_graph_monitor.py` (or as a private
-function inside `_graph.py` if it stays small). Not a shared facility
-in v1 — see ADR-0023 for the reality-check that turned the earlier
+`src/remote_store/aio/backends/_graph/monitor.py` (or inline in
+`backend.py` if it stays small). Not a shared facility in v1 — see
+ADR-0023 for the reality-check that turned the earlier
 shared-helper design backend-local.
 **Postconditions:**
 - Initial interval defaults to 1 s; ceiling 30 s; multiplicative

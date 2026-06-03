@@ -62,8 +62,8 @@ path or disable persistent caching by passing a
 implementation (see ADR-0021 for the full `graph` extra dependency
 set). Callers that supply their own provider and never instantiate
 `GraphAuth` do not load `platformdirs` at import time (standard
-lazy-import pattern, applied here to the `backends/_graph_auth`
-module).
+lazy-import pattern, applied here to the
+`aio/backends/_graph/auth` module).
 
 ### What the backend does with the provider
 

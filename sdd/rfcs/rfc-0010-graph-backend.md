@@ -60,7 +60,7 @@ gap is the point of this RFC.
 
 ### New backend
 
-**Module:** `remote_store.backends._graph`
+**Module:** `remote_store.aio.backends._graph` (sub-package; async-native)
 **Name:** `"graph"`
 **Optional extra:** `pip install "remote-store[graph]"`
 **Dependencies:** see ADR-0021 for the locked dependency set.
@@ -135,10 +135,10 @@ Path segments are percent-encoded per RFC 3986 before substitution.
 Graph is fussy about spaces, `#`, `?`, `+`, and trailing dots in
 segment names; the spec enumerates the encoding rules (GR-010).
 
-#### `resolve_drive_id` helper
+#### `GraphUtils.resolve_drive_id` helper
 
 Users who have a drive URL or site URL rather than a raw `drive_id`
-call a helper that resolves the three canonical shapes:
+call a namespaced helper that resolves the three canonical shapes:
 
 - **OneDrive personal / for business.** `/me/drive` → `drive.id`.
   The `GraphAuth` principal determines whose drive.
@@ -146,9 +146,12 @@ call a helper that resolves the three canonical shapes:
   `/sites/{site_id}/drives` → pick by name.
 - **Teams channel files.** Team/channel → `filesFolder` → `drive_id`.
 
-The helper is a one-shot translation used at application wiring time;
-the resolved `drive_id` is then passed to `GraphBackend` and stored.
-The backend does not repeat the resolution on each call.
+The helper is exposed as `GraphUtils.resolve_drive_id(...)` (and the
+async counterpart `GraphUtils.aresolve_drive_id(...)`), mirroring the
+`SFTPUtils` namespace pattern in `backends/_sftp.py`. It is a
+one-shot translation used at application wiring time; the resolved
+`drive_id` is then passed to `GraphBackend` and stored. The backend
+does not repeat the resolution on each call.
 
 ### Async posture
 
@@ -178,18 +181,18 @@ operation completes or fails. Move is synchronous in most cases but
 can also go async; both reuse the same poller.
 
 The polling logic lives **backend-local** in
-`src/remote_store/backends/_graph_monitor.py` (sibling-file form,
-matching `_graph_http.py` / `_graph_transfer.py` / `_graph_auth.py`),
-or inline in `_graph.py` while it stays small. ADR-0023 records the
-reality check: an earlier draft proposed a shared
-`backends/_async_monitor.py` on the premise that Azure cross-account
-copy would reuse it, but `AsyncAzureBackend.copy` ships in v0.27.0
-without any polling, and there is no second consumer today. The
-contract — interval, backoff, timeout, transient-5xx handling,
-cancellation, `status_parser` — is in ADR-0023 and referenced by the
-spec (GR-026). If a second backend genuinely needs the same shape, a
-follow-up ADR supersedes ADR-0023 and the function moves to a shared
-location.
+`src/remote_store/aio/backends/_graph/monitor.py` (a module inside
+the Graph sub-package alongside `backend.py` / `http.py` /
+`transfer.py` / `auth.py`), or inline in `backend.py` while it
+stays small. ADR-0023 records the reality check: an earlier draft
+proposed a shared `backends/_async_monitor.py` on the premise that
+Azure cross-account copy would reuse it, but `AsyncAzureBackend.copy`
+ships in v0.27.0 without any polling, and there is no second consumer
+today. The contract — interval, backoff, timeout, transient-5xx
+handling, cancellation, `status_parser` — is in ADR-0023 and
+referenced by the spec (GR-026). If a second backend genuinely needs
+the same shape, a follow-up ADR supersedes ADR-0023 and the function
+moves to a shared location.
 
 ### Capability matrix
 
@@ -263,15 +266,23 @@ budget is bounded by `RetryPolicy`.
 ### Module layout
 
 Referenced here for the implementation-phase work — the spec does
-not hard-wire file names but does hard-wire responsibilities.
+not hard-wire file names but does hard-wire responsibilities and
+location. `GraphBackend` is async-native, so it sits under
+`aio/backends/` (matching `aio/backends/_azure.py` and
+`aio/backends/_memory.py`), not under the sync `backends/` package.
+The component count (backend, HTTP wrapper, transfer drivers,
+monitor poller, auth helper, utils) makes a sub-package preferable
+to the sibling-file form used by smaller `aio/backends/` modules.
 
 ```
-src/remote_store/backends/
-  _graph.py           # GraphBackend (AsyncBackend implementation)
-  _graph_http.py      # httpx client wrapper, error mapper, pagination
-  _graph_transfer.py  # upload-session driver, range-download driver
-  _graph_monitor.py   # backend-local monitor-URL poller (ADR-0023)
-  _graph_auth.py      # GraphAuth helper (optional; inlined if small)
+src/remote_store/aio/backends/_graph/
+  __init__.py         # re-exports GraphBackend, GraphAuth, GraphUtils
+  backend.py          # GraphBackend (AsyncBackend implementation)
+  http.py             # httpx client wrapper, error mapper, pagination
+  transfer.py         # upload-session driver, range-download driver
+  monitor.py          # backend-local monitor-URL poller (ADR-0023)
+  auth.py             # GraphAuth helper
+  utils.py            # GraphUtils namespace (resolve_drive_id, …)
 ```
 
 ### User onboarding
@@ -301,28 +312,36 @@ the implementation phase ships a dedicated guide. The guide covers:
   403 `accessDenied` case where scopes are correct but Graph denies
   access because the target drive is outside the principal's
   permissions.
-- **`resolve_drive_id` usage.** Example snippets for OneDrive,
-  SharePoint, and Teams.
+- **`GraphUtils.resolve_drive_id` usage.** Example snippets for
+  OneDrive, SharePoint, and Teams.
 
 ### Documentation deliverables (implementation phase)
 
 Tracked here so the implementation run does not lose them:
 
-- `guides/backends/graph.md` — primary backend guide.
+- `guides/backends/graph.md` — primary backend guide (usage,
+  configuration, capability notes).
+- `guides/backends/graph-setup.md` — initial setup walkthrough
+  modelled on `docs-src/guides/backends/azure-hns-setup.md`:
+  Microsoft Entra app registration, redirect URIs, client-secret vs
+  certificate, admin-consent URL construction, common `AADSTS*`
+  errors and their fixes. Onboarding is the largest UX hurdle for
+  this backend and merits a dedicated step-by-step doc separate
+  from the usage guide.
 - `examples/graph-backend.md` or the corresponding module docstring
   rendered by `gen_pages.py`.
 - `FEATURES.md` row for Graph (capabilities, extras, status); the
   capability columns must match GR-003, including `WRITE_RESULT_NATIVE`
   and the explicit absence of `USER_METADATA`.
 - `__all__` ↔ `index.md` parity (ID-173): every public symbol added by
-  this work (`GraphBackend`, `GraphAuth`, `resolve_drive_id`,
+  this work (`GraphBackend`, `GraphAuth`, `GraphUtils`,
   `ResourceLocked`) must appear in the rendered API reference. The
   `check_api_docs.py` parity check is a hard CI gate; the
   implementation PR ships the docs entries in the same commit as the
   `__all__` additions.
 - README backends line and Quick Start snippet (optional).
-- Docstrings on `GraphBackend`, `GraphAuth`, `resolve_drive_id`, and
-  public helpers.
+- Docstrings on `GraphBackend`, `GraphAuth`, `GraphUtils` (including
+  each `@staticmethod`), and public helpers.
 
 ### Test plan
 
@@ -331,12 +350,42 @@ feature** Definition of Done (000-process.md § Feature-type Definition
 of Done — owned by BK-237). The DoD checklist takes precedence on any
 overlap; the items below are additions, not substitutes.
 
-- **Unit tests** via `respx` (httpx mock transport) covering every
-  operation, every error-code mapping, pagination across multiple
-  pages, async copy polling (success + failure), upload-session
-  chunking (small, exact boundary, large, retry, resume, abort), and
+The plan uses the kind/stage axes from ADR-0028. Graph is an HTTP
+backend — the full Stage 1 (replay), Stage 3 (live) demotion path
+applies. Graph has no Stage 2 (no Docker emulator exists for the
+Microsoft Graph surface), and that gap is explicit: Stage 3 is the
+authoritative tier; Stage 1 replay is what runs in default CI.
+
+- **Stage 1 — unit (`respx` direct).** `respx`-stubbed
+  `httpx.AsyncClient` covering every operation, every error-code
+  mapping, pagination across multiple pages, async copy polling
+  (success + failure), upload-session chunking (small, exact
+  boundary, large, retry, resume, abort), and
   `@microsoft.graph.downloadUrl` range reads (including URL expiry
-  mid-read).
+  mid-read). These exercise the request-construction layer; they do
+  not exercise the live wire format.
+- **Stage 1 — replay (`graph_replay` fixture).** Per the
+  HTTP-backend recipe in ADR-0028, a `graph_replay` Stage 1 fixture
+  exercises the real `GraphBackend` code path with the HTTP transport
+  stubbed by a recorded cassette. Cassettes live alongside the Azure
+  cassettes; refresh follows the explicit `pytest --stage=3 --record`
+  recipe (TEST-009 cassette-refresh policy) — CI does not silently
+  re-record. The replay fixture plugs into the shared conformance
+  spine so the full conformance matrix runs against Graph at Stage 1
+  cost in every default CI run.
+- **Stage 3 — live (`graph_live` fixture).** Gated by
+  `RS_TEST_LIVE_GRAPH=1` **plus** the four credential env vars
+  `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`, `GRAPH_CLIENT_SECRET`,
+  `GRAPH_DRIVE_ID`. Skip cleanly when either layer is missing. This
+  mirrors the Azure live-test pattern at
+  `tests/backends/fixtures/fixtures.toml` and `_live_env.py` —
+  secret-presence alone is deliberately not enough to opt into live
+  runs. Stage 3 is the authoritative tier for any behaviour that
+  depends on Graph service semantics (chunk alignment, real
+  throttling with authentic `Retry-After`, real `423 resourceLocked`,
+  real `507`/quota responses); Stage 3 discoveries get cassetted
+  back into the `graph_replay` fixture so the next default CI run
+  catches the regression at Stage 1 cost.
 - **`WriteResult` conformance.** `TestWriteResultConformance` in
   `tests/backends/conformance/test_atomic.py` is sync-fixtured today
   (via `fixture_params(Capability.WRITE)`, default `is_async=False`);
@@ -353,22 +402,25 @@ overlap; the items below are additions, not substitutes.
 - **`USER_METADATA` strict-gate test** — non-empty `metadata=` raises
   `CapabilityNotSupported` per WR-010; empty mapping and `None` are
   no-ops (GR-003).
-- **Integration tests** gated by `RS_TEST_LIVE_GRAPH=1` **plus** the
-  four credential env vars `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
-  `GRAPH_CLIENT_SECRET`, `GRAPH_DRIVE_ID`. Skip cleanly when either
-  layer is missing. This mirrors the Azure pattern at
-  `tests/backends/fixtures/fixtures.toml` and `_live_env.py`:
-  secret-presence alone is deliberately not enough to opt into live
-  runs, so a CI box with leaked creds does not silently exercise
-  the live suite.
 - **Capability matrix test** asserting that declared capabilities
   match the matrix in GR-003 and that unsupported capabilities raise
   `CapabilityNotSupported` where applicable.
 - **Round-trip test** writing a 10 MiB file via upload session,
   reading it back via `Range` to validate byte-equality across the
-  large-file path.
-- **Conformance suite** reusing the shared backend conformance tests,
-  parameterised for async.
+  large-file path. (This is the largest payload the conformance
+  matrix carries today — ~1 MiB is the prior precedent — and is
+  deliberately Stage-3-only on the cost side; Stage 1 cassettes
+  record a single representative round-trip.)
+- **e2e chain.** Graph plugs into
+  `tests/e2e/test_async_streaming_integrity.py` as an additional
+  async hop in the existing chain (e.g.
+  `AsyncMemory(seed) → AsyncAzure → AsyncGraph → SyncWrapped(Local) →
+  AsyncMemory(sink)` when both Azurite and Graph live credentials
+  are reachable). The integrity assertion (SHA-256 identical across
+  hops) and the lazy-read chunking assertion (count > 1, max_chunk
+  < file_size) cover the streaming contract Graph is required to
+  honour. The Graph hop is conditional on the same two-layer gate
+  as the live fixture and skips cleanly otherwise.
 
 Every spec ID in GR-NNN is traceable to at least one test via
 `@pytest.mark.spec("GR-NNN")` per 000-process.md Rule 2.
@@ -401,12 +453,13 @@ deferred in GR-011 so the deferral is tracked.
 
 ## Impact
 
-- **Public API.** Adds `GraphBackend`, `GraphAuth`, and
-  `resolve_drive_id` under `remote_store.backends._graph`, re-exported
-  from `remote_store.backends` behind a guarded import (the pattern
-  used for every optional-dependency backend in
-  `src/remote_store/backends/__init__.py`). Adds `ResourceLocked` to
-  the top-level error exports.
+- **Public API.** Adds `GraphBackend`, `GraphAuth`, and `GraphUtils`
+  (namespace class carrying `resolve_drive_id`, mirroring `SFTPUtils`)
+  under `remote_store.aio.backends._graph`, re-exported from
+  `remote_store.aio.backends` behind a guarded import (the pattern
+  used by the other async-native backends in
+  `src/remote_store/aio/backends/__init__.py`). Adds `ResourceLocked`
+  to the top-level error exports.
 - **Backwards compatibility.** Purely additive. No existing behaviour
   changes except the new `ResourceLocked` error class — which is
   unreachable from backends other than Graph.

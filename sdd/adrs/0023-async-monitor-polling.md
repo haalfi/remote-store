@@ -27,11 +27,14 @@ shape (`UploadId` + `complete-multipart-upload`, not a monitor URL).
 ## Decision
 
 Ship the polling logic **backend-local** in
-`src/remote_store/backends/_graph_monitor.py` (sibling-file form,
-matching `_graph_http.py` / `_graph_transfer.py` / `_graph_auth.py`),
-or inline in `_graph.py` if it stays under ~100 lines. It is part of
-the Graph backend, not a shared facility. No public API surface and
-no Store-level capability is introduced.
+`src/remote_store/aio/backends/_graph/monitor.py` (a module inside
+the Graph sub-package, alongside `backend.py` / `http.py` /
+`transfer.py` / `auth.py`), or inline in `backend.py` if it stays
+under ~100 lines. The Graph backend lives under `aio/backends/`
+because it is async-native (matching `aio/backends/_azure.py`); the
+poller follows. It is part of the Graph sub-package, not a shared
+facility. No public API surface and no Store-level capability is
+introduced.
 
 If and when a second backend genuinely needs the same shape — measured
 in a follow-up implementation, not predicted here — a hoisting ADR
@@ -80,8 +83,10 @@ its audience and scope.
 ### What changes if a second consumer arrives
 
 The migration path from backend-local to shared is mechanical: lift
-the function to `backends/_async_monitor.py`, add a re-export from
-the original `_graph` location for a release, supersede this ADR.
+the function to a shared location (`aio/backends/_async_monitor.py`
+if both consumers are async-native; `backends/_async_monitor.py` if a
+sync consumer also wants it), add a re-export from the original
+`aio/backends/_graph/monitor.py` for a release, supersede this ADR.
 The `status_parser` parameter is already shaped to support a second
 consumer's response format; no API redesign is required at hoist
 time. The current decision optimises for not paying that cost until
@@ -91,7 +96,8 @@ there is a real demand for it.
 
 - **One file, one consumer.** No premature abstraction; the polling
   code lives next to the only thing that calls it, and reviewers
-  reading `_graph.py` find the loop where they expect it.
+  reading `aio/backends/_graph/` find the loop where they expect it
+  (`monitor.py` next to `backend.py`).
 - **No public API surface growth.** The poller is private and
   un-exported. Changing its signature affects only Graph backend
   code.
