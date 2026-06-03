@@ -10,9 +10,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 - [x] **BK-239 — Generic field-vs-capability symmetry check for `WriteResult`**
   spec: WR-001a, WR-005, WR-012 · effort: S · audience: infra.test
-  The two existing per-pair under-declaration guards
-  (`test_basic_source_leaves_rich_fields_none` for the rich fields,
-  `test_file_info_metadata_none_when_capability_absent` for `metadata`) did
+  The two existing per-pair under-declaration guards on the `WriteResult`
+  fields (`test_basic_source_leaves_rich_fields_none` for the rich fields,
+  `test_metadata_is_none_when_not_passed` for `WriteResult.metadata`) did
   not scale: the next contract-expanding feature could add a field/capability
   pair without a matching guard. Closed by two additions to
   `tests/backends/conformance/test_atomic.py`:

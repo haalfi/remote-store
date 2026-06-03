@@ -1,16 +1,17 @@
 id: BK-239
 title: "Generic field-vs-capability symmetry check for WriteResult"
 trigger: >-
-  Two per-pair under-declaration guards in test_atomic.py
-  (test_basic_source_leaves_rich_fields_none for the rich fields,
-  test_file_info_metadata_none_when_capability_absent for metadata) did not
-  scale: the next contract-expanding feature (ID-127 Graph) could add a
-  field/capability pair without a matching guard. A generic, self-extending
+  Two per-pair under-declaration guards on the WriteResult fields in
+  test_atomic.py (test_basic_source_leaves_rich_fields_none for the rich
+  fields, test_metadata_is_none_when_not_passed for WriteResult.metadata)
+  did not scale: the next contract-expanding feature (ID-127 Graph) could add
+  a field/capability pair without a matching guard. A generic, self-extending
   symmetry assertion was needed before that backend joins.
 source_items:
   - BK-239
 audience:
   - infra.test
+review_rounds: 1
 expected_ripples:
   - sdd/backlogid.json
 phases:

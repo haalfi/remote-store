@@ -291,9 +291,12 @@ class TestWriteResultConformance:
     def test_populated_field_implies_declared_capability(self, backend: Backend, op: str, cap: Capability) -> None:
         """BK-239: generic field↔capability symmetry over every WriteResult field.
 
-        Generalises the two per-pair under-declaration guards
+        Generalises the two per-pair under-declaration guards on the
+        ``WriteResult`` fields themselves
         (``test_basic_source_leaves_rich_fields_none`` for the rich fields,
-        ``test_file_info_metadata_none_when_capability_absent`` for metadata):
+        ``test_metadata_is_none_when_not_passed`` for ``metadata``, both WR-012
+        / WR-005 inspecting ``WriteResult`` directly — not the WR-013
+        ``FileInfo`` round-trip guard):
         for every populated field, the capability that gates it
         (``_FIELD_CAPABILITY``) MUST be declared. Runs on all WRITE backends,
         not only the basic-source ones, so a backend that populates a gated
