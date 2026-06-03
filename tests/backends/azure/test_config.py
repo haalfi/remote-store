@@ -50,6 +50,7 @@ from remote_store._models import FileInfo, WriteResult  # noqa: E402
 from remote_store.backends._azure import AzureBackend, _AzureBinaryIO, _ByteCountingIO  # noqa: E402
 from tests.backends.azure._materialization_guard import (  # noqa: E402
     FULL_PAYLOAD,
+    ReadSizeSpy,
     chunks_from_append_calls,
     collect_sync_upload,
 )
@@ -768,7 +769,7 @@ class TestAzureNoMaterialization:
 
         from remote_store.backends import _azure as _azure_mod
 
-        # Force >1 block for the 33-byte payload so a single-append
+        # Force >1 block for the 35-byte payload so a single-append
         # materialization is distinguishable from the per-chunk stream.
         monkeypatch.setattr(_azure_mod, "_AZURE_BLOCK_SIZE", 10)
 
@@ -788,7 +789,8 @@ class TestAzureNoMaterialization:
         )
         backend._fs_instance.get_file_client.return_value = tmp_fc
 
-        backend.write_atomic("dir/stream.bin", io.BytesIO(FULL_PAYLOAD))
+        source = ReadSizeSpy(io.BytesIO(FULL_PAYLOAD))
+        backend.write_atomic("dir/stream.bin", source)
 
         # upload_data must NOT be called for streaming input (would re-introduce
         # the BUG-202 MissingRequiredQueryParameter regression).
@@ -796,6 +798,15 @@ class TestAzureNoMaterialization:
         observed = chunks_from_append_calls(tmp_fc.append_data)
         assert len(observed) > 1, "streaming HNS write must append per chunk, not once"
         assert b"".join(observed) == FULL_PAYLOAD
+        # The bounded-memory discriminator for a BinaryIO source: every read pulls
+        # one _AZURE_BLOCK_SIZE block, never a single unbounded read(-1). A
+        # read-all + re-chunk materialization (unbounded read, then small appends)
+        # would still satisfy the two assertions above but records size == -1 here.
+        assert source.read_sizes, "backend never read the source"
+        assert all(size == _azure_mod._AZURE_BLOCK_SIZE for size in source.read_sizes), (
+            f"sync HNS write issued an unbounded read (sizes={source.read_sizes}); "
+            "a bounded-memory stream reads one _AZURE_BLOCK_SIZE block at a time"
+        )
 
 
 # =============================================================================

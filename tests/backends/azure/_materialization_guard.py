@@ -14,6 +14,13 @@ only possible at the SDK boundary, since a black-box write cannot see chunk
 boundaries. A new SDK-streaming backend reuses them by pointing its mocked SDK
 call at the same collectors.
 
+A ``BinaryIO`` source (the sync paths) supplies no caller chunk boundaries — the
+backend chooses the ``read(N)`` size — so the analogue of the chunk-count check
+is the *read size*: a faithful backend reads a bounded block each call, while a
+materialization slurps the source with one unbounded ``read()`` / ``read(-1)``.
+``ReadSizeSpy`` records those sizes (sync HNS append path); the sync non-HNS
+path instead pins the forwarded ``_ByteCountingIO`` passthrough wrapper.
+
 Regression context: BUG-165, BUG-181, BUG-194.
 """
 
@@ -23,6 +30,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+    from typing import BinaryIO
     from unittest.mock import Mock
 
 # Distinct, multi-byte chunks. Distinctness makes a reordering visible; >1 chunk
@@ -95,6 +103,24 @@ def collect_sync_upload(data: Any, block: int = 4) -> list[bytes]:
             break
         observed.append(chunk)
     return observed
+
+
+class ReadSizeSpy:
+    """Wrap a ``BinaryIO`` and record the ``size`` argument of every ``read``.
+
+    The bounded-memory discriminator for a ``BinaryIO`` source: a streaming
+    backend reads a bounded ``size`` each call, while a materialization slurps
+    the whole source with one unbounded ``read()`` / ``read(-1)``.
+    ``read_sizes`` lets a test assert every read was bounded.
+    """
+
+    def __init__(self, stream: BinaryIO) -> None:
+        self._stream = stream
+        self.read_sizes: list[int] = []
+
+    def read(self, size: int = -1) -> bytes:
+        self.read_sizes.append(size)
+        return self._stream.read(size)
 
 
 def chunks_from_append_calls(append_mock: Mock) -> list[bytes]:
