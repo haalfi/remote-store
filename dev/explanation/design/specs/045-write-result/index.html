@@ -9880,7 +9880,11 @@ consistent fields. Verified in <code>MemoryBackend.dfy</code>. Python backstop i
 (<code>test_result_is_write_result_with_path_and_size</code>,
 <code>test_size_matches_written_bytes_for_streaming_input</code>,
 <code>test_native_populates_last_modified</code>,
-<code>test_write_result_rich_fields_match_file_info</code>). See ID-151.</p>
+<code>test_write_result_rich_fields_match_file_info</code>). The field set itself is
+pinned to this schema by the module-level
+<code>test_field_capability_map_covers_every_write_result_field</code> (BK-239), which
+fails if a new <code>WriteResult</code> field lands without a capability classification.
+See ID-151.</p>
 <h2 id="wr-002-writeresultpath-is-store-relative">WR-002: WriteResult.path Is Store-Relative<a class="headerlink" href="#wr-002-writeresultpath-is-store-relative" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>WriteResult.path</code> is store-relative — <code>root_path</code> is stripped
 exactly as <code>FileInfo.path</code> is stripped by <code>list_files</code> and <code>get_file_info</code>.
@@ -9932,7 +9936,10 @@ branch of the <code>Write</code> postcondition chain — when <code>CapWriteResu
 !in capabilities</code>, the returned <code>WriteResult</code> has
 <code>digest/etag/version_id/last_modified</code> pinned to <code>None</code>. Verified in
 <code>MemoryBackend.dfy</code>. Python backstop in
-<code>tests/backends/conformance/test_atomic.py::TestWriteResultConformance::test_basic_source_leaves_rich_fields_none</code>.
+<code>tests/backends/conformance/test_atomic.py::TestWriteResultConformance::test_basic_source_leaves_rich_fields_none</code>,
+generalised to every backend by
+<code>test_populated_field_implies_declared_capability</code> (BK-239), which asserts
+each populated rich field implies the <code>WRITE_RESULT_NATIVE</code> capability.
 See ID-151.</p>
 <h2 id="wr-006-sidecar-source">WR-006: Sidecar Source<a class="headerlink" href="#wr-006-sidecar-source" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>WriteResult.source == "sidecar"</code> only when the <code>WriteResult</code> is
@@ -10183,7 +10190,9 @@ the caller's mapping does not satisfy the refinement. Verified in
 <code>MemoryBackend.dfy</code>. Python backstop in
 <code>tests/backends/conformance/test_atomic.py::TestWriteResultConformance</code>
 (<code>test_metadata_echoed_when_gate_passes</code>,
-<code>test_metadata_is_none_when_not_passed</code>). See ID-151.</p>
+<code>test_metadata_is_none_when_not_passed</code>,
+<code>test_populated_field_implies_declared_capability</code> — the latter asserts a
+populated <code>metadata</code> field implies <code>USER_METADATA</code> (BK-239)). See ID-151.</p>
 <h2 id="wr-013-user-metadata-round-trip">WR-013: User Metadata Round-Trip<a class="headerlink" href="#wr-013-user-metadata-round-trip" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> User metadata passed to <code>Store.write*()</code> on a backend declaring
 <code>USER_METADATA</code> survives round-trip through <code>Store.get_file_info()</code>, accessible
