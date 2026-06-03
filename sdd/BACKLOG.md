@@ -346,9 +346,12 @@ and the highest ID already in this file, then take the next integer. Run
     `ResourceLocked` Python exception class in
     `src/remote_store/_errors.py` (named `ResourceLocked` per the flat
     error hierarchy and spec 005's example), the
-    `Error.ResourceLocked(path: Path)` variant in
+    `Error.ResourceLocked(path: string, backend: string)` variant in
     `sdd/formal/BackendContract.dfy` (re-translate
-    `MemoryBackend-py/module_.py`), and its dispatch in
+    `MemoryBackend-py/module_.py`) — shape matches the other
+    non-`BackendUnavailable` variants in that datatype so
+    `_raise_if_err` can dispatch via the existing
+    `err.path` / `err.backend` reader, and its dispatch in
     `tests/backends/dafny/_helpers.py::_raise_if_err`. Formerly tracked
     as the standalone ID-189; folded here because the Dafny variant
     cannot land in isolation — without the runtime class to raise,

@@ -206,8 +206,9 @@ in `sdd/specs/044-graph-backend.md` for the complete declaration and per-capabil
 Graph returns structured error bodies with a `code` field under
 `error`. The mapping uses HTTP status plus `code`, not string
 matching — no fragile string parsing. `backend` is set to `"graph"`
-on every mapped error. See GR-028 through GR-045 in
-`sdd/specs/044-graph-backend.md` for the complete mapping table.
+on every mapped error. See GR-028 through GR-034 plus GR-045 / GR-046
+/ GR-054 / GR-055 in `sdd/specs/044-graph-backend.md` for the
+complete mapping table.
 
 ### Throttling
 
@@ -255,7 +256,8 @@ Graph returns item metadata containing an `@microsoft.graph.downloadUrl`
 endpoint returns a `302` redirect to this URL, and only the URL
 reliably honours the `Range` header.
 
-`read_bytes(path, start, length)` issues a `GET` with `Range:
+An internal `_read_bytes(path, start, length)` helper (private; not
+a public Store method — see GR-015) issues a `GET` with `Range:
 bytes=<start>-<end>` directly to the download URL (no `Authorization`
 header; the URL is pre-signed). If the URL expires mid-read
 (`403` / `401` from the pre-signed host), the backend re-fetches the
@@ -367,12 +369,41 @@ authoritative tier; Stage 1 replay is what runs in default CI.
 - **Stage 1 — replay (`graph_replay` fixture).** Per the
   HTTP-backend recipe in ADR-0028, a `graph_replay` Stage 1 fixture
   exercises the real `GraphBackend` code path with the HTTP transport
-  stubbed by a recorded cassette. Cassettes live alongside the Azure
-  cassettes; refresh follows the explicit `pytest --stage=3 --record`
-  recipe (TEST-009 cassette-refresh policy) — CI does not silently
-  re-record. The replay fixture plugs into the shared conformance
-  spine so the full conformance matrix runs against Graph at Stage 1
-  cost in every default CI run.
+  stubbed by a recorded cassette. Refresh follows the explicit
+  `pytest --stage=3 --record` recipe (TEST-009 cassette-refresh
+  policy) — CI does not silently re-record. **Prerequisite work for
+  the impl PR-set** (not free against today's spine): the existing
+  replay machinery is Azure-hardcoded and has to be generalised
+  before Graph can plug in. Concretely:
+  - `tests/backends/conformance/conftest.py:vcr_cassette_dir`
+    currently returns `CASSETTE_DIR_AZURE` unconditionally; TEST-007
+    mandates `cassettes/<backend>/`, so a per-backend dispatch is
+    needed (Graph gets `cassettes/graph/`, not "alongside" Azure).
+  - The id-alias map, `_AZURE_REAL_FIXTURE_IDS` set, and missing-cassette
+    → skip hook in `tests/backends/fixtures/registry.py` recognise
+    only `azure_*` ids; `graph_replay` needs the same recognition.
+  - **Cassette scrub layer** (`tests/backends/fixtures/_cassettes.py`)
+    is Azure-specific (`x-ms-*`, SharedKey, connection-string,
+    Azurite). Graph uses `Authorization: Bearer` plus pre-signed
+    `@microsoft.graph.downloadUrl` hosts — without a Graph-aware
+    scrub list, **a bearer token would survive and leak into
+    committed cassettes.** This is a security-critical prerequisite,
+    not a polish item.
+  - `scripts/record_cassettes.py` `_BACKENDS` carries only `azure`
+    today; a `graph` entry is part of the same work.
+  - **`httpx` streaming-replay path is unproven.** Azure async needed
+    a bespoke `AsyncioRequestsTransport` shim because vcrpy 8.1.1's
+    aiohttp stub cannot stream a response body
+    (`azure_replay_async.py:9-23`); whether vcrpy can capture/replay
+    `httpx.AsyncClient.stream()` for GR-012 (chunked reads) and
+    GR-015 (`Range`-over-`downloadUrl`) is open. `respx` has no
+    record-from-live mode and is unit-only.
+
+  If the generic spine + scrub + httpx-streaming-replay package
+  cannot land alongside the Graph backend, the Stage-1-replay scope
+  shrinks to the operations that don't require streaming and the
+  conformance matrix runs against Graph at Stage 3 only — call this
+  out explicitly in the impl PR.
 - **Stage 3 — live (`graph_live` fixture).** Gated by
   `RS_TEST_LIVE_GRAPH=1` **plus** the four credential env vars
   `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`, `GRAPH_CLIENT_SECRET`,
@@ -411,16 +442,30 @@ authoritative tier; Stage 1 replay is what runs in default CI.
   matrix carries today — ~1 MiB is the prior precedent — and is
   deliberately Stage-3-only on the cost side; Stage 1 cassettes
   record a single representative round-trip.)
-- **e2e chain.** Graph plugs into
-  `tests/e2e/test_async_streaming_integrity.py` as an additional
-  async hop in the existing chain (e.g.
+- **Dafny-oracle ripple.** ADR-0024 ships a Dafny
+  `Error.ResourceLocked(path: string, backend: string)` variant
+  plus dispatch in `tests/backends/dafny/_helpers.py::_raise_if_err`.
+  The `dafny_oracle` and `dafny_oracle_async` fixtures
+  (`fixtures.toml:83-99`) participate in the conformance spine, so
+  the variant addition and dispatcher update are conformance-fixture-
+  affecting changes — bundled with the impl PR per the ADR-0024
+  "Bundled implementation" section.
+- **e2e chain.** `tests/e2e/test_async_streaming_integrity.py`
+  builds its async chain by hand in the test body; there is no
+  registration seam. Wiring Graph in requires (a) adding two-layer-
+  gate credential plumbing to `tests/e2e/conftest.py` (today wires
+  only Docker-service settings), (b) editing the chain construction
+  to insert a conditional Graph hop alongside the existing
+  `if _async_azure_available():` branch (e.g.
   `AsyncMemory(seed) → AsyncAzure → AsyncGraph → SyncWrapped(Local) →
   AsyncMemory(sink)` when both Azurite and Graph live credentials
-  are reachable). The integrity assertion (SHA-256 identical across
-  hops) and the lazy-read chunking assertion (count > 1, max_chunk
-  < file_size) cover the streaming contract Graph is required to
-  honour. The Graph hop is conditional on the same two-layer gate
-  as the live fixture and skips cleanly otherwise.
+  are reachable), and (c) handling the `LAZY_READ` chunk-exemption
+  if Graph's range-fallback path (GR-015) materialises during the
+  test. The integrity assertion (SHA-256 identical across hops) and
+  the lazy-read chunking assertion (count > 1, max_chunk < file_size)
+  then cover the streaming contract Graph is required to honour. The
+  Graph hop is conditional on the same two-layer gate as the live
+  fixture and skips cleanly otherwise. Non-trivial — not a "plug in".
 
 Every spec ID in GR-NNN is traceable to at least one test via
 `@pytest.mark.spec("GR-NNN")` per 000-process.md Rule 2.

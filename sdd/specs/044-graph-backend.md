@@ -96,9 +96,18 @@ GraphBackend(
   surface. Declaring `USER_METADATA` would advertise a behaviour that
   varies by drive backing — the exact dishonest-declaration failure
   mode the project guards against. Callers that need the SharePoint
-  property bag reach it through `unwrap(httpx.AsyncClient)` (GR-037).
-  WR-010's strict gate therefore raises `CapabilityNotSupported` on
-  any non-empty `metadata=` passed to `write` / `write_atomic`.
+  property bag reach it through `unwrap(httpx.AsyncClient)` (GR-037 —
+  async only; sync callers via `AsyncBackendSyncAdapter` get
+  `CapabilityNotSupported` per ASYNC-086, since the underlying
+  `httpx.AsyncClient` is bound to the adapter's private event loop).
+  Because `USER_METADATA` is not declared, the WR-010/WR-011 strict
+  gate in the **Store layer** (`Store.write` / `AsyncStore.write` —
+  one place, not per-backend) raises `CapabilityNotSupported` on any
+  non-empty `metadata=` before `GraphBackend.write` is entered. A
+  backend-level rejection mirroring the Store gate is permitted as
+  defense-in-depth (and is exercised by the conformance suite when
+  the backend is invoked directly without a Store wrapper), but the
+  authoritative gate lives at the Store layer per spec 045.
 
 Async monitor polling for `copy` and may-be-async `move` is a
 backend-internal technique, not a capability — see ADR-0023.
@@ -315,8 +324,12 @@ nothing for non-existent paths, never raises `NotFound`.
 accepts `recursive` and `max_depth` (ASYNC-014) but no `pattern`;
 `AsyncBackend.list_folders` does not accept `max_depth` (ASYNC-015).
 Pattern-limited listing is composed at `AsyncStore` level (ASYNC-052).
-The Graph backend honours `recursive` and `max_depth` by short-circuiting
-the recursive `/children` walk at the configured depth.
+**Precedence (per ASYNC-014):** when `max_depth` is set, `recursive`
+is ignored — `max_depth` governs traversal depth alone; `recursive=True`
+with `max_depth=None` means unbounded; `recursive=False` (the default)
+with `max_depth=None` yields only immediate children. The Graph backend
+honours this by short-circuiting the recursive `/children` walk at the
+configured depth (or after one level for the non-recursive default).
 
 ### GR-015: Range Download via `@microsoft.graph.downloadUrl`
 
@@ -348,7 +361,13 @@ dataclass and the proxy's `finally`-block emit; OBS-015's
 post-operation `WriteResult` injection is the one exception, and it
 runs in the proxy method's closure after the inner call returns —
 not from inside the backend). Tests assert against the WARNING log
-record (always reachable) and against `FileInfo.extra`.
+record (always reachable) and against `FileInfo.extra`. Note that
+`ext.observe` and `ext.otel` are sync-only (they subclass
+`ProxyStore`; `aio/ext/` ships no `observe`/`otel` module today), so
+they reach `GraphBackend` only when it is wrapped by
+`AsyncBackendSyncAdapter` into a sync `Store`. A native-`AsyncStore`
+Graph consumer gets no observe/otel surface at all; native-async
+observability is a separate, unscheduled item.
 **Rationale:** The `/content` endpoint returns `302` redirecting to
 the download URL, and only the download URL honours `Range`
 reliably. The download URL is pre-signed; no `Authorization` header
@@ -413,9 +432,14 @@ per ASYNC-021) with content size <= 4 MiB uses
   left `None` until a future extension selects a canonical hash from
   `driveItem.file.hashes` (see GR-049). `metadata` echoes the caller's
   input mapping when one is supplied (WR-012), `None` otherwise.
-**`metadata=` gate:** Per WR-010, a non-`None`, non-empty `metadata=`
-raises `CapabilityNotSupported` because `GraphBackend` does not declare
-`USER_METADATA` (GR-003). `metadata=None` and `metadata={}` are no-ops.
+**`metadata=` gate:** Because `GraphBackend` does not declare
+`USER_METADATA` (GR-003), the WR-010/WR-011 strict gate at the Store
+layer raises `CapabilityNotSupported` on any non-`None`, non-empty
+`metadata=` before `GraphBackend.write` is entered. `metadata=None`
+and `metadata={}` are no-ops at the Store layer per the
+empty-mapping carve-out. The backend itself may optionally re-raise
+the same error as defense-in-depth for direct-backend callers; this
+is permitted but not required.
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`.
 `InvalidPath` if the path names a folder, or if a slash-aligned ancestor
 of `path` is a regular file (BE-008 ID-209 clause).
@@ -491,7 +515,9 @@ There is no separate `content_length` keyword on `AsyncBackend.write()`
   is built by the proxy layer (OBS-001) before the inner call, so a
   backend cannot inject into it; OBS-015's `WriteResult` injection
   is the one exception and lives in the proxy's post-call closure,
-  not in the backend.
+  not in the backend. As with GR-015, `ext.observe`/`ext.otel`
+  themselves are sync-only and reach `GraphBackend` only through
+  `AsyncBackendSyncAdapter`.
 
 **Postconditions:**
 - The upload is atomic on commit: the item becomes visible only
@@ -505,9 +531,11 @@ There is no separate `content_length` keyword on `AsyncBackend.write()`
 - On unrecoverable failure, the session is deleted as a best-effort
   cleanup (GR-024).
 
-**`metadata=` gate:** Identical to GR-018 — a non-`None`, non-empty
-`metadata=` raises `CapabilityNotSupported` per WR-010 because
-`USER_METADATA` is not declared (GR-003).
+**`metadata=` gate:** Identical to GR-018 — the WR-010/WR-011 strict
+gate fires at the Store layer (not in the backend) because
+`USER_METADATA` is not declared (GR-003); a non-`None`, non-empty
+`metadata=` raises `CapabilityNotSupported` before
+`GraphBackend.write` is entered.
 
 ### GR-020: Chunk Size Alignment
 
@@ -687,17 +715,21 @@ shared-helper design backend-local.
   values map to `BackendUnavailable`.
 - Cancellation propagates `asyncio.CancelledError`.
 
-**`ext.observe` interaction:** `Store.copy()` and `Store.move()`
-emit one event in `finally` per the OBS-001 `StoreEvent` shape and
-the `ObservedStore._observe_op` proxy contract; the internal polling
-loop is not observable. The backend does **not** inject per-poll
-attributes into `StoreEvent.metadata` — the proxy builds metadata
-before the inner backend call, so the backend has no handle on the
-event object. (OBS-015's post-operation `WriteResult` injection is
-the one exception and lives in the proxy's post-call closure, not in
-any backend.) Poll-count and duration diagnostics are emitted as
-DEBUG log records carrying the marker `graph.copy.poll_complete`;
-`caplog` is the test channel.
+**`ext.observe` interaction:** When Graph is wrapped via
+`AsyncBackendSyncAdapter` into a sync `Store`, `Store.copy()` and
+`Store.move()` emit one event in `finally` per the OBS-001
+`StoreEvent` shape and the `ObservedStore._observe_op` proxy
+contract; the internal polling loop is not observable. The backend
+does **not** inject per-poll attributes into `StoreEvent.metadata` —
+the proxy builds metadata before the inner backend call, so the
+backend has no handle on the event object. (OBS-015's post-operation
+`WriteResult` injection is the one exception and lives in the
+proxy's post-call closure, not in any backend.) Native-`AsyncStore`
+Graph consumers see no `ext.observe` surface at all (no
+`aio/ext/observe.py` exists in v0.27.0). Poll-count and duration
+diagnostics are emitted as DEBUG log records carrying the marker
+`graph.copy.poll_complete`; `caplog` is the test channel and is
+reachable on both async and sync surfaces.
 
 ### GR-027: Move (May-Be-Async)
 
@@ -1000,6 +1032,13 @@ identity default would be a poor fit; backends with a native root
 underlying `httpx.AsyncClient` instance, enabling callers to issue
 custom Graph calls.
 **Raises:** `CapabilityNotSupported` for any other type hint.
+**Sync-via-adapter caveat:** Sync callers that reach the backend
+through `AsyncBackendSyncAdapter` also receive `CapabilityNotSupported`
+for `unwrap(httpx.AsyncClient)` per ASYNC-086 — the async client is
+bound to the adapter's private event loop and is unsafe to use from
+the caller's thread. The escape hatch is therefore async-only;
+sync callers needing the SharePoint property bag construct a
+separate `httpx.AsyncClient` on their own event loop.
 **Rationale:** Escape hatch per ADR-0003.
 
 ### GR-035: Credential Masking
