@@ -2,8 +2,13 @@
 
 ## Status
 
-Accepted. Revised 2026-06-03 (in-place, per user override of the
-project's normally-immutable ADR rule — see CHANGELOG `[Unreleased]`).
+Accepted. Revised 2026-06-03 in place rather than superseded — by
+the time the rewrite landed the ADR was unimplemented against, so
+there was no caller state to preserve and a superseding ADR would
+have added a level of indirection without aiding any reader. Per
+project rule, materially-changing ADRs would normally be superseded;
+this one was a user-authorised exception scoped to the four Graph
+ADRs (0021..0024).
 
 ## Context
 

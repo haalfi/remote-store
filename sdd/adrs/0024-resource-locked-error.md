@@ -2,8 +2,15 @@
 
 ## Status
 
-Accepted. Revised 2026-06-03 (in-place, per user override of the
-project's normally-immutable ADR rule — see CHANGELOG `[Unreleased]`).
+Accepted. Revised 2026-06-03 in place rather than superseded — by
+the time the rewrite landed the ADR was unimplemented against, so
+there was no caller state to preserve and a superseding ADR would
+have added a level of indirection without aiding any reader. The
+rewrite is material (it dropped the speculative `lock_owner`
+attribute reservation and triggered the spec 005 ERR-013
+co-amendment); a future audit reading this file should note that the
+supersession discipline was traded for in-place clarity, scoped to
+the four Graph ADRs (0021..0024).
 
 ## Context
 

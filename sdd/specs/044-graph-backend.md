@@ -340,11 +340,15 @@ marker and sets
 `FileInfo` returned for the same item within the operation context.
 The `extra` channel is the v0.27.0 supported surface for
 backend-specific signal (see GR-049 for `graph.file.hashes`);
-`ext.observe` is **not** used as a delivery channel — OBS-015 of
-spec 019 explicitly prohibits backend-side injection into
-`StoreEvent.metadata`, and the proxy emits no start event during
-`read`. Tests assert against the WARNING log record (always
-reachable) and against `FileInfo.extra`.
+`ext.observe` is **not** used as a delivery channel —
+`StoreEvent.metadata` is constructed by `ObservedStore._observe_op`
+at the proxy layer before the inner backend call, so the backend
+has no handle on the event object (per OBS-001's `StoreEvent`
+dataclass and the proxy's `finally`-block emit; OBS-015's
+post-operation `WriteResult` injection is the one exception, and it
+runs in the proxy method's closure after the inner call returns —
+not from inside the backend). Tests assert against the WARNING log
+record (always reachable) and against `FileInfo.extra`.
 **Rationale:** The `/content` endpoint returns `302` redirecting to
 the download URL, and only the download URL honours `Range`
 reliably. The download URL is pre-signed; no `Authorization` header
@@ -483,8 +487,11 @@ There is no separate `content_length` keyword on `AsyncBackend.write()`
   `graph.upload.spool_spilled` carrying the spool path. The DEBUG
   channel is the supported v0.27.0 mechanism for backend-internal
   diagnostics; tests assert against the log record (via `caplog`).
-  `ext.observe` is not used — OBS-015 prohibits backend-side
-  injection into `StoreEvent.metadata`.
+  `ext.observe` is not used as a backend-push channel — `StoreEvent`
+  is built by the proxy layer (OBS-001) before the inner call, so a
+  backend cannot inject into it; OBS-015's `WriteResult` injection
+  is the one exception and lives in the proxy's post-call closure,
+  not in the backend.
 
 **Postconditions:**
 - The upload is atomic on commit: the item becomes visible only
@@ -680,12 +687,15 @@ shared-helper design backend-local.
   values map to `BackendUnavailable`.
 - Cancellation propagates `asyncio.CancelledError`.
 
-**`ext.observe` interaction:** `Store.copy()` and `Store.move()` emit
-one event in `finally` per OBS-015; the internal polling loop is not
-observable. The backend does **not** inject per-poll attributes into
-`StoreEvent.metadata` — OBS-015 prohibits backend-side metadata
-injection, and the proxy builds metadata at the proxy layer before
-the inner call. Poll-count and duration diagnostics are emitted as
+**`ext.observe` interaction:** `Store.copy()` and `Store.move()`
+emit one event in `finally` per the OBS-001 `StoreEvent` shape and
+the `ObservedStore._observe_op` proxy contract; the internal polling
+loop is not observable. The backend does **not** inject per-poll
+attributes into `StoreEvent.metadata` — the proxy builds metadata
+before the inner backend call, so the backend has no handle on the
+event object. (OBS-015's post-operation `WriteResult` injection is
+the one exception and lives in the proxy's post-call closure, not in
+any backend.) Poll-count and duration diagnostics are emitted as
 DEBUG log records carrying the marker `graph.copy.poll_complete`;
 `caplog` is the test channel.
 
