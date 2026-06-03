@@ -13,6 +13,7 @@ source_items:
 audience:
   - infra.test
   - contributor.tooling
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -59,6 +60,19 @@ phases:
         section: "lint job gate steps (after 106)"
         read_type: reference
         extract: "add - run: python scripts/check_capability_parity.py"
+        outcome: ok
+  - id: fix
+    name: Fix (PR #744 review)
+    steps:
+      - file: scripts/check_capability_parity.py
+        section: "extract_dafny_capabilities / _capability_name_body"
+        read_type: reference
+        extract: "review flagged the file-wide case-arm regex as brittle: a future second `match c` helper over Capability would leak arms (over-collection the empty-parse guard misses). Slice CapabilityName's brace-delimited body first, then scan — assumption now enforced by construction"
+        outcome: ok
+      - file: tests/scripts/test_check_capability_parity.py
+        section: "test_ignores_arms_in_a_second_helper, test_absent_function_yields_empty"
+        read_type: reference
+        extract: "pin the body-scoping: arms in a second helper do not leak; absent CapabilityName yields empty (caught by main's empty-parse guard)"
         outcome: ok
   - id: verify
     name: Verify

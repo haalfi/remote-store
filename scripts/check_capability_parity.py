@@ -42,9 +42,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# A Dafny ``CapabilityName`` arm: ``case CapLazyRead => "lazy_read"``. These
-# ``case <Cap…> => "<string>"`` lines occur only inside ``CapabilityName``,
-# so a file-wide scan needs no function-body slicing.
+# The ``CapabilityName`` function header, used to slice its ``{ … }`` body out
+# of the contract before scanning for arms. Scoping to the body keeps a future
+# second ``match c`` helper over ``Capability`` (e.g. a description function)
+# from leaking its arms into the parsed set — over-collection the empty-parse
+# guard would not catch.
+_CAPABILITY_NAME_FN_RE = re.compile(r"function\s+CapabilityName\b")
+
+# A Dafny ``CapabilityName`` arm: ``case CapLazyRead => "lazy_read"``.
 _DAFNY_CASE_RE = re.compile(r'case\s+(Cap\w+)\s*=>\s*"([^"]+)"')
 
 
@@ -81,10 +86,39 @@ def extract_python_capabilities(capabilities_py: Path) -> set[str]:
 # ---------------------------------------------------------------------------
 
 
+def _capability_name_body(text: str) -> str:
+    """Return the brace-delimited body of the ``CapabilityName`` function.
+
+    Empty string if the function is absent or its braces are unbalanced —
+    either case surfaces as an empty parse, which ``main`` rejects.
+    """
+    header = _CAPABILITY_NAME_FN_RE.search(text)
+    if header is None:
+        return ""
+    start = text.find("{", header.end())
+    if start == -1:
+        return ""
+    depth = 0
+    for i in range(start, len(text)):
+        ch = text[i]
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start + 1 : i]
+    return ""
+
+
 def extract_dafny_capabilities(contract_dfy: Path) -> set[str]:
-    """Return the string of every ``CapabilityName`` arm in the Dafny contract."""
-    text = contract_dfy.read_text(encoding="utf-8")
-    return {string for _variant, string in _DAFNY_CASE_RE.findall(text)}
+    """Return the string of every ``CapabilityName`` arm in the Dafny contract.
+
+    Only arms inside the ``CapabilityName`` function body count: a second
+    ``match c`` helper over ``Capability`` elsewhere in the contract must not
+    leak its ``case`` arms into the parsed capability set.
+    """
+    body = _capability_name_body(contract_dfy.read_text(encoding="utf-8"))
+    return {string for _variant, string in _DAFNY_CASE_RE.findall(body)}
 
 
 # ---------------------------------------------------------------------------

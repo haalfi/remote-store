@@ -100,12 +100,39 @@ class TestExtractDafnyCapabilities:
         dfy.write_text(
             "datatype Error = CapabilityNotSupported(capability: string)\n"
             '// CapWriteResultNative is a quality flag returning "write_result_native"\n'
-            '  case CapWrite => "write"\n',
+            "function CapabilityName(c: Capability): string\n{\n"
+            "  match c\n"
+            '  case CapWrite => "write"\n'
+            "}\n",
             encoding="utf-8",
         )
-        # Only the genuine ``case … => "…"`` arm counts; the datatype line and
-        # the prose comment must not leak names in.
+        # Only genuine ``case … => "…"`` arms inside the function body count;
+        # the datatype line and the prose comment must not leak names in.
         assert extract_dafny_capabilities(dfy) == {"write"}
+
+    def test_ignores_arms_in_a_second_helper(self, tmp_path: Path) -> None:
+        # A second ``match c`` helper over Capability returning strings must
+        # not leak its arms into the parsed set — the brittleness PR #744
+        # review flagged. Only CapabilityName's body is scanned.
+        dfy = tmp_path / "Contract.dfy"
+        dfy.write_text(
+            "function CapabilityName(c: Capability): string\n{\n"
+            "  match c\n"
+            '  case CapRead => "read"\n'
+            "}\n\n"
+            "function CapabilityDescription(c: Capability): string\n{\n"
+            "  match c\n"
+            '  case CapRead => "reads bytes"\n'
+            '  case CapGhost => "not a real capability"\n'
+            "}\n",
+            encoding="utf-8",
+        )
+        assert extract_dafny_capabilities(dfy) == {"read"}
+
+    def test_absent_function_yields_empty(self, tmp_path: Path) -> None:
+        dfy = tmp_path / "Contract.dfy"
+        dfy.write_text("datatype Capability = CapRead | CapWrite\n", encoding="utf-8")
+        assert extract_dafny_capabilities(dfy) == set()
 
 
 # ---------------------------------------------------------------------------
