@@ -6,6 +6,34 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+- [x] **BK-239 — Generic field-vs-capability symmetry check for `WriteResult`**
+  spec: WR-001a, WR-005, WR-012 · effort: S · audience: infra.test
+  The two existing per-pair under-declaration guards on the `WriteResult`
+  fields (`test_basic_source_leaves_rich_fields_none` for the rich fields,
+  `test_metadata_is_none_when_not_passed` for `WriteResult.metadata`) did
+  not scale: the next contract-expanding feature could add a field/capability
+  pair without a matching guard. Closed by two additions to
+  `tests/backends/conformance/test_atomic.py`:
+  - **`_FIELD_CAPABILITY`** — a single map from every `WriteResult` field to
+    the capability that gates a non-`None` value (`digest` / `etag` /
+    `version_id` / `last_modified` → `WRITE_RESULT_NATIVE`, `metadata` →
+    `USER_METADATA`, `path` / `size` / `source` unconditional).
+  - **`test_field_capability_map_covers_every_write_result_field`** — a
+    backend-independent guard pinning `_FIELD_CAPABILITY` to
+    `dataclasses.fields(WriteResult)`, so a new field cannot land unclassified.
+    This is the mechanism that makes future pairs inherit the symmetry.
+  - **`test_populated_field_implies_declared_capability`** — runs across every
+    WRITE backend (both `write` and `write_atomic`): for each populated field,
+    the gating capability must be declared. Generalises the basic-source guard
+    to all backends and both declaration directions; exercises the `metadata`
+    branch non-vacuously where `USER_METADATA` is declared.
+  - **Spec:** WR-001a / WR-005 / WR-012 Python-backstop lists in
+    `sdd/specs/045-write-result.md` now name the new tests.
+  - No CHANGELOG entry (audience `infra.test`, not user-facing). Lands ahead
+    of ID-127 (Graph backend) so the guard is generic when a new backend joins.
+
 ## v0.27.0
 
 - [x] **BK-237 — Feature-type DoD checklists in `sdd/000-process.md`**

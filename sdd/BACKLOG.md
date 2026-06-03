@@ -337,9 +337,10 @@ and the highest ID already in this file, then take the next integer. Run
     (`AsyncBackendSyncAdapter` implementation + integration suite) — all landed.
   - Prerequisites (process/test, should land first): BK-237 (feature-DoD
     checklists) landed — see `sdd/000-process.md` § Feature-type Definition
-    of Done. BK-239 (generic field↔capability symmetry guard) and BK-241
-    (`tests/aio/README.md` orientation) each name this backend as the trigger
-    they must precede — land them before starting implementation.
+    of Done. BK-239 (generic field↔capability symmetry guard) landed
+    (see BACKLOG-DONE.md). BK-241 (`tests/aio/README.md` orientation)
+    names this backend as the trigger it must precede — land it before
+    starting implementation.
   - **Bundled sub-task — `ResourceLocked` (ERR-013, ADR-0024):** Graph
     triggers the only need for this error class today. Three coupled
     pieces ship together with the backend, not separately: the
@@ -472,23 +473,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   the successor ticket is linked here; if promoted, `verify-tla` joins the
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
-
-- [ ] **BK-239 — Generic field-vs-capability symmetry check for `WriteResult`**
-  spec: — · effort: S · audience: infra.test
-  Per-pair under-declaration guards already exist:
-  `tests/backends/conformance/test_atomic.py::test_basic_source_leaves_rich_fields_none`
-  (lines 157-168) asserts that a backend NOT declaring
-  `WRITE_RESULT_NATIVE` leaves `digest` / `etag` / `version_id` /
-  `last_modified` as `None`, and
-  `test_file_info_metadata_none_when_capability_absent` (lines 252-258)
-  does the same for `USER_METADATA`. The gap is that these checks do not
-  scale — a new field/capability pair (the next contract-expanding
-  feature) can land without a guard. Add a generic conformance assertion
-  that iterates every `WriteResult` field and verifies any populated
-  value is matched by a declared capability, so future
-  field/capability pairs inherit the symmetry automatically (post-v0.23.0
-  lessons §4 Pattern 7). Lands before ID-127 to keep the guard generic
-  when a new backend joins.
 
 - [ ] **BK-240 — Streaming-iteration counting wrapper for write paths**
   spec: SIO-003 · effort: S · audience: infra.test
