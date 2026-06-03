@@ -30,9 +30,24 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   pattern parallel (not sync `_azure.py`); `open_atomic` synthesis via
   ASYNC-085 cross-referenced; test plan layered on top of BK-237's
   contract-expanding-feature DoD; ID-173 `__all__` ↔ `index.md`
-  parity called out in documentation deliverables. ADR-0021..ADR-0024
-  stand unchanged (Accepted; superseding ADRs would be needed for any
-  real change). No runtime changes.
+  parity called out in documentation deliverables. ADR-0021 through
+  ADR-0024 — accepted as initial design but never reality-checked
+  against the v0.27.0 codebase — rewritten in place rather than
+  superseded, since none had been implemented against. ADR-0021
+  tightens the `httpx`-dependency framing (optional extra, not core)
+  and pins the `graph` extra at `httpx` + `msal` + `platformdirs`.
+  ADR-0022 fixes the broken ADR-0002 cross-reference (the relevant
+  architecture ADR is ADR-0001), adds the missing `_SENSITIVE_KEYS`
+  story for `client_secret` / `client_certificate`, and grounds
+  credential masking in the actual `Secret` / `SecretRedactionFilter`
+  mechanisms (SEC-001..SEC-007, AF-008). ADR-0023 drops the speculative
+  shared-helper design — there is no second consumer in v0.27.0
+  (`AsyncAzureBackend.copy` ships without polling) — and goes
+  backend-local under `backends/_graph_monitor.py`, with a documented
+  hoist path if a real second consumer arrives. ADR-0024 strips the
+  speculative `lock_owner` attribute reservation and routes any future
+  per-backend lock-holder signal through
+  `RemoteStoreError.context["lock_owner"]` instead. No runtime changes.
 
 ## [0.27.0] - 2026-06-02
 

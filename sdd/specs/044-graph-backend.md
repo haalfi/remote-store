@@ -604,7 +604,11 @@ monitor URL.
 ### GR-026: Monitor-URL Polling Contract
 
 **Invariant:** The backend polls the monitor URL from GR-025 (and
-GR-027) using the shared `_async_monitor` module (ADR-0023).
+GR-027) using a backend-local poller in
+`src/remote_store/backends/_graph/_monitor.py` (or as a private
+function inside `_graph.py` if it stays small). Not a shared facility
+in v1 — see ADR-0023 for the reality-check that turned the earlier
+shared-helper design backend-local.
 **Postconditions:**
 - Initial interval defaults to 1 s; ceiling 30 s; multiplicative
   backoff factor 2.

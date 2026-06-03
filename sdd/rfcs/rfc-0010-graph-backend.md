@@ -193,10 +193,18 @@ header pointing to a monitor URL. The client polls that URL until the
 operation completes or fails. Move is synchronous in most cases but
 can also go async; both reuse the same poller.
 
-The polling logic lives in a shared module
-`src/remote_store/backends/_async_monitor.py`. Its contract —
-interval, backoff, timeout, transient-5xx handling, cancellation — is
-specified in ADR-0023 and referenced by the spec (GR-026).
+The polling logic lives **backend-local** in the Graph package
+(`src/remote_store/backends/_graph/_monitor.py`, or inline in
+`_graph.py` while it stays small). ADR-0023 records the reality
+check: an earlier draft proposed a shared
+`backends/_async_monitor.py` on the premise that Azure cross-account
+copy would reuse it, but `AsyncAzureBackend.copy` ships in v0.27.0
+without any polling, and there is no second consumer today. The
+contract — interval, backoff, timeout, transient-5xx handling,
+cancellation, `status_parser` — is in ADR-0023 and referenced by the
+spec (GR-026). If a second backend genuinely needs the same shape, a
+follow-up ADR supersedes ADR-0023 and the function moves to a shared
+location.
 
 ### Capability matrix
 
@@ -277,7 +285,7 @@ src/remote_store/backends/
   _graph.py           # GraphBackend (AsyncBackend implementation)
   _graph_http.py      # httpx client wrapper, error mapper, pagination
   _graph_transfer.py  # upload-session driver, range-download driver
-  _async_monitor.py   # shared monitor-URL poller (ADR-0023)
+  _graph_monitor.py   # backend-local monitor-URL poller (ADR-0023)
   _graph_auth.py      # GraphAuth helper (optional; inlined if small)
 ```
 
