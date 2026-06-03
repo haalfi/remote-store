@@ -1,0 +1,68 @@
+id: BK-256
+title: "Test hygiene: real restricted backend + misfiled test"
+trigger: |
+  Test-suite review found two cleanups in tests/test_store.py independent of
+  BK-255's deletions: three capability-gate tests built ad-hoc
+  MagicMock(spec=Backend) backends instead of using the canonical
+  make_restricted_store helper in tests/conftest.py (consistent with
+  tests/test_open_atomic.py and TESTING.md Rule 6 — prefer real dependencies);
+  and test_write_text_roundtrip was misfiled in TestListFilesDepthFilter,
+  which exercises write_text, not depth filtering.
+source_items:
+  - BK-256
+audience:
+  - infra.test
+expected_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-256"
+        read_type: gate
+        extract: "two independent cleanups; named tests to convert; named test to relocate; carve-out for test_head_maps_all_fields (injects fully-populated FileInfo); CHANGELOG skipped per infra.test"
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rule 6 (prefer real dependencies over mocks)"
+        read_type: gate
+        extract: "MemoryBackend / in-memory SQLite / pytest-httpserver before reaching for mocks — the BK-256 conversion's justification"
+        outcome: ok
+      - file: tests/conftest.py
+        section: "make_restricted_store"
+        read_type: reference
+        extract: "Store wrapping a RestrictedBackend(MemoryBackend, exclude); pre-writes test.txt and folder/a.txt so head() / write() targets exist; replaces the three ad-hoc MagicMock builders"
+        outcome: ok
+      - file: tests/test_open_atomic.py
+        section: "TestStoreOpenAtomicLocal.test_gates_on_capability"
+        read_type: reference
+        extract: "canonical call shape — `make_restricted_store(exclude={Capability.X})` + assert on the gated call; module-level `from .conftest import make_restricted_store` import"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/test_store.py
+        section: "TestStoreBasics.test_supports_atomic_move_false_when_backend_lacks_it, TestStoreHead.test_head_requires_metadata_capability, TestMetadataGate.test_metadata_validation_before_capability_check"
+        read_type: reference
+        extract: "rewrote three tests onto make_restricted_store; dropped per-test MagicMock/Backend/CapabilitySet imports; left test_head_maps_all_fields on a mock (FileInfo-injection carve-out)"
+        outcome: ok
+      - file: tests/test_store.py
+        section: "TestListFilesDepthFilter"
+        read_type: reference
+        extract: "moved test_write_text_roundtrip into TestStoreWriteText (existing WTXT-001 owner); deleted the now-empty class — the BK-255 docstring breadcrumb's only purpose was flagging the misfile for BK-256"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/test_store.py
+        section: "(full)"
+        read_type: verify
+        extract: "hatch run test on the four touched tests + spec-mark gate green (STORE-005, WR-008, WR-011, WTXT-001 marks preserved)"
+        outcome: ok
+  - id: ripple
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / infra.test change"
+        read_type: verify
+        extract: "BACKLOG -> BACKLOG-DONE same commit; trace shipped same PR; CHANGELOG skipped (infra.test, BK-255 precedent); no spec/src/docs touched; backlogid.json counter already past BK-256 — no bump"
+        outcome: ok

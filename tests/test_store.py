@@ -25,6 +25,8 @@ from remote_store._store import Store
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
 
+from .conftest import make_restricted_store
+
 
 @pytest.fixture
 def store() -> Store:
@@ -70,14 +72,7 @@ class TestStoreBasics:
     @pytest.mark.spec("STORE-005")
     def test_supports_atomic_move_false_when_backend_lacks_it(self) -> None:
         """Store.supports returns False when the backend's CapabilitySet excludes ATOMIC_MOVE."""
-        from unittest.mock import MagicMock
-
-        from remote_store._backend import Backend
-        from remote_store._capabilities import CapabilitySet
-
-        mock_backend = MagicMock(spec=Backend)
-        mock_backend.capabilities = CapabilitySet(set(Capability) - {Capability.ATOMIC_MOVE})
-        store = Store(backend=mock_backend, root_path="root")
+        store = make_restricted_store(exclude={Capability.ATOMIC_MOVE})
         assert store.supports(Capability.ATOMIC_MOVE) is False
 
     @pytest.mark.spec("STORE-004")
@@ -741,16 +736,6 @@ class TestStoreWriteText:
         with pytest.raises(InvalidPath):
             store.write_text(path, "text")
 
-
-class TestListFilesDepthFilter:
-    """STORE-depth-filter: list_files depth filter trims results beyond max_depth.
-
-    The Store-level max_depth trimming invariant is owned by
-    ``tests/test_depth_listing.py::TestListFilesMaxDepth`` (STORE-016 /
-    DEPTH-001). The remaining ``test_write_text_roundtrip`` is misfiled here
-    (it exercises write_text, not depth filtering); BK-256 relocates it.
-    """
-
     @pytest.mark.spec("WTXT-001")
     def test_write_text_roundtrip(self, store: Store) -> None:
         store.write_text("rt.txt", "caf\u00e9", encoding="utf-8")
@@ -814,18 +799,9 @@ class TestStoreHead:
 
     @pytest.mark.spec("WR-008")
     def test_head_requires_metadata_capability(self) -> None:
-        from unittest.mock import MagicMock
-
-        from remote_store._backend import Backend
-        from remote_store._capabilities import CapabilitySet
-        from remote_store._errors import CapabilityNotSupported
-
-        mock_backend = MagicMock(spec=Backend)
-        mock_backend.capabilities = CapabilitySet(set(Capability) - {Capability.METADATA})
-        mock_backend.name = "mock"
-        s = Store(backend=mock_backend)
+        s = make_restricted_store(exclude={Capability.METADATA})
         with pytest.raises(CapabilityNotSupported):
-            s.head("f.bin")
+            s.head("test.txt")
 
     @pytest.mark.spec("WR-008")
     def test_head_path_is_store_relative(self, store: Store) -> None:
@@ -937,17 +913,7 @@ class TestMetadataGate:
 
     @pytest.mark.spec("WR-011")
     def test_metadata_validation_before_capability_check(self) -> None:
-        from unittest.mock import MagicMock
-
-        from remote_store._backend import Backend
-        from remote_store._capabilities import CapabilitySet
-
-        mock_backend = MagicMock(spec=Backend)
-        mock_backend.capabilities = CapabilitySet(
-            set(Capability) - {Capability.USER_METADATA, Capability.GLOB, Capability.LAZY_READ}
-        )
-        mock_backend.name = "mock"
-        s = Store(backend=mock_backend)
+        s = make_restricted_store(exclude={Capability.USER_METADATA})
         with pytest.raises(ValueError, match="underscore"):
             s.write("f.bin", b"x", metadata={"_bad": "v"})
 
