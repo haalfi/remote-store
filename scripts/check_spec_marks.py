@@ -195,7 +195,8 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         # Testing-process spec (spec 048) — not runtime behaviors.
         "TEST-002",  # conformance is cross-backend spine
         "TEST-003",  # backend-specific tests isolated per backend
-        "TEST-007",  # HTTP cassette and replay layer
+        # TEST-007 (HTTP cassette + per-backend dir) now carries a mark via the
+        # Graph scrub security-gate test (tests/backends/fixtures/test_cassettes.py).
         "TEST-008",  # replay scope is HTTP-transport only
         "TEST-009",  # cassette refresh is explicit
         # Deferred features (specced, not yet built — no behavior to mark).

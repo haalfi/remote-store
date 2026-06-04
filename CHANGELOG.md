@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-127: Microsoft Graph backend setup guide
+
 ## [0.27.0] - 2026-06-02
 
 ### Added

@@ -40,6 +40,16 @@ Used by ``tests/backends/conformance/conftest.py`` for both the
 ``vcr_cassette_dir`` fixture override and the missing-cassette skip hook.
 """
 
+CASSETTE_DIR_GRAPH: Path = Path(__file__).resolve().parent.parent / "cassettes" / "graph"
+"""Absolute path to ``tests/backends/cassettes/graph/`` (TEST-007).
+
+Per-backend cassette directory for the Microsoft Graph backend (ID-127 /
+GR-FOUNDATION). The conformance ``vcr_cassette_dir`` dispatch will route
+``graph_*`` fixtures here once the backend's replay fixtures land in
+GR-CORE; the constant exists now so the scrub profile below and its
+security-gate test have a stable home to reference.
+"""
+
 # ---------------------------------------------------------------------------
 # Fixed identifiers used in replay and scrubbing
 # ---------------------------------------------------------------------------
@@ -118,6 +128,68 @@ _BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
 ]
 
 _USER_AGENT_NORMALIZED = "azsdk-python-replay"
+
+# ---------------------------------------------------------------------------
+# Microsoft Graph scrub profile (ID-127 / GR-FOUNDATION; GR-035, TEST-007)
+# ---------------------------------------------------------------------------
+#
+# Security gate: the Graph backend sends an ``Authorization: Bearer <token>``
+# on every request and downloads content from a pre-signed
+# ``@microsoft.graph.downloadUrl`` whose query carries its own access token.
+# Neither may survive into a committed cassette. The profile below drops the
+# bearer + cookies + correlation ids, redacts the downloadUrl and any
+# bearer/access/refresh token from response bodies, filters the pre-signed
+# download query params, and rewrites the live ``drive_id`` to a placeholder.
+
+FAKE_DRIVE_ID = "graphreplaydrive"
+"""Placeholder drive id written into every recorded Graph cassette URL.
+
+Replay fixtures (GR-CORE) construct the backend with this same drive id so
+the ``/drives/{drive_id}/...`` path in every outgoing request matches the
+cassette. Not a secret — an arbitrary well-formed token.
+"""
+
+_GRAPH_SCRUB_REQUEST_HEADERS: frozenset[str] = frozenset({"authorization", "cookie", "client-request-id"})
+_GRAPH_SCRUB_RESPONSE_HEADERS: frozenset[str] = frozenset(
+    {"request-id", "client-request-id", "x-ms-ags-diagnostic", "set-cookie", "date"}
+)
+# Pre-signed download-URL query parameters. Consumer OneDrive uses
+# ``tempauth`` / ``Expires``; SharePoint uses the SAS-style set already listed
+# for Azure. ``access_token`` covers the rare in-query token form.
+_GRAPH_SCRUB_QUERY_PARAMS: tuple[str, ...] = (*_SCRUB_QUERY_PARAMS, "tempauth", "Expires", "access_token")
+
+# The pre-signed download token also rides the ``Location`` response header:
+# ``GET /content`` answers ``302`` whose ``Location`` IS the
+# ``@microsoft.graph.downloadUrl`` with the token in its query (spec 044
+# GR-015). ``filter_query_parameters`` only touches request URIs, so the header
+# is redacted here. The *whole query* is wiped value-based — mirroring the
+# JSON-body downloadUrl scrub — rather than enumerating param names: the entire
+# query of a downloadUrl is token machinery, so a novel/undocumented param name
+# must not survive on the strength of not being in a list. Host + path are kept
+# so the cassette stays reviewable.
+_GRAPH_URL_QUERY_RE: re.Pattern[str] = re.compile(r"\?\S*")
+
+# Body-level redactions, applied in the bytes domain so binary payloads are
+# safe. Each preserves surrounding JSON structure and replaces only the
+# secret-bearing value.
+_GRAPH_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
+    (re.compile(rb'("@microsoft\.graph\.downloadUrl"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
+    (re.compile(rb'("(?:access_token|refresh_token)"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
+    (re.compile(rb"Bearer\s+[A-Za-z0-9._~+/=\-]+"), b"Bearer REDACTED"),
+]
+
+# Request-body redactions for the OAuth token-exchange POST. MSAL sends this
+# form-encoded over ``requests`` (which vcrpy also patches), so a recording made
+# while the client-credentials / certificate / refresh flows acquire a token
+# would otherwise capture the credential in the request body. The device-code
+# flow carries none of these, but the app-only recipe shipped in graph-setup.md
+# does — so the gate scrubs them rather than only covering the device-code path.
+_GRAPH_REQUEST_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
+    (re.compile(rb"(client_secret=)[^&\r\n]+"), rb"\1REDACTED"),
+    (re.compile(rb"(client_assertion=)[^&\r\n]+"), rb"\1REDACTED"),
+    (re.compile(rb"(assertion=)[^&\r\n]+"), rb"\1REDACTED"),
+    (re.compile(rb"(refresh_token=)[^&\r\n]+"), rb"\1REDACTED"),
+]
 
 
 # ---------------------------------------------------------------------------
@@ -273,11 +345,104 @@ def build_vcr_config(real_account: str | None) -> dict[str, Any]:
     }
 
 
+def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
+    """Return a ``vcr_config`` dict for recording/replaying Microsoft Graph.
+
+    ``real_drive_id`` is the live drive id (record mode) or ``None`` (replay
+    mode). The ``before_record_*`` hooks run in both modes because vcrpy
+    normalises outgoing requests for matching during replay too, so the
+    ``if real_drive_id:`` guards are load-bearing on the replay path.
+
+    What it strips (the GR-FOUNDATION security gate, GR-035 / TEST-007):
+
+    * ``Authorization`` (the bearer token), ``Cookie``, and the
+      ``client-request-id`` correlation header from requests;
+    * the OAuth credentials (``client_secret`` / ``client_assertion`` /
+      ``assertion`` / ``refresh_token``) from the token-exchange **request**
+      body — MSAL sends these form-encoded over ``requests``, which vcrpy
+      records too (the app-only recording path; the device-code path carries
+      none of them);
+    * ``request-id`` / ``client-request-id`` / ``x-ms-ags-diagnostic`` /
+      ``Set-Cookie`` / ``Date`` from responses;
+    * the pre-signed download token from the ``Location`` /
+      ``Content-Location`` response header — the ``302`` from ``GET /content``
+      redirects to ``@microsoft.graph.downloadUrl`` (GR-015); its **whole
+      query** is wiped (value-based, like the body scrub) so no token survives,
+      named or not;
+    * the ``@microsoft.graph.downloadUrl`` value and any
+      ``Bearer`` / ``access_token`` / ``refresh_token`` from response bodies;
+    * the pre-signed download query parameters; and
+    * the live ``drive_id`` (rewritten to ``FAKE_DRIVE_ID``) from request
+      URIs and response bodies, so a cassette recorded against a real drive
+      replays against the fake one.
+    """
+
+    def before_record_request(request: Any) -> Any:
+        if real_drive_id:
+            request.uri = request.uri.replace(real_drive_id, FAKE_DRIVE_ID)
+        for key in list(request.headers):
+            lower = key.lower()
+            if lower in _GRAPH_SCRUB_REQUEST_HEADERS:
+                del request.headers[key]
+            elif lower == "user-agent":
+                request.headers[key] = _USER_AGENT_NORMALIZED
+        # Scrub credentials out of the OAuth token-exchange POST body. The
+        # bytes-domain sub is a no-op on binary upload payloads (no form keys
+        # match) and on the device-code flow (no secret present).
+        body = getattr(request, "body", None)
+        if isinstance(body, (str, bytes)):
+            raw = body.encode() if isinstance(body, str) else body
+            for pattern, replacement in _GRAPH_REQUEST_BODY_SCRUB:
+                raw = pattern.sub(replacement, raw)
+            request.body = raw.decode() if isinstance(body, str) else raw
+        return request
+
+    def before_record_response(response: dict[str, Any]) -> dict[str, Any]:
+        headers = response.get("headers", {})
+        for key in list(headers):
+            lower = key.lower()
+            if lower in _GRAPH_SCRUB_RESPONSE_HEADERS:
+                del headers[key]
+            elif lower in ("location", "content-location"):
+                # The 302 from GET /content carries the pre-signed download
+                # token in the Location query (GR-015); wipe the whole query,
+                # keeping host/path so the cassette stays reviewable.
+                val = headers[key]
+                if isinstance(val, list):
+                    headers[key] = [_GRAPH_URL_QUERY_RE.sub("?REDACTED", v) if isinstance(v, str) else v for v in val]
+                elif isinstance(val, str):
+                    headers[key] = _GRAPH_URL_QUERY_RE.sub("?REDACTED", val)
+        body = response.get("body", {})
+        raw = body.get("string")
+        if isinstance(raw, str):
+            raw = raw.encode()
+            was_str = True
+        else:
+            was_str = False
+        if isinstance(raw, bytes):
+            if real_drive_id:
+                raw = raw.replace(real_drive_id.encode(), FAKE_DRIVE_ID.encode())
+            for pattern, replacement in _GRAPH_BODY_SCRUB:
+                raw = pattern.sub(replacement, raw)
+            body["string"] = raw.decode() if was_str else raw
+        return response
+
+    return {
+        "decode_compressed_response": True,
+        "filter_query_parameters": list(_GRAPH_SCRUB_QUERY_PARAMS),
+        "before_record_request": before_record_request,
+        "before_record_response": before_record_response,
+    }
+
+
 __all__ = [
     "CASSETTE_DIR_AZURE",
+    "CASSETTE_DIR_GRAPH",
     "FAKE_ACCOUNT",
     "FAKE_CONN_STR",
+    "FAKE_DRIVE_ID",
     "FAKE_FILESYSTEM",
+    "build_graph_vcr_config",
     "build_vcr_config",
     "live_connection_string",
     "parse_account_name",
