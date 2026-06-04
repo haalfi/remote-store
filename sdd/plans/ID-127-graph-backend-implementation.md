@@ -171,8 +171,15 @@ without leaking secrets. No backend code yet.
   `Authorization: Bearer`, drop/redact the pre-signed
   `@microsoft.graph.downloadUrl` host + query, scrub `client-request-id`
   / correlation headers; introduce `CASSETTE_DIR_GRAPH`).
-- `tests/backends/fixtures/graph_replay_async.py` (new — httpx-streaming
-  replay shim, mirroring `azure_replay_async.py`).
+- `tests/backends/fixtures/graph_replay_async.py` (new — **new httpx
+  streaming-replay plumbing, built from scratch**, not a copy of
+  `azure_replay_async.py`. The Azure file swaps in an `azure.core`
+  `AsyncioRequestsTransport` because vcrpy's aiohttp stub deadlocks on a
+  streamed body; but `GraphBackend` uses a bare `httpx.AsyncClient`
+  (`.stream()`, GR-012/GR-015) with no `azure.core` transport seam, so the
+  httpx capture/replay path has no equivalent shim to borrow. Azure is the
+  *role* model only — see the unproven-streaming risk below; budget this
+  as new transport work, not "mirror the Azure file").
 - `scripts/record_cassettes.py` (add a `graph` entry to `_BACKENDS`).
 
 **Spec IDs covered.** TEST-007 (per-backend cassette dirs), TEST-009
@@ -319,14 +326,20 @@ exists — it landed in GR-CONTRACT; GR-CORE's `http.py` only wires the
 - `src/remote_store/aio/backends/__init__.py` (guarded re-export of
   `GraphBackend`, `GraphAuth`, `GraphUtils`).
 - `src/remote_store/_config.py` (`_SENSITIVE_KEYS` += `client_secret`,
-  `client_certificate`).
-- `sdd/specs/031-ext-dagster.md` (**ripple — third consumer**):
+  `client_certificate`) **and its spec `sdd/specs/020-credential-hygiene.md`
+  § SEC-003** — SEC-003 inlines the literal key set in prose (lines 42-45)
+  and carries a Forward note (46-50) anticipating this exact ID-127
+  addition. The widening makes the inline list stale, so update it (or
+  repoint at `_config._SENSITIVE_KEYS` per principle 4) **and** resolve the
+  now-satisfied Forward note in the same commit. This is the primary spec
+  of the change, not a downstream consumer.
+- `sdd/specs/031-ext-dagster.md` § DAG-033 (**downstream consumer**):
   `ext/dagster.py::_build_store` *imports* `_SENSITIVE_KEYS` (no code
-  change needed), but spec 031 § DAG-033 **hard-enumerates the literal
-  key set in prose**, which the widening leaves stale. Per principle 4
-  (single source of truth), repoint that enumeration at
-  `_config._SENSITIVE_KEYS` rather than re-listing keys, so the next
-  widening never desyncs again.
+  change needed), but DAG-033 **hard-enumerates the literal key set in
+  prose** too, equally stale after the widening. Repoint at the single
+  source per principle 4. So the widening has **two stale-prose sites —
+  SEC-003 and DAG-033** — plus the zero-change Dagster code consumer; both
+  prose sites are fixed in this commit.
 - `docs-src/reference/api/index.md` (parity entries for the three Graph
   symbols `GraphBackend` / `GraphAuth` / `GraphUtils`; `ResourceLocked`
   parity landed in GR-CONTRACT) ; `pyproject.toml` (`graph` extra per
@@ -340,18 +353,26 @@ exists — it landed in GR-CONTRACT; GR-CORE's `http.py` only wires the
 (mapper test; the class + ERR-013 are GR-CONTRACT's), GR-050..GR-053,
 GR-057, RET-015 (mapping table), SEC-003, DAG-033 (ripple). The
 error-mapping *table* GR-CORE's `http.py` authors covers 054/055/046 as
-code, but those IDs' behaviour + test ownership sits in GR-WRITE
+code, but GR-054/055/056's behaviour + test ownership sits in GR-WRITE
 (GR-054), GR-READ (GR-055), and GR-MUTATE (GR-056) — so they are
 deliberately **not** claimed here, keeping one unambiguous owner per ID
-for GR-DONE's traceability sweep.
+for GR-DONE's traceability sweep. **GR-046 is the deliberate exception:**
+it is a **shared umbrella** ID (spec 044 enumerates per-operation failure
+postconditions in one section), intentionally sliced across GR-READ /
+GR-WRITE / GR-MUTATE — each owning its operation's failure paths, with the
+mapping table here. GR-DONE's `@pytest.mark.spec("GR-046")` sweep should
+therefore expect **multiple** owners and not flag the multi-owner as an
+inconsistency (unlike 054/055/056, which are single-owner by design).
 
 **Acceptance criteria.**
 - **`_SENSITIVE_KEYS` widening** (named obligation): config-loaded Graph
   backends auto-wrap `client_secret` / `client_certificate`; test asserts
-  it, plus no regression for other backends' keys. Dagster masking
-  (`ext/dagster.py`) inherits the widening automatically (it imports the
-  set); spec 031 § DAG-033's prose enumeration is updated in the same
-  commit (repointed at the single source per principle 4).
+  it, plus no regression for other backends' keys. **Both stale-prose
+  sites updated in the same commit** — spec 020 § SEC-003 (the spec of the
+  `from_dict` wrapping, including resolving its now-satisfied Forward note)
+  and spec 031 § DAG-033 — each repointed at `_config._SENSITIVE_KEYS` per
+  principle 4. Dagster masking (`ext/dagster.py`) inherits the widening
+  automatically (it imports the set; no code change).
 - `423`→`ResourceLocked` mapping: a respx unit test feeds a `423`
   response and asserts the `ResourceLocked` class (from GR-CONTRACT) is
   raised with `backend="graph"` (GR-045 mapper test; mid-session 423 is
