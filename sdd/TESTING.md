@@ -5,7 +5,7 @@
 
 Authoritative source for test **quality** rules and top-level
 **placement** of test files in `tests/`. Companion to
-[`sdd/DESIGN.md` § 11 (test style)](DESIGN.md#11-test-style).
+[`sdd/DESIGN.md` § 11 (test style)](DESIGN.md#test-style).
 
 For test **architecture** (the shape of the test tree and how backends
 are wired into it), see
@@ -64,6 +64,7 @@ enforces three rules at CI time, all derived from spec 048:
   `src/remote_store/ext/<x>.py`. The single namespace-wide contract test
   (`tests/ext/test_contract.py`) is on the script's allow-list.
 
+<a id="rules"></a>
 ## Rules
 
 1. **Every test must have at least one meaningful assertion** [CI-enforced]
@@ -82,7 +83,7 @@ enforces three rules at CI time, all derived from spec 048:
 5. **Don't mock what you don't own** [review-enforced]
    — mock at our boundary (Backend ABC, wrapper, protocol), never third-party internals.
 
-6. **Prefer real dependencies over mocks** [review-enforced]
+6. <a id="prefer-real-dependencies"></a>**Prefer real dependencies over mocks** [review-enforced]
    — `MemoryBackend`, in-memory SQLite, `pytest-httpserver` before reaching for mocks.
 
 7. **Maximize behavioral coverage per line of test code** [review-enforced]

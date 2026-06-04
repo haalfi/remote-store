@@ -1,6 +1,6 @@
 """Check markdown links in the repo.
 
-Two rules, both enforced by ``main`` over every git-tracked ``.md`` file:
+Three rules, all enforced by ``main`` over every git-tracked ``.md`` file:
 
 * On-disk links (BK-171, DOCFRAME-008): every relative ``](path)`` link
   must resolve to an on-disk repo file. No docs-only carve-out; no
@@ -15,6 +15,13 @@ Two rules, both enforced by ``main`` over every git-tracked ``.md`` file:
   map the mkdocs bridge uses — so a stale or mistyped path segment
   (``/stable/api/store/`` for ``/stable/reference/api/store/``) fails the
   gate offline, with no live HTTP request and no docs build.
+
+* Fragment resolution (ID-180): every ``[text](path.md#fragment)`` link
+  whose consumer is not on the historical denylist must resolve to either
+  an explicit ``<a id="fragment">`` tag in ``path.md`` or a heading whose
+  GitHub-style slug equals ``fragment``. Anchor uniqueness (M2) and
+  heading-adjacency (M3) of every ``<a id>`` in a target file are checked
+  in the same pass.
 
 Exit 0 = clean.  Exit 1 = broken links found.
 """
@@ -37,6 +44,22 @@ _LINK_RE = re.compile(r'\]\(([^)\s]+)(?:\s+"[^"]*")?\)')
 _EXTERNAL_PREFIXES = ("http://", "https://", "mailto:", "ftp://")
 _FENCE_RE = re.compile(r"^(`{3,}|~{3,})")
 _INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
+
+# ID-180 fragment resolution.
+# Matches <a id="anchor"></a> — the carrier this repo uses for stable section IDs.
+_ANCHOR_RE = re.compile(r'<a\s+id="([^"]+)"\s*>\s*</a>')
+# Matches a Markdown ATX heading (# .. ######). Captures level and text.
+_HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$")
+# Repo-relative paths whose outbound fragment refs are NOT validated.
+# Historical / append-only docs; referenced anchors may name sections that
+# existed at the time the entry was written.
+_FRAGMENT_CONSUMER_DENYLIST = (
+    "CHANGELOG.md",
+    "sdd/BACKLOG-DONE.md",
+    "sdd/audits/",
+    "sdd/research/",
+    "sdd/traces/",
+)
 
 # Host of the published docs site (mkdocs.yml site_url).
 _DOCS_SITE_HOST = "docs.remotestore.dev"
@@ -93,6 +116,130 @@ def _strip_fragment(target: str) -> str:
     return target.split("#")[0]
 
 
+def _slugify_heading(text: str) -> str:
+    """Slug for a Markdown heading, in the dialect both GitHub and mkdocs accept.
+
+    Lowercase, drop punctuation, each space becomes a single dash. Both the
+    strict GitHub form (consecutive dashes preserved) and the collapsed form
+    (consecutive dashes merged — what python-markdown / mkdocs produce) are
+    returned, so a consumer reference written in either style resolves.
+
+    Strips backticks and asterisks (Markdown emphasis markers) but preserves
+    underscores, which are valid identifier characters and appear in headings
+    like ``S3-011: delete_folder Recursive``. A trailing kramdown / pymdown
+    attr-list block (``{ #id .class }``) is stripped before slugging; the
+    explicit ID is captured separately by the caller.
+
+    Returns the strict form; ``_slug_variants`` yields both.
+    """
+    s = re.sub(r"\{[^}]*\}\s*$", "", text)
+    s = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", s)  # [text](url) → text
+    s = re.sub(r"[`*]", "", s)
+    s = s.strip().lower()
+    s = re.sub(r"[^\w\s-]", "", s)
+    s = s.replace(" ", "-")
+    return s.strip("-")
+
+
+def _slug_variants(text: str) -> tuple[str, ...]:
+    """Yield both the strict and dash-collapsed slug forms for *text*."""
+    strict = _slugify_heading(text)
+    if not strict:
+        return ()
+    collapsed = re.sub(r"-+", "-", strict)
+    if collapsed == strict:
+        return (strict,)
+    return (strict, collapsed)
+
+
+# mkdocs attr-list explicit anchor: trailing { #id ... }.
+_ATTR_LIST_RE = re.compile(r"\{\s*#([^\s}]+)[^}]*\}\s*$")
+
+
+@dataclass(frozen=True)
+class _AnchorIndex:
+    """Set of fragment IDs a target Markdown file exposes."""
+
+    ids: frozenset[str]
+    duplicate_ids: tuple[str, ...]
+    orphan_ids: tuple[tuple[int, str], ...]
+
+
+def _extract_anchors(text: str) -> _AnchorIndex:
+    """Collect every <a id> and heading slug in *text*.
+
+    Returns the set of resolvable fragment IDs, plus duplicate-anchor and
+    orphan-anchor diagnostics. An orphan is an ``<a id>`` not immediately
+    followed by a Markdown heading (after optional blank lines), per M3.
+    """
+    in_fence = False
+    ids: set[str] = set()
+    duplicates: list[str] = []
+    orphans: list[tuple[int, str]] = []
+    seen: set[str] = set()
+
+    lines = text.splitlines()
+    for idx, line in enumerate(lines):
+        if _FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        # Headings: collect their GitHub slug plus any attr-list explicit anchor.
+        m = _HEADING_RE.match(line)
+        if m:
+            heading_text = m.group(2)
+            attr_m = _ATTR_LIST_RE.search(heading_text)
+            if attr_m:
+                ids.add(attr_m.group(1))
+            for variant in _slug_variants(heading_text):
+                ids.add(variant)
+            continue
+        # Explicit <a id> tags.
+        for am in _ANCHOR_RE.finditer(line):
+            anchor = am.group(1)
+            if anchor in seen:
+                duplicates.append(anchor)
+            seen.add(anchor)
+            ids.add(anchor)
+            # M3 (orphan check) applies only to anchors on their own line — an
+            # inline anchor inside a list item or heading is co-located with
+            # its semantic target and need not be followed by a heading.
+            stripped = line.strip()
+            anchor_only_line = bool(_ANCHOR_RE.fullmatch(stripped))
+            if not anchor_only_line:
+                continue
+            j = idx + 1
+            while j < len(lines):
+                nxt = lines[j].strip()
+                if not nxt:
+                    j += 1
+                    continue
+                # Another anchor-only line is allowed; keep looking.
+                if _ANCHOR_RE.fullmatch(nxt):
+                    j += 1
+                    continue
+                break
+            if j >= len(lines) or not _HEADING_RE.match(lines[j]):
+                orphans.append((idx + 1, anchor))
+    return _AnchorIndex(
+        ids=frozenset(ids),
+        duplicate_ids=tuple(duplicates),
+        orphan_ids=tuple(orphans),
+    )
+
+
+def _is_denylisted_consumer(rel_path: str) -> bool:
+    """True when fragment refs from this file are exempt from M1.
+
+    Historical / append-only docs (CHANGELOG, BACKLOG-DONE, audits, research,
+    traces) describe the repo as it was at write time; reanchoring them on
+    every rename would distort history.
+    """
+    rel = rel_path.replace("\\", "/")
+    return any(rel == p or rel.startswith(p) for p in _FRAGMENT_CONSUMER_DENYLIST)
+
+
 def check_repo_links(repo_root: Path) -> list[BrokenLink]:
     """On-disk check: every internal link in every git-tracked ``.md`` resolves.
 
@@ -122,6 +269,96 @@ def check_repo_links(repo_root: Path) -> list[BrokenLink]:
                         resolved=str(resolved),
                     )
                 )
+    return broken
+
+
+def check_repo_link_fragments(repo_root: Path) -> list[BrokenLink]:
+    """ID-180 fragment-resolution gate.
+
+    For every ``[text](path.md#fragment)`` link in every git-tracked ``.md``
+    file (excluding the historical denylist), verify the ``#fragment``
+    resolves to either an ``<a id="fragment">`` tag or a heading whose
+    GitHub slug equals ``fragment`` in the target file.
+
+    Also reports anchor uniqueness violations (M2) and orphan ``<a id>``
+    tags not adjacent to a heading (M3), once per target file.
+    """
+    from docs.scan import _git_repo_markdown  # type: ignore[import]
+
+    broken: list[BrokenLink] = []
+    anchor_cache: dict[Path, _AnchorIndex] = {}
+
+    def _anchors_for(path: Path) -> _AnchorIndex | None:
+        cached = anchor_cache.get(path)
+        if cached is not None:
+            return cached
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            return None
+        idx = _extract_anchors(text)
+        anchor_cache[path] = idx
+        return idx
+
+    for md in _git_repo_markdown(repo_root):
+        rel = str(md.relative_to(repo_root))
+        if _is_denylisted_consumer(rel):
+            continue
+        try:
+            text = md.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        for lineno, raw in _extract_links(text):
+            if "#" not in raw:
+                continue
+            target, _, frag = raw.partition("#")
+            if not frag or not target:
+                continue
+            # mkdocstrings symbol IDs (e.g. ``remote_store.Store.read``) are
+            # generated at docs-build time and never appear in source `.md` as
+            # `<a id>` tags or heading slugs. Detect by the Python-attribute
+            # dot which GitHub slug rules would have stripped.
+            if "." in frag:
+                continue
+            tgt_path = (md.parent / target).resolve()
+            if not tgt_path.exists() or tgt_path.suffix != ".md":
+                # On-disk gate (above) already flags missing files; non-md
+                # targets (e.g. .svg) have no anchor index.
+                continue
+            idx = _anchors_for(tgt_path)
+            if idx is None:
+                continue
+            if frag not in idx.ids:
+                broken.append(
+                    BrokenLink(
+                        source=md,
+                        line=lineno,
+                        raw=raw,
+                        resolved=f"no anchor #{frag} in {tgt_path.relative_to(repo_root)}",
+                    )
+                )
+
+    # M2 / M3 diagnostics for every Markdown file scanned.
+    for path, idx in anchor_cache.items():
+        rel_target = path.relative_to(repo_root)
+        for dup in idx.duplicate_ids:
+            broken.append(
+                BrokenLink(
+                    source=path,
+                    line=0,
+                    raw=f'<a id="{dup}">',
+                    resolved=f"duplicate anchor in {rel_target}",
+                )
+            )
+        for line_no, orphan in idx.orphan_ids:
+            broken.append(
+                BrokenLink(
+                    source=path,
+                    line=line_no,
+                    raw=f'<a id="{orphan}">',
+                    resolved=f"orphan anchor (no adjacent heading) in {rel_target}",
+                )
+            )
     return broken
 
 
@@ -259,7 +496,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     repo_root = args.root.resolve()
-    broken = check_repo_links(repo_root) + check_docs_site_links(repo_root)
+    broken = check_repo_links(repo_root) + check_docs_site_links(repo_root) + check_repo_link_fragments(repo_root)
 
     if broken:
         print(_format_broken(broken, repo_root), file=sys.stderr)

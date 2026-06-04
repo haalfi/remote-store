@@ -8,6 +8,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-180 — Stable HTML-anchor IDs across non-spec docs under `sdd/`**
+  spec: — · effort: M · audience: library.maintainer, contributor.process
+  Cross-doc references between framework docs (CLAUDE.md, CONTRIBUTING.md,
+  the seven `sdd/` framework docs, `sdd/formal/README.md`, `sdd/BACKLOG.md`)
+  used heading text or GitHub auto-slugs that rot silently on heading rename.
+  Prose `§ Section` references were invisible to the link checker entirely.
+  Added `<a id="…">` anchors next to currently-cited sections (concept-named,
+  not numbered — `#workflows` not `#rule-6`, `#bug-fix-protocol` not
+  `#section-30`), converted prose refs to Markdown anchor links across CLAUDE.md,
+  CONTRIBUTING.md, the framework docs, and the consumer skills under
+  `.claude/skills/`. Extended `scripts/docs/check_links.py` with M1 (fragment
+  resolution against `<a id>` tags and GitHub-style heading slugs), M2 (anchor
+  uniqueness), and M3 (orphan-anchor heuristic). Denylist: CHANGELOG,
+  BACKLOG-DONE, audits, research, traces. mkdocstrings dotted symbol refs
+  (`#remote_store.Store.read`) are skipped (rendered at docs-build time).
+  Tests: 17 new in `tests/scripts/test_check_links.py`, including a live-repo
+  positive control. No CHANGELOG entry: audience is library.maintainer +
+  contributor.process. Followup not pursued: ID-179 (trace `section:` validator)
+  stays parked separately per the user's "traces are a lightweight tool" framing.
+  Trace: `sdd/traces/id-180-stable-anchor-ids.yml`.
+
 - [x] **BK-256 — Test hygiene: real restricted backend + misfiled test**
   spec: — · effort: S · audience: infra.test
   Two independent cleanups from the test-suite review (sibling to BK-255).

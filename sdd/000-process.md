@@ -5,19 +5,21 @@
 
 Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC formats, backlog tiers, and test traceability. Governs all `sdd/` content.
 
+<a id="rules"></a>
 ## Rules
 
 1. **No code without a spec**: every testable contract must have a spec section ID.
-2. **No spec without tests**: every spec section must have at least one test with `@pytest.mark.spec("ID")`.
+2. <a id="spec-test-traceability"></a>**No spec without tests**: every spec section must have at least one test with `@pytest.mark.spec("ID")`.
 3. **Specs are authoritative**: if code and spec disagree, the code is wrong.
 4. **ADRs are immutable once Accepted**: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.
 5. **IDs are stable**: once assigned, a section ID never changes meaning. Deprecated sections are marked `[DEPRECATED]`, not removed.
-6. **Workflows**:
+6. <a id="workflows"></a>**Workflows**:
    - **Features**: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.
    - **Bug fixes**: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec.
 
 ## Guides
 
+<a id="spec-format"></a>
 ### Spec format
 
 Each spec uses numbered section IDs with a module prefix declared at the top of each file:
@@ -63,6 +65,7 @@ Completed items live in [`sdd/BACKLOG-DONE.md`](BACKLOG-DONE.md).
 `BACKLOG.md` is the single source of truth for ID prefixes, status conventions,
 completion workflow, and section structure. See its "How this file works" header.
 
+<a id="feature-type-definition-of-done"></a>
 ### Feature-type Definition of Done
 
 Rule 6 gives a feature's lifecycle order; the two checklists below give its
@@ -108,6 +111,7 @@ one `Store` or backend surface onto another.
 - [ ] **`filterwarnings = error`-clean suite** under the global policy in
   `pyproject.toml`.
 
+<a id="document-types"></a>
 ### Document types
 
 Five document categories live under `sdd/`. Each has a clear purpose and lifecycle:

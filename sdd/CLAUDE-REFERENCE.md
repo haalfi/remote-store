@@ -6,6 +6,7 @@ Scope: cross-file dependency checks, repo navigation, and layout.
 
 ---
 
+<a id="ripple-check-table"></a>
 ## Ripple-check table
 
 The ripple-check has two presentations of the same set of triggers, grouped by SDD lifecycle phase (specs and contract → code surface → tests → docs → release and meta):
@@ -20,6 +21,7 @@ match between "Pre-work index" and "Detailed checklist". Trace section strings
 (sdd/traces/*.yml) cite row names verbatim — renaming requires updating those
 too. Reviewer-enforced; if drift recurs, promote a check script into BACKLOG. -->
 
+<a id="pre-work-index"></a>
 ### Pre-work index
 
 Read this before starting. One line per trigger.
@@ -58,22 +60,23 @@ Read this before starting. One line per trigger.
 
 | Trigger                       | Ripples (at a glance) |
 |-------------------------------|-----------------------|
-| Docs navigation               | Per-section `_nav.yml` files, `docs-src/guides/backends/index.md`, AUTHORING Rule 1, DOCUMENTATION § Content homes |
-| API reference page            | DOCUMENTATION § API page building blocks + required sections |
+| Docs navigation               | Per-section `_nav.yml` files, `docs-src/guides/backends/index.md`, [AUTHORING Rule 1](AUTHORING.md#file-classification), [DOCUMENTATION § Content homes](DOCUMENTATION.md#content-homes) |
+| API reference page            | [DOCUMENTATION § API page building blocks](DOCUMENTATION.md#api-page-building-blocks) + required sections |
 | Example script                | README examples table, generated `tutorial/examples/<slug>.md`, `tests/test_examples.py` import |
-| Tracker ID in published prose | Any backlog/spec coordinate (`PREFIX-NNN`, `spec NNN`, `RFC-NNNN`, `ADR-NNNN`, `PR #NNN`) leaking into a docstring rendered by mkdocstrings or any `.md` under `docs-src/` (plus README, FEATURES, CONTRIBUTING); CONTENT-RULES Rules 1 + 5. Out of scope: `sdd/**`, CHANGELOG, DEVELOPMENT_STORY, source `#` comments |
+| Tracker ID in published prose | Any backlog/spec coordinate (`PREFIX-NNN`, `spec NNN`, `RFC-NNNN`, `ADR-NNNN`, `PR #NNN`) leaking into a docstring rendered by mkdocstrings or any `.md` under `docs-src/` (plus README, FEATURES, CONTRIBUTING); [CONTENT-RULES Rules 1 + 5](CONTENT-RULES.md#rules). Out of scope: `sdd/**`, CHANGELOG, DEVELOPMENT_STORY, source `#` comments |
 
 #### Release & meta
 
 | Trigger                       | Ripples (at a glance) |
 |-------------------------------|-----------------------|
 | Bug fix                       | BACKLOG item, CHANGELOG stub under `[Unreleased]`, failing test **before** fix, spec if invariant contradicted |
-| Backlog item touched          | Live trace at `sdd/traces/<id>-<slug>.yml` (CLAUDE.md § Trace authoring); schema at `sdd/traces/_schema.yml`; `audience` drives the CHANGELOG-required rule |
+| Backlog item touched          | Live trace at `sdd/traces/<id>-<slug>.yml` ([CLAUDE.md § Trace authoring](../CLAUDE.md#trace-authoring)); schema at `sdd/traces/_schema.yml`; `audience` drives the CHANGELOG-required rule |
 | CHANGELOG entry               | One-line `- <ID>: <Title>` at top of `[Unreleased]`; release skill expands and groups |
 | Version number                | `bump-my-version` (drives `pyproject` file list), then `hatch run gen-graph`; full checklist in CONTRIBUTING § Phase 2 |
 | Source/test/spec counts       | README badge + CI coverage report (no manual table) |
-| New authoritative process doc in `sdd/` | CLAUDE.md § Documentation framework (if part of the trio), CONTRIBUTING § Authoritative Document Format Scope, sibling authority back-references, `.claude/skills/*/SKILL.md` foundation lists, `docs-src/explanation/design/_nav.yml`, and this ripple-check |
+| New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) Scope subsection, sibling authority back-references, `.claude/skills/*/SKILL.md` foundation lists, `docs-src/explanation/design/_nav.yml`, and this ripple-check |
 
+<a id="detailed-checklist"></a>
 ### Detailed checklist
 
 Read this at verify-end (after the diff is complete) and during PR review. Each row expands the Pre-work index above.
@@ -247,6 +250,7 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 
 ---
 
+<a id="github-pr-io-split"></a>
 ## GitHub PR I/O split
 
 When reading or writing PR data — in the main session **or** inside a forked PR
@@ -272,6 +276,7 @@ forces on CLI writes. Identical in main session and forks.
 
 ---
 
+<a id="local-toolchain"></a>
 ## Local toolchain
 
 `session-init.sh` auto-installs on Linux+root (claude.ai/code). On-prem: warn only.

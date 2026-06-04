@@ -11,9 +11,10 @@ framework](../CLAUDE.md#documentation-framework)): placement →
 [`sdd/AUTHORING.md`](AUTHORING.md); structure →
 [`sdd/DOCUMENTATION.md`](DOCUMENTATION.md).
 
+<a id="rules"></a>
 ## Rules
 
-1. **The 6-month test.** [review-enforced]
+1. <a id="six-month-test"></a>**The 6-month test.** [review-enforced]
    Before writing any sentence, ask: "Would this still be accurate in 6 months?"
    If not, it belongs in a linked SSoT or generated artefact, not in stable prose.
 
@@ -31,15 +32,15 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    Every fact lives in exactly one authoritative place; everywhere else is a link
    or a paraphrase of the principle. Authoritative homes: file placement in
    [`sdd/AUTHORING.md`](AUTHORING.md) Rule 1; content type homes in
-   [`sdd/DOCUMENTATION.md` § 2](DOCUMENTATION.md#2-content-homes). README and
+   [`sdd/DOCUMENTATION.md` § 2](DOCUMENTATION.md#content-homes). README and
    guides link; they do not copy.
 
-5. **Source-code facts stay in source.** [review-enforced]
+5. <a id="source-code-facts-stay-in-source"></a>**Source-code facts stay in source.** [review-enforced]
    API signatures, capability sets, type annotations, default values live in code.
    Docs describe the pattern and link to the reference; they do not reproduce the
    values.
 
-6. **Code examples are sourced, not written.** [review-enforced]
+6. <a id="code-examples-sourced"></a>**Code examples are sourced, not written.** [review-enforced]
    Doc code blocks come from `examples/snippets/` via `pymdownx.snippets`
    `--8<--` regions, so CI catches API drift. Hand-written fences are allowed
    only when the snippet cannot execute in CI (e.g. needs real credentials);

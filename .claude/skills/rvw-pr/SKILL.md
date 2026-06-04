@@ -30,7 +30,7 @@ Read the PR state via `gh pr view <resolved PR number> --repo haalfi/remote-stor
 
 ## Step 1: Gather context
 
-Read PR **content** via `gh` CLI when available; fall back to MCP when `gh` is absent. Use MCP only for the write/post path (Step 4). This split is identical to the main session — see `sdd/CLAUDE-REFERENCE.md` § GitHub PR I/O split. The fork is not an exception.
+Read PR **content** via `gh` CLI when available; fall back to MCP when `gh` is absent. Use MCP only for the write/post path (Step 4). This split is identical to the main session — see [`sdd/CLAUDE-REFERENCE.md` § GitHub PR I/O split](../../../sdd/CLAUDE-REFERENCE.md#github-pr-io-split). The fork is not an exception.
 
 Read the diff via `gh pr diff $ARGUMENTS --repo haalfi/remote-store` (fall back to `pull_request_read` when `gh` is unavailable). Read every changed file **in full** for surrounding context — from the local checkout via `Read`, or `gh pr view $ARGUMENTS --json files` / `get_file_contents` for the PR-head version.
 
@@ -42,7 +42,7 @@ Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Con
 
 **Skip:** style (ruff handles it), docstrings on unchanged code, "consider X" without reason, praise.
 
-**Ripple check:** Read `sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist. For each triggered row, verify targets are addressed. File `Ripple:` comments for gaps.
+**Ripple check:** Read [`sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist). For each triggered row, verify targets are addressed. File `Ripple:` comments for gaps.
 
 **Search discipline:** Use `Grep` and `Glob` for all local codebase searches. Use `Read` for full file reads. Never use `Bash` or Python scripts to search local code — Bash is permitted **only** for `gh` PR-content reads (Steps 0–1).
 

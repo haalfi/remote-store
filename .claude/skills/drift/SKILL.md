@@ -111,7 +111,7 @@ falling back to `gh` for GraphQL-only flows. Repo: `haalfi/remote-store`.
 
 10. **Commit** the locks + regenerated docs together. Prefix the subject with
     the drift-guard backlog item ID (named in the `drift-guard.yml` header and
-    `infra/drift-locks/README.md`), per CLAUDE.md § Backlog:
+    `infra/drift-locks/README.md`), per [CLAUDE.md § Backlog](../../../CLAUDE.md#backlog):
     `<id>: refresh drift baselines (<extras>)`.
 
 11. **Stop for the user to open the PR.** Push the branch, then **stop — do not

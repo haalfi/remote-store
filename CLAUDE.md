@@ -8,7 +8,7 @@ Spec-Driven Development (SDD).
 
 ## Principles
 
-1. **Ship complete**: a change is finished when everything it touches is consistent: code, tests, docs, CHANGELOG, BACKLOG. Track gaps as `[~]`. For releases, follow the full checklist in `CONTRIBUTING.md` § Release.
+1. **Ship complete**: a change is finished when everything it touches is consistent: code, tests, docs, CHANGELOG, BACKLOG. Track gaps as `[~]`. For releases, follow the full checklist in [`CONTRIBUTING.md` § Release](CONTRIBUTING.md#release).
 2. **Verify beyond the diff**: search for what references the thing you changed. The ripple-check in `sdd/CLAUDE-REFERENCE.md` has a Pre-work index (read **before starting** to anticipate ripples) and a Detailed checklist (read **before committing** to verify them). You MUST consult both presentations for changes that touch backends, errors, capabilities, versions, specs, or dependencies.
 3. **Repo describes reality at every commit**: docs, backlog, and CHANGELOG reflect current state, not future intent. Same commit, or mark `[~]`.
 4. **Single source of truth**: Authoritative references live in one place: link to them, don't copy. Examples: ripple-check, CHANGELOG section order, backlog ID format. Copies become stale.
@@ -29,16 +29,18 @@ extensions, capabilities, and install extras for the current version.
 
 ## Bug-fix protocol
 
-See `sdd/000-process.md` § Rule 6 for the canonical pipeline (BACKLOG →
+See [`sdd/000-process.md` § Rule 6](sdd/000-process.md#workflows) for the canonical pipeline (BACKLOG →
 CHANGELOG → failing TEST → FIX → COMMIT together). Per principle 6, **write
 the failing test, run it, see it fail** before implementing the fix.
 
+<a id="backlog"></a>
 ## Backlog (mandatory)
 
 - See `sdd/BACKLOG.md` for workflow rules, ID prefixes, completing-work
   procedure, and active items. Completed items are in `sdd/BACKLOG-DONE.md`.
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
+<a id="trace-authoring"></a>
 ## Trace authoring (mandatory)
 
 When working on a backlog item, maintain `sdd/traces/<id>-<slug>.yml` as you work, not after merge. Schema: `sdd/traces/_schema.yml`. **"Working on" means implementing or closing the item.** A pure advisory annotation to a body (e.g. recording a verification-run result) that neither implements nor closes the item does not require a trace; the trace is authored when implementation begins.
@@ -61,6 +63,7 @@ Claude-specific shell constraints:
 - **No heredoc in git commits.** `git commit -m "$(cat <<'EOF'...)"` breaks the `Bash(git:*)` auto-approve pattern. Use multiple `-m` flags instead.
 - **No `/tmp/`.** Use `./tmp/` instead (gitignored). `/tmp/` is a system directory and triggers a separate permission prompt.
 
+<a id="coverage-gate"></a>
 ## Coverage gate
 
 `hatch run all` uses a Stage-1, no-Docker test variant; the 95% strict gate lives in CI and the publish workflow. See pyproject.toml's `test-cov*` script comments for which variant to use when.
@@ -77,6 +80,7 @@ If `test-cov-strict` fails locally on coverage, **do not loop on "master is pass
 - Branch naming: `id-021-store-child`, `fix-streaming-io`, `af-008-credential-masking`, etc.
 - Push the feature branch; the user will create PRs or ask you to.
 
+<a id="response-style"></a>
 ## Response style
 
 Use em dashes (`—`) sparingly in prose responses. Default to periods, colons,
@@ -90,6 +94,7 @@ spec-ID ranges (`BATCH-020 -- BATCH-025`), Mermaid edge syntax
 (`A -- text --> B`), `--8<--` snippet includes, and code/SQL comments inside
 fenced blocks. Table separator rows (`| --- |`) are structural Markdown.
 
+<a id="documentation-framework"></a>
 ## Documentation framework
 
 Three authority docs govern documentation. Apply in order:
@@ -100,7 +105,7 @@ Three authority docs govern documentation. Apply in order:
 
 ## Code conventions
 
-See `sdd/DESIGN.md` for code style rules. See `sdd/000-process.md` § Rules for
+See `sdd/DESIGN.md` for code style rules. See [`sdd/000-process.md` § Rules](sdd/000-process.md#rules) for
 spec/test traceability obligations. Run `hatch run lint` before committing.
 
 ## Testing conventions
@@ -125,4 +130,4 @@ Ignore AGENTS.md; this file defines Claude Code behavior for this repo.
 
 ---
 
-For document structure rules see `CONTRIBUTING.md` § Authoritative Document Format.
+For document structure rules see [`CONTRIBUTING.md` § Authoritative Document Format](CONTRIBUTING.md#authoritative-document-format).

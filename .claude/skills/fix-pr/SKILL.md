@@ -34,7 +34,7 @@ Read PR **content** (diff, files, body) via `gh` CLI when available; read review
 GitHub MCP server — content-only `gh` reads miss `isResolved`/`isOutdated`. Post
 comments and resolve threads via MCP, falling back to `gh api graphql` for the
 thread-resolve gap. This split is identical in the main session and any forked
-PR skill — see `sdd/CLAUDE-REFERENCE.md` § GitHub PR I/O split.
+PR skill — see [`sdd/CLAUDE-REFERENCE.md` § GitHub PR I/O split](../../../sdd/CLAUDE-REFERENCE.md#github-pr-io-split).
 
 **Fetch comments after any rebase, not before.** Line numbers and the
 `isOutdated` flag are computed against the PR's current HEAD; comments
@@ -107,7 +107,7 @@ Only resolve threads you fixed. No gh? Tell user to resolve manually.
 Run `hatch run lint`. Fix failures, re-run until clean.
 
 **Coverage gate:** Check `git diff origin/master...HEAD --name-only` for files under `src/`, `tests/`, or `examples/`.
-- If any match: run `hatch run test-cov-strict` (enforces 95%; needs Azurite running locally — see CLAUDE.md § Coverage gate). If it fails, stop and report which files are below threshold.
+- If any match: run `hatch run test-cov-strict` (enforces 95%; needs Azurite running locally — see [CLAUDE.md § Coverage gate](../../../CLAUDE.md#coverage-gate)). If it fails, stop and report which files are below threshold.
 - If none match (docs/config-only): run `hatch run test`.
 
 5a. **Testing gate:** Do the changed tests follow the rules in `sdd/TESTING.md`?

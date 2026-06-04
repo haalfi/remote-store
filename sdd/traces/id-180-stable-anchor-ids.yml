@@ -1,0 +1,121 @@
+id: ID-180
+title: "Stable HTML-anchor IDs across non-spec docs under sdd/"
+trigger: >-
+  Cross-doc references between framework docs (CLAUDE.md, CONTRIBUTING.md,
+  sdd/000-process.md, DESIGN.md, AUTHORING.md, DOCUMENTATION.md, CONTENT-RULES.md,
+  TESTING.md, CLAUDE-REFERENCE.md, formal/README.md, BACKLOG.md) all use heading
+  text or GitHub auto-slugs that rot on heading rename. The drift is silent —
+  check_links.py validates the file part of a Markdown link but explicitly skips
+  the #fragment. Prose "§ Section" refs are invisible to any linter today. The
+  exposure surface is broad: skills, audits, RFCs, ADRs, plus the framework docs
+  themselves cite each other this way.
+source_items:
+  - ID-180
+audience:
+  - library.maintainer
+  - contributor.process
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-180"
+        read_type: gate
+        extract: "Stated trigger — heading-text references rot; HTML-anchor comments proposed. Inventory of seven sdd/ framework docs plus CLAUDE.md."
+      - file: scripts/docs/check_links.py
+        section: "(full)"
+        read_type: gate
+        extract: "Existing on-disk gate skips anchors (line 86-87). Two-pass structure: check_repo_links + check_docs_site_links."
+      - file: sdd/traces/_schema.yml
+        section: "section field"
+        read_type: reference
+        extract: "Trace section: field is free-form by design. Restating the user's framing: traces are a lightweight optimisation tool; the doc cross-ref problem is the actual driver."
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-180 (interview-mode discussion)"
+        read_type: gate
+        extract: "Locked decisions via AskUserQuestion: carrier = <a id> only; coverage = currently-referenced sections only; prose refs = convert to Markdown anchor links; migration = sweep in same PR; rule tokens = concept-named not numbered; CHANGELOG/audits/research/BACKLOG-DONE/traces exempt; ADRs/RFCs live; gate hard-fail in same PR; ID-179 stays parked separately; tier-1 = 11 docs."
+  - id: implement
+    name: Implement
+    steps:
+      - file: CLAUDE.md
+        section: "Backlog, Trace authoring, Coverage gate, Response style, Documentation framework"
+        read_type: gate
+        extract: "Add <a id> tags before currently-cited H2s. Anchor names match GitHub auto-slugs where they already work, so existing Shape A links keep resolving."
+      - file: CONTRIBUTING.md
+        section: "Authoritative Document Format, Release, Adding a New Backend, Adding an Extension, Versioning"
+        read_type: gate
+        extract: "Add <a id> before cited H2s."
+      - file: sdd/000-process.md
+        section: "Rules (with concept-named inline anchors for Rule 2 and Rule 6), Spec format, Feature-type Definition of Done, Document types"
+        read_type: gate
+        extract: "Rules are prose list items inside ## Rules — inline anchors inside list-item content per the concept-name decision: spec-test-traceability for Rule 2, workflows for Rule 6."
+      - file: sdd/DESIGN.md
+        section: "4. Docstrings, 11. Test Style"
+        read_type: gate
+        extract: "Concept anchors docstrings and test-style supplement the existing #4-docstrings / #11-test-style auto-slugs."
+      - file: sdd/AUTHORING.md
+        section: "Rules (with concept-named anchors for Rule 1 file-classification and Rule 4 one-bridge-mechanism)"
+        read_type: gate
+      - file: sdd/DOCUMENTATION.md
+        section: "1. Diataxis placement, 2. Content homes, 4. Cross-linking requirements, API page building blocks"
+        read_type: gate
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules (with concept-named anchors for cited rules)"
+        read_type: gate
+      - file: sdd/TESTING.md
+        section: "Rules (with concept anchor for Rule 6 prefer-real-dependencies)"
+        read_type: gate
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index, Detailed checklist, GitHub PR I/O split, Local toolchain, Where do I"
+        read_type: gate
+      - file: sdd/formal/README.md
+        section: "Compiled oracle as conformance gate, Authoring rules"
+        read_type: gate
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+  - id: rewrite
+    name: Rewrite consumer references
+    steps:
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Pre-work index, Detailed checklist, DESIGN § 11, DESIGN § 4 cites"
+        read_type: gate
+        extract: "Skills cite tier-1 sections heavily — convert prose § refs to anchor links."
+      - file: .claude/skills/pr/SKILL.md
+        section: "Coverage gate, Backlog, Trace authoring cites"
+        read_type: gate
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "GitHub PR I/O split, Detailed checklist cites"
+        read_type: gate
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "GitHub PR I/O split, Coverage gate cites"
+        read_type: gate
+      - file: .claude/skills/release/SKILL.md
+        section: "Release, Detailed checklist, Response style cites"
+        read_type: gate
+      - file: .claude/skills/drift/SKILL.md
+        section: "Backlog cite"
+        read_type: gate
+  - id: gate
+    name: Extend check_links.py
+    steps:
+      - file: scripts/docs/check_links.py
+        section: "check_repo_links, new fragment-resolution pass"
+        read_type: gate
+        extract: "Add fragment validation: parse <a id> tags + heading slugs from target file; fail if reference fragment matches neither. Denylist CHANGELOG, BACKLOG-DONE, audits/, research/, traces/."
+      - file: tests/scripts/test_check_links.py
+        section: "new fragment-resolution tests"
+        read_type: gate
+        extract: "Cover: anchor tag matches, heading slug matches, broken fragment fails, denylist skips, exemption respected."
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / New authoritative process doc in sdd/"
+        read_type: verify
+        extract: "Not a new process doc; convention extension to an existing one (link discipline). No CHANGELOG required per audience = library.maintainer + contributor.process."
+expected_ripples:
+  - sdd/BACKLOG.md

@@ -15,6 +15,7 @@ not only automated agents.
 
 See [`CLAUDE.md` § Documentation framework](CLAUDE.md#documentation-framework) for placement, structure, and longevity rules.
 
+<a id="authoritative-document-format"></a>
 ## Authoritative Document Format
 
 Internal process and reference documents follow a fixed structure.
@@ -59,7 +60,7 @@ The full SDD pipeline is described in [`sdd/000-process.md`](sdd/000-process.md)
 ## Bug Fixes
 
 Bug fixes follow a strict pipeline: BACKLOG → CHANGELOG → failing TEST → FIX →
-COMMIT together. See [`sdd/000-process.md`](sdd/000-process.md) § Rule 6 for
+COMMIT together. See [`sdd/000-process.md` § Rule 6](sdd/000-process.md#workflows) for
 the canonical rule.
 
 ## Repository Structure
@@ -75,8 +76,9 @@ sdd/
 Browse `sdd/specs/` for the full list of specifications. Each spec file is
 numbered and named after the feature it describes (e.g. `008-s3-backend.md`).
 
-For spec format and ID prefixes, see [`sdd/000-process.md`](sdd/000-process.md) § Spec format.
+For spec format and ID prefixes, see [`sdd/000-process.md` § Spec format](sdd/000-process.md#spec-format).
 
+<a id="adding-a-new-backend"></a>
 ## Adding a New Backend
 
 See [Build Your Own Backend](docs-src/guides/custom-backend-guide.md) for a full
@@ -85,13 +87,14 @@ walkthrough of the `Backend` contract, error mapping, and capabilities.
 1. Write a spec in `sdd/specs/` or as an addendum in `sdd/specs/backends/<name>.md`
 2. Implement `Backend` ABC in `src/remote_store/backends/_<name>.py`
 3. Register a fixture in `tests/backends/fixtures/` (declare it in `backends.toml` / `fixtures.toml` and add a per-fixture factory module)
-4. The cross-backend conformance suite under `tests/backends/conformance/` (spec-traced per-topic files: `test_io.py`, `test_listing.py`, `test_atomic.py`, …) runs automatically against the new fixture; Dafny-derived cases carry `@pytest.mark.extended_conformance` and are validated by a Dafny-compiled oracle — see [`sdd/formal/README.md`](sdd/formal/README.md) § Compiled Oracle
+4. The cross-backend conformance suite under `tests/backends/conformance/` (spec-traced per-topic files: `test_io.py`, `test_listing.py`, `test_atomic.py`, …) runs automatically against the new fixture; Dafny-derived cases carry `@pytest.mark.extended_conformance` and are validated by a Dafny-compiled oracle — see [`sdd/formal/README.md` § Compiled Oracle](sdd/formal/README.md#compiled-oracle)
 5. Add user-facing guide in `docs-src/guides/backends/<name>.md` and add to `docs-src/guides/_nav.yml`
 6. Update `docs-src/guides/backends/index.md` (Supported Backends table)
 7. Update `README.md` (Supported Backends table + Installation extras)
 8. Add backend config example to `examples/configuration/configuration.py`
 9. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`
 
+<a id="adding-an-extension"></a>
 ## Adding an Extension
 
 Extensions live in `src/remote_store/ext/` and follow the contract in the [extension architecture ADR](sdd/adrs/0008-extension-architecture.md). Full checklist:
@@ -260,7 +263,7 @@ See [`sdd/DESIGN.md`](sdd/DESIGN.md) for the full code style conventions.
 
 See [`sdd/TESTING.md`](sdd/TESTING.md) for testing quality rules. Spec
 traceability and test-per-spec obligations are in
-[`sdd/000-process.md`](sdd/000-process.md) § Rules 1–2.
+[`sdd/000-process.md` § Rules](sdd/000-process.md#rules) (Rules 1–2 cover spec-test traceability).
 
 - Run `pytest -m spec` to verify all spec-derived tests pass
 - Run `pytest --cov=remote_store` for coverage reports
@@ -310,6 +313,7 @@ workflow's runner) so the lock is comparable.
 
 `hatch run drift-check refresh-baseline all` refreshes every extra at once.
 
+<a id="versioning"></a>
 ## Versioning
 
 This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor bumps may contain breaking changes. The public API surface is everything in `remote_store.__init__.__all__`.
@@ -348,11 +352,12 @@ bump-my-version bump major   # 0.4.1 → 1.0.0
 
 Documentation, examples, and metadata live in many places. Use these to keep them in sync.
 
-- **New backend**: see § Adding a New Backend above.
-- **New extension**: see § Adding an Extension above (12-step checklist).
+- **New backend**: see [§ Adding a New Backend](#adding-a-new-backend) above.
+- **New extension**: see [§ Adding an Extension](#adding-an-extension) above (12-step checklist).
 - **New Store method / cross-reference validation**: see the ripple-check table in `sdd/CLAUDE-REFERENCE.md`.
 - **Pre-PR validation**: run `hatch run all`, verify CHANGELOG and BACKLOG are updated, then check the ripple-check table in `sdd/CLAUDE-REFERENCE.md`.
 
+<a id="release"></a>
 ## Release
 
 ### Phase 0: Pre-flight
