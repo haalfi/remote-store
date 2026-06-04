@@ -162,6 +162,7 @@ class _AnchorIndex:
 
     ids: frozenset[str]
     duplicate_ids: tuple[str, ...]
+    duplicate_heading_slugs: tuple[str, ...]
     orphan_ids: tuple[tuple[int, str], ...]
 
 
@@ -171,12 +172,32 @@ def _extract_anchors(text: str) -> _AnchorIndex:
     Returns the set of resolvable fragment IDs, plus duplicate-anchor and
     orphan-anchor diagnostics. An orphan is an ``<a id>`` not immediately
     followed by a Markdown heading (after optional blank lines), per M3.
+
+    Duplicate detection separates two shapes:
+
+    - ``duplicate_ids`` — the same ``<a id="X">`` tag appears on more than
+      one line. Always a bug; the author typed the same identifier twice.
+    - ``duplicate_heading_slugs`` — two distinct headings produce the same
+      strict slug (e.g. two ``## Rules`` in one file). Both render as
+      ``#rules`` on GitHub but only the first resolves, so any consumer
+      reference is ambiguous. Common in pages with intentional structural
+      duplication (async + sync API on one page, two-presentation ripple
+      tables), so the caller decides whether to surface these — typically
+      only when at least one live consumer references the colliding slug.
+
+    The deliberate redundancy pattern — ``<a id="rules">`` immediately
+    followed by ``## Rules`` (same value) — is not flagged: the anchor
+    and the heading slug target the same location, so the id is not
+    ambiguous. Authors use this to freeze the section identity against
+    future heading-text edits.
     """
     in_fence = False
     ids: set[str] = set()
-    duplicates: list[str] = []
+    duplicate_anchors: list[str] = []
+    duplicate_headings: list[str] = []
     orphans: list[tuple[int, str]] = []
     seen: set[str] = set()
+    heading_slugs_seen: set[str] = set()
 
     lines = text.splitlines()
     for idx, line in enumerate(lines):
@@ -192,14 +213,23 @@ def _extract_anchors(text: str) -> _AnchorIndex:
             attr_m = _ATTR_LIST_RE.search(heading_text)
             if attr_m:
                 ids.add(attr_m.group(1))
-            for variant in _slug_variants(heading_text):
+            variants = _slug_variants(heading_text)
+            # Track only the strict slug for collision detection — the
+            # collapsed variant is a consumer-side fallback, not an
+            # independent identity.
+            if variants:
+                strict = variants[0]
+                if strict in heading_slugs_seen:
+                    duplicate_headings.append(strict)
+                heading_slugs_seen.add(strict)
+            for variant in variants:
                 ids.add(variant)
             continue
         # Explicit <a id> tags.
         for am in _ANCHOR_RE.finditer(line):
             anchor = am.group(1)
             if anchor in seen:
-                duplicates.append(anchor)
+                duplicate_anchors.append(anchor)
             seen.add(anchor)
             ids.add(anchor)
             # M3 (orphan check) applies only to anchors on their own line — an
@@ -224,7 +254,8 @@ def _extract_anchors(text: str) -> _AnchorIndex:
                 orphans.append((idx + 1, anchor))
     return _AnchorIndex(
         ids=frozenset(ids),
-        duplicate_ids=tuple(duplicates),
+        duplicate_ids=tuple(duplicate_anchors),
+        duplicate_heading_slugs=tuple(duplicate_headings),
         orphan_ids=tuple(orphans),
     )
 
@@ -287,6 +318,10 @@ def check_repo_link_fragments(repo_root: Path) -> list[BrokenLink]:
 
     broken: list[BrokenLink] = []
     anchor_cache: dict[Path, _AnchorIndex] = {}
+    # Per-target set of fragments referenced from non-denylisted consumers.
+    # Used to surface heading-slug collisions lazily — only when at least one
+    # live consumer actually points at the colliding fragment.
+    referenced_frags: dict[Path, set[str]] = {}
 
     def _anchors_for(path: Path) -> _AnchorIndex | None:
         cached = anchor_cache.get(path)
@@ -333,6 +368,7 @@ def check_repo_link_fragments(repo_root: Path) -> list[BrokenLink]:
                 # On-disk gate (above) already flags missing files; non-md
                 # targets (e.g. .svg) have no anchor index.
                 continue
+            referenced_frags.setdefault(tgt_path, set()).add(frag)
             idx = _anchors_for(tgt_path)
             if idx is None:
                 continue
@@ -346,9 +382,22 @@ def check_repo_link_fragments(repo_root: Path) -> list[BrokenLink]:
                     )
                 )
 
-    # M2 / M3 diagnostics for every Markdown file scanned.
+    # M2 / M3 diagnostics — symmetric with M1's denylist. Historical /
+    # append-only docs (CHANGELOG with per-version `## Added`, audits with
+    # templated `## Description` / `## Reproduction`, research / RFCs with
+    # repeated section names) carry legitimate heading-slug repeats; they
+    # are not consumer targets for fragment links, so any ambiguity there
+    # is invisible to live readers.
+    #
+    # Heading-slug collisions are reported lazily — only when at least one
+    # live consumer references the colliding fragment. Pages with intentional
+    # structural duplication (sync + async API on one page, two-presentation
+    # ripple tables) carry collisions that are harmless until someone tries
+    # to link into them.
     for path, idx in anchor_cache.items():
         rel_target = path.relative_to(repo_root)
+        if _is_denylisted_consumer(str(rel_target)):
+            continue
         for dup in idx.duplicate_ids:
             broken.append(
                 BrokenLink(
@@ -356,6 +405,22 @@ def check_repo_link_fragments(repo_root: Path) -> list[BrokenLink]:
                     line=0,
                     raw=f'<a id="{dup}">',
                     resolved=f"duplicate anchor in {rel_target}",
+                )
+            )
+        live_refs = referenced_frags.get(path, set())
+        for dup in idx.duplicate_heading_slugs:
+            if dup not in live_refs:
+                continue
+            broken.append(
+                BrokenLink(
+                    source=path,
+                    line=0,
+                    raw=f"## ... (slug {dup!r})",
+                    resolved=(
+                        f"duplicate heading slug #{dup} in {rel_target} "
+                        "(two or more headings produce the same slug; "
+                        "a live consumer references it ambiguously)"
+                    ),
                 )
             )
         for line_no, orphan in idx.orphan_ids:

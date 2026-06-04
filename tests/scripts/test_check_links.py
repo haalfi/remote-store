@@ -296,6 +296,50 @@ def test_extract_anchors_flags_duplicate(check_links_mod):
     assert "x" in idx.duplicate_ids
 
 
+def test_extract_anchors_flags_duplicate_heading_slug(check_links_mod):
+    # Two headings that slug to the same value render as two `#rules`
+    # candidates on GitHub but only the first resolves, so any consumer
+    # `#rules` ref is silently ambiguous. The collision lands in
+    # duplicate_heading_slugs (lazy — surfaced only when a live consumer
+    # references it).
+    text = "## Rules\n\nsome prose\n\n## Rules\n"
+    idx = check_links_mod._extract_anchors(text)
+    assert "rules" in idx.duplicate_heading_slugs
+    assert idx.duplicate_ids == ()
+
+
+def test_extract_anchors_anchor_plus_matching_heading_not_duplicate(check_links_mod):
+    # The deliberate redundancy pattern: <a id="X"> immediately before
+    # ## X (slug also "x"). Both target the same line; the id is not
+    # ambiguous. Authors use this to freeze the section identity.
+    text = '<a id="rules"></a>\n## Rules\n'
+    idx = check_links_mod._extract_anchors(text)
+    assert idx.duplicate_ids == ()
+    assert idx.duplicate_heading_slugs == ()
+    assert "rules" in idx.ids
+
+
+def test_fragment_gate_lazy_strict_heading_slug_silent_without_consumer(check_links_mod, tmp_path):
+    # Two `## Rules` produce a heading-slug collision, but nothing links to
+    # `target.md#rules` — pages with intentional structural duplication
+    # (sync + async on one page, two-presentation ripple tables) live here.
+    # Lazy-strict: stay silent until a live consumer references the slug.
+    (tmp_path / "target.md").write_text("## Rules\n\nfirst\n\n## Rules\n")
+    (tmp_path / "README.md").write_text("# README — no inbound section ref.\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert broken == []
+
+
+def test_fragment_gate_lazy_strict_heading_slug_fires_with_consumer(check_links_mod, tmp_path):
+    # Same colliding headings, now an inbound `target.md#rules` ref exists.
+    # The link silently resolves to one of the two on GitHub; the gate must
+    # call it out so the author disambiguates.
+    (tmp_path / "target.md").write_text("## Rules\n\nfirst\n\n## Rules\n")
+    (tmp_path / "README.md").write_text("[link](target.md#rules)\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert any("duplicate heading slug #rules" in b.resolved for b in broken), [b.resolved for b in broken]
+
+
 def test_extract_anchors_flags_orphan(check_links_mod):
     text = '<a id="dangling"></a>\n\nSome paragraph not a heading.\n'
     idx = check_links_mod._extract_anchors(text)

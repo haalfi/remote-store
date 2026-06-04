@@ -131,7 +131,7 @@ phases:
         extract: "Not a new process doc; convention extension to an existing one (link discipline). No CHANGELOG required per audience = library.maintainer + contributor.process."
 expected_ripples:
   - sdd/BACKLOG.md
-review_rounds: 1
+review_rounds: 2
 surprising_ripples:
   # Initial sweep missed CLAUDE-REFERENCE.md ripple-table row prose (both
   # Pre-work and Detailed presentations), CONTRIBUTING.md § Project Principles
@@ -140,3 +140,10 @@ surprising_ripples:
   # explicit pass.
   - CONTRIBUTING.md
   - sdd/CLAUDE-REFERENCE.md
+  # Second review round added a heading-slug-collision diagnostic (M2)
+  # which exposed 20 latent collisions across docs-src/reference/api/aio.md,
+  # sdd/CLAUDE-REFERENCE.md, sdd/rfcs/rfc-0007-doc-cross-links.md,
+  # docs-src/explanation/concurrency.md, docs-src/guides/observe.md. None
+  # had live inbound consumer refs, so a lazy-strict rule was adopted
+  # (collision reported only when a live consumer references the slug).
+  - docs-src/reference/api/aio.md
