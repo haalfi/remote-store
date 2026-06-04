@@ -49,6 +49,36 @@ class TestGraphCassetteScrub:
         out = cfg["before_record_request"](_request({"client-request-id": "abc-123"}))
         assert "client-request-id" not in {k.lower() for k in out.headers}
 
+    def test_client_secret_redacted_from_request_body(self) -> None:
+        """The client-credentials token POST body must not leak the secret (PR #750 review)."""
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        req = _request({"Content-Type": "application/x-www-form-urlencoded"})
+        req.body = b"grant_type=client_credentials&client_id=app&client_secret=SUPERSECRET&scope=.default"
+        out = cfg["before_record_request"](req)
+        assert b"SUPERSECRET" not in out.body
+        assert b"client_secret=REDACTED" in out.body
+        # Non-secret form fields survive so the cassette still matches on replay.
+        assert b"grant_type=client_credentials" in out.body
+        assert b"client_id=app" in out.body
+
+    def test_certificate_and_refresh_credentials_redacted_from_str_body(self) -> None:
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        req = _request({})
+        req.body = "client_assertion=JWTSECRET&assertion=CERTJWT&refresh_token=RT123&grant_type=refresh_token"
+        out = cfg["before_record_request"](req)
+        assert isinstance(out.body, str)  # str in -> str out
+        for secret in ("JWTSECRET", "CERTJWT", "RT123"):
+            assert secret not in out.body
+        assert "grant_type=refresh_token" in out.body
+
+    def test_binary_request_body_left_intact(self) -> None:
+        """A non-form (binary upload) body has no credential keys, so it is untouched."""
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        req = _request({})
+        req.body = bytes(range(256))
+        out = cfg["before_record_request"](req)
+        assert out.body == bytes(range(256))
+
     def test_downloadurl_redacted_from_body(self) -> None:
         cfg = build_graph_vcr_config(real_drive_id=None)
         body = (

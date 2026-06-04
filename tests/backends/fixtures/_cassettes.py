@@ -167,6 +167,19 @@ _GRAPH_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
     (re.compile(rb"Bearer\s+[A-Za-z0-9._~+/=\-]+"), b"Bearer REDACTED"),
 ]
 
+# Request-body redactions for the OAuth token-exchange POST. MSAL sends this
+# form-encoded over ``requests`` (which vcrpy also patches), so a recording made
+# while the client-credentials / certificate / refresh flows acquire a token
+# would otherwise capture the credential in the request body. The device-code
+# flow carries none of these, but the app-only recipe shipped in graph-setup.md
+# does — so the gate scrubs them rather than only covering the device-code path.
+_GRAPH_REQUEST_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
+    (re.compile(rb"(client_secret=)[^&\r\n]+"), rb"\1REDACTED"),
+    (re.compile(rb"(client_assertion=)[^&\r\n]+"), rb"\1REDACTED"),
+    (re.compile(rb"(assertion=)[^&\r\n]+"), rb"\1REDACTED"),
+    (re.compile(rb"(refresh_token=)[^&\r\n]+"), rb"\1REDACTED"),
+]
+
 
 # ---------------------------------------------------------------------------
 # Connection-string helpers
@@ -333,6 +346,11 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
 
     * ``Authorization`` (the bearer token), ``Cookie``, and the
       ``client-request-id`` correlation header from requests;
+    * the OAuth credentials (``client_secret`` / ``client_assertion`` /
+      ``assertion`` / ``refresh_token``) from the token-exchange **request**
+      body — MSAL sends these form-encoded over ``requests``, which vcrpy
+      records too (the app-only recording path; the device-code path carries
+      none of them);
     * ``request-id`` / ``client-request-id`` / ``x-ms-ags-diagnostic`` /
       ``Set-Cookie`` / ``Date`` from responses;
     * the ``@microsoft.graph.downloadUrl`` value and any
@@ -352,6 +370,15 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
                 del request.headers[key]
             elif lower == "user-agent":
                 request.headers[key] = _USER_AGENT_NORMALIZED
+        # Scrub credentials out of the OAuth token-exchange POST body. The
+        # bytes-domain sub is a no-op on binary upload payloads (no form keys
+        # match) and on the device-code flow (no secret present).
+        body = getattr(request, "body", None)
+        if isinstance(body, (str, bytes)):
+            raw = body.encode() if isinstance(body, str) else body
+            for pattern, replacement in _GRAPH_REQUEST_BODY_SCRUB:
+                raw = pattern.sub(replacement, raw)
+            request.body = raw.decode() if isinstance(body, str) else raw
         return request
 
     def before_record_response(response: dict[str, Any]) -> dict[str, Any]:
