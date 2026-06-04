@@ -40,6 +40,7 @@ def write(self, path: str, content: BinaryIO | bytes, *, overwrite: bool = False
 - `X | None` replaces `Optional[X]`, `X | Y` replaces `Union[X, Y]` (PEP 604).
 - `typing` imports only for generics not yet built-in (`Callable`, `Iterator`, etc.).
 
+<a id="docstrings"></a>
 ### 4. Docstrings
 
 Google style (`Args:`, `Returns:`, `Raises:`). Short and purpose-focused:
@@ -156,6 +157,7 @@ f-strings with context for human-readable tracebacks. Structured attributes for 
 raise NotFound(f"File not found: {path}", path=path, backend=self.name)
 ```
 
+<a id="test-style"></a>
 ### 11. Test Style
 
 Tests are grouped into classes by spec aspect. The class docstring references the spec IDs covered:

@@ -175,6 +175,7 @@ threshold is qualitative by design — two PoC modules is not enough
 data to pin a numeric bound, and a false-precision threshold would
 age worse than the qualitative one.
 
+<a id="authoring-rules"></a>
 ### Authoring rules
 
 1. **Stand-alone modules per concern.** No `EXTENDS` hierarchy until a
@@ -246,7 +247,7 @@ bash scripts/dafny_verify.sh BackendContract.dfy   # single file
 
 Native: install [Dafny](https://github.com/dafny-lang/dafny) at the
 pinned version (see
-[`sdd/CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) § Local toolchain),
+[`sdd/CLAUDE-REFERENCE.md` § Local toolchain](../CLAUDE-REFERENCE.md#local-toolchain)),
 then `dafny verify sdd/formal/<file>.dfy`.
 
 CI runs the `verify-formal` job automatically when `sdd/formal/` or
@@ -311,6 +312,7 @@ small, stable, and maintainable:
   returns. `MemoryBackend` preserves `fs` on error paths by
   construction instead.
 
+<a id="compiled-oracle"></a>
 ### Compiled oracle as conformance gate
 
 The Dafny `MemoryBackend` is compiled to Python via `dafny translate

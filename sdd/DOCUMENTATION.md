@@ -9,6 +9,7 @@ Part of the documentation framework (see [`CLAUDE.md` § Documentation framework
 
 ## Rules
 
+<a id="diataxis-placement"></a>
 ### 1. Diataxis placement
 
 Every user-facing documentation page belongs to exactly one category:
@@ -21,6 +22,7 @@ Every user-facing documentation page belongs to exactly one category:
 
 Pages that try to be two things at once must be split.
 
+<a id="content-homes"></a>
 ### 2. Content homes
 
 | Content type | Source location |
@@ -38,11 +40,11 @@ Pages that try to be two things at once must be split.
 | Development narrative | `DEVELOPMENT_STORY.md` |
 | Site-specific pages, nav, templates | `docs-src/` |
 
-For file classification (repo-only / docs-only / dual), see [`sdd/AUTHORING.md`](AUTHORING.md) Rule 1. For SDD artefact path patterns, naming, and lifecycle (specs, ADRs, RFCs, research, audits), see [`sdd/000-process.md` § Document types](000-process.md#document-types).
+For file classification (repo-only / docs-only / dual), see [`sdd/AUTHORING.md` Rule 1](AUTHORING.md#file-classification). For SDD artefact path patterns, naming, and lifecycle (specs, ADRs, RFCs, research, audits), see [`sdd/000-process.md` § Document types](000-process.md#document-types).
 
 ### 3. Docstring completeness
 
-Format and style rules are in `sdd/DESIGN.md` § 4. This section covers what mkdocstrings requires per symbol type:
+Format and style rules are in [`sdd/DESIGN.md` § 4](DESIGN.md#docstrings). This section covers what mkdocstrings requires per symbol type:
 
 | Symbol | `Args` | `Returns` | `Raises` | Example |
 |---|---|---|---|---|
@@ -55,6 +57,7 @@ Format and style rules are in `sdd/DESIGN.md` § 4. This section covers what mkd
 
 No TODOs or placeholders in published docstrings.
 
+<a id="cross-linking-requirements"></a>
 ### 4. Cross-linking requirements
 
 Choose the link target based on which presentation hosts the destination (see [`sdd/AUTHORING.md`](AUTHORING.md#two-presentations-one-source) for the two presentations):
@@ -139,7 +142,7 @@ Use ``Example:`` (not ``Usage:``) for code snippets in docstrings. In class/func
 
 ### PR documentation review checklist
 
-The SDD workflow includes a DOCS step (see `sdd/000-process.md` rule 6). When reviewing PRs, check:
+The SDD workflow includes a DOCS step (see [`sdd/000-process.md` Rule 6](000-process.md#workflows)). When reviewing PRs, check:
 
 - Docstrings meet Rule 3 for all new/changed public symbols.
 - Relevant guide updated (if behavior changed).
@@ -147,6 +150,7 @@ The SDD workflow includes a DOCS step (see `sdd/000-process.md` rule 6). When re
 - CHANGELOG stub present (one line per completed item; see ripple-check table **CHANGELOG entry**).
 - No orphaned cross-links (renamed/removed APIs).
 
+<a id="api-page-building-blocks"></a>
 ### API page building blocks
 
 Reusable structural blocks for `docs-src/reference/api/` pages. `store.md` is the

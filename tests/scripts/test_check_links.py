@@ -260,6 +260,229 @@ def test_find_broken_docs_site_links_skips_fenced_code(check_links_mod, tmp_path
     assert check_links_mod._find_broken_docs_site_links(text, tmp_path / "x.md", _VALID) == []
 
 
+# ---------------------------------------------------------------------------
+# ID-180: fragment resolution (#anchor) + anchor sanity (M1, M2, M3)
+# ---------------------------------------------------------------------------
+
+
+def test_slugify_heading_matches_github_style(check_links_mod):
+    f = check_links_mod._slugify_heading
+    assert f("Documentation framework") == "documentation-framework"
+    assert f("4. Cross-linking requirements") == "4-cross-linking-requirements"
+    assert f("`Capability` ClassVar") == "capability-classvar"
+    assert f("GitHub PR I/O split") == "github-pr-io-split"
+
+
+def test_extract_anchors_collects_a_id_and_heading_slugs(check_links_mod):
+    text = '<a id="custom"></a>\n## Real Heading\n\n## Another\n'
+    idx = check_links_mod._extract_anchors(text)
+    assert "custom" in idx.ids
+    assert "real-heading" in idx.ids
+    assert "another" in idx.ids
+    assert idx.duplicate_ids == ()
+    assert idx.orphan_ids == ()
+
+
+def test_extract_anchors_skips_fenced_code(check_links_mod):
+    text = '```\n<a id="fake"></a>\n## fake heading\n```\n## real\n'
+    idx = check_links_mod._extract_anchors(text)
+    assert "fake" not in idx.ids
+    assert "real" in idx.ids
+
+
+def test_extract_anchors_flags_duplicate(check_links_mod):
+    text = '<a id="x"></a>\n## First\n\n<a id="x"></a>\n## Second\n'
+    idx = check_links_mod._extract_anchors(text)
+    assert "x" in idx.duplicate_ids
+
+
+def test_extract_anchors_flags_duplicate_heading_slug(check_links_mod):
+    # Two headings that slug to the same value render as two `#rules`
+    # candidates on GitHub but only the first resolves, so any consumer
+    # `#rules` ref is silently ambiguous. The collision lands in
+    # duplicate_heading_slugs (lazy — surfaced only when a live consumer
+    # references it).
+    text = "## Rules\n\nsome prose\n\n## Rules\n"
+    idx = check_links_mod._extract_anchors(text)
+    assert "rules" in idx.duplicate_heading_slugs
+    assert idx.duplicate_ids == ()
+
+
+def test_extract_anchors_anchor_plus_matching_heading_not_duplicate(check_links_mod):
+    # The deliberate redundancy pattern: <a id="X"> immediately before
+    # ## X (slug also "x"). Both target the same line; the id is not
+    # ambiguous. Authors use this to freeze the section identity.
+    text = '<a id="rules"></a>\n## Rules\n'
+    idx = check_links_mod._extract_anchors(text)
+    assert idx.duplicate_ids == ()
+    assert idx.duplicate_heading_slugs == ()
+    assert "rules" in idx.ids
+
+
+def test_fragment_gate_resolves_in_page_fragment(check_links_mod, tmp_path):
+    # `[text](#frag)` in-page refs must resolve against the source file's
+    # own anchors. Closes the in-page leg of ID-180; the explicit anchor
+    # planted above the heading is what the link targets.
+    (tmp_path / "README.md").write_text(
+        '[jump](#adding-a-new-backend)\n\n<a id="adding-a-new-backend"></a>\n## Adding a New Backend\n'
+    )
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert broken == []
+
+
+def test_fragment_gate_flags_broken_in_page_fragment(check_links_mod, tmp_path):
+    # In-page ref that points at no anchor or matching heading in the same
+    # file must be flagged. This is the rot the in-page leg of ID-180 closes:
+    # if the heading is renamed and the anchor removed, the link breaks
+    # silently today; the gate must catch it.
+    (tmp_path / "README.md").write_text("[jump](#section-that-vanished)\n\n## Some Other Section\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert any("no anchor #section-that-vanished" in b.resolved for b in broken), [b.resolved for b in broken]
+
+
+def test_fragment_gate_lazy_strict_heading_slug_silent_without_consumer(check_links_mod, tmp_path):
+    # Two `## Rules` produce a heading-slug collision, but nothing links to
+    # `target.md#rules` — pages with intentional structural duplication
+    # (sync + async on one page, two-presentation ripple tables) live here.
+    # Lazy-strict: stay silent until a live consumer references the slug.
+    (tmp_path / "target.md").write_text("## Rules\n\nfirst\n\n## Rules\n")
+    (tmp_path / "README.md").write_text("# README - no inbound section ref.\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert broken == []
+
+
+def test_fragment_gate_lazy_strict_heading_slug_fires_with_consumer(check_links_mod, tmp_path):
+    # Same colliding headings, now an inbound `target.md#rules` ref exists.
+    # The link silently resolves to one of the two on GitHub; the gate must
+    # call it out so the author disambiguates.
+    (tmp_path / "target.md").write_text("## Rules\n\nfirst\n\n## Rules\n")
+    (tmp_path / "README.md").write_text("[link](target.md#rules)\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert any("duplicate heading slug #rules" in b.resolved for b in broken), [b.resolved for b in broken]
+
+
+def test_extract_anchors_flags_orphan(check_links_mod):
+    text = '<a id="dangling"></a>\n\nSome paragraph not a heading.\n'
+    idx = check_links_mod._extract_anchors(text)
+    assert idx.orphan_ids == ((1, "dangling"),)
+
+
+def test_extract_anchors_inline_anchor_in_list_item(check_links_mod):
+    # Rule list items use inline <a id> before the bold token.
+    text = '## Rules\n\n6. <a id="workflows"></a>**Workflows**:\n'
+    idx = check_links_mod._extract_anchors(text)
+    # Inline anchor inside a list item is co-located with its semantic target
+    # (the list item content); the orphan-suppression branch must skip it so
+    # the live tree's `2. <a id="spec-test-traceability"></a>...` in
+    # sdd/000-process.md does not fire M3.
+    assert "workflows" in idx.ids
+    assert idx.orphan_ids == ()
+
+
+def test_is_denylisted_consumer(check_links_mod):
+    f = check_links_mod._is_denylisted_consumer
+    assert f("CHANGELOG.md")
+    assert f("sdd/BACKLOG-DONE.md")
+    assert f("sdd/audits/audit-014.md")
+    assert f("sdd/research/foo.md")
+    assert f("sdd/traces/bk-251.yml")
+    assert not f("CLAUDE.md")
+    assert not f("sdd/BACKLOG.md")
+    assert not f("sdd/AUTHORING.md")
+
+
+def test_fragment_gate_resolves_against_a_id(check_links_mod, tmp_path):
+    (tmp_path / "target.md").write_text('<a id="here"></a>\n## Some Heading\n')
+    (tmp_path / "README.md").write_text("[link](target.md#here)\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert [b for b in broken if b.line > 0] == []
+
+
+def test_fragment_gate_resolves_against_heading_slug(check_links_mod, tmp_path):
+    (tmp_path / "target.md").write_text("## Coverage gate\n")
+    (tmp_path / "README.md").write_text("[link](target.md#coverage-gate)\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert [b for b in broken if b.line > 0] == []
+
+
+def test_fragment_gate_flags_unresolved(check_links_mod, tmp_path):
+    (tmp_path / "target.md").write_text("## Something Else\n")
+    (tmp_path / "README.md").write_text("[link](target.md#nope)\n")
+    broken = [b for b in check_links_mod.check_repo_link_fragments(tmp_path) if b.line > 0]
+    assert len(broken) == 1
+    assert "nope" in broken[0].resolved
+
+
+def test_fragment_gate_denylist_skips(check_links_mod, tmp_path):
+    (tmp_path / "target.md").write_text("## Something\n")
+    chlog = tmp_path / "CHANGELOG.md"
+    chlog.write_text("[stale](target.md#nope)\n")
+    broken = [b for b in check_links_mod.check_repo_link_fragments(tmp_path) if b.line > 0]
+    assert broken == []
+
+
+def test_fragment_gate_skips_non_md_target(check_links_mod, tmp_path):
+    (tmp_path / "img.svg").write_text("<svg></svg>")
+    (tmp_path / "README.md").write_text("[img](img.svg#whatever)\n")
+    broken = [b for b in check_links_mod.check_repo_link_fragments(tmp_path) if b.line > 0]
+    assert broken == []
+
+
+def test_fragment_gate_skips_missing_target(check_links_mod, tmp_path):
+    # The on-disk gate flags missing files; the fragment gate stays silent
+    # to avoid duplicate diagnostics.
+    (tmp_path / "README.md").write_text("[gone](missing.md#frag)\n")
+    broken = [b for b in check_links_mod.check_repo_link_fragments(tmp_path) if b.line > 0]
+    assert broken == []
+
+
+def test_fragment_gate_reports_duplicate_anchor(check_links_mod, tmp_path):
+    (tmp_path / "target.md").write_text('<a id="x"></a>\n## A\n\n<a id="x"></a>\n## B\n')
+    (tmp_path / "README.md").write_text("[link](target.md#x)\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert any("duplicate" in b.resolved for b in broken)
+
+
+def test_fragment_gate_reports_orphan_anchor(check_links_mod, tmp_path):
+    (tmp_path / "target.md").write_text('<a id="orph"></a>\n\nNot a heading line.\n')
+    (tmp_path / "README.md").write_text("[link](target.md#orph)\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert any("orphan" in b.resolved for b in broken)
+
+
+def test_fragment_gate_reports_duplicate_without_inbound_link(check_links_mod, tmp_path):
+    # Regression: M2 / M3 must cover every Markdown file, not only files reached
+    # as link targets. A duplicate anchor in a doc no consumer happens to point at
+    # would silently slip past otherwise.
+    (tmp_path / "target.md").write_text('<a id="x"></a>\n## A\n\n<a id="x"></a>\n## B\n')
+    (tmp_path / "README.md").write_text("# README\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert any("duplicate" in b.resolved for b in broken)
+
+
+def test_fragment_gate_reports_orphan_without_inbound_link(check_links_mod, tmp_path):
+    (tmp_path / "target.md").write_text('<a id="orph"></a>\n\nNot a heading line.\n')
+    (tmp_path / "README.md").write_text("# README\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert any("orphan" in b.resolved for b in broken)
+
+
+@pytest.mark.spec("DOCFRAME-008")
+def test_fragment_gate_against_live_repo(check_links_mod):
+    """No broken anchor refs on the live tree (positive control for ID-180)."""
+    import subprocess
+
+    result = subprocess.run(
+        ["git", "rev-parse", "--git-dir"],
+        cwd=ROOT,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        pytest.skip("not a git checkout")
+    broken = check_links_mod.check_repo_link_fragments(ROOT)
+    assert broken == [], "\n".join(f"{b.source.relative_to(ROOT)}:{b.line}: {b.raw} → {b.resolved}" for b in broken)
+
+
 @pytest.mark.spec("DOCFRAME-009")
 def test_docs_site_links_against_live_repo(check_links_mod):
     """Docs-site links resolve, and the page set covers known pages.

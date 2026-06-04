@@ -34,19 +34,19 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
     Report violations before drafting the PR.
 
 2c. **Coverage gate:** Check `git diff origin/<BASE>...HEAD --name-only` for files under `src/`, `tests/`, or `examples/`.
-    - If any match: run `hatch run test-cov-strict` (enforces 95%; needs Azurite running locally — see CLAUDE.md § Coverage gate). If it fails, stop and report which files are below threshold. Do **not** create the PR until coverage passes.
+    - If any match: run `hatch run test-cov-strict` (enforces 95%; needs Azurite running locally — see [CLAUDE.md § Coverage gate](../../../CLAUDE.md#coverage-gate)). If it fails, stop and report which files are below threshold. Do **not** create the PR until coverage passes.
     - If none match (docs/config-only): run `hatch run test`. A `scripts/`-only diff lands here, yet scripts have guard tests under `tests/scripts/` (e.g. source-order assertions) that the strict-coverage trigger never fires for — so still run the suite. If it fails, stop and report.
 
 2d. **Trace gate:** Extract backlog IDs from `git log origin/<BASE>..HEAD --format=%s`
     using the pattern `^([A-Z]+-\d+[a-z]?)[:\s]` against each subject — the ID
     is the leading `PREFIX-NNN` token, optionally followed by a single
     lowercase letter for split items (e.g. `BK-167a`, allowed by
-    `sdd/traces/_schema.yml`), then `:` or whitespace (per CLAUDE.md § Backlog,
+    `sdd/traces/_schema.yml`), then `:` or whitespace (per [CLAUDE.md § Backlog](../../../CLAUDE.md#backlog),
     commit subjects start with the item ID). For each unique ID, look up a
     matching trace **case-insensitively** — `find sdd/traces -iname '<id>-*.yml'` —
     because existing trace filenames mix lowercase and uppercase prefixes.
-    If any ID has no match, stop and ask the user — CLAUDE.md § Trace
-    authoring (mandatory) requires the trace to ship in the same PR as the
+    If any ID has no match, stop and ask the user — [CLAUDE.md § Trace
+    authoring (mandatory)](../../../CLAUDE.md#trace-authoring) requires the trace to ship in the same PR as the
     work. Schema: `sdd/traces/_schema.yml`. No ID-prefixed commits? Skip the gate.
 
 3. **Gather context:** `git log origin/<BASE>..HEAD --oneline` and `git diff origin/<BASE>...HEAD`

@@ -1,0 +1,156 @@
+id: ID-180
+title: "Stable HTML-anchor IDs across non-spec docs under sdd/"
+trigger: >-
+  Cross-doc references between framework docs (CLAUDE.md, CONTRIBUTING.md,
+  sdd/000-process.md, DESIGN.md, AUTHORING.md, DOCUMENTATION.md, CONTENT-RULES.md,
+  TESTING.md, CLAUDE-REFERENCE.md, formal/README.md, BACKLOG.md) all use heading
+  text or GitHub auto-slugs that rot on heading rename. The drift is silent —
+  check_links.py validates the file part of a Markdown link but explicitly skips
+  the #fragment. Prose "§ Section" refs are invisible to any linter today. The
+  exposure surface is broad: skills, audits, RFCs, ADRs, plus the framework docs
+  themselves cite each other this way.
+source_items:
+  - ID-180
+audience:
+  - library.maintainer
+  - contributor.process
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-180"
+        read_type: gate
+        extract: "Stated trigger — heading-text references rot; HTML-anchor comments proposed. Inventory of seven sdd/ framework docs plus CLAUDE.md."
+      - file: scripts/docs/check_links.py
+        section: "(full)"
+        read_type: gate
+        extract: "Existing on-disk gate skips anchors (line 86-87). Two-pass structure: check_repo_links + check_docs_site_links."
+      - file: sdd/traces/_schema.yml
+        section: "section field"
+        read_type: reference
+        extract: "Trace section: field is free-form by design. Restating the user's framing: traces are a lightweight optimisation tool; the doc cross-ref problem is the actual driver."
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-180 (interview-mode discussion)"
+        read_type: gate
+        extract: "Locked decisions via AskUserQuestion: carrier = <a id> only; coverage = currently-referenced sections only; prose refs = convert to Markdown anchor links; migration = sweep in same PR; rule tokens = concept-named not numbered; CHANGELOG/audits/research/BACKLOG-DONE/traces exempt; ADRs/RFCs live; gate hard-fail in same PR; ID-179 stays parked separately; tier-1 = 11 docs."
+  - id: implement
+    name: Implement
+    steps:
+      - file: CLAUDE.md
+        section: "Backlog, Trace authoring, Coverage gate, Response style, Documentation framework"
+        read_type: gate
+        extract: "Add <a id> tags before currently-cited H2s. Anchor names match GitHub auto-slugs where they already work, so existing Shape A links keep resolving."
+      - file: CONTRIBUTING.md
+        section: "Authoritative Document Format, Release, Adding a New Backend, Adding an Extension, Versioning"
+        read_type: gate
+        extract: "Add <a id> before cited H2s."
+      - file: sdd/000-process.md
+        section: "Rules (with concept-named inline anchors for Rule 2 and Rule 6), Spec format, Feature-type Definition of Done, Document types"
+        read_type: gate
+        extract: "Rules are prose list items inside ## Rules — inline anchors inside list-item content per the concept-name decision: spec-test-traceability for Rule 2, workflows for Rule 6."
+      - file: sdd/DESIGN.md
+        section: "4. Docstrings, 11. Test Style"
+        read_type: gate
+        extract: "Concept anchors docstrings and test-style supplement the existing #4-docstrings / #11-test-style auto-slugs."
+      - file: sdd/AUTHORING.md
+        section: "Rules (with concept-named anchors for Rule 1 file-classification and Rule 4 one-bridge-mechanism)"
+        read_type: gate
+        extract: "Rule 1 (file classification) cited from DOCUMENTATION.md and CLAUDE-REFERENCE.md ripple-check; Rule 4 (one bridge mechanism) cited from adr-0027. Both anchored inline inside their list items to survive renumbering."
+      - file: sdd/DOCUMENTATION.md
+        section: "1. Diataxis placement, 2. Content homes, 4. Cross-linking requirements, API page building blocks"
+        read_type: gate
+        extract: "Numbered rules: replace existing #1-diataxis-placement / #2-content-homes auto-slug refs with concept-named anchors. API page building blocks cited from CLAUDE-REFERENCE ripple-check; new anchor."
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules (with concept-named anchors for cited rules)"
+        read_type: gate
+        extract: "AUTHORING.md cites Rule 6 (code examples are sourced) at #rules — narrow to #code-examples-sourced. CLAUDE-REFERENCE ripple-check cites Rules 1 + 5 — anchor each by concept (six-month-test, source-code-facts-stay-in-source)."
+      - file: sdd/TESTING.md
+        section: "Rules (with concept anchor for Rule 6 prefer-real-dependencies)"
+        read_type: gate
+        extract: "adr-0025 cites Rule 6 (prefer real dependencies); inline anchor #prefer-real-dependencies survives renumbering."
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index, Detailed checklist, GitHub PR I/O split, Local toolchain, Where do I"
+        read_type: gate
+        extract: "All sub-section anchors at H3 level; skills + formal/README cite into these. Also sweep inbound bare-prose refs INSIDE ripple-check rows (CONTENT-RULES Rules 1+5, AUTHORING Rule 1, DOCUMENTATION § Content homes) into anchor links."
+      - file: sdd/formal/README.md
+        section: "Compiled oracle as conformance gate, Authoring rules"
+        read_type: gate
+        extract: "Compiled oracle cited from CONTRIBUTING.md and custom-backend-guide; Authoring rules cited from BACKLOG.md ID-150."
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: "Cited by 000-process.md § Backlog (\"See its 'How this file works' header.\")."
+  - id: rewrite
+    name: Rewrite consumer references
+    steps:
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Pre-work index, Detailed checklist, DESIGN § 11, DESIGN § 4 cites"
+        read_type: gate
+        extract: "Skills cite tier-1 sections heavily — convert prose § refs to anchor links."
+      - file: .claude/skills/pr/SKILL.md
+        section: "Coverage gate, Backlog, Trace authoring cites"
+        read_type: gate
+        extract: "Three prose cites in the PR skill's gate descriptions: coverage gate, backlog ID convention, trace mandatory rule."
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "GitHub PR I/O split, Detailed checklist cites"
+        read_type: gate
+        extract: "PR I/O split cited for the gh/MCP read-write split; Detailed checklist cited for the ripple audit."
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "GitHub PR I/O split, Coverage gate cites"
+        read_type: gate
+        extract: "Same PR I/O split + coverage gate pattern as pr/SKILL.md."
+      - file: .claude/skills/release/SKILL.md
+        section: "Release, Detailed checklist, Response style cites"
+        read_type: gate
+        extract: "CONTRIBUTING § Release is the authoritative checklist (cited twice); ripple-check Detailed checklist drives release-note section order; Response style governs the dash-vs-bullet rule."
+      - file: .claude/skills/drift/SKILL.md
+        section: "Backlog cite"
+        read_type: gate
+        extract: "Single Backlog cite for the commit-prefix convention."
+  - id: gate
+    name: Extend check_links.py
+    steps:
+      - file: scripts/docs/check_links.py
+        section: "check_repo_links, new fragment-resolution pass"
+        read_type: gate
+        extract: "Add fragment validation: parse <a id> tags + heading slugs from target file; fail if reference fragment matches neither. Denylist CHANGELOG, BACKLOG-DONE, audits/, research/, traces/."
+      - file: tests/scripts/test_check_links.py
+        section: "new fragment-resolution tests"
+        read_type: gate
+        extract: "Cover: anchor tag matches, heading slug matches, broken fragment fails, denylist skips, exemption respected."
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / New authoritative process doc in sdd/"
+        read_type: verify
+        extract: "Not a new process doc; convention extension to an existing one (link discipline). No CHANGELOG required per audience = library.maintainer + contributor.process."
+expected_ripples:
+  - sdd/BACKLOG.md
+review_rounds: 3
+surprising_ripples:
+  # Initial sweep missed CLAUDE-REFERENCE.md ripple-table row prose (both
+  # Pre-work and Detailed presentations), CONTRIBUTING.md § Project Principles
+  # cite, and CONTRIBUTING.md § Phase 2 had no anchor target. Adjacent table
+  # rows look mechanical but each row's prose is its own cite and needed an
+  # explicit pass.
+  - CONTRIBUTING.md
+  - sdd/CLAUDE-REFERENCE.md
+  # Second review round added a heading-slug-collision diagnostic (M2)
+  # which exposed 20 latent collisions across docs-src/reference/api/aio.md,
+  # sdd/CLAUDE-REFERENCE.md, sdd/rfcs/rfc-0007-doc-cross-links.md,
+  # docs-src/explanation/concurrency.md, docs-src/guides/observe.md. None
+  # had live inbound consumer refs, so a lazy-strict rule was adopted
+  # (collision reported only when a live consumer references the slug).
+  - docs-src/reference/api/aio.md
+  # Third review round caught the in-page `[text](#frag)` coverage gap:
+  # the gate validated cross-file `path.md#frag` but `_extract_links`
+  # dropped bare `#frag` targets entirely, so the two same-page refs this
+  # PR added in CONTRIBUTING.md (#adding-a-new-backend, #adding-an-extension)
+  # had no rot protection. Fragment gate switched to _iter_link_targets
+  # so it sees in-page refs and resolves them against the source file's
+  # own anchor index.

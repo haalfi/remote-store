@@ -7,6 +7,7 @@ Active work items and ideas. Completed items live in
 Items graduate through the SDD pipeline:
 **Idea → Backlog → RFC/Spec → Tests → Code**.
 
+<a id="how-this-file-works"></a>
 ## How this file works
 
 **Status legend:** `[ ]` pending · `[~]` in progress
@@ -220,17 +221,6 @@ and the highest ID already in this file, then take the next integer. Run
   **Exit criteria:** trial run recorded; keep/drop decision noted on this item;
   if kept, a documented invocation lands in dev docs.
 
-- [ ] **ID-180 — Stable HTML-anchor IDs across non-spec docs under `sdd/`**
-  spec: — · effort: M · audience: library.maintainer
-  Specs already have stable IDs (`ASYNC-016`, `WR-013`); non-spec docs
-  (CLAUDE.md "Principles", CLAUDE-REFERENCE row pointers, AUTHORING /
-  DOCUMENTATION / CONTENT-RULES rules) do not. Trace `section:` fields
-  reference these by heading text, which rots when sections are renamed.
-  Add HTML-anchor comments (`<!-- id: ripple-bug-fix -->`) to stable
-  reference points in seven `sdd/` framework docs plus `CLAUDE.md`. No
-  priority until trace aggregation exists or first heading-text drift
-  breaks a trace reference; promote to BK-prefix at that point.
-
 - [ ] **ID-197 — Review context7.com docs page for framing and content gaps**
   spec: — · effort: S · audience: library.maintainer
   The context7 docs proxy surfaces how external tools and readers discover the
@@ -338,7 +328,7 @@ and the highest ID already in this file, then take the next integer. Run
   - Prerequisites (process/test, should land first): BK-237 (feature-DoD
     checklists), BK-239 (generic field↔capability symmetry guard), and
     BK-241 (`tests/aio/README.md` orientation) all landed — see
-    `sdd/000-process.md` § Feature-type Definition of Done and
+    [`sdd/000-process.md` § Feature-type Definition of Done](000-process.md#feature-type-definition-of-done) and
     BACKLOG-DONE.md.
   - **Bundled sub-task — `ResourceLocked` (ERR-013, ADR-0024):** Graph
     triggers the only need for this error class today. Three coupled
@@ -463,7 +453,7 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer
   First revisit ticket for the informational `verify-tla` job landed under
-  ID-147 on 2026-04-19. Per `sdd/formal/README.md` § Authoring rules (3),
+  ID-147 on 2026-04-19. Per [`sdd/formal/README.md` § Authoring rules](formal/README.md#authoring-rules) (3),
   the status is revisited every 6 months or every 10 spec amendments touching
   TLA-backed sections (whichever first). At the revisit, record one of:
   **promote** (check caught a real regression — add to the gate's `needs`),

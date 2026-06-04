@@ -5,13 +5,13 @@ disable-model-invocation: true
 argument-hint: "[patch|minor|major]"
 ---
 
-**Authority:** `CONTRIBUTING.md` § Release is the authoritative checklist for all phases.
+**Authority:** [`CONTRIBUTING.md` § Release](../../../CONTRIBUTING.md#release) is the authoritative checklist for all phases.
 This skill carries the agent-specific execution layer (Phase 4 roles, release template) and
 surfaced process notes that an agent must not miss.
 
 Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patch = bugfix/refactor, no bump = CI/docs only.
 
-Execute `CONTRIBUTING.md` § Release (Phases 0–5). Agent notes per phase:
+Execute [`CONTRIBUTING.md` § Release](../../../CONTRIBUTING.md#release) (Phases 0–5). Agent notes per phase:
 
 **Phase 1** — Update FEATURES.md content only; do NOT touch the version header
 (`# Features — remote-store vX.Y.Z` where `X.Y.Z` is the *current* version) —

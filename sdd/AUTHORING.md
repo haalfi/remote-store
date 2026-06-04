@@ -11,9 +11,10 @@ framework](../CLAUDE.md#documentation-framework)): structure →
 [`sdd/DOCUMENTATION.md`](DOCUMENTATION.md); longevity →
 [`sdd/CONTENT-RULES.md`](CONTENT-RULES.md).
 
+<a id="rules"></a>
 ## Rules
 
-1. **File classification.** Every `.md` belongs to exactly one class.
+1. <a id="file-classification"></a>**File classification.** Every `.md` belongs to exactly one class.
    Classification follows a marker on the file or a directory default
    when no marker is present. A file with no marker and no matching
    default is unclassified and fails G-01. See _Classification markers_
@@ -27,10 +28,10 @@ framework](../CLAUDE.md#documentation-framework)): structure →
    and pure anchors are exempt. The bridge (Rule 4) rewrites on-disk
    targets to docs-site URLs at build time so both presentations render
    correctly. Dual files additionally use only plain Markdown; see
-   [`sdd/CONTENT-RULES.md` Rule 6](CONTENT-RULES.md#rules) for the
+   [`sdd/CONTENT-RULES.md` Rule 6](CONTENT-RULES.md#code-examples-sourced) for the
    one snippet exception.
 
-4. **One bridge mechanism.** The bridge presents dual files on the docs
+4. <a id="one-bridge-mechanism"></a>**One bridge mechanism.** The bridge presents dual files on the docs
    site and rewrites on-disk links in docs-only files to docs-site URLs
    at build time. Exactly one bridge applies; new mechanisms are not
    added. The implementation lives in the build tooling.
@@ -60,7 +61,7 @@ docs site"; host configuration is a deployment concern, not an authoring one.
 ### Where does my new file go?
 
 1. **Docs-site only?** → `docs-src/` (Diataxis bucket per
-   [`DOCUMENTATION.md`](DOCUMENTATION.md#1-diataxis-placement) Rule 1).
+   [`DOCUMENTATION.md` Rule 1](DOCUMENTATION.md#diataxis-placement)).
 2. **Pure internal tooling** (`sdd/BACKLOG.md`, `sdd/CLAUDE-REFERENCE.md`,
    `CLAUDE.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, agent harness
    files)? → repo path; declare repo-only.
@@ -70,8 +71,7 @@ docs site"; host configuration is a deployment concern, not an authoring one.
    artefacts (specs, ADRs, RFCs, research, audits). The bridge handles
    the docs-site presentation. See
    [`sdd/CLAUDE-REFERENCE.md`](CLAUDE-REFERENCE.md) and
-   [`CONTRIBUTING.md`](../CONTRIBUTING.md) § Authoritative Document
-   Format Scope for the path map.
+   [`CONTRIBUTING.md` § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) Scope subsection for the path map.
 
 If unsure, declare dual.
 
@@ -134,7 +134,7 @@ Files not covered by the table require explicit markers. Common cases:
 
 For the complete path map see
 [`sdd/CLAUDE-REFERENCE.md`](CLAUDE-REFERENCE.md) and
-[`CONTRIBUTING.md` § Authoritative Document Format](../CONTRIBUTING.md).
+[`CONTRIBUTING.md` § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format).
 
 ### Examples
 

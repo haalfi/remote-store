@@ -15,7 +15,7 @@ remainder is optional task description. Ask if missing.
 
 1. Read `sdd/BACKLOG.md` — confirm item exists, note description and dependencies
 2. Read linked specs and RFCs from the backlog entry
-3. Read `sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Pre-work index — identify triggered rows
+3. Read [`sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Pre-work index](../../../sdd/CLAUDE-REFERENCE.md#pre-work-index) — identify triggered rows
 4. Create feature branch: `git checkout -b <id>-<short-name>`
 
 ## Step 2: Plan
@@ -157,7 +157,7 @@ DOMAIN: tests/
 
 FOUNDATION — read before writing:
 - sdd/TESTING.md (8 quality rules — mandatory)
-- sdd/DESIGN.md § 11 (test style — class grouping, spec markers)
+- [sdd/DESIGN.md § 11 (test style — class grouping, spec markers)](../../../sdd/DESIGN.md#test-style)
 - The task-specific spec (for spec IDs to trace)
 
 TASK: [orchestrator fills this]
@@ -192,7 +192,7 @@ FOUNDATION — read before writing:
 - sdd/AUTHORING.md (placement)
 - sdd/DOCUMENTATION.md (structure, cross-linking)
 - sdd/CONTENT-RULES.md (longevity)
-- sdd/DESIGN.md § 4 (docstring format)
+- [sdd/DESIGN.md § 4 (docstring format)](../../../sdd/DESIGN.md#docstrings)
 - The task-specific spec
 
 TASK: [orchestrator fills this — always includes: "Evaluate whether
@@ -284,7 +284,7 @@ experts*, not just their own domain. Each returns:
 
 ## Step 7: Finish
 
-1. **Ripple-check audit**: Walk `sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist. For each
+1. **Ripple-check audit**: Walk [`sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist). For each
    triggered row, verify target files were updated. For domain-specific gaps
    (e.g., missing test), re-spawn the relevant expert. For cross-domain gaps,
    fix directly.
