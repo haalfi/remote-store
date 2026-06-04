@@ -14,7 +14,7 @@ surprising_ripples:
   # spec's _ALLOWLIST_DESIGN entry stale; the allowlist had to be edited. No
   # ripple-check row anticipates "first mark for a previously-allowlisted spec".
   - scripts/check_spec_marks.py
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

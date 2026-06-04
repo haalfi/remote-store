@@ -120,6 +120,38 @@ class TestGraphCassetteScrub:
         assert "x-ms-ags-diagnostic" not in remaining
         assert "content-type" in remaining
 
+    def test_download_token_redacted_from_302_location_header(self) -> None:
+        """GR-015: GET /content -> 302 whose Location is the pre-signed downloadUrl.
+
+        The token in its query must not survive in the recorded response headers
+        (PR #750 review — the primary leak path the streaming proof de-risks).
+        """
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        loc = (
+            "https://abc.microsoftpersonalcontent.com/personal/x/Documents/f.bin"
+            "?tempauth=TEMPAUTHSECRET&Expires=1700000000&access_token=ACCESSTOKENSECRET"
+        )
+        resp: dict[str, Any] = {"headers": {"Location": [loc], "Content-Type": ["text/html"]}, "body": {"string": b""}}
+        scrubbed = cfg["before_record_response"](resp)["headers"]["Location"][0]
+        assert "TEMPAUTHSECRET" not in scrubbed
+        assert "ACCESSTOKENSECRET" not in scrubbed
+        assert "tempauth=REDACTED" in scrubbed
+        assert "access_token=REDACTED" in scrubbed
+        # Non-secret structure (host + path) stays for cassette review / replay matching.
+        assert "abc.microsoftpersonalcontent.com" in scrubbed
+        assert "/Documents/f.bin" in scrubbed
+
+    def test_location_redaction_does_not_over_match_short_params(self) -> None:
+        """The (?<=[?&]) anchor stops a short token name (se/st/...) from
+        matching a substring inside an unrelated query value."""
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        loc = "https://host/path?usercase=keepme&tempauth=SECRET"
+        resp: dict[str, Any] = {"headers": {"Location": loc}, "body": {"string": b""}}
+        scrubbed = cfg["before_record_response"](resp)["headers"]["Location"]
+        assert "usercase=keepme" in scrubbed  # 'se=' substring untouched
+        assert "SECRET" not in scrubbed
+        assert "tempauth=REDACTED" in scrubbed
+
     def test_drive_id_rewritten_in_uri_and_body(self) -> None:
         cfg = build_graph_vcr_config(real_drive_id="realdrive123")
         out = cfg["before_record_request"](

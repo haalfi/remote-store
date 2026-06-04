@@ -152,9 +152,9 @@ instead of a secret; see the
 
 ## Resolve the drive id
 
-The backend takes one opaque `drive_id`. The public helper
-`GraphUtils.resolve_drive_id(...)` accepts three target shapes and returns
-that id:
+The forthcoming Graph backend will take one opaque `drive_id`. Its public
+helper `GraphUtils.resolve_drive_id(...)` (shipping with the backend) will
+accept three target shapes and return that id:
 
 - **`"me"`** — the signed-in user's OneDrive, via `GET /me/drive`.
   Delegated (device-code) only.
@@ -170,7 +170,7 @@ capture a `drive_id` before any backend code is installed.
 
 This snippet completes a device-code sign-in and reads back your drive id.
 It uses `msal` and `httpx` (the libraries the built-in `GraphAuth` helper
-wraps), so it works before the `graph` extra is installed. It is
+will wrap), so it works before the `graph` extra is installed. It is
 hand-written rather than sourced from `examples/snippets/` because it needs
 real interactive credentials and cannot run in CI.
 
@@ -250,10 +250,10 @@ GRAPH_DRIVE_ID=<id resolved from your SharePoint or OneDrive target>
 `.env` is gitignored. Never commit `GRAPH_CLIENT_SECRET` or the MSAL token
 cache (it holds a refresh token).
 
-The built-in `GraphAuth` helper persists its MSAL cache under your
-user config directory (`platformdirs.user_config_dir("remote-store")`).
-The verification snippet above uses a local cache file instead, to stay
-self-contained.
+The built-in `GraphAuth` helper, when it ships with the Graph backend, will
+persist its MSAL cache under your user config directory
+(`platformdirs.user_config_dir("remote-store")`). The verification snippet
+above uses a local cache file instead, to stay self-contained.
 
 ## Troubleshooting
 
