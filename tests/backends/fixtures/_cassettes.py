@@ -40,6 +40,16 @@ Used by ``tests/backends/conformance/conftest.py`` for both the
 ``vcr_cassette_dir`` fixture override and the missing-cassette skip hook.
 """
 
+CASSETTE_DIR_GRAPH: Path = Path(__file__).resolve().parent.parent / "cassettes" / "graph"
+"""Absolute path to ``tests/backends/cassettes/graph/`` (TEST-007).
+
+Per-backend cassette directory for the Microsoft Graph backend (ID-127 /
+GR-FOUNDATION). The conformance ``vcr_cassette_dir`` dispatch will route
+``graph_*`` fixtures here once the backend's replay fixtures land in
+GR-CORE; the constant exists now so the scrub profile below and its
+security-gate test have a stable home to reference.
+"""
+
 # ---------------------------------------------------------------------------
 # Fixed identifiers used in replay and scrubbing
 # ---------------------------------------------------------------------------
@@ -118,6 +128,44 @@ _BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
 ]
 
 _USER_AGENT_NORMALIZED = "azsdk-python-replay"
+
+# ---------------------------------------------------------------------------
+# Microsoft Graph scrub profile (ID-127 / GR-FOUNDATION; GR-035, TEST-007)
+# ---------------------------------------------------------------------------
+#
+# Security gate: the Graph backend sends an ``Authorization: Bearer <token>``
+# on every request and downloads content from a pre-signed
+# ``@microsoft.graph.downloadUrl`` whose query carries its own access token.
+# Neither may survive into a committed cassette. The profile below drops the
+# bearer + cookies + correlation ids, redacts the downloadUrl and any
+# bearer/access/refresh token from response bodies, filters the pre-signed
+# download query params, and rewrites the live ``drive_id`` to a placeholder.
+
+FAKE_DRIVE_ID = "graphreplaydrive"
+"""Placeholder drive id written into every recorded Graph cassette URL.
+
+Replay fixtures (GR-CORE) construct the backend with this same drive id so
+the ``/drives/{drive_id}/...`` path in every outgoing request matches the
+cassette. Not a secret — an arbitrary well-formed token.
+"""
+
+_GRAPH_SCRUB_REQUEST_HEADERS: frozenset[str] = frozenset({"authorization", "cookie", "client-request-id"})
+_GRAPH_SCRUB_RESPONSE_HEADERS: frozenset[str] = frozenset(
+    {"request-id", "client-request-id", "x-ms-ags-diagnostic", "set-cookie", "date"}
+)
+# Pre-signed download-URL query parameters. Consumer OneDrive uses
+# ``tempauth`` / ``Expires``; SharePoint uses the SAS-style set already listed
+# for Azure. ``access_token`` covers the rare in-query token form.
+_GRAPH_SCRUB_QUERY_PARAMS: tuple[str, ...] = (*_SCRUB_QUERY_PARAMS, "tempauth", "Expires", "access_token")
+
+# Body-level redactions, applied in the bytes domain so binary payloads are
+# safe. Each preserves surrounding JSON structure and replaces only the
+# secret-bearing value.
+_GRAPH_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
+    (re.compile(rb'("@microsoft\.graph\.downloadUrl"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
+    (re.compile(rb'("(?:access_token|refresh_token)"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
+    (re.compile(rb"Bearer\s+[A-Za-z0-9._~+/=\-]+"), b"Bearer REDACTED"),
+]
 
 
 # ---------------------------------------------------------------------------
@@ -273,11 +321,75 @@ def build_vcr_config(real_account: str | None) -> dict[str, Any]:
     }
 
 
+def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
+    """Return a ``vcr_config`` dict for recording/replaying Microsoft Graph.
+
+    ``real_drive_id`` is the live drive id (record mode) or ``None`` (replay
+    mode). The ``before_record_*`` hooks run in both modes because vcrpy
+    normalises outgoing requests for matching during replay too, so the
+    ``if real_drive_id:`` guards are load-bearing on the replay path.
+
+    What it strips (the GR-FOUNDATION security gate, GR-035 / TEST-007):
+
+    * ``Authorization`` (the bearer token), ``Cookie``, and the
+      ``client-request-id`` correlation header from requests;
+    * ``request-id`` / ``client-request-id`` / ``x-ms-ags-diagnostic`` /
+      ``Set-Cookie`` / ``Date`` from responses;
+    * the ``@microsoft.graph.downloadUrl`` value and any
+      ``Bearer`` / ``access_token`` / ``refresh_token`` from response bodies;
+    * the pre-signed download query parameters; and
+    * the live ``drive_id`` (rewritten to ``FAKE_DRIVE_ID``) from request
+      URIs and response bodies, so a cassette recorded against a real drive
+      replays against the fake one.
+    """
+
+    def before_record_request(request: Any) -> Any:
+        if real_drive_id:
+            request.uri = request.uri.replace(real_drive_id, FAKE_DRIVE_ID)
+        for key in list(request.headers):
+            lower = key.lower()
+            if lower in _GRAPH_SCRUB_REQUEST_HEADERS:
+                del request.headers[key]
+            elif lower == "user-agent":
+                request.headers[key] = _USER_AGENT_NORMALIZED
+        return request
+
+    def before_record_response(response: dict[str, Any]) -> dict[str, Any]:
+        headers = response.get("headers", {})
+        for key in list(headers):
+            if key.lower() in _GRAPH_SCRUB_RESPONSE_HEADERS:
+                del headers[key]
+        body = response.get("body", {})
+        raw = body.get("string")
+        if isinstance(raw, str):
+            raw = raw.encode()
+            was_str = True
+        else:
+            was_str = False
+        if isinstance(raw, bytes):
+            if real_drive_id:
+                raw = raw.replace(real_drive_id.encode(), FAKE_DRIVE_ID.encode())
+            for pattern, replacement in _GRAPH_BODY_SCRUB:
+                raw = pattern.sub(replacement, raw)
+            body["string"] = raw.decode() if was_str else raw
+        return response
+
+    return {
+        "decode_compressed_response": True,
+        "filter_query_parameters": list(_GRAPH_SCRUB_QUERY_PARAMS),
+        "before_record_request": before_record_request,
+        "before_record_response": before_record_response,
+    }
+
+
 __all__ = [
     "CASSETTE_DIR_AZURE",
+    "CASSETTE_DIR_GRAPH",
     "FAKE_ACCOUNT",
     "FAKE_CONN_STR",
+    "FAKE_DRIVE_ID",
     "FAKE_FILESYSTEM",
+    "build_graph_vcr_config",
     "build_vcr_config",
     "live_connection_string",
     "parse_account_name",
