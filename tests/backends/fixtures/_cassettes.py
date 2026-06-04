@@ -159,16 +159,15 @@ _GRAPH_SCRUB_RESPONSE_HEADERS: frozenset[str] = frozenset(
 _GRAPH_SCRUB_QUERY_PARAMS: tuple[str, ...] = (*_SCRUB_QUERY_PARAMS, "tempauth", "Expires", "access_token")
 
 # The pre-signed download token also rides the ``Location`` response header:
-# ``GET /content`` answers ``302`` whose ``Location`` is the
+# ``GET /content`` answers ``302`` whose ``Location`` IS the
 # ``@microsoft.graph.downloadUrl`` with the token in its query (spec 044
-# GR-015). ``filter_query_parameters`` only touches request URIs, so the
-# header value is redacted here instead. The ``(?<=[?&])`` lookbehind anchors
-# each param to a query delimiter so a short name (``se``/``st``/...) cannot
-# match a substring inside an unrelated value (e.g. ``usercase=``).
-_GRAPH_URL_CRED_RE: re.Pattern[str] = re.compile(
-    r"(?<=[?&])((?:" + "|".join(_GRAPH_SCRUB_QUERY_PARAMS) + r")=)[^&\s]*",
-    re.IGNORECASE,
-)
+# GR-015). ``filter_query_parameters`` only touches request URIs, so the header
+# is redacted here. The *whole query* is wiped value-based — mirroring the
+# JSON-body downloadUrl scrub — rather than enumerating param names: the entire
+# query of a downloadUrl is token machinery, so a novel/undocumented param name
+# must not survive on the strength of not being in a list. Host + path are kept
+# so the cassette stays reviewable.
+_GRAPH_URL_QUERY_RE: re.Pattern[str] = re.compile(r"\?\S*")
 
 # Body-level redactions, applied in the bytes domain so binary payloads are
 # safe. Each preserves surrounding JSON structure and replaces only the
@@ -366,9 +365,10 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
     * ``request-id`` / ``client-request-id`` / ``x-ms-ags-diagnostic`` /
       ``Set-Cookie`` / ``Date`` from responses;
     * the pre-signed download token from the ``Location`` /
-      ``Content-Location`` response header (the ``302`` from ``GET /content``
-      redirects to ``@microsoft.graph.downloadUrl`` with the token in its
-      query — GR-015);
+      ``Content-Location`` response header — the ``302`` from ``GET /content``
+      redirects to ``@microsoft.graph.downloadUrl`` (GR-015); its **whole
+      query** is wiped (value-based, like the body scrub) so no token survives,
+      named or not;
     * the ``@microsoft.graph.downloadUrl`` value and any
       ``Bearer`` / ``access_token`` / ``refresh_token`` from response bodies;
     * the pre-signed download query parameters; and
@@ -405,13 +405,13 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
                 del headers[key]
             elif lower in ("location", "content-location"):
                 # The 302 from GET /content carries the pre-signed download
-                # token in the Location query (GR-015); redact it, keeping the
-                # host/path so the cassette stays reviewable.
+                # token in the Location query (GR-015); wipe the whole query,
+                # keeping host/path so the cassette stays reviewable.
                 val = headers[key]
                 if isinstance(val, list):
-                    headers[key] = [_GRAPH_URL_CRED_RE.sub(r"\1REDACTED", v) if isinstance(v, str) else v for v in val]
+                    headers[key] = [_GRAPH_URL_QUERY_RE.sub("?REDACTED", v) if isinstance(v, str) else v for v in val]
                 elif isinstance(val, str):
-                    headers[key] = _GRAPH_URL_CRED_RE.sub(r"\1REDACTED", val)
+                    headers[key] = _GRAPH_URL_QUERY_RE.sub("?REDACTED", val)
         body = response.get("body", {})
         raw = body.get("string")
         if isinstance(raw, str):

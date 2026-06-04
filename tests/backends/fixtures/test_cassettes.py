@@ -135,22 +135,24 @@ class TestGraphCassetteScrub:
         scrubbed = cfg["before_record_response"](resp)["headers"]["Location"][0]
         assert "TEMPAUTHSECRET" not in scrubbed
         assert "ACCESSTOKENSECRET" not in scrubbed
-        assert "tempauth=REDACTED" in scrubbed
-        assert "access_token=REDACTED" in scrubbed
-        # Non-secret structure (host + path) stays for cassette review / replay matching.
-        assert "abc.microsoftpersonalcontent.com" in scrubbed
-        assert "/Documents/f.bin" in scrubbed
+        # The whole query is wiped value-based; host + path stay for review.
+        assert scrubbed == "https://abc.microsoftpersonalcontent.com/personal/x/Documents/f.bin?REDACTED"
 
-    def test_location_redaction_does_not_over_match_short_params(self) -> None:
-        """The (?<=[?&]) anchor stops a short token name (se/st/...) from
-        matching a substring inside an unrelated query value."""
+    def test_location_redaction_catches_unnamed_token_param(self) -> None:
+        """Value-based wipe: a token under a param name NOT in the enumerated
+        set is still redacted (PR #750 round-3 review — name-based was brittle)."""
         cfg = build_graph_vcr_config(real_drive_id=None)
-        loc = "https://host/path?usercase=keepme&tempauth=SECRET"
+        loc = "https://host/path?novel_token=SURVIVESNAMEBASED&tempauth=ALSOSECRET"
         resp: dict[str, Any] = {"headers": {"Location": loc}, "body": {"string": b""}}
         scrubbed = cfg["before_record_response"](resp)["headers"]["Location"]
-        assert "usercase=keepme" in scrubbed  # 'se=' substring untouched
-        assert "SECRET" not in scrubbed
-        assert "tempauth=REDACTED" in scrubbed
+        assert "SURVIVESNAMEBASED" not in scrubbed  # the unnamed param's value is gone
+        assert "ALSOSECRET" not in scrubbed
+        assert scrubbed == "https://host/path?REDACTED"
+
+    def test_location_without_query_is_unchanged(self) -> None:
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        resp: dict[str, Any] = {"headers": {"Location": "https://host/path"}, "body": {"string": b""}}
+        assert cfg["before_record_response"](resp)["headers"]["Location"] == "https://host/path"
 
     def test_drive_id_rewritten_in_uri_and_body(self) -> None:
         cfg = build_graph_vcr_config(real_drive_id="realdrive123")
