@@ -66,9 +66,9 @@ named acceptance criterion in its owning step.
 | Cassette-spine generalisation (per-backend dir, id-alias, **bearer-token scrub**, record script, httpx-streaming-replay) | **GR-FOUNDATION (1)** |
 | Setup guide `graph-setup.md` (doubles as the live-provisioning runbook) | **GR-FOUNDATION (1)** |
 | Async `TestWriteResultConformance` decision | **GR-CONTRACT (2)** |
+| `ResourceLocked` bundle (runtime + Dafny variant + `_raise_if_err`) | **GR-CONTRACT (2)** |
 | `_SENSITIVE_KEYS` widening (`client_secret`, `client_certificate`) | **GR-CORE (3)** |
-| `ResourceLocked` bundle (runtime + Dafny variant + `_raise_if_err`) | **GR-CORE (3)** |
-| `__all__` ↔ `index.md` parity (ID-173) for the four public symbols | **GR-CORE (3)** |
+| `__all__` ↔ `index.md` parity (ID-173) for the four public symbols | **GR-CONTRACT (`ResourceLocked`) + GR-CORE (the three Graph symbols)** |
 | e2e wiring into `test_async_streaming_integrity.py` | **GR-DOCS-E2E (7)** |
 | BK-237 contract-expanding-feature DoD umbrella checklist | **GR-DONE (8)** |
 
@@ -116,6 +116,14 @@ deliverables, not part of the surfaced eight; they land in GR-DOCS-E2E.)
   operation slices xfail'd. GR-READ / GR-WRITE / GR-MUTATE each clear
   their own slices. This is exactly the DoD "move off the xfail list"
   pattern.
+- **`ResourceLocked` lands in GR-CONTRACT, not with the backend.** The
+  bundle is fully backend-independent, so it goes in the "contract before
+  the backend" step (where the error contract belongs) rather than
+  GR-CORE — de-bloating the heaviest step and giving GR-CORE's 423 mapper
+  an already-existing class to reference. This is a deliberate **deviation
+  from ADR-0024's "same PR as the sub-package" packaging**; it preserves
+  the ADR's binding coupling (class + variant + dispatch ship together)
+  and edits no ADR. See *Alignment notes*.
 
 ---
 
@@ -211,12 +219,14 @@ runtime behaviour yet.
 
 ---
 
-## Step 2 — GR-CONTRACT: async conformance contract before the backend
+## Step 2 — GR-CONTRACT: async conformance + `ResourceLocked` contract before the backend
 
-**Scope.** Land the async conformance surface Graph will move onto:
-an async `TestWriteResultConformance`, a capability-matrix assertion,
-and the `USER_METADATA` strict-gate test — all validated against
-existing async fixtures, with no Graph code yet.
+**Scope.** Land the contract surface Graph will move onto, all validated
+against existing fixtures with no Graph backend code yet: an async
+`TestWriteResultConformance`, a capability-matrix assertion, the
+`USER_METADATA` strict-gate test, **and the backend-independent
+`ResourceLocked` bundle** (runtime class + Dafny variant + `_raise_if_err`
+dispatch + ERR-013 test).
 
 **Files touched.**
 - `tests/backends/conformance/test_async_extended.py` (or a new
@@ -227,30 +237,55 @@ existing async fixtures, with no Graph code yet.
   `CapabilityNotSupported`).
 - `USER_METADATA` strict-gate test (non-empty `metadata=` →
   `CapabilityNotSupported`; `{}` / `None` are no-ops) at the Store layer.
+- `src/remote_store/_errors.py` (`ResourceLocked` class + `__all__`).
+- `sdd/formal/BackendContract.dfy` (`Error.ResourceLocked(path, backend)`
+  variant) + re-translated `sdd/formal/MemoryBackend-py/module_.py` +
+  `tests/backends/dafny/_helpers.py::_raise_if_err` dispatch + a direct
+  unit test of the `ResourceLocked` dispatch arm (the MemoryBackend
+  oracle never raises 423, so conformance never exercises it).
+- `docs-src/reference/api/index.md` (parity entry for `ResourceLocked`,
+  same commit as the `__all__` addition).
 - `tests/backends/fixtures/registry.py` / `fixtures.toml` if an xfail /
   expected-capability registry entry shape needs to exist for backends
   to register against.
 
 **Spec IDs covered.** WR-001a/004/005/010/011/012/013, ASYNC-008/010/021,
 GR-003 (matrix shape, exercised by existing backends here; Graph slots in
-at GR-CORE).
+at GR-CORE), **ERR-013** (`ResourceLocked` runtime class + Dafny variant).
 
 **Acceptance criteria.**
 - New async `TestWriteResultConformance` passes against `AsyncMemory`
   and `AsyncAzure` (proves the contract is real before Graph exists).
 - Capability-matrix and metadata-gate tests pass against existing
   backends.
+- **`ResourceLocked` bundle** (named obligation): runtime class, Dafny
+  variant, and `_raise_if_err` dispatch land **together**; Dafny suite
+  re-verifies; an ERR-013 unit test covers construction, `path`/`backend`,
+  `__all__` membership, and the flat-hierarchy parent, plus a direct
+  `_raise_if_err` dispatch-arm test. `check_api_docs.py` passes with
+  `ResourceLocked` in both `__all__` and `index.md` (same commit).
 - `filterwarnings = error` suite stays clean.
-- `hatch run lint` clean.
+- `hatch run lint` clean (incl. `check_formal_trace` / `check_capability_parity`
+  after the Dafny variant lands).
 
-**Dependencies.** None hard; pairs naturally after GR-FOUNDATION.
+**Dependencies.** None hard; pairs naturally after GR-FOUNDATION. The
+`ResourceLocked` bundle is fully backend-independent — it is placed here
+(rather than GR-CORE) so the error contract exists before the GR-CORE
+`http.py` 423→`ResourceLocked` mapping references it, and to keep the
+already-heavy GR-CORE step focused. See *Alignment notes* for the
+ADR-0024 packaging deviation this introduces.
 
-**Risk / surprises.** Option (a) modifies a **shared** conformance class,
-so every async backend must satisfy the newly-asserted WR slices — if
-`AsyncAzure` does not already populate a rich field the async suite now
-checks, that is a pre-existing gap this step surfaces (record it, do not
-silently weaken the assertion — principle 7). May force a small
-`AsyncAzure` follow-up; flag it rather than absorb it.
+**Risk / surprises.**
+- Option (a) modifies a **shared** conformance class, so every async
+  backend must satisfy the newly-asserted WR slices — if `AsyncAzure`
+  does not already populate a rich field the async suite now checks, that
+  is a pre-existing gap this step surfaces (record it, do not silently
+  weaken the assertion — principle 7). May force a small `AsyncAzure`
+  follow-up; flag it rather than absorb it.
+- The Dafny re-translation needs the Dafny toolchain to regenerate
+  `MemoryBackend-py/module_.py`; if unavailable in dev/CI, land the
+  variant + dispatch as a hand-checked translation matching the existing
+  variant shape and flag the toolchain status in the PR.
 
 ---
 
@@ -259,7 +294,9 @@ silently weaken the assertion — principle 7). May force a small
 **Scope.** Land the full public API surface and request/error foundation
 of the backend with operation bodies stubbed and their conformance
 slices xfail'd: construction, capabilities, addressing, HTTP+error
-mapping, auth, utils, masking, `ResourceLocked` bundle.
+mapping, auth, utils, masking. (The `ResourceLocked` class itself already
+exists — it landed in GR-CONTRACT; GR-CORE's `http.py` only wires the
+423→`ResourceLocked` mapping.)
 
 **Files touched.**
 - `src/remote_store/aio/backends/_graph/` (new sub-package):
@@ -267,12 +304,12 @@ mapping, auth, utils, masking, `ResourceLocked` bundle.
   capability decl GR-003, `to_key`/`native_path` GR-036/036a, `unwrap`
   GR-037, `close` GR-051 baseline, addressing GR-009/010, stubbed ops),
   `http.py` (httpx wrapper, pagination GR-016, error-mapping table
-  GR-028..034/045/054/055/046, masking GR-035), `auth.py` (`GraphAuth`
+  GR-028..034/045/054/055/046 — mapping `423`→the `ResourceLocked` class
+  from GR-CONTRACT, masking GR-035), `auth.py` (`GraphAuth`
   GR-006/007/008), `utils.py` (`GraphUtils.resolve_drive_id` /
   `aresolve_drive_id` GR-057).
 - `src/remote_store/aio/backends/__init__.py` (guarded re-export of
   `GraphBackend`, `GraphAuth`, `GraphUtils`).
-- `src/remote_store/_errors.py` (`ResourceLocked` class + `__all__`).
 - `src/remote_store/_config.py` (`_SENSITIVE_KEYS` += `client_secret`,
   `client_certificate`).
 - `sdd/specs/031-ext-dagster.md` (**ripple — third consumer**):
@@ -282,24 +319,23 @@ mapping, auth, utils, masking, `ResourceLocked` bundle.
   (single source of truth), repoint that enumeration at
   `_config._SENSITIVE_KEYS` rather than re-listing keys, so the next
   widening never desyncs again.
-- `sdd/formal/BackendContract.dfy` (`Error.ResourceLocked(path, backend)`
-  variant) + re-translated `sdd/formal/MemoryBackend-py/module_.py` +
-  `tests/backends/dafny/_helpers.py::_raise_if_err` dispatch.
-- `docs-src/reference/api/index.md` (parity entries for the four
-  symbols) ; `pyproject.toml` (`graph` extra per ADR-0021) ;
-  `FEATURES.md` (Graph row, capability columns per GR-003).
+- `docs-src/reference/api/index.md` (parity entries for the three Graph
+  symbols `GraphBackend` / `GraphAuth` / `GraphUtils`; `ResourceLocked`
+  parity landed in GR-CONTRACT) ; `pyproject.toml` (`graph` extra per
+  ADR-0021) ; `FEATURES.md` (Graph row, capability columns per GR-003).
 - `tests/backends/fixtures/fixtures.toml` / `registry.py` (the
   conformance fixture *factory* that instantiates `GraphBackend` for the
   `graph_live` / `graph_replay` entries declared in GR-FOUNDATION; xfail
   registry for unimplemented op slices).
 
-**Spec IDs covered.** GR-001..GR-011, GR-016, GR-028..GR-037, GR-045,
-GR-050..GR-053, GR-057, ERR-013, RET-015 (mapping table), SEC-003,
-DAG-033 (ripple). The error-mapping *table* GR-CORE's `http.py` authors
-covers 054/055/046 as code, but those IDs' behaviour + test ownership
-sits in GR-WRITE (GR-054), GR-READ (GR-055), and GR-MUTATE (GR-056) —
-so they are deliberately **not** claimed in this range, keeping one
-unambiguous owner per ID for GR-DONE's traceability sweep.
+**Spec IDs covered.** GR-001..GR-011, GR-016, GR-028..GR-037, GR-045
+(mapper test; the class + ERR-013 are GR-CONTRACT's), GR-050..GR-053,
+GR-057, RET-015 (mapping table), SEC-003, DAG-033 (ripple). The
+error-mapping *table* GR-CORE's `http.py` authors covers 054/055/046 as
+code, but those IDs' behaviour + test ownership sits in GR-WRITE
+(GR-054), GR-READ (GR-055), and GR-MUTATE (GR-056) — so they are
+deliberately **not** claimed here, keeping one unambiguous owner per ID
+for GR-DONE's traceability sweep.
 
 **Acceptance criteria.**
 - **`_SENSITIVE_KEYS` widening** (named obligation): config-loaded Graph
@@ -308,14 +344,15 @@ unambiguous owner per ID for GR-DONE's traceability sweep.
   (`ext/dagster.py`) inherits the widening automatically (it imports the
   set); spec 031 § DAG-033's prose enumeration is updated in the same
   commit (repointed at the single source per principle 4).
-- **`ResourceLocked` bundle** (named obligation): runtime class, Dafny
-  variant, and `_raise_if_err` dispatch land **together**; Dafny suite
-  re-verifies; an error-class unit test covers ERR-013 (construction,
-  `path`/`backend`, `__all__` membership, flat-hierarchy parent).
-- **`__all__` ↔ `index.md` parity** (named obligation): `check_api_docs.py`
-  passes with `GraphBackend`, `GraphAuth`, `GraphUtils`, `ResourceLocked`
-  present in both `__all__` and `index.md`, in the **same commit** as the
-  `__all__` additions (hard CI gate).
+- `423`→`ResourceLocked` mapping: a respx unit test feeds a `423`
+  response and asserts the `ResourceLocked` class (from GR-CONTRACT) is
+  raised with `backend="graph"` (GR-045 mapper test; mid-session 423 is
+  GR-WRITE's).
+- **`__all__` ↔ `index.md` parity** (named obligation, Graph share):
+  `check_api_docs.py` passes with `GraphBackend`, `GraphAuth`,
+  `GraphUtils` present in both `__all__` and `index.md`, in the **same
+  commit** as the `__all__` additions (hard CI gate). `ResourceLocked`'s
+  parity entry already landed in GR-CONTRACT.
 - Credential masking: a bearer token never appears in `str`/`repr` of any
   raised error or in any backend log record at any level (GR-035 anchors).
 - `import remote_store` works without the `graph` extra installed (guarded
@@ -327,14 +364,12 @@ unambiguous owner per ID for GR-DONE's traceability sweep.
 **Dependencies.** GR-FOUNDATION (fixture entries + live gate + scrub
 spine; first live reality-check of `resolve_drive_id` happens here),
 GR-CONTRACT (capability-matrix + metadata-gate contract to register
-against).
+against, **and the `ResourceLocked` class** the 423 mapper references).
 
-**Risk / surprises.** The Dafny re-translation requires the Dafny
-toolchain to regenerate `MemoryBackend-py/module_.py`; if it is not
-available in the dev/CI environment, the variant + dispatch must still
-land as a hand-checked translation matching the existing variant shape —
-flag the toolchain status in the PR. ADR-0024 packaging note: see
-*Alignment notes* below.
+**Risk / surprises.** `import remote_store` must stay clean without the
+`graph` extra (guarded import); a missing guard would break the base
+install. The `httpx`-streaming dependence of read/write ops is deferred
+to those steps. ADR-0024 packaging note: see *Alignment notes* below.
 
 ---
 
@@ -600,29 +635,43 @@ Stage-3 assertions are deferred to whoever has tenant access (record it).
 
 ---
 
-## Alignment notes (read before implementing GR-CORE)
+## Alignment notes (read before implementing GR-CONTRACT / GR-CORE)
 
-- **ADR-0024 packaging wording.** ADR-0024 § Bundled implementation says
-  the `ResourceLocked` runtime class + Dafny variant "land in the same PR
-  as the Graph sub-package (`aio/backends/_graph/`)." This plan lands them
-  in **GR-CORE**, which *is* the PR that creates the `_graph` sub-package —
-  so the ADR's binding coupling (runtime class, Dafny variant, and
-  dispatch ship **together**, never the variant alone) is preserved.
-  GR-CORE intentionally carries the public surface and foundation but
-  not the operation bodies; that is a finer decomposition than ADR-0024
-  contemplated, not a contradiction of it. If a reviewer prefers strict
-  "one Graph PR" packaging, GR-CORE..GR-MUTATE collapse into that single
-  PR without any change to *what* lands — only *how finely* it is split.
-  This is a packaging interpretation, **not** a spec amendment.
+- **ADR-0024 packaging deviation (`ResourceLocked` placement).** ADR-0024
+  § Bundled implementation says the `ResourceLocked` runtime class + Dafny
+  variant "land in the same PR as the Graph sub-package
+  (`aio/backends/_graph/`)." **This plan deliberately lands the bundle one
+  step earlier, in GR-CONTRACT** (step 2), which does *not* create the
+  sub-package — so it diverges from the ADR's literal packaging. The
+  reasons: the bundle is fully backend-independent (runtime class + Dafny
+  variant + `_raise_if_err` dispatch + ERR-013 test need no `GraphBackend`);
+  landing it in the "contract before the backend" step is more faithful to
+  the BK-237 *contract-expanding* DoD than bundling it with backend code;
+  it de-bloats the already-heavy GR-CORE; and GR-CORE's `http.py`
+  423→`ResourceLocked` mapping then references a class that already exists.
+  **The ADR's *binding* concern is preserved**: its stated rationale is
+  "the Dafny variant cannot land without the runtime class to raise it,"
+  and the bundle still ships class + variant + dispatch **together** in
+  one PR — only the PR's *position* moves, not the coupling. This is a
+  packaging deviation recorded here, **not** a spec/ADR edit (the ADR file
+  is untouched). A reviewer who prefers strict ADR-0024 packaging can pull
+  the bundle back into GR-CORE (or collapse GR-CONTRACT..GR-MUTATE into one
+  Graph PR) with no change to *what* lands — only *how finely* it is split.
+- **Finer decomposition than ADR-0024 contemplated.** ADR-0024 assumed a
+  single "Graph backend" PR; this plan splits it (GR-CORE..GR-MUTATE).
+  That is a decomposition choice, not a contradiction of any ADR.
 
 ## Spec follow-ups
 
-None identified during planning. Spec 044, RFC-0010, and ADRs
-0021..0024 are internally consistent and sufficient to implement against;
-the only ADR-vs-plan nuance is the packaging interpretation recorded
-under *Alignment notes*, which does not require a spec change. If
-implementation surfaces a genuine spec drift, record it here and stop
-(do not silently amend the baseline).
+No spec *content* drift identified. Spec 044, RFC-0010, and ADRs
+0021..0024 are internally consistent and sufficient to implement against.
+The one ADR-vs-plan divergence is a **packaging deviation** — landing the
+`ResourceLocked` bundle in GR-CONTRACT rather than the `_graph` sub-package
+PR per ADR-0024's wording — recorded under *Alignment notes*. It changes
+no testable contract and edits no spec/ADR file (the bundle's binding
+coupling is preserved), so it is a plan-level decision, not a spec
+amendment. If implementation surfaces a genuine spec-content drift, record
+it here and stop (do not silently amend the baseline).
 
 ## Non-goals for this roadmap
 
