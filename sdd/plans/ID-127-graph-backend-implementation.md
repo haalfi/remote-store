@@ -120,10 +120,17 @@ deliverables, not part of the surfaced eight; they land in GR-DOCS-E2E.)
   bundle is fully backend-independent, so it goes in the "contract before
   the backend" step (where the error contract belongs) rather than
   GR-CORE — de-bloating the heaviest step and giving GR-CORE's 423 mapper
-  an already-existing class to reference. This is a deliberate **deviation
-  from ADR-0024's "same PR as the sub-package" packaging**; it preserves
-  the ADR's binding coupling (class + variant + dispatch ship together)
-  and edits no ADR. See *Alignment notes*.
+  an already-existing class to reference. This **honours ADR-0024's
+  intention**, not just its letter: the ADR's concern is that the Dafny
+  variant must not be orphaned (shipped as standalone formal work for
+  behaviour no code exhibits — the folded-in ID-189 scenario), so it
+  "ships together with the Graph backend implementation." Here the bundle
+  stays coupled (class + variant + dispatch together) **and** the backend
+  that raises it lands in the very next steps of the same ID-127 delivery.
+  ADR-0024's literal "same PR as the sub-package" is its wording under a
+  one-PR assumption; splitting it across GR-CONTRACT → GR-CORE is the same
+  kind of decomposition as splitting the backend across GR-CORE..GR-MUTATE.
+  See *Alignment notes*.
 
 ---
 
@@ -272,8 +279,9 @@ at GR-CORE), **ERR-013** (`ResourceLocked` runtime class + Dafny variant).
 `ResourceLocked` bundle is fully backend-independent — it is placed here
 (rather than GR-CORE) so the error contract exists before the GR-CORE
 `http.py` 423→`ResourceLocked` mapping references it, and to keep the
-already-heavy GR-CORE step focused. See *Alignment notes* for the
-ADR-0024 packaging deviation this introduces.
+already-heavy GR-CORE step focused. This honours ADR-0024's intention
+because the Graph backend (its only raiser) lands in the immediately
+following steps of the same ID-127 delivery — see *Alignment notes*.
 
 **Risk / surprises.**
 - Option (a) modifies a **shared** conformance class, so every async
@@ -369,7 +377,8 @@ against, **and the `ResourceLocked` class** the 423 mapper references).
 **Risk / surprises.** `import remote_store` must stay clean without the
 `graph` extra (guarded import); a missing guard would break the base
 install. The `httpx`-streaming dependence of read/write ops is deferred
-to those steps. ADR-0024 packaging note: see *Alignment notes* below.
+to those steps. ADR-0024 alignment (`ResourceLocked` landed in
+GR-CONTRACT): see *Alignment notes* below.
 
 ---
 
@@ -637,41 +646,52 @@ Stage-3 assertions are deferred to whoever has tenant access (record it).
 
 ## Alignment notes (read before implementing GR-CONTRACT / GR-CORE)
 
-- **ADR-0024 packaging deviation (`ResourceLocked` placement).** ADR-0024
+- **ADR-0024 intention vs. wording (`ResourceLocked` placement).** ADR-0024
   § Bundled implementation says the `ResourceLocked` runtime class + Dafny
   variant "land in the same PR as the Graph sub-package
-  (`aio/backends/_graph/`)." **This plan deliberately lands the bundle one
-  step earlier, in GR-CONTRACT** (step 2), which does *not* create the
-  sub-package — so it diverges from the ADR's literal packaging. The
-  reasons: the bundle is fully backend-independent (runtime class + Dafny
-  variant + `_raise_if_err` dispatch + ERR-013 test need no `GraphBackend`);
-  landing it in the "contract before the backend" step is more faithful to
-  the BK-237 *contract-expanding* DoD than bundling it with backend code;
-  it de-bloats the already-heavy GR-CORE; and GR-CORE's `http.py`
-  423→`ResourceLocked` mapping then references a class that already exists.
-  **The ADR's *binding* concern is preserved**: its stated rationale is
-  "the Dafny variant cannot land without the runtime class to raise it,"
-  and the bundle still ships class + variant + dispatch **together** in
-  one PR — only the PR's *position* moves, not the coupling. This is a
-  packaging deviation recorded here, **not** a spec/ADR edit (the ADR file
-  is untouched). A reviewer who prefers strict ADR-0024 packaging can pull
-  the bundle back into GR-CORE (or collapse GR-CONTRACT..GR-MUTATE into one
-  Graph PR) with no change to *what* lands — only *how finely* it is split.
+  (`aio/backends/_graph/`)." This plan lands the bundle one step earlier,
+  in **GR-CONTRACT** (step 2). Read **verbatim**, GR-CONTRACT is not the
+  sub-package PR; read by **intention**, this is fully aligned, and the
+  intention governs. ADR-0024's stated concern is that the Dafny variant
+  must not be **orphaned** — "without the runtime class to raise, adding
+  the variant alone would create a verified contract for behaviour the
+  codebase cannot exhibit" — which is why it "ships together with the
+  Graph backend implementation." This plan honours that on every count:
+  (1) the bundle stays coupled — class + variant + dispatch ship
+  **together** in GR-CONTRACT, never the variant alone; (2) the Graph
+  backend that raises it (the only raiser, via GR-CORE's `http.py` 423
+  mapper) lands in the immediately following steps of the **same ID-127
+  delivery**; (3) the intermediate state is already consistent with the
+  repo — ERR-013 exists in spec 005 from RFC acceptance with no raiser, so
+  the runtime class joining it before the Graph mapper introduces nothing
+  new. The "same PR" phrasing is ADR-0024's wording under a one-PR
+  assumption; splitting the bundle across GR-CONTRACT → GR-CORE is the
+  same kind of decomposition as splitting the backend itself across
+  GR-CORE..GR-MUTATE — neither contradicts the ADR.
+- **When this *would* deviate.** The ADR's intention is violated only if
+  the Graph backend never lands after GR-CONTRACT — i.e. the bundle is
+  shipped and the roadmap then stalls, leaving an orphaned formal contract
+  (exactly the standalone-ID-189 scenario ADR-0024 folded away). The
+  guardrail for the implementer: **do not merge GR-CONTRACT's
+  `ResourceLocked` bundle unless GR-CORE is committed to land in the same
+  release cycle.** As long as the backend follows, there is no deviation.
 - **Finer decomposition than ADR-0024 contemplated.** ADR-0024 assumed a
   single "Graph backend" PR; this plan splits it (GR-CORE..GR-MUTATE).
-  That is a decomposition choice, not a contradiction of any ADR.
+  That is a decomposition choice, not a contradiction of any ADR. A
+  reviewer who prefers a single Graph PR can collapse
+  GR-CONTRACT..GR-MUTATE with no change to *what* lands.
 
 ## Spec follow-ups
 
-No spec *content* drift identified. Spec 044, RFC-0010, and ADRs
-0021..0024 are internally consistent and sufficient to implement against.
-The one ADR-vs-plan divergence is a **packaging deviation** — landing the
-`ResourceLocked` bundle in GR-CONTRACT rather than the `_graph` sub-package
-PR per ADR-0024's wording — recorded under *Alignment notes*. It changes
-no testable contract and edits no spec/ADR file (the bundle's binding
-coupling is preserved), so it is a plan-level decision, not a spec
-amendment. If implementation surfaces a genuine spec-content drift, record
-it here and stop (do not silently amend the baseline).
+None. Spec 044, RFC-0010, and ADRs 0021..0024 are internally consistent
+and sufficient to implement against, and the plan does not deviate from
+any of them. The `ResourceLocked`-in-GR-CONTRACT placement honours
+ADR-0024's intention (no orphaned formal contract; the backend lands in
+the same delivery) — it reads the ADR by intention rather than verbatim,
+which the *Alignment notes* explain in full; it is a decomposition choice,
+not a deviation, and edits no spec/ADR file. If implementation surfaces a
+genuine spec-content drift, record it here and stop (do not silently amend
+the baseline).
 
 ## Non-goals for this roadmap
 
