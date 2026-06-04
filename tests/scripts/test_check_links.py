@@ -325,7 +325,7 @@ def test_fragment_gate_lazy_strict_heading_slug_silent_without_consumer(check_li
     # (sync + async on one page, two-presentation ripple tables) live here.
     # Lazy-strict: stay silent until a live consumer references the slug.
     (tmp_path / "target.md").write_text("## Rules\n\nfirst\n\n## Rules\n")
-    (tmp_path / "README.md").write_text("# README — no inbound section ref.\n")
+    (tmp_path / "README.md").write_text("# README - no inbound section ref.\n")
     broken = check_links_mod.check_repo_link_fragments(tmp_path)
     assert broken == []
 
