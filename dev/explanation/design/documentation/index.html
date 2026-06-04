@@ -9783,6 +9783,7 @@
 <p>Authoritative source for documentation structure and standards. Governs the shape and quality of all docs work: new pages, restructuring, and reviews.</p>
 <p>Part of the documentation framework (see <a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#documentation-framework"><code>CLAUDE.md</code> § Documentation framework</a>): placement → <a href="../authoring/"><code>sdd/AUTHORING.md</code></a>; longevity → <a href="../content-rules/"><code>sdd/CONTENT-RULES.md</code></a>.</p>
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
+<p><a id="diataxis-placement"></a></p>
 <h3 id="1-diataxis-placement">1. Diataxis placement<a class="headerlink" href="#1-diataxis-placement" title="Permanent link">&para;</a></h3>
 <p>Every user-facing documentation page belongs to exactly one category:</p>
 <ol>
@@ -9793,6 +9794,7 @@
 <li>If unsure, it is probably a Guide.</li>
 </ol>
 <p>Pages that try to be two things at once must be split.</p>
+<p><a id="content-homes"></a></p>
 <h3 id="2-content-homes">2. Content homes<a class="headerlink" href="#2-content-homes" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -9852,9 +9854,9 @@
 </tr>
 </tbody>
 </table>
-<p>For file classification (repo-only / docs-only / dual), see <a href="../authoring/"><code>sdd/AUTHORING.md</code></a> Rule 1. For SDD artefact path patterns, naming, and lifecycle (specs, ADRs, RFCs, research, audits), see <a href="../process/#document-types"><code>sdd/000-process.md</code> § Document types</a>.</p>
+<p>For file classification (repo-only / docs-only / dual), see <a href="../authoring/#file-classification"><code>sdd/AUTHORING.md</code> Rule 1</a>. For SDD artefact path patterns, naming, and lifecycle (specs, ADRs, RFCs, research, audits), see <a href="../process/#document-types"><code>sdd/000-process.md</code> § Document types</a>.</p>
 <h3 id="3-docstring-completeness">3. Docstring completeness<a class="headerlink" href="#3-docstring-completeness" title="Permanent link">&para;</a></h3>
-<p>Format and style rules are in <code>sdd/DESIGN.md</code> § 4. This section covers what mkdocstrings requires per symbol type:</p>
+<p>Format and style rules are in <a href="../design/#docstrings"><code>sdd/DESIGN.md</code> § 4</a>. This section covers what mkdocstrings requires per symbol type:</p>
 <table>
 <thead>
 <tr>
@@ -9911,6 +9913,7 @@
 </tbody>
 </table>
 <p>No TODOs or placeholders in published docstrings.</p>
+<p><a id="cross-linking-requirements"></a></p>
 <h3 id="4-cross-linking-requirements">4. Cross-linking requirements<a class="headerlink" href="#4-cross-linking-requirements" title="Permanent link">&para;</a></h3>
 <p>Choose the link target based on which presentation hosts the destination (see <a href="../authoring/#two-presentations-one-source"><code>sdd/AUTHORING.md</code></a> for the two presentations):</p>
 <ul>
@@ -10032,7 +10035,7 @@
 <p>Supplementary context that does not fit Args/Returns/Raises goes in a <code>Notes:</code> block, not scattered inline or appended to the summary line.</p>
 <p>Use <code>Example:</code> (not <code>Usage:</code>) for code snippets in docstrings. In class/function docstrings, mkdocstrings renders <code>Example:</code> as a collapsible box. For module-level docstrings, use MkDocs admonition syntax: <code>!!! example</code> with indented code blocks (Google sections don't parse in module docstrings).</p>
 <h3 id="pr-documentation-review-checklist">PR documentation review checklist<a class="headerlink" href="#pr-documentation-review-checklist" title="Permanent link">&para;</a></h3>
-<p>The SDD workflow includes a DOCS step (see <code>sdd/000-process.md</code> rule 6). When reviewing PRs, check:</p>
+<p>The SDD workflow includes a DOCS step (see <a href="../process/#workflows"><code>sdd/000-process.md</code> Rule 6</a>). When reviewing PRs, check:</p>
 <ul>
 <li>Docstrings meet Rule 3 for all new/changed public symbols.</li>
 <li>Relevant guide updated (if behavior changed).</li>
@@ -10040,6 +10043,7 @@
 <li>CHANGELOG stub present (one line per completed item; see ripple-check table <strong>CHANGELOG entry</strong>).</li>
 <li>No orphaned cross-links (renamed/removed APIs).</li>
 </ul>
+<p><a id="api-page-building-blocks"></a></p>
 <h3 id="api-page-building-blocks">API page building blocks<a class="headerlink" href="#api-page-building-blocks" title="Permanent link">&para;</a></h3>
 <p>Reusable structural blocks for <code>docs-src/reference/api/</code> pages. <code>store.md</code> is the
 canonical example. Apply the appropriate page-type template (see below) and

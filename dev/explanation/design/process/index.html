@@ -9593,18 +9593,20 @@
 
 <h2 id="intent-scope">Intent &amp; Scope<a class="headerlink" href="#intent-scope" title="Permanent link">&para;</a></h2>
 <p>Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC formats, backlog tiers, and test traceability. Governs all <code>sdd/</code> content.</p>
+<p><a id="rules"></a></p>
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
 <ol>
 <li><strong>No code without a spec</strong>: every testable contract must have a spec section ID.</li>
-<li><strong>No spec without tests</strong>: every spec section must have at least one test with <code>@pytest.mark.spec("ID")</code>.</li>
+<li><a id="spec-test-traceability"></a><strong>No spec without tests</strong>: every spec section must have at least one test with <code>@pytest.mark.spec("ID")</code>.</li>
 <li><strong>Specs are authoritative</strong>: if code and spec disagree, the code is wrong.</li>
 <li><strong>ADRs are immutable once Accepted</strong>: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.</li>
 <li><strong>IDs are stable</strong>: once assigned, a section ID never changes meaning. Deprecated sections are marked <code>[DEPRECATED]</code>, not removed.</li>
-<li><strong>Workflows</strong>:</li>
+<li><a id="workflows"></a><strong>Workflows</strong>:</li>
 <li><strong>Features</strong>: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.</li>
 <li><strong>Bug fixes</strong>: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec.</li>
 </ol>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
+<p><a id="spec-format"></a></p>
 <h3 id="spec-format">Spec format<a class="headerlink" href="#spec-format" title="Permanent link">&para;</a></h3>
 <p>Each spec uses numbered section IDs with a module prefix declared at the top of each file:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gu">## &lt;PREFIX&gt;-NNN: &lt;Rule Title&gt;</span>
@@ -9637,6 +9639,7 @@ no subdirectory split is used while the tooling-spec count is small.</p>
 Completed items live in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md"><code>sdd/BACKLOG-DONE.md</code></a>.</p>
 <p><code>BACKLOG.md</code> is the single source of truth for ID prefixes, status conventions,
 completion workflow, and section structure. See its "How this file works" header.</p>
+<p><a id="feature-type-definition-of-done"></a></p>
 <h3 id="feature-type-definition-of-done">Feature-type Definition of Done<a class="headerlink" href="#feature-type-definition-of-done" title="Permanent link">&para;</a></h3>
 <p>Rule 6 gives a feature's lifecycle order; the two checklists below give its
 exit criteria. Pick the row that matches the change and treat each box as a
@@ -9678,6 +9681,7 @@ one <code>Store</code> or backend surface onto another.</p>
 <li>[ ] <strong><code>filterwarnings = error</code>-clean suite</strong> under the global policy in
   <code>pyproject.toml</code>.</li>
 </ul>
+<p><a id="document-types"></a></p>
 <h3 id="document-types">Document types<a class="headerlink" href="#document-types" title="Permanent link">&para;</a></h3>
 <p>Five document categories live under <code>sdd/</code>. Each has a clear purpose and lifecycle:</p>
 <table>

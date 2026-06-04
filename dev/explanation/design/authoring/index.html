@@ -9520,10 +9520,11 @@ placement of all <code>.md</code> content in the repository.</p>
 framework</a>): structure →
 <a href="../documentation/"><code>sdd/DOCUMENTATION.md</code></a>; longevity →
 <a href="../content-rules/"><code>sdd/CONTENT-RULES.md</code></a>.</p>
+<p><a id="rules"></a></p>
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
-<p><strong>File classification.</strong> Every <code>.md</code> belongs to exactly one class.
+<p><a id="file-classification"></a><strong>File classification.</strong> Every <code>.md</code> belongs to exactly one class.
    Classification follows a marker on the file or a directory default
    when no marker is present. A file with no marker and no matching
    default is unclassified and fails G-01. See <em>Classification markers</em>
@@ -9539,11 +9540,11 @@ framework</a>): structure →
    and pure anchors are exempt. The bridge (Rule 4) rewrites on-disk
    targets to docs-site URLs at build time so both presentations render
    correctly. Dual files additionally use only plain Markdown; see
-   <a href="../content-rules/#rules"><code>sdd/CONTENT-RULES.md</code> Rule 6</a> for the
+   <a href="../content-rules/#code-examples-sourced"><code>sdd/CONTENT-RULES.md</code> Rule 6</a> for the
    one snippet exception.</p>
 </li>
 <li>
-<p><strong>One bridge mechanism.</strong> The bridge presents dual files on the docs
+<p><a id="one-bridge-mechanism"></a><strong>One bridge mechanism.</strong> The bridge presents dual files on the docs
    site and rewrites on-disk links in docs-only files to docs-site URLs
    at build time. Exactly one bridge applies; new mechanisms are not
    added. The implementation lives in the build tooling.</p>
@@ -9590,7 +9591,7 @@ docs site"; host configuration is a deployment concern, not an authoring one.</p
 <h3 id="where-does-my-new-file-go">Where does my new file go?<a class="headerlink" href="#where-does-my-new-file-go" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>Docs-site only?</strong> → <code>docs-src/</code> (Diataxis bucket per
-   <a href="../documentation/#1-diataxis-placement"><code>DOCUMENTATION.md</code></a> Rule 1).</li>
+   <a href="../documentation/#diataxis-placement"><code>DOCUMENTATION.md</code> Rule 1</a>).</li>
 <li><strong>Pure internal tooling</strong> (<code>sdd/BACKLOG.md</code>, <code>sdd/CLAUDE-REFERENCE.md</code>,
    <code>CLAUDE.md</code>, <code>CODE_OF_CONDUCT.md</code>, <code>SECURITY.md</code>, agent harness
    files)? → repo path; declare repo-only.</li>
@@ -9600,8 +9601,7 @@ docs site"; host configuration is a deployment concern, not an authoring one.</p
    artefacts (specs, ADRs, RFCs, research, audits). The bridge handles
    the docs-site presentation. See
    <a href="https://github.com/haalfi/remote-store/blob/master/sdd/CLAUDE-REFERENCE.md"><code>sdd/CLAUDE-REFERENCE.md</code></a> and
-   <a href="../../contributing/"><code>CONTRIBUTING.md</code></a> § Authoritative Document
-   Format Scope for the path map.</li>
+   <a href="../../contributing/#authoritative-document-format"><code>CONTRIBUTING.md</code> § Authoritative Document Format</a> Scope subsection for the path map.</li>
 </ol>
 <p>If unsure, declare dual.</p>
 <h3 id="classification-markers">Classification markers<a class="headerlink" href="#classification-markers" title="Permanent link">&para;</a></h3>
@@ -9696,7 +9696,7 @@ and default to repo-only.</p>
 </ul>
 <p>For the complete path map see
 <a href="https://github.com/haalfi/remote-store/blob/master/sdd/CLAUDE-REFERENCE.md"><code>sdd/CLAUDE-REFERENCE.md</code></a> and
-<a href="../../contributing/"><code>CONTRIBUTING.md</code> § Authoritative Document Format</a>.</p>
+<a href="../../contributing/#authoritative-document-format"><code>CONTRIBUTING.md</code> § Authoritative Document Format</a>.</p>
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>&lt;!-- A new guide. docs-src/ is docs-only by default; no marker needed. --&gt;
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="gh"># Streaming reads</span>

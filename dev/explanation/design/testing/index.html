@@ -9604,7 +9604,7 @@
 <h2 id="intent-scope">Intent &amp; Scope<a class="headerlink" href="#intent-scope" title="Permanent link">&para;</a></h2>
 <p>Authoritative source for test <strong>quality</strong> rules and top-level
 <strong>placement</strong> of test files in <code>tests/</code>. Companion to
-<a href="../design/#11-test-style"><code>sdd/DESIGN.md</code> § 11 (test style)</a>.</p>
+<a href="../design/#test-style"><code>sdd/DESIGN.md</code> § 11 (test style)</a>.</p>
 <p>For test <strong>architecture</strong> (the shape of the test tree and how backends
 are wired into it), see
 <a href="../specs/048-testing-architecture/"><code>sdd/specs/048-testing-architecture.md</code></a>
@@ -9711,6 +9711,7 @@ enforces three rules at CI time, all derived from spec 048:</p>
   <code>src/remote_store/ext/&lt;x&gt;.py</code>. The single namespace-wide contract test
   (<code>tests/ext/test_contract.py</code>) is on the script's allow-list.</li>
 </ul>
+<p><a id="rules"></a></p>
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
@@ -9735,7 +9736,7 @@ enforces three rules at CI time, all derived from spec 048:</p>
    — mock at our boundary (Backend ABC, wrapper, protocol), never third-party internals.</p>
 </li>
 <li>
-<p><strong>Prefer real dependencies over mocks</strong> [review-enforced]
+<p><a id="prefer-real-dependencies"></a><strong>Prefer real dependencies over mocks</strong> [review-enforced]
    — <code>MemoryBackend</code>, in-memory SQLite, <code>pytest-httpserver</code> before reaching for mocks.</p>
 </li>
 <li>

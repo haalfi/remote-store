@@ -9476,10 +9476,11 @@ all content: README, guides, docstrings, and inline doc comments.</p>
 framework</a>): placement →
 <a href="../authoring/"><code>sdd/AUTHORING.md</code></a>; structure →
 <a href="../documentation/"><code>sdd/DOCUMENTATION.md</code></a>.</p>
+<p><a id="rules"></a></p>
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
-<p><strong>The 6-month test.</strong> [review-enforced]
+<p><a id="six-month-test"></a><strong>The 6-month test.</strong> [review-enforced]
    Before writing any sentence, ask: "Would this still be accurate in 6 months?"
    If not, it belongs in a linked SSoT or generated artefact, not in stable prose.</p>
 </li>
@@ -9500,17 +9501,17 @@ framework</a>): placement →
    Every fact lives in exactly one authoritative place; everywhere else is a link
    or a paraphrase of the principle. Authoritative homes: file placement in
    <a href="../authoring/"><code>sdd/AUTHORING.md</code></a> Rule 1; content type homes in
-   <a href="../documentation/#2-content-homes"><code>sdd/DOCUMENTATION.md</code> § 2</a>. README and
+   <a href="../documentation/#content-homes"><code>sdd/DOCUMENTATION.md</code> § 2</a>. README and
    guides link; they do not copy.</p>
 </li>
 <li>
-<p><strong>Source-code facts stay in source.</strong> [review-enforced]
+<p><a id="source-code-facts-stay-in-source"></a><strong>Source-code facts stay in source.</strong> [review-enforced]
    API signatures, capability sets, type annotations, default values live in code.
    Docs describe the pattern and link to the reference; they do not reproduce the
    values.</p>
 </li>
 <li>
-<p><strong>Code examples are sourced, not written.</strong> [review-enforced]
+<p><a id="code-examples-sourced"></a><strong>Code examples are sourced, not written.</strong> [review-enforced]
    Doc code blocks come from <code>examples/snippets/</code> via <code>pymdownx.snippets</code>
    <code>--8&lt;--</code> regions, so CI catches API drift. Hand-written fences are allowed
    only when the snippet cannot execute in CI (e.g. needs real credentials);

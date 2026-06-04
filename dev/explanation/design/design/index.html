@@ -9671,6 +9671,7 @@
 <li><code>X | None</code> replaces <code>Optional[X]</code>, <code>X | Y</code> replaces <code>Union[X, Y]</code> (PEP 604).</li>
 <li><code>typing</code> imports only for generics not yet built-in (<code>Callable</code>, <code>Iterator</code>, etc.).</li>
 </ul>
+<p><a id="docstrings"></a></p>
 <h3 id="4-docstrings">4. Docstrings<a class="headerlink" href="#4-docstrings" title="Permanent link">&para;</a></h3>
 <p>Google style (<code>Args:</code>, <code>Returns:</code>, <code>Raises:</code>). Short and purpose-focused:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n">WritableContent</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -9786,6 +9787,7 @@ regions there instead.</p>
 <p>f-strings with context for human-readable tracebacks. Structured attributes for programmatic access:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </code></pre></div>
+<p><a id="test-style"></a></p>
 <h3 id="11-test-style">11. Test Style<a class="headerlink" href="#11-test-style" title="Permanent link">&para;</a></h3>
 <p>Tests are grouped into classes by spec aspect. The class docstring references the spec IDs covered:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TestRemotePathNormalization</span><span class="p">:</span>
