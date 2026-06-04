@@ -319,6 +319,27 @@ def test_extract_anchors_anchor_plus_matching_heading_not_duplicate(check_links_
     assert "rules" in idx.ids
 
 
+def test_fragment_gate_resolves_in_page_fragment(check_links_mod, tmp_path):
+    # `[text](#frag)` in-page refs must resolve against the source file's
+    # own anchors. Closes the in-page leg of ID-180; the explicit anchor
+    # planted above the heading is what the link targets.
+    (tmp_path / "README.md").write_text(
+        '[jump](#adding-a-new-backend)\n\n<a id="adding-a-new-backend"></a>\n## Adding a New Backend\n'
+    )
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert broken == []
+
+
+def test_fragment_gate_flags_broken_in_page_fragment(check_links_mod, tmp_path):
+    # In-page ref that points at no anchor or matching heading in the same
+    # file must be flagged. This is the rot the in-page leg of ID-180 closes:
+    # if the heading is renamed and the anchor removed, the link breaks
+    # silently today; the gate must catch it.
+    (tmp_path / "README.md").write_text("[jump](#section-that-vanished)\n\n## Some Other Section\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert any("no anchor #section-that-vanished" in b.resolved for b in broken), [b.resolved for b in broken]
+
+
 def test_fragment_gate_lazy_strict_heading_slug_silent_without_consumer(check_links_mod, tmp_path):
     # Two `## Rules` produce a heading-slug collision, but nothing links to
     # `target.md#rules` — pages with intentional structural duplication

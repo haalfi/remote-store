@@ -351,17 +351,42 @@ def check_repo_link_fragments(repo_root: Path) -> list[BrokenLink]:
             text = md.read_text(encoding="utf-8")
         except OSError:
             continue
-        for lineno, raw in _extract_links(text):
+        for lineno, raw in _iter_link_targets(text):
+            # Fragment gate uses _iter_link_targets directly (not _extract_links)
+            # because in-page `#frag` refs — which _extract_links drops as
+            # uninteresting to the on-disk gate — are exactly the shape this
+            # gate needs to see. External URLs and fragmentless paths get
+            # filtered here.
+            if any(raw.startswith(p) for p in _EXTERNAL_PREFIXES):
+                continue
             if "#" not in raw:
                 continue
             target, _, frag = raw.partition("#")
-            if not frag or not target:
+            if not frag:
                 continue
             # mkdocstrings symbol IDs (e.g. ``remote_store.Store.read``) are
             # generated at docs-build time and never appear in source `.md` as
             # `<a id>` tags or heading slugs. Detect by the Python-attribute
             # dot which GitHub slug rules would have stripped.
             if "." in frag:
+                continue
+            if not target:
+                # In-page reference (`[text](#frag)`). Resolve against the
+                # current file's own anchor index. Closes the in-page leg of
+                # ID-180; cross-file form handled below.
+                idx = _anchors_for(md)
+                if idx is None:
+                    continue
+                referenced_frags.setdefault(md, set()).add(frag)
+                if frag not in idx.ids:
+                    broken.append(
+                        BrokenLink(
+                            source=md,
+                            line=lineno,
+                            raw=raw,
+                            resolved=f"no anchor #{frag} in {md.relative_to(repo_root)}",
+                        )
+                    )
                 continue
             tgt_path = (md.parent / target).resolve()
             if not tgt_path.exists() or tgt_path.suffix != ".md":

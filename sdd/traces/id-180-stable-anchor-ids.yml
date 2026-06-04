@@ -131,7 +131,7 @@ phases:
         extract: "Not a new process doc; convention extension to an existing one (link discipline). No CHANGELOG required per audience = library.maintainer + contributor.process."
 expected_ripples:
   - sdd/BACKLOG.md
-review_rounds: 2
+review_rounds: 3
 surprising_ripples:
   # Initial sweep missed CLAUDE-REFERENCE.md ripple-table row prose (both
   # Pre-work and Detailed presentations), CONTRIBUTING.md § Project Principles
@@ -147,3 +147,10 @@ surprising_ripples:
   # had live inbound consumer refs, so a lazy-strict rule was adopted
   # (collision reported only when a live consumer references the slug).
   - docs-src/reference/api/aio.md
+  # Third review round caught the in-page `[text](#frag)` coverage gap:
+  # the gate validated cross-file `path.md#frag` but `_extract_links`
+  # dropped bare `#frag` targets entirely, so the two same-page refs this
+  # PR added in CONTRIBUTING.md (#adding-a-new-backend, #adding-an-extension)
+  # had no rot protection. Fragment gate switched to _iter_link_targets
+  # so it sees in-page refs and resolves them against the source file's
+  # own anchor index.
