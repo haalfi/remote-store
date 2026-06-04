@@ -72,9 +72,9 @@ Read this before starting. One line per trigger.
 | Bug fix                       | BACKLOG item, CHANGELOG stub under `[Unreleased]`, failing test **before** fix, spec if invariant contradicted |
 | Backlog item touched          | Live trace at `sdd/traces/<id>-<slug>.yml` ([CLAUDE.md § Trace authoring](../CLAUDE.md#trace-authoring)); schema at `sdd/traces/_schema.yml`; `audience` drives the CHANGELOG-required rule |
 | CHANGELOG entry               | One-line `- <ID>: <Title>` at top of `[Unreleased]`; release skill expands and groups |
-| Version number                | `bump-my-version` (drives `pyproject` file list), then `hatch run gen-graph`; full checklist in CONTRIBUTING § Phase 2 |
+| Version number                | `bump-my-version` (drives `pyproject` file list), then `hatch run gen-graph`; full checklist in [CONTRIBUTING § Phase 2](../CONTRIBUTING.md#phase-2) |
 | Source/test/spec counts       | README badge + CI coverage report (no manual table) |
-| New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) Scope subsection, sibling authority back-references, `.claude/skills/*/SKILL.md` foundation lists, `docs-src/explanation/design/_nav.yml`, and this ripple-check |
+| New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) (Scope subsection within), sibling authority back-references, `.claude/skills/*/SKILL.md` foundation lists, `docs-src/explanation/design/_nav.yml`, and this ripple-check |
 
 <a id="detailed-checklist"></a>
 ### Detailed checklist
@@ -180,9 +180,9 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |----------------------------|-----------------------------------------------------------|
 | **Docs navigation**        | Per-section `_nav.yml` files in `docs-src/`,              |
 |                            | `docs-src/guides/backends/index.md`,                      |
-|                            | `sdd/AUTHORING.md` Rule 1 (file classification),          |
-|                            | `sdd/DOCUMENTATION.md` § Content homes                    |
-| **API reference page**     | `sdd/DOCUMENTATION.md` § API page building blocks         |
+|                            | [AUTHORING.md Rule 1](AUTHORING.md#file-classification),  |
+|                            | [DOCUMENTATION.md § Content homes](DOCUMENTATION.md#content-homes) |
+| **API reference page**     | [DOCUMENTATION.md § API page building blocks](DOCUMENTATION.md#api-page-building-blocks) |
 | (new or restructured)      | and building blocks for required sections                 |
 | **Example script**         | README examples table, generated `tutorial/examples/<slug>.md` |
 |                            | `tests/test_examples.py` import                           |
@@ -190,8 +190,8 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | (any prose change that touches | `spec NNN`, `RFC-NNNN`, `ADR-NNNN`, `PR #NNN`) leaking |
 | docstrings of public symbols | into a docstring under `src/remote_store/` or any        |
 | or `docs-src/` markdown)    | `.md` under `docs-src/` (plus README, FEATURES,           |
-|                            | CONTRIBUTING). Per `sdd/CONTENT-RULES.md` Rules 1 +      |
-|                            | 5: rewrite the sentence in behavioural terms and put     |
+|                            | CONTRIBUTING). Per [CONTENT-RULES.md Rules 1 + 5](CONTENT-RULES.md#rules): |
+|                            | rewrite the sentence in behavioural terms and put        |
 |                            | the internal coordinate in the matching `sdd/specs/`    |
 |                            | clause or the BACKLOG entry instead. Out of scope:      |
 |                            | `sdd/**`, CHANGELOG, DEVELOPMENT_STORY, agent harness   |
@@ -205,8 +205,8 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | **Bug fix**                | `sdd/BACKLOG.md` (item), `CHANGELOG.md` (stub line under  |
 |                            | `[Unreleased]`), failing test **before** the fix, spec if |
 |                            | the bug contradicts a spec invariant                      |
-| **Backlog item touched**   | Live trace at `sdd/traces/<id>-<slug>.yml` per `CLAUDE.md`|
-|                            | § Trace authoring (mandatory). Created/updated as work    |
+| **Backlog item touched**   | Live trace at `sdd/traces/<id>-<slug>.yml` per [CLAUDE.md § Trace authoring](../CLAUDE.md#trace-authoring) |
+|                            | (mandatory). Created/updated as work                      |
 |                            | proceeds (not retrospectively); ships in same PR; schema  |
 |                            | at `sdd/traces/_schema.yml`. `audience` priority-sorted   |
 |                            | drives the CHANGELOG-required rule.                       |
@@ -216,14 +216,14 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | **Version number**         | Run `bump-my-version` (manages the files listed in        |
 |                            | `[[tool.bumpversion.files]]` in `pyproject.toml`);        |
 |                            | then `hatch run gen-graph` to re-stamp `graph.json`.      |
-|                            | Full checklist: `CONTRIBUTING.md` § Phase 2.              |
+|                            | Full checklist: [CONTRIBUTING.md § Phase 2](../CONTRIBUTING.md#phase-2). |
 | **Source/test/spec counts**| README badge + CI coverage report (no manual table)       |
-| **New authoritative**      | `CLAUDE.md` § Documentation framework (if part of the     |
-| **process doc in `sdd/`**  | trio), `CONTRIBUTING.md` Authoritative Document Format    |
-|                            | § Scope, sibling authority docs (back-references in       |
-|                            | their Intent & Scope), `.claude/skills/*/SKILL.md`        |
-|                            | foundation lists, `docs-src/explanation/design/_nav.yml`, |
-|                            | and this ripple-check                                     |
+| **New authoritative**      | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) |
+| **process doc in `sdd/`**  | (if part of the trio), [CONTRIBUTING.md § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) |
+|                            | (Scope subsection within), sibling authority docs         |
+|                            | (back-references in their Intent & Scope),                |
+|                            | `.claude/skills/*/SKILL.md` foundation lists,             |
+|                            | `docs-src/explanation/design/_nav.yml`, and this ripple-check |
 
 ---
 

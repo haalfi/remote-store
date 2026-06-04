@@ -8,7 +8,7 @@ This project follows **Spec-Driven Development (SDD)**: every feature starts as 
 ## Project Principles
 
 The universal working principles for this repo are listed in
-[`CLAUDE.md`](CLAUDE.md) § Principles. They apply to any contributor,
+[`CLAUDE.md` § Principles](CLAUDE.md#principles). They apply to any contributor,
 not only automated agents.
 
 ## Documentation framework
@@ -381,6 +381,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] Guides: new/changed backend guides are accurate
 - [ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)
 
+<a id="phase-2"></a>
 ### Phase 2: Version bump (on a release branch)
 
 - [ ] Create release branch: `git checkout -b release-vX.Y.Z`

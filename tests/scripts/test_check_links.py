@@ -306,13 +306,12 @@ def test_extract_anchors_inline_anchor_in_list_item(check_links_mod):
     # Rule list items use inline <a id> before the bold token.
     text = '## Rules\n\n6. <a id="workflows"></a>**Workflows**:\n'
     idx = check_links_mod._extract_anchors(text)
-    # Inline anchor inside a list item is not a section-heading anchor; it must
-    # not be flagged as orphan because its semantic target is the surrounding
-    # list-item content, not a heading.
-    # However our heuristic looks for a heading on the next non-blank line; a
-    # bare list item won't qualify, so we accept that as a known limitation: the
-    # M3 sanity gate is best-effort, M1 (resolution) is what protects users.
+    # Inline anchor inside a list item is co-located with its semantic target
+    # (the list item content); the orphan-suppression branch must skip it so
+    # the live tree's `2. <a id="spec-test-traceability"></a>...` in
+    # sdd/000-process.md does not fire M3.
     assert "workflows" in idx.ids
+    assert idx.orphan_ids == ()
 
 
 def test_is_denylisted_consumer(check_links_mod):
@@ -382,6 +381,23 @@ def test_fragment_gate_reports_duplicate_anchor(check_links_mod, tmp_path):
 def test_fragment_gate_reports_orphan_anchor(check_links_mod, tmp_path):
     (tmp_path / "target.md").write_text('<a id="orph"></a>\n\nNot a heading line.\n')
     (tmp_path / "README.md").write_text("[link](target.md#orph)\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert any("orphan" in b.resolved for b in broken)
+
+
+def test_fragment_gate_reports_duplicate_without_inbound_link(check_links_mod, tmp_path):
+    # Regression: M2 / M3 must cover every Markdown file, not only files reached
+    # as link targets. A duplicate anchor in a doc no consumer happens to point at
+    # would silently slip past otherwise.
+    (tmp_path / "target.md").write_text('<a id="x"></a>\n## A\n\n<a id="x"></a>\n## B\n')
+    (tmp_path / "README.md").write_text("# README\n")
+    broken = check_links_mod.check_repo_link_fragments(tmp_path)
+    assert any("duplicate" in b.resolved for b in broken)
+
+
+def test_fragment_gate_reports_orphan_without_inbound_link(check_links_mod, tmp_path):
+    (tmp_path / "target.md").write_text('<a id="orph"></a>\n\nNot a heading line.\n')
+    (tmp_path / "README.md").write_text("# README\n")
     broken = check_links_mod.check_repo_link_fragments(tmp_path)
     assert any("orphan" in b.resolved for b in broken)
 

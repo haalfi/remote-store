@@ -300,6 +300,14 @@ def check_repo_link_fragments(repo_root: Path) -> list[BrokenLink]:
         anchor_cache[path] = idx
         return idx
 
+    # Two-pass: first populate the anchor cache for every Markdown file the
+    # gate will diagnose, then walk consumer links. Populating M2/M3 only
+    # from link-target visits would silently exempt files no live consumer
+    # references — the orphan or duplicate would sit unnoticed until the
+    # next time someone added a link into them.
+    for md in _git_repo_markdown(repo_root):
+        _anchors_for(md)
+
     for md in _git_repo_markdown(repo_root):
         rel = str(md.relative_to(repo_root))
         if _is_denylisted_consumer(rel):

@@ -59,24 +59,31 @@ phases:
       - file: sdd/AUTHORING.md
         section: "Rules (with concept-named anchors for Rule 1 file-classification and Rule 4 one-bridge-mechanism)"
         read_type: gate
+        extract: "Rule 1 (file classification) cited from DOCUMENTATION.md and CLAUDE-REFERENCE.md ripple-check; Rule 4 (one bridge mechanism) cited from adr-0027. Both anchored inline inside their list items to survive renumbering."
       - file: sdd/DOCUMENTATION.md
         section: "1. Diataxis placement, 2. Content homes, 4. Cross-linking requirements, API page building blocks"
         read_type: gate
+        extract: "Numbered rules: replace existing #1-diataxis-placement / #2-content-homes auto-slug refs with concept-named anchors. API page building blocks cited from CLAUDE-REFERENCE ripple-check; new anchor."
       - file: sdd/CONTENT-RULES.md
         section: "Rules (with concept-named anchors for cited rules)"
         read_type: gate
+        extract: "AUTHORING.md cites Rule 6 (code examples are sourced) at #rules — narrow to #code-examples-sourced. CLAUDE-REFERENCE ripple-check cites Rules 1 + 5 — anchor each by concept (six-month-test, source-code-facts-stay-in-source)."
       - file: sdd/TESTING.md
         section: "Rules (with concept anchor for Rule 6 prefer-real-dependencies)"
         read_type: gate
+        extract: "adr-0025 cites Rule 6 (prefer real dependencies); inline anchor #prefer-real-dependencies survives renumbering."
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / Pre-work index, Detailed checklist, GitHub PR I/O split, Local toolchain, Where do I"
         read_type: gate
+        extract: "All sub-section anchors at H3 level; skills + formal/README cite into these. Also sweep inbound bare-prose refs INSIDE ripple-check rows (CONTENT-RULES Rules 1+5, AUTHORING Rule 1, DOCUMENTATION § Content homes) into anchor links."
       - file: sdd/formal/README.md
         section: "Compiled oracle as conformance gate, Authoring rules"
         read_type: gate
+        extract: "Compiled oracle cited from CONTRIBUTING.md and custom-backend-guide; Authoring rules cited from BACKLOG.md ID-150."
       - file: sdd/BACKLOG.md
         section: "How this file works"
         read_type: gate
+        extract: "Cited by 000-process.md § Backlog (\"See its 'How this file works' header.\")."
   - id: rewrite
     name: Rewrite consumer references
     steps:
@@ -87,18 +94,23 @@ phases:
       - file: .claude/skills/pr/SKILL.md
         section: "Coverage gate, Backlog, Trace authoring cites"
         read_type: gate
+        extract: "Three prose cites in the PR skill's gate descriptions: coverage gate, backlog ID convention, trace mandatory rule."
       - file: .claude/skills/rvw-pr/SKILL.md
         section: "GitHub PR I/O split, Detailed checklist cites"
         read_type: gate
+        extract: "PR I/O split cited for the gh/MCP read-write split; Detailed checklist cited for the ripple audit."
       - file: .claude/skills/fix-pr/SKILL.md
         section: "GitHub PR I/O split, Coverage gate cites"
         read_type: gate
+        extract: "Same PR I/O split + coverage gate pattern as pr/SKILL.md."
       - file: .claude/skills/release/SKILL.md
         section: "Release, Detailed checklist, Response style cites"
         read_type: gate
+        extract: "CONTRIBUTING § Release is the authoritative checklist (cited twice); ripple-check Detailed checklist drives release-note section order; Response style governs the dash-vs-bullet rule."
       - file: .claude/skills/drift/SKILL.md
         section: "Backlog cite"
         read_type: gate
+        extract: "Single Backlog cite for the commit-prefix convention."
   - id: gate
     name: Extend check_links.py
     steps:
@@ -119,3 +131,12 @@ phases:
         extract: "Not a new process doc; convention extension to an existing one (link discipline). No CHANGELOG required per audience = library.maintainer + contributor.process."
 expected_ripples:
   - sdd/BACKLOG.md
+review_rounds: 1
+surprising_ripples:
+  # Initial sweep missed CLAUDE-REFERENCE.md ripple-table row prose (both
+  # Pre-work and Detailed presentations), CONTRIBUTING.md § Project Principles
+  # cite, and CONTRIBUTING.md § Phase 2 had no anchor target. Adjacent table
+  # rows look mechanical but each row's prose is its own cite and needed an
+  # explicit pass.
+  - CONTRIBUTING.md
+  - sdd/CLAUDE-REFERENCE.md
