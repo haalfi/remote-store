@@ -23,8 +23,8 @@ _SENSITIVE_KEYS: frozenset[str] = frozenset(
         "account_key",
         "sas_token",
         "connection_string",
-        # ID-127 (Graph backend): GraphAuth client-credentials secrets, so
-        # config-loaded Graph backends inherit the same auto-wrap protection
+        # GraphAuth client-credentials secrets — auto-wrapped so config-loaded
+        # Graph backends get the same protection as other backend credentials
         # (SEC-003, ADR-0022 § Credential masking).
         "client_secret",
         "client_certificate",

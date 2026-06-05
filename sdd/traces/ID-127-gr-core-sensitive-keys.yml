@@ -28,7 +28,7 @@ surprising_ripples:
   # note. Reality-aligned in place (these four Graph ADRs are revised in place,
   # not superseded; the ADR-0024 GR-CONTRACT past-tensing set the precedent).
   - sdd/adrs/0022-graph-auth-model.md
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
