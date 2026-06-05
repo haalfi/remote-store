@@ -37,6 +37,10 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
     - If any match: run `hatch run test-cov-strict` (enforces 95%; needs Azurite running locally — see [CLAUDE.md § Coverage gate](../../../CLAUDE.md#coverage-gate)). If it fails, stop and report which files are below threshold. Do **not** create the PR until coverage passes.
     - If none match (docs/config-only): run `hatch run test`. A `scripts/`-only diff lands here, yet scripts have guard tests under `tests/scripts/` (e.g. source-order assertions) that the strict-coverage trigger never fires for — so still run the suite. If it fails, stop and report.
 
+2e. **Local-machine reference gate:** Grep changed files for private local-machine
+    references unreachable from the repo, per the [ripple-check Local-machine reference row](../../../sdd/CLAUDE-REFERENCE.md#pre-work-index)
+    (patterns + scope live there). Fix before creating the PR.
+
 2d. **Trace gate:** Extract backlog IDs from `git log origin/<BASE>..HEAD --format=%s`
     using the pattern `^([A-Z]+-\d+[a-z]?)[:\s]` against each subject — the ID
     is the leading `PREFIX-NNN` token, optionally followed by a single

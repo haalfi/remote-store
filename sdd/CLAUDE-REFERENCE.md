@@ -64,6 +64,7 @@ Read this before starting. One line per trigger.
 | API reference page            | [DOCUMENTATION § API page building blocks](DOCUMENTATION.md#api-page-building-blocks) + required sections |
 | Example script                | README examples table, generated `tutorial/examples/<slug>.md`, `tests/test_examples.py` import |
 | Tracker ID in published prose | Any backlog/spec coordinate (`PREFIX-NNN`, `spec NNN`, `RFC-NNNN`, `ADR-NNNN`, `PR #NNN`) leaking into a docstring rendered by mkdocstrings or any `.md` under `docs-src/` (plus README, FEATURES, CONTRIBUTING); [CONTENT-RULES Rules 1 + 5](CONTENT-RULES.md#rules). Out of scope: `sdd/**`, CHANGELOG, DEVELOPMENT_STORY, source `#` comments |
+| Local-machine reference in any committed file | Grep all changed file types (`.md`, `.py`, `.sh`, `.yml`, `.dfy`, `.tla`) for: `See memory `, `` captured as `<slug>.md` `` (Claude Code memory slugs), `[A-Z]:\\[A-Za-z]` (Windows drive paths — skip `\n`/`\r`/`\t` escape sequences), `~/.claude`, `.claude/projects`. Replace each with the principle it refers to, inline. Enforced by the `/pr` gate 2e and `/fix-pr` gate 5d. |
 
 #### Release & meta
 

@@ -116,6 +116,10 @@ Run `hatch run lint`. Fix failures, re-run until clean.
 5b. **Docs gate:** Does changed documentation follow the rules in `sdd/CONTENT-RULES.md`?
     Report violations before commit.
 
+5d. **Local-machine reference gate:** Grep changed files for private local-machine
+    references unreachable from the repo, per the [ripple-check Local-machine reference row](../../../sdd/CLAUDE-REFERENCE.md#pre-work-index)
+    (patterns + scope live there). Fix before committing.
+
 5c. **Trace update:** Find the trace already on this branch via
     `git diff origin/master...HEAD --name-only` — any `sdd/traces/*.yml`
     that appears is the target. The /pr trace gate guarantees it exists

@@ -161,7 +161,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   rediscovering the ID-146 → ID-151c sprawl (eight sub-IDs over two weeks).
   - **Contract-expanding feature** (trigger: new `Capability.X`, Store method,
     or error class): spec/RFC update with conformance/PBT/Dafny extensions
-    enumerated up front (`feedback_estimation.md` 2-3× rule at RFC time),
+    enumerated up front (budget 2-3× the research estimate at RFC time),
     capability over- *and* under-declaration review, conformance test + xfail
     registry landed before the first backend, wrapper-forwarding check
     (`ProxyStore`, `ObservedStore`, `CachedStore`, sync adapter, oracle

@@ -13,7 +13,7 @@ FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty')
 
 # Filter to sdd/BACKLOG.md only — the matcher uses a loose glob (*BACKLOG.md)
 # for cross-platform safety (Claude Code may pass absolute paths with either
-# slash style, e.g. K:\Code\...\sdd\BACKLOG.md on Windows), so do the precise
+# slash style, e.g. C:\project\sdd\BACKLOG.md on Windows), so do the precise
 # path filter here. Excludes legacy/sam-services-snapshot/.../BACKLOG.md.
 case "$FILE" in
   *sdd/BACKLOG.md|*sdd\\BACKLOG.md|sdd/BACKLOG.md|sdd\\BACKLOG.md) ;;
