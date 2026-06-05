@@ -222,27 +222,25 @@ def default_cassette_name(request: pytest.FixtureRequest) -> str:
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="session")
-def _real_azure_account(record_mode: str) -> str | None:
-    """Real storage-account name (record mode) or ``None`` (replay mode).
+# The real-credential resolvers are plain functions, not fixtures, so
+# ``vcr_config`` can call ONLY the one matching the test's backend family.
+# As session fixtures they were both eagerly evaluated for every vcr test, so a
+# graph ``--record`` run would trip the azure live-connection-string check even
+# though graph needs only ``GRAPH_DRIVE_ID``. Both still short-circuit to
+# ``None`` in replay mode, so a normal ``hatch run test`` touches no creds.
 
-    Session-scoped because ``record_mode`` is session-scoped and the env var
-    does not change within a session.  Only calls ``live_connection_string()``
-    when recording is active (any mode other than ``"none"``), so normal
-    ``hatch run test`` runs never touch ``.env`` credentials.
-    """
+
+def _real_azure_account(record_mode: str) -> str | None:
+    """Real storage-account name (record mode) or ``None`` (replay mode)."""
     if record_mode == "none":
         return None
     return parse_account_name(live_connection_string())
 
 
-@pytest.fixture(scope="session")
 def _real_graph_drive_id(record_mode: str) -> str | None:
     """Real Graph ``drive_id`` (record mode) or ``None`` (replay mode).
 
-    Session-scoped alongside ``record_mode``. Only reads ``GRAPH_DRIVE_ID``
-    when recording, so a normal replay run never touches live config. The
-    value is rewritten to ``FAKE_DRIVE_ID`` in every recorded graph cassette.
+    The value is rewritten to ``FAKE_DRIVE_ID`` in every recorded graph cassette.
     """
     if record_mode == "none":
         return None
@@ -250,21 +248,19 @@ def _real_graph_drive_id(record_mode: str) -> str | None:
 
 
 @pytest.fixture
-def vcr_config(
-    request: pytest.FixtureRequest,
-    _real_azure_account: str | None,
-    _real_graph_drive_id: str | None,
-) -> dict[str, Any]:
+def vcr_config(request: pytest.FixtureRequest, record_mode: str) -> dict[str, Any]:
     """Scrubbing layer for vcrpy, dispatched per backend family.
 
     Delegates to ``_cassettes.build_graph_vcr_config`` for graph fixtures
     (bearer token, download-URL, drive-id scrub) and ``build_vcr_config`` for
     azure (SharedKey, account name, filesystem UUID) — each the single source
-    of truth for what gets stripped out of its cassettes.
+    of truth for what gets stripped out of its cassettes. Only the resolver for
+    the test's own backend family runs, so neither family's live config is
+    required to record the other's cassettes.
     """
     if _cassette_dir_for_node_name(request.node.name) == CASSETTE_DIR_GRAPH:
-        return build_graph_vcr_config(_real_graph_drive_id)
-    return build_vcr_config(_real_azure_account)
+        return build_graph_vcr_config(_real_graph_drive_id(record_mode))
+    return build_vcr_config(_real_azure_account(record_mode))
 
 
 # ---------------------------------------------------------------------------

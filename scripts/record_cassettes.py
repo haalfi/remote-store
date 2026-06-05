@@ -118,6 +118,7 @@ _BACKENDS: dict[str, dict] = {
         # Live opt-in flag — checked at preflight so the absence does not
         # wipe cassettes before the pytest fixture would fail (BUG-212).
         "live_opt_in_env": "RS_TEST_LIVE_HNS",
+        "setup_doc": "docs-src/guides/backends/azure-hns-setup.md",
         # Lower-bound guard: recording fewer cassettes than this means pytest
         # silently selected zero tests (k-filter mismatch, stage gate, etc.).
         "min_cassettes": 200,
@@ -130,6 +131,7 @@ _BACKENDS: dict[str, dict] = {
         "replay_k": "graph_replay",
         "account_fn": _resolve_graph_drive_id,
         "live_opt_in_env": "RS_TEST_LIVE_GRAPH",
+        "setup_doc": "docs-src/guides/backends/graph-setup.md",
         # No min-cassette guard yet: the recordable count grows as GR-READ /
         # GR-WRITE / GR-MUTATE implement the data-plane ops. Raise it once the
         # first real op slice records (so a zero-selection run fails loudly).
@@ -187,7 +189,7 @@ def _preflight_env(cfg: dict, *, verify_only: bool) -> None:
     if os.environ.get(opt_in) != "1":
         _die(
             f"{opt_in}=1 is required for recording (targets a real account).\n"
-            f"  See docs-src/guides/backends/azure-hns-setup.md for setup instructions."
+            f"  See {cfg['setup_doc']} for setup instructions."
         )
     cfg["account_fn"]()  # validates cred string; calls _die on failure
 

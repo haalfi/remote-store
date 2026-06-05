@@ -316,8 +316,8 @@ def _build() -> dict[str, Scope]:
             )
 
     # Async-extended — per backend that wires a native or adapted async
-    # implementation today (memory, local, azure, dafny oracle). Mirrors the
-    # conformance-split ``if not f: continue`` guard so a future backend with
+    # implementation today (memory, local, azure, dafny oracle, graph). Mirrors
+    # the conformance-split ``if not f: continue`` guard so a future backend with
     # only stage-3 fixtures does not silently produce a scope with empty
     # filter and ``_needs(f)`` expanding to ``full_needs``.
     #
@@ -327,7 +327,14 @@ def _build() -> dict[str, Scope]:
     # ``SyncBackendAdapter`` bridge that the (T) certification leans on
     # (``_src(b)`` returns ``[]`` for backends whose sources live under
     # ``tests/``, so the targets set reduces to ``{_SYNC_ADAPTER}``).
-    for backend_name in ("azure", "dafny", "local", "memory"):
+    #
+    # ``graph`` is async-native but its sources are declared under
+    # ``async_sources`` (it has no sync twin), which ``_src`` (reading
+    # ``sources``) does not see — so its scope also reduces to ``{_SYNC_ADAPTER}``
+    # for now. The filter resolves to ``graph_replay``; those slices stay inert
+    # until GR-READ records cassettes, at which point the scope (and its source
+    # targeting) is broadened to the ``_graph`` package.
+    for backend_name in ("azure", "dafny", "graph", "local", "memory"):
         f = _filter_term(backend_name)
         if not f:
             continue

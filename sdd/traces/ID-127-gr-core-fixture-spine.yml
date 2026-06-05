@@ -19,8 +19,25 @@ surprising_ripples:
   # `build_graph_vcr_config` imports from conftest while they were momentarily
   # unused (the import edit landed before the usage edits), surfacing as a
   # NameError at conftest import. Re-added after the usages existed.
+  #
+  # PR review: the graph vcr_config still eagerly depended on the
+  # _real_azure_account SESSION fixture, so a graph `--record` run would trip the
+  # azure live-connection-string check (inert on the replay/CI path, but would
+  # block the first GR-READ recording). Converted both account resolvers from
+  # session fixtures to plain functions vcr_config calls per backend family.
+  # Also surfaced: record_cassettes' generic preflight message hardcoded the
+  # azure setup doc (added a per-backend setup_doc key), and the new graph
+  # _BACKENDS entry / sync_k=None skip / _resolve_graph_drive_id were uncovered.
   - tests/backends/conformance/conftest.py
-review_rounds: 0
+  - scripts/record_cassettes.py
+  # Registering the graph_replay (stage-1) async fixture tripped
+  # test_mutate_scopes' "every async stage<=2 fixture needs a mutation scope"
+  # guard — the async-extended scope list is a hardcoded backend tuple that
+  # didn't include graph. Added "graph"; the scope is adapter-targeted + inert
+  # until GR-READ records cassettes (graph's sources live under async_sources,
+  # which _src does not read). Not anticipated by the ripple-check.
+  - scripts/mutate_scopes.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
