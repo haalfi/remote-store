@@ -48,7 +48,7 @@ surprising_ripples:
   # calls — CodeQL flagged the surplus named argument. A self-inflicted ripple
   # of the doc cleanup, caught by review not lint.
   - src/remote_store/aio/backends/_graph/backend.py
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

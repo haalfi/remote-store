@@ -195,14 +195,21 @@ async def graph_send(
     except _TRANSPORT_ERRORS as exc:
         raise BackendUnavailable(f"Graph transport error: {exc}", path=path, backend=BACKEND_NAME) from None
 
-    if response.status_code == 401 and _parse_error(response) == "InvalidAuthenticationToken":
-        # GR-029 one-shot refresh + retry, independent of RetryPolicy.
-        token = await acquire_token(token_provider)
-        headers["Authorization"] = f"Bearer {token}"
-        try:
-            response = await client.request(method, url, headers=headers, **kwargs)
-        except _TRANSPORT_ERRORS as exc:
-            raise BackendUnavailable(f"Graph transport error: {exc}", path=path, backend=BACKEND_NAME) from None
+    if response.status_code == 401:
+        # Parse the 401 body once and branch on the code (GR-029).
+        code = _parse_error(response)
+        if code == "InvalidAuthenticationToken":
+            # One-shot refresh + retry, independent of RetryPolicy. A second
+            # 401 falls through to the classification below.
+            token = await acquire_token(token_provider)
+            headers["Authorization"] = f"Bearer {token}"
+            try:
+                response = await client.request(method, url, headers=headers, **kwargs)
+            except _TRANSPORT_ERRORS as exc:
+                raise BackendUnavailable(f"Graph transport error: {exc}", path=path, backend=BACKEND_NAME) from None
+        else:
+            # Any other 401 code is a permission failure a refresh cannot fix.
+            raise classify_graph_error(401, code, path=path, scope=scope)
 
     if response.is_success:
         return response
