@@ -1,0 +1,88 @@
+id: ID-127
+title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-CORE: conformance fixture spine + factory"
+trigger: "ID-127 GR-CORE (PR-3 of 3): GR-FOUNDATION deferred the whole conformance fixture spine to GR-CORE because the loader rejects fixture entries whose backend cannot be built — and the GraphBackend class only landed in PR 2. Register the graph fixtures, build the factories, and generalise the Azure-hardcoded cassette / vcr machinery so graph plugs in."
+source_items:
+  - ID-127
+audience:
+  - infra.test
+  - contributor.tooling
+expected_ripples:
+  # The deferred GR-FOUNDATION spine: TOML registry + factory modules + live
+  # gate + cassette dispatch + record script.
+  - tests/backends/fixtures/backends.toml
+  - tests/backends/fixtures/fixtures.toml
+  - tests/backends/fixtures/_live_env.py
+  - tests/backends/conformance/conftest.py
+  - scripts/record_cassettes.py
+surprising_ripples:
+  # The ruff Edit hook stripped the just-added `CASSETTE_DIR_GRAPH` /
+  # `build_graph_vcr_config` imports from conftest while they were momentarily
+  # unused (the import edit landed before the usage edits), surfacing as a
+  # NameError at conftest import. Re-added after the usages existed.
+  #
+  # PR review: the graph vcr_config still eagerly depended on the
+  # _real_azure_account SESSION fixture, so a graph `--record` run would trip the
+  # azure live-connection-string check (inert on the replay/CI path, but would
+  # block the first GR-READ recording). Converted both account resolvers from
+  # session fixtures to plain functions vcr_config calls per backend family.
+  # Also surfaced: record_cassettes' generic preflight message hardcoded the
+  # azure setup doc (added a per-backend setup_doc key), and the new graph
+  # _BACKENDS entry / sync_k=None skip / _resolve_graph_drive_id were uncovered.
+  - tests/backends/conformance/conftest.py
+  - scripts/record_cassettes.py
+  # Registering the graph_replay (stage-1) async fixture tripped
+  # test_mutate_scopes' "every async stage<=2 fixture needs a mutation scope"
+  # guard — the async-extended scope list is a hardcoded backend tuple that
+  # didn't include graph. Added "graph"; the scope is adapter-targeted + inert
+  # until GR-READ records cassettes (graph's sources live under async_sources,
+  # which _src does not read). Not anticipated by the ripple-check.
+  - scripts/mutate_scopes.py
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: tests/backends/fixtures/_loader.py
+        section: "FixtureDescriptor; to_kwargs; load_fixture"
+        read_type: gate
+        extract: "Declarative fixture facts come from TOML; live_opt_in_env / live_creds_env carry the gate; factory/marks/capabilities stay in the Python module"
+      - file: tests/backends/conformance/conftest.py
+        section: "vcr_cassette_dir; _CASSETTE_ID_ALIASES; _cassette_path_for_item; vcr_config"
+        read_type: gate
+        extract: "Cassette machinery is Azure-hardcoded (single CASSETTE_DIR_AZURE, azure-only aliases, azure scrub); needs per-backend dispatch keyed on the parametrize-id fixture token"
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "CASSETTE_DIR_GRAPH; FAKE_DRIVE_ID; build_graph_vcr_config"
+        read_type: reference
+        extract: "GR-FOUNDATION already landed the graph cassette dir + scrub; PR 3 only wires the dispatch to them"
+      - file: tests/backends/fixtures/azure_replay_async.py
+        section: "(full)"
+        read_type: reference
+        extract: "Replay-fixture factory shape: build backend, vcr(record_mode=none) mark, aclose; mirror for graph_replay (no transport shim — httpx streams natively)"
+  - id: implement
+    name: Implement spine
+    steps:
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "graph_live / graph_replay"
+        read_type: reference
+        extract: "Async-only; device-code/consumer live gate (RS_TEST_LIVE_GRAPH + GRAPH_CLIENT_ID/TENANT_ID/DRIVE_ID, no secret)"
+      - file: tests/backends/conformance/conftest.py
+        section: "_FIXTURE_CASSETTE_DIRS; _cassette_dir_for_node_name; vcr_cassette_dir (function-scoped)"
+        read_type: reference
+        extract: "vcr_cassette_dir flips module->function scope so one conformance module routes azure cassettes to cassettes/azure and graph to cassettes/graph; vcr_config dispatches the scrub the same way"
+      - file: scripts/record_cassettes.py
+        section: "_BACKENDS[graph]; sync_k skip"
+        read_type: reference
+        extract: "Graph is async-only: sync_k=None so Step 2 is skipped; account_fn resolves GRAPH_DRIVE_ID for the scrub-leak check"
+  - id: verify
+    name: Verify spine
+    steps:
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "graph_replay parametrization"
+        read_type: verify
+        extract: "118 graph_replay conformance slices skip cleanly (missing-cassette hook routes to cassettes/graph/); 0 errors. graph_live skips without RS_TEST_LIVE_GRAPH. Slices stay inert until GR-READ/WRITE/MUTATE land cassettes + ops."
+        outcome: ok
+      - file: tests/backends/conformance/conftest.py
+        section: "azure_replay regression"
+        read_type: verify
+        extract: "azure_replay conformance still green (296 passed) after the per-backend dispatch generalisation — backward compatible"
+        outcome: ok

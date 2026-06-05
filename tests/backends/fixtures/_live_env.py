@@ -132,6 +132,19 @@ def require_s3_live_credentials() -> dict[str, str]:
     return creds
 
 
+def require_graph_live_credentials() -> dict[str, str]:
+    """Return the device-code Graph credentials for a live consumer OneDrive.
+
+    The Graph live tier is device-code (delegated) against a personal Microsoft
+    account, so there is no client secret: the three required vars are
+    ``GRAPH_CLIENT_ID``, ``GRAPH_TENANT_ID`` (``consumers``), and
+    ``GRAPH_DRIVE_ID``. The MSAL refresh token is supplied out of band via the
+    token cache the first interactive sign-in writes. Fails loud (not skips)
+    when ``RS_TEST_LIVE_GRAPH=1`` is set but a var is missing.
+    """
+    return require_live_credentials(load_fixture("graph_live"))
+
+
 def require_azure_live_connection_string() -> str:
     """Return ``AZURE_STORAGE_CONNECTION_STRING`` for a real ADLS Gen2 account.
 
@@ -155,6 +168,7 @@ def require_azure_live_connection_string() -> str:
 
 __all__ = [
     "require_azure_live_connection_string",
+    "require_graph_live_credentials",
     "require_live_credentials",
     "require_s3_live_credentials",
 ]

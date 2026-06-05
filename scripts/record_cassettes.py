@@ -93,6 +93,21 @@ def _resolve_azure_account() -> str:
 # Backend config table
 # ---------------------------------------------------------------------------
 
+
+def _resolve_graph_drive_id() -> str:
+    """Return the real Graph ``drive_id`` from ``GRAPH_DRIVE_ID``.
+
+    Used by the scrub-verify step to confirm the live drive id was rewritten
+    to ``FAKE_DRIVE_ID`` in every recorded cassette. The Graph live tier is
+    device-code / consumer, so there is no connection string to parse — just
+    the opaque drive id.
+    """
+    drive_id = os.environ.get("GRAPH_DRIVE_ID", "").strip()
+    if not drive_id:
+        _die("GRAPH_DRIVE_ID is missing.\n  See docs-src/guides/backends/graph-setup.md for setup instructions.")
+    return drive_id
+
+
 _BACKENDS: dict[str, dict] = {
     "azure": {
         "cassette_dir": Path("tests/backends/cassettes/azure"),
@@ -103,9 +118,24 @@ _BACKENDS: dict[str, dict] = {
         # Live opt-in flag — checked at preflight so the absence does not
         # wipe cassettes before the pytest fixture would fail (BUG-212).
         "live_opt_in_env": "RS_TEST_LIVE_HNS",
+        "setup_doc": "docs-src/guides/backends/azure-hns-setup.md",
         # Lower-bound guard: recording fewer cassettes than this means pytest
         # silently selected zero tests (k-filter mismatch, stage gate, etc.).
         "min_cassettes": 200,
+    },
+    "graph": {
+        "cassette_dir": Path("tests/backends/cassettes/graph"),
+        # Graph is async-only: no sync fixtures, so Step 2 is skipped.
+        "sync_k": None,
+        "async_k": "graph_live",
+        "replay_k": "graph_replay",
+        "account_fn": _resolve_graph_drive_id,
+        "live_opt_in_env": "RS_TEST_LIVE_GRAPH",
+        "setup_doc": "docs-src/guides/backends/graph-setup.md",
+        # No min-cassette guard yet: the recordable count grows as GR-READ /
+        # GR-WRITE / GR-MUTATE implement the data-plane ops. Raise it once the
+        # first real op slice records (so a zero-selection run fails loudly).
+        "min_cassettes": 0,
     },
 }
 
@@ -159,7 +189,7 @@ def _preflight_env(cfg: dict, *, verify_only: bool) -> None:
     if os.environ.get(opt_in) != "1":
         _die(
             f"{opt_in}=1 is required for recording (targets a real account).\n"
-            f"  See docs-src/guides/backends/azure-hns-setup.md for setup instructions."
+            f"  See {cfg['setup_doc']} for setup instructions."
         )
     cfg["account_fn"]()  # validates cred string; calls _die on failure
 
@@ -243,21 +273,24 @@ def main() -> None:
             deleted += 1
         print(f"  Deleted {deleted} file(s) from {cassette_dir}/")
 
-        _section("Step 2 — record sync fixtures")
-        _run(
-            sys.executable,
-            "-m",
-            "pytest",
-            "--stage=3",
-            "--record",
-            "-m",
-            "live",
-            "-k",
-            cfg["sync_k"],
-            _CONFORMANCE,
-            "--tb=short",
-            "-q",
-        )
+        if cfg["sync_k"]:
+            _section("Step 2 — record sync fixtures")
+            _run(
+                sys.executable,
+                "-m",
+                "pytest",
+                "--stage=3",
+                "--record",
+                "-m",
+                "live",
+                "-k",
+                cfg["sync_k"],
+                _CONFORMANCE,
+                "--tb=short",
+                "-q",
+            )
+        else:
+            _section("Step 2 — record sync fixtures (skipped: async-only backend)")
 
         _section("Step 3 — record async fixtures")
         _run(
@@ -283,7 +316,17 @@ def main() -> None:
                 f"only {recorded} cassette(s) recorded (expected >= {min_expected}); "
                 "pytest likely selected zero tests — check the k-filter and --stage value"
             )
-        print(f"  Cassette count OK: {recorded} >= {min_expected}")
+        if recorded == 0:
+            # A min_cassettes=0 backend (e.g. graph before GR-READ) makes the
+            # count guard vacuous, so make a zero-recording run LOUD rather than
+            # let main() print "All steps passed" as if it had recorded
+            # something. Raise min_cassettes once the first op slice lands.
+            print(
+                f"  WARNING: recorded 0 cassettes for {opts.backend!r} — nothing to replay. "
+                "Either no recordable ops exist yet, or the -k filter / --stage selected zero tests."
+            )
+        else:
+            print(f"  Cassette count OK: {recorded} >= {min_expected}")
 
     _section("Step 4 — verify scrub (no real credentials in cassettes)")
     account: str = cfg["account_fn"]()

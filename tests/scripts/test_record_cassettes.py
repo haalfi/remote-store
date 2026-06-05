@@ -1,22 +1,22 @@
 """Guard tests for scripts/record_cassettes.py structural assumptions.
 
-``record_cassettes.py`` embeds three kinds of assumptions that can silently
-drift when tests or fixtures change:
+``record_cassettes.py`` embeds assumptions that can silently drift when tests
+or fixtures change:
 
-1. ``cassette_dir`` — must resolve to the same path as ``CASSETTE_DIR_AZURE``
-   in ``tests/backends/fixtures/_cassettes.py``.
+1. ``cassette_dir`` — must resolve to the same path as the matching
+   ``CASSETTE_DIR_<BACKEND>`` constant in ``tests/backends/fixtures/_cassettes.py``.
 2. ``_CONFORMANCE`` — must be a real directory on disk.
-3. k-filter fixture IDs — each fixture name referenced in ``sync_k`` /
-   ``async_k`` / ``replay_k`` must exist as a registered ``BackendFixture``
-   name.
+3. k-filter fixture IDs — every fixture-name token in ``sync_k`` / ``async_k`` /
+   ``replay_k`` must be a substring of at least one registered ``BackendFixture``
+   name (else ``pytest -k`` selects nothing and exits 0 — silent zero-selection).
 
-Drift in any of these causes the script to silently record or replay against
-zero tests (pytest selects nothing and exits 0), which is the hardest class
-of failure to notice.
+The registration / cassette-dir guards are parametrized over **every**
+``_BACKENDS`` key, so a future backend addition cannot drift silently.
 """
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -25,38 +25,94 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent.parent
 SCRIPTS = ROOT / "scripts"
 
+# Module-level import so the per-backend parametrize lists derive from the live
+# _BACKENDS table (drift-proof: a new backend is covered automatically).
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+import record_cassettes as _rc  # noqa: E402
+
+_ALL_BACKENDS = sorted(_rc._BACKENDS)
+
+# Each backend's cassette_dir must equal this constant from _cassettes.py.
+_CASSETTE_DIR_CONSTANT = {"azure": "CASSETTE_DIR_AZURE", "graph": "CASSETTE_DIR_GRAPH"}
+
+# pytest -k expression keywords that are not fixture-name tokens.
+_K_KEYWORDS = frozenset({"and", "or", "not"})
+
 
 @pytest.fixture(scope="module")
 def rc():
     """Import ``record_cassettes`` from the scripts directory."""
-    if str(SCRIPTS) not in sys.path:
-        sys.path.insert(0, str(SCRIPTS))
-    import record_cassettes
-
-    return record_cassettes
+    return _rc
 
 
-class TestAzureBackendConfig:
-    def test_cassette_dir_matches_canonical_constant(self, rc):
-        """_BACKENDS cassette_dir must equal CASSETTE_DIR_AZURE from _cassettes.py."""
-        from tests.backends.fixtures._cassettes import CASSETTE_DIR_AZURE
+def _k_fixture_tokens(expr: str) -> list[str]:
+    """Identifier tokens in a ``-k`` expression, minus the and/or/not keywords."""
+    return [t for t in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", expr) if t not in _K_KEYWORDS]
 
-        script_dir = rc._BACKENDS["azure"]["cassette_dir"].resolve()
-        assert script_dir == CASSETTE_DIR_AZURE.resolve(), (
-            f"record_cassettes._BACKENDS['azure']['cassette_dir'] ({script_dir}) "
-            f"diverges from CASSETTE_DIR_AZURE ({CASSETTE_DIR_AZURE.resolve()}); "
-            "keep them in sync"
+
+class TestBackendConfigTable:
+    """Structural guards parametrized over every _BACKENDS entry."""
+
+    @pytest.mark.parametrize("backend", _ALL_BACKENDS)
+    def test_cassette_dir_matches_canonical_constant(self, rc, backend: str) -> None:
+        """_BACKENDS cassette_dir must equal the backend's CASSETTE_DIR_* constant."""
+        import tests.backends.fixtures._cassettes as cassettes
+
+        constant_name = _CASSETTE_DIR_CONSTANT.get(backend)
+        assert constant_name is not None, (
+            f"no cassette-dir constant mapped for backend {backend!r}; "
+            "add it to _CASSETTE_DIR_CONSTANT when registering a new backend"
+        )
+        expected = getattr(cassettes, constant_name).resolve()
+        script_dir = rc._BACKENDS[backend]["cassette_dir"].resolve()
+        assert script_dir == expected, (
+            f"record_cassettes._BACKENDS[{backend!r}]['cassette_dir'] ({script_dir}) "
+            f"diverges from {constant_name} ({expected}); keep them in sync"
         )
 
-    def test_conformance_path_is_directory(self, rc):
+    @pytest.mark.parametrize("backend", _ALL_BACKENDS)
+    def test_k_filter_fixture_ids_are_registered(self, rc, backend: str) -> None:
+        """Every fixture token in a backend's k-filters resolves to a registered fixture.
+
+        ``pytest -k`` matches fixture names by substring, so each token must be a
+        substring of at least one registered ``BackendFixture`` name. A renamed
+        or removed fixture makes its token match nothing — the silent
+        zero-selection failure this guard exists to catch.
+        """
+        from tests.backends.fixtures import _load_all, all_fixtures
+
+        _load_all()
+        registered = [f.name for f in all_fixtures()]
+        cfg = rc._BACKENDS[backend]
+        for key in ("sync_k", "async_k", "replay_k"):
+            expr = cfg[key]
+            if not expr:  # sync_k is None for async-only backends
+                continue
+            for token in _k_fixture_tokens(expr):
+                assert any(token in name for name in registered), (
+                    f"record_cassettes._BACKENDS[{backend!r}][{key!r}] token {token!r} "
+                    f"matches no registered fixture; update the script or the fixture registration"
+                )
+
+    @pytest.mark.parametrize("backend", _ALL_BACKENDS)
+    def test_setup_doc_exists(self, rc, backend: str) -> None:
+        """Each backend's preflight setup_doc must point at a real guide on disk."""
+        doc = ROOT / rc._BACKENDS[backend]["setup_doc"]
+        assert doc.is_file(), f"_BACKENDS[{backend!r}]['setup_doc'] = {doc} does not exist"
+
+    def test_conformance_path_is_directory(self, rc) -> None:
         """_CONFORMANCE must point at a real directory."""
         path = ROOT / rc._CONFORMANCE
         assert path.is_dir(), f"record_cassettes._CONFORMANCE = {rc._CONFORMANCE!r} is not a directory ({path})"
 
-    def test_sync_k_async_exclusion_relies_on_async_substring(self, rc):
-        """sync_k uses 'not async' to exclude the async fixture.
 
-        Two sides of the same invariant are pinned:
+class TestAzureSyncExclusion:
+    """Azure-specific: the sync/async k-filter split relies on a 'not async' clause."""
+
+    def test_sync_k_async_exclusion_relies_on_async_substring(self, rc) -> None:
+        """sync_k uses 'not async' to exclude the async fixture (azure has both lanes).
+
         (a) async_k must contain 'async' (fixture rename would break exclusion).
         (b) sync_k must contain 'not async' (clause edit would silently re-include async).
         """
@@ -64,34 +120,49 @@ class TestAzureBackendConfig:
         async_name = cfg["async_k"]
         sync_expr = cfg["sync_k"]
         assert "async" in async_name, (
-            f"sync_k = {sync_expr!r} excludes async fixtures "
-            f"via 'not async', but async_k = {async_name!r} does not contain 'async'; "
-            "the exclusion would silently stop working if the fixture is renamed"
+            f"sync_k = {sync_expr!r} excludes async fixtures via 'not async', but "
+            f"async_k = {async_name!r} does not contain 'async'; exclusion would silently break on rename"
         )
         assert "not async" in sync_expr, (
             f"sync_k = {sync_expr!r} no longer contains 'not async'; async fixtures would be included in sync recording"
         )
 
-    def test_k_filter_fixture_ids_are_registered(self, rc):
-        """Fixture IDs referenced by k-filters must be in the fixture registry.
 
-        Checked names and which filter they come from:
-          - ``azure_live``       : sync_k  (``"azure_live and not async"``)
-          - ``azure_live_async`` : async_k (``"azure_live_async"``)
-          - ``azure_replay``     : replay_k (``"azure_replay"``, substring-
-                                   matches ``azure_replay_async`` too)
-        """
-        from tests.backends.fixtures import _load_all, all_fixtures
+class TestResolveGraphDriveId:
+    """The graph account_fn resolves GRAPH_DRIVE_ID for the scrub-leak check."""
 
-        _load_all()
-        registered = {f.name for f in all_fixtures()}
-        expected = {"azure_live", "azure_live_async", "azure_replay"}
-        missing = expected - registered
-        assert not missing, (
-            f"Fixture ID(s) referenced by record_cassettes._BACKENDS['azure'] "
-            f"k-filters are not in the fixture registry: {sorted(missing)}. "
-            "Update scripts/record_cassettes.py or the fixture registration."
-        )
+    def test_returns_drive_id_when_set(self, rc, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("GRAPH_DRIVE_ID", "b!drive-xyz")
+        assert rc._resolve_graph_drive_id() == "b!drive-xyz"
+
+    def test_dies_when_missing(self, rc, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("GRAPH_DRIVE_ID", raising=False)
+        with pytest.raises(SystemExit) as exc:
+            rc._resolve_graph_drive_id()
+        assert exc.value.code == 1
+
+
+class TestMainAsyncOnlyBackend:
+    """An async-only backend (sync_k=None) skips the Step-2 sync recording in main()."""
+
+    def test_sync_record_step_is_skipped(self, rc, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        # Drive main() down the full record path for graph, capturing each
+        # pytest invocation so we can assert the sync record step never runs.
+        monkeypatch.setattr(sys, "argv", ["record_cassettes.py", "--backend", "graph"])
+        monkeypatch.setenv("GRAPH_DRIVE_ID", "b!drive-xyz")
+        monkeypatch.setattr(rc, "_preflight_env", lambda cfg, *, verify_only: None)
+        runs: list[tuple[str, ...]] = []
+        monkeypatch.setattr(rc, "_run", lambda *args: runs.append(args))
+        graph_cfg = dict(rc._BACKENDS["graph"])
+        graph_cfg["cassette_dir"] = tmp_path  # empty → min_cassettes=0 passes, scrub-verify clean
+        monkeypatch.setitem(rc._BACKENDS, "graph", graph_cfg)
+
+        rc.main()
+
+        k_values = [args[args.index("-k") + 1] for args in runs if "-k" in args]
+        # Async record (Step 3) + replay smoke (Step 5) only — no sync record (Step 2).
+        assert k_values == ["graph_live", "graph_replay"]
+        assert all("not async" not in k for k in k_values)
 
 
 class TestPreflightEnvGuard:

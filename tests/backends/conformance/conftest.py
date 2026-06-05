@@ -53,6 +53,8 @@ import pytest
 from tests.backends.fixtures import BackendFixture, fixture_params
 from tests.backends.fixtures._cassettes import (
     CASSETTE_DIR_AZURE,
+    CASSETTE_DIR_GRAPH,
+    build_graph_vcr_config,
     build_vcr_config,
     live_connection_string,
     parse_account_name,
@@ -80,7 +82,35 @@ _CASSETTE_ID_ALIASES: dict[str, str] = {
     "azure_live_async": "azure_async",
     "azure_replay": "azure",
     "azure_replay_async": "azure_async",
+    # Graph is async-only (no sync twin), so live (record) and replay (playback)
+    # share one canonical "graph" suffix.
+    "graph_live": "graph",
+    "graph_replay": "graph",
 }
+
+# Each cassette-bearing fixture id maps to its spec-mandated per-backend cassette
+# directory (TEST-007). A node id carrying no listed fixture has no cassette.
+_FIXTURE_CASSETTE_DIRS: dict[str, Any] = {
+    "azure_live": CASSETTE_DIR_AZURE,
+    "azure_live_async": CASSETTE_DIR_AZURE,
+    "azure_replay": CASSETTE_DIR_AZURE,
+    "azure_replay_async": CASSETTE_DIR_AZURE,
+    "graph_live": CASSETTE_DIR_GRAPH,
+    "graph_replay": CASSETTE_DIR_GRAPH,
+}
+
+
+def _cassette_dir_for_node_name(name: str) -> None | Any:
+    """Return the cassette ``Path`` for the fixture id in *name*, or ``None``.
+
+    Matches each fixture id as a whole parametrize-bracket component so no
+    partial-name collision can occur (mirrors ``_normalise_cassette_name``).
+    """
+    for fid, cassette_dir in _FIXTURE_CASSETTE_DIRS.items():
+        if f"[{fid}]" in name or f"[{fid}-" in name or f"-{fid}]" in name or f"-{fid}-" in name:
+            return cassette_dir
+    return None
+
 
 # Forbidden characters replaced by pytest-recording's get_default_cassette_name.
 _FORBIDDEN_CASSETTE_CHARS = r"""<>?%*:|"'/\\"""
@@ -114,20 +144,18 @@ def _normalise_cassette_name(node_name: str, cls: type | None) -> str:
 def _cassette_path_for_item(item: pytest.Item) -> None | Any:
     """Return the expected cassette ``Path`` for a vcr-marked conformance test.
 
-    Returns ``None`` when the item's parametrize id is not an azure fixture
-    (and therefore has no cassette path to check).
+    Returns ``None`` when the item's parametrize id carries no cassette-bearing
+    fixture (and therefore has no cassette path to check). The directory is the
+    fixture's per-backend cassette dir (``azure`` / ``graph``), per TEST-007.
     """
     from pathlib import Path  # noqa: PLC0415 -- local to avoid top-level Path import noise
 
-    name = item.name
-    # Check if any alias fixture name appears as a whole component in the id.
-    if not any(
-        f"[{k}]" in name or f"[{k}-" in name or f"-{k}]" in name or f"-{k}-" in name for k in _CASSETTE_ID_ALIASES
-    ):
+    cassette_dir = _cassette_dir_for_node_name(item.name)
+    if cassette_dir is None:
         return None
     cls = getattr(item, "cls", None)
-    cassette_name = _normalise_cassette_name(name, cls)
-    return Path(CASSETTE_DIR_AZURE) / f"{cassette_name}.yaml"
+    cassette_name = _normalise_cassette_name(item.name, cls)
+    return Path(cassette_dir) / f"{cassette_name}.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -157,22 +185,37 @@ def pytest_configure(config: pytest.Config) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="module")
-def vcr_cassette_dir(request: pytest.FixtureRequest) -> str:  # noqa: ARG001
-    """Override: all conformance azure cassettes live in tests/backends/cassettes/azure/.
+@pytest.fixture
+def vcr_cassette_dir(request: pytest.FixtureRequest) -> str:
+    """Override: route each cassette to its per-backend directory (TEST-007).
 
     Spec TEST-007 mandates ``tests/backends/cassettes/<backend>/`` for all
-    HTTP replay cassettes.  The default pytest-recording path
-    (``{test_file_dir}/cassettes/{test_module}/``) would scatter cassettes
-    across the conformance subtree; centralising them makes the corpus
-    reviewable as a single PR diff (TEST-009).
+    HTTP replay cassettes.  The directory is selected from the test's
+    parametrize id — ``cassettes/azure/`` for an azure fixture,
+    ``cassettes/graph/`` for a graph fixture — so the corpus stays reviewable
+    as a single per-backend PR diff (TEST-009).
 
-    Module-scoped to match the scope of pytest-recording's built-in
-    ``vcr_cassette_dir`` fixture.  Non-azure tests in this module are
-    unaffected: the ``vcr`` autouse fixture only activates for tests that
-    carry ``pytest.mark.vcr``.
+    Function-scoped (not module-scoped) because one conformance module
+    parametrises over both backend families; the cassette dir is per-test, not
+    per-module.
+
+    pytest-recording resolves this fixture for *every* async conformance test,
+    not only vcr-marked ones (a non-cassette param like ``memory_async_native``
+    shares the parametrized class with the cassette params). So a missing
+    ``_FIXTURE_CASSETTE_DIRS`` entry only fails loudly when the node actually
+    carries ``pytest.mark.vcr`` — a genuinely-vcr-marked id with no registered
+    directory. For non-vcr nodes the returned value is unused, so an arbitrary
+    valid directory is harmless.
     """
-    return str(CASSETTE_DIR_AZURE)
+    cassette_dir = _cassette_dir_for_node_name(request.node.name)
+    if cassette_dir is not None:
+        return str(cassette_dir)
+    if request.node.get_closest_marker("vcr") is not None:
+        raise RuntimeError(
+            f"vcr-marked test {request.node.name!r} has no cassette directory; "
+            "register its fixture id in _FIXTURE_CASSETTE_DIRS"
+        )
+    return str(CASSETTE_DIR_AZURE)  # unused: this node has no vcr marker
 
 
 @pytest.fixture
@@ -193,28 +236,55 @@ def default_cassette_name(request: pytest.FixtureRequest) -> str:
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="session")
-def _real_azure_account(record_mode: str) -> str | None:
-    """Real storage-account name (record mode) or ``None`` (replay mode).
+# The real-credential resolvers are plain functions, not fixtures, so
+# ``vcr_config`` can call ONLY the one matching the test's backend family.
+# As session fixtures they were both eagerly evaluated for every vcr test, so a
+# graph ``--record`` run would trip the azure live-connection-string check even
+# though graph needs only ``GRAPH_DRIVE_ID``. Both still short-circuit to
+# ``None`` in replay mode, so a normal ``hatch run test`` touches no creds.
 
-    Session-scoped because ``record_mode`` is session-scoped and the env var
-    does not change within a session.  Only calls ``live_connection_string()``
-    when recording is active (any mode other than ``"none"``), so normal
-    ``hatch run test`` runs never touch ``.env`` credentials.
-    """
+
+def _real_azure_account(record_mode: str) -> str | None:
+    """Real storage-account name (record mode) or ``None`` (replay mode)."""
     if record_mode == "none":
         return None
     return parse_account_name(live_connection_string())
 
 
-@pytest.fixture
-def vcr_config(_real_azure_account: str | None) -> dict[str, Any]:
-    """Scrubbing layer for vcrpy: credentials, account name, filesystem UUID.
+def _real_graph_drive_id(record_mode: str) -> str | None:
+    """Real Graph ``drive_id`` (record mode) or ``None`` (replay mode).
 
-    Delegates to ``_cassettes.build_vcr_config`` which is the single source
-    of truth for what gets stripped out of every recorded cassette.
+    The value is rewritten to ``FAKE_DRIVE_ID`` in every recorded graph cassette.
     """
-    return build_vcr_config(_real_azure_account)
+    if record_mode == "none":
+        return None
+    return os.environ.get("GRAPH_DRIVE_ID")
+
+
+@pytest.fixture
+def vcr_config(request: pytest.FixtureRequest, record_mode: str) -> dict[str, Any]:
+    """Scrubbing layer for vcrpy, dispatched per backend family.
+
+    Delegates to ``_cassettes.build_graph_vcr_config`` for graph fixtures
+    (bearer token, download-URL, drive-id scrub) and ``build_vcr_config`` for
+    azure (SharedKey, account name, filesystem UUID) — each the single source
+    of truth for what gets stripped out of its cassettes. Only the resolver for
+    the test's own backend family runs, so neither family's live config is
+    required to record the other's cassettes.
+
+    As with ``vcr_cassette_dir``, pytest-recording resolves this for every async
+    conformance test; an unregistered id only fails loudly when the node is
+    actually ``pytest.mark.vcr``. For a non-vcr node the value is unused.
+    """
+    cassette_dir = _cassette_dir_for_node_name(request.node.name)
+    if cassette_dir == CASSETTE_DIR_GRAPH:
+        return build_graph_vcr_config(_real_graph_drive_id(record_mode))
+    if cassette_dir != CASSETTE_DIR_AZURE and request.node.get_closest_marker("vcr") is not None:
+        raise RuntimeError(
+            f"vcr-marked test {request.node.name!r} has no scrub config; "
+            "register its fixture id in _FIXTURE_CASSETTE_DIRS"
+        )
+    return build_vcr_config(_real_azure_account(record_mode))
 
 
 # ---------------------------------------------------------------------------
