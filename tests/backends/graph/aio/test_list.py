@@ -93,6 +93,17 @@ class TestIterChildren:
         async with _make() as backend:
             assert [e async for e in backend.iter_children("gone")] == []
 
+    @respx.mock
+    @pytest.mark.spec("GR-014")
+    async def test_skips_item_without_name(self) -> None:
+        # A malformed driveItem with no ``name`` is defensively skipped.
+        respx.get(_children_url("d")).mock(
+            return_value=_page([{"file": {"mimeType": "text/plain"}}, _file_child("a.txt")])
+        )
+        async with _make() as backend:
+            entries = [e async for e in backend.iter_children("d")]
+        assert [str(e.path) for e in entries] == ["d/a.txt"]
+
 
 class TestListFolders:
     """GR-014: list_folders yields only the folder-faceted children."""
@@ -136,6 +147,17 @@ class TestListFiles:
         _seed_depth_tree()
         async with _make() as backend:
             files = [f async for f in backend.list_files("pc")]
+        assert {f.name for f in files} == {"a.txt"}
+
+    @respx.mock
+    @pytest.mark.spec("GR-014")
+    async def test_skips_item_without_name(self) -> None:
+        # The recursive walk defensively skips a child with no ``name``.
+        respx.get(_children_url("d")).mock(
+            return_value=_page([{"file": {"mimeType": "text/plain"}}, _file_child("a.txt")])
+        )
+        async with _make() as backend:
+            files = [f async for f in backend.list_files("d")]
         assert {f.name for f in files} == {"a.txt"}
 
     @respx.mock

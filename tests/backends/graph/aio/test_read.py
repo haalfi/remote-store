@@ -238,6 +238,13 @@ class TestParseGraphDatetime:
         assert dt.tzinfo is not None
 
     @pytest.mark.spec("GR-013")
+    def test_naive_timestamp_assumed_utc(self) -> None:
+        # A timestamp with neither Z nor an explicit offset is treated as UTC.
+        dt = parse_graph_datetime("2024-01-15T10:30:00")
+        assert dt.tzinfo is not None
+        assert dt.utcoffset() == timezone.utc.utcoffset(None)
+
+    @pytest.mark.spec("GR-013")
     @pytest.mark.parametrize("bad", ["", None, "not-a-date", 12345])
     def test_fallback_is_tz_aware(self, bad: object) -> None:
         dt = parse_graph_datetime(bad)
