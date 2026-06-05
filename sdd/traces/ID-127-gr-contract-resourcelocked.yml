@@ -1,0 +1,101 @@
+id: ID-127
+title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-CONTRACT: ResourceLocked bundle"
+trigger: "ID-127 GR-CONTRACT (PR-A): land the backend-independent ResourceLocked error contract before the Graph backend's 423 mapper needs it. ERR-013 existed in spec 005 and ADR-0024 at RFC acceptance with no runtime class, no Dafny variant, and no raiser; the error surface was incomplete."
+source_items:
+  - ID-127
+audience:
+  - user.api
+  - infra.test
+  - contributor.tooling
+expected_ripples:
+  # user.api audience → CHANGELOG stub required (trace-schema derived rule).
+  - CHANGELOG.md
+  # ID-173 __all__ ↔ index.md parity (named GR-CONTRACT obligation): a new
+  # public symbol needs both an index row and a rendered errors.md directive.
+  - docs-src/reference/api/index.md
+  - docs-src/reference/api/errors.md
+  # The Dafny Error-variant addition regenerates the committed oracle.
+  - sdd/formal/MemoryBackend-py/module_.py
+  # check_spec_marks._ALLOWLIST_PENDING_IDS named ERR-013 against ID-127
+  # explicitly; the first citing mark forces its self-pruning removal —
+  # anticipated by that allowlist comment, so expected rather than surprising.
+  - scripts/check_spec_marks.py
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/plans/ID-127-graph-backend-implementation.md
+        section: "Step 2 — GR-CONTRACT; Alignment notes"
+        read_type: gate
+        extract: "ResourceLocked lands in GR-CONTRACT (not GR-CORE); bundle stays coupled (class + Dafny variant + dispatch); guardrail — do not merge unless GR-CORE follows in the same release cycle"
+      - file: sdd/adrs/0024-resource-locked-error.md
+        section: "Decision; Semantics; Bundled implementation"
+        read_type: gate
+        extract: "Flat-hierarchy class inheriting RemoteStoreError; standard path/backend, no lock_owner; Dafny variant uses (path, backend) so _raise_if_err dispatches via the existing reader; oracle never raises 423 so conformance can't exercise it"
+      - file: sdd/specs/005-error-model.md
+        section: "ERR-008, ERR-013"
+        read_type: gate
+        extract: "ERR-013 invariant/postconditions (path+backend set, no extra fields); ERR-008 flat hierarchy"
+      - file: src/remote_store/_errors.py
+        section: "BackendUnavailable; CapabilityNotSupported"
+        read_type: reference
+        extract: "Existing class shape to mirror; CapabilityNotSupported is the only error with extra fields — ResourceLocked needs none"
+      - file: scripts/check_formal_trace.py
+        section: "extract_dafny_specs; KIND_UNTESTED"
+        read_type: gate
+        extract: "F-checks key on // @spec tags above ensures, not datatype variants — a bare Error variant adds no D entry, so no F1/F3 from the variant alone"
+  - id: implement
+    name: Implement bundle
+    steps:
+      - file: src/remote_store/__init__.py
+        section: "_errors import block; __all__ (Errors)"
+        read_type: reference
+        extract: "Public re-export + __all__ membership for ResourceLocked"
+      - file: scripts/check_api_docs.py
+        section: "compare_exports (Phase 4)"
+        read_type: gate
+        extract: "Every __all__ symbol needs an index.md link row; errors.md must render it via ::: so the anchor resolves"
+      - file: sdd/formal/BackendContract.dfy
+        section: "datatype Error"
+        read_type: reference
+        extract: "Add | ResourceLocked(path, backend); no match over Error is exhaustive (all matches are over fs entries / phase / capability), so the variant is purely additive"
+      - file: tests/backends/dafny/_helpers.py
+        section: "_ERR_DISPATCH; _raise_if_err"
+        read_type: reference
+        extract: "Add is_ResourceLocked → ResourceLocked dispatch arm; the loop raises with path+backend, matching the class"
+  - id: translate
+    name: Re-verify + translate oracle
+    steps:
+      - file: scripts/dafny_verify.sh
+        section: "(run, no args)"
+        read_type: verify
+        extract: "All four specs re-verify with the new variant: 51/478/9/18 verified, 0 errors"
+        outcome: ok
+      - file: scripts/dafny_translate.sh
+        section: "post-process python3 classorder step"
+        read_type: verify
+        extract: "Translation wrote MemoryBackend-py (106 verified) but the script's `python3 _dafny_classorder.py` post-step exits non-zero on Windows (python3 → Microsoft Store stub); ran `python scripts/_dafny_classorder.py` manually to finish the reorder"
+        outcome: misleading
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/test_errors.py
+        section: "TestResourceLocked; TestFlatHierarchy"
+        read_type: reference
+        extract: "ERR-013 construction, path/backend, no speculative fields, __all__ membership; extend the flat-hierarchy parent list"
+      - file: tests/backends/dafny/test_raise_if_err.py
+        section: "(full)"
+        read_type: reference
+        extract: "Direct dispatch-arm test — construct Dafny Error.ResourceLocked, pump through _raise_if_err, assert runtime ResourceLocked (oracle never returns 423, so conformance can't cover this arm)"
+  - id: verify
+    name: Verify gates
+    steps:
+      - file: scripts/check_spec_marks.py
+        section: "_ALLOWLIST_PENDING_IDS"
+        read_type: verify
+        extract: "Removed ERR-013 from the pending allowlist (now has a citing test); the self-prune gate would otherwise flag the stale entry"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "user.api audience → one-line stub for the ResourceLocked error type"

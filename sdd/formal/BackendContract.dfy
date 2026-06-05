@@ -45,6 +45,7 @@ datatype Error =
   | CapabilityNotSupported(capability: string, backend: string)
   | DirectoryNotEmpty(path: string, backend: string)
   | BackendUnavailable(backend: string)
+  | ResourceLocked(path: string, backend: string)
 
 datatype Result<T> = Ok(value: T) | Err(error: Error)
 

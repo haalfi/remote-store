@@ -16,6 +16,8 @@
 
 ::: remote_store.BackendUnavailable
 
+::: remote_store.ResourceLocked
+
 ## See also
 
 - [Troubleshooting](../../guides/troubleshooting.md) — diagnosing and resolving common errors

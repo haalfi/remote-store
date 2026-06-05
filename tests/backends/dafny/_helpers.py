@@ -31,6 +31,7 @@ from remote_store._errors import (
     DirectoryNotEmpty,
     InvalidPath,
     NotFound,
+    ResourceLocked,
 )
 from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
@@ -86,6 +87,7 @@ _ERR_DISPATCH: dict[str, type[Exception]] = {
     "is_AlreadyExists": AlreadyExists,
     "is_InvalidPath": InvalidPath,
     "is_DirectoryNotEmpty": DirectoryNotEmpty,
+    "is_ResourceLocked": ResourceLocked,
 }
 
 

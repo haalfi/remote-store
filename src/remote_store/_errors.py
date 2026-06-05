@@ -131,6 +131,24 @@ class BackendUnavailable(RemoteStoreError):
     """
 
 
+class ResourceLocked(RemoteStoreError):
+    """Raised when a target resource is locked by another session.
+
+    The resource exists and the caller is authorised, but it is currently
+    held by another session or process so the operation cannot proceed
+    right now (for example, an open Office co-authoring session, a
+    SharePoint checked-out document, or a concurrent upload session on the
+    same item). Distinct from ``PermissionDenied`` (the caller *is*
+    authorised), ``AlreadyExists`` (not a write conflict), and
+    ``BackendUnavailable`` (the backend is reachable and responsive).
+
+    The default retry policy does not treat this as transient: there is no
+    ``Retry-After`` promise and the lock may last seconds, minutes, or
+    indefinitely, so callers decide their own retry cadence. Maps from
+    Microsoft Graph ``423 Locked`` / ``resourceLocked``.
+    """
+
+
 # ---------------------------------------------------------------------------
 # Error factory helpers
 # ---------------------------------------------------------------------------
