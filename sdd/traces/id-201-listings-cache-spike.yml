@@ -17,9 +17,9 @@ audience:
 discovery_followups:
   # The chosen disposition (a) became this item; born from the measurements.
   - BK-257
-# sdd/backlogid.json did NOT ripple: the moved ID-201 and the new active BK-257
-# are both <= the DONE-max BK (254 from upstream #733), so gen_backlogid is a
-# no-op (see memory gotcha_backlogid_json_max_only). Omitted by design.
+# sdd/backlogid.json did NOT ripple: gen_backlogid.py scans BACKLOG-DONE.md for
+# the per-prefix max; ID-201 and new BK-257 are both <= the DONE-max BK-254
+# (from upstream #733), so the regen produces no JSON diff. Omitted by design.
 review_rounds: 1
 phases:
   - id: orient

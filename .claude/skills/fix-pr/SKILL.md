@@ -116,6 +116,18 @@ Run `hatch run lint`. Fix failures, re-run until clean.
 5b. **Docs gate:** Does changed documentation follow the rules in `sdd/CONTENT-RULES.md`?
     Report violations before commit.
 
+5d. **Local-machine reference gate:** Grep all files changed on this branch
+    (`git diff origin/master...HEAD --name-only`) for private local-machine
+    references that are unreachable from the repo:
+
+    - `See memory ` or `` captured as `<slug>.md` `` — Claude Code memory slugs
+    - `[A-Z]:\\[A-Za-z]` — Windows drive paths (skip `\n`/`\r`/`\t` escape sequences in string literals)
+    - `~/\.claude` or `\.claude/projects` — private config paths
+
+    Cover all tracked file types: `.md`, `.py`, `.sh`, `.yml`, `.dfy`, `.tla`.
+    If any match, fix before committing — replace each with the principle or
+    content it refers to, inline.
+
 5c. **Trace update:** Find the trace already on this branch via
     `git diff origin/master...HEAD --name-only` — any `sdd/traces/*.yml`
     that appears is the target. The /pr trace gate guarantees it exists
