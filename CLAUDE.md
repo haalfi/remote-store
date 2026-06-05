@@ -87,7 +87,9 @@ Use em dashes (`—`) sparingly in prose responses. Default to periods, colons,
 or commas. Never use `--` as an em dash substitute anywhere in written output.
 
 In tables, `—` (em dash U+2014) is the standard N/A / none value. Never
-`--` or `No`. See memory `feedback_table_style.md` for the full rule.
+`--` or `No`. The dash draws less attention than "No", keeping the eye on what is
+supported rather than what is not. Applies to all capability, feature, and
+comparison tables.
 
 Preserve `--` only in: shell end-of-options separators (`git log -- path`),
 spec-ID ranges (`BATCH-020 -- BATCH-025`), Mermaid edge syntax
