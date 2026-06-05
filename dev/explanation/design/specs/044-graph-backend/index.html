@@ -11377,9 +11377,13 @@ for <code>read_seekable()</code>. <code>SEEKABLE_READ</code> remains withheld (G
 pre-signed download URL has been observed to ignore or reject
 <code>Range</code> headers depending on tenant configuration (WebDAV-style
 backends in particular). When the server returns the full entity
-(<code>200 OK</code> to a <code>Range</code> request) or rejects the range with <code>416</code>
-outside the valid extent, the backend falls back to the spool
-strategy rather than pretending to stream. When the fallback
+(<code>200 OK</code> to a <code>Range</code> request) or rejects the range with a
+non-<code>416</code> <code>4xx</code> — the range-incapable signals — the backend falls
+back to the spool strategy rather than pretending to stream. A
+<code>416</code> is <strong>not</strong> a range-incapability signal and does not trigger
+this fallback: a start at or past EOF is a legitimate empty read and
+an inverted-bounds <code>416</code> is a backend bug, both owned by GR-055 (the
+single source of truth for <code>416</code> on a range read). When the fallback
 fires, the backend logs a WARNING with the <code>graph.read.range_fallback</code>
 marker and sets
 <code>FileInfo.extra["graph.read.range_fallback"] = True</code> on any
