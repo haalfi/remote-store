@@ -14,7 +14,11 @@ expected_ripples:
   # the public-API graph IR + viz per the "A public method signature" row.
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
-discovery_followups: []
+discovery_followups:
+  # PR #760 review surfaced the range-fallback flag's lifecycle problem
+  # (unbounded per-backend set + permanent marking vs GR-015's "operation
+  # context"). Filed for its own work rather than redesigned mid-fix-PR.
+  - BK-259
 surprising_ripples:
   # The plan's Step 4 acceptance ("Graph moves off xfail for READ/LIST/METADATA/
   # LAZY_READ conformance slices ... cassetted back into graph_replay") collides
