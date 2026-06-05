@@ -43,6 +43,7 @@ _EXTRA_COMMENTS: dict[str, str] = {
     "s3-pyarrow": "S3 via PyArrow C++ filesystem",
     "sftp": "SFTP via paramiko",
     "azure": "Azure ADLS Gen2 via Azure SDK",
+    "graph": "Microsoft Graph (OneDrive / SharePoint / Teams) via httpx + msal",
     "sql": "SQL blob store via SQLAlchemy",
     "sql-query": "SQL query store via SQLAlchemy + PyArrow",
     "arrow": "PyArrow filesystem bridge + Parquet extension",

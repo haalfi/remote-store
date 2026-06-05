@@ -362,6 +362,7 @@ conformance suite as native backends.
 pip install remote-store[arrow]       # PyArrow filesystem bridge + Parquet extension
 pip install remote-store[azure]       # Azure ADLS Gen2 via Azure SDK
 pip install remote-store[dagster]     # Dagster IO manager
+pip install remote-store[graph]       # Microsoft Graph (OneDrive / SharePoint / Teams) via httpx + msal
 pip install remote-store[httpx]       # httpx HTTP adapter for ReadOnlyHttpBackend
 pip install remote-store[otel]        # OpenTelemetry distributed tracing
 pip install remote-store[pydantic]    # Pydantic settings integration

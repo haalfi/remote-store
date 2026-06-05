@@ -1,0 +1,236 @@
+"""GraphAuth construction, flow selection, masking, and token acquisition.
+
+MSAL is faked via ``monkeypatch`` (real fake classes, not ``Mock`` — see
+``check_mock_spec``) so the GR-006/007/008 control flow is exercised without a
+network handshake. The live device-code path is reality-checked separately in
+the GR-CORE PR.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+import pytest
+
+from remote_store._config import Secret
+from remote_store.aio.backends._graph.auth import GraphAuth
+
+
+class _FakeCache:
+    def __init__(self) -> None:
+        self.has_state_changed = False
+
+    def deserialize(self, data: str) -> None:  # pragma: no cover - unused on fresh path
+        self.has_state_changed = False
+
+    def serialize(self) -> str:
+        return "{}"
+
+
+class _FakeConfidentialApp:
+    def __init__(self, client_id: str, *, authority: str, client_credential: Any, token_cache: Any) -> None:
+        self.client_credential = client_credential
+
+    def acquire_token_for_client(self, scopes: list[str]) -> dict[str, str]:
+        return {"access_token": "tok-cc"}
+
+
+class _FakePublicApp:
+    accounts: list[dict[str, str]] = []
+    silent_result: dict[str, str] | None = {"access_token": "tok-silent"}
+
+    def __init__(self, client_id: str, *, authority: str, token_cache: Any) -> None:
+        self.authority = authority
+
+    def get_accounts(self) -> list[dict[str, str]]:
+        return type(self).accounts
+
+    def acquire_token_silent(self, scopes: list[str], account: Any) -> dict[str, str] | None:
+        return type(self).silent_result
+
+    def initiate_device_flow(self, scopes: list[str]) -> dict[str, str]:
+        return {"user_code": "ABC123", "message": "Sign in at https://microsoft.com/devicelogin"}
+
+    def acquire_token_by_device_flow(self, flow: dict[str, str]) -> dict[str, str]:
+        return {"access_token": "tok-device"}
+
+
+@pytest.fixture
+def fake_msal(monkeypatch: pytest.MonkeyPatch) -> None:
+    import msal
+
+    monkeypatch.setattr(msal, "SerializableTokenCache", _FakeCache)
+    monkeypatch.setattr(msal, "ConfidentialClientApplication", _FakeConfidentialApp)
+    monkeypatch.setattr(msal, "PublicClientApplication", _FakePublicApp)
+    # Reset the device-code fake's class state between tests.
+    _FakePublicApp.accounts = []
+    _FakePublicApp.silent_result = {"access_token": "tok-silent"}
+
+
+class TestConstruction:
+    @pytest.mark.spec("GR-006")
+    @pytest.mark.parametrize(("tenant", "client"), [("", "c"), ("  ", "c"), ("t", ""), ("t", "  ")])
+    def test_empty_ids_rejected(self, tenant: str, client: str) -> None:
+        with pytest.raises(ValueError, match="non-empty"):
+            GraphAuth(tenant, client)
+
+    @pytest.mark.spec("GR-006")
+    def test_secret_and_certificate_mutually_exclusive(self) -> None:
+        with pytest.raises(ValueError, match="at most one"):
+            GraphAuth("t", "c", client_secret="s", client_certificate={"thumbprint": "x"})
+
+    @pytest.mark.spec("GR-006")
+    def test_authority_from_tenant(self) -> None:
+        assert GraphAuth("consumers", "c").authority == "https://login.microsoftonline.com/consumers"
+
+    @pytest.mark.spec("GR-006")
+    def test_client_secret_selects_app_only_flow(self) -> None:
+        assert GraphAuth("t", "c", client_secret="s")._app_only is True
+
+    @pytest.mark.spec("GR-007")
+    def test_no_credential_selects_device_flow(self) -> None:
+        auth = GraphAuth("consumers", "c")
+        assert auth._app_only is False
+        # Consumer-compatible delegated default (the reality-check finding).
+        assert auth._scopes == ["Files.ReadWrite", "User.Read"]
+
+    @pytest.mark.spec("GR-006")
+    def test_client_credentials_default_scope(self) -> None:
+        assert GraphAuth("t", "c", client_secret="s")._scopes == ["https://graph.microsoft.com/.default"]
+
+
+class TestMasking:
+    @pytest.mark.spec("GR-035")
+    def test_repr_masks_secret(self) -> None:
+        r = repr(GraphAuth("t", "c", client_secret="topsecret"))
+        assert "topsecret" not in r
+        assert "***" in r
+        assert "client_credentials" in r
+
+    @pytest.mark.spec("GR-035")
+    def test_secret_wrapper_accepted_and_masked(self) -> None:
+        r = repr(GraphAuth("t", "c", client_secret=Secret("wrapped-secret")))
+        assert "wrapped-secret" not in r
+
+    @pytest.mark.spec("GR-007")
+    def test_repr_device_flow_has_no_secret_fields(self) -> None:
+        r = repr(GraphAuth("consumers", "c"))
+        assert "client_secret=None" in r
+        assert "device_code" in r
+
+
+class TestGetToken:
+    @pytest.mark.spec("GR-006")
+    def test_client_credentials_token(self, fake_msal: None, tmp_path: Any) -> None:
+        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
+        assert auth.get_token() == "tok-cc"
+
+    @pytest.mark.spec("GR-007")
+    def test_device_code_uses_cached_account_silently(self, fake_msal: None, tmp_path: Any) -> None:
+        _FakePublicApp.accounts = [{"username": "u@example.com"}]
+        auth = GraphAuth("consumers", "c", cache_path=str(tmp_path / "c.json"))
+        assert auth.get_token() == "tok-silent"
+
+    @pytest.mark.spec("GR-007")
+    def test_device_code_interactive_when_no_account(self, fake_msal: None, tmp_path: Any) -> None:
+        _FakePublicApp.accounts = []
+        prompts: list[dict[str, str]] = []
+        auth = GraphAuth("consumers", "c", cache_path=str(tmp_path / "c.json"), prompt_callback=prompts.append)
+        assert auth.get_token() == "tok-device"
+        assert len(prompts) == 1
+        assert "user_code" in prompts[0]
+
+    @pytest.mark.spec("GR-008")
+    def test_callable_protocol(self, fake_msal: None, tmp_path: Any) -> None:
+        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
+        assert auth() == "tok-cc"  # GraphAuth instance IS a token provider
+
+    @pytest.mark.spec("GR-006")
+    def test_acquisition_failure_raises(self, fake_msal: None, tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+        def _fail(self: Any, scopes: list[str]) -> dict[str, str]:
+            return {"error": "invalid_client", "error_description": "bad secret"}
+
+        monkeypatch.setattr(_FakeConfidentialApp, "acquire_token_for_client", _fail)
+        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
+        with pytest.raises(PermissionError, match="bad secret"):
+            auth.get_token()
+
+    @pytest.mark.spec("GR-006")
+    def test_app_is_built_once(self, fake_msal: None, tmp_path: Any) -> None:
+        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
+        auth.get_token()
+        first = auth._app
+        auth.get_token()
+        assert auth._app is first  # cached, not rebuilt
+
+    @pytest.mark.spec("GR-007")
+    def test_existing_cache_file_is_loaded(self, fake_msal: None, tmp_path: Any) -> None:
+        cache_file = tmp_path / "c.json"
+        cache_file.write_text("{}", encoding="utf-8")
+        auth = GraphAuth("consumers", "c", cache_path=str(cache_file))
+        _FakePublicApp.accounts = [{"username": "u@example.com"}]
+        auth.get_token()
+        assert auth._cache is not None
+
+    @pytest.mark.spec("GR-007")
+    def test_device_flow_initiation_failure(
+        self, fake_msal: None, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            _FakePublicApp, "initiate_device_flow", lambda self, scopes: {"error_description": "no flow"}
+        )
+        auth = GraphAuth("consumers", "c", cache_path=str(tmp_path / "c.json"))
+        with pytest.raises(ValueError, match="device-code flow"):
+            auth.get_token()
+
+    @pytest.mark.spec("GR-007")
+    def test_device_flow_prints_message_without_callback(
+        self, fake_msal: None, tmp_path: Any, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        auth = GraphAuth("consumers", "c", cache_path=str(tmp_path / "c.json"))
+        assert auth.get_token() == "tok-device"
+        assert "devicelogin" in capsys.readouterr().out
+
+
+class TestCachePersistence:
+    """GR-007 token-cache persistence (GraphAuth.flush_cache, GR-051 caller)."""
+
+    @pytest.mark.spec("GR-007")
+    def test_default_cache_path_uses_user_config_dir(self) -> None:
+        path = GraphAuth("consumers", "c")._resolve_cache_path()
+        assert path.endswith("graph_token_cache.json")
+        assert "remote-store" in path
+
+    @pytest.mark.spec("GR-051")
+    def test_flush_writes_changed_cache(self, tmp_path: Any) -> None:
+        class _ChangedCache:
+            has_state_changed = True
+
+            def serialize(self) -> str:
+                return '{"persisted": true}'
+
+        target = tmp_path / "nested" / "c.json"
+        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(target))
+        auth._cache = _ChangedCache()
+        auth.flush_cache()
+        assert target.read_text(encoding="utf-8") == '{"persisted": true}'
+
+    @pytest.mark.spec("GR-051")
+    def test_flush_noop_when_no_cache(self, tmp_path: Any) -> None:
+        target = tmp_path / "c.json"
+        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(target))
+        auth.flush_cache()  # _cache is None — early return, no file written
+        assert not target.exists()
+
+    @pytest.mark.spec("GR-051")
+    def test_flush_swallows_write_error(self, tmp_path: Any, caplog: pytest.LogCaptureFixture) -> None:
+        class _BadCache:
+            has_state_changed = True
+
+            def serialize(self) -> str:
+                raise OSError("disk full")
+
+        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
+        auth._cache = _BadCache()
+        auth.flush_cache()  # best-effort: must not raise
+        assert any("token cache" in r.getMessage() for r in caplog.records)

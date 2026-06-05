@@ -1,0 +1,121 @@
+id: ID-127
+title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-CORE: _graph public surface + foundation"
+trigger: "ID-127 GR-CORE (PR-2 of 3): the contract surface (async WriteResult, ResourceLocked, capability matrix) and the config ripple were in place, but no GraphBackend existed. Land the full public surface (GraphBackend / GraphAuth / GraphUtils) and the request/error/auth/utils foundation, with the data-plane operation bodies stubbed for the later read/write/mutate steps."
+source_items:
+  - ID-127
+audience:
+  - user.api
+  - user.api_docs
+  - infra.test
+  - contributor.tooling
+expected_ripples:
+  # user.api audience → CHANGELOG stub required (trace-schema derived rule).
+  - CHANGELOG.md
+  # __all__ ↔ index.md parity (named GR-CORE obligation): the three new public
+  # symbols need index rows + a rendered docstring on an API page.
+  - docs-src/reference/api/index.md
+  - docs-src/reference/api/aio.md
+  # New backend + extra: the FEATURES install-extras list and the public-API
+  # graph IR + its viz regenerate from the codebase.
+  - FEATURES.md
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+discovery_followups: []
+surprising_ripples:
+  # The plan put the conformance fixture spine (graph_live/graph_replay
+  # entries, live-gate, registry/conftest recognition, record_cassettes,
+  # vcr_cassette_dir dispatch) in GR-FOUNDATION, but #750 deferred ALL of it to
+  # GR-CORE because the fixture loader couples entries to a buildable backend
+  # class. So GR-CORE owns more than its Step-3 text lists — split out as PR 3.
+  #
+  # FEATURES.md capability matrix is sync-registry-driven (register_backend +
+  # runtime==sync; gen_features skips ``.aio.``). Graph is the FIRST async-only
+  # backend with no sync twin, so it surfaces ONLY in the install-extras list,
+  # not as a capability row. AsyncAzureBackend is invisible there too but Azure
+  # rides in via its sync twin. Flagged to the user (not auto-filed): the
+  # matrix generator does not enumerate async-native backends.
+  - scripts/gen_features.py
+  # New SDK without py.typed needs a mypy ignore-missing-imports override,
+  # mirroring the dagster one.
+  - pyproject.toml
+  # respx became a test-only dependency (httpx stub for the unit layer).
+  - tests/backends/graph/aio/test_http.py
+  # New [graph] extra → drift-lock baseline + tested-versions render.
+  - infra/drift-locks/graph.txt
+  - docs-src/reference/tested-versions.md
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/plans/ID-127-graph-backend-implementation.md
+        section: "Step 3 — GR-CORE; Alignment notes"
+        read_type: gate
+        extract: "Full public surface with op bodies stubbed + slices xfail'd; capabilities declared up front; _SENSITIVE_KEYS already landed in PR 1"
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-001..011, GR-016, GR-028..037, GR-045, GR-050..053, GR-057"
+        read_type: gate
+        extract: "Construction/validation, addressing+encoding, error table, auth protocol, resolve_drive_id shapes, capability set, close baseline"
+      - file: sdd/adrs/0022-graph-auth-model.md
+        section: "Decision; Flows; Token caching; Credential masking"
+        read_type: gate
+        extract: "Token-provider callable (sync|async); GraphAuth wraps MSAL client-credentials + device-code; cache under user_config_dir; mask secret in repr"
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "graph_live / graph_replay (absent)"
+        read_type: gate
+        extract: "GR-FOUNDATION DEFERRED the whole fixture spine to GR-CORE (the loader couples entries to a buildable backend class), so fixtures.toml has no graph entries yet; the live tier wired in #750 is device-code/consumer, not app-only"
+        outcome: misleading
+      - file: src/remote_store/aio/_async_backend.py
+        section: "abstract methods"
+        read_type: reference
+        extract: "The 17 abstract methods GraphBackend must implement; data-plane ops stubbed with NotImplementedError in GR-CORE"
+  - id: implement
+    name: Implement surface
+    steps:
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "(full)"
+        read_type: reference
+        extract: "Shape model for an async-native backend: lazy client, capabilities, unwrap, aclose, repr masking"
+      - file: src/remote_store/backends/_sftp.py
+        section: "SFTPUtils namespace class"
+        read_type: reference
+        extract: "Namespace-class-of-staticmethods precedent for GraphUtils"
+      - file: scripts/check_api_docs.py
+        section: "compare_exports (Phase 4); _INDEX_EXEMPT"
+        read_type: gate
+        extract: "Every public __all__ symbol (remote_store/.backends/.aio) needs an index.md row or _INDEX_EXEMPT entry; gave all three Graph symbols index rows"
+  - id: reality_check
+    name: Stage-3 reality check
+    steps:
+      - file: docs-src/guides/backends/graph-setup.md
+        section: "Verify and capture the drive id (device-code)"
+        read_type: gate
+        extract: "Consumer device-code uses scopes Files.ReadWrite + User.Read; cache at tmp/graph_token_cache.json from the GR-FOUNDATION dogfood"
+      - file: src/remote_store/aio/backends/_graph/auth.py
+        section: "_DEFAULT_DEVICE_SCOPES"
+        read_type: verify
+        extract: "Ad-hoc live run (device-code, consumer OneDrive) acquired a token silently from the cached refresh token; resolve_drive_id('me') matched .env GRAPH_DRIVE_ID; a real 404 body is {error:{code:itemNotFound}} -> NotFound. SURFACED a real bug a respx test could never catch: the device-code default scopes were the work/school .All variants a personal account cannot consent to — fixed to Files.ReadWrite + User.Read."
+        outcome: ok
+  - id: docs
+    name: Docs + generated artefacts
+    steps:
+      - file: scripts/gen_features.py
+        section: "_EXTRA_COMMENTS; project_backends_main"
+        read_type: verify
+        extract: "Added the graph extra comment; confirmed the capability matrix is sync-registry-driven so Graph (async-only) has no row — flagged, not forced"
+      - file: scripts/check_no_tracker_refs.py
+        section: "Scope; Patterns flagged"
+        read_type: gate
+        extract: "Docstrings are published surfaces — swept GR-/ADR-/SEC-/AF- IDs out of every _graph docstring (kept them in # comments and @pytest.mark.spec)"
+        outcome: misleading
+  - id: verify
+    name: Verify gates
+    steps:
+      - file: scripts/check_api_docs.py
+        section: "(run)"
+        read_type: verify
+        extract: "index.md parity clean for GraphBackend / GraphAuth / GraphUtils"
+      - file: pyproject.toml
+        section: "[tool.hatch] test-cov-strict"
+        read_type: verify
+        extract: "_graph package at 100% line coverage; full Stage-1 suite green; mypy clean with the msal override"

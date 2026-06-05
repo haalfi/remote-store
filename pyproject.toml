@@ -67,6 +67,10 @@ s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
 # Full rationale: sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md § 5.
 sftp = ["paramiko>=3.0", "tenacity>=4.0"]
 azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
+# graph (ID-127, ADR-0021): direct REST over httpx + msal for token
+# acquisition; platformdirs resolves the MSAL token-cache path (loaded lazily
+# by GraphAuth only).
+graph = ["httpx>=0.24.0", "msal>=1.20.0", "platformdirs>=3.0.0"]
 sql = ["sqlalchemy>=2.0"]
 sql-query = ["sqlalchemy>=2.0", "pyarrow>=12.0.0,<25"]
 requests = ["requests>=2.25.0", "urllib3>=1.26.0"]
@@ -104,13 +108,14 @@ docs = [
 
 # -- Development (all user-facing extras + test/build tooling) --
 dev = [
-  "remote-store[s3-pyarrow,sftp,azure,otel,toml,yaml,pydantic,dagster,sql,sql-query,requests,httpx]",
+  "remote-store[s3-pyarrow,sftp,azure,otel,toml,yaml,pydantic,dagster,sql,sql-query,requests,httpx,graph]",
   # Testing
   "pytest",
   "pytest-cov",
   "pytest-httpserver>=1.0.0",
   "pytest-asyncio>=0.23",
   "pytest-recording>=0.13",
+  "respx>=0.20",  # ID-127: stub httpx.AsyncClient for Graph backend unit tests
   "pytest-xdist>=3.5",
   "hypothesis>=6.0",
   "moto[server,s3]>=5.2.0",
@@ -288,6 +293,11 @@ warn_unused_ignores = false
 # Dagster does not ship py.typed and has no third-party stubs on PyPI.
 [[tool.mypy.overrides]]
 module = "dagster.*"
+ignore_missing_imports = true
+
+# msal (ID-127 Graph auth) does not ship py.typed and has no third-party stubs.
+[[tool.mypy.overrides]]
+module = "msal.*"
 ignore_missing_imports = true
 
 # ext/dagster.py uses `# type: ignore[import-untyped]` on dagster imports.
