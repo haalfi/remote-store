@@ -297,8 +297,15 @@ class TestFromDictSecretWrapping:
                 ["container", "account_name"],
             ),
             ("sftp", {"host": "h", "password": "p"}, ["password"], ["host"]),
+            (
+                # ID-127: Graph client-credentials secrets auto-wrap (SEC-003).
+                "graph",
+                {"drive_id": "d", "client_secret": "cs", "client_certificate": "cc"},
+                ["client_secret", "client_certificate"],
+                ["drive_id"],
+            ),
         ],
-        ids=["s3", "azure", "sftp"],
+        ids=["s3", "azure", "sftp", "graph"],
     )
     def test_keys_wrapped(
         self, backend_type: str, options: dict[str, str], secret_keys: list[str], non_secret_keys: list[str]

@@ -422,15 +422,14 @@ built once in `__init__` and closed in `dispose()`, which also disposes the
 ### DAG-033: Credential Masking in `_build_store`
 
 **Invariant:** `_build_store` wraps any value in `backend_options` whose key
-name is in `_SENSITIVE_KEYS` (`remote_store._config` — `key`, `secret`,
-`password`, `account_key`, `sas_token`, `connection_string`) in a `Secret`
-before passing it to the backend constructor, so credentials are masked in
-`repr()` and tracebacks. Wrapping is applied to a copy; the caller's
-`backend_options` mapping is not mutated. Because `_build_store` is the shared
-construction helper, this masking applies equally to `DagsterStoreResource`
-(DAG-012) and `RemoteStoreIOManager` (DAG-015). It reuses the exact
-`_SENSITIVE_KEYS` set that `RegistryConfig._from_dict` applies, so the two
-config paths mask the same keys.
+name is in `_SENSITIVE_KEYS` (the authoritative set in `remote_store._config`,
+not re-enumerated here per principle 4) in a `Secret` before passing it to the
+backend constructor, so credentials are masked in `repr()` and tracebacks.
+Wrapping is applied to a copy; the caller's `backend_options` mapping is not
+mutated. Because `_build_store` is the shared construction helper, this masking
+applies equally to `DagsterStoreResource` (DAG-012) and `RemoteStoreIOManager`
+(DAG-015). It reuses the exact `_SENSITIVE_KEYS` set that
+`RegistryConfig._from_dict` applies, so the two config paths mask the same keys.
 
 **Scope note:** the `ConfigurableClass` `inst_data` config-YAML fragment is
 owned and serialised by Dagster, not by `_build_store`; masking it is out of
