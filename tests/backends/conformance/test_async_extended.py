@@ -931,15 +931,12 @@ class TestMoveCopyMetadataPreservation:
 
 
 # ===========================================================================
-# §3b  WriteResult field contract for AsyncBackend (ID-127 GR-CONTRACT)
+# §3b  WriteResult field contract for AsyncBackend
 # ===========================================================================
 #
-# Async parametrisation of ``test_atomic.py::TestWriteResultConformance``.
-# Per the ID-127 plan's "option (a)" decision, the async WriteResult slices
-# (WR-001a / 004 / 005 / 012 / 013) land for ``AsyncBackend`` — validated
-# against ``AsyncMemory`` / ``AsyncAzure`` — *before* the Graph backend plugs
-# in, so its native ``driveItem``-from-response population (GR-018 / GR-019)
-# moves onto a contract that already exists.
+# Async parametrisation of ``test_atomic.py::TestWriteResultConformance``: the
+# WR-001a / 004 / 005 / 012 / 013 field contract asserted over the native and
+# basic-source ``AsyncBackend`` write paths.
 
 # (op, cap) carrying each op's async-method spec mark — ASYNC-008 (``write``)
 # / ASYNC-010 (``write_atomic``). The WriteResult *field* contract (WR-*) is

@@ -5,7 +5,7 @@ source_items:
   - ID-127
 audience:
   - infra.test
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient + scope reality-check
