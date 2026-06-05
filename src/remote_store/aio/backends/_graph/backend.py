@@ -274,7 +274,13 @@ class GraphBackend(AsyncBackend):
         transport, and other failures map through the same primitive.
         """
         response = await graph_send(
-            self._client, "GET", self._item_url(path), token_provider=self._token_provider, path=path, scope="item"
+            self._client,
+            "GET",
+            self._item_url(path),
+            token_provider=self._token_provider,
+            path=path,
+            scope="item",
+            retry=self._retry,
         )
         body: dict[str, Any] = response.json()
         return body
@@ -420,7 +426,9 @@ class GraphBackend(AsyncBackend):
         url = self._children_url(path)
         started = False
         try:
-            async for page in iter_pages(self._client, url, token_provider=self._token_provider, path=path):
+            async for page in iter_pages(
+                self._client, url, token_provider=self._token_provider, path=path, retry=self._retry
+            ):
                 started = True
                 value = page.get("value")
                 if isinstance(value, list):

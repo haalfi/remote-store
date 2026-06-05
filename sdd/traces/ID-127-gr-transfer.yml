@@ -1,0 +1,67 @@
+id: ID-127
+title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-TRANSFER (PR C): read-path resilience (range + expiry + retry + 416 + SharePoint fallback)"
+trigger: "ID-127 GR-READ, sub-PR C of 3: PR A filled single-item read + metadata and PR B filled listing, both riding the bare single-attempt graph_send (the retry loop was deferred here). PR C hardens the read path: fold RetryPolicy into graph_send (exponential backoff + jitter, Retry-After precedence) so every non-streaming send retries transient 5xx/429/transport; add a transfer.py range-download driver (_read_bytes against the pre-signed downloadUrl, no auth header) with downloadUrl-expiry re-fetch + eTag validation (GR-017) and the 416 invalidRange mapping (GR-055); and the SharePoint range-fallback-to-spool path (WARNING marker + FileInfo.extra flag). Cassettes move the read/list/metadata/lazy_read conformance slices off the missing-cassette skip. Closes the read half of ID-127; write (PR/Step 5) and mutate (Step 6) remain."
+source_items:
+  - ID-127
+audience:
+  - user.api
+  - user.api_docs
+  - infra.test
+expected_ripples:
+  # user.api audience → CHANGELOG stub required (trace-schema derived rule).
+  - CHANGELOG.md
+  # New / changed public-method docstrings (read Raises, retry semantics) regen
+  # the public-API graph IR + viz per the "A public method signature" row.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+discovery_followups: []
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-015, GR-017, GR-047, GR-048, GR-055"
+        read_type: gate
+        extract: "Range GET to downloadUrl (no auth header); full reads carry NO Range header (GR-015 postcondition); expiry → metadata re-fetch + eTag check, mismatch → BackendUnavailable; RetryPolicy folded in-backend with Retry-After precedence (date + delta-seconds); 416 → empty stream / RemoteStoreError on malformed bounds"
+      - file: sdd/specs/025-retry-policy.md
+        section: "RET-015"
+        read_type: gate
+        extract: "Graph honours all five RetryPolicy fields in-backend (httpx has no native retry); retryable = 5xx/429/transport; terminal = 423/403/404/InvalidPath/507; Retry-After floors the computed backoff; timeout bounds the loop (NOT copy_timeout)"
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "graph_send (pre-change)"
+        read_type: reference
+        extract: "Single attempt + one-shot 401 refresh, shared by resolve_drive_id / read-metadata / listing / future write. Errors carry only (message, path, backend) — no structured context — so the loop must read Retry-After off the live response, not off the raised error (GR-034's 'error context' is aspirational; spec 005 has no context surface)"
+      - file: src/remote_store/backends/_http.py
+        section: "_parse_retry_after, _request_with_retry"
+        read_type: reference
+        extract: "Reuse the sync HTTP backend's Retry-After parse shape (delta-seconds + HTTP-date via parsedate_to_datetime) and the backoff-floor pattern (delay = max(computed, retry_after)) rather than re-deriving them"
+  - id: implement_retry
+    name: Implement retry into graph_send
+    steps:
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "_send_attempt, graph_send, _parse_retry_after, iter_pages"
+        read_type: reference
+        extract: "Split the single attempt into _send_attempt (send + one-shot 401 refresh, returns raw Response, propagates transport errors); graph_send wraps it in the retry loop, classifying retryable 5xx/429 + transport vs terminal. retry=None = single attempt (every existing call site byte-identical). iter_pages threads retry to its per-page graph_send"
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_get_item, _iter_child_items"
+        read_type: reference
+        extract: "Thread self._retry into the metadata GET and the listing iter_pages so read/metadata/type-probes/listing all retry. resolve_drive_id (utils.py) is deliberately left on the bare single-attempt send (retry=None) — the shared primitive now carries the capability for all callers, but the read-path PR does not change the config helper's default behaviour"
+      - file: tests/backends/graph/aio/test_http.py
+        section: "TestGraphSendRetry (run)"
+        read_type: verify
+        extract: "respx green: 5xx/429/transport retried-then-succeed, exhaustion → last mapped error, Retry-After delta + HTTP-date floor the wait (asyncio.sleep patched to record), timeout budget short-circuits, terminal 423/507/404 not retried, 401-refresh composes with the loop. Existing graph_send/iter_pages/read/list/utils tests stay green at retry=None"
+  - id: implement_transfer
+    name: Implement transfer.py range + expiry/fallback
+    steps:
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "(full, new)"
+        read_type: reference
+        extract: "PENDING (C2/C3): _read_bytes range GET (no auth), GR-017 expiry re-fetch + eTag, GR-055 416 mapping, SharePoint full-entity-200 fallback to spool (WARNING graph.read.range_fallback + FileInfo.extra flag)"
+  - id: verify
+    name: Verify gates
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A public method signature"
+        read_type: verify
+        extract: "PENDING (C3): CHANGELOG stub + graph IR/viz regen for the changed read-path docstrings; lint (check_no_tracker_refs bars spec IDs in docstrings) + typecheck + 100% _graph coverage + filterwarnings clean"
