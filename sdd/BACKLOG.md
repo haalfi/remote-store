@@ -308,7 +308,7 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## New Backends
 
-- [ ] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
+- [~] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
   spec: GR-001..GR-057, ERR-013 · effort: L · audience: user.api
   Unified backend covering OneDrive (personal & business) and SharePoint
   document libraries via the Microsoft Graph REST API. Single `drive_id`
@@ -347,7 +347,11 @@ and the highest ID already in this file, then take the next integer. Run
     cannot land in isolation — without the runtime class to raise,
     adding the variant alone would create a verified contract for
     behaviour the codebase cannot exhibit.
-  - Next: implementation per spec 044.
+  - Progress: GR-FOUNDATION (setup guide + Stage-1 cassette spine + scrub
+    security gate + httpx streaming-replay proof) landed. Next: GR-CONTRACT
+    (async `TestWriteResultConformance` + capability-matrix/metadata gates +
+    the `ResourceLocked` bundle) per the
+    [implementation plan](plans/ID-127-graph-backend-implementation.md).
 
 - [ ] **ID-121 — CompositeStore (research complete)**
   spec: — · effort: L · audience: user.api
