@@ -1,0 +1,83 @@
+id: ID-127
+title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-READ (PR A): metadata + simple read"
+trigger: "ID-127 GR-READ, sub-PR A of 3: GR-CORE landed the GraphBackend public surface with the data-plane bodies stubbed (NotImplementedError). The read path is the first to fill — single-GET item metadata feeds get_file_info (GR-013) and the exists/is_file/is_folder type probes (GR-031), and a simple stream from the pre-signed @microsoft.graph.downloadUrl (GR-012) with the folder check before the first byte (BE-021). List+pagination (PR B) and the range/expiry/retry hardening in transfer.py (PR C) follow on the same branch."
+source_items:
+  - ID-127
+audience:
+  - user.api
+  - user.api_docs
+  - infra.test
+expected_ripples:
+  # user.api audience → CHANGELOG stub required (trace-schema derived rule).
+  - CHANGELOG.md
+  # New public-method docstrings (read / get_file_info Raises clauses) regen the
+  # public-API graph IR + its viz per the "A public method signature" ripple row.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+discovery_followups: []
+surprising_ripples:
+  # Stage-3 live check (read-only, device-code consumer OneDrive) caught a 400
+  # the respx layer structurally could not: _get_item built the root metadata
+  # URL as ``/drives/{id}/root:`` (the path-addressing colon form), which real
+  # Graph rejects for a standalone item GET — the root item is the bare
+  # ``/drives/{id}/root``. The unit mocks mirrored the buggy URL so they passed
+  # falsely; the fix added an _item_url builder special-casing the root exactly
+  # as _children_url already did, plus a TestItemUrl regression and a live probe.
+  #
+  # PR review (ultrareview) also flagged GR-033: read() streams the body direct
+  # via client.stream (not graph_send), so a transport error on the pre-signed
+  # download host escaped as a raw httpx.TransportError instead of the mandated
+  # BackendUnavailable. Fixed by wrapping the stream; the docstring no longer
+  # under-claims the transport case.
+  - src/remote_store/aio/backends/_graph/backend.py
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/plans/ID-127-graph-backend-implementation.md
+        section: "Step 4 — GR-READ"
+        read_type: gate
+        extract: "GR-READ scope (GR-012/013/014, GR-015/017/055, GR-049); sub-decompose read+metadata / list+pagination / range+transfer; off-xfail is really missing-cassette skip"
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-012, GR-013, GR-031, GR-049"
+        read_type: gate
+        extract: "read streams from downloadUrl unauthenticated; get_file_info field map + eTag strip/lowercase; 404 itemNotFound → NotFound; file.hashes → FileInfo.extra"
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "graph_send, classify_graph_error"
+        read_type: reference
+        extract: "Single-attempt send + one-shot 401 refresh maps 404 at item scope to NotFound; RetryPolicy loop deferred to PR C, so read rides the bare send for now"
+  - id: implement
+    name: Implement read + metadata
+    steps:
+      - file: src/remote_store/backends/_fileinfo.py
+        section: "_clean_etag, _name_from_path"
+        read_type: reference
+        extract: "Reuse the shared eTag strip/lowercase + name-from-path helpers rather than re-deriving them in the Graph mapping"
+      - file: src/remote_store/aio/backends/_graph/items.py
+        section: "(full, new)"
+        read_type: reference
+        extract: "New pure driveItem→FileInfo mapping module: facet probes, download_url accessor, 3.10-safe RFC-3339 parse (trailing Z → +00:00), hashes → extra"
+      - file: src/remote_store/aio/_async_backend.py
+        section: "read / read_bytes / get_file_info / exists / is_file / is_folder"
+        read_type: reference
+        extract: "Signatures + the BE-021 folder-before-yield contract the read generator must honour"
+  - id: verify
+    name: Verify gates
+    steps:
+      - file: tests/backends/graph/aio/test_read.py
+        section: "(run)"
+        read_type: verify
+        extract: "respx unit layer green: field map + hashes→extra, type-probe 404 suppression, stream content, no Authorization on download, folder/missing-url/host-error mappings"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A public method signature"
+        read_type: verify
+        extract: "CHANGELOG stub + graph IR/viz regen for the new read-path docstrings"
+  - id: reality_check
+    name: Stage-3 reality check
+    steps:
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_get_item / _item_url"
+        read_type: verify
+        extract: "Live read-only probe (device-code consumer OneDrive) ran the whole read/list surface: read_bytes streamed a real 1.15MB PDF from the pre-signed downloadUrl with no auth (GR-015 confirmed), get_file_info/get_folder_info/iter_children all green. SURFACED a 400 respx could not: the root metadata GET used the ``root:`` path-address form Graph rejects for a standalone item; fixed with _item_url special-casing the bare ``/root``."
+        outcome: ok

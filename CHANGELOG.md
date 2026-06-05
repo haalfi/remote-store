@@ -11,6 +11,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - ID-127: `ResourceLocked` error type for resources held by another session
 - ID-127: config auto-wraps `client_secret` / `client_certificate` in `Secret`
 - ID-127: `GraphBackend` / `GraphAuth` / `GraphUtils` public surface + `graph` extra
+- ID-127: `GraphBackend` read path — `read` / `read_bytes` / `get_file_info` / `exists` / `is_file` / `is_folder`
+- ID-127: `GraphBackend` listing — `iter_children` / `list_files` / `list_folders` / `get_folder_info`
 
 ## [0.27.0] - 2026-06-02
 

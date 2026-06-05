@@ -183,3 +183,17 @@ class TestIterPages:
             with pytest.raises(BackendUnavailable):
                 async for _ in iter_pages(client, self._BASE, token_provider=lambda: "t"):
                     pass
+
+    @respx.mock
+    @pytest.mark.spec("GR-016")
+    async def test_cross_host_next_link_is_backend_unavailable(self) -> None:
+        # A well-formed but cross-host nextLink must NOT be followed: each page is
+        # re-fetched through graph_send with the bearer token attached, so a foreign
+        # host would receive the token. The scheme check alone would let this pass.
+        respx.get(self._BASE).mock(
+            return_value=httpx.Response(200, json={"value": [], "@odata.nextLink": "https://evil.example/p2"})
+        )
+        async with httpx.AsyncClient() as client:
+            with pytest.raises(BackendUnavailable):
+                async for _ in iter_pages(client, self._BASE, token_provider=lambda: "t"):
+                    pass

@@ -17,14 +17,23 @@ import httpx
 
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy
-from remote_store._errors import CapabilityNotSupported
+from remote_store._errors import BackendUnavailable, CapabilityNotSupported, InvalidPath, NotFound
+from remote_store._models import FolderEntry, FolderInfo
+from remote_store._path import RemotePath
 from remote_store.aio._async_backend import AsyncBackend
-from remote_store.aio.backends._graph.http import BACKEND_NAME
+from remote_store.aio.backends._graph.http import BACKEND_NAME, graph_send, iter_pages
+from remote_store.aio.backends._graph.items import (
+    download_url,
+    is_file_item,
+    is_folder_item,
+    item_to_fileinfo,
+    parse_graph_datetime,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 
-    from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
+    from remote_store._models import FileInfo, WriteResult
     from remote_store._resolution import ResolutionPlan
     from remote_store.aio._types import AsyncWritableContent
 
@@ -67,6 +76,11 @@ def _encode_segment(segment: str) -> str:
     stripped = encoded.rstrip(".")
     trailing_dots = len(encoded) - len(stripped)
     return stripped + "%2E" * trailing_dots
+
+
+def _child_key(parent: str, name: str) -> str:
+    """Join a parent folder key and a child name into a store key."""
+    return f"{parent}/{name}" if parent else name
 
 
 class GraphBackend(AsyncBackend):
@@ -249,57 +263,273 @@ class GraphBackend(AsyncBackend):
 
     # endregion
 
-    # region: data-plane operations — stubbed (GR-READ / GR-WRITE / GR-MUTATE)
+    # region: data-plane reads (GR-012, GR-013, GR-031, GR-049)
+
+    async def _get_item(self, path: str) -> dict[str, Any]:
+        """Fetch the Graph ``driveItem`` body for *path* (one metadata GET).
+
+        The single item-by-path metadata round trip shared by the read and
+        type-probe operations. A missing item surfaces as ``NotFound`` (404
+        ``itemNotFound`` at item scope, mapped by ``graph_send``); drive-scope,
+        transport, and other failures map through the same primitive.
+        """
+        response = await graph_send(
+            self._client, "GET", self._item_url(path), token_provider=self._token_provider, path=path, scope="item"
+        )
+        body: dict[str, Any] = response.json()
+        return body
+
+    def _item_url(self, path: str) -> str:
+        """Return the item-metadata endpoint for *path*.
+
+        The drive root is the bare ``/root`` item; every other path uses the
+        ``root:/{encoded}:`` path-addressing form. ``native_path('')`` yields the
+        ``root:`` path-address form, which Graph rejects (400) for a standalone
+        item GET, so the root is special-cased here exactly as in ``_children_url``.
+        """
+        native = self.native_path(path)
+        if native == f"/drives/{self._drive_id}/root:":
+            return f"{self._base_url}/drives/{self._drive_id}/root"
+        return f"{self._base_url}{native}"
 
     async def read(self, path: str) -> AsyncIterator[bytes]:
-        """Stream file content. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="read"))
-        if False:  # pragma: no cover -- marks this an async generator
-            yield b""
+        """Stream file content from the pre-signed download URL.
+
+        Fetches item metadata first (so the directory check happens before any
+        byte is yielded), then streams the response body from
+        ``@microsoft.graph.downloadUrl``. The download URL is pre-signed, so no
+        ``Authorization`` header is attached.
+
+        Raises:
+            NotFound: If the path does not exist.
+            InvalidPath: If the path names a folder.
+            BackendUnavailable: If the download URL is missing, the pre-signed
+                host returns a non-success status, or the download fails at the
+                transport level (connect/read timeout, DNS, reset).
+        """
+        item = await self._get_item(path)
+        if is_folder_item(item):
+            raise InvalidPath(f"Cannot read — '{path}' is a folder", path=path, backend=self.name)
+        url = download_url(item)
+        if url is None:
+            # A file item should always carry a download URL (even 0-byte files);
+            # its absence is a Graph contract gap, not a silent empty read.
+            raise BackendUnavailable(f"Graph returned no download URL for: {path}", path=path, backend=self.name)
+        # The metadata GET rides graph_send, but this body stream goes direct to
+        # the pre-signed host, so transport errors are mapped here per GR-033.
+        try:
+            async with self._client.stream("GET", url) as response:
+                if not response.is_success:
+                    await response.aread()
+                    raise BackendUnavailable(
+                        f"Graph download failed ({response.status_code}): {path}", path=path, backend=self.name
+                    )
+                async for chunk in response.aiter_bytes():
+                    yield chunk
+        except httpx.TransportError as exc:
+            raise BackendUnavailable(f"Graph download transport error: {exc}", path=path, backend=self.name) from None
 
     async def read_bytes(self, path: str) -> bytes:
-        """Read full file content. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="read_bytes"))
+        """Read full file content as bytes.
+
+        Delegates to ``read`` so the directory check and not-found mapping live
+        in one place.
+
+        Raises:
+            NotFound: If the path does not exist.
+            InvalidPath: If the path names a folder.
+        """
+        return b"".join([chunk async for chunk in self.read(path)])
 
     async def exists(self, path: str) -> bool:
-        """Existence probe. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="exists"))
+        """Return ``True`` if a file or folder exists at *path*.
+
+        A 404 ``itemNotFound`` is suppressed to ``False``; never raises
+        ``NotFound``.
+        """
+        try:
+            await self._get_item(path)
+        except NotFound:
+            return False
+        return True
 
     async def is_file(self, path: str) -> bool:
-        """File-type probe. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="is_file"))
+        """Return ``True`` if *path* exists and carries the ``file`` facet.
+
+        A missing item returns ``False`` (the 404 is suppressed).
+        """
+        try:
+            item = await self._get_item(path)
+        except NotFound:
+            return False
+        return is_file_item(item)
 
     async def is_folder(self, path: str) -> bool:
-        """Folder-type probe. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="is_folder"))
+        """Return ``True`` if *path* exists and carries the ``folder`` facet.
+
+        A missing item returns ``False`` (the 404 is suppressed). The drive root
+        (``""``) carries the ``folder`` facet and reports ``True``.
+        """
+        try:
+            item = await self._get_item(path)
+        except NotFound:
+            return False
+        return is_folder_item(item)
 
     async def get_file_info(self, path: str) -> FileInfo:
-        """File metadata. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="get_file_info"))
+        """Return file metadata mapped from the Graph ``driveItem`` body.
 
-    async def get_folder_info(self, path: str) -> FolderInfo:
-        """Folder metadata. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="get_folder_info"))
+        ``file.hashes`` rides ``FileInfo.extra["graph.file.hashes"]``;
+        ``metadata`` is ``None`` (user metadata is not declared) and ``digest``
+        is left unset.
+
+        Raises:
+            NotFound: If the path does not exist.
+            InvalidPath: If the path names a folder.
+        """
+        item = await self._get_item(path)
+        if is_folder_item(item):
+            raise InvalidPath(f"Cannot get file info — '{path}' is a folder", path=path, backend=self.name)
+        return item_to_fileinfo(item, path)
+
+    # endregion
+
+    # region: data-plane listing (GR-014, GR-016)
+
+    def _children_url(self, path: str) -> str:
+        """Return the ``/children`` collection endpoint for the folder *path*.
+
+        The drive root uses the bare ``/root/children`` form; every other folder
+        uses the path-addressed ``root:/{encoded}:/children`` form.
+        """
+        native = self.native_path(path)
+        if native == f"/drives/{self._drive_id}/root:":
+            return f"{self._base_url}/drives/{self._drive_id}/root/children"
+        return f"{self._base_url}{native}/children"
+
+    async def _iter_child_items(self, path: str) -> AsyncIterator[dict[str, Any]]:
+        """Yield each child ``driveItem`` under *path*, following pagination.
+
+        A 404 on the *first* request (a missing folder, or a file path with no
+        children collection) is suppressed to an empty iteration, so the public
+        listing operations never raise ``NotFound`` for a bad path. A 404 raised
+        mid-pagination (a later ``@odata.nextLink`` page) is a real error and
+        propagates, rather than silently truncating the listing to the pages
+        seen so far.
+        """
+        url = self._children_url(path)
+        started = False
+        try:
+            async for page in iter_pages(self._client, url, token_provider=self._token_provider, path=path):
+                started = True
+                value = page.get("value")
+                if isinstance(value, list):
+                    for raw in value:
+                        if isinstance(raw, dict):
+                            yield raw
+        except NotFound:
+            if started:
+                raise
+            return
+
+    async def _walk_files(self, path: str, depth: int, limit: int | None) -> AsyncIterator[FileInfo]:
+        """Yield files under *path*, descending while ``depth < limit``.
+
+        ``limit is None`` means unbounded. A subfolder is entered only when the
+        next level stays within the bound, so every yielded file sits at a depth
+        ``<= limit`` — the inclusive depth boundary.
+        """
+        async for item in self._iter_child_items(path):
+            name = item.get("name")
+            if not isinstance(name, str):
+                continue
+            child = _child_key(path, name)
+            if is_folder_item(item):
+                if limit is None or depth < limit:
+                    async for info in self._walk_files(child, depth + 1, limit):
+                        yield info
+            elif is_file_item(item):
+                yield item_to_fileinfo(item, child)
+
+    async def iter_children(self, path: str) -> AsyncIterator[FileInfo | FolderEntry]:
+        """Yield immediate files and folders under *path* in a single pass.
+
+        Overrides the default (which would chain ``list_files`` + ``list_folders``
+        and double the round-trips) to consume one ``/children`` response:
+        ``folder``-faceted items become ``FolderEntry``, ``file``-faceted items
+        become ``FileInfo``, in the order Graph returns them. A missing or file
+        path yields nothing.
+        """
+        async for item in self._iter_child_items(path):
+            name = item.get("name")
+            if not isinstance(name, str):
+                continue
+            child = _child_key(path, name)
+            if is_folder_item(item):
+                yield FolderEntry(path=RemotePath(child), name=name)
+            elif is_file_item(item):
+                yield item_to_fileinfo(item, child)
 
     async def list_files(
         self, path: str, *, recursive: bool = False, max_depth: int | None = None
     ) -> AsyncIterator[FileInfo]:
-        """List files. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="list_files"))
-        if False:  # pragma: no cover -- marks this an async generator
-            yield
+        """List files under *path*.
+
+        When ``max_depth`` is set it governs traversal depth and ``recursive`` is
+        ignored; otherwise ``recursive=True`` walks the subtree unbounded and the
+        default lists only immediate files. A missing or file path yields nothing.
+        """
+        if max_depth is not None:
+            limit: int | None = max_depth
+        elif recursive:
+            limit = None
+        else:
+            limit = 0
+        async for info in self._walk_files(path, 0, limit):
+            yield info
 
     async def list_folders(self, path: str) -> AsyncIterator[FolderEntry]:
-        """List folders. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="list_folders"))
-        if False:  # pragma: no cover -- marks this an async generator
-            yield
+        """List immediate subfolders under *path*.
 
-    async def iter_children(self, path: str) -> AsyncIterator[FileInfo | FolderEntry]:
-        """Single-pass children listing. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="iter_children"))
-        if False:  # pragma: no cover -- marks this an async generator
-            yield
+        A missing or file path yields nothing.
+        """
+        async for item in self._iter_child_items(path):
+            name = item.get("name")
+            if isinstance(name, str) and is_folder_item(item):
+                yield FolderEntry(path=RemotePath(_child_key(path, name)), name=name)
+
+    async def get_folder_info(self, path: str) -> FolderInfo:
+        """Return aggregated folder metadata: recursive file count + total size.
+
+        Validates the path first — a missing item raises ``NotFound`` and a file
+        item raises ``InvalidPath``. ``file_count`` and ``total_size`` aggregate
+        every file in the subtree; ``modified_at`` is the folder item's own
+        timestamp.
+
+        Raises:
+            NotFound: If the path does not exist.
+            InvalidPath: If the path names a file.
+        """
+        item = await self._get_item(path)
+        if not is_folder_item(item):
+            raise InvalidPath(f"Cannot get folder info — '{path}' is a file", path=path, backend=self.name)
+        file_count = 0
+        total_size = 0
+        async for info in self._walk_files(path, 0, None):
+            file_count += 1
+            total_size += info.size
+        lmd = item.get("lastModifiedDateTime")
+        modified_at = parse_graph_datetime(lmd) if isinstance(lmd, str) and lmd else None
+        return FolderInfo(
+            path=RemotePath.from_backend_path(path),
+            file_count=file_count,
+            total_size=total_size,
+            modified_at=modified_at,
+        )
+
+    # endregion
+
+    # region: data-plane operations — stubbed (GR-WRITE / GR-MUTATE)
 
     async def write(
         self,

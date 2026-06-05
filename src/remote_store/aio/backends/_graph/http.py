@@ -16,6 +16,7 @@ from __future__ import annotations
 import inspect
 import logging
 from typing import TYPE_CHECKING, Any, Literal
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -231,10 +232,14 @@ async def iter_pages(
     """Yield each page body of a Graph collection, following ``@odata.nextLink``.
 
     Terminates when a page omits ``@odata.nextLink``. An empty ``value`` array
-    carrying a ``nextLink`` is followed, not treated as the end. A malformed
-    ``@odata.nextLink`` (not an absolute URL) is a Graph contract violation and
-    maps to ``BackendUnavailable`` rather than being repaired or second-guessed.
+    carrying a ``nextLink`` is followed, not treated as the end. A ``nextLink``
+    that is malformed, or that points to a different scheme/host than the
+    original request, is a Graph contract violation and maps to
+    ``BackendUnavailable`` rather than being followed: each page is re-fetched
+    through ``graph_send`` (which attaches the bearer token), so following a
+    cross-host link would leak the token to an unrelated host.
     """
+    trusted = urlsplit(url)
     next_url: str | None = url
     while next_url:
         response = await graph_send(client, "GET", next_url, token_provider=token_provider, path=path)
@@ -243,8 +248,11 @@ async def iter_pages(
         link = body.get("@odata.nextLink") if isinstance(body, dict) else None
         if link is None:
             return
-        if not isinstance(link, str) or not link.startswith(("http://", "https://")):
+        parts = urlsplit(link) if isinstance(link, str) else None
+        if parts is None or (parts.scheme, parts.netloc) != (trusted.scheme, trusted.netloc):
             raise BackendUnavailable(
-                f"Graph returned a malformed @odata.nextLink: {link!r}", path=path, backend=BACKEND_NAME
+                f"Graph returned a cross-host or malformed @odata.nextLink: {link!r}",
+                path=path,
+                backend=BACKEND_NAME,
             )
         next_url = link
