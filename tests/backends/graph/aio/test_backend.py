@@ -225,13 +225,12 @@ class TestUnwrapAndClose:
 
 
 class TestStubs:
-    """Write/mutate + list ops remain stubbed until GR-READ list / GR-WRITE / GR-MUTATE."""
+    """Write + mutate ops remain stubbed until GR-WRITE / GR-MUTATE."""
 
     @pytest.mark.spec("GR-012")
     @pytest.mark.parametrize(
         "call",
         [
-            lambda b: b.get_folder_info("a"),
             lambda b: b.write("a", b"x"),
             lambda b: b.write_atomic("a", b"x"),
             lambda b: b.delete("a"),
@@ -243,17 +242,3 @@ class TestStubs:
     async def test_coroutine_stub_raises(self, call: Callable[[GraphBackend], Awaitable[Any]]) -> None:
         with pytest.raises(NotImplementedError):
             await call(_make())
-
-    @pytest.mark.spec("GR-012")
-    @pytest.mark.parametrize(
-        "call",
-        [
-            lambda b: b.list_files("a"),
-            lambda b: b.list_folders("a"),
-            lambda b: b.iter_children("a"),
-        ],
-    )
-    async def test_async_generator_stub_raises(self, call: Callable[[GraphBackend], Any]) -> None:
-        with pytest.raises(NotImplementedError):
-            async for _ in call(_make()):
-                pass

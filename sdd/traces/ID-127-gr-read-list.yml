@@ -1,0 +1,60 @@
+id: ID-127
+title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-READ (PR B): listing + folder aggregate"
+trigger: "ID-127 GR-READ, sub-PR B of 3: PR A filled the single-item read + metadata bodies, leaving the listing operations stubbed. Fill them off the shared /children collection: iter_children (GR-014, single-pass override), list_files (recursive + inclusive max_depth precedence per ASYNC-014), list_folders, and the recursive get_folder_info aggregate (BE-017). All four ride iter_pages (GR-016, already complete in http.py) and suppress a 404 at the path to an empty listing (BE-014). The range/expiry/retry hardening in transfer.py (PR C) follows on the same branch."
+source_items:
+  - ID-127
+audience:
+  - user.api
+  - user.api_docs
+  - infra.test
+expected_ripples:
+  # user.api audience → CHANGELOG stub required (trace-schema derived rule).
+  - CHANGELOG.md
+  # New public-method docstrings (list_files / get_folder_info Raises clauses)
+  # regen the public-API graph IR + viz per the "A public method signature" row.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+discovery_followups: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-014, GR-016, GR-046"
+        read_type: gate
+        extract: "All three listings back onto /children; iter_children overrides the chain default; max_depth ignores recursive (ASYNC-014); missing/file path yields nothing"
+      - file: tests/backends/conformance/test_listing.py
+        section: "TestListFilesCompleteness — DEPTH_TREE, DEPTH-003 params"
+        read_type: gate
+        extract: "Inclusive depth boundary: max_depth=0→{a}, 1→{a,b,c}, 2→+d, 3→+e; depth = rel-path slash count"
+      - file: tests/backends/conformance/_helpers.py
+        section: "_depth"
+        read_type: reference
+        extract: "depth = len(parent.parts) - len(prefix_parts); pins the recursion-descent bound (enter folder only while depth < limit)"
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "iter_pages"
+        read_type: reference
+        extract: "Pagination over @odata.nextLink is done — empty value + nextLink is followed, malformed link → BackendUnavailable; listings consume it directly"
+  - id: implement
+    name: Implement listing + aggregate
+    steps:
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "list_files / list_folders / iter_children / get_folder_info"
+        read_type: reference
+        extract: "Shape model: recursive walk, max_depth prune by rel-depth, FolderInfo aggregate (file_count/total_size, latest modified); get_folder_info validates file→InvalidPath, missing→NotFound"
+      - file: src/remote_store/_path.py
+        section: "RemotePath.__init__ / from_backend_path"
+        read_type: gate
+        extract: "RemotePath('') raises; the root folder key must go through from_backend_path (used in get_folder_info)"
+        outcome: ok
+  - id: verify
+    name: Verify gates
+    steps:
+      - file: tests/backends/graph/aio/test_list.py
+        section: "(run)"
+        read_type: verify
+        extract: "respx green: interleaved iter_children, recursion + inclusive max_depth, ≥2-page pagination, empty-page+nextLink followed, malformed nextLink → BackendUnavailable, folder aggregate, file→InvalidPath, missing→NotFound. Caught: respx matches a no-query route regardless of query, so a same-path nextLink looped forever — model nextLink as a distinct opaque path"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A public method signature"
+        read_type: verify
+        extract: "CHANGELOG stub + graph IR/viz regen for the new listing docstrings"
