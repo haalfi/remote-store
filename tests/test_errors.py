@@ -12,6 +12,7 @@ from remote_store._errors import (
     NotFound,
     PermissionDenied,
     RemoteStoreError,
+    ResourceLocked,
 )
 
 
@@ -113,13 +114,51 @@ class TestBackendUnavailable:
         assert e.backend == "s3"
 
 
+class TestResourceLocked:
+    """ERR-013: ResourceLocked (ADR-0024 — maps Graph 423 Locked)."""
+
+    @pytest.mark.spec("ERR-013")
+    def test_is_remote_store_error(self) -> None:
+        assert issubclass(ResourceLocked, RemoteStoreError)
+
+    @pytest.mark.spec("ERR-013")
+    def test_path_and_backend(self) -> None:
+        """Postcondition: path and backend attributes are set, no extra fields."""
+        e = ResourceLocked("locked", path="contracts/report.docx", backend="graph")
+        assert e.path == "contracts/report.docx"
+        assert e.backend == "graph"
+
+    @pytest.mark.spec("ERR-013")
+    def test_no_speculative_fields(self) -> None:
+        """ADR-0024 dropped the reserved lock_owner field — no extra attributes."""
+        e = ResourceLocked("locked", path="x", backend="graph")
+        assert not hasattr(e, "lock_owner")
+        assert not hasattr(e, "capability")
+
+    @pytest.mark.spec("ERR-013")
+    def test_exported_from_package(self) -> None:
+        """ERR-013 is a user-facing error — present in the public surface."""
+        import remote_store
+
+        assert remote_store.ResourceLocked is ResourceLocked
+        assert "ResourceLocked" in remote_store.__all__
+
+
 class TestFlatHierarchy:
     """ERR-008: All errors inherit directly from RemoteStoreError."""
 
     @pytest.mark.spec("ERR-008")
     def test_all_errors_inherit_directly_from_base(self) -> None:
         """Concrete errors inherit from RemoteStoreError, not from each other."""
-        concrete = [NotFound, AlreadyExists, PermissionDenied, InvalidPath, CapabilityNotSupported, BackendUnavailable]
+        concrete = [
+            NotFound,
+            AlreadyExists,
+            PermissionDenied,
+            InvalidPath,
+            CapabilityNotSupported,
+            BackendUnavailable,
+            ResourceLocked,
+        ]
         for cls in concrete:
             bases = cls.__mro__
             assert bases[1] is RemoteStoreError, f"{cls.__name__} does not directly inherit RemoteStoreError"

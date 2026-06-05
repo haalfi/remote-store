@@ -83,11 +83,18 @@ v1, so the runtime class, the spec 005 entry (ERR-013), the Dafny
 non-`BackendUnavailable` variant uses in
 `sdd/formal/BackendContract.dfy`, so `_raise_if_err` can dispatch it
 through the existing `err.path` / `err.backend` reader), and its
-dispatch in `tests/backends/dafny/_helpers.py::_raise_if_err` all
-ship together with the Graph backend implementation, not separately.
-Spec 005 records ERR-013 at RFC acceptance; the runtime class and
-Dafny variant land in the same PR as the Graph sub-package
-(`aio/backends/_graph/`). See ID-127 in `sdd/BACKLOG.md` for the
+dispatch in `tests/backends/dafny/_helpers.py::_raise_if_err` ship as
+one coupled bundle, never the variant alone. Spec 005 records ERR-013
+at RFC acceptance.
+
+**Delivery under ID-127.** This ADR was written assuming a single Graph
+backend PR, in which the bundle would land "in the same PR as the Graph
+sub-package (`aio/backends/_graph/`)." ID-127's phased roadmap instead
+lands the bundle one step earlier — in the GR-CONTRACT step, ahead of the
+sub-package, which follows in GR-CORE. The decision is unchanged and its
+intention still honoured: the variant never ships orphaned (its only
+raiser, the Graph `423` mapper, lands in the same ID-127 delivery) and the
+bundle stays coupled. See ID-127 in `sdd/BACKLOG.md` for the
 bundled-sub-task note.
 
 ## Consequences

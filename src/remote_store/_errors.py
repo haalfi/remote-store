@@ -131,6 +131,17 @@ class BackendUnavailable(RemoteStoreError):
     """
 
 
+class ResourceLocked(RemoteStoreError):
+    """Raised when a target resource is locked by another session.
+
+    The resource exists and the caller is authorised, but another session
+    or process holds it (e.g. an open Office co-authoring session), so the
+    operation cannot proceed now. Not retried by the default policy: the
+    lock has no ``Retry-After`` and may last indefinitely. Maps from
+    Microsoft Graph ``423 Locked``.
+    """
+
+
 # ---------------------------------------------------------------------------
 # Error factory helpers
 # ---------------------------------------------------------------------------

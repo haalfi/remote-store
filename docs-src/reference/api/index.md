@@ -86,6 +86,7 @@ Complete reference for all public exports of `remote-store`.
 | [CapabilityNotSupported](errors.md#remote_store.CapabilityNotSupported) | Backend lacks required capability |
 | [BackendUnavailable](errors.md#remote_store.BackendUnavailable) | Backend could not be reached |
 | [DirectoryNotEmpty](errors.md#remote_store.DirectoryNotEmpty) | Non-recursive delete on non-empty folder |
+| [ResourceLocked](errors.md#remote_store.ResourceLocked) | Resource locked by another session |
 
 ## Introspection
 

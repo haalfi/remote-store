@@ -23,6 +23,7 @@ from remote_store._errors import (
     NotFound,
     PermissionDenied,
     RemoteStoreError,
+    ResourceLocked,
 )
 from remote_store._info import BackendInfo, ExtensionInfo, InfoResult, info
 from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, PathEntry, WriteResult
@@ -88,6 +89,7 @@ __all__ = [
     "CapabilityNotSupported",
     "DirectoryNotEmpty",
     "BackendUnavailable",
+    "ResourceLocked",
     # Batch operations
     "BatchResult",
     "batch_delete",

@@ -36,6 +36,9 @@ class Error:
     @property
     def is_BackendUnavailable(self) -> bool:
         return isinstance(self, Error_BackendUnavailable)
+    @property
+    def is_ResourceLocked(self) -> bool:
+        return isinstance(self, Error_ResourceLocked)
 
 class Error_NotFound(Error, NamedTuple('NotFound', [('path', Any), ('backend', Any)])):
     def __dafnystr__(self) -> str:
@@ -90,6 +93,14 @@ class Error_BackendUnavailable(Error, NamedTuple('BackendUnavailable', [('backen
         return f'Error.BackendUnavailable({self.backend.VerbatimString(True)})'
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Error_BackendUnavailable) and self.backend == __o.backend
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+class Error_ResourceLocked(Error, NamedTuple('ResourceLocked', [('path', Any), ('backend', Any)])):
+    def __dafnystr__(self) -> str:
+        return f'Error.ResourceLocked({self.path.VerbatimString(True)}, {self.backend.VerbatimString(True)})'
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, Error_ResourceLocked) and self.path == __o.path and self.backend == __o.backend
     def __hash__(self) -> int:
         return super().__hash__()
 

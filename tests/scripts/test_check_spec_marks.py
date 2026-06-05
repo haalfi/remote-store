@@ -189,9 +189,11 @@ class TestAllowlist:
         assert is_allowlisted("GR-001") is True
         assert is_allowlisted("GR-057") is True
 
-    def test_resource_locked_pending_id_allowlisted(self) -> None:
-        # ERR-013 / ResourceLocked ships with the Graph backend.
-        assert is_allowlisted("ERR-013") is True
+    def test_resource_locked_no_longer_pending(self) -> None:
+        # ERR-013 / ResourceLocked left the pending allowlist when its runtime
+        # class + tests landed in GR-CONTRACT (ahead of the Graph backend that
+        # raises it). It is now an ordinary shipped ID with a real citing mark.
+        assert is_allowlisted("ERR-013") is False
 
     def test_ordinary_shipped_id_not_allowlisted(self) -> None:
         assert is_allowlisted("BE-014") is False

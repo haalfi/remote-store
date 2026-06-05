@@ -257,12 +257,13 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
 )
 
 # Implementation-pending backends absent from FEATURES.md. The Graph
-# backend (spec 044 GR-001..GR-057, plus ERR-013/ResourceLocked in spec
-# 005) is owned by ID-127 and not yet built; its marks land with the
-# backend. Prefix-matched so the whole GR-* family is covered without
-# enumerating 57 IDs.
+# backend operations (spec 044 GR-001..GR-057) are owned by ID-127 and not
+# yet built; their marks land with the backend. Prefix-matched so the whole
+# GR-* family is covered without enumerating 57 IDs. (ERR-013/ResourceLocked
+# left this list when its runtime class + tests landed in GR-CONTRACT, ahead
+# of the backend that raises it — ADR-0024 bundled-implementation order.)
 _ALLOWLIST_PENDING_PREFIXES: tuple[str, ...] = ("GR-",)
-_ALLOWLIST_PENDING_IDS: frozenset[str] = frozenset({"ERR-013"})
+_ALLOWLIST_PENDING_IDS: frozenset[str] = frozenset()
 
 # The enumerated (non-prefix) allowlist — every explicitly named excused
 # ID. These get the same shrink-only self-pruning the baseline enforces:
