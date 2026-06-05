@@ -129,6 +129,8 @@ def classify_graph_error(
         return AlreadyExists(f"Already exists: {path}", path=path, backend=backend)
     if status == 423:  # GR-045 resourceLocked (ERR-013, ADR-0024)
         return ResourceLocked(f"Resource locked: {path}", path=path, backend=backend)
+    if status == 416:  # GR-055 invalidRange on a range read (malformed-bounds case)
+        return RemoteStoreError(f"Invalid range (416 {code or 'invalidRange'}): {path}", path=path, backend=backend)
     if status == 429:  # GR-034 activityLimitReached
         return BackendUnavailable(
             f"Throttled (429 {code or 'activityLimitReached'}): {path}", path=path, backend=backend

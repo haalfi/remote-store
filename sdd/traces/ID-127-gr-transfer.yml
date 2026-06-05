@@ -55,9 +55,17 @@ phases:
     name: Implement transfer.py range + expiry/fallback
     steps:
       - file: src/remote_store/aio/backends/_graph/transfer.py
-        section: "(full, new)"
+        section: "stream_range, _spooled_window"
         read_type: reference
-        extract: "PENDING (C2/C3): _read_bytes range GET (no auth), GR-017 expiry re-fetch + eTag, GR-055 416 mapping, SharePoint full-entity-200 fallback to spool (WARNING graph.read.range_fallback + FileInfo.extra flag)"
+        extract: "One stream_range generator drives full reads (no Range header per GR-015) and partial reads (Range: bytes=start-end), both against the pre-signed downloadUrl with no auth. Expiry (401/403) is status-time (zero bytes delivered), so recovery re-requests the same window after a metadata re-fetch + eTag check — no partial-delivery cursor. 416 → empty past EOF / RemoteStoreError on inverted bounds (via classify_graph_error, the 416 branch added to http.py). SharePoint 200-to-a-ranged-GET → _spooled_window buffers the full entity to a SpooledTemporaryFile and serves the window; WARNING marker + on_fallback callback"
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "read, _read_bytes, _mark_range_fallback, get_file_info"
+        read_type: reference
+        extract: "read() now drives stream_range (full); _read_bytes(path, start, length) is the internal range helper (not a public Store method — SEEKABLE_READ stays withheld). on_fallback records the path in self._range_fallback_paths; get_file_info flags extra[graph.read.range_fallback]=True for any FileInfo it later returns for that item (the OBS-safe delivery channel — the backend has no StoreEvent handle)"
+      - file: tests/backends/graph/aio/test_transfer.py
+        section: "(run)"
+        read_type: verify
+        extract: "respx green: Range header shape + no-auth, full read sends no Range, 416 empty-vs-malformed, expiry→eTag-unchanged resume / eTag-changed → BackendUnavailable / persistent-expiry budget exhaustion, SharePoint full-entity-200 fallback (WARNING marker + windowed bytes + FileInfo.extra flag, open-ended + bounded windows)"
   - id: verify
     name: Verify gates
     steps:
