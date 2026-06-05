@@ -223,14 +223,23 @@ class TestCachePersistence:
         assert not target.exists()
 
     @pytest.mark.spec("GR-051")
-    def test_flush_swallows_write_error(self, tmp_path: Any, caplog: pytest.LogCaptureFixture) -> None:
+    @pytest.mark.parametrize(
+        "exc",
+        # OSError is the write path; ValueError is the realistic MSAL JSON
+        # serialize() failure mode the OSError-only except used to miss.
+        [OSError("disk full"), ValueError("not serializable")],
+        ids=["write_error", "serialize_error"],
+    )
+    def test_flush_swallows_persist_error(
+        self, tmp_path: Any, caplog: pytest.LogCaptureFixture, exc: Exception
+    ) -> None:
         class _BadCache:
             has_state_changed = True
 
             def serialize(self) -> str:
-                raise OSError("disk full")
+                raise exc
 
         auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
         auth._cache = _BadCache()
-        auth.flush_cache()  # best-effort: must not raise
+        auth.flush_cache()  # best-effort: must not raise, regardless of failure kind
         assert any("token cache" in r.getMessage() for r in caplog.records)

@@ -90,10 +90,13 @@ class GraphUtils:
             The opaque Graph ``drive.id`` string.
 
         Raises:
-            InvalidPath: If ``target`` matches no accepted shape, or the named
-                SharePoint library does not exist on the site.
+            InvalidPath: If ``target`` matches no accepted shape, the SharePoint
+                site URL has no host, or the named library does not exist.
             NotFound: If a site/team/channel id resolves but returns ``404``.
             PermissionDenied: If Graph returns ``403`` for the lookup.
+            BackendUnavailable: For a transport error, a retryable ``5xx`` /
+                ``429`` / ``507``, or a malformed ``@odata.nextLink`` while
+                paging a site's document libraries.
         """
         client = http_client if http_client is not None else httpx.AsyncClient()
         owns_client = http_client is None

@@ -82,6 +82,20 @@ class TestGraphSend:
                 await graph_send(client, "GET", _ME_DRIVE, token_provider=lambda: "t")
 
     @respx.mock
+    @pytest.mark.spec("GR-029")
+    async def test_non_refresh_401_maps_without_retry(self) -> None:
+        # A 401 with any code other than InvalidAuthenticationToken is a
+        # permission failure that a refresh cannot fix: map straight to
+        # PermissionDenied, with no second token acquisition (GR-029).
+        provider = _CountingProvider()
+        route = respx.get(_ME_DRIVE).mock(return_value=httpx.Response(401, json={"error": {"code": "unauthenticated"}}))
+        async with httpx.AsyncClient() as client:
+            with pytest.raises(PermissionDenied):
+                await graph_send(client, "GET", _ME_DRIVE, token_provider=provider)
+        assert provider.calls == 1  # no refresh attempt
+        assert route.call_count == 1  # request issued exactly once
+
+    @respx.mock
     @pytest.mark.spec("GR-031")
     async def test_non_401_error_is_mapped(self) -> None:
         respx.get(_ME_DRIVE).mock(return_value=httpx.Response(404, json={"error": {"code": "itemNotFound"}}))

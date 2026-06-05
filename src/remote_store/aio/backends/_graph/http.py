@@ -177,6 +177,12 @@ async def graph_send(
     The retry/back-off loop for transient ``5xx`` / ``429`` is the read/write
     paths' concern and is layered on by later steps; this primitive is a single
     attempt plus the one-shot auth refresh.
+
+    Caveat: the ``401`` refresh re-issues the request with the same ``kwargs``,
+    so it is only safe when the body is replayable. A streaming body (an
+    ``AsyncIterator`` ``content=`` / generator ``data=``) is consumed by the
+    first attempt and would replay empty — the write path must re-materialise or
+    re-open such a body before relying on the refresh.
     """
     token = await acquire_token(token_provider)
     headers = {**kwargs.pop("headers", {}), "Authorization": f"Bearer {token}"}

@@ -43,7 +43,12 @@ surprising_ripples:
   # New [graph] extra → drift-lock baseline + tested-versions render.
   - infra/drift-locks/graph.txt
   - docs-src/reference/tested-versions.md
-review_rounds: 0
+  # PR review: removing "(lands in GR-{step})" from the stub message during the
+  # docstring tracker-ID sweep left a dead `step=` kwarg on 16 `.format()`
+  # calls — CodeQL flagged the surplus named argument. A self-inflicted ripple
+  # of the doc cleanup, caught by review not lint.
+  - src/remote_store/aio/backends/_graph/backend.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

@@ -93,8 +93,11 @@ class GraphBackend(AsyncBackend):
         copy_timeout: Wall-clock budget for copy/move monitor polling, or
             ``None`` for no backend-imposed ceiling. When set, must be a
             positive float.
-        client_options: Extra options merged into the internal
-            ``httpx.AsyncClient``; explicit constructor parameters win.
+        client_options: Extra options passed through to the internal
+            ``httpx.AsyncClient``. (When a future revision adds an explicit
+            httpx-level constructor parameter, it takes precedence over a
+            ``client_options`` key of the same name; the backend has no such
+            parameter today, so this is passthrough only.)
 
     Raises:
         ValueError: For an empty ``drive_id``, a non-callable
@@ -250,51 +253,51 @@ class GraphBackend(AsyncBackend):
 
     async def read(self, path: str) -> AsyncIterator[bytes]:
         """Stream file content. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="read", step="READ"))
+        raise NotImplementedError(_STUB_MSG.format(op="read"))
         if False:  # pragma: no cover -- marks this an async generator
             yield b""
 
     async def read_bytes(self, path: str) -> bytes:
         """Read full file content. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="read_bytes", step="READ"))
+        raise NotImplementedError(_STUB_MSG.format(op="read_bytes"))
 
     async def exists(self, path: str) -> bool:
         """Existence probe. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="exists", step="READ"))
+        raise NotImplementedError(_STUB_MSG.format(op="exists"))
 
     async def is_file(self, path: str) -> bool:
         """File-type probe. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="is_file", step="READ"))
+        raise NotImplementedError(_STUB_MSG.format(op="is_file"))
 
     async def is_folder(self, path: str) -> bool:
         """Folder-type probe. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="is_folder", step="READ"))
+        raise NotImplementedError(_STUB_MSG.format(op="is_folder"))
 
     async def get_file_info(self, path: str) -> FileInfo:
         """File metadata. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="get_file_info", step="READ"))
+        raise NotImplementedError(_STUB_MSG.format(op="get_file_info"))
 
     async def get_folder_info(self, path: str) -> FolderInfo:
         """Folder metadata. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="get_folder_info", step="READ"))
+        raise NotImplementedError(_STUB_MSG.format(op="get_folder_info"))
 
     async def list_files(
         self, path: str, *, recursive: bool = False, max_depth: int | None = None
     ) -> AsyncIterator[FileInfo]:
         """List files. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="list_files", step="READ"))
+        raise NotImplementedError(_STUB_MSG.format(op="list_files"))
         if False:  # pragma: no cover -- marks this an async generator
             yield
 
     async def list_folders(self, path: str) -> AsyncIterator[FolderEntry]:
         """List folders. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="list_folders", step="READ"))
+        raise NotImplementedError(_STUB_MSG.format(op="list_folders"))
         if False:  # pragma: no cover -- marks this an async generator
             yield
 
     async def iter_children(self, path: str) -> AsyncIterator[FileInfo | FolderEntry]:
         """Single-pass children listing. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="iter_children", step="READ"))
+        raise NotImplementedError(_STUB_MSG.format(op="iter_children"))
         if False:  # pragma: no cover -- marks this an async generator
             yield
 
@@ -307,7 +310,7 @@ class GraphBackend(AsyncBackend):
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
         """Write a file. Not implemented yet (write path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="write", step="WRITE"))
+        raise NotImplementedError(_STUB_MSG.format(op="write"))
 
     async def write_atomic(
         self,
@@ -318,23 +321,23 @@ class GraphBackend(AsyncBackend):
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
         """Atomic write. Not implemented yet (write path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="write_atomic", step="WRITE"))
+        raise NotImplementedError(_STUB_MSG.format(op="write_atomic"))
 
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a file. Not implemented yet (mutate path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="delete", step="MUTATE"))
+        raise NotImplementedError(_STUB_MSG.format(op="delete"))
 
     async def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         """Delete a folder. Not implemented yet (mutate path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="delete_folder", step="MUTATE"))
+        raise NotImplementedError(_STUB_MSG.format(op="delete_folder"))
 
     async def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Move or rename. Not implemented yet (mutate path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="move", step="MUTATE"))
+        raise NotImplementedError(_STUB_MSG.format(op="move"))
 
     async def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Copy. Not implemented yet (mutate path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="copy", step="MUTATE"))
+        raise NotImplementedError(_STUB_MSG.format(op="copy"))
 
     # endregion
 

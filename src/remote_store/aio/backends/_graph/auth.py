@@ -201,11 +201,16 @@ class GraphAuth:
         import os  # noqa: PLC0415
 
         path = self._resolve_cache_path()
+        # Best-effort: flush_cache is called from get_token and from close(), so
+        # neither a write error (OSError) nor a serialization error (MSAL's
+        # JSON-backed serialize() can raise ValueError / TypeError) may
+        # propagate and break token acquisition or teardown.
         try:
+            payload = self._cache.serialize()
             os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(path, "w", encoding="utf-8") as fh:
-                fh.write(self._cache.serialize())
-        except OSError:
+                fh.write(payload)
+        except Exception:  # noqa: BLE001 -- cleanup must never raise
             log.warning("failed to persist Graph token cache to %s", path, exc_info=True)
 
     def __repr__(self) -> str:
