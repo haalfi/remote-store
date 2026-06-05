@@ -40,14 +40,10 @@ instead of hitting the `__setattr__` override.
 ### SEC-003: from_dict() Secret Wrapping
 
 **Invariant:** `RegistryConfig.from_dict()` wraps string values for keys in
-`_SENSITIVE_KEYS` (`key`, `secret`, `password`, `account_key`, `sas_token`,
-`connection_string`) inside `Secret()`. Non-string values (e.g., `None`,
-credential objects) are left unchanged.
-**Forward note:** Extended at ID-127 (Graph backend) implementation to
-add `"client_secret"` and `"client_certificate"` so config-loaded
-Graph backends inherit the same auto-wrap protection
-([RFC-0010](../rfcs/rfc-0010-graph-backend.md) §Auth,
-[ADR-0022](../adrs/0022-graph-auth-model.md) §Credential masking).
+`_SENSITIVE_KEYS` (the authoritative set in `remote_store._config`) inside
+`Secret()`. Non-string values (e.g., `None`, credential objects) are left
+unchanged. The set is the single source of truth (principle 4); this spec
+does not re-enumerate it, so a future widening cannot leave the prose stale.
 
 ### SEC-004: Backend Secret Acceptance
 

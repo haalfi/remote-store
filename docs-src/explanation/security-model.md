@@ -21,6 +21,7 @@ automatically wrap values for these config keys in `Secret`:
 
 - `key`, `secret`, `password`
 - `account_key`, `sas_token`, `connection_string`
+- `client_secret`, `client_certificate`
 
 You never need to create `Secret` instances manually in configuration code.
 

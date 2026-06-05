@@ -85,12 +85,12 @@ Two concrete mechanisms cover credential leakage:
 - **`Secret` wrapper at config and `__repr__`.** `GraphAuth` accepts
   `client_secret: str | Secret`, calls `.reveal()` internally per
   SEC-004, and exposes a `__repr__` that masks the secret per AF-008.
-  `client_secret` is **not** in the default `_SENSITIVE_KEYS` set
-  (SEC-003) — `RegistryConfig.from_dict()` therefore does **not**
-  auto-wrap it. The implementation amends `_SENSITIVE_KEYS` to add
-  `"client_secret"` (and `"client_certificate"`) so config-loaded
-  Graph backends inherit the same auto-wrap protection as S3 / Azure /
-  SFTP credentials. The amendment ships with the implementation PR.
+  `client_secret` and `client_certificate` are in the default
+  `_SENSITIVE_KEYS` set (SEC-003), so `RegistryConfig.from_dict()`
+  auto-wraps them — config-loaded Graph backends inherit the same
+  auto-wrap protection as S3 / Azure / SFTP credentials. (ID-127 added
+  the two keys to the set; they predate the Graph backend's own
+  surface, landing with the GR-CORE config ripple.)
 - **`Authorization` header redaction at the request boundary.** The
   bearer token is replaced with the literal `"***"` in any
   DEBUG-level log record emitted by the backend, and never appears
@@ -124,10 +124,10 @@ in static config and only apply to direct construction.
   async shape is primary; the sync shape exists so sync-facing
   wrapper code can reuse the same `GraphAuth` instance without
   an event loop.
-- **`_SENSITIVE_KEYS` widens.** The amendment to add
-  `"client_secret"` (and `"client_certificate"`) is a one-line
-  config change with no behavioural impact on other backends
-  (their config keys do not collide).
+- **`_SENSITIVE_KEYS` widened.** Adding `"client_secret"` and
+  `"client_certificate"` (ID-127) was a one-line config change with
+  no behavioural impact on other backends (their config keys do not
+  collide).
 
 ## References
 

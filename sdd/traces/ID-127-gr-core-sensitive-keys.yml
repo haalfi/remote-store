@@ -1,0 +1,72 @@
+id: ID-127
+title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-CORE: _SENSITIVE_KEYS widening"
+trigger: "ID-127 GR-CORE (PR-1 of 3): GraphAuth's client-credentials secrets (client_secret, client_certificate) were absent from _config._SENSITIVE_KEYS, so config-loaded Graph backends would not inherit the from_dict() auto-wrap protection that S3 / Azure / SFTP credentials get. SEC-003 carried a Forward note anticipating this exact widening; DAG-033 hard-enumerated the same set in prose. Both go stale on the widening."
+source_items:
+  - ID-127
+audience:
+  - user.api
+  - contributor.process
+expected_ripples:
+  # user.api audience → CHANGELOG stub required (trace-schema derived rule).
+  - CHANGELOG.md
+  # Named GR-CORE obligation: the widening makes two prose sites that inline
+  # the key set stale. Both repointed at the single source (principle 4).
+  - sdd/specs/020-credential-hygiene.md
+  - sdd/specs/031-ext-dagster.md
+surprising_ripples:
+  # The ripple-check named only SEC-003 + DAG-033, but the user-facing
+  # security-model.md enumerates the same auto-wrapped key set verbatim and
+  # went stale too (verbatim-mirror divergence). migration.md also enumerates
+  # it but is a frozen v0.12→v0.13 historical note — correct as-of that
+  # version, left untouched.
+  - docs-src/explanation/security-model.md
+  # PR review: ADR-0022 (cited by this PR as the governing authority) carried
+  # anticipatory prose — "client_secret is not in the set", "the implementation
+  # amends _SENSITIVE_KEYS", "the amendment ships with the implementation PR" —
+  # that this commit, being that amendment, turned stale (principle 3). Caught
+  # in review, not by the ripple-check; same failure mode as SEC-003's Forward
+  # note. Reality-aligned in place (these four Graph ADRs are revised in place,
+  # not superseded; the ADR-0024 GR-CONTRACT past-tensing set the precedent).
+  - sdd/adrs/0022-graph-auth-model.md
+review_rounds: 3
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/plans/ID-127-graph-backend-implementation.md
+        section: "Step 3 — GR-CORE (files-touched: _config + SEC-003 + DAG-033)"
+        read_type: gate
+        extract: "The widening has two stale-prose sites (SEC-003 with its Forward note, DAG-033) plus the zero-change Dagster code consumer; repoint both at _config._SENSITIVE_KEYS, resolve the Forward note, same commit"
+      - file: sdd/specs/020-credential-hygiene.md
+        section: "SEC-003"
+        read_type: gate
+        extract: "Inline key list + Forward note explicitly anticipating client_secret/client_certificate at ID-127; this is the spec of the from_dict wrapping, not a downstream consumer"
+      - file: sdd/specs/031-ext-dagster.md
+        section: "DAG-033"
+        read_type: reference
+        extract: "Downstream consumer: ext/dagster._build_store imports _SENSITIVE_KEYS (no code change) but DAG-033 re-enumerates the set in prose, equally stale"
+      - file: src/remote_store/ext/dagster.py
+        section: "_build_store"
+        read_type: reference
+        extract: "Confirmed _build_store imports _SENSITIVE_KEYS directly — inherits the widening with no code change, as the plan stated"
+  - id: implement
+    name: Implement widening
+    steps:
+      - file: src/remote_store/_config.py
+        section: "_SENSITIVE_KEYS"
+        read_type: reference
+        extract: "Add client_secret, client_certificate; from_dict wraps purely by key name, so the test needs no registered graph backend type"
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/test_config.py
+        section: "TestFromDictSecretWrapping.test_keys_wrapped"
+        read_type: reference
+        extract: "Add a graph case to the parametrize: client_secret/client_certificate wrapped, drive_id not; from_dict accepts any string type with no validation"
+  - id: verify
+    name: Verify gates
+    steps:
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "user.api audience → one-line stub for the config auto-wrap widening"
