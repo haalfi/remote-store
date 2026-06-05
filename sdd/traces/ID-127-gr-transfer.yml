@@ -1,6 +1,6 @@
 id: ID-127
 title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-TRANSFER (PR C): read-path resilience (range + expiry + retry + 416 + SharePoint fallback)"
-trigger: "ID-127 GR-READ, sub-PR C of 3: PR A filled single-item read + metadata and PR B filled listing, both riding the bare single-attempt graph_send (the retry loop was deferred here). PR C hardens the read path: fold RetryPolicy into graph_send (exponential backoff + jitter, Retry-After precedence) so every non-streaming send retries transient 5xx/429/transport; add a transfer.py range-download driver (_read_bytes against the pre-signed downloadUrl, no auth header) with downloadUrl-expiry re-fetch + eTag validation (GR-017) and the 416 invalidRange mapping (GR-055); and the SharePoint range-fallback-to-spool path (WARNING marker + FileInfo.extra flag). Cassettes move the read/list/metadata/lazy_read conformance slices off the missing-cassette skip. Closes the read half of ID-127; write (PR/Step 5) and mutate (Step 6) remain."
+trigger: "ID-127 GR-READ, sub-PR C of 3: PR A filled single-item read + metadata and PR B filled listing, both riding the bare single-attempt graph_send (the retry loop was deferred here). PR C hardens the read path: fold RetryPolicy into graph_send (exponential backoff + jitter, Retry-After precedence) so every non-streaming send retries transient 5xx/429/transport; add a transfer.py range-download driver (_read_bytes against the pre-signed downloadUrl, no auth header) with downloadUrl-expiry re-fetch + eTag validation (GR-017) and the 416 invalidRange mapping (GR-055); and the SharePoint range-fallback-to-spool path (WARNING marker + FileInfo.extra flag). Read-path resilience is validated by respx units + a live device-code probe; conformance-slice cassettes are deferred to GR-WRITE because the conformance read tests seed fixtures via backend.write (still NotImplementedError). Hardens the read half of ID-127; write (Step 5) and mutate (Step 6) remain, and close it."
 source_items:
   - ID-127
 audience:
@@ -15,7 +15,18 @@ expected_ripples:
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
 discovery_followups: []
-surprising_ripples: []
+surprising_ripples:
+  # The plan's Step 4 acceptance ("Graph moves off xfail for READ/LIST/METADATA/
+  # LAZY_READ conformance slices ... cassetted back into graph_replay") collides
+  # with an ordering dependency the plan did not flag: the conformance read/list/
+  # metadata tests seed their fixtures through backend.write (_seed in
+  # test_async_extended.py), which is still NotImplementedError until GR-WRITE.
+  # So only the no-setup missing-path slices are recordable today, and those would
+  # be re-recorded by GR-WRITE's tree-wipe anyway. Cassettes are therefore deferred
+  # to GR-WRITE (one record covers read+write+mutate once seeding works); this PR's
+  # live validation is the bespoke device-code probe instead. Same pattern PRs A/B
+  # shipped — cassettes/graph/ is still empty.
+  - tests/backends/conformance/test_async_extended.py
 phases:
   - id: orient
     name: Orient
@@ -72,4 +83,13 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / A public method signature"
         read_type: verify
-        extract: "PENDING (C3): CHANGELOG stub + graph IR/viz regen for the changed read-path docstrings; lint (check_no_tracker_refs bars spec IDs in docstrings) + typecheck + 100% _graph coverage + filterwarnings clean"
+        extract: "CHANGELOG stub added; gen-graph + gen-graph-viz re-run (no diff — read's summary + signature are unchanged, only its Raises prose, which the IR does not capture). lint clean: check_no_tracker_refs forced the spec IDs out of the new docstrings into # comments / @pytest.mark.spec. typecheck clean; 100% _graph coverage including the new transfer.py (77 stmts)"
+        outcome: ok
+  - id: reality_check
+    name: Stage-3 reality check
+    steps:
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "stream_range / _read_bytes (live)"
+        read_type: verify
+        extract: "Live device-code probe (read-only, consumer OneDrive, reusing the tmp/ token cache) extended for range reads: _read_bytes head/mid/tail/past-EOF/full slices all matched the full body of a 1.15 MB PDF streamed from the real pre-signed downloadUrl — proving the Range header IS honoured on live consumer OneDrive, past-EOF → b'', and no auth header rides the range GET. range_fallback=no: consumer OneDrive honours Range, so the SharePoint full-entity-200 fallback stays respx/unit-only (the SharePoint range-incapable shape is not reproducible on this tenant — consistent with the device-code-only live limit). No surprises this round (unlike PR A's root-addressing 400)."
+        outcome: ok
