@@ -9715,14 +9715,10 @@ instead of hitting the <code>__setattr__</code> override.</p>
 <h2 id="config-integration">Config Integration<a class="headerlink" href="#config-integration" title="Permanent link">&para;</a></h2>
 <h3 id="sec-003-from_dict-secret-wrapping">SEC-003: from_dict() Secret Wrapping<a class="headerlink" href="#sec-003-from_dict-secret-wrapping" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>RegistryConfig.from_dict()</code> wraps string values for keys in
-<code>_SENSITIVE_KEYS</code> (<code>key</code>, <code>secret</code>, <code>password</code>, <code>account_key</code>, <code>sas_token</code>,
-<code>connection_string</code>) inside <code>Secret()</code>. Non-string values (e.g., <code>None</code>,
-credential objects) are left unchanged.
-<strong>Forward note:</strong> Extended at ID-127 (Graph backend) implementation to
-add <code>"client_secret"</code> and <code>"client_certificate"</code> so config-loaded
-Graph backends inherit the same auto-wrap protection
-(<a href="../../rfcs/rfc-0010-graph-backend/">RFC-0010</a> §Auth,
-<a href="../../adrs/0022-graph-auth-model/">ADR-0022</a> §Credential masking).</p>
+<code>_SENSITIVE_KEYS</code> (the authoritative set in <code>remote_store._config</code>) inside
+<code>Secret()</code>. Non-string values (e.g., <code>None</code>, credential objects) are left
+unchanged. The set is the single source of truth (principle 4); this spec
+does not re-enumerate it, so a future widening cannot leave the prose stale.</p>
 <h3 id="sec-004-backend-secret-acceptance">SEC-004: Backend Secret Acceptance<a class="headerlink" href="#sec-004-backend-secret-acceptance" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Backend <code>__init__</code> methods accept <code>str | Secret | None</code> for
 credential parameters and call <code>_reveal()</code> to unwrap them. Backends store

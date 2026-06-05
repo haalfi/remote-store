@@ -10758,15 +10758,14 @@ built once in <code>__init__</code> and closed in <code>dispose()</code>, which 
 <code>PollingComputeLogSubscriptionManager</code> and the <code>LocalComputeLogManager</code>.</p>
 <h3 id="dag-033-credential-masking-in-_build_store">DAG-033: Credential Masking in <code>_build_store</code><a class="headerlink" href="#dag-033-credential-masking-in-_build_store" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>_build_store</code> wraps any value in <code>backend_options</code> whose key
-name is in <code>_SENSITIVE_KEYS</code> (<code>remote_store._config</code> — <code>key</code>, <code>secret</code>,
-<code>password</code>, <code>account_key</code>, <code>sas_token</code>, <code>connection_string</code>) in a <code>Secret</code>
-before passing it to the backend constructor, so credentials are masked in
-<code>repr()</code> and tracebacks. Wrapping is applied to a copy; the caller's
-<code>backend_options</code> mapping is not mutated. Because <code>_build_store</code> is the shared
-construction helper, this masking applies equally to <code>DagsterStoreResource</code>
-(DAG-012) and <code>RemoteStoreIOManager</code> (DAG-015). It reuses the exact
-<code>_SENSITIVE_KEYS</code> set that <code>RegistryConfig._from_dict</code> applies, so the two
-config paths mask the same keys.</p>
+name is in <code>_SENSITIVE_KEYS</code> (the authoritative set in <code>remote_store._config</code>,
+not re-enumerated here per principle 4) in a <code>Secret</code> before passing it to the
+backend constructor, so credentials are masked in <code>repr()</code> and tracebacks.
+Wrapping is applied to a copy; the caller's <code>backend_options</code> mapping is not
+mutated. Because <code>_build_store</code> is the shared construction helper, this masking
+applies equally to <code>DagsterStoreResource</code> (DAG-012) and <code>RemoteStoreIOManager</code>
+(DAG-015). It reuses the exact <code>_SENSITIVE_KEYS</code> set that
+<code>RegistryConfig._from_dict</code> applies, so the two config paths mask the same keys.</p>
 <p><strong>Scope note:</strong> the <code>ConfigurableClass</code> <code>inst_data</code> config-YAML fragment is
 owned and serialised by Dagster, not by <code>_build_store</code>; masking it is out of
 scope. Credentials in <code>dagster.yaml</code> should be supplied through environment
