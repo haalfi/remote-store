@@ -17,18 +17,18 @@ import httpx
 
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy
-from remote_store._errors import BackendUnavailable, CapabilityNotSupported, InvalidPath, NotFound
+from remote_store._errors import CapabilityNotSupported, InvalidPath, NotFound
 from remote_store._models import FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store.aio._async_backend import AsyncBackend
 from remote_store.aio.backends._graph.http import BACKEND_NAME, graph_send, iter_pages
 from remote_store.aio.backends._graph.items import (
-    download_url,
     is_file_item,
     is_folder_item,
     item_to_fileinfo,
     parse_graph_datetime,
 )
+from remote_store.aio.backends._graph.transfer import RANGE_FALLBACK_FLAG, stream_range
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
@@ -151,6 +151,9 @@ class GraphBackend(AsyncBackend):
         self._upload_chunk_size = upload_chunk_size
         self._copy_timeout = copy_timeout
         self._client_options = client_options or {}
+        # Paths whose drive ignored a Range request (SharePoint range-fallback,
+        # GR-015): get_file_info flags any FileInfo it returns for them.
+        self._range_fallback_paths: set[str] = set()
 
     # region: properties
 
@@ -274,7 +277,13 @@ class GraphBackend(AsyncBackend):
         transport, and other failures map through the same primitive.
         """
         response = await graph_send(
-            self._client, "GET", self._item_url(path), token_provider=self._token_provider, path=path, scope="item"
+            self._client,
+            "GET",
+            self._item_url(path),
+            token_provider=self._token_provider,
+            path=path,
+            scope="item",
+            retry=self._retry,
         )
         body: dict[str, Any] = response.json()
         return body
@@ -292,42 +301,81 @@ class GraphBackend(AsyncBackend):
             return f"{self._base_url}/drives/{self._drive_id}/root"
         return f"{self._base_url}{native}"
 
+    def _mark_range_fallback(self, path: str) -> None:
+        """Record that *path*'s drive ignored ``Range`` (SharePoint range-fallback).
+
+        ``get_file_info`` consults this set to flag any ``FileInfo`` it later
+        returns for the same item with ``extra[graph.read.range_fallback]``.
+        """
+        self._range_fallback_paths.add(path)
+
     async def read(self, path: str) -> AsyncIterator[bytes]:
         """Stream file content from the pre-signed download URL.
 
         Fetches item metadata first (so the directory check happens before any
         byte is yielded), then streams the response body from
-        ``@microsoft.graph.downloadUrl``. The download URL is pre-signed, so no
-        ``Authorization`` header is attached.
+        ``@microsoft.graph.downloadUrl`` with no ``Range`` header (the URL is
+        pre-signed, so no ``Authorization`` header is attached either). If the
+        read is interrupted — the URL expires, or the connection drops mid-body —
+        the stream re-fetches metadata for a fresh URL and resumes from the next
+        unread byte with a ``Range`` request, provided the ``eTag`` is unchanged.
 
         Raises:
             NotFound: If the path does not exist.
             InvalidPath: If the path names a folder.
-            BackendUnavailable: If the download URL is missing, the pre-signed
-                host returns a non-success status, or the download fails at the
-                transport level (connect/read timeout, DNS, reset).
+            BackendUnavailable: If the download URL is missing, the file changed
+                mid-read (``eTag`` mismatch), the pre-signed host returns a
+                non-success status, or the download fails at the transport level
+                (connect/read timeout, DNS, reset).
         """
         item = await self._get_item(path)
         if is_folder_item(item):
             raise InvalidPath(f"Cannot read — '{path}' is a folder", path=path, backend=self.name)
-        url = download_url(item)
-        if url is None:
-            # A file item should always carry a download URL (even 0-byte files);
-            # its absence is a Graph contract gap, not a silent empty read.
-            raise BackendUnavailable(f"Graph returned no download URL for: {path}", path=path, backend=self.name)
-        # The metadata GET rides graph_send, but this body stream goes direct to
-        # the pre-signed host, so transport errors are mapped here per GR-033.
-        try:
-            async with self._client.stream("GET", url) as response:
-                if not response.is_success:
-                    await response.aread()
-                    raise BackendUnavailable(
-                        f"Graph download failed ({response.status_code}): {path}", path=path, backend=self.name
-                    )
-                async for chunk in response.aiter_bytes():
-                    yield chunk
-        except httpx.TransportError as exc:
-            raise BackendUnavailable(f"Graph download transport error: {exc}", path=path, backend=self.name) from None
+        async for chunk in stream_range(
+            self._client,
+            path,
+            item,
+            refetch=lambda: self._get_item(path),
+            on_fallback=lambda: self._mark_range_fallback(path),
+            retry=self._retry,
+            backend=self.name,
+        ):
+            yield chunk
+
+    async def _read_bytes(self, path: str, start: int, length: int | None = None) -> bytes:
+        """Read the byte range ``[start, start+length)`` via the download URL.
+
+        Internal range-read helper (not a public Store method): it services the
+        non-seekable read pipeline and the spool fallback for ``read_seekable``.
+        ``SEEKABLE_READ`` remains withheld. ``length=None`` reads to EOF. A start
+        at or past EOF yields ``b""``; the download URL is pre-signed, so the
+        range ``GET`` carries no ``Authorization`` header.
+
+        Raises:
+            NotFound: If the path does not exist.
+            InvalidPath: If the path names a folder.
+            BackendUnavailable: As for ``read`` (missing URL, expiry, eTag change,
+                host or transport failure).
+            RemoteStoreError: A ``416`` provoked by a malformed (inverted) range.
+        """
+        item = await self._get_item(path)
+        if is_folder_item(item):
+            raise InvalidPath(f"Cannot read — '{path}' is a folder", path=path, backend=self.name)
+        chunks = [
+            chunk
+            async for chunk in stream_range(
+                self._client,
+                path,
+                item,
+                start=start,
+                length=length,
+                refetch=lambda: self._get_item(path),
+                on_fallback=lambda: self._mark_range_fallback(path),
+                retry=self._retry,
+                backend=self.name,
+            )
+        ]
+        return b"".join(chunks)
 
     async def read_bytes(self, path: str) -> bytes:
         """Read full file content as bytes.
@@ -390,7 +438,12 @@ class GraphBackend(AsyncBackend):
         item = await self._get_item(path)
         if is_folder_item(item):
             raise InvalidPath(f"Cannot get file info — '{path}' is a folder", path=path, backend=self.name)
-        return item_to_fileinfo(item, path)
+        info = item_to_fileinfo(item, path)
+        if path in self._range_fallback_paths:
+            # A prior range read on this path fell back because the drive ignored
+            # Range; surface the signal on the FileInfo (GR-015).
+            info.extra[RANGE_FALLBACK_FLAG] = True
+        return info
 
     # endregion
 
@@ -420,7 +473,9 @@ class GraphBackend(AsyncBackend):
         url = self._children_url(path)
         started = False
         try:
-            async for page in iter_pages(self._client, url, token_provider=self._token_provider, path=path):
+            async for page in iter_pages(
+                self._client, url, token_provider=self._token_provider, path=path, retry=self._retry
+            ):
                 started = True
                 value = page.get("value")
                 if isinstance(value, list):

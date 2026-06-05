@@ -1,0 +1,117 @@
+id: ID-127
+title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-TRANSFER (PR C): read-path resilience (range + expiry + retry + 416 + SharePoint fallback)"
+trigger: "ID-127 GR-READ, sub-PR C of 3: PR A filled single-item read + metadata and PR B filled listing, both riding the bare single-attempt graph_send (the retry loop was deferred here). PR C hardens the read path: fold RetryPolicy into graph_send (exponential backoff + jitter, Retry-After precedence) so every non-streaming send retries transient 5xx/429/transport; add a transfer.py range-download driver (_read_bytes against the pre-signed downloadUrl, no auth header) with downloadUrl-expiry re-fetch + eTag validation (GR-017) and the 416 invalidRange mapping (GR-055); and the SharePoint range-fallback-to-spool path (WARNING marker + FileInfo.extra flag). Read-path resilience is validated by respx units + a live device-code probe; conformance-slice cassettes are deferred to GR-WRITE because the conformance read tests seed fixtures via backend.write (still NotImplementedError). Hardens the read half of ID-127; write (Step 5) and mutate (Step 6) remain, and close it."
+source_items:
+  - ID-127
+audience:
+  - user.api
+  - user.api_docs
+  - infra.test
+expected_ripples:
+  # user.api audience → CHANGELOG stub required (trace-schema derived rule).
+  - CHANGELOG.md
+  # New / changed public-method docstrings (read Raises, retry semantics) regen
+  # the public-API graph IR + viz per the "A public method signature" row.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+discovery_followups:
+  # PR #760 review surfaced the range-fallback flag's lifecycle problem
+  # (unbounded per-backend set + permanent marking vs GR-015's "operation
+  # context"). Filed for its own work rather than redesigned mid-fix-PR.
+  - BK-259
+surprising_ripples:
+  # The plan's Step 4 acceptance ("Graph moves off xfail for READ/LIST/METADATA/
+  # LAZY_READ conformance slices ... cassetted back into graph_replay") collides
+  # with an ordering dependency the plan did not flag: the conformance read/list/
+  # metadata tests seed their fixtures through backend.write (_seed in
+  # test_async_extended.py), which is still NotImplementedError until GR-WRITE.
+  # So only the no-setup missing-path slices are recordable today, and those would
+  # be re-recorded by GR-WRITE's tree-wipe anyway. Cassettes are therefore deferred
+  # to GR-WRITE (one record covers read+write+mutate once seeding works); this PR's
+  # live validation is the bespoke device-code probe instead. Same pattern PRs A/B
+  # shipped — cassettes/graph/ is still empty.
+  - tests/backends/conformance/test_async_extended.py
+review_rounds: 2
+# Round 1 (code-review on the opened PR) caught that the GR-017 implementation
+# narrowed the spec: it only recovered status-time 401/403 expiry, leaving a
+# mid-body connection drop (httpx.TransportError after partial delivery) an
+# unrecoverable BackendUnavailable, and the docstrings reframed that as "no
+# partial-delivery cursor." Per principle 5 the spec wins: the fix reinstated the
+# delivered-byte cursor so a drop resumes from the next unread byte via Range
+# (eTag-guarded), implemented the GR-017 non-416-4xx-to-spool caveat, split the
+# spool rollover/read-window constants, and added the disk-rollover test the
+# 10-byte fallback bodies never exercised. It also filed BK-259 for the
+# range-fallback-flag lifecycle.
+# Round 2 caught an internal SPEC conflict the ripple-check did not anticipate:
+# GR-055 (416 at/past EOF -> empty stream) and GR-015's SharePoint caveat (416
+# "outside the valid extent" -> spool fallback) prescribed opposite behaviour for
+# the same response. Per principle 4 the dedicated owner wins: GR-015's caveat was
+# amended to defer all 416 handling to GR-055 and scope the fallback to the genuine
+# range-incapable signals (200 / non-416 4xx) — a spec-only fix, the code already
+# matched GR-055. Plus the Retry-After x timeout interaction test.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-015, GR-017, GR-047, GR-048, GR-055"
+        read_type: gate
+        extract: "Range GET to downloadUrl (no auth header); full reads carry NO Range header (GR-015 postcondition); expiry → metadata re-fetch + eTag check, mismatch → BackendUnavailable; RetryPolicy folded in-backend with Retry-After precedence (date + delta-seconds); 416 → empty stream / RemoteStoreError on malformed bounds"
+      - file: sdd/specs/025-retry-policy.md
+        section: "RET-015"
+        read_type: gate
+        extract: "Graph honours all five RetryPolicy fields in-backend (httpx has no native retry); retryable = 5xx/429/transport; terminal = 423/403/404/InvalidPath/507; Retry-After floors the computed backoff; timeout bounds the loop (NOT copy_timeout)"
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "graph_send (pre-change)"
+        read_type: reference
+        extract: "Single attempt + one-shot 401 refresh, shared by resolve_drive_id / read-metadata / listing / future write. Errors carry only (message, path, backend) — no structured context — so the loop must read Retry-After off the live response, not off the raised error (GR-034's 'error context' is aspirational; spec 005 has no context surface)"
+      - file: src/remote_store/backends/_http.py
+        section: "_parse_retry_after, _request_with_retry"
+        read_type: reference
+        extract: "Reuse the sync HTTP backend's Retry-After parse shape (delta-seconds + HTTP-date via parsedate_to_datetime) and the backoff-floor pattern (delay = max(computed, retry_after)) rather than re-deriving them"
+  - id: implement_retry
+    name: Implement retry into graph_send
+    steps:
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "_send_attempt, graph_send, _parse_retry_after, iter_pages"
+        read_type: reference
+        extract: "Split the single attempt into _send_attempt (send + one-shot 401 refresh, returns raw Response, propagates transport errors); graph_send wraps it in the retry loop, classifying retryable 5xx/429 + transport vs terminal. retry=None = single attempt (every existing call site byte-identical). iter_pages threads retry to its per-page graph_send"
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_get_item, _iter_child_items"
+        read_type: reference
+        extract: "Thread self._retry into the metadata GET and the listing iter_pages so read/metadata/type-probes/listing all retry. resolve_drive_id (utils.py) is deliberately left on the bare single-attempt send (retry=None) — the shared primitive now carries the capability for all callers, but the read-path PR does not change the config helper's default behaviour"
+      - file: tests/backends/graph/aio/test_http.py
+        section: "TestGraphSendRetry (run)"
+        read_type: verify
+        extract: "respx green: 5xx/429/transport retried-then-succeed, exhaustion → last mapped error, Retry-After delta + HTTP-date floor the wait (asyncio.sleep patched to record), timeout budget short-circuits, terminal 423/507/404 not retried, 401-refresh composes with the loop. Existing graph_send/iter_pages/read/list/utils tests stay green at retry=None"
+  - id: implement_transfer
+    name: Implement transfer.py range + expiry/fallback
+    steps:
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "stream_range, _spooled_window"
+        read_type: reference
+        extract: "One stream_range generator drives full reads (no Range header per GR-015) and partial reads (Range: bytes=start-end), both against the pre-signed downloadUrl with no auth. Expiry (401/403) is status-time (zero bytes delivered), so recovery re-requests the same window after a metadata re-fetch + eTag check — no partial-delivery cursor. 416 → empty past EOF / RemoteStoreError on inverted bounds (via classify_graph_error, the 416 branch added to http.py). SharePoint 200-to-a-ranged-GET → _spooled_window buffers the full entity to a SpooledTemporaryFile and serves the window; WARNING marker + on_fallback callback"
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "read, _read_bytes, _mark_range_fallback, get_file_info"
+        read_type: reference
+        extract: "read() now drives stream_range (full); _read_bytes(path, start, length) is the internal range helper (not a public Store method — SEEKABLE_READ stays withheld). on_fallback records the path in self._range_fallback_paths; get_file_info flags extra[graph.read.range_fallback]=True for any FileInfo it later returns for that item (the OBS-safe delivery channel — the backend has no StoreEvent handle)"
+      - file: tests/backends/graph/aio/test_transfer.py
+        section: "(run)"
+        read_type: verify
+        extract: "respx green: Range header shape + no-auth, full read sends no Range, 416 empty-vs-malformed, expiry→eTag-unchanged resume / eTag-changed → BackendUnavailable / persistent-expiry budget exhaustion, SharePoint full-entity-200 fallback (WARNING marker + windowed bytes + FileInfo.extra flag, open-ended + bounded windows)"
+  - id: verify
+    name: Verify gates
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A public method signature"
+        read_type: verify
+        extract: "CHANGELOG stub added; gen-graph + gen-graph-viz re-run (no diff — read's summary + signature are unchanged, only its Raises prose, which the IR does not capture). lint clean: check_no_tracker_refs forced the spec IDs out of the new docstrings into # comments / @pytest.mark.spec. typecheck clean; 100% _graph coverage including the new transfer.py (77 stmts)"
+        outcome: ok
+  - id: reality_check
+    name: Stage-3 reality check
+    steps:
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "stream_range / _read_bytes (live)"
+        read_type: verify
+        extract: "Live device-code probe (read-only, consumer OneDrive, reusing the tmp/ token cache) extended for range reads: _read_bytes head/mid/tail/past-EOF/full slices all matched the full body of a 1.15 MB PDF streamed from the real pre-signed downloadUrl — proving the Range header IS honoured on live consumer OneDrive, past-EOF → b'', and no auth header rides the range GET. range_fallback=no: consumer OneDrive honours Range, so the SharePoint full-entity-200 fallback stays respx/unit-only (the SharePoint range-incapable shape is not reproducible on this tenant — consistent with the device-code-only live limit). No surprises this round (unlike PR A's root-addressing 400)."
+        outcome: ok
