@@ -316,7 +316,17 @@ def main() -> None:
                 f"only {recorded} cassette(s) recorded (expected >= {min_expected}); "
                 "pytest likely selected zero tests — check the k-filter and --stage value"
             )
-        print(f"  Cassette count OK: {recorded} >= {min_expected}")
+        if recorded == 0:
+            # A min_cassettes=0 backend (e.g. graph before GR-READ) makes the
+            # count guard vacuous, so make a zero-recording run LOUD rather than
+            # let main() print "All steps passed" as if it had recorded
+            # something. Raise min_cassettes once the first op slice lands.
+            print(
+                f"  WARNING: recorded 0 cassettes for {opts.backend!r} — nothing to replay. "
+                "Either no recordable ops exist yet, or the -k filter / --stage selected zero tests."
+            )
+        else:
+            print(f"  Cassette count OK: {recorded} >= {min_expected}")
 
     _section("Step 4 — verify scrub (no real credentials in cassettes)")
     account: str = cfg["account_fn"]()

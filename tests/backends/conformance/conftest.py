@@ -197,11 +197,25 @@ def vcr_cassette_dir(request: pytest.FixtureRequest) -> str:
 
     Function-scoped (not module-scoped) because one conformance module
     parametrises over both backend families; the cassette dir is per-test, not
-    per-module.  Non-cassette tests are unaffected: the ``vcr`` autouse fixture
-    only activates for tests carrying ``pytest.mark.vcr``, and a parametrize id
-    with no known cassette fixture falls back to the azure directory.
+    per-module.
+
+    pytest-recording resolves this fixture for *every* async conformance test,
+    not only vcr-marked ones (a non-cassette param like ``memory_async_native``
+    shares the parametrized class with the cassette params). So a missing
+    ``_FIXTURE_CASSETTE_DIRS`` entry only fails loudly when the node actually
+    carries ``pytest.mark.vcr`` — a genuinely-vcr-marked id with no registered
+    directory. For non-vcr nodes the returned value is unused, so an arbitrary
+    valid directory is harmless.
     """
-    return str(_cassette_dir_for_node_name(request.node.name) or CASSETTE_DIR_AZURE)
+    cassette_dir = _cassette_dir_for_node_name(request.node.name)
+    if cassette_dir is not None:
+        return str(cassette_dir)
+    if request.node.get_closest_marker("vcr") is not None:
+        raise RuntimeError(
+            f"vcr-marked test {request.node.name!r} has no cassette directory; "
+            "register its fixture id in _FIXTURE_CASSETTE_DIRS"
+        )
+    return str(CASSETTE_DIR_AZURE)  # unused: this node has no vcr marker
 
 
 @pytest.fixture
@@ -257,9 +271,19 @@ def vcr_config(request: pytest.FixtureRequest, record_mode: str) -> dict[str, An
     of truth for what gets stripped out of its cassettes. Only the resolver for
     the test's own backend family runs, so neither family's live config is
     required to record the other's cassettes.
+
+    As with ``vcr_cassette_dir``, pytest-recording resolves this for every async
+    conformance test; an unregistered id only fails loudly when the node is
+    actually ``pytest.mark.vcr``. For a non-vcr node the value is unused.
     """
-    if _cassette_dir_for_node_name(request.node.name) == CASSETTE_DIR_GRAPH:
+    cassette_dir = _cassette_dir_for_node_name(request.node.name)
+    if cassette_dir == CASSETTE_DIR_GRAPH:
         return build_graph_vcr_config(_real_graph_drive_id(record_mode))
+    if cassette_dir != CASSETTE_DIR_AZURE and request.node.get_closest_marker("vcr") is not None:
+        raise RuntimeError(
+            f"vcr-marked test {request.node.name!r} has no scrub config; "
+            "register its fixture id in _FIXTURE_CASSETTE_DIRS"
+        )
     return build_vcr_config(_real_azure_account(record_mode))
 
 

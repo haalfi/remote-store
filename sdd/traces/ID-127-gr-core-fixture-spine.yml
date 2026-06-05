@@ -37,7 +37,7 @@ surprising_ripples:
   # until GR-READ records cassettes (graph's sources live under async_sources,
   # which _src does not read). Not anticipated by the ripple-check.
   - scripts/mutate_scopes.py
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
