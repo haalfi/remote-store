@@ -1,0 +1,66 @@
+id: ID-127
+title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-CONTRACT: async WriteResult conformance"
+trigger: "ID-127 GR-CONTRACT (PR-B): land the async-parametrised TestWriteResultConformance (plan 'option (a)') so the WR-001a/004/005/012/013 field contract exists for AsyncBackend — the contract Graph's async write path (GR-018/019) will move onto — before the backend plugs in. The async conformance suite had only a happy-path write_atomic check and the WR-013 move/copy round-trip, not the full WriteResult field contract."
+source_items:
+  - ID-127
+audience:
+  - infra.test
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient + scope reality-check
+    steps:
+      - file: sdd/plans/ID-127-graph-backend-implementation.md
+        section: "Step 2 — GR-CONTRACT (three pieces)"
+        read_type: gate
+        extract: "Plan lists three pieces: async TestWriteResultConformance, capability-matrix, USER_METADATA strict-gate. Reality-check: pieces 2 and 3 already exist, so PR-B is piece 1 only"
+        outcome: misleading
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestWriteResultConformance; _WRITE_OPS; _FIELD_CAPABILITY"
+        read_type: reference
+        extract: "Sync class to mirror for async (WR-001a path/size, WR-004 source, WR-005 basic-leaves-rich-none + field-capability symmetry, WR-012 metadata, WR-013 round-trip); _FIELD_CAPABILITY map is backend-agnostic with a completeness guard — import it rather than duplicate"
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestAsyncWriteAtomic; TestMoveCopyMetadataPreservation; async _require/_do_op"
+        read_type: reference
+        extract: "Existing async WR coverage is only ASYNC-010 happy-path + WR-013 move/copy; the field contract (WR-001a/004/005/012) is the genuine gap. async _require skips per-cap; conftest auto-parametrises async_backend"
+      - file: tests/test_store.py
+        section: "TestMetadataGate (WR-010/011)"
+        read_type: verify
+        extract: "Plan piece 3 (USER_METADATA strict-gate) already covered sync: non-empty-without-cap raises, {} no-op. Async sibling TestAsyncStoreMetadataGate covers the same. Do not duplicate"
+        outcome: misleading
+      - file: tests/backends/conformance/test_identity.py
+        section: "CAP-004; TestAtomicMoveCapability (CAP-001); TestSeekableCapability (SEEK-001); BE-003 subset"
+        read_type: verify
+        extract: "Plan piece 2 (capability-matrix) already covered: per-backend expected declarations for the discriminating caps + require-rejects-undeclared + subset bound + STORE-006 method gating. Matrix mechanism exists; full GR-003 per-backend set is GR-CORE/GR-DONE. Do not duplicate"
+        outcome: misleading
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-008, ASYNC-010, ASYNC-021"
+        read_type: gate
+        extract: "write()/write_atomic() return WriteResult (ASYNC-008/010); content is bytes|AsyncIterator[bytes] (ASYNC-021). Pair these per-op marks with the WR-* field-contract marks"
+  - id: implement
+    name: Implement async WriteResult conformance
+    steps:
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestAsyncWriteResultConformance (new)"
+        read_type: reference
+        extract: "Async mirror of the sync class over async_backend; per-op ASYNC-008/010 marks + per-method WR-* marks; AsyncIterator streaming-size analogue of the sync BytesIO BUG-168 guard; reuses _FIELD_CAPABILITY (import); empty xfail registries for future async-backend gaps"
+  - id: verify
+    name: Verify (incl. empirical AsyncAzure)
+    steps:
+      - file: src/remote_store/backends/_azure_common.py
+        section: "_build_azure_write_result"
+        read_type: verify
+        extract: "Sync and async Azure share one WriteResult builder; sync WR conformance already passes on the azurite fixture, so async populates identically — no gap predicted"
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "write / write_atomic → _build_azure_write_result"
+        read_type: verify
+        extract: "Empirically probed against the live azurite emulator: AsyncAzureBackend write()/write_atomic() return source=native, size, last_modified, etag (matching get_file_info), digest, echoed metadata. The plan's flagged AsyncAzure rich-field gap does NOT materialise"
+        outcome: ok
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "azure_async; azurite_async_strict"
+        read_type: reference
+        extract: "azure_async is replay-cassette (Stage-1); the new tests' azure_async params skip pending Stage-3 live-Azure cassette recording. No non-strict azurite_async baseline exists, so AsyncAzure was validated via the direct azurite probe instead"
+      - file: scripts/check_spec_marks.py
+        section: "(run output)"
+        read_type: verify
+        extract: "WR-001a/004/005/012/013 + ASYNC-008/010/021 marks all resolve to declared specs; 0 violations"
