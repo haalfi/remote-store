@@ -44,10 +44,6 @@ instead of hitting the `__setattr__` override.
 `Secret()`. Non-string values (e.g., `None`, credential objects) are left
 unchanged. The set is the single source of truth (principle 4); this spec
 does not re-enumerate it, so a future widening cannot leave the prose stale.
-Graph's `client_secret` / `client_certificate` were added to the set at
-ID-127 ([RFC-0010](../rfcs/rfc-0010-graph-backend.md) §Auth,
-[ADR-0022](../adrs/0022-graph-auth-model.md) §Credential masking) so
-config-loaded Graph backends inherit the same auto-wrap protection.
 
 ### SEC-004: Backend Secret Acceptance
 

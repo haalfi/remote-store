@@ -298,7 +298,7 @@ class TestFromDictSecretWrapping:
             ),
             ("sftp", {"host": "h", "password": "p"}, ["password"], ["host"]),
             (
-                # ID-127: Graph client-credentials secrets auto-wrap (SEC-003).
+                # SEC-003: Graph client-credentials secrets auto-wrap.
                 "graph",
                 {"drive_id": "d", "client_secret": "cs", "client_certificate": "cc"},
                 ["client_secret", "client_certificate"],
