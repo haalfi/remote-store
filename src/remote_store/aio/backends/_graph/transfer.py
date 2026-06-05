@@ -7,16 +7,20 @@ header. This module drives reads against that URL:
 
 * a full read streams the whole entity with no ``Range`` header (the happy
   path), while a partial read sends ``Range: bytes=<start>-<end>``;
-* if the URL expires mid-read (``401`` / ``403`` from the pre-signed host) the
-  driver re-fetches item metadata for a fresh URL and verifies the ``eTag`` is
-  unchanged before resuming from the next unread byte — a changed ``eTag`` means
-  the file was mutated underneath the read, which surfaces as
-  ``BackendUnavailable`` rather than a mixed-version byte stream;
+* if the read is interrupted — the pre-signed URL expires (``401`` / ``403``)
+  or the connection drops mid-body (``httpx.TransportError``, possibly after
+  some bytes have already streamed) — the driver re-fetches item metadata for a
+  fresh URL, verifies the ``eTag`` is unchanged, and resumes from the next unread
+  byte with a ``Range`` request; a changed ``eTag`` means the file was mutated
+  underneath the read, which surfaces as ``BackendUnavailable`` rather than a
+  mixed-version byte stream. Recovery is bounded by the retry budget;
 * some SharePoint drive backings ignore ``Range`` and answer a ranged request
-  with the **full** entity (``200``); the driver then falls back to the spool
-  strategy (buffer to a ``SpooledTemporaryFile``, serve the requested window),
-  emits a WARNING carrying the ``graph.read.range_fallback`` marker, and lets the
-  backend flag the condition on any ``FileInfo`` it returns for the same item;
+  with the **full** entity (``200``) — or reject it with a non-``416`` ``4xx``;
+  the driver then treats the URL as range-incapable, falls back to the spool
+  strategy (re-read the full entity into a ``SpooledTemporaryFile``, serve the
+  requested window), emits a WARNING carrying the ``graph.read.range_fallback``
+  marker, and lets the backend flag the condition on any ``FileInfo`` it returns
+  for the same item;
 * a ``416`` whose start is at or past EOF yields an empty remainder (no error);
   a ``416`` provoked by a malformed (inverted) range is a backend bug and
   surfaces as ``RemoteStoreError`` carrying the HTTP status.
@@ -52,8 +56,12 @@ RANGE_FALLBACK_FLAG = "graph.read.range_fallback"
 """Key set ``True`` on ``FileInfo.extra`` (and the WARNING-log marker) when a
 SharePoint drive ignores ``Range`` and the read falls back to the spool."""
 
-# Window the spooled fallback body back out in bounded reads rather than one
-# slice, so a large full-entity fallback stays disk-backed end to end.
+# Rollover threshold for the fallback spool: a full-entity body larger than this
+# spills from memory to a temp file, so a large fallback does not balloon memory.
+_SPOOL_MAX_SIZE = 1024 * 1024
+# Read-back window size: the spooled body is served out in chunks of this size,
+# kept independent of the rollover threshold so tuning one cannot silently move
+# the other.
 _SPOOL_READ_CHUNK = 1024 * 1024
 
 
@@ -74,6 +82,25 @@ def _range_header(offset: int, end: int | None) -> str:
     return f"bytes={offset}-" if end is None else f"bytes={offset}-{end}"
 
 
+def _remaining(length: int | None, consumed: int) -> int | None:
+    """Bytes still owed to the caller after *consumed* yielded; ``None`` = to EOF."""
+    return None if length is None else max(0, length - consumed)
+
+
+def _resume_url(item: Mapping[str, Any], expected_etag: object, path: str, backend: str) -> str:
+    """Return a fresh download URL from re-fetched *item*, guarding the ``eTag``.
+
+    A changed ``eTag`` means the file was mutated mid-read; rather than splice two
+    versions, raise ``BackendUnavailable`` carrying both eTags.
+    """
+    new_etag = item.get("eTag")
+    if new_etag != expected_etag:
+        raise BackendUnavailable(
+            f"File changed under read (eTag {expected_etag!r} != {new_etag!r}): {path}", path=path, backend=backend
+        )
+    return _require_url(item, path, backend)
+
+
 async def stream_range(
     client: httpx.AsyncClient,
     path: str,
@@ -89,76 +116,96 @@ async def stream_range(
     """Stream ``[start, start+length)`` of a file from its download URL.
 
     ``start=0, length=None`` is a full read and sends no ``Range`` header; any
-    other window sends one. Yields the body in chunks; recovers across
-    download-URL expiry (re-fetching metadata via *refetch* and re-checking the
-    ``eTag``) and degrades to a spooled full-entity read when the drive ignores
-    ``Range`` (*on_fallback* is invoked once when that happens).
+    other window sends one. Yields the body in chunks, tracking how many it has
+    delivered so an interrupted read resumes from the next unread byte:
 
-    Expiry is a status-time signal (``401`` / ``403`` arrives before any byte of
-    the body), so the failed attempt delivered nothing and recovery re-requests
-    the same window — there is no partial-delivery cursor to advance.
+    * a status-time expiry (``401`` / ``403``) or a connection drop
+      (``httpx.TransportError``, possibly mid-body after some chunks have already
+      been yielded) re-fetches metadata for a fresh URL, verifies the ``eTag`` is
+      unchanged, and re-requests from ``start + delivered`` with a ``Range``
+      header — bounded by ``retry.max_attempts``;
+    * a drive that ignores ``Range`` (``200`` full entity) or rejects it with a
+      non-``416`` ``4xx`` is treated as range-incapable: the full entity is
+      re-read into a spool and the requested window served from it
+      (*on_fallback* fires once).
 
     Raises:
-        BackendUnavailable: Missing download URL, expiry that does not clear
+        BackendUnavailable: Missing download URL, recovery that does not clear
             within the retry budget, an ``eTag`` change mid-read, a non-range
             error status, or a transport failure on the pre-signed host.
         RemoteStoreError: A ``416`` provoked by a malformed (inverted) range.
     """
     end = None if length is None else start + length - 1
-    sent_range = start > 0 or end is not None
-    headers = {"Range": _range_header(start, end)} if sent_range else {}
     etag = item.get("eTag")
     url = _require_url(item, path, backend)
-    refetches = 0
-    max_refetch = retry.max_attempts if retry is not None else 1
+    delivered = 0  # bytes already yielded to the caller; resume offset is start + delivered
+    attempts = 0
+    max_attempts = retry.max_attempts if retry is not None else 1
+    range_incapable = False  # the drive ignores/rejects Range: read full + window
 
     while True:
+        offset = start + delivered
+        sent_range = (offset > 0 or end is not None) and not range_incapable
+        headers = {"Range": _range_header(offset, end)} if sent_range else {}
         try:
             async with client.stream("GET", url, headers=headers) as response:
                 status = response.status_code
                 if status in (401, 403):
-                    # Download URL expired before serving a byte: re-fetch metadata
-                    # for a fresh URL and re-request, bounded by the retry budget.
+                    # Download URL expired: re-fetch for a fresh URL and resume,
+                    # bounded by the retry budget.
                     await response.aread()
-                    refetches += 1
-                    if refetches > max_refetch:
+                    attempts += 1
+                    if attempts >= max_attempts:
                         raise BackendUnavailable(
-                            f"Download URL kept expiring after {refetches} re-fetch(es): {path}",
+                            f"Download URL kept expiring after {attempts} attempt(s): {path}",
                             path=path,
                             backend=backend,
                         )
-                    item = await refetch()
-                    new_etag = item.get("eTag")
-                    if new_etag != etag:
-                        raise BackendUnavailable(
-                            f"File changed under read (eTag {etag!r} != {new_etag!r}): {path}",
-                            path=path,
-                            backend=backend,
-                        )
-                    url = _require_url(item, path, backend)
+                    url = _resume_url(await refetch(), etag, path, backend)
                     continue
-                if status == 416:
+                if sent_range and status == 416:
                     await response.aread()
-                    if end is not None and end < start:
+                    if end is not None and end < offset:
                         # Inverted bounds are a backend bug, not an empty read.
                         raise classify_graph_error(416, "invalidRange", path=path, backend=backend)
-                    return  # start at/past EOF → empty remainder
-                if sent_range and status == 200:
-                    # SharePoint ignored Range and sent the full entity: spool it
-                    # and serve the requested window rather than streaming mid-file.
+                    return  # offset at/past EOF → empty remainder
+                if sent_range and (status == 200 or 400 <= status < 500):
+                    # The drive ignored Range (200 full entity) or rejected it
+                    # (non-401/403/416 4xx): treat the URL as range-incapable.
                     on_fallback()
                     log.warning("%s: drive ignored Range; spooling full entity for %r", RANGE_FALLBACK_FLAG, path)
-                    async for chunk in _spooled_window(response, skip=start, remaining=length):
+                    if status != 200:
+                        # A 4xx carries no usable body — re-issue without a Range.
+                        await response.aread()
+                        range_incapable = True
+                        continue
+                    async for chunk in _spooled_window(response, skip=offset, remaining=_remaining(length, delivered)):
+                        delivered += len(chunk)
                         yield chunk
                     return
                 if not response.is_success:
                     await response.aread()
                     raise BackendUnavailable(f"Graph download failed ({status}): {path}", path=path, backend=backend)
-                async for chunk in response.aiter_bytes():
+                # 2xx body. In range-incapable mode the response is the full entity
+                # (no Range honoured), so window it through the spool; otherwise
+                # stream it straight. A drop mid-body raises below and resumes.
+                source = (
+                    _spooled_window(response, skip=offset, remaining=_remaining(length, delivered))
+                    if range_incapable
+                    else response.aiter_bytes()
+                )
+                async for chunk in source:
+                    delivered += len(chunk)
                     yield chunk
                 return
         except httpx.TransportError as exc:
-            raise BackendUnavailable(f"Graph download transport error: {exc}", path=path, backend=backend) from None
+            # Connection failed or dropped mid-body (after `delivered` bytes):
+            # re-fetch for a fresh URL, verify the file is unchanged, and resume
+            # from the next unread byte — bounded by the retry budget.
+            attempts += 1
+            if attempts >= max_attempts:
+                raise BackendUnavailable(f"Graph download transport error: {exc}", path=path, backend=backend) from None
+            url = _resume_url(await refetch(), etag, path, backend)
 
 
 async def _spooled_window(
@@ -170,11 +217,13 @@ async def _spooled_window(
     """Buffer a full-entity response to a spool, then yield the ``[skip, skip+remaining)`` window.
 
     Used only on the SharePoint range-fallback path, where the drive returned the
-    whole file in answer to a ``Range`` request. The body is spooled to disk (via
-    ``SpooledTemporaryFile``) so a large fallback does not balloon memory, then
-    the requested window is read back out in bounded chunks.
+    whole file (the ``200`` it answered a ranged GET with, or the re-issued
+    no-``Range`` GET after a ``4xx`` range rejection). The body is spooled, rolling
+    over from memory to a temp file past ``_SPOOL_MAX_SIZE`` so a large fallback
+    does not balloon memory, then the requested window is read back out in
+    ``_SPOOL_READ_CHUNK`` slices.
     """
-    with tempfile.SpooledTemporaryFile(max_size=_SPOOL_READ_CHUNK) as spool:
+    with tempfile.SpooledTemporaryFile(max_size=_SPOOL_MAX_SIZE) as spool:
         async for chunk in response.aiter_bytes():
             spool.write(chunk)
         spool.seek(skip)

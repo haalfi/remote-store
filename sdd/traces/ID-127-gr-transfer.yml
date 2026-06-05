@@ -27,6 +27,16 @@ surprising_ripples:
   # live validation is the bespoke device-code probe instead. Same pattern PRs A/B
   # shipped — cassettes/graph/ is still empty.
   - tests/backends/conformance/test_async_extended.py
+review_rounds: 1
+# Round 1 (code-review on the opened PR) caught that the GR-017 implementation
+# narrowed the spec: it only recovered status-time 401/403 expiry, leaving a
+# mid-body connection drop (httpx.TransportError after partial delivery) an
+# unrecoverable BackendUnavailable, and the docstrings reframed that as "no
+# partial-delivery cursor." Per principle 5 the spec wins: the fix reinstated the
+# delivered-byte cursor so a drop resumes from the next unread byte via Range
+# (eTag-guarded), implemented the GR-017 non-416-4xx-to-spool caveat, split the
+# spool rollover/read-window constants, and added the disk-rollover test the
+# 10-byte fallback bodies never exercised.
 phases:
   - id: orient
     name: Orient

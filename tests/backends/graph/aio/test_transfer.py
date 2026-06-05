@@ -10,6 +10,7 @@ range request shape (GR-015), ``416`` mapping (GR-055), download-URL expiry with
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 import httpx
 import pytest
@@ -17,8 +18,12 @@ import respx
 
 from remote_store._config import RetryPolicy
 from remote_store._errors import BackendUnavailable, InvalidPath, NotFound, RemoteStoreError
+from remote_store.aio.backends._graph import transfer as graph_transfer
 from remote_store.aio.backends._graph.backend import GraphBackend
 from remote_store.aio.backends._graph.transfer import RANGE_FALLBACK_FLAG
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 _DRIVE = "b!driveid123"
 _BASE = "https://graph.microsoft.com/v1.0"
@@ -199,3 +204,111 @@ class TestSharePointRangeFallback:
         async with _make() as backend:
             data = await backend._read_bytes("a.txt", 7, None)
         assert data == b"789"  # skip 7, read to EOF
+
+    @respx.mock
+    @pytest.mark.spec("GR-017")
+    async def test_non_416_4xx_on_range_falls_back_to_spool(self, caplog: pytest.LogCaptureFixture) -> None:
+        # A drive that *rejects* a ranged GET with a non-416 4xx (no usable body)
+        # is range-incapable: the driver re-issues without a Range header and
+        # serves the window from the spooled full entity.
+        respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(200, json=_file_item()))
+        route = respx.get(_DL1).mock(
+            side_effect=[
+                httpx.Response(400, json={"error": {"code": "invalidRequest"}}),
+                httpx.Response(200, content=b"0123456789"),
+            ]
+        )
+        with caplog.at_level(logging.WARNING, logger="remote_store.aio.backends._graph"):
+            async with _make() as backend:
+                data = await backend._read_bytes("a.txt", 5, 4)
+        assert data == b"5678"
+        assert RANGE_FALLBACK_FLAG in "\n".join(r.getMessage() for r in caplog.records)
+        assert route.calls[0].request.headers["range"] == "bytes=5-8"  # rejected ranged GET
+        assert "range" not in {k.lower() for k in route.calls[1].request.headers}  # re-issued full GET
+
+    @respx.mock
+    @pytest.mark.spec("GR-015")
+    async def test_fallback_spools_to_disk_and_windows_in_chunks(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Shrink the spool thresholds so a 20-byte body rolls over to disk and the
+        # windowing loop reads across multiple iterations (the `owed` decrement
+        # path the 1 MiB default never exercises on small test bodies).
+        monkeypatch.setattr(graph_transfer, "_SPOOL_MAX_SIZE", 4)
+        monkeypatch.setattr(graph_transfer, "_SPOOL_READ_CHUNK", 4)
+        body = bytes(range(20))
+        respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(200, json=_file_item()))
+        respx.get(_DL1).mock(return_value=httpx.Response(200, content=body))
+        async with _make() as backend:
+            data = await backend._read_bytes("a.txt", 3, 12)
+        assert data == body[3:15]  # bounded window, served across 3 four-byte reads
+
+    @respx.mock
+    @pytest.mark.spec("GR-015")
+    async def test_fallback_open_ended_spools_in_chunks(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # The open-ended (read-to-EOF) window across multiple spool reads, ending
+        # on the empty-read return rather than an `owed` count.
+        monkeypatch.setattr(graph_transfer, "_SPOOL_MAX_SIZE", 4)
+        monkeypatch.setattr(graph_transfer, "_SPOOL_READ_CHUNK", 4)
+        body = bytes(range(14))
+        respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(200, json=_file_item()))
+        respx.get(_DL1).mock(return_value=httpx.Response(200, content=body))
+        async with _make() as backend:
+            data = await backend._read_bytes("a.txt", 2, None)
+        assert data == body[2:]
+
+
+class TestMidStreamResume:
+    """GR-017: a connection drop after partial delivery resumes from the next byte."""
+
+    @respx.mock
+    @pytest.mark.spec("GR-017")
+    async def test_drop_mid_body_resumes_via_range(self) -> None:
+        # DL1 streams 5 bytes then the connection drops; the re-fetch hands out DL2
+        # (same eTag), and the read resumes with Range: bytes=5- for the remainder.
+        respx.get(_meta_url("a.txt")).mock(
+            side_effect=[
+                httpx.Response(200, json=_file_item(url=_DL1)),
+                httpx.Response(200, json=_file_item(url=_DL2)),
+            ]
+        )
+
+        async def _drop_after_5() -> AsyncIterator[bytes]:
+            yield b"01234"
+            raise httpx.ReadError("connection dropped")
+
+        respx.get(_DL1).mock(return_value=httpx.Response(200, content=_drop_after_5()))
+        dl2 = respx.get(_DL2).mock(return_value=httpx.Response(206, content=b"56789"))
+        async with _make() as backend:
+            assert await backend.read_bytes("a.txt") == b"0123456789"
+        assert dl2.calls.last.request.headers["range"] == "bytes=5-"  # resumed from the next unread byte
+
+    @respx.mock
+    @pytest.mark.spec("GR-017")
+    async def test_drop_then_etag_changed_raises(self) -> None:
+        # A drop after partial delivery, then a re-fetch showing a new eTag: the
+        # file changed under the read, so resume is refused (no version splicing).
+        respx.get(_meta_url("a.txt")).mock(
+            side_effect=[
+                httpx.Response(200, json=_file_item(etag='"{E1},1"', url=_DL1)),
+                httpx.Response(200, json=_file_item(etag='"{E2},2"', url=_DL2)),
+            ]
+        )
+
+        async def _drop_after_3() -> AsyncIterator[bytes]:
+            yield b"012"
+            raise httpx.ReadError("connection dropped")
+
+        respx.get(_DL1).mock(return_value=httpx.Response(200, content=_drop_after_3()))
+        async with _make() as backend:
+            with pytest.raises(BackendUnavailable) as exc:
+                await backend.read_bytes("a.txt")
+        assert "eTag" in str(exc.value)
+
+    @respx.mock
+    @pytest.mark.spec("GR-017")
+    async def test_persistent_transport_error_exhausts_budget(self) -> None:
+        respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(200, json=_file_item(url=_DL1)))
+        respx.get(_DL1).mock(side_effect=httpx.ConnectError("unreachable"))
+        async with _make(RetryPolicy(max_attempts=2)) as backend:
+            with pytest.raises(BackendUnavailable) as exc:
+                await backend.read_bytes("a.txt")
+        assert "transport" in str(exc.value).lower()

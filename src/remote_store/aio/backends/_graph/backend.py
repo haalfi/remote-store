@@ -316,8 +316,9 @@ class GraphBackend(AsyncBackend):
         byte is yielded), then streams the response body from
         ``@microsoft.graph.downloadUrl`` with no ``Range`` header (the URL is
         pre-signed, so no ``Authorization`` header is attached either). If the
-        URL expires mid-read the stream re-fetches metadata for a fresh URL and
-        resumes from the next unread byte, provided the ``eTag`` is unchanged.
+        read is interrupted — the URL expires, or the connection drops mid-body —
+        the stream re-fetches metadata for a fresh URL and resumes from the next
+        unread byte with a ``Range`` request, provided the ``eTag`` is unchanged.
 
         Raises:
             NotFound: If the path does not exist.
