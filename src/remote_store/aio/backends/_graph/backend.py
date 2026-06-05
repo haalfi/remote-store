@@ -273,12 +273,24 @@ class GraphBackend(AsyncBackend):
         ``itemNotFound`` at item scope, mapped by ``graph_send``); drive-scope,
         transport, and other failures map through the same primitive.
         """
-        url = f"{self._base_url}{self.native_path(path)}"
         response = await graph_send(
-            self._client, "GET", url, token_provider=self._token_provider, path=path, scope="item"
+            self._client, "GET", self._item_url(path), token_provider=self._token_provider, path=path, scope="item"
         )
         body: dict[str, Any] = response.json()
         return body
+
+    def _item_url(self, path: str) -> str:
+        """Return the item-metadata endpoint for *path*.
+
+        The drive root is the bare ``/root`` item; every other path uses the
+        ``root:/{encoded}:`` path-addressing form. ``native_path('')`` yields the
+        ``root:`` path-address form, which Graph rejects (400) for a standalone
+        item GET, so the root is special-cased here exactly as in ``_children_url``.
+        """
+        native = self.native_path(path)
+        if native == f"/drives/{self._drive_id}/root:":
+            return f"{self._base_url}/drives/{self._drive_id}/root"
+        return f"{self._base_url}{native}"
 
     async def read(self, path: str) -> AsyncIterator[bytes]:
         """Stream file content from the pre-signed download URL.

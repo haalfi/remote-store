@@ -15,6 +15,15 @@ expected_ripples:
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
 discovery_followups: []
+surprising_ripples:
+  # Stage-3 live check (read-only, device-code consumer OneDrive) caught a 400
+  # the respx layer structurally could not: _get_item built the root metadata
+  # URL as ``/drives/{id}/root:`` (the path-addressing colon form), which real
+  # Graph rejects for a standalone item GET — the root item is the bare
+  # ``/drives/{id}/root``. The unit mocks mirrored the buggy URL so they passed
+  # falsely; the fix added an _item_url builder special-casing the root exactly
+  # as _children_url already did, plus a TestItemUrl regression and a live probe.
+  - src/remote_store/aio/backends/_graph/backend.py
 phases:
   - id: orient
     name: Orient
@@ -57,3 +66,11 @@ phases:
         section: "Ripple-check table / A public method signature"
         read_type: verify
         extract: "CHANGELOG stub + graph IR/viz regen for the new read-path docstrings"
+  - id: reality_check
+    name: Stage-3 reality check
+    steps:
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_get_item / _item_url"
+        read_type: verify
+        extract: "Live read-only probe (device-code consumer OneDrive) ran the whole read/list surface: read_bytes streamed a real 1.15MB PDF from the pre-signed downloadUrl with no auth (GR-015 confirmed), get_file_info/get_folder_info/iter_children all green. SURFACED a 400 respx could not: the root metadata GET used the ``root:`` path-address form Graph rejects for a standalone item; fixed with _item_url special-casing the bare ``/root``."
+        outcome: ok

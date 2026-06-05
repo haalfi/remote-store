@@ -28,8 +28,12 @@ def _make() -> GraphBackend:
 
 
 def _meta_url(path: str) -> str:
-    """The item-by-path metadata endpoint the backend GETs for *path*."""
-    return f"{_BASE}{_make().native_path(path)}"
+    """The item-metadata endpoint the backend GETs for *path*, via the real builder.
+
+    Routing through ``_item_url`` keeps the mocks honest about the drive-root
+    special-case (bare ``/root``, not the ``root:`` path-address form).
+    """
+    return _make()._item_url(path)
 
 
 def _file_item(name: str = "a.txt", **overrides: object) -> dict[str, object]:
@@ -47,6 +51,23 @@ def _file_item(name: str = "a.txt", **overrides: object) -> dict[str, object]:
 
 def _folder_item(name: str = "a") -> dict[str, object]:
     return {"name": name, "folder": {"childCount": 3}}
+
+
+class TestItemUrl:
+    """GR-031: the drive root item is the bare ``/root``, not ``root:``.
+
+    Regression for a live-only 400: ``root:`` is the path-addressing form and is
+    rejected by Graph for a standalone item GET. respx mocks never caught it
+    because they mirrored the buggy URL.
+    """
+
+    @pytest.mark.spec("GR-031")
+    def test_root_uses_bare_item(self) -> None:
+        assert _make()._item_url("") == f"{_BASE}/drives/{_DRIVE}/root"
+
+    @pytest.mark.spec("GR-031")
+    def test_nested_uses_path_address(self) -> None:
+        assert _make()._item_url("a/b.txt") == f"{_BASE}/drives/{_DRIVE}/root:/a/b.txt:"
 
 
 class TestGetFileInfo:

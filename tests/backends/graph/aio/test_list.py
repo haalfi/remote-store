@@ -26,8 +26,8 @@ def _make() -> GraphBackend:
 
 
 def _meta_url(path: str) -> str:
-    """The item-by-path metadata endpoint the backend GETs for *path*."""
-    return f"{_BASE}{_make().native_path(path)}"
+    """The item-metadata endpoint the backend GETs for *path*, via the real builder."""
+    return _make()._item_url(path)
 
 
 def _children_url(path: str) -> str:
