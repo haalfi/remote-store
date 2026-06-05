@@ -35,8 +35,9 @@ from remote_store._errors import (
     NotFound,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderEntry
+from remote_store._models import FileInfo, FolderEntry, WriteResult
 from tests.backends.conformance._helpers import _depth, _fixture_record
+from tests.backends.conformance.test_atomic import _FIELD_CAPABILITY
 from tests.backends.fixtures import fixture_params
 
 if TYPE_CHECKING:
@@ -927,6 +928,182 @@ class TestMoveCopyMetadataPreservation:
         await _do_op(async_backend, op, src, dst)
         info = await async_backend.get_file_info(dst)
         assert info.metadata == meta
+
+
+# ===========================================================================
+# §3b  WriteResult field contract for AsyncBackend
+# ===========================================================================
+#
+# Async parametrisation of ``test_atomic.py::TestWriteResultConformance``: the
+# WR-001a / 004 / 005 / 012 / 013 field contract asserted over the native and
+# basic-source ``AsyncBackend`` write paths.
+
+# (op, cap) carrying each op's async-method spec mark — ASYNC-008 (``write``)
+# / ASYNC-010 (``write_atomic``). The WriteResult *field* contract (WR-*) is
+# carried per test method below.
+_WRITE_OPS = [
+    pytest.param("write", Capability.WRITE, id="write", marks=pytest.mark.spec("ASYNC-008")),
+    pytest.param("write_atomic", Capability.ATOMIC_WRITE, id="write_atomic", marks=pytest.mark.spec("ASYNC-010")),
+]
+
+# name → (reason, strict).  Populate when an async backend temporarily returns
+# last_modified=None / disagrees on a rich field from write() (mirrors the sync
+# test_atomic.py registries; empty until a real async-backend gap is recorded).
+_ASYNC_LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {}
+_ASYNC_RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {}
+
+
+class TestAsyncWriteResultConformance:
+    """WR-001a / WR-004 / WR-005 / WR-012 / WR-013: WriteResult field contract (async)."""
+
+    @pytest.mark.spec("WR-001a")
+    @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
+    async def test_result_is_write_result_with_path_and_size(
+        self, async_backend: AsyncBackend, op: str, cap: Capability
+    ) -> None:
+        _require(async_backend, cap)
+        payload = b"wr001a-payload"
+        result = await getattr(async_backend, op)(f"wr/{op}-path-size.txt", payload)
+        assert isinstance(result, WriteResult)
+        assert str(result.path) == f"wr/{op}-path-size.txt"
+        assert result.size == len(payload)
+
+    @pytest.mark.spec("WR-001a")
+    @pytest.mark.spec("ASYNC-021")
+    async def test_size_matches_written_bytes_for_async_iterator_input(self, async_backend: AsyncBackend) -> None:
+        """WR-001a size clause for ``AsyncIterator[bytes]`` input on write_atomic.
+
+        The payload spans many chunks, so a backend that captures size from the
+        first chunk rather than the streamed total reports a truncated value —
+        the async analogue of the sync ``BytesIO`` BUG-168 guard. The
+        ``_count_and_pass`` streaming wrapper (ASYNC-021) must total every chunk.
+        """
+        _require(async_backend, Capability.ATOMIC_WRITE)
+        payload = b"x" * (100 * 1024)
+
+        async def _chunks() -> AsyncIterator[bytes]:
+            for i in range(0, len(payload), 16 * 1024):
+                yield payload[i : i + 16 * 1024]
+
+        result = await async_backend.write_atomic("wr/streaming-size.bin", _chunks())
+        assert result.size == len(payload)
+
+    @pytest.mark.spec("WR-004")
+    @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
+    async def test_source_matches_write_result_native(
+        self, async_backend: AsyncBackend, op: str, cap: Capability
+    ) -> None:
+        _require(async_backend, cap)
+        result = await getattr(async_backend, op)(f"wr/{op}-source.txt", b"data")
+        expected = "native" if async_backend.capabilities.supports(Capability.WRITE_RESULT_NATIVE) else "basic"
+        assert result.source == expected
+
+    @pytest.mark.spec("WR-005")
+    @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
+    async def test_basic_source_leaves_rich_fields_none(
+        self, async_backend: AsyncBackend, op: str, cap: Capability
+    ) -> None:
+        _require(async_backend, cap)
+        if async_backend.capabilities.supports(Capability.WRITE_RESULT_NATIVE):
+            pytest.skip("WR-005 governs basic-source results")
+        result = await getattr(async_backend, op)(f"wr/{op}-basic.txt", b"data")
+        assert result.source == "basic"
+        assert result.digest is None
+        assert result.etag is None
+        assert result.version_id is None
+        assert result.last_modified is None
+
+    @pytest.mark.spec("WR-005")
+    @pytest.mark.spec("WR-012")
+    @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
+    async def test_populated_field_implies_declared_capability(
+        self, async_backend: AsyncBackend, op: str, cap: Capability
+    ) -> None:
+        """BK-239 async: every populated WriteResult field implies its gating capability.
+
+        Generic field↔capability symmetry over the shared ``_FIELD_CAPABILITY``
+        map (its completeness guard lives in the sync ``test_atomic.py``). Runs on
+        every async WRITE backend, so over-declaration fails regardless of direction.
+        """
+        _require(async_backend, cap)
+        meta = {"author": "symmetry"} if async_backend.capabilities.supports(Capability.USER_METADATA) else None
+        result = await getattr(async_backend, op)(f"wr/{op}-symmetry.txt", b"data", metadata=meta)
+        for name, required in _FIELD_CAPABILITY.items():
+            if required is not None and getattr(result, name) is not None:
+                assert async_backend.capabilities.supports(required), (
+                    f"{async_backend.name} populated WriteResult.{name} without declaring {required.name}"
+                )
+
+    @pytest.mark.spec("WR-001a")
+    @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
+    async def test_native_populates_last_modified(
+        self, async_backend: AsyncBackend, op: str, cap: Capability, request: pytest.FixtureRequest
+    ) -> None:
+        """WR-001a rich-field obligation on declaring async backends."""
+        _require(async_backend, cap, Capability.WRITE_RESULT_NATIVE)
+        if async_backend.name in _ASYNC_LAST_MODIFIED_XFAIL:
+            reason, strict = _ASYNC_LAST_MODIFIED_XFAIL[async_backend.name]
+            request.applymarker(pytest.mark.xfail(reason=reason, strict=strict))
+        result = await getattr(async_backend, op)(f"wr/{op}-lm.txt", b"data")
+        assert result.last_modified is not None
+
+    @pytest.mark.spec("WR-001a")
+    @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
+    async def test_write_result_rich_fields_match_file_info(
+        self, async_backend: AsyncBackend, op: str, cap: Capability, request: pytest.FixtureRequest
+    ) -> None:
+        """WR-001a consistency contract: write() rich fields must match get_file_info()."""
+        _require(async_backend, cap, Capability.METADATA)
+        if async_backend.name in _ASYNC_RICH_FIELDS_XFAIL:
+            reason, strict = _ASYNC_RICH_FIELDS_XFAIL[async_backend.name]
+            request.applymarker(pytest.mark.xfail(reason=reason, strict=strict))
+        key = f"wr/{op}-rich-fields-match.txt"
+        result = await getattr(async_backend, op)(key, b"rich-fields-payload")
+        info = await async_backend.get_file_info(key)
+        assert result.etag == info.etag
+        assert result.digest == info.digest
+        if info.modified_at is not None:
+            assert result.last_modified == info.modified_at
+
+    @pytest.mark.spec("WR-012")
+    @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
+    async def test_metadata_echoed_when_gate_passes(
+        self, async_backend: AsyncBackend, op: str, cap: Capability
+    ) -> None:
+        _require(async_backend, cap, Capability.USER_METADATA)
+        meta = {"author": "alice", "project": "conformance"}
+        result = await getattr(async_backend, op)(f"wr/{op}-meta-echo.txt", b"data", metadata=meta)
+        assert result.metadata == meta
+
+    @pytest.mark.spec("WR-012")
+    @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
+    async def test_metadata_is_none_when_not_passed(
+        self, async_backend: AsyncBackend, op: str, cap: Capability
+    ) -> None:
+        _require(async_backend, cap)
+        result = await getattr(async_backend, op)(f"wr/{op}-meta-absent.txt", b"data")
+        assert result.metadata is None
+
+    @pytest.mark.spec("WR-013")
+    @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
+    async def test_metadata_round_trips_via_get_file_info(
+        self, async_backend: AsyncBackend, op: str, cap: Capability
+    ) -> None:
+        _require(async_backend, cap, Capability.USER_METADATA, Capability.METADATA)
+        meta = {"author": "bob", "version": "v1"}
+        key = f"wr/{op}-meta-roundtrip.txt"
+        await getattr(async_backend, op)(key, b"data", metadata=meta)
+        info = await async_backend.get_file_info(key)
+        assert info.metadata == meta
+
+    @pytest.mark.spec("WR-013")
+    async def test_file_info_metadata_none_when_capability_absent(self, async_backend: AsyncBackend) -> None:
+        _require(async_backend, Capability.METADATA)
+        if async_backend.capabilities.supports(Capability.USER_METADATA):
+            pytest.skip("WR-013 negative direction targets non-declaring backends")
+        await async_backend.write("wr/meta-no-cap.txt", b"data")
+        info = await async_backend.get_file_info("wr/meta-no-cap.txt")
+        assert info.metadata is None
 
 
 # ===========================================================================
