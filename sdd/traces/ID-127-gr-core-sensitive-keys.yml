@@ -20,7 +20,15 @@ surprising_ripples:
   # it but is a frozen v0.12→v0.13 historical note — correct as-of that
   # version, left untouched.
   - docs-src/explanation/security-model.md
-review_rounds: 0
+  # PR review: ADR-0022 (cited by this PR as the governing authority) carried
+  # anticipatory prose — "client_secret is not in the set", "the implementation
+  # amends _SENSITIVE_KEYS", "the amendment ships with the implementation PR" —
+  # that this commit, being that amendment, turned stale (principle 3). Caught
+  # in review, not by the ripple-check; same failure mode as SEC-003's Forward
+  # note. Reality-aligned in place (these four Graph ADRs are revised in place,
+  # not superseded; the ADR-0024 GR-CONTRACT past-tensing set the precedent).
+  - sdd/adrs/0022-graph-auth-model.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
