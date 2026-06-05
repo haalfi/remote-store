@@ -30,6 +30,16 @@ _Captured 2026-06-01 on Python 3.13._
 |---|---|
 | `dagster` | `1.13.7` |
 
+## `[graph]`
+
+_Captured 2026-06-05 on Python 3.13._
+
+| Package | Tested up to |
+|---|---|
+| `httpx` | `1.0.dev3` |
+| `msal` | `1.37.0` |
+| `platformdirs` | `4.10.0` |
+
 ## `[httpx]`
 
 _Captured 2026-05-25 on Python 3.13._

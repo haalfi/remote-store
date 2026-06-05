@@ -158,6 +158,66 @@
     },
     {
       "condition": null,
+      "dst": "cap:ATOMIC_WRITE",
+      "kind": "declares",
+      "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:COPY",
+      "kind": "declares",
+      "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:DELETE",
+      "kind": "declares",
+      "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:LAZY_READ",
+      "kind": "declares",
+      "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:LIST",
+      "kind": "declares",
+      "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:METADATA",
+      "kind": "declares",
+      "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:MOVE",
+      "kind": "declares",
+      "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:READ",
+      "kind": "declares",
+      "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:WRITE",
+      "kind": "declares",
+      "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
+    },
+    {
+      "condition": null,
+      "dst": "cap:WRITE_RESULT_NATIVE",
+      "kind": "declares",
+      "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
+    },
+    {
+      "condition": null,
       "dst": "cap:ATOMIC_MOVE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
@@ -1264,6 +1324,11 @@
     {
       "dst": "cls:remote_store.aio._async_backend.AsyncBackend",
       "kind": "inherits",
+      "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
+    },
+    {
+      "dst": "cls:remote_store.aio._async_backend.AsyncBackend",
+      "kind": "inherits",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
@@ -1831,6 +1896,15 @@
       "role": "backend",
       "runtime": "async",
       "summary": "Async Azure Storage backend."
+    },
+    {
+      "file": "src/remote_store/aio/backends/_graph/backend.py",
+      "id": "cls:remote_store.aio.backends._graph.backend.GraphBackend",
+      "kind": "class",
+      "line": 72,
+      "role": "backend",
+      "runtime": "async",
+      "summary": "Async Microsoft Graph backend over OneDrive / SharePoint / Teams files."
     },
     {
       "file": "src/remote_store/aio/backends/_memory.py",
@@ -2879,6 +2953,11 @@
     },
     {
       "id": "xtr:azure",
+      "kind": "extra",
+      "kind_of": "backend"
+    },
+    {
+      "id": "xtr:graph",
       "kind": "extra",
       "kind_of": "backend"
     },

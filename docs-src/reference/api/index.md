@@ -34,6 +34,7 @@ Complete reference for all public exports of `remote-store`.
 | [SyncBackendAdapter](aio.md#syncbackendadapter) | Wraps any synchronous backend for async use via thread-pool executor |
 | [AsyncBackendSyncAdapter](aio.md#asyncbackendsyncadapter) | Wraps any `AsyncBackend` as a synchronous `Backend` via a private event loop |
 | [AsyncMemoryBackend](aio.md#asyncmemorybackend) | In-memory async backend for testing |
+| [GraphBackend](aio.md#graphbackend) | Microsoft Graph backend (OneDrive, SharePoint, Teams files) |
 | [AsyncWritableContent](aio.md#asyncwritablecontent) | Type alias: ``bytes`` or ``AsyncIterator[bytes]`` |
 
 ## Utilities
@@ -41,6 +42,8 @@ Complete reference for all public exports of `remote-store`.
 | Class | Description |
 |-------|-------------|
 | [SFTPUtils](sftp-utils.md) | Key loading and host-key verification helpers for SFTP |
+| [GraphAuth](aio.md#graphauth) | MSAL token provider (client-credentials / device-code) for Graph |
+| [GraphUtils](aio.md#graphutils) | Resolve a Graph `drive_id` from OneDrive / SharePoint / Teams targets |
 
 ## Configuration
 
