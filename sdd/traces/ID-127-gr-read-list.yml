@@ -23,7 +23,7 @@ surprising_ripples:
   # nextLink would leak the token. The fix lives in the unchanged-by-feature
   # http.py, surfaced only because listings exposed the path.
   - src/remote_store/aio/backends/_graph/http.py
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

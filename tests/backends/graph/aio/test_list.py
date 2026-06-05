@@ -221,6 +221,18 @@ class TestPagination:
             with pytest.raises(BackendUnavailable):
                 _ = [f async for f in backend.list_files("p")]
 
+    @respx.mock
+    @pytest.mark.spec("GR-014")
+    async def test_mid_pagination_not_found_propagates(self) -> None:
+        # A 404 on a LATER page is a real error, not the BE-014 missing-path case:
+        # it must surface rather than silently truncate the listing to page 1.
+        nxt = f"{_BASE}/_page/d-page2"
+        respx.get(_children_url("d")).mock(return_value=_page([_file_child("a.txt")], next_link=nxt))
+        respx.get(nxt).mock(return_value=_not_found())
+        async with _make() as backend:
+            with pytest.raises(NotFound):
+                _ = [f async for f in backend.list_files("d")]
+
 
 class TestGetFolderInfo:
     """BE-017 / ASYNC-017: recursive aggregate; file/missing path failures."""

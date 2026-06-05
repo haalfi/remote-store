@@ -410,19 +410,26 @@ class GraphBackend(AsyncBackend):
     async def _iter_child_items(self, path: str) -> AsyncIterator[dict[str, Any]]:
         """Yield each child ``driveItem`` under *path*, following pagination.
 
-        A 404 at *path* (a missing folder, or a file path with no children
-        collection) is suppressed to an empty iteration, so the public listing
-        operations never raise ``NotFound`` for a bad path.
+        A 404 on the *first* request (a missing folder, or a file path with no
+        children collection) is suppressed to an empty iteration, so the public
+        listing operations never raise ``NotFound`` for a bad path. A 404 raised
+        mid-pagination (a later ``@odata.nextLink`` page) is a real error and
+        propagates, rather than silently truncating the listing to the pages
+        seen so far.
         """
         url = self._children_url(path)
+        started = False
         try:
             async for page in iter_pages(self._client, url, token_provider=self._token_provider, path=path):
+                started = True
                 value = page.get("value")
                 if isinstance(value, list):
                     for raw in value:
                         if isinstance(raw, dict):
                             yield raw
         except NotFound:
+            if started:
+                raise
             return
 
     async def _walk_files(self, path: str, depth: int, limit: int | None) -> AsyncIterator[FileInfo]:
