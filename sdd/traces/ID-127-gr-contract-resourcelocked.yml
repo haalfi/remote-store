@@ -20,7 +20,17 @@ expected_ripples:
   # explicitly; the first citing mark forces its self-pruning removal —
   # anticipated by that allowlist comment, so expected rather than surprising.
   - scripts/check_spec_marks.py
-review_rounds: 0
+discovery_followups:
+  # The strict-coverage runs during this PR surfaced a recurring xdist
+  # PytestUnraisableExceptionWarning cross-attribution flake; filed as a memo.
+  - ID-217
+surprising_ripples:
+  # PR review caught that landing the bundle in GR-CONTRACT (ahead of the
+  # Graph sub-package) makes ADR-0024 § Bundled implementation's literal
+  # "same PR as the Graph sub-package" wording false — a doc-truth gap
+  # (principle 3) no ripple-check row anticipates. Amended the ADR in this PR.
+  - sdd/adrs/0024-resource-locked-error.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
