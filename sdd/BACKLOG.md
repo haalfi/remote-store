@@ -421,6 +421,35 @@ and the highest ID already in this file, then take the next integer. Run
   `sdd/specs/044-graph-backend.md` (GR-015). Discovered in PR #760 (ID-127
   GR-TRANSFER) review.
 
+- [ ] **BK-260 — Graph cassettes: replay across the pre-signed download/upload URL**
+  spec: GR-015, GR-019 · effort: M · audience: infra.test
+  The `graph_replay` Stage-1 fixture is still inert: no cassette in
+  `tests/backends/cassettes/graph/`, and `record_cassettes.py` keeps
+  `min_cassettes=0` for graph. GR-WRITE made the read/list/metadata/lazy_read +
+  write conformance slices *seedable* (write now works), but recording them
+  productively is blocked by a pre-signed-URL replay problem the GR-FOUNDATION
+  streaming proof never exercised (it recorded and replayed the **same** URL):
+  - The scrub redacts the `@microsoft.graph.downloadUrl` (read) and the
+    upload-session `uploadUrl` (write) body values to `REDACTED`. On replay the
+    backend re-requests that value — `GET "REDACTED"` / `PUT "REDACTED"` — which
+    matches no cassette interaction. The read conformance tests write-then-read,
+    so they hit this too.
+  - The token also rides the request *query* on those pre-signed hosts, so a
+    naive host+path+query match would either leak the token (if kept) or fail to
+    match (if filtered asymmetrically between record and replay).
+
+  **Solution sketch (decide when picked up):** change the body scrub to wipe the
+  *query only* (preserve host+path, mirroring the existing `Location`-header
+  scrub), add a `before_record_request` that normalises the query to empty on the
+  non-`graph.microsoft.com` pre-signed hosts (so record and replay agree), and/or
+  a custom `match_on` that ignores the query for those hosts. Then record live,
+  move the slices off the missing-cassette skip, and raise `min_cassettes`.
+  Until then the live device-code probe (`tmp/validate_graph_*_live.py`) is the
+  Stage-3 reality-check (the GR-TRANSFER precedent). Touches
+  `tests/backends/fixtures/_cassettes.py`,
+  `tests/backends/conformance/conftest.py`, `scripts/record_cassettes.py`, and
+  the recorded cassette tree. Discovered in ID-127 GR-WRITE.
+
 - [ ] **ID-121 — CompositeStore (research complete)**
   spec: — · effort: L · audience: user.api
   `CompositeStore(Store)` — core Store subclass (not extension) that composes

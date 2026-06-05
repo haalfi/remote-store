@@ -225,14 +225,12 @@ class TestUnwrapAndClose:
 
 
 class TestStubs:
-    """Write + mutate ops remain stubbed until GR-WRITE / GR-MUTATE."""
+    """Mutate ops remain stubbed until GR-MUTATE (write landed in GR-WRITE)."""
 
     @pytest.mark.spec("GR-012")
     @pytest.mark.parametrize(
         "call",
         [
-            lambda b: b.write("a", b"x"),
-            lambda b: b.write_atomic("a", b"x"),
             lambda b: b.delete("a"),
             lambda b: b.delete_folder("a"),
             lambda b: b.move("a", "b"),

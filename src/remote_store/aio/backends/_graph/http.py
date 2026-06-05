@@ -28,6 +28,7 @@ import httpx
 from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
+    InvalidPath,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
@@ -154,6 +155,68 @@ def _parse_error(response: httpx.Response) -> str | None:
         return None
 
 
+def response_json(response: httpx.Response) -> object | None:
+    """Return the parsed JSON body, or ``None`` for a non-JSON / empty body.
+
+    Used by the write path, which inspects ``409`` conflict bodies the flat
+    status→error table is deliberately blind to.
+    """
+    try:
+        body: object = response.json()
+    except (ValueError, httpx.DecodingError):
+        return None
+    return body
+
+
+def _conflict_candidates(body: object) -> list[dict[str, Any]]:
+    """Return the driveItem-shaped dicts a ``409`` conflict body may carry.
+
+    Graph surfaces the conflicting item either as ``error.details`` entries or,
+    under ``@microsoft.graph.conflictBehavior=fail``, as the echoed target item
+    at the body top level. Both shapes are accepted; non-dict members are
+    dropped so a malformed body degrades to the plain ``AlreadyExists`` default.
+    """
+    candidates: list[dict[str, Any]] = []
+    if not isinstance(body, dict):
+        return candidates
+    err = body.get("error")
+    if isinstance(err, dict):
+        details = err.get("details")
+        if isinstance(details, list):
+            candidates.extend(d for d in details if isinstance(d, dict))
+    if "folder" in body or "file" in body:
+        candidates.append(body)
+    return candidates
+
+
+def discriminate_write_conflict(body: object, path: str, *, backend: str = BACKEND_NAME) -> RemoteStoreError:
+    """Map a ``409`` write-conflict body to a typed error.
+
+    Graph's ``409 nameAlreadyExists`` alone does not discriminate the
+    precondition outcomes, so the structured body (facets on the conflicting
+    item, never the error *message*) is inspected:
+
+    * a ``folder`` facet on the **target** name → the target is an existing
+      folder → ``InvalidPath``;
+    * a ``file`` facet on an **ancestor** name (file-as-directory-component) →
+      ``InvalidPath`` regardless of ``overwrite``;
+    * otherwise the target is a file at the requested name → ``AlreadyExists``.
+
+    The ancestor and folder cases are overwrite-independent: ``overwrite=True``
+    sends ``conflictBehavior=replace``, so a plain target-file never reaches
+    this discriminator — only the structurally-invalid cases do.
+    """
+    # GR-018 / BE-008 precondition discrimination; ancestor-file is ID-209.
+    target = path.rsplit("/", 1)[-1]
+    for entry in _conflict_candidates(body):
+        name = entry.get("name") or entry.get("target")
+        if "folder" in entry and name in (None, target):
+            return InvalidPath(f"Cannot write — '{path}' names an existing folder", path=path, backend=backend)
+        if "file" in entry and name is not None and name != target:
+            return InvalidPath(f"Cannot write — ancestor '{name}' is a file: {path}", path=path, backend=backend)
+    return AlreadyExists(f"Already exists: {path}", path=path, backend=backend)
+
+
 def _parse_retry_after(value: str | None) -> float | None:
     """Parse a ``Retry-After`` header into seconds.
 
@@ -202,6 +265,7 @@ async def _send_attempt(
     url: str,
     *,
     token_provider: TokenProvider,
+    authenticated: bool = True,
     **kwargs: Any,
 ) -> httpx.Response:
     """One request attempt plus the one-shot ``401`` auth refresh.
@@ -213,18 +277,25 @@ async def _send_attempt(
     code) is returned for the caller to map to ``PermissionDenied``. Transport
     failures propagate as ``httpx.TransportError`` for the retry loop to handle.
 
+    ``authenticated=False`` attaches no bearer token and skips the refresh — for
+    pre-signed targets (the upload-session ``uploadUrl``) that carry their own
+    token in the URL and reject a cross-host ``Authorization`` header, mirroring
+    the auth-free ``downloadUrl`` reads.
+
     ``kwargs`` is consumed locally (``headers`` is popped from the callee's own
     copy), so a caller may re-invoke with the same ``kwargs`` across retries; a
     streaming body would still replay empty, so the retry loop is only wired to
     replayable (non-streaming) requests.
     """
-    token = await acquire_token(token_provider)
-    headers = {**kwargs.pop("headers", {}), "Authorization": f"Bearer {token}"}
+    headers = dict(kwargs.pop("headers", {}))
+    if authenticated:
+        token = await acquire_token(token_provider)
+        headers["Authorization"] = f"Bearer {token}"
     if log.isEnabledFor(logging.DEBUG):
         # GR-035: the bearer token is redacted before the record is formatted.
         log.debug("graph request %s %s headers=%s", method, url, mask_headers(headers))
     response = await client.request(method, url, headers=headers, **kwargs)
-    if response.status_code == 401 and _parse_error(response) == "InvalidAuthenticationToken":
+    if authenticated and response.status_code == 401 and _parse_error(response) == "InvalidAuthenticationToken":
         # One-shot refresh + re-issue, independent of RetryPolicy.
         token = await acquire_token(token_provider)
         headers["Authorization"] = f"Bearer {token}"
@@ -241,6 +312,8 @@ async def graph_send(
     path: str = "",
     scope: Literal["item", "drive"] = "item",
     retry: RetryPolicy | None = None,
+    return_on: frozenset[int] = frozenset(),
+    authenticated: bool = True,
     **kwargs: Any,
 ) -> httpx.Response:
     """Send an authenticated Graph request and map failures to typed errors.
@@ -262,6 +335,20 @@ async def graph_send(
     single attempt (the default for every call site until it opts in), so the
     auth refresh is the only re-issue.
 
+    ``return_on`` lists non-2xx statuses the caller wants to classify itself:
+    a response whose status is in the set is **returned raw** instead of
+    mapped-and-raised, and is never treated as transient (so it is not retried).
+    The write path uses this to inspect a ``409`` body for the
+    folder / ancestor-file / already-exists discrimination and to surface a
+    mid-session ``423`` with the unfinished session context — cases the flat
+    status→error table cannot disambiguate. The default empty set leaves every
+    existing call site byte-identical.
+
+    ``authenticated=False`` sends no bearer token (and skips the ``401`` refresh)
+    for a pre-signed, self-authenticating target such as the upload-session
+    ``uploadUrl`` — which lives on a different host and rejects a cross-host
+    ``Authorization`` header, exactly like the ``downloadUrl`` reads.
+
     Caveat: both the auth refresh and the retry loop re-issue the request with
     the same ``kwargs``, so they are only safe when the body is replayable. A
     streaming body (an ``AsyncIterator`` ``content=`` / generator ``data=``) is
@@ -275,11 +362,13 @@ async def graph_send(
     for attempt in range(attempts):
         retry_after: float | None = None
         try:
-            response = await _send_attempt(client, method, url, token_provider=token_provider, **kwargs)
+            response = await _send_attempt(
+                client, method, url, token_provider=token_provider, authenticated=authenticated, **kwargs
+            )
         except _TRANSPORT_ERRORS as exc:
             last_error = BackendUnavailable(f"Graph transport error: {exc}", path=path, backend=BACKEND_NAME)
         else:
-            if response.is_success:
+            if response.is_success or response.status_code in return_on:
                 return response
             code = _parse_error(response)
             if response.status_code in _RETRYABLE_STATUSES:

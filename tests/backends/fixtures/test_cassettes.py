@@ -93,6 +93,22 @@ class TestGraphCassetteScrub:
         assert b"@microsoft.graph.downloadUrl" in scrubbed
         assert b'"name":"f.txt"' in scrubbed
 
+    def test_uploadurl_redacted_from_body(self) -> None:
+        # createUploadSession returns a pre-authorised uploadUrl whose query
+        # carries its own token — the same leak threat as downloadUrl (GR-019).
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        body = (
+            b'{"uploadUrl":"https://up.example.com/session/abc?tempauth=UPLOADSECRET999",'
+            b'"expirationDateTime":"2026-01-01T00:00:00Z","nextExpectedRanges":["0-"]}'
+        )
+        resp: dict[str, Any] = {"headers": {"Content-Type": ["application/json"]}, "body": {"string": body}}
+        scrubbed = cfg["before_record_response"](resp)["body"]["string"]
+        assert b"UPLOADSECRET999" not in scrubbed
+        assert b"REDACTED" in scrubbed
+        # Structure preserved: the key and the non-secret fields stay.
+        assert b'"uploadUrl"' in scrubbed
+        assert b'"nextExpectedRanges":["0-"]' in scrubbed
+
     def test_oauth_tokens_redacted_from_body(self) -> None:
         cfg = build_graph_vcr_config(real_drive_id=None)
         body = b'{"access_token":"AAAsecretAAA","refresh_token":"RRRsecretRRR","expires_in":3600}'
