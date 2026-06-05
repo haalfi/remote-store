@@ -303,8 +303,9 @@ class GraphBackend(AsyncBackend):
         Raises:
             NotFound: If the path does not exist.
             InvalidPath: If the path names a folder.
-            BackendUnavailable: If the download URL is missing or the
-                pre-signed host returns a non-success status.
+            BackendUnavailable: If the download URL is missing, the pre-signed
+                host returns a non-success status, or the download fails at the
+                transport level (connect/read timeout, DNS, reset).
         """
         item = await self._get_item(path)
         if is_folder_item(item):
@@ -314,14 +315,19 @@ class GraphBackend(AsyncBackend):
             # A file item should always carry a download URL (even 0-byte files);
             # its absence is a Graph contract gap, not a silent empty read.
             raise BackendUnavailable(f"Graph returned no download URL for: {path}", path=path, backend=self.name)
-        async with self._client.stream("GET", url) as response:
-            if not response.is_success:
-                await response.aread()
-                raise BackendUnavailable(
-                    f"Graph download failed ({response.status_code}): {path}", path=path, backend=self.name
-                )
-            async for chunk in response.aiter_bytes():
-                yield chunk
+        # The metadata GET rides graph_send, but this body stream goes direct to
+        # the pre-signed host, so transport errors are mapped here per GR-033.
+        try:
+            async with self._client.stream("GET", url) as response:
+                if not response.is_success:
+                    await response.aread()
+                    raise BackendUnavailable(
+                        f"Graph download failed ({response.status_code}): {path}", path=path, backend=self.name
+                    )
+                async for chunk in response.aiter_bytes():
+                    yield chunk
+        except httpx.TransportError as exc:
+            raise BackendUnavailable(f"Graph download transport error: {exc}", path=path, backend=self.name) from None
 
     async def read_bytes(self, path: str) -> bytes:
         """Read full file content as bytes.

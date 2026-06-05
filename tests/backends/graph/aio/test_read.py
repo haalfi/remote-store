@@ -242,6 +242,18 @@ class TestRead:
                 async for _ in backend.read("a.txt"):
                     pass
 
+    @respx.mock
+    @pytest.mark.spec("GR-033")
+    async def test_download_transport_error_raises(self) -> None:
+        # A transport failure on the pre-signed host (the stream goes direct, not
+        # via graph_send) is mapped to BackendUnavailable per GR-033.
+        respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(200, json=_file_item()))
+        respx.get(_DOWNLOAD).mock(side_effect=httpx.ConnectError("boom"))
+        async with _make() as backend:
+            with pytest.raises(BackendUnavailable):
+                async for _ in backend.read("a.txt"):
+                    pass
+
 
 class TestParseGraphDatetime:
     """RFC 3339 parsing with the trailing-Z normalisation for the 3.10 floor."""

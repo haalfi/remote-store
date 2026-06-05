@@ -23,7 +23,14 @@ surprising_ripples:
   # ``/drives/{id}/root``. The unit mocks mirrored the buggy URL so they passed
   # falsely; the fix added an _item_url builder special-casing the root exactly
   # as _children_url already did, plus a TestItemUrl regression and a live probe.
+  #
+  # PR review (ultrareview) also flagged GR-033: read() streams the body direct
+  # via client.stream (not graph_send), so a transport error on the pre-signed
+  # download host escaped as a raw httpx.TransportError instead of the mandated
+  # BackendUnavailable. Fixed by wrapping the stream; the docstring no longer
+  # under-claims the transport case.
   - src/remote_store/aio/backends/_graph/backend.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

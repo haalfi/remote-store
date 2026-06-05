@@ -15,6 +15,15 @@ expected_ripples:
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
 discovery_followups: []
+surprising_ripples:
+  # PR review (ultrareview) flagged that this PR is the first to route user
+  # listings through iter_pages, making a latent GR-016 gap reachable: iter_pages
+  # validated the @odata.nextLink scheme but not its host, and each page is
+  # re-fetched through graph_send (bearer token attached) — so a cross-host
+  # nextLink would leak the token. The fix lives in the unchanged-by-feature
+  # http.py, surfaced only because listings exposed the path.
+  - src/remote_store/aio/backends/_graph/http.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
