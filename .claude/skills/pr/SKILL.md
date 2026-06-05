@@ -37,17 +37,9 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
     - If any match: run `hatch run test-cov-strict` (enforces 95%; needs Azurite running locally — see [CLAUDE.md § Coverage gate](../../../CLAUDE.md#coverage-gate)). If it fails, stop and report which files are below threshold. Do **not** create the PR until coverage passes.
     - If none match (docs/config-only): run `hatch run test`. A `scripts/`-only diff lands here, yet scripts have guard tests under `tests/scripts/` (e.g. source-order assertions) that the strict-coverage trigger never fires for — so still run the suite. If it fails, stop and report.
 
-2e. **Local-machine reference gate:** Grep all files changed on this branch
-    (`git diff origin/<BASE>...HEAD --name-only`) for private local-machine
-    references that are unreachable from the repo:
-
-    - `See memory ` or `` captured as `<slug>.md` `` — Claude Code memory slugs
-    - `[A-Z]:\\[A-Za-z]` — Windows drive paths (skip `\n`/`\r`/`\t` escape sequences in string literals)
-    - `~/\.claude` or `\.claude/projects` — private config paths
-
-    Cover all tracked file types: `.md`, `.py`, `.sh`, `.yml`, `.dfy`, `.tla`.
-    If any match, fix before creating the PR — replace each with the principle
-    or content it refers to, inline.
+2e. **Local-machine reference gate:** Grep changed files for private local-machine
+    references unreachable from the repo, per the [ripple-check Local-machine reference row](../../../sdd/CLAUDE-REFERENCE.md#pre-work-index)
+    (patterns + scope live there). Fix before creating the PR.
 
 2d. **Trace gate:** Extract backlog IDs from `git log origin/<BASE>..HEAD --format=%s`
     using the pattern `^([A-Z]+-\d+[a-z]?)[:\s]` against each subject — the ID
