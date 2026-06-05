@@ -31,7 +31,7 @@ surprising_ripples:
   # live validation is the bespoke device-code probe instead. Same pattern PRs A/B
   # shipped — cassettes/graph/ is still empty.
   - tests/backends/conformance/test_async_extended.py
-review_rounds: 1
+review_rounds: 2
 # Round 1 (code-review on the opened PR) caught that the GR-017 implementation
 # narrowed the spec: it only recovered status-time 401/403 expiry, leaving a
 # mid-body connection drop (httpx.TransportError after partial delivery) an
@@ -40,7 +40,15 @@ review_rounds: 1
 # delivered-byte cursor so a drop resumes from the next unread byte via Range
 # (eTag-guarded), implemented the GR-017 non-416-4xx-to-spool caveat, split the
 # spool rollover/read-window constants, and added the disk-rollover test the
-# 10-byte fallback bodies never exercised.
+# 10-byte fallback bodies never exercised. It also filed BK-259 for the
+# range-fallback-flag lifecycle.
+# Round 2 caught an internal SPEC conflict the ripple-check did not anticipate:
+# GR-055 (416 at/past EOF -> empty stream) and GR-015's SharePoint caveat (416
+# "outside the valid extent" -> spool fallback) prescribed opposite behaviour for
+# the same response. Per principle 4 the dedicated owner wins: GR-015's caveat was
+# amended to defer all 416 handling to GR-055 and scope the fallback to the genuine
+# range-incapable signals (200 / non-416 4xx) — a spec-only fix, the code already
+# matched GR-055. Plus the Retry-After x timeout interaction test.
 phases:
   - id: orient
     name: Orient

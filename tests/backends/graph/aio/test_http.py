@@ -318,6 +318,26 @@ class TestGraphSendRetry:
         assert record_sleeps == []  # never slept — the timeout check short-circuited
 
     @respx.mock
+    @pytest.mark.spec("GR-048")
+    async def test_large_retry_after_against_small_budget_short_circuits(self, record_sleeps: list[float]) -> None:
+        # The realistic throttle case: the server says "wait 60s" via Retry-After
+        # while the retry budget is 0.5s. The budget guard runs on the
+        # Retry-After-raised delay, so the loop gives up rather than sleeping past
+        # the budget — the Retry-After/timeout interaction the two are tested for
+        # only in isolation otherwise.
+        route = respx.get(_ME_DRIVE).mock(
+            return_value=httpx.Response(
+                429, headers={"Retry-After": "60"}, json={"error": {"code": "activityLimitReached"}}
+            )
+        )
+        policy = RetryPolicy(max_attempts=5, backoff_base=0.0, backoff_max=0.0, jitter=0.0, timeout=0.5)
+        async with httpx.AsyncClient() as client:
+            with pytest.raises(BackendUnavailable):
+                await graph_send(client, "GET", _ME_DRIVE, token_provider=lambda: "t", retry=policy)
+        assert route.call_count == 1  # gave up before a second attempt
+        assert record_sleeps == []  # the 60s Retry-After never slept — budget short-circuited
+
+    @respx.mock
     @pytest.mark.spec("GR-045")
     async def test_terminal_resource_locked_is_not_retried(self) -> None:
         route = respx.get(_ME_DRIVE).mock(return_value=httpx.Response(423, json={"error": {"code": "resourceLocked"}}))

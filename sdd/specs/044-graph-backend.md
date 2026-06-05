@@ -344,9 +344,13 @@ for `read_seekable()`. `SEEKABLE_READ` remains withheld (GR-003).
 pre-signed download URL has been observed to ignore or reject
 `Range` headers depending on tenant configuration (WebDAV-style
 backends in particular). When the server returns the full entity
-(`200 OK` to a `Range` request) or rejects the range with `416`
-outside the valid extent, the backend falls back to the spool
-strategy rather than pretending to stream. When the fallback
+(`200 OK` to a `Range` request) or rejects the range with a
+non-`416` `4xx` — the range-incapable signals — the backend falls
+back to the spool strategy rather than pretending to stream. A
+`416` is **not** a range-incapability signal and does not trigger
+this fallback: a start at or past EOF is a legitimate empty read and
+an inverted-bounds `416` is a backend bug, both owned by GR-055 (the
+single source of truth for `416` on a range read). When the fallback
 fires, the backend logs a WARNING with the `graph.read.range_fallback`
 marker and sets
 `FileInfo.extra["graph.read.range_fallback"] = True` on any
