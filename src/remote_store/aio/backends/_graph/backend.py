@@ -17,9 +17,15 @@ import httpx
 
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy
-from remote_store._errors import CapabilityNotSupported
+from remote_store._errors import BackendUnavailable, CapabilityNotSupported, InvalidPath, NotFound
 from remote_store.aio._async_backend import AsyncBackend
-from remote_store.aio.backends._graph.http import BACKEND_NAME
+from remote_store.aio.backends._graph.http import BACKEND_NAME, graph_send
+from remote_store.aio.backends._graph.items import (
+    download_url,
+    is_file_item,
+    is_folder_item,
+    item_to_fileinfo,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
@@ -249,33 +255,120 @@ class GraphBackend(AsyncBackend):
 
     # endregion
 
-    # region: data-plane operations — stubbed (GR-READ / GR-WRITE / GR-MUTATE)
+    # region: data-plane reads (GR-012, GR-013, GR-031, GR-049)
+
+    async def _get_item(self, path: str) -> dict[str, Any]:
+        """Fetch the Graph ``driveItem`` body for *path* (one metadata GET).
+
+        The single item-by-path metadata round trip shared by the read and
+        type-probe operations. A missing item surfaces as ``NotFound`` (404
+        ``itemNotFound`` at item scope, mapped by ``graph_send``); drive-scope,
+        transport, and other failures map through the same primitive.
+        """
+        url = f"{self._base_url}{self.native_path(path)}"
+        response = await graph_send(
+            self._client, "GET", url, token_provider=self._token_provider, path=path, scope="item"
+        )
+        body: dict[str, Any] = response.json()
+        return body
 
     async def read(self, path: str) -> AsyncIterator[bytes]:
-        """Stream file content. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="read"))
-        if False:  # pragma: no cover -- marks this an async generator
-            yield b""
+        """Stream file content from the pre-signed download URL.
+
+        Fetches item metadata first (so the directory check happens before any
+        byte is yielded), then streams the response body from
+        ``@microsoft.graph.downloadUrl``. The download URL is pre-signed, so no
+        ``Authorization`` header is attached.
+
+        Raises:
+            NotFound: If the path does not exist.
+            InvalidPath: If the path names a folder.
+            BackendUnavailable: If the download URL is missing or the
+                pre-signed host returns a non-success status.
+        """
+        item = await self._get_item(path)
+        if is_folder_item(item):
+            raise InvalidPath(f"Cannot read — '{path}' is a folder", path=path, backend=self.name)
+        url = download_url(item)
+        if url is None:
+            # A file item should always carry a download URL (even 0-byte files);
+            # its absence is a Graph contract gap, not a silent empty read.
+            raise BackendUnavailable(f"Graph returned no download URL for: {path}", path=path, backend=self.name)
+        async with self._client.stream("GET", url) as response:
+            if not response.is_success:
+                await response.aread()
+                raise BackendUnavailable(
+                    f"Graph download failed ({response.status_code}): {path}", path=path, backend=self.name
+                )
+            async for chunk in response.aiter_bytes():
+                yield chunk
 
     async def read_bytes(self, path: str) -> bytes:
-        """Read full file content. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="read_bytes"))
+        """Read full file content as bytes.
+
+        Delegates to ``read`` so the directory check and not-found mapping live
+        in one place.
+
+        Raises:
+            NotFound: If the path does not exist.
+            InvalidPath: If the path names a folder.
+        """
+        return b"".join([chunk async for chunk in self.read(path)])
 
     async def exists(self, path: str) -> bool:
-        """Existence probe. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="exists"))
+        """Return ``True`` if a file or folder exists at *path*.
+
+        A 404 ``itemNotFound`` is suppressed to ``False``; never raises
+        ``NotFound``.
+        """
+        try:
+            await self._get_item(path)
+        except NotFound:
+            return False
+        return True
 
     async def is_file(self, path: str) -> bool:
-        """File-type probe. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="is_file"))
+        """Return ``True`` if *path* exists and carries the ``file`` facet.
+
+        A missing item returns ``False`` (the 404 is suppressed).
+        """
+        try:
+            item = await self._get_item(path)
+        except NotFound:
+            return False
+        return is_file_item(item)
 
     async def is_folder(self, path: str) -> bool:
-        """Folder-type probe. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="is_folder"))
+        """Return ``True`` if *path* exists and carries the ``folder`` facet.
+
+        A missing item returns ``False`` (the 404 is suppressed). The drive root
+        (``""``) carries the ``folder`` facet and reports ``True``.
+        """
+        try:
+            item = await self._get_item(path)
+        except NotFound:
+            return False
+        return is_folder_item(item)
 
     async def get_file_info(self, path: str) -> FileInfo:
-        """File metadata. Not implemented yet (read path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="get_file_info"))
+        """Return file metadata mapped from the Graph ``driveItem`` body.
+
+        ``file.hashes`` rides ``FileInfo.extra["graph.file.hashes"]``;
+        ``metadata`` is ``None`` (user metadata is not declared) and ``digest``
+        is left unset.
+
+        Raises:
+            NotFound: If the path does not exist.
+            InvalidPath: If the path names a folder.
+        """
+        item = await self._get_item(path)
+        if is_folder_item(item):
+            raise InvalidPath(f"Cannot get file info — '{path}' is a folder", path=path, backend=self.name)
+        return item_to_fileinfo(item, path)
+
+    # endregion
+
+    # region: data-plane operations — stubbed (GR-READ list / GR-WRITE / GR-MUTATE)
 
     async def get_folder_info(self, path: str) -> FolderInfo:
         """Folder metadata. Not implemented yet (read path)."""

@@ -225,17 +225,12 @@ class TestUnwrapAndClose:
 
 
 class TestStubs:
-    """Data-plane operations are stubbed in GR-CORE (xfail'd until GR-READ/WRITE/MUTATE)."""
+    """Write/mutate + list ops remain stubbed until GR-READ list / GR-WRITE / GR-MUTATE."""
 
     @pytest.mark.spec("GR-012")
     @pytest.mark.parametrize(
         "call",
         [
-            lambda b: b.read_bytes("a"),
-            lambda b: b.exists("a"),
-            lambda b: b.is_file("a"),
-            lambda b: b.is_folder("a"),
-            lambda b: b.get_file_info("a"),
             lambda b: b.get_folder_info("a"),
             lambda b: b.write("a", b"x"),
             lambda b: b.write_atomic("a", b"x"),
@@ -253,7 +248,6 @@ class TestStubs:
     @pytest.mark.parametrize(
         "call",
         [
-            lambda b: b.read("a"),
             lambda b: b.list_files("a"),
             lambda b: b.list_folders("a"),
             lambda b: b.iter_children("a"),
