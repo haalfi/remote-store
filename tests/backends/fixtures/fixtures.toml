@@ -321,3 +321,27 @@ container = "none"
 is_async  = true
 # BUG-201: AsyncAzureBackend short-circuits src==dst; async fixtures are green.
 self_op_supported = true
+
+# ---------------------------------------------------------------------------
+# Graph fixtures (ID-127). Async-native only. The live tier is device-code /
+# consumer (no client secret): RS_TEST_LIVE_GRAPH=1 plus GRAPH_CLIENT_ID /
+# GRAPH_TENANT_ID / GRAPH_DRIVE_ID. graph_replay plays back committed cassettes
+# recorded from the live tier; until those exist the missing-cassette skip keeps
+# the slices inert (and the data-plane ops are stubbed until GR-READ/WRITE/MUTATE).
+# ---------------------------------------------------------------------------
+
+[fixture.graph_live]
+backend   = "graph"
+stage     = 3
+kind      = "real-live"
+container = "none"
+is_async  = true
+live_opt_in_env = "RS_TEST_LIVE_GRAPH"
+live_creds_env  = ["GRAPH_CLIENT_ID", "GRAPH_TENANT_ID", "GRAPH_DRIVE_ID"]
+
+[fixture.graph_replay]
+backend   = "graph"
+stage     = 1
+kind      = "replay"
+container = "none"
+is_async  = true

@@ -85,3 +85,18 @@ sources   = ["tests/backends/dafny/_helpers.py"]
 transport = "memory"
 flat_namespace    = false
 self_op_supported = true
+
+# ID-127: Microsoft Graph — async-native only (no sync twin). Hierarchical
+# (real folders), so flat_namespace=false; self-copy/move short-circuits after
+# a single existence GET (GR-044), so self_op_supported=true.
+[backend.graph]
+sources       = []
+async_sources = [
+    "src/remote_store/aio/backends/_graph/backend.py",
+    "src/remote_store/aio/backends/_graph/http.py",
+    "src/remote_store/aio/backends/_graph/auth.py",
+    "src/remote_store/aio/backends/_graph/utils.py",
+]
+transport     = "http"
+flat_namespace    = false
+self_op_supported = true
