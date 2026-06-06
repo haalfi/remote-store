@@ -992,7 +992,7 @@ class GraphBackend(AsyncBackend):
         """
         # GR-051: the poller task is tracked so close() can cancel it mid-flight.
         if response.status_code != 202:
-            return
+            return None  # explicit so it does not mix with the `return await` below
         monitor_url = response.headers.get("location")
         if not monitor_url:
             raise BackendUnavailable(
