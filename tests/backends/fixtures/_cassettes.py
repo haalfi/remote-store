@@ -171,9 +171,12 @@ _GRAPH_URL_QUERY_RE: re.Pattern[str] = re.compile(r"\?\S*")
 
 # Body-level redactions, applied in the bytes domain so binary payloads are
 # safe. Each preserves surrounding JSON structure and replaces only the
-# secret-bearing value.
+# secret-bearing value. The ``uploadUrl`` returned by ``createUploadSession``
+# is pre-authorised and carries its own token in the query (the same threat as
+# ``downloadUrl``), so it is wiped alongside it.
 _GRAPH_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
     (re.compile(rb'("@microsoft\.graph\.downloadUrl"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
+    (re.compile(rb'("uploadUrl"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
     (re.compile(rb'("(?:access_token|refresh_token)"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
     (re.compile(rb"Bearer\s+[A-Za-z0-9._~+/=\-]+"), b"Bearer REDACTED"),
 ]
@@ -369,7 +372,8 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
       redirects to ``@microsoft.graph.downloadUrl`` (GR-015); its **whole
       query** is wiped (value-based, like the body scrub) so no token survives,
       named or not;
-    * the ``@microsoft.graph.downloadUrl`` value and any
+    * the ``@microsoft.graph.downloadUrl`` value, the upload-session
+      ``uploadUrl`` value (pre-authorised, token in its query), and any
       ``Bearer`` / ``access_token`` / ``refresh_token`` from response bodies;
     * the pre-signed download query parameters; and
     * the live ``drive_id`` (rewritten to ``FAKE_DRIVE_ID``) from request

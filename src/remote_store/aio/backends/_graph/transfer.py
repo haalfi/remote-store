@@ -31,24 +31,33 @@ may change without a public-API deprecation.
 
 from __future__ import annotations
 
+import io
 import logging
 import tempfile
 from typing import TYPE_CHECKING
 
 import httpx
 
-from remote_store._errors import BackendUnavailable
-from remote_store.aio.backends._graph.http import BACKEND_NAME, classify_graph_error
+from remote_store._errors import BackendUnavailable, RemoteStoreError, ResourceLocked
+from remote_store.aio.backends._graph.http import (
+    BACKEND_NAME,
+    classify_graph_error,
+    discriminate_write_conflict,
+    error_code,
+    graph_send,
+    response_json,
+)
 from remote_store.aio.backends._graph.items import download_url
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
-    from typing import Any
+    from typing import Any, BinaryIO
 
     from remote_store._config import RetryPolicy
 
     Refetch = Callable[[], Awaitable[Mapping[str, Any]]]
     OnFallback = Callable[[], None]
+    TokenProvider = Callable[[], str] | Callable[[], Awaitable[str]]
 
 log = logging.getLogger("remote_store.aio.backends._graph")
 
@@ -236,3 +245,270 @@ async def _spooled_window(
             if owed is not None:
                 owed -= len(data)
             yield data
+
+
+# ---------------------------------------------------------------------------
+# Upload-session driver (GR-019 .. GR-024, GR-038, GR-045)
+# ---------------------------------------------------------------------------
+
+UPLOAD_SPOOL_MARKER = "graph.upload.spool_spilled"
+"""DEBUG-log marker emitted when an unknown-length write iterator spills to disk
+(GR-019). The spool path rides the record so callers on small temp volumes can
+diagnose ``TMPDIR`` pressure."""
+
+UPLOAD_ABORT_MARKER = "graph.upload.abort_failed"
+"""DEBUG-log marker emitted when a best-effort upload-session ``DELETE`` fails
+(GR-024 / GR-051). Cleanup never propagates."""
+
+# Rollover threshold for an unknown-length write iterator. Matches the GR-018
+# small-file boundary so an iterator that stays small is replayed from memory
+# (no spill, no marker) and only a genuine large write spills to disk.
+_UPLOAD_SPOOL_MAX_SIZE = 4 * 1024 * 1024
+
+
+async def spool_content(content: bytes | AsyncIterator[bytes], *, path: str) -> tuple[BinaryIO, int]:
+    """Materialise write *content* into a seekable, replayable reader + its length.
+
+    ``bytes`` is wrapped in an in-memory ``BytesIO`` (no spill). An
+    ``AsyncIterator[bytes]`` of unknown length is drained into a
+    ``SpooledTemporaryFile`` (system temp, no ``dir=``) so the total can be
+    measured before the upload session opens (Graph's ``Content-Range`` needs a
+    known total); a spill past the in-memory threshold emits the
+    ``graph.upload.spool_spilled`` DEBUG marker. The reader is positioned at
+    ``0`` and supports ``seek``/``read`` so chunks replay safely across retries.
+    The caller owns closing it.
+    """
+    if isinstance(content, (bytes, bytearray)):
+        return io.BytesIO(bytes(content)), len(content)
+    # Returned to the caller, which owns closing it (write()'s finally) — a
+    # context manager here would close it before the upload reads from it.
+    spool: Any = tempfile.SpooledTemporaryFile(max_size=_UPLOAD_SPOOL_MAX_SIZE)  # noqa: SIM115
+    async for chunk in content:
+        spool.write(chunk)
+    total = spool.tell()
+    if total > _UPLOAD_SPOOL_MAX_SIZE:
+        log.debug("%s: spilled %d bytes to %s for %r", UPLOAD_SPOOL_MARKER, total, spool.name, path)
+    spool.seek(0)
+    return spool, total
+
+
+async def upload_session(
+    client: httpx.AsyncClient,
+    create_url: str,
+    reader: BinaryIO,
+    total: int,
+    *,
+    path: str,
+    token_provider: TokenProvider,
+    chunk_size: int,
+    overwrite: bool,
+    retry: RetryPolicy | None,
+    on_session_open: Callable[[str], None],
+    on_session_close: Callable[[str], None],
+    backend: str = BACKEND_NAME,
+) -> dict[str, Any]:
+    """Upload *reader* (``total`` bytes) via a Graph upload session; return the driveItem.
+
+    Opens a session with ``POST createUploadSession``, then PUTs aligned chunks
+    with ``Content-Range: bytes {start}-{end}/{total}``. Each chunk is an
+    in-memory byte slice, so the shared retry loop may re-send it on a transient
+    ``5xx`` / ``429`` without restarting the session; a ``202`` resumes from the
+    server's ``nextExpectedRanges`` rather than the client cursor. Chunk PUTs are
+    sent unauthenticated: the session URL is pre-authorised, lives on a different
+    host, and carries its own token in the query, so attaching the Graph bearer
+    would both leak it cross-host and be rejected.
+
+    On an unrecoverable failure the session is ``DELETE``d best-effort; a ``423``
+    is the exception — the session URL stays valid for caller-driven resume, so
+    it surfaces as ``ResourceLocked`` (carrying the session URL and last
+    ``nextExpectedRanges``) without an abort. ``on_session_open`` /
+    ``on_session_close`` register the live session URL so the backend's
+    ``close()`` can abort it if a write is mid-flight.
+    """
+    # GR-019..GR-024, GR-038 (token expiry), GR-045 (423), GR-051 (close-abort).
+    session_url = await _create_upload_session(
+        client, create_url, path=path, token_provider=token_provider, overwrite=overwrite, retry=retry, backend=backend
+    )
+    on_session_open(session_url)
+    try:
+        return await _upload_chunks(
+            client,
+            session_url,
+            reader,
+            total,
+            path=path,
+            token_provider=token_provider,
+            chunk_size=chunk_size,
+            retry=retry,
+            backend=backend,
+        )
+    except ResourceLocked:
+        # GR-045: leave the session alive for caller-driven resume — no abort.
+        raise
+    except BaseException:
+        await abort_upload_session(client, session_url, token_provider=token_provider)
+        raise
+    finally:
+        on_session_close(session_url)
+
+
+async def _create_upload_session(
+    client: httpx.AsyncClient,
+    create_url: str,
+    *,
+    path: str,
+    token_provider: TokenProvider,
+    overwrite: bool,
+    retry: RetryPolicy | None,
+    backend: str,
+) -> str:
+    """Open an upload session and return its (pre-authorised) ``uploadUrl``.
+
+    A ``409`` at creation discriminates the conflict outcome; a missing
+    ``uploadUrl`` is a Graph contract gap mapped to ``BackendUnavailable``.
+    """
+    behavior = "replace" if overwrite else "fail"
+    response = await graph_send(
+        client,
+        "POST",
+        create_url,
+        token_provider=token_provider,
+        path=path,
+        retry=retry,
+        return_on=frozenset({409}),
+        json={"item": {"@microsoft.graph.conflictBehavior": behavior}},
+    )
+    if response.status_code == 409:
+        raise discriminate_write_conflict(response_json(response), path, backend=backend)
+    data = response.json()
+    session_url = data.get("uploadUrl") if isinstance(data, dict) else None
+    if not isinstance(session_url, str) or not session_url:
+        raise BackendUnavailable(f"Graph createUploadSession returned no uploadUrl: {path}", path=path, backend=backend)
+    return session_url
+
+
+async def _upload_chunks(
+    client: httpx.AsyncClient,
+    session_url: str,
+    reader: BinaryIO,
+    total: int,
+    *,
+    path: str,
+    token_provider: TokenProvider,
+    chunk_size: int,
+    retry: RetryPolicy | None,
+    backend: str,
+) -> dict[str, Any]:
+    """PUT aligned chunks to *session_url* until the final ``200`` / ``201`` driveItem."""
+    offset = 0
+    last_ranges: list[str] | None = None
+    while offset < total:
+        length = min(chunk_size, total - offset)  # chunk_size is pre-aligned; final chunk is the remainder
+        end = offset + length - 1
+        reader.seek(offset)
+        data = reader.read(length)
+        response = await graph_send(
+            client,
+            "PUT",
+            session_url,
+            token_provider=token_provider,
+            path=path,
+            retry=retry,
+            return_on=frozenset({409, 423}),
+            # The session URL is pre-authorised and lives on a different host; a
+            # cross-host bearer leaks the token and is rejected (live-verified).
+            authenticated=False,
+            headers={"Content-Range": f"bytes {offset}-{end}/{total}"},
+            content=data,
+        )
+        status = response.status_code
+        if status == 423:
+            raise _resource_locked_mid_session(session_url, last_ranges, path, backend)
+        if status == 409:
+            body = response_json(response)
+            if error_code(body) == "invalidRange":
+                raise RemoteStoreError(
+                    f"Upload chunk rejected (409 invalidRange) at bytes {offset}-{end}: {path}",
+                    path=path,
+                    backend=backend,
+                )
+            raise discriminate_write_conflict(body, path, backend=backend)
+        if status in (200, 201):
+            item: dict[str, Any] = response.json()
+            return item
+        # 202 Accepted: more chunks expected — resume from the server's offset.
+        last_ranges = _next_expected_ranges(response_json(response))
+        next_offset = _resume_offset(last_ranges, path=path, backend=backend)
+        # Liveness guard: the server must consume at least one byte of the chunk
+        # just sent. Partial receipt is legitimate and still advances (>= 1 byte
+        # past `offset`); a non-advancing or regressing resume offset means a
+        # stalled / contract-violating session, so fail fast instead of re-PUTting
+        # the same chunk forever. `offset` is now strictly increasing and bounded
+        # by `total`, so the loop is guaranteed to terminate.
+        if next_offset <= offset:
+            raise BackendUnavailable(
+                f"Graph upload made no progress: server re-requested byte {next_offset} "
+                f"after a chunk sent from byte {offset}: {path}",
+                path=path,
+                backend=backend,
+            )
+        offset = next_offset
+    raise BackendUnavailable(f"Upload session completed without a final driveItem: {path}", path=path, backend=backend)
+
+
+def _next_expected_ranges(body: object) -> list[str] | None:
+    """Return the ``nextExpectedRanges`` string list from a ``202`` body, or ``None``."""
+    if isinstance(body, dict):
+        ranges = body.get("nextExpectedRanges")
+        if isinstance(ranges, list):
+            return [r for r in ranges if isinstance(r, str)]
+    return None
+
+
+def _resume_offset(ranges: list[str] | None, *, path: str, backend: str) -> int:
+    """Parse the first ``nextExpectedRanges`` start offset.
+
+    A missing or malformed list on a ``202`` (when one is expected) is a Graph
+    contract violation mapped to ``BackendUnavailable`` — the server's offset is
+    authoritative, so there is no client-cursor fallback.
+    """
+    if not ranges:
+        raise BackendUnavailable(
+            f"Graph upload returned no nextExpectedRanges mid-session: {path}", path=path, backend=backend
+        )
+    try:
+        return int(ranges[0].split("-", 1)[0])
+    except (ValueError, IndexError):
+        raise BackendUnavailable(
+            f"Graph upload returned malformed nextExpectedRanges {ranges!r}: {path}", path=path, backend=backend
+        ) from None
+
+
+def _resource_locked_mid_session(session_url: str, ranges: list[str] | None, path: str, backend: str) -> ResourceLocked:
+    """Build the mid-session ``ResourceLocked`` carrying resume context.
+
+    There is no structured ``RemoteStoreError.context`` surface, so the
+    unfinished session URL and last-known ``nextExpectedRanges`` ride the
+    message text — the session URL stays valid and the caller (or a test) can
+    resume from them without re-deriving the offset.
+    """
+    ranges_text = ", ".join(ranges) if ranges else "unknown"
+    return ResourceLocked(
+        f"Resource locked during upload session (423): {path}. The session URL stays valid for "
+        f"caller-driven resume — sessionUrl={session_url} nextExpectedRanges=[{ranges_text}].",
+        path=path,
+        backend=backend,
+    )
+
+
+async def abort_upload_session(client: httpx.AsyncClient, session_url: str, *, token_provider: TokenProvider) -> None:
+    """Issue a best-effort ``DELETE`` against *session_url*.
+
+    Every failure — a mapped error, a transport drop, a non-2xx status — is
+    swallowed to a DEBUG record; cleanup must never propagate.
+    """
+    try:
+        # The session URL is pre-authorised (no cross-host bearer) — as for chunks.
+        await graph_send(client, "DELETE", session_url, token_provider=token_provider, authenticated=False)
+    except Exception:  # noqa: BLE001 -- best-effort cleanup never propagates
+        log.debug("%s: best-effort DELETE of upload session failed", UPLOAD_ABORT_MARKER, exc_info=True)

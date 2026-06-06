@@ -59,6 +59,20 @@ class TestConstruction:
         assert backend._upload_chunk_size == 320 * 1024 * 3
 
     @pytest.mark.spec("GR-005")
+    @pytest.mark.parametrize("bad", [60 * 1024 * 1024, 200 * 320 * 1024])
+    def test_oversized_upload_chunk_size_rejected(self, bad: int) -> None:
+        # Aligned 320 KiB multiples at/above Graph's 60 MiB per-request ceiling
+        # (60 MiB == 192 x 320 KiB exactly; 200 x 320 KiB == 62.5 MiB).
+        with pytest.raises(ValueError, match="60 MiB"):
+            _make(upload_chunk_size=bad)
+
+    @pytest.mark.spec("GR-005")
+    def test_upload_chunk_size_just_below_ceiling_accepted(self) -> None:
+        size = 191 * 320 * 1024  # largest aligned multiple strictly below 60 MiB
+        backend = _make(upload_chunk_size=size)
+        assert backend._upload_chunk_size == size
+
+    @pytest.mark.spec("GR-005")
     @pytest.mark.parametrize("bad", [0, -1.0])
     def test_non_positive_copy_timeout_rejected(self, bad: float) -> None:
         with pytest.raises(ValueError, match="copy_timeout"):
@@ -225,14 +239,12 @@ class TestUnwrapAndClose:
 
 
 class TestStubs:
-    """Write + mutate ops remain stubbed until GR-WRITE / GR-MUTATE."""
+    """Mutate ops remain stubbed until GR-MUTATE (write landed in GR-WRITE)."""
 
     @pytest.mark.spec("GR-012")
     @pytest.mark.parametrize(
         "call",
         [
-            lambda b: b.write("a", b"x"),
-            lambda b: b.write_atomic("a", b"x"),
             lambda b: b.delete("a"),
             lambda b: b.delete_folder("a"),
             lambda b: b.move("a", "b"),

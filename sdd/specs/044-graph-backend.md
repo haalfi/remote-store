@@ -48,8 +48,9 @@ GraphBackend(
   `__init__`.
 - If `http_client` is not supplied, an `httpx.AsyncClient` is created
   lazily on first use and closed by `close()`.
-- `upload_chunk_size` is a positive multiple of 320 KiB;
-  non-conforming values raise `ValueError`.
+- `upload_chunk_size` is a positive multiple of 320 KiB and strictly
+  less than 60 MiB (Graph's per-request ceiling); non-conforming
+  values raise `ValueError`.
 - `drive_id` is a non-empty string; empty or whitespace-only values
   raise `ValueError`.
 
@@ -130,9 +131,10 @@ first use.
 
 **Invariant:** `drive_id` must be a non-empty string. `token_provider`
 must be callable. `upload_chunk_size` must be a positive multiple of
-320 KiB (Graph's alignment requirement). `copy_timeout`, when set,
-must be a positive float. Violations raise `ValueError` at
-construction time.
+320 KiB (Graph's alignment requirement) and strictly less than 60 MiB
+(Graph rejects any single upload-session chunk PUT at or above that
+per-request ceiling). `copy_timeout`, when set, must be a positive
+float. Violations raise `ValueError` at construction time.
 **Postconditions:** Drive existence and caller permissions are not
 validated at construction; they surface on the first operation and
 are mapped per GR-028 through GR-033.
@@ -169,8 +171,9 @@ override rules (single source of truth).
 invokes the callable lazily — never from `__init__`.
 **Postconditions:**
 - The returned string is attached to every Graph request as
-  `Authorization: Bearer <token>` (except to `@microsoft.graph.downloadUrl`
-  targets, which are pre-signed — see GR-015).
+  `Authorization: Bearer <token>`, except to pre-signed targets that
+  carry their own credential: `@microsoft.graph.downloadUrl` (see
+  GR-015) and the upload-session `uploadUrl` (see GR-038).
 - The callable is re-invoked on `401 InvalidAuthenticationToken`
   responses (GR-029). A second `401` after refresh is mapped to
   `PermissionDenied`.
@@ -470,6 +473,16 @@ outcomes. The backend inspects the 409 response body:
 
 This rule applies equally to GR-019, GR-025 (copy), and GR-027 (move)
 destinations.
+**Known limitation — `overwrite=True` on a file conflict:** with
+`@microsoft.graph.conflictBehavior=replace`, an existing *file* at the
+target is expected to be overwritten (`200`). Some backing stores
+(observed on SharePoint-backed drives in Graph issue reports) instead
+return `409 nameAlreadyExists` for a file even under `replace`, which
+the discrimination above would surface as `AlreadyExists` — a spurious
+failure for an intended overwrite. This is not reproduced on the
+consumer OneDrive drive used for live verification, so no guard is
+taken in v1; the edge is unverified on SharePoint-backed drives and
+tracked in BK-261.
 **Note on the 4 MiB threshold:** Graph documents the
 `PUT .../content` endpoint as suitable for files up to ~4 MiB and
 recommends upload sessions beyond that. In practice the endpoint
@@ -576,9 +589,14 @@ upper bound), e.g. `["524288-"]` or
 `["0-262143", "786432-"]`. The backend parses the first range's
 start offset and resumes from there.
 **Postconditions:** Enables recovery from partial chunk receipt
-without restarting the session. A missing or malformed
-`nextExpectedRanges` (when one is expected) is treated as a Graph
-contract violation and maps to `BackendUnavailable`.
+without restarting the session — a legitimate resume offset advances
+by at least one byte past the start of the chunk just sent (the server
+consumed some of it). A missing or malformed `nextExpectedRanges`, or
+a resume offset that does not advance past the chunk just sent (a
+stalled or regressing session), is treated as a Graph contract
+violation and maps to `BackendUnavailable`. The resume offset is
+therefore strictly increasing, so the chunk loop is guaranteed to
+terminate rather than re-PUT the same chunk indefinitely.
 
 ### GR-024: Upload-Session Abort
 
@@ -588,14 +606,20 @@ during cleanup are logged but not propagated.
 **Postconditions:** Orphan sessions eventually expire server-side
 (Graph documents session lifetime on the order of hours).
 
-### GR-038: Upload-Session Token Expiry Mid-Session
+### GR-038: Upload-Session Authentication
 
-**Invariant:** If a chunk PUT returns `401 InvalidAuthenticationToken`,
-the backend re-acquires the token via `token_provider` and retries
-the same chunk. The session URL is pre-authorised and is **not**
-recreated.
-**Postconditions:** A second `401` after refresh maps to
-`PermissionDenied`.
+**Invariant:** Upload-session chunk PUTs and the abort `DELETE` are
+sent **unauthenticated**. The `uploadUrl` returned by
+`createUploadSession` is pre-signed, lives on a different host than
+`graph.microsoft.com`, and carries its own credential in the query
+string; attaching the Graph bearer would leak it cross-host and is
+rejected by the service. The backend performs no mid-session token
+refresh.
+**Postconditions:** Graph documents the session lifetime on the order
+of hours (GR-024). A session URL that expires or is revoked mid-upload
+surfaces through the standard error mapping — a `401` / `403` on the
+pre-signed URL maps to `PermissionDenied` (GR-029 / GR-030) — with no
+refresh attempt, since the bearer is not the credential in play.
 
 ### GR-039: Auto-Mkdir on Write
 

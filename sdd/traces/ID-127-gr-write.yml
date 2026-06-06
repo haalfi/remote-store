@@ -1,0 +1,139 @@
+id: ID-127
+title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-WRITE (PR D): small write, upload session, write_atomic"
+trigger: "ID-127 Step 5, sub-PR D of the GR-READ/WRITE/MUTATE fan-out: GR-TRANSFER (PR C) hardened the read path and folded RetryPolicy into graph_send, but left write() / write_atomic() raising NotImplementedError and the conformance read/list/metadata/lazy_read slices unrecordable (they seed fixtures through backend.write). GR-WRITE fills the write path: the small-file PUT /content path (GR-018) with the BE-008 409 body discrimination (folder target / file-faceted ancestor / already-exists), write_atomic delegating to the same path (GR-040), auto-mkdir via Graph's implicit parent creation (GR-039), native WriteResult population from the driveItem response (WR-004); the upload-session driver in transfer.py for >4 MiB (GR-019..GR-024, GR-038) with 320 KiB alignment, per-chunk retry without session restart, resume from nextExpectedRanges, token-expiry-mid-session re-acquire (session URL preserved), best-effort abort DELETE, and the unknown-length-iterator spool with the graph.upload.spool_spilled DEBUG marker; the GR-045 mid-session 423 surfacing (sessionUrl + nextExpectedRanges in the message) and the GR-051 close() upload-session-abort half. With write seeding now available, the deferred conformance read/list/metadata/lazy_read + write cassette slices become recordable and move off the missing-cassette skip; min_cassettes is raised off 0. Leaves GR-MUTATE (Step 6) and the combined close() (GR-DONE) to close ID-127."
+source_items:
+  - ID-127
+audience:
+  - user.api
+  - user.api_docs
+  - infra.test
+expected_ripples:
+  # user.api audience -> CHANGELOG stub required (trace-schema derived rule).
+  - CHANGELOG.md
+  # New / changed public-method docstrings (write / write_atomic Raises + semantics)
+  # regen the public-API graph IR + viz per the "A public method signature" row.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+discovery_followups:
+  # Cassette recording for the read/list/metadata/lazy_read + write slices is
+  # blocked by pre-signed-URL replay matching (scrub redacts downloadUrl/
+  # uploadUrl to REDACTED -> replay re-requests "REDACTED"). Filed rather than
+  # solved in-PR; recording + min_cassettes raise deferred here.
+  - BK-260
+  # PR #761 review (F4): on the small PUT /content path, conflictBehavior=replace
+  # can still 409 nameAlreadyExists for a *file* on SharePoint-backed drives,
+  # which discrimination maps to AlreadyExists (spurious overwrite failure).
+  # Unreproduced (consumer OneDrive honours replace) and unverifiable on our
+  # consumer-only live path; no speculative guard taken. Documented as a GR-018
+  # known limitation and filed to verify against a SharePoint-backed drive.
+  - BK-261
+surprising_ripples:
+  # The shared graph_send primitive needed an `authenticated=False` mode the
+  # ripple-check did not anticipate: the upload-session chunk PUTs target the
+  # pre-signed uploadUrl on a DIFFERENT host (consumer OneDrive), and attaching
+  # the graph.microsoft.com bearer both leaked the token cross-host and was
+  # rejected (live 401). The read path already dodged this by streaming the
+  # downloadUrl with no auth via httpx directly; the write path routes chunks
+  # through graph_send (for the retry loop), so the auth-skip had to be threaded
+  # into the shared primitive. Verified read/list/resolve_drive_id still attach
+  # auth (authenticated defaults True).
+  - src/remote_store/aio/backends/_graph/http.py
+  # The createUploadSession response body carries an `uploadUrl` whose query is
+  # its own token — the GR-FOUNDATION scrub profile redacted downloadUrl but NOT
+  # uploadUrl, a latent leak the moment a session cassette is recorded.
+  - tests/backends/fixtures/_cassettes.py
+  # PR #761 review drove a spec amendment the ripple-check did not anticipate.
+  # The live no-auth fix made GR-038 ("on 401 re-acquire token mid-session")
+  # describe an impossible behaviour: the pre-signed uploadUrl rejects a bearer,
+  # so chunks send none and the 401-refresh never fires. Shipping that
+  # contradiction would break "repo describes reality at every commit", so
+  # GR-038 was rewritten to "Upload-Session Authentication" (unauthenticated
+  # chunks, no mid-session refresh), GR-008's bearer-exception list extended to
+  # name the uploadUrl alongside the downloadUrl, and the F3 chunk-size upper
+  # bound (< 60 MiB Graph ceiling) added to GR-005/GR-001 with the validation.
+  # PR #761 review round 2 added a chunk-loop liveness guard: the outer
+  # `while offset < total` was driven purely off the server's nextExpectedRanges,
+  # so a non-advancing/regressing 202 would re-PUT the same chunk forever (the
+  # per-PUT retry budget only bounds a single PUT). Guard raises BackendUnavailable
+  # when the resume offset does not advance past the chunk just sent; GR-023's
+  # postcondition extended to spec the strictly-increasing-offset -> termination
+  # invariant. Live-validated: real Graph's resume offsets strictly advance (15
+  # points, one 320 KiB chunk apart), so the guard never false-fires; the firing
+  # branch is unit-only (no real server produces a non-advancing offset).
+  - sdd/specs/044-graph-backend.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-018, GR-019, GR-020..GR-024, GR-038..GR-040, GR-045, GR-051, GR-054"
+        read_type: gate
+        extract: "Small PUT /content (<=4 MiB, conflictBehavior fail/replace, auto-mkdir, native WriteResult); upload session for >4 MiB (createUploadSession, 320 KiB alignment, Content-Range chunk PUT, per-chunk retry w/o session restart, resume from nextExpectedRanges, abort DELETE, token-expiry re-acquire keeping the session URL, spool unknown-length iterator w/ graph.upload.spool_spilled DEBUG); BE-008 409 discrimination (folder/ancestor-file/already-exists); 423 mid-session surfacing; close() session-abort half"
+      - file: sdd/plans/ID-127-graph-backend-implementation.md
+        section: "Step 5 — GR-WRITE"
+        read_type: gate
+        extract: "Files touched (backend.py write/write_atomic, transfer.py upload-session driver, http.py 423 mid-session), acceptance (off xfail for WRITE/ATOMIC_WRITE/WRITE_RESULT_NATIVE, close() session-abort half, cassettes), GR-054 owned here"
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "graph_send (retry caveat), classify_graph_error"
+        read_type: gate
+        extract: "graph_send re-issues the same kwargs on both the 401 refresh and the retry loop, so a streaming body replays EMPTY: write must spool/materialise unknown-length iterators BEFORE the session, send chunks as in-memory byte slices, and not pass a retry policy to a live-stream send. classify already maps 423->ResourceLocked / 507->BackendUnavailable"
+  - id: implement_small
+    name: Implement small write + 409 discrimination + write_atomic
+    steps:
+      - file: src/remote_store/aio/backends/_graph/items.py
+        section: "item_to_write_result"
+        read_type: reference
+        extract: "New helper maps a driveItem response body to a native WriteResult (size/etag via _clean_etag/last_modified via parse_graph_datetime; version_id where present; digest None per GR-049; metadata echoed)"
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "write, write_atomic, _content_url, _discriminate_409"
+        read_type: reference
+        extract: "write small path PUT /content with @microsoft.graph.conflictBehavior; size detection (bytes len vs spool iterator); 409 body discrimination; write_atomic delegates; backend-level metadata defense-in-depth re-raise"
+      - file: tests/backends/graph/aio/test_write.py
+        section: "(run)"
+        read_type: verify
+        extract: "respx green: PUT shape + conflictBehavior, native WriteResult fields, 409 folder/ancestor-file/already-exists, auto-mkdir nested, metadata gate"
+  - id: implement_session
+    name: Implement upload-session driver
+    steps:
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "upload_session, _aligned_chunk, _spool_iterator"
+        read_type: reference
+        extract: "createUploadSession -> aligned chunk PUTs (Content-Range bytes start-end/total) -> final 201/200 driveItem; per-chunk retry w/o session restart; resume from nextExpectedRanges; chunk PUTs sent unauthenticated against the pre-authorised cross-host session URL (no bearer); abort DELETE; spool unknown-length AsyncIterator to SpooledTemporaryFile (no dir=) w/ graph.upload.spool_spilled DEBUG; chunks are in-memory slices (replayable)"
+      - file: tests/backends/graph/aio/test_write.py
+        section: "(run, session)"
+        read_type: verify
+        extract: "respx green: createUploadSession -> aligned chunk PUTs -> final driveItem, nextExpectedRanges resume, chunk retry on transient 5xx/429 w/o restart, chunk PUTs unauthenticated (no bearer to the pre-signed session URL), 423 mid-session -> ResourceLocked (sessionUrl+nextExpectedRanges in message), abort DELETE, spool spill DEBUG, 507/quota -> BackendUnavailable"
+  - id: implement_close_423
+    name: 423 mid-session + close() session-abort
+    steps:
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "aclose, _active_upload_sessions"
+        read_type: reference
+        extract: "Backend tracks in-flight upload-session URLs; aclose() issues best-effort DELETE for each (GR-051 session-abort half), swallowing errors; poller-cancel half is GR-MUTATE"
+  - id: cassettes
+    name: Cassette scrub gap + recording deferral
+    steps:
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "build_graph_vcr_config, _GRAPH_BODY_SCRUB"
+        read_type: reference
+        extract: "Closed a latent security GAP the prompt flagged: createUploadSession returns uploadUrl carrying its own token; the scrub redacted downloadUrl but NOT uploadUrl. Added the uploadUrl body-scrub + a test."
+      - file: scripts/record_cassettes.py
+        section: "_BACKENDS[graph].min_cassettes"
+        read_type: reference
+        extract: "DEFERRED (user-confirmed): recording the read/list/metadata/lazy_read + write slices and raising min_cassettes is blocked by a pre-signed-URL replay-matching problem (scrub redacts downloadUrl/uploadUrl to REDACTED, so replay re-requests 'REDACTED'). A GR-FOUNDATION-level concern; filed as BK-260. min_cassettes stays 0 with its existing zero-recording WARNING; the live probe is the Stage-3 reality-check (GR-TRANSFER precedent)."
+        outcome: misleading
+  - id: verify
+    name: Verify gates
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A public method signature"
+        read_type: verify
+        extract: "CHANGELOG stub added; gen-graph + gen-graph-viz re-run; lint clean (check_no_tracker_refs forces spec IDs out of docstrings); typecheck clean; 100% _graph coverage; filterwarnings clean"
+  - id: reality_check
+    name: Stage-3 reality check
+    steps:
+      - file: tmp/validate_graph_write_live.py
+        section: "(new write probe)"
+        read_type: verify
+        extract: "Live device-code / consumer probe for write (mutating, scratch prefix, raw-DELETE cleanup since delete() is GR-MUTATE): small PUT, overwrite fail/replace + AlreadyExists, write_atomic auto-mkdir, and a 5 MiB upload session over 17 real 320 KiB chunks — all byte-equal round-trips. Caught a real bug respx could not (like GR-READ's root-addressing 400): the upload-session chunk PUTs went to the pre-signed cross-host uploadUrl carrying the graph bearer -> 401 PermissionDenied (and a cross-host token leak). Fix: chunk PUTs + abort DELETE send NO Authorization (graph_send authenticated=False), mirroring the auth-free downloadUrl reads. This honours GR-038's 'session URL is pre-authorised' clause; its 'on 401 re-acquire token' sub-clause was contradicted by live consumer reality. Originally flagged-not-amended per the plan's record-drift-and-stop rule; the PR #761 review re-opened it under 'repo describes reality at every commit' and the deliberate amendment landed in this PR — GR-038 rewritten to 'Upload-Session Authentication' (unauthenticated chunks, no mid-session refresh), GR-008's bearer-exception list extended to name the uploadUrl."
+        outcome: ok

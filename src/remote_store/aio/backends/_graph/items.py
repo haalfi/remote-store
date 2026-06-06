@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
-from remote_store._models import FileInfo
+from remote_store._models import FileInfo, WriteResult
 from remote_store._path import RemotePath
 from remote_store.backends._fileinfo import _clean_etag, _name_from_path
 
@@ -82,3 +82,48 @@ def item_to_fileinfo(item: Mapping[str, Any], key: str) -> FileInfo:
         metadata=None,
         extra=extra,
     )
+
+
+def item_to_write_result(
+    item: Mapping[str, Any],
+    key: str,
+    size: int,
+    metadata: Mapping[str, str] | None,
+) -> WriteResult:
+    """Map a write-response ``driveItem`` to a native ``WriteResult`` for *key*.
+
+    Both ``PUT /content`` and the final upload-session chunk return a full
+    ``driveItem`` body; this populates ``source="native"`` with ``size``,
+    ``etag`` (cleaned to match ``get_file_info``), and ``last_modified``.
+    ``version_id`` rides the SharePoint ``listItem`` version where Graph
+    surfaces one, ``None`` otherwise. ``digest`` is left ``None`` — no
+    canonical hash is selected from ``file.hashes`` in v1. ``metadata`` echoes
+    the caller's input mapping (``None`` when none was supplied).
+
+    *size* is the byte count the backend wrote (authoritative even when the
+    response omits or under-reports ``size``), not re-derived from the body.
+    """
+    return WriteResult(
+        path=RemotePath(key),
+        size=size,
+        source="native",
+        etag=_clean_etag(item.get("eTag")),
+        version_id=_version_id(item),
+        last_modified=parse_graph_datetime(item.get("lastModifiedDateTime")),
+        metadata=metadata,
+    )
+
+
+def _version_id(item: Mapping[str, Any]) -> str | None:
+    """Return a SharePoint version identifier from *item*, or ``None``.
+
+    SharePoint-backed drives expose the published version under
+    ``publication.versionId``; personal OneDrive omits it. The value is opaque
+    and surfaced verbatim when a non-empty string is present.
+    """
+    publication = item.get("publication")
+    if isinstance(publication, dict):
+        version = publication.get("versionId")
+        if isinstance(version, str) and version:
+            return version
+    return None

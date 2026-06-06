@@ -21,14 +21,27 @@ from remote_store._errors import CapabilityNotSupported, InvalidPath, NotFound
 from remote_store._models import FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store.aio._async_backend import AsyncBackend
-from remote_store.aio.backends._graph.http import BACKEND_NAME, graph_send, iter_pages
+from remote_store.aio.backends._graph.http import (
+    BACKEND_NAME,
+    discriminate_write_conflict,
+    graph_send,
+    iter_pages,
+    response_json,
+)
 from remote_store.aio.backends._graph.items import (
     is_file_item,
     is_folder_item,
     item_to_fileinfo,
+    item_to_write_result,
     parse_graph_datetime,
 )
-from remote_store.aio.backends._graph.transfer import RANGE_FALLBACK_FLAG, stream_range
+from remote_store.aio.backends._graph.transfer import (
+    RANGE_FALLBACK_FLAG,
+    abort_upload_session,
+    spool_content,
+    stream_range,
+    upload_session,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
@@ -43,7 +56,9 @@ T = TypeVar("T")
 
 _DEFAULT_BASE_URL = "https://graph.microsoft.com/v1.0"
 _CHUNK_ALIGNMENT = 320 * 1024  # Graph's documented upload-chunk alignment (GR-020)
+_MAX_UPLOAD_CHUNK_SIZE = 60 * 1024 * 1024  # Graph rejects any single chunk PUT >= 60 MiB (GR-005)
 _DEFAULT_UPLOAD_CHUNK_SIZE = 10 * 1024 * 1024  # 10 MiB (GR-001)
+_SMALL_FILE_MAX_SIZE = 4 * 1024 * 1024  # PUT /content vs upload-session boundary (GR-018)
 
 # GR-003: the declared capability set. GLOB, ATOMIC_MOVE, SEEKABLE_READ, and
 # USER_METADATA are deliberately withheld (see spec 044 GR-003 for rationale).
@@ -103,7 +118,8 @@ class GraphBackend(AsyncBackend):
         retry: Retry policy for transient failures; ``None`` uses the default
             ``RetryPolicy()`` profile.
         upload_chunk_size: Upload-session chunk size; must be a positive
-            multiple of 320 KiB. Default 10 MiB.
+            multiple of 320 KiB and strictly less than 60 MiB (Graph's
+            per-request ceiling). Default 10 MiB.
         copy_timeout: Wall-clock budget for copy/move monitor polling, or
             ``None`` for no backend-imposed ceiling. When set, must be a
             positive float.
@@ -115,8 +131,9 @@ class GraphBackend(AsyncBackend):
 
     Raises:
         ValueError: For an empty ``drive_id``, a non-callable
-            ``token_provider``, a non-aligned ``upload_chunk_size``, or a
-            non-positive ``copy_timeout``.
+            ``token_provider``, an ``upload_chunk_size`` that is not a
+            positive 320 KiB multiple below 60 MiB, or a non-positive
+            ``copy_timeout``.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _GRAPH_CAPABILITIES
@@ -139,6 +156,8 @@ class GraphBackend(AsyncBackend):
             raise ValueError("token_provider must be callable")
         if upload_chunk_size <= 0 or upload_chunk_size % _CHUNK_ALIGNMENT != 0:
             raise ValueError("upload_chunk_size must be a positive multiple of 320 KiB")
+        if upload_chunk_size >= _MAX_UPLOAD_CHUNK_SIZE:
+            raise ValueError("upload_chunk_size must be strictly less than 60 MiB (Graph's per-request ceiling)")
         if copy_timeout is not None and copy_timeout <= 0:
             raise ValueError("copy_timeout must be a positive float or None")
 
@@ -154,6 +173,9 @@ class GraphBackend(AsyncBackend):
         # Paths whose drive ignored a Range request (SharePoint range-fallback,
         # GR-015): get_file_info flags any FileInfo it returns for them.
         self._range_fallback_paths: set[str] = set()
+        # Upload-session URLs with a write mid-chunk-loop: close() aborts each
+        # via best-effort DELETE (GR-051 upload-session-abort half).
+        self._active_upload_sessions: set[str] = set()
 
     # region: properties
 
@@ -253,10 +275,16 @@ class GraphBackend(AsyncBackend):
         """Close the owned HTTP client and flush the auth cache.
 
         Safe to call multiple times. A caller-supplied ``http_client`` is left
-        open — the caller owns it. The monitor-poller-cancel and
-        upload-session-abort behaviours are layered on by later steps, once
-        those subsystems exist.
+        open — the caller owns it. Any upload session a ``write()`` left
+        mid-chunk-loop is aborted first via best-effort ``DELETE``, swallowing
+        every cleanup error so ``close()`` never raises. Pending monitor pollers
+        are cancelled once that subsystem exists.
         """
+        # GR-051 upload-session-abort half (mirrors GR-024); the
+        # monitor-poller-cancel half is layered on by GR-MUTATE.
+        for session_url in list(self._active_upload_sessions):
+            await abort_upload_session(self._client, session_url, token_provider=self._token_provider)
+        self._active_upload_sessions.clear()
         if self._owned_client is not None:
             await self._owned_client.aclose()
             self._owned_client = None
@@ -584,7 +612,36 @@ class GraphBackend(AsyncBackend):
 
     # endregion
 
-    # region: data-plane operations — stubbed (GR-WRITE / GR-MUTATE)
+    # region: data-plane writes (GR-018/019/039/040, BE-008)
+
+    def _content_url(self, path: str) -> str:
+        """Return the ``PUT /content`` endpoint for *path* (small-file write)."""
+        return f"{self._base_url}{self.native_path(path)}/content"
+
+    def _session_create_url(self, path: str) -> str:
+        """Return the ``createUploadSession`` endpoint for *path* (large-file write)."""
+        return f"{self._base_url}{self.native_path(path)}/createUploadSession"
+
+    def _reject_user_metadata(self, metadata: Mapping[str, str] | None) -> None:
+        """Re-raise the Store-layer user-metadata gate as defense-in-depth.
+
+        The authoritative gate fires at the Store layer before the backend is
+        entered; a non-empty ``metadata=`` only reaches here on a direct-backend
+        call (the conformance suite invokes the backend without a Store
+        wrapper). ``None`` / ``{}`` are no-ops per the empty-mapping carve-out.
+        """
+        # GR-018 metadata= gate (WR-010/WR-011); USER_METADATA is not declared.
+        if metadata:
+            raise CapabilityNotSupported(
+                "Backend 'graph' does not support user metadata (USER_METADATA is not declared)",
+                capability="USER_METADATA",
+                backend=self.name,
+            )
+
+    def _require_writable_key(self, path: str) -> None:
+        """Reject a write at the drive root — a file needs a name (path validity)."""
+        if not path.strip("/"):
+            raise InvalidPath(f"Cannot write to the drive root: {path!r}", path=path, backend=self.name)
 
     async def write(
         self,
@@ -594,8 +651,77 @@ class GraphBackend(AsyncBackend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
-        """Write a file. Not implemented yet (write path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="write"))
+        """Write a file, creating intermediate folders implicitly.
+
+        Content ``<= 4 MiB`` uses ``PUT /content``; larger content uploads via a
+        chunked session. An ``AsyncIterator`` of unknown length is spooled to
+        size it first (the session ``Content-Range`` needs a known total). The
+        returned ``WriteResult`` is ``source="native"``, populated from the
+        ``driveItem`` Graph returns. ``overwrite`` maps to Graph's
+        ``@microsoft.graph.conflictBehavior`` (``replace`` vs ``fail``).
+
+        Raises:
+            AlreadyExists: If the file exists and ``overwrite=False``.
+            InvalidPath: If the path names the drive root, an existing folder,
+                or descends through a file ancestor.
+            CapabilityNotSupported: If a non-empty ``metadata=`` reaches the
+                backend directly (``USER_METADATA`` is not declared).
+            BackendUnavailable: On 5xx / throttling / transport failure, or a
+                Graph contract gap (missing ``uploadUrl`` / ``nextExpectedRanges``).
+            ResourceLocked: If the item is locked mid-session; the session URL
+                stays valid for caller-driven resume.
+        """
+        # GR-018 (small PUT) / GR-019 (upload session) / GR-039 (auto-mkdir);
+        # native WriteResult per WR-004; 409 discrimination per BE-008 / ID-209.
+        self._reject_user_metadata(metadata)
+        self._require_writable_key(path)
+        reader, total = await spool_content(content, path=path)
+        try:
+            if total <= _SMALL_FILE_MAX_SIZE:
+                return await self._write_small(path, reader.read(), overwrite=overwrite, metadata=metadata)
+            item = await upload_session(
+                self._client,
+                self._session_create_url(path),
+                reader,
+                total,
+                path=path,
+                token_provider=self._token_provider,
+                chunk_size=self._upload_chunk_size,
+                overwrite=overwrite,
+                retry=self._retry,
+                on_session_open=self._active_upload_sessions.add,
+                on_session_close=self._active_upload_sessions.discard,
+                backend=self.name,
+            )
+            return item_to_write_result(item, path, total, metadata)
+        finally:
+            reader.close()
+
+    async def _write_small(
+        self, path: str, data: bytes, *, overwrite: bool, metadata: Mapping[str, str] | None
+    ) -> WriteResult:
+        """``PUT /content`` for content already materialised in memory.
+
+        The body is in-memory bytes (replayable), so the request rides the shared
+        retry loop safely. A ``409`` is discriminated (folder / ancestor-file /
+        already-exists) rather than mapped to a flat ``AlreadyExists``.
+        """
+        behavior = "replace" if overwrite else "fail"
+        url = f"{self._content_url(path)}?@microsoft.graph.conflictBehavior={behavior}"
+        response = await graph_send(
+            self._client,
+            "PUT",
+            url,
+            token_provider=self._token_provider,
+            path=path,
+            retry=self._retry,
+            return_on=frozenset({409}),
+            headers={"Content-Type": "application/octet-stream"},
+            content=data,
+        )
+        if response.status_code == 409:
+            raise discriminate_write_conflict(response_json(response), path, backend=self.name)
+        return item_to_write_result(response.json(), path, len(data), metadata)
 
     async def write_atomic(
         self,
@@ -605,8 +731,18 @@ class GraphBackend(AsyncBackend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
-        """Atomic write. Not implemented yet (write path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="write_atomic"))
+        """Atomic write — delegates to ``write``.
+
+        Graph's own write paths already provide the no-partial-content guarantee
+        (``PUT /content`` is service-atomic; an upload session commits only on the
+        final chunk), so no client-side temp-rename is taken. The ``WriteResult``
+        shape and the ``metadata=`` gate are inherited verbatim from ``write``.
+        """
+        return await self.write(path, content, overwrite=overwrite, metadata=metadata)
+
+    # endregion
+
+    # region: data-plane operations — stubbed (GR-MUTATE)
 
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a file. Not implemented yet (mutate path)."""
