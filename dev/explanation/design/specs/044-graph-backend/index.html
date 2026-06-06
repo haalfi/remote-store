@@ -11228,7 +11228,10 @@ invokes the callable lazily — never from <code>__init__</code>.
 - The returned string is attached to every Graph request as
   <code>Authorization: Bearer &lt;token&gt;</code>, except to pre-signed targets that
   carry their own credential: <code>@microsoft.graph.downloadUrl</code> (see
-  GR-015) and the upload-session <code>uploadUrl</code> (see GR-038).
+  GR-015), the upload-session <code>uploadUrl</code> (see GR-038), and the
+  copy/move monitor URL (see GR-026). Each lives on a cross-host
+  pre-authenticated endpoint that <em>rejects</em> a Graph bearer
+  (live-verified <code>401</code>), so attaching one both leaks the token and fails.
 - The callable is re-invoked on <code>401 InvalidAuthenticationToken</code>
   responses (GR-029). A second <code>401</code> after refresh is mapped to
   <code>PermissionDenied</code>.
@@ -11680,6 +11683,20 @@ probe). If non-empty, raises <code>DirectoryNotEmpty</code>. If empty, issues
 copy</code> with a <code>parentReference</code> and <code>name</code> derived from <code>dst</code>. Graph
 responds with <code>202 Accepted</code> and a <code>Location</code> header pointing to a
 monitor URL.
+<strong><code>@microsoft.graph.conflictBehavior</code> is a query parameter</strong> on the copy
+action (<code>?@microsoft.graph.conflictBehavior=replace|fail</code>), not a body
+field — live-verified: a body field is silently ignored, so an intended
+<code>overwrite=True</code> would <code>409</code> until the value is moved to the query.
+<strong><code>parentReference</code> shape (documented-form divergence):</strong> the backend
+addresses the destination parent by <code>{driveId, path}</code>. The Graph
+<code>copy</code> / <code>move</code> reference documents the write input as <code>{driveId, id}</code> /
+<code>{id}</code> and lists <code>path</code> as a <em>read-only</em> navigation property. The
+<code>path</code> form is live-verified against consumer OneDrive (the only tier
+this project can reach — device-code / consumer), but path-only
+<code>parentReference</code> is a known soft spot on SharePoint / business drives
+and is <strong>unverified</strong> there; the <code>id</code> form would cost an extra parent-id
+resolution round trip and is deferred. Tracked alongside the other
+SharePoint-unverified edges (cf. the GR-018 BK-261 note).
 <strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if
 <code>dst</code> exists and <code>overwrite=False</code>. <code>InvalidPath</code> per BE-021.</p>
 <h3 id="gr-026-monitor-url-polling-contract">GR-026: Monitor-URL Polling Contract<a class="headerlink" href="#gr-026-monitor-url-polling-contract" title="Permanent link">&para;</a></h3>
@@ -11712,7 +11729,15 @@ shared-helper design backend-local.
   backend must call this out.
 - On <code>copy_timeout</code> expiry the poller raises <code>BackendUnavailable</code>
   whose message embeds the monitor URL, the poll count, and a
-  <code>last_status</code> token from a closed set: <code>"pending"</code> (terminal poll
+  <code>last_status</code> token from a closed set. The embedded monitor URL is
+  <strong>query-stripped</strong> (scheme / host / path only): the monitor endpoint is
+  pre-signed and carries its own credential in the query string
+  (live-verified — the URL lives on a cross-host
+  <code>*.microsoftpersonalcontent.com</code> endpoint and a Graph bearer is in fact
+  <em>rejected</em> there), and GR-035 bars any token from an exception message, so
+  the query is redacted while the path still identifies the operation for
+  out-of-band diagnosis. The <code>last_status</code> token is from a closed set:
+  <code>"pending"</code> (terminal poll
   returned a still-running status), <code>"5xx"</code> (last response was a
   transient server error treated as pending per below), or
   <code>"parse-error"</code> (last response could not be classified by the
@@ -11752,9 +11777,22 @@ reachable on both async and sync surfaces.</p>
 <h3 id="gr-027-move-may-be-async">GR-027: Move (May-Be-Async)<a class="headerlink" href="#gr-027-move-may-be-async" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>move(src, dst, overwrite=False)</code> issues <code>PATCH</code> on
 the source item with a new <code>parentReference</code> and optional new
-<code>name</code>. Graph responds synchronously in most cases; large-item or
-cross-drive moves may return <code>202 Accepted</code>, in which case the
-backend reuses the GR-026 poller.
+<code>name</code>. Graph responds synchronously in most cases; a large-item move
+may return <code>202 Accepted</code> (the async trigger is item size /
+server-side replication, not crossing folders — and cross-drive is
+structurally impossible here, GR-056), in which case the backend
+reuses the GR-026 poller. The <code>parentReference</code> shape note in GR-025
+applies equally here.
+<strong><code>conflictBehavior</code> on PATCH (documented-form divergence):</strong> the
+backend carries <code>@microsoft.graph.conflictBehavior</code> as a query
+parameter on the move <code>PATCH</code>. The Graph <code>move</code>/update reference does
+<strong>not</strong> document <code>conflictBehavior</code> for the update path (only for
+<code>copy</code> and the upload-session paths). It is live-verified honoured on
+consumer OneDrive — <code>overwrite=True</code> onto an occupied destination
+replaces, <code>overwrite=False</code> raises <code>AlreadyExists</code> — but, being
+undocumented for PATCH, its behaviour on SharePoint / business drives
+is <strong>unverified</strong> and a SharePoint conformance pass should confirm
+move-overwrite actually replaces.
 <strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if
 <code>dst</code> exists and <code>overwrite=False</code>. <code>InvalidPath</code> per BE-021 and
 GR-018's BE-008 precondition discrimination (including the
