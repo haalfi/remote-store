@@ -203,6 +203,22 @@ class TestCopy:
         assert backend._pending_pollers == set()  # poller deregistered after await
 
     @respx.mock
+    @pytest.mark.spec("GR-008")
+    async def test_copy_monitor_poll_carries_no_authorization(self) -> None:
+        # GR-008/GR-026: the monitor URL is a pre-signed cross-host endpoint that
+        # REJECTS a Graph bearer (live 401), so the poll must go out unauthenticated.
+        # A regression routing the poll through graph_send would attach the bearer,
+        # pass every status-only test, and leak the token cross-host — pin it here.
+        respx.get(_ITEM_RE).mock(return_value=httpx.Response(200, json=_file_item()))
+        post = respx.post(_COPY_RE).mock(return_value=httpx.Response(202, headers={"Location": _MONITOR}))
+        monitor = respx.get(_MONITOR).mock(return_value=httpx.Response(200, json={"status": "completed"}))
+        async with _make() as backend:
+            await backend.copy("a.txt", "b.txt")
+        # the authed graph_send calls carry the bearer; the monitor poll must not.
+        assert "authorization" in {k.lower() for k in post.calls.last.request.headers}
+        assert "authorization" not in {k.lower() for k in monitor.calls.last.request.headers}
+
+    @respx.mock
     @pytest.mark.spec("GR-056")
     async def test_copy_body_parent_reference_targets_configured_drive(self) -> None:
         import json as _json

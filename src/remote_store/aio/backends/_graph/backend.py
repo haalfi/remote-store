@@ -1,11 +1,11 @@
 """``GraphBackend`` — the ``AsyncBackend`` implementation for Microsoft Graph.
 
-This module lands the public surface and request/error foundation:
+This module holds the public surface and request/error foundation —
 construction and validation, the capability declaration, path addressing and
-segment encoding, the native-client escape hatch, the ``close()`` baseline, and
-credential-safe ``repr``. The data-plane operation bodies (read / write /
-delete / list / move / copy) are stubbed here and filled in by later steps;
-they raise ``NotImplementedError`` until then.
+segment encoding, the native-client escape hatch, ``close()``, and a
+credential-safe ``repr`` — together with the full data plane: read, write,
+list, delete / delete_folder, and move / copy (the last two awaiting the
+backend-local ``monitor`` poller when Graph answers ``202 Accepted``).
 """
 
 from __future__ import annotations

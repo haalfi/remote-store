@@ -7,7 +7,7 @@ audience:
   - user.api
   - user.api_docs
   - infra.test
-review_rounds: 2
+review_rounds: 3
 expected_ripples:
   # user.api audience -> CHANGELOG stub required (trace-schema derived rule).
   - CHANGELOG.md
@@ -39,6 +39,17 @@ surprising_ripples:
   # is contract-real). The review also tightened GR-043's empty-check to the
   # spec-mandated /children?$top=1 probe (was a full default page), and CodeQL
   # flagged a dead last_status store + a bare `await task` statement.
+  #
+  # A later round caught a "repo describes reality" ripple the table did not
+  # anticipate: backend.py's MODULE docstring still said the data-plane ops were
+  # stubbed and raised NotImplementedError — true when GR-CORE wrote it, made
+  # false by THIS PR filling the last stubs (delete/delete_folder/move/copy).
+  # Same round added the missing unit guard that the monitor poll carries no
+  # Authorization header (the GR-008 unauthenticated-poll contract was asserted
+  # only by the live probe). A persistent-4xx-on-the-monitor question (expired
+  # tempauth burns the full copy_timeout as parse-error rather than failing fast)
+  # was reviewed and kept as intentional: the loop never hangs and ends on the
+  # defined closed-set last_status outcome; live failures arrive as 200/failed.
   - sdd/specs/044-graph-backend.md
 phases:
   - id: orient
