@@ -56,6 +56,7 @@ T = TypeVar("T")
 
 _DEFAULT_BASE_URL = "https://graph.microsoft.com/v1.0"
 _CHUNK_ALIGNMENT = 320 * 1024  # Graph's documented upload-chunk alignment (GR-020)
+_MAX_UPLOAD_CHUNK_SIZE = 60 * 1024 * 1024  # Graph rejects any single chunk PUT >= 60 MiB (GR-005)
 _DEFAULT_UPLOAD_CHUNK_SIZE = 10 * 1024 * 1024  # 10 MiB (GR-001)
 _SMALL_FILE_MAX_SIZE = 4 * 1024 * 1024  # PUT /content vs upload-session boundary (GR-018)
 
@@ -117,7 +118,8 @@ class GraphBackend(AsyncBackend):
         retry: Retry policy for transient failures; ``None`` uses the default
             ``RetryPolicy()`` profile.
         upload_chunk_size: Upload-session chunk size; must be a positive
-            multiple of 320 KiB. Default 10 MiB.
+            multiple of 320 KiB and strictly less than 60 MiB (Graph's
+            per-request ceiling). Default 10 MiB.
         copy_timeout: Wall-clock budget for copy/move monitor polling, or
             ``None`` for no backend-imposed ceiling. When set, must be a
             positive float.
@@ -129,8 +131,9 @@ class GraphBackend(AsyncBackend):
 
     Raises:
         ValueError: For an empty ``drive_id``, a non-callable
-            ``token_provider``, a non-aligned ``upload_chunk_size``, or a
-            non-positive ``copy_timeout``.
+            ``token_provider``, an ``upload_chunk_size`` that is not a
+            positive 320 KiB multiple below 60 MiB, or a non-positive
+            ``copy_timeout``.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _GRAPH_CAPABILITIES
@@ -153,6 +156,8 @@ class GraphBackend(AsyncBackend):
             raise ValueError("token_provider must be callable")
         if upload_chunk_size <= 0 or upload_chunk_size % _CHUNK_ALIGNMENT != 0:
             raise ValueError("upload_chunk_size must be a positive multiple of 320 KiB")
+        if upload_chunk_size >= _MAX_UPLOAD_CHUNK_SIZE:
+            raise ValueError("upload_chunk_size must be strictly less than 60 MiB (Graph's per-request ceiling)")
         if copy_timeout is not None and copy_timeout <= 0:
             raise ValueError("copy_timeout must be a positive float or None")
 

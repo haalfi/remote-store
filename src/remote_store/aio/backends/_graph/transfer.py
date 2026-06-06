@@ -313,9 +313,10 @@ async def upload_session(
     with ``Content-Range: bytes {start}-{end}/{total}``. Each chunk is an
     in-memory byte slice, so the shared retry loop may re-send it on a transient
     ``5xx`` / ``429`` without restarting the session; a ``202`` resumes from the
-    server's ``nextExpectedRanges`` rather than the client cursor; a ``401``
-    re-acquires the token and retries the same chunk against the same
-    (pre-authorised) session URL.
+    server's ``nextExpectedRanges`` rather than the client cursor. Chunk PUTs are
+    sent unauthenticated: the session URL is pre-authorised, lives on a different
+    host, and carries its own token in the query, so attaching the Graph bearer
+    would both leak it cross-host and be rejected.
 
     On an unrecoverable failure the session is ``DELETE``d best-effort; a ``423``
     is the exception — the session URL stays valid for caller-driven resume, so

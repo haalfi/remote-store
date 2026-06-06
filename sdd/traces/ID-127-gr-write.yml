@@ -20,6 +20,13 @@ discovery_followups:
   # uploadUrl to REDACTED -> replay re-requests "REDACTED"). Filed rather than
   # solved in-PR; recording + min_cassettes raise deferred here.
   - BK-260
+  # PR #761 review (F4): on the small PUT /content path, conflictBehavior=replace
+  # can still 409 nameAlreadyExists for a *file* on SharePoint-backed drives,
+  # which discrimination maps to AlreadyExists (spurious overwrite failure).
+  # Unreproduced (consumer OneDrive honours replace) and unverifiable on our
+  # consumer-only live path; no speculative guard taken. Documented as a GR-018
+  # known limitation and filed to verify against a SharePoint-backed drive.
+  - BK-261
 surprising_ripples:
   # The shared graph_send primitive needed an `authenticated=False` mode the
   # ripple-check did not anticipate: the upload-session chunk PUTs target the
@@ -35,6 +42,16 @@ surprising_ripples:
   # its own token — the GR-FOUNDATION scrub profile redacted downloadUrl but NOT
   # uploadUrl, a latent leak the moment a session cassette is recorded.
   - tests/backends/fixtures/_cassettes.py
+  # PR #761 review drove a spec amendment the ripple-check did not anticipate.
+  # The live no-auth fix made GR-038 ("on 401 re-acquire token mid-session")
+  # describe an impossible behaviour: the pre-signed uploadUrl rejects a bearer,
+  # so chunks send none and the 401-refresh never fires. Shipping that
+  # contradiction would break "repo describes reality at every commit", so
+  # GR-038 was rewritten to "Upload-Session Authentication" (unauthenticated
+  # chunks, no mid-session refresh), GR-008's bearer-exception list extended to
+  # name the uploadUrl alongside the downloadUrl, and the F3 chunk-size upper
+  # bound (< 60 MiB Graph ceiling) added to GR-005/GR-001 with the validation.
+  - sdd/specs/044-graph-backend.md
 phases:
   - id: orient
     name: Orient
@@ -72,11 +89,11 @@ phases:
       - file: src/remote_store/aio/backends/_graph/transfer.py
         section: "upload_session, _aligned_chunk, _spool_iterator"
         read_type: reference
-        extract: "createUploadSession -> aligned chunk PUTs (Content-Range bytes start-end/total) -> final 201/200 driveItem; per-chunk retry w/o session restart; resume from nextExpectedRanges; token-expiry re-acquire same chunk; abort DELETE; spool unknown-length AsyncIterator to SpooledTemporaryFile (no dir=) w/ graph.upload.spool_spilled DEBUG; chunks are in-memory slices (replayable)"
+        extract: "createUploadSession -> aligned chunk PUTs (Content-Range bytes start-end/total) -> final 201/200 driveItem; per-chunk retry w/o session restart; resume from nextExpectedRanges; chunk PUTs sent unauthenticated against the pre-authorised cross-host session URL (no bearer); abort DELETE; spool unknown-length AsyncIterator to SpooledTemporaryFile (no dir=) w/ graph.upload.spool_spilled DEBUG; chunks are in-memory slices (replayable)"
       - file: tests/backends/graph/aio/test_write.py
         section: "(run, session)"
         read_type: verify
-        extract: "respx green: createUploadSession -> aligned chunk PUTs -> final driveItem, nextExpectedRanges resume, chunk retry on transient 5xx/429 w/o restart, token-expiry-mid-session re-acquire+retry-same-chunk, 423 mid-session -> ResourceLocked (sessionUrl+nextExpectedRanges in message), abort DELETE, spool spill DEBUG, 507/quota -> BackendUnavailable"
+        extract: "respx green: createUploadSession -> aligned chunk PUTs -> final driveItem, nextExpectedRanges resume, chunk retry on transient 5xx/429 w/o restart, chunk PUTs unauthenticated (no bearer to the pre-signed session URL), 423 mid-session -> ResourceLocked (sessionUrl+nextExpectedRanges in message), abort DELETE, spool spill DEBUG, 507/quota -> BackendUnavailable"
   - id: implement_close_423
     name: 423 mid-session + close() session-abort
     steps:
@@ -109,5 +126,5 @@ phases:
       - file: tmp/validate_graph_write_live.py
         section: "(new write probe)"
         read_type: verify
-        extract: "Live device-code / consumer probe for write (mutating, scratch prefix, raw-DELETE cleanup since delete() is GR-MUTATE): small PUT, overwrite fail/replace + AlreadyExists, write_atomic auto-mkdir, and a 5 MiB upload session over 17 real 320 KiB chunks — all byte-equal round-trips. Caught a real bug respx could not (like GR-READ's root-addressing 400): the upload-session chunk PUTs went to the pre-signed cross-host uploadUrl carrying the graph bearer -> 401 PermissionDenied (and a cross-host token leak). Fix: chunk PUTs + abort DELETE send NO Authorization (graph_send authenticated=False), mirroring the auth-free downloadUrl reads. This honours GR-038's 'session URL is pre-authorised' clause; its 'on 401 re-acquire token' sub-clause is contradicted by live consumer reality and flagged for a spec amendment (not amended here per the plan's record-drift-and-stop rule)."
+        extract: "Live device-code / consumer probe for write (mutating, scratch prefix, raw-DELETE cleanup since delete() is GR-MUTATE): small PUT, overwrite fail/replace + AlreadyExists, write_atomic auto-mkdir, and a 5 MiB upload session over 17 real 320 KiB chunks — all byte-equal round-trips. Caught a real bug respx could not (like GR-READ's root-addressing 400): the upload-session chunk PUTs went to the pre-signed cross-host uploadUrl carrying the graph bearer -> 401 PermissionDenied (and a cross-host token leak). Fix: chunk PUTs + abort DELETE send NO Authorization (graph_send authenticated=False), mirroring the auth-free downloadUrl reads. This honours GR-038's 'session URL is pre-authorised' clause; its 'on 401 re-acquire token' sub-clause was contradicted by live consumer reality. Originally flagged-not-amended per the plan's record-drift-and-stop rule; the PR #761 review re-opened it under 'repo describes reality at every commit' and the deliberate amendment landed in this PR — GR-038 rewritten to 'Upload-Session Authentication' (unauthenticated chunks, no mid-session refresh), GR-008's bearer-exception list extended to name the uploadUrl."
         outcome: ok

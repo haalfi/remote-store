@@ -450,6 +450,26 @@ and the highest ID already in this file, then take the next integer. Run
   `tests/backends/conformance/conftest.py`, `scripts/record_cassettes.py`, and
   the recorded cassette tree. Discovered in ID-127 GR-WRITE.
 
+- [ ] **BK-261 — Graph small-write `overwrite=True`: replace-returns-409-for-files quirk**
+  spec: GR-018 · effort: S · audience: user.api, library.maintainer
+  On the small-file `PUT /content` path, `@microsoft.graph.conflictBehavior=replace`
+  is expected to overwrite an existing file and return `200`. Graph issue reports
+  describe some backing stores (SharePoint-backed drives) instead returning
+  `409 nameAlreadyExists` for a *file* even with `replace`. The 409 discrimination
+  in GR-018 would map that to `AlreadyExists` — a spurious failure for an intended
+  overwrite. **Not reproduced**: the consumer OneDrive drive used for Stage-3 live
+  verification honours `replace`, and our live path is consumer-only / device-code,
+  so the SharePoint-backed edge cannot be live-verified today. No guard is taken in
+  v1 because a speculative one (treating a `file`-faceted 409 on the `replace` path
+  as success-equivalent) risks masking a genuine conflict and would guess at the
+  body shape blind.
+  **When picked up:** reproduce against a SharePoint-backed drive (needs app-only /
+  SharePoint live testing, currently blocked — see the live-testing note), confirm
+  the exact 409 body, then decide between a targeted guard on the `replace` path or
+  documenting it as a hard backend limitation. Touches
+  `src/remote_store/aio/backends/_graph/backend.py` (`_write_small`) and
+  `sdd/specs/044-graph-backend.md` (GR-018). Discovered in ID-127 GR-WRITE review.
+
 - [ ] **ID-121 — CompositeStore (research complete)**
   spec: — · effort: L · audience: user.api
   `CompositeStore(Store)` — core Store subclass (not extension) that composes
