@@ -9532,10 +9532,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gr-038-upload-session-token-expiry-mid-session" class="md-nav__link">
+  <a href="#gr-038-upload-session-authentication" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GR-038: Upload-Session Token Expiry Mid-Session
+        GR-038: Upload-Session Authentication
       
     </span>
   </a>
@@ -10566,10 +10566,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gr-038-upload-session-token-expiry-mid-session" class="md-nav__link">
+  <a href="#gr-038-upload-session-authentication" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GR-038: Upload-Session Token Expiry Mid-Session
+        GR-038: Upload-Session Authentication
       
     </span>
   </a>
@@ -11121,8 +11121,9 @@ ADRs: <a href="../../adrs/0021-graph-sdk-choice/">0021</a> (SDK),
   <code>__init__</code>.
 - If <code>http_client</code> is not supplied, an <code>httpx.AsyncClient</code> is created
   lazily on first use and closed by <code>close()</code>.
-- <code>upload_chunk_size</code> is a positive multiple of 320 KiB;
-  non-conforming values raise <code>ValueError</code>.
+- <code>upload_chunk_size</code> is a positive multiple of 320 KiB and strictly
+  less than 60 MiB (Graph's per-request ceiling); non-conforming
+  values raise <code>ValueError</code>.
 - <code>drive_id</code> is a non-empty string; empty or whitespace-only values
   raise <code>ValueError</code>.</p>
 <h3 id="gr-002-backend-name">GR-002: Backend Name<a class="headerlink" href="#gr-002-backend-name" title="Permanent link">&para;</a></h3>
@@ -11193,9 +11194,10 @@ first use.
 <h3 id="gr-005-construction-validation">GR-005: Construction Validation<a class="headerlink" href="#gr-005-construction-validation" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>drive_id</code> must be a non-empty string. <code>token_provider</code>
 must be callable. <code>upload_chunk_size</code> must be a positive multiple of
-320 KiB (Graph's alignment requirement). <code>copy_timeout</code>, when set,
-must be a positive float. Violations raise <code>ValueError</code> at
-construction time.
+320 KiB (Graph's alignment requirement) and strictly less than 60 MiB
+(Graph rejects any single upload-session chunk PUT at or above that
+per-request ceiling). <code>copy_timeout</code>, when set, must be a positive
+float. Violations raise <code>ValueError</code> at construction time.
 <strong>Postconditions:</strong> Drive existence and caller permissions are not
 validated at construction; they surface on the first operation and
 are mapped per GR-028 through GR-033.</p>
@@ -11224,8 +11226,9 @@ override rules (single source of truth).</p>
 invokes the callable lazily — never from <code>__init__</code>.
 <strong>Postconditions:</strong>
 - The returned string is attached to every Graph request as
-  <code>Authorization: Bearer &lt;token&gt;</code> (except to <code>@microsoft.graph.downloadUrl</code>
-  targets, which are pre-signed — see GR-015).
+  <code>Authorization: Bearer &lt;token&gt;</code>, except to pre-signed targets that
+  carry their own credential: <code>@microsoft.graph.downloadUrl</code> (see
+  GR-015) and the upload-session <code>uploadUrl</code> (see GR-038).
 - The callable is re-invoked on <code>401 InvalidAuthenticationToken</code>
   responses (GR-029). A second <code>401</code> after refresh is mapped to
   <code>PermissionDenied</code>.
@@ -11494,6 +11497,16 @@ outcomes. The backend inspects the 409 response body:
   backend raises <code>AlreadyExists</code>.</p>
 <p>This rule applies equally to GR-019, GR-025 (copy), and GR-027 (move)
 destinations.
+<strong>Known limitation — <code>overwrite=True</code> on a file conflict:</strong> with
+<code>@microsoft.graph.conflictBehavior=replace</code>, an existing <em>file</em> at the
+target is expected to be overwritten (<code>200</code>). Some backing stores
+(observed on SharePoint-backed drives in Graph issue reports) instead
+return <code>409 nameAlreadyExists</code> for a file even under <code>replace</code>, which
+the discrimination above would surface as <code>AlreadyExists</code> — a spurious
+failure for an intended overwrite. This is not reproduced on the
+consumer OneDrive drive used for live verification, so no guard is
+taken in v1; the edge is unverified on SharePoint-backed drives and
+tracked in BK-261.
 <strong>Note on the 4 MiB threshold:</strong> Graph documents the
 <code>PUT .../content</code> endpoint as suitable for files up to ~4 MiB and
 recommends upload sessions beyond that. In practice the endpoint
@@ -11588,22 +11601,33 @@ upper bound), e.g. <code>["524288-"]</code> or
 <code>["0-262143", "786432-"]</code>. The backend parses the first range's
 start offset and resumes from there.
 <strong>Postconditions:</strong> Enables recovery from partial chunk receipt
-without restarting the session. A missing or malformed
-<code>nextExpectedRanges</code> (when one is expected) is treated as a Graph
-contract violation and maps to <code>BackendUnavailable</code>.</p>
+without restarting the session — a legitimate resume offset advances
+by at least one byte past the start of the chunk just sent (the server
+consumed some of it). A missing or malformed <code>nextExpectedRanges</code>, or
+a resume offset that does not advance past the chunk just sent (a
+stalled or regressing session), is treated as a Graph contract
+violation and maps to <code>BackendUnavailable</code>. The resume offset is
+therefore strictly increasing, so the chunk loop is guaranteed to
+terminate rather than re-PUT the same chunk indefinitely.</p>
 <h3 id="gr-024-upload-session-abort">GR-024: Upload-Session Abort<a class="headerlink" href="#gr-024-upload-session-abort" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> On unrecoverable failure or caller cancellation, the
 backend issues <code>DELETE {sessionUrl}</code> as best-effort cleanup. Errors
 during cleanup are logged but not propagated.
 <strong>Postconditions:</strong> Orphan sessions eventually expire server-side
 (Graph documents session lifetime on the order of hours).</p>
-<h3 id="gr-038-upload-session-token-expiry-mid-session">GR-038: Upload-Session Token Expiry Mid-Session<a class="headerlink" href="#gr-038-upload-session-token-expiry-mid-session" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> If a chunk PUT returns <code>401 InvalidAuthenticationToken</code>,
-the backend re-acquires the token via <code>token_provider</code> and retries
-the same chunk. The session URL is pre-authorised and is <strong>not</strong>
-recreated.
-<strong>Postconditions:</strong> A second <code>401</code> after refresh maps to
-<code>PermissionDenied</code>.</p>
+<h3 id="gr-038-upload-session-authentication">GR-038: Upload-Session Authentication<a class="headerlink" href="#gr-038-upload-session-authentication" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Upload-session chunk PUTs and the abort <code>DELETE</code> are
+sent <strong>unauthenticated</strong>. The <code>uploadUrl</code> returned by
+<code>createUploadSession</code> is pre-signed, lives on a different host than
+<code>graph.microsoft.com</code>, and carries its own credential in the query
+string; attaching the Graph bearer would leak it cross-host and is
+rejected by the service. The backend performs no mid-session token
+refresh.
+<strong>Postconditions:</strong> Graph documents the session lifetime on the order
+of hours (GR-024). A session URL that expires or is revoked mid-upload
+surfaces through the standard error mapping — a <code>401</code> / <code>403</code> on the
+pre-signed URL maps to <code>PermissionDenied</code> (GR-029 / GR-030) — with no
+refresh attempt, since the bearer is not the credential in play.</p>
 <h3 id="gr-039-auto-mkdir-on-write">GR-039: Auto-Mkdir on Write<a class="headerlink" href="#gr-039-auto-mkdir-on-write" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Graph creates missing intermediate folders implicitly
 when a path-based write targets a nested path. The backend does not

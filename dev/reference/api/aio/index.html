@@ -22336,7 +22336,8 @@ is created lazily on first use and closed by <code>close()</code>.</p>
           –
           <div class="doc-md-description">
             <p>Upload-session chunk size; must be a positive
-multiple of 320 KiB. Default 10 MiB.</p>
+multiple of 320 KiB and strictly less than 60 MiB (Graph's
+per-request ceiling). Default 10 MiB.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -22375,8 +22376,9 @@ parameter today, so this is passthrough only.)</p>
             –
           <div class="doc-md-description">
             <p>For an empty <code>drive_id</code>, a non-callable
-<code>token_provider</code>, a non-aligned <code>upload_chunk_size</code>, or a
-non-positive <code>copy_timeout</code>.</p>
+<code>token_provider</code>, an <code>upload_chunk_size</code> that is not a
+positive 320 KiB multiple below 60 MiB, or a non-positive
+<code>copy_timeout</code>.</p>
           </div>
         </li>
     </ul>
