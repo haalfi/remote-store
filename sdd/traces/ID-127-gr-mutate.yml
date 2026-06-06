@@ -1,0 +1,90 @@
+id: ID-127
+title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-MUTATE (PR E): delete, copy, move, monitor poller"
+trigger: "ID-127 Step 6, sub-PR E of the GR-READ/WRITE/MUTATE fan-out: GR-WRITE (PR D) landed the write path and the GR-051 upload-session-abort half of close(), but left delete() / delete_folder() / move() / copy() raising NotImplementedError and the mutate conformance slices unrecordable. GR-MUTATE fills the mutate path: delete() type-checking via one GET then DELETE (GR-041); delete_folder() recursive single-DELETE (GR-042) and non-recursive childCount/probe empty-check (GR-043); copy() POST -> 202 -> Location monitor URL -> poll-to-completion (GR-025) and move() PATCH sync-or-202 reusing the same poller (GR-027); the self-op single-GET short-circuit (GR-044); the cross-drive-vacuous parentReference (GR-056); a new backend-local monitor poller monitor.py (poll_monitor + parse_graph_monitor_response per ADR-0023 / GR-026) bounding polling by copy_timeout with the closed-set last_status timeout message; the GR-051 poller-cancel half of close(); and the BE-008 409 destination discrimination applied to copy/move. Leaves GR-DOCS-E2E (Step 7) and the combined close() + BK-237 DoD (GR-DONE, Step 8) to close ID-127."
+source_items:
+  - ID-127
+audience:
+  - user.api
+  - user.api_docs
+  - infra.test
+expected_ripples:
+  # user.api audience -> CHANGELOG stub required (trace-schema derived rule).
+  - CHANGELOG.md
+  # New public-method docstrings (delete/delete_folder/move/copy Raises + semantics)
+  # regen the public-API graph IR + viz per the "A public method signature" row.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+surprising_ripples:
+  # Two live-driven spec reconciliations the ripple-check did not anticipate, both
+  # in spec 044. (1) GR-026 mandates embedding the monitor URL in the copy_timeout
+  # message, but the live monitor URL is a pre-signed CROSS-HOST endpoint
+  # (my.microsoftpersonalcontent.com) whose query carries its own credential —
+  # embedding it verbatim would leak a token, contradicting GR-035. Reconciled by
+  # query-stripping the embedded URL (scheme/host/path only) and amending GR-026 to
+  # say so. (2) GR-008's bearer-exception list named only downloadUrl + uploadUrl;
+  # the monitor URL is a third pre-signed target that REJECTS a Graph bearer (live
+  # 401), so the poll GET must be unauthenticated — GR-008's list extended to name
+  # it. Both amendments land in this PR under "repo describes reality at every
+  # commit" (GR-WRITE's GR-038 precedent).
+  - sdd/specs/044-graph-backend.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-025, GR-026, GR-027, GR-041..GR-044, GR-046, GR-051, GR-056"
+        read_type: gate
+        extract: "delete (GET-then-DELETE, folder -> InvalidPath); delete_folder recursive single-DELETE vs non-recursive childCount/probe empty-check -> DirectoryNotEmpty; copy POST -> 202 Location monitor; move PATCH sync-or-202; monitor poll contract (1s/30s/2 backoff, copy_timeout budget, Retry-After precedence, 5xx-as-pending, failed-status -> error table, closed-set last_status timeout message); self-op single-GET short-circuit; cross-drive vacuous; close() poller-cancel half; BE-008 409 discrimination on copy/move destinations"
+      - file: sdd/plans/ID-127-graph-backend-implementation.md
+        section: "Step 6 — GR-MUTATE"
+        read_type: gate
+        extract: "Files touched (backend.py mutate methods, new monitor.py), acceptance (off xfail for DELETE/MOVE/COPY, copy 202->monitor success+failure+timeout, Retry-After precedence, transient-5xx-as-pending, self-op short-circuit, delete_folder non-empty -> DirectoryNotEmpty, close() poller-cancel half), GR-056 owned here"
+      - file: sdd/adrs/0023-async-monitor-polling.md
+        section: "Decision, Contract"
+        read_type: gate
+        extract: "Backend-local poller in _graph/monitor.py (not shared); parser-driven (status_parser); params monitor_url/client/initial_interval/max_interval/backoff_factor/timeout; honours Retry-After, treats 5xx as pending, propagates CancelledError"
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "graph_send (return_on, retry), classify_graph_error, discriminate_write_conflict"
+        read_type: reference
+        extract: "return_on={409} surfaces a raw 409 for destination discrimination; classify_graph_error keys on status+code. A failed monitor body carries only error.code (no status), so a new classify_graph_error_code reverse-maps the known codes through the same table, defaulting unknown -> BackendUnavailable"
+  - id: implement_monitor
+    name: Implement the monitor poller
+    steps:
+      - file: src/remote_store/aio/backends/_graph/monitor.py
+        section: "poll_monitor, parse_graph_monitor_response, MonitorResult"
+        read_type: reference
+        extract: "Poll loop with backoff + Retry-After precedence + copy_timeout budget; parser classifies status completed/inProgress/failed (+ 3xx redirect = success, no-status body = unclassified pending -> parse-error token); 5xx/transport = pending (5xx token); failed -> classify_graph_error_code; succeeded logs graph.copy.poll_complete; the timeout message embeds a query-STRIPPED monitor URL (GR-035 vs GR-026 reconciliation)"
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "classify_graph_error_code, _CODE_TO_STATUS"
+        read_type: reference
+        extract: "New status-less code classifier for the failed-monitor body; reuses the single classify table via a known code->status reverse map"
+      - file: tests/backends/graph/aio/test_monitor.py
+        section: "(run)"
+        read_type: verify
+        extract: "respx green: completed/pending->succeeded, failed->mapped error, unknown-code->BackendUnavailable, 3xx=success, 5xx/transport pending, timeout closed-set last_status (pending/5xx/parse-error) + query-redacted URL, Retry-After precedence, backoff growth to ceiling, CancelledError propagation"
+  - id: implement_mutate
+    name: Implement delete / copy / move + close poller-cancel
+    steps:
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "delete, delete_folder, copy, move, _short_circuit_self_op, _await_async_operation, aclose"
+        read_type: reference
+        extract: "delete GET-then-DELETE; delete_folder recursive vs childCount/probe; copy POST?conflictBehavior + 202 monitor; move PATCH?conflictBehavior sync-or-202; self-op single-GET; _await_async_operation tracks the poller task in _pending_pollers so aclose() cancels it (gather(return_exceptions) drains cancelled tasks so no CancelledError/destroyed-pending warning escapes filterwarnings=error)"
+      - file: tests/backends/graph/aio/test_mutate.py
+        section: "(run)"
+        read_type: verify
+        extract: "respx green: delete file/folder/missing/missing_ok; delete_folder recursive/empty/non-empty/probe/file; copy 202->monitor, self-copy single-GET, src missing/folder, dest 409 discrimination, 202-without-Location, monitor failure; move sync/async/self/folder/409; close() cancels a pending poller (deterministic + in-flight-copy)"
+  - id: verify
+    name: Verify gates
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A public method signature"
+        read_type: verify
+        extract: "CHANGELOG stub added; BACKLOG progress line updated; gen-graph + gen-graph-viz re-run after the new public docstrings; lint clean (check_no_tracker_refs forced GR-/BE-/ADR- IDs out of docstrings into # comments); typecheck clean; 100% _graph coverage; filterwarnings clean"
+  - id: reality_check
+    name: Stage-3 reality check
+    steps:
+      - file: tmp/validate_graph_mutate_live.py
+        section: "(new mutate probe)"
+        read_type: verify
+        extract: "Live device-code / consumer OneDrive probe (scratch prefix, delete-on-exit): copy 202 -> REAL pre-signed monitor URL poll -> completed byte-equal (the GR-026 live exercise), overwrite fail/replace, self-copy no-op, sync move, delete + delete_folder recursive/non-recursive. Caught a real bug respx could not (like GR-READ's root-addressing 400 and GR-WRITE's cross-host token leak): the copy action reads @microsoft.graph.conflictBehavior from the QUERY, not the body — a body field is silently ignored, so overwrite=True 409'd until moved to the query (move already used the query). Also live-confirmed the monitor URL is a cross-host pre-signed endpoint that 200s un-authenticated but 401s with a Graph bearer, validating the no-auth poll and driving the GR-008/GR-026 spec reconciliations."
+        outcome: ok

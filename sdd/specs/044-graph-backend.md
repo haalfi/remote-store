@@ -173,7 +173,10 @@ invokes the callable lazily — never from `__init__`.
 - The returned string is attached to every Graph request as
   `Authorization: Bearer <token>`, except to pre-signed targets that
   carry their own credential: `@microsoft.graph.downloadUrl` (see
-  GR-015) and the upload-session `uploadUrl` (see GR-038).
+  GR-015), the upload-session `uploadUrl` (see GR-038), and the
+  copy/move monitor URL (see GR-026). Each lives on a cross-host
+  pre-authenticated endpoint that *rejects* a Graph bearer
+  (live-verified `401`), so attaching one both leaks the token and fails.
 - The callable is re-invoked on `401 InvalidAuthenticationToken`
   responses (GR-029). A second `401` after refresh is mapped to
   `PermissionDenied`.
@@ -720,7 +723,15 @@ shared-helper design backend-local.
   backend must call this out.
 - On `copy_timeout` expiry the poller raises `BackendUnavailable`
   whose message embeds the monitor URL, the poll count, and a
-  `last_status` token from a closed set: `"pending"` (terminal poll
+  `last_status` token from a closed set. The embedded monitor URL is
+  **query-stripped** (scheme / host / path only): the monitor endpoint is
+  pre-signed and carries its own credential in the query string
+  (live-verified — the URL lives on a cross-host
+  `*.microsoftpersonalcontent.com` endpoint and a Graph bearer is in fact
+  *rejected* there), and GR-035 bars any token from an exception message, so
+  the query is redacted while the path still identifies the operation for
+  out-of-band diagnosis. The `last_status` token is from a closed set:
+  `"pending"` (terminal poll
   returned a still-running status), `"5xx"` (last response was a
   transient server error treated as pending per below), or
   `"parse-error"` (last response could not be classified by the

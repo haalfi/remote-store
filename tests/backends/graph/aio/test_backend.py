@@ -2,19 +2,16 @@
 
 Construction/validation, capability declaration, path addressing and encoding,
 the unwrap escape hatch, the close baseline, and credential-safe repr. The
-data-plane operations are stubbed in GR-CORE; the tests here assert the stubs
-raise ``NotImplementedError`` (their conformance slices are xfail'd in PR3).
+data-plane operations themselves are exercised in the read / write / mutate
+test modules; this module covers the construction-time and addressing surface.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import httpx
 import pytest
-
-if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
 
 from remote_store._capabilities import Capability
 from remote_store._errors import CapabilityNotSupported
@@ -236,21 +233,3 @@ class TestUnwrapAndClose:
         r = repr(_make())
         assert _DRIVE in r
         assert "tok" not in r
-
-
-class TestStubs:
-    """Mutate ops remain stubbed until GR-MUTATE (write landed in GR-WRITE)."""
-
-    @pytest.mark.spec("GR-012")
-    @pytest.mark.parametrize(
-        "call",
-        [
-            lambda b: b.delete("a"),
-            lambda b: b.delete_folder("a"),
-            lambda b: b.move("a", "b"),
-            lambda b: b.copy("a", "b"),
-        ],
-    )
-    async def test_coroutine_stub_raises(self, call: Callable[[GraphBackend], Awaitable[Any]]) -> None:
-        with pytest.raises(NotImplementedError):
-            await call(_make())

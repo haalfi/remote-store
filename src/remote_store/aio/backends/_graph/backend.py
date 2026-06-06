@@ -10,6 +10,7 @@ they raise ``NotImplementedError`` until then.
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 from urllib.parse import quote, unquote
 
@@ -17,7 +18,13 @@ import httpx
 
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy
-from remote_store._errors import CapabilityNotSupported, InvalidPath, NotFound
+from remote_store._errors import (
+    BackendUnavailable,
+    CapabilityNotSupported,
+    DirectoryNotEmpty,
+    InvalidPath,
+    NotFound,
+)
 from remote_store._models import FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store.aio._async_backend import AsyncBackend
@@ -35,6 +42,7 @@ from remote_store.aio.backends._graph.items import (
     item_to_write_result,
     parse_graph_datetime,
 )
+from remote_store.aio.backends._graph.monitor import poll_monitor
 from remote_store.aio.backends._graph.transfer import (
     RANGE_FALLBACK_FLAG,
     abort_upload_session,
@@ -77,8 +85,6 @@ _GRAPH_CAPABILITIES = CapabilitySet(
     }
 )
 
-_STUB_MSG = "GraphBackend.{op} is not implemented yet"
-
 
 def _encode_segment(segment: str) -> str:
     """Percent-encode one path segment per RFC 3986.
@@ -96,6 +102,17 @@ def _encode_segment(segment: str) -> str:
 def _child_key(parent: str, name: str) -> str:
     """Join a parent folder key and a child name into a store key."""
     return f"{parent}/{name}" if parent else name
+
+
+def _split_parent(path: str) -> tuple[str, str]:
+    """Split a store path into ``(parent_key, basename)``.
+
+    ``"a/b/c.txt"`` → ``("a/b", "c.txt")``; a top-level ``"c.txt"`` →
+    ``("", "c.txt")``. Leading/trailing slashes are stripped first.
+    """
+    key = path.strip("/")
+    parent, _, name = key.rpartition("/")
+    return parent, name
 
 
 class GraphBackend(AsyncBackend):
@@ -176,6 +193,9 @@ class GraphBackend(AsyncBackend):
         # Upload-session URLs with a write mid-chunk-loop: close() aborts each
         # via best-effort DELETE (GR-051 upload-session-abort half).
         self._active_upload_sessions: set[str] = set()
+        # In-flight copy/move monitor-poll tasks: close() cancels each
+        # cooperatively (GR-051 poller-cancel half).
+        self._pending_pollers: set[asyncio.Task[None]] = set()
 
     # region: properties
 
@@ -272,16 +292,25 @@ class GraphBackend(AsyncBackend):
         )
 
     async def aclose(self) -> None:
-        """Close the owned HTTP client and flush the auth cache.
+        """Close the owned HTTP client, cancel pollers, and flush the auth cache.
 
         Safe to call multiple times. A caller-supplied ``http_client`` is left
-        open — the caller owns it. Any upload session a ``write()`` left
-        mid-chunk-loop is aborted first via best-effort ``DELETE``, swallowing
-        every cleanup error so ``close()`` never raises. Pending monitor pollers
-        are cancelled once that subsystem exists.
+        open — the caller owns it. Any in-flight copy/move monitor poller is
+        cancelled cooperatively, and any upload session a ``write()`` left
+        mid-chunk-loop is aborted via best-effort ``DELETE`` — every cleanup
+        error is swallowed so ``close()`` never raises. The server-side copy /
+        move continues (Graph monitor URLs have no cancel endpoint).
         """
-        # GR-051 upload-session-abort half (mirrors GR-024); the
-        # monitor-poller-cancel half is layered on by GR-MUTATE.
+        # GR-051: poller-cancel half + upload-session-abort half (mirrors GR-024).
+        pollers = list(self._pending_pollers)
+        for task in pollers:
+            task.cancel()
+        if pollers:
+            # gather(return_exceptions) drains the cancelled tasks so neither a
+            # CancelledError nor a "task was destroyed but pending" warning escapes
+            # (filterwarnings=error would turn the latter into a failure).
+            await asyncio.gather(*pollers, return_exceptions=True)
+        self._pending_pollers.clear()
         for session_url in list(self._active_upload_sessions):
             await abort_upload_session(self._client, session_url, token_provider=self._token_provider)
         self._active_upload_sessions.clear()
@@ -742,23 +771,230 @@ class GraphBackend(AsyncBackend):
 
     # endregion
 
-    # region: data-plane operations — stubbed (GR-MUTATE)
+    # region: data-plane mutate (GR-025/027/041/042/043/044/056)
 
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
-        """Delete a file. Not implemented yet (mutate path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="delete"))
+        """Delete a file (Graph moves it to the recycle bin).
+
+        Fetches the item first so a folder is rejected before any ``DELETE`` is
+        issued (a bare ``DELETE`` on a folder would remove the folder and its
+        contents). A missing item is ``NotFound`` unless ``missing_ok``.
+
+        Raises:
+            NotFound: If the file does not exist and ``missing_ok`` is ``False``.
+            InvalidPath: If the path names a folder (use ``delete_folder``).
+        """
+        # GR-041: type-check via one GET, then DELETE the resolved item.
+        try:
+            item = await self._get_item(path)
+        except NotFound:
+            if missing_ok:
+                return
+            raise
+        if is_folder_item(item):
+            raise InvalidPath(f"Cannot delete — '{path}' is a folder", path=path, backend=self.name)
+        await graph_send(
+            self._client,
+            "DELETE",
+            self._item_url(path),
+            token_provider=self._token_provider,
+            path=path,
+            retry=self._retry,
+        )
 
     async def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
-        """Delete a folder. Not implemented yet (mutate path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="delete_folder"))
+        """Delete a folder, optionally requiring it to be empty.
 
-    async def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        """Move or rename. Not implemented yet (mutate path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="move"))
+        ``recursive=True`` is a single ``DELETE`` — Graph removes the folder and
+        all contents atomically server-side. ``recursive=False`` first checks the
+        folder is empty (via the item's ``folder.childCount``, falling back to a
+        ``/children`` probe when the count is absent) and raises
+        ``DirectoryNotEmpty`` if not.
+
+        Raises:
+            NotFound: If the folder does not exist and ``missing_ok`` is ``False``.
+            InvalidPath: If the path names a file.
+            DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
+        """
+        # GR-042 (recursive) / GR-043 (non-recursive empty-check).
+        try:
+            item = await self._get_item(path)
+        except NotFound:
+            if missing_ok:
+                return
+            raise
+        if not is_folder_item(item):
+            raise InvalidPath(f"Cannot delete folder — '{path}' is a file", path=path, backend=self.name)
+        if not recursive and await self._folder_is_nonempty(path, item):
+            raise DirectoryNotEmpty(f"Folder not empty: {path}", path=path, backend=self.name)
+        await graph_send(
+            self._client,
+            "DELETE",
+            self._item_url(path),
+            token_provider=self._token_provider,
+            path=path,
+            retry=self._retry,
+        )
+
+    async def _folder_is_nonempty(self, path: str, item: dict[str, Any]) -> bool:
+        """Return ``True`` if the folder *item* has at least one child.
+
+        Prefers the ``folder.childCount`` Graph returns on the metadata item; when
+        absent (not an int), falls back to a single-child ``/children`` probe.
+        """
+        child_count = (item.get("folder") or {}).get("childCount")
+        if isinstance(child_count, int):
+            return child_count > 0
+        async for _child in self._iter_child_items(path):
+            return True
+        return False
 
     async def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        """Copy. Not implemented yet (mutate path)."""
-        raise NotImplementedError(_STUB_MSG.format(op="copy"))
+        """Copy a file, awaiting the async monitor to completion.
+
+        Graph answers ``POST copy`` with ``202 Accepted`` and a ``Location``
+        monitor URL; this polls it to a terminal state (bounded by
+        ``copy_timeout``). ``src == dst`` short-circuits after a single
+        existence-confirming ``GET``. A destination conflict surfaces as
+        ``AlreadyExists`` (or ``InvalidPath`` for a folder / file-ancestor target)
+        when ``overwrite`` is ``False``.
+
+        Raises:
+            NotFound: If ``src`` does not exist.
+            InvalidPath: If ``src`` names a folder, or ``dst`` names an existing
+                folder or descends through a file ancestor.
+            AlreadyExists: If ``dst`` exists, ``src != dst``, and ``overwrite`` is
+                ``False``.
+            BackendUnavailable: On a ``202`` without a ``Location`` monitor URL, a
+                ``copy_timeout`` expiry, or a transient/5xx failure.
+        """
+        # GR-025 (POST copy -> 202 monitor), GR-044 (self-copy short-circuit),
+        # GR-056 (cross-drive is vacuous — parentReference resolves against the one
+        # configured drive). BE-008 409 discrimination applies to the destination.
+        # conflictBehavior is a QUERY parameter on the copy action (live-verified:
+        # a body field is ignored, so overwrite=True 409'd until moved here).
+        if await self._short_circuit_self_op(src, dst):
+            return
+        behavior = "replace" if overwrite else "fail"
+        response = await graph_send(
+            self._client,
+            "POST",
+            f"{self._base_url}{self.native_path(src)}/copy?@microsoft.graph.conflictBehavior={behavior}",
+            token_provider=self._token_provider,
+            path=src,
+            retry=self._retry,
+            return_on=frozenset({409}),
+            json=self._move_copy_body(dst),
+        )
+        if response.status_code == 409:
+            raise discriminate_write_conflict(response_json(response), dst, backend=self.name)
+        await self._await_async_operation(response, path=dst)
+
+    async def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        """Move or rename a file, awaiting the monitor when Graph goes async.
+
+        Graph answers ``PATCH driveItem`` synchronously in most cases (``200``);
+        a large or cross-folder move may return ``202`` with a monitor URL, which
+        is polled to completion exactly as ``copy`` does. ``src == dst``
+        short-circuits after one ``GET``. Item identity (id / eTag / property
+        bag) is preserved by Graph; the backend issues no compensating writes.
+
+        Raises:
+            NotFound: If ``src`` does not exist.
+            InvalidPath: If ``src`` names a folder, or ``dst`` names an existing
+                folder or descends through a file ancestor.
+            AlreadyExists: If ``dst`` exists, ``src != dst``, and ``overwrite`` is
+                ``False``.
+            BackendUnavailable: On a ``202`` without a ``Location`` monitor URL, a
+                ``copy_timeout`` expiry, or a transient/5xx failure.
+        """
+        # GR-027 (PATCH -> sync 200 or 202 monitor), GR-044 (self-move),
+        # GR-056 (cross-drive vacuous). BE-008 409 discrimination on the dest.
+        if await self._short_circuit_self_op(src, dst):
+            return
+        behavior = "replace" if overwrite else "fail"
+        response = await graph_send(
+            self._client,
+            "PATCH",
+            f"{self._base_url}{self.native_path(src)}?@microsoft.graph.conflictBehavior={behavior}",
+            token_provider=self._token_provider,
+            path=src,
+            retry=self._retry,
+            return_on=frozenset({409}),
+            json=self._move_copy_body(dst),
+        )
+        if response.status_code == 409:
+            raise discriminate_write_conflict(response_json(response), dst, backend=self.name)
+        await self._await_async_operation(response, path=dst)
+
+    async def _short_circuit_self_op(self, src: str, dst: str) -> bool:
+        """Validate *src* for a move/copy and report whether it is a self-op no-op.
+
+        Issues the single existence ``GET`` the self-op contract requires: a
+        missing ``src`` is ``NotFound`` and a folder ``src`` is ``InvalidPath``,
+        both raised before any mutation. Returns ``True`` when ``src == dst`` (the
+        caller then short-circuits after this one GET), ``False`` otherwise.
+        """
+        # BE-019 / BE-021 self-op preconditions; GR-044 single-GET short-circuit.
+        src_item = await self._get_item(src)
+        if is_folder_item(src_item):
+            raise InvalidPath(f"Cannot move/copy — '{src}' is a folder", path=src, backend=self.name)
+        return src == dst
+
+    def _move_copy_body(self, dst: str) -> dict[str, Any]:
+        """Build the ``parentReference`` + ``name`` body for a move / copy to *dst*.
+
+        ``parentReference`` names the configured drive and the destination's
+        parent folder by path — there is no syntax to address a different drive,
+        so a cross-drive move/copy is structurally impossible. Both ``copy`` (POST
+        action) and ``move`` (PATCH) carry ``@microsoft.graph.conflictBehavior`` as
+        a query parameter, not in this body (live-verified for the copy action).
+        """
+        # GR-056: cross-drive is vacuous — parentReference binds to the one drive.
+        parent, name = _split_parent(dst)
+        return {
+            "parentReference": {"driveId": self._drive_id, "path": self._parent_ref_path(parent)},
+            "name": name,
+        }
+
+    def _parent_ref_path(self, parent_key: str) -> str:
+        """Return the ``parentReference.path`` for the folder key *parent_key*.
+
+        ``/drives/{drive_id}/root:`` for the drive root, otherwise
+        ``/drives/{drive_id}/root:/{encoded_parent}`` (no trailing colon — the
+        ``parentReference`` path form, unlike the item-address form).
+        """
+        root = f"/drives/{self._drive_id}/root:"
+        if not parent_key:
+            return root
+        encoded = "/".join(_encode_segment(s) for s in parent_key.split("/") if s)
+        return f"{root}/{encoded}"
+
+    async def _await_async_operation(self, response: httpx.Response, *, path: str) -> None:
+        """Drive a mutate response to completion: poll the monitor if async.
+
+        A synchronous success (``200`` for a sync move) returns immediately. A
+        ``202 Accepted`` (always for copy, sometimes for move) carries a
+        ``Location`` monitor URL that is polled to a terminal state in a tracked
+        task, so ``close()`` can cancel an in-flight poller. A ``202`` without a
+        ``Location`` is a Graph contract gap.
+        """
+        # GR-051: the poller task is tracked so close() can cancel it mid-flight.
+        if response.status_code != 202:
+            return
+        monitor_url = response.headers.get("location")
+        if not monitor_url:
+            raise BackendUnavailable(
+                f"Graph returned 202 Accepted without a Location monitor URL: {path}", path=path, backend=self.name
+            )
+        task: asyncio.Task[None] = asyncio.ensure_future(
+            poll_monitor(monitor_url, self._client, timeout=self._copy_timeout, path=path, backend=self.name)
+        )
+        self._pending_pollers.add(task)
+        try:
+            await task
+        finally:
+            self._pending_pollers.discard(task)
 
     # endregion
 
