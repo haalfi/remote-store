@@ -840,14 +840,24 @@ class GraphBackend(AsyncBackend):
         """Return ``True`` if the folder *item* has at least one child.
 
         Prefers the ``folder.childCount`` Graph returns on the metadata item; when
-        absent (not an int), falls back to a single-child ``/children`` probe.
+        absent (not an int), falls back to a single ``/children?$top=1`` probe — one
+        bounded request, not a full default page (the folder already type-checked,
+        so the probe never 404s).
         """
         child_count = (item.get("folder") or {}).get("childCount")
         if isinstance(child_count, int):
             return child_count > 0
-        async for _child in self._iter_child_items(path):
-            return True
-        return False
+        response = await graph_send(
+            self._client,
+            "GET",
+            f"{self._children_url(path)}?$top=1",
+            token_provider=self._token_provider,
+            path=path,
+            retry=self._retry,
+        )
+        body = response.json()
+        value = body.get("value") if isinstance(body, dict) else None
+        return bool(value)
 
     async def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Copy a file, awaiting the async monitor to completion.
@@ -894,8 +904,9 @@ class GraphBackend(AsyncBackend):
         """Move or rename a file, awaiting the monitor when Graph goes async.
 
         Graph answers ``PATCH driveItem`` synchronously in most cases (``200``);
-        a large or cross-folder move may return ``202`` with a monitor URL, which
-        is polled to completion exactly as ``copy`` does. ``src == dst``
+        a large-item move may return ``202`` with a monitor URL (the async trigger
+        is item size / server-side replication, not crossing folders), which is
+        polled to completion exactly as ``copy`` does. ``src == dst``
         short-circuits after one ``GET``. Item identity (id / eTag / property
         bag) is preserved by Graph; the backend issues no compensating writes.
 
@@ -992,7 +1003,10 @@ class GraphBackend(AsyncBackend):
         )
         self._pending_pollers.add(task)
         try:
-            await task
+            # `return await` (not a bare `await task` statement) keeps the await as
+            # part of a return — poll_monitor yields None, and the finally still
+            # runs the discard before this method returns or unwinds on cancel.
+            return await task
         finally:
             self._pending_pollers.discard(task)
 

@@ -689,6 +689,20 @@ probe). If non-empty, raises `DirectoryNotEmpty`. If empty, issues
 copy` with a `parentReference` and `name` derived from `dst`. Graph
 responds with `202 Accepted` and a `Location` header pointing to a
 monitor URL.
+**`@microsoft.graph.conflictBehavior` is a query parameter** on the copy
+action (`?@microsoft.graph.conflictBehavior=replace|fail`), not a body
+field — live-verified: a body field is silently ignored, so an intended
+`overwrite=True` would `409` until the value is moved to the query.
+**`parentReference` shape (documented-form divergence):** the backend
+addresses the destination parent by `{driveId, path}`. The Graph
+`copy` / `move` reference documents the write input as `{driveId, id}` /
+`{id}` and lists `path` as a *read-only* navigation property. The
+`path` form is live-verified against consumer OneDrive (the only tier
+this project can reach — device-code / consumer), but path-only
+`parentReference` is a known soft spot on SharePoint / business drives
+and is **unverified** there; the `id` form would cost an extra parent-id
+resolution round trip and is deferred. Tracked alongside the other
+SharePoint-unverified edges (cf. the GR-018 BK-261 note).
 **Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if
 `dst` exists and `overwrite=False`. `InvalidPath` per BE-021.
 
@@ -774,9 +788,22 @@ reachable on both async and sync surfaces.
 
 **Invariant:** `move(src, dst, overwrite=False)` issues `PATCH` on
 the source item with a new `parentReference` and optional new
-`name`. Graph responds synchronously in most cases; large-item or
-cross-drive moves may return `202 Accepted`, in which case the
-backend reuses the GR-026 poller.
+`name`. Graph responds synchronously in most cases; a large-item move
+may return `202 Accepted` (the async trigger is item size /
+server-side replication, not crossing folders — and cross-drive is
+structurally impossible here, GR-056), in which case the backend
+reuses the GR-026 poller. The `parentReference` shape note in GR-025
+applies equally here.
+**`conflictBehavior` on PATCH (documented-form divergence):** the
+backend carries `@microsoft.graph.conflictBehavior` as a query
+parameter on the move `PATCH`. The Graph `move`/update reference does
+**not** document `conflictBehavior` for the update path (only for
+`copy` and the upload-session paths). It is live-verified honoured on
+consumer OneDrive — `overwrite=True` onto an occupied destination
+replaces, `overwrite=False` raises `AlreadyExists` — but, being
+undocumented for PATCH, its behaviour on SharePoint / business drives
+is **unverified** and a SharePoint conformance pass should confirm
+move-overwrite actually replaces.
 **Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if
 `dst` exists and `overwrite=False`. `InvalidPath` per BE-021 and
 GR-018's BE-008 precondition discrimination (including the

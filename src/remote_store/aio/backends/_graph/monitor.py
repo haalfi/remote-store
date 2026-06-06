@@ -74,21 +74,26 @@ class MonitorResult(NamedTuple):
     classified: bool = True
 
 
-_SUCCEEDED_STATES = frozenset({"completed", "succeeded"})
+# The terminal status strings of Graph's asyncJobStatus enum (lowercased).
+# Success is the single value ``completed``; ``failed`` / ``deleteFailed`` are the
+# two failure values. The remaining enum members (``inProgress`` / ``notStarted``
+# / ``updating`` / ``waiting`` / ``deletePending``) are in-flight and map to pending.
+_COMPLETED_STATUS = "completed"
 _FAILED_STATES = frozenset({"failed", "deletefailed"})
 
 
 def parse_graph_monitor_response(response: httpx.Response) -> MonitorResult:
     """Classify a Graph monitor poll response into pending / succeeded / failed.
 
-    A completion ``3xx`` redirect is success (the operation finished and Graph is
-    redirecting to the new item, which the poll deliberately does not follow). A
-    ``2xx`` body carries a ``status`` field — ``completed`` / ``succeeded`` is
-    terminal success, ``failed`` / ``deleteFailed`` is terminal failure (with the
-    ``error`` envelope), and any in-flight status (``inProgress`` /
-    ``notStarted`` / ``updating`` / ``waiting`` / ``deletePending``) is pending. A
-    body with no readable ``status`` is treated as pending-but-unclassified so the
-    loop keeps polling rather than failing on a single odd response.
+    A completion ``3xx`` redirect is success (the consumer-OneDrive monitor
+    answers a finished operation with ``303 See Other`` to the new item, which
+    the poll deliberately does not follow). A ``2xx`` body carries a ``status``
+    field — ``completed`` is the sole terminal-success value, ``failed`` /
+    ``deleteFailed`` are terminal failure (with the ``error`` envelope), and any
+    in-flight status (``inProgress`` / ``notStarted`` / ``updating`` / ``waiting``
+    / ``deletePending``) is pending. A body with no readable ``status`` is treated
+    as pending-but-unclassified so the loop keeps polling rather than failing on a
+    single odd response.
     """
     if 300 <= response.status_code < 400:
         return MonitorResult("succeeded")
@@ -99,7 +104,7 @@ def parse_graph_monitor_response(response: httpx.Response) -> MonitorResult:
     if not isinstance(status, str):
         return MonitorResult("pending", classified=False)
     normalized = status.lower()
-    if normalized in _SUCCEEDED_STATES:
+    if normalized == _COMPLETED_STATUS:
         return MonitorResult("succeeded")
     if normalized in _FAILED_STATES:
         error = body.get("error")
@@ -165,10 +170,12 @@ async def poll_monitor(
     factor = _BACKOFF_FACTOR if backoff_factor is None else backoff_factor
     start = time.monotonic()
     polls = 0
-    last_status = "pending"
     while True:
         polls += 1
         retry_after: float | None = None
+        # last_status is assigned on every branch below before the timeout check
+        # reads it (no init — CodeQL flagged a pre-loop init as a dead store).
+        last_status: str
         try:
             # follow_redirects=False: a completion 3xx must surface as success,
             # not be chased to the new item (whose body has no monitor status).

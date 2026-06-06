@@ -7,6 +7,7 @@ audience:
   - user.api
   - user.api_docs
   - infra.test
+review_rounds: 1
 expected_ripples:
   # user.api audience -> CHANGELOG stub required (trace-schema derived rule).
   - CHANGELOG.md
@@ -26,6 +27,18 @@ surprising_ripples:
   # 401), so the poll GET must be unauthenticated — GR-008's list extended to name
   # it. Both amendments land in this PR under "repo describes reality at every
   # commit" (GR-WRITE's GR-038 precedent).
+  #
+  # The #762 review (doc-compliance focus) drove four more spec-044 amendments on
+  # the same axis (live shape vs documented contract): (a) copy's conflictBehavior
+  # is a QUERY param not a body field — the bug the live probe caught; (b)
+  # parentReference is addressed by {driveId, path} where the doc sanctions
+  # {driveId, id} and lists path as read-only (live-verified consumer OneDrive,
+  # unverified SharePoint); (c) move's PATCH conflictBehavior is undocumented by
+  # Graph but live-honoured on consumer (now also probed onto an occupied dst);
+  # (d) "succeeded" is not in the asyncJobStatus enum (dropped — only "completed"
+  # is contract-real). The review also tightened GR-043's empty-check to the
+  # spec-mandated /children?$top=1 probe (was a full default page), and CodeQL
+  # flagged a dead last_status store + a bare `await task` statement.
   - sdd/specs/044-graph-backend.md
 phases:
   - id: orient

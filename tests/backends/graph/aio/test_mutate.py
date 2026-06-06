@@ -42,6 +42,7 @@ _MONITOR = "https://my.microsoftpersonalcontent.com/op/01ABC?tempauth=secret"
 _ITEM_RE = re.compile(re.escape(_BASE) + r"/drives/[^/]+/root:/[^:?]+:$")
 _COPY_RE = re.compile(re.escape(_BASE) + r"/drives/[^/]+/root:/[^:]+:/copy(\?.*)?$")
 _MOVE_RE = re.compile(re.escape(_BASE) + r"/drives/[^/]+/root:/[^:?]+:(\?.*)?$")
+_CHILDREN_RE = re.compile(re.escape(_BASE) + r"/drives/[^/]+/root:/dir:/children(\?.*)?$")
 
 _FAST = RetryPolicy(max_attempts=3, backoff_base=0.0, backoff_max=0.0, jitter=0.0)
 
@@ -144,22 +145,22 @@ class TestDeleteFolder:
     @respx.mock
     @pytest.mark.spec("GR-043")
     async def test_non_recursive_falls_back_to_children_probe_when_count_absent(self) -> None:
-        # childCount absent -> probe /children; a child present -> DirectoryNotEmpty.
+        # childCount absent -> single $top=1 probe; a child present -> DirectoryNotEmpty.
         respx.get(_ITEM_RE).mock(return_value=httpx.Response(200, json=_folder_item(child_count=None)))
-        respx.get(re.compile(re.escape(_BASE) + r"/drives/[^/]+/root:/dir:/children$")).mock(
+        probe = respx.get(_CHILDREN_RE).mock(
             return_value=httpx.Response(200, json={"value": [_file_item("child.txt")]})
         )
         async with _make() as backend:
             with pytest.raises(DirectoryNotEmpty):
                 await backend.delete_folder("dir", recursive=False)
+        # GR-043: the probe is bounded to one child, not a full default page.
+        assert probe.calls.last.request.url.params["$top"] == "1"
 
     @respx.mock
     @pytest.mark.spec("GR-043")
     async def test_non_recursive_probe_empty_deletes(self) -> None:
         respx.get(_ITEM_RE).mock(return_value=httpx.Response(200, json=_folder_item(child_count=None)))
-        respx.get(re.compile(re.escape(_BASE) + r"/drives/[^/]+/root:/dir:/children$")).mock(
-            return_value=httpx.Response(200, json={"value": []})
-        )
+        respx.get(_CHILDREN_RE).mock(return_value=httpx.Response(200, json={"value": []}))
         delete = respx.delete(_ITEM_RE).mock(return_value=httpx.Response(204))
         async with _make() as backend:
             await backend.delete_folder("dir", recursive=False)
@@ -231,6 +232,36 @@ class TestCopy:
         respx.get(_MONITOR).mock(return_value=httpx.Response(200, json={"status": "completed"}))
         async with _make() as backend:
             await backend.copy("a.txt", "b.txt", overwrite=True)
+        assert post.calls.last.request.url.params["@microsoft.graph.conflictBehavior"] == "replace"
+
+    @respx.mock
+    @pytest.mark.spec("GR-056")
+    async def test_copy_top_level_dst_parent_reference_is_drive_root(self) -> None:
+        # _parent_ref_path("") -> the bare drive-root form (no trailing path segment);
+        # every other body-asserting test uses a nested dst, so pin the root shape.
+        import json as _json
+
+        respx.get(_ITEM_RE).mock(return_value=httpx.Response(200, json=_file_item()))
+        post = respx.post(_COPY_RE).mock(return_value=httpx.Response(202, headers={"Location": _MONITOR}))
+        respx.get(_MONITOR).mock(return_value=httpx.Response(200, json={"status": "completed"}))
+        async with _make() as backend:
+            await backend.copy("a.txt", "b.txt")
+        body = _json.loads(post.calls.last.request.content)
+        assert body["parentReference"]["path"] == f"/drives/{_DRIVE}/root:"
+        assert body["name"] == "b.txt"
+
+    @respx.mock
+    @pytest.mark.spec("GR-025")
+    async def test_copy_overwrite_onto_existing_does_not_raise(self) -> None:
+        # Contract guard for the failure mode this PR found: with overwrite=True the
+        # backend must send conflictBehavior=replace where Graph honours it, so a
+        # successful copy onto an occupied dst returns rather than raising
+        # AlreadyExists. (The doc-vs-live behaviour is closed by the live probe.)
+        respx.get(_ITEM_RE).mock(return_value=httpx.Response(200, json=_file_item()))
+        post = respx.post(_COPY_RE).mock(return_value=httpx.Response(202, headers={"Location": _MONITOR}))
+        respx.get(_MONITOR).mock(return_value=httpx.Response(200, json={"status": "completed"}))
+        async with _make() as backend:
+            await backend.copy("a.txt", "b.txt", overwrite=True)  # must not raise AlreadyExists
         assert post.calls.last.request.url.params["@microsoft.graph.conflictBehavior"] == "replace"
 
     @respx.mock
@@ -337,6 +368,19 @@ class TestMove:
         patch = respx.patch(_MOVE_RE).mock(return_value=httpx.Response(200, json=_file_item("b.txt")))
         async with _make() as backend:
             await backend.move("a.txt", "b.txt", overwrite=True)
+        assert patch.calls.last.request.url.params["@microsoft.graph.conflictBehavior"] == "replace"
+
+    @respx.mock
+    @pytest.mark.spec("GR-027")
+    async def test_move_overwrite_onto_existing_does_not_raise(self) -> None:
+        # conflictBehavior on the move PATCH is consumer-verified but undocumented by
+        # Graph for the update path. Contract guard: with overwrite=True and a server
+        # that honours replace (200 success), move must not raise AlreadyExists. The
+        # cross-drive doc gap is closed empirically by the live probe.
+        respx.get(_ITEM_RE).mock(return_value=httpx.Response(200, json=_file_item()))
+        patch = respx.patch(_MOVE_RE).mock(return_value=httpx.Response(200, json=_file_item("b.txt")))
+        async with _make() as backend:
+            await backend.move("a.txt", "b.txt", overwrite=True)  # must not raise AlreadyExists
         assert patch.calls.last.request.url.params["@microsoft.graph.conflictBehavior"] == "replace"
 
     @respx.mock
