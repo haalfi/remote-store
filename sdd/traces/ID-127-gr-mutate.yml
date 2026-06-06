@@ -7,7 +7,7 @@ audience:
   - user.api
   - user.api_docs
   - infra.test
-review_rounds: 1
+review_rounds: 2
 expected_ripples:
   # user.api audience -> CHANGELOG stub required (trace-schema derived rule).
   - CHANGELOG.md

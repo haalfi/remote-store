@@ -252,17 +252,27 @@ class TestCopy:
 
     @respx.mock
     @pytest.mark.spec("GR-025")
-    async def test_copy_overwrite_onto_existing_does_not_raise(self) -> None:
-        # Contract guard for the failure mode this PR found: with overwrite=True the
-        # backend must send conflictBehavior=replace where Graph honours it, so a
-        # successful copy onto an occupied dst returns rather than raising
-        # AlreadyExists. (The doc-vs-live behaviour is closed by the live probe.)
+    async def test_copy_overwrite_replace_succeeds_where_fail_conflicts(self) -> None:
+        # Pairwise contract for an OCCUPIED dst, routed by the conflictBehavior the
+        # backend sends: a conflictBehavior=fail copy (overwrite=False) draws a 409
+        # -> AlreadyExists, while conflictBehavior=replace (overwrite=True) is
+        # honoured (202 -> monitor) and returns. This proves the overwrite flag
+        # drives the divergent outcome, not merely that the wire param is set; the
+        # backend itself does NOT swallow a 409 (a replace the server rejects must
+        # still surface), so success rides on Graph honouring replace.
         respx.get(_ITEM_RE).mock(return_value=httpx.Response(200, json=_file_item()))
-        post = respx.post(_COPY_RE).mock(return_value=httpx.Response(202, headers={"Location": _MONITOR}))
+
+        def _by_behavior(request: httpx.Request) -> httpx.Response:
+            if request.url.params["@microsoft.graph.conflictBehavior"] == "replace":
+                return httpx.Response(202, headers={"Location": _MONITOR})
+            return httpx.Response(409, json={"error": {"code": "nameAlreadyExists"}})
+
+        respx.post(_COPY_RE).mock(side_effect=_by_behavior)
         respx.get(_MONITOR).mock(return_value=httpx.Response(200, json={"status": "completed"}))
         async with _make() as backend:
-            await backend.copy("a.txt", "b.txt", overwrite=True)  # must not raise AlreadyExists
-        assert post.calls.last.request.url.params["@microsoft.graph.conflictBehavior"] == "replace"
+            with pytest.raises(AlreadyExists):
+                await backend.copy("a.txt", "b.txt")  # fail -> 409
+            await backend.copy("a.txt", "b.txt", overwrite=True)  # replace -> 202, no raise
 
     @respx.mock
     @pytest.mark.spec("GR-044")
@@ -372,16 +382,24 @@ class TestMove:
 
     @respx.mock
     @pytest.mark.spec("GR-027")
-    async def test_move_overwrite_onto_existing_does_not_raise(self) -> None:
-        # conflictBehavior on the move PATCH is consumer-verified but undocumented by
-        # Graph for the update path. Contract guard: with overwrite=True and a server
-        # that honours replace (200 success), move must not raise AlreadyExists. The
-        # cross-drive doc gap is closed empirically by the live probe.
+    async def test_move_overwrite_replace_succeeds_where_fail_conflicts(self) -> None:
+        # Pairwise contract for the move PATCH (conflictBehavior is consumer-verified
+        # but undocumented for the update path): routed by the sent behavior, a fail
+        # move (overwrite=False) draws a 409 -> AlreadyExists, while replace
+        # (overwrite=True) is honoured (200) and returns. Proves the overwrite flag
+        # drives the divergent outcome; the backend does not swallow a 409 itself.
         respx.get(_ITEM_RE).mock(return_value=httpx.Response(200, json=_file_item()))
-        patch = respx.patch(_MOVE_RE).mock(return_value=httpx.Response(200, json=_file_item("b.txt")))
+
+        def _by_behavior(request: httpx.Request) -> httpx.Response:
+            if request.url.params["@microsoft.graph.conflictBehavior"] == "replace":
+                return httpx.Response(200, json=_file_item("b.txt"))
+            return httpx.Response(409, json={"error": {"code": "nameAlreadyExists"}})
+
+        respx.patch(_MOVE_RE).mock(side_effect=_by_behavior)
         async with _make() as backend:
-            await backend.move("a.txt", "b.txt", overwrite=True)  # must not raise AlreadyExists
-        assert patch.calls.last.request.url.params["@microsoft.graph.conflictBehavior"] == "replace"
+            with pytest.raises(AlreadyExists):
+                await backend.move("a.txt", "b.txt")  # fail -> 409
+            await backend.move("a.txt", "b.txt", overwrite=True)  # replace -> 200, no raise
 
     @respx.mock
     @pytest.mark.spec("GR-027")
