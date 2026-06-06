@@ -112,7 +112,8 @@ def test_async_extended_scopes_use_explicit_filter() -> None:
 
 @pytest.mark.spec("TEST-004")
 def test_every_async_fixture_matches_an_async_extended_scope() -> None:
-    scopes = _load_manifest().SCOPES
+    manifest = _load_manifest()
+    scopes = manifest.SCOPES
 
     async_extended_scopes = [
         (name, scope) for name, scope in scopes.items() if any("test_async_extended.py" in t for t in scope.tests)
@@ -132,6 +133,14 @@ def test_every_async_fixture_matches_an_async_extended_scope() -> None:
         # mutation scope, which is its actual intent.
         if f.stage >= 3:
             continue
+        # Replay fixtures whose cassettes have not been recorded yet skip
+        # every test, so they are intentionally excluded from the
+        # async-extended scopes (a scope built around them aborts the gremlins
+        # baseline with 'No data was collected', exit 3). Exempt them here in
+        # lockstep with ``mutate_scopes._async_extended_runnable``; the
+        # exemption self-lifts once cassettes land (graph: BK-260).
+        if f.kind == "replay" and not manifest._cassettes_recorded(f.backend):
+            continue
         # The companion test above asserts every async-extended scope has a
         # non-None filter, so the substring match is the only path that
         # counts as coverage. Do not relax this without revisiting that test.
@@ -144,6 +153,44 @@ def test_every_async_fixture_matches_an_async_extended_scope() -> None:
         "async fixtures missing from any conformance-async-extended-* scope: "
         f"{uncovered}. Add a scope in scripts/mutate_scopes.py whose `-k` "
         "filter substring-matches the fixture name."
+    )
+
+
+@pytest.mark.spec("TEST-004")
+def test_async_extended_scopes_select_a_runnable_fixture() -> None:
+    """Every async-extended scope must select at least one fixture that
+    actually executes.
+
+    A scope whose ``-k`` filter matches only fixtures that skip — e.g. a
+    ``kind="replay"`` fixture whose cassettes have not been recorded yet —
+    leaves the pytest-gremlins baseline pass with no coverage, which aborts
+    the shard (``CoverageWarning: No data was collected``, exit 3). This is
+    how the weekly ``conformance-async-extended-graph`` shard failed while
+    ``graph_replay`` had no cassettes (BK-260).
+
+    The check is derived, so it self-heals: once a backend's cassettes land,
+    ``_cassettes_recorded`` flips and the scope is expected to reappear (the
+    companion completeness guard then requires it).
+    """
+    manifest = _load_manifest()
+    scopes = manifest.SCOPES
+
+    offenders: list[str] = []
+    for name, scope in scopes.items():
+        if not any("test_async_extended.py" in t for t in scope.tests):
+            continue
+        if scope.filter is None:
+            continue
+        matched = [f for f in all_fixtures() if f.is_async and f.stage <= 2 and _kfilter_matches(f.name, scope.filter)]
+        runnable = [f for f in matched if f.kind != "replay" or manifest._cassettes_recorded(f.backend)]
+        if not runnable:
+            offenders.append(name)
+
+    assert not offenders, (
+        "async-extended scopes whose fixtures all skip (no runnable fixture): "
+        f"{offenders}. A replay backend with no recorded cassettes must be excluded "
+        "from scripts/mutate_scopes.py until its cassettes land, or the shard aborts "
+        "with 'No data was collected' (exit 3)."
     )
 
 

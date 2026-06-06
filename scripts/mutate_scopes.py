@@ -99,6 +99,36 @@ def _needs(filter_str: str | None) -> list[str]:
     return sorted({f.container for f in matched if f.container != "none"})
 
 
+def _cassettes_recorded(backend_name: str) -> bool:
+    """True if ``tests/backends/cassettes/<backend_name>/`` holds at least one
+    recorded cassette.
+
+    A ``kind="replay"`` fixture whose cassette tree has not been recorded yet
+    skips *every* conformance test (missing-cassette skip). A mutation scope
+    built solely around such a fixture therefore collects zero coverage, and
+    pytest-gremlins aborts its baseline pass with ``CoverageWarning: No data
+    was collected`` (exit 3) — which is exactly how the weekly
+    ``conformance-async-extended-graph`` shard failed. This predicate keeps a
+    not-yet-cassetted replay backend out of those scopes until its cassettes
+    land (graph: BK-260), at which point the scope self-generates again.
+    """
+    cassette_dir = _TESTS_ROOT / "backends" / "cassettes" / backend_name
+    return cassette_dir.is_dir() and any(cassette_dir.iterdir())
+
+
+def _async_extended_runnable(backend_name: str) -> bool:
+    """True if ``backend_name`` has a stage-≤2 async fixture that actually
+    executes under the async-extended suite — native async (``kind`` other than
+    ``replay``), or a replay fixture whose cassettes have been recorded.
+
+    Mirror this with the coverage-guard exemption in
+    ``tests/scripts/test_mutate_scopes.py``: a backend excluded here must also
+    be exempt there, so the two stay in lockstep as cassettes land.
+    """
+    own = [f for f in load_fixtures().values() if f.backend == backend_name and f.is_async and f.stage <= 2]
+    return any(f.kind != "replay" or _cassettes_recorded(f.backend) for f in own)
+
+
 # ---------------------------------------------------------------------------
 # Filesystem-driven primitives (non-backend scopes)
 # ---------------------------------------------------------------------------
@@ -331,12 +361,18 @@ def _build() -> dict[str, Scope]:
     # ``graph`` is async-native but its sources are declared under
     # ``async_sources`` (it has no sync twin), which ``_src`` (reading
     # ``sources``) does not see — so its scope also reduces to ``{_SYNC_ADAPTER}``
-    # for now. The filter resolves to ``graph_replay``; those slices stay inert
-    # until GR-READ records cassettes, at which point the scope (and its source
-    # targeting) is broadened to the ``_graph`` package.
+    # for now. The filter resolves to ``graph_replay``, whose cassettes are not
+    # yet recorded (BK-260): every selected test skips, so a scope built around
+    # it collects no coverage and aborts the gremlins baseline (exit 3). The
+    # ``_async_extended_runnable`` guard keeps such a backend out until its
+    # cassettes land, at which point the scope (and, eventually, its broadened
+    # source targeting on the ``_graph`` package) self-generates again. Keep the
+    # companion exemption in ``tests/scripts/test_mutate_scopes.py`` in lockstep.
     for backend_name in ("azure", "dafny", "graph", "local", "memory"):
         f = _filter_term(backend_name)
         if not f:
+            continue
+        if not _async_extended_runnable(backend_name):
             continue
         b = load_backends()[backend_name]
         out[f"conformance-async-extended-{backend_name}"] = Scope(
