@@ -173,7 +173,10 @@ invokes the callable lazily — never from `__init__`.
 - The returned string is attached to every Graph request as
   `Authorization: Bearer <token>`, except to pre-signed targets that
   carry their own credential: `@microsoft.graph.downloadUrl` (see
-  GR-015) and the upload-session `uploadUrl` (see GR-038).
+  GR-015), the upload-session `uploadUrl` (see GR-038), and the
+  copy/move monitor URL (see GR-026). Each lives on a cross-host
+  pre-authenticated endpoint that *rejects* a Graph bearer
+  (live-verified `401`), so attaching one both leaks the token and fails.
 - The callable is re-invoked on `401 InvalidAuthenticationToken`
   responses (GR-029). A second `401` after refresh is mapped to
   `PermissionDenied`.
@@ -686,6 +689,20 @@ probe). If non-empty, raises `DirectoryNotEmpty`. If empty, issues
 copy` with a `parentReference` and `name` derived from `dst`. Graph
 responds with `202 Accepted` and a `Location` header pointing to a
 monitor URL.
+**`@microsoft.graph.conflictBehavior` is a query parameter** on the copy
+action (`?@microsoft.graph.conflictBehavior=replace|fail`), not a body
+field — live-verified: a body field is silently ignored, so an intended
+`overwrite=True` would `409` until the value is moved to the query.
+**`parentReference` shape (documented-form divergence):** the backend
+addresses the destination parent by `{driveId, path}`. The Graph
+`copy` / `move` reference documents the write input as `{driveId, id}` /
+`{id}` and lists `path` as a *read-only* navigation property. The
+`path` form is live-verified against consumer OneDrive (the only tier
+this project can reach — device-code / consumer), but path-only
+`parentReference` is a known soft spot on SharePoint / business drives
+and is **unverified** there; the `id` form would cost an extra parent-id
+resolution round trip and is deferred. Tracked alongside the other
+SharePoint-unverified edges (cf. the GR-018 BK-261 note).
 **Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if
 `dst` exists and `overwrite=False`. `InvalidPath` per BE-021.
 
@@ -720,7 +737,15 @@ shared-helper design backend-local.
   backend must call this out.
 - On `copy_timeout` expiry the poller raises `BackendUnavailable`
   whose message embeds the monitor URL, the poll count, and a
-  `last_status` token from a closed set: `"pending"` (terminal poll
+  `last_status` token from a closed set. The embedded monitor URL is
+  **query-stripped** (scheme / host / path only): the monitor endpoint is
+  pre-signed and carries its own credential in the query string
+  (live-verified — the URL lives on a cross-host
+  `*.microsoftpersonalcontent.com` endpoint and a Graph bearer is in fact
+  *rejected* there), and GR-035 bars any token from an exception message, so
+  the query is redacted while the path still identifies the operation for
+  out-of-band diagnosis. The `last_status` token is from a closed set:
+  `"pending"` (terminal poll
   returned a still-running status), `"5xx"` (last response was a
   transient server error treated as pending per below), or
   `"parse-error"` (last response could not be classified by the
@@ -763,9 +788,22 @@ reachable on both async and sync surfaces.
 
 **Invariant:** `move(src, dst, overwrite=False)` issues `PATCH` on
 the source item with a new `parentReference` and optional new
-`name`. Graph responds synchronously in most cases; large-item or
-cross-drive moves may return `202 Accepted`, in which case the
-backend reuses the GR-026 poller.
+`name`. Graph responds synchronously in most cases; a large-item move
+may return `202 Accepted` (the async trigger is item size /
+server-side replication, not crossing folders — and cross-drive is
+structurally impossible here, GR-056), in which case the backend
+reuses the GR-026 poller. The `parentReference` shape note in GR-025
+applies equally here.
+**`conflictBehavior` on PATCH (documented-form divergence):** the
+backend carries `@microsoft.graph.conflictBehavior` as a query
+parameter on the move `PATCH`. The Graph `move`/update reference does
+**not** document `conflictBehavior` for the update path (only for
+`copy` and the upload-session paths). It is live-verified honoured on
+consumer OneDrive — `overwrite=True` onto an occupied destination
+replaces, `overwrite=False` raises `AlreadyExists` — but, being
+undocumented for PATCH, its behaviour on SharePoint / business drives
+is **unverified** and a SharePoint conformance pass should confirm
+move-overwrite actually replaces.
 **Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if
 `dst` exists and `overwrite=False`. `InvalidPath` per BE-021 and
 GR-018's BE-008 precondition discrimination (including the

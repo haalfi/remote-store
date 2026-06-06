@@ -147,6 +147,42 @@ def classify_graph_error(
     return RemoteStoreError(f"Graph request failed ({status} {code or 'unknown'}): {path}", path=path, backend=backend)
 
 
+# Reverse map for a Graph error.code that arrives without an HTTP status — the
+# async-operation monitor reports a failed copy/move as a `error.code` string in
+# the poll body (GR-026), not as a transport status. Each known code is mapped to
+# the status its synchronous form would carry so the single classify table stays
+# authoritative; an unrecognised code falls through to BackendUnavailable.
+_CODE_TO_STATUS = {
+    "accessDenied": 403,
+    "itemNotFound": 404,
+    "nameAlreadyExists": 409,
+    "resourceLocked": 423,
+    "activityLimitReached": 429,
+    "quotaLimitReached": 507,
+    "insufficientStorage": 507,
+}
+
+
+def classify_graph_error_code(
+    code: str | None,
+    *,
+    path: str = "",
+    backend: str = BACKEND_NAME,
+) -> RemoteStoreError:
+    """Map a status-less Graph ``error.code`` to a ``remote_store`` error.
+
+    A failed async operation (copy / may-be-async move) reports its failure as an
+    ``error.code`` string in the monitor poll body with no HTTP status of its own.
+    This reuses the single ``classify_graph_error`` table via the known
+    code→status reverse map; an unknown or missing code maps to
+    ``BackendUnavailable`` (the operation failed and the cause is not classifiable).
+    """
+    status = _CODE_TO_STATUS.get(code or "")
+    if status is None:
+        return BackendUnavailable(f"Graph operation failed ({code or 'unknown'}): {path}", path=path, backend=backend)
+    return classify_graph_error(status, code, path=path, backend=backend)
+
+
 def _parse_error(response: httpx.Response) -> str | None:
     """Best-effort extraction of ``error.code`` from a response body."""
     try:

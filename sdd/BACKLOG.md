@@ -364,11 +364,11 @@ and the highest ID already in this file, then take the next integer. Run
     cannot land in isolation — without the runtime class to raise,
     adding the variant alone would create a verified contract for
     behaviour the codebase cannot exhibit.
-  - Progress: GR-FOUNDATION (setup guide + Stage-1 cassette spine + scrub
-    security gate + httpx streaming-replay proof) landed. Next: GR-CONTRACT
-    (async `TestWriteResultConformance` + capability-matrix/metadata gates +
-    the `ResourceLocked` bundle) per the
-    [implementation plan](plans/ID-127-graph-backend-implementation.md).
+  - Progress: GR-FOUNDATION, GR-CONTRACT, GR-CORE, GR-READ, GR-TRANSFER,
+    GR-WRITE, and GR-MUTATE (delete / delete_folder / move / copy + the async
+    copy/move monitor poller) landed. Next: GR-DOCS-E2E (usage guide + e2e
+    streaming wiring) and GR-DONE (BK-237 DoD + combined `close()` + close-out)
+    per the [implementation plan](plans/ID-127-graph-backend-implementation.md).
 
 - [ ] **BK-259 — Graph `_range_fallback_paths` flag: scope to operation, not backend lifetime**
   spec: GR-015 · effort: S · audience: user.api, library.maintainer
