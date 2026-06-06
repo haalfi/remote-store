@@ -438,7 +438,21 @@ async def _upload_chunks(
             return item
         # 202 Accepted: more chunks expected — resume from the server's offset.
         last_ranges = _next_expected_ranges(response_json(response))
-        offset = _resume_offset(last_ranges, path=path, backend=backend)
+        next_offset = _resume_offset(last_ranges, path=path, backend=backend)
+        # Liveness guard: the server must consume at least one byte of the chunk
+        # just sent. Partial receipt is legitimate and still advances (>= 1 byte
+        # past `offset`); a non-advancing or regressing resume offset means a
+        # stalled / contract-violating session, so fail fast instead of re-PUTting
+        # the same chunk forever. `offset` is now strictly increasing and bounded
+        # by `total`, so the loop is guaranteed to terminate.
+        if next_offset <= offset:
+            raise BackendUnavailable(
+                f"Graph upload made no progress: server re-requested byte {next_offset} "
+                f"after a chunk sent from byte {offset}: {path}",
+                path=path,
+                backend=backend,
+            )
+        offset = next_offset
     raise BackendUnavailable(f"Upload session completed without a final driveItem: {path}", path=path, backend=backend)
 
 

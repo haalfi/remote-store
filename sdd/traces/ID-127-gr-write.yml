@@ -51,6 +51,15 @@ surprising_ripples:
   # chunks, no mid-session refresh), GR-008's bearer-exception list extended to
   # name the uploadUrl alongside the downloadUrl, and the F3 chunk-size upper
   # bound (< 60 MiB Graph ceiling) added to GR-005/GR-001 with the validation.
+  # PR #761 review round 2 added a chunk-loop liveness guard: the outer
+  # `while offset < total` was driven purely off the server's nextExpectedRanges,
+  # so a non-advancing/regressing 202 would re-PUT the same chunk forever (the
+  # per-PUT retry budget only bounds a single PUT). Guard raises BackendUnavailable
+  # when the resume offset does not advance past the chunk just sent; GR-023's
+  # postcondition extended to spec the strictly-increasing-offset -> termination
+  # invariant. Live-validated: real Graph's resume offsets strictly advance (15
+  # points, one 320 KiB chunk apart), so the guard never false-fires; the firing
+  # branch is unit-only (no real server produces a non-advancing offset).
   - sdd/specs/044-graph-backend.md
 phases:
   - id: orient

@@ -589,9 +589,14 @@ upper bound), e.g. `["524288-"]` or
 `["0-262143", "786432-"]`. The backend parses the first range's
 start offset and resumes from there.
 **Postconditions:** Enables recovery from partial chunk receipt
-without restarting the session. A missing or malformed
-`nextExpectedRanges` (when one is expected) is treated as a Graph
-contract violation and maps to `BackendUnavailable`.
+without restarting the session — a legitimate resume offset advances
+by at least one byte past the start of the chunk just sent (the server
+consumed some of it). A missing or malformed `nextExpectedRanges`, or
+a resume offset that does not advance past the chunk just sent (a
+stalled or regressing session), is treated as a Graph contract
+violation and maps to `BackendUnavailable`. The resume offset is
+therefore strictly increasing, so the chunk loop is guaranteed to
+terminate rather than re-PUT the same chunk indefinitely.
 
 ### GR-024: Upload-Session Abort
 

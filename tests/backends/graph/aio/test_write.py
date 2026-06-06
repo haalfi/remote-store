@@ -395,6 +395,20 @@ class TestUploadSession:
                 await backend.write("big.bin", b"01234567")
 
     @respx.mock
+    @pytest.mark.spec("GR-023")
+    async def test_non_advancing_next_expected_ranges_is_backend_unavailable(self) -> None:
+        # Liveness guard: a 202 whose resume offset does not advance past the chunk
+        # just sent (here the server keeps re-requesting byte 0) means no progress.
+        # Without the guard the loop would re-PUT the same chunk forever; it must
+        # fail fast instead. The 4-byte chunk at offset 0 gets back "0-" -> 0 <= 0.
+        respx.post(_SESSION_RE).mock(return_value=httpx.Response(200, json={"uploadUrl": _UPLOAD_URL}))
+        respx.put(_UPLOAD_URL).mock(return_value=httpx.Response(202, json={"nextExpectedRanges": ["0-"]}))
+        respx.delete(_UPLOAD_URL).mock(return_value=httpx.Response(204))
+        async with _session_backend() as backend:
+            with pytest.raises(BackendUnavailable, match="no progress"):
+                await backend.write("big.bin", b"01234567")
+
+    @respx.mock
     @pytest.mark.spec("GR-019")
     async def test_missing_upload_url_is_backend_unavailable(self) -> None:
         respx.post(_SESSION_RE).mock(return_value=httpx.Response(200, json={"expirationDateTime": "soon"}))
