@@ -126,7 +126,9 @@ def _async_extended_runnable(backend_name: str) -> bool:
     be exempt there, so the two stay in lockstep as cassettes land.
     """
     own = [f for f in load_fixtures().values() if f.backend == backend_name and f.is_async and f.stage <= 2]
-    return any(f.kind != "replay" or _cassettes_recorded(f.backend) for f in own)
+    # _cassettes_recorded is invariant here (every f.backend == backend_name),
+    # so call it once on backend_name rather than per fixture.
+    return any(f.kind != "replay" or _cassettes_recorded(backend_name) for f in own)
 
 
 # ---------------------------------------------------------------------------
