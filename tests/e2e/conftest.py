@@ -7,6 +7,7 @@ and credentials come from ``infra/.env`` (single source of truth).
 
 from __future__ import annotations
 
+import os
 import socket
 import uuid
 from dataclasses import dataclass, field
@@ -95,6 +96,50 @@ def _legacy_sftp_available() -> bool:
     except ImportError:
         return False
     return _port_open(LEGACY_SFTP_HOST, LEGACY_SFTP_PORT)
+
+
+# ---------------------------------------------------------------------------
+# Live Microsoft Graph gate (device-code / consumer OneDrive)
+# ---------------------------------------------------------------------------
+
+# Consumer/personal accounts consent to the delegated Files.ReadWrite scope, not
+# the work/school .All variants (mirrors the graph_live conformance fixture).
+_GRAPH_LIVE_SCOPES = ["Files.ReadWrite", "User.Read"]
+
+
+def _graph_live_available() -> bool:
+    """Return True when the live Graph two-layer gate is satisfied.
+
+    Graph has no emulator — the gate is the ``RS_TEST_LIVE_GRAPH=1`` opt-in
+    plus the ``graph`` extra (httpx / msal). Credential presence is validated
+    fail-loud only when the hop is actually built (``build_graph_live_store``),
+    matching the ``graph_live`` conformance fixture; an unset opt-in skips the
+    Graph hop cleanly.
+    """
+    if os.environ.get("RS_TEST_LIVE_GRAPH") != "1":
+        return False
+    try:
+        import httpx  # noqa: F401
+        import msal  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def build_graph_live_store(root_path: str) -> Any:
+    """Build an ``AsyncStore`` on the real Graph drive, rooted at *root_path*.
+
+    Reuses the two-layer live-credential gate (``require_graph_live_credentials``)
+    so missing vars fail loud rather than skip. Caller owns ``aclose()`` and
+    scratch-folder cleanup.
+    """
+    from remote_store.aio import AsyncStore, GraphAuth, GraphBackend
+    from tests.backends.fixtures._live_env import require_graph_live_credentials
+
+    creds = require_graph_live_credentials()
+    auth = GraphAuth(creds["GRAPH_TENANT_ID"], creds["GRAPH_CLIENT_ID"], scopes=_GRAPH_LIVE_SCOPES)
+    backend = GraphBackend(creds["GRAPH_DRIVE_ID"], token_provider=auth)
+    return AsyncStore(backend=backend, root_path=root_path)
 
 
 # ---------------------------------------------------------------------------

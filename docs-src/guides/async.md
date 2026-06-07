@@ -119,6 +119,39 @@ No additional dependencies are needed — the Azure SDK's async clients
 (`azure.storage.blob.aio`, `azure.storage.filedatalake.aio`) are
 included in the same packages as the sync clients.
 
+### GraphBackend
+
+`GraphBackend` targets OneDrive / SharePoint / Teams files through the
+Microsoft Graph REST API. It is **async-only** — there is no sync `Store`
+wrapper or config `type=` string, so it is constructed directly:
+
+```python
+from remote_store.aio import AsyncStore, GraphAuth, GraphBackend, GraphUtils
+
+# Device-code auth against a personal Microsoft account (consumer OneDrive).
+auth = GraphAuth(tenant_id="consumers", client_id="<entra-app-id>")
+drive_id = GraphUtils.resolve_drive_id("me", token_provider=auth)
+
+backend = GraphBackend(drive_id, token_provider=auth)
+async with AsyncStore(backend, root_path="Documents") as store:
+    await store.write("report.csv", b"col1,col2\n1,2", overwrite=True)
+```
+
+`GraphAuth` selects device-code (interactive) or client-credentials
+(app-only) auth depending on whether a `client_secret` / `client_certificate`
+is supplied. `GraphUtils.resolve_drive_id` turns `"me"`, a SharePoint site
+URL, or a Teams `{"team_id", "channel_id"}` mapping into a `drive_id`.
+
+Install the extra:
+
+```bash
+pip install "remote-store[graph]"
+```
+
+See the [Graph backend guide](backends/graph.md) for configuration,
+capability notes, and the `TMPDIR` / `copy_timeout` operational caveats, and
+the [Graph setup guide](backends/graph-setup.md) for Entra app registration.
+
 ## Health check
 
 `ping()` verifies that the backend is reachable and credentials are valid:
@@ -169,9 +202,10 @@ async counterpart of `remote_store.ext.write.write_with_hash`. See the
 
 ## See also
 
-- [API reference](../reference/api/aio.md) — `AsyncStore`, `AsyncBackend`, `AsyncAzureBackend`, `SyncBackendAdapter`
+- [API reference](../reference/api/aio.md) — `AsyncStore`, `AsyncBackend`, `AsyncAzureBackend`, `GraphBackend`, `SyncBackendAdapter`
 - [Async-Sync Bridges](async-sync-bridges.md) — `AsyncBackendSyncAdapter` for calling an async backend from sync code
 - [Azure Backend](backends/azure.md) — sync Azure backend configuration and usage
+- [Graph Backend](backends/graph.md) — async-only OneDrive / SharePoint / Teams backend
 - [Health Check](health-check.md) — `ping()` and `check_health()` details
 - [Concurrency](../explanation/concurrency.md) — thread safety, atomicity, and `overwrite=False` semantics
 - [Example: Async Store](../../examples/advanced/async_store.py) — runnable async demo

@@ -16,6 +16,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - ID-127: `GraphBackend` read-path resilience — range reads, download-URL expiry recovery, in-backend retry, SharePoint range fallback
 - ID-127: `GraphBackend` write path — `write` / `write_atomic` (small `PUT /content` + large upload session), auto-mkdir, native `WriteResult`
 - ID-127: `GraphBackend` mutate path — `delete` / `delete_folder` / `move` / `copy` with async copy/move monitor polling
+- ID-127: Microsoft Graph backend usage guide and capability listings (FEATURES, capabilities matrix, choosing-a-backend, README)
 
 ## [0.27.0] - 2026-06-02
 

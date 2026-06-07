@@ -216,6 +216,37 @@ def test_mirrors_edge_carries_capability_delta(gen_graph_module):
             assert d[key] == sorted(d[key]), f"{key} not sorted in {mirror_edge}"
 
 
+def test_enables_edge_resolves_re_exported_subpackage_class(gen_graph_module):
+    """A backend re-exported from a deeper sub-package keeps its enables edge.
+
+    ``aio/backends/__init__.py`` imports ``GraphBackend`` from the ``_graph``
+    *package* (``from ...aio.backends._graph import GraphBackend``), so the
+    import-derived qname is ``..._graph.GraphBackend`` while the canonical
+    griffe node is ``..._graph.backend.GraphBackend``. The extra→backend join
+    must resolve that mismatch, otherwise the ``xtr:graph`` extra is silently
+    orphaned (node present, no enables edge) and Graph drops out of the
+    generated FEATURES tables.
+    """
+    graph = gen_graph_module.build_graph()
+    graph_uri = "cls:remote_store.aio.backends._graph.backend.GraphBackend"
+
+    # The node and extra both exist.
+    node_ids = {n["id"] for n in graph["nodes"]}
+    assert graph_uri in node_ids
+    assert "xtr:graph" in node_ids
+
+    # The enables edge connecting them must exist.
+    enables = [e for e in graph["edges"] if e["kind"] == "enables" and e["dst"] == graph_uri]
+    assert enables == [{"kind": "enables", "src": "xtr:graph", "dst": graph_uri}], (
+        f"xtr:graph → GraphBackend enables edge missing or malformed: {enables}"
+    )
+
+    # No extra node should be left without any enables edge (orphan guard).
+    enabled_extras = {e["src"] for e in graph["edges"] if e["kind"] == "enables"}
+    extra_nodes = {n["id"] for n in graph["nodes"] if n["kind"] == "extra"}
+    assert extra_nodes <= enabled_extras, f"orphaned extra nodes: {sorted(extra_nodes - enabled_extras)}"
+
+
 @pytest.mark.spec("BE-027")
 def test_backend_gating_keys_match_backend_members(gen_graph_module):
     """Every key in _BACKEND_GATING must be a real member of the Backend class.

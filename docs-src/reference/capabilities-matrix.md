@@ -7,24 +7,28 @@ at runtime before calling an operation.
 
 ## Backend x Capability
 
-| Capability | [Local](../guides/backends/local.md) | [Memory](../guides/backends/memory.md) | [HTTP](../guides/backends/http.md) | [S3](../guides/backends/s3.md) | [S3-PyArrow](../guides/backends/s3-pyarrow.md) | [SFTP](../guides/backends/sftp.md) | [Azure](../guides/backends/azure.md) | [SQLBlob](../guides/backends/sql-blob.md) | [SQLQuery](../guides/backends/sql-query.md) |
-|------------|:-----:|:------:|:----:|:--:|:----------:|:----:|:-----:|:-------:|:---------:|
-| READ           | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| WRITE          | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
-| DELETE         | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
-| LIST           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes |
-| GLOB           | Yes | —   | —   | Yes | Yes | —   | Yes | Yes | Yes |
-| MOVE           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
-| COPY           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
-| ATOMIC_WRITE   | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
-| ATOMIC_MOVE    | Yes | Yes | —   | —   | —   | —   | —   | Yes | —   |
-| METADATA       | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| SEEKABLE_READ  | Yes | Yes | —   | Yes | Yes | Yes | —   | Yes | Yes |
-| LAZY_READ      | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   | —   |
-| WRITE_RESULT_NATIVE | Yes | Yes | — | Yes | Yes | Yes | Yes | Yes† | — |
-| USER_METADATA  | —   | Yes | —   | Yes | —   | —   | Yes | Yes† | —   |
+| Capability | [Local](../guides/backends/local.md) | [Memory](../guides/backends/memory.md) | [HTTP](../guides/backends/http.md) | [S3](../guides/backends/s3.md) | [S3-PyArrow](../guides/backends/s3-pyarrow.md) | [SFTP](../guides/backends/sftp.md) | [Azure](../guides/backends/azure.md) | [Graph](../guides/backends/graph.md)‡ | [SQLBlob](../guides/backends/sql-blob.md) | [SQLQuery](../guides/backends/sql-query.md) |
+|------------|:-----:|:------:|:----:|:--:|:----------:|:----:|:-----:|:-----:|:-------:|:---------:|
+| READ           | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| WRITE          | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | —   |
+| DELETE         | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | —   |
+| LIST           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| GLOB           | Yes | —   | —   | Yes | Yes | —   | Yes | —   | Yes | Yes |
+| MOVE           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | —   |
+| COPY           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | —   |
+| ATOMIC_WRITE   | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | —   |
+| ATOMIC_MOVE    | Yes | Yes | —   | —   | —   | —   | —   | —   | Yes | —   |
+| METADATA       | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| SEEKABLE_READ  | Yes | Yes | —   | Yes | Yes | Yes | —   | —   | Yes | Yes |
+| LAZY_READ      | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | —   | —   |
+| WRITE_RESULT_NATIVE | Yes | Yes | — | Yes | Yes | Yes | Yes | Yes | Yes† | — |
+| USER_METADATA  | —   | Yes | —   | Yes | —   | —   | Yes | —   | Yes† | —   |
 
 † `WRITE_RESULT_NATIVE` and `USER_METADATA` are declared by `SQLBlobBackend` only when the backing table includes a `user_metadata` column (see the SQLBlob guide for schema requirements). Legacy tables without this column do not declare either capability.
+
+‡ Graph is an **async-only** backend — construct it via
+`AsyncStore(backend=GraphBackend(...))`; there is no sync `Store` wrapper or
+config `type=` string. The column lists its declared capabilities.
 
 **Near-full:** Local lacks `USER_METADATA` — passing non-empty `metadata=` raises `CapabilityNotSupported`. S3 and S3-PyArrow lack `ATOMIC_MOVE` (copy-then-delete
 semantics). SQLBlob lacks `LAZY_READ` — the entire blob is loaded into memory
@@ -37,6 +41,9 @@ data lives in process memory; use the portable fallback
 SFTP lacks both `GLOB` and `ATOMIC_MOVE`.
 Azure lacks `SEEKABLE_READ` and `ATOMIC_MOVE` (forward-only chunk iterator,
 copy-then-delete move).
+Graph lacks `GLOB`, `SEEKABLE_READ`, `ATOMIC_MOVE`, and `USER_METADATA`
+(Microsoft Graph has no server-side glob, forward-only download streams,
+copy-then-delete move, and no OneDrive/SharePoint user-metadata surface).
 
 **Read-only:** SQLQuery supports `READ`, `LIST`, `METADATA`, `GLOB`,
 and `SEEKABLE_READ` — no write operations.

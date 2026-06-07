@@ -55,6 +55,7 @@
     - s3_listing_strategies
     - sftp_backend
     - azure_backend
+    - graph_backend
     - sql_blob_backend
     - http_backend
 

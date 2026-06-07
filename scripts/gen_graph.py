@@ -375,13 +375,35 @@ def build_graph() -> dict[str, Any]:
                         edges.append({"kind": "inherits", "src": uri, "dst": base_uri})
 
     # --- extra nodes + enables edges ---
+    # class_extra_map keys are import-derived qnames (from the AST of the
+    # backends __init__ re-exports), which equal the canonical griffe path for
+    # single-module backends (e.g. ``_azure.AzureBackend``) but NOT for a class
+    # re-exported from a deeper sub-package (e.g. the package import
+    # ``_graph`` yields ``..._graph.GraphBackend`` while the canonical node is
+    # ``..._graph.backend.GraphBackend``). Resolve each to the real backend node
+    # by exact match, then by name within the import package.
+    backend_uris: set[str] = {_class_uri(c) for c in backend_classes}
+    backend_by_name: dict[str, list[str]] = {}
+    for griffe_cls in backend_classes:
+        backend_by_name.setdefault(griffe_cls.name, []).append(_class_uri(griffe_cls))
+
     seen_extras: set[str] = set()
     for class_qname, extra_name in class_extra_map.items():
         if extra_name not in seen_extras:
             nodes.append({"id": f"xtr:{extra_name}", "kind": "extra", "kind_of": "backend"})
             seen_extras.add(extra_name)
-        backend_uri = f"cls:{class_qname}"
-        if backend_uri in node_ids:
+        exact = f"cls:{class_qname}"
+        if exact in backend_uris:
+            backend_uri: str | None = exact
+        else:
+            import_module, _, cls_name = class_qname.rpartition(".")
+            candidates = [
+                uri
+                for uri in backend_by_name.get(cls_name, [])
+                if uri.removeprefix("cls:").startswith(f"{import_module}.")
+            ]
+            backend_uri = candidates[0] if len(candidates) == 1 else None
+        if backend_uri is not None:
             edges.append({"kind": "enables", "src": f"xtr:{extra_name}", "dst": backend_uri})
 
     # --- Store method nodes + gates/of edges ---

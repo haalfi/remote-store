@@ -32,9 +32,9 @@ flowchart LR
     subgraph INFRA[" "]
         direction TB
         Backends["Backends"]
-        B_list["Local - S3 - SFTP - Azure - Http - Memory - SQL - ...yours"]
+        B_list["Local - S3 - SFTP - Azure - Graph - Http - Memory - SQL - ...yours"]
         Libs["Proven Libraries"]
-        L_list["stdlib - s3fs - pyarrow - paramiko - azure SDK"]
+        L_list["stdlib - s3fs - pyarrow - paramiko - azure SDK - httpx/msal"]
         Backends -.-> B_list
         Backends --> Libs
         Libs -.-> L_list

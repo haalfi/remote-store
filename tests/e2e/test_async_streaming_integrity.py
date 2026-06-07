@@ -16,6 +16,12 @@ Chain (Azurite reachable):
 Fallback (no Azurite):
     AsyncMemory(seed) -> SyncWrapped(Local) -> AsyncMemory(sink)
 
+A live Microsoft Graph hop is inserted before the Local hop when the
+``graph_live`` two-layer gate (``RS_TEST_LIVE_GRAPH=1`` + credentials) is
+satisfied; it is skipped cleanly otherwise.  GR-015 SharePoint range-fallback
+exempts the Graph read from the lazy-chunking assertion (correct bytes, one
+chunk).
+
 No ``ext.transfer``.  Transfer is a manual ``async for chunk in store.read()``
 loop fed into ``store.write()``.
 
@@ -43,7 +49,14 @@ from remote_store import Capability
 from remote_store.aio._async_store import AsyncStore
 from remote_store.aio.backends._memory import AsyncMemoryBackend
 from remote_store.backends._local import LocalBackend
-from tests.e2e.conftest import AZURITE_CONN_STR, AZURITE_HOST, AZURITE_PORT, _port_open
+from tests.e2e.conftest import (
+    AZURITE_CONN_STR,
+    AZURITE_HOST,
+    AZURITE_PORT,
+    _graph_live_available,
+    _port_open,
+    build_graph_live_store,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -234,6 +247,8 @@ class TestAsyncStreamingIntegrity:
         mid_store: AsyncStore | None = None
         azure_service = None
         azure_container: str | None = None
+        graph_store: AsyncStore | None = None
+        graph_scratch: str | None = None
         local_store: AsyncStore | None = None
         tmp: tempfile.TemporaryDirectory[str] | None = None
 
@@ -258,15 +273,28 @@ class TestAsyncStreamingIntegrity:
             if azure_store is None:
                 record_property("azure_skipped", "AsyncAzureBackend unavailable — running 2-hop fallback chain")
 
+            # Optional live Microsoft Graph hop (device-code / consumer OneDrive).
+            # Gated by the same two-layer gate as the graph_live fixture; skips
+            # cleanly without RS_TEST_LIVE_GRAPH=1 + credentials.
+            if _graph_live_available():
+                graph_scratch = f"e2e-async-stream-{uuid.uuid4().hex[:8]}"
+                graph_store = build_graph_live_store(graph_scratch)
+            else:
+                record_property("graph_skipped", "GraphBackend live gate unmet — Graph hop skipped")
+
             tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
             # LocalBackend is sync; AsyncStore auto-wraps it via SyncBackendAdapter.
             local_store = AsyncStore(backend=LocalBackend(root=tmp.name))
 
-            # Build ordered chain: seed, [azure, mid,] local, sink
+            # Build ordered chain: seed, [azure, mid,] [graph,] local, sink.
+            # A live Graph store joins as both a write target (from its
+            # predecessor) and a lazy-read source (to its successor).
             chain: list[tuple[str, AsyncStore]] = [("async-memory(seed)", seed_store)]
             if azure_store is not None and mid_store is not None:
                 chain.append(("async-azure", azure_store))
                 chain.append(("async-memory(mid)", mid_store))
+            if graph_store is not None:
+                chain.append(("graph", graph_store))
             chain.append(("sync-wrapped(local)", local_store))
             chain.append(("async-memory(sink)", sink_store))
 
@@ -302,13 +330,26 @@ class TestAsyncStreamingIntegrity:
                 )
                 await _verify_hash(dst_store, PATH, expected_sha)
 
+                src_lazy = id(src_store) in lazy_read_ids
+                # GR-015: a SharePoint-backed Graph drive that ignores Range
+                # collapses the read to a single full re-fetch — correct bytes,
+                # but one chunk. FileInfo.extra flags it; exempt that hop from
+                # the chunking assertion so it does not flap.
+                if graph_store is not None and src_store is graph_store and src_lazy:
+                    info = await src_store.get_file_info(PATH)
+                    if info.extra.get("graph.read.range_fallback"):
+                        record_property(
+                            "graph_range_fallback", "GR-015 fired — Graph hop exempt from chunking assertion"
+                        )
+                        src_lazy = False
+
                 results.append(
                     HopResult(
                         label=f"{src_name} -> {dst_name}",
                         file_size=file_size,
                         chunk_count=len(chunk_sizes),
                         max_chunk=max(chunk_sizes) if chunk_sizes else 0,
-                        src_lazy=id(src_store) in lazy_read_ids,
+                        src_lazy=src_lazy,
                     )
                 )
 
@@ -331,6 +372,19 @@ class TestAsyncStreamingIntegrity:
                 await mid_store.aclose()
             if local_store is not None:
                 await local_store.aclose()
+            if graph_store is not None:
+                await graph_store.aclose()
+            if graph_scratch is not None:
+                # Best-effort: drop the scratch folder from the real drive.
+                # Cleanup must never fail the test.
+                try:
+                    cleanup_store = build_graph_live_store("")
+                    try:
+                        await cleanup_store.delete_folder(graph_scratch, recursive=True)
+                    finally:
+                        await cleanup_store.aclose()
+                except Exception:  # noqa: BLE001 -- teardown best-effort
+                    pass
             if azure_service is not None and azure_container is not None:
                 await asyncio.to_thread(azure_service.delete_container, azure_container)
                 await asyncio.to_thread(azure_service.close)

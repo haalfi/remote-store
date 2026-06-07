@@ -174,6 +174,65 @@ class TestBackendsFlagsTable:
         assert type_strs == sorted(type_strs)
 
 
+class TestBackendsAsyncTable:
+    def test_header_row(self, gen_features_module, graph):
+        table = gen_features_module.project_backends_async(graph)
+        lines = table.splitlines()
+        assert lines[0] == "| Class | Extra | Capabilities |"
+        assert lines[1] == "|---|---|---|"
+
+    def test_native_async_backends_present(self, gen_features_module, graph):
+        table = gen_features_module.project_backends_async(graph)
+        for cls_name in ("AsyncMemoryBackend", "AsyncAzureBackend", "GraphBackend"):
+            assert f"| `{cls_name}` |" in table, f"{cls_name!r} missing"
+
+    def test_excludes_abc_and_adapter(self, gen_features_module, graph):
+        """The AsyncBackend ABC and SyncBackendAdapter bridge are not native backends."""
+        table = gen_features_module.project_backends_async(graph)
+        assert "AsyncBackend `" not in table  # the bare ABC row
+        assert "SyncBackendAdapter" not in table
+        assert "AsyncBackendSyncAdapter" not in table
+
+    def test_graph_extra_and_caps(self, gen_features_module, graph):
+        table = gen_features_module.project_backends_async(graph)
+        graph_row = next(row for row in table.splitlines() if row.startswith("| `GraphBackend` |"))
+        assert "`remote-store[graph]`" in graph_row
+        # GR-003: Graph supports all except ATOMIC_MOVE, GLOB, SEEKABLE_READ.
+        assert graph_row.endswith("All except `ATOMIC_MOVE`, `GLOB`, `SEEKABLE_READ` |")
+
+    def test_memory_has_no_extra(self, gen_features_module, graph):
+        table = gen_features_module.project_backends_async(graph)
+        mem_row = next(row for row in table.splitlines() if row.startswith("| `AsyncMemoryBackend` |"))
+        assert mem_row.split("|")[2].strip() == "—"
+
+    def test_sorted_alphabetically(self, gen_features_module, graph):
+        table = gen_features_module.project_backends_async(graph)
+        names = [row.split("|")[1].strip().strip("`") for row in table.splitlines()[2:] if row.startswith("| `")]
+        assert names == sorted(names)
+
+
+class TestBackendsAsyncFlagsTable:
+    def test_header_row(self, gen_features_module, graph):
+        table = gen_features_module.project_backends_async_flags(graph)
+        lines = table.splitlines()
+        assert lines[0] == "| Class | `WRITE_RESULT_NATIVE` | `USER_METADATA` |"
+        assert lines[1] == "|---|---|---|"
+
+    def test_graph_native_write_no_user_metadata(self, gen_features_module, graph):
+        table = gen_features_module.project_backends_async_flags(graph)
+        graph_row = next(row for row in table.splitlines() if row.startswith("| `GraphBackend` |"))
+        cols = [c.strip() for c in graph_row.split("|")[1:-1]]
+        assert cols[1] == "Yes"
+        assert cols[2] == "—"
+
+    def test_async_azure_has_both_flags(self, gen_features_module, graph):
+        table = gen_features_module.project_backends_async_flags(graph)
+        azure_row = next(row for row in table.splitlines() if row.startswith("| `AsyncAzureBackend` |"))
+        cols = [c.strip() for c in azure_row.split("|")[1:-1]]
+        assert cols[1] == "Yes"
+        assert cols[2] == "Yes"
+
+
 class TestInstallExtras:
     def test_starts_and_ends_with_fence(self, gen_features_module, pyproject):
         block = gen_features_module.project_install_extras(pyproject)
@@ -257,7 +316,7 @@ class TestRegionReplacement:
 class TestFeaturesFileIntegrity:
     def test_features_md_has_all_regions(self):
         text = (ROOT / "FEATURES.md").read_text(encoding="utf-8")
-        for region in ("backends_main", "backends_flags", "install_extras"):
+        for region in ("backends_main", "backends_flags", "backends_async", "backends_async_flags", "install_extras"):
             assert f"<!-- BEGIN_GENERATED:{region} -->" in text
             assert f"<!-- END_GENERATED:{region} -->" in text
 

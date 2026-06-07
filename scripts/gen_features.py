@@ -104,6 +104,38 @@ def _cls_qname_map(graph: dict) -> dict[str, str]:
     return result
 
 
+def _async_backend_nodes(graph: dict) -> list[tuple[str, str]]:
+    """Return [(class_name, cls_uri)] for native async backend nodes, sorted by name.
+
+    Native async backends carry no RegistryConfig ``type=`` string (there is no
+    async config registry — they are constructed directly via
+    ``AsyncStore(backend=...)``), so they are keyed by class name rather than
+    by the sync registry order.
+    """
+    result: list[tuple[str, str]] = []
+    for node in graph["nodes"]:
+        if node["kind"] == "class" and node.get("role") == "backend" and node.get("runtime") == "async":
+            cls_uri = node["id"]
+            # Native backends live under ``remote_store.aio.backends.*``; this
+            # excludes the ``AsyncBackend`` ABC (``aio._async_backend``) and the
+            # ``SyncBackendAdapter`` bridge (``aio._sync_adapter``), mirroring how
+            # the sync table is filtered to registered backends only.
+            if ".aio.backends." not in cls_uri:
+                continue
+            cls_name = cls_uri.removeprefix("cls:").rsplit(".", 1)[-1]
+            result.append((cls_name, cls_uri))
+    return sorted(result)
+
+
+def _async_backend_extras(graph: dict) -> dict[str, str]:
+    """Return {cls_uri → extra_name} for async backends (``.aio.`` enables edges)."""
+    extras: dict[str, str] = {}
+    for edge in graph["edges"]:
+        if edge["kind"] == "enables" and ".aio." in edge["dst"]:
+            extras[edge["dst"]] = edge["src"].removeprefix("xtr:")
+    return extras
+
+
 def _build_lookups(
     graph: dict,
 ) -> tuple[dict[str, frozenset[str]], dict[str, str]]:
@@ -206,6 +238,43 @@ def project_backends_flags(graph: dict) -> str:
     return "\n".join(lines)
 
 
+def project_backends_async(graph: dict) -> str:
+    """Return the generated native-async-backend capability table (Markdown)."""
+    declares, _ = _build_lookups(graph)
+    extras = _async_backend_extras(graph)
+    baseline = _baseline_caps(graph)
+
+    lines = [
+        "| Class | Extra | Capabilities |",
+        "|---|---|---|",
+    ]
+    for cls_name, cls_uri in _async_backend_nodes(graph):
+        declared = declares.get(cls_uri, frozenset())
+        extra = extras.get(cls_uri)
+        extra_cell = f"`remote-store[{extra}]`" if extra else "—"
+        caps_cell = _format_caps(declared, baseline)
+        lines.append(f"| `{cls_name}` | {extra_cell} | {caps_cell} |")
+
+    return "\n".join(lines)
+
+
+def project_backends_async_flags(graph: dict) -> str:
+    """Return the generated native-async-backend write-result flags table (Markdown)."""
+    declares, _ = _build_lookups(graph)
+
+    lines = [
+        "| Class | `WRITE_RESULT_NATIVE` | `USER_METADATA` |",
+        "|---|---|---|",
+    ]
+    for cls_name, cls_uri in _async_backend_nodes(graph):
+        declared = declares.get(cls_uri, frozenset())
+        wrn = "Yes" if "WRITE_RESULT_NATIVE" in declared else "—"
+        um = "Yes" if "USER_METADATA" in declared else "—"
+        lines.append(f"| `{cls_name}` | {wrn} | {um} |")
+
+    return "\n".join(lines)
+
+
 def project_install_extras(pyproject: dict) -> str:
     """Return the generated install extras code block (Markdown)."""
     opt_deps = pyproject.get("project", {}).get("optional-dependencies", {})
@@ -236,6 +305,8 @@ def project_all(graph: dict, pyproject: dict) -> dict[str, str]:
     return {
         "backends_main": project_backends_main(graph),
         "backends_flags": project_backends_flags(graph),
+        "backends_async": project_backends_async(graph),
+        "backends_async_flags": project_backends_async_flags(graph),
         "install_extras": project_install_extras(pyproject),
     }
 
