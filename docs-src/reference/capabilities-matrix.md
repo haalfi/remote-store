@@ -43,7 +43,8 @@ Azure lacks `SEEKABLE_READ` and `ATOMIC_MOVE` (forward-only chunk iterator,
 copy-then-delete move).
 Graph lacks `GLOB`, `SEEKABLE_READ`, `ATOMIC_MOVE`, and `USER_METADATA`
 (Microsoft Graph has no server-side glob, forward-only download streams,
-copy-then-delete move, and no OneDrive/SharePoint user-metadata surface).
+a native server-side move that may complete asynchronously so atomicity is
+not guaranteed, and no OneDrive/SharePoint user-metadata surface).
 
 **Read-only:** SQLQuery supports `READ`, `LIST`, `METADATA`, `GLOB`,
 and `SEEKABLE_READ` — no write operations.

@@ -189,7 +189,7 @@ class TestBackendsAsyncTable:
     def test_excludes_abc_and_adapter(self, gen_features_module, graph):
         """The AsyncBackend ABC and SyncBackendAdapter bridge are not native backends."""
         table = gen_features_module.project_backends_async(graph)
-        assert "AsyncBackend `" not in table  # the bare ABC row
+        assert "| `AsyncBackend` |" not in table  # the bare ABC row
         assert "SyncBackendAdapter" not in table
         assert "AsyncBackendSyncAdapter" not in table
 

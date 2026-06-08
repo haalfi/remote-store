@@ -36,6 +36,17 @@ surprising_ripples:
   #     bridge stay out, and retrofitted AsyncAzureBackend for consistency.
   - scripts/gen_graph.py
   - scripts/gen_features.py
+# PR #764 review (Testing + Documentation experts) drove one fix round: a vacuous
+# ABC-leak assertion (space-before-backtick needle never matched), the Graph move
+# mischaracterised as copy-then-delete in README + capabilities-matrix (it is a
+# native identity-preserving PATCH driveItem; ATOMIC_MOVE withheld for async GR-027),
+# a graph.md http_client row documenting the not-yet-existing close() (only aclose()
+# exists today, GR-DONE work), plus two accuracy nits (FileInfo.extra, over-broad
+# seekable claim). The cassettes-for-example-tests idea was folded into BK-260; the
+# e2e GR-015 demotion-branch coverage gap is deferred to GR-DONE. No new backlog ID
+# born and all fixes landed in ripple-check-anticipated files, so neither
+# discovery_followups nor surprising_ripples gained entries.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

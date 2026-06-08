@@ -452,6 +452,13 @@ and the highest ID already in this file, then take the next integer. Run
   `tests/backends/conformance/conftest.py`, `scripts/record_cassettes.py`, and
   the recorded cassette tree. Discovered in ID-127 GR-WRITE.
 
+  **Extension (example tests, ID-127 GR-DOCS-E2E review, PR #764):** the same
+  recorded cassettes could drive the env-gated `examples/backends/graph_backend.py`
+  snippet, which today only runs under live credentials (and is excluded from the
+  `run_examples.py` CI sweep entirely). Once the pre-signed-URL replay above is
+  solved, a replayed variant could exercise the example in CI without creds —
+  same blocker, second beneficiary. Gated on the solution sketch landing first.
+
 - [ ] **BK-261 — Graph small-write `overwrite=True`: replace-returns-409-for-files quirk**
   spec: GR-018 · effort: S · audience: user.api, library.maintainer
   On the small-file `PUT /content` path, `@microsoft.graph.conflictBehavior=replace`

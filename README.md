@@ -170,15 +170,16 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 | S3 (PyArrow) | `remote-store[s3-pyarrow]` | [`pyarrow`](https://pypi.org/project/pyarrow/) + [`s3fs`](https://pypi.org/project/s3fs/) | Yes | Yes | — (copy+delete) |
 | SFTP / SSH | `remote-store[sftp]` | [`paramiko`](https://pypi.org/project/paramiko/) | Yes | — | —** |
 | Azure Blob / ADLS | `remote-store[azure]` | [`azure-storage-file-datalake`](https://pypi.org/project/azure-storage-file-datalake/) | Yes | Yes | HNS: Yes / non-HNS: — |
-| Microsoft Graph (OneDrive / SharePoint / Teams)*** | `remote-store[graph]` | [`httpx`](https://pypi.org/project/httpx/) + [`msal`](https://pypi.org/project/msal/) | Yes | — | — (copy+delete) |
+| Microsoft Graph (OneDrive / SharePoint / Teams)*** | `remote-store[graph]` | [`httpx`](https://pypi.org/project/httpx/) + [`msal`](https://pypi.org/project/msal/) | Yes | — | —**** |
 | SQL Blob (SQLite, PostgreSQL, ...) | `remote-store[sql]` | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/) | Yes | Yes | Yes |
 | SQL Query (read-only) | `remote-store[sql-query]` | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/) + [`pyarrow`](https://pypi.org/project/pyarrow/) | — | — | — |
 
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Attempts `posix_rename` (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so `ATOMIC_MOVE` is not declared.
 \*** Async-only: construct via `AsyncStore(backend=GraphBackend(...))`; there is no sync `Store` wrapper or config `type=` string.
+\**** Native server-side move (`PATCH driveItem`, identity-preserving); may complete asynchronously, so `ATOMIC_MOVE` is not declared.
 
-All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only: it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback `ext.glob.glob_files()` works with any `LIST`-capable backend. Seekable reads are available on all backends via `Store.read_seekable()`. See [features](https://github.com/haalfi/remote-store/blob/master/FEATURES.md), the [capabilities matrix](https://docs.remotestore.dev/stable/reference/capabilities-matrix/), and the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for full details.
+All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only: it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback `ext.glob.glob_files()` works with any `LIST`-capable backend. Seekable reads are available via `Store.read_seekable()` on backends that declare `SEEKABLE_READ`. See [features](https://github.com/haalfi/remote-store/blob/master/FEATURES.md), the [capabilities matrix](https://docs.remotestore.dev/stable/reference/capabilities-matrix/), and the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for full details.
 
 ## Store API
 

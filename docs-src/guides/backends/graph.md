@@ -96,7 +96,7 @@ A `drive_id` is immutable for the life of a backend instance — point a second
 | `drive_id` | `str` | *(required)* | Opaque Graph drive id (resolve via `GraphUtils`) |
 | `token_provider` | `Callable` | *(required)* | Sync or async callable returning a bearer token |
 | `base_url` | `str` | `https://graph.microsoft.com/v1.0` | Graph API root |
-| `http_client` | `httpx.AsyncClient` | `None` | Reuse an existing client; the caller owns its lifecycle (`close()` leaves it open). When omitted, one is created lazily and closed by `close()` |
+| `http_client` | `httpx.AsyncClient` | `None` | Reuse an existing client; the caller owns its lifecycle (`aclose()` leaves it open). When omitted, one is created lazily and closed by `aclose()` |
 | `retry` | `RetryPolicy` | `None` | Transient-failure retry policy; `None` uses the default profile |
 | `upload_chunk_size` | `int` | 10 MiB | Upload-session chunk size; must be a positive multiple of 320 KiB and `< 60 MiB` |
 | `copy_timeout` | `float \| None` | `None` | Wall-clock budget for copy/move monitor polling (see [caveat](#operational-caveats)) |
@@ -147,7 +147,7 @@ Supports all capabilities except `GLOB`, `SEEKABLE_READ`, `ATOMIC_MOVE`, and
 `AsyncStore.read()` returns a forward-only `AsyncIterator[bytes]` streamed from
 the item's pre-authenticated download URL. Some SharePoint-backed drives ignore
 HTTP range requests; when that happens the backend transparently falls back to
-a full re-read and flags the returned `FileInfo` (key
+a full re-read and flags the returned `FileInfo.extra` (key
 `graph.read.range_fallback`), so a single read still yields correct bytes.
 
 ## Escape hatch
