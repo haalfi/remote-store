@@ -1359,6 +1359,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../tutorial/examples/graph-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../tutorial/examples/sql-blob-backend/" class="md-nav__link">
         
   
@@ -2266,6 +2294,34 @@
     
   
     Azure HNS Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/backends/graph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph
   
 
     
@@ -9434,6 +9490,7 @@ at runtime before calling an operation.</p>
 <th style="text-align: center;"><a href="../../guides/backends/s3-pyarrow/">S3-PyArrow</a></th>
 <th style="text-align: center;"><a href="../../guides/backends/sftp/">SFTP</a></th>
 <th style="text-align: center;"><a href="../../guides/backends/azure/">Azure</a></th>
+<th style="text-align: center;"><a href="../../guides/backends/graph/">Graph</a>‡</th>
 <th style="text-align: center;"><a href="../../guides/backends/sql-blob/">SQLBlob</a></th>
 <th style="text-align: center;"><a href="../../guides/backends/sql-query/">SQLQuery</a></th>
 </tr>
@@ -9441,6 +9498,7 @@ at runtime before calling an operation.</p>
 <tbody>
 <tr>
 <td>READ</td>
+<td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
@@ -9461,6 +9519,7 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
 </tr>
 <tr>
@@ -9468,6 +9527,7 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
+<td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
@@ -9486,6 +9546,7 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
 <td>GLOB</td>
@@ -9496,6 +9557,7 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 </tr>
@@ -9504,6 +9566,7 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
+<td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
@@ -9521,6 +9584,7 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
 </tr>
 <tr>
@@ -9533,12 +9597,14 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
 </tr>
 <tr>
 <td>ATOMIC_MOVE</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
@@ -9558,6 +9624,7 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
 <td>SEEKABLE_READ</td>
@@ -9568,6 +9635,7 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 </tr>
@@ -9575,6 +9643,7 @@ at runtime before calling an operation.</p>
 <td>LAZY_READ</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
+<td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
@@ -9592,6 +9661,7 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes†</td>
 <td style="text-align: center;">—</td>
 </tr>
@@ -9604,12 +9674,16 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">Yes†</td>
 <td style="text-align: center;">—</td>
 </tr>
 </tbody>
 </table>
 <p>† <code>WRITE_RESULT_NATIVE</code> and <code>USER_METADATA</code> are declared by <code>SQLBlobBackend</code> only when the backing table includes a <code>user_metadata</code> column (see the SQLBlob guide for schema requirements). Legacy tables without this column do not declare either capability.</p>
+<p>‡ Graph is an <strong>async-only</strong> backend — construct it via
+<code>AsyncStore(backend=GraphBackend(...))</code>; there is no sync <code>Store</code> wrapper or
+config <code>type=</code> string. The column lists its declared capabilities.</p>
 <p><strong>Near-full:</strong> Local lacks <code>USER_METADATA</code> — passing non-empty <code>metadata=</code> raises <code>CapabilityNotSupported</code>. S3 and S3-PyArrow lack <code>ATOMIC_MOVE</code> (copy-then-delete
 semantics). SQLBlob lacks <code>LAZY_READ</code> — the entire blob is loaded into memory
 before a stream is returned. Writes also materialize the full stream before
@@ -9619,7 +9693,11 @@ data lives in process memory; use the portable fallback
 <code>ext.glob.glob_files()</code> — see the <a href="../../guides/glob-pattern-matching/">Glob Pattern Matching</a> guide).
 SFTP lacks both <code>GLOB</code> and <code>ATOMIC_MOVE</code>.
 Azure lacks <code>SEEKABLE_READ</code> and <code>ATOMIC_MOVE</code> (forward-only chunk iterator,
-copy-then-delete move).</p>
+copy-then-delete move).
+Graph lacks <code>GLOB</code>, <code>SEEKABLE_READ</code>, <code>ATOMIC_MOVE</code>, and <code>USER_METADATA</code>
+(Microsoft Graph has no server-side glob, forward-only download streams,
+a native server-side move that may complete asynchronously so atomicity is
+not guaranteed, and no OneDrive/SharePoint user-metadata surface).</p>
 <p><strong>Read-only:</strong> SQLQuery supports <code>READ</code>, <code>LIST</code>, <code>METADATA</code>, <code>GLOB</code>,
 and <code>SEEKABLE_READ</code> — no write operations.</p>
 <p><strong>Minimal:</strong> HTTP supports <code>READ</code>, <code>METADATA</code>, and <code>LAZY_READ</code> (read-only backend).</p>

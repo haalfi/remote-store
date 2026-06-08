@@ -1359,6 +1359,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../tutorial/examples/graph-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../tutorial/examples/sql-blob-backend/" class="md-nav__link">
         
   
@@ -2271,6 +2299,34 @@
     
   
     Azure HNS Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/graph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph
   
 
     
@@ -9468,6 +9524,13 @@
    string, SAS token, or DefaultAzureCredential auth.</p>
 </li>
 <li>
+<p><strong>OneDrive, SharePoint, or Microsoft Teams files (Microsoft Graph)?</strong> Use <strong>Graph</strong>.
+   <strong>Async-only</strong> — construct via <code>AsyncStore(backend=GraphBackend(...))</code>; there is
+   no sync wrapper or config <code>type=</code> string. Device-code or client-credential auth
+   via MSAL; onboarding is the main hurdle, so start from the
+   <a href="../backends/graph-setup/">setup guide</a>. Lacks native glob and seekable reads.</p>
+</li>
+<li>
 <p><strong>SSH/SFTP server?</strong> Use <strong>SFTP</strong>.
    Legacy systems, on-prem file servers. Supports password and key-based auth.
    Lacks native glob (use <code>ext.glob</code> fallback).</p>
@@ -9545,6 +9608,13 @@
 <td>Azure workloads</td>
 </tr>
 <tr>
+<td><a href="../backends/graph/">Graph</a></td>
+<td><code>httpx</code> + <code>msal</code></td>
+<td style="text-align: center;">Fallback</td>
+<td>Network</td>
+<td>OneDrive / SharePoint / Teams (async-only)</td>
+</tr>
+<tr>
 <td><a href="../backends/sql-blob/">SQLBlob</a></td>
 <td><code>sqlalchemy</code></td>
 <td style="text-align: center;">Native</td>
@@ -9593,6 +9663,9 @@ regardless of backend. Switch via configuration:</p>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">store</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Same API regardless of backend</span>
 </code></pre></div>
+<p>Config-driven switching covers the sync backends. The async-only <strong>Graph</strong>
+backend has no config <code>type=</code> string — construct it directly via
+<code>AsyncStore(backend=GraphBackend(...))</code> (see the <a href="../backends/graph/">Graph guide</a>).</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../reference/capabilities-matrix/">Capabilities Matrix</a> — full backend x capability

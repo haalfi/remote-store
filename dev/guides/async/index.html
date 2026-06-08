@@ -1359,6 +1359,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../tutorial/examples/graph-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../tutorial/examples/sql-blob-backend/" class="md-nav__link">
         
   
@@ -2291,6 +2319,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../backends/graph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../backends/graph-setup/" class="md-nav__link">
         
   
@@ -2863,6 +2919,17 @@
     <span class="md-ellipsis">
       
         AsyncAzureBackend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#graphbackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GraphBackend
       
     </span>
   </a>
@@ -9569,6 +9636,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#graphbackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GraphBackend
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9753,17 +9831,41 @@ The constructor accepts the same credential parameters as the sync
 <p>No additional dependencies are needed — the Azure SDK's async clients
 (<code>azure.storage.blob.aio</code>, <code>azure.storage.filedatalake.aio</code>) are
 included in the same packages as the sync clients.</p>
+<h3 id="graphbackend">GraphBackend<a class="headerlink" href="#graphbackend" title="Permanent link">&para;</a></h3>
+<p><code>GraphBackend</code> targets OneDrive / SharePoint / Teams files through the
+Microsoft Graph REST API. It is <strong>async-only</strong> — there is no sync <code>Store</code>
+wrapper or config <code>type=</code> string, so it is constructed directly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.aio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncStore</span><span class="p">,</span> <span class="n">GraphAuth</span><span class="p">,</span> <span class="n">GraphBackend</span><span class="p">,</span> <span class="n">GraphUtils</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># Device-code auth against a personal Microsoft account (consumer OneDrive).</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">auth</span> <span class="o">=</span> <span class="n">GraphAuth</span><span class="p">(</span><span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;consumers&quot;</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;&lt;entra-app-id&gt;&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">drive_id</span> <span class="o">=</span> <span class="n">GraphUtils</span><span class="o">.</span><span class="n">resolve_drive_id</span><span class="p">(</span><span class="s2">&quot;me&quot;</span><span class="p">,</span> <span class="n">token_provider</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">GraphBackend</span><span class="p">(</span><span class="n">drive_id</span><span class="p">,</span> <span class="n">token_provider</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="k">async</span> <span class="k">with</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;Documents&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;col1,col2</span><span class="se">\n</span><span class="s2">1,2&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p><code>GraphAuth</code> selects device-code (interactive) or client-credentials
+(app-only) auth depending on whether a <code>client_secret</code> / <code>client_certificate</code>
+is supplied. <code>GraphUtils.resolve_drive_id</code> turns <code>"me"</code>, a SharePoint site
+URL, or a Teams <code>{"team_id", "channel_id"}</code> mapping into a <code>drive_id</code>.</p>
+<p>Install the extra:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[graph]&quot;</span>
+</code></pre></div>
+<p>See the <a href="../backends/graph/">Graph backend guide</a> for configuration,
+capability notes, and the <code>TMPDIR</code> / <code>copy_timeout</code> operational caveats, and
+the <a href="../backends/graph-setup/">Graph setup guide</a> for Entra app registration.</p>
 <h2 id="health-check">Health check<a class="headerlink" href="#health-check" title="Permanent link">&para;</a></h2>
 <p><code>ping()</code> verifies that the backend is reachable and credentials are valid:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>  <span class="c1"># raises BackendUnavailable on failure</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>  <span class="c1"># raises BackendUnavailable on failure</span>
 </code></pre></div>
 <p>Native async backends (like <code>AsyncAzureBackend</code>) perform a lightweight
 async probe. Wrapped sync backends delegate through <code>asyncio.to_thread()</code>.</p>
 <h2 id="context-manager">Context manager<a class="headerlink" href="#context-manager" title="Permanent link">&para;</a></h2>
 <p>Use <code>async with</code> for automatic cleanup:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># backend resources released here</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="c1"># backend resources released here</span>
 </code></pre></div>
 <p>Child stores do not close the parent's backend — only the owning store
 calls <code>aclose()</code> on exit.</p>
@@ -9791,9 +9893,10 @@ async counterpart of <code>remote_store.ext.write.write_with_hash</code>. See th
 <a href="../write-integrity/">Write Integrity</a> guide for usage examples and the full async API.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../reference/api/aio/">API reference</a> — <code>AsyncStore</code>, <code>AsyncBackend</code>, <code>AsyncAzureBackend</code>, <code>SyncBackendAdapter</code></li>
+<li><a href="../../reference/api/aio/">API reference</a> — <code>AsyncStore</code>, <code>AsyncBackend</code>, <code>AsyncAzureBackend</code>, <code>GraphBackend</code>, <code>SyncBackendAdapter</code></li>
 <li><a href="../async-sync-bridges/">Async-Sync Bridges</a> — <code>AsyncBackendSyncAdapter</code> for calling an async backend from sync code</li>
 <li><a href="../backends/azure/">Azure Backend</a> — sync Azure backend configuration and usage</li>
+<li><a href="../backends/graph/">Graph Backend</a> — async-only OneDrive / SharePoint / Teams backend</li>
 <li><a href="../health-check/">Health Check</a> — <code>ping()</code> and <code>check_health()</code> details</li>
 <li><a href="../../explanation/concurrency/">Concurrency</a> — thread safety, atomicity, and <code>overwrite=False</code> semantics</li>
 <li><a href="../../tutorial/examples/async-store/">Example: Async Store</a> — runnable async demo</li>

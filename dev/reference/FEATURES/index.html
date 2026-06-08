@@ -1359,6 +1359,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../tutorial/examples/graph-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../tutorial/examples/sql-blob-backend/" class="md-nav__link">
         
   
@@ -2266,6 +2294,34 @@
     
   
     Azure HNS Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/backends/graph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph
   
 
     
@@ -10578,6 +10634,67 @@ additional backend-specific options via <code>BackendConfig.options</code>.</p>
 </table>
 <!-- END_GENERATED:backends_flags -->
 
+<p><strong>Native async backends</strong> — constructed directly via <code>AsyncStore(backend=…)</code>;
+no RegistryConfig <code>type=</code> string (there is no async config registry).</p>
+<!-- BEGIN_GENERATED:backends_async -->
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Extra</th>
+<th>Capabilities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AsyncAzureBackend</code></td>
+<td><code>remote-store[azure]</code></td>
+<td>All except <code>ATOMIC_MOVE</code>, <code>SEEKABLE_READ</code></td>
+</tr>
+<tr>
+<td><code>AsyncMemoryBackend</code></td>
+<td>—</td>
+<td>All except <code>GLOB</code></td>
+</tr>
+<tr>
+<td><code>GraphBackend</code></td>
+<td><code>remote-store[graph]</code></td>
+<td>All except <code>ATOMIC_MOVE</code>, <code>GLOB</code>, <code>SEEKABLE_READ</code></td>
+</tr>
+</tbody>
+</table>
+<!-- END_GENERATED:backends_async -->
+
+<p><strong>Write-result quality flags by native async backend:</strong></p>
+<!-- BEGIN_GENERATED:backends_async_flags -->
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th><code>WRITE_RESULT_NATIVE</code></th>
+<th><code>USER_METADATA</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AsyncAzureBackend</code></td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>AsyncMemoryBackend</code></td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>GraphBackend</code></td>
+<td>Yes</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<!-- END_GENERATED:backends_async_flags -->
+
 <hr />
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p><code>RegistryConfig</code> decouples storage topology from application code.
@@ -10834,6 +10951,10 @@ adapters for mixing sync and async backends.</p>
 <tr>
 <td><code>AsyncAzureBackend</code></td>
 <td>Native async Azure backend via Azure SDK async clients</td>
+</tr>
+<tr>
+<td><code>GraphBackend</code></td>
+<td>Native async Microsoft Graph backend (OneDrive / SharePoint / Teams) via httpx + msal; companions <code>GraphAuth</code>, <code>GraphUtils</code></td>
 </tr>
 <tr>
 <td><code>AsyncWritableContent</code></td>

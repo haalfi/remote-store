@@ -947,6 +947,11 @@
       "src": "xtr:azure"
     },
     {
+      "dst": "cls:remote_store.aio.backends._graph.backend.GraphBackend",
+      "kind": "enables",
+      "src": "xtr:graph"
+    },
+    {
       "dst": "cls:remote_store.backends._s3.S3Backend",
       "kind": "enables",
       "src": "xtr:s3"

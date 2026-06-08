@@ -1560,6 +1560,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/graph-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/sql-blob-backend/" class="md-nav__link">
         
   
@@ -2467,6 +2495,34 @@
     
   
     Azure HNS Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/backends/graph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph
   
 
     
@@ -9659,8 +9715,9 @@
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[s3-pyarrow]&quot;</span><span class="w">   </span><span class="c1"># S3 via PyArrow (analytical workloads)</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[sftp]&quot;</span><span class="w">         </span><span class="c1"># SFTP / SSH</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[azure]&quot;</span><span class="w">        </span><span class="c1"># Azure Blob / ADLS Gen2</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[sql]&quot;</span><span class="w">          </span><span class="c1"># SQL Blob (SQLite, PostgreSQL, ...)</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[sql-query]&quot;</span><span class="w">    </span><span class="c1"># SQL Query (read-only, SQLAlchemy + PyArrow)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[graph]&quot;</span><span class="w">        </span><span class="c1"># Microsoft Graph (OneDrive / SharePoint / Teams), async-only</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[sql]&quot;</span><span class="w">          </span><span class="c1"># SQL Blob (SQLite, PostgreSQL, ...)</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[sql-query]&quot;</span><span class="w">    </span><span class="c1"># SQL Query (read-only, SQLAlchemy + PyArrow)</span>
 </code></pre></div>
 <p>Optional extras for integrations:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[requests]&quot;</span><span class="w">       </span><span class="c1"># HTTP backend with requests (connection pooling)</span>
@@ -9730,7 +9787,7 @@ use a Registry with declarative config:</p>
 </ul>
 <h2 id="what-you-get">What you get<a class="headerlink" href="#what-you-get" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>One interface, many backends:</strong> local filesystem, S3, SFTP, Azure, in-memory, and more</li>
+<li><strong>One interface, many backends:</strong> local filesystem, S3, SFTP, Azure, OneDrive / SharePoint (Microsoft Graph, async), in-memory, and more</li>
 <li><strong>Folder-scoped stores:</strong> each Store is rooted at a folder; compose layouts with multiple stores or narrow scope with <code>child()</code></li>
 <li><strong>Swap backends via config:</strong> move between environments without changing code</li>
 <li><strong>Streaming by default:</strong> large files just work without blowing up memory</li>
@@ -9816,6 +9873,14 @@ use a Registry with declarative config:</p>
 <td style="text-align: center;">HNS: Yes / non-HNS: —</td>
 </tr>
 <tr>
+<td>Microsoft Graph (OneDrive / SharePoint / Teams)***</td>
+<td><code>remote-store[graph]</code></td>
+<td><a href="https://pypi.org/project/httpx/"><code>httpx</code></a> + <a href="https://pypi.org/project/msal/"><code>msal</code></a></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—****</td>
+</tr>
+<tr>
 <td>SQL Blob (SQLite, PostgreSQL, ...)</td>
 <td><code>remote-store[sql]</code></td>
 <td><a href="https://pypi.org/project/SQLAlchemy/"><code>sqlalchemy</code></a></td>
@@ -9834,8 +9899,10 @@ use a Registry with declarative config:</p>
 </tbody>
 </table>
 <p>* Same-filesystem only; cross-filesystem falls back to copy+delete.
-** Attempts <code>posix_rename</code> (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so <code>ATOMIC_MOVE</code> is not declared.</p>
-<p>All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only: it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback <code>ext.glob.glob_files()</code> works with any <code>LIST</code>-capable backend. Seekable reads are available on all backends via <code>Store.read_seekable()</code>. See <a href="https://github.com/haalfi/remote-store/blob/master/FEATURES.md">features</a>, the <a href="https://docs.remotestore.dev/stable/reference/capabilities-matrix/">capabilities matrix</a>, and the <a href="https://docs.remotestore.dev/stable/explanation/concurrency/">concurrency guide</a> for full details.</p>
+*<em> Attempts <code>posix_rename</code> (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so <code>ATOMIC_MOVE</code> is not declared.
+*</em><em> Async-only: construct via <code>AsyncStore(backend=GraphBackend(...))</code>; there is no sync <code>Store</code> wrapper or config <code>type=</code> string.
+*</em>** Native server-side move (<code>PATCH driveItem</code>, identity-preserving); may complete asynchronously, so <code>ATOMIC_MOVE</code> is not declared.</p>
+<p>All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only: it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback <code>ext.glob.glob_files()</code> works with any <code>LIST</code>-capable backend. Seekable reads are available via <code>Store.read_seekable()</code> on backends that declare <code>SEEKABLE_READ</code>. See <a href="https://github.com/haalfi/remote-store/blob/master/FEATURES.md">features</a>, the <a href="https://docs.remotestore.dev/stable/reference/capabilities-matrix/">capabilities matrix</a>, and the <a href="https://docs.remotestore.dev/stable/explanation/concurrency/">concurrency guide</a> for full details.</p>
 <h2 id="store-api">Store API<a class="headerlink" href="#store-api" title="Permanent link">&para;</a></h2>
 <p>The Store provides methods across read/write, browsing, management, and utility. Key highlights:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">)</span>             <span class="c1"># → str</span>
