@@ -24,12 +24,14 @@ from remote_store._errors import (
     DirectoryNotEmpty,
     InvalidPath,
     NotFound,
+    RemoteStoreError,
 )
 from remote_store._models import FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store.aio._async_backend import AsyncBackend
 from remote_store.aio.backends._graph.http import (
     BACKEND_NAME,
+    classify_graph_error,
     discriminate_write_conflict,
     graph_send,
     iter_pages,
@@ -50,6 +52,7 @@ from remote_store.aio.backends._graph.transfer import (
     stream_range,
     upload_session,
 )
+from remote_store.backends._flat_ns import _acheck_no_file_ancestor
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
@@ -140,6 +143,11 @@ class GraphBackend(AsyncBackend):
         copy_timeout: Wall-clock budget for copy/move monitor polling, or
             ``None`` for no backend-imposed ceiling. When set, must be a
             positive float.
+        base_path: Optional drive subfolder to scope every operation under.
+            When set, all keys are addressed relative to this folder and keys
+            returned by listing / ``to_key`` stay relative to it, so the backend
+            behaves as if ``base_path`` were its root (mirrors
+            ``SFTPBackend.base_path``). Defaults to the drive root.
         client_options: Extra options passed through to the internal
             ``httpx.AsyncClient``. (When a future revision adds an explicit
             httpx-level constructor parameter, it takes precedence over a
@@ -165,12 +173,15 @@ class GraphBackend(AsyncBackend):
         retry: RetryPolicy | None = None,
         upload_chunk_size: int = _DEFAULT_UPLOAD_CHUNK_SIZE,
         copy_timeout: float | None = None,
+        base_path: str = "",
         client_options: dict[str, Any] | None = None,
     ) -> None:
         if not isinstance(drive_id, str) or not drive_id.strip():
             raise ValueError("drive_id must be a non-empty string")
         if not callable(token_provider):
             raise ValueError("token_provider must be callable")
+        if not isinstance(base_path, str):
+            raise ValueError("base_path must be a string")
         if upload_chunk_size <= 0 or upload_chunk_size % _CHUNK_ALIGNMENT != 0:
             raise ValueError("upload_chunk_size must be a positive multiple of 320 KiB")
         if upload_chunk_size >= _MAX_UPLOAD_CHUNK_SIZE:
@@ -181,6 +192,10 @@ class GraphBackend(AsyncBackend):
         self._drive_id = drive_id
         self._token_provider = token_provider
         self._base_url = base_url.rstrip("/")
+        # GR-058: scope every key under this drive subfolder. Normalised to a
+        # slash-trimmed segment list so native_path / parentReference prepend it
+        # and keys returned to callers stay base_path-relative.
+        self._base_segments = [s for s in base_path.split("/") if s]
         self._http_client = http_client
         self._owned_client: httpx.AsyncClient | None = None
         self._retry = retry if retry is not None else RetryPolicy()
@@ -232,10 +247,11 @@ class GraphBackend(AsyncBackend):
 
         ``/drives/{drive_id}/root:{encoded_path}:`` with each segment
         percent-encoded. The empty key returns ``/drives/{drive_id}/root:``
-        (Graph's drive-root form, no trailing colon delimiter).
+        (Graph's drive-root form, no trailing colon delimiter). A configured
+        ``base_path`` is prepended so every key is scoped under it.
         """
         root = f"/drives/{self._drive_id}/root:"
-        segments = [s for s in path.split("/") if s]
+        segments = self._base_segments + [s for s in path.split("/") if s]
         if not segments:
             return root
         encoded = "/".join(_encode_segment(s) for s in segments)
@@ -257,7 +273,12 @@ class GraphBackend(AsyncBackend):
         rest = rest.lstrip("/")
         if not rest:
             return ""
-        return "/".join(unquote(seg) for seg in rest.split("/"))
+        decoded = [unquote(seg) for seg in rest.split("/")]
+        # GR-058: drop the configured base_path prefix so the key is returned
+        # relative to the backend's scoped root (inverse of native_path).
+        if self._base_segments == decoded[: len(self._base_segments)]:
+            decoded = decoded[len(self._base_segments) :]
+        return "/".join(decoded)
 
     def resolve(self, path: str) -> ResolutionPlan:
         """Return a ``ResolutionPlan`` carrying the drive id and base URL."""
@@ -344,6 +365,69 @@ class GraphBackend(AsyncBackend):
         )
         body: dict[str, Any] = response.json()
         return body
+
+    async def _is_file_at(self, path: str) -> bool:
+        """Fail-open file probe for the file-ancestor walk: ``True`` iff *path* is a file.
+
+        A missing item or any transient metadata failure returns ``False`` so a
+        confirming walk never masks the original error with a probe failure
+        (mirrors the fail-open ``head_one`` contract in ``_flat_ns``).
+        """
+        try:
+            item = await self._get_item(path)
+        except RemoteStoreError:
+            return False
+        return is_file_item(item)
+
+    async def _raise_if_existing_folder(self, path: str, *, verb: str) -> None:
+        """Raise ``InvalidPath`` if *path* names an existing folder; else return.
+
+        Live Graph rejects ``PUT /content`` to a folder with ``501 notSupported``
+        and a move/copy onto a folder with a ``409`` that carries no folder facet,
+        so neither reaches the body-based ``discriminate_write_conflict``. This
+        confirming metadata GET (error-path only) restores the hierarchical-backend
+        InvalidPath promise.
+        """
+        # ID-211 / BE-008: hierarchical backends own the folder-target InvalidPath promise.
+        try:
+            item = await self._get_item(path)
+        except RemoteStoreError:
+            return
+        if is_folder_item(item):
+            raise InvalidPath(f"Cannot {verb} — '{path}' names an existing folder", path=path, backend=self.name)
+
+    async def _raise_if_file_ancestor(self, path: str) -> None:
+        """Raise ``InvalidPath`` naming the file ancestor of *path*, if any; else return.
+
+        Live Graph answers a write under a file ancestor with ``404`` and a
+        move/copy under one with ``400 invalidRequest`` — neither the ``NotFound``
+        nor the generic mapping the contract wants. This walk (error-path only)
+        confirms an ancestor is a regular file and re-raises ``InvalidPath`` per
+        the hierarchical-backend promise.
+        """
+        # ID-211 / ID-209: file-ancestor descent must surface as InvalidPath.
+        await _acheck_no_file_ancestor(path, head_one=self._is_file_at, backend=self.name)
+
+    async def _raise_move_copy_dest_error(self, response: httpx.Response, dst: str) -> None:
+        """Raise the destination-conflict error for a move/copy *response*, if any.
+
+        Live Graph signals a *dst* under a file ancestor with ``400 invalidRequest``
+        and a *dst* onto an existing folder with a ``409`` carrying no folder facet,
+        so neither the generic ``400`` mapping nor the body-based ``409``
+        discriminator delivers the hierarchical-backend InvalidPath promise. A
+        non-conflict response is left untouched for the caller to poll
+        (``return_on`` surfaces only ``400`` / ``409`` here).
+        """
+        # ID-211 / BE-008: dst-is-folder and dst-under-file-ancestor -> InvalidPath.
+        status = response.status_code
+        if status == 400:
+            await self._raise_if_file_ancestor(dst)
+            body = response_json(response)
+            code = (body.get("error") or {}).get("code") if isinstance(body, dict) else None
+            raise classify_graph_error(status, code, path=dst, backend=self.name)
+        if status == 409:
+            await self._raise_if_existing_folder(dst, verb="move/copy to")
+            raise discriminate_write_conflict(response_json(response), dst, backend=self.name)
 
     def _item_url(self, path: str) -> str:
         """Return the item-metadata endpoint for *path*.
@@ -744,11 +828,23 @@ class GraphBackend(AsyncBackend):
             token_provider=self._token_provider,
             path=path,
             retry=self._retry,
-            return_on=frozenset({409}),
+            return_on=frozenset({404, 409, 501}),
             headers={"Content-Type": "application/octet-stream"},
             content=data,
         )
-        if response.status_code == 409:
+        status = response.status_code
+        if status == 501:
+            # PUT /content to a folder is the only 501 (notSupported) case — the
+            # target is an existing folder. The hierarchical-backend contract wants
+            # InvalidPath, not the generic mapping (ID-211, BE-008).
+            raise InvalidPath(f"Cannot write — '{path}' names an existing folder", path=path, backend=self.name)
+        if status == 404:
+            # Graph auto-creates missing intermediate folders, so the only cause of
+            # a write 404 is a regular file blocking an ancestor segment. Name it
+            # as InvalidPath (ID-209); fall back to NotFound if the walk finds none.
+            await self._raise_if_file_ancestor(path)
+            raise NotFound(f"Not found: {path}", path=path, backend=self.name)
+        if status == 409:
             raise discriminate_write_conflict(response_json(response), path, backend=self.name)
         return item_to_write_result(response.json(), path, len(data), metadata)
 
@@ -893,11 +989,10 @@ class GraphBackend(AsyncBackend):
             token_provider=self._token_provider,
             path=src,
             retry=self._retry,
-            return_on=frozenset({409}),
+            return_on=frozenset({400, 409}),
             json=self._move_copy_body(dst),
         )
-        if response.status_code == 409:
-            raise discriminate_write_conflict(response_json(response), dst, backend=self.name)
+        await self._raise_move_copy_dest_error(response, dst)
         await self._await_async_operation(response, path=dst)
 
     async def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
@@ -931,11 +1026,10 @@ class GraphBackend(AsyncBackend):
             token_provider=self._token_provider,
             path=src,
             retry=self._retry,
-            return_on=frozenset({409}),
+            return_on=frozenset({400, 409}),
             json=self._move_copy_body(dst),
         )
-        if response.status_code == 409:
-            raise discriminate_write_conflict(response_json(response), dst, backend=self.name)
+        await self._raise_move_copy_dest_error(response, dst)
         await self._await_async_operation(response, path=dst)
 
     async def _short_circuit_self_op(self, src: str, dst: str) -> bool:
@@ -976,9 +1070,10 @@ class GraphBackend(AsyncBackend):
         ``parentReference`` path form, unlike the item-address form).
         """
         root = f"/drives/{self._drive_id}/root:"
-        if not parent_key:
+        segments = self._base_segments + [s for s in parent_key.split("/") if s]
+        if not segments:
             return root
-        encoded = "/".join(_encode_segment(s) for s in parent_key.split("/") if s)
+        encoded = "/".join(_encode_segment(s) for s in segments)
         return f"{root}/{encoded}"
 
     async def _await_async_operation(self, response: httpx.Response, *, path: str) -> None:

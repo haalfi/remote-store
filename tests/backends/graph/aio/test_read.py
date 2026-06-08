@@ -111,6 +111,7 @@ class TestGetFileInfo:
 
     @respx.mock
     @pytest.mark.spec("GR-013")
+    @pytest.mark.spec("GR-046")  # umbrella: get_file_info on a folder -> InvalidPath
     async def test_folder_raises_invalid_path(self) -> None:
         respx.get(_meta_url("a")).mock(return_value=httpx.Response(200, json=_folder_item()))
         async with _make() as backend:

@@ -199,6 +199,9 @@ test-cov-branch = [
 ]
 # Records HTTP cassettes from a live service; requires backend credentials.
 record-azure = "python scripts/record_cassettes.py --backend azure"
+# Records Graph cassettes from a live consumer drive; device-code sign-in on
+# first run (the MSAL token cache makes later runs non-interactive).
+record-graph = "python scripts/record_cassettes.py --backend graph"
 # Auto-discovers examples in getting_started/, configuration/, errors/,
 # advanced/, extensions/, plus snippets.  Skips backends/ (needs credentials)
 # and integrations/ (needs optional deps like PyArrow/Dagster).

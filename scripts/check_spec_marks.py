@@ -60,23 +60,23 @@ Two classes of declared spec ID are excused from the drift rule:
   * **type-(d) — design / meta / deferred.** Invariants that describe a
     design principle, a process/meta section, or an explicitly *deferred*
     feature (TLS Phase 2, ext.parquet Dagster-v2, the async
-    ``read_seekable`` / ``open_atomic`` deferrals, graph retry). These
-    are not runtime-testable behaviors; a mark would have nothing to sit
-    on. Seeded from audit-015's verified addendum's (d) rows.
-  * **implementation-pending backends absent from ``FEATURES.md``.** The
-    Graph backend (``GR-*`` plus ``ERR-013``/``ResourceLocked``) is
-    specced (spec 044 / 005) but not built; it is owned by backlog
-    ID-127. Its tests and marks land when the backend is built, so its
-    IDs are not traceability debt today.
+    ``read_seekable`` / ``open_atomic`` deferrals, graph retry, the Graph
+    item-id addressing deferral ``GR-011``). These are not runtime-testable
+    behaviors; a mark would have nothing to sit on. Seeded from audit-015's
+    verified addendum's (d) rows.
+  * **implementation-pending backends absent from ``FEATURES.md``.**
+    Currently empty: this was the coarse ``GR-*`` prefix while the Graph
+    backend (spec 044 / 005, owned by ID-127) was unbuilt. GR-DONE landed the
+    backend, its tests, and the integration tier, so the prefix was removed as
+    a unit and the shipped GR-NNN IDs now carry real marks. A future unbuilt
+    backend would re-seed this class.
 
 An allowlisted ID is excused from *drift* only. It is still checked for
 duplicate declaration, and a marker citing it is still valid (it is
 declared). When an enumerated allowlist ID becomes testable (grows a
 mark) or its spec section disappears, the *allowlist-stale* mode above
 fails the gate until the entry is removed — so the allowlist cannot rot
-silently, the same shrink-only contract the baseline has. (The ``GR-*``
-*prefix* is exempt: it covers the whole unbuilt Graph family and is
-removed as a unit by ID-127 when the backend lands, not per ID.)
+silently, the same shrink-only contract the baseline has.
 
 Landing strategy — checked-in baseline
 --------------------------------------
@@ -207,6 +207,7 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         "ASYNC-061",  # 029 — read_seekable() deferral
         "ASYNC-062",  # 029 — open_atomic() deferral
         "RET-015",  # 025 — graph retry mapping (rides the Graph backend)
+        "GR-011",  # 044 — item-id addressing deferred to a future RFC (reserved slot, no behavior)
         # Optional-dependency / packaging declarations (pyproject extras).
         "PA-023",  # 014 — pyarrow optional extra declaration
         "CFG-014",  # 021 — toml/yaml/pydantic optional extras declaration
@@ -256,31 +257,33 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
     }
 )
 
-# Implementation-pending backends absent from FEATURES.md. The Graph
-# backend operations (spec 044 GR-001..GR-057) are owned by ID-127 and not
-# yet built; their marks land with the backend. Prefix-matched so the whole
-# GR-* family is covered without enumerating 57 IDs. (ERR-013/ResourceLocked
-# left this list when its runtime class + tests landed in GR-CONTRACT, ahead
-# of the backend that raises it — ADR-0024 bundled-implementation order.)
-_ALLOWLIST_PENDING_PREFIXES: tuple[str, ...] = ("GR-",)
+# Implementation-pending backends absent from FEATURES.md. Was the coarse
+# ``GR-*`` prefix while the Graph backend (spec 044 GR-001..GR-057, owned by
+# ID-127) was unbuilt. GR-DONE (the final ID-127 step) landed the backend, its
+# tests, and the integration tier, so the prefix was removed as a unit and every
+# GR-NNN is now either marked or individually allowlisted (GR-011 — item-id
+# addressing — is the lone deferred-feature exception, enumerated above with the
+# other type-(d) deferrals). (ERR-013/ResourceLocked left the pending list
+# earlier when its runtime class + tests landed in GR-CONTRACT, ahead of the
+# backend that raises it — ADR-0024 bundled-implementation order.)
+_ALLOWLIST_PENDING_PREFIXES: tuple[str, ...] = ()
 _ALLOWLIST_PENDING_IDS: frozenset[str] = frozenset()
 
 # The enumerated (non-prefix) allowlist — every explicitly named excused
 # ID. These get the same shrink-only self-pruning the baseline enforces:
 # an entry that no longer earns its place (the spec section was renamed /
 # removed, or the ID grew a real mark and is now testable) is flagged so
-# it cannot rot silently. The ``GR-*`` *prefix* is excluded from this
-# self-prune: it is a coarse exclusion for the whole unbuilt Graph family,
-# removed as a unit by ID-127 when the backend lands, not per ID.
+# it cannot rot silently.
 _ENUMERATED_ALLOWLIST: frozenset[str] = _ALLOWLIST_DESIGN | _ALLOWLIST_PENDING_IDS
 
 
 def is_allowlisted(spec_id: str) -> bool:
     """True if ``spec_id`` is excused from the drift rule.
 
-    Covers type-(d) design/meta/deferred IDs and implementation-pending
-    backend IDs (Graph / ID-127). An allowlisted ID is still checked for
-    duplicate declaration.
+    Covers type-(d) design/meta/deferred IDs (and, when non-empty, any
+    implementation-pending backend prefix — see ``_ALLOWLIST_PENDING_PREFIXES``,
+    currently empty). An allowlisted ID is still checked for duplicate
+    declaration.
     """
     if spec_id in _ALLOWLIST_DESIGN or spec_id in _ALLOWLIST_PENDING_IDS:
         return True

@@ -1,0 +1,135 @@
+id: ID-127
+title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-DONE (Step 8): BK-237 DoD umbrella + combined close() + close-out"
+trigger: "ID-127 Step 8, the final close-out: seven roadmap steps (GR-FOUNDATION, GR-CONTRACT, GR-CORE, GR-READ, GR-TRANSFER, GR-WRITE, GR-MUTATE, GR-DOCS-E2E) have landed and Graph is functionally complete, but the backend has never been measured against the BK-237 contract-expanding-feature Definition-of-Done as a whole. Three concrete gaps remain that no single op-step owned: (1) the combined close() assertion — GR-WRITE landed the upload-session-abort half and GR-MUTATE the poller-cancel half, but no test asserts BOTH fire at once on one fully-assembled backend; (2) the integration-only tier (GR-007/020/026/034/054 + a 10 MiB round-trip) was never created — there are zero @pytest.mark.integration markers under tests/backends/graph/; (3) the spec<->mark traceability sweep is vacuous because scripts/check_spec_marks.py allowlists the entire GR-* prefix as 'not yet built', so seven shipped-but-unmarked IDs (GR-004/011/020/021/046/050/053) pass the drift gate silently. GR-DONE pins the combined close(), lands the integration tier, removes the GR-* allowlist and resolves the fallout, reviews the GR-003 capability declaration for over/under-declaration, runs a report-only audit, and moves ID-127 (incl. the bundled ResourceLocked sub-task) to BACKLOG-DONE."
+source_items:
+  - ID-127
+audience:
+  # GR-DONE began as the DoD umbrella + close-out, but the first live conformance
+  # run (recording the previously-vacuous suite) exposed real Graph backend bugs.
+  # Fixing them — write/move/copy error fidelity + the new base_path scoping
+  # feature (GR-058) — is user-facing behaviour, so user.api leads.
+  - user.api
+  - infra.test
+  - contributor.tooling
+  - contributor.process
+discovery_followups:
+  # The live conformance run (first ever) exposed both the backend error-fidelity
+  # bugs (fixed in-PR) and the graph cassette-replay infra gap (downloadUrl
+  # redaction is not replay-able) — the latter deferred and tracked here.
+  - BK-262
+review_rounds: 0
+expected_ripples:
+  # user.api -> CHANGELOG [Unreleased] stubs for the error-fidelity fix + base_path.
+  - CHANGELOG.md
+  # BACKLOG -> BACKLOG-DONE move regenerates the id-allocator snapshot.
+  - sdd/backlogid.json
+surprising_ripples:
+  # The dynamic vcr-mark hook was azure-ONLY: graph_live items never got the mark,
+  # so the first --record run wrote 0 cassettes. The ripple-check did not flag that
+  # a second cassette-backed live backend needs this hook extended.
+  - tests/conftest.py
+  # The conformance cassette scrub layer had no notion of a per-test base_path; the
+  # GR-058 isolation uuid pollutes recorded URLs and had to be normalised to a fixed
+  # token for replay to match — an interaction the ripple-check did not anticipate.
+  - tests/backends/fixtures/_cassettes.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/plans/ID-127-graph-backend-implementation.md
+        section: "Step 8 — GR-DONE"
+        read_type: gate
+        extract: "BK-237 DoD gate checklist: combined close() (GR-051) is the assertion no op-step owns end-to-end; integration-only set GR-007/020/026/034/054 + 10 MiB round-trip; spec-mark sweep over every GR-NNN; capability review for over- AND under-declaration; wrapper-forwarding; docs ripple; report-only audit; PBT recorded N/A up front (not a discovered gap)"
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-003, GR-051, Integration-only (GR-007/020/026/034/054)"
+        read_type: gate
+        extract: "GR-003 declared set (READ/WRITE/DELETE/LIST/MOVE/COPY/METADATA/ATOMIC_WRITE/LAZY_READ/WRITE_RESULT_NATIVE; withheld GLOB/SEEKABLE_READ/ATOMIC_MOVE/USER_METADATA); GR-051 close() both-halves contract (cancel pollers + DELETE sessionUrl, never raise); integration tier is two-layer gated (RS_TEST_LIVE_GRAPH=1 + four GRAPH_* env vars), skip-clean otherwise"
+      - file: scripts/check_spec_marks.py
+        section: "_ALLOWLIST_PENDING_PREFIXES, is_allowlisted, _ALLOWLIST_DESIGN"
+        read_type: gate
+        extract: "The GR-* prefix allowlist (line 265) excuses the whole Graph family from drift today; removing it is the load-bearing sweep step. GR-011 (deferred non-goal) belongs in _ALLOWLIST_DESIGN as type-(d); RET-015 already there. Gate is zero-tolerance (baseline drained empty)"
+      - file: tests/backends/graph/aio/test_backend.py
+        section: "GR-051 close() tests (lines 185-224)"
+        read_type: reference
+        extract: "Existing GR-051 unit tests cover client-close/idempotent/user-client/auth-flush but NOT the combined poller-cancel + session-abort assertion; the combined test lands here"
+      - file: tests/backends/graph/aio/test_mutate.py
+        section: "TestClosePollerCancel (lines 491-523)"
+        read_type: reference
+        extract: "Poller-cancel half: seed backend._pending_pollers with a never-terminal task, aclose() cancels it. Reuse this seeding shape for the combined test"
+      - file: tests/backends/graph/aio/test_write.py
+        section: "TestCloseAbortsSessions (lines 559-578)"
+        read_type: reference
+        extract: "Session-abort half: seed backend._active_upload_sessions with _UPLOAD_URL + mocked DELETE, aclose() fires DELETE and swallows failures. Reuse for the combined test"
+  - id: implement
+    name: Land the missing assertions
+    steps:
+      - file: tests/backends/graph/aio/test_backend.py
+        section: "test_aclose_cancels_pollers_and_aborts_sessions_together; GR-004/050/053 tests"
+        read_type: reference
+        extract: "Combined close() test seeds both _pending_pollers + _active_upload_sessions, asserts both fire + never raises. Added GR-004 mark on the lazy-construction test, new GR-050 (drive_id immutable) and GR-053 (retry None->default / explicit->replaces) unit tests. Hit the formatter-drops-unused-import gotcha twice (asyncio/respx, RetryPolicy) — re-added once usages existed"
+      - file: tests/backends/graph/aio/test_integration.py
+        section: "(new file)"
+        read_type: reference
+        extract: "Net-new integration tier: zero @pytest.mark.integration existed before. Module pytestmark = integration + live + skipif(RS_TEST_LIVE_GRAPH!=1); device-code graph_backend fixture (fail-loud creds). Tests: GR-007 round-trip, GR-020 real chunk alignment, GR-026 copy monitor poll, GR-034 throttle-retried, GR-054 quota (extra opt-in skip), GR-019 10 MiB round-trip. read() has no range param (GR-015 internal) and GR-054 maps to BackendUnavailable not a distinct class — both corrected before commit. Deselected by default addopts (-m 'not live'); skip-clean under -m live without env"
+      - file: scripts/check_spec_marks.py
+        section: "_ALLOWLIST_PENDING_PREFIXES, _ALLOWLIST_DESIGN, docstrings"
+        read_type: reference
+        extract: "The load-bearing sweep step: emptied the GR-* prefix ('GR-' -> ()), added GR-011 to _ALLOWLIST_DESIGN as the lone deferred exception, rewrote both stale docstrings. Resolved fallout: GR-021/046/004/050/053 grew marks, GR-020 via the integration test. Gate now 0 violations"
+      - file: tests/scripts/test_check_spec_marks.py
+        section: "TestAllowlist::test_graph_backend_prefix_no_longer_pending"
+        read_type: verify
+        extract: "Updated the gate's own test: is_allowlisted('GR-001'/'GR-057') now False (marked), is_allowlisted('GR-011') True. 42 passed"
+  - id: audit
+    name: Capability + wrapper-forwarding audit (report-only)
+    steps:
+      - file: tests/backends/fixtures/graph_replay.py
+        section: "module docstring + missing-cassette skip"
+        read_type: verify
+        extract: "AUDIT FINDING (vacuous conformance): all 118 graph conformance slices SKIP — zero cassettes under tests/backends/cassettes/ (only azure + .gitkeep). The cross-backend conformance spine (TEST-002) is inert for Graph; behaviour is covered ONLY by the 300 respx unit tests, not the matrix. Capability-honesty guards (test_populated_field_implies_declared_capability, test_file_info_metadata_none_when_capability_absent) are therefore inert too. Cassettes need a Stage-3 device-code recording run (tenant deferral). Report-only — user decides"
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_GRAPH_CAPABILITIES (GR-003)"
+        read_type: verify
+        extract: "Capability review: all 10 declared caps (READ/WRITE/DELETE/LIST/MOVE/COPY/METADATA/ATOMIC_WRITE/LAZY_READ/WRITE_RESULT_NATIVE) have a real method + non-vacuous respx unit coverage — no over-declaration. All 4 withheld (GLOB/SEEKABLE_READ/ATOMIC_MOVE/USER_METADATA) have sound GR-003 rationale — no under-declaration. The only honesty gap is conformance-level, same root cause as the cassette finding"
+      - file: tests/backends/graph/test_sync_adapter.py
+        section: "(new) test_resource_locked_surfaces_through_sync_adapter"
+        read_type: reference
+        extract: "Wrapper-forwarding gate gap closed: ResourceLocked is Graph-only, so the sync-adapter conformance suite (Memory/Local/Azure) never exercised it crossing the async->sync boundary. New test wraps GraphBackend (respx 423) in AsyncBackendSyncAdapter and asserts the sync caller sees ResourceLocked(backend='graph'). Confirms respx intercepts across the adapter's background-thread loop. ProxyStore/ext forward exceptions transparently (structural) and async ext wrappers are a documented deferral (GR-003) — reported, not patched"
+  - id: reproduce
+    name: Live conformance exposes real backend bugs
+    steps:
+      - file: tests/backends/cassettes/graph/
+        section: "(record run)"
+        read_type: verify
+        extract: "Recording the previously-vacuous conformance suite live (first ever) failed 23/118. SURPRISING RIPPLE: the respx unit tests passed by mocking 409+folder-facet responses, but live Graph returns 501 (write-to-folder), 404 (write under file-ancestor), 400 invalidRequest (move/copy under file-ancestor) — none mapped to the contract's InvalidPath. A clean-drive re-run gave the IDENTICAL 23, disproving the dirty-state hypothesis and confirming (A) real error-mapping bugs + (B) a graph_live isolation gap"
+        outcome: misleading
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestWriteErrorFidelity / TestMoveCopyErrorFidelity / TestListFilesCompleteness"
+        read_type: gate
+        extract: "The cross-backend contract: IsDir(path)->InvalidPath, write/move/copy under a file ancestor -> InvalidPath, dst-is-dir -> InvalidPath. The ID-211 family rule (loader: rejects = not flat_namespace) makes Graph (flat_namespace=false) OWN these promises, like Azure — so these are genuine backend bugs, not over-strict tests"
+  - id: fix
+    name: Fix error fidelity + isolation + base_path
+    steps:
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_write_small (return_on 404/501), _raise_move_copy_dest_error, _raise_if_existing_folder, _raise_if_file_ancestor, base_path"
+        read_type: reference
+        extract: "Error-path metadata-confirm remaps (mirrors Azure's _raise_invalid_if_hns_file_ancestor): 501->InvalidPath(folder); 404/400 -> confirm file-ancestor via _acheck_no_file_ancestor -> InvalidPath; 409 -> confirm dst-is-folder -> InvalidPath else discriminate. Plus base_path (GR-058): prepend in native_path + _parent_ref_path, strip in to_key; returned paths stay caller-relative (built from request key via _child_key), so no listing-strip needed"
+      - file: tests/backends/fixtures/graph_live.py
+        section: "_factory base_path, _aclose teardown"
+        read_type: reference
+        extract: "Per-test isolation = fresh rs-conformance-<uuid> subfolder (GR-058), the Graph analogue of azure_live's fresh container. Replaced a first-attempt snapshot-diff (got 105/4 — the 4 were the real OneDrive root PDF breaking empty-namespace assertions). aclose deletes the scoped folder via an unrooted sibling backend"
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "build_graph_vcr_config base_path scrub, GRAPH_CONFORMANCE_BASE_PATH"
+        read_type: reference
+        extract: "SURPRISING RIPPLE: the dynamic vcr-mark hook (tests/conftest.py) was azure-ONLY -> 0 graph cassettes. And the per-test base_path uuid pollutes cassette URLs, breaking replay. Fix: extend the hook to graph_live + scrub rs-conformance-<uuid> -> fixed token in URIs/bodies; graph_replay roots under that token so record/replay URLs match"
+      - file: tests/backends/graph/aio/test_backend.py
+        section: "TestBasePath (GR-058)"
+        read_type: verify
+        extract: "7 unit tests: native_path prepend, empty-key->base folder, to_key round-trip, parentReference scoping, slash normalisation, non-str rejection, default targets drive root. 308 graph unit tests green; spec-mark gate green (GR-058 traced)"
+  - id: verify_live
+    name: Re-record green; cassette CI replay deferred
+    steps:
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "build_graph_vcr_config (downloadUrl redaction)"
+        read_type: verify
+        extract: "Live conformance GREEN 109/0/9 with all fixes. Recording captured 118 cassettes (after extending the azure-only vcr hook + adding the request-body drive_id scrub the verify gate caught), but committable CI replay is DEFERRED to BK-262: the GR-035 scrub redacts @microsoft.graph.downloadUrl to the bare string 'REDACTED' (not a URL), so read-back can't replay (GET :///REDACTED). The fix (redact to a valid placeholder URL) is a 4th infra layer with replay-ordering uncertainty; per user decision, close ID-127 on the live-green proof and track replay separately. Cassettes not committed."
+        outcome: unclear

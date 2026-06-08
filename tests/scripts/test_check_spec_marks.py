@@ -184,10 +184,15 @@ class TestAllowlist:
         # SIO-006 is a design principle (type d) — never mark-able.
         assert is_allowlisted("SIO-006") is True
 
-    def test_pending_graph_backend_prefix_allowlisted(self) -> None:
-        # The whole GR-* family is owned by ID-127, backend not yet built.
-        assert is_allowlisted("GR-001") is True
-        assert is_allowlisted("GR-057") is True
+    def test_graph_backend_prefix_no_longer_pending(self) -> None:
+        # The coarse GR-* prefix was removed in GR-DONE when ID-127 landed the
+        # Graph backend, its tests, and the integration tier. The shipped GR-NNN
+        # IDs now carry real marks, so they are NOT allowlisted — only GR-011
+        # (item-id addressing, a declared non-goal deferred to a future RFC) stays
+        # excused, enumerated alongside the other type-(d) deferrals.
+        assert is_allowlisted("GR-001") is False
+        assert is_allowlisted("GR-057") is False
+        assert is_allowlisted("GR-011") is True
 
     def test_resource_locked_no_longer_pending(self) -> None:
         # ERR-013 / ResourceLocked left the pending allowlist when its runtime

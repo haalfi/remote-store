@@ -25,6 +25,7 @@ from remote_store._errors import (
     BackendUnavailable,
     CapabilityNotSupported,
     InvalidPath,
+    NotFound,
     RemoteStoreError,
     ResourceLocked,
 )
@@ -228,6 +229,48 @@ class TestConflictDiscrimination:
                 await backend.write("a.txt", b"x")
 
 
+class TestLiveWriteErrorFidelity:
+    """GR-046: the live status shapes (501 / 404) the respx 409-facet tests above
+    do NOT reproduce — verified against a real drive in GR-DONE, locked here."""
+
+    @respx.mock
+    @pytest.mark.spec("GR-046")
+    async def test_501_on_folder_target_raises_invalid_path(self) -> None:
+        # Live Graph rejects PUT /content to a folder with 501 notSupported (not a
+        # 409+folder-facet); the backend maps it to InvalidPath directly.
+        respx.put(_CONTENT_RE).mock(return_value=httpx.Response(501, json={"error": {"code": "notSupported"}}))
+        async with _make() as backend:
+            with pytest.raises(InvalidPath, match="folder"):
+                await backend.write("somedir", b"x")
+
+    @respx.mock
+    @pytest.mark.spec("GR-046")
+    async def test_404_under_file_ancestor_raises_invalid_path(self) -> None:
+        # Live Graph answers a write under a file ancestor with 404 (not 409); the
+        # backend confirms the ancestor is a file via a metadata GET, then re-raises
+        # InvalidPath naming it.
+        respx.put(_CONTENT_RE).mock(return_value=httpx.Response(404, json={"error": {"code": "itemNotFound"}}))
+        respx.get(url__regex=r".*/root:/parent\.txt:$").mock(
+            return_value=httpx.Response(200, json={"name": "parent.txt", "file": {}})
+        )
+        async with _make() as backend:
+            with pytest.raises(InvalidPath, match="parent.txt"):
+                await backend.write("parent.txt/child.txt", b"x")
+
+    @respx.mock
+    @pytest.mark.spec("GR-046")
+    async def test_404_without_file_ancestor_falls_back_to_not_found(self) -> None:
+        # A write 404 whose ancestor is NOT a regular file (the ancestor GET 404s)
+        # has no InvalidPath cause, so it falls back to the mapped NotFound.
+        respx.put(_CONTENT_RE).mock(return_value=httpx.Response(404, json={"error": {"code": "itemNotFound"}}))
+        respx.get(url__regex=r".*/root:/parent\.txt:$").mock(
+            return_value=httpx.Response(404, json={"error": {"code": "itemNotFound"}})
+        )
+        async with _make() as backend:
+            with pytest.raises(NotFound):
+                await backend.write("parent.txt/child.txt", b"x")
+
+
 # ===========================================================================
 # Metadata gate + path validity + write_atomic
 # ===========================================================================
@@ -291,6 +334,7 @@ def _session_backend() -> GraphBackend:
 class TestUploadSession:
     @respx.mock
     @pytest.mark.spec("GR-019")
+    @pytest.mark.spec("GR-021")
     async def test_create_session_then_aligned_chunks_then_final_item(self) -> None:
         respx.post(_SESSION_RE).mock(return_value=httpx.Response(200, json={"uploadUrl": _UPLOAD_URL}))
         chunks = respx.put(_UPLOAD_URL).mock(
@@ -483,6 +527,7 @@ class TestUploadSessionFailures:
 
     @respx.mock
     @pytest.mark.spec("GR-024")
+    @pytest.mark.spec("GR-046")  # umbrella: write malformed Content-Range (409 invalidRange) -> RemoteStoreError
     async def test_invalid_range_chunk_aborts_session(self) -> None:
         respx.post(_SESSION_RE).mock(return_value=httpx.Response(200, json={"uploadUrl": _UPLOAD_URL}))
         respx.put(_UPLOAD_URL).mock(return_value=httpx.Response(409, json={"error": {"code": "invalidRange"}}))

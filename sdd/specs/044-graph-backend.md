@@ -1170,6 +1170,24 @@ attempts, 1-60 s exponential backoff, 1 s jitter — matching
 `RetryPolicy()` defaults). When provided, replaces the default
 entirely. See RET-015.
 
+### GR-058: Base-Path Scoping
+
+**Invariant:** `GraphBackend` accepts `base_path: str = ""`. When
+non-empty, every key is addressed relative to that drive subfolder:
+`native_path(key)` resolves to `{base_path}/{key}` under the drive root,
+and keys returned by listing / `to_key` are stripped back to
+`base_path`-relative form, so the backend behaves as if `base_path` were
+its root.
+**Postconditions:**
+- `base_path` is normalised by trimming leading/trailing slashes; the
+  default `""` targets the drive root unchanged (backward compatible).
+- Intermediate folders of `base_path` are created on demand by the same
+  auto-mkdir-on-write path as any nested key (GR-039); no eager creation
+  occurs in `__init__` (GR-004).
+- Mirrors `SFTPBackend.base_path` — the hierarchical-backend convention for
+  scoping a backend to a subtree. Enables isolating a `GraphBackend` to a
+  SharePoint document-library subfolder or a OneDrive working directory.
+
 ---
 
 ## Integration-only

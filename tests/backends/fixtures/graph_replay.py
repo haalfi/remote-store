@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.backends.fixtures._cassettes import FAKE_DRIVE_ID
+from tests.backends.fixtures._cassettes import FAKE_DRIVE_ID, GRAPH_CONFORMANCE_BASE_PATH
 from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
 
@@ -36,7 +36,11 @@ def _factory() -> AsyncBackend:
     except ImportError:
         pytest.skip("httpx not installed (graph extra)")
 
-    return GraphBackend(FAKE_DRIVE_ID, token_provider=lambda: "graph-replay-token")
+    # Root under the same fixed base_path the cassette scrub normalises the
+    # per-test recording uuid to (GR-058), so replay request URLs match.
+    return GraphBackend(
+        FAKE_DRIVE_ID, token_provider=lambda: "graph-replay-token", base_path=GRAPH_CONFORMANCE_BASE_PATH
+    )
 
 
 async def _aclose(backend: AsyncBackend) -> None:

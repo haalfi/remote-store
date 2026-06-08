@@ -90,6 +90,26 @@ and the highest ID already in this file, then take the next integer. Run
 ## Lint / CI Completeness
 
 
+- [ ] **BK-262 — Graph conformance cassettes: replay-able pre-signed URLs**
+  spec: GR-015 · effort: M · audience: infra.test
+  ID-127 GR-DONE recorded the Graph conformance suite live (green, 109/0/9) but
+  the cassettes are **not committed**: replaying reads fails because the GR-035
+  scrub redacts `@microsoft.graph.downloadUrl` to the bare string `"REDACTED"`,
+  which is not a URL the backend can `GET` on replay (it issues `GET :///REDACTED`
+  → no cassette match). Fix by redacting pre-signed URLs (downloadUrl / uploadUrl
+  / `Location`) to a **valid placeholder URL** (e.g.
+  `https://graph-download.invalid/REDACTED`) consistently in response bodies, the
+  `Location` header, and the recorded pre-signed-host **request** URIs, so
+  `graph_replay` can `GET` the placeholder and match the recorded (rewritten)
+  request — the same full redaction, just replay-able. Then re-record, validate
+  Stage-1 replay, raise `scripts/record_cassettes.py` graph `min_cassettes` off
+  `0`, and commit the cassettes so the cross-backend conformance spine runs for
+  Graph in CI (today it skips-clean). Watch for vcr replay-ordering on multiple
+  same-placeholder `GET`s within one cassette. Prerequisite scrub infra (vcr-mark
+  hook extended to `graph_live`, request-body `drive_id` scrub, per-test
+  `base_path` uuid scrub, `graph_replay` `base_path`) already landed in the
+  ID-127 GR-DONE PR; this item is only the downloadUrl-replay piece + the commit.
+
 - [ ] **ID-179 — Trace schema validator: wire `audience` field check into `hatch run lint`**
   spec: — · effort: S · audience: library.maintainer
   `sdd/traces/_schema.yml` declares `audience` as `required`, but BK-193
@@ -324,53 +344,6 @@ and the highest ID already in this file, then take the next integer. Run
 ---
 
 ## New Backends
-
-- [~] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
-  spec: GR-001..GR-057, ERR-013 · effort: L · audience: user.api
-  Unified backend covering OneDrive (personal & business) and SharePoint
-  document libraries via the Microsoft Graph REST API. Single `drive_id`
-  parameter selects the target drive.
-  - Design: [RFC-0010](rfcs/rfc-0010-graph-backend.md),
-    [ADR-0021](adrs/0021-graph-sdk-choice.md) (SDK),
-    [ADR-0022](adrs/0022-graph-auth-model.md) (auth),
-    [ADR-0023](adrs/0023-async-monitor-polling.md) (async polling),
-    [ADR-0024](adrs/0024-resource-locked-error.md) (ResourceLocked error).
-  - Spec: [044-graph-backend.md](specs/044-graph-backend.md)
-    (GR-001..GR-057; RET-015 in [spec 025](specs/025-retry-policy.md);
-    ERR-013 in [spec 005](specs/005-error-model.md)).
-  - Reference: Azure backend (`_azure.py`) — closest architectural parallel.
-  - Spec foundation: ID-141 (ADR-0025), ID-142 (spec 029
-    § AsyncBackendSyncAdapter + `tests/aio/_doubles.py`), and ID-143
-    (`AsyncBackendSyncAdapter` implementation + integration suite) — all landed.
-  - Prerequisites (process/test, should land first): BK-237 (feature-DoD
-    checklists), BK-239 (generic field↔capability symmetry guard), and
-    BK-241 (`tests/aio/README.md` orientation) all landed — see
-    [`sdd/000-process.md` § Feature-type Definition of Done](000-process.md#feature-type-definition-of-done) and
-    BACKLOG-DONE.md.
-  - **Bundled sub-task — `ResourceLocked` (ERR-013, ADR-0024):** Graph
-    triggers the only need for this error class today. Three coupled
-    pieces ship together with the backend, not separately: the
-    `ResourceLocked` Python exception class in
-    `src/remote_store/_errors.py` (named `ResourceLocked` per the flat
-    error hierarchy and spec 005's example), the
-    `Error.ResourceLocked(path: string, backend: string)` variant in
-    `sdd/formal/BackendContract.dfy` (re-translate
-    `MemoryBackend-py/module_.py`) — shape matches the other
-    non-`BackendUnavailable` variants in that datatype so
-    `_raise_if_err` can dispatch via the existing
-    `err.path` / `err.backend` reader, and its dispatch in
-    `tests/backends/dafny/_helpers.py::_raise_if_err`. Formerly tracked
-    as the standalone ID-189; folded here because the Dafny variant
-    cannot land in isolation — without the runtime class to raise,
-    adding the variant alone would create a verified contract for
-    behaviour the codebase cannot exhibit.
-  - Progress: GR-FOUNDATION, GR-CONTRACT, GR-CORE, GR-READ, GR-TRANSFER,
-    GR-WRITE, GR-MUTATE (delete / delete_folder / move / copy + the async
-    copy/move monitor poller), and GR-DOCS-E2E (usage guide `graph.md`,
-    generated async-backend FEATURES tables + capability/enumeration parity,
-    e2e Graph streaming hop) landed. Next: GR-DONE (BK-237 DoD + combined
-    `close()` + close-out) per the
-    [implementation plan](plans/ID-127-graph-backend-implementation.md).
 
 - [ ] **BK-259 — Graph `_range_fallback_paths` flag: scope to operation, not backend lifetime**
   spec: GR-015 · effort: S · audience: user.api, library.maintainer
