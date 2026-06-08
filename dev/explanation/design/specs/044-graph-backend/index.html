@@ -10069,6 +10069,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#gr-058-base-path-scoping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GR-058: Base-Path Scoping
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11103,6 +11114,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#gr-058-base-path-scoping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GR-058: Base-Path Scoping
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -12015,6 +12037,19 @@ postcondition:</p>
   is governed by spec 036 (<code>SEEK-*</code>).</li>
 <li><code>write</code> with malformed <code>Content-Range</code> (upload session) →
   <code>RemoteStoreError</code> mapped from <code>409 invalidRange</code>.</li>
+<li><code>write</code> / <code>write_atomic</code> onto an existing folder → <code>InvalidPath</code>.
+  Live Graph rejects <code>PUT /content</code> to a folder with <code>501 notSupported</code>;
+  the backend confirms the target is a folder and raises <code>InvalidPath</code>
+  (the hierarchical-backend promise — BE-008, ID-211).</li>
+<li><code>write</code> / <code>write_atomic</code> / <code>move</code> / <code>copy</code> descending through a file
+  ancestor → <code>InvalidPath</code>. Live Graph answers a write under a file
+  ancestor with <code>404</code> and a <code>move</code> / <code>copy</code> with <code>400 invalidRequest</code>;
+  the backend confirms an ancestor is a regular file and re-raises
+  <code>InvalidPath</code> naming it (BE-008, ID-209, ID-211).</li>
+<li><code>move</code> / <code>copy</code> onto an existing directory → <code>InvalidPath</code>. The <code>409</code>
+  Graph returns carries no folder facet, so the backend confirms the
+  destination is a folder and raises <code>InvalidPath</code> rather than
+  <code>AlreadyExists</code>.</li>
 <li><code>list_files</code> / <code>list_folders</code> on a file path → yields nothing
   (BE-014, BE-015).</li>
 <li><code>get_file_info</code> on a folder → <code>InvalidPath</code>.</li>
@@ -12155,6 +12190,22 @@ None</code>. When <code>None</code>, uses the backend's default retry profile (3
 attempts, 1-60 s exponential backoff, 1 s jitter — matching
 <code>RetryPolicy()</code> defaults). When provided, replaces the default
 entirely. See RET-015.</p>
+<h3 id="gr-058-base-path-scoping">GR-058: Base-Path Scoping<a class="headerlink" href="#gr-058-base-path-scoping" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>GraphBackend</code> accepts <code>base_path: str = ""</code>. When
+non-empty, every key is addressed relative to that drive subfolder:
+<code>native_path(key)</code> resolves to <code>{base_path}/{key}</code> under the drive root,
+and keys returned by listing / <code>to_key</code> are stripped back to
+<code>base_path</code>-relative form, so the backend behaves as if <code>base_path</code> were
+its root.
+<strong>Postconditions:</strong>
+- <code>base_path</code> is normalised by trimming leading/trailing slashes; the
+  default <code>""</code> targets the drive root unchanged (backward compatible).
+- Intermediate folders of <code>base_path</code> are created on demand by the same
+  auto-mkdir-on-write path as any nested key (GR-039); no eager creation
+  occurs in <code>__init__</code> (GR-004).
+- Mirrors <code>SFTPBackend.base_path</code> — the hierarchical-backend convention for
+  scoping a backend to a subtree. Enables isolating a <code>GraphBackend</code> to a
+  SharePoint document-library subfolder or a OneDrive working directory.</p>
 <hr />
 <h2 id="integration-only">Integration-only<a class="headerlink" href="#integration-only" title="Permanent link">&para;</a></h2>
 <p>Some invariants cannot be validated against <code>respx</code> fixtures because

@@ -22311,8 +22311,9 @@ for provisioning credentials and resolving a <code>drive_id</code>.</p>
    (remote_store._config.RetryPolicy)" href="../config/#remote_store.RetryPolicy">RetryPolicy</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">upload_chunk_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="n"><span title="remote_store.aio.backends._graph.backend._DEFAULT_UPLOAD_CHUNK_SIZE">_DEFAULT_UPLOAD_CHUNK_SIZE</span></span><span class="p">,</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">copy_timeout</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">base_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -22409,6 +22410,19 @@ positive float.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
+            <b><code>base_path</code></b>
+              (<code><span title="str">str</span></code>, default:
+                  <code>&#39;&#39;</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional drive subfolder to scope every operation under.
+When set, all keys are addressed relative to this folder and keys
+returned by listing / <code>to_key</code> stay relative to it, so the backend
+behaves as if <code>base_path</code> were its root. Defaults to the drive root.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
             <b><code>client_options</code></b>
               (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>, default:
                   <code>None</code>
@@ -22432,9 +22446,9 @@ parameter today, so this is passthrough only.)</p>
             –
           <div class="doc-md-description">
             <p>For an empty <code>drive_id</code>, a non-callable
-<code>token_provider</code>, an <code>upload_chunk_size</code> that is not a
-positive 320 KiB multiple below 60 MiB, or a non-positive
-<code>copy_timeout</code>.</p>
+<code>token_provider</code>, a non-string <code>base_path</code>, an
+<code>upload_chunk_size</code> that is not a positive 320 KiB multiple
+below 60 MiB, or a non-positive <code>copy_timeout</code>.</p>
           </div>
         </li>
     </ul>
