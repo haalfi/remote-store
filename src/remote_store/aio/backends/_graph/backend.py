@@ -155,9 +155,9 @@ class GraphBackend(AsyncBackend):
 
     Raises:
         ValueError: For an empty ``drive_id``, a non-callable
-            ``token_provider``, an ``upload_chunk_size`` that is not a
-            positive 320 KiB multiple below 60 MiB, or a non-positive
-            ``copy_timeout``.
+            ``token_provider``, a non-string ``base_path``, an
+            ``upload_chunk_size`` that is not a positive 320 KiB multiple
+            below 60 MiB, or a non-positive ``copy_timeout``.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _GRAPH_CAPABILITIES
@@ -403,6 +403,10 @@ class GraphBackend(AsyncBackend):
         nor the generic mapping the contract wants. This walk (error-path only)
         confirms an ancestor is a regular file and re-raises ``InvalidPath`` per
         the hierarchical-backend promise.
+
+        Cost is O(depth) sequential metadata GETs, but only on an already-failed
+        write/move/copy — never the happy path — so the deep-path penalty is a
+        deliberate trade (mirrors the Azure HNS file-ancestor remap).
         """
         # ID-211 / ID-209: file-ancestor descent must surface as InvalidPath.
         await _acheck_no_file_ancestor(path, head_one=self._is_file_at, backend=self.name)
@@ -847,7 +851,7 @@ class GraphBackend(AsyncBackend):
             await self._raise_if_file_ancestor(path)
             body = response_json(response)
             code = (body.get("error") or {}).get("code") if isinstance(body, dict) else None
-            raise classify_graph_error(status, code, path=path)
+            raise classify_graph_error(status, code, path=path, backend=self.name)
         if status == 409:
             raise discriminate_write_conflict(response_json(response), path, backend=self.name)
         return item_to_write_result(response.json(), path, len(data), metadata)

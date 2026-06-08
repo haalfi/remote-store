@@ -17,7 +17,7 @@ discovery_followups:
   # bugs (fixed in-PR) and the graph cassette-replay infra gap (downloadUrl
   # redaction is not replay-able) — the latter deferred and tracked here.
   - BK-262
-review_rounds: 1
+review_rounds: 2
 expected_ripples:
   # user.api -> CHANGELOG [Unreleased] stubs for the error-fidelity fix + base_path.
   - CHANGELOG.md
