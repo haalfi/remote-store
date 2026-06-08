@@ -146,8 +146,7 @@ class GraphBackend(AsyncBackend):
         base_path: Optional drive subfolder to scope every operation under.
             When set, all keys are addressed relative to this folder and keys
             returned by listing / ``to_key`` stay relative to it, so the backend
-            behaves as if ``base_path`` were its root (mirrors
-            ``SFTPBackend.base_path``). Defaults to the drive root.
+            behaves as if ``base_path`` were its root. Defaults to the drive root.
         client_options: Extra options passed through to the internal
             ``httpx.AsyncClient``. (When a future revision adds an explicit
             httpx-level constructor parameter, it takes precedence over a
@@ -839,11 +838,16 @@ class GraphBackend(AsyncBackend):
             # InvalidPath, not the generic mapping (ID-211, BE-008).
             raise InvalidPath(f"Cannot write — '{path}' names an existing folder", path=path, backend=self.name)
         if status == 404:
-            # Graph auto-creates missing intermediate folders, so the only cause of
-            # a write 404 is a regular file blocking an ancestor segment. Name it
-            # as InvalidPath (ID-209); fall back to NotFound if the walk finds none.
+            # Graph auto-creates missing intermediate folders, so a write 404 is
+            # almost always a regular file blocking an ancestor segment — name it as
+            # InvalidPath (ID-209). If the walk finds no file ancestor, route the 404
+            # back through the standard classifier so a drive-scope resourceNotFound
+            # keeps its BackendUnavailable mapping (GR-031) instead of flattening to
+            # NotFound.
             await self._raise_if_file_ancestor(path)
-            raise NotFound(f"Not found: {path}", path=path, backend=self.name)
+            body = response_json(response)
+            code = (body.get("error") or {}).get("code") if isinstance(body, dict) else None
+            raise classify_graph_error(status, code, path=path)
         if status == 409:
             raise discriminate_write_conflict(response_json(response), path, backend=self.name)
         return item_to_write_result(response.json(), path, len(data), metadata)

@@ -998,6 +998,19 @@ postcondition:
   is governed by spec 036 (`SEEK-*`).
 - `write` with malformed `Content-Range` (upload session) →
   `RemoteStoreError` mapped from `409 invalidRange`.
+- `write` / `write_atomic` onto an existing folder → `InvalidPath`.
+  Live Graph rejects `PUT /content` to a folder with `501 notSupported`;
+  the backend confirms the target is a folder and raises `InvalidPath`
+  (the hierarchical-backend promise — BE-008, ID-211).
+- `write` / `write_atomic` / `move` / `copy` descending through a file
+  ancestor → `InvalidPath`. Live Graph answers a write under a file
+  ancestor with `404` and a `move` / `copy` with `400 invalidRequest`;
+  the backend confirms an ancestor is a regular file and re-raises
+  `InvalidPath` naming it (BE-008, ID-209, ID-211).
+- `move` / `copy` onto an existing directory → `InvalidPath`. The `409`
+  Graph returns carries no folder facet, so the backend confirms the
+  destination is a folder and raises `InvalidPath` rather than
+  `AlreadyExists`.
 - `list_files` / `list_folders` on a file path → yields nothing
   (BE-014, BE-015).
 - `get_file_info` on a folder → `InvalidPath`.

@@ -270,6 +270,17 @@ class TestLiveWriteErrorFidelity:
             with pytest.raises(NotFound):
                 await backend.write("parent.txt/child.txt", b"x")
 
+    @respx.mock
+    @pytest.mark.spec("GR-031")
+    async def test_drive_scope_404_keeps_backend_unavailable_mapping(self) -> None:
+        # A write 404 with no file ancestor routes back through classify_graph_error:
+        # a drive-scope resourceNotFound keeps its BackendUnavailable mapping (GR-031)
+        # rather than flattening to NotFound (PR #769 review).
+        respx.put(_CONTENT_RE).mock(return_value=httpx.Response(404, json={"error": {"code": "resourceNotFound"}}))
+        async with _make() as backend:
+            with pytest.raises(BackendUnavailable):
+                await backend.write("a.txt", b"x")
+
 
 # ===========================================================================
 # Metadata gate + path validity + write_atomic

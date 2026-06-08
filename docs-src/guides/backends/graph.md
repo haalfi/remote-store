@@ -100,6 +100,7 @@ A `drive_id` is immutable for the life of a backend instance — point a second
 | `retry` | `RetryPolicy` | `None` | Transient-failure retry policy; `None` uses the default profile |
 | `upload_chunk_size` | `int` | 10 MiB | Upload-session chunk size; must be a positive multiple of 320 KiB and `< 60 MiB` |
 | `copy_timeout` | `float \| None` | `None` | Wall-clock budget for copy/move monitor polling (see [caveat](#operational-caveats)) |
+| `base_path` | `str` | `""` | Scope every operation to this drive subfolder; keys are addressed relative to it and listings return relative keys. Defaults to the drive root |
 | `client_options` | `dict` | `None` | Extra kwargs passed through to the internal `httpx.AsyncClient` |
 
 ## Operational caveats

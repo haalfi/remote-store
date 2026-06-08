@@ -17,7 +17,7 @@ discovery_followups:
   # bugs (fixed in-PR) and the graph cassette-replay infra gap (downloadUrl
   # redaction is not replay-able) — the latter deferred and tracked here.
   - BK-262
-review_rounds: 0
+review_rounds: 1
 expected_ripples:
   # user.api -> CHANGELOG [Unreleased] stubs for the error-fidelity fix + base_path.
   - CHANGELOG.md
@@ -32,6 +32,12 @@ surprising_ripples:
   # GR-058 isolation uuid pollutes recorded URLs and had to be normalised to a fixed
   # token for replay to match — an interaction the ripple-check did not anticipate.
   - tests/backends/fixtures/_cassettes.py
+  # PR #769 review caught the docs ripple the docs-sweep missed: adding the base_path
+  # constructor param (GR-058) left the graph.md guide's Options table the only place
+  # the new option was undocumented. Also: the write-404 fallback I introduced
+  # flattened drive-scope resourceNotFound (GR-031 BackendUnavailable) to NotFound —
+  # caught in review, routed back through classify_graph_error.
+  - docs-src/guides/backends/graph.md
 phases:
   - id: orient
     name: Orient
