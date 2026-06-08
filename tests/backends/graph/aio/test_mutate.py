@@ -134,6 +134,7 @@ class TestDeleteFolder:
 
     @respx.mock
     @pytest.mark.spec("GR-043")
+    @pytest.mark.spec("GR-046")  # umbrella: delete_folder(recursive=False) on non-empty -> DirectoryNotEmpty
     async def test_non_recursive_nonempty_raises_directory_not_empty(self) -> None:
         respx.get(_ITEM_RE).mock(return_value=httpx.Response(200, json=_folder_item(child_count=2)))
         delete = respx.delete(_ITEM_RE).mock(return_value=httpx.Response(204))
@@ -521,3 +522,44 @@ class TestClosePollerCancel:
         with pytest.raises(asyncio.CancelledError):
             await copy_task
         assert backend._pending_pollers == set()
+
+
+# ===========================================================================
+# Live move/copy destination error fidelity (GR-046)
+# ===========================================================================
+
+
+@pytest.mark.parametrize("op", ["copy", "move"])
+class TestLiveMoveCopyDestErrorFidelity:
+    """GR-046: the live status shapes (400 invalidRequest, 409 with no folder facet)
+    the mocked discriminator tests do not reproduce — verified live in GR-DONE."""
+
+    @respx.mock
+    @pytest.mark.spec("GR-046")
+    async def test_dest_under_file_ancestor_raises_invalid_path(self, op: str) -> None:
+        # Live Graph rejects a dst under a file ancestor with 400 invalidRequest; the
+        # backend confirms the ancestor is a file and re-raises InvalidPath naming it.
+        respx.get(url__regex=r".*/root:/a/src\.txt:$").mock(
+            return_value=httpx.Response(200, json=_file_item("src.txt"))
+        )
+        respx.get(url__regex=r".*/root:/blocker\.txt:$").mock(
+            return_value=httpx.Response(200, json=_file_item("blocker.txt"))
+        )
+        route = respx.post(_COPY_RE) if op == "copy" else respx.patch(_MOVE_RE)
+        route.mock(return_value=httpx.Response(400, json={"error": {"code": "invalidRequest"}}))
+        async with _make() as backend:
+            with pytest.raises(InvalidPath, match="blocker.txt"):
+                await getattr(backend, op)("a/src.txt", "blocker.txt/dst.txt")
+
+    @respx.mock
+    @pytest.mark.spec("GR-046")
+    async def test_dest_is_directory_raises_invalid_path(self, op: str) -> None:
+        # Live Graph's 409 onto an existing folder carries no folder facet, so the
+        # backend confirms dst-is-folder via a metadata GET and raises InvalidPath.
+        respx.get(url__regex=r".*/root:/src\.txt:$").mock(return_value=httpx.Response(200, json=_file_item("src.txt")))
+        respx.get(url__regex=r".*/root:/dstdir:$").mock(return_value=httpx.Response(200, json=_folder_item("dstdir")))
+        route = respx.post(_COPY_RE) if op == "copy" else respx.patch(_MOVE_RE)
+        route.mock(return_value=httpx.Response(409, json={"error": {"code": "nameAlreadyExists"}}))
+        async with _make() as backend:
+            with pytest.raises(InvalidPath, match="dstdir"):
+                await getattr(backend, op)("src.txt", "dstdir")

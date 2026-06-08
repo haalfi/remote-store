@@ -101,7 +101,17 @@ def _resolve_graph_drive_id() -> str:
     to ``FAKE_DRIVE_ID`` in every recorded cassette. The Graph live tier is
     device-code / consumer, so there is no connection string to parse — just
     the opaque drive id.
+
+    Loads ``.env`` (like ``_resolve_azure_account``) so ``--verify-only`` — which
+    skips the recording preflight that would otherwise load it — still resolves
+    the drive id for the scrub check.
     """
+    try:
+        from dotenv import load_dotenv  # noqa: PLC0415
+
+        load_dotenv(override=False)
+    except ImportError:
+        pass
     drive_id = os.environ.get("GRAPH_DRIVE_ID", "").strip()
     if not drive_id:
         _die("GRAPH_DRIVE_ID is missing.\n  See docs-src/guides/backends/graph-setup.md for setup instructions.")

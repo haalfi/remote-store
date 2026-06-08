@@ -17,6 +17,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - ID-127: `GraphBackend` write path — `write` / `write_atomic` (small `PUT /content` + large upload session), auto-mkdir, native `WriteResult`
 - ID-127: `GraphBackend` mutate path — `delete` / `delete_folder` / `move` / `copy` with async copy/move monitor polling
 - ID-127: Microsoft Graph backend usage guide and capability listings (FEATURES, capabilities matrix, choosing-a-backend, README)
+- ID-127: `GraphBackend` write / move / copy raise `InvalidPath` for folder targets, file-ancestor descents, and directory destinations (live-conformance error fidelity)
+- ID-127: `GraphBackend(base_path=…)` scopes a backend to a drive subfolder (GR-058)
 
 ## [0.27.0] - 2026-06-02
 

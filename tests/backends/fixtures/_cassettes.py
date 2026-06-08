@@ -149,6 +149,17 @@ the ``/drives/{drive_id}/...`` path in every outgoing request matches the
 cassette. Not a secret — an arbitrary well-formed token.
 """
 
+GRAPH_CONFORMANCE_BASE_PATH = "rs-conformance"
+"""Canonical ``base_path`` (GR-058) the ``graph_replay`` fixture roots under.
+
+``graph_live`` isolates each conformance test in a unique
+``rs-conformance-<uuid>`` drive subfolder; the scrub below rewrites that
+per-test uuid form back to this stable token in recorded cassette URIs and
+bodies, so a cassette recorded under a random folder replays against this fixed
+path. ``graph_replay`` constructs its backend with this same ``base_path`` so
+every outgoing request matches. Not a secret — a normalisation token.
+"""
+
 _GRAPH_SCRUB_REQUEST_HEADERS: frozenset[str] = frozenset({"authorization", "cookie", "client-request-id"})
 _GRAPH_SCRUB_RESPONSE_HEADERS: frozenset[str] = frozenset(
     {"request-id", "client-request-id", "x-ms-ags-diagnostic", "set-cookie", "date"}
@@ -180,6 +191,14 @@ _GRAPH_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
     (re.compile(rb'("(?:access_token|refresh_token)"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
     (re.compile(rb"Bearer\s+[A-Za-z0-9._~+/=\-]+"), b"Bearer REDACTED"),
 ]
+
+# Per-test conformance-root normalisation (GR-058 isolation ↔ replay): rewrite
+# the unique ``rs-conformance-<uuid>`` subfolder graph_live roots each test under
+# back to the stable ``GRAPH_CONFORMANCE_BASE_PATH`` token, in both request URIs
+# and request/response bodies (parentReference paths), so cassettes are
+# reproducible on replay regardless of the random per-record uuid.
+_GRAPH_CONFORMANCE_ROOT_RE_STR: re.Pattern[str] = re.compile(r"rs-conformance-[0-9a-f]+")
+_GRAPH_CONFORMANCE_ROOT_RE_BYTES: re.Pattern[bytes] = re.compile(rb"rs-conformance-[0-9a-f]+")
 
 # Request-body redactions for the OAuth token-exchange POST. MSAL sends this
 # form-encoded over ``requests`` (which vcrpy also patches), so a recording made
@@ -384,6 +403,9 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
     def before_record_request(request: Any) -> Any:
         if real_drive_id:
             request.uri = request.uri.replace(real_drive_id, FAKE_DRIVE_ID)
+        # Normalise the per-test base_path uuid to the stable replay token so the
+        # recorded URI matches graph_replay's fixed base_path (runs in both modes).
+        request.uri = _GRAPH_CONFORMANCE_ROOT_RE_STR.sub(GRAPH_CONFORMANCE_BASE_PATH, request.uri)
         for key in list(request.headers):
             lower = key.lower()
             if lower in _GRAPH_SCRUB_REQUEST_HEADERS:
@@ -398,6 +420,12 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
             raw = body.encode() if isinstance(body, str) else body
             for pattern, replacement in _GRAPH_REQUEST_BODY_SCRUB:
                 raw = pattern.sub(replacement, raw)
+            # The move/copy parentReference body carries the live drive_id (driveId
+            # field + a /drives/{drive_id}/root: path), so the URI replace above is
+            # not enough — rewrite it in the request body too (mirrors the response).
+            if real_drive_id:
+                raw = raw.replace(real_drive_id.encode(), FAKE_DRIVE_ID.encode())
+            raw = _GRAPH_CONFORMANCE_ROOT_RE_BYTES.sub(GRAPH_CONFORMANCE_BASE_PATH.encode(), raw)
             request.body = raw.decode() if isinstance(body, str) else raw
         return request
 
@@ -428,6 +456,7 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
                 raw = raw.replace(real_drive_id.encode(), FAKE_DRIVE_ID.encode())
             for pattern, replacement in _GRAPH_BODY_SCRUB:
                 raw = pattern.sub(replacement, raw)
+            raw = _GRAPH_CONFORMANCE_ROOT_RE_BYTES.sub(GRAPH_CONFORMANCE_BASE_PATH.encode(), raw)
             body["string"] = raw.decode() if was_str else raw
         return response
 
@@ -446,6 +475,7 @@ __all__ = [
     "FAKE_CONN_STR",
     "FAKE_DRIVE_ID",
     "FAKE_FILESYSTEM",
+    "GRAPH_CONFORMANCE_BASE_PATH",
     "build_graph_vcr_config",
     "build_vcr_config",
     "live_connection_string",

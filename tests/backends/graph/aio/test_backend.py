@@ -8,16 +8,20 @@ test modules; this module covers the construction-time and addressing surface.
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import httpx
 import pytest
+import respx
 
 from remote_store._capabilities import Capability
+from remote_store._config import RetryPolicy
 from remote_store._errors import CapabilityNotSupported
 from remote_store.aio.backends._graph.backend import GraphBackend, _encode_segment
 
 _DRIVE = "b!driveid123"
+_UPLOAD_URL = "https://up.example.com/session/abc?tempauth=secret"
 
 
 def _make(**kwargs: Any) -> GraphBackend:
@@ -28,6 +32,7 @@ class TestConstruction:
     """GR-001 / GR-005 construction and validation."""
 
     @pytest.mark.spec("GR-001")
+    @pytest.mark.spec("GR-004")
     def test_valid_construction_does_no_io(self) -> None:
         backend = _make()
         assert backend.drive_id == _DRIVE
@@ -79,6 +84,16 @@ class TestConstruction:
     def test_copy_timeout_none_is_allowed(self) -> None:
         assert _make(copy_timeout=None)._copy_timeout is None
 
+    @pytest.mark.spec("GR-053")
+    def test_retry_none_uses_default_profile(self) -> None:
+        # retry=None -> the backend's default RetryPolicy() profile (RET-015).
+        assert _make()._retry == RetryPolicy()
+
+    @pytest.mark.spec("GR-053")
+    def test_explicit_retry_replaces_default(self) -> None:
+        policy = RetryPolicy(max_attempts=7)
+        assert _make(retry=policy)._retry is policy
+
 
 class TestIdentity:
     """GR-002 name, GR-003 capabilities."""
@@ -110,6 +125,15 @@ class TestIdentity:
     )
     def test_withheld_capabilities(self, withheld: Capability) -> None:
         assert not _make().capabilities.supports(withheld)
+
+    @pytest.mark.spec("GR-050")
+    def test_drive_id_is_immutable(self) -> None:
+        # drive_id is a read-only property: changing the target drive requires a
+        # new backend. Reserved as a future identity component (GR-050).
+        backend = _make()
+        assert backend.drive_id == _DRIVE
+        with pytest.raises(AttributeError):
+            backend.drive_id = "b!other"  # type: ignore[misc]
 
 
 class TestAddressing:
@@ -169,6 +193,43 @@ class TestAddressing:
         assert plan.details["base_url"] == "https://graph.microsoft.com/v1.0"
 
 
+class TestBasePath:
+    """GR-058 base_path scoping."""
+
+    @pytest.mark.spec("GR-058")
+    def test_native_path_prepends_base_path(self) -> None:
+        assert _make(base_path="root/sub").native_path("a/b.txt") == f"/drives/{_DRIVE}/root:/root/sub/a/b.txt:"
+
+    @pytest.mark.spec("GR-058")
+    def test_native_path_empty_key_is_base_folder(self) -> None:
+        assert _make(base_path="root/sub").native_path("") == f"/drives/{_DRIVE}/root:/root/sub:"
+
+    @pytest.mark.spec("GR-058")
+    def test_to_key_round_trips_under_base_path(self) -> None:
+        backend = _make(base_path="root/sub")
+        assert backend.to_key(backend.native_path("a/b.txt")) == "a/b.txt"
+        assert backend.to_key(backend.native_path("")) == ""
+
+    @pytest.mark.spec("GR-058")
+    def test_parent_ref_path_includes_base_path(self) -> None:
+        # The move/copy parentReference must also be scoped (GR-058 + GR-027/025).
+        backend = _make(base_path="root/sub")
+        assert backend._parent_ref_path("dir") == f"/drives/{_DRIVE}/root:/root/sub/dir"
+
+    @pytest.mark.spec("GR-058")
+    def test_base_path_slashes_normalised(self) -> None:
+        assert _make(base_path="/root/sub/").native_path("x") == f"/drives/{_DRIVE}/root:/root/sub/x:"
+
+    @pytest.mark.spec("GR-058")
+    def test_non_string_base_path_rejected(self) -> None:
+        with pytest.raises(ValueError, match="base_path"):
+            _make(base_path=123)  # type: ignore[arg-type]
+
+    @pytest.mark.spec("GR-058")
+    def test_default_base_path_targets_drive_root(self) -> None:
+        assert _make().native_path("a") == f"/drives/{_DRIVE}/root:/a:"
+
+
 class TestUnwrapAndClose:
     """GR-037 escape hatch and GR-051 close baseline."""
 
@@ -222,6 +283,33 @@ class TestUnwrapAndClose:
         backend = GraphBackend(_DRIVE, token_provider=provider)
         await backend.aclose()
         assert provider.flushed
+
+    @respx.mock
+    @pytest.mark.spec("GR-051")
+    async def test_aclose_cancels_pollers_and_aborts_sessions_together(self) -> None:
+        # The combined close() assertion no single op-step owns end-to-end:
+        # GR-WRITE landed the upload-session-abort half (TestCloseAbortsSessions
+        # in test_write.py) and GR-MUTATE the poller-cancel half
+        # (TestClosePollerCancel in test_mutate.py), but only here are BOTH
+        # exercised at once on one fully-assembled backend that holds a pending
+        # poller AND an in-flight upload session. close() must cancel the poller,
+        # fire DELETE {sessionUrl}, empty both registries, and never raise.
+        delete = respx.delete(_UPLOAD_URL).mock(return_value=httpx.Response(204))
+        backend = _make()
+
+        async def _never() -> None:
+            await asyncio.Event().wait()
+
+        task: asyncio.Task[None] = asyncio.ensure_future(_never())
+        backend._pending_pollers.add(task)
+        backend._active_upload_sessions.add(_UPLOAD_URL)
+
+        await backend.aclose()  # must not raise on cleanup
+
+        assert task.cancelled()
+        assert delete.called
+        assert backend._pending_pollers == set()
+        assert backend._active_upload_sessions == set()
 
     @pytest.mark.spec("GR-052")
     def test_client_options_passed_through(self) -> None:

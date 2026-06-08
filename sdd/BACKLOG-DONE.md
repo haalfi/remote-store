@@ -8,6 +8,47 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
+  spec: GR-001..GR-058, ERR-013 · effort: L · audience: user.api
+  Unified async backend covering OneDrive (personal & business) and SharePoint
+  document libraries via the Microsoft Graph REST API; a single `drive_id`
+  selects the target drive (async-only — construct via
+  `AsyncStore(backend=GraphBackend(...))`). Design: RFC-0010, ADR-0021 (SDK),
+  ADR-0022 (auth), ADR-0023 (async polling), ADR-0024 (ResourceLocked); spec
+  [044](specs/044-graph-backend.md) (GR-001..GR-058), ERR-013 in spec 005,
+  RET-015 in spec 025.
+  - **Bundled sub-task — `ResourceLocked` (ERR-013, ADR-0024):** landed in
+    GR-CONTRACT — the `ResourceLocked` exception (`_errors.py`), the
+    `Error.ResourceLocked(path, backend)` Dafny variant
+    (`sdd/formal/BackendContract.dfy`), and its `_raise_if_err` dispatch
+    (`tests/backends/dafny/_helpers.py`). Folded from the former ID-189.
+  - Shipped across nine steps: GR-FOUNDATION, GR-CONTRACT, GR-CORE, GR-READ,
+    GR-TRANSFER, GR-WRITE, GR-MUTATE, GR-DOCS-E2E, and **GR-DONE** (BK-237 DoD
+    umbrella + close-out).
+  - **GR-DONE** landed: the combined `close()` assertion (GR-051 — cancels
+    pending pollers *and* aborts in-flight upload sessions on one assembled
+    backend); the integration-only tier (GR-007/020/026/034/054 + 10 MiB
+    round-trip, two-layer `graph_live`-gated); the spec↔mark traceability sweep
+    (removed the coarse `GR-*` allowlist in `check_spec_marks.py`, marked
+    GR-004/021/046/050/053, allowlisted the deferred GR-011); a wrapper-forwarding
+    proof (`ResourceLocked` survives the async→sync adapter); and a capability
+    review (no over/under-declaration).
+  - **Live conformance exposed and fixed real backend bugs.** Recording the
+    previously-skip-clean (vacuous) conformance suite live for the first time
+    surfaced error-fidelity divergences the respx unit tests had masked by
+    mocking 409+facet responses live Graph never returns: `write`/`move`/`copy`
+    now raise `InvalidPath` for folder targets (live 501), file-ancestor descents
+    (404/400), and directory destinations, via error-path metadata-confirm remaps
+    (mirrors Azure). Added **`base_path` (GR-058)** to scope a backend to a drive
+    subfolder (the per-test isolation mechanism + a real feature). Full live
+    conformance is green (109/0/9).
+  - **Cassette CI replay deferred to [BK-262]** — committable replay cassettes
+    need pre-signed `downloadUrl` redaction to a replay-able placeholder URL;
+    the prerequisite scrub infra (vcr-mark hook, request-body `drive_id` scrub,
+    `base_path` uuid scrub) landed here. Conformance was proven green live, so
+    this is strictly better than the prior vacuous-skip state.
+  - Trace: `sdd/traces/ID-127-gr-done.yml` (+ the eight prior step traces).
+
 - [x] **ID-180 — Stable HTML-anchor IDs across non-spec docs under `sdd/`**
   spec: — · effort: M · audience: library.maintainer, contributor.process
   Cross-doc references between framework docs (CLAUDE.md, CONTRIBUTING.md,

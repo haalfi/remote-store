@@ -137,6 +137,10 @@ class TestResolveGraphDriveId:
 
     def test_dies_when_missing(self, rc, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("GRAPH_DRIVE_ID", raising=False)
+        # The resolver lazily loads .env (so --verify-only resolves the drive id
+        # without the recording preflight); no-op it so a developer's real .env
+        # cannot repopulate GRAPH_DRIVE_ID and mask the missing-var death path.
+        monkeypatch.setattr("dotenv.load_dotenv", lambda **_: None)
         with pytest.raises(SystemExit) as exc:
             rc._resolve_graph_drive_id()
         assert exc.value.code == 1
