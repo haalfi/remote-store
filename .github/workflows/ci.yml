@@ -72,7 +72,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
@@ -128,7 +128,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
@@ -151,7 +151,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           # BK-230: forward-defensive cache-suffix. The matrix excludes the
           # primary (line 63: ALL_PYTHONS - PRIMARY), so today no shard
@@ -190,7 +190,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           cache-suffix: ci-test-primary  # BK-230
       - run: uv pip install -e ".[dev]"
@@ -221,7 +221,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
@@ -246,7 +246,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
       - run: uv pip install -e ".[dev]"
       - name: Run OS-sensitive tests
         run: pytest -m "os_sensitive" --ignore=tests/e2e
@@ -260,7 +260,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
@@ -275,7 +275,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev,arrow]"
@@ -303,7 +303,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           cache-suffix: ci-e2e  # BK-230
       - run: uv pip install -e ".[dev]"
@@ -318,7 +318,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[docs]"
@@ -334,7 +334,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false
       - run: uv pip install build twine

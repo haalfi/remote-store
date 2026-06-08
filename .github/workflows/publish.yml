@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
       - run: uv pip install build twine
       - run: python -m build
       - run: twine check dist/*
@@ -66,7 +66,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
       - run: uv pip install -e ".[dev]"
       - name: Run tests with coverage
         # Deliberate single-pass (not the two-pass `hatch run test-cov-strict`
