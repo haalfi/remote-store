@@ -365,10 +365,12 @@ and the highest ID already in this file, then take the next integer. Run
     adding the variant alone would create a verified contract for
     behaviour the codebase cannot exhibit.
   - Progress: GR-FOUNDATION, GR-CONTRACT, GR-CORE, GR-READ, GR-TRANSFER,
-    GR-WRITE, and GR-MUTATE (delete / delete_folder / move / copy + the async
-    copy/move monitor poller) landed. Next: GR-DOCS-E2E (usage guide + e2e
-    streaming wiring) and GR-DONE (BK-237 DoD + combined `close()` + close-out)
-    per the [implementation plan](plans/ID-127-graph-backend-implementation.md).
+    GR-WRITE, GR-MUTATE (delete / delete_folder / move / copy + the async
+    copy/move monitor poller), and GR-DOCS-E2E (usage guide `graph.md`,
+    generated async-backend FEATURES tables + capability/enumeration parity,
+    e2e Graph streaming hop) landed. Next: GR-DONE (BK-237 DoD + combined
+    `close()` + close-out) per the
+    [implementation plan](plans/ID-127-graph-backend-implementation.md).
 
 - [ ] **BK-259 — Graph `_range_fallback_paths` flag: scope to operation, not backend lifetime**
   spec: GR-015 · effort: S · audience: user.api, library.maintainer
@@ -449,6 +451,13 @@ and the highest ID already in this file, then take the next integer. Run
   `tests/backends/fixtures/_cassettes.py`,
   `tests/backends/conformance/conftest.py`, `scripts/record_cassettes.py`, and
   the recorded cassette tree. Discovered in ID-127 GR-WRITE.
+
+  **Extension (example tests, ID-127 GR-DOCS-E2E review, PR #764):** the same
+  recorded cassettes could drive the env-gated `examples/backends/graph_backend.py`
+  snippet, which today only runs under live credentials (and is excluded from the
+  `run_examples.py` CI sweep entirely). Once the pre-signed-URL replay above is
+  solved, a replayed variant could exercise the example in CI without creds —
+  same blocker, second beneficiary. Gated on the solution sketch landing first.
 
 - [ ] **BK-261 — Graph small-write `overwrite=True`: replace-returns-409-for-files quirk**
   spec: GR-018 · effort: S · audience: user.api, library.maintainer

@@ -238,6 +238,27 @@ additional backend-specific options via `BackendConfig.options`.
 | `sql-query` | — | — |
 <!-- END_GENERATED:backends_flags -->
 
+**Native async backends** — constructed directly via `AsyncStore(backend=…)`;
+no RegistryConfig `type=` string (there is no async config registry).
+
+<!-- BEGIN_GENERATED:backends_async -->
+| Class | Extra | Capabilities |
+|---|---|---|
+| `AsyncAzureBackend` | `remote-store[azure]` | All except `ATOMIC_MOVE`, `SEEKABLE_READ` |
+| `AsyncMemoryBackend` | — | All except `GLOB` |
+| `GraphBackend` | `remote-store[graph]` | All except `ATOMIC_MOVE`, `GLOB`, `SEEKABLE_READ` |
+<!-- END_GENERATED:backends_async -->
+
+**Write-result quality flags by native async backend:**
+
+<!-- BEGIN_GENERATED:backends_async_flags -->
+| Class | `WRITE_RESULT_NATIVE` | `USER_METADATA` |
+|---|---|---|
+| `AsyncAzureBackend` | Yes | Yes |
+| `AsyncMemoryBackend` | Yes | Yes |
+| `GraphBackend` | Yes | — |
+<!-- END_GENERATED:backends_async_flags -->
+
 ---
 
 ## Configuration
@@ -335,6 +356,7 @@ adapters for mixing sync and async backends.
 | `AsyncBackend` | ABC for native async backends |
 | `AsyncMemoryBackend` | In-memory async backend (for testing) |
 | `AsyncAzureBackend` | Native async Azure backend via Azure SDK async clients |
+| `GraphBackend` | Native async Microsoft Graph backend (OneDrive / SharePoint / Teams) via httpx + msal; companions `GraphAuth`, `GraphUtils` |
 | `AsyncWritableContent` | Type alias: `bytes \| AsyncIterator[bytes]` |
 
 **Bridge adapters** — when you need to cross the sync/async boundary:

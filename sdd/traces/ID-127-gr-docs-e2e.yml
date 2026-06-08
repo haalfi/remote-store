@@ -1,0 +1,121 @@
+id: ID-127
+title: "OneDrive / SharePoint backend (Microsoft Graph) — GR-DOCS-E2E (Step 7): usage guide, generated async-backend listings, e2e Graph streaming hop"
+trigger: "ID-127 Step 7, after all seven functional steps (GR-FOUNDATION..GR-MUTATE) landed on master. The data plane is complete but the backend is invisible to users: no usage guide (only the GR-FOUNDATION provisioning runbook graph-setup.md exists), Graph is absent from every backend enumeration (README, FEATURES, capabilities matrix, choosing-a-backend, backends index, context7, homepage), and the hand-built async streaming-integrity e2e chain has no Graph hop. Surfacing it cleanly is blocked by a structural fact discovered during the ripple sweep: Graph is the first ASYNC-ONLY backend (no sync Registry type= string, no async config registry), so the FEATURES backends_main/backends_flags tables — generated from the sync registry — have no slot for it, mirroring how AsyncAzureBackend is already excluded. Leaves GR-DONE (Step 8: combined close(), integration-only invariants, BK-237 DoD, close-out) to finish ID-127."
+source_items:
+  - ID-127
+audience:
+  - user.site
+  - user.api_docs
+  - contributor.tooling
+  - infra.test
+expected_ripples:
+  # user.site audience -> CHANGELOG stub required (trace-schema derived rule).
+  - CHANGELOG.md
+  # gen_graph fix re-emits the IR; gen_features/gen_graph_viz regen follow per the
+  # "Public API" / "Backend" ripple-check rows.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+  - FEATURES.md
+surprising_ripples:
+  # The ripple-check "Backend" row anticipates README/FEATURES/guides/nav/examples,
+  # but NOT the IR generator itself. Two generator surprises, both rooted in Graph
+  # being the first async-only backend:
+  # (1) scripts/gen_graph.py silently dropped the xtr:graph -> GraphBackend "enables"
+  #     edge. The extra->backend join keys on the import-derived qname from
+  #     aio/backends/__init__.py, which re-exports GraphBackend from the _graph
+  #     PACKAGE (`from ..._graph import GraphBackend`), giving `..._graph.GraphBackend`
+  #     while the canonical griffe node is `..._graph.backend.GraphBackend`. Every
+  #     other backend is a single module, so the `.backend` submodule level is unique
+  #     to Graph and the mismatch went unnoticed until the async FEATURES table needed
+  #     the extra. Fixed by resolving the import qname to the real backend node
+  #     (exact match, else by class name within the import package).
+  # (2) scripts/gen_features.py enumerated backends from the SYNC registry only, so an
+  #     async-only backend could never appear. Added project_backends_async /
+  #     project_backends_async_flags (new BEGIN_GENERATED:backends_async regions),
+  #     filtered to `.aio.backends.*` so the AsyncBackend ABC and SyncBackendAdapter
+  #     bridge stay out, and retrofitted AsyncAzureBackend for consistency.
+  - scripts/gen_graph.py
+  - scripts/gen_features.py
+# PR #764 review (Testing + Documentation experts) drove one fix round: a vacuous
+# ABC-leak assertion (space-before-backtick needle never matched), the Graph move
+# mischaracterised as copy-then-delete in README + capabilities-matrix (it is a
+# native identity-preserving PATCH driveItem; ATOMIC_MOVE withheld for async GR-027),
+# a graph.md http_client row documenting the not-yet-existing close() (only aclose()
+# exists today, GR-DONE work), plus two accuracy nits (FileInfo.extra, over-broad
+# seekable claim). The cassettes-for-example-tests idea was folded into BK-260; the
+# e2e GR-015 demotion-branch coverage gap is deferred to GR-DONE. No new backlog ID
+# born and all fixes landed in ripple-check-anticipated files, so neither
+# discovery_followups nor surprising_ripples gained entries.
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/plans/ID-127-graph-backend-implementation.md
+        section: "Step 7 — GR-DOCS-E2E"
+        read_type: gate
+        extract: "Files touched (graph.md usage guide + nav, examples snippet, FEATURES/README lines, e2e conftest + test wiring), acceptance (TMPDIR GR-019 + copy_timeout=None GR-026 caveats, LAZY_READ range-fallback exemption, skips cleanly without creds). GR-MUTATE not a functional prerequisite for the e2e test"
+      - file: sdd/rfcs/rfc-0010-graph-backend.md
+        section: "Documentation deliverables (implementation phase)"
+        read_type: gate
+        extract: "Required docs: guides/backends/graph.md, examples/graph-backend.md (or module docstring via gen_pages), FEATURES.md row matching GR-003, __all__<->index.md parity (already landed GR-CORE), README backends line. Does NOT enumerate capabilities-matrix / choosing-a-backend (caught by the ripple-check Backend row instead)"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backend"
+        read_type: gate
+        extract: "Backend trigger -> README table, pyproject extras, guides, docs nav, examples, specs, _registry.py. Drove the exhaustive enumeration sweep; the sweep found capabilities-matrix.md / choosing-a-backend.md / index.md / context7.json as additional hand-maintained enumeration sites beyond the RFC list"
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-019, GR-026"
+        read_type: gate
+        extract: "GR-019: unknown-length AsyncIterator spools to SpooledTemporaryFile (system temp, no dir=); guide MUST note TMPDIR redirection. GR-026: copy_timeout=None is unbounded-by-design and unsafe by default; guide MUST call out the unbounded wait + the asyncio.timeout escape"
+  - id: implement_tooling
+    name: Surface async-only backends in the generated tables
+    steps:
+      - file: scripts/gen_graph.py
+        section: "extra nodes + enables edges"
+        read_type: reference
+        extract: "Found the dropped xtr:graph enables edge: the join `cls:{class_qname}` from the re-export AST misses the deeper `..._graph.backend.GraphBackend` node. Resolve by exact match else by class name within the import package; only the Graph case changes (one edge added), all single-module backends byte-identical"
+      - file: scripts/gen_features.py
+        section: "project_backends_async, _async_backend_nodes, _async_backend_extras"
+        read_type: reference
+        extract: "Sync table reads the sync registry; added an async projection enumerating runtime=async role=backend nodes filtered to `.aio.backends.*` (excludes the AsyncBackend ABC + SyncBackendAdapter), with async-aware extras from `.aio.`-dst enables edges. GraphBackend -> 'All except ATOMIC_MOVE, GLOB, SEEKABLE_READ' + WRITE_RESULT_NATIVE/no USER_METADATA, matching GR-003"
+      - file: tests/scripts/test_gen_graph.py
+        section: "test_enables_edge_resolves_re_exported_subpackage_class (run)"
+        read_type: verify
+        extract: "Regression test: the xtr:graph -> GraphBackend enables edge exists and no extra node is orphaned. 61 generator tests green (was 51)"
+  - id: docs
+    name: Usage guide + enumeration parity
+    steps:
+      - file: docs-src/guides/backends/azure.md
+        section: "(full)"
+        read_type: reference
+        extract: "Structural model for graph.md (Installation / Usage / Auth / Options / Capabilities / Streaming / Escape Hatch / See also / API Reference :::). Adapted for async-only construction (no RegistryConfig) and the TMPDIR + copy_timeout caveats"
+      - file: docs-src/reference/capabilities-matrix.md
+        section: "Backend x Capability"
+        read_type: reference
+        extract: "Added a Graph column (async-only footnote) + partial-support prose; first async-only backend in the sync-framed matrix"
+      - file: examples/_categories.yml
+        section: "backends"
+        read_type: reference
+        extract: "Registered graph_backend in the backends category; example is an env-gated async script (asyncio.run) modelled on azure_backend.py, auto-rendered by gen_pages (ast.parse, no import) so module-level sys.exit is safe"
+  - id: wire_e2e
+    name: e2e Graph streaming hop
+    steps:
+      - file: tests/backends/fixtures/graph_live.py
+        section: "_factory"
+        read_type: reference
+        extract: "Reused the two-layer gate: RS_TEST_LIVE_GRAPH=1 + require_graph_live_credentials() + GraphAuth(scopes=Files.ReadWrite/User.Read) + GraphBackend(GRAPH_DRIVE_ID). conftest gained _graph_live_available() + build_graph_live_store(root)"
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "get_file_info (RANGE_FALLBACK_FLAG)"
+        read_type: reference
+        extract: "GR-015 SharePoint range-fallback surfaces FileInfo.extra['graph.read.range_fallback']; the e2e hop checks it after reading from Graph and exempts that hop from the lazy chunking assertion (count>1 / max_chunk<file_size) when it fires"
+      - file: tests/e2e/test_async_streaming_integrity.py
+        section: "test_chain_checksum_and_chunking (run)"
+        read_type: verify
+        extract: "Graph hop inserted before the Local hop when the gate is met; skips cleanly otherwise. Fallback chain (no Azurite, no Graph) green: 1 passed. Live Stage-3 validation (multi-MiB round-trip on a real OneDrive) deferred to the operator"
+  - id: verify
+    name: Verify gates
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public API"
+        read_type: verify
+        extract: "graph.json + graph_viz.html regenerated; FEATURES.md regenerated; gen-graph/gen-features/gen-graph-viz --check idempotent; check_docs_framework + check_links + mkdocs build --strict clean; CHANGELOG stub added; ruff clean"

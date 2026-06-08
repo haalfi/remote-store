@@ -6,7 +6,7 @@
 <h1 align="center">remote-store</h1>
 
 <p align="center">
-  Write file storage code once. Run it against local files, S3, SFTP, or Azure.
+  Write file storage code once. Run it against local files, S3, SFTP, Azure, or OneDrive.
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@ Where files live is configuration, not application code.
 Under the hood, established Python libraries like `s3fs`, `paramiko`,
 and `azure-storage-file-datalake` do the real work.
 
-**Requires Python 3.10+.** The core API is synchronous; an async counterpart is available via `remote_store.aio`. See the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for atomicity caveats and race conditions.
+**Requires Python 3.10+.** The core API is synchronous; an async counterpart is available via `remote_store.aio` (also home to the async-only Microsoft Graph backend for OneDrive / SharePoint / Teams). See the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for atomicity caveats and race conditions.
 
 <!-- --8<-- [start:getting-started] -->
 ## Installation
@@ -48,6 +48,7 @@ pip install "remote-store[s3]"           # Amazon S3 / MinIO
 pip install "remote-store[s3-pyarrow]"   # S3 via PyArrow (analytical workloads)
 pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
+pip install "remote-store[graph]"        # Microsoft Graph (OneDrive / SharePoint / Teams), async-only
 pip install "remote-store[sql]"          # SQL Blob (SQLite, PostgreSQL, ...)
 pip install "remote-store[sql-query]"    # SQL Query (read-only, SQLAlchemy + PyArrow)
 ```
@@ -141,7 +142,7 @@ Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Crede
 
 ## What you get
 
-- **One interface, many backends:** local filesystem, S3, SFTP, Azure, in-memory, and more
+- **One interface, many backends:** local filesystem, S3, SFTP, Azure, OneDrive / SharePoint (Microsoft Graph, async), in-memory, and more
 - **Folder-scoped stores:** each Store is rooted at a folder; compose layouts with multiple stores or narrow scope with `child()`
 - **Swap backends via config:** move between environments without changing code
 - **Streaming by default:** large files just work without blowing up memory
@@ -169,13 +170,16 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 | S3 (PyArrow) | `remote-store[s3-pyarrow]` | [`pyarrow`](https://pypi.org/project/pyarrow/) + [`s3fs`](https://pypi.org/project/s3fs/) | Yes | Yes | — (copy+delete) |
 | SFTP / SSH | `remote-store[sftp]` | [`paramiko`](https://pypi.org/project/paramiko/) | Yes | — | —** |
 | Azure Blob / ADLS | `remote-store[azure]` | [`azure-storage-file-datalake`](https://pypi.org/project/azure-storage-file-datalake/) | Yes | Yes | HNS: Yes / non-HNS: — |
+| Microsoft Graph (OneDrive / SharePoint / Teams)*** | `remote-store[graph]` | [`httpx`](https://pypi.org/project/httpx/) + [`msal`](https://pypi.org/project/msal/) | Yes | — | —**** |
 | SQL Blob (SQLite, PostgreSQL, ...) | `remote-store[sql]` | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/) | Yes | Yes | Yes |
 | SQL Query (read-only) | `remote-store[sql-query]` | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/) + [`pyarrow`](https://pypi.org/project/pyarrow/) | — | — | — |
 
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Attempts `posix_rename` (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so `ATOMIC_MOVE` is not declared.
+\*** Async-only: construct via `AsyncStore(backend=GraphBackend(...))`; there is no sync `Store` wrapper or config `type=` string.
+\**** Native server-side move (`PATCH driveItem`, identity-preserving); may complete asynchronously, so `ATOMIC_MOVE` is not declared.
 
-All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only: it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback `ext.glob.glob_files()` works with any `LIST`-capable backend. Seekable reads are available on all backends via `Store.read_seekable()`. See [features](https://github.com/haalfi/remote-store/blob/master/FEATURES.md), the [capabilities matrix](https://docs.remotestore.dev/stable/reference/capabilities-matrix/), and the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for full details.
+All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only: it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback `ext.glob.glob_files()` works with any `LIST`-capable backend. Seekable reads are available via `Store.read_seekable()` on backends that declare `SEEKABLE_READ`. See [features](https://github.com/haalfi/remote-store/blob/master/FEATURES.md), the [capabilities matrix](https://docs.remotestore.dev/stable/reference/capabilities-matrix/), and the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for full details.
 
 ## Store API
 
