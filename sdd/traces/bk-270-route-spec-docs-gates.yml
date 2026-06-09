@@ -15,7 +15,7 @@ audience:
   - infra.ci
   - infra.test
 co_shipped_items: []
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -99,6 +99,16 @@ phases:
           shipped docs-gate delegation (the docs steps build the full default env
           via uvx hatch; only verify-formal's two steps are bare stdlib python3)
         outcome: misleading
+      - file: .github/workflows/ci.yml
+        section: "docs + verify-formal job comments; pyproject docs-gate / check-no-tracker-refs comments"
+        read_type: reference
+        extract: >
+          Review round 3 (CONTENT-RULES rules 1-2): the comments I added narrated
+          ticket history and enumerated the individual checks. Rewrote them to state
+          the durable principle (docs-only PRs skip lint so the gate runs here;
+          single-source via hatch) and dropped the BK-26x references and per-check
+          lists
+        outcome: ok
   - id: verify
     name: Verify
     steps:

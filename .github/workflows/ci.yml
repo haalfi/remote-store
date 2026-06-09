@@ -372,15 +372,10 @@ jobs:
       - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false
-      # BK-270: route a docs-only PR (docs==true, code==false → lint job skipped)
-      # through the gates built for guide prose — check_no_tracker_refs (scoped to
-      # docs-src/**), check_links, and `drift_check render-docs --check` (the
-      # tested-versions sync gate, otherwise in no PR CI lane at all) — plus the
-      # existing docs-framework + mkdocs --strict build, bundled as the `docs-gate`
-      # hatch target. Delegated to hatch (not hand-listed scripts) so the pyproject
-      # script lists stay the single source, per BK-269: `uvx` tool-runs hatch
-      # ephemerally, and the default env (pip installer in CI via the pyproject
-      # override) carries the docs extra so `mkdocs build --strict` resolves.
+      # A docs-only PR skips the lint job (code==false), so the gate that validates
+      # docs/spec prose runs here instead. Delegated to the docs-gate hatch target
+      # so the pyproject script list stays the single source — see the lint job for
+      # the uvx-hatch mechanism.
       - run: uvx hatch run docs-gate
 
   package:
@@ -430,12 +425,10 @@ jobs:
       # Python ↔ Dafny capability parity. Stdlib-only; system python3 suffices.
       - name: Check Python-Dafny capability parity
         run: python3 scripts/check_capability_parity.py
-      # BK-270: the spec-drift gates also live only in the lint job (CODE_PAT),
-      # which a `sdd/specs/`-only PR skips. FORMAL_PAT matches `^sdd/specs/`, so
-      # wiring them here routes a spec-only change through check_spec_marks
-      # (spec ↔ test-mark drift) and check_formal_trace (spec ↔ Dafny ↔ test)
-      # without firing the whole code matrix. Both stdlib-only; system python3
-      # suffices.
+      # Same pattern as above: these spec-drift gates otherwise live only in the
+      # lint job (CODE_PAT), which a `sdd/specs/`-only change skips. FORMAL_PAT
+      # matches `^sdd/specs/`, so wiring them here keeps a spec-only PR gated
+      # without firing the whole code matrix. Stdlib-only; system python3 suffices.
       - name: Check spec-mark drift
         run: python3 scripts/check_spec_marks.py
       - name: Check formal-trace drift
