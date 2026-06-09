@@ -32,15 +32,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `scripts/run_tests.py` caps workers to `max(1, floor(cpu*0.75) - 1)`
   (`RS_TEST_WORKERS=auto`/`=<n>` overrides) and forwards the rest to pytest; the
   five local `test*` hatch scripts now route their parallel pass through it.
-  **CI is unchanged** — its workflows call pytest inline (`-n auto`), not these
-  scripts, so the bound is local-only. Added `pytest-randomly` and a
-  `test-isolation` lane (bounded-parallel + randomised order) as the explicit
-  "prove no hidden state" run; everyday `test*` pins order with `-p no:randomly`
-  for reproducible failures. Verified: `test-isolation` green under randomised
-  order (6427 passed), launcher guard `tests/scripts/test_run_tests.py` (29
-  cases). The suite uses no GPU — GPU load during tests is from concurrent
-  ollama/MCP sessions (documented in CLAUDE.md). Builds on BK-276: without that
-  fix the randomised lane resurfaces ID-217. Trace:
+  CI's **worker count** is unchanged — its workflows call pytest inline
+  (`-n auto`), not these scripts, so the bound is local-only. Added
+  `pytest-randomly`; because it auto-activates on install, order is held
+  deterministic by default via `-p no:randomly` in `[tool.pytest.ini_options]`
+  `addopts` — so every invocation (CI's inline pytest, the publish strict gate,
+  bench/e2e, ad-hoc) stays reproducible. The new `test-isolation` lane
+  re-enables shuffling with `-p randomly` (a command-line `-p` overrides the
+  addopts opt-out) — the explicit "prove no hidden state" run. Verified:
+  `test-isolation` green under randomised order, launcher guard
+  `tests/scripts/test_run_tests.py` (32 cases, incl. `main()` end-to-end). The
+  suite uses no GPU — GPU load during tests is from concurrent ollama/MCP
+  sessions (documented in CLAUDE.md). Builds on BK-276: without that fix the
+  randomised lane resurfaces ID-217. Trace:
   `sdd/traces/bk-277-resource-bounded-test-runner.yml`.
 
 - [x] **BK-276 — Flaky `PytestUnraisableExceptionWarning` cross-attribution under `pytest -n auto`** (promoted from ID-217)

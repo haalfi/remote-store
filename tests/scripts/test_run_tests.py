@@ -29,6 +29,7 @@ def _load_module():
 _mod = _load_module()
 compute_workers = _mod.compute_workers
 _has_explicit_n = _mod._has_explicit_n
+main = _mod.main
 
 
 @pytest.mark.parametrize(
@@ -88,3 +89,53 @@ def test_explicit_n_detected(args: list[str]) -> None:
 @pytest.mark.parametrize("args", [[], ["-p", "no:benchmark"], ["tests/aio"], ["--cov=remote_store"]])
 def test_no_explicit_n(args: list[str]) -> None:
     assert _has_explicit_n(args) is False
+
+
+def _stub_run(monkeypatch: pytest.MonkeyPatch, cpu_count: int = 8) -> dict:
+    """Stub subprocess.run / os.cpu_count / RS_TEST_WORKERS; capture the argv."""
+    captured: dict = {}
+
+    class _Result:
+        returncode = 7
+
+    def _fake_run(argv, check):  # type: ignore[no-untyped-def]  # noqa: ANN001, ANN202
+        captured["argv"] = argv
+        captured["check"] = check
+        return _Result()
+
+    monkeypatch.setattr(_mod.subprocess, "run", _fake_run)
+    monkeypatch.setattr(_mod.os, "cpu_count", lambda: cpu_count)
+    monkeypatch.delenv("RS_TEST_WORKERS", raising=False)
+    return captured
+
+
+def test_main_injects_bounded_workers_and_forwards(monkeypatch: pytest.MonkeyPatch) -> None:
+    """main() injects the computed -n and forwards the rest, propagating exit code."""
+    captured = _stub_run(monkeypatch, cpu_count=8)
+    monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py", "-p", "no:benchmark", "tests/x"])
+    rc = main()
+    assert rc == 7  # subprocess returncode propagated
+    argv = captured["argv"]
+    assert argv[:3] == [_mod.sys.executable, "-m", "pytest"]
+    assert argv[3:5] == ["-n", "5"]  # floor(8*0.75) - 1
+    assert argv[5:] == ["-p", "no:benchmark", "tests/x"]
+    assert captured["check"] is False
+
+
+def test_main_respects_explicit_n(monkeypatch: pytest.MonkeyPatch) -> None:
+    """main() does not inject -n when the caller already passed one."""
+    captured = _stub_run(monkeypatch, cpu_count=8)
+    monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py", "-n", "2", "tests/x"])
+    main()
+    argv = captured["argv"]
+    assert argv == [_mod.sys.executable, "-m", "pytest", "-n", "2", "tests/x"]
+    assert argv.count("-n") == 1  # no second -n injected
+
+
+def test_main_invalid_override_returns_2(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An invalid RS_TEST_WORKERS makes main() exit 2 without invoking pytest."""
+    captured = _stub_run(monkeypatch)
+    monkeypatch.setenv("RS_TEST_WORKERS", "nope")
+    monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py"])
+    assert main() == 2
+    assert "argv" not in captured  # subprocess.run never called

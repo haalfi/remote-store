@@ -71,8 +71,13 @@ def compute_workers(cpu_count: int | None, override: str | None) -> int:
 
 
 def _has_explicit_n(args: Sequence[str]) -> bool:
-    """True if the forwarded args already select a worker count."""
-    return any(a == "-n" or a.startswith(("-n", "--numprocesses")) for a in args)
+    """True if the forwarded args already select a worker count.
+
+    ``startswith("-n")`` covers both the separate-token form (``-n 4``) and the
+    glued form (``-n4`` / ``-n0``); ``--numprocesses`` covers the long option in
+    either ``--numprocesses 4`` or ``--numprocesses=4`` shape.
+    """
+    return any(a.startswith(("-n", "--numprocesses")) for a in args)
 
 
 def main() -> int:
