@@ -14,7 +14,7 @@ surprising_ripples:
   - .github/workflows/docs.yml
   - .github/workflows/mutation.yml
   - .github/workflows/drift-guard.yml
-review_rounds: 1
+review_rounds: 2
 expected_ripples:
   - sdd/backlogid.json
 phases:
@@ -90,3 +90,7 @@ phases:
         section: "BK-280 (item)"
         read_type: reference
         extract: "review: entry too chatty — trimmed to the valuable insights (UV_SYSTEM_PYTHON=1 keeps installs on the matrix interpreter; CODE_PAT coupling; scope limited to the setup/coverage lane), letting the ci.yml comments carry the mechanical detail"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1-3 + Authoritative Document Format (meaningful minimum)"
+        read_type: gate
+        extract: "round 2: reviewer flagged the ci.yml comments (setup version block, test-matrix tests/scripts note, test-primary header, tooling-tests header) as too long / not content-rules.md. Trimmed each to the load-bearing why, dropping pseudo-precise figures and the historical backlog-ID breadcrumbs (BK-207/BK-219/BK-280) — traceability lives in the BACKLOG-DONE entry and this trace, not inline"

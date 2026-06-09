@@ -62,15 +62,11 @@ jobs:
           ALL_PYTHONS: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
           MIN_PYTHON: "3.10"
         run: |
-          # The priority (primary) Python is single-sourced in .python-version
-          # so local uv / pyenv dev environments and CI resolve the same
-          # interpreter — the coverage lane runs there. Bumping it is one line
-          # in that file. ALL_PYTHONS / MIN_PYTHON (the matrix bounds) stay
-          # here. BK-280.
+          # Primary Python: single-sourced in .python-version (local uv/pyenv
+          # read it too). ALL_PYTHONS / MIN_PYTHON below bound the matrix.
           PRIMARY_PYTHON="$(cat .python-version)"
-          # Guard the cross-file coupling now that primary lives elsewhere: it
-          # must be one of ALL_PYTHONS, else `test-matrix = ALL - primary`
-          # would not drop it and the primary jobs would run an unlisted slot.
+          # Must be one of ALL_PYTHONS, else `test-matrix = ALL - primary`
+          # keeps it and the primary jobs run an unlisted slot.
           if ! jq -e --argjson a "$ALL_PYTHONS" --arg p "$PRIMARY_PYTHON" -n '$a | index($p) != null' > /dev/null; then
             echo "::error::.python-version ($PRIMARY_PYTHON) is not in ALL_PYTHONS ($ALL_PYTHONS)"
             exit 1
@@ -211,10 +207,8 @@ jobs:
           # silently revive the setup-uv-*-pruned-* reservation race.
           cache-suffix: ci-test-matrix
       - run: uv pip install -e ".[dev]"
-      # tests/scripts/ holds contributor-tooling tests (script checkers, gen
-      # scripts) that exercise scripts/, not remote_store. They gain nothing
-      # from multi-version coverage and run once on the primary Python in the
-      # dedicated tooling-tests job below. BK-207.
+      # tests/scripts/ exercises scripts/, not remote_store: no multi-version
+      # value, so it runs once in the tooling-tests job below, not here.
       #
       # ID-195 two-pass split: pass 1 runs all backends in parallel with xdist;
       # the sftp_docker fixture is filtered out under PYTEST_XDIST_WORKER
@@ -224,10 +218,7 @@ jobs:
       - run: pytest -n auto -p no:benchmark --ignore=tests/scripts
       - run: pytest -p no:benchmark --ignore=tests/scripts -k sftp_docker tests/backends/conformance/
 
-  # Primary-Python job: the coverage gate. Runs the two-pass suite on the
-  # primary Python with --cov-fail-under=95. Contributor-tooling tests
-  # (tests/scripts/) run separately in the backend-free tooling-tests job, off
-  # this job's critical path. BK-219 (coverage split), BK-280 (tooling split-out).
+  # The coverage gate: the two-pass suite on the primary Python, 95% floor.
   test-primary:
     needs: [setup, prepare-images]
     if: needs.setup.outputs.code == 'true'
@@ -252,23 +243,15 @@ jobs:
         with:
           cache-suffix: ci-test-primary  # BK-230
       - run: uv pip install -e ".[dev]"
-      # ID-195 two-pass split with --cov-append for pass 2. The 95% floor
-      # is asserted on pass 2 after pass 1's `.coverage` data has been
-      # combined in. --ignore=tests/scripts keeps the contributor-tooling
-      # tests out of this job: they exercise scripts/, not remote_store, so
-      # they would only inflate the denominator. They run on the primary
-      # Python in the dedicated tooling-tests job. BK-280.
+      # ID-195 two-pass split with --cov-append for pass 2: the 95% floor is
+      # asserted after pass 1's `.coverage` is combined in. --ignore=tests/scripts
+      # keeps those tests out so they don't inflate the denominator.
       - run: pytest -n auto -p no:benchmark --cov=remote_store --cov-report= --ignore=tests/scripts
       - run: pytest -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-fail-under=95 -k sftp_docker tests/backends/conformance/
 
-  # Contributor-tooling tests (tests/scripts/) exercise scripts/, not
-  # remote_store, so they need no live backends and gain nothing from
-  # multi-version coverage. They run once on the primary Python in their own
-  # backend-free job, off test-primary's critical path (which is the longest
-  # job — it carries coverage instrumentation on the two-pass suite). No
-  # prepare-images / start-backends: the tests are pure-Python. e2e already
-  # runs on the primary Python too, so multiple primary-Python jobs are fine.
-  # BK-207 (original split), BK-280 (re-split out of test-primary).
+  # tests/scripts/ exercises scripts/, not remote_store: pure-Python, no
+  # backends, no coverage. Runs once on the primary Python in its own job,
+  # off test-primary's critical path.
   tooling-tests:
     needs: [setup]
     if: needs.setup.outputs.code == 'true'
