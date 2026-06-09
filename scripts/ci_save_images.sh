@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# Pre-pull every CI service image (with retry) and bundle them into one tar for
-# actions/cache reuse (BK-279). Run on cache miss by the prepare-images job.
+# Pre-pull the cached CI service images (RS_CACHED_IMAGES, with retry) and bundle
+# them into one tar for actions/cache reuse (BK-279). Run on cache miss by the
+# prepare-images job.
 #
-# Best-effort by design: a pull that outlasts ci_docker_pull.sh's retry window
-# is logged but does NOT fail the job. The cache is an optimisation, not a gate —
-# consumers' load-or-pull fallback (start-backends) retries at use time, and the
-# test matrix's `fail-fast: false` stops one block from cancelling siblings. We
-# only emit `complete=true` (which gates the cache *save*) when all three images
-# bundled, so a partial/empty tar is never persisted under the ref-hash key and
-# left to rot until the next ref bump.
+# Best-effort by design: neither a pull that outlasts ci_docker_pull.sh's retry
+# window nor a `docker save` error fails the job — both are logged and degrade to
+# `complete=false`. The cache is an optimisation, not a gate: consumers' load-or-pull
+# fallback (start-backends) retries at use time, and the test matrix's
+# `fail-fast: false` stops one block from cancelling siblings. Keeping this step
+# unable to hard-fail also shrinks the `needs: prepare-images` cascade surface — a
+# save hiccup degrades to per-job pulls instead of skipping the backend lane. We
+# only emit `complete=true` (which gates the cache *save*) when every cached image
+# (RS_CACHED_IMAGES) bundled, so a partial/empty tar is never persisted under the
+# ref-hash key and left to rot until the next ref bump.
 #
 # The real payoff is cross-run reuse: once the tar is cached, later runs
 # `docker load` it with zero upstream pull, immune to registry blocks entirely.
@@ -33,10 +37,12 @@ for img in "${want[@]}"; do
   fi
 done
 
-if [ "${#saved[@]}" -gt 0 ] && [ "${#saved[@]}" -eq "${#want[@]}" ]; then
-  docker save "${saved[@]}" -o "$dir/images.tar"
+# `docker save` is in the `if` condition so a save error trips the else branch
+# (complete=false) under `set -e` instead of failing the job.
+if [ "${#saved[@]}" -gt 0 ] && [ "${#saved[@]}" -eq "${#want[@]}" ] \
+    && docker save "${saved[@]}" -o "$dir/images.tar"; then
   echo "complete=true" >> "${GITHUB_OUTPUT:-/dev/null}"
 else
-  echo "::warning::pre-pulled ${#saved[@]}/${#want[@]} cached images; skipping cache save"
+  echo "::warning::did not bundle all cached images (pulled ${#saved[@]}/${#want[@]}, or docker save failed); skipping cache save"
   echo "complete=false" >> "${GITHUB_OUTPUT:-/dev/null}"
 fi

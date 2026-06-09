@@ -259,19 +259,17 @@ jobs:
   # The main `test` matrix resolves pyarrow to whatever pip picks; this job
   # pins pyarrow 24 explicitly to confirm the MinIO routing works end-to-end.
   pyarrow24-check:
-    needs: [setup, prepare-images]
+    # No prepare-images dep: this job starts only MinIO, which is excluded from
+    # RS_CACHED_IMAGES (digest-pinned, doesn't round-trip docker save/load). The
+    # cache holds only Azurite+SFTP, which this job never starts — so restoring it
+    # would be pure overhead. start-backends pulls MinIO directly (cgr.dev reliable).
+    needs: [setup]
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     env:
       RS_REQUIRE_MINIO: "1"
     steps:
       - uses: actions/checkout@v6
-      - name: Restore service-image cache
-        uses: actions/cache/restore@v5
-        with:
-          path: ci-images
-          key: ci-images-v1-${{ hashFiles('scripts/ci_service_images.sh') }}
-      - run: bash scripts/ci_load_images.sh ci-images
       - uses: ./.github/actions/start-backends
         with:
           minio: 'true'
