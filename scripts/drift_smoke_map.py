@@ -19,7 +19,14 @@ from __future__ import annotations
 # to avoid masking flakiness as resolution noise).
 SMOKE_TARGETS: dict[str, list[str]] = {
     # Backend extras — conformance + per-backend config tests.
-    "s3": ["tests/backends/conformance/", "-k", "s3 and not s3_pyarrow"],
+    # `not s3_boto3` excludes the ID-202 parked-PoC fixtures
+    # (`s3_boto3_moto`, `s3_boto3_moto_strict`): their backend module
+    # `remote_store.backends._s3_boto3` is wheel-excluded (see the
+    # `[tool.hatch.build.targets.wheel] exclude` in pyproject.toml), so the
+    # smoke's non-editable `pip install .[s3]` can't import it and the
+    # fixtures error with ModuleNotFoundError regardless of any dep bump.
+    # The shipped `[s3]` surface is the s3fs-backed S3Backend.
+    "s3": ["tests/backends/conformance/", "-k", "s3 and not s3_pyarrow and not s3_boto3"],
     "s3-pyarrow": ["tests/backends/conformance/", "-k", "s3_pyarrow"],
     "azure": ["tests/backends/conformance/", "-k", "azure"],
     # sftp: includes tests/e2e/, which pyproject.toml's addopts excludes by
