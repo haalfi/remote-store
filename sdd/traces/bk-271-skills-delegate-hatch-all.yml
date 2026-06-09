@@ -11,7 +11,9 @@ source_items:
 audience:
   - library.maintainer
   - contributor.process
-review_rounds: 2
+review_rounds: 3
+surprising_ripples:
+  - CONTRIBUTING.md
 phases:
   - id: orient
     name: Orient
@@ -126,6 +128,30 @@ phases:
           Review: don't restate the gate composition 1:1 in both skills when they point
           to the shared ref. Thinned both summaries to name the three gate categories
           only (mechanical / local-machine / qualitative).
+      - file: CONTRIBUTING.md
+        section: "Consistency Checklists — Pre-PR validation"
+        read_type: gate
+        extract: >-
+          Round-3 review (surprising ripple): CONTRIBUTING:365 still prescribed a blanket
+          `hatch run all`, contradicting the new path filter (principles 3 + 4). Reconciled
+          it to defer to the PR-validation-gates section (code → all; non-code → lint +
+          docs-gate; all-as-safe-superset fallback), and dropped the now-circular
+          "CONTRIBUTING's prescribed superset" citation from CLAUDE-REFERENCE.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates — mechanical gate (code path)"
+        read_type: reference
+        extract: >-
+          Round-3 review: narrowed the imprecise "preflight catches the remaining CODE_PAT
+          members" claim — `preflight` covers FEATURES + graph data, but workflow/action
+          YAML is validated only by CI (and a workflow-only diff takes the non-code path
+          where preflight does not run).
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-271 divergence note"
+        read_type: reference
+        extract: >-
+          Round-3 review: expanded the R3-divergence rationale to address R3's "one thin
+          target … but only one" provision — justified two existing non-code targets
+          (lint + docs-gate) over minting a new composite (compose-don't-add).
   - id: verify
     name: Verify
     steps:

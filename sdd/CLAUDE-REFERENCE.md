@@ -307,14 +307,14 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
   failures, re-run until clean.
     - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `pyproject.toml`, or
-      `.python-version`** → run `hatch run all`, CONTRIBUTING's prescribed pre-PR
-      superset ([CONTRIBUTING § Consistency Checklists](../CONTRIBUTING.md#consistency-checklists));
-      its constituent scripts are the source of truth in `pyproject.toml`. These
+      `.python-version`** → run `hatch run all`, the full pre-PR superset (its
+      constituent scripts are the source of truth in `pyproject.toml`). These
       are the test-bearing and interpreter-defining members of CI's `CODE_PAT`;
       `scripts/` is among them because its guards live under `tests/scripts/`, which
       only the suite runs (a `scripts/`-only diff must still run it). The remaining
-      `CODE_PAT` members are generated artefacts or CI config (FEATURES, the graph
-      data, workflows) whose drift is caught by `preflight` on this path and by CI.
+      `CODE_PAT` members are generated artefacts (FEATURES, the graph data — drift
+      caught by `preflight` on this path) and CI config (workflows, actions —
+      validated only by CI, which re-runs itself on those paths).
       `all` uses the no-Docker `test-cov-s1` variant (no 95% floor); that floor is
       deliberately CI/publish-only, so do **not** substitute `test-cov-strict`
       (see [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)).

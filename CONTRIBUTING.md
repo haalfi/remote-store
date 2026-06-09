@@ -362,7 +362,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - **New backend**: see [§ Adding a New Backend](#adding-a-new-backend) above.
 - **New extension**: see [§ Adding an Extension](#adding-an-extension) above (12-step checklist).
 - **New Store method / cross-reference validation**: see the ripple-check table in `sdd/CLAUDE-REFERENCE.md`.
-- **Pre-PR validation**: run `hatch run all`, verify CHANGELOG and BACKLOG are updated, then check the ripple-check table in `sdd/CLAUDE-REFERENCE.md`.
+- **Pre-PR validation**: run the [PR validation gates](sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — `hatch run all` for a code change, or the lighter `hatch run lint` + `hatch run docs-gate` for a docs/specs-only change — then verify CHANGELOG and BACKLOG are updated and check the ripple-check table in `sdd/CLAUDE-REFERENCE.md`. Running `hatch run all` is always a safe superset if you would rather not classify the diff.
 
 <a id="release"></a>
 ## Release

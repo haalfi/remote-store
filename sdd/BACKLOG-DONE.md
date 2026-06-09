@@ -35,9 +35,18 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   review (assertion depth, mock discipline, prose longevity are not mechanized).
   The skill gate uses `test-cov-s1` (via `all`), not `test-cov-strict`, so it
   carries no local Azurite dependency — the 95% strict floor stays CI/publish-only
-  by design. Diverges from audit-017 R3's literal "drop the branch" prescription
-  (the prescription is advisory): a CI-mirroring path filter fixes the diagnosed
-  pain (M1 / M2) without billing every doc/spec PR the full ~4-minute superset.
+  by design. Diverges from audit-017 R3's literal prescription (advisory per the
+  Audits rule) in two ways: R3 said to *drop* the per-type branch and collapse to a
+  single `hatch run all`, and — where a lighter fast-iteration gate was wanted — to
+  "document **one** thin target … but only one." This design keeps a (CI-mirroring)
+  branch and uses two existing targets for the non-code path. The branch earns its
+  keep by making the local gate no heavier than CI without skipping relevant checks
+  (M1 / M2). The two-target choice over R3's "but only one" is deliberate: no single
+  existing target spans both the `lint` check-family (spec / docs / trace scripts)
+  and the `docs-gate` build / link / drift family, and minting a new composite would
+  duplicate what `lint` + `docs-gate` already express — against the audit's own
+  compose-don't-add north star. Net: fixes the diagnosed pain without billing every
+  doc/spec PR the full ~4-minute superset.
   Audit-017 R3 (M1 / M2 / L2). Trace: `sdd/traces/bk-271-skills-delegate-hatch-all.yml`.
 
 - [x] **BK-281 — Reap adapter daemon thread in close-timeout tests (BK-276 residual loop leak)**
