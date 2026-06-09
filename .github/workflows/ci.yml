@@ -372,9 +372,11 @@ jobs:
       - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false
-      - run: uv pip install -e ".[docs]"
-      - run: python scripts/check_docs_framework.py
-      - run: mkdocs build --strict
+      # A docs-only PR skips the lint job (code==false), so the gate that validates
+      # docs/spec prose runs here instead. Delegated to the docs-gate hatch target
+      # so the pyproject script list stays the single source — see the lint job for
+      # the uvx-hatch mechanism.
+      - run: uvx hatch run docs-gate
 
   package:
     needs: [setup]
@@ -423,6 +425,14 @@ jobs:
       # Python ↔ Dafny capability parity. Stdlib-only; system python3 suffices.
       - name: Check Python-Dafny capability parity
         run: python3 scripts/check_capability_parity.py
+      # Same pattern as above: these spec-drift gates otherwise live only in the
+      # lint job (CODE_PAT), which a `sdd/specs/`-only change skips. FORMAL_PAT
+      # matches `^sdd/specs/`, so wiring them here keeps a spec-only PR gated
+      # without firing the whole code matrix. Stdlib-only; system python3 suffices.
+      - name: Check spec-mark drift
+        run: python3 scripts/check_spec_marks.py
+      - name: Check formal-trace drift
+        run: python3 scripts/check_formal_trace.py
 
   # INFORMATIONAL: TLA+ model checks for the live informal layer under
   # sdd/formal/tla/. Not in the gate below by design — see

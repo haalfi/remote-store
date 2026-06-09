@@ -275,10 +275,16 @@ check-test-quality = ["python scripts/check_test_assertions.py tests", "python s
 # Usage: `hatch run mutate <scope>` (e.g. `hatch run mutate core-api`).
 # `hatch run mutate --list-scopes` prints all scope names.
 mutate = "python scripts/run_mutate.py {args}"
+# Standalone entry point for the guide-prose tracker-ref gate, so the docs gate
+# can invoke it on its own; the same check also runs inside the `lint` bundle.
+check-no-tracker-refs = "python scripts/check_no_tracker_refs.py"
 check-links = "python scripts/docs/check_links.py --root ."
 docs-check = "python scripts/check_docs_framework.py"
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
+# The full set of checks that validate a docs/spec change, as one entry point CI
+# invokes once. Composed by reference so each sub-target stays the single source.
+docs-gate = ["docs-check", "check-no-tracker-refs", "check-links", "drift-docs-check", "docs-build"]
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"

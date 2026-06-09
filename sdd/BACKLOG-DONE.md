@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-270 — Route `sdd/specs`-only and docs-only changes through their gates**
+  spec: — · effort: S · audience: library.maintainer, infra.test
+  The CI `setup` path filter (`CODE_PAT`) did not match `sdd/`, so a `sdd/specs`-only
+  PR **skipped the entire `lint` job** — `check_spec_marks` (spec ↔ test-mark drift,
+  BK-251) and `check_formal_trace` (spec ↔ Dafny ↔ test, ID-206) ran in neither CI
+  nor commit. Separately a docs-only PR (`docs-src/guides/*.md`) ran only
+  `check_docs_framework` + `mkdocs build --strict` in the `docs` job, skipping
+  `check_no_tracker_refs` (the gate built for guide prose), `check_links`, and
+  `drift_check render-docs --check` (the last in no PR CI lane at all). Both fixes
+  route *existing* gates to the change types they validate; no new gate. For specs,
+  wired `check_spec_marks` + `check_formal_trace` into the `verify-formal` job
+  (which already triggers on `^sdd/specs/` via `FORMAL_PAT` and already runs a
+  stdlib check, `check_capability_parity`) rather than widening `CODE_PAT` — the
+  latter would fire the whole code matrix (test ×5, typecheck, e2e, …) on a
+  markdown-only PR, against the path-filter design's own intent. These two run
+  inline as `python3 scripts/…` alongside the pre-existing `check_capability_parity`
+  (no `uv`/`hatch` setup in that Dafny job). For docs, the `docs` job now delegates
+  to a single combined hatch target, `docs-gate` (`docs-check` +
+  `check-no-tracker-refs` + `check-links` + `drift-docs-check` + `docs-build`), via
+  `uvx hatch run` — extending BK-269's "CI calls hatch, pyproject is the single
+  source" pattern rather than hand-listing scripts. Audit-017 H2 / M3 / M5. Trace:
+  `sdd/traces/bk-270-route-spec-docs-gates.yml`.
+
 - [x] **BK-269 — CI `lint` job delegates to `hatch` (one source of truth for "lint")**
   spec: — · effort: S · audience: infra.ci, contributor.tooling
   The CI `lint` job inlined all 18 lint commands as `- run:` steps, hand-duplicating
