@@ -64,7 +64,7 @@ Read this before starting. One line per trigger.
 | API reference page            | [DOCUMENTATION § API page building blocks](DOCUMENTATION.md#api-page-building-blocks) + required sections |
 | Example script                | README examples table, generated `tutorial/examples/<slug>.md`, `tests/test_examples.py` import |
 | Tracker ID in published prose | Any backlog/spec coordinate (`PREFIX-NNN`, `spec NNN`, `RFC-NNNN`, `ADR-NNNN`, `PR #NNN`) leaking into a docstring rendered by mkdocstrings or any `.md` under `docs-src/` (plus README, FEATURES, CONTRIBUTING); [CONTENT-RULES Rules 1 + 5](CONTENT-RULES.md#rules). Out of scope: `sdd/**`, CHANGELOG, DEVELOPMENT_STORY, source `#` comments |
-| Local-machine reference in any committed file | Grep all changed file types (`.md`, `.py`, `.sh`, `.yml`, `.dfy`, `.tla`) for: `See memory `, `` captured as `<slug>.md` `` (Claude Code memory slugs), `[A-Z]:\\[A-Za-z]` (Windows drive paths — skip `\n`/`\r`/`\t` escape sequences), `~/.claude`, `.claude/projects`. Replace each with the principle it refers to, inline. Enforced by the `/pr` gate 2e and `/fix-pr` gate 5d. |
+| Local-machine reference in any committed file | Grep all changed file types (`.md`, `.py`, `.sh`, `.yml`, `.dfy`, `.tla`) for: `See memory `, `` captured as `<slug>.md` `` (Claude Code memory slugs), `[A-Z]:\\[A-Za-z]` (Windows drive paths — skip `\n`/`\r`/`\t` escape sequences), `~/.claude`, `.claude/projects`. Replace each with the principle it refers to, inline. Enforced by the shared [PR validation gates](#pr-validation-gates) that `/pr` and `/fix-pr` both run. |
 
 #### Release & meta
 
@@ -274,6 +274,50 @@ context from local git, not the PR API, and its only GitHub call is the
 no approval prompt. **Why MCP for writes:** posts without an approval prompt and
 avoids the temp-JSON + `gh api --input` dance the no-pipes/no-redirect hook
 forces on CLI writes. Identical in main session and forks.
+
+---
+
+<a id="branch-freshness"></a>
+## Branch freshness check
+
+Shared by `/pr` and `/fix-pr`. `<BASE>` is the PR base branch (default
+`master`). Run `git fetch origin <BASE>`, then
+`git rev-list --count origin/<BASE> ^HEAD`. A non-zero count means the branch is
+behind `origin/<BASE>` — **stop and ask the user whether to rebase**. If
+approved: `git rebase origin/<BASE>` then immediately
+`git push --force-with-lease origin <current-branch>`, so later steps act on the
+rebased remote state. Never rebase silently — `--force-with-lease` is
+destructive to anyone tracking the branch. (`/fix-pr` fetches review comments
+**after** any rebase: line numbers and the `isOutdated` flag triage against
+current HEAD.)
+
+---
+
+<a id="pr-validation-gates"></a>
+## PR validation gates
+
+Shared by `/pr` (before creating the PR) and `/fix-pr` (before committing
+fixes). `<BASE>` is the PR base branch (default `master`). Run all four; each
+skill keeps its own trace step (`/pr` verifies a trace exists, `/fix-pr` updates
+it).
+
+- **Testing gate.** Do the changed tests follow [`TESTING.md`](TESTING.md)?
+  Report violations before finishing.
+- **Docs gate.** Does changed documentation follow
+  [`CONTENT-RULES.md`](CONTENT-RULES.md)? Report violations before finishing.
+- **Coverage gate.** Check `git diff origin/<BASE>...HEAD --name-only` for files
+  under `src/`, `tests/`, or `examples/`.
+    - Any match → run `hatch run test-cov-strict` (enforces 95%; needs Azurite
+      locally — see [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)). On
+      failure, stop and report which files are below threshold.
+    - None match (docs/config-only) → run `hatch run test`. A `scripts/`-only
+      diff lands here, yet scripts have guard tests under `tests/scripts/` the
+      strict trigger never fires for — so still run the suite. On failure, stop
+      and report.
+- **Local-machine reference gate.** Grep changed files for private
+  local-machine references unreachable from the repo, per the [ripple-check
+  Local-machine reference row](#pre-work-index) (patterns + scope live there).
+  Fix before finishing.
 
 ---
 
