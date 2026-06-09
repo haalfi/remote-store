@@ -8,6 +8,23 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-278 — Retry CI service image pulls (Azurite/MinIO/SFTP) with backoff**
+  spec: — · effort: S · audience: infra.ci, contributor.tooling
+  CI service containers were started with a bare `docker run`, so a single
+  transient registry hiccup failed the whole job: `mcr.microsoft.com` edge/WAF
+  rejections ("The request is blocked" / pull access denied), Docker Hub
+  anonymous rate limits (`atmoz/sftp`), and blob-store "reduce your rate of
+  simultaneous reads" throttling all surfaced this way. Added
+  `scripts/ci_docker_pull.sh` (5-attempt exponential backoff) and pre-pull every
+  service image before `docker run` across the three start sites:
+  `.github/actions/start-backends/action.yml` (minio/azurite/sftp — shared by the
+  `e2e`, `test`, and `test-primary` jobs), `.github/workflows/publish.yml`
+  (azurite), and `.github/workflows/mutation.yml` (the three `-mut` services).
+  Each block single-sources its image ref via `$img`. Digest pinning (already
+  done for minio) stays a future option for azurite/sftp. Promoted from a
+  deferred CI-flake memo once the failure recurred. Trace:
+  `sdd/traces/bk-278-ci-image-pull-retry.yml`.
+
 - [x] **BK-276 — Flaky `PytestUnraisableExceptionWarning` cross-attribution under `pytest -n auto`** (promoted from ID-217)
   spec: — · effort: M · audience: infra.test
   pytest-asyncio 1.3 on Python 3.13 (Windows `ProactorEventLoop`) left each

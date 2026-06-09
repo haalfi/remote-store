@@ -36,9 +36,11 @@ runs:
       if: inputs.minio == 'true'
       shell: bash
       run: |
+        img=cgr.dev/chainguard/minio:latest-dev@sha256:2d8f8a3f8da60885794dfd0749c9d49c985b0ee642f1c522e6aa93be59f34a84
+        bash scripts/ci_docker_pull.sh "$img"
         docker run -d --name minio -p ${MINIO_HOST_PORT}:9000 \
           -e MINIO_ROOT_USER=${MINIO_ACCESS_KEY} -e MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY} \
-          cgr.dev/chainguard/minio:latest-dev@sha256:2d8f8a3f8da60885794dfd0749c9d49c985b0ee642f1c522e6aa93be59f34a84 server /data
+          "$img" server /data
         for i in $(seq 1 30); do
           wget -qO /dev/null http://127.0.0.1:${MINIO_HOST_PORT}/minio/health/live && break || sleep 1
         done
@@ -48,8 +50,10 @@ runs:
       if: inputs.azurite == 'true'
       shell: bash
       run: |
+        img=mcr.microsoft.com/azure-storage/azurite:3.35.0
+        bash scripts/ci_docker_pull.sh "$img"
         docker run -d --name azurite -p ${AZURITE_HOST_PORT}:10000 \
-          mcr.microsoft.com/azure-storage/azurite:3.35.0 \
+          "$img" \
           azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
         for i in $(seq 1 30); do
           nc -z 127.0.0.1 ${AZURITE_HOST_PORT} && break || sleep 1
@@ -60,8 +64,10 @@ runs:
       if: inputs.sftp == 'true'
       shell: bash
       run: |
+        img=atmoz/sftp:alpine
+        bash scripts/ci_docker_pull.sh "$img"
         docker run -d --name sftp -p ${SFTP_HOST_PORT}:22 \
-          atmoz/sftp:alpine \
+          "$img" \
           "${SFTP_USER}:${SFTP_PASS}:::upload"
         for i in $(seq 1 30); do
           nc -z 127.0.0.1 ${SFTP_HOST_PORT} && break || sleep 1
