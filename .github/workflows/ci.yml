@@ -374,6 +374,14 @@ jobs:
           enable-cache: false
       - run: uv pip install -e ".[docs]"
       - run: python scripts/check_docs_framework.py
+      # BK-270: route a docs-only PR (docs==true, code==false → lint job skipped)
+      # through the gates built for guide prose. check_no_tracker_refs scopes to
+      # docs-src/**; check_links and `drift_check render-docs --check` (the
+      # tested-versions sync gate) otherwise run in no PR CI lane at all. All
+      # stdlib-only; mkdocs build --strict stays last (the expensive step).
+      - run: python scripts/check_no_tracker_refs.py
+      - run: python scripts/docs/check_links.py --root .
+      - run: python scripts/drift_check.py render-docs --check
       - run: mkdocs build --strict
 
   package:
@@ -423,6 +431,16 @@ jobs:
       # Python ↔ Dafny capability parity. Stdlib-only; system python3 suffices.
       - name: Check Python-Dafny capability parity
         run: python3 scripts/check_capability_parity.py
+      # BK-270: the spec-drift gates also live only in the lint job (CODE_PAT),
+      # which a `sdd/specs/`-only PR skips. FORMAL_PAT matches `^sdd/specs/`, so
+      # wiring them here routes a spec-only change through check_spec_marks
+      # (spec ↔ test-mark drift) and check_formal_trace (spec ↔ Dafny ↔ test)
+      # without firing the whole code matrix. Both stdlib-only; system python3
+      # suffices.
+      - name: Check spec-mark drift
+        run: python3 scripts/check_spec_marks.py
+      - name: Check formal-trace drift
+        run: python3 scripts/check_formal_trace.py
 
   # INFORMATIONAL: TLA+ model checks for the live informal layer under
   # sdd/formal/tla/. Not in the gate below by design — see

@@ -1,0 +1,104 @@
+id: BK-270
+title: "Route sdd/specs-only and docs-only changes through their gates"
+trigger: >
+  The CI `setup` path filter (`CODE_PAT`) did not match `sdd/`, so a
+  `sdd/specs/`-only PR skipped the entire `lint` job — `check_spec_marks`
+  (spec ↔ test-mark drift) and `check_formal_trace` (spec ↔ Dafny ↔ test)
+  ran in neither CI nor at commit. Separately a docs-only PR ran only
+  `check_docs_framework` + `mkdocs build --strict` in the `docs` job,
+  skipping `check_no_tracker_refs` (the gate built for guide prose),
+  `check_links`, and `drift_check render-docs --check` (the last in no PR
+  CI lane at all). Existing gates firing in the wrong place, not missing ones.
+source_items:
+  - BK-270
+audience:
+  - infra.ci
+  - infra.test
+co_shipped_items: []
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-270"
+        read_type: gate
+        extract: >
+          Two routing gaps; the item offers widening CODE_PAT (called "leanest")
+          OR wiring check_spec_marks + check_formal_trace into verify-formal —
+          pick one place, not both
+        outcome: ok
+      - file: sdd/audits/audit-017-dev-process-gate-topology.md
+        section: "H2, M3, M5, R2, R4"
+        read_type: reference
+        extract: >
+          H2 diagnosis (spec-only skips lint) + R2/R4 recommendations; R2 labels
+          widening CODE_PAT as the leaner option — re-evaluated against the
+          diagnosed pain and diverged (CODE_PAT gates the whole code matrix)
+        outcome: misleading
+      - file: .github/workflows/ci.yml
+        section: "setup (CODE_PAT/DOCS_PAT/FORMAL_PAT), lint/test gating, docs, verify-formal"
+        read_type: gate
+        extract: >
+          CODE_PAT gates lint AND typecheck/test×5/e2e/package — widening it fires
+          the full gauntlet on a markdown PR; FORMAL_PAT already matches ^sdd/specs/
+          and verify-formal already runs a stdlib check (capability_parity); specs
+          are also docs==true (DOCS_PAT ^sdd/), so the docs-job checks apply too
+        outcome: ok
+      - file: scripts/check_spec_marks.py
+        section: "imports + scope docstring"
+        read_type: reference
+        extract: >
+          stdlib-only (ast/re/sys/pathlib); scans sdd/specs + tests — no package
+          install needed, runs under verify-formal's system python3
+        outcome: ok
+      - file: scripts/drift_check.py
+        section: "render_docs / _cmd_render_docs"
+        read_type: reference
+        extract: >
+          render-docs --check reads infra/drift-locks + pyproject (list_extras),
+          no venv/subprocess/network in --check mode — safe and fast in the docs job
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "verify-formal job"
+        read_type: reference
+        extract: >
+          Added check_spec_marks + check_formal_trace steps after capability_parity,
+          mirroring its FORMAL_PAT-not-CODE_PAT rationale comment
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "docs job"
+        read_type: reference
+        extract: >
+          Added check_no_tracker_refs + check_links + drift_check render-docs --check
+          as direct python steps before mkdocs build --strict (the expensive step last)
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_spec_marks.py
+        section: "(run)"
+        read_type: verify
+        extract: >
+          All five routed scripts green locally: spec_marks 0 violations,
+          formal_trace 2 baselined gaps, no_tracker_refs clean, check_links clean,
+          render-docs --check up to date
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience derived rule (120-124)"
+        read_type: verify
+        extract: >
+          audience infra.ci + infra.test → no user.* → CHANGELOG skipped
+          (BK-269 / BK-223 precedent)
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-270, intro narrative"
+        read_type: verify
+        extract: >
+          BK-270 moved to DONE; the Lint/CI Completeness intro updated to (done);
+          backlogid.json a no-op (270 <= DONE max, BK-269 already done); trace
+          shipped same PR
+        outcome: ok

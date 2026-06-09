@@ -395,32 +395,13 @@ picking one up; in particular the disposition below may narrow.
 audit-017 gate-topology follow-ups (BK-269–BK-272), in execution order; full
 findings in [audit-017](audits/audit-017-dev-process-gate-topology.md).
 **Order:** single-source the lint definition (BK-269, done) → route `sdd/specs`-only
-and docs-only changes through their gates (BK-270) → point the `/pr` and
+and docs-only changes through their gates (BK-270, done) → point the `/pr` and
 `/fix-pr` skills at that single gate (BK-271) → drop the dead mypy pre-push hook
 (BK-272). BK-269 then BK-271 are the load-bearing consolidation wins; BK-270
-closes the real coverage gaps and is cheaper once BK-269 makes the gate
+closed the real coverage gaps and was cheaper once BK-269 made the gate
 one-place; BK-272 is trivial and order-independent. Each item's rationale lives
 in its body. The `ID-*` items below are older, unprioritised ideas in the same
 area.
-
-- [ ] **BK-270 — Route `sdd/specs`-only and docs-only changes through their gates**
-  spec: — · effort: S · audience: library.maintainer, infra.test
-  The CI `setup` path filter (`ci.yml:40`, `CODE_PAT`) does not match `sdd/`, so a
-  spec-only PR **skips the entire `lint` job** — `check_spec_marks` and
-  `check_formal_trace` (the spec ↔ test / spec ↔ Dafny drift gates) never run, in
-  CI or at commit (`verify-formal` runs only `dafny verify` +
-  `check_capability_parity`, `ci.yml:364-374`). Separately, a docs-only PR
-  (`docs-src/guides/*.md`) runs only `check_docs_framework` + `mkdocs build
-  --strict` in the `docs` job, skipping `check_no_tracker_refs` (the gate built for
-  guide prose), `check_links`, and `drift_check render-docs --check` (the last runs
-  in no PR CI lane at all). Both fixes route *existing* gates to the change types
-  they validate; neither adds a new gate:
-  - Widen `CODE_PAT` to include `^sdd/specs/` (leanest), or add `check_spec_marks`
-    + `check_formal_trace` to `verify-formal` — pick one place, not both.
-  - Add `check_no_tracker_refs`, `check_links`, and `drift_check render-docs
-    --check` to the `docs` job (or, once BK-269 lands, point the `docs` job at the
-    relevant `hatch` targets).
-  Audit-017 H2 / M3 / M5.
 
 - [ ] **BK-271 — `/pr` and `/fix-pr` delegate to `hatch run all` instead of re-encoding gate logic**
   spec: — · effort: M · audience: library.maintainer, contributor.process
