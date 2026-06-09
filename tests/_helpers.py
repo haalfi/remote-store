@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-import asyncio.events
+import asyncio.base_events
 import gc
 import io
 import weakref
@@ -43,32 +43,30 @@ __all__ = [
 # Fix: close such loops at their source after every test, *before* any
 # ``gc.collect`` can free their sockets. A whole-heap ``gc.get_objects()`` scan
 # per test is correct but doubles the suite wall-time, so we instead track every
-# loop created via ``new_event_loop`` in a ``WeakSet`` and sweep only that tiny
-# set per-test. The broad heap scan is kept as a once-per-session backstop (it
-# also preserves ID-158's original guarantee for loops created before the
-# tracker was installed).
+# event loop at construction (a ``BaseEventLoop.__init__`` patch — the one
+# chokepoint every loop class and every supported Python funnels through) in a
+# ``WeakSet`` and sweep only that tiny set per-test. The broad heap scan is kept
+# as a once-per-session backstop (it also preserves ID-158's original guarantee
+# for loops created before the tracker was installed).
 
 _TRACKED_LOOPS: weakref.WeakSet[asyncio.AbstractEventLoop] = weakref.WeakSet()
-_ORIG_POLICY_NEW_EVENT_LOOP: Callable[..., asyncio.AbstractEventLoop] | None = None
+_ORIG_LOOP_INIT: Callable[..., None] | None = None
 
 
 def install_event_loop_tracker() -> None:
-    """Patch the policy's ``new_event_loop`` so every loop created is weakly tracked.
+    """Patch ``BaseEventLoop.__init__`` so every event loop is weakly tracked.
 
-    Idempotent. We patch ``BaseDefaultEventLoopPolicy.new_event_loop`` at the
-    *class* level rather than the module-level ``asyncio.new_event_loop``
-    function, because every creation path funnels through the policy method:
+    Idempotent. ``asyncio.base_events.BaseEventLoop.__init__`` is the single
+    chokepoint every concrete loop runs through — Proactor/Selector,
+    pytest-asyncio's ``asyncio.Runner`` loop, and the ID-158
+    ``asyncio.get_event_loop()`` phantom alike — on every supported Python.
 
-    * ``asyncio.new_event_loop()`` → ``get_event_loop_policy().new_event_loop()``
-    * pytest-asyncio's ``asyncio.Runner`` → ``events.new_event_loop()`` → ditto
-    * ``asyncio.get_event_loop()`` auto-create (the ID-158 phantom path) →
-      ``self.set_event_loop(self.new_event_loop())`` — calls the policy *method*
-      directly, which a module-function patch misses.
-
-    Patching the class also survives pytest-asyncio's temporary policy swaps
-    (its replacement policy subclasses ``BaseDefaultEventLoopPolicy``). Closed
-    and collected loops drop out of the ``WeakSet`` on their own, so it stays
-    small.
+    An earlier version patched ``BaseDefaultEventLoopPolicy.new_event_loop``;
+    that broke on Python 3.14, which removed the event-loop policy framework
+    entirely (and where ``get_event_loop`` no longer auto-creates, so the
+    phantom path does not exist). Patching the loop constructor is
+    version-agnostic: ``BaseEventLoop`` exists everywhere. Closed and collected
+    loops drop out of the ``WeakSet`` on their own, so it stays small.
 
     The sweep is deliberately scoped to *teardown* (see
     ``sweep_tracked_event_loops``): a loop is only safe to close once the test
@@ -77,27 +75,26 @@ def install_event_loop_tracker() -> None:
     loop is momentarily not running but still owned, and closing it there breaks
     the test.
     """
-    global _ORIG_POLICY_NEW_EVENT_LOOP
-    if _ORIG_POLICY_NEW_EVENT_LOOP is not None:
+    global _ORIG_LOOP_INIT
+    if _ORIG_LOOP_INIT is not None:
         return
-    orig = asyncio.events.BaseDefaultEventLoopPolicy.new_event_loop
-    _ORIG_POLICY_NEW_EVENT_LOOP = orig
+    orig = asyncio.base_events.BaseEventLoop.__init__
+    _ORIG_LOOP_INIT = orig
 
-    def _tracking_new_event_loop(self: asyncio.AbstractEventLoopPolicy) -> asyncio.AbstractEventLoop:
-        loop = orig(self)
-        _TRACKED_LOOPS.add(loop)
-        return loop
+    def _tracking_init(self: asyncio.AbstractEventLoop, *args: object, **kwargs: object) -> None:
+        orig(self, *args, **kwargs)
+        _TRACKED_LOOPS.add(self)
 
-    asyncio.events.BaseDefaultEventLoopPolicy.new_event_loop = _tracking_new_event_loop  # type: ignore[method-assign]
+    asyncio.base_events.BaseEventLoop.__init__ = _tracking_init  # type: ignore[method-assign]
 
 
 def uninstall_event_loop_tracker() -> None:
-    """Restore the original policy ``new_event_loop``. Idempotent."""
-    global _ORIG_POLICY_NEW_EVENT_LOOP
-    if _ORIG_POLICY_NEW_EVENT_LOOP is None:
+    """Restore the original ``BaseEventLoop.__init__``. Idempotent."""
+    global _ORIG_LOOP_INIT
+    if _ORIG_LOOP_INIT is None:
         return
-    asyncio.events.BaseDefaultEventLoopPolicy.new_event_loop = _ORIG_POLICY_NEW_EVENT_LOOP  # type: ignore[method-assign]
-    _ORIG_POLICY_NEW_EVENT_LOOP = None
+    asyncio.base_events.BaseEventLoop.__init__ = _ORIG_LOOP_INIT  # type: ignore[method-assign]
+    _ORIG_LOOP_INIT = None
 
 
 def _close_if_abandoned(loop: asyncio.AbstractEventLoop) -> None:
