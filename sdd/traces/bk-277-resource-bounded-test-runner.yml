@@ -1,0 +1,72 @@
+id: BK-277
+title: "Resource-bounded local test runner + randomised-order isolation lane"
+trigger: >
+  `pytest -n auto` spawned one worker per logical CPU; on a high-core
+  workstation with several suites running at once it saturated and crashed the
+  machine. There was also no order randomisation, so test isolation ("no hidden
+  state") was unproven. Needed a runner that uses available cores without taking
+  all of them, plus an explicit way to prove cross-test isolation.
+source_items:
+  - BK-277
+  - BK-276
+audience:
+  - contributor.tooling
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: design
+    name: Design
+    steps:
+      - file: scripts/run_mutate.py
+        section: "main / _build_pytest_argv"
+        read_type: reference
+        extract: "Launcher pattern to mirror: pure arg-builder + subprocess.run + sys.exit, platform-neutral over os.execvp"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] test*"
+        read_type: gate
+        extract: "Five local test* scripts use `-n auto`; two-pass structure (parallel + serial sftp_docker) must be preserved"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "test / test-primary jobs"
+        read_type: gate
+        extract: "CI runs pytest inline (not `hatch run test*`), so rewiring the hatch scripts bounds local only — matches the decision"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/run_tests.py
+        section: "compute_workers / main"
+        read_type: reference
+        extract: "RS_TEST_WORKERS override (auto/<n>) else max(1, floor(cpu*0.75)-1); forward pytest args; respect caller -n"
+        outcome: ok
+      - file: pyproject.toml
+        section: "test / test-cov* / test-isolation, dev deps"
+        read_type: reference
+        extract: "Route pass-1 through run_tests.py; -p no:randomly on defaults; add pytest-randomly + test-isolation lane"
+        outcome: ok
+      - file: tests/scripts/test_run_tests.py
+        section: "(full)"
+        read_type: reference
+        extract: "Guard the worker formula, the auto/int override, and the explicit-n passthrough"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/test_run_tests.py
+        section: "(full)"
+        read_type: verify
+        extract: "29 cases green; launcher drives pytest with bounded workers end-to-end"
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Parallel tests"
+        read_type: verify
+        extract: "Document run_tests.py, RS_TEST_WORKERS, CI-keeps-auto, test-isolation lane, and the no-GPU note"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "contributor.tooling+infra.test skip CHANGELOG; BACKLOG-DONE move + backlogid.json regen; trace shipped same PR"
+        outcome: ok

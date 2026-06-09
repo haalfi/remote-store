@@ -72,7 +72,11 @@ If `test-cov-strict` fails locally on coverage, **do not loop on "master is pass
 
 ## Parallel tests
 
-`test*` scripts run a parallel pass via `pytest -n auto` plus a serial pass for sftp_docker conformance — see `tests/backends/fixtures/registry.fixture_params` for the carve-out. Don't reintroduce `--dist loadgroup`, MaxStartups tuning, or banner retries: the simpler carve-out is the entire stabilisation story.
+Local `test*` scripts run a **resource-bounded** parallel pass via `scripts/run_tests.py` (it caps xdist workers to leave the machine usable when several suites run at once; `RS_TEST_WORKERS=auto` or `=<n>` overrides — see the script docstring) plus a serial pass for sftp_docker conformance. See `tests/backends/fixtures/registry.fixture_params` for the carve-out. CI keeps `pytest -n auto` (its workflows call pytest inline, not these scripts). Don't reintroduce `--dist loadgroup`, MaxStartups tuning, or banner retries: the simpler carve-out is the entire stabilisation story.
+
+`hatch run test-isolation` is the explicit "prove no hidden state" lane: bounded-parallel **plus randomised order** (pytest-randomly). Everyday `test*` runs pin order with `-p no:randomly` for reproducible failures; the isolation lane omits that so order varies — each run prints its seed (`--randomly-seed=<n>` reproduces).
+
+The suite uses **no GPU**. GPU saturation during a test run comes from concurrent ollama/MCP sessions, not pytest — bound those, not the test workers.
 
 ## Branching
 

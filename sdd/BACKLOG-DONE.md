@@ -25,6 +25,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   deferred CI-flake memo once the failure recurred. Trace:
   `sdd/traces/bk-278-ci-image-pull-retry.yml`.
 
+- [x] **BK-277 — Resource-bounded local test runner + randomised-order isolation lane**
+  spec: — · effort: M · audience: contributor.tooling, infra.test
+  `pytest -n auto` spawned one worker per logical CPU; on a high-core machine
+  with several suites running at once it saturated and crashed the box. New
+  `scripts/run_tests.py` caps workers to `max(1, floor(cpu*0.75) - 1)`
+  (`RS_TEST_WORKERS=auto`/`=<n>` overrides) and forwards the rest to pytest; the
+  five local `test*` hatch scripts now route their parallel pass through it.
+  **CI is unchanged** — its workflows call pytest inline (`-n auto`), not these
+  scripts, so the bound is local-only. Added `pytest-randomly` and a
+  `test-isolation` lane (bounded-parallel + randomised order) as the explicit
+  "prove no hidden state" run; everyday `test*` pins order with `-p no:randomly`
+  for reproducible failures. Verified: `test-isolation` green under randomised
+  order (6427 passed), launcher guard `tests/scripts/test_run_tests.py` (29
+  cases). The suite uses no GPU — GPU load during tests is from concurrent
+  ollama/MCP sessions (documented in CLAUDE.md). Builds on BK-276: without that
+  fix the randomised lane resurfaces ID-217. Trace:
+  `sdd/traces/bk-277-resource-bounded-test-runner.yml`.
+
 - [x] **BK-276 — Flaky `PytestUnraisableExceptionWarning` cross-attribution under `pytest -n auto`** (promoted from ID-217)
   spec: — · effort: M · audience: infra.test
   pytest-asyncio 1.3 on Python 3.13 (Windows `ProactorEventLoop`) left each
