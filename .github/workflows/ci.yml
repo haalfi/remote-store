@@ -134,15 +134,60 @@ jobs:
       - run: uv pip install -e ".[dev]"
       - run: mypy src/ examples/
 
-  test:
+  # BK-279: prime a shared service-image cache once per run. On a cache miss
+  # (image refs in scripts/ci_service_images.sh changed, or the cache was
+  # evicted) the block-prone images (Azurite/mcr.microsoft.com, SFTP/Docker Hub —
+  # RS_CACHED_IMAGES) are pulled with backoff and `docker save`d to a tar that
+  # actions/cache persists; on a hit nothing is pulled. Downstream backend jobs
+  # `needs: prepare-images`, restore the same tar, and `docker load` it before
+  # start-backends — so those two registries see ZERO upstream pulls and are
+  # immune to the blocks that BK-278's per-job retry only partly absorbed. MinIO
+  # is excluded (digest refs do not survive docker save/load; cgr.dev is reliable)
+  # and start-backends still pulls it. The cache key hashes ci_service_images.sh,
+  # the single source of the refs, so a ref bump busts the cache and re-primes it.
+  prepare-images:
     needs: [setup]
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Restore service-image cache
+        id: cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ci-images
+          key: ci-images-v1-${{ hashFiles('scripts/ci_service_images.sh') }}
+      - name: Pull and bundle service images
+        id: bundle
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: bash scripts/ci_save_images.sh ci-images
+      # Save only when all three images bundled (bundle.complete == 'true'), so a
+      # partial/empty tar from a registry block is never persisted under the key.
+      - name: Save service-image cache
+        if: steps.cache.outputs.cache-hit != 'true' && steps.bundle.outputs.complete == 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ci-images
+          key: ci-images-v1-${{ hashFiles('scripts/ci_service_images.sh') }}
+
+  test:
+    needs: [setup, prepare-images]
+    if: needs.setup.outputs.code == 'true'
+    runs-on: ubuntu-latest
     strategy:
+      # BK-279: one blocked image pull (or any single shard failure) must not
+      # cancel the sibling Python shards — let each report independently.
+      fail-fast: false
       matrix:
         python-version: ${{ fromJSON(needs.setup.outputs.test-matrix) }}
     steps:
       - uses: actions/checkout@v6
+      - name: Restore service-image cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ci-images
+          key: ci-images-v1-${{ hashFiles('scripts/ci_service_images.sh') }}
+      - run: bash scripts/ci_load_images.sh ci-images
       - uses: ./.github/actions/start-backends
         with:
           minio: 'true'
@@ -177,11 +222,17 @@ jobs:
   # once on the primary Python; sharing setup avoids a redundant runner.
   # BK-219 (coverage split), BK-207 (tooling-test rationale).
   test-primary:
-    needs: [setup]
+    needs: [setup, prepare-images]
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Restore service-image cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ci-images
+          key: ci-images-v1-${{ hashFiles('scripts/ci_service_images.sh') }}
+      - run: bash scripts/ci_load_images.sh ci-images
       - uses: ./.github/actions/start-backends
         with:
           minio: 'true'
@@ -208,6 +259,10 @@ jobs:
   # The main `test` matrix resolves pyarrow to whatever pip picks; this job
   # pins pyarrow 24 explicitly to confirm the MinIO routing works end-to-end.
   pyarrow24-check:
+    # No prepare-images dep: this job starts only MinIO, which is excluded from
+    # RS_CACHED_IMAGES (digest-pinned, doesn't round-trip docker save/load). The
+    # cache holds only Azurite+SFTP, which this job never starts — so restoring it
+    # would be pure overhead. start-backends pulls MinIO directly (cgr.dev reliable).
     needs: [setup]
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
@@ -290,11 +345,17 @@ jobs:
           if [ $rc -ne 0 ] && [ $rc -ne 124 ]; then exit $rc; fi
 
   e2e:
-    needs: [setup]
+    needs: [setup, prepare-images]
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Restore service-image cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ci-images
+          key: ci-images-v1-${{ hashFiles('scripts/ci_service_images.sh') }}
+      - run: bash scripts/ci_load_images.sh ci-images
       - uses: ./.github/actions/start-backends
         with:
           minio: 'true'
@@ -410,7 +471,7 @@ jobs:
           done
 
   gate:
-    needs: [setup, lint, typecheck, test, test-primary, pyarrow24-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
+    needs: [setup, prepare-images, lint, typecheck, test, test-primary, pyarrow24-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -423,6 +484,7 @@ jobs:
             exit 1
           fi
           results=( \
+            "${{ needs.prepare-images.result }}" \
             "${{ needs.lint.result }}" \
             "${{ needs.typecheck.result }}" \
             "${{ needs.test.result }}" \

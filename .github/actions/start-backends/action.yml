@@ -36,8 +36,9 @@ runs:
       if: inputs.minio == 'true'
       shell: bash
       run: |
-        img=cgr.dev/chainguard/minio:latest-dev@sha256:2d8f8a3f8da60885794dfd0749c9d49c985b0ee642f1c522e6aa93be59f34a84
-        bash scripts/ci_docker_pull.sh "$img"
+        . scripts/ci_service_images.sh
+        img="$MINIO_IMAGE"
+        docker image inspect "$img" >/dev/null 2>&1 || bash scripts/ci_docker_pull.sh "$img"
         docker run -d --name minio -p ${MINIO_HOST_PORT}:9000 \
           -e MINIO_ROOT_USER=${MINIO_ACCESS_KEY} -e MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY} \
           "$img" server /data
@@ -50,8 +51,9 @@ runs:
       if: inputs.azurite == 'true'
       shell: bash
       run: |
-        img=mcr.microsoft.com/azure-storage/azurite:3.35.0
-        bash scripts/ci_docker_pull.sh "$img"
+        . scripts/ci_service_images.sh
+        img="$AZURITE_IMAGE"
+        docker image inspect "$img" >/dev/null 2>&1 || bash scripts/ci_docker_pull.sh "$img"
         docker run -d --name azurite -p ${AZURITE_HOST_PORT}:10000 \
           "$img" \
           azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
@@ -64,8 +66,9 @@ runs:
       if: inputs.sftp == 'true'
       shell: bash
       run: |
-        img=atmoz/sftp:alpine
-        bash scripts/ci_docker_pull.sh "$img"
+        . scripts/ci_service_images.sh
+        img="$SFTP_IMAGE"
+        docker image inspect "$img" >/dev/null 2>&1 || bash scripts/ci_docker_pull.sh "$img"
         docker run -d --name sftp -p ${SFTP_HOST_PORT}:22 \
           "$img" \
           "${SFTP_USER}:${SFTP_PASS}:::upload"
