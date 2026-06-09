@@ -106,20 +106,20 @@ gates](../../../sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — testing, docs,
 coverage, local-machine reference — with `<BASE>` = `master`. Report violations
 and resolve any stop condition before committing.
 
-5c. **Trace update:** Find the trace already on this branch via
-    `git diff origin/master...HEAD --name-only` — any `sdd/traces/*.yml`
-    that appears is the target. The /pr trace gate guarantees it exists
-    before the PR is opened. Update it with the review-driven fields:
+**Trace update.** Find the trace already on this branch via
+`git diff origin/master...HEAD --name-only` — any `sdd/traces/*.yml`
+that appears is the target. The /pr trace gate guarantees it exists
+before the PR is opened. Update it with the review-driven fields:
 
-    - `discovery_followups` — new backlog items the review surfaced.
-    - `surprising_ripples` — paths the ripple-check table did not anticipate
-      that the review caught.
-    - `co_shipped_items` — unrelated items the review confirmed this PR also closes.
+- `discovery_followups` — new backlog items the review surfaced.
+- `surprising_ripples` — paths the ripple-check table did not anticipate
+  that the review caught.
+- `co_shipped_items` — unrelated items the review confirmed this PR also closes.
 
-    No trace in the diff? The PR touches no backlog item; skip and note it
-    in the Step 6 report. If the review surfaces a distinct new backlog
-    item that warrants its own work, that follows the /pr flow in a
-    separate PR — do not create a new trace here.
+No trace in the diff? The PR touches no backlog item; skip and note it
+in the Step 6 report. If the review surfaces a distinct new backlog item
+that warrants its own work, that follows the /pr flow in a separate PR —
+do not create a new trace here.
 
 ## Step 6: Commit and push
 
