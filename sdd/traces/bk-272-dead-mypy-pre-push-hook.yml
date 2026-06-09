@@ -13,6 +13,8 @@ source_items:
 audience:
   - contributor.tooling
   - contributor.process
+discovery_followups:
+  - BK-282
 surprising_ripples:
   - sdd/BACKLOG.md
 review_rounds: 1
