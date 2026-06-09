@@ -396,29 +396,12 @@ audit-017 gate-topology follow-ups (BK-269–BK-272), in execution order; full
 findings in [audit-017](audits/audit-017-dev-process-gate-topology.md).
 **Order:** single-source the lint definition (BK-269, done) → route `sdd/specs`-only
 and docs-only changes through their gates (BK-270, done) → point the `/pr` and
-`/fix-pr` skills at that single gate (BK-271) → drop the dead mypy pre-push hook
-(BK-272). BK-269 then BK-271 are the load-bearing consolidation wins; BK-270
+`/fix-pr` skills at that single gate (BK-271, done) → drop the dead mypy pre-push
+hook (BK-272). BK-269 then BK-271 were the load-bearing consolidation wins; BK-270
 closed the real coverage gaps and was cheaper once BK-269 made the gate
 one-place; BK-272 is trivial and order-independent. Each item's rationale lives
 in its body. The `ID-*` items below are older, unprioritised ideas in the same
 area.
-
-- [ ] **BK-271 — `/pr` and `/fix-pr` delegate to `hatch run all` instead of re-encoding gate logic**
-  spec: — · effort: M · audience: library.maintainer, contributor.process
-  `/pr` never runs `hatch run lint` or `hatch run all` — CONTRIBUTING's prescribed
-  pre-PR command (`CONTRIBUTING.md:358`) — and instead reconstructs a partial
-  subset (manual TESTING/CONTENT reads, a coverage run keyed on
-  `src|tests|examples`, a trace-existence check, a local-machine grep), so it can
-  open a PR that fails any of the 13+ lint checks it does not run. Both skills also
-  prescribe `hatch run test` for "docs/config-only" diffs (`pr/SKILL.md:36-38`,
-  `fix-pr/SKILL.md:109-111`) — the suite least relevant to a doc/spec change — and
-  never prescribe `hatch run lint`, the gate that validates those changes. Define
-  "what validates a change" **once** as `hatch run all` and have both skills run
-  it, dropping the per-type coverage branch and the manual sub-gates (those rules
-  already live inside `check_*` / `docs-check`). If a lighter fast-iteration gate
-  is wanted, document one thin target and have both skills call it — but only one.
-  Best sequenced after BK-269 + BK-270 so `hatch run all` is the true, complete
-  superset. Audit-017 M1 / M2 / L2.
 
 - [ ] **BK-272 — Resolve the dead mypy pre-push hook**
   spec: — · effort: S · audience: library.maintainer, contributor.process

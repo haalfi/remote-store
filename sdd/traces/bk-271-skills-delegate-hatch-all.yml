@@ -1,0 +1,101 @@
+id: BK-271
+title: "/pr and /fix-pr delegate to `hatch run all` instead of re-encoding gate logic"
+trigger: >-
+  The /pr and /fix-pr skills already shared one validation-gate section, but that
+  section was a hand-rolled subset of `hatch run all`: /pr ran neither `hatch run
+  lint` nor `all` (so it could open a PR failing any of the ~13 lint checks), and a
+  docs/spec-only diff fell to `hatch run test` — the least-relevant gate — while
+  skipping `lint`, the relevant one.
+source_items:
+  - BK-271
+audience:
+  - library.maintainer
+  - contributor.process
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-271"
+        read_type: gate
+        extract: >-
+          The item to implement. Its line refs (pr/SKILL.md:36-38,
+          fix-pr/SKILL.md:109-111) and its "both skills inline-duplicate the gate"
+          framing no longer matched the code — the dedup into one shared section had
+          already happened.
+        outcome: misleading
+      - file: sdd/audits/audit-017-dev-process-gate-topology.md
+        section: "R3 (findings M1 / M2 / L2); Recommendations table"
+        read_type: reference
+        extract: >-
+          Disposition: define "what validates a change" once as `hatch run all` and
+          have both skills run it, dropping the src/tests/examples coverage branch and
+          the manual TESTING/CONTENT sub-gates.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates"
+        read_type: gate
+        extract: >-
+          The shared gate to collapse: a four-bullet Testing/Docs/Coverage/Local-machine
+          subset that re-encodes a slice of `hatch run all`.
+      - file: .claude/skills/pr/SKILL.md
+        section: "Step 2 (Validation gates)"
+        read_type: reference
+        extract: "/pr delegates to the shared gate but runs neither lint nor all (M1)."
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 5 (Validate)"
+        read_type: reference
+        extract: >-
+          /fix-pr runs `hatch run lint` explicitly then the shared gate — redundant
+          once the shared gate runs `all` (which includes lint).
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] — all, lint, test-cov-s1"
+        read_type: reference
+        extract: >-
+          `all` = preflight+lint+format-check+typecheck+test-cov-s1+examples+notebooks
+          +check-links+docs-check+docs-build, using the no-Docker test-cov-s1 (no 95%
+          floor). No check_* script covers the local-machine-reference grep, so it
+          cannot be folded into `all`.
+  - id: implement
+    name: Implement
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Consistency Checklists"
+        read_type: reference
+        extract: >-
+          Anchor for the "Pre-PR validation: run `hatch run all`" link used in the
+          rewritten gate.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates"
+        read_type: reference
+        extract: >-
+          Rewrote to: mechanical gate (`hatch run all`) + local-machine-reference grep
+          (not covered by `all`) + thin qualitative TESTING/CONTENT review (assertion
+          depth, mock discipline, prose longevity are not mechanized). Dropped the
+          per-type coverage branch and `hatch run test` fallback.
+      - file: .claude/skills/pr/SKILL.md
+        section: "Step 2 (Validation gates)"
+        read_type: reference
+        extract: "Updated the gate-name summary to match the rewritten shared section."
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 5 (Validate)"
+        read_type: reference
+        extract: >-
+          Removed the redundant explicit `hatch run lint`; invoke only the shared gate,
+          now running `hatch run all`.
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: reference
+        extract: >-
+          Moved BK-271 to done (newest-first) with a de-staled description; updated the
+          Lint/CI-Completeness preamble in BACKLOG.md to mark it done.
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Local-machine reference row"
+        read_type: verify
+        extract: >-
+          Confirmed the row's "Enforced by the shared PR validation gates that /pr and
+          /fix-pr both run" claim still holds after the rewrite — the local-machine grep
+          survived the collapse as its own bullet.

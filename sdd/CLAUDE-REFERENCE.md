@@ -297,27 +297,26 @@ current HEAD.)
 ## PR validation gates
 
 Shared by `/pr` (before creating the PR) and `/fix-pr` (before committing
-fixes). `<BASE>` is the PR base branch (default `master`). Run all four; each
-skill keeps its own trace step (`/pr` verifies a trace exists, `/fix-pr` updates
-it).
+fixes). "What validates a change" is defined **once** as `hatch run all`; the two
+gates after it cover only what `all` cannot. Each skill keeps its own trace step
+(`/pr` verifies a trace exists, `/fix-pr` updates it).
 
-- **Testing gate.** Do the changed tests follow [`TESTING.md`](TESTING.md)?
-  Report violations before finishing.
-- **Docs gate.** Does changed documentation follow
-  [`CONTENT-RULES.md`](CONTENT-RULES.md)? Report violations before finishing.
-- **Coverage gate.** Check `git diff origin/<BASE>...HEAD --name-only` for files
-  under `src/`, `tests/`, or `examples/`.
-    - Any match → run `hatch run test-cov-strict` (enforces 95%; needs Azurite
-      locally — see [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)). On
-      failure, stop and report which files are below threshold.
-    - None match (docs/config-only) → run `hatch run test`. A `scripts/`-only
-      diff lands here, yet scripts have guard tests under `tests/scripts/` the
-      strict trigger never fires for — so still run the suite. On failure, stop
-      and report.
-- **Local-machine reference gate.** Grep changed files for private
-  local-machine references unreachable from the repo, per the [ripple-check
-  Local-machine reference row](#pre-work-index) (patterns + scope live there).
-  Fix before finishing.
+- **Mechanical gate.** Run `hatch run all` — CONTRIBUTING's prescribed pre-PR
+  command ([CONTRIBUTING § Consistency Checklists](../CONTRIBUTING.md#consistency-checklists))
+  and the complete superset of every lint, type, test, example, and docs check CI
+  enforces (constituent scripts in `pyproject.toml`). Fix failures, re-run until
+  clean. `all` runs the no-Docker `test-cov-s1` variant (no 95% floor); that floor
+  is deliberately CI/publish-only, so do **not** substitute `test-cov-strict` here
+  (see [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)).
+- **Local-machine reference gate.** Not covered by `hatch run all`. Grep changed
+  files for private local-machine references unreachable from the repo, per the
+  [ripple-check Local-machine reference row](#pre-work-index) (patterns + scope
+  live there). Fix before finishing.
+- **Qualitative review.** The `check_*`/`docs-check` scripts inside `hatch run
+  all` enforce the mechanical rules but not the judgment-based ones. Review the
+  changed tests against [`TESTING.md`](TESTING.md) (assertion depth, mock
+  discipline) and changed documentation against [`CONTENT-RULES.md`](CONTENT-RULES.md)
+  (prose longevity). Report violations before finishing.
 
 ---
 

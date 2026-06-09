@@ -8,6 +8,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-271 — `/pr` and `/fix-pr` delegate to `hatch run all` instead of re-encoding gate logic**
+  spec: — · effort: M · audience: library.maintainer, contributor.process
+  The gate logic was already deduplicated into one shared reference section
+  (`sdd/CLAUDE-REFERENCE.md#pr-validation-gates`) both skills call — but that
+  shared gate was a hand-rolled *subset* of `hatch run all`: `/pr` ran neither
+  `hatch run lint` nor `all` (so it could open a PR failing any of the ~13 `lint`
+  checks — `check_mock_spec`, `check_spec_marks`, `check_formal_trace`,
+  `check_no_tracker_refs`, …), and the coverage step keyed on `src/`/`tests/`/`examples/`
+  sent a docs/spec-only diff to `hatch run test` (the least-relevant gate) while
+  skipping `lint` (the relevant one). Collapsed the shared gate to define "what
+  validates a change" once as `hatch run all` (CONTRIBUTING's prescribed pre-PR
+  command), dropping the per-type coverage branch and the mechanical TESTING/CONTENT
+  sub-gates that duplicated `check_*`/`docs-check`. Two gates remain because `hatch
+  run all` does not cover them: the local-machine-reference grep (no `check_*`
+  script enforces it) and a thin qualitative TESTING/CONTENT review (assertion
+  depth, mock discipline, prose longevity are not mechanized). `/fix-pr` no longer
+  runs `hatch run lint` separately (folded into `all`). Aligns the skills with
+  CONTRIBUTING and drops the local Azurite dependency from the skill gate — the 95%
+  strict floor stays CI/publish-only by design. Audit-017 R3 (M1 / M2 / L2). Trace:
+  `sdd/traces/bk-271-skills-delegate-hatch-all.yml`.
+
 - [x] **BK-281 — Reap adapter daemon thread in close-timeout tests (BK-276 residual loop leak)**
   spec: — · effort: S · audience: infra.test
   BK-276/ID-217 fixed the teardown-time unclosed-`ProactorEventLoop` flake but a

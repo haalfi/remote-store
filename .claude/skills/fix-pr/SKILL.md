@@ -99,12 +99,10 @@ Only resolve threads you fixed. No gh? Tell user to resolve manually.
 
 ## Step 5: Validate
 
-Run `hatch run lint`. Fix failures, re-run until clean.
-
-Then run the shared [PR validation
-gates](../../../sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — testing, docs,
-coverage, local-machine reference — with `<BASE>` = `master`. Report violations
-and resolve any stop condition before committing.
+Run the shared [PR validation
+gates](../../../sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — `hatch run all`
+(which includes `lint`), local-machine reference, qualitative TESTING/CONTENT
+review. Report violations and resolve any stop condition before committing.
 
 **Trace update.** Find the trace already on this branch via
 `git diff origin/master...HEAD --name-only` — any `sdd/traces/*.yml`
