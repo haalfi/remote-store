@@ -15,7 +15,7 @@ audience:
   - infra.ci
   - infra.test
 co_shipped_items: []
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -73,8 +73,21 @@ phases:
         section: "docs job"
         read_type: reference
         extract: >
-          Added check_no_tracker_refs + check_links + drift_check render-docs --check
-          as direct python steps before mkdocs build --strict (the expensive step last)
+          First added the three checks as direct `python scripts/…` steps; PR
+          review flagged this as repeating the BK-269 anti-pattern (CI hand-listing
+          script invocations). Refactored to delegate to hatch targets
+          (docs-check / check-no-tracker-refs / check-links / drift-docs-check /
+          docs-build via `uvx hatch run`), dropping the inline `uv pip install`,
+          so the pyproject script lists stay the single source
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] check-no-tracker-refs"
+        read_type: reference
+        extract: >
+          Review-driven: added a standalone check-no-tracker-refs target (the
+          invocation otherwise lived only inside the lint bundle) so the docs job
+          can reach it via hatch. verify-formal kept inline python3 by decision —
+          it already runs capability_parity inline and has no uv/hatch setup
         outcome: ok
   - id: verify
     name: Verify

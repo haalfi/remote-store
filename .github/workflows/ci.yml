@@ -372,17 +372,20 @@ jobs:
       - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false
-      - run: uv pip install -e ".[docs]"
-      - run: python scripts/check_docs_framework.py
       # BK-270: route a docs-only PR (docs==true, code==false → lint job skipped)
-      # through the gates built for guide prose. check_no_tracker_refs scopes to
-      # docs-src/**; check_links and `drift_check render-docs --check` (the
-      # tested-versions sync gate) otherwise run in no PR CI lane at all. All
-      # stdlib-only; mkdocs build --strict stays last (the expensive step).
-      - run: python scripts/check_no_tracker_refs.py
-      - run: python scripts/docs/check_links.py --root .
-      - run: python scripts/drift_check.py render-docs --check
-      - run: mkdocs build --strict
+      # through the gates built for guide prose — check_no_tracker_refs (scoped to
+      # docs-src/**), check_links, and `drift_check render-docs --check` (the
+      # tested-versions sync gate, otherwise in no PR CI lane at all) — plus the
+      # existing docs-framework + mkdocs --strict build. Delegated to hatch targets
+      # (not hand-listed scripts) so the pyproject script lists stay the single
+      # source, per BK-269: `uvx` tool-runs hatch ephemerally, the default env (pip
+      # installer in CI via the pyproject override) carries the docs extra so
+      # mkdocs resolves, and hatch builds it once and reuses it across the steps.
+      - run: uvx hatch run docs-check
+      - run: uvx hatch run check-no-tracker-refs
+      - run: uvx hatch run check-links
+      - run: uvx hatch run drift-docs-check
+      - run: uvx hatch run docs-build
 
   package:
     needs: [setup]

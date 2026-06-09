@@ -275,6 +275,9 @@ check-test-quality = ["python scripts/check_test_assertions.py tests", "python s
 # Usage: `hatch run mutate <scope>` (e.g. `hatch run mutate core-api`).
 # `hatch run mutate --list-scopes` prints all scope names.
 mutate = "python scripts/run_mutate.py {args}"
+# Standalone entry point for the guide-prose tracker-ref gate (also inside the
+# `lint` bundle). BK-270 routes it to the CI `docs` job via `uvx hatch run`.
+check-no-tracker-refs = "python scripts/check_no_tracker_refs.py"
 check-links = "python scripts/docs/check_links.py --root ."
 docs-check = "python scripts/check_docs_framework.py"
 docs = "mkdocs serve"
