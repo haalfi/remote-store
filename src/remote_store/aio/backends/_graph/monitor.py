@@ -24,7 +24,6 @@ import asyncio
 import logging
 import time
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple
-from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
@@ -32,6 +31,7 @@ from remote_store._errors import BackendUnavailable
 from remote_store.aio.backends._graph.http import (
     BACKEND_NAME,
     classify_graph_error_code,
+    redact_presigned_url,
     response_json,
 )
 from remote_store.aio.backends._graph.http import _parse_retry_after as parse_retry_after
@@ -118,21 +118,6 @@ def _failed_error(error: dict[str, Any] | None, *, path: str, backend: str) -> R
     return classify_graph_error_code(code if isinstance(code, str) else None, path=path, backend=backend)
 
 
-def _redact_url(url: str) -> str:
-    """Return *url* with its query stripped — the monitor URL is pre-signed.
-
-    The Graph copy/move monitor URL lives on a pre-authenticated cross-host
-    endpoint (live-verified: ``my.microsoftpersonalcontent.com``) and carries its
-    own credential in the query string. The timeout message embeds the monitor URL
-    for out-of-band diagnosis, but a token must never reach an exception message;
-    stripping the query satisfies both — the scheme / host / path identify the
-    operation without leaking the credential.
-    """
-    # GR-026 (embed monitor URL) reconciled with GR-035 (no token in messages).
-    parts = urlsplit(url)
-    return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
-
-
 async def poll_monitor(
     monitor_url: str,
     client: httpx.AsyncClient,
@@ -206,7 +191,7 @@ async def poll_monitor(
         if timeout is not None and (time.monotonic() - start) + delay >= timeout:
             raise BackendUnavailable(
                 f"Copy/move monitor timed out after {polls} poll(s) "
-                f"(last_status={last_status}, monitorUrl={_redact_url(monitor_url)}): {path}",
+                f"(last_status={last_status}, monitorUrl={redact_presigned_url(monitor_url)}): {path}",
                 path=path,
                 backend=backend,
             )

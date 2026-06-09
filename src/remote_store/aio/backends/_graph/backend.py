@@ -784,8 +784,9 @@ class GraphBackend(AsyncBackend):
                 backend directly (``USER_METADATA`` is not declared).
             BackendUnavailable: On 5xx / throttling / transport failure, or a
                 Graph contract gap (missing ``uploadUrl`` / ``nextExpectedRanges``).
-            ResourceLocked: If the item is locked mid-session; the session URL
-                stays valid for caller-driven resume.
+            ResourceLocked: If the item is locked mid-session. The session
+                stays valid server-side, but its credentialed URL is not
+                exposed in the exception.
         """
         # GR-018 (small PUT) / GR-019 (upload session) / GR-039 (auto-mkdir);
         # native WriteResult per WR-004; 409 discrimination per BE-008 / ID-209.

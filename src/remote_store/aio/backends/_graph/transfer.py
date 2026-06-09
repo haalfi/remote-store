@@ -45,6 +45,7 @@ from remote_store.aio.backends._graph.http import (
     discriminate_write_conflict,
     error_code,
     graph_send,
+    redact_presigned_url,
     response_json,
 )
 from remote_store.aio.backends._graph.items import download_url
@@ -319,11 +320,11 @@ async def upload_session(
     would both leak it cross-host and be rejected.
 
     On an unrecoverable failure the session is ``DELETE``d best-effort; a ``423``
-    is the exception — the session URL stays valid for caller-driven resume, so
-    it surfaces as ``ResourceLocked`` (carrying the session URL and last
-    ``nextExpectedRanges``) without an abort. ``on_session_open`` /
-    ``on_session_close`` register the live session URL so the backend's
-    ``close()`` can abort it if a write is mid-flight.
+    is the exception — the session stays valid server-side, so it surfaces as
+    ``ResourceLocked`` (carrying the **redacted** session URL — query stripped so
+    no credential leaks — and last ``nextExpectedRanges`` for diagnosis) without
+    an abort. ``on_session_open`` / ``on_session_close`` register the live session
+    URL so the backend's ``close()`` can abort it if a write is mid-flight.
     """
     # GR-019..GR-024, GR-038 (token expiry), GR-045 (423), GR-051 (close-abort).
     session_url = await _create_upload_session(
@@ -485,17 +486,23 @@ def _resume_offset(ranges: list[str] | None, *, path: str, backend: str) -> int:
 
 
 def _resource_locked_mid_session(session_url: str, ranges: list[str] | None, path: str, backend: str) -> ResourceLocked:
-    """Build the mid-session ``ResourceLocked`` carrying resume context.
+    """Build the mid-session ``ResourceLocked`` for diagnosis (no credential leaked).
 
-    There is no structured ``RemoteStoreError.context`` surface, so the
-    unfinished session URL and last-known ``nextExpectedRanges`` ride the
-    message text — the session URL stays valid and the caller (or a test) can
-    resume from them without re-deriving the offset.
+    The session URL carries its own credential in its query, so it is
+    **redacted** (host + path only) before it reaches the message — a token must
+    never appear in an exception message, and the sibling monitor path masks the
+    identical credential class the same way. The session stays valid server-side,
+    but the credentialed URL is not surfaced here; a caller that chooses to
+    resume must re-derive it (there is no public resume API). The redacted
+    host+path and last-known ``nextExpectedRanges`` ride the message so the
+    operation is still identifiable for out-of-band diagnosis.
     """
+    # Credential masking (GR-035 / GR-026) of the GR-038 pre-signed uploadUrl on the GR-045 423 path.
     ranges_text = ", ".join(ranges) if ranges else "unknown"
     return ResourceLocked(
-        f"Resource locked during upload session (423): {path}. The session URL stays valid for "
-        f"caller-driven resume — sessionUrl={session_url} nextExpectedRanges=[{ranges_text}].",
+        f"Resource locked during upload session (423): {path}. The session remains valid server-side, "
+        f"but its credentialed URL is not exposed here — session={redact_presigned_url(session_url)} "
+        f"nextExpectedRanges=[{ranges_text}].",
         path=path,
         backend=backend,
     )

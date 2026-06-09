@@ -944,12 +944,18 @@ no native retry); see RET-015.
   remains valid — Graph does not invalidate it on `423` — but the
   backend does not auto-retry or auto-resume. Caller retry is the
   caller's decision; if it chooses to retry, the session URL and
-  `nextExpectedRanges` discipline (GR-023) still apply. The
-  unfinished session URL and last-known `nextExpectedRanges` list
-  are included in the exception message text so callers (and tests)
-  can resume without re-deriving them. (Spec 005 has no structured
-  `RemoteStoreError.context` surface today; adding one is out of
-  scope for ID-127.)
+  `nextExpectedRanges` discipline (GR-023) still apply.
+- The upload-session URL carries its own credential in its query
+  string (GR-038), so it is **redacted** (query stripped; scheme,
+  host, and path retained) before it is surfaced in the
+  `ResourceLocked` message — GR-035 bars any token from an exception
+  message, and the copy/move monitor URL is masked the same way
+  (GR-026). The redacted URL and last-known `nextExpectedRanges` are
+  included in the message so the locked operation stays identifiable
+  for out-of-band diagnosis; the credentialed URL is **not** surfaced,
+  so a caller that resumes must re-derive the session URL. (There is
+  no public resume API, and spec 005 has no structured
+  `RemoteStoreError.context` surface — adding one is out of scope.)
 
 ### GR-054: 507 insufficientStorage / quotaLimitReached
 
@@ -1132,6 +1138,13 @@ values never appear in exception messages or logging records.
 - The raw bearer token never appears in `str(exc)`, `repr(exc)`, or
   any backend-emitted log record at any level — the backend never
   passes the header into an exception message.
+- A pre-signed target carries its credential in the URL query rather
+  than the `Authorization` header (the upload-session `uploadUrl` per
+  GR-038, the monitor URL per GR-026). The request DEBUG log redacts
+  that query (scheme/host/path retained) for such unauthenticated
+  requests before formatting, so the pre-signed credential never
+  reaches a log record — the log-side counterpart to the
+  message-side redaction GR-045 / GR-026 require.
 **Postconditions:** Satisfies AF-008 (extended to a per-request
 header rather than just backend `__repr__`; this goes beyond the
 HTTP backend's `repr`-only precedent in HTTP-CRED-001).

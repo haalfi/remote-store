@@ -151,6 +151,24 @@ class TestGraphSend:
         assert "super-secret" not in joined
         assert "***" in joined
 
+    @respx.mock
+    @pytest.mark.spec("GR-035")
+    async def test_debug_log_redacts_presigned_url_query(self, caplog: pytest.LogCaptureFixture) -> None:
+        # A pre-signed target (authenticated=False) carries its credential in the
+        # URL query (GR-038), not the Authorization header; the request DEBUG log
+        # must redact that query the same way it masks the bearer. This covers the
+        # upload-session chunk PUTs and the abort DELETE (the BK-263 credential
+        # class), which flow through graph_send unauthenticated.
+        presigned = "https://up.example.com/session/abc?tempauth=secret-token"
+        respx.put(presigned).mock(return_value=httpx.Response(200, json={"id": "x"}))
+        with caplog.at_level(logging.DEBUG, logger="remote_store.aio.backends._graph"):
+            async with httpx.AsyncClient() as client:
+                await graph_send(client, "PUT", presigned, token_provider=lambda: "unused", authenticated=False)
+        joined = "\n".join(r.getMessage() for r in caplog.records)
+        assert "tempauth" not in joined
+        assert "secret-token" not in joined
+        assert "up.example.com/session/abc" in joined  # redacted host+path still identifies the request
+
 
 class TestIterPages:
     """Pagination over ``@odata.nextLink`` (GR-016)."""
