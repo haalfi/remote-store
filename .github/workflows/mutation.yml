@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version-file: .python-version
       - id: set-scopes
         env:
           # Route every workflow context value through the env, not direct
@@ -135,7 +135,7 @@ jobs:
       # install command.
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version-file: .python-version
       - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false

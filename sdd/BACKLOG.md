@@ -433,21 +433,6 @@ area.
   hook and rely on `hatch run`/CI. Don't leave a declared gate that never fires.
   Trivial and order-independent. Audit-017 M4.
 
-- [ ] **BK-281 — Single-source the primary Python across all workflows (read `.python-version`)**
-  spec: — · effort: S · audience: infra.ci
-  BK-280 made `.python-version` the source `ci.yml`'s `setup` job reads for the
-  primary Python, but four other workflows still hardcode `"3.13"` independently:
-  `publish.yml` (the release/coverage gate, 18/71), `docs.yml` (31/52),
-  `mutation.yml` (32/138), and `drift-guard.yml` (`PY_VERSION`, 31). So bumping
-  `.python-version` silently leaves the publish gate, docs build, mutation run,
-  and drift baseline on the old interpreter — "CI cannot disagree" holds only for
-  `ci.yml`'s matrix resolution, not CI as a whole. Point each at
-  `.python-version`: `actions/setup-python` takes `python-version-file:
-  .python-version` directly (no `cat` step), and `drift-guard`'s `PY_VERSION` env
-  can be sourced the same way `ci.yml`'s `setup` job does. Check each workflow's
-  own path filter so a lone `.python-version` bump still triggers it (CI's
-  `CODE_PAT` already includes it after BK-280). Born from BK-280 review.
-
 - [ ] **ID-179 — Trace schema validator: wire `audience` field check into `hatch run lint`**
   spec: — · effort: S · audience: library.maintainer
   `sdd/traces/_schema.yml` declares `audience` as `required`, but BK-193

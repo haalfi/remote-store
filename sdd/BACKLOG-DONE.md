@@ -40,16 +40,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   backends, no coverage. Moved to a backend-free job that runs in parallel,
   trimming ~34s off the critical path. Reinstates the standalone job BK-207 had
   before a roll-up merged it into `test-primary`.
-  **(2) `.python-version`.** Replaces the last hardcoded primary-Python literal
-  (BK-219 removed ~12) so local `uv` / `pyenv` and `ci.yml`'s `setup` resolver
-  agree on the matrix's primary interpreter. A `jq` guard fails if it drifts
-  from `ALL_PYTHONS`, and it is in `CODE_PAT` so a lone bump still triggers the
-  gating jobs (without that, `code=false` skips them and `gate` greens without
-  testing the new version). Scope is `ci.yml`'s setup/coverage lane only —
-  `publish.yml`, `docs.yml`, `mutation.yml`, `drift-guard.yml` keep their own
-  pins (migration tracked in BK-281). Runtime is unaffected: `UV_SYSTEM_PYTHON=1`
-  keeps `uv pip install` on each job's matrix interpreter, not the file
-  (verified — `typecheck (3.10)` stayed green with the file present).
+  **(2) `.python-version`.** New root file is the single source for the priority
+  Python across CI, replacing the hardcoded literals (BK-219 removed ~12 from
+  `ci.yml`; this removes the last one plus the copies in `publish.yml`,
+  `docs.yml`, `mutation.yml`, `drift-guard.yml`). `ci.yml`'s `setup` reads it to
+  resolve the matrix's primary slot (with a `jq` guard that fails if it drifts
+  from `ALL_PYTHONS`); the other workflows read it via `setup-python`'s
+  `python-version-file`; local `uv` / `pyenv` auto-select it. It is in `CODE_PAT`
+  so a lone bump still triggers `ci.yml`'s gating jobs (without that,
+  `code=false` skips them and `gate` greens without testing the new version; the
+  release/scheduled workflows are not PR-gating, so this only matters for
+  `ci.yml`). Runtime is unaffected: `UV_SYSTEM_PYTHON=1` keeps `uv pip install`
+  on each job's matrix interpreter, not the file (verified — `typecheck (3.10)`
+  stayed green with the file present).
   Trace: [`sdd/traces/BK-280-ci-build-improvements.yml`](traces/BK-280-ci-build-improvements.yml).
 
 - [x] **BK-269 — CI `lint` job delegates to `hatch` (one source of truth for "lint")**

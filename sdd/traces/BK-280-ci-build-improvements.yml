@@ -8,10 +8,12 @@ source_items:
 audience:
   - infra.ci
   - contributor.tooling
-discovery_followups:
-  - BK-281
 surprising_ripples:
   - .github/workflows/ci.yml
+  - .github/workflows/publish.yml
+  - .github/workflows/docs.yml
+  - .github/workflows/mutation.yml
+  - .github/workflows/drift-guard.yml
 review_rounds: 1
 expected_ripples:
   - sdd/backlogid.json
@@ -76,10 +78,14 @@ phases:
         section: "setup job / Detect changed files (CODE_PAT)"
         read_type: gate
         extract: "review caught a regression: moving the primary literal out of ci.yml into .python-version left it outside CODE_PAT, so a lone bump yields code=false -> every gating job skips -> gate greens without testing the new interpreter. Added ^\\.python-version$ to CODE_PAT. This is the surprising_ripple — the ripple-check table did not flag the change-detection filter when a source-of-truth file moved"
+      - file: .github/workflows/publish.yml
+        section: "build + publish setup-python steps (also docs.yml, mutation.yml, drift-guard.yml)"
+        read_type: gate
+        extract: "review flagged 'single source of truth' as overstated — four other workflows hardcoded 3.13. Rather than defer (reviewer proposals are advisory), migrated all four to setup-python's `python-version-file: .python-version` in-task and dropped drift-guard's now-unused PY_VERSION env, so the claim holds CI-wide. Release/scheduled workflows are not PR-gating, so no path-filter change is needed for them"
       - file: CONTRIBUTING.md
         section: "Development Setup"
         read_type: reference
-        extract: "review: 'single source of truth for the primary Python' overstated — .python-version feeds only ci.yml's setup job; publish/docs/mutation/drift-guard keep their own 3.13. Narrowed the wording and pointed at BK-281 (the discovery_followup tracking the migration)"
+        extract: "reworded to the now-true single-source claim across CI workflows (every workflow reads .python-version)"
       - file: sdd/BACKLOG-DONE.md
         section: "BK-280 (item)"
         read_type: reference
