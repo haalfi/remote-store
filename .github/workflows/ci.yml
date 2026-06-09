@@ -75,7 +75,6 @@ jobs:
       - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false
-      - run: uv pip install -e ".[dev]"
       # actionlint: static lint for GitHub Actions workflows. Catches
       # template-injection vectors, undefined env / matrix references,
       # outdated runner labels, and expression-syntax errors. Pinned
@@ -97,24 +96,15 @@ jobs:
           bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7 "$RUNNER_TEMP"
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - run: actionlint -color -shellcheck=
-      - run: ruff check src/ tests/ examples/ scripts/
-      - run: ruff format --check src/ tests/ examples/ scripts/
-      - run: python scripts/check_test_assertions.py tests
-      - run: python scripts/check_mock_spec.py tests
-      - run: python scripts/check_test_placement.py tests
-      - run: python scripts/check_tla_no_emdash.py
-      - run: python scripts/check_formal_trace.py
-      - run: python scripts/check_capability_parity.py
-      - run: python scripts/check_spec_marks.py
-      - run: python scripts/check_docs_framework.py
-      - run: python scripts/check_rst_roles.py
-      - run: python scripts/check_infra_settings.py
-      - run: python scripts/check_no_tracker_refs.py
-      - run: python scripts/gen_graph.py --check
-      - run: python scripts/check_api_docs.py
-      - run: python scripts/gen_features.py --check
-      - run: python scripts/gen_graph_viz.py --check
-      - run: python scripts/gen_backlogid.py --check
+      # Single source of truth for "lint": delegate to the hatch script lists
+      # (preflight + lint + format-check in pyproject.toml) rather than
+      # re-listing every command here, so adding a checker to a hatch target
+      # propagates to CI automatically. `uvx` (= uv tool run) provides the hatch
+      # CLI ephemerally; hatch builds the default env once on the first call and
+      # reuses it across the three steps. BK-269 / audit-017 H1.
+      - run: uvx hatch run preflight
+      - run: uvx hatch run lint
+      - run: uvx hatch run format-check
 
   typecheck:
     needs: [setup]

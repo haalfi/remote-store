@@ -1,0 +1,103 @@
+id: BK-269
+title: "CI lint job delegates to hatch (one source of truth for \"lint\")"
+trigger: >
+  The CI `lint` job inlined all 18 lint commands as `- run:` steps, re-listing by
+  hand the commands already defined as the hatch `preflight`, `lint`, and
+  `format-check` targets in pyproject.toml. Three divergent definitions of "lint"
+  (the pre-commit subset, `hatch run lint`, and the CI job) drifted independently —
+  CI already carried `format-check` + four `gen_* --check` that `hatch run lint`
+  did not — so adding a checker to one list did not propagate to the others.
+source_items:
+  - BK-269
+audience:
+  - infra.ci
+  - contributor.tooling
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-269"
+        read_type: gate
+        extract: >
+          Replace inline steps with hatch run preflight + lint + format-check; the
+          item says "install hatch in the job, as the publish/drift jobs already
+          do" — but no CI job uses hatch run; every job uses uv pip install
+        outcome: misleading
+      - file: sdd/audits/audit-017-dev-process-gate-topology.md
+        section: "H1, R1"
+        read_type: reference
+        extract: >
+          Three-divergent-lint diagnosis + R1 recommendation; same wrong premise
+          that publish/drift jobs already reference hatch (they install via
+          uv pip install, not hatch run)
+        outcome: misleading
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] preflight, lint, format-check"
+        read_type: reference
+        extract: >
+          Union of the three targets == the 18 inline CI steps PLUS
+          drift_check render-docs --check (in preflight, absent from CI) — closing
+          audit M5's tested-versions-drift-in-no-PR-lane gap for free
+        outcome: ok
+      - file: .github/workflows/mutation.yml
+        section: "Install dependencies comment (128-133)"
+        read_type: gate
+        extract: >
+          Documented reason hatch run is avoided in CI: hatch 1.16.5 + uv installer
+          silently drops `features` from the venv. Shaped the empirical-first
+          decision — keep uv, verify in the PR's own lint run, force pip only if
+          features actually drop
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "lint job (66-117)"
+        read_type: gate
+        extract: >
+          The 18 inline steps + uv pip install to replace; actionlint is not a
+          hatch target and stays; setup-uv kept to tool-run hatch via uvx
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "lint job"
+        read_type: reference
+        extract: >
+          Dropped uv pip install + the 18 steps; added uvx hatch run
+          preflight/lint/format-check (uvx provides hatch ephemerally, env built
+          once under uv); kept checkout, setup-python, setup-uv, actionlint
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: pyproject.toml
+        section: "preflight, lint, format-check"
+        read_type: verify
+        extract: >
+          Target-by-target diff vs the prior 18 CI steps: nothing dropped, only
+          drift render-docs --check added
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "lint job (local hatch run)"
+        read_type: verify
+        extract: >
+          hatch run preflight/lint/format-check all green locally; render-docs
+          --check in sync; gen_backlogid next BK=280 so 269 -> DONE is a
+          backlogid.json no-op
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "lint job (PR run) — pivotal probe"
+        read_type: verify
+        extract: >
+          Empirical: uvx hatch builds the env under uv with all features present
+          and every check passes. If a dep is missing (features dropped), add the
+          GITHUB_ACTIONS installer=pip override to pyproject and re-run
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: >
+          infra.ci + contributor.tooling skip CHANGELOG; BK-269 moved to
+          BACKLOG-DONE; trace shipped same PR; backlogid.json unchanged (269 <=
+          DONE max)
+        outcome: ok

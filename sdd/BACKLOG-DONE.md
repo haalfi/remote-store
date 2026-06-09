@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-269 — CI `lint` job delegates to `hatch` (one source of truth for "lint")**
+  spec: — · effort: S · audience: infra.ci, contributor.tooling
+  The CI `lint` job inlined all 18 lint commands as `- run:` steps, hand-duplicating
+  the hatch `preflight` (5), `lint` (13), and `format-check` (1) targets — three
+  divergent definitions of "lint" (the pre-commit subset, `hatch run lint`, and the
+  CI job) that drifted independently (audit-017 H1 / L1 / L3). The job now runs
+  `uvx hatch run preflight` + `lint` + `format-check` (`uvx` tool-runs the hatch CLI
+  ephemerally; `setup-uv` retained, the inline `uv pip install -e ".[dev]"` dropped),
+  so the `pyproject.toml` script lists are the single source and CI inherits any
+  future checker automatically. `actionlint` is unchanged (not a hatch target). Side
+  effect: `drift_check render-docs --check` (in `preflight`, previously in no PR CI
+  lane) now gates tested-versions drift, closing part of audit M5. The env stays
+  uv-built per the `mutation.yml` gotcha (hatch + uv installer can silently drop
+  `features`): the PR's own `lint` run is the empirical probe, with a `GITHUB_ACTIONS`
+  `installer = "pip"` override as the ready fallback if features drop. Did not fold
+  the targets into a single `lint` (preserves `preflight`'s fast-fail ordering in
+  `hatch run all`); the `sdd/specs`/docs-only filter gaps and skill delegation remain
+  BK-270 / BK-271. Trace: `sdd/traces/bk-269-ci-lint-delegates-to-hatch.yml`.
+
 - [x] **BK-263 — Graph upload-session `ResourceLocked` leaked the pre-signed `uploadUrl` (credential)**
   spec: GR-045, GR-035, GR-026 · effort: M · audience: user.api, library.maintainer
   The mid-session `423` handler embedded the full pre-signed `uploadUrl` verbatim

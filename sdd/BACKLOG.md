@@ -394,7 +394,7 @@ picking one up; in particular the disposition below may narrow.
 
 audit-017 gate-topology follow-ups (BK-269–BK-272), in execution order; full
 findings in [audit-017](audits/audit-017-dev-process-gate-topology.md).
-**Order:** single-source the lint definition (BK-269) → route `sdd/specs`-only
+**Order:** single-source the lint definition (BK-269, done) → route `sdd/specs`-only
 and docs-only changes through their gates (BK-270) → point the `/pr` and
 `/fix-pr` skills at that single gate (BK-271) → drop the dead mypy pre-push hook
 (BK-272). BK-269 then BK-271 are the load-bearing consolidation wins; BK-270
@@ -402,23 +402,6 @@ closes the real coverage gaps and is cheaper once BK-269 makes the gate
 one-place; BK-272 is trivial and order-independent. Each item's rationale lives
 in its body. The `ID-*` items below are older, unprioritised ideas in the same
 area.
-
-- [ ] **BK-269 — CI `lint` job delegates to `hatch` (one source of truth for "lint")**
-  spec: — · effort: S · audience: library.maintainer, contributor.process
-  The CI `lint` job (`ci.yml:100-117`) inlines all 18 commands that already exist
-  as the `hatch` `lint` (13 checks), `format-check` (1), and `preflight` (4
-  `gen_* --check`) targets, so the `pyproject.toml` script lists and the workflow
-  drift independently — there are three divergent definitions of "lint" (the
-  pre-commit subset, `hatch run lint`, and the CI `lint` job), and they already
-  differ (CI carries `format-check` + the `gen_* --check`; `hatch run lint`
-  carries neither). Replace the inline steps with `hatch run preflight` +
-  `hatch run lint` + `hatch run format-check` (install hatch in the job, as the
-  publish/drift jobs already do), so the pyproject lists become the single source
-  and CI inherits any future checker automatically. Keep `mutation.yml`'s
-  deliberate no-`hatch` exception (it re-derives the env on purpose,
-  `mutation.yml:121`). Optionally fold `format-check` and the four `gen_* --check`
-  into `hatch run lint` so the three definitions collapse toward one. Audit-017
-  H1 / L1 / L3.
 
 - [ ] **BK-270 — Route `sdd/specs`-only and docs-only changes through their gates**
   spec: — · effort: S · audience: library.maintainer, infra.test
