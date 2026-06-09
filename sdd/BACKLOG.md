@@ -91,27 +91,10 @@ and the highest ID already in this file, then take the next integer. Run
 
 ID-127 (Microsoft Graph / OneDrive / SharePoint) follow-ups, in execution order;
 full findings in [audit-016](audits/audit-016-graph-backend-review.md).
-**Order:** security (BK-263) → load-bearing CI coverage (BK-262) → cheap spec/doc
-fixes (BK-264/265) → correctness + tests (BK-266/267) → blocked or hygiene tail
-(BK-259/261/268). Each item's own rationale lives in its body.
-
-- [ ] **BK-263 — Graph upload-session `ResourceLocked` leaks the pre-signed `uploadUrl` (credential)**
-  spec: GR-045, GR-035, GR-026 · effort: M · audience: user.api, library.maintainer
-  The mid-session `423` handler embeds the full pre-signed `uploadUrl` verbatim in
-  the `ResourceLocked` message (`transfer.py:_resource_locked_mid_session`); that
-  URL carries its own credential in its query (GR-038), so any caller logging the
-  exception leaks a live write/DELETE credential — defeating GR-035. The sibling
-  monitor path already query-strips the identical credential class
-  (`monitor.py:_redact_url`, GR-026); the upload path does not, and a
-  GR-045-marked test (`test_write.py:535`) asserts the credential is *present*.
-  Root cause is a spec contradiction: GR-045 mandates embedding the session URL for
-  resume, GR-035 / GR-026 forbid tokens in messages — and for the upload session
-  the credential *is* the resume handle, so both cannot hold.
-  **Decide first (escalated spec conflict):** either (a) query-strip like the
-  monitor and amend GR-045 to drop the resume-from-message promise, or (b) add a
-  structured `RemoteStoreError.context` carrier (the spec-005 work ID-127 deferred)
-  to keep both no-leak and resume. Then fix `transfer.py`, flip the test to assert
-  *absence* of the credential, and add a masking regression test. Audit-016 H1.
+**Order:** load-bearing CI coverage (BK-262) → cheap spec/doc fixes (BK-264/265) →
+correctness + tests (BK-266/267) → blocked or hygiene tail (BK-259/261/268). Each
+item's own rationale lives in its body. (Security item BK-263 — the upload-session
+credential leak — shipped first; see BACKLOG-DONE.md.)
 
 - [ ] **BK-262 — Graph conformance cassettes: replay-able pre-signed URLs**
   spec: GR-015, GR-019 · effort: M · audience: infra.test

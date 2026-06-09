@@ -21,7 +21,7 @@ import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from typing import TYPE_CHECKING, Any, Literal
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
@@ -74,6 +74,22 @@ def mask_headers(headers: Mapping[str, str]) -> dict[str, str]:
     routes them through this helper first.
     """
     return {k: (_REDACTED if k.lower() in _SENSITIVE_HEADERS else v) for k, v in headers.items()}
+
+
+def redact_presigned_url(url: str) -> str:
+    """Return *url* with its query (and fragment) stripped — for pre-signed URLs.
+
+    The Graph pre-signed surfaces — the read download URL, the upload-session
+    URL, and the copy/move monitor URL — each carry their own credential in the
+    query string. A token must never reach an exception message or log record, so
+    when such a URL is surfaced for out-of-band diagnosis the query is dropped
+    while the scheme / host / path still identify the operation. Used by both the
+    monitor poller and the upload-session ``423`` handler so the masking rule
+    applies once, the same way, to both pre-signed sites.
+    """
+    # Credential masking (GR-035) for the GR-015 / GR-038 / GR-026 pre-signed URLs.
+    parts = urlsplit(url)
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
 
 
 # ---------------------------------------------------------------------------

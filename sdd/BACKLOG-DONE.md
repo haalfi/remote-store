@@ -8,6 +8,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-263 — Graph upload-session `ResourceLocked` leaked the pre-signed `uploadUrl` (credential)**
+  spec: GR-045, GR-035, GR-026 · effort: M · audience: user.api, library.maintainer
+  The mid-session `423` handler embedded the full pre-signed `uploadUrl` verbatim
+  in the `ResourceLocked` message (`transfer.py:_resource_locked_mid_session`); that
+  URL carries its own write/DELETE credential in its query (GR-038), so any caller
+  logging the exception leaked a live credential, defeating GR-035 — while the
+  sibling monitor path already query-stripped the identical credential class
+  (`monitor.py`, GR-026). Root cause was a spec contradiction: GR-045 mandated
+  embedding the session URL for resume, GR-035/GR-026 forbid tokens in messages, and
+  for the upload session the credential *is* the resume handle. Resolved in favour of
+  GR-035 (audit-016 H1): the query-strip redaction was hoisted into a shared
+  `redact_presigned_url` helper in `http.py` used by both the monitor poller and the
+  `423` handler; the session URL is now redacted (scheme/host/path only) before it
+  reaches the message; and GR-045 was amended to drop the resume-from-message promise
+  (the redacted URL + `nextExpectedRanges` still identify the operation for
+  diagnosis, but resume requires re-deriving the URL — there is no public resume API,
+  and a structured `RemoteStoreError.context` carrier stays out of scope). The GR-045
+  test that asserted the credential was *present* was flipped to assert its absence,
+  and a masking regression test (`str`/`repr`) was added. Trace:
+  `sdd/traces/bk-263-graph-resourcelocked-cred-leak.yml`.
+
 - [x] **BK-279 — Share CI service images via a cache instead of pulling per job**
   spec: — · effort: M · audience: infra.ci, contributor.tooling
   BK-278's per-job backoff retry still pulled every backend image (MinIO from

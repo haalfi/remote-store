@@ -944,12 +944,18 @@ no native retry); see RET-015.
   remains valid — Graph does not invalidate it on `423` — but the
   backend does not auto-retry or auto-resume. Caller retry is the
   caller's decision; if it chooses to retry, the session URL and
-  `nextExpectedRanges` discipline (GR-023) still apply. The
-  unfinished session URL and last-known `nextExpectedRanges` list
-  are included in the exception message text so callers (and tests)
-  can resume without re-deriving them. (Spec 005 has no structured
-  `RemoteStoreError.context` surface today; adding one is out of
-  scope for ID-127.)
+  `nextExpectedRanges` discipline (GR-023) still apply.
+- The upload-session URL carries its own credential in its query
+  string (GR-038), so it is **redacted** (query stripped; scheme,
+  host, and path retained) before it is surfaced in the
+  `ResourceLocked` message — GR-035 bars any token from an exception
+  message, and the copy/move monitor URL is masked the same way
+  (GR-026). The redacted URL and last-known `nextExpectedRanges` are
+  included in the message so the locked operation stays identifiable
+  for out-of-band diagnosis; the credentialed URL is **not** surfaced,
+  so a caller that resumes must re-derive the session URL. (There is
+  no public resume API, and spec 005 has no structured
+  `RemoteStoreError.context` surface — adding one is out of scope.)
 
 ### GR-054: 507 insufficientStorage / quotaLimitReached
 

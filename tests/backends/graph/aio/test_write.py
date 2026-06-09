@@ -530,11 +530,35 @@ class TestUploadSessionFailures:
         async with _session_backend() as backend:
             with pytest.raises(ResourceLocked) as exc:
                 await backend.write("big.bin", b"01234567")
-        # GR-045: the session URL + last nextExpectedRanges ride the message so a
-        # caller can resume; the session is left ALIVE (no abort).
-        assert _UPLOAD_URL in str(exc.value)
-        assert "4-" in str(exc.value)
+        # GR-045 / GR-035: the credentialed session URL is NEVER surfaced verbatim
+        # — its query (the credential, GR-038) is stripped so a logged exception
+        # cannot leak it. The redacted host+path still identifies the session and
+        # the last nextExpectedRanges ride the message for diagnosis. The session
+        # is left ALIVE (no abort) — resume requires re-deriving the URL.
+        msg = str(exc.value)
+        assert "tempauth" not in msg
+        assert "secret" not in msg
+        assert _UPLOAD_URL not in msg
+        assert "up.example.com/session/abc" in msg  # redacted host+path retained
+        assert "4-" in msg
         assert delete.call_count == 0
+
+    @respx.mock
+    @pytest.mark.spec("GR-045")
+    @pytest.mark.spec("GR-035")  # credential masking: no token in str(exc)/repr(exc)
+    async def test_423_message_redacts_the_presigned_session_query(self) -> None:
+        # The pre-signed uploadUrl carries its own credential in the query (GR-038);
+        # it must never reach str(exc) / repr(exc), mirroring the monitor redaction
+        # (test_monitor.py::test_timeout_message_redacts_the_presigned_query).
+        respx.post(_SESSION_RE).mock(return_value=httpx.Response(200, json={"uploadUrl": _UPLOAD_URL}))
+        respx.put(_UPLOAD_URL).mock(return_value=httpx.Response(423, json={"error": {"code": "resourceLocked"}}))
+        respx.delete(_UPLOAD_URL).mock(return_value=httpx.Response(204))
+        async with _session_backend() as backend:
+            with pytest.raises(ResourceLocked) as exc:
+                await backend.write("big.bin", b"01234567")
+        for rendered in (str(exc.value), repr(exc.value)):
+            assert "tempauth" not in rendered
+            assert "secret" not in rendered
 
     @respx.mock
     @pytest.mark.spec("GR-024")
