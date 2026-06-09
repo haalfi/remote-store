@@ -299,31 +299,35 @@ current HEAD.)
 Shared by `/pr` (before creating the PR) and `/fix-pr` (before committing
 fixes). `<BASE>` is the PR base branch (default `master`). "What validates a
 change" is composed from hatch targets, never re-encoded; the mechanical gate
-mirrors CI's code-vs-docs path filtering so a non-code PR is not billed the full
-test/examples/notebooks run CI itself skips for it. Each skill keeps its own
+follows the same code-vs-docs split CI uses, so a non-code PR is not billed the
+full test/examples/notebooks run CI itself skips for it. Each skill keeps its own
 trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
 
 - **Mechanical gate.** Classify the diff with
   `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
   failures, re-run until clean.
-    - **Touches `src/`, `tests/`, `examples/`, `scripts/`, or `pyproject.toml`**
-      → run `hatch run all` — CONTRIBUTING's prescribed pre-PR superset
-      ([CONTRIBUTING § Consistency Checklists](../CONTRIBUTING.md#consistency-checklists)):
-      lint, typecheck, the full Stage-1 test suite, examples, notebooks, and a
-      strict docs build. These are the test-bearing members of CI's `CODE_PAT`;
-      `scripts/` belongs here because its guards live under `tests/scripts/`, which
-      only the test suite exercises (a `scripts/`-only diff must still run it).
+    - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `pyproject.toml`, or
+      `.python-version`** → run `hatch run all`, CONTRIBUTING's prescribed pre-PR
+      superset ([CONTRIBUTING § Consistency Checklists](../CONTRIBUTING.md#consistency-checklists));
+      its constituent scripts are the source of truth in `pyproject.toml`. These
+      are the test-bearing and interpreter-defining members of CI's `CODE_PAT`;
+      `scripts/` is among them because its guards live under `tests/scripts/`, which
+      only the suite runs (a `scripts/`-only diff must still run it). The remaining
+      `CODE_PAT` members are generated artefacts or CI config (FEATURES, the graph
+      data, workflows) whose drift is caught by `preflight` on this path and by CI.
       `all` uses the no-Docker `test-cov-s1` variant (no 95% floor); that floor is
       deliberately CI/publish-only, so do **not** substitute `test-cov-strict`
       (see [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)).
     - **No code touched** (docs / specs / skills / pure config only) → run
       `hatch run lint` + `hatch run docs-gate`. `lint` is the gate `/pr` used to
-      skip — it holds the code, spec, docs, and trace check scripts
-      (`check_spec_marks`, `check_formal_trace`, `check_docs_framework`,
-      `check_no_tracker_refs`, …); `docs-gate` adds the strict mkdocs build, link
-      scan, and tested-versions drift check. This skips the test suite, examples,
-      and notebooks — none of which a non-code change exercises — matching CI,
-      which runs its heavy matrix only when `CODE_PAT` matches.
+      skip — it holds the code, spec, docs, and trace check scripts (e.g.
+      `check_spec_marks`, `check_formal_trace`, `check_no_tracker_refs`);
+      `docs-gate` adds the strict mkdocs build, link scan, and tested-versions
+      drift check. This skips the test suite, examples, and notebooks — none of
+      which a non-code change exercises. The code path reaches these same
+      docs / tracker / drift checks through `preflight` + `lint` + `check-links`,
+      so the two paths stay equivalent on docs coverage despite composing
+      different targets.
 - **Local-machine reference gate.** Not covered by either target above. Grep
   changed files for private local-machine references unreachable from the repo,
   per the [ripple-check Local-machine reference row](#pre-work-index) (patterns +

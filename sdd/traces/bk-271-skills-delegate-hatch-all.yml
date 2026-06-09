@@ -11,7 +11,7 @@ source_items:
 audience:
   - library.maintainer
   - contributor.process
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -98,6 +98,34 @@ phases:
         extract: >-
           Moved BK-271 to done (newest-first) with a de-staled description; updated the
           Lint/CI-Completeness preamble in BACKLOG.md to mark it done.
+  - id: fix
+    name: Fix (PR #784 review)
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates — mechanical gate"
+        read_type: reference
+        extract: >-
+          Review caught the code trigger was narrower than CI's CODE_PAT. Added
+          `.python-version`; softened "mirrors CI" to "follows CI's code-vs-docs split"
+          (the trigger covers CODE_PAT's test-bearing/interpreter members, not the full
+          regex); noted generated-artefact members are caught by `preflight`/CI; added
+          a line that the code path reaches the docs/drift checks via preflight+lint+
+          check-links (equivalent to docs-gate). (scripts/+pyproject were already added
+          pre-review in d73bee4f6.)
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 2 (principles not enumerations) + 4 (one copy per fact)"
+        read_type: gate
+        extract: >-
+          Review flagged line enumerating `hatch run all`'s members. Trimmed to "the
+          superset; constituent scripts are the SSoT in pyproject.toml" + a 3-example
+          representative check-script list.
+      - file: .claude/skills/pr/SKILL.md
+        section: "Step 2 + fix-pr Step 5"
+        read_type: reference
+        extract: >-
+          Review: don't restate the gate composition 1:1 in both skills when they point
+          to the shared ref. Thinned both summaries to name the three gate categories
+          only (mechanical / local-machine / qualitative).
   - id: verify
     name: Verify
     steps:
