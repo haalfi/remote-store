@@ -10498,6 +10498,12 @@ walkthrough of the <code>Backend</code> contract, error mapping, and capabilitie
 <li>For backend extensions: reuse the conformance test suite by importing and parameterizing it</li>
 </ul>
 <h2 id="development-setup">Development Setup<a class="headerlink" href="#development-setup" title="Permanent link">&para;</a></h2>
+<p>The repo pins its priority interpreter in <code>.python-version</code> (the version CI's
+coverage lane runs on), so <code>uv</code> and <code>pyenv</code> select it automatically and your
+local <code>hatch run all</code> reproduces what CI gates on. It is the single source for
+the priority Python across CI: every workflow reads it (<code>setup-python</code>'s
+<code>python-version-file</code>, or <code>ci.yml</code>'s <code>setup</code> job for the matrix), so bumping the
+development version is a one-line edit there.</p>
 <p>The default hatch env is configured with <code>path = ".venv"</code>, so <code>hatch run</code>
 creates and owns <code>.venv/</code> at the repo root via uv. A separate
 <code>python -m venv</code> or <code>pip install -e ".[dev]"</code> step duplicates the env that
