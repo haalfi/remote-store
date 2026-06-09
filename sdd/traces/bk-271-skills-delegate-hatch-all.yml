@@ -1,0 +1,164 @@
+id: BK-271
+title: "/pr and /fix-pr compose hatch targets instead of re-encoding gate logic"
+trigger: >-
+  The /pr and /fix-pr skills already shared one validation-gate section, but that
+  section was a hand-rolled gate that re-encoded a subset of CI: /pr ran neither
+  `hatch run lint` nor `all` (so it could open a PR failing any of the ~13 lint
+  checks), and a docs/spec-only diff fell to `hatch run test` — the least-relevant
+  gate — while skipping `lint`, the relevant one.
+source_items:
+  - BK-271
+audience:
+  - library.maintainer
+  - contributor.process
+review_rounds: 3
+surprising_ripples:
+  - CONTRIBUTING.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-271"
+        read_type: gate
+        extract: >-
+          The item to implement. Its line refs (pr/SKILL.md:36-38,
+          fix-pr/SKILL.md:109-111) and its "both skills inline-duplicate the gate"
+          framing no longer matched the code — the dedup into one shared section had
+          already happened.
+        outcome: misleading
+      - file: sdd/audits/audit-017-dev-process-gate-topology.md
+        section: "R3 (findings M1 / M2 / L2); Recommendations table"
+        read_type: reference
+        extract: >-
+          Disposition: define "what validates a change" once as `hatch run all` and
+          have both skills run it, dropping the src/tests/examples coverage branch and
+          the manual TESTING/CONTENT sub-gates.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates"
+        read_type: gate
+        extract: >-
+          The shared gate to collapse: a four-bullet Testing/Docs/Coverage/Local-machine
+          subset that re-encodes a slice of `hatch run all`.
+      - file: .claude/skills/pr/SKILL.md
+        section: "Step 2 (Validation gates)"
+        read_type: reference
+        extract: "/pr delegates to the shared gate but runs neither lint nor all (M1)."
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 5 (Validate)"
+        read_type: reference
+        extract: >-
+          /fix-pr runs `hatch run lint` explicitly then the shared gate — redundant
+          once the shared gate runs `all` (which includes lint).
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] — all, lint, test-cov-s1"
+        read_type: reference
+        extract: >-
+          `all` = preflight+lint+format-check+typecheck+test-cov-s1+examples+notebooks
+          +check-links+docs-check+docs-build, using the no-Docker test-cov-s1 (no 95%
+          floor). No check_* script covers the local-machine-reference grep, so it
+          cannot be folded into `all`.
+  - id: implement
+    name: Implement
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Consistency Checklists"
+        read_type: reference
+        extract: >-
+          Anchor for the "Pre-PR validation: run `hatch run all`" link used in the
+          rewritten gate.
+      - file: .github/workflows/ci.yml
+        section: "setup job — CODE_PAT / DOCS_PAT / FORMAL_PAT path filters"
+        read_type: reference
+        extract: >-
+          After user pushback that `hatch run all`-on-every-PR is too heavy, mirrored
+          CI's own routing: the heavy matrix runs only when CODE_PAT
+          (src|tests|examples|scripts) matches; docs/specs route to lighter jobs.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates"
+        read_type: reference
+        extract: >-
+          Rewrote to a CI-mirroring mechanical gate: code diff
+          (src/tests/examples/scripts/pyproject — scripts/ included because its guards
+          live under tests/scripts/) → `hatch run all`; else → `hatch run lint` +
+          `docs-gate` (no test suite / examples / notebooks). Plus the
+          local-machine-reference grep (no `check_*` covers it) and a thin qualitative
+          TESTING/CONTENT review. Dropped the old `hatch run test`-for-docs fallback.
+      - file: .claude/skills/pr/SKILL.md
+        section: "Step 2 (Validation gates)"
+        read_type: reference
+        extract: "Updated the gate-name summary to match the rewritten shared section."
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 5 (Validate)"
+        read_type: reference
+        extract: >-
+          Removed the redundant explicit `hatch run lint`; invoke only the shared gate,
+          now running `hatch run all`.
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: reference
+        extract: >-
+          Moved BK-271 to done (newest-first) with a de-staled description; updated the
+          Lint/CI-Completeness preamble in BACKLOG.md to mark it done.
+  - id: fix
+    name: Fix (PR #784 review)
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates — mechanical gate"
+        read_type: reference
+        extract: >-
+          Review caught the code trigger was narrower than CI's CODE_PAT. Added
+          `.python-version`; softened "mirrors CI" to "follows CI's code-vs-docs split"
+          (the trigger covers CODE_PAT's test-bearing/interpreter members, not the full
+          regex); noted generated-artefact members are caught by `preflight`/CI; added
+          a line that the code path reaches the docs/drift checks via preflight+lint+
+          check-links (equivalent to docs-gate). (scripts/+pyproject were already added
+          pre-review in d73bee4f6.)
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 2 (principles not enumerations) + 4 (one copy per fact)"
+        read_type: gate
+        extract: >-
+          Review flagged line enumerating `hatch run all`'s members. Trimmed to "the
+          superset; constituent scripts are the SSoT in pyproject.toml" + a 3-example
+          representative check-script list.
+      - file: .claude/skills/pr/SKILL.md
+        section: "Step 2 + fix-pr Step 5"
+        read_type: reference
+        extract: >-
+          Review: don't restate the gate composition 1:1 in both skills when they point
+          to the shared ref. Thinned both summaries to name the three gate categories
+          only (mechanical / local-machine / qualitative).
+      - file: CONTRIBUTING.md
+        section: "Consistency Checklists — Pre-PR validation"
+        read_type: gate
+        extract: >-
+          Round-3 review (surprising ripple): CONTRIBUTING:365 still prescribed a blanket
+          `hatch run all`, contradicting the new path filter (principles 3 + 4). Reconciled
+          it to defer to the PR-validation-gates section (code → all; non-code → lint +
+          docs-gate; all-as-safe-superset fallback), and dropped the now-circular
+          "CONTRIBUTING's prescribed superset" citation from CLAUDE-REFERENCE.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates — mechanical gate (code path)"
+        read_type: reference
+        extract: >-
+          Round-3 review: narrowed the imprecise "preflight catches the remaining CODE_PAT
+          members" claim — `preflight` covers FEATURES + graph data, but workflow/action
+          YAML is validated only by CI (and a workflow-only diff takes the non-code path
+          where preflight does not run).
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-271 divergence note"
+        read_type: reference
+        extract: >-
+          Round-3 review: expanded the R3-divergence rationale to address R3's "one thin
+          target … but only one" provision — justified two existing non-code targets
+          (lint + docs-gate) over minting a new composite (compose-don't-add).
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Local-machine reference row"
+        read_type: verify
+        extract: >-
+          Confirmed the row's "Enforced by the shared PR validation gates that /pr and
+          /fix-pr both run" claim still holds after the rewrite — the local-machine grep
+          survived the collapse as its own bullet.

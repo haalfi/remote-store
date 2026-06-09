@@ -297,27 +297,46 @@ current HEAD.)
 ## PR validation gates
 
 Shared by `/pr` (before creating the PR) and `/fix-pr` (before committing
-fixes). `<BASE>` is the PR base branch (default `master`). Run all four; each
-skill keeps its own trace step (`/pr` verifies a trace exists, `/fix-pr` updates
-it).
+fixes). `<BASE>` is the PR base branch (default `master`). "What validates a
+change" is composed from hatch targets, never re-encoded; the mechanical gate
+follows the same code-vs-docs split CI uses, so a non-code PR is not billed the
+full test/examples/notebooks run CI itself skips for it. Each skill keeps its own
+trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
 
-- **Testing gate.** Do the changed tests follow [`TESTING.md`](TESTING.md)?
-  Report violations before finishing.
-- **Docs gate.** Does changed documentation follow
-  [`CONTENT-RULES.md`](CONTENT-RULES.md)? Report violations before finishing.
-- **Coverage gate.** Check `git diff origin/<BASE>...HEAD --name-only` for files
-  under `src/`, `tests/`, or `examples/`.
-    - Any match → run `hatch run test-cov-strict` (enforces 95%; needs Azurite
-      locally — see [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)). On
-      failure, stop and report which files are below threshold.
-    - None match (docs/config-only) → run `hatch run test`. A `scripts/`-only
-      diff lands here, yet scripts have guard tests under `tests/scripts/` the
-      strict trigger never fires for — so still run the suite. On failure, stop
-      and report.
-- **Local-machine reference gate.** Grep changed files for private
-  local-machine references unreachable from the repo, per the [ripple-check
-  Local-machine reference row](#pre-work-index) (patterns + scope live there).
-  Fix before finishing.
+- **Mechanical gate.** Classify the diff with
+  `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
+  failures, re-run until clean.
+    - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `pyproject.toml`, or
+      `.python-version`** → run `hatch run all`, the full pre-PR superset (its
+      constituent scripts are the source of truth in `pyproject.toml`). These
+      are the test-bearing and interpreter-defining members of CI's `CODE_PAT`;
+      `scripts/` is among them because its guards live under `tests/scripts/`, which
+      only the suite runs (a `scripts/`-only diff must still run it). The remaining
+      `CODE_PAT` members are generated artefacts (FEATURES, the graph data — drift
+      caught by `preflight` on this path) and CI config (workflows, actions —
+      validated only by CI, which re-runs itself on those paths).
+      `all` uses the no-Docker `test-cov-s1` variant (no 95% floor); that floor is
+      deliberately CI/publish-only, so do **not** substitute `test-cov-strict`
+      (see [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)).
+    - **No code touched** (docs / specs / skills / pure config only) → run
+      `hatch run lint` + `hatch run docs-gate`. `lint` is the gate `/pr` used to
+      skip — it holds the code, spec, docs, and trace check scripts (e.g.
+      `check_spec_marks`, `check_formal_trace`, `check_no_tracker_refs`);
+      `docs-gate` adds the strict mkdocs build, link scan, and tested-versions
+      drift check. This skips the test suite, examples, and notebooks — none of
+      which a non-code change exercises. The code path reaches these same
+      docs / tracker / drift checks through `preflight` + `lint` + `check-links`,
+      so the two paths stay equivalent on docs coverage despite composing
+      different targets.
+- **Local-machine reference gate.** Not covered by either target above. Grep
+  changed files for private local-machine references unreachable from the repo,
+  per the [ripple-check Local-machine reference row](#pre-work-index) (patterns +
+  scope live there). Fix before finishing.
+- **Qualitative review.** The `check_*`/`docs-check` scripts in the mechanical
+  gate enforce the mechanical rules but not the judgment-based ones. Review the
+  changed tests against [`TESTING.md`](TESTING.md) (assertion depth, mock
+  discipline) and changed documentation against [`CONTENT-RULES.md`](CONTENT-RULES.md)
+  (prose longevity). Report violations before finishing.
 
 ---
 

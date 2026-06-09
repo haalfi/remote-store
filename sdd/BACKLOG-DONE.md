@@ -8,6 +8,47 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-271 — `/pr` and `/fix-pr` compose hatch targets instead of re-encoding gate logic**
+  spec: — · effort: M · audience: library.maintainer, contributor.process
+  The gate logic was already deduplicated into one shared reference section
+  (`sdd/CLAUDE-REFERENCE.md#pr-validation-gates`) both skills call — but that
+  shared gate was a hand-rolled gate that re-encoded a subset of CI: `/pr` ran
+  neither `hatch run lint` nor `all` (so it could open a PR failing any of the ~13
+  `lint` checks — `check_mock_spec`, `check_spec_marks`, `check_formal_trace`,
+  `check_no_tracker_refs`, …) (M1), and its coverage step keyed on
+  `src/`/`tests/`/`examples/` sent a docs/spec-only diff to `hatch run test` — the
+  least-relevant gate — while skipping `lint`, the relevant one (M2). Replaced the
+  hand-rolled gate with a mechanical gate composed from existing hatch targets that
+  follows CI's code-vs-docs split: a diff touching the test-bearing and
+  interpreter-defining members of CI's `CODE_PAT`
+  (`src/`/`tests/`/`examples/`/`scripts/`/`pyproject.toml`/`.python-version` —
+  `scripts/` included because its guards live under `tests/scripts/`) runs
+  `hatch run all` (the full superset); any other diff (docs / specs / skills /
+  config) runs `hatch run lint` + `hatch run docs-gate` — lint (the gate `/pr`
+  skipped) plus the strict mkdocs build, link scan, and version-drift check, but
+  not the test suite / examples / notebooks a non-code change does not exercise.
+  This keeps the local pre-PR gate no heavier than CI (which path-filters the same
+  way and was praised for it in the audit), composes targets rather than re-encoding
+  checks, and routes each change type to its *relevant* gate. Two gates sit beside
+  the mechanical one because no hatch target covers them: the local-machine-reference
+  grep (no `check_*` script enforces it) and a thin qualitative TESTING/CONTENT
+  review (assertion depth, mock discipline, prose longevity are not mechanized).
+  The skill gate uses `test-cov-s1` (via `all`), not `test-cov-strict`, so it
+  carries no local Azurite dependency — the 95% strict floor stays CI/publish-only
+  by design. Diverges from audit-017 R3's literal prescription (advisory per the
+  Audits rule) in two ways: R3 said to *drop* the per-type branch and collapse to a
+  single `hatch run all`, and — where a lighter fast-iteration gate was wanted — to
+  "document **one** thin target … but only one." This design keeps a (CI-mirroring)
+  branch and uses two existing targets for the non-code path. The branch earns its
+  keep by making the local gate no heavier than CI without skipping relevant checks
+  (M1 / M2). The two-target choice over R3's "but only one" is deliberate: no single
+  existing target spans both the `lint` check-family (spec / docs / trace scripts)
+  and the `docs-gate` build / link / drift family, and minting a new composite would
+  duplicate what `lint` + `docs-gate` already express — against the audit's own
+  compose-don't-add north star. Net: fixes the diagnosed pain without billing every
+  doc/spec PR the full ~4-minute superset.
+  Audit-017 R3 (M1 / M2 / L2). Trace: `sdd/traces/bk-271-skills-delegate-hatch-all.yml`.
+
 - [x] **BK-281 — Reap adapter daemon thread in close-timeout tests (BK-276 residual loop leak)**
   spec: — · effort: S · audience: infra.test
   BK-276/ID-217 fixed the teardown-time unclosed-`ProactorEventLoop` flake but a
