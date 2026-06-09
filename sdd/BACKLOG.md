@@ -323,6 +323,83 @@ fixes (BK-264/265) → correctness + tests (BK-266/267) → blocked or hygiene t
 
 ## Lint / CI Completeness
 
+audit-017 gate-topology follow-ups (BK-269–BK-272), in execution order; full
+findings in [audit-017](audits/audit-017-dev-process-gate-topology.md).
+**Order:** single-source the lint definition (BK-269) → route `sdd/specs`-only
+and docs-only changes through their gates (BK-270) → point the `/pr` and
+`/fix-pr` skills at that single gate (BK-271) → drop the dead mypy pre-push hook
+(BK-272). BK-269 then BK-271 are the load-bearing consolidation wins; BK-270
+closes the real coverage gaps and is cheaper once BK-269 makes the gate
+one-place; BK-272 is trivial and order-independent. Each item's rationale lives
+in its body. The `ID-*` items below are older, unprioritised ideas in the same
+area.
+
+- [ ] **BK-269 — CI `lint` job delegates to `hatch` (one source of truth for "lint")**
+  spec: — · effort: S · audience: library.maintainer, contributor.process
+  The CI `lint` job (`ci.yml:100-117`) inlines all 18 commands that already exist
+  as the `hatch` `lint` (13 checks), `format-check` (1), and `preflight` (4
+  `gen_* --check`) targets, so the `pyproject.toml` script lists and the workflow
+  drift independently — there are three divergent definitions of "lint" (the
+  pre-commit subset, `hatch run lint`, and the CI `lint` job), and they already
+  differ (CI carries `format-check` + the `gen_* --check`; `hatch run lint`
+  carries neither). Replace the inline steps with `hatch run preflight` +
+  `hatch run lint` + `hatch run format-check` (install hatch in the job, as the
+  publish/drift jobs already do), so the pyproject lists become the single source
+  and CI inherits any future checker automatically. Keep `mutation.yml`'s
+  deliberate no-`hatch` exception (it re-derives the env on purpose,
+  `mutation.yml:121`). Optionally fold `format-check` and the four `gen_* --check`
+  into `hatch run lint` so the three definitions collapse toward one. Audit-017
+  H1 / L1 / L3.
+
+- [ ] **BK-270 — Route `sdd/specs`-only and docs-only changes through their gates**
+  spec: — · effort: S · audience: library.maintainer, infra.test
+  The CI `setup` path filter (`ci.yml:40`, `CODE_PAT`) does not match `sdd/`, so a
+  spec-only PR **skips the entire `lint` job** — `check_spec_marks` and
+  `check_formal_trace` (the spec ↔ test / spec ↔ Dafny drift gates) never run, in
+  CI or at commit (`verify-formal` runs only `dafny verify` +
+  `check_capability_parity`, `ci.yml:364-374`). Separately, a docs-only PR
+  (`docs-src/guides/*.md`) runs only `check_docs_framework` + `mkdocs build
+  --strict` in the `docs` job, skipping `check_no_tracker_refs` (the gate built for
+  guide prose), `check_links`, and `drift_check render-docs --check` (the last runs
+  in no PR CI lane at all). Both fixes route *existing* gates to the change types
+  they validate; neither adds a new gate:
+  - Widen `CODE_PAT` to include `^sdd/specs/` (leanest), or add `check_spec_marks`
+    + `check_formal_trace` to `verify-formal` — pick one place, not both.
+  - Add `check_no_tracker_refs`, `check_links`, and `drift_check render-docs
+    --check` to the `docs` job (or, once BK-269 lands, point the `docs` job at the
+    relevant `hatch` targets).
+  Audit-017 H2 / M3 / M5.
+
+- [ ] **BK-271 — `/pr` and `/fix-pr` delegate to `hatch run all` instead of re-encoding gate logic**
+  spec: — · effort: M · audience: library.maintainer, contributor.process
+  `/pr` never runs `hatch run lint` or `hatch run all` — CONTRIBUTING's prescribed
+  pre-PR command (`CONTRIBUTING.md:358`) — and instead reconstructs a partial
+  subset (manual TESTING/CONTENT reads, a coverage run keyed on
+  `src|tests|examples`, a trace-existence check, a local-machine grep), so it can
+  open a PR that fails any of the 13+ lint checks it does not run. Both skills also
+  prescribe `hatch run test` for "docs/config-only" diffs (`pr/SKILL.md:36-38`,
+  `fix-pr/SKILL.md:109-111`) — the suite least relevant to a doc/spec change — and
+  never prescribe `hatch run lint`, the gate that validates those changes. Define
+  "what validates a change" **once** as `hatch run all` and have both skills run
+  it, dropping the per-type coverage branch and the manual sub-gates (those rules
+  already live inside `check_*` / `docs-check`). If a lighter fast-iteration gate
+  is wanted, document one thin target and have both skills call it — but only one.
+  Best sequenced after BK-269 + BK-270 so `hatch run all` is the true, complete
+  superset. Audit-017 M1 / M2 / L2.
+
+- [ ] **BK-272 — Resolve the dead mypy pre-push hook**
+  spec: — · effort: S · audience: library.maintainer, contributor.process
+  `.pre-commit-config.yaml:8-15` declares mypy with `stages: [pre-push]`, but the
+  documented install (`hatch run pre-commit-install` = `pre-commit install`,
+  `pyproject.toml:256`) installs only the pre-commit stage — there is no
+  `default_install_hook_types` in the config and no doc mentions
+  `--hook-type pre-push` — so the hook never fires on `git push`. Type-checking
+  still runs via `hatch run typecheck`/`all` and CI, so this is dead config, not a
+  correctness hole. Either set `default_install_hook_types: [pre-commit,
+  pre-push]` so `pre-commit install` wires both stages, or drop the pre-push mypy
+  hook and rely on `hatch run`/CI. Don't leave a declared gate that never fires.
+  Trivial and order-independent. Audit-017 M4.
+
 - [ ] **ID-179 — Trace schema validator: wire `audience` field check into `hatch run lint`**
   spec: — · effort: S · audience: library.maintainer
   `sdd/traces/_schema.yml` declares `audience` as `required`, but BK-193
