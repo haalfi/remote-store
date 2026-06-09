@@ -76,11 +76,12 @@ phases:
         section: "PR validation gates"
         read_type: reference
         extract: >-
-          Rewrote to a CI-mirroring mechanical gate: code diff (src/tests/examples) →
-          `hatch run all`; else → `hatch run lint` + `docs-gate` (no test suite /
-          examples / notebooks). Plus the local-machine-reference grep (no `check_*`
-          covers it) and a thin qualitative TESTING/CONTENT review. Dropped the old
-          `hatch run test`-for-docs fallback.
+          Rewrote to a CI-mirroring mechanical gate: code diff
+          (src/tests/examples/scripts/pyproject — scripts/ included because its guards
+          live under tests/scripts/) → `hatch run all`; else → `hatch run lint` +
+          `docs-gate` (no test suite / examples / notebooks). Plus the
+          local-machine-reference grep (no `check_*` covers it) and a thin qualitative
+          TESTING/CONTENT review. Dropped the old `hatch run test`-for-docs fallback.
       - file: .claude/skills/pr/SKILL.md
         section: "Step 2 (Validation gates)"
         read_type: reference

@@ -21,9 +21,9 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
 
 2. **Validation gates:** Run the shared [PR validation
    gates](../../../sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — the mechanical
-   gate (`hatch run all` for code changes, else `hatch run lint` + `docs-gate`),
-   local-machine reference, qualitative TESTING/CONTENT review. Resolve any stop
-   condition before drafting the PR.
+   gate (`hatch run all` for code changes incl. `scripts/`, else `hatch run lint`
+   + `docs-gate`), local-machine reference, qualitative TESTING/CONTENT review.
+   Resolve any stop condition before drafting the PR.
 
 3. **Trace gate:** Extract backlog IDs from `git log origin/<BASE>..HEAD --format=%s`
    using the pattern `^([A-Z]+-\d+[a-z]?)[:\s]` against each subject — the ID

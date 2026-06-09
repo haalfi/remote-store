@@ -306,14 +306,17 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
 - **Mechanical gate.** Classify the diff with
   `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
   failures, re-run until clean.
-    - **Touches `src/`, `tests/`, or `examples/`** → run `hatch run all` —
-      CONTRIBUTING's prescribed pre-PR superset
+    - **Touches `src/`, `tests/`, `examples/`, `scripts/`, or `pyproject.toml`**
+      → run `hatch run all` — CONTRIBUTING's prescribed pre-PR superset
       ([CONTRIBUTING § Consistency Checklists](../CONTRIBUTING.md#consistency-checklists)):
       lint, typecheck, the full Stage-1 test suite, examples, notebooks, and a
-      strict docs build. `all` uses the no-Docker `test-cov-s1` variant (no 95%
-      floor); that floor is deliberately CI/publish-only, so do **not** substitute
-      `test-cov-strict` (see [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)).
-    - **No code touched** (docs / specs / skills / config only) → run
+      strict docs build. These are the test-bearing members of CI's `CODE_PAT`;
+      `scripts/` belongs here because its guards live under `tests/scripts/`, which
+      only the test suite exercises (a `scripts/`-only diff must still run it).
+      `all` uses the no-Docker `test-cov-s1` variant (no 95% floor); that floor is
+      deliberately CI/publish-only, so do **not** substitute `test-cov-strict`
+      (see [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)).
+    - **No code touched** (docs / specs / skills / pure config only) → run
       `hatch run lint` + `hatch run docs-gate`. `lint` is the gate `/pr` used to
       skip — it holds the code, spec, docs, and trace check scripts
       (`check_spec_marks`, `check_formal_trace`, `check_docs_framework`,

@@ -19,8 +19,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `src/`/`tests/`/`examples/` sent a docs/spec-only diff to `hatch run test` — the
   least-relevant gate — while skipping `lint`, the relevant one (M2). Replaced the
   hand-rolled gate with a mechanical gate composed from existing hatch targets that
-  mirrors CI's code-vs-docs path filtering: a diff touching `src/`/`tests/`/`examples/`
-  runs `hatch run all` (the full superset); any other diff (docs / specs / skills /
+  mirrors CI's code-vs-docs path filtering: a diff touching the test-bearing members
+  of CI's `CODE_PAT` (`src/`/`tests/`/`examples/`/`scripts/`/`pyproject.toml` —
+  `scripts/` included because its guards live under `tests/scripts/`) runs
+  `hatch run all` (the full superset); any other diff (docs / specs / skills /
   config) runs `hatch run lint` + `hatch run docs-gate` — lint (the gate `/pr`
   skipped) plus the strict mkdocs build, link scan, and version-drift check, but
   not the test suite / examples / notebooks a non-code change does not exercise.
