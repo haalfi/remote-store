@@ -12,7 +12,7 @@ source_items:
 audience:
   - infra.ci
   - contributor.tooling
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
