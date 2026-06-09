@@ -156,11 +156,21 @@ dependencies = [
   "pytest-gremlins>=1.5; python_version>='3.11'",
 ]
 
+[tool.hatch.envs.default.overrides]
+# BK-269: force the pip installer in CI. With `installer = "uv"` above, hatch's
+# dependency sync silently drops the env `features` (the dev/docs/bench extras)
+# on GitHub runners — the `lint` job came up without `griffe` (the same hatch +
+# uv installer bug recorded in .github/workflows/mutation.yml). Local dev keeps
+# uv (fast); GITHUB_ACTIONS is always "true" on runners, so this only flips the
+# installer in CI.
+env.GITHUB_ACTIONS.installer = { value = "pip", if = ["true"] }
+
 [tool.hatch.envs.default.scripts]
-# Fast artifact-drift checks (gen_graph, gen_features, gen_graph_viz, check_api_docs).
-# Surfacing them ahead of `lint` in `hatch run all` catches drift in seconds rather
-# than after the full lint/typecheck/test gauntlet. CI runs the same checks inline
-# in the `lint` job (one step each) so the wall-time win is dev-loop only.
+# Fast artifact-drift checks (gen_graph, check_api_docs, gen_features,
+# gen_graph_viz, drift_check render-docs). Surfacing them ahead of `lint` in
+# `hatch run all` catches drift in seconds rather than after the full
+# lint/typecheck/test gauntlet. CI runs this same target via `uvx hatch run
+# preflight` in the `lint` job (BK-269), so the script list is the single source.
 preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/drift_check.py render-docs --check"]
 lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py"]
 format = "ruff format src/ tests/ examples/ scripts/"
