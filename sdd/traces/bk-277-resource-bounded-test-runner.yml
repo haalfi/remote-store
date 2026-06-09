@@ -12,8 +12,7 @@ source_items:
 audience:
   - contributor.tooling
   - infra.test
-expected_ripples:
-  - sdd/backlogid.json
+expected_ripples: []  # backlogid.json is a no-op: BK-277 <= DONE-max (278), so the move does not change it
 review_rounds: 1
 phases:
   - id: design

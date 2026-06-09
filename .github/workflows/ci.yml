@@ -307,7 +307,7 @@ jobs:
         with:
           cache-suffix: ci-e2e  # BK-230
       - run: uv pip install -e ".[dev]"
-      - run: pytest tests/e2e/ -v -o addopts=
+      - run: pytest tests/e2e/ -v -o addopts= -p no:randomly
 
   docs:
     needs: [setup]
