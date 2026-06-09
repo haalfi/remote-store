@@ -33,42 +33,23 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 - [x] **BK-280 — CI build improvements: split tooling tests off `test-primary` + single-source the priority Python**
   spec: — · effort: S · audience: infra.ci, contributor.tooling
-  Two related improvements to the CI build, shipped together.
-  **(1) Split contributor-tooling tests out of `test-primary`.** `test-primary`
-  is the longest CI job, and it ran a third pytest pass — `pytest tests/scripts/
-  -q` (~34s) — serially after the two coverage passes (`pytest -n auto --cov`
-  ~2m, then the serial sftp_docker `--cov-append` floor pass ~1m). The tooling
-  tests exercise `scripts/`, not `remote_store`, so they need no live backends
-  and contribute no coverage; sitting them behind `start-backends` + the
-  coverage suite only padded the critical path. BK-207 originally ran them in a
-  standalone `tooling-test` job; a later roll-up folded them into `test-primary`
-  to "avoid a redundant runner". This restores the separation: a new
-  backend-free `tooling-tests` job (`needs: [setup]`, no `prepare-images` /
-  `start-backends`, `enable-cache: false`) runs them once on the primary Python
-  in parallel, removing ~34s from `test-primary`'s critical path. `e2e` already
-  runs on the primary Python, so a second primary-Python job is not new.
-  `test-primary`'s pass-1 `--ignore=tests/scripts` is retained
-  (`testpaths=['tests']` would otherwise re-collect them). `gate` wires in the
-  new job.
-  **(2) Single-source the priority Python in `.python-version`.** The primary
-  (priority) Python was a `PRIMARY_PYTHON: "3.13"` literal in `ci.yml`'s `setup`
-  job — the last hand-edited copy after BK-219 deleted the other ~12 — and
-  nothing pinned it for local dev, so a contributor's `uv` / `pyenv` could build
-  `.venv/` on a different interpreter than CI's coverage lane. Added a root
-  `.python-version` (`3.13`) as the single source: `uv` and `pyenv` now
-  auto-select it locally, and the `setup` job reads it
-  (`PRIMARY_PYTHON="$(cat .python-version)"`) instead of carrying its own
-  literal, so local dev and CI cannot disagree and bumping the dev version is a
-  one-line edit. `ALL_PYTHONS` / `MIN_PYTHON` (the matrix bounds) stay in the
-  `setup` env; because primary now lives in a separate file, the `setup` step
-  gained a guard (`jq … index`) that fails fast if `.python-version` is not one
-  of `ALL_PYTHONS` — otherwise `test-matrix = ALL - primary` would not drop it
-  and the primary jobs would run an unlisted slot. CI runtime is unaffected:
-  every job passes an explicit `python-version` to `setup-python`, which
-  overrides `.python-version`. `CONTRIBUTING.md` § Development Setup documents
-  the pin.
-  Builds on BK-219 (centralised Python version config) and BK-207 (original
-  tooling-test job). CI/dev-tooling only — no CHANGELOG entry.
+  Two CI-build changes, no runtime impact.
+  **(1) `tooling-tests` job.** `test-primary` (the longest job) ran `pytest
+  tests/scripts/ -q` as a third serial pass behind `start-backends` + the two
+  coverage passes, though those tests hit `scripts/`, not `remote_store` — no
+  backends, no coverage. Moved to a backend-free job that runs in parallel,
+  trimming ~34s off the critical path. Reinstates the standalone job BK-207 had
+  before a roll-up merged it into `test-primary`.
+  **(2) `.python-version`.** Replaces the last hardcoded primary-Python literal
+  (BK-219 removed ~12) so local `uv` / `pyenv` and `ci.yml`'s `setup` resolver
+  agree on the matrix's primary interpreter. A `jq` guard fails if it drifts
+  from `ALL_PYTHONS`, and it is in `CODE_PAT` so a lone bump still triggers the
+  gating jobs (without that, `code=false` skips them and `gate` greens without
+  testing the new version). Scope is `ci.yml`'s setup/coverage lane only —
+  `publish.yml`, `docs.yml`, `mutation.yml`, `drift-guard.yml` keep their own
+  pins (migration tracked in BK-281). Runtime is unaffected: `UV_SYSTEM_PYTHON=1`
+  keeps `uv pip install` on each job's matrix interpreter, not the file
+  (verified — `typecheck (3.10)` stayed green with the file present).
   Trace: [`sdd/traces/BK-280-ci-build-improvements.yml`](traces/BK-280-ci-build-improvements.yml).
 
 - [x] **BK-269 — CI `lint` job delegates to `hatch` (one source of truth for "lint")**

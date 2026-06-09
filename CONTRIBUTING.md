@@ -160,9 +160,10 @@ External packages should use the naming convention `remote-store-<name>` and:
 
 The repo pins its priority interpreter in `.python-version` (the version CI's
 coverage lane runs on), so `uv` and `pyenv` select it automatically and your
-local `hatch run all` reproduces what CI gates on. That file is the single
-source of truth for the primary Python: CI's `setup` job reads it, so bumping
-the development version is a one-line edit there.
+local `hatch run all` reproduces what CI gates on. `ci.yml`'s `setup` job reads
+it to resolve the primary Python for the test matrix, so bumping the
+development version is a one-line edit there. (Other workflows — publish, docs,
+mutation, drift-guard — still pin their own Python version.)
 
 The default hatch env is configured with `path = ".venv"`, so `hatch run`
 creates and owns `.venv/` at the repo root via uv. A separate

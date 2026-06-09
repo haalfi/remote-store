@@ -8,6 +8,11 @@ source_items:
 audience:
   - infra.ci
   - contributor.tooling
+discovery_followups:
+  - BK-281
+surprising_ripples:
+  - .github/workflows/ci.yml
+review_rounds: 1
 expected_ripples:
   - sdd/backlogid.json
 phases:
@@ -64,3 +69,18 @@ phases:
         section: "Ripple-check table / Backlog item touched + versions"
         read_type: verify
         extract: "the version-number ripple rows are about the package version (bump-my-version), not the interpreter; supported/tested set (3.10-3.14, primary 3.13) is unchanged, so tested-versions.md / classifiers / badges are untouched (preflight render-docs --check confirms); trace + BACKLOG-DONE + backlogid.json regen satisfy the row; audience infra.ci + contributor.tooling skips CHANGELOG per _schema.yml audience-derived rule"
+  - id: fix
+    name: Fix (PR review)
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "setup job / Detect changed files (CODE_PAT)"
+        read_type: gate
+        extract: "review caught a regression: moving the primary literal out of ci.yml into .python-version left it outside CODE_PAT, so a lone bump yields code=false -> every gating job skips -> gate greens without testing the new interpreter. Added ^\\.python-version$ to CODE_PAT. This is the surprising_ripple — the ripple-check table did not flag the change-detection filter when a source-of-truth file moved"
+      - file: CONTRIBUTING.md
+        section: "Development Setup"
+        read_type: reference
+        extract: "review: 'single source of truth for the primary Python' overstated — .python-version feeds only ci.yml's setup job; publish/docs/mutation/drift-guard keep their own 3.13. Narrowed the wording and pointed at BK-281 (the discovery_followup tracking the migration)"
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-280 (item)"
+        read_type: reference
+        extract: "review: entry too chatty — trimmed to the valuable insights (UV_SYSTEM_PYTHON=1 keeps installs on the matrix interpreter; CODE_PAT coupling; scope limited to the setup/coverage lane), letting the ci.yml comments carry the mechanical detail"
