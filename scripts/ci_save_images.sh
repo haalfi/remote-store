@@ -23,8 +23,9 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 mkdir -p "$dir"
 
+read -ra want <<< "$RS_CACHED_IMAGES"
 saved=()
-for img in "$MINIO_IMAGE" "$AZURITE_IMAGE" "$SFTP_IMAGE"; do
+for img in "${want[@]}"; do
   if bash "$here/ci_docker_pull.sh" "$img"; then
     saved+=("$img")
   else
@@ -32,10 +33,10 @@ for img in "$MINIO_IMAGE" "$AZURITE_IMAGE" "$SFTP_IMAGE"; do
   fi
 done
 
-if [ "${#saved[@]}" -eq 3 ]; then
+if [ "${#saved[@]}" -gt 0 ] && [ "${#saved[@]}" -eq "${#want[@]}" ]; then
   docker save "${saved[@]}" -o "$dir/images.tar"
   echo "complete=true" >> "${GITHUB_OUTPUT:-/dev/null}"
 else
-  echo "::warning::pre-pulled ${#saved[@]}/3 images; skipping cache save"
+  echo "::warning::pre-pulled ${#saved[@]}/${#want[@]} cached images; skipping cache save"
   echo "complete=false" >> "${GITHUB_OUTPUT:-/dev/null}"
 fi

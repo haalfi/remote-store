@@ -15,7 +15,7 @@ audience:
   - contributor.tooling
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -65,6 +65,11 @@ phases:
         section: "prepare-images, fail-fast, gate"
         read_type: verify
         extract: "All YAML parses; cache key consistent across prime/restore; prepare-images in gate needs[] + results[]; save gated on bundle.complete; bash -n clean on the three new scripts"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "e2e job log (first CI run)"
+        read_type: verify
+        extract: "Cache primed on miss + consumers loaded it, but MinIO still pulled: digest-pinned refs do not survive docker save/load, so inspect-by-digest misses. Excluded MinIO from RS_CACHED_IMAGES (cgr.dev reliable); cache now covers only the block-prone Azurite/SFTP"
         outcome: ok
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / Backlog item touched"

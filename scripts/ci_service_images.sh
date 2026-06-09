@@ -16,3 +16,13 @@
 MINIO_IMAGE=cgr.dev/chainguard/minio:latest-dev@sha256:2d8f8a3f8da60885794dfd0749c9d49c985b0ee642f1c522e6aa93be59f34a84
 AZURITE_IMAGE=mcr.microsoft.com/azure-storage/azurite:3.35.0
 SFTP_IMAGE=atmoz/sftp:alpine
+
+# Subset bundled into the actions/cache tar (ci_save_images.sh / ci_load_images.sh).
+# Only Azurite (mcr.microsoft.com) and SFTP (Docker Hub) — the two registries that
+# intermittently block GitHub-runner egress — are cached. MinIO is deliberately
+# EXCLUDED: its ref is digest-pinned, and `docker save`/`docker load` does not
+# preserve a digest reference, so a loaded MinIO image cannot be resolved by
+# `docker image inspect "$MINIO_IMAGE"` and start-backends pulls it regardless
+# (verified empirically on CI). cgr.dev is reliable, so per-job MinIO pulls are the
+# pre-existing, non-flaky behavior — caching it would only bloat the tar ~8x.
+RS_CACHED_IMAGES="$AZURITE_IMAGE $SFTP_IMAGE"

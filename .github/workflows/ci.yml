@@ -136,13 +136,15 @@ jobs:
 
   # BK-279: prime a shared service-image cache once per run. On a cache miss
   # (image refs in scripts/ci_service_images.sh changed, or the cache was
-  # evicted) the images are pulled with backoff and `docker save`d to a tar that
+  # evicted) the block-prone images (Azurite/mcr.microsoft.com, SFTP/Docker Hub —
+  # RS_CACHED_IMAGES) are pulled with backoff and `docker save`d to a tar that
   # actions/cache persists; on a hit nothing is pulled. Downstream backend jobs
   # `needs: prepare-images`, restore the same tar, and `docker load` it before
-  # start-backends — so a normal run does ZERO upstream pulls and is immune to
-  # the registry blocks that BK-278's per-job retry only partly absorbed. The
-  # cache key hashes ci_service_images.sh, the single source of the refs, so a
-  # ref bump busts the cache and re-primes it.
+  # start-backends — so those two registries see ZERO upstream pulls and are
+  # immune to the blocks that BK-278's per-job retry only partly absorbed. MinIO
+  # is excluded (digest refs do not survive docker save/load; cgr.dev is reliable)
+  # and start-backends still pulls it. The cache key hashes ci_service_images.sh,
+  # the single source of the refs, so a ref bump busts the cache and re-primes it.
   prepare-images:
     needs: [setup]
     if: needs.setup.outputs.code == 'true'
