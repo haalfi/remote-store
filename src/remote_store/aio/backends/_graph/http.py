@@ -79,15 +79,18 @@ def mask_headers(headers: Mapping[str, str]) -> dict[str, str]:
 def redact_presigned_url(url: str) -> str:
     """Return *url* with its query (and fragment) stripped — for pre-signed URLs.
 
-    The Graph pre-signed surfaces — the read download URL, the upload-session
-    URL, and the copy/move monitor URL — each carry their own credential in the
-    query string. A token must never reach an exception message or log record, so
-    when such a URL is surfaced for out-of-band diagnosis the query is dropped
-    while the scheme / host / path still identify the operation. Used by both the
-    monitor poller and the upload-session ``423`` handler so the masking rule
-    applies once, the same way, to both pre-signed sites.
+    Graph's pre-signed URLs carry their own credential in the query string, so a
+    token must never reach an exception message or log record. Wherever such a URL
+    would otherwise surface for diagnosis it is routed through this helper,
+    dropping the query while the scheme / host / path still identify the
+    operation. Three call sites: the request DEBUG log (the upload-session chunk
+    PUTs and the abort DELETE run unauthenticated, their credential in the URL),
+    the copy/move monitor timeout message, and the upload-session ``423`` handler.
+    The read download URL is the same credential class but is never surfaced in a
+    message or log (it is streamed directly, not sent via ``graph_send``), so it
+    needs no redaction.
     """
-    # Credential masking (GR-035) for the GR-015 / GR-038 / GR-026 pre-signed URLs.
+    # Credential masking (GR-035) for the GR-038 / GR-026 pre-signed URLs.
     parts = urlsplit(url)
     return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
 
@@ -344,8 +347,13 @@ async def _send_attempt(
         token = await acquire_token(token_provider)
         headers["Authorization"] = f"Bearer {token}"
     if log.isEnabledFor(logging.DEBUG):
-        # GR-035: the bearer token is redacted before the record is formatted.
-        log.debug("graph request %s %s headers=%s", method, url, mask_headers(headers))
+        # GR-035: the bearer token is redacted from headers before formatting. A
+        # pre-signed target (authenticated=False) instead carries its credential
+        # in the URL query, so redact that too rather than log it verbatim; an
+        # authenticated graph.microsoft.com URL has no query credential, so its
+        # query (diagnostic params) is kept.
+        logged_url = url if authenticated else redact_presigned_url(url)
+        log.debug("graph request %s %s headers=%s", method, logged_url, mask_headers(headers))
     response = await client.request(method, url, headers=headers, **kwargs)
     if authenticated and response.status_code == 401 and _parse_error(response) == "InvalidAuthenticationToken":
         # One-shot refresh + re-issue, independent of RetryPolicy.

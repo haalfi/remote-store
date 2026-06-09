@@ -11,7 +11,7 @@ audience:
   - user.api
   - library.maintainer
   - infra.test
-review_rounds: 1
+review_rounds: 2
 surprising_ripples:
   # Amending GR-045's resume narrative drifted the public write() Raises: clause
   # in backend.py — a mkdocstrings-rendered surface the ripple-check table did not
@@ -70,6 +70,11 @@ phases:
         section: "write (Raises:)"
         read_type: reference
         extract: "Public Raises: clause still promised caller-driven resume; reword to match amended GR-045 (no credentialed URL exposed)"
+        outcome: misleading
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "_send_attempt (DEBUG request log)"
+        read_type: reference
+        extract: "Pre-existing log-record leak surfaced by the new 'or log record' docstring claim: request DEBUG log emitted the pre-signed URL query verbatim for unauthenticated chunk PUTs / abort DELETE; redact via redact_presigned_url, add GR-035 observable-surface bullet + test"
         outcome: misleading
   - id: verify
     name: Verify

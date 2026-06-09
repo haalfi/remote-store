@@ -1138,6 +1138,13 @@ values never appear in exception messages or logging records.
 - The raw bearer token never appears in `str(exc)`, `repr(exc)`, or
   any backend-emitted log record at any level — the backend never
   passes the header into an exception message.
+- A pre-signed target carries its credential in the URL query rather
+  than the `Authorization` header (the upload-session `uploadUrl` per
+  GR-038, the monitor URL per GR-026). The request DEBUG log redacts
+  that query (scheme/host/path retained) for such unauthenticated
+  requests before formatting, so the pre-signed credential never
+  reaches a log record — the log-side counterpart to the
+  message-side redaction GR-045 / GR-026 require.
 **Postconditions:** Satisfies AF-008 (extended to a per-request
 header rather than just backend `__repr__`; this goes beyond the
 HTTP backend's `repr`-only precedent in HTTP-CRED-001).
