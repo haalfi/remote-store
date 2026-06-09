@@ -170,8 +170,10 @@ staleness finding (L2) is already covered by BK-259's "Semantics vs spec" clause
 
   **Audit-016 (H2):** until cassettes land, the Graph conformance matrix is 100%
   skip in CI *and* the integration/live tier (GR-007/020/026/034/054 + the 10 MiB
-  round-trip) runs in no lane — so the only automated coverage is the ~300 respx
-  unit tests (whose mocks the first live run already proved wrong, 23/118). Raising
+  round-trip) runs in no lane — so the only *automated* coverage is the ~300 respx
+  unit tests (the code was live-validated per-PR during implementation, but
+  manually — no CI gate captures it; the first live run of the conformance
+  *matrix* at GR-DONE proved those mocks wrong in 23/118 cases). Raising
   the `min_cassettes` floor off `0` is part of this work for a second reason: at
   `0` the record gate *warns* but does not *fail* on an empty corpus
   (`record_cassettes.py:329-337` prints a loud zero-cassette WARNING, but it is

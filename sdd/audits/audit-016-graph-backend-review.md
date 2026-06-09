@@ -117,13 +117,20 @@ re-verification of the test.
   it is deselected in every lane, and no scheduled/nightly live lane exists
   (`.github/` has no `-m live` / `--stage` / `RS_TEST_LIVE_GRAPH` invocation).
 
-**Net:** the **only** automated coverage of the Graph backend is the ~300 respx
-unit tests. By ID-127's own experience this is the risky kind of coverage: the
-first live conformance run (recorded during GR-DONE) failed **23/118** because
-the respx mocks asserted `409 + folder-facet` while live Graph returns `501`
+**Net:** the **only** *automated* coverage of the Graph backend is the ~300 respx
+unit tests. The backend was not built blind to the live service — throughout
+implementation each PR's code was validated against the live Graph API, and those
+checks repeatedly surfaced surprises that were fixed in-PR. But that validation is
+manual and captured in no CI gate, so it protects against nothing going forward.
+Its value — and the mocks' limits — is visible in what the unit tier alone could
+not catch: when the cross-backend conformance *matrix* was first recorded live at
+GR-DONE (it had been skip-only before), it failed **23/118** because the respx
+mocks asserted `409 + folder-facet` while live Graph returns `501`
 (write-to-folder), `404` (write under a file ancestor), and `400 invalidRequest`
-(move/copy under a file ancestor) — real mapping bugs the green mock suite hid.
-The same class of blind spot remains for any service behaviour the mocks guess.
+(move/copy under a file ancestor) — real mapping bugs the green mock suite hid. The
+mocks, being the sole *automated* coverage, encode assumed shapes; the same class
+of blind spot remains for any service behaviour they guess, and nothing in CI will
+catch the next one.
 
 The cassette-replay gap itself is partly tracked (BK-262), but two
 sub-issues are not: the `min_cassettes: 0` gate-blindness, and the fact that the
