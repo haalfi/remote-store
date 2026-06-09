@@ -1,0 +1,73 @@
+id: BK-282
+title: "Forward CLI args through the gen-* hatch script targets"
+trigger: >
+  During BK-272 verification, `hatch run gen-backlogid --check` printed
+  `Updated sdd\backlogid.json` (write-mode output) instead of the check result,
+  while the lint job's direct `python scripts/gen_backlogid.py --check` printed
+  the verification. The bare `gen-*` hatch targets lacked a `{args}` placeholder,
+  so `hatch run gen-X --check` dropped the flag and ran the script in write mode
+  — a silent write-instead-of-verify footgun.
+source_items:
+  - BK-282
+audience:
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] gen-backlogid"
+        read_type: reference
+        extract: >
+          gen-backlogid = "python scripts/gen_backlogid.py" (no {args}); ran
+          `hatch run gen-backlogid --check` (Updated/write) vs the direct script
+          `--check` (No ID collisions) — confirmed the flag is swallowed
+        outcome: ok
+  - id: classify
+    name: Classify
+    steps:
+      - file: pyproject.toml
+        section: "drift-check, gen-* / gen-*-check pairs"
+        read_type: reference
+        extract: >
+          drift-check uses the `{args}` placeholder to forward args; the four
+          gen-* targets (graph, features, graph-viz, backlogid) all lack it and
+          each has a dedicated gen-*-check sibling — a deliberate, consistent
+          4-way pattern, not a one-off. preflight/lint call the scripts directly,
+          so composite lists are unaffected by the bare targets
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: pyproject.toml
+        section: "gen-graph, gen-features, gen-graph-viz, gen-backlogid"
+        read_type: reference
+        extract: >
+          Added `{args}` to all four bare targets (uniform with drift-check), so
+          `hatch run gen-X --check` forwards the flag. Chose all-four over a lone
+          gen-backlogid edit to keep the paired pattern consistent; left the
+          gen-*-check siblings as the canonical lint targets
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: pyproject.toml
+        section: "gen-* targets (run check + bare)"
+        read_type: verify
+        extract: >
+          hatch run gen-backlogid/gen-graph/gen-features/gen-graph-viz --check all
+          run check mode now (No ID collisions / up to date); bare hatch run
+          gen-backlogid still writes (empty {args}) — non-breaking
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: >
+          contributor.tooling skips CHANGELOG; BK-282 added to BACKLOG-DONE; trace
+          ships same PR; gen-backlogid bumps backlogid.json (BK 281 -> 282, a real
+          ripple this time since 282 > prior DONE max); pyproject.toml in CODE_PAT
+          so the PR gate runs `hatch run all`
+        outcome: ok

@@ -8,6 +8,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-282 — Forward CLI args through the `gen-*` hatch script targets**
+  spec: — · effort: S · audience: contributor.tooling
+  The bare generator targets (`gen-graph`, `gen-features`, `gen-graph-viz`,
+  `gen-backlogid`) were defined as plain strings with no `{args}` placeholder, so
+  `hatch run gen-backlogid --check` (and the equivalent for the others) **dropped
+  the `--check`** and ran the script in **write mode** — printing `Updated …` and
+  verifying nothing. Harmless when already in sync (identical bytes, no git diff),
+  but a silent write-instead-of-verify if the artifact had drifted. The repo had
+  worked around this with dedicated `gen-*-check` siblings (the canonical lint
+  targets, called directly in `preflight`/`lint`), but the bare-target footgun
+  remained for anyone typing the natural `--check` form. Fix: add `{args}` to all
+  four bare targets (mirroring the existing `drift-check = "… {args}"` precedent),
+  so the flag forwards. Non-breaking — bare invocation still runs write mode
+  (empty `{args}`), the `gen-*-check` targets and the direct-script composite
+  lists are untouched. Applied uniformly across all four to keep the paired
+  pattern consistent. No CHANGELOG (contributor.tooling). Surfaced during BK-272
+  verification (PR #785). Trace: `sdd/traces/bk-282-gen-args-forwarding.yml`.
+
 - [x] **BK-272 — Resolve the dead mypy pre-push hook**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
   `.pre-commit-config.yaml` declared a mypy hook gated `stages: [pre-push]`, but
