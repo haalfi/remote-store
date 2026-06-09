@@ -13,7 +13,9 @@ source_items:
 audience:
   - contributor.tooling
   - contributor.process
-review_rounds: 0
+surprising_ripples:
+  - sdd/BACKLOG.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -93,7 +95,15 @@ phases:
         read_type: verify
         extract: >
           contributor.tooling + contributor.process skip CHANGELOG (trace-schema
-          derived rule); BK-272 moved to BACKLOG-DONE + preamble updated; trace
-          shipped same PR; gen_backlogid --check green (272 <= DONE max, a
-          backlogid.json no-op)
+          derived rule); BK-272 moved to BACKLOG-DONE; trace shipped same PR;
+          gen_backlogid --check green (272 <= DONE max, a backlogid.json no-op)
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Lint / CI Completeness"
+        read_type: reference
+        extract: >
+          Review (round 1): initially updated the section preamble to mark all
+          four audit-017 follow-ups done, but the active backlog should carry no
+          completed-item history — removed the whole preamble, keeping the heading
+          for the live ID-* items
         outcome: ok

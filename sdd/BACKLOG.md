@@ -392,17 +392,6 @@ picking one up; in particular the disposition below may narrow.
 
 ## Lint / CI Completeness
 
-audit-017 gate-topology follow-ups (BK-269–BK-272) are all complete; full
-findings in [audit-017](audits/audit-017-dev-process-gate-topology.md), the
-items in [BACKLOG-DONE](BACKLOG-DONE.md). They ran in execution order:
-single-source the lint definition (BK-269) → route `sdd/specs`-only and
-docs-only changes through their gates (BK-270) → point the `/pr` and `/fix-pr`
-skills at that single gate (BK-271) → drop the dead mypy pre-push hook (BK-272).
-BK-269 then BK-271 were the load-bearing consolidation wins; BK-270 closed the
-real coverage gaps and was cheaper once BK-269 made the gate one-place; BK-272
-was trivial and order-independent. The `ID-*` items below are older,
-unprioritised ideas in the same area.
-
 - [ ] **ID-179 — Trace schema validator: wire `audience` field check into `hatch run lint`**
   spec: — · effort: S · audience: library.maintainer
   `sdd/traces/_schema.yml` declares `audience` as `required`, but BK-193
