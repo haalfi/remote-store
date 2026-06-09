@@ -376,16 +376,12 @@ jobs:
       # through the gates built for guide prose — check_no_tracker_refs (scoped to
       # docs-src/**), check_links, and `drift_check render-docs --check` (the
       # tested-versions sync gate, otherwise in no PR CI lane at all) — plus the
-      # existing docs-framework + mkdocs --strict build. Delegated to hatch targets
-      # (not hand-listed scripts) so the pyproject script lists stay the single
-      # source, per BK-269: `uvx` tool-runs hatch ephemerally, the default env (pip
-      # installer in CI via the pyproject override) carries the docs extra so
-      # mkdocs resolves, and hatch builds it once and reuses it across the steps.
-      - run: uvx hatch run docs-check
-      - run: uvx hatch run check-no-tracker-refs
-      - run: uvx hatch run check-links
-      - run: uvx hatch run drift-docs-check
-      - run: uvx hatch run docs-build
+      # existing docs-framework + mkdocs --strict build, bundled as the `docs-gate`
+      # hatch target. Delegated to hatch (not hand-listed scripts) so the pyproject
+      # script lists stay the single source, per BK-269: `uvx` tool-runs hatch
+      # ephemerally, and the default env (pip installer in CI via the pyproject
+      # override) carries the docs extra so `mkdocs build --strict` resolves.
+      - run: uvx hatch run docs-gate
 
   package:
     needs: [setup]

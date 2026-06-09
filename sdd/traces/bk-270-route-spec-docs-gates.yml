@@ -15,7 +15,7 @@ audience:
   - infra.ci
   - infra.test
 co_shipped_items: []
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -73,22 +73,32 @@ phases:
         section: "docs job"
         read_type: reference
         extract: >
-          First added the three checks as direct `python scripts/…` steps; PR
-          review flagged this as repeating the BK-269 anti-pattern (CI hand-listing
-          script invocations). Refactored to delegate to hatch targets
-          (docs-check / check-no-tracker-refs / check-links / drift-docs-check /
-          docs-build via `uvx hatch run`), dropping the inline `uv pip install`,
-          so the pyproject script lists stay the single source
+          First added the three checks as direct `python scripts/…` steps; review
+          round 1 flagged the BK-269 anti-pattern (CI hand-listing scripts) →
+          delegated to hatch. Review round 2 asked for one combined command like
+          the lint job → folded the five into a `docs-gate` bundle target; the job
+          is now a single `uvx hatch run docs-gate`
         outcome: ok
       - file: pyproject.toml
-        section: "[tool.hatch.envs.default.scripts] check-no-tracker-refs"
+        section: "[tool.hatch.envs.default.scripts] check-no-tracker-refs, docs-gate"
         read_type: reference
         extract: >
           Review-driven: added a standalone check-no-tracker-refs target (the
-          invocation otherwise lived only inside the lint bundle) so the docs job
-          can reach it via hatch. verify-formal kept inline python3 by decision —
-          it already runs capability_parity inline and has no uv/hatch setup
+          invocation otherwise lived only inside the lint bundle), then a combined
+          docs-gate target composing the five sub-targets. verify-formal kept
+          inline python3 by decision — it already runs capability_parity inline and
+          has no uv/hatch setup
         outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-270 entry"
+        read_type: reference
+        extract: >
+          Review round 2 (principle 3): the DONE entry still described the
+          round-1-superseded "direct python steps, hatch deferred to BK-271" and a
+          stale "stdlib-only / no extra install" claim. Rewrote it to match the
+          shipped docs-gate delegation (the docs steps build the full default env
+          via uvx hatch; only verify-formal's two steps are bare stdlib python3)
+        outcome: misleading
   - id: verify
     name: Verify
     steps:

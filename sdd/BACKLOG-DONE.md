@@ -22,10 +22,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (which already triggers on `^sdd/specs/` via `FORMAL_PAT` and already runs a
   stdlib check, `check_capability_parity`) rather than widening `CODE_PAT` — the
   latter would fire the whole code matrix (test ×5, typecheck, e2e, …) on a
-  markdown-only PR, against the path-filter design's own intent. For docs, added the
-  three checks to the `docs` job as direct `python scripts/…` steps (matching the
-  existing `check_docs_framework` step); collapsing CI to `hatch` targets is BK-271.
-  All five scripts are stdlib-only. Audit-017 H2 / M3 / M5. Trace:
+  markdown-only PR, against the path-filter design's own intent. These two run
+  inline as `python3 scripts/…` alongside the pre-existing `check_capability_parity`
+  (no `uv`/`hatch` setup in that Dafny job). For docs, the `docs` job now delegates
+  to a single combined hatch target, `docs-gate` (`docs-check` +
+  `check-no-tracker-refs` + `check-links` + `drift-docs-check` + `docs-build`), via
+  `uvx hatch run` — extending BK-269's "CI calls hatch, pyproject is the single
+  source" pattern rather than hand-listing scripts. Audit-017 H2 / M3 / M5. Trace:
   `sdd/traces/bk-270-route-spec-docs-gates.yml`.
 
 - [x] **BK-269 — CI `lint` job delegates to `hatch` (one source of truth for "lint")**

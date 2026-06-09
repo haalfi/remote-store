@@ -282,6 +282,11 @@ check-links = "python scripts/docs/check_links.py --root ."
 docs-check = "python scripts/check_docs_framework.py"
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
+# Combined docs gate (BK-270): the full set of checks that validate a docs/spec
+# change, as one entry point the CI `docs` job calls once (like the `lint` job
+# calls the `lint` bundle) instead of listing each `uvx hatch run` separately.
+# References the sub-targets so their definitions stay the single source.
+docs-gate = ["docs-check", "check-no-tracker-refs", "check-links", "drift-docs-check", "docs-build"]
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"
