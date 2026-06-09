@@ -1,0 +1,66 @@
+id: BK-280
+title: "CI build improvements: split tooling tests off test-primary + single-source the priority Python"
+trigger: "test-primary is the longest CI job — it ran pytest tests/scripts/ -q (~34s) as a third serial pass behind start-backends and the two coverage passes, even though the tooling tests exercise scripts/ (not remote_store), need no live backends, and contribute no coverage; separately, the primary Python was a PRIMARY_PYTHON: \"3.13\" literal in ci.yml's setup job (the last copy after BK-219 removed ~12) with nothing pinning it for local dev, so a contributor's uv/pyenv could build .venv on a different interpreter than CI's coverage lane"
+source_items:
+  - BK-280
+  - BK-219
+  - BK-207
+audience:
+  - infra.ci
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test-primary job (three pytest steps)"
+        read_type: gate
+        extract: "pass 1 (-n auto --cov), pass 2 (serial sftp_docker --cov-append --cov-fail-under=95), pass 3 (tests/scripts -q) run serially in one job; only pass 3 is separable"
+      - file: tests/scripts/
+        section: "minio/azurite/sftp references"
+        read_type: verify
+        extract: "the only backend-name hits are string literals in arg-parsing tests (test_mutate_scopes --container-needs); no live backend is used, so the split-out job needs no start-backends"
+      - file: .github/workflows/ci.yml
+        section: "setup job / Resolve Python versions step"
+        read_type: gate
+        extract: "PRIMARY_PYTHON='3.13' literal feeds primary output + test-matrix (ALL - primary) + typecheck-matrix ([min, primary]); ALL_PYTHONS / MIN_PYTHON are the matrix bounds"
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-207 (tooling-test job), BK-219 (coverage split / centralised Python version config)"
+        read_type: reference
+        extract: "BK-207 originally ran tooling tests in a standalone job (a later roll-up folded them into test-primary); BK-219 removed ~12 hardcoded 3.13 literals — both precedents this item extends"
+      - file: .gitignore
+        section: "(full)"
+        read_type: verify
+        extract: "no .python-version / pyenv ignore, so a tracked root .python-version is not swallowed"
+  - id: implement
+    name: Implement
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test-primary job + new tooling-tests job + gate"
+        read_type: gate
+        extract: "drop test-primary's third `pytest tests/scripts/ -q` step (keep pass-1 --ignore=tests/scripts); add a backend-free tooling-tests job (needs:[setup], no prepare-images/start-backends, enable-cache:false, primary Python); wire tooling-tests into gate needs + results"
+      - file: .python-version
+        section: "(full)"
+        read_type: gate
+        extract: "new root file containing `3.13` — the single source uv/pyenv auto-select locally"
+      - file: .github/workflows/ci.yml
+        section: "setup job / Resolve Python versions step"
+        read_type: gate
+        extract: "drop the PRIMARY_PYTHON env literal; read PRIMARY_PYTHON=$(cat .python-version); add a jq guard that fails if it is not in ALL_PYTHONS (the coupling is now cross-file)"
+      - file: CONTRIBUTING.md
+        section: "Development Setup"
+        read_type: reference
+        extract: "document that .python-version pins the priority interpreter (uv/pyenv pick it up; CI reads it) so local hatch run reproduces CI's coverage lane"
+  - id: verify
+    name: Verify
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "(full)"
+        read_type: verify
+        extract: "YAML parses; gate references tooling-tests; setup runtime unaffected — every job passes explicit python-version to setup-python, which overrides .python-version; the `test` matrix comment pointer now names the dedicated tooling-tests job"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched + versions"
+        read_type: verify
+        extract: "the version-number ripple rows are about the package version (bump-my-version), not the interpreter; supported/tested set (3.10-3.14, primary 3.13) is unchanged, so tested-versions.md / classifiers / badges are untouched (preflight render-docs --check confirms); trace + BACKLOG-DONE + backlogid.json regen satisfy the row; audience infra.ci + contributor.tooling skips CHANGELOG per _schema.yml audience-derived rule"
