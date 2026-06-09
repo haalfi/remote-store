@@ -89,20 +89,11 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Graph
 
-ID-127 (Microsoft Graph / OneDrive / SharePoint) follow-ups, in execution order.
-**Why this order:** the credential leak (BK-263) leads — it is a security defect,
-though it needs a spec-contradiction decision before any code. The cassette-replay
-work (BK-262, which absorbed the former BK-260) is next because it is
-load-bearing: until it lands, the cross-backend conformance matrix *and* the
-live/integration tier run in no CI lane, so the backend's only automated guard is
-the respx unit suite. BK-264 (spec/RFC reality-sync) documents that gap and fixes
-spec-lags-code drift; BK-265 (docs) is cheap, high-value, consumer-facing.
-BK-266 / BK-267 are correctness edges and test hardening. The tail — BK-259
-(range-fallback flag scope), BK-261 (SharePoint overwrite quirk, blocked on a
-SharePoint live tier we cannot reach today), and BK-268 (backlog hygiene) — is
-lower-priority or externally blocked. Findings trace to
-[audit-016](audits/audit-016-graph-backend-review.md); that audit's range-fallback
-staleness finding (L2) is already covered by BK-259's "Semantics vs spec" clause.
+ID-127 (Microsoft Graph / OneDrive / SharePoint) follow-ups, in execution order;
+full findings in [audit-016](audits/audit-016-graph-backend-review.md).
+**Order:** security (BK-263) → load-bearing CI coverage (BK-262) → cheap spec/doc
+fixes (BK-264/265) → correctness + tests (BK-266/267) → blocked or hygiene tail
+(BK-259/261/268). Each item's own rationale lives in its body.
 
 - [ ] **BK-263 — Graph upload-session `ResourceLocked` leaks the pre-signed `uploadUrl` (credential)**
   spec: GR-045, GR-035, GR-026 · effort: M · audience: user.api, library.maintainer
