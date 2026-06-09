@@ -24,5 +24,6 @@ SFTP_IMAGE=atmoz/sftp:alpine
 # preserve a digest reference, so a loaded MinIO image cannot be resolved by
 # `docker image inspect "$MINIO_IMAGE"` and start-backends pulls it regardless
 # (verified empirically on CI). cgr.dev is reliable, so per-job MinIO pulls are the
-# pre-existing, non-flaky behavior — caching it would only bloat the tar ~8x.
+# pre-existing, non-flaky behavior — caching it would only bloat the cached tar
+# (with its layers) for no benefit.
 RS_CACHED_IMAGES="$AZURITE_IMAGE $SFTP_IMAGE"

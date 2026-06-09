@@ -30,7 +30,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   not survive `docker save`/`docker load` (verified on CI: the loaded image
   can't be resolved by `docker image inspect "$MINIO_IMAGE"`), so start-backends
   pulls it regardless; cgr.dev is reliable, so per-job MinIO pulls are the
-  pre-existing non-flaky behavior and caching it would only bloat the tar ~8x.
+  pre-existing non-flaky behavior and caching it would only bloat the tar for no
+  benefit (measured on CI: the saved tar drops from ~160 MB to ~90 MB without
+  MinIO — Azurite, not MinIO, dominates the bundle).
   `fail-fast: false` on the `test` matrix stops one block from cancelling
   siblings. The three refs are single-sourced in `scripts/ci_service_images.sh`
   (sourced by `start-backends`, the new job, and — removing the prior
