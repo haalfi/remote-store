@@ -14,7 +14,7 @@ audience:
   - infra.test
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: reproduce
     name: Reproduce and diagnose
@@ -37,7 +37,7 @@ phases:
       - file: tests/aio/test_async_to_sync_adapter.py
         section: "TestRunningLoopFailFast.test_raises_from_running_loop"
         read_type: reference
-        extract: "asyncio.run + get_event_loop here exercises the ID-158 phantom-loop path that survived a module-level new_event_loop patch"
+        extract: "asyncio.run + get_event_loop here exercises the ID-158 phantom-loop path that a narrow module-level new_event_loop patch misses — motivates tracking at the loop constructor"
         outcome: ok
   - id: tests
     name: Failing-first regression
@@ -58,8 +58,13 @@ phases:
       - file: tests/_helpers.py
         section: "install_event_loop_tracker / sweep_tracked_event_loops"
         read_type: reference
-        extract: "Patch BaseDefaultEventLoopPolicy.new_event_loop (the chokepoint both Runner and get_event_loop paths funnel through); WeakSet-track loops; teardown-only sweep"
+        extract: "Patch BaseEventLoop.__init__ (the constructor every loop class funnels through); WeakSet-track loops; teardown-only sweep"
         outcome: ok
+      - file: tests/_helpers.py
+        section: "install_event_loop_tracker"
+        read_type: reference
+        extract: "Pivot after CI: the first cut patched BaseDefaultEventLoopPolicy.new_event_loop, which INTERNALERRORed on Python 3.14 (policy framework removed). Moved tracking to BaseEventLoop.__init__ — version-agnostic — re-verified on 3.14.2 and 3.13.11"
+        outcome: misleading
       - file: tests/conftest.py
         section: "pytest_configure / pytest_runtest_teardown / _close_leaked_event_loops"
         read_type: reference

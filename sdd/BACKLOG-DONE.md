@@ -17,12 +17,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   promoted it to a spurious hard failure (the blamed test varied run-to-run and
   always passed in isolation). `tracemalloc` pinned two creation paths: pytest-
   asyncio's `asyncio.Runner` loop and the ID-158 `asyncio.get_event_loop()`
-  phantom (3.13 auto-creates via the policy). Fix (`tests/_helpers.py`,
-  `tests/conftest.py`): patch `BaseDefaultEventLoopPolicy.new_event_loop` — the
-  single chokepoint both paths funnel through — to weakly track every loop, then
-  a `pytest_runtest_teardown` hookwrapper closes abandoned (non-running,
-  unclosed) tracked loops after each test, before the next GC can free their
-  sockets. The `WeakSet` sweep adds ~1.5% wall-time; a whole-heap
+  phantom (3.13 auto-creates a loop). Fix (`tests/_helpers.py`,
+  `tests/conftest.py`): patch `BaseEventLoop.__init__` — the constructor every
+  loop class funnels through — to weakly track every loop, then a
+  `pytest_runtest_teardown` hookwrapper closes abandoned (non-running, unclosed)
+  tracked loops after each test, before the next GC can free their sockets. (An
+  initial `BaseDefaultEventLoopPolicy.new_event_loop` patch broke on Python 3.14,
+  which removed the event-loop policy framework; the constructor patch is
+  version-agnostic.) The `WeakSet` sweep adds ~1.5% wall-time; a whole-heap
   `gc.get_objects()` sweep doubled it, and a GC-start callback closed in-use
   loops mid-test and was rejected. The session sweep (ID-158) stays as a broad
   backstop. Verified clean under a per-boundary-GC stress (was 12 leaked loops,
