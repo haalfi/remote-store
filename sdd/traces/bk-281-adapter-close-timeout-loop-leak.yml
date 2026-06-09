@@ -1,0 +1,74 @@
+id: BK-281
+title: "Reap adapter daemon thread in close-timeout tests (BK-276 residual loop leak)"
+trigger: >-
+  A residual unclosed-ProactorEventLoop flake recurred post-PR773 under
+  bounded-worker test-cov-strict: a non-deterministic PytestUnraisableExceptionWarning
+  ("unclosed event loop") cross-attributed by xdist to innocent nodes (azure-aio HNS,
+  s3_boto3_moto). BK-276/ID-217 fixed only teardown-time loops, not this source.
+source_items:
+  - BK-281
+  - BK-276
+  - ID-217
+audience:
+  - infra.test
+review_rounds: 1
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: tests/_helpers.py
+        section: "Event-loop leak guard (BK-276)"
+        read_type: reference
+        extract: >-
+          sweep closes non-running tracked loops at teardown but DELIBERATELY spares
+          the adapter daemon loop while is_running() — the documented carve-out
+        outcome: ok
+      - file: tests/conftest.py
+        section: "pytest_runtest_teardown / _close_leaked_event_loops"
+        read_type: reference
+        extract: "per-test sweep is a wrapper hook after pytest-asyncio teardown; session backstop"
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/aio/test_async_to_sync_adapter.py
+        section: "TestClose / _adapter_with_caps"
+        read_type: verify
+        extract: >-
+          tracemalloc leak-detector at test setup over tests/aio + s3 + azure/aio
+          traced 2 non-running unclosed ProactorEventLoops to AsyncBackendSyncAdapter(...)
+          at the close(timeout=0.05)-on-_HangingAsyncBackend sites
+        outcome: ok
+      - file: src/remote_store/_async_to_sync_adapter.py
+        section: "close()"
+        read_type: reference
+        extract: >-
+          close(timeout) schedules loop.stop then join(timeout≈0) returns with the
+          daemon thread still alive — loop "left for process-exit reaping", so the
+          finally: loop.close() runs asynchronously after close() returns
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/aio/test_async_to_sync_adapter.py
+        section: "_reap_adapter helper + 3 close-timeout sites + regression test"
+        read_type: reference
+        extract: >-
+          join the daemon thread so the loop closes deterministically before the test
+          returns; fold in the one test that already hand-rolled the join
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/aio/test_async_to_sync_adapter.py
+        section: "(full module)"
+        read_type: verify
+        extract: "module green under -W error::ResourceWarning; leak-detector distinct loops 2 -> 0"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "infra.test audience -> CHANGELOG skipped; BACKLOG-DONE + trace shipped same PR"
+        outcome: ok

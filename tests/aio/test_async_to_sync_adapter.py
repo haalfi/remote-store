@@ -49,6 +49,19 @@ def _populated_adapter() -> tuple[AsyncBackendSyncAdapter, AsyncMemoryBackend]:
     return adapter, backend
 
 
+def _reap_adapter(adapter: AsyncBackendSyncAdapter) -> None:
+    """Join the daemon thread so the adapter's private loop is closed before the test returns.
+
+    A timed-out ``close()`` returns before the daemon thread runs its
+    ``finally: loop.close()``, leaving the loop to close asynchronously; tests that
+    drive that path on a hanging backend must call this so the close is
+    deterministic instead of racing the cyclic GC (BK-281).
+    """
+    adapter._thread.join(timeout=5.0)
+    assert not adapter._thread.is_alive(), "adapter daemon thread did not exit after close()"
+    assert adapter._loop.is_closed(), "adapter private loop not closed after thread join"
+
+
 # ---------------------------------------------------------------------------
 # Construction
 # ---------------------------------------------------------------------------
@@ -827,6 +840,7 @@ class TestSyncContextManager:
         adapter.close(timeout=0.05)
         with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
             adapter.exists("x")
+        _reap_adapter(adapter)
 
 
 # ---------------------------------------------------------------------------
@@ -920,6 +934,24 @@ class TestCloseSemantics:
         matched = [r for r in caplog.records if "close timed out" in r.message]
         assert matched, "expected a close-timeout log record"
         assert all(r.levelno == logging.WARNING for r in matched)
+        _reap_adapter(adapter)
+
+    @pytest.mark.spec("ASYNC-088")
+    def test_timeout_close_loop_closes_on_thread_join(self) -> None:
+        """Joining the daemon thread closes the loop a timed-out close() left winding down (BK-281).
+
+        Pins the property ``_reap_adapter`` relies on: after a timed-out
+        ``close()``, the daemon thread's ``finally: loop.close()`` does run once
+        joined. This is a smoke check, not the leak guard — what actually catches a
+        site that forgets to reap is the suite-wide ``filterwarnings=error``
+        exercising every site under load, not this single-threaded assertion.
+        """
+        double = _HangingAsyncBackend()
+        adapter = AsyncBackendSyncAdapter(double)
+        loop = adapter._loop
+        adapter.close(timeout=0.05)
+        adapter._thread.join(timeout=5.0)
+        assert loop.is_closed()
 
 
 # ---------------------------------------------------------------------------
@@ -1145,6 +1177,7 @@ class TestCapabilityMasking:
         adapter = AsyncBackendSyncAdapter(double)
         with caplog.at_level(logging.CRITICAL, logger="remote_store._async_to_sync_adapter"):
             adapter.close(timeout=0.05)  # not doing I/O — close immediately
+        _reap_adapter(adapter)
         return adapter
 
     @pytest.mark.spec("WR-004")
@@ -1485,9 +1518,7 @@ class TestCloseDrainsPendingTasks:
         assert all(r.levelno == logging.WARNING for r in matched)
 
         # close() schedules loop.stop but its own join times out, leaving the
-        # never-completing task on the loop. Join the daemon thread here so the
-        # loop reaches its close() (and destroys the abandoned task) at a
-        # controlled point, rather than deferring teardown to GC / interpreter
-        # shutdown where it could leak across tests under xdist.
-        adapter._thread.join(timeout=5.0)  # internal: no public observable for the loop thread
-        assert not adapter._thread.is_alive(), "loop thread did not stop after close timeout"
+        # never-completing task on the loop. Reap the daemon thread so the loop
+        # reaches its close() at a controlled point rather than deferring teardown
+        # to GC / interpreter shutdown where it could leak across tests (BK-281).
+        _reap_adapter(adapter)
