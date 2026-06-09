@@ -11471,8 +11471,9 @@ Graph contract gap (missing <code>uploadUrl</code> / <code>nextExpectedRanges</c
               <code><a class="autorefs autorefs-internal" title="            ResourceLocked (remote_store._errors.ResourceLocked)" href="../../../reference/api/errors/#remote_store.ResourceLocked">ResourceLocked</a></code>
             –
           <div class="doc-md-description">
-            <p>If the item is locked mid-session; the session URL
-stays valid for caller-driven resume.</p>
+            <p>If the item is locked mid-session. The session
+stays valid server-side, but its credentialed URL is not
+exposed in the exception.</p>
           </div>
         </li>
     </ul>

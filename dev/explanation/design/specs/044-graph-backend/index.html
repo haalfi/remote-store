@@ -12073,12 +12073,18 @@ no native retry); see RET-015.</p>
   remains valid — Graph does not invalidate it on <code>423</code> — but the
   backend does not auto-retry or auto-resume. Caller retry is the
   caller's decision; if it chooses to retry, the session URL and
-  <code>nextExpectedRanges</code> discipline (GR-023) still apply. The
-  unfinished session URL and last-known <code>nextExpectedRanges</code> list
-  are included in the exception message text so callers (and tests)
-  can resume without re-deriving them. (Spec 005 has no structured
-  <code>RemoteStoreError.context</code> surface today; adding one is out of
-  scope for ID-127.)</p>
+  <code>nextExpectedRanges</code> discipline (GR-023) still apply.
+- The upload-session URL carries its own credential in its query
+  string (GR-038), so it is <strong>redacted</strong> (query stripped; scheme,
+  host, and path retained) before it is surfaced in the
+  <code>ResourceLocked</code> message — GR-035 bars any token from an exception
+  message, and the copy/move monitor URL is masked the same way
+  (GR-026). The redacted URL and last-known <code>nextExpectedRanges</code> are
+  included in the message so the locked operation stays identifiable
+  for out-of-band diagnosis; the credentialed URL is <strong>not</strong> surfaced,
+  so a caller that resumes must re-derive the session URL. (There is
+  no public resume API, and spec 005 has no structured
+  <code>RemoteStoreError.context</code> surface — adding one is out of scope.)</p>
 <h3 id="gr-054-507-insufficientstorage-quotalimitreached">GR-054: 507 insufficientStorage / quotaLimitReached<a class="headerlink" href="#gr-054-507-insufficientstorage-quotalimitreached" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> HTTP <code>507 insufficientStorage</code>, and any response
 carrying <code>error.code == "quotaLimitReached"</code>, map to
@@ -12234,6 +12240,13 @@ values never appear in exception messages or logging records.
 - The raw bearer token never appears in <code>str(exc)</code>, <code>repr(exc)</code>, or
   any backend-emitted log record at any level — the backend never
   passes the header into an exception message.
+- A pre-signed target carries its credential in the URL query rather
+  than the <code>Authorization</code> header (the upload-session <code>uploadUrl</code> per
+  GR-038, the monitor URL per GR-026). The request DEBUG log redacts
+  that query (scheme/host/path retained) for such unauthenticated
+  requests before formatting, so the pre-signed credential never
+  reaches a log record — the log-side counterpart to the
+  message-side redaction GR-045 / GR-026 require.
 <strong>Postconditions:</strong> Satisfies AF-008 (extended to a per-request
 header rather than just backend <code>__repr__</code>; this goes beyond the
 HTTP backend's <code>repr</code>-only precedent in HTTP-CRED-001).</p>
