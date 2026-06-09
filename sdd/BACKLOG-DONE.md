@@ -8,6 +8,31 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-281 — Reap adapter daemon thread in close-timeout tests (BK-276 residual loop leak)**
+  spec: — · effort: S · audience: infra.test
+  BK-276/ID-217 fixed the teardown-time unclosed-`ProactorEventLoop` flake but a
+  residual leak recurred under bounded-worker `test-cov-strict` (non-deterministic
+  `PytestUnraisableExceptionWarning: unclosed event loop`, cross-attributed by
+  xdist to innocent nodes — azure-aio HNS, s3_boto3_moto). Tracemalloc traced the
+  real owners to `tests/aio/test_async_to_sync_adapter.py`: the failure-path tests
+  that drive `AsyncBackendSyncAdapter.close(timeout=…)` against a hanging
+  `aclose()`. By design `close()` schedules the loop stop and returns *before* the
+  daemon thread runs its `finally: loop.close()` — the loop is "left for
+  process-exit reaping" — so the private `ProactorEventLoop` lingers
+  non-running-and-unclosed in the gap between `close()` returning and the thread
+  winding down. Under load that gap widens enough for the cyclic GC to collect it
+  and fire the warning. The BK-276 per-test sweep cannot catch it: at the
+  offending test's own teardown the loop is still winding down (`is_running()`),
+  so the sweep spares it (the documented adapter-daemon carve-out in
+  `tests/_helpers.py`). Fix is test-hygiene, not product: a shared
+  `_reap_adapter` helper joins the daemon thread so the loop closes
+  deterministically before each such test returns; applied to the three
+  `_HangingAsyncBackend` close-timeout sites and folded in the one test that
+  already hand-rolled the join. Verified by re-running the tracemalloc
+  leak-detector over `tests/aio` + `tests/backends/{s3,azure/aio}`: distinct
+  abandoned loops went 2 → 0. Not a product defect — the `close(timeout)`
+  abandonment is intentional, documented behavior for a genuinely-hung backend.
+
 - [x] **BK-270 — Route `sdd/specs`-only and docs-only changes through their gates**
   spec: — · effort: S · audience: library.maintainer, infra.test
   The CI `setup` path filter (`CODE_PAT`) did not match `sdd/`, so a `sdd/specs`-only
