@@ -20,6 +20,12 @@ from infra._settings import (
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
+from tests._helpers import (
+    close_all_abandoned_event_loops,
+    install_event_loop_tracker,
+    sweep_tracked_event_loops,
+    uninstall_event_loop_tracker,
+)
 from tests.backends.fixtures._loader import VALID_STAGES
 from tests.backends.fixtures._state import set_current_stage
 
@@ -309,18 +315,34 @@ def _close_leaked_event_loops() -> Iterator[None]:
     (a sync test that calls ``asyncio.run()``) reproduces the leak on Python
     3.11 without this fixture.
 
-    Ref: ID-158.
-    """
-    import asyncio
-    import gc
+    The per-test ``pytest_runtest_teardown`` hookwrapper below closes tracked
+    loops eagerly after every test (fast ``WeakSet`` sweep), so the mid-run leak
+    (BK-276) never accumulates; this session sweep remains as a broad final
+    backstop, then restores the patched ``BaseEventLoop.__init__``.
 
+    Ref: ID-158 (session sweep), BK-276 (per-test sweep).
+    """
     yield
-    for obj in gc.get_objects():
-        try:
-            if isinstance(obj, asyncio.AbstractEventLoop) and not obj.is_running() and not obj.is_closed():
-                obj.close()
-        except Exception:  # noqa: BLE001
-            pass
+    close_all_abandoned_event_loops()
+    uninstall_event_loop_tracker()
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_teardown(item: pytest.Item, nextitem: pytest.Item | None) -> Iterator[None]:
+    """Close abandoned event loops after every test, before the next GC (BK-276).
+
+    pytest-asyncio 1.3 on Python 3.13 (Windows ``ProactorEventLoop``) leaves the
+    per-test loop unclosed; its self-pipe loopback sockets fire ``ResourceWarning``
+    on the next cyclic GC, cross-attributed by xdist to an innocent test and
+    promoted to a hard failure by ``filterwarnings = error``. As a ``wrapper``
+    hook the post-``yield`` body runs *after* pytest-asyncio's own loop teardown,
+    so we only ever close loops it genuinely abandoned — never one it still owns.
+    Uses the fast ``WeakSet`` sweep (whole-heap scanning here doubled suite
+    wall-time); the session fixture above does the one broad backstop pass.
+    """
+    res = yield
+    sweep_tracked_event_loops()
+    return res
 
 
 # -- Hypothesis profiles (dev=50, ci=100, nightly=1000) --
@@ -406,6 +428,10 @@ def _docker_daemon_reachable() -> bool:
 
 def pytest_configure(config: object) -> None:
     """Register custom markers and set the active stage."""
+    # Track every event loop created from here on so the per-test sweep
+    # (pytest_runtest_teardown) can close pytest-asyncio's abandoned loops
+    # cheaply, before a mid-run GC fires ResourceWarning (BK-276 / ID-217).
+    install_event_loop_tracker()
     if os.environ.get("RS_REQUIRE_MINIO") == "1" and not _minio_reachable():
         pytest.exit(
             f"RS_REQUIRE_MINIO=1 but MinIO is not reachable at {MINIO_HOST}:{MINIO_PORT}",
