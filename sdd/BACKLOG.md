@@ -92,8 +92,8 @@ and the highest ID already in this file, then take the next integer. Run
 ID-127 (Microsoft Graph / OneDrive / SharePoint) follow-ups, in execution order.
 **Why this order:** the credential leak (BK-263) leads — it is a security defect,
 though it needs a spec-contradiction decision before any code. The cassette-replay
-work (BK-260 / BK-262, which overlap — consolidate when picked up) is next because
-it is load-bearing: until it lands, the cross-backend conformance matrix *and* the
+work (BK-262, which absorbed the former BK-260) is next because it is
+load-bearing: until it lands, the cross-backend conformance matrix *and* the
 live/integration tier run in no CI lane, so the backend's only automated guard is
 the respx unit suite. BK-264 (spec/RFC reality-sync) documents that gap and fixes
 spec-lags-code drift; BK-265 (docs) is cheap, high-value, consumer-facing.
@@ -122,34 +122,44 @@ staleness finding (L2) is already covered by BK-259's "Semantics vs spec" clause
   to keep both no-leak and resume. Then fix `transfer.py`, flip the test to assert
   *absence* of the credential, and add a masking regression test. Audit-016 H1.
 
-- [ ] **BK-260 — Graph cassettes: replay across the pre-signed download/upload URL**
+- [ ] **BK-262 — Graph conformance cassettes: replay-able pre-signed URLs**
   spec: GR-015, GR-019 · effort: M · audience: infra.test
-  The `graph_replay` Stage-1 fixture is still inert: no cassette in
-  `tests/backends/cassettes/graph/`, and `record_cassettes.py` keeps
-  `min_cassettes=0` for graph. GR-WRITE made the read/list/metadata/lazy_read +
-  write conformance slices *seedable* (write now works), but recording them
-  productively is blocked by a pre-signed-URL replay problem the GR-FOUNDATION
-  streaming proof never exercised (it recorded and replayed the **same** URL):
-  - The scrub redacts the `@microsoft.graph.downloadUrl` (read) and the
-    upload-session `uploadUrl` (write) body values to `REDACTED`. On replay the
-    backend re-requests that value — `GET "REDACTED"` / `PUT "REDACTED"` — which
-    matches no cassette interaction. The read conformance tests write-then-read,
-    so they hit this too.
-  - The token also rides the request *query* on those pre-signed hosts, so a
-    naive host+path+query match would either leak the token (if kept) or fail to
-    match (if filtered asymmetrically between record and replay).
+  ID-127 GR-DONE recorded the Graph conformance suite live (green, 109/0/9) but
+  the cassettes are **not committed**, and `record_cassettes.py` keeps
+  `min_cassettes=0` for graph (no committed cassette under
+  `tests/backends/cassettes/graph/`). Replaying reads/writes fails because the
+  GR-035 scrub redacts `@microsoft.graph.downloadUrl` (read) and the upload-session
+  `uploadUrl` (write) to the bare string `"REDACTED"`, which is not a URL the
+  backend can `GET`/`PUT` on replay (it issues `GET :///REDACTED` → no cassette
+  match; the read conformance slices write-then-read, so they hit it too). The
+  token also rides the request *query* on those pre-signed hosts, so a naive
+  host+path+query match would either leak the token (if kept) or fail to match (if
+  filtered asymmetrically between record and replay). The GR-FOUNDATION streaming
+  proof never exercised this because it recorded and replayed the **same** URL.
 
-  **Solution sketch (decide when picked up):** change the body scrub to wipe the
-  *query only* (preserve host+path, mirroring the existing `Location`-header
-  scrub), add a `before_record_request` that normalises the query to empty on the
-  non-`graph.microsoft.com` pre-signed hosts (so record and replay agree), and/or
-  a custom `match_on` that ignores the query for those hosts. Then record live,
-  move the slices off the missing-cassette skip, and raise `min_cassettes`.
-  Until then the live device-code probe (`tmp/validate_graph_*_live.py`) is the
-  Stage-3 reality-check (the GR-TRANSFER precedent). Touches
+  **Solution sketch (decide when picked up):** redact pre-signed URLs (downloadUrl
+  / uploadUrl / `Location`) to a **valid placeholder URL** (e.g.
+  `https://graph-download.invalid/REDACTED`) — or, equivalently, wipe the *query
+  only* (preserve host+path, mirroring the existing `Location`-header scrub) via a
+  `before_record_request` that normalises the query to empty on the
+  non-`graph.microsoft.com` pre-signed hosts (so record and replay agree) and/or a
+  custom `match_on` that ignores the query for those hosts — consistently in
+  response bodies, the `Location` header, and the recorded pre-signed-host
+  **request** URIs, so `graph_replay` matches the recorded (rewritten) request:
+  the same full redaction, just replay-able. Then re-record, validate Stage-1
+  replay, raise `scripts/record_cassettes.py` graph `min_cassettes` off `0` (see
+  the Audit-016 note below), move the slices off the missing-cassette skip, and
+  commit the cassettes so the cross-backend conformance spine runs for Graph in CI
+  (today it skips-clean). Watch for vcr replay-ordering on multiple same-placeholder
+  `GET`s within one cassette. Prerequisite scrub infra (vcr-mark hook extended to
+  `graph_live`, request-body `drive_id` scrub, per-test `base_path` uuid scrub,
+  `graph_replay` `base_path`) already landed in the ID-127 GR-DONE PR. Until then
+  the live device-code probe (`tmp/validate_graph_*_live.py`) is the Stage-3
+  reality-check (the GR-TRANSFER precedent). Touches
   `tests/backends/fixtures/_cassettes.py`,
-  `tests/backends/conformance/conftest.py`, `scripts/record_cassettes.py`, and
-  the recorded cassette tree. Discovered in ID-127 GR-WRITE.
+  `tests/backends/conformance/conftest.py`, `scripts/record_cassettes.py`, and the
+  recorded cassette tree. Discovered in ID-127 GR-WRITE; re-confirmed in GR-DONE.
+  (Consolidates the former BK-260, retired into this item per PR #770 review.)
 
   **Extension (example tests, ID-127 GR-DOCS-E2E review, PR #764):** the same
   recorded cassettes could drive the env-gated `examples/backends/graph_backend.py`
@@ -158,34 +168,16 @@ staleness finding (L2) is already covered by BK-259's "Semantics vs spec" clause
   solved, a replayed variant could exercise the example in CI without creds —
   same blocker, second beneficiary. Gated on the solution sketch landing first.
 
-- [ ] **BK-262 — Graph conformance cassettes: replay-able pre-signed URLs**
-  spec: GR-015 · effort: M · audience: infra.test
-  ID-127 GR-DONE recorded the Graph conformance suite live (green, 109/0/9) but
-  the cassettes are **not committed**: replaying reads fails because the GR-035
-  scrub redacts `@microsoft.graph.downloadUrl` to the bare string `"REDACTED"`,
-  which is not a URL the backend can `GET` on replay (it issues `GET :///REDACTED`
-  → no cassette match). Fix by redacting pre-signed URLs (downloadUrl / uploadUrl
-  / `Location`) to a **valid placeholder URL** (e.g.
-  `https://graph-download.invalid/REDACTED`) consistently in response bodies, the
-  `Location` header, and the recorded pre-signed-host **request** URIs, so
-  `graph_replay` can `GET` the placeholder and match the recorded (rewritten)
-  request — the same full redaction, just replay-able. Then re-record, validate
-  Stage-1 replay, raise `scripts/record_cassettes.py` graph `min_cassettes` off
-  `0`, and commit the cassettes so the cross-backend conformance spine runs for
-  Graph in CI (today it skips-clean). Watch for vcr replay-ordering on multiple
-  same-placeholder `GET`s within one cassette. Prerequisite scrub infra (vcr-mark
-  hook extended to `graph_live`, request-body `drive_id` scrub, per-test
-  `base_path` uuid scrub, `graph_replay` `base_path`) already landed in the
-  ID-127 GR-DONE PR; this item is only the downloadUrl-replay piece + the commit.
-
   **Audit-016 (H2):** until cassettes land, the Graph conformance matrix is 100%
   skip in CI *and* the integration/live tier (GR-007/020/026/034/054 + the 10 MiB
   round-trip) runs in no lane — so the only automated coverage is the ~300 respx
   unit tests (whose mocks the first live run already proved wrong, 23/118). Raising
   the `min_cassettes` floor off `0` is part of this work for a second reason: at
-  `0` the record gate passes on an empty corpus, so there is no tripwire that the
-  matrix has gone vacuous. The spec-honesty disclosure of this gap is tracked in
-  BK-264. (Overlaps BK-260 — consolidate the two when picked up.)
+  `0` the record gate *warns* but does not *fail* on an empty corpus
+  (`record_cassettes.py:329-337` prints a loud zero-cassette WARNING, but it is
+  non-fatal), so the fix should promote that existing warning to a hard failure
+  rather than add a redundant one. The spec-honesty disclosure of this gap is
+  tracked in BK-264.
 
 - [ ] **BK-264 — Graph spec / RFC reality-sync**
   spec: GR-001, GR-005, GR-018, GR-019, GR-034 · effort: S · audience: library.maintainer

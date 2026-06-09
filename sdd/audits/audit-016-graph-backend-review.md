@@ -107,8 +107,10 @@ re-verification of the test.
   therefore also inert.
 - `scripts/record_cassettes.py:148` sets graph `"min_cassettes": 0`, and the
   guard at `:322` reads `min_expected = cfg.get("min_cassettes", 0)` — so a
-  recording run that writes **zero** graph cassettes still passes. There is no
-  tripwire for a vacuous corpus.
+  recording run that writes **zero** graph cassettes does not *fail* the gate. It
+  does *warn*: `:329-337` prints a loud zero-cassette WARNING, but it is
+  non-fatal, so an empty corpus still passes CI. The fix should promote that
+  warning to a hard failure rather than add a redundant tripwire.
 - The integration tier (`tests/backends/graph/aio/test_integration.py`,
   covering GR-007/019/020/026/034/054 + a 10 MiB round-trip) carries module-level
   `pytest.mark.live`. `pyproject.toml:355` sets `addopts = "… -m 'not live'"`, so
@@ -123,7 +125,7 @@ the respx mocks asserted `409 + folder-facet` while live Graph returns `501`
 (move/copy under a file ancestor) — real mapping bugs the green mock suite hid.
 The same class of blind spot remains for any service behaviour the mocks guess.
 
-The cassette-replay gap itself is partly tracked (BK-260/BK-262), but two
+The cassette-replay gap itself is partly tracked (BK-262), but two
 sub-issues are not: the `min_cassettes: 0` gate-blindness, and the fact that the
 spec presents the suite as covering "every ID" without disclosing that the matrix
 is skip-only and the integration tier never runs automatically (see C-series
@@ -388,7 +390,7 @@ called out first.
 
 | Item | Folds in | What to add |
 |------|----------|-------------|
-| **BK-260 / BK-262** (Graph conformance cassettes / replay-able pre-signed URLs) | **H2** | These already own the cassette-replay gap. Extend their Definition-of-Done with two currently-unowned sub-issues: (1) once cassettes land, raise `record_cassettes.py` graph `min_cassettes` off `0` so an empty corpus fails the record gate (today it passes silently); (2) add a CI tripwire / note that until cassettes exist the Graph conformance matrix is skip-only — the suite must not read as "covered". If the two items overlap, consolidate; keep the pre-signed-URL redaction-vs-replay work as the load-bearing blocker. |
+| **BK-262** (Graph conformance cassettes / replay-able pre-signed URLs; the near-duplicate **BK-260** was consolidated into it per this PR's review) | **H2** | Already owns the cassette-replay gap. Extend its Definition-of-Done with two currently-unowned sub-issues: (1) once cassettes land, raise `record_cassettes.py` graph `min_cassettes` off `0` so an empty corpus *fails* the record gate — today the `recorded == 0` branch (`record_cassettes.py:329-337`) only *warns*, non-fatally, so promote that warning rather than add a redundant one; (2) note that until cassettes exist the Graph conformance matrix is skip-only — the suite must not read as "covered". Keep the pre-signed-URL redaction-vs-replay work as the load-bearing blocker. |
 | **BK-259** (range-fallback flag: scope to operation, not backend lifetime) | **L2** | Already targets the flag's lifetime. Add the staleness/scope-bleed observations: the flag is set by a read but read back by a later unrelated `get_file_info`; it never clears (stale after item re-creation / tenant change); and it keys on the raw caller string (`"/x"` vs `"x"` diverge). The fix that scopes to operation context should also address these. |
 | **ID-123** (cache keys derived from backend identity) | **L8** | Correct the framing: "single-backend cache keys are already correct" holds for the default per-store cache but **not** for a shared `cache_backend=` across multiple top-level stores, which is precisely where cross-drive collisions occur. Note this case in the item's scope. |
 
@@ -403,6 +405,6 @@ called out first.
 | **G5 — Graph test hardening** | **L7** (+ the masking regression test from G1) | `tests/backends/graph/aio/` | Pin `read()` first-iteration failure timing (assert no bytes yielded before the raise); add a direct `write_atomic` failure-path test; add at least one per-method `403`→`PermissionDenied` test or document the centralised-mapping rationale. |
 | **G6 — File the deferred async-ext follow-ups (backlog hygiene)** | **L10** | `sdd/BACKLOG.md` | File (or decline) the "async `ext.glob`" item GR-003 promises and the "cache warns when wrapping a bridged backend" item ADR-0025 promises, so the deferred async-ext surface has tracked owners. |
 
-**Priority ordering:** G1 (security, needs a decision) → BK-260/262 amendment +
+**Priority ordering:** G1 (security, needs a decision) → BK-262 amendment +
 G2 honesty note (close the coverage/honesty gap) → G3 (consumer-facing docs,
 cheap) → G4/G5 (correctness + tests) → BK-259/ID-123 amendments, G6 (hygiene).
