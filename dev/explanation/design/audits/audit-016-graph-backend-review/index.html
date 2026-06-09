@@ -10,29 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/audits/audit-016-graph-backend-review/">
       
       
+        <link rel="prev" href="../audit-015-spec-traceability/">
       
-        <link rel="next" href="tutorial/">
+      
+        <link rel="next" href="../../rfcs/">
       
       
         
       
       
-      <link rel="icon" href="assets/logo.png">
+      <link rel="icon" href="../../../../assets/logo.png">
       <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.6">
     
     
       
-        <title>remote-store</title>
+        <title>016: Microsoft Graph Backend (ID-127) Review - remote-store</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -51,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="css/custom.css">
+      <link rel="stylesheet" href="../../../../css/custom.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#remote-store" class="md-skip">
+        <a href="#audit-016-microsoft-graph-backend-id-127-review" class="md-skip">
           Skip to content
         </a>
       
@@ -100,9 +102,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="assets/logo.png" alt="logo">
+  <img src="../../../../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -119,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              016: Microsoft Graph Backend (ID-127) Review
             
           </span>
         </div>
@@ -224,11 +226,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="." class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../../.." class="md-tabs__link">
         
   
   
@@ -247,7 +247,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="tutorial/" class="md-tabs__link">
+      <a href="../../../../tutorial/" class="md-tabs__link">
         
   
   
@@ -266,7 +266,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="guides/" class="md-tabs__link">
+      <a href="../../../../guides/" class="md-tabs__link">
         
   
   
@@ -285,7 +285,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="reference/" class="md-tabs__link">
+      <a href="../../../../reference/" class="md-tabs__link">
         
   
   
@@ -302,9 +302,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="explanation/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="../../../" class="md-tabs__link">
         
   
   
@@ -334,9 +336,7 @@
           
             
               
-                
-              
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -347,9 +347,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="assets/logo.png" alt="logo">
+  <img src="../../../../assets/logo.png" alt="logo">
 
     </a>
     remote-store
@@ -373,37 +373,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Home
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
         
   
   
@@ -419,142 +392,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Architecture
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-core-idea" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The core idea
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#design-principles" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Design principles
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Design principles">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#zero-dependencies-in-core" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Zero dependencies in core
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#proven-libraries-underneath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Proven libraries underneath
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#backend-native-when-possible" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Backend-native when possible
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#extensions-sit-beside-not-around" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Extensions sit beside, not around
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#bring-your-own" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bring your own
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick start
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#where-to-go-next" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where to go next
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -581,7 +418,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="tutorial/" class="md-nav__link ">
+            <a href="../../../../tutorial/" class="md-nav__link ">
               
   
   
@@ -623,7 +460,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/getting-started/" class="md-nav__link">
+      <a href="../../../../tutorial/getting-started/" class="md-nav__link">
         
   
   
@@ -666,7 +503,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="tutorial/examples/" class="md-nav__link ">
+            <a href="../../../../tutorial/examples/" class="md-nav__link ">
               
   
   
@@ -758,7 +595,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/quickstart/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/quickstart/" class="md-nav__link">
         
   
   
@@ -786,7 +623,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/file-operations/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/file-operations/" class="md-nav__link">
         
   
   
@@ -814,7 +651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/streaming-io/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/streaming-io/" class="md-nav__link">
         
   
   
@@ -842,7 +679,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/atomic-writes/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/atomic-writes/" class="md-nav__link">
         
   
   
@@ -928,7 +765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/configuration/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/configuration/" class="md-nav__link">
         
   
   
@@ -956,7 +793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/config-loaders/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/config-loaders/" class="md-nav__link">
         
   
   
@@ -1042,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/error-handling/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/error-handling/" class="md-nav__link">
         
   
   
@@ -1070,7 +907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/capabilities-and-errors/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/capabilities-and-errors/" class="md-nav__link">
         
   
   
@@ -1156,7 +993,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/path-model/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/path-model/" class="md-nav__link">
         
   
   
@@ -1184,7 +1021,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/memory-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/memory-backend/" class="md-nav__link">
         
   
   
@@ -1212,7 +1049,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/store-child/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/store-child/" class="md-nav__link">
         
   
   
@@ -1240,7 +1077,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/async-store/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/async-store/" class="md-nav__link">
         
   
   
@@ -1268,7 +1105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/retry-policy/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/retry-policy/" class="md-nav__link">
         
   
   
@@ -1296,7 +1133,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/health-check/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/health-check/" class="md-nav__link">
         
   
   
@@ -1382,7 +1219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/s3-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/s3-backend/" class="md-nav__link">
         
   
   
@@ -1410,7 +1247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -1438,7 +1275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/s3-listing-strategies/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/s3-listing-strategies/" class="md-nav__link">
         
   
   
@@ -1466,7 +1303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/sftp-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/sftp-backend/" class="md-nav__link">
         
   
   
@@ -1494,7 +1331,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/azure-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/azure-backend/" class="md-nav__link">
         
   
   
@@ -1522,7 +1359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/graph-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/graph-backend/" class="md-nav__link">
         
   
   
@@ -1550,7 +1387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/sql-blob-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -1578,7 +1415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/http-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/http-backend/" class="md-nav__link">
         
   
   
@@ -1664,7 +1501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/batch-operations/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/batch-operations/" class="md-nav__link">
         
   
   
@@ -1692,7 +1529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/transfer-operations/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/transfer-operations/" class="md-nav__link">
         
   
   
@@ -1720,7 +1557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1748,7 +1585,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/caching/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/caching/" class="md-nav__link">
         
   
   
@@ -1776,7 +1613,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/observe-hooks/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/observe-hooks/" class="md-nav__link">
         
   
   
@@ -1804,7 +1641,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/otel-tracing/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/otel-tracing/" class="md-nav__link">
         
   
   
@@ -1890,7 +1727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1918,7 +1755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/parquet-dataset/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/parquet-dataset/" class="md-nav__link">
         
   
   
@@ -1946,7 +1783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/dagster-io-manager/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/dagster-io-manager/" class="md-nav__link">
         
   
   
@@ -1974,7 +1811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/dagster-v2-resource/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/dagster-v2-resource/" class="md-nav__link">
         
   
   
@@ -2002,7 +1839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/dagster-compute-log-manager/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/dagster-compute-log-manager/" class="md-nav__link">
         
   
   
@@ -2088,7 +1925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorial/examples/medallion-dagster/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/medallion-dagster/" class="md-nav__link">
         
   
   
@@ -2154,7 +1991,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="guides/" class="md-nav__link ">
+            <a href="../../../../guides/" class="md-nav__link ">
               
   
   
@@ -2211,7 +2048,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="guides/backends/" class="md-nav__link ">
+            <a href="../../../../guides/backends/" class="md-nav__link ">
               
   
   
@@ -2253,7 +2090,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/backends/local/" class="md-nav__link">
+      <a href="../../../../guides/backends/local/" class="md-nav__link">
         
   
   
@@ -2281,7 +2118,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/backends/memory/" class="md-nav__link">
+      <a href="../../../../guides/backends/memory/" class="md-nav__link">
         
   
   
@@ -2309,7 +2146,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/backends/http/" class="md-nav__link">
+      <a href="../../../../guides/backends/http/" class="md-nav__link">
         
   
   
@@ -2337,7 +2174,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/backends/s3/" class="md-nav__link">
+      <a href="../../../../guides/backends/s3/" class="md-nav__link">
         
   
   
@@ -2365,7 +2202,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../../guides/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -2393,7 +2230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/backends/sftp/" class="md-nav__link">
+      <a href="../../../../guides/backends/sftp/" class="md-nav__link">
         
   
   
@@ -2421,7 +2258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/backends/azure/" class="md-nav__link">
+      <a href="../../../../guides/backends/azure/" class="md-nav__link">
         
   
   
@@ -2449,7 +2286,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/backends/azure-hns-setup/" class="md-nav__link">
+      <a href="../../../../guides/backends/azure-hns-setup/" class="md-nav__link">
         
   
   
@@ -2477,7 +2314,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/backends/graph/" class="md-nav__link">
+      <a href="../../../../guides/backends/graph/" class="md-nav__link">
         
   
   
@@ -2505,7 +2342,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/backends/graph-setup/" class="md-nav__link">
+      <a href="../../../../guides/backends/graph-setup/" class="md-nav__link">
         
   
   
@@ -2533,7 +2370,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/backends/sql-blob/" class="md-nav__link">
+      <a href="../../../../guides/backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -2561,7 +2398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/backends/sql-query/" class="md-nav__link">
+      <a href="../../../../guides/backends/sql-query/" class="md-nav__link">
         
   
   
@@ -2647,7 +2484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/extensions/" class="md-nav__link">
+      <a href="../../../../guides/extensions/" class="md-nav__link">
         
   
   
@@ -2675,7 +2512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/batch-operations/" class="md-nav__link">
+      <a href="../../../../guides/batch-operations/" class="md-nav__link">
         
   
   
@@ -2703,7 +2540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/cache/" class="md-nav__link">
+      <a href="../../../../guides/cache/" class="md-nav__link">
         
   
   
@@ -2731,7 +2568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../../guides/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -2759,7 +2596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/observe/" class="md-nav__link">
+      <a href="../../../../guides/observe/" class="md-nav__link">
         
   
   
@@ -2787,7 +2624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/transfer-operations/" class="md-nav__link">
+      <a href="../../../../guides/transfer-operations/" class="md-nav__link">
         
   
   
@@ -2815,7 +2652,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../../guides/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -2843,7 +2680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/parquet-datasets/" class="md-nav__link">
+      <a href="../../../../guides/parquet-datasets/" class="md-nav__link">
         
   
   
@@ -2871,7 +2708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/dagster/" class="md-nav__link">
+      <a href="../../../../guides/dagster/" class="md-nav__link">
         
   
   
@@ -2899,7 +2736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/retry/" class="md-nav__link">
+      <a href="../../../../guides/retry/" class="md-nav__link">
         
   
   
@@ -2935,7 +2772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/async/" class="md-nav__link">
+      <a href="../../../../guides/async/" class="md-nav__link">
         
   
   
@@ -2963,7 +2800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/async-sync-bridges/" class="md-nav__link">
+      <a href="../../../../guides/async-sync-bridges/" class="md-nav__link">
         
   
   
@@ -2991,7 +2828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/write-integrity/" class="md-nav__link">
+      <a href="../../../../guides/write-integrity/" class="md-nav__link">
         
   
   
@@ -3019,7 +2856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/health-check/" class="md-nav__link">
+      <a href="../../../../guides/health-check/" class="md-nav__link">
         
   
   
@@ -3047,7 +2884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/data-lake-patterns/" class="md-nav__link">
+      <a href="../../../../guides/data-lake-patterns/" class="md-nav__link">
         
   
   
@@ -3075,7 +2912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/troubleshooting/" class="md-nav__link">
+      <a href="../../../../guides/troubleshooting/" class="md-nav__link">
         
   
   
@@ -3103,7 +2940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/choosing-a-backend/" class="md-nav__link">
+      <a href="../../../../guides/choosing-a-backend/" class="md-nav__link">
         
   
   
@@ -3131,7 +2968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="guides/custom-backend-guide/" class="md-nav__link">
+      <a href="../../../../guides/custom-backend-guide/" class="md-nav__link">
         
   
   
@@ -3181,7 +3018,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="reference/" class="md-nav__link ">
+            <a href="../../../../reference/" class="md-nav__link ">
               
   
   
@@ -3223,7 +3060,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/FEATURES/" class="md-nav__link">
+      <a href="../../../../reference/FEATURES/" class="md-nav__link">
         
   
   
@@ -3251,7 +3088,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/capabilities-matrix/" class="md-nav__link">
+      <a href="../../../../reference/capabilities-matrix/" class="md-nav__link">
         
   
   
@@ -3279,7 +3116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/tested-versions/" class="md-nav__link">
+      <a href="../../../../reference/tested-versions/" class="md-nav__link">
         
   
   
@@ -3322,7 +3159,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="reference/api/" class="md-nav__link ">
+            <a href="../../../../reference/api/" class="md-nav__link ">
               
   
   
@@ -3364,7 +3201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/store/" class="md-nav__link">
+      <a href="../../../../reference/api/store/" class="md-nav__link">
         
   
   
@@ -3392,7 +3229,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/proxy/" class="md-nav__link">
+      <a href="../../../../reference/api/proxy/" class="md-nav__link">
         
   
   
@@ -3420,7 +3257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/registry/" class="md-nav__link">
+      <a href="../../../../reference/api/registry/" class="md-nav__link">
         
   
   
@@ -3448,7 +3285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/config/" class="md-nav__link">
+      <a href="../../../../reference/api/config/" class="md-nav__link">
         
   
   
@@ -3476,7 +3313,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/models/" class="md-nav__link">
+      <a href="../../../../reference/api/models/" class="md-nav__link">
         
   
   
@@ -3504,7 +3341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/capabilities/" class="md-nav__link">
+      <a href="../../../../reference/api/capabilities/" class="md-nav__link">
         
   
   
@@ -3532,7 +3369,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/errors/" class="md-nav__link">
+      <a href="../../../../reference/api/errors/" class="md-nav__link">
         
   
   
@@ -3560,7 +3397,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/backend/" class="md-nav__link">
+      <a href="../../../../reference/api/backend/" class="md-nav__link">
         
   
   
@@ -3588,7 +3425,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/aio/" class="md-nav__link">
+      <a href="../../../../reference/api/aio/" class="md-nav__link">
         
   
   
@@ -3616,7 +3453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/info/" class="md-nav__link">
+      <a href="../../../../reference/api/info/" class="md-nav__link">
         
   
   
@@ -3644,7 +3481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/sftp-utils/" class="md-nav__link">
+      <a href="../../../../reference/api/sftp-utils/" class="md-nav__link">
         
   
   
@@ -3687,7 +3524,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="reference/api/backends/" class="md-nav__link ">
+            <a href="../../../../reference/api/backends/" class="md-nav__link ">
               
   
   
@@ -3729,7 +3566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/backends/local/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/local/" class="md-nav__link">
         
   
   
@@ -3757,7 +3594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/backends/memory/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/memory/" class="md-nav__link">
         
   
   
@@ -3785,7 +3622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/backends/http/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/http/" class="md-nav__link">
         
   
   
@@ -3813,7 +3650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/backends/s3/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/s3/" class="md-nav__link">
         
   
   
@@ -3841,7 +3678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -3869,7 +3706,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/backends/sftp/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/sftp/" class="md-nav__link">
         
   
   
@@ -3897,7 +3734,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/backends/azure/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/azure/" class="md-nav__link">
         
   
   
@@ -3925,7 +3762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/backends/sql-blob/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -3953,7 +3790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/backends/sql-query/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/sql-query/" class="md-nav__link">
         
   
   
@@ -4004,7 +3841,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="reference/api/extensions/" class="md-nav__link ">
+            <a href="../../../../reference/api/extensions/" class="md-nav__link ">
               
   
   
@@ -4046,7 +3883,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/batch/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/batch/" class="md-nav__link">
         
   
   
@@ -4074,7 +3911,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/cache/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/cache/" class="md-nav__link">
         
   
   
@@ -4102,7 +3939,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/glob/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/glob/" class="md-nav__link">
         
   
   
@@ -4130,7 +3967,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/integrity/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/integrity/" class="md-nav__link">
         
   
   
@@ -4158,7 +3995,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/observe/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/observe/" class="md-nav__link">
         
   
   
@@ -4186,7 +4023,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/partition/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/partition/" class="md-nav__link">
         
   
   
@@ -4214,7 +4051,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/streams/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/streams/" class="md-nav__link">
         
   
   
@@ -4242,7 +4079,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/transfer/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/transfer/" class="md-nav__link">
         
   
   
@@ -4270,7 +4107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/write/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/write/" class="md-nav__link">
         
   
   
@@ -4298,7 +4135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/aio-write/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/aio-write/" class="md-nav__link">
         
   
   
@@ -4326,7 +4163,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/arrow/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/arrow/" class="md-nav__link">
         
   
   
@@ -4354,7 +4191,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/dagster/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/dagster/" class="md-nav__link">
         
   
   
@@ -4382,7 +4219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/otel/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/otel/" class="md-nav__link">
         
   
   
@@ -4410,7 +4247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/parquet/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/parquet/" class="md-nav__link">
         
   
   
@@ -4438,7 +4275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/pydantic/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/pydantic/" class="md-nav__link">
         
   
   
@@ -4466,7 +4303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/api/extensions/yaml/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/yaml/" class="md-nav__link">
         
   
   
@@ -4510,7 +4347,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/migration/" class="md-nav__link">
+      <a href="../../../../reference/migration/" class="md-nav__link">
         
   
   
@@ -4538,7 +4375,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/changelog/" class="md-nav__link">
+      <a href="../../../../reference/changelog/" class="md-nav__link">
         
   
   
@@ -4570,25 +4407,30 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="explanation/" class="md-nav__link ">
+            <a href="../../../" class="md-nav__link ">
               
   
   
@@ -4606,13 +4448,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -4630,7 +4472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/architecture/" class="md-nav__link">
+      <a href="../../../architecture/" class="md-nav__link">
         
   
   
@@ -4658,7 +4500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/graph-ir/" class="md-nav__link">
+      <a href="../../../graph-ir/" class="md-nav__link">
         
   
   
@@ -4686,7 +4528,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/performance/" class="md-nav__link">
+      <a href="../../../performance/" class="md-nav__link">
         
   
   
@@ -4714,7 +4556,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/concurrency/" class="md-nav__link">
+      <a href="../../../concurrency/" class="md-nav__link">
         
   
   
@@ -4742,7 +4584,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/security-model/" class="md-nav__link">
+      <a href="../../../security-model/" class="md-nav__link">
         
   
   
@@ -4770,7 +4612,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/contributing/" class="md-nav__link">
+      <a href="../../../contributing/" class="md-nav__link">
         
   
   
@@ -4798,7 +4640,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/development-story/" class="md-nav__link">
+      <a href="../../../development-story/" class="md-nav__link">
         
   
   
@@ -4823,6 +4665,8 @@
                 
   
   
+    
+  
   
   
     
@@ -4833,15 +4677,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="explanation/design/" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -4865,7 +4709,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_8">
             <span class="md-nav__icon md-icon"></span>
             
@@ -4883,7 +4727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/authoring/" class="md-nav__link">
+      <a href="../../authoring/" class="md-nav__link">
         
   
   
@@ -4911,7 +4755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/content-rules/" class="md-nav__link">
+      <a href="../../content-rules/" class="md-nav__link">
         
   
   
@@ -4939,7 +4783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/design/" class="md-nav__link">
+      <a href="../../design/" class="md-nav__link">
         
   
   
@@ -4967,7 +4811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/documentation/" class="md-nav__link">
+      <a href="../../documentation/" class="md-nav__link">
         
   
   
@@ -4995,7 +4839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/process/" class="md-nav__link">
+      <a href="../../process/" class="md-nav__link">
         
   
   
@@ -5023,7 +4867,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/testing/" class="md-nav__link">
+      <a href="../../testing/" class="md-nav__link">
         
   
   
@@ -5066,7 +4910,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="explanation/design/adrs/" class="md-nav__link ">
+            <a href="../../adrs/" class="md-nav__link ">
               
   
   
@@ -5108,7 +4952,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -5136,7 +4980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -5164,7 +5008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -5192,7 +5036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -5220,7 +5064,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -5248,7 +5092,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -5276,7 +5120,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -5304,7 +5148,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -5332,7 +5176,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5360,7 +5204,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -5388,7 +5232,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -5416,7 +5260,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -5444,7 +5288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -5472,7 +5316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -5500,7 +5344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -5528,7 +5372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5556,7 +5400,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
         
   
   
@@ -5584,7 +5428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
+      <a href="../../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
         
   
   
@@ -5612,7 +5456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0019-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -5640,7 +5484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
+      <a href="../../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
         
   
   
@@ -5668,7 +5512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0021-graph-sdk-choice/" class="md-nav__link">
+      <a href="../../adrs/0021-graph-sdk-choice/" class="md-nav__link">
         
   
   
@@ -5696,7 +5540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0022-graph-auth-model/" class="md-nav__link">
+      <a href="../../adrs/0022-graph-auth-model/" class="md-nav__link">
         
   
   
@@ -5724,7 +5568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0023-async-monitor-polling/" class="md-nav__link">
+      <a href="../../adrs/0023-async-monitor-polling/" class="md-nav__link">
         
   
   
@@ -5752,7 +5596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0024-resource-locked-error/" class="md-nav__link">
+      <a href="../../adrs/0024-resource-locked-error/" class="md-nav__link">
         
   
   
@@ -5780,7 +5624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
+      <a href="../../adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
         
   
   
@@ -5808,7 +5652,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
+      <a href="../../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
         
   
   
@@ -5836,7 +5680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
+      <a href="../../adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
         
   
   
@@ -5864,7 +5708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/adrs/0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
+      <a href="../../adrs/0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
         
   
   
@@ -5897,6 +5741,8 @@
                 
   
   
+    
+  
   
   
     
@@ -5907,15 +5753,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_8" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="explanation/design/audits/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -5939,7 +5785,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_8_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_8_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_8_8">
             <span class="md-nav__icon md-icon"></span>
             
@@ -5957,7 +5803,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-001-adversarial-review/" class="md-nav__link">
+      <a href="../audit-001-adversarial-review/" class="md-nav__link">
         
   
   
@@ -5985,7 +5831,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-002-design-compliance/" class="md-nav__link">
+      <a href="../audit-002-design-compliance/" class="md-nav__link">
         
   
   
@@ -6013,7 +5859,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-003-documentation/" class="md-nav__link">
+      <a href="../audit-003-documentation/" class="md-nav__link">
         
   
   
@@ -6041,7 +5887,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-004-docs-structural-consistency/" class="md-nav__link">
+      <a href="../audit-004-docs-structural-consistency/" class="md-nav__link">
         
   
   
@@ -6069,7 +5915,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-005-laziness-memory/" class="md-nav__link">
+      <a href="../audit-005-laziness-memory/" class="md-nav__link">
         
   
   
@@ -6097,7 +5943,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-006-docs-list-completeness/" class="md-nav__link">
+      <a href="../audit-006-docs-list-completeness/" class="md-nav__link">
         
   
   
@@ -6125,7 +5971,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-007-test-behavior-assertions/" class="md-nav__link">
+      <a href="../audit-007-test-behavior-assertions/" class="md-nav__link">
         
   
   
@@ -6153,7 +5999,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-008-package-bugs/" class="md-nav__link">
+      <a href="../audit-008-package-bugs/" class="md-nav__link">
         
   
   
@@ -6181,7 +6027,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-009-backend-specifics-visibility/" class="md-nav__link">
+      <a href="../audit-009-backend-specifics-visibility/" class="md-nav__link">
         
   
   
@@ -6209,7 +6055,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-010-ext-private-imports/" class="md-nav__link">
+      <a href="../audit-010-ext-private-imports/" class="md-nav__link">
         
   
   
@@ -6237,7 +6083,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-011-docs-v023-gaps/" class="md-nav__link">
+      <a href="../audit-011-docs-v023-gaps/" class="md-nav__link">
         
   
   
@@ -6265,7 +6111,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-012-docs-structure/" class="md-nav__link">
+      <a href="../audit-012-docs-structure/" class="md-nav__link">
         
   
   
@@ -6293,7 +6139,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-013-docstring-style/" class="md-nav__link">
+      <a href="../audit-013-docstring-style/" class="md-nav__link">
         
   
   
@@ -6321,7 +6167,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
+      <a href="../audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
         
   
   
@@ -6349,7 +6195,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-015-spec-traceability/" class="md-nav__link">
+      <a href="../audit-015-spec-traceability/" class="md-nav__link">
         
   
   
@@ -6374,10 +6220,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="explanation/design/audits/audit-016-graph-backend-review/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    016: Microsoft Graph Backend (ID-127) Review
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -6393,6 +6266,347 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#high" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔴 High
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🔴 High">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#h1-pre-signed-upload-session-url-credential-leaked-into-the-resourcelocked-message" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        H1 — Pre-signed upload-session URL (credential) leaked into the ResourceLocked message
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#h2-graph-behavioural-coverage-is-effectively-absent-in-automated-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        H2 — Graph behavioural coverage is effectively absent in automated CI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#medium" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🟠 Medium
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🟠 Medium">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#m1-writeresultsize-source-diverges-from-gr-018-gr-019-code-is-better-amend-the-spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M1 — WriteResult.size source diverges from GR-018 / GR-019 (code is better; amend the spec)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m2-base_path-gr-058-is-absent-from-the-specs-authoritative-signature-and-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M2 — base_path (GR-058) is absent from the spec's authoritative signature and validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m3-live-tier-credential-env-vars-are-wrong-in-the-spec-and-rfc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M3 — Live-tier credential env vars are wrong in the spec and RFC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m4-graph-setupmd-is-written-as-if-the-backend-has-not-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M4 — graph-setup.md is written as if the backend has not shipped
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m5-the-main-guides-headline-usage-snippet-throws-on-copy-paste" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M5 — The main guide's headline Usage snippet throws on copy-paste
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m6-the-async-native-graph-consumer-gets-no-extension-ecosystem-undocumented-cliff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M6 — The async-native Graph consumer gets no extension ecosystem (undocumented cliff)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m7-graphauthget_token-raises-stdlib-permissionerror-not-a-remotestoreerror" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M7 — GraphAuth.get_token raises stdlib PermissionError, not a RemoteStoreError
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#low-nits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🟡 Low / Nits
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🟡 Low / Nits">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#l1-resourcenotfound-mapped-to-backendunavailable-regardless-of-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L1 — resourceNotFound mapped to BackendUnavailable regardless of scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l2-_range_fallback_paths-stale-flag-scope-bleed-extends-bk-259" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L2 — _range_fallback_paths stale-flag / scope-bleed (extends BK-259)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l3-self-op-short-circuit-uses-raw-string-equality-not-normalised-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L3 — Self-op short-circuit uses raw string equality, not normalised paths
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l4-gr-034-retry-after-propagated-via-the-errors-context-describes-a-surface-that-does-not-exist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L4 — GR-034 "Retry-After propagated via the error's context" describes a surface that does not exist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l5-raises-clauses-omit-permissiondenied-list-backendunavailable-inconsistently" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L5 — Raises: clauses omit PermissionDenied, list BackendUnavailable inconsistently
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l6-no-sharepointbusiness-is-less-tested-ground-caveat-consumer-only-verification-is-scattered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L6 — No "SharePoint/business is less-tested ground" caveat; consumer-only verification is scattered
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l7-test-gaps-within-the-sole-respx-tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L7 — Test gaps within the (sole) respx tier
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l8-extcache-shared-cache_backend-cross-store-collision-extends-id-123" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L8 — ext.cache shared-cache_backend cross-store collision (extends ID-123)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l9-large-arrowparquet-reads-over-graph-spool-to-tmpdir-undocumented-read-side" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L9 — Large arrow/parquet reads over Graph spool to TMPDIR (undocumented, read-side)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l10-promised-follow-ups-are-untracked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L10 — Promised follow-ups are untracked
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verified-strengths-checked-not-rubber-stamped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verified strengths (checked, not rubber-stamped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proposed-backlog-items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposed backlog items
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Proposed backlog items">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#amend-existing-items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Amend existing items
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-items-proposed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New items (proposed)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -6428,7 +6642,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="explanation/design/rfcs/" class="md-nav__link ">
+            <a href="../../rfcs/" class="md-nav__link ">
               
   
   
@@ -6470,7 +6684,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -6498,7 +6712,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -6526,7 +6740,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -6554,7 +6768,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -6582,7 +6796,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
         
   
   
@@ -6610,7 +6824,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
         
   
   
@@ -6638,7 +6852,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
         
   
   
@@ -6666,7 +6880,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
         
   
   
@@ -6694,7 +6908,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -6722,7 +6936,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0010-graph-backend/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0010-graph-backend/" class="md-nav__link">
         
   
   
@@ -6750,7 +6964,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0011-write-result/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0011-write-result/" class="md-nav__link">
         
   
   
@@ -6778,7 +6992,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0012-doc-graph-model/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0012-doc-graph-model/" class="md-nav__link">
         
   
   
@@ -6806,7 +7020,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
         
   
   
@@ -6834,7 +7048,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/rfcs/rfc-0014-dagster-compute-log-manager/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0014-dagster-compute-log-manager/" class="md-nav__link">
         
   
   
@@ -6885,7 +7099,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="explanation/design/research/" class="md-nav__link ">
+            <a href="../../research/" class="md-nav__link ">
               
   
   
@@ -6927,7 +7141,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-agent-workflow-substrate/" class="md-nav__link">
+      <a href="../../research/research-agent-workflow-substrate/" class="md-nav__link">
         
   
   
@@ -6955,7 +7169,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-async-store-api-round2/" class="md-nav__link">
+      <a href="../../research/research-async-store-api-round2/" class="md-nav__link">
         
   
   
@@ -6983,7 +7197,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-async-store-api/" class="md-nav__link">
+      <a href="../../research/research-async-store-api/" class="md-nav__link">
         
   
   
@@ -7011,7 +7225,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../../research/research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -7039,7 +7253,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-backend-contract-completeness/" class="md-nav__link">
+      <a href="../../research/research-backend-contract-completeness/" class="md-nav__link">
         
   
   
@@ -7067,7 +7281,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-backend-setup-guides/" class="md-nav__link">
+      <a href="../../research/research-backend-setup-guides/" class="md-nav__link">
         
   
   
@@ -7095,7 +7309,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../../research/research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -7123,7 +7337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-bk-181-cassette-replay-poc/" class="md-nav__link">
+      <a href="../../research/research-bk-181-cassette-replay-poc/" class="md-nav__link">
         
   
   
@@ -7151,7 +7365,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
+      <a href="../../research/research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
         
   
   
@@ -7179,7 +7393,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
+      <a href="../../research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
         
   
   
@@ -7207,7 +7421,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-bug-prevention-beyond-testing/" class="md-nav__link">
+      <a href="../../research/research-bug-prevention-beyond-testing/" class="md-nav__link">
         
   
   
@@ -7235,7 +7449,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-dagster-extension/" class="md-nav__link">
+      <a href="../../research/research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -7263,7 +7477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-depth-limited-listing/" class="md-nav__link">
+      <a href="../../research/research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -7291,7 +7505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-doc-content-longevity/" class="md-nav__link">
+      <a href="../../research/research-doc-content-longevity/" class="md-nav__link">
         
   
   
@@ -7319,7 +7533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../../research/research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -7347,7 +7561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-example-testing/" class="md-nav__link">
+      <a href="../../research/research-example-testing/" class="md-nav__link">
         
   
   
@@ -7375,7 +7589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -7403,7 +7617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-feature-discoverability/" class="md-nav__link">
+      <a href="../../research/research-feature-discoverability/" class="md-nav__link">
         
   
   
@@ -7431,7 +7645,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -7459,7 +7673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-health-check/" class="md-nav__link">
+      <a href="../../research/research-health-check/" class="md-nav__link">
         
   
   
@@ -7487,7 +7701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-id-147-obs003-decomposition/" class="md-nav__link">
+      <a href="../../research/research-id-147-obs003-decomposition/" class="md-nav__link">
         
   
   
@@ -7515,7 +7729,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-id-147-tla-augmentation/" class="md-nav__link">
+      <a href="../../research/research-id-147-tla-augmentation/" class="md-nav__link">
         
   
   
@@ -7543,7 +7757,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-id-147b-tla-poc/" class="md-nav__link">
+      <a href="../../research/research-id-147b-tla-poc/" class="md-nav__link">
         
   
   
@@ -7571,7 +7785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-id-211-flat-ns-file-ancestor-precheck/" class="md-nav__link">
+      <a href="../../research/research-id-211-flat-ns-file-ancestor-precheck/" class="md-nav__link">
         
   
   
@@ -7599,7 +7813,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -7627,7 +7841,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-lx-llms-context-tooling/" class="md-nav__link">
+      <a href="../../research/research-lx-llms-context-tooling/" class="md-nav__link">
         
   
   
@@ -7655,7 +7869,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -7683,7 +7897,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-openrouter-integration/" class="md-nav__link">
+      <a href="../../research/research-openrouter-integration/" class="md-nav__link">
         
   
   
@@ -7711,7 +7925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -7739,7 +7953,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-resolve-spec-proposal/" class="md-nav__link">
+      <a href="../../research/research-resolve-spec-proposal/" class="md-nav__link">
         
   
   
@@ -7767,7 +7981,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-retry-policy/" class="md-nav__link">
+      <a href="../../research/research-retry-policy/" class="md-nav__link">
         
   
   
@@ -7795,7 +8009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-s3-boto3-poc/" class="md-nav__link">
+      <a href="../../research/research-s3-boto3-poc/" class="md-nav__link">
         
   
   
@@ -7823,7 +8037,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-s3-error-mapping-fidelity/" class="md-nav__link">
+      <a href="../../research/research-s3-error-mapping-fidelity/" class="md-nav__link">
         
   
   
@@ -7851,7 +8065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-seekable-read/" class="md-nav__link">
+      <a href="../../research/research-seekable-read/" class="md-nav__link">
         
   
   
@@ -7879,7 +8093,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-sftpgo-comparison/" class="md-nav__link">
+      <a href="../../research/research-sftpgo-comparison/" class="md-nav__link">
         
   
   
@@ -7907,7 +8121,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../../research/research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -7935,7 +8149,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -7963,7 +8177,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-store-config/" class="md-nav__link">
+      <a href="../../research/research-store-config/" class="md-nav__link">
         
   
   
@@ -7991,7 +8205,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../../research/research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -8019,7 +8233,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-testing-best-practices/" class="md-nav__link">
+      <a href="../../research/research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -8047,7 +8261,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -8098,7 +8312,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="explanation/design/specs/" class="md-nav__link ">
+            <a href="../../specs/" class="md-nav__link ">
               
   
   
@@ -8140,7 +8354,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/001-store-api/" class="md-nav__link">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -8168,7 +8382,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/002-registry-config/" class="md-nav__link">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -8196,7 +8410,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -8224,7 +8438,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/004-path-model/" class="md-nav__link">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -8252,7 +8466,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/005-error-model/" class="md-nav__link">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -8280,7 +8494,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/006-streaming-io/" class="md-nav__link">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -8308,7 +8522,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/007-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -8336,7 +8550,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/008-s3-backend/" class="md-nav__link">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -8364,7 +8578,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/009-sftp-backend/" class="md-nav__link">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -8392,7 +8606,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/010-native-path-resolution/" class="md-nav__link">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -8420,7 +8634,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -8448,7 +8662,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/012-azure-backend/" class="md-nav__link">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -8476,7 +8690,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/013-memory-backend/" class="md-nav__link">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -8504,7 +8718,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -8532,7 +8746,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/015-store-child/" class="md-nav__link">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -8560,7 +8774,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -8588,7 +8802,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -8616,7 +8830,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/018-glob/" class="md-nav__link">
+      <a href="../../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -8644,7 +8858,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/019-ext-observe/" class="md-nav__link">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -8672,7 +8886,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/020-credential-hygiene/" class="md-nav__link">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -8700,7 +8914,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/021-config-loaders/" class="md-nav__link">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -8728,7 +8942,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -8756,7 +8970,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/023-ext-cache/" class="md-nav__link">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -8784,7 +8998,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/024-ext-partition/" class="md-nav__link">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -8812,7 +9026,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/025-retry-policy/" class="md-nav__link">
+      <a href="../../specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -8840,7 +9054,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/026-health-check/" class="md-nav__link">
+      <a href="../../specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -8868,7 +9082,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/027-iter-children/" class="md-nav__link">
+      <a href="../../specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -8896,7 +9110,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/028-read-text/" class="md-nav__link">
+      <a href="../../specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -8924,7 +9138,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -8952,7 +9166,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/030-write-text/" class="md-nav__link">
+      <a href="../../specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -8980,7 +9194,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/031-ext-dagster/" class="md-nav__link">
+      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -9008,7 +9222,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/032-http-backend/" class="md-nav__link">
+      <a href="../../specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -9036,7 +9250,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/033-ext-streams/" class="md-nav__link">
+      <a href="../../specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -9064,7 +9278,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/034-ext-integrity/" class="md-nav__link">
+      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -9092,7 +9306,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/035-content-digest/" class="md-nav__link">
+      <a href="../../specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -9120,7 +9334,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/036-seekable-read/" class="md-nav__link">
+      <a href="../../specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -9148,7 +9362,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/037-depth-limited-listing/" class="md-nav__link">
+      <a href="../../specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -9176,7 +9390,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../../specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -9204,7 +9418,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../../specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -9232,7 +9446,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/040-sql-blob-backend/" class="md-nav__link">
+      <a href="../../specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -9260,7 +9474,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/041-sql-query-backend/" class="md-nav__link">
+      <a href="../../specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -9288,7 +9502,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/042-ext-parquet/" class="md-nav__link">
+      <a href="../../specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -9316,7 +9530,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/043-resolution-plan/" class="md-nav__link">
+      <a href="../../specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -9344,7 +9558,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/044-graph-backend/" class="md-nav__link">
+      <a href="../../specs/044-graph-backend/" class="md-nav__link">
         
   
   
@@ -9372,7 +9586,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/045-write-result/" class="md-nav__link">
+      <a href="../../specs/045-write-result/" class="md-nav__link">
         
   
   
@@ -9400,7 +9614,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/046-ext-write/" class="md-nav__link">
+      <a href="../../specs/046-ext-write/" class="md-nav__link">
         
   
   
@@ -9428,7 +9642,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/047-docs-framework-tooling/" class="md-nav__link">
+      <a href="../../specs/047-docs-framework-tooling/" class="md-nav__link">
         
   
   
@@ -9456,7 +9670,7 @@
   
   
     <li class="md-nav__item">
-      <a href="explanation/design/specs/048-testing-architecture/" class="md-nav__link">
+      <a href="../../specs/048-testing-architecture/" class="md-nav__link">
         
   
   
@@ -9508,8 +9722,6 @@
             
             
               
-                
-              
               <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
@@ -9529,10 +9741,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
+  <a href="#summary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Architecture
+        Summary
       
     </span>
   </a>
@@ -9540,33 +9752,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-core-idea" class="md-nav__link">
+  <a href="#high" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The core idea
+        🔴 High
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#design-principles" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Design principles
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Design principles">
+    <nav class="md-nav" aria-label="🔴 High">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#zero-dependencies-in-core" class="md-nav__link">
+  <a href="#h1-pre-signed-upload-session-url-credential-leaked-into-the-resourcelocked-message" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Zero dependencies in core
+        H1 — Pre-signed upload-session URL (credential) leaked into the ResourceLocked message
       
     </span>
   </a>
@@ -9574,32 +9775,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#proven-libraries-underneath" class="md-nav__link">
+  <a href="#h2-graph-behavioural-coverage-is-effectively-absent-in-automated-ci" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Proven libraries underneath
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#backend-native-when-possible" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Backend-native when possible
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#extensions-sit-beside-not-around" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Extensions sit beside, not around
+        H2 — Graph behavioural coverage is effectively absent in automated CI
       
     </span>
   </a>
@@ -9612,10 +9791,231 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bring-your-own" class="md-nav__link">
+  <a href="#medium" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Bring your own
+        🟠 Medium
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🟠 Medium">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#m1-writeresultsize-source-diverges-from-gr-018-gr-019-code-is-better-amend-the-spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M1 — WriteResult.size source diverges from GR-018 / GR-019 (code is better; amend the spec)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m2-base_path-gr-058-is-absent-from-the-specs-authoritative-signature-and-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M2 — base_path (GR-058) is absent from the spec's authoritative signature and validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m3-live-tier-credential-env-vars-are-wrong-in-the-spec-and-rfc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M3 — Live-tier credential env vars are wrong in the spec and RFC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m4-graph-setupmd-is-written-as-if-the-backend-has-not-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M4 — graph-setup.md is written as if the backend has not shipped
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m5-the-main-guides-headline-usage-snippet-throws-on-copy-paste" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M5 — The main guide's headline Usage snippet throws on copy-paste
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m6-the-async-native-graph-consumer-gets-no-extension-ecosystem-undocumented-cliff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M6 — The async-native Graph consumer gets no extension ecosystem (undocumented cliff)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m7-graphauthget_token-raises-stdlib-permissionerror-not-a-remotestoreerror" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M7 — GraphAuth.get_token raises stdlib PermissionError, not a RemoteStoreError
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#low-nits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🟡 Low / Nits
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🟡 Low / Nits">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#l1-resourcenotfound-mapped-to-backendunavailable-regardless-of-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L1 — resourceNotFound mapped to BackendUnavailable regardless of scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l2-_range_fallback_paths-stale-flag-scope-bleed-extends-bk-259" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L2 — _range_fallback_paths stale-flag / scope-bleed (extends BK-259)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l3-self-op-short-circuit-uses-raw-string-equality-not-normalised-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L3 — Self-op short-circuit uses raw string equality, not normalised paths
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l4-gr-034-retry-after-propagated-via-the-errors-context-describes-a-surface-that-does-not-exist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L4 — GR-034 "Retry-After propagated via the error's context" describes a surface that does not exist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l5-raises-clauses-omit-permissiondenied-list-backendunavailable-inconsistently" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L5 — Raises: clauses omit PermissionDenied, list BackendUnavailable inconsistently
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l6-no-sharepointbusiness-is-less-tested-ground-caveat-consumer-only-verification-is-scattered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L6 — No "SharePoint/business is less-tested ground" caveat; consumer-only verification is scattered
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l7-test-gaps-within-the-sole-respx-tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L7 — Test gaps within the (sole) respx tier
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l8-extcache-shared-cache_backend-cross-store-collision-extends-id-123" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L8 — ext.cache shared-cache_backend cross-store collision (extends ID-123)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l9-large-arrowparquet-reads-over-graph-spool-to-tmpdir-undocumented-read-side" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L9 — Large arrow/parquet reads over Graph spool to TMPDIR (undocumented, read-side)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l10-promised-follow-ups-are-untracked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L10 — Promised follow-ups are untracked
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verified-strengths-checked-not-rubber-stamped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verified strengths (checked, not rubber-stamped)
       
     </span>
   </a>
@@ -9623,24 +10023,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#proposed-backlog-items" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick start
+        Proposed backlog items
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Proposed backlog items">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#amend-existing-items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Amend existing items
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#where-to-go-next" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#new-items-proposed" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Where to go next
+        New items (proposed)
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -9658,134 +10075,417 @@
               <article class="md-content__inner md-typeset">
                 
                   
-  
 
 
 
-  
-  
-
-
-<h1 id="remote-store">remote-store<a class="headerlink" href="#remote-store" title="Permanent link">&para;</a></h1>
-<p>A Store is a logical folder.
-Where files live is configuration.</p>
-<p>remote-store provides a single interface for file storage across local
-filesystems, S3, SFTP, Azure, and more, using the libraries you would choose
-yourself.</p>
+<h1 id="audit-016-microsoft-graph-backend-id-127-review">Audit 016 — Microsoft Graph Backend (ID-127) Review<a class="headerlink" href="#audit-016-microsoft-graph-backend-id-127-review" title="Permanent link">&para;</a></h1>
+<p><strong>Backlog item:</strong> — (ad-hoc multi-expert review of ID-127, post-merge; follow-ups proposed at the end)
+<strong>Date:</strong> 2026-06-09
+<strong>Scope:</strong> The complete Microsoft Graph / OneDrive / SharePoint backend delivered by
+ID-127 (PRs #750–#769): <code>src/remote_store/aio/backends/_graph/</code> (~2,800 LOC across
+<code>backend.py</code>, <code>http.py</code>, <code>transfer.py</code>, <code>monitor.py</code>, <code>items.py</code>, <code>auth.py</code>,
+<code>utils.py</code>), its tests (~4,400 LOC under <code>tests/backends/graph/</code>), spec
+<code>044-graph-backend.md</code>, <code>rfc-0010</code>, ADRs 0021–0024, the 13 ID-127 traces, the
+user-facing guides/example, and the extension-ecosystem interactions.
+<strong>Method:</strong> Five domain experts (Store/Backend, Testing, SDD, Documentation,
+Extension) reviewed independently, each from a consumer-advocate stance, against
+the spec as contract. Claims were cross-checked across experts and verified
+against source. The live consumer-OneDrive API was exercised: the full live
+conformance suite passes <strong>109 passed / 0 failed / 9 skipped</strong>. This is a
+<strong>report-only</strong> audit — nothing was modified. Findings carry file:line and
+spec-ID evidence; dispositions in the proposals section are advisory (the user
+decides what becomes work).</p>
+<p><strong>Severity key:</strong> 🔴 High · 🟠 Medium · 🟡 Low / Nit.
+Each finding tag (H1, M3, L7…) is referenced by the proposals table at the end.</p>
 <hr />
-<h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
-<pre class="mermaid"><code>flowchart LR
-    Ext["Extensions"]
-
-    subgraph CORE[" "]
-        direction TB
-        API["Your Code"]
-        Store["Store API"]
-        Methods["Read/Write - List - Copy/Move - Config - Capabilities"]
-        API --&gt; Store
-        Store -.-&gt; Methods
-    end
-
-    subgraph INFRA[" "]
-        direction TB
-        Backends["Backends"]
-        B_list["Local - S3 - SFTP - Azure - Graph - Http - Memory - SQL - ...yours"]
-        Libs["Proven Libraries"]
-        L_list["stdlib - s3fs - pyarrow - paramiko - azure SDK - httpx/msal"]
-        Backends -.-&gt; B_list
-        Backends --&gt; Libs
-        Libs -.-&gt; L_list
-    end
-
-    Ext -. enhance .-&gt; CORE
-    CORE --&gt; INFRA</code></pre>
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p>The backend is well-built where it counts: an honest capability declaration with
+no over- or under-declaration, error classification that keys only on HTTP status
+plus <code>error.code</code> (never message strings), a disciplined retry/resume design, and
+a test tree with zero <code>MagicMock</code> (every boundary is <code>respx</code> or a hand-written
+fake). The two material risks are orthogonal to that quality:</p>
+<ol>
+<li>a <strong>credential leak</strong> — the pre-signed upload-session URL (carrying its own
+   query credential) is embedded verbatim in a <code>ResourceLocked</code> exception
+   message, enshrined by a passing test, while the sibling monitor path redacts
+   the identical credential class. The root cause is a spec-internal
+   contradiction (GR-045 vs GR-035/GR-026); and</li>
+<li><strong>near-total absence of automated behavioural coverage in CI</strong> — the
+   cross-backend conformance matrix is 100% skipped for Graph (no committed
+   cassettes) and the integration tier never runs in any CI lane, so the only
+   automated guard is the respx unit suite, whose mocks (by ID-127's own
+   experience) encoded shapes the real service contradicts.</li>
+</ol>
+<p>The remaining findings are spec-lags-code accuracy gaps, documentation defects
+(including a headline example that throws on copy-paste), and small correctness
+edges.</p>
+<hr />
+<h2 id="high">🔴 High<a class="headerlink" href="#high" title="Permanent link">&para;</a></h2>
+<h3 id="h1-pre-signed-upload-session-url-credential-leaked-into-the-resourcelocked-message">H1 — Pre-signed upload-session URL (credential) leaked into the <code>ResourceLocked</code> message<a class="headerlink" href="#h1-pre-signed-upload-session-url-credential-leaked-into-the-resourcelocked-message" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong> <code>src/remote_store/aio/backends/_graph/transfer.py:487-501</code>
+(<code>_resource_locked_mid_session</code>), reached from <code>transfer.py:426</code>;
+test <code>tests/backends/graph/aio/test_write.py:520-537</code>.</p>
+<p>On a <code>423</code> during an upload-session chunk PUT, the backend raises:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">return</span> <span class="n">ResourceLocked</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="sa">f</span><span class="s2">&quot;Resource locked during upload session (423): </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">. The session URL stays valid for &quot;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="sa">f</span><span class="s2">&quot;caller-driven resume — sessionUrl=</span><span class="si">{</span><span class="n">session_url</span><span class="si">}</span><span class="s2"> nextExpectedRanges=[</span><span class="si">{</span><span class="n">ranges_text</span><span class="si">}</span><span class="s2">].&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<p><code>session_url</code> is the Graph <code>uploadUrl</code>. Per <strong>GR-038</strong> it "is pre-signed … and
+carries its own credential in the query string"; the suite's own
+<code>test_chunk_puts_are_unauthenticated_against_presigned_session</code>
+(<code>test_write.py:416</code>) proves the URL itself authorises (chunk PUTs deliberately
+omit <code>Authorization</code>). The test for this path <strong>asserts the credential is
+present</strong>, with fixture <code>_UPLOAD_URL = "https://up.example.com/session/abc?tempauth=secret"</code>
+(<code>test_write.py:43</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">assert</span> <span class="n">_UPLOAD_URL</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>   <span class="c1"># requires &quot;?tempauth=secret&quot; in the message</span>
+</code></pre></div>
+<p>The copy/move <strong>monitor</strong> path treats the identical credential class as a secret
+and strips it — <code>monitor.py:121-133</code> (<code>_redact_url</code>) query-strips, and
+<code>test_monitor.py:232</code> asserts <code>"tempauth" not in msg</code>. The two pre-signed-URL
+sites apply the masking rule inconsistently to the same threat.</p>
+<p><strong>Consumer impact:</strong> any caller that logs a caught <code>ResourceLocked</code> (the norm for
+exception handlers, Sentry, crash reporters) exposes a live write/DELETE
+credential valid for the session lifetime (hours, per GR-024). This defeats
+<strong>GR-035</strong> ("token values never appear in exception messages … at any level").</p>
+<p><strong>Root cause — a spec contradiction (escalated, see SDD findings):</strong> <strong>GR-045</strong>
+<em>mandates</em> embedding the session URL so callers can "resume without re-deriving";
+<strong>GR-035</strong> + <strong>GR-026</strong> <em>forbid</em> tokens in messages. For the upload session the
+credential <strong>is</strong> the resume handle, so the two cannot both hold: query-stripping
+(GR-026's remedy) removes exactly the part that makes resume possible. Confirmed
+independently by the Store/Backend, Testing, and SDD experts plus direct
+re-verification of the test.</p>
+<h3 id="h2-graph-behavioural-coverage-is-effectively-absent-in-automated-ci">H2 — Graph behavioural coverage is effectively absent in automated CI<a class="headerlink" href="#h2-graph-behavioural-coverage-is-effectively-absent-in-automated-ci" title="Permanent link">&para;</a></h3>
+<p><strong>Evidence (run output and source):</strong></p>
 <ul>
-<li>The <strong>Store</strong> provides a portable API</li>
-<li><strong>Backends</strong> implement storage-specific behavior</li>
-<li><strong>Libraries</strong> do the actual I/O</li>
-<li><strong>Extensions</strong> add optional capabilities alongside the core</li>
+<li><code>tests/backends/cassettes/graph/</code> contains <strong>zero</strong> committed cassettes (only
+  <code>azure/</code> and a <code>.gitkeep</code> exist). Consequently <code>pytest tests/backends/conformance -k graph</code>
+  (Stage-1, no live) reports <strong>118 skipped, 0 passed</strong> — every conformance slice
+  skips with "replay cassette missing". This includes the two capability-honesty
+  guards (<code>test_populated_field_implies_declared_capability[graph-*]</code>,
+  <code>test_file_info_metadata_none_when_capability_absent[graph]</code>), which are
+  therefore also inert.</li>
+<li><code>scripts/record_cassettes.py:148</code> sets graph <code>"min_cassettes": 0</code>, and the
+  guard at <code>:322</code> reads <code>min_expected = cfg.get("min_cassettes", 0)</code> — so a
+  recording run that writes <strong>zero</strong> graph cassettes does not <em>fail</em> the gate. It
+  does <em>warn</em>: <code>:329-337</code> prints a loud zero-cassette WARNING, but it is
+  non-fatal, so an empty corpus still passes CI. The fix should promote that
+  warning to a hard failure rather than add a redundant tripwire.</li>
+<li>The integration tier (<code>tests/backends/graph/aio/test_integration.py</code>,
+  covering GR-007/019/020/026/034/054 + a 10 MiB round-trip) carries module-level
+  <code>pytest.mark.live</code>. <code>pyproject.toml:355</code> sets <code>addopts = "… -m 'not live'"</code>, so
+  it is deselected in every lane, and no scheduled/nightly live lane exists
+  (<code>.github/</code> has no <code>-m live</code> / <code>--stage</code> / <code>RS_TEST_LIVE_GRAPH</code> invocation).</li>
+</ul>
+<p><strong>Net:</strong> the <strong>only</strong> <em>automated</em> coverage of the Graph backend is the ~300 respx
+unit tests. The backend was not built blind to the live service — throughout
+implementation each PR's code was validated against the live Graph API, and those
+checks repeatedly surfaced surprises that were fixed in-PR. But that validation is
+manual and captured in no CI gate, so it protects against nothing going forward.
+Its value — and the mocks' limits — is visible in what the unit tier alone could
+not catch: when the cross-backend conformance <em>matrix</em> was first recorded live at
+GR-DONE (it had been skip-only before), it failed <strong>23/118</strong> because the respx
+mocks asserted <code>409 + folder-facet</code> while live Graph returns <code>501</code>
+(write-to-folder), <code>404</code> (write under a file ancestor), and <code>400 invalidRequest</code>
+(move/copy under a file ancestor) — real mapping bugs the green mock suite hid. The
+mocks, being the sole <em>automated</em> coverage, encode assumed shapes; the same class
+of blind spot remains for any service behaviour they guess, and nothing in CI will
+catch the next one.</p>
+<p>The cassette-replay gap itself is partly tracked (BK-262), but two
+sub-issues are not: the <code>min_cassettes: 0</code> gate-blindness, and the fact that the
+spec presents the suite as covering "every ID" without disclosing that the matrix
+is skip-only and the integration tier never runs automatically (see C-series
+below). The <code>@pytest.mark.spec</code> gate (<code>scripts/check_spec_marks.py</code> →
+<code>violations: 0</code>) is <strong>structural</strong>: it proves a mark exists at collection time,
+not that the test executes — so spec-mark-green does not imply behaviour-verified.</p>
+<hr />
+<h2 id="medium">🟠 Medium<a class="headerlink" href="#medium" title="Permanent link">&para;</a></h2>
+<h3 id="m1-writeresultsize-source-diverges-from-gr-018-gr-019-code-is-better-amend-the-spec">M1 — <code>WriteResult.size</code> source diverges from GR-018 / GR-019 (code is better; amend the spec)<a class="headerlink" href="#m1-writeresultsize-source-diverges-from-gr-018-gr-019-code-is-better-amend-the-spec" title="Permanent link">&para;</a></h3>
+<p><code>items.py:106</code> populates <code>WriteResult.size</code> from the caller-supplied byte count
+(<code>backend.py:812</code> passes <code>total</code>; <code>:857</code> passes <code>len(data)</code>), and the docstring
+says so explicitly: "<em>size</em> is the byte count the backend wrote (authoritative
+even when the response omits or under-reports <code>size</code>), not re-derived from the
+body." But <strong>GR-018</strong> (spec 442-444) and <strong>GR-019</strong> (546-549) both state <code>size</code>
+is "populated from the <code>driveItem</code> body Graph returns". <code>etag</code>/<code>last_modified</code>/
+<code>version_id</code> <em>do</em> come from the body; only <code>size</code> diverges. Because
+<code>get_file_info().size</code> reads <code>driveItem.size</code> (<code>items.py:78</code>), the two can
+disagree if Graph omits or lags the field. The code's choice is the more
+trustworthy one — per principle 5 the <strong>spec</strong> is the less-authoritative side and
+should be amended, not the code.</p>
+<h3 id="m2-base_path-gr-058-is-absent-from-the-specs-authoritative-signature-and-validation">M2 — <code>base_path</code> (GR-058) is absent from the spec's authoritative signature and validation<a class="headerlink" href="#m2-base_path-gr-058-is-absent-from-the-specs-authoritative-signature-and-validation" title="Permanent link">&para;</a></h3>
+<p>GR-058 was added late (during GR-DONE). The code has <code>base_path: str = ""</code> in
+<code>__init__</code> (<code>backend.py:175</code>) and validates it must be a <code>str</code>
+(<code>backend.py:182-183</code>). But <strong>GR-001</strong>'s signature block (spec 32-45) — the one
+place that enumerates the constructor contract — does not list <code>base_path</code>, and
+<strong>GR-005</strong>'s validation list (spec 130-140) omits the <code>base_path</code> check. The RFC
+never mentions it either. The spec lags shipped reality (principle 3).</p>
+<h3 id="m3-live-tier-credential-env-vars-are-wrong-in-the-spec-and-rfc">M3 — Live-tier credential env vars are wrong in the spec and RFC<a class="headerlink" href="#m3-live-tier-credential-env-vars-are-wrong-in-the-spec-and-rfc" title="Permanent link">&para;</a></h3>
+<p>The spec's Integration-only section (spec 1211-1213) and <strong>rfc-0010</strong> Stage 3
+(407-410) both require "the four credential env vars <code>GRAPH_TENANT_ID</code>,
+<code>GRAPH_CLIENT_ID</code>, <code>GRAPH_CLIENT_SECRET</code>, <code>GRAPH_DRIVE_ID</code>" — a client-credentials
+tier. The shipped tier is device-code / consumer (<code>_live_env.py:135-143</code>,
+<code>graph_live.py:7-12</code>, <code>test_integration.py:28-30</code>): three vars, <strong>no</strong>
+<code>GRAPH_CLIENT_SECRET</code>. The spec/RFC describe a live tier that does not exist.</p>
+<h3 id="m4-graph-setupmd-is-written-as-if-the-backend-has-not-shipped">M4 — <code>graph-setup.md</code> is written as if the backend has not shipped<a class="headerlink" href="#m4-graph-setupmd-is-written-as-if-the-backend-has-not-shipped" title="Permanent link">&para;</a></h3>
+<p><code>docs-src/guides/backends/graph-setup.md</code> describes the backend in the future
+tense throughout: "the <strong>forthcoming</strong> Graph backend <strong>will take</strong> one opaque
+<code>drive_id</code>" (L155); "<code>GraphUtils.resolve_drive_id(...)</code> (<strong>shipping with</strong> the
+backend) <strong>will accept</strong> three target shapes" (L156); "the libraries the built-in
+<code>GraphAuth</code> helper <strong>will wrap</strong>" (L173-174); "the built-in <code>GraphAuth</code> helper,
+<strong>when it ships</strong>, <strong>will persist</strong> its MSAL cache" (L253-254). The backend
+shipped at <code>77acaa58b</code>. A reader concludes it is unavailable and hand-rolls an
+<code>msal</code>/<code>httpx</code> device-code snippet (L177-214) instead of <code>pip install
+"remote-store[graph]"</code> + <code>GraphUtils.resolve_drive_id("me", …)</code> — the exact
+ergonomic on-ramp ID-127 delivered. Principle-3 violation.</p>
+<h3 id="m5-the-main-guides-headline-usage-snippet-throws-on-copy-paste">M5 — The main guide's headline Usage snippet throws on copy-paste<a class="headerlink" href="#m5-the-main-guides-headline-usage-snippet-throws-on-copy-paste" title="Permanent link">&para;</a></h3>
+<p><code>docs-src/guides/backends/graph.md:26-41</code> mixes the <strong>sync</strong> resolver into an
+async context:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">drive_id</span> <span class="o">=</span> <span class="n">GraphUtils</span><span class="o">.</span><span class="n">resolve_drive_id</span><span class="p">(</span><span class="s2">&quot;me&quot;</span><span class="p">,</span> <span class="n">token_provider</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>   <span class="c1"># L34 — runs asyncio.run() internally</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">async</span> <span class="k">with</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;Documents&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>     <span class="c1"># L38 — requires async def</span>
+</code></pre></div>
+<p>A reader wrapping the block in <code>async def main(): … asyncio.run(main())</code> hits
+<code>RuntimeError: asyncio.run() cannot be called from a running event loop</code>, because
+<code>resolve_drive_id</code> calls <code>asyncio.run()</code> internally (<code>utils.py:58</code>). The runnable
+example does it correctly with <code>await GraphUtils.aresolve_drive_id("me", …)</code>
+(<code>examples/backends/graph_backend.py:71</code>) — the guide and the example disagree.</p>
+<h3 id="m6-the-async-native-graph-consumer-gets-no-extension-ecosystem-undocumented-cliff">M6 — The async-native Graph consumer gets no extension ecosystem (undocumented cliff)<a class="headerlink" href="#m6-the-async-native-graph-consumer-gets-no-extension-ecosystem-undocumented-cliff" title="Permanent link">&para;</a></h3>
+<p><code>src/remote_store/aio/ext/</code> ships exactly one module — <code>write.py</code>
+(<code>write_with_hash</code>). There is no async <code>observe</code>, <code>otel</code>, <code>glob</code>, <code>cache</code>,
+<code>integrity</code>, <code>arrow</code>, <code>parquet</code>, or <code>dagster</code>. The spec's claim (GR-003, GR-015,
+GR-026) that these are sync-only and reach Graph only via
+<code>AsyncBackendSyncAdapter</code> is therefore accurate. The consequence is a real
+user-experience cliff: a native <code>AsyncStore</code> Graph consumer — the natural
+audience for an async-native backend — has the full <code>ext.*</code> surface available
+only by switching to the sync adapter, which forfeits the async streaming the
+backend exists to provide. This asymmetry is documented piecemeal in ADR-0025
+and scattered spec notes, but nowhere a consumer would see it (no guide section,
+no async-vs-sync extension matrix).</p>
+<h3 id="m7-graphauthget_token-raises-stdlib-permissionerror-not-a-remotestoreerror">M7 — <code>GraphAuth.get_token</code> raises stdlib <code>PermissionError</code>, not a <code>RemoteStoreError</code><a class="headerlink" href="#m7-graphauthget_token-raises-stdlib-permissionerror-not-a-remotestoreerror" title="Permanent link">&para;</a></h3>
+<p><code>auth.py:184</code> raises the builtin <code>PermissionError</code> on a token-acquisition
+failure. It is invoked via <code>acquire_token</code> inside <code>graph_send</code>, so a failure
+during any <code>store.read()</code> / <code>store.write()</code> propagates a stdlib exception to the
+caller. It is not a <code>RemoteStoreError</code> subclass, so <code>except RemoteStoreError</code>
+will not catch it — at odds with FEATURES' promise that "callers always receive a
+typed error, never a backend-native exception" and the BE-021 spirit. The
+docstring documents it honestly; the question is whether the built-in helper
+should map it. (User-supplied token providers may raise anything; this finding is
+scoped to the bundled <code>GraphAuth</code>.)</p>
+<hr />
+<h2 id="low-nits">🟡 Low / Nits<a class="headerlink" href="#low-nits" title="Permanent link">&para;</a></h2>
+<h3 id="l1-resourcenotfound-mapped-to-backendunavailable-regardless-of-scope">L1 — <code>resourceNotFound</code> mapped to <code>BackendUnavailable</code> regardless of scope<a class="headerlink" href="#l1-resourcenotfound-mapped-to-backendunavailable-regardless-of-scope" title="Permanent link">&para;</a></h3>
+<p><code>http.py:124</code>: <code>if scope == "drive" or code == "resourceNotFound"</code> maps to
+<code>BackendUnavailable</code>. <code>_get_item</code> always passes <code>scope="item"</code>
+(<code>backend.py:362</code>), and <code>exists</code>/<code>is_file</code>/<code>is_folder</code> catch only <code>NotFound</code>
+(<code>backend.py:542-569</code>). <strong>GR-031</strong> ties <code>resourceNotFound</code> to <em>drive</em> scope, but
+the code applies it at any scope. If Graph ever returns <code>404 resourceNotFound</code> for
+a missing <em>item</em>, <code>exists()</code> would raise <code>BackendUnavailable</code> rather than return
+<code>False</code>, violating BE-004/BE-005. Latent today (Graph uses <code>itemNotFound</code> for
+items), but the mapping is broader than the spec authorises.</p>
+<h3 id="l2-_range_fallback_paths-stale-flag-scope-bleed-extends-bk-259">L2 — <code>_range_fallback_paths</code> stale-flag / scope-bleed (extends BK-259)<a class="headerlink" href="#l2-_range_fallback_paths-stale-flag-scope-bleed-extends-bk-259" title="Permanent link">&para;</a></h3>
+<p><code>backend.py:206</code> holds a per-instance <code>set[str]</code> that grows for the backend's
+lifetime; <code>_mark_range_fallback</code> (<code>:448</code>) adds the raw <code>path</code>, and
+<code>get_file_info</code> (<code>:586-589</code>) stamps <code>extra["graph.read.range_fallback"]=True</code> on
+<strong>every</strong> future <code>FileInfo</code> for that path. Beyond BK-259's unbounded-growth
+concern: the flag is set by a <em>read</em> but reported by an unrelated later
+<code>get_file_info</code>, with no operation-context scoping despite GR-015 saying "within
+the operation context"; it never clears, so a re-created item or changed tenant
+config still reports a stale fallback; and the key is the raw caller string, so
+<code>"/x"</code> and <code>"x"</code> track as distinct entries.</p>
+<h3 id="l3-self-op-short-circuit-uses-raw-string-equality-not-normalised-paths">L3 — Self-op short-circuit uses raw string equality, not normalised paths<a class="headerlink" href="#l3-self-op-short-circuit-uses-raw-string-equality-not-normalised-paths" title="Permanent link">&para;</a></h3>
+<p><code>_short_circuit_self_op</code> (<code>backend.py:1043-1055</code>) returns <code>src == dst</code> by raw
+string. But <code>native_path</code> treats <code>"/a.txt"</code> and <code>"a.txt"</code> as the same item
+(<code>:253</code> drops empty segments). So a direct-backend <code>copy("/a.txt", "a.txt")</code> does
+<strong>not</strong> short-circuit (GR-044): it issues a real <code>POST …/copy</code>, Graph <code>409</code>s, and
+the caller gets <code>AlreadyExists</code> instead of the no-op. Masked through
+<code>AsyncStore</code>/<code>Store</code>, which normalise and short-circuit before the backend — but
+GR-044 is a backend contract ("exercised … when the backend is invoked
+directly").</p>
+<h3 id="l4-gr-034-retry-after-propagated-via-the-errors-context-describes-a-surface-that-does-not-exist">L4 — GR-034 "Retry-After propagated via the error's context" describes a surface that does not exist<a class="headerlink" href="#l4-gr-034-retry-after-propagated-via-the-errors-context-describes-a-surface-that-does-not-exist" title="Permanent link">&para;</a></h3>
+<p><strong>GR-034</strong> (spec 929-931) says the <code>Retry-After</code> value is "propagated via the
+error's context". There is no <code>RemoteStoreError.context</code> surface (GR-026,
+GR-045, and ADR-0024 all say so), and the code honours <code>Retry-After</code> inline in
+the retry loop (<code>http.py:411-423</code>), not on any error object. The mechanism
+wording is inaccurate on two counts; GR-048 already states the in-loop behaviour
+correctly.</p>
+<h3 id="l5-raises-clauses-omit-permissiondenied-list-backendunavailable-inconsistently">L5 — <code>Raises:</code> clauses omit <code>PermissionDenied</code>, list <code>BackendUnavailable</code> inconsistently<a class="headerlink" href="#l5-raises-clauses-omit-permissiondenied-list-backendunavailable-inconsistently" title="Permanent link">&para;</a></h3>
+<p><code>classify_graph_error</code> maps <code>401</code>/<code>403</code> → <code>PermissionDenied</code> on every
+authenticated request (<code>http.py:117-122</code>), yet no public-method docstring lists
+it (<code>read</code> :467, <code>get_file_info</code> :578, <code>delete</code> :887, <code>copy</code> :976, <code>move</code> :1016,
+<code>write</code> :779). <code>BackendUnavailable</code> (429/5xx/transport, also universal) is listed
+on <code>read</code>/<code>write</code>/<code>copy</code>/<code>move</code> but absent on <code>get_file_info</code>/<code>delete</code>/
+<code>list_files</code>. No docstring promises an exception the code does not raise — this is
+a completeness/consistency gap.</p>
+<h3 id="l6-no-sharepointbusiness-is-less-tested-ground-caveat-consumer-only-verification-is-scattered">L6 — No "SharePoint/business is less-tested ground" caveat; consumer-only verification is scattered<a class="headerlink" href="#l6-no-sharepointbusiness-is-less-tested-ground-caveat-consumer-only-verification-is-scattered" title="Permanent link">&para;</a></h3>
+<p>The whole backend was live-verified only against consumer OneDrive (device-code).
+The candid SharePoint-unverified notes exist but are scattered across GR-018
+(BK-261), GR-025 (<code>parentReference</code> path-form), GR-027 (<code>conflictBehavior</code> on
+PATCH), and GR-049 (<code>file.hashes</code> omission), and all correctly cross-reference
+each other. What is missing: (a) the spec's Integration-only section never states
+the live tier is consumer-only with zero SharePoint/business coverage; and (b)
+<code>graph.md</code> leads with "OneDrive, SharePoint, and Teams" and presents SharePoint
+as fully supported, with no signal that a SharePoint user is on less-exercised
+paths.</p>
+<h3 id="l7-test-gaps-within-the-sole-respx-tier">L7 — Test gaps within the (sole) respx tier<a class="headerlink" href="#l7-test-gaps-within-the-sole-respx-tier" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>read()</code> is an async generator, so its <code>_get_item</code> + folder check defer to
+  first iteration. <code>test_read.py:207</code> (<code>test_folder_raises_before_yield</code>) wraps
+  the whole <code>async for</code> in <code>pytest.raises</code> and does not assert <em>no bytes yielded
+  before the raise</em> — it would pass whether the error fires on first <code>__anext__</code>
+  or after partial yields. The timing it is named for is not pinned.</li>
+<li><code>write_atomic</code> has no direct failure-path test (<code>test_write.py:317-324</code> asserts
+  only delegation); its failure modes are covered transitively via <code>write</code>. Per
+  TESTING.md Rule 1 it is a public method without its own <code>pytest.raises</code>.</li>
+<li>No per-method <code>403</code>→<code>PermissionDenied</code> test on any data-plane method;
+  PermissionDenied is exercised only centrally at the <code>graph_send</code> layer.</li>
+</ul>
+<h3 id="l8-extcache-shared-cache_backend-cross-store-collision-extends-id-123">L8 — <code>ext.cache</code> shared-<code>cache_backend</code> cross-store collision (extends ID-123)<a class="headerlink" href="#l8-extcache-shared-cache_backend-cross-store-collision-extends-id-123" title="Permanent link">&para;</a></h3>
+<p>Cache keys are plain <code>(op, path)</code> tuples with no backend identity
+(<code>ext/cache.py:365,392,409</code>); GR-050 acknowledges this. The default
+<code>cache(store)</code> builds a fresh cache per store, so single-store use is safe. The
+unguarded case is an explicitly <strong>shared</strong> <code>cache_backend=</code> across two top-level
+stores at different drives: <code>cache(GraphStore("A"), cache_backend=shared)</code> and
+<code>cache(GraphStore("B"), cache_backend=shared)</code> collide on <code>("read_bytes",
+"report.csv")</code> → drive B serves drive A's bytes. Not Graph-specific (same for two
+Local roots or S3 buckets) and opt-in, but ID-123's framing ("single-backend
+cache keys are already correct") understates the multi-store case, which is
+exactly where collisions occur.</p>
+<h3 id="l9-large-arrowparquet-reads-over-graph-spool-to-tmpdir-undocumented-read-side">L9 — Large arrow/parquet reads over Graph spool to <code>TMPDIR</code> (undocumented, read-side)<a class="headerlink" href="#l9-large-arrowparquet-reads-over-graph-spool-to-tmpdir-undocumented-read-side" title="Permanent link">&para;</a></h3>
+<p><code>SEEKABLE_READ</code> is masked off, so <code>ext.arrow</code>/<code>ext.parquet</code> route large reads
+through <code>read_seekable</code> (<code>ext/arrow.py:331</code>), which the Store layer synthesises
+via <code>SpooledTemporaryFile</code>. Reading a large Parquet file over Graph therefore
+spools the whole file to the temp volume before PyArrow can seek the footer — the
+same <code>TMPDIR</code>-sizing concern GR-019 flags for uploads, but on the read side and
+not currently documented in the guide.</p>
+<h3 id="l10-promised-follow-ups-are-untracked">L10 — Promised follow-ups are untracked<a class="headerlink" href="#l10-promised-follow-ups-are-untracked" title="Permanent link">&para;</a></h3>
+<p>GR-003 says async callers compose pattern matching themselves "until an async
+equivalent of <code>ext.glob</code> lands as a separate backlog item" — no such item exists
+in BACKLOG. ADR-0025 § Risks says "the cache extension should learn to warn when
+wrapped over a bridged backend (tracked separately)" — that follow-up is not
+filed either. The deferred async-ext surface (glob, observe, otel, cache,
+integrity) is largely without a tracked owner.</p>
+<hr />
+<h2 id="verified-strengths-checked-not-rubber-stamped">Verified strengths (checked, not rubber-stamped)<a class="headerlink" href="#verified-strengths-checked-not-rubber-stamped" title="Permanent link">&para;</a></h2>
+<p>These were actively probed and came back clean:</p>
+<ul>
+<li><strong>Capability honesty (GR-003):</strong> all 10 declared capabilities back a real,
+  non-vacuous method; all 4 withheld (<code>GLOB</code>/<code>SEEKABLE_READ</code>/<code>ATOMIC_MOVE</code>/
+  <code>USER_METADATA</code>) have sound rationale. No over- or under-declaration; the
+  declared set is byte-identical to the GR-003 prose. <code>USER_METADATA</code> carries a
+  defense-in-depth backend gate (<code>_reject_user_metadata</code>).</li>
+<li><strong>Error mapping is structured-only:</strong> <code>classify_graph_error</code> keys on HTTP
+  status + <code>error.code</code>; there is no string-matching on error messages anywhere
+  (GR-028 satisfied). The monitor reuses the same table via a code→status reverse
+  map.</li>
+<li><strong>Test-double discipline is exemplary:</strong> zero <code>MagicMock</code>/<code>Mock(</code> in the entire
+  graph test tree — every boundary is <code>respx</code> (real <code>httpx</code> transport) or a
+  hand-written fake (TESTING.md Rules 4 &amp; 6).</li>
+<li><strong>Retry/backoff is asserted at the computation level:</strong> <code>test_http.py</code> pins
+  Retry-After (delta and HTTP-date), precedence over computed backoff, and budget
+  short-circuit — not just eventual success. Monitor cadence likewise.</li>
+<li><strong>Upload-session resume is hardened:</strong> the liveness guard (non-advancing
+  <code>nextExpectedRanges</code> → <code>BackendUnavailable</code>), malformed/missing ranges, and the
+  strictly-increasing-offset termination guarantee are all tested.</li>
+<li><strong>Retry-safety of writes:</strong> <code>spool_content</code> always materialises an
+  <code>AsyncIterator</code> to a seekable spool before any send; no streaming body ever
+  reaches a retrying <code>graph_send</code>.</li>
+<li><strong>Combined <code>close()</code> (GR-051) is genuinely pinned:</strong> one test asserts both
+  poller-cancel and session-abort fire on a fully-assembled backend and that
+  <code>close()</code> never raises.</li>
+<li><strong>Extension safety is structural, not assumed:</strong> ID-127 changes no <code>ext/</code>
+  file and breaks none. <code>ProxyStore</code> forwards exceptions by default; <code>observe</code>/
+  <code>otel</code> catch-record-<code>raise</code>; <code>ResourceLocked</code> reaches the caller verbatim
+  through every layer. <code>ext.integrity</code> over Graph recomputes from the stream
+  (no crash, no silent no-op). Lazy-import discipline is intact — no <code>ext</code>
+  module imports graph/httpx/msal.</li>
+<li><strong>Trace quality is high:</strong> the 13 ID-127 traces conform to the schema; the
+  gr-done "vacuous conformance" finding matches reality; no trace claims a
+  behaviour the code/tests do not support; the GR-* spec IDs are contiguous
+  (GR-001..GR-058 + GR-036a) with no duplicates or dangling references.</li>
 </ul>
 <hr />
-<h2 id="the-core-idea">The core idea<a class="headerlink" href="#the-core-idea" title="Permanent link">&para;</a></h2>
-<p>A <code>Store</code> scopes all operations to a root path. Everything is relative.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalBackend</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;/tmp/data&quot;</span><span class="p">))</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">store</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;Hello, world!&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">))</span>  <span class="c1"># &#39;Hello, world!&#39;</span>
-</code></pre></div>
-<p>Switch backend without changing application code:</p>
-<!-- Inline block: S3Backend can't be instantiated without credentials,
-     so this is not sourced from a snippet file. -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3Backend</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">))</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">store</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;hello&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">))</span>  <span class="c1"># same API, different backend</span>
-</code></pre></div>
-<p>Narrow scope with <code>child()</code>; all paths inside are relative to the new root:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">sub</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;reports/2024&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">sub</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;summary.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;...&quot;</span><span class="p">)</span>
-</code></pre></div>
-<p>See <a href="tutorial/examples/store-child/">Store child scoping</a> for more.</p>
-<hr />
-<h2 id="design-principles">Design principles<a class="headerlink" href="#design-principles" title="Permanent link">&para;</a></h2>
-<h3 id="zero-dependencies-in-core">Zero dependencies in core<a class="headerlink" href="#zero-dependencies-in-core" title="Permanent link">&para;</a></h3>
-<p>Install only what you use. <code>pip install remote-store</code> pulls in nothing.
-Extras like <code>[s3]</code> or <code>[sftp]</code> bring in only the backend you need.</p>
-<h3 id="proven-libraries-underneath">Proven libraries underneath<a class="headerlink" href="#proven-libraries-underneath" title="Permanent link">&para;</a></h3>
-<p>Established libraries like <code>s3fs</code>, <code>paramiko</code>, and the Azure SDK do the
-real work: remote-store adapts, they execute.
-Backends delegate to the packages you'd pick yourself.</p>
-<h3 id="backend-native-when-possible">Backend-native when possible<a class="headerlink" href="#backend-native-when-possible" title="Permanent link">&para;</a></h3>
-<p><code>glob()</code> and atomic writes work everywhere. Where the backend supports them
-natively, remote-store uses that. Where not, a portable fallback steps in.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">GLOB</span><span class="p">)</span>  <span class="c1"># True for most backends; see capabilities matrix</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">ATOMIC_WRITE</span><span class="p">)</span>  <span class="c1"># True for most backends; see capabilities matrix</span>
-</code></pre></div>
-<h3 id="extensions-sit-beside-not-around">Extensions sit beside, not around<a class="headerlink" href="#extensions-sit-beside-not-around" title="Permanent link">&para;</a></h3>
-<p>Extensions like caching, observability, batch operations, and PyArrow
-integration: import what you need from <code>remote_store.ext</code>.
-Your Store code doesn't change.</p>
-<hr />
-<h2 id="bring-your-own">Bring your own<a class="headerlink" href="#bring-your-own" title="Permanent link">&para;</a></h2>
-<p>Implement the <code>Backend</code> protocol for a new storage target. Or write an
-extension. The hooks are public.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Backend</span><span class="p">,</span> <span class="n">Store</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyBackend</span><span class="p">(</span><span class="n">Backend</span><span class="p">):</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Implement the Backend protocol for your storage.&quot;&quot;&quot;</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="o">...</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">MyBackend</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>  <span class="c1"># works with all extensions</span>
-</code></pre></div>
-<p>See the <a href="guides/custom-backend-guide/">custom backend guide</a> for a step-by-step walkthrough.</p>
-<hr />
-<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pip<span class="w"> </span>install<span class="w"> </span>remote-store<span class="o">[</span>s3<span class="o">]</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3Backend</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">))</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">store</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;hello&quot;</span><span class="p">)</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">))</span>  <span class="c1"># &#39;hello&#39;</span>
-</code></pre></div>
-<p>See <a href="tutorial/getting-started/">Getting Started</a> for a complete walkthrough.</p>
-<hr />
-<h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong><a href="tutorial/getting-started/">Getting Started</a>:</strong> install, tutorial, and runnable examples</li>
-<li><strong>Guides:</strong> <a href="guides/backends/">Backends</a> · <a href="guides/extensions/">Extensions</a> · <a href="guides/choosing-a-backend/">Choosing a Backend</a> · <a href="guides/data-lake-patterns/">and more</a></li>
-<li><strong>Reference:</strong> <a href="reference/api/">API</a> · <a href="reference/FEATURES/">Features</a> · <a href="reference/capabilities-matrix/">Capabilities Matrix</a> · <a href="reference/changelog/">Changelog</a></li>
-<li><strong>Explanation:</strong> <a href="explanation/architecture/">Architecture</a> · <a href="explanation/performance/">Performance</a> · <a href="explanation/concurrency/">Concurrency</a></li>
-</ul>
+<h2 id="proposed-backlog-items">Proposed backlog items<a class="headerlink" href="#proposed-backlog-items" title="Permanent link">&para;</a></h2>
+<p>Advisory groupings for the user to accept, split, or decline. Findings are
+grouped by theme, owning files, and disposition. Existing items to <strong>amend</strong> are
+called out first.</p>
+<h3 id="amend-existing-items">Amend existing items<a class="headerlink" href="#amend-existing-items" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Folds in</th>
+<th>What to add</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>BK-262</strong> (Graph conformance cassettes / replay-able pre-signed URLs; the near-duplicate <strong>BK-260</strong> was consolidated into it per this PR's review)</td>
+<td><strong>H2</strong></td>
+<td>Already owns the cassette-replay gap. Extend its Definition-of-Done with two currently-unowned sub-issues: (1) once cassettes land, raise <code>record_cassettes.py</code> graph <code>min_cassettes</code> off <code>0</code> so an empty corpus <em>fails</em> the record gate — today the <code>recorded == 0</code> branch (<code>record_cassettes.py:329-337</code>) only <em>warns</em>, non-fatally, so promote that warning rather than add a redundant one; (2) note that until cassettes exist the Graph conformance matrix is skip-only — the suite must not read as "covered". Keep the pre-signed-URL redaction-vs-replay work as the load-bearing blocker.</td>
+</tr>
+<tr>
+<td><strong>BK-259</strong> (range-fallback flag: scope to operation, not backend lifetime)</td>
+<td><strong>L2</strong></td>
+<td>Already targets the flag's lifetime. Add the staleness/scope-bleed observations: the flag is set by a read but read back by a later unrelated <code>get_file_info</code>; it never clears (stale after item re-creation / tenant change); and it keys on the raw caller string (<code>"/x"</code> vs <code>"x"</code> diverge). The fix that scopes to operation context should also address these.</td>
+</tr>
+<tr>
+<td><strong>ID-123</strong> (cache keys derived from backend identity)</td>
+<td><strong>L8</strong></td>
+<td>Correct the framing: "single-backend cache keys are already correct" holds for the default per-store cache but <strong>not</strong> for a shared <code>cache_backend=</code> across multiple top-level stores, which is precisely where cross-drive collisions occur. Note this case in the item's scope.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="new-items-proposed">New items (proposed)<a class="headerlink" href="#new-items-proposed" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Findings</th>
+<th>Scope / files</th>
+<th>Suggested disposition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>G1 — Resolve the credential-leak spec contradiction (security)</strong></td>
+<td><strong>H1</strong></td>
+<td>spec GR-045 / GR-035 / GR-026, possibly ADR-0024; <code>transfer.py:_resource_locked_mid_session</code>; <code>test_write.py</code> (flip to assert <em>absence</em> of the credential); add a masking regression test</td>
+<td><strong>High / security.</strong> Needs a design decision first (the two options are: redact the query like the monitor path and amend GR-045 to drop the resume-from-message promise; or introduce a structured <code>RemoteStoreError.context</code> carrier — spec-005 work ID-127 declared out of scope — and keep both the no-leak guarantee and resume). Escalate as a spec contradiction per CLAUDE.md before any code change.</td>
+</tr>
+<tr>
+<td><strong>G2 — Spec / RFC reality-sync for ID-127</strong></td>
+<td><strong>M1, M2, M3, L4, L6 (spec half), H2 (honesty note)</strong></td>
+<td><code>sdd/specs/044-graph-backend.md</code>, <code>rfc-0010</code>; <code>sdd/</code>-only</td>
+<td>Amend GR-018/GR-019 so <code>size</code> is the written byte count (code is authoritative; M1); add <code>base_path</code> to the GR-001 signature block and GR-005 validation list and mention it in the RFC (M2); fix the Integration-only env-var list and RFC Stage 3 to the device-code three-var tier (M3); reword GR-034 to describe in-loop Retry-After honouring (L4); disclose in the Integration-only section that the conformance matrix is skip-only and the integration tier never runs in automated CI, and that the live tier is consumer-OneDrive-only with no SharePoint/business coverage (H2, L6).</td>
+</tr>
+<tr>
+<td><strong>G3 — Graph guide &amp; docstring accuracy</strong></td>
+<td><strong>M4, M5, M6, L5, L6 (guide half), L9</strong></td>
+<td><code>docs-src/guides/backends/graph-setup.md</code>, <code>graph.md</code>; docstrings in <code>backend.py</code>; FEATURES.md</td>
+<td>Rewrite the setup guide to present tense and reframe the hand-rolled snippet as an alternative (M4); fix the Usage snippet to resolve the drive id outside the async scope or use <code>await aresolve_drive_id</code> (M5); add an async-vs-sync extension matrix / note that native-async consumers have no <code>ext.*</code> surface (M6); complete the <code>Raises:</code> clauses (<code>PermissionDenied</code>, consistent <code>BackendUnavailable</code>) (L5); add a "verified against consumer OneDrive; SharePoint/business less exercised" caveat (L6); note read-side <code>TMPDIR</code> spooling for large arrow/parquet reads (L9). Low-risk, docs-only — M4/M5 are the cheapest, highest-value wins.</td>
+</tr>
+<tr>
+<td><strong>G4 — Graph backend correctness edges</strong></td>
+<td><strong>L1, L3, M7</strong></td>
+<td><code>src/remote_store/aio/backends/_graph/{http.py, backend.py, auth.py}</code></td>
+<td>Scope the <code>resourceNotFound</code>→<code>BackendUnavailable</code> mapping to drive scope so it cannot escape <code>exists()</code>/<code>is_file()</code>/<code>is_folder()</code> (L1); normalise paths before the self-op <code>src == dst</code> short-circuit, or document that the contract assumes Store-normalised input (L3); decide whether the bundled <code>GraphAuth</code> should raise a <code>RemoteStoreError</code> subtype instead of stdlib <code>PermissionError</code> (M7). Each is small and independent; split if preferred.</td>
+</tr>
+<tr>
+<td><strong>G5 — Graph test hardening</strong></td>
+<td><strong>L7</strong> (+ the masking regression test from G1)</td>
+<td><code>tests/backends/graph/aio/</code></td>
+<td>Pin <code>read()</code> first-iteration failure timing (assert no bytes yielded before the raise); add a direct <code>write_atomic</code> failure-path test; add at least one per-method <code>403</code>→<code>PermissionDenied</code> test or document the centralised-mapping rationale.</td>
+</tr>
+<tr>
+<td><strong>G6 — File the deferred async-ext follow-ups (backlog hygiene)</strong></td>
+<td><strong>L10</strong></td>
+<td><code>sdd/BACKLOG.md</code></td>
+<td>File (or decline) the "async <code>ext.glob</code>" item GR-003 promises and the "cache warns when wrapping a bridged backend" item ADR-0025 promises, so the deferred async-ext surface has tracked owners.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Priority ordering:</strong> G1 (security, needs a decision) → BK-262 amendment +
+G2 honesty note (close the coverage/honesty gap) → G3 (consumer-facing docs,
+cheap) → G4/G5 (correctness + tests) → BK-259/ID-123 amendments, G6 (hygiene).</p>
 
 
 
@@ -9793,13 +10493,8 @@ extension. The hooks are public.</p>
 
 
 
-  
-  
 
 
-
-
-  
 
 
 
@@ -9823,19 +10518,33 @@ extension. The hooks are public.</p>
   
     
       
-        
-      
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../audit-015-spec-traceability/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 015: Spec-to-Test Traceability">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                015: Spec-to-Test Traceability
+              </div>
+            </div>
+          </a>
         
         
           
-          <a href="tutorial/" class="md-footer__link md-footer__link--next" aria-label="Next: Tutorial">
+          <a href="../../rfcs/" class="md-footer__link md-footer__link--next" aria-label="Next: RFCs">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Tutorial
+                RFCs
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -9872,10 +10581,10 @@ extension. The hooks are public.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow", "navigation.footer"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow", "navigation.footer"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
