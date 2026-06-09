@@ -74,7 +74,7 @@ What actually runs, per change type, at each enforcement point. Cells:
 | `sdd/specs/**.md`      | **backlog-id only**   | —               | ✅ (spec-marks, formal-trace) | ✅ |
 | `sdd/traces/*.yml`     | backlog-id only       | —               | — (trace-schema check parked: ID-179) | — |
 | `sdd/audits, research` | backlog-id only       | —               | ⚠ docs-framework only | ✅ |
-| `docs-src/guides/*.md` | **backlog-id only**   | —               | ✅ (tracker-refs, links, docs-framework) | ✅ |
+| `docs-src/guides/*.md` | **backlog-id only**   | —               | ✅ (tracker-refs, docs-framework) | ✅ (+ links) |
 | `pyproject.toml`       | backlog-id only       | —               | ⚠ (no toml-specific gate) | ✅ |
 
 **CI routing** (`ci.yml` `setup` job path filters; a job runs only if its filter
@@ -90,8 +90,9 @@ matches):
 The two **bold "skipped"** columns are the load-bearing observation: every gate
 that lives only in the CI `lint` job — `check_spec_marks`, `check_formal_trace`,
 `check_no_tracker_refs`, `check_rst_roles`, `check_infra_settings`,
-`check_test_*`, `check_mock_spec`, the four `gen_* --check` artifact-drift
-checks — is invisible to any PR whose diff does not match `CODE_PAT`
+`check_test_*`, `check_mock_spec`, the four artifact-drift checks (`gen_graph` /
+`gen_features` / `gen_graph_viz --check` + plain `check_api_docs`) — is invisible
+to any PR whose diff does not match `CODE_PAT`
 (`ci.yml:40`).
 
 ---
@@ -114,20 +115,21 @@ No CI job invokes `hatch run`. The `lint` job re-lists all 18 commands inline:
 - run: python scripts/gen_backlogid.py --check
 ```
 
-This is the union of three separate `hatch` targets —
-`lint` (13 checks), `format-check` (1), and `preflight`'s four `gen_* --check` —
+This is the union of three separate `hatch` targets — `lint` (13 checks),
+`format-check` (1), and four of `preflight`'s artifact-drift checks (`gen_graph`
+/ `gen_features` / `gen_graph_viz --check`, plus plain `check_api_docs`) —
 transcribed by hand. The consequence is three definitions of "lint" that must be
 kept in sync manually:
 
 | "lint" | Source | Contents |
 |--------|--------|----------|
 | commit | `.pre-commit-config.yaml` | `ruff --fix`, `ruff-format`, 2 pygrep, `backlog-id` |
-| `hatch run lint` | `pyproject.toml:164` | 13 checks (no `format-check`, no `gen_*`) |
-| CI `lint` job | `ci.yml:100-117` | 18 checks (= `hatch lint` + `format-check` + 4 `gen_*`) |
+| `hatch run lint` | `pyproject.toml:164` | 13 checks (incl. `gen_backlogid --check`; no `format-check`, no artifact-drift `gen_*`) |
+| CI `lint` job | `ci.yml:100-117` | 18 checks (= `hatch lint` + `format-check` + 4 artifact-drift) |
 
 Adding a checker to `hatch run lint` does **not** add it to CI, and vice-versa;
 the two lists already diverge (CI carries `ruff format --check` and the four
-`gen_* --check`; `hatch run lint` carries none of them). A contributor who types
+artifact-drift checks; `hatch run lint` carries none of them). A contributor who types
 the obvious `hatch run lint` runs a *different and smaller* gate than CI enforces
 (see L3). This is the central principle-4 violation in the topology.
 
@@ -183,7 +185,7 @@ manual CONTENT-RULES.md read (2b), a coverage run (2c), a local-machine grep
 `hatch run all`. So `/pr` will happily open a PR that fails CI on any of the 13+
 `lint` checks it does not run (`check_mock_spec`, `check_test_placement`,
 `check_spec_marks`, `check_formal_trace`, `check_infra_settings`,
-`check_no_tracker_refs`, the `gen_* --check` drift gates …). `/fix-pr` runs
+`check_no_tracker_refs`, the four artifact-drift checks …). `/fix-pr` runs
 `hatch run lint` unconditionally; `/pr` does not — an asymmetry with no stated
 rationale, and a divergence from CONTRIBUTING's own instruction.
 
@@ -268,7 +270,7 @@ patching rather than by re-deriving from one list.
 ### L3 — `hatch run lint` is a strict subset of CI `lint`; the obvious command under-checks
 
 A contributor types `hatch run lint` and gets 13 checks; CI runs 18
-(`+ format-check + 4 gen_*`). The documented complete gate is `hatch run all`
+(`+ format-check + 4 artifact-drift`). The documented complete gate is `hatch run all`
 (`CONTRIBUTING.md:358`, `pyproject.toml:259`), but `lint` is the more obvious
 thing to type and silently does less than CI. Subset of H1.
 
@@ -312,7 +314,7 @@ backlog items are created here (CLAUDE.md § Audits; ask-before-new-followup).
 
 | Group | Findings | Recommendation | Effort |
 |-------|----------|----------------|--------|
-| **R1 — CI delegates to `hatch`** | H1, L1, L3 | Replace the inline `lint`-job steps with `hatch run preflight` + `hatch run lint` + `hatch run format-check` (install hatch in the job, as the publish/drift jobs already reference). The `hatch` script lists become the single source; CI inherits any future check automatically. Keep `mutation.yml`'s deliberate no-`hatch` exception. Optionally fold `format-check` + the four `gen_* --check` into `hatch run lint` so the three "lint" definitions collapse toward one. | Low |
+| **R1 — CI delegates to `hatch`** | H1, L1, L3 | Replace the inline `lint`-job steps with `hatch run preflight` + `hatch run lint` + `hatch run format-check` (install hatch in the job, as the publish/drift jobs already reference). The `hatch` script lists become the single source; CI inherits any future check automatically. Keep `mutation.yml`'s deliberate no-`hatch` exception. Optionally fold `format-check` + the four artifact-drift checks into `hatch run lint` so the three "lint" definitions collapse toward one. | Low |
 | **R2 — Close the `sdd/specs`-only gate gap** | H2 | Pick **one** place: either widen `CODE_PAT` (`ci.yml:40`) to include `^sdd/specs/` so the `lint` job runs on spec-only PRs, or add `check_spec_marks` + `check_formal_trace` to the `verify-formal` job (which already triggers on `sdd/specs/`). Widening the filter is the leaner option — it routes spec changes through the existing single gate rather than adding a second copy. | Low |
 | **R3 — Skills delegate, stop re-encoding** | M1, M2, L2 | Define "what validates a change" **once** as `hatch run all` and have `/pr` and `/fix-pr` both run it, dropping the `src/tests/examples`-keyed coverage branch and the manual TESTING/CONTENT sub-gates (those rules are already inside `check_*`/`docs-check`). This is the largest consolidation: it removes the per-type logic the skills currently duplicate from CONTRIBUTING and CI. If a lighter gate is wanted for fast iteration, document one thin target and have both skills call it — but only one. | Medium |
 | **R4 — Docs-only PRs get their relevant gate** | M3, M5 (drift-docs) | Subsumed by R3 for the skill path. For CI: add `check_no_tracker_refs`, `check_links`, and `drift_check render-docs --check` to the `docs` job (or widen the lint filter), so a docs-only PR is gated by the checks built for docs. | Low |
