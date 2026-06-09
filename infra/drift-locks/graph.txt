@@ -1,6 +1,6 @@
 # extra: graph
 # python: 3.13
-# captured: 2026-06-05
+# captured: 2026-06-09
 # Regenerate with: hatch run drift-check refresh-baseline graph
 
 certifi==2026.5.20
@@ -9,7 +9,7 @@ charset-normalizer==3.4.7
 cryptography==48.0.0
 httpx==1.0.dev3
 idna==3.18
-msal==1.37.0
+msal==1.38.0rc1
 platformdirs==4.10.0
 pycparser==3.0
 pyjwt==2.13.0
