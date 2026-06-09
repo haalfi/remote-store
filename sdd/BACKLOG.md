@@ -324,16 +324,16 @@ fixes (BK-264/265) → correctness + tests (BK-266/267) → blocked or hygiene t
 ## CI Operations
 
 Scheduled-guard observability follow-ups from
-[audit-017](audits/audit-017-ci-operations.md), prompted by the weekend mutation
+[audit-018](audits/audit-018-ci-operations.md), prompted by the weekend mutation
 failure (#763) reaching the maintainer by email only. `drift-guard` is the proven
 pattern (scheduled finding → rolling GitHub issue → triage skill); these items
 generalise it to the guards that lack it.
-**Order:** handbook + principle (BK-271, the SSoT the others point at) → mutation
-issue surface (BK-269, closes the #763 class) → dependabot approval safety
-(BK-270). The adversarial section of audit-017 challenges each — read it before
+**Order:** handbook + principle (BK-275, the SSoT the others point at) → mutation
+issue surface (BK-273, closes the #763 class) → dependabot approval safety
+(BK-274). The adversarial section of audit-018 challenges each — read it before
 picking one up; in particular the disposition below may narrow.
 
-- [ ] **BK-271 — CI-operations handbook + the scheduled-guard consistency principle**
+- [ ] **BK-275 — CI-operations handbook + the scheduled-guard consistency principle**
   spec: — · effort: S · audience: library.maintainer
   No document inventories the scheduled/automated workflows: what runs when, what
   finding each produces, where that finding shows up (issue / PR / Security tab /
@@ -345,16 +345,16 @@ picking one up; in particular the disposition below may narrow.
   triage entry point; email / red-X / green-check are insufficient alone.* Record
   codeql's weekly sweep (`codeql.yml:21-22`) reporting to the Security tab as a
   deliberate exception. The per-task skills/checklists (`/drift`, and any from
-  BK-269/270) become thin pointers to this doc per the skill-overlay convention.
-  **Decide first (audit-017 A1):** prefer a *generated* inventory
+  BK-273/274) become thin pointers to this doc per the skill-overlay convention.
+  **Decide first (audit-018 A1):** prefer a *generated* inventory
   (`scripts/check_ci_inventory.py` parsing `.github/workflows/*.yml` for
   `on.schedule`/`on.pull_request_review` and failing on an undocumented guard) over
   hand-maintained prose, which goes stale — matching the repo's automate-don't-hand-maintain
   doctrine (FEATURES.md, graph data). If shipped as static prose, attach an explicit
   "review when a workflow is added" obligation (the ID-150 revisit-ticket pattern).
-  Audit-017 M2 / L1.
+  Audit-018 M2 / L1.
 
-- [ ] **BK-269 — `mutation` testing produces no durable TODO; failures reach the maintainer by email only**
+- [ ] **BK-273 — `mutation` testing produces no durable TODO; failures reach the maintainer by email only**
   spec: — · effort: M · audience: library.maintainer, infra.test
   `mutation.yml` lets its job fail, so the only signals are a red X in the Actions
   tab and GitHub's default actor email — that is how the weekend run (#763, an
@@ -368,8 +368,12 @@ picking one up; in particular the disposition below may narrow.
   mirroring `/drift`.
   **The body must distinguish two outcomes** (drift has one axis; mutation has
   two): a **surviving mutant** (test-coverage gap, advisory) vs a
-  **harness/implementation failure** (the run itself broke — #763).
-  **Decide first (audit-017 C-DECISION / A3):** `drift-guard` chose
+  **harness/implementation failure** (the run itself broke — #763). Note the
+  `summary` job today aggregates only `job.status` (success/failure/skipped), which
+  cannot tell those two apart, so the reconciler must derive the distinction from
+  the per-scope reports / exit semantics — this is closer to A5's "more code than
+  it looks" than to a pure redirect.
+  **Decide first (audit-018 C-DECISION / A3):** `drift-guard` chose
   never-red-issue-only; mutation should likely diverge — *surviving mutant → issue
   only, run stays green*; *harness/impl failure → issue AND red run*. The choice
   shapes whether the `mutate` job swallows or propagates its exit code. A3 raises
@@ -378,10 +382,10 @@ picking one up; in particular the disposition below may narrow.
   harness breaks — check the base rate across recent Saturday runs before building
   the full reconciler. The harness/impl-failure half is worth it unconditionally.
   If `mutation_report.py` is built, lift `drift-guard`'s single-writer concurrency
-  guard (`drift-guard.yml:37-44`) deliberately, not approximately (audit-017 A5).
-  Audit-017 H1 / L2.
+  guard (`drift-guard.yml:37-44`) deliberately, not approximately (audit-018 A5).
+  Audit-018 H1 / L2.
 
-- [ ] **BK-270 — Dependabot approval is the only gate before auto-merge to `master`, with no codified criteria**
+- [ ] **BK-274 — Dependabot approval is the only gate before auto-merge to `master`, with no codified criteria**
   spec: — · effort: S · audience: library.maintainer
   `dependabot-auto-merge.yml` fires on a maintainer `approved` review and runs
   `gh pr merge --auto --squash` (`:33-41`) — by design, the human review is the
@@ -390,16 +394,16 @@ picking one up; in particular the disposition below may narrow.
   (github-actions) goes green because the bump exercises nothing testable (#766 was
   approved on the green check); `Chore(deps-dev)` (pip) can go red on an
   upper-pin (#767) with no "real-ceiling-vs-transient" runbook.
-  **Decide first (audit-017 A2 — the real risk may be the control, not the
+  **Decide first (audit-018 A2 — the real risk may be the control, not the
   runbook):** the strongest option is to **drop auto-merge for the `github-actions`
   ecosystem** (low volume; a manual `gh pr merge` costs seconds and removes the
   rubber-stamp path), optionally gating any remaining auto-merge behind an explicit
   label so the irreversible step is deliberate. If a control is adopted, this item
   shrinks to a small "triage a red pip dev-dep" checklist; whether it needs a
-  `/deps` skill or just a handbook checklist (BK-271) is itself deferred until the
-  triage proves multi-step (audit-017 A4). Codify the surviving checklist in the
-  BK-271 handbook rather than a standalone doc.
-  Audit-017 M1.
+  `/deps` skill or just a handbook checklist (BK-275) is itself deferred until the
+  triage proves multi-step (audit-018 A4). Codify the surviving checklist in the
+  BK-275 handbook rather than a standalone doc.
+  Audit-018 M1.
 
 ---
 

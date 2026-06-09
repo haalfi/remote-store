@@ -1,4 +1,4 @@
-# Audit 017 — CI Operations: scheduled-guard notification surfaces
+# Audit 018 — CI Operations: scheduled-guard notification surfaces
 
 **Backlog item:** — (ad-hoc operational audit prompted by the weekend mutation
 failure; follow-ups proposed at the end)
@@ -194,12 +194,17 @@ the weekly CodeQL sweep is even a maintenance obligation.
 **Files:** `.github/workflows/mutation.yml:188-218`.
 
 The `summary` job already downloads every per-scope outcome and renders a
-`| Scope | Result |` table (`:201-216`). It is one step short of being the
-issue-reconciler `mutation` needs: it has the aggregated state in hand and throws
-it at `$GITHUB_STEP_SUMMARY` instead of at a `[mutation]` rolling issue. The fix
-for H1 is less "add a whole report job" than "redirect the data this job already
-computes." Noted as a Low because it is an enabler observation, not a defect on its
-own.
+`| Scope | Result |` table (`:201-216`), and that gives the H1 reconciler a job to
+attach to. But be precise about what it aggregates: only `job.status`
+(`mutation.yml:166`, `:201-216`) — success / failure / skipped, a **single axis**.
+That axis cannot carry the two-outcome distinction H1 and C-DECISION require: a
+*surviving mutant* and a *harness/impl failure* both collapse to `failure` (or, if
+the runner exits 0 on a surviving mutant, both to `success`, in which case the
+table cannot surface mutants at all). So the `[mutation]` issue reconciler must
+**derive** that distinction from the per-scope reports / exit semantics, not merely
+redirect the table this job already computes — closer to A5's "more code than it
+looks" than to a pure redirect. Noted as a Low because it is an enabler/scoping
+observation, not a defect on its own.
 
 ---
 
@@ -237,7 +242,7 @@ owning files. The adversarial section below challenges each before you commit.
 
 | Group | Findings | Scope / files | Suggested disposition |
 |-------|----------|---------------|-----------------------|
-| **C1 — `mutation` → rolling `[mutation]` issue + `/mutation` triage skill** | **H1, L2** | `.github/workflows/mutation.yml` (redirect the `summary` job into a reconciler, modeled on `drift-guard`'s `report` job); a new `scripts/mutation_report.py` mirroring `drift_report.py`; a new `.claude/skills/mutation/SKILL.md` mirroring `/drift` | **High.** The body must distinguish **surviving mutant** (test-gap, advisory) from **harness/impl failure** (run broke, like #763). One design decision up front (see C-DECISION below). The `summary` job already aggregates the state (L2), so this is largely a redirect, not new plumbing. |
+| **C1 — `mutation` → rolling `[mutation]` issue + `/mutation` triage skill** | **H1, L2** | `.github/workflows/mutation.yml` (redirect the `summary` job into a reconciler, modeled on `drift-guard`'s `report` job); a new `scripts/mutation_report.py` mirroring `drift_report.py`; a new `.claude/skills/mutation/SKILL.md` mirroring `/drift` | **High.** The body must distinguish **surviving mutant** (test-gap, advisory) from **harness/impl failure** (run broke, like #763). One design decision up front (see C-DECISION below). The `summary` job gives the reconciler a job to attach to, but it aggregates only `job.status` (L2), which cannot tell a surviving mutant from a harness failure — so the reconciler must derive that from the per-scope reports, not just redirect the table (closer to A5 than to "a redirect"). |
 | **C2 — Dependabot pre-approval runbook + `/deps` triage skill** | **M1** | a new `.claude/skills/deps/SKILL.md`; a `CONTRIBUTING`/handbook section codifying the per-ecosystem pre-approval checklist; optionally a weekly "open dependabot PRs" digest issue | **Medium.** Because approval auto-merges to `master`, the checklist is a safety control, not a nicety: github-actions = "green ≠ behaves; diff changelog + `with:`/permissions surface"; pip dev = "red ⇒ real-ceiling-vs-transient triage." Decide whether to also add a digest issue or rely on the PR list. |
 | **C3 — CI-operations handbook (authority doc) + the consistency principle** | **M2, L1** | one new authority doc (e.g. `sdd/CI-OPERATIONS.md` or a `CONTRIBUTING` section) holding the inventory table from M2; the per-task skills (`/drift`, `/mutation`, `/deps`) become thin pointers to it per the existing skill-overlay convention | **Medium.** States the house principle: *every scheduled-maintenance guard emits a durable GitHub Issue as its TODO and has a triage skill; email/red-X/green-check are insufficient alone.* Records codeql's Security-tab surface (L1) as a deliberate exception. This is the SSoT C1/C2 point at — sequence it to land alongside or just before them. |
 
