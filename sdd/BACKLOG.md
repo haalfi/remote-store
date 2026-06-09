@@ -392,29 +392,16 @@ picking one up; in particular the disposition below may narrow.
 
 ## Lint / CI Completeness
 
-audit-017 gate-topology follow-ups (BK-269–BK-272), in execution order; full
-findings in [audit-017](audits/audit-017-dev-process-gate-topology.md).
-**Order:** single-source the lint definition (BK-269, done) → route `sdd/specs`-only
-and docs-only changes through their gates (BK-270, done) → point the `/pr` and
-`/fix-pr` skills at that single gate (BK-271, done) → drop the dead mypy pre-push
-hook (BK-272). BK-269 then BK-271 were the load-bearing consolidation wins; BK-270
-closed the real coverage gaps and was cheaper once BK-269 made the gate
-one-place; BK-272 is trivial and order-independent. Each item's rationale lives
-in its body. The `ID-*` items below are older, unprioritised ideas in the same
-area.
-
-- [ ] **BK-272 — Resolve the dead mypy pre-push hook**
-  spec: — · effort: S · audience: library.maintainer, contributor.process
-  `.pre-commit-config.yaml:8-15` declares mypy with `stages: [pre-push]`, but the
-  documented install (`hatch run pre-commit-install` = `pre-commit install`,
-  `pyproject.toml:256`) installs only the pre-commit stage — there is no
-  `default_install_hook_types` in the config and no doc mentions
-  `--hook-type pre-push` — so the hook never fires on `git push`. Type-checking
-  still runs via `hatch run typecheck`/`all` and CI, so this is dead config, not a
-  correctness hole. Either set `default_install_hook_types: [pre-commit,
-  pre-push]` so `pre-commit install` wires both stages, or drop the pre-push mypy
-  hook and rely on `hatch run`/CI. Don't leave a declared gate that never fires.
-  Trivial and order-independent. Audit-017 M4.
+audit-017 gate-topology follow-ups (BK-269–BK-272) are all complete; full
+findings in [audit-017](audits/audit-017-dev-process-gate-topology.md), the
+items in [BACKLOG-DONE](BACKLOG-DONE.md). They ran in execution order:
+single-source the lint definition (BK-269) → route `sdd/specs`-only and
+docs-only changes through their gates (BK-270) → point the `/pr` and `/fix-pr`
+skills at that single gate (BK-271) → drop the dead mypy pre-push hook (BK-272).
+BK-269 then BK-271 were the load-bearing consolidation wins; BK-270 closed the
+real coverage gaps and was cheaper once BK-269 made the gate one-place; BK-272
+was trivial and order-independent. The `ID-*` items below are older,
+unprioritised ideas in the same area.
 
 - [ ] **ID-179 — Trace schema validator: wire `audience` field check into `hatch run lint`**
   spec: — · effort: S · audience: library.maintainer

@@ -1,0 +1,99 @@
+id: BK-272
+title: "Resolve the dead mypy pre-push hook"
+trigger: >
+  `.pre-commit-config.yaml` declared a mypy hook gated `stages: [pre-push]`, but
+  the config had no `default_install_hook_types` and no doc mentioned
+  `--hook-type pre-push`, so the documented `pre-commit install`
+  (`pre-commit-install` hatch script) wired only the `pre-commit` stage — the
+  hook never fired on `git push`. mypy already ran via `hatch run typecheck`
+  (inside `hatch run all`) and the CI typecheck job, so this was dead config
+  reading as protection, not a correctness hole.
+source_items:
+  - BK-272
+audience:
+  - contributor.tooling
+  - contributor.process
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-272 (Lint / CI Completeness)"
+        read_type: gate
+        extract: >
+          Two dispositions offered (set default_install_hook_types, or drop the
+          hook); the cited `pyproject.toml:256` for pre-commit-install was stale
+          (now :288) — re-grepped rather than trusting it, as the item itself
+          flagged the drift
+        outcome: misleading
+      - file: sdd/audits/audit-017-dev-process-gate-topology.md
+        section: "M4, R5"
+        read_type: reference
+        extract: >
+          M4 diagnosis (pre-commit install wires only the commit stage; mypy
+          stays enforced by hatch + CI) and R5's two options; the epic's grain is
+          consolidation (BK-269/270/271 removed divergent lint definitions)
+        outcome: ok
+      - file: .pre-commit-config.yaml
+        section: "mirrors-mypy block (lines 8-15)"
+        read_type: gate
+        extract: >
+          The block to remove: id mypy, hand-synced additional_dependencies stub
+          list, files ^src/, stages [pre-push]. ruff repo + local hooks untouched
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] pre-commit-install, all"
+        read_type: reference
+        extract: >
+          pre-commit-install = "pre-commit install" (no --hook-type, so pre-commit
+          stage only); `all` runs `typecheck` directly via hatch, not through the
+          pre-commit framework — so removing the block has zero effect on hatch run all
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Setup (Clone and enter the repo)"
+        read_type: reference
+        extract: >
+          Documented local gate is `hatch run all` / `hatch run typecheck`; setup
+          never tells contributors to run `pre-commit install`. Grep over **/*.md
+          for `--hook-type pre-push` returned zero hits — no doc advertises a
+          push-time mypy gate, so dropping it removes nothing relied upon
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: .pre-commit-config.yaml
+        section: "mirrors-mypy block"
+        read_type: reference
+        extract: >
+          Took R5's drop option over add-default_install_hook_types: avoids a
+          third local mypy surface (against the consolidation grain) and deletes
+          the hand-synced stub-list staleness vector. No default_install_hook_types
+          added; ruff + local hooks left intact
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: pyproject.toml
+        section: "typecheck"
+        read_type: verify
+        extract: >
+          `hatch run typecheck` still green — mypy survives via the retained,
+          documented path; the dropped hook left type-checking intact
+        outcome: ok
+      - file: .pre-commit-config.yaml
+        section: "(full)"
+        read_type: verify
+        extract: >
+          Config still parses; remaining hooks (ruff, ruff-format, pygrep x2,
+          backlog-id) intact after the block removal
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: >
+          contributor.tooling + contributor.process skip CHANGELOG (trace-schema
+          derived rule); BK-272 moved to BACKLOG-DONE + preamble updated; trace
+          shipped same PR; gen_backlogid --check green (272 <= DONE max, a
+          backlogid.json no-op)
+        outcome: ok

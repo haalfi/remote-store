@@ -8,6 +8,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-272 — Resolve the dead mypy pre-push hook**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  `.pre-commit-config.yaml` declared a mypy hook gated `stages: [pre-push]`, but
+  the config had no `default_install_hook_types` and no doc mentioned
+  `--hook-type pre-push`, so the documented `pre-commit install` wired only the
+  `pre-commit` stage — the hook never fired on `git push`. Type-checking already
+  runs via `hatch run typecheck` (inside `hatch run all`, the documented local
+  gate) and the CI `typecheck` job, so this was dead config, not a correctness
+  hole. Took audit-017 R5's second option (**drop** the hook) over the first
+  (add `default_install_hook_types: [pre-commit, pre-push]`): the audit-017 epic
+  was a consolidation story (BK-269/270/271 collapsed three divergent "lint"
+  definitions into one), so adding a *third* local mypy surface beside `hatch run
+  all` and CI runs against that grain — and the hook's hand-synced
+  `additional_dependencies` stub list was a standing staleness vector that only
+  existed to serve it. Dropping it removes both with zero contributor-facing
+  change (the hook never fired and no doc promised it) and no slower `git push`.
+  No CHANGELOG: audience is contributor.tooling / contributor.process, neither of
+  which trips the trace-schema derived rule. Audit-017 R5 (M4). Trace:
+  `sdd/traces/bk-272-dead-mypy-pre-push-hook.yml`.
+
 - [x] **BK-271 — `/pr` and `/fix-pr` compose hatch targets instead of re-encoding gate logic**
   spec: — · effort: M · audience: library.maintainer, contributor.process
   The gate logic was already deduplicated into one shared reference section
