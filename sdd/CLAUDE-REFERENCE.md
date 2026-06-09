@@ -297,23 +297,36 @@ current HEAD.)
 ## PR validation gates
 
 Shared by `/pr` (before creating the PR) and `/fix-pr` (before committing
-fixes). "What validates a change" is defined **once** as `hatch run all`; the two
-gates after it cover only what `all` cannot. Each skill keeps its own trace step
-(`/pr` verifies a trace exists, `/fix-pr` updates it).
+fixes). `<BASE>` is the PR base branch (default `master`). "What validates a
+change" is composed from hatch targets, never re-encoded; the mechanical gate
+mirrors CI's code-vs-docs path filtering so a non-code PR is not billed the full
+test/examples/notebooks run CI itself skips for it. Each skill keeps its own
+trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
 
-- **Mechanical gate.** Run `hatch run all` — CONTRIBUTING's prescribed pre-PR
-  command ([CONTRIBUTING § Consistency Checklists](../CONTRIBUTING.md#consistency-checklists))
-  and the complete superset of every lint, type, test, example, and docs check CI
-  enforces (constituent scripts in `pyproject.toml`). Fix failures, re-run until
-  clean. `all` runs the no-Docker `test-cov-s1` variant (no 95% floor); that floor
-  is deliberately CI/publish-only, so do **not** substitute `test-cov-strict` here
-  (see [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)).
-- **Local-machine reference gate.** Not covered by `hatch run all`. Grep changed
-  files for private local-machine references unreachable from the repo, per the
-  [ripple-check Local-machine reference row](#pre-work-index) (patterns + scope
-  live there). Fix before finishing.
-- **Qualitative review.** The `check_*`/`docs-check` scripts inside `hatch run
-  all` enforce the mechanical rules but not the judgment-based ones. Review the
+- **Mechanical gate.** Classify the diff with
+  `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
+  failures, re-run until clean.
+    - **Touches `src/`, `tests/`, or `examples/`** → run `hatch run all` —
+      CONTRIBUTING's prescribed pre-PR superset
+      ([CONTRIBUTING § Consistency Checklists](../CONTRIBUTING.md#consistency-checklists)):
+      lint, typecheck, the full Stage-1 test suite, examples, notebooks, and a
+      strict docs build. `all` uses the no-Docker `test-cov-s1` variant (no 95%
+      floor); that floor is deliberately CI/publish-only, so do **not** substitute
+      `test-cov-strict` (see [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)).
+    - **No code touched** (docs / specs / skills / config only) → run
+      `hatch run lint` + `hatch run docs-gate`. `lint` is the gate `/pr` used to
+      skip — it holds the code, spec, docs, and trace check scripts
+      (`check_spec_marks`, `check_formal_trace`, `check_docs_framework`,
+      `check_no_tracker_refs`, …); `docs-gate` adds the strict mkdocs build, link
+      scan, and tested-versions drift check. This skips the test suite, examples,
+      and notebooks — none of which a non-code change exercises — matching CI,
+      which runs its heavy matrix only when `CODE_PAT` matches.
+- **Local-machine reference gate.** Not covered by either target above. Grep
+  changed files for private local-machine references unreachable from the repo,
+  per the [ripple-check Local-machine reference row](#pre-work-index) (patterns +
+  scope live there). Fix before finishing.
+- **Qualitative review.** The `check_*`/`docs-check` scripts in the mechanical
+  gate enforce the mechanical rules but not the judgment-based ones. Review the
   changed tests against [`TESTING.md`](TESTING.md) (assertion depth, mock
   discipline) and changed documentation against [`CONTENT-RULES.md`](CONTENT-RULES.md)
   (prose longevity). Report violations before finishing.
