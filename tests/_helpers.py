@@ -29,7 +29,7 @@ __all__ = [
 ]
 
 # ---------------------------------------------------------------------------
-# Event-loop leak guard (BK-276 / ID-217)
+# Event-loop leak guard (BK-276)
 # ---------------------------------------------------------------------------
 #
 # pytest-asyncio 1.3 on Python 3.13 (Windows ``ProactorEventLoop``) leaves the
@@ -109,9 +109,25 @@ def sweep_tracked_event_loops() -> None:
     """Close every tracked loop that is neither running nor closed.
 
     Fast path used after every test: iterates only ``_TRACKED_LOOPS`` (a handful
-    of entries), never the whole heap. A *running* loop is the one in active use,
-    so it is left untouched — the per-test hookwrapper runs after pytest-asyncio's
-    own teardown, so any loop it finds non-running here is genuinely abandoned.
+    of entries), never the whole heap. A *running* loop is left untouched.
+
+    "Non-running ⇒ abandoned" holds because of two scope assumptions, both true
+    today; revisit this sweep if either changes:
+
+    * **Function-scoped loops only.** ``asyncio_mode = auto`` with the default
+      function loop scope means pytest-asyncio tears its loop down per test, so a
+      loop found non-running at *that test's* teardown is finished with. A
+      ``@pytest.mark.asyncio(loop_scope="module"|"session")`` test — or any
+      module/session fixture holding an idle ``new_event_loop()`` between tests —
+      would own a non-running loop *between* tests in its scope, and this sweep
+      would close it mid-scope. No such usage exists in the suite.
+    * **The adapter daemon loop is spared while it runs.** The class-level patch
+      also tracks ``AsyncBackendSyncAdapter``'s private loop
+      (``src/remote_store/_async_to_sync_adapter.py``); ``is_running()`` is
+      ``True`` for its whole ``run_forever()`` lifetime, so it is never swept.
+      There is a sub-millisecond ``thread.start()`` → ``run_forever()`` window
+      where ``is_running()`` is briefly ``False``, but a test cannot reach its own
+      teardown inside that window, so it is theoretical.
     """
     for loop in list(_TRACKED_LOOPS):
         _close_if_abandoned(loop)

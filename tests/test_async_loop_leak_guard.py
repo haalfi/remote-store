@@ -1,4 +1,4 @@
-"""Regression for the per-test event-loop sweep (BK-276 / ID-217).
+"""Regression for the per-test event-loop sweep (BK-276).
 
 pytest-asyncio 1.3 on Python 3.13 (Windows ``ProactorEventLoop``) leaves the
 per-test event loop unclosed after teardown. Its self-pipe loopback socket pair
@@ -7,7 +7,7 @@ mid-run collection is cross-attributed by xdist to an innocent test, and
 ``filterwarnings = error`` turns it into a spurious hard failure.
 
 The helpers in ``tests/_helpers.py`` close such loops at their source:
-``install_event_loop_tracker`` records every loop created via ``new_event_loop``,
+``install_event_loop_tracker`` records every event loop at construction,
 ``sweep_tracked_event_loops`` (the fast per-test path) closes the abandoned ones,
 and ``close_all_abandoned_event_loops`` is the broad session backstop.
 ``tests/conftest.py`` wires them in. These tests pin the behaviour
@@ -17,8 +17,6 @@ deterministically — no xdist, no flake.
 from __future__ import annotations
 
 import asyncio
-import gc
-import warnings
 
 from tests._helpers import (
     close_all_abandoned_event_loops,
@@ -70,17 +68,23 @@ def test_sweep_leaves_running_loop_untouched() -> None:
         loop.close()
 
 
-def test_swept_loop_emits_no_resourcewarning_on_gc() -> None:
-    """After the sweep closes a loop, collecting it raises no ResourceWarning.
+def test_sweep_closes_the_loop_self_pipe_sockets() -> None:
+    """The sweep releases the loop's self-pipe sockets — the actual ID-217 leak.
 
-    Closing the loop releases its self-pipe sockets, so the socket ``__del__``
-    that would otherwise warn at GC has nothing to report.
+    Asserts directly on the loop's own self-pipe loopback sockets rather than
+    forcing a process-wide ``gc.collect()`` under an error-promoted
+    ``ResourceWarning``: a whole-heap collection can be tripped by an unrelated
+    leaked resource elsewhere on the heap — exactly the cross-attribution flake
+    this guard exists to prevent — which would make a "deterministic" regression
+    flaky. We capture the sockets before the sweep (``close()`` clears the
+    references) and confirm they were closed (``fileno() == -1``).
     """
     install_event_loop_tracker()
     loop = asyncio.new_event_loop()
+    # ProactorEventLoop / SelectorEventLoop both create a self-pipe socket pair
+    # in __init__; that pair is what fires ResourceWarning if left unclosed.
+    self_pipe = [s for s in (getattr(loop, "_ssock", None), getattr(loop, "_csock", None)) if s is not None]
+    assert self_pipe, "expected the loop to expose its self-pipe sockets"
     sweep_tracked_event_loops()
     assert loop.is_closed()
-    del loop
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", ResourceWarning)
-        gc.collect()
+    assert all(sock.fileno() == -1 for sock in self_pipe), "sweep must close the loop's self-pipe sockets"

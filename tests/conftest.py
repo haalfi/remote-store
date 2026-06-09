@@ -317,10 +317,10 @@ def _close_leaked_event_loops() -> Iterator[None]:
 
     The per-test ``pytest_runtest_teardown`` hookwrapper below closes tracked
     loops eagerly after every test (fast ``WeakSet`` sweep), so the mid-run leak
-    (BK-276 / ID-217) never accumulates; this session sweep remains as a broad
-    final backstop, then restores the patched ``new_event_loop`` bindings.
+    (BK-276) never accumulates; this session sweep remains as a broad final
+    backstop, then restores the patched ``new_event_loop`` bindings.
 
-    Ref: ID-158 (session sweep), BK-276 / ID-217 (per-test sweep).
+    Ref: ID-158 (session sweep), BK-276 (per-test sweep).
     """
     yield
     close_all_abandoned_event_loops()
