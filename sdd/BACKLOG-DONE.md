@@ -31,6 +31,30 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   source" pattern rather than hand-listing scripts. Audit-017 H2 / M3 / M5. Trace:
   `sdd/traces/bk-270-route-spec-docs-gates.yml`.
 
+- [x] **BK-280 — CI build improvements: split tooling tests off `test-primary` + single-source the priority Python**
+  spec: — · effort: S · audience: infra.ci, contributor.tooling
+  Two CI-build changes, no runtime impact.
+  **(1) `tooling-tests` job.** `test-primary` (the longest job) ran `pytest
+  tests/scripts/ -q` as a third serial pass behind `start-backends` + the two
+  coverage passes, though those tests hit `scripts/`, not `remote_store` — no
+  backends, no coverage. Moved to a backend-free job that runs in parallel,
+  trimming ~34s off the critical path. Reinstates the standalone job BK-207 had
+  before a roll-up merged it into `test-primary`.
+  **(2) `.python-version`.** New root file is the single source for the priority
+  Python across CI, replacing the hardcoded literals (BK-219 removed ~12 from
+  `ci.yml`; this removes the last one plus the copies in `publish.yml`,
+  `docs.yml`, `mutation.yml`, `drift-guard.yml`). `ci.yml`'s `setup` reads it to
+  resolve the matrix's primary slot (with a `jq` guard that fails if it drifts
+  from `ALL_PYTHONS`); the other workflows read it via `setup-python`'s
+  `python-version-file`; local `uv` / `pyenv` auto-select it. It is in `CODE_PAT`
+  so a lone bump still triggers `ci.yml`'s gating jobs (without that,
+  `code=false` skips them and `gate` greens without testing the new version; the
+  release/scheduled workflows are not PR-gating, so this only matters for
+  `ci.yml`). Runtime is unaffected: `UV_SYSTEM_PYTHON=1` keeps `uv pip install`
+  on each job's matrix interpreter, not the file (verified — `typecheck (3.10)`
+  stayed green with the file present).
+  Trace: [`sdd/traces/BK-280-ci-build-improvements.yml`](traces/BK-280-ci-build-improvements.yml).
+
 - [x] **BK-269 — CI `lint` job delegates to `hatch` (one source of truth for "lint")**
   spec: — · effort: S · audience: infra.ci, contributor.tooling
   The CI `lint` job inlined all 18 lint commands as `- run:` steps, hand-duplicating

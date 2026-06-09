@@ -37,7 +37,11 @@ jobs:
           else
             FILES=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")
           fi
-          CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/|^\.github/actions/'
+          # .python-version is the source this job reads for the primary
+          # Python (below), so a lone bump must re-run the gating jobs that
+          # exercise that interpreter — otherwise code=false skips them and
+          # gate goes green without ever testing the new version.
+          CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^\.python-version$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/|^\.github/actions/'
           DOCS_PAT='^(docs-src|src)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/|^scripts/(docs/|check_docs_framework\.py$)|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$CODE_PAT"; then echo "code=true" >> "$GITHUB_OUTPUT"
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
@@ -56,9 +60,17 @@ jobs:
         id: versions
         env:
           ALL_PYTHONS: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
-          PRIMARY_PYTHON: "3.13"
           MIN_PYTHON: "3.10"
         run: |
+          # Primary Python: single-sourced in .python-version (local uv/pyenv
+          # read it too). ALL_PYTHONS / MIN_PYTHON below bound the matrix.
+          PRIMARY_PYTHON="$(cat .python-version)"
+          # Must be one of ALL_PYTHONS, else `test-matrix = ALL - primary`
+          # keeps it and the primary jobs run an unlisted slot.
+          if ! jq -e --argjson a "$ALL_PYTHONS" --arg p "$PRIMARY_PYTHON" -n '$a | index($p) != null' > /dev/null; then
+            echo "::error::.python-version ($PRIMARY_PYTHON) is not in ALL_PYTHONS ($ALL_PYTHONS)"
+            exit 1
+          fi
           echo "primary=$PRIMARY_PYTHON" >> "$GITHUB_OUTPUT"
           echo "test-matrix=$(jq -cn --argjson a "$ALL_PYTHONS" --arg p "$PRIMARY_PYTHON" '$a - [$p]')" >> "$GITHUB_OUTPUT"
           echo "typecheck-matrix=$(jq -cn --arg m "$MIN_PYTHON" --arg p "$PRIMARY_PYTHON" '[$m, $p]')" >> "$GITHUB_OUTPUT"
@@ -195,10 +207,8 @@ jobs:
           # silently revive the setup-uv-*-pruned-* reservation race.
           cache-suffix: ci-test-matrix
       - run: uv pip install -e ".[dev]"
-      # tests/scripts/ holds contributor-tooling tests (script checkers, gen
-      # scripts) that exercise scripts/, not remote_store. They gain nothing
-      # from multi-version coverage and run once on the primary Python via
-      # test-primary below. BK-207.
+      # tests/scripts/ exercises scripts/, not remote_store: no multi-version
+      # value, so it runs once in the tooling-tests job below, not here.
       #
       # ID-195 two-pass split: pass 1 runs all backends in parallel with xdist;
       # the sftp_docker fixture is filtered out under PYTEST_XDIST_WORKER
@@ -208,9 +218,7 @@ jobs:
       - run: pytest -n auto -p no:benchmark --ignore=tests/scripts
       - run: pytest -p no:benchmark --ignore=tests/scripts -k sftp_docker tests/backends/conformance/
 
-  # Primary-Python job: coverage gate + contributor-tooling tests. Both run
-  # once on the primary Python; sharing setup avoids a redundant runner.
-  # BK-219 (coverage split), BK-207 (tooling-test rationale).
+  # The coverage gate: the two-pass suite on the primary Python, 95% floor.
   test-primary:
     needs: [setup, prepare-images]
     if: needs.setup.outputs.code == 'true'
@@ -235,13 +243,28 @@ jobs:
         with:
           cache-suffix: ci-test-primary  # BK-230
       - run: uv pip install -e ".[dev]"
-      # ID-195 two-pass split with --cov-append for pass 2. The 95% floor
-      # is asserted on pass 2 after pass 1's `.coverage` data has been
-      # combined in. tests/scripts/ deliberately runs without --cov: it
-      # exercises scripts/, not remote_store, so it would only inflate
-      # the denominator without contributing meaningful coverage.
+      # ID-195 two-pass split with --cov-append for pass 2: the 95% floor is
+      # asserted after pass 1's `.coverage` is combined in. --ignore=tests/scripts
+      # keeps those tests out so they don't inflate the denominator.
       - run: pytest -n auto -p no:benchmark --cov=remote_store --cov-report= --ignore=tests/scripts
       - run: pytest -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-fail-under=95 -k sftp_docker tests/backends/conformance/
+
+  # tests/scripts/ exercises scripts/, not remote_store: pure-Python, no
+  # backends, no coverage. Runs once on the primary Python in its own job,
+  # off test-primary's critical path.
+  tooling-tests:
+    needs: [setup]
+    if: needs.setup.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ needs.setup.outputs.primary }}
+      - uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: false
+      - run: uv pip install -e ".[dev]"
       - run: pytest tests/scripts/ -q
 
   # BK-172: verify that S3-PyArrow tests run (not skip) against MinIO when
@@ -471,7 +494,7 @@ jobs:
           done
 
   gate:
-    needs: [setup, prepare-images, lint, typecheck, test, test-primary, pyarrow24-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
+    needs: [setup, prepare-images, lint, typecheck, test, test-primary, tooling-tests, pyarrow24-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -489,6 +512,7 @@ jobs:
             "${{ needs.typecheck.result }}" \
             "${{ needs.test.result }}" \
             "${{ needs.test-primary.result }}" \
+            "${{ needs.tooling-tests.result }}" \
             "${{ needs.pyarrow24-check.result }}" \
             "${{ needs.test-cross-platform.result }}" \
             "${{ needs.notebooks.result }}" \

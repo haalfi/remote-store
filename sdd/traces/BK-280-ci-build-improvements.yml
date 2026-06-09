@@ -1,0 +1,96 @@
+id: BK-280
+title: "CI build improvements: split tooling tests off test-primary + single-source the priority Python"
+trigger: "test-primary is the longest CI job — it ran pytest tests/scripts/ -q (~34s) as a third serial pass behind start-backends and the two coverage passes, even though the tooling tests exercise scripts/ (not remote_store), need no live backends, and contribute no coverage; separately, the primary Python was a PRIMARY_PYTHON: \"3.13\" literal in ci.yml's setup job (the last copy after BK-219 removed ~12) with nothing pinning it for local dev, so a contributor's uv/pyenv could build .venv on a different interpreter than CI's coverage lane"
+source_items:
+  - BK-280
+  - BK-219
+  - BK-207
+audience:
+  - infra.ci
+  - contributor.tooling
+surprising_ripples:
+  - .github/workflows/ci.yml
+  - .github/workflows/publish.yml
+  - .github/workflows/docs.yml
+  - .github/workflows/mutation.yml
+  - .github/workflows/drift-guard.yml
+review_rounds: 2
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test-primary job (three pytest steps)"
+        read_type: gate
+        extract: "pass 1 (-n auto --cov), pass 2 (serial sftp_docker --cov-append --cov-fail-under=95), pass 3 (tests/scripts -q) run serially in one job; only pass 3 is separable"
+      - file: tests/scripts/
+        section: "minio/azurite/sftp references"
+        read_type: verify
+        extract: "the only backend-name hits are string literals in arg-parsing tests (test_mutate_scopes --container-needs); no live backend is used, so the split-out job needs no start-backends"
+      - file: .github/workflows/ci.yml
+        section: "setup job / Resolve Python versions step"
+        read_type: gate
+        extract: "PRIMARY_PYTHON='3.13' literal feeds primary output + test-matrix (ALL - primary) + typecheck-matrix ([min, primary]); ALL_PYTHONS / MIN_PYTHON are the matrix bounds"
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-207 (tooling-test job), BK-219 (coverage split / centralised Python version config)"
+        read_type: reference
+        extract: "BK-207 originally ran tooling tests in a standalone job (a later roll-up folded them into test-primary); BK-219 removed ~12 hardcoded 3.13 literals — both precedents this item extends"
+      - file: .gitignore
+        section: "(full)"
+        read_type: verify
+        extract: "no .python-version / pyenv ignore, so a tracked root .python-version is not swallowed"
+  - id: implement
+    name: Implement
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test-primary job + new tooling-tests job + gate"
+        read_type: gate
+        extract: "drop test-primary's third `pytest tests/scripts/ -q` step (keep pass-1 --ignore=tests/scripts); add a backend-free tooling-tests job (needs:[setup], no prepare-images/start-backends, enable-cache:false, primary Python); wire tooling-tests into gate needs + results"
+      - file: .python-version
+        section: "(full)"
+        read_type: gate
+        extract: "new root file containing `3.13` — the single source uv/pyenv auto-select locally"
+      - file: .github/workflows/ci.yml
+        section: "setup job / Resolve Python versions step"
+        read_type: gate
+        extract: "drop the PRIMARY_PYTHON env literal; read PRIMARY_PYTHON=$(cat .python-version); add a jq guard that fails if it is not in ALL_PYTHONS (the coupling is now cross-file)"
+      - file: CONTRIBUTING.md
+        section: "Development Setup"
+        read_type: reference
+        extract: "document that .python-version pins the priority interpreter (uv/pyenv pick it up; CI reads it) so local hatch run reproduces CI's coverage lane"
+  - id: verify
+    name: Verify
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "(full)"
+        read_type: verify
+        extract: "YAML parses; gate references tooling-tests; setup runtime unaffected — every job passes explicit python-version to setup-python, which overrides .python-version; the `test` matrix comment pointer now names the dedicated tooling-tests job"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched + versions"
+        read_type: verify
+        extract: "the version-number ripple rows are about the package version (bump-my-version), not the interpreter; supported/tested set (3.10-3.14, primary 3.13) is unchanged, so tested-versions.md / classifiers / badges are untouched (preflight render-docs --check confirms); trace + BACKLOG-DONE + backlogid.json regen satisfy the row; audience infra.ci + contributor.tooling skips CHANGELOG per _schema.yml audience-derived rule"
+  - id: fix
+    name: Fix (PR review)
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "setup job / Detect changed files (CODE_PAT)"
+        read_type: gate
+        extract: "review caught a regression: moving the primary literal out of ci.yml into .python-version left it outside CODE_PAT, so a lone bump yields code=false -> every gating job skips -> gate greens without testing the new interpreter. Added ^\\.python-version$ to CODE_PAT. This is the surprising_ripple — the ripple-check table did not flag the change-detection filter when a source-of-truth file moved"
+      - file: .github/workflows/publish.yml
+        section: "build + publish setup-python steps (also docs.yml, mutation.yml, drift-guard.yml)"
+        read_type: gate
+        extract: "review flagged 'single source of truth' as overstated — four other workflows hardcoded 3.13. Rather than defer (reviewer proposals are advisory), migrated all four to setup-python's `python-version-file: .python-version` in-task and dropped drift-guard's now-unused PY_VERSION env, so the claim holds CI-wide. Release/scheduled workflows are not PR-gating, so no path-filter change is needed for them"
+      - file: CONTRIBUTING.md
+        section: "Development Setup"
+        read_type: reference
+        extract: "reworded to the now-true single-source claim across CI workflows (every workflow reads .python-version)"
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-280 (item)"
+        read_type: reference
+        extract: "review: entry too chatty — trimmed to the valuable insights (UV_SYSTEM_PYTHON=1 keeps installs on the matrix interpreter; CODE_PAT coupling; scope limited to the setup/coverage lane), letting the ci.yml comments carry the mechanical detail"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1-3 + Authoritative Document Format (meaningful minimum)"
+        read_type: gate
+        extract: "round 2: reviewer flagged the ci.yml comments (setup version block, test-matrix tests/scripts note, test-primary header, tooling-tests header) as too long / not content-rules.md. Trimmed each to the load-bearing why, dropping pseudo-precise figures and the historical backlog-ID breadcrumbs (BK-207/BK-219/BK-280) — traceability lives in the BACKLOG-DONE entry and this trace, not inline"
