@@ -1,0 +1,61 @@
+id: BK-278
+title: "Retry CI service image pulls with backoff"
+trigger: >
+  The CI e2e job intermittently failed starting Azurite: `docker run` pulled
+  mcr.microsoft.com/azure-storage/azurite and the registry returned a Microsoft
+  edge/WAF "The request is blocked" page (pull access denied). A bare docker run
+  fails the whole job on the first transient registry hiccup. The failure had
+  recurred, meeting the escalation bar a deferred CI-flake memo had recorded.
+source_items:
+  - BK-278
+audience:
+  - infra.ci
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: triage
+    name: Triage
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(active items)"
+        read_type: gate
+        extract: "No existing backlog item; the deferred memo set a recur-then-escalate bar, now met"
+        outcome: ok
+      - file: .github/actions/start-backends/action.yml
+        section: "Start MinIO / Azurite / SFTP"
+        read_type: reference
+        extract: "Three bare docker-run service starts; the e2e/test/test-primary jobs all share this composite action"
+        outcome: ok
+      - file: .github/workflows/publish.yml
+        section: "Start Azurite"
+        read_type: reference
+        extract: "Inline azurite docker-run copy in the coverage job"
+        outcome: ok
+      - file: .github/workflows/mutation.yml
+        section: "Start MinIO / Azurite / SFTP"
+        read_type: reference
+        extract: "Three inline -mut docker-run copies — same bare-pull pattern duplicated"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/ci_docker_pull.sh
+        section: "(full)"
+        read_type: reference
+        extract: "5-attempt exponential-backoff docker pull; pre-pull before each docker run so the run uses a now-local image"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: .github/actions/start-backends/action.yml
+        section: "(full)"
+        read_type: verify
+        extract: "All three YAML files parse; image ref single-sourced per block via $img; bash -n clean on the helper"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "infra.ci + contributor.tooling skip CHANGELOG; BACKLOG-DONE move + backlogid.json regen; trace shipped same PR"
+        outcome: ok
