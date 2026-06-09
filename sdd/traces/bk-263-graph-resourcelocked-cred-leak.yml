@@ -11,6 +11,12 @@ audience:
   - user.api
   - library.maintainer
   - infra.test
+review_rounds: 1
+surprising_ripples:
+  # Amending GR-045's resume narrative drifted the public write() Raises: clause
+  # in backend.py — a mkdocstrings-rendered surface the ripple-check table did not
+  # flag. Caught in PR #778 review, not during the original sweep.
+  - src/remote_store/aio/backends/_graph/backend.py
 phases:
   - id: orient
     name: Orient
@@ -57,6 +63,14 @@ phases:
         section: "_resource_locked_mid_session"
         read_type: reference
         extract: "Redact session_url before embedding; reword to drop resume-from-message"
+  - id: fix
+    name: Review fix (PR #778)
+    steps:
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "write (Raises:)"
+        read_type: reference
+        extract: "Public Raises: clause still promised caller-driven resume; reword to match amended GR-045 (no credentialed URL exposed)"
+        outcome: misleading
   - id: verify
     name: Verify
     steps:
