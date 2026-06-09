@@ -117,6 +117,7 @@ dev = [
   "pytest-recording>=0.13",
   "respx>=0.20",  # ID-127: stub httpx.AsyncClient for Graph backend unit tests
   "pytest-xdist>=3.5",
+  "pytest-randomly>=3.15",  # BK-277: randomised test order in the `test-isolation` proof lane
   "hypothesis>=6.0",
   "moto[server,s3]>=5.2.0",
   # vcrpy (pulled by pytest-recording) 8.1.1 references
@@ -165,17 +166,25 @@ lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
 typecheck = "mypy src/ examples/"
-# Tests are split into two passes:
-#   Pass 1: `-n auto` parallel for every backend EXCEPT sftp_docker. The
+# Local test runs are resource-bounded, not `-n auto` (BK-277):
+# `scripts/run_tests.py` caps xdist workers to leave the machine usable when
+# several suites run at once (see its docstring; `RS_TEST_WORKERS=auto`
+# restores per-CPU behaviour, `RS_TEST_WORKERS=<n>` forces a count). CI keeps
+# `-n auto` — its workflows call pytest inline, not these `hatch` scripts, so
+# this change is local-only. Two passes:
+#   Pass 1: bounded-parallel for every backend EXCEPT sftp_docker. The
 #           sftp_docker fixture is filtered out by registry.fixture_params
 #           when PYTEST_XDIST_WORKER is set (atmoz/sftp's OpenSSH daemon
 #           is unreliable under concurrent xdist worker connections).
 #   Pass 2: serial single-process for sftp_docker conformance variants only.
 # `-p no:benchmark` suppresses PytestBenchmarkWarning under xdist
 # (filterwarnings=error would otherwise turn it into INTERNALERROR);
-# bench-* scripts load the plugin explicitly.
+# bench-* scripts load the plugin explicitly. Order determinism is handled
+# globally by `-p no:randomly` in [tool.pytest.ini_options] addopts (so CI's
+# inline pytest is deterministic too); the `test-isolation` lane re-enables
+# randomisation with `-p randomly`.
 test = [
-  "pytest -n auto -p no:benchmark",
+  "python scripts/run_tests.py -p no:benchmark",
   "pytest -p no:benchmark -k sftp_docker tests/backends/conformance/",
 ]
 # Coverage variants. `test-cov` reports coverage with no floor — everyday
@@ -185,18 +194,25 @@ test = [
 # workflow; needs Azurite running locally (Stage-2 Azure-backend fixtures
 # contribute the coverage that makes the 95% floor reachable).
 test-cov = [
-  "pytest -n auto -p no:benchmark --cov=remote_store --cov-report=",
+  "python scripts/run_tests.py -p no:benchmark --cov=remote_store --cov-report=",
   "pytest -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-report=xml -k sftp_docker tests/backends/conformance/",
 ]
-test-cov-s1 = "pytest -n auto -p no:benchmark --stage=1 --cov=remote_store --cov-report=term-missing --cov-report=xml"
+test-cov-s1 = "python scripts/run_tests.py -p no:benchmark --stage=1 --cov=remote_store --cov-report=term-missing --cov-report=xml"
 test-cov-strict = [
-  "pytest -n auto -p no:benchmark --cov=remote_store --cov-report=",
+  "python scripts/run_tests.py -p no:benchmark --cov=remote_store --cov-report=",
   "pytest -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-report=xml --cov-fail-under=95 -k sftp_docker tests/backends/conformance/",
 ]
 test-cov-branch = [
-  "pytest -n auto -p no:benchmark --cov=remote_store --cov-branch --cov-report=",
+  "python scripts/run_tests.py -p no:benchmark --cov=remote_store --cov-branch --cov-report=",
   "pytest -p no:benchmark --cov=remote_store --cov-append --cov-branch --cov-report=term-missing --cov-report=xml -k sftp_docker tests/backends/conformance/",
 ]
+# Isolation proof lane (BK-277): bounded-parallel + randomised order to flush
+# hidden cross-test state — the explicit "prove no hidden state" run. `-p
+# randomly` re-enables pytest-randomly (the global addopts `-p no:randomly` keeps
+# every other run deterministic); the CLI flag wins because it is processed
+# after addopts. Stage-1 so it needs no Docker; run it a few times. Each run
+# prints its seed; reproduce a surfaced failure with `--randomly-seed=<n>`.
+test-isolation = "python scripts/run_tests.py -p no:benchmark -p randomly --stage=1"
 # Records HTTP cassettes from a live service; requires backend credentials.
 record-azure = "python scripts/record_cassettes.py --backend azure"
 # Records Graph cassettes from a live consumer drive; device-code sign-in on
@@ -208,7 +224,7 @@ record-graph = "python scripts/record_cassettes.py --backend graph"
 examples = "python tests/scripts/run_examples.py"
 notebooks = "python tests/scripts/run_notebooks.py"
 # End-to-end tests against Docker backends (docker compose -f infra/docker-compose.yml up -d)
-e2e = "pytest tests/e2e/ -v -o addopts="
+e2e = "pytest tests/e2e/ -v -o addopts= -p no:randomly"
 bench = 'pytest benchmarks/ -v --benchmark-sort=mean -m "not standard and not full"'
 bench-standard = 'pytest benchmarks/ -v --benchmark-sort=mean -m "not full"'
 bench-full = "pytest benchmarks/ -v --benchmark-sort=mean"
@@ -352,7 +368,14 @@ pythonpath = ["."]
 # Exclude `live` tests by default — they need a real cloud account.
 # Run them explicitly with: hatch run pytest -m live (env vars must be set;
 # see e.g. docs-src/guides/backends/azure-hns-setup.md).
-addopts = "--ignore=tests/e2e -m 'not live'"
+# `-p no:randomly` keeps order deterministic for EVERY pytest invocation —
+# including CI's inline `pytest` (which does not go through the hatch `test*`
+# scripts), reproducible local runs, and ad-hoc runs (BK-277). The
+# `test-isolation` lane re-enables randomisation with `-p randomly`, which
+# overrides this opt-out because command-line `-p` args are processed after
+# addopts. Without this global default, installing pytest-randomly would shuffle
+# every run by default and surface order-dependence as CI flake.
+addopts = "--ignore=tests/e2e -m 'not live' -p no:randomly"
 filterwarnings = [
   "error",
   # SQLAlchemy's connection pool on SQLite may leave DBAPI connections for GC to
