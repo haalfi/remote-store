@@ -10695,7 +10695,7 @@ workflow's runner) so the lock is comparable.</p>
 <li><strong>New backend</strong>: see <a href="#adding-a-new-backend">§ Adding a New Backend</a> above.</li>
 <li><strong>New extension</strong>: see <a href="#adding-an-extension">§ Adding an Extension</a> above (12-step checklist).</li>
 <li><strong>New Store method / cross-reference validation</strong>: see the ripple-check table in <code>sdd/CLAUDE-REFERENCE.md</code>.</li>
-<li><strong>Pre-PR validation</strong>: run <code>hatch run all</code>, verify CHANGELOG and BACKLOG are updated, then check the ripple-check table in <code>sdd/CLAUDE-REFERENCE.md</code>.</li>
+<li><strong>Pre-PR validation</strong>: run the <a href="https://github.com/haalfi/remote-store/blob/master/sdd/CLAUDE-REFERENCE.md#pr-validation-gates">PR validation gates</a> — <code>hatch run all</code> for a code change, or the lighter <code>hatch run lint</code> + <code>hatch run docs-gate</code> for a docs/specs-only change — then verify CHANGELOG and BACKLOG are updated and check the ripple-check table in <code>sdd/CLAUDE-REFERENCE.md</code>. Running <code>hatch run all</code> is always a safe superset if you would rather not classify the diff.</li>
 </ul>
 <p><a id="release"></a></p>
 <h2 id="release">Release<a class="headerlink" href="#release" title="Permanent link">&para;</a></h2>
