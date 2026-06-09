@@ -156,6 +156,15 @@ dependencies = [
   "pytest-gremlins>=1.5; python_version>='3.11'",
 ]
 
+[tool.hatch.envs.default.overrides]
+# BK-269: force the pip installer in CI. With `installer = "uv"` above, hatch's
+# dependency sync silently drops the env `features` (the dev/docs/bench extras)
+# on GitHub runners — the `lint` job came up without `griffe` (the same hatch +
+# uv installer bug recorded in .github/workflows/mutation.yml). Local dev keeps
+# uv (fast); GITHUB_ACTIONS is always "true" on runners, so this only flips the
+# installer in CI.
+env.GITHUB_ACTIONS.installer = { value = "pip", if = ["true"] }
+
 [tool.hatch.envs.default.scripts]
 # Fast artifact-drift checks (gen_graph, gen_features, gen_graph_viz, check_api_docs).
 # Surfacing them ahead of `lint` in `hatch run all` catches drift in seconds rather

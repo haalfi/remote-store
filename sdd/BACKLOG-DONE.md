@@ -19,10 +19,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   so the `pyproject.toml` script lists are the single source and CI inherits any
   future checker automatically. `actionlint` is unchanged (not a hatch target). Side
   effect: `drift_check render-docs --check` (in `preflight`, previously in no PR CI
-  lane) now gates tested-versions drift, closing part of audit M5. The env stays
-  uv-built per the `mutation.yml` gotcha (hatch + uv installer can silently drop
-  `features`): the PR's own `lint` run is the empirical probe, with a `GITHUB_ACTIONS`
-  `installer = "pip"` override as the ready fallback if features drop. Did not fold
+  lane) now gates tested-versions drift, closing part of audit M5. The CI env uses
+  the **pip** installer via a `GITHUB_ACTIONS`-keyed `[tool.hatch.envs.default.overrides]`
+  in `pyproject.toml`; local dev keeps uv. This is required, not precautionary: the
+  PR's own `lint` run confirmed the `mutation.yml` hatch + uv bug — the uv installer
+  silently dropped the env `features` and the job came up without `griffe` — even
+  though it did not reproduce locally. Did not fold
   the targets into a single `lint` (preserves `preflight`'s fast-fail ordering in
   `hatch run all`); the `sdd/specs`/docs-only filter gaps and skill delegation remain
   BK-270 / BK-271. Trace: `sdd/traces/bk-269-ci-lint-delegates-to-hatch.yml`.
