@@ -8,6 +8,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-276 — Flaky `PytestUnraisableExceptionWarning` cross-attribution under `pytest -n auto`** (promoted from ID-217)
+  spec: — · effort: M · audience: infra.test
+  pytest-asyncio 1.3 on Python 3.13 (Windows `ProactorEventLoop`) left each
+  per-test event loop unclosed after teardown; its self-pipe loopback socket
+  pair fired `ResourceWarning` on the next cyclic GC, cross-attributed by xdist
+  to whichever test was running on that worker, and `filterwarnings = error`
+  promoted it to a spurious hard failure (the blamed test varied run-to-run and
+  always passed in isolation). `tracemalloc` pinned two creation paths: pytest-
+  asyncio's `asyncio.Runner` loop and the ID-158 `asyncio.get_event_loop()`
+  phantom (3.13 auto-creates via the policy). Fix (`tests/_helpers.py`,
+  `tests/conftest.py`): patch `BaseDefaultEventLoopPolicy.new_event_loop` — the
+  single chokepoint both paths funnel through — to weakly track every loop, then
+  a `pytest_runtest_teardown` hookwrapper closes abandoned (non-running,
+  unclosed) tracked loops after each test, before the next GC can free their
+  sockets. The `WeakSet` sweep adds ~1.5% wall-time; a whole-heap
+  `gc.get_objects()` sweep doubled it, and a GC-start callback closed in-use
+  loops mid-test and was rejected. The session sweep (ID-158) stays as a broad
+  backstop. Verified clean under a per-boundary-GC stress (was 12 leaked loops,
+  now 0). Regression: `tests/test_async_loop_leak_guard.py`. Trace:
+  `sdd/traces/bk-276-event-loop-leak-guard.yml`.
+
 - [x] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
   spec: GR-001..GR-058, ERR-013 · effort: L · audience: user.api
   Unified async backend covering OneDrive (personal & business) and SharePoint

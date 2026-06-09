@@ -1,0 +1,80 @@
+id: BK-276
+title: "Per-test event-loop sweep for flaky PytestUnraisableExceptionWarning (ID-217)"
+trigger: >
+  The parallel suite (pytest -n auto) intermittently failed with a
+  PytestUnraisableExceptionWarning that filterwarnings=error promoted to a hard
+  failure. The blamed test varied run-to-run and always passed in isolation,
+  pointing at a cross-attributed mid-run GC of an unclosed ProactorEventLoop +
+  loopback socket pair rather than a defect in the blamed test.
+source_items:
+  - BK-276
+  - ID-217
+  - ID-158
+audience:
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: reproduce
+    name: Reproduce and diagnose
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-217 (item)"
+        read_type: gate
+        extract: "Memo: tracemalloc-locate the leaked loop, close at source; do not just scope the warning"
+        outcome: ok
+      - file: tests/conftest.py
+        section: "_close_leaked_event_loops"
+        read_type: reference
+        extract: "Existing ID-158 sweep runs only at session teardown — too late for a mid-run GC"
+        outcome: ok
+      - file: src/remote_store/_async_to_sync_adapter.py
+        section: "__init__ / close"
+        read_type: reference
+        extract: "Plan's A1 hypothesis (adapter loop has no finalizer); tracemalloc disproved it — the daemon thread keeps the adapter loop alive, so it is not the mid-run leak"
+        outcome: misleading
+      - file: tests/aio/test_async_to_sync_adapter.py
+        section: "TestRunningLoopFailFast.test_raises_from_running_loop"
+        read_type: reference
+        extract: "asyncio.run + get_event_loop here exercises the ID-158 phantom-loop path that survived a module-level new_event_loop patch"
+        outcome: ok
+  - id: tests
+    name: Failing-first regression
+    steps:
+      - file: sdd/000-process.md
+        section: "Rule 6 (Bug-fix protocol)"
+        read_type: gate
+        extract: "Write the failing test, see it fail, then fix"
+        outcome: ok
+      - file: tests/_helpers.py
+        section: "(module)"
+        read_type: reference
+        extract: "Shared-helper location for the tracker + sweep so conftest and the regression import one source"
+        outcome: ok
+  - id: implement
+    name: Implement the leak guard
+    steps:
+      - file: tests/_helpers.py
+        section: "install_event_loop_tracker / sweep_tracked_event_loops"
+        read_type: reference
+        extract: "Patch BaseDefaultEventLoopPolicy.new_event_loop (the chokepoint both Runner and get_event_loop paths funnel through); WeakSet-track loops; teardown-only sweep"
+        outcome: ok
+      - file: tests/conftest.py
+        section: "pytest_configure / pytest_runtest_teardown / _close_leaked_event_loops"
+        read_type: reference
+        extract: "Install tracker at configure; fast per-test wrapper sweep after pytest-asyncio teardown; broad session backstop + uninstall"
+        outcome: ok
+  - id: verify
+    name: Verify and ship
+    steps:
+      - file: tests/test_async_loop_leak_guard.py
+        section: "(full)"
+        read_type: verify
+        extract: "Deterministic regression: sweep closes abandoned loops, leaves running loops untouched, no ResourceWarning on GC"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG→BACKLOG-DONE move, infra.test skips CHANGELOG, trace shipped same PR, backlogid.json regen"
+        outcome: ok

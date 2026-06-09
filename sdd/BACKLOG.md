@@ -526,23 +526,6 @@ area.
   into separate IDs. No priority until the gate is shown to miss a real
   regression; promote to BK-prefix at that point.
 
-- [ ] **ID-217 — Flaky `PytestUnraisableExceptionWarning` cross-attribution under `pytest -n auto`**
-  spec: — · effort: M · audience: infra.test
-  The parallel suite intermittently fails with a
-  `PytestUnraisableExceptionWarning` raised by pytest's `collect_unraisable`:
-  an unclosed loopback socket pair plus a `ProactorEventLoop` get garbage-
-  collected mid-run and are cross-attributed to whichever test happens to be
-  executing on that xdist worker at GC time. The blamed test varies run to
-  run (observed: `tests/scripts/test_gen_graph.py::test_graph_deterministic_in_process`
-  on one run, `tests/ext/test_dagster.py::TestSerializerRoundtrips::test_roundtrip[pickle]`
-  on the next) and always passes in isolation, so the failure is spurious;
-  `filterwarnings = error` promotes the warning to a hard failure. The true
-  leak is a fixture/SDK on another module leaving a socket + event loop open
-  at teardown, not the blamed test. Investigation: enable `tracemalloc` to
-  locate the allocation site, then close the resource at its source (or scope
-  the warning). Memo only — no fix scoped yet; promote to BK-prefix when it
-  blocks a green local run often enough to prioritise.
-
 ---
 
 ## Docs & Discoverability
