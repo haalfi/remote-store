@@ -1,7 +1,6 @@
 ---
 name: fix-pr
 description: Read review comments from a PR, fix each issue, resolve threads, validate
-disable-model-invocation: true
 argument-hint: "[PR number]"
 ---
 
@@ -21,13 +20,9 @@ Read the PR state via `gh pr view <resolved PR number> --repo haalfi/remote-stor
 
 Check out the PR's head branch.
 
-**Freshness check:** Run `git fetch origin master`, then
-`git rev-list --count origin/master ^HEAD`. If the count is non-zero, the
-branch is behind `origin/master`. Stop and ask the user whether to rebase.
-If approved: `git rebase origin/master` then immediately
-`git push --force-with-lease origin <current-branch>`, so Step 6's push is a
-plain fast-forward. Do not rebase silently — `--force-with-lease` is
-destructive to anyone tracking the branch.
+**Freshness check:** Run the shared [branch freshness
+check](../../../sdd/CLAUDE-REFERENCE.md#branch-freshness) with `<BASE>` =
+`master`, so Step 6's push is a plain fast-forward.
 
 Read PR **content** (diff, files, body) via `gh` CLI when available; read review
 **feedback with resolution state** (the four comment sources below) via the
@@ -106,19 +101,10 @@ Only resolve threads you fixed. No gh? Tell user to resolve manually.
 
 Run `hatch run lint`. Fix failures, re-run until clean.
 
-**Coverage gate:** Check `git diff origin/master...HEAD --name-only` for files under `src/`, `tests/`, or `examples/`.
-- If any match: run `hatch run test-cov-strict` (enforces 95%; needs Azurite running locally — see [CLAUDE.md § Coverage gate](../../../CLAUDE.md#coverage-gate)). If it fails, stop and report which files are below threshold.
-- If none match (docs/config-only): run `hatch run test`.
-
-5a. **Testing gate:** Do the changed tests follow the rules in `sdd/TESTING.md`?
-    Report violations before commit.
-
-5b. **Docs gate:** Does changed documentation follow the rules in `sdd/CONTENT-RULES.md`?
-    Report violations before commit.
-
-5d. **Local-machine reference gate:** Grep changed files for private local-machine
-    references unreachable from the repo, per the [ripple-check Local-machine reference row](../../../sdd/CLAUDE-REFERENCE.md#pre-work-index)
-    (patterns + scope live there). Fix before committing.
+Then run the shared [PR validation
+gates](../../../sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — testing, docs,
+coverage, local-machine reference — with `<BASE>` = `master`. Report violations
+and resolve any stop condition before committing.
 
 5c. **Trace update:** Find the trace already on this branch via
     `git diff origin/master...HEAD --name-only` — any `sdd/traces/*.yml`

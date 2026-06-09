@@ -1,7 +1,6 @@
 ---
 name: pr
 description: Create a pull request for the current branch
-disable-model-invocation: true
 argument-hint: "[base branch]"
 ---
 
@@ -16,58 +15,42 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
 
 ## Steps
 
-1. **Pre-check:** Verify not on master, working tree clean, branch pushed to remote.
-   Push with `-u` if needed.
+1. **Pre-check:** Verify not on master, working tree clean, branch pushed to
+   remote. Push with `-u` if needed. Then run the [branch freshness
+   check](../../../sdd/CLAUDE-REFERENCE.md#branch-freshness) with `<BASE>`.
 
-   **Freshness check:** Run `git fetch origin <BASE>`, then
-   `git rev-list --count origin/<BASE> ^HEAD`. If the count is non-zero, the
-   branch is behind `origin/<BASE>`. Stop and ask the user whether to rebase.
-   If approved: `git rebase origin/<BASE>` then immediately
-   `git push --force-with-lease origin <current-branch>`, so subsequent steps
-   see the rebased commits on the remote. Do not rebase silently —
-   `--force-with-lease` is destructive to anyone tracking the branch.
+2. **Validation gates:** Run the shared [PR validation
+   gates](../../../sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — testing, docs,
+   coverage, local-machine reference. Resolve any stop condition before drafting
+   the PR.
 
-2a. **Testing gate:** Do the changed tests follow the rules in `sdd/TESTING.md`?
-    Report violations before drafting the PR.
+3. **Trace gate:** Extract backlog IDs from `git log origin/<BASE>..HEAD --format=%s`
+   using the pattern `^([A-Z]+-\d+[a-z]?)[:\s]` against each subject — the ID
+   is the leading `PREFIX-NNN` token, optionally followed by a single
+   lowercase letter for split items (e.g. `BK-167a`, allowed by
+   `sdd/traces/_schema.yml`), then `:` or whitespace (per [CLAUDE.md § Backlog](../../../CLAUDE.md#backlog),
+   commit subjects start with the item ID). For each unique ID, look up a
+   matching trace **case-insensitively** — `find sdd/traces -iname '<id>-*.yml'` —
+   because existing trace filenames mix lowercase and uppercase prefixes.
+   If any ID has no match, stop and ask the user — [CLAUDE.md § Trace
+   authoring (mandatory)](../../../CLAUDE.md#trace-authoring) requires the trace to ship in the same PR as the
+   work. Schema: `sdd/traces/_schema.yml`. No ID-prefixed commits? Skip the gate.
 
-2b. **Docs gate:** Does changed documentation follow the rules in `sdd/CONTENT-RULES.md`?
-    Report violations before drafting the PR.
-
-2c. **Coverage gate:** Check `git diff origin/<BASE>...HEAD --name-only` for files under `src/`, `tests/`, or `examples/`.
-    - If any match: run `hatch run test-cov-strict` (enforces 95%; needs Azurite running locally — see [CLAUDE.md § Coverage gate](../../../CLAUDE.md#coverage-gate)). If it fails, stop and report which files are below threshold. Do **not** create the PR until coverage passes.
-    - If none match (docs/config-only): run `hatch run test`. A `scripts/`-only diff lands here, yet scripts have guard tests under `tests/scripts/` (e.g. source-order assertions) that the strict-coverage trigger never fires for — so still run the suite. If it fails, stop and report.
-
-2e. **Local-machine reference gate:** Grep changed files for private local-machine
-    references unreachable from the repo, per the [ripple-check Local-machine reference row](../../../sdd/CLAUDE-REFERENCE.md#pre-work-index)
-    (patterns + scope live there). Fix before creating the PR.
-
-2d. **Trace gate:** Extract backlog IDs from `git log origin/<BASE>..HEAD --format=%s`
-    using the pattern `^([A-Z]+-\d+[a-z]?)[:\s]` against each subject — the ID
-    is the leading `PREFIX-NNN` token, optionally followed by a single
-    lowercase letter for split items (e.g. `BK-167a`, allowed by
-    `sdd/traces/_schema.yml`), then `:` or whitespace (per [CLAUDE.md § Backlog](../../../CLAUDE.md#backlog),
-    commit subjects start with the item ID). For each unique ID, look up a
-    matching trace **case-insensitively** — `find sdd/traces -iname '<id>-*.yml'` —
-    because existing trace filenames mix lowercase and uppercase prefixes.
-    If any ID has no match, stop and ask the user — [CLAUDE.md § Trace
-    authoring (mandatory)](../../../CLAUDE.md#trace-authoring) requires the trace to ship in the same PR as the
-    work. Schema: `sdd/traces/_schema.yml`. No ID-prefixed commits? Skip the gate.
-
-3. **Gather context:** `git log origin/<BASE>..HEAD --oneline` and `git diff origin/<BASE>...HEAD`
+4. **Gather context:** `git log origin/<BASE>..HEAD --oneline` and `git diff origin/<BASE>...HEAD`
    to understand all changes (not just the latest commit). Use `origin/<BASE>`,
    not local `<BASE>`, so context does not depend on a stale local ref.
 
-4. **Draft PR:** Title (<70 chars) + body. Read `.github/PULL_REQUEST_TEMPLATE.md`
+5. **Draft PR:** Title (<70 chars) + body. Read `.github/PULL_REQUEST_TEMPLATE.md`
    and fill each section from gathered context: summary bullets from commits,
    check the appropriate Type of change box, link any related issues, fill the
    Checklist. The template is the authoritative body shape.
 
-5. **Create PR** using `create_pull_request`:
+6. **Create PR** using `create_pull_request`:
    - `owner: "haalfi"`, `repo: "remote-store"`
    - `head:` current branch, `base:` `<BASE>`
-   - `title:` and `body:` from step 4
+   - `title:` and `body:` from step 5
 
-6. **Report** the PR URL.
+7. **Report** the PR URL.
 
 ## Rules
 

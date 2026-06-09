@@ -39,6 +39,11 @@
           },
           {
             "type": "command",
+            "if": "Bash(gh pr create*)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/warn-direct-pr.sh"
+          },
+          {
+            "type": "command",
             "if": "Bash(pytest*)",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-bare-runner.sh 'pytest → hatch run test'"
           },
@@ -91,6 +96,15 @@
             "type": "command",
             "if": "Bash(echo*)",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny-bare-runner.sh 'echo → output text directly or use Write tool'"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*__create_pull_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/warn-direct-pr.sh"
           }
         ]
       }
