@@ -1,0 +1,73 @@
+id: BK-279
+title: "Share CI service images via a cache instead of pulling per job"
+trigger: >
+  BK-278's per-job backoff retry still pulled every backend image (MinIO from
+  cgr.dev, Azurite from mcr.microsoft.com, SFTP from Docker Hub) on each of the
+  ~8 backend jobs per run, so a Microsoft WAF "request is blocked" page or a
+  Docker Hub timeout that outlasted the ~75s retry window could still redden
+  `gate`; `fail-fast` then cancelled the sibling matrix shards, turning one
+  blocked pull into a red run.
+source_items:
+  - BK-279
+  - BK-278
+audience:
+  - infra.ci
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .github/actions/start-backends/action.yml
+        section: "Start MinIO / Azurite / SFTP"
+        read_type: reference
+        extract: "Composite action pre-pulls each image then docker-runs it; shared by test / test-primary / pyarrow24-check / e2e"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "test, test-primary, pyarrow24-check, e2e, gate"
+        read_type: gate
+        extract: "Which jobs start backends; gate's needs[] + results[] array; test matrix derives from ALL_PYTHONS - PRIMARY so no shard collides on cache keys"
+        outcome: ok
+      - file: .github/workflows/publish.yml
+        section: "Start Azurite"
+        read_type: reference
+        extract: "Inline azurite image ref duplicated outside start-backends"
+        outcome: ok
+      - file: .github/workflows/mutation.yml
+        section: "Start MinIO / Azurite / SFTP, Restore gremlins cache"
+        read_type: reference
+        extract: "Three inline -mut image refs (more duplication); actions/cache@v5 is the repo's pinned cache version"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/ci_docker_pull.sh
+        section: "(full)"
+        read_type: reference
+        extract: "Reuse the 5-attempt backoff pull inside ci_save_images.sh and as start-backends' inspect-or-pull fallback"
+        outcome: ok
+      - file: scripts/ci_service_images.sh
+        section: "(full)"
+        read_type: reference
+        extract: "New single source of the three refs; sourced by start-backends, prepare-images, publish, mutation; its hash is the cache key"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_infra_settings.py
+        section: "check_ci_no_dash_p_literals, check_ci_no_credential_literals"
+        read_type: verify
+        extract: "Edits keep -p ${VAR}:N and reference creds as $VAR; no new literals introduced in the four CI files"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "prepare-images, fail-fast, gate"
+        read_type: verify
+        extract: "All YAML parses; cache key consistent across prime/restore; prepare-images in gate needs[] + results[]; save gated on bundle.complete; bash -n clean on the three new scripts"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "infra.ci + contributor.tooling skip CHANGELOG; BACKLOG-DONE entry + backlogid.json regen; trace shipped same PR"
+        outcome: ok

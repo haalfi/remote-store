@@ -85,7 +85,8 @@ jobs:
       - name: Start MinIO
         if: contains(fromJSON(needs.setup.outputs.minio-scopes), matrix.scope)
         run: |
-          img=cgr.dev/chainguard/minio:latest-dev@sha256:2d8f8a3f8da60885794dfd0749c9d49c985b0ee642f1c522e6aa93be59f34a84
+          . scripts/ci_service_images.sh
+          img="$MINIO_IMAGE"
           bash scripts/ci_docker_pull.sh "$img"
           docker run -d --name minio-mut -p ${MINIO_HOST_PORT}:9000 \
             -e MINIO_ROOT_USER=${MINIO_ACCESS_KEY} -e MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY} \
@@ -98,7 +99,8 @@ jobs:
       - name: Start Azurite
         if: contains(fromJSON(needs.setup.outputs.azurite-scopes), matrix.scope)
         run: |
-          img=mcr.microsoft.com/azure-storage/azurite:3.35.0
+          . scripts/ci_service_images.sh
+          img="$AZURITE_IMAGE"
           bash scripts/ci_docker_pull.sh "$img"
           docker run -d --name azurite-mut -p ${AZURITE_HOST_PORT}:10000 \
             "$img" \
@@ -111,7 +113,8 @@ jobs:
       - name: Start SFTP
         if: contains(fromJSON(needs.setup.outputs.sftp-scopes), matrix.scope)
         run: |
-          img=atmoz/sftp:alpine
+          . scripts/ci_service_images.sh
+          img="$SFTP_IMAGE"
           bash scripts/ci_docker_pull.sh "$img"
           docker run -d --name sftp-mut -p ${SFTP_HOST_PORT}:22 \
             "$img" \

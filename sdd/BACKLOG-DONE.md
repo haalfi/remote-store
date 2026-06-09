@@ -8,6 +8,33 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-279 — Share CI service images via a cache instead of pulling per job**
+  spec: — · effort: M · audience: infra.ci, contributor.tooling
+  BK-278's per-job backoff retry still pulled every backend image (MinIO from
+  `cgr.dev`, Azurite from `mcr.microsoft.com`, SFTP from Docker Hub) on each of
+  the ~8 backend jobs per run, so a Microsoft WAF block or Docker Hub timeout
+  that outlasted the ~75s retry window could still redden `gate` — and
+  `fail-fast` then cancelled the sibling matrix shards. New `prepare-images` job
+  primes an `actions/cache` tar once per run: on a miss it pulls each image
+  (reusing `ci_docker_pull.sh`'s backoff) and `docker save`s them via
+  `scripts/ci_save_images.sh`; on a hit nothing is pulled. The backend jobs
+  (`test`, `test-primary`, `pyarrow24-check`, `e2e`) `needs: prepare-images`,
+  restore the same tar, and `docker load` it (`scripts/ci_load_images.sh`)
+  before `start-backends`, which now does `docker image inspect || pull` so a
+  loaded image skips the upstream pull and an unloaded one still falls back to
+  the retry. A normal run does ZERO upstream pulls and, on cross-run cache
+  reuse, is immune to the blocks entirely; the first run after an image-ref
+  change pulls once to re-prime. `fail-fast: false` on the `test` matrix stops
+  one block from cancelling siblings. The three refs are single-sourced in
+  `scripts/ci_service_images.sh` (sourced by `start-backends`, the new job, and
+  — removing the prior duplication — `publish.yml` + `mutation.yml`); the cache
+  key hashes that file so a ref bump busts and re-primes the cache. The cache is
+  best-effort: `ci_save_images.sh` only persists when all three images bundle,
+  so a partial/empty tar never sticks under the key. `publish.yml` and
+  `mutation.yml` are not exercised by PR CI; their edits are static-validated
+  (`bash -n`, actionlint, `check_infra_settings.py`) only. Trace:
+  `sdd/traces/bk-279-ci-share-service-images.yml`.
+
 - [x] **BK-278 — Retry CI service image pulls (Azurite/MinIO/SFTP) with backoff**
   spec: — · effort: S · audience: infra.ci, contributor.tooling
   CI service containers were started with a bare `docker run`, so a single

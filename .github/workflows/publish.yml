@@ -56,7 +56,8 @@ jobs:
           echo "AZURITE_HOST_PORT=$AZURITE_HOST_PORT" >> $GITHUB_ENV
       - name: Start Azurite
         run: |
-          img=mcr.microsoft.com/azure-storage/azurite:3.35.0
+          . scripts/ci_service_images.sh
+          img="$AZURITE_IMAGE"
           bash scripts/ci_docker_pull.sh "$img"
           docker run -d --name azurite -p ${AZURITE_HOST_PORT}:10000 \
             "$img" \
