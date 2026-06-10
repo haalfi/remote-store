@@ -119,3 +119,15 @@ phases:
           (warm cache => no real token POST recorded); folded into PR 2 (EnvRedact hyphen form + drop
           X-AnchorMailbox + oid-anchor forbidden marker) per user decision, not a separate item.
         outcome: ok
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "TestGraphCassetteScrub real-literal scrub (PR gate qualitative review)"
+        read_type: verify
+        extract: >-
+          PR-gate qualitative review caught the real OneDrive drive cid hardcoded as a test literal
+          (the live X-AnchorMailbox oid low-64 matched it exactly) plus a base64 JWT payload encoding
+          the real account email — both pre-existing from #787, carried forward unchanged by PR 1's
+          rewrite, present only in test source (cassettes were clean). Per user decision, scrubbed in
+          PR 1 (file PR 1 already owns): cid -> obviously-fake deadbeefcafe0123 both cases, email ->
+          user@example.com, zero test-behaviour change (3 affected tests still pass). Not a local-path
+          gate hit; judgment-based catch.
+        outcome: ok

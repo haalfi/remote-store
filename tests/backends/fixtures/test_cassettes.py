@@ -267,15 +267,15 @@ class TestGraphCassetteScrub:
         host carries the drive id (the cid AND the long ``b!…`` form) in its PATH,
         which the old query-only wipe left intact. The pre-signed-host collapse
         removes both."""
-        cfg = build_graph_vcr_config(real_drive_id="4fde4d5aac63bdf1")
+        cfg = build_graph_vcr_config(real_drive_id="deadbeefcafe0123")
         loc = (
-            "https://my.microsoftpersonalcontent.com/personal/4FDE4D5AAC63BDF1"
+            "https://my.microsoftpersonalcontent.com/personal/DEADBEEFCAFE0123"
             "/_api/v2.0/drives/b!3XW1UgCSb0aoUxhAGtlXy8vVrIsFxBxJm9hrzwaK5lr1q/operations/copy"
         )
         resp: dict[str, Any] = {"headers": {"Location": loc}, "body": {"string": b""}}
         scrubbed = cfg["before_record_response"](resp)["headers"]["Location"]
         assert scrubbed == GRAPH_PRESIGNED_PLACEHOLDER
-        assert "4FDE4D5AAC63BDF1" not in scrubbed
+        assert "DEADBEEFCAFE0123" not in scrubbed
         assert "b!3XW1Ug" not in scrubbed
 
     def test_api_host_location_preserved_and_id_normalised(self) -> None:
@@ -314,17 +314,17 @@ class TestGraphCassetteScrub:
         the lower-cased env value leaked the upper-cased copies; the rewrite is
         case-insensitive and maps every casing to the same ``FAKE_DRIVE_ID`` so
         id/eTag self-comparisons within a cassette still match."""
-        cfg = build_graph_vcr_config(real_drive_id="4fde4d5aac63bdf1")
+        cfg = build_graph_vcr_config(real_drive_id="deadbeefcafe0123")
         body = (
-            b'{"id":"4FDE4D5AAC63BDF1!s0123abcd",'
-            b'"eTag":"\\"4FDE4D5AAC63BDF1!112.0\\"",'
+            b'{"id":"DEADBEEFCAFE0123!s0123abcd",'
+            b'"eTag":"\\"DEADBEEFCAFE0123!112.0\\"",'
             b'"name":"f.txt",'
-            b'"webUrl":"https://onedrive.live.com?cid=4fde4d5aac63bdf1&id=4FDE4D5AAC63BDF1!112"}'
+            b'"webUrl":"https://onedrive.live.com?cid=deadbeefcafe0123&id=DEADBEEFCAFE0123!112"}'
         )
         scrubbed = cfg["before_record_response"]({"body": {"string": body}})["body"]["string"]
         # No casing of the real cid survives, in either the lower- or upper-cased form.
-        assert b"4FDE4D5AAC63BDF1" not in scrubbed
-        assert b"4fde4d5aac63bdf1" not in scrubbed
+        assert b"DEADBEEFCAFE0123" not in scrubbed
+        assert b"deadbeefcafe0123" not in scrubbed
         # Every occurrence maps to the same fake id, so the eTag/id/webUrl agree.
         assert scrubbed.count(FAKE_DRIVE_ID.encode()) == 4
         # The load-bearing item name is untouched.
@@ -359,10 +359,10 @@ class TestGraphCassetteScrub:
         the drive cid — none caught by the drive-id or email scrubs because they
         are base64-encoded, so all four token-response fields are redacted
         wholesale. The ``bare JWT`` forbidden marker caught this on re-record."""
-        cfg = build_graph_vcr_config(real_drive_id="4fde4d5aac63bdf1")
-        # A realistic token response: the id_token / client_info base64 would
-        # decode to rs@alferi.de / the tenant id / an oid embedding the cid.
-        jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJwcmVmZXJyZWRfdXNlcm5hbWUiOiJyc0BhbGZlcmkuZGU"
+        cfg = build_graph_vcr_config(real_drive_id="deadbeefcafe0123")
+        # A synthetic token response: the id_token / client_info base64 stands in
+        # for the account email / tenant id / oid-embedded cid a live response carries.
+        jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJwcmVmZXJyZWRfdXNlcm5hbWUiOiAidXNlckBleGFtcGxlLmNvbSJ9"
         body = (
             b'{"token_type":"Bearer","scope":"Files.ReadWrite",'
             b'"access_token":"' + jwt.encode() + b'.sig",'
