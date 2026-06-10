@@ -17,6 +17,7 @@ expected_ripples:
   - sdd/backlogid.json
   - docs-src/explanation/design/_nav.yml
 surprising_ripples: []
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
