@@ -99,7 +99,8 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   failure vs harness/tooling break vs setup death), and fixes the regression
   on a pushed branch. Surviving mutants are noted for a coverage-hardening
   pass, never patched ad hoc. The issue auto-closes on the next healthy full
-  run; a single-scope dispatch never closes it.
+  run; a single-scope dispatch never closes it or rewrites its body (its
+  findings land as comments).
 
 ### dependabot + `dependabot-auto-merge.yml` — dependency update PRs
 

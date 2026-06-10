@@ -83,5 +83,6 @@ Repo: `haalfi/remote-store`.
   exit code never reflects survivors. Treat it with bug-fix urgency.
 - Never silence a scope (skip, filter, pardon) to make the issue close;
   fix the cause or escalate with the diagnosis.
-- A single-scope dispatch can verify one fix but never closes the issue;
-  only a healthy **full** run does. Never close the rolling issue by hand.
+- A single-scope dispatch can verify one fix but never closes the issue or
+  rewrites its body (its findings land as comments); only a healthy **full**
+  run closes it. Never close the rolling issue by hand.

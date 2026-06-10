@@ -177,6 +177,18 @@ class TestRecord:
 
 
 class TestClassify:
+    def test_stray_non_outcome_json_is_ignored(self, tmp_path):
+        # Defense in depth behind the workflow's pattern filter: a stray
+        # non-outcome JSON (e.g. a co-downloaded report artifact) must not
+        # crash _load_outcomes with KeyError: 'scope'. A genuinely missing
+        # outcome stays loud — its scope classifies as harness failure.
+        dir_ = tmp_path / "outcomes"
+        _write_outcome(dir_, "a", "success", {"survived": 0, "zapped": 10})
+        (dir_ / "report.json").write_text(json.dumps({"summary": {"total": 10}}))
+        (dir_ / "listing.json").write_text(json.dumps(["not", "a", "dict"]))
+        outcomes = _mod._load_outcomes(dir_)
+        assert sorted(outcomes) == ["a"]
+
     def test_red_job_is_harness_failure(self):
         scopes = _mod.classify_scopes(["a"], {"a": {"scope": "a", "job_status": "failure", "counts": None}})
         assert scopes["a"]["status"] == "harness_failure"
@@ -295,6 +307,28 @@ class TestReconcile:
         assert _reconcile(tmp_path, monkeypatch, gh=gh, scopes_json='["a"]') == 0
         assert "edit" in gh.verbs()
         assert "create" not in gh.verbs()
+
+    def test_partial_run_failure_comments_instead_of_rewriting_body(self, tmp_path, monkeypatch):
+        # A partial run cannot vouch for scopes it did not execute, so it
+        # must not replace a full-run body (other failing scopes would
+        # silently vanish from the issue). It records its finding as a
+        # comment instead.
+        _write_outcome(tmp_path / "outcomes", "a", "failure", None)
+        gh = _GhRecorder(open_issue=42)
+        assert _reconcile(tmp_path, monkeypatch, gh=gh, scopes_json='["a"]', full_run="false") == 0
+        assert "comment" in gh.verbs()
+        assert "edit" not in gh.verbs()
+        assert "close" not in gh.verbs()
+        comment_call = next(c for c in gh.calls if c[:2] == ("issue", "comment"))
+        assert any("`a`" in arg for arg in comment_call)
+
+    def test_partial_run_failure_creates_issue_when_none_open(self, tmp_path, monkeypatch):
+        # No body to protect when no issue is open — a real failure still
+        # needs the durable TODO, and render_body flags the partial view.
+        _write_outcome(tmp_path / "outcomes", "a", "failure", None)
+        gh = _GhRecorder(open_issue=None)
+        assert _reconcile(tmp_path, monkeypatch, gh=gh, scopes_json='["a"]', full_run="false") == 0
+        assert "create" in gh.verbs()
 
     def test_survivors_alone_do_not_open_an_issue(self, tmp_path, monkeypatch):
         _write_outcome(tmp_path / "outcomes", "a", "success", {"survived": 3, "zapped": 7})

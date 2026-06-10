@@ -37,12 +37,16 @@ Two subcommands, both invoked from ``.github/workflows/mutation.yml``:
     reconciles the single rolling issue via the ``gh`` CLI (preinstalled on
     GitHub-hosted runners):
 
-    * any harness failure -> create-or-update the issue;
+    * harness failure, no open issue -> create it;
+    * harness failure on a **full** run -> rewrite the issue body;
+    * harness failure on a **partial** run (single-scope dispatch) -> add a
+      comment, never rewrite the body (a rewrite would silently drop the
+      failures of scopes the partial run did not execute);
     * all clear on a **full** run -> comment "healthy" and close it;
-    * all clear on a **partial** run (single-scope dispatch) -> no-op — a
-      partial run cannot vouch for the scopes it did not execute, so it
-      never closes the issue (deliberate divergence from ``drift_report.py``,
-      whose dispatch default re-checks everything).
+    * all clear on a **partial** run -> no-op — a partial run cannot vouch
+      for the scopes it did not execute, so it never closes the issue
+      (deliberate divergence from ``drift_report.py``, whose dispatch
+      default re-checks everything).
 
     ``--scopes`` is the run's scope list JSON (``needs.setup.outputs.scopes``).
     An empty value with no outcomes means setup itself died before producing
@@ -120,6 +124,13 @@ def _load_outcomes(dir_: Path) -> dict[str, dict]:
     for path in sorted(dir_.rglob("*.json")):
         with path.open(encoding="utf-8") as f:
             data = json.load(f)
+        # Skip stray non-outcome JSON (the workflow's download pattern is the
+        # primary guard; this keeps a co-downloaded artifact from crashing
+        # reconcile). A genuinely missing outcome stays loud — its expected
+        # scope classifies as a harness failure downstream.
+        if not isinstance(data, dict) or "scope" not in data:
+            print(f"Ignoring non-outcome JSON: {path}", file=sys.stderr)
+            continue
         outcomes[data["scope"]] = data
     return outcomes
 
@@ -303,13 +314,27 @@ def reconcile(outcomes_dir: Path, repo: str, run_url: str, title: str, scopes_js
     existing = _find_open_issue(repo, title)
 
     if has_failure:
-        body = render_body(classified, run_url, full_run)
         if existing is None:
+            body = render_body(classified, run_url, full_run)
             print(f"Harness failure — creating issue: {title}", file=sys.stderr)
             _gh("issue", "create", "--repo", repo, "--title", title, "--body-file", "-", input_=body)
-        else:
+        elif full_run:
+            body = render_body(classified, run_url, full_run)
             print(f"Harness failure — updating issue #{existing}", file=sys.stderr)
             _gh("issue", "edit", str(existing), "--repo", repo, "--body-file", "-", input_=body)
+        else:
+            # A partial run must not rewrite the body: it cannot vouch for
+            # the scopes it did not execute, and replacing a full-run body
+            # would silently drop their failures. Record the finding as a
+            # comment; the next full run regenerates the body.
+            failing = sorted(s for s, c in classified.items() if c["status"] == "harness_failure")
+            comment = (
+                "Partial run (single-scope dispatch) hit harness failures in: "
+                + ", ".join(f"`{s}`" for s in failing)
+                + f"\n\n{run_url}\n\nThe issue body reflects the last full run and is not replaced by partial runs."
+            )
+            print(f"Harness failure on partial run — commenting on issue #{existing}", file=sys.stderr)
+            _gh("issue", "comment", str(existing), "--repo", repo, "--body", comment)
         return 0
 
     # No harness failure. Survivors alone are advisory and never touch the issue.

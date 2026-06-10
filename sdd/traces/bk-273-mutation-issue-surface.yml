@@ -15,7 +15,7 @@ co_shipped_items: []
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples: []
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -106,6 +106,10 @@ phases:
         section: "record"
         read_type: reference
         extract: "review consistency finding: green leg with no readable gremlins report now fails the leg (exit 1), so the harness-failure-means-red-run invariant holds; verified the plugin's JSON output path with a real single-scope dispatch"
+      - file: scripts/mutation_report.py
+        section: "reconcile"
+        read_type: reference
+        extract: "review round 2: partial run with harness failure now comments on the existing issue instead of rewriting the body (a rewrite would drop failures of scopes it did not execute); _load_outcomes skips stray non-outcome JSON behind the workflow's download pattern filter"
   - id: verify
     name: Verify
     steps:

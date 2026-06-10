@@ -264,11 +264,13 @@ jobs:
 
       # Classify every scope from its outcome JSON, write the per-scope
       # verdict table to the run summary, then reconcile the rolling issue:
-      #  - any harness/impl failure -> create/update the rolling issue (the
-      #    mutate leg is already red; the issue is the durable TODO).
+      #  - any harness/impl failure -> create the rolling issue, or update it
+      #    (the mutate leg is already red; the issue is the durable TODO). A
+      #    full run rewrites the body; a partial (single-scope) dispatch only
+      #    comments, so it cannot erase failures of scopes it did not run.
       #  - surviving mutants alone -> advisory; no issue.
       #  - all clear on a full run -> comment "healthy" and close the issue.
-      #    A partial (single-scope) dispatch never closes it.
+      #    A partial dispatch never closes it.
       # ALL_SCOPES empty means setup died before listing scopes — reconcile
       # treats that as a harness failure too (the no-pytest setup break
       # surfaced exactly that way).
