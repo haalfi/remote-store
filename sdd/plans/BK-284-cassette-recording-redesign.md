@@ -246,15 +246,25 @@ anyway (see tests).
   the **real** account name / drive-id from `.env` and confirms
   neither survives into any committed cassette under the new
   native-filter code path.
-- Optional, requires the live-record opt-in flag
-  (`RS_TEST_LIVE_GRAPH=1` / `RS_TEST_LIVE_HNS=1`, deliberately distinct
-  from holding creds) **and live account writes**: one `--node`
-  single-cassette re-record per backend; with the body migration
-  rejected the expected diff is **header-only-volatile** (no
-  filter-attributable byte change). Not run — the opt-in flag is
-  unset and a re-record writes to the real OneDrive / ADLS account;
-  `--verify-only` above already proves the scrub guarantee on the
-  live-resolved secrets, so the re-record is confirmatory only.
+- Byte-identity dogfood — **✓ run live** (opt-in flags exported, one
+  `--node` re-record per backend, both reverted, nothing committed):
+  - **Azure** byte-equivalent — only `ETag` / `Last-Modified`
+    (per-run volatile) changed; every migrated header stably
+    absent/normalised. No filter-attributable byte change.
+  - **Graph** byte-equivalent on the interactions both recordings
+    share (volatile churn only); the re-record additionally captured
+    a cold-cache MSAL `refresh_token` POST absent from the corpus,
+    which directly proves the migration: `User-Agent` normalised via
+    the native filter, `refresh_token=` redacted by the kept bytes
+    regex, all four token-response fields redacted.
+  - **Finding folded into PR 2:** that same refresh POST exposed a
+    pre-existing scrub gap — `X-AnchorMailbox` embeds the cid in
+    hyphen-split oid form, missed by the contiguous drive-id rewrite
+    and every Step-4 marker. The committed corpus is clean (warm
+    cache → no real token POST ever recorded), so nothing is broken
+    today; PR 2's `EnvRedact` + `FORBIDDEN_ENVELOPE` work (workstream
+    B above) closes it before any future cold-cache re-record can
+    commit the cid.
 
 **Risks (resolved at implementation).**
 
@@ -364,7 +374,16 @@ New shapes (frozen dataclasses, names indicative):
   `GRAPH_DRIVE_ID`, case-insensitive. The core applies it across URI,
   rewrite-listed header values, request body, response body, bytes +
   str — replacing today's hand-woven `real_account` /
-  `_drive_id_re_*` threading.
+  `_drive_id_re_*` threading. **Must also match the hyphen-split
+  GUID/oid form of the Graph cid** (PR-1 dogfood finding, see PR 1
+  verification): the contiguous `re.escape(drive_id)` rewrite misses
+  the cid when it rides the oid low-64-bits inside the
+  `X-AnchorMailbox: Oid:…-XXXX-XXXXXXXXXXXX@…` *request header* on the
+  MSAL `grant_type=refresh_token` POST. The EnvRedact must additionally
+  scrub the **request-header values** of the Graph profile (today only
+  the Azure `x-ms-*-source` rewrites touch request headers), and the
+  Graph profile should just **delete `X-AnchorMailbox`** outright (the
+  backend never reads it on replay) — belt and braces.
 - `CassetteProfile` — per backend family. Field inventory (everything
   the two builders + conftest tables currently encode):
   `backend` name; `cassette_dir`; `fixture_aliases`
@@ -401,7 +420,11 @@ New shapes (frozen dataclasses, names indicative):
   with a non-empty cassette dir, not just Graph. Likewise the
   `id_token` / `client_info` token-response redaction and the
   pre-signed `Host`-header rewrite are review-hardened guarantees the
-  profile declarations must reproduce, not regress.
+  profile declarations must reproduce, not regress. **Add an
+  oid-anchor forbidden marker** (`Oid:[0-9a-f-]{36}` or tighter) so a
+  cold-cache re-record that captures the MSAL refresh POST cannot
+  silently commit the cid via `X-AnchorMailbox` — the gap the PR-1
+  dogfood found, which today's contiguous-cid markers miss.
 
 The behaviour bar: every redaction the two builders perform today is
 reproduced exactly — the reworked PR-1 unit tests (which assert
@@ -548,7 +571,7 @@ Grep for `from tests.backends.fixtures._cassettes import` and
 | Composed-pipeline scrub unit tests | ✓ (introduced) | ✓ (carried) |
 | `check_spec_marks.py` REC coverage | — | ✓ |
 | `hatch run docs-gate` + `gen-graph` | — | ✓ |
-| Single-node live re-record byte-diff | optional (creds) | — |
+| Single-node live re-record byte-diff | ✓ live (both backends) | — |
 | Trace shipped in-PR | ✓ | ✓ |
 
 ## Ripple-check obligations (read before each PR)

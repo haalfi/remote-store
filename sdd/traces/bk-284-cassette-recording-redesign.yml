@@ -103,6 +103,19 @@ phases:
           Re-ran live on a creds-bearing machine after the initial implementation: graph Step 4
           clean over 118 cassettes (live drive-id + 10 markers absent), azure clean over 303
           (live account name absent), Step 5 replay green both. Proves the native-filter code
-          path keeps the real .env-resolved secrets out of the corpus. Single-node live re-record
-          (byte-identity dogfood) NOT run: RS_TEST_LIVE_GRAPH/HNS opt-in unset + writes to real account.
+          path keeps the real .env-resolved secrets out of the corpus.
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "--node single-cassette re-record (graph + azure, byte-identity dogfood)"
+        read_type: verify
+        extract: >-
+          Opt-in flags exported; one node re-recorded per backend, both reverted (nothing committed).
+          PR-1 byte-equivalence confirmed: azure diff = ETag/Last-Modified volatile only; graph shared
+          interactions = volatile churn only, plus a cold-cache MSAL refresh_token POST proving the
+          native User-Agent filter, the kept refresh_token= bytes regex, and the id_token/client_info
+          response redaction all fire live. Surfaced a pre-existing scrub gap (not a PR-1 regression):
+          the X-AnchorMailbox request header on that refresh POST embeds the drive cid in hyphen-split
+          oid form, missed by the contiguous drive-id rewrite and all Step-4 markers. Corpus clean today
+          (warm cache => no real token POST recorded); folded into PR 2 (EnvRedact hyphen form + drop
+          X-AnchorMailbox + oid-anchor forbidden marker) per user decision, not a separate item.
         outcome: ok

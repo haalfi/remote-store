@@ -795,6 +795,16 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   the recorder Step-4 gate and the creds-free CI sweep
   (`TestGraphCommittedCassettePIISweep`), and the pre-signed
   `Host`-header rewrite — as profile declarations, not regressions.
+  **PR 2 also closes a scrub gap the PR-1 live byte-identity dogfood
+  surfaced:** a cold-cache MSAL `refresh_token` POST carries the drive
+  cid in the `X-AnchorMailbox` request header as a hyphen-split oid,
+  which the contiguous drive-id rewrite and every Step-4 marker miss.
+  The corpus is clean today (every committed recording had a warm
+  token cache, so no real token POST was ever recorded), so nothing
+  is broken now; PR 2's `EnvRedact` must match the hyphen form, drop
+  `X-AnchorMailbox` in the Graph request-header set, and add an
+  oid-anchor forbidden marker. Folded into PR 2 by decision (no
+  separate item).
 
   Surfaced during PR #787 review (BK-262).
 
