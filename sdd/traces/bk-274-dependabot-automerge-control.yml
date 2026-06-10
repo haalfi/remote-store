@@ -1,0 +1,80 @@
+id: BK-274
+title: "Dependabot approval is the only gate before auto-merge to `master`, with no codified criteria"
+trigger: >
+  dependabot-auto-merge.yml fired `gh pr merge --auto --squash` on any
+  maintainer approval, for both ecosystems. For github-actions bumps a green
+  check means "the workflow parsed", not "the action behaves", so the
+  approval click was a rubber-stamp path straight to master (#766); for pip
+  dev-deps a red CI had no real-ceiling-vs-transient runbook (#767).
+source_items:
+  - BK-274
+audience:
+  - library.maintainer
+  - infra.ci
+co_shipped_items: []
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples: []
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/audits/audit-018-ci-operations.md
+        section: "M1, A2, A4"
+        read_type: gate
+        extract: "A2: the real fix is a control, not a runbook — drop auto-merge for github-actions; A4: defer the /deps skill"
+      - file: sdd/BACKLOG.md
+        section: "CI Operations / BK-274 (item)"
+        read_type: gate
+        extract: "if a control is adopted the item shrinks to the handbook checklist; skill deferred until triage proves multi-step"
+      - file: .github/workflows/dependabot-auto-merge.yml
+        section: "(full)"
+        read_type: gate
+        extract: "trigger/guard model: pull_request_review + repo/state/actor checks; the header's recovery + token notes to preserve"
+  - id: design
+    name: Design
+    steps:
+      - file: .github/dependabot.yml
+        section: "(full)"
+        read_type: gate
+        extract: "two ecosystems, weekly Monday; github-actions is the low-volume one; verified the live branch prefix the guard keys on (dependabot/github_actions/…) against an actual actions-bump PR via the GitHub API"
+  - id: tests
+    name: Tests (failing first)
+    steps:
+      - file: tests/scripts/test_check_ci_inventory.py
+        section: "live-repo honesty test"
+        read_type: reference
+        extract: "pattern for pinning a workflow-level control with a repo-state test"
+  - id: implement
+    name: Implement
+    steps:
+      - file: .github/workflows/dependabot-auto-merge.yml
+        section: "jobs.dependabot.if + header"
+        read_type: reference
+        extract: "added !startsWith(head.ref, 'dependabot/github_actions/') so actions bumps require a manual merge; header documents the control"
+  - id: docs
+    name: Docs / pointers
+    steps:
+      - file: sdd/CI-OPERATIONS.md
+        section: "dependabot runbook"
+        read_type: gate
+        extract: "record the control: github-actions PRs merge manually after the checklist; pip keeps approve-to-merge with the red-triage checklist"
+  - id: fix
+    name: Fix (review round)
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: "review flagged the workflow header: rewrite as durable present-tense doc (ecosystem scope as design, not change-narrative), drop tracker IDs, no double-hyphen em dashes"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Backlog item touched"
+        read_type: verify
+        extract: "trace ships in same PR; audience has no user.* entry, so no CHANGELOG"
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased / BK-274 (item)"
+        read_type: verify
+        extract: "archive BK-274 [x] with the A2/A4 disposition recorded; CI Operations backlog section now empty and removed"

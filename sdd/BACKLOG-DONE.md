@@ -8,6 +8,60 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-274 — Dependabot approval is the only gate before auto-merge to `master`, with no codified criteria**
+  spec: — · effort: S · audience: library.maintainer, infra.ci
+  `dependabot-auto-merge.yml` fired `gh pr merge --auto --squash` on any
+  maintainer approval, for both ecosystems — for github-actions bumps a green
+  check means "the workflow parsed", not "the action behaves" (nothing in the
+  test suite exercises a bumped action), so approval was a rubber-stamp path
+  straight to `master` (#766). Took audit-018 A2's strongest option — a
+  **control, not a runbook**: the workflow's job condition now excludes the
+  `github-actions` ecosystem via its head-ref prefix
+  (`!startsWith(head.ref, 'dependabot/github_actions/')`, prefix verified
+  against a live actions-bump PR); those PRs are merged manually
+  (`gh pr merge <N> --squash --delete-branch`) after the changelog +
+  `with:`/permissions checklist. `pip` keeps approve-to-merge: its bumps are
+  exercised by the suite, so the approval has a real signal, and the
+  red-CI "real ceiling vs transient" triage stays codified in the
+  [`sdd/CI-OPERATIONS.md`](CI-OPERATIONS.md) dependabot runbook (per the
+  BK-275 handbook, no standalone doc). The control is pinned by
+  `tests/scripts/test_dependabot_automerge_control.py` so a workflow refactor
+  cannot silently restore auto-merge for actions. A `/deps` skill is
+  deferred per A4 — the surviving triage is a checklist, not a multi-step
+  procedure; promote only if it proves otherwise. The optional label gate
+  from A2(c) was not adopted: with the actions path removed, pip approval is
+  already a deliberate, signal-bearing step. No CHANGELOG (no `user.*`
+  audience). Audit-018 M1. Trace:
+  `sdd/traces/bk-274-dependabot-automerge-control.yml`.
+
+- [x] **BK-273 — `mutation` testing produces no durable TODO; failures reach the maintainer by email only**
+  spec: — · effort: M · audience: library.maintainer, infra.ci
+  `mutation.yml` let its jobs fail with no durable surface: a red X plus
+  GitHub's actor email was the entire notification path — exactly how the
+  weekend implementation failure (#763) surfaced. Resolved audit-018's
+  C-DECISION on run-history evidence (A3): across the scheduled Saturday runs
+  on record, every failure was a **harness/implementation break** (a timeout
+  cascade ending in "no tests ran", a setup `ModuleNotFoundError`, a plugin
+  INTERNALERROR) and **never a surviving mutant** — pytest-gremlins has no
+  fail-on-survivor mechanism, so survivors never turn a run red and were never
+  actioned as TODOs. Shipped accordingly: **harness failure → rolling
+  `[mutation]` issue AND red run** (the leg keeps propagating pytest's exit
+  code); **surviving mutants → advisory only** (run stays green, counts in the
+  run-summary table + HTML artifacts, never the issue) — a recorded divergence
+  from drift-guard's never-red model. Each `mutate-<scope>` leg now records a
+  per-scope outcome JSON (`job.status` + `--gremlin-report=json` counts, since
+  `job.status` alone cannot see survivors — audit-018 L2), and the `summary`
+  job runs `scripts/mutation_report.py reconcile`: create/update on any
+  harness failure (including a dead `setup` with no scope list), comment-and-
+  close on a healthy **full** run; a single-scope dispatch never closes (a
+  deliberate tightening of `drift_report.py`'s regenerate-everything
+  semantics). Lifted drift-guard's single-writer `concurrency` guard and
+  least-privilege `permissions` deliberately per A5. Added the
+  `/mutation` triage skill and flipped the `mutation.yml` row + runbook in
+  [`sdd/CI-OPERATIONS.md`](CI-OPERATIONS.md); `check_ci_inventory` keeps the
+  row honest. No CHANGELOG (no `user.*` audience). Audit-018 H1 / L2.
+  Trace: `sdd/traces/bk-273-mutation-issue-surface.yml`.
+
 - [x] **BK-275 — CI-operations handbook + the scheduled-guard consistency principle**
   spec: — · effort: S · audience: library.maintainer
   No document inventoried the scheduled/automated workflows; the knowledge lived

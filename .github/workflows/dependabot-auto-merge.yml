@@ -1,7 +1,19 @@
 # Intentional design: trigger on pull_request_review (not pull_request) so the
 # workflow only enables auto-merge after a human approval. The fetch-metadata
-# action is deliberately omitted -- the human review is the gate, so update-type
+# action is deliberately omitted: the human review is the gate, so update-type
 # filtering would be redundant.
+#
+# Ecosystem scope: auto-merge applies to `pip` PRs only. The `github-actions`
+# ecosystem (head refs under dependabot/github_actions/) is excluded by the
+# job condition below. An action bump usually exercises nothing in the test
+# suite, so a green check proves the workflow parses, not that the bumped
+# action behaves, and approval alone carries no real signal there. Those PRs
+# are merged manually after the per-ecosystem checklist in
+# sdd/CI-OPERATIONS.md:
+#   gh pr merge <N> --squash --delete-branch
+# pip bumps are exercised by the test suite, so for them approval is an
+# informed gate and auto-merge stays on. The exclusion is pinned by
+# tests/scripts/test_dependabot_automerge_control.py.
 #
 # Things to be aware of:
 # - Recovery for a missed PR: dismiss + re-approve (fires a new submitted event),
@@ -35,7 +47,8 @@ jobs:
       github.event.pull_request.state == 'open' &&
       github.event.review.state == 'approved' &&
       github.event.review.user.login == 'haalfi' &&
-      github.event.pull_request.user.login == 'dependabot[bot]'
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      !startsWith(github.event.pull_request.head.ref, 'dependabot/github_actions/')
     steps:
       - name: Enable auto-merge for Dependabot PRs
         run: gh pr merge --auto --squash --delete-branch "$PR_URL"
