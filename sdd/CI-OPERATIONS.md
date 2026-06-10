@@ -81,19 +81,19 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 - **When:** Saturday 05:00 UTC, plus manual `workflow_dispatch` (optionally for a
   single scope).
 - **Where the finding shows up:** depends on which of the two outcomes
-  occurred — they are deliberately split:
+  occurred. They are deliberately split:
   - **Harness / implementation failure** (the run itself broke: an import,
     config, or tooling error, a baseline test failure, a leg that recorded no
-    outcome): the run is **red** AND the single **rolling `[mutation]` GitHub
-    Issue** is opened or updated. This diverges from drift-guard's never-red
-    model on purpose: a broken weekly guard is a real regression worth both a
-    red X and a durable TODO.
-  - **Surviving mutant** (a mutated line no test caught): **advisory only** —
-    the run stays green and no issue is opened. Counts appear in the run-summary
-    table and the per-scope HTML report artifacts. Decided on run-history
-    evidence: the mutation runner never fails on survivors, strict coverage
-    gates already run in CI, and survivors were not actioned as standalone
-    TODOs in practice.
+    outcome or no readable report): the run is **red** AND the single
+    **rolling `[mutation]` GitHub Issue** is opened or updated. This diverges
+    from drift-guard's never-red model on purpose: a broken weekly guard is a
+    real regression worth both a red X and a durable TODO.
+  - **Surviving mutant** (a mutated line no test caught): **advisory only**.
+    The run stays green and no issue is opened; counts appear in the
+    run-summary table and the per-scope HTML report artifacts. The mutation
+    runner never fails a run on survivors, and strict coverage gates already
+    run in CI, so survivors feed a coverage-hardening pass rather than a
+    standalone TODO.
 - **How to act:** run the **`/mutation` skill**. It reads the rolling issue,
   classifies each failing scope from the linked run's logs (baseline test
   failure vs harness/tooling break vs setup death), and fixes the regression
@@ -106,17 +106,17 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 - **What it does:** dependabot opens weekly update PRs for the `pip` and
   `github-actions` ecosystems (`.github/dependabot.yml`).
   `dependabot-auto-merge.yml` triggers on a maintainer's `pull_request_review`
-  approval and enables `--auto --squash` merge to `master` — for the **`pip`
+  approval and enables `--auto --squash` merge to `master`, for the **`pip`
   ecosystem only**. `github-actions` PRs are excluded from auto-merge by the
-  workflow's head-ref guard (`dependabot/github_actions/`), because an action
-  bump usually exercises nothing in the test suite: a green check means the
-  workflow *parses*, not that the bumped action *behaves*, so approval there
-  had no real signal to act on. The exclusion is a control, not a convention —
-  pinned by `tests/scripts/test_dependabot_automerge_control.py`.
+  workflow's head-ref guard (`dependabot/github_actions/`): an action bump
+  usually exercises nothing in the test suite, so a green check means the
+  workflow *parses*, not that the bumped action *behaves*, and approval alone
+  carries no real signal there. The exclusion is a control, not a convention;
+  it is pinned by `tests/scripts/test_dependabot_automerge_control.py`.
 - **When:** Monday, weekly.
 - **Where the finding shows up:** the **PR list** and each PR's CI status. For
-  `pip` PRs the approval click is the load-bearing gate — it is what fires the
-  merge. For `github-actions` PRs the merge itself is the manual step.
+  `pip` PRs the approval click is the load-bearing gate: it fires the merge.
+  For `github-actions` PRs the merge itself is the manual step.
 - **How to act, per ecosystem:**
   - **`github-actions` (`Chore(deps)`):** diff the action's changelog and
     confirm no `with:` input or permission surface changed. Then merge
@@ -124,7 +124,7 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
     nothing for this ecosystem).
   - **`pip` dev-dep (`Chore(deps-dev)`):** a red CI is a real signal. Decide
     whether the failing ceiling is real (hold the PR, or bump the floor) or
-    transient/unsupported (close it). Approve only when green and understood —
+    transient/unsupported (close it). Approve only when green and understood:
     approval auto-merges to `master`, irreversibly.
 
 ### `codeql.yml` — security scanning (exception to Rule 1)

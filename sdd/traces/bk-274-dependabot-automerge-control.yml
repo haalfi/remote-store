@@ -15,7 +15,7 @@ co_shipped_items: []
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples: []
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -60,6 +60,13 @@ phases:
         section: "dependabot runbook"
         read_type: gate
         extract: "record the control: github-actions PRs merge manually after the checklist; pip keeps approve-to-merge with the red-triage checklist"
+  - id: fix
+    name: Fix (review round)
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: "review flagged the workflow header: rewrite as durable present-tense doc (ecosystem scope as design, not change-narrative), drop tracker IDs, no double-hyphen em dashes"
   - id: verify
     name: Verify
     steps:

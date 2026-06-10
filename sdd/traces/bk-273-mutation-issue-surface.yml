@@ -15,7 +15,7 @@ co_shipped_items: []
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples: []
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -95,6 +95,17 @@ phases:
         section: "Inventory at a glance + mutation.yml runbook"
         read_type: gate
         extract: "flip the row to rolling issue + /mutation; record the deliberate divergence from drift's never-red model"
+  - id: fix
+    name: Fix (review round)
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: "review flagged the workflow headers and handbook prose: rewrite as durable present-tense doc, drop tracker IDs and change-narrative, fix em-dash typography"
+      - file: scripts/mutation_report.py
+        section: "record"
+        read_type: reference
+        extract: "review consistency finding: green leg with no readable gremlins report now fails the leg (exit 1), so the harness-failure-means-red-run invariant holds; verified the plugin's JSON output path with a real single-scope dispatch"
   - id: verify
     name: Verify
     steps:

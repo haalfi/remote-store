@@ -25,8 +25,11 @@ Two subcommands, both invoked from ``.github/workflows/mutation.yml``:
     (``--gremlin-report=json`` writes ``coverage/gremlins/gremlins.json``)
     into one outcome JSON. Written atomically (tempfile + rename) so a
     mid-write failure leaves no truncated JSON for ``reconcile`` to crash
-    on; a missing or corrupt gremlins report records ``counts: null``
-    rather than failing the step.
+    on. A missing or corrupt gremlins report records ``counts: null``; when
+    the leg was otherwise green, ``record`` then exits non-zero so the leg
+    goes red — the reporting half of the harness broke, and the
+    "harness failure -> issue AND red run" invariant must hold for that
+    breakage too.
 
 ``reconcile <outcomes-dir> --repo … --run-url … --title … --scopes … --full-run …``
     Runs in the ``summary`` job. Classifies every expected scope, appends a
@@ -91,6 +94,17 @@ def record(scope: str, job_status: str, gremlins_json: Path, out: Path) -> int:
         Path(tmp_name).unlink(missing_ok=True)
         raise
     print(f"Recorded outcome for {scope}: job_status={job_status}, counts={outcome['counts']}", file=sys.stderr)
+    if job_status == "success" and outcome["counts"] is None:
+        # Fail the leg: pytest exited 0 but no readable gremlins report
+        # exists, so the reporting half of the harness broke silently (or the
+        # plugin moved its output path). Exiting non-zero here keeps the
+        # "harness failure -> issue AND red run" invariant intact — without
+        # it the issue would fire on an apparently green run.
+        print(
+            f"::error::mutate-{scope} was green but no gremlins JSON report was readable at {gremlins_json}",
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 

@@ -134,17 +134,41 @@ class TestRecord:
         assert data["job_status"] == "failure"
         assert data["counts"] is None
 
-    def test_corrupt_gremlins_report_records_null_counts(self, tmp_path):
-        # A truncated/garbage report must not crash the always() step —
-        # null counts classify as a harness failure downstream instead.
+    def test_corrupt_gremlins_report_on_green_job_fails_the_leg(self, tmp_path):
+        # A truncated/garbage report on an otherwise-green leg still writes
+        # the outcome (counts: null -> harness failure downstream) but exits
+        # non-zero, so the leg goes red and the "harness failure -> issue AND
+        # red run" invariant holds.
         report = tmp_path / "gremlins.json"
         report.write_text("{not json")
         out = tmp_path / "outcome" / "core-store.json"
         rc = _mod.main(
             ["record", "core-store", "--job-status", "success", "--gremlins-json", str(report), "--out", str(out)]
         )
-        assert rc == 0
+        assert rc == 1
         assert json.loads(out.read_text())["counts"] is None
+
+    def test_missing_gremlins_report_on_green_job_fails_the_leg(self, tmp_path):
+        # Same invariant for the silent case: pytest exited 0 but no report
+        # exists (e.g. the plugin moved its output path). The leg must fail
+        # loudly rather than letting the issue fire on a green run.
+        out = tmp_path / "outcome" / "core-store.json"
+        rc = _mod.main(
+            [
+                "record",
+                "core-store",
+                "--job-status",
+                "success",
+                "--gremlins-json",
+                str(tmp_path / "absent.json"),
+                "--out",
+                str(out),
+            ]
+        )
+        assert rc == 1
+        data = json.loads(out.read_text())
+        assert data["job_status"] == "success"
+        assert data["counts"] is None
 
 
 # --------------------------------------------------------------------------- #

@@ -1,17 +1,19 @@
 # Intentional design: trigger on pull_request_review (not pull_request) so the
 # workflow only enables auto-merge after a human approval. The fetch-metadata
-# action is deliberately omitted -- the human review is the gate, so update-type
+# action is deliberately omitted: the human review is the gate, so update-type
 # filtering would be redundant.
 #
-# BK-274 control: the `github-actions` ecosystem is excluded from auto-merge
-# (the `!startsWith(... 'dependabot/github_actions/')` guard below). An action
-# bump usually exercises nothing in the test suite, so a green check means the
-# workflow parsed, not that the bumped action behaves -- approval there was a
-# rubber-stamp path straight to master. Those PRs are merged manually after
-# the per-ecosystem checklist in sdd/CI-OPERATIONS.md:
+# Ecosystem scope: auto-merge applies to `pip` PRs only. The `github-actions`
+# ecosystem (head refs under dependabot/github_actions/) is excluded by the
+# job condition below. An action bump usually exercises nothing in the test
+# suite, so a green check proves the workflow parses, not that the bumped
+# action behaves, and approval alone carries no real signal there. Those PRs
+# are merged manually after the per-ecosystem checklist in
+# sdd/CI-OPERATIONS.md:
 #   gh pr merge <N> --squash --delete-branch
-# pip PRs keep approve-to-merge: their bumps are exercised by the test suite,
-# so the approval has a real signal to act on.
+# pip bumps are exercised by the test suite, so for them approval is an
+# informed gate and auto-merge stays on. The exclusion is pinned by
+# tests/scripts/test_dependabot_automerge_control.py.
 #
 # Things to be aware of:
 # - Recovery for a missed PR: dismiss + re-approve (fires a new submitted event),
