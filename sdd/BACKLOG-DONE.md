@@ -8,6 +8,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-275 — CI-operations handbook + the scheduled-guard consistency principle**
+  spec: — · effort: S · audience: library.maintainer
+  No document inventoried the scheduled/automated workflows; the knowledge lived
+  only in one guard's docs (`/drift` + `drift-guard.yml` header + `CONTRIBUTING §
+  Dependency drift guard`). Shipped [`sdd/CI-OPERATIONS.md`](CI-OPERATIONS.md) as
+  the authority doc: the durable-TODO principle (every scheduled-maintenance guard
+  emits a durable GitHub Issue + has a triage entry point; email / red-X /
+  green-check are insufficient alone), the family inventory table, and
+  `codeql.yml`'s Security-tab surface recorded as a deliberate exception. Per
+  audit-018 A1, the inventory is kept honest by a lint gate rather than prose:
+  `scripts/check_ci_inventory.py` parses `.github/workflows/*.yml` for the family
+  triggers (`on.schedule` / `on.pull_request_review`) and fails if a family
+  workflow is absent from the handbook. Diverged from the pre-agreed in-script
+  exceptions allowlist: the gate verifies documented *presence*, so `codeql.yml`
+  passes by being named in the handbook's Exceptions section — a separate in-script
+  allowlist would duplicate that single source (principle 4). Existing guards
+  (`/drift` skill, `drift-guard.yml` header, `CONTRIBUTING § Dependency drift
+  guard`) now point at the handbook. BK-273/BK-274 will upgrade the `mutation` and
+  dependabot rows from "partial" to the rolling-issue + triage shape. Audit-018 M2
+  / L1. Trace: `sdd/traces/bk-275-ci-operations-handbook.yml`.
+
 - [x] **BK-282 — Forward CLI args through the `gen-*` hatch script targets**
   spec: — · effort: S · audience: contributor.tooling
   The bare generator targets (`gen-graph`, `gen-features`, `gen-graph-viz`,
