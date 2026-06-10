@@ -793,32 +793,50 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   - **Per-backend extension contract** — what a third HTTP backend must
     register and what the shared core promises.
 
-  Author a new spec (`sdd/specs/049-live-recording-architecture.md`, REC-NNN
-  clauses) rather than extending 048: 048's authority is fixture
-  layout/stage/kind, the recording transport stands on its own and gets
-  ripple-checked separately. Cross-link from 048 § TEST-007's
-  deferred-design note. Pair with an ADR (`adrs/0029-…md`) capturing the
-  named-pattern + profile-registry decision after ADR-0028's
-  kind-stage-replay decision.
+  **Decisions (taken at filing — see below for rationale):**
+  1. **Spec home: new doc.** Author
+     `sdd/specs/049-live-recording-architecture.md` with REC-NNN clauses
+     rather than extending 048. 048's authority is fixture
+     layout/stage/kind; the recording transport stands on its own axis and
+     gets ripple-checked separately. Cross-link from 048 § TEST-007's
+     deferred-design note ("Implementation choice … See spec 049"). Pair
+     with `adrs/0029-cassette-recording-architecture.md` after ADR-0028's
+     kind-stage-replay decision.
+  2. **`CassetteProfile` registration: alongside `BackendFixture`.** Add
+     `cassette_profile: CassetteProfile | None = None` as a field on the
+     fixture record (like `capabilities` / `marks`). One registry, profile
+     co-locates with the fixture it serves; non-HTTP fixtures simply leave
+     it `None`. `conformance/conftest.py:vcr_config` reads
+     `request.fixture._cassette_profile` instead of branching on
+     `_FIXTURE_CASSETTE_DIRS`.
+  3. **Async-transport notes: same spec.** `AsyncioRequestsTransport`
+     (the shim `azure_live_async` needs so vcrpy captures bodies), the
+     no-shim story for httpx-based Graph (vcrpy 8.1.1 patches httpx
+     directly), and the `_RS_CASSETTE_RECORDING=1` flag wiring all describe
+     what vcrpy can capture — which is 049's subject. Don't carve out.
+  4. **`forbidden_patterns` ownership: hybrid.** A module-level
+     `FORBIDDEN_ENVELOPE` (bare `Bearer …`, generic `email@host` forms,
+     common token shapes) every profile inherits, plus per-profile
+     additions (Graph's `docID` site-GUID host form, the long `b!…` drive
+     id, etc.). Catches universal leaks once, lets each backend declare
+     its own specifics inline with its scrub rules.
+  5. **Migration: phased.** Ship two PRs.
+     - **PR 1 (warm-up, low risk):** migrate the bits vcrpy has native
+       filters for — request-header deletes →
+       `filter_headers=[...]`; User-Agent replace →
+       `filter_headers=[("user-agent", ...)]`; OAuth POST-body params
+       (`client_secret` / `client_assertion` / `assertion` /
+       `refresh_token`) → `filter_post_data_parameters=[...]`. No
+       structural change; cassettes should be byte-identical modulo
+       the filter-source attribution.
+     - **PR 2 (the rewrite):** introduce `RedactPattern` / `EnvRedact` /
+       `CassetteProfile`, the generic `before_record_*` core, register
+       Azure and Graph profiles, ship the 049 spec + ADR-0029, wire
+       Step-4 named-pattern audit.
 
-  **Open questions for whoever picks this up:**
-  1. **New spec doc (049) vs extend 048?** Lean: new. Decide first.
-  2. **`CassetteProfile` registration: alongside `BackendFixture` or a
-     separate registry?** Piggybacking is one fewer registry but mixes
-     concerns; lean: alongside, since the profile is per-fixture-family.
-  3. **Async-transport notes** (the `AsyncioRequestsTransport` shim
-     `azure_live_async` needs so vcrpy captures bodies; the no-shim story
-     for httpx-based Graph; the `_RS_CASSETTE_RECORDING=1` flag wiring) —
-     same spec or carved out? Lean: same — they're constraints on what
-     vcrpy can capture, which is the spec's subject.
-  4. **`forbidden_patterns` ownership:** module-level envelope list (bare
-     `Bearer`, generic email forms) that every profile inherits + per-profile
-     additions, or fully per-profile? Lean: hybrid (envelope shared, specifics
-     per profile).
-  5. **Migration strategy:** big-bang one PR vs Azure-then-Graph two PRs.
-     The body-scrub registry refactor is the largest single change; the
-     vcrpy-native-filter migration (item 4 above) could ship first as a
-     low-risk warm-up.
+     PR 1 builds confidence in the filter-equivalence claim before
+     touching cassette-matching correctness in PR 2. Each PR is
+     independently reviewable and reversible.
 
   **Dependencies:** BK-262 must land (PR #787) so the refactor moves a
   known-good baseline, not a moving target. Independent of BK-283
