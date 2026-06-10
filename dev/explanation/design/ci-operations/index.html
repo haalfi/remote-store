@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/audits/audit-017-dev-process-gate-topology/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/ci-operations/">
       
       
-        <link rel="prev" href="../audit-016-graph-backend-review/">
+        <link rel="prev" href="../authoring/">
       
       
-        <link rel="next" href="../audit-018-ci-operations/">
+        <link rel="next" href="../content-rules/">
       
       
         
       
       
-      <link rel="icon" href="../../../../assets/logo.png">
+      <link rel="icon" href="../../../assets/logo.png">
       <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.6">
     
     
       
-        <title>017: Dev-process gate topology (commit / push / lint / PR / CI in sync) - remote-store</title>
+        <title>CI Operations - remote-store</title>
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../../css/custom.css">
+      <link rel="stylesheet" href="../../../css/custom.css">
     
-    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#audit-017-dev-process-gate-topology-commit-push-lint-pr-ci-in-sync" class="md-skip">
+        <a href="#ci-operations" class="md-skip">
           Skip to content
         </a>
       
@@ -102,9 +102,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../../../assets/logo.png" alt="logo">
+  <img src="../../../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              017: Dev-process gate topology (commit / push / lint / PR / CI in sync)
+              CI Operations
             
           </span>
         </div>
@@ -228,7 +228,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../.." class="md-tabs__link">
+      <a href="../../.." class="md-tabs__link">
         
   
   
@@ -247,7 +247,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../tutorial/" class="md-tabs__link">
+      <a href="../../../tutorial/" class="md-tabs__link">
         
   
   
@@ -266,7 +266,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../guides/" class="md-tabs__link">
+      <a href="../../../guides/" class="md-tabs__link">
         
   
   
@@ -285,7 +285,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../reference/" class="md-tabs__link">
+      <a href="../../../reference/" class="md-tabs__link">
         
   
   
@@ -306,7 +306,7 @@
   
   
     <li class="md-tabs__item md-tabs__item--active">
-      <a href="../../../" class="md-tabs__link">
+      <a href="../../" class="md-tabs__link">
         
   
   
@@ -347,9 +347,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../../../assets/logo.png" alt="logo">
+  <img src="../../../assets/logo.png" alt="logo">
 
     </a>
     remote-store
@@ -376,7 +376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -418,7 +418,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../tutorial/" class="md-nav__link ">
+            <a href="../../../tutorial/" class="md-nav__link ">
               
   
   
@@ -460,7 +460,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/getting-started/" class="md-nav__link">
+      <a href="../../../tutorial/getting-started/" class="md-nav__link">
         
   
   
@@ -503,7 +503,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../tutorial/examples/" class="md-nav__link ">
+            <a href="../../../tutorial/examples/" class="md-nav__link ">
               
   
   
@@ -595,7 +595,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/quickstart/" class="md-nav__link">
+      <a href="../../../tutorial/examples/quickstart/" class="md-nav__link">
         
   
   
@@ -623,7 +623,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/file-operations/" class="md-nav__link">
+      <a href="../../../tutorial/examples/file-operations/" class="md-nav__link">
         
   
   
@@ -651,7 +651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/streaming-io/" class="md-nav__link">
+      <a href="../../../tutorial/examples/streaming-io/" class="md-nav__link">
         
   
   
@@ -679,7 +679,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/atomic-writes/" class="md-nav__link">
+      <a href="../../../tutorial/examples/atomic-writes/" class="md-nav__link">
         
   
   
@@ -765,7 +765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/configuration/" class="md-nav__link">
+      <a href="../../../tutorial/examples/configuration/" class="md-nav__link">
         
   
   
@@ -793,7 +793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/config-loaders/" class="md-nav__link">
+      <a href="../../../tutorial/examples/config-loaders/" class="md-nav__link">
         
   
   
@@ -879,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/error-handling/" class="md-nav__link">
+      <a href="../../../tutorial/examples/error-handling/" class="md-nav__link">
         
   
   
@@ -907,7 +907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/capabilities-and-errors/" class="md-nav__link">
+      <a href="../../../tutorial/examples/capabilities-and-errors/" class="md-nav__link">
         
   
   
@@ -993,7 +993,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/path-model/" class="md-nav__link">
+      <a href="../../../tutorial/examples/path-model/" class="md-nav__link">
         
   
   
@@ -1021,7 +1021,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/memory-backend/" class="md-nav__link">
+      <a href="../../../tutorial/examples/memory-backend/" class="md-nav__link">
         
   
   
@@ -1049,7 +1049,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/store-child/" class="md-nav__link">
+      <a href="../../../tutorial/examples/store-child/" class="md-nav__link">
         
   
   
@@ -1077,7 +1077,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/async-store/" class="md-nav__link">
+      <a href="../../../tutorial/examples/async-store/" class="md-nav__link">
         
   
   
@@ -1105,7 +1105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/retry-policy/" class="md-nav__link">
+      <a href="../../../tutorial/examples/retry-policy/" class="md-nav__link">
         
   
   
@@ -1133,7 +1133,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/health-check/" class="md-nav__link">
+      <a href="../../../tutorial/examples/health-check/" class="md-nav__link">
         
   
   
@@ -1219,7 +1219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/s3-backend/" class="md-nav__link">
+      <a href="../../../tutorial/examples/s3-backend/" class="md-nav__link">
         
   
   
@@ -1247,7 +1247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../../tutorial/examples/s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -1275,7 +1275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/s3-listing-strategies/" class="md-nav__link">
+      <a href="../../../tutorial/examples/s3-listing-strategies/" class="md-nav__link">
         
   
   
@@ -1303,7 +1303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/sftp-backend/" class="md-nav__link">
+      <a href="../../../tutorial/examples/sftp-backend/" class="md-nav__link">
         
   
   
@@ -1331,7 +1331,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/azure-backend/" class="md-nav__link">
+      <a href="../../../tutorial/examples/azure-backend/" class="md-nav__link">
         
   
   
@@ -1359,7 +1359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/graph-backend/" class="md-nav__link">
+      <a href="../../../tutorial/examples/graph-backend/" class="md-nav__link">
         
   
   
@@ -1387,7 +1387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/sql-blob-backend/" class="md-nav__link">
+      <a href="../../../tutorial/examples/sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -1415,7 +1415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/http-backend/" class="md-nav__link">
+      <a href="../../../tutorial/examples/http-backend/" class="md-nav__link">
         
   
   
@@ -1501,7 +1501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/batch-operations/" class="md-nav__link">
+      <a href="../../../tutorial/examples/batch-operations/" class="md-nav__link">
         
   
   
@@ -1529,7 +1529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/transfer-operations/" class="md-nav__link">
+      <a href="../../../tutorial/examples/transfer-operations/" class="md-nav__link">
         
   
   
@@ -1557,7 +1557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../tutorial/examples/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1585,7 +1585,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/caching/" class="md-nav__link">
+      <a href="../../../tutorial/examples/caching/" class="md-nav__link">
         
   
   
@@ -1613,7 +1613,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/observe-hooks/" class="md-nav__link">
+      <a href="../../../tutorial/examples/observe-hooks/" class="md-nav__link">
         
   
   
@@ -1641,7 +1641,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/otel-tracing/" class="md-nav__link">
+      <a href="../../../tutorial/examples/otel-tracing/" class="md-nav__link">
         
   
   
@@ -1727,7 +1727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../tutorial/examples/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1755,7 +1755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/parquet-dataset/" class="md-nav__link">
+      <a href="../../../tutorial/examples/parquet-dataset/" class="md-nav__link">
         
   
   
@@ -1783,7 +1783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/dagster-io-manager/" class="md-nav__link">
+      <a href="../../../tutorial/examples/dagster-io-manager/" class="md-nav__link">
         
   
   
@@ -1811,7 +1811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/dagster-v2-resource/" class="md-nav__link">
+      <a href="../../../tutorial/examples/dagster-v2-resource/" class="md-nav__link">
         
   
   
@@ -1839,7 +1839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/dagster-compute-log-manager/" class="md-nav__link">
+      <a href="../../../tutorial/examples/dagster-compute-log-manager/" class="md-nav__link">
         
   
   
@@ -1925,7 +1925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorial/examples/medallion-dagster/" class="md-nav__link">
+      <a href="../../../tutorial/examples/medallion-dagster/" class="md-nav__link">
         
   
   
@@ -1991,7 +1991,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../guides/" class="md-nav__link ">
+            <a href="../../../guides/" class="md-nav__link ">
               
   
   
@@ -2048,7 +2048,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../guides/backends/" class="md-nav__link ">
+            <a href="../../../guides/backends/" class="md-nav__link ">
               
   
   
@@ -2090,7 +2090,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/backends/local/" class="md-nav__link">
+      <a href="../../../guides/backends/local/" class="md-nav__link">
         
   
   
@@ -2118,7 +2118,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/backends/memory/" class="md-nav__link">
+      <a href="../../../guides/backends/memory/" class="md-nav__link">
         
   
   
@@ -2146,7 +2146,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/backends/http/" class="md-nav__link">
+      <a href="../../../guides/backends/http/" class="md-nav__link">
         
   
   
@@ -2174,7 +2174,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/backends/s3/" class="md-nav__link">
+      <a href="../../../guides/backends/s3/" class="md-nav__link">
         
   
   
@@ -2202,7 +2202,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../guides/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -2230,7 +2230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/backends/sftp/" class="md-nav__link">
+      <a href="../../../guides/backends/sftp/" class="md-nav__link">
         
   
   
@@ -2258,7 +2258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/backends/azure/" class="md-nav__link">
+      <a href="../../../guides/backends/azure/" class="md-nav__link">
         
   
   
@@ -2286,7 +2286,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/backends/azure-hns-setup/" class="md-nav__link">
+      <a href="../../../guides/backends/azure-hns-setup/" class="md-nav__link">
         
   
   
@@ -2314,7 +2314,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/backends/graph/" class="md-nav__link">
+      <a href="../../../guides/backends/graph/" class="md-nav__link">
         
   
   
@@ -2342,7 +2342,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/backends/graph-setup/" class="md-nav__link">
+      <a href="../../../guides/backends/graph-setup/" class="md-nav__link">
         
   
   
@@ -2370,7 +2370,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/backends/sql-blob/" class="md-nav__link">
+      <a href="../../../guides/backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -2398,7 +2398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/backends/sql-query/" class="md-nav__link">
+      <a href="../../../guides/backends/sql-query/" class="md-nav__link">
         
   
   
@@ -2484,7 +2484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/extensions/" class="md-nav__link">
+      <a href="../../../guides/extensions/" class="md-nav__link">
         
   
   
@@ -2512,7 +2512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/batch-operations/" class="md-nav__link">
+      <a href="../../../guides/batch-operations/" class="md-nav__link">
         
   
   
@@ -2540,7 +2540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/cache/" class="md-nav__link">
+      <a href="../../../guides/cache/" class="md-nav__link">
         
   
   
@@ -2568,7 +2568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../guides/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -2596,7 +2596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/observe/" class="md-nav__link">
+      <a href="../../../guides/observe/" class="md-nav__link">
         
   
   
@@ -2624,7 +2624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/transfer-operations/" class="md-nav__link">
+      <a href="../../../guides/transfer-operations/" class="md-nav__link">
         
   
   
@@ -2652,7 +2652,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../guides/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -2680,7 +2680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/parquet-datasets/" class="md-nav__link">
+      <a href="../../../guides/parquet-datasets/" class="md-nav__link">
         
   
   
@@ -2708,7 +2708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/dagster/" class="md-nav__link">
+      <a href="../../../guides/dagster/" class="md-nav__link">
         
   
   
@@ -2736,7 +2736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/retry/" class="md-nav__link">
+      <a href="../../../guides/retry/" class="md-nav__link">
         
   
   
@@ -2772,7 +2772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/async/" class="md-nav__link">
+      <a href="../../../guides/async/" class="md-nav__link">
         
   
   
@@ -2800,7 +2800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/async-sync-bridges/" class="md-nav__link">
+      <a href="../../../guides/async-sync-bridges/" class="md-nav__link">
         
   
   
@@ -2828,7 +2828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/write-integrity/" class="md-nav__link">
+      <a href="../../../guides/write-integrity/" class="md-nav__link">
         
   
   
@@ -2856,7 +2856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/health-check/" class="md-nav__link">
+      <a href="../../../guides/health-check/" class="md-nav__link">
         
   
   
@@ -2884,7 +2884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/data-lake-patterns/" class="md-nav__link">
+      <a href="../../../guides/data-lake-patterns/" class="md-nav__link">
         
   
   
@@ -2912,7 +2912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/troubleshooting/" class="md-nav__link">
+      <a href="../../../guides/troubleshooting/" class="md-nav__link">
         
   
   
@@ -2940,7 +2940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/choosing-a-backend/" class="md-nav__link">
+      <a href="../../../guides/choosing-a-backend/" class="md-nav__link">
         
   
   
@@ -2968,7 +2968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../guides/custom-backend-guide/" class="md-nav__link">
+      <a href="../../../guides/custom-backend-guide/" class="md-nav__link">
         
   
   
@@ -3018,7 +3018,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../reference/" class="md-nav__link ">
+            <a href="../../../reference/" class="md-nav__link ">
               
   
   
@@ -3060,7 +3060,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/FEATURES/" class="md-nav__link">
+      <a href="../../../reference/FEATURES/" class="md-nav__link">
         
   
   
@@ -3088,7 +3088,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/capabilities-matrix/" class="md-nav__link">
+      <a href="../../../reference/capabilities-matrix/" class="md-nav__link">
         
   
   
@@ -3116,7 +3116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/tested-versions/" class="md-nav__link">
+      <a href="../../../reference/tested-versions/" class="md-nav__link">
         
   
   
@@ -3159,7 +3159,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../reference/api/" class="md-nav__link ">
+            <a href="../../../reference/api/" class="md-nav__link ">
               
   
   
@@ -3201,7 +3201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/store/" class="md-nav__link">
+      <a href="../../../reference/api/store/" class="md-nav__link">
         
   
   
@@ -3229,7 +3229,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/proxy/" class="md-nav__link">
+      <a href="../../../reference/api/proxy/" class="md-nav__link">
         
   
   
@@ -3257,7 +3257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/registry/" class="md-nav__link">
+      <a href="../../../reference/api/registry/" class="md-nav__link">
         
   
   
@@ -3285,7 +3285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/config/" class="md-nav__link">
+      <a href="../../../reference/api/config/" class="md-nav__link">
         
   
   
@@ -3313,7 +3313,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/models/" class="md-nav__link">
+      <a href="../../../reference/api/models/" class="md-nav__link">
         
   
   
@@ -3341,7 +3341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/capabilities/" class="md-nav__link">
+      <a href="../../../reference/api/capabilities/" class="md-nav__link">
         
   
   
@@ -3369,7 +3369,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/errors/" class="md-nav__link">
+      <a href="../../../reference/api/errors/" class="md-nav__link">
         
   
   
@@ -3397,7 +3397,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/backend/" class="md-nav__link">
+      <a href="../../../reference/api/backend/" class="md-nav__link">
         
   
   
@@ -3425,7 +3425,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/aio/" class="md-nav__link">
+      <a href="../../../reference/api/aio/" class="md-nav__link">
         
   
   
@@ -3453,7 +3453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/info/" class="md-nav__link">
+      <a href="../../../reference/api/info/" class="md-nav__link">
         
   
   
@@ -3481,7 +3481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/sftp-utils/" class="md-nav__link">
+      <a href="../../../reference/api/sftp-utils/" class="md-nav__link">
         
   
   
@@ -3524,7 +3524,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../reference/api/backends/" class="md-nav__link ">
+            <a href="../../../reference/api/backends/" class="md-nav__link ">
               
   
   
@@ -3566,7 +3566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/backends/local/" class="md-nav__link">
+      <a href="../../../reference/api/backends/local/" class="md-nav__link">
         
   
   
@@ -3594,7 +3594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/backends/memory/" class="md-nav__link">
+      <a href="../../../reference/api/backends/memory/" class="md-nav__link">
         
   
   
@@ -3622,7 +3622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/backends/http/" class="md-nav__link">
+      <a href="../../../reference/api/backends/http/" class="md-nav__link">
         
   
   
@@ -3650,7 +3650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/backends/s3/" class="md-nav__link">
+      <a href="../../../reference/api/backends/s3/" class="md-nav__link">
         
   
   
@@ -3678,7 +3678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../reference/api/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -3706,7 +3706,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/backends/sftp/" class="md-nav__link">
+      <a href="../../../reference/api/backends/sftp/" class="md-nav__link">
         
   
   
@@ -3734,7 +3734,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/backends/azure/" class="md-nav__link">
+      <a href="../../../reference/api/backends/azure/" class="md-nav__link">
         
   
   
@@ -3762,7 +3762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/backends/sql-blob/" class="md-nav__link">
+      <a href="../../../reference/api/backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -3790,7 +3790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/backends/sql-query/" class="md-nav__link">
+      <a href="../../../reference/api/backends/sql-query/" class="md-nav__link">
         
   
   
@@ -3841,7 +3841,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../reference/api/extensions/" class="md-nav__link ">
+            <a href="../../../reference/api/extensions/" class="md-nav__link ">
               
   
   
@@ -3883,7 +3883,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/batch/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/batch/" class="md-nav__link">
         
   
   
@@ -3911,7 +3911,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/cache/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/cache/" class="md-nav__link">
         
   
   
@@ -3939,7 +3939,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/glob/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/glob/" class="md-nav__link">
         
   
   
@@ -3967,7 +3967,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/integrity/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/integrity/" class="md-nav__link">
         
   
   
@@ -3995,7 +3995,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/observe/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/observe/" class="md-nav__link">
         
   
   
@@ -4023,7 +4023,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/partition/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/partition/" class="md-nav__link">
         
   
   
@@ -4051,7 +4051,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/streams/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/streams/" class="md-nav__link">
         
   
   
@@ -4079,7 +4079,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/transfer/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/transfer/" class="md-nav__link">
         
   
   
@@ -4107,7 +4107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/write/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/write/" class="md-nav__link">
         
   
   
@@ -4135,7 +4135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/aio-write/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/aio-write/" class="md-nav__link">
         
   
   
@@ -4163,7 +4163,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/arrow/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/arrow/" class="md-nav__link">
         
   
   
@@ -4191,7 +4191,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/dagster/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/dagster/" class="md-nav__link">
         
   
   
@@ -4219,7 +4219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/otel/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/otel/" class="md-nav__link">
         
   
   
@@ -4247,7 +4247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/parquet/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/parquet/" class="md-nav__link">
         
   
   
@@ -4275,7 +4275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/pydantic/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/pydantic/" class="md-nav__link">
         
   
   
@@ -4303,7 +4303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/api/extensions/yaml/" class="md-nav__link">
+      <a href="../../../reference/api/extensions/yaml/" class="md-nav__link">
         
   
   
@@ -4347,7 +4347,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/migration/" class="md-nav__link">
+      <a href="../../../reference/migration/" class="md-nav__link">
         
   
   
@@ -4375,7 +4375,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../reference/changelog/" class="md-nav__link">
+      <a href="../../../reference/changelog/" class="md-nav__link">
         
   
   
@@ -4430,7 +4430,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -4472,7 +4472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/" class="md-nav__link">
+      <a href="../../architecture/" class="md-nav__link">
         
   
   
@@ -4500,7 +4500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../graph-ir/" class="md-nav__link">
+      <a href="../../graph-ir/" class="md-nav__link">
         
   
   
@@ -4528,7 +4528,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../performance/" class="md-nav__link">
+      <a href="../../performance/" class="md-nav__link">
         
   
   
@@ -4556,7 +4556,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../concurrency/" class="md-nav__link">
+      <a href="../../concurrency/" class="md-nav__link">
         
   
   
@@ -4584,7 +4584,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../security-model/" class="md-nav__link">
+      <a href="../../security-model/" class="md-nav__link">
         
   
   
@@ -4612,7 +4612,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/" class="md-nav__link">
+      <a href="../../contributing/" class="md-nav__link">
         
   
   
@@ -4640,7 +4640,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development-story/" class="md-nav__link">
+      <a href="../../development-story/" class="md-nav__link">
         
   
   
@@ -4685,7 +4685,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -4727,7 +4727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../authoring/" class="md-nav__link">
+      <a href="../authoring/" class="md-nav__link">
         
   
   
@@ -4752,10 +4752,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../ci-operations/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI Operations
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4771,6 +4798,131 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#intent-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Intent &amp; Scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#guides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Guides
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Guides">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#inventory-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inventory at a glance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#drift-guardyml-transitive-dependency-drift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        drift-guard.yml — transitive dependency drift
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mutationyml-mutation-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mutation.yml — mutation testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependabot-dependabot-auto-mergeyml-dependency-update-prs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dependabot + dependabot-auto-merge.yml — dependency update PRs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#codeqlyml-security-scanning-exception-to-rule-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        codeql.yml — security scanning (exception to Rule 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding a guard
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4783,7 +4935,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../content-rules/" class="md-nav__link">
+      <a href="../content-rules/" class="md-nav__link">
         
   
   
@@ -4811,7 +4963,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design/" class="md-nav__link">
+      <a href="../design/" class="md-nav__link">
         
   
   
@@ -4839,7 +4991,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../documentation/" class="md-nav__link">
+      <a href="../documentation/" class="md-nav__link">
         
   
   
@@ -4867,7 +5019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../process/" class="md-nav__link">
+      <a href="../process/" class="md-nav__link">
         
   
   
@@ -4895,7 +5047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../testing/" class="md-nav__link">
+      <a href="../testing/" class="md-nav__link">
         
   
   
@@ -4938,7 +5090,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../adrs/" class="md-nav__link ">
+            <a href="../adrs/" class="md-nav__link ">
               
   
   
@@ -4980,7 +5132,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -5008,7 +5160,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -5036,7 +5188,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -5064,7 +5216,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -5092,7 +5244,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -5120,7 +5272,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -5148,7 +5300,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -5176,7 +5328,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -5204,7 +5356,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5232,7 +5384,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -5260,7 +5412,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -5288,7 +5440,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -5316,7 +5468,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -5344,7 +5496,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -5372,7 +5524,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -5400,7 +5552,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5428,7 +5580,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+      <a href="../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
         
   
   
@@ -5456,7 +5608,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
+      <a href="../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
         
   
   
@@ -5484,7 +5636,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -5512,7 +5664,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
+      <a href="../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
         
   
   
@@ -5540,7 +5692,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0021-graph-sdk-choice/" class="md-nav__link">
+      <a href="../adrs/0021-graph-sdk-choice/" class="md-nav__link">
         
   
   
@@ -5568,7 +5720,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0022-graph-auth-model/" class="md-nav__link">
+      <a href="../adrs/0022-graph-auth-model/" class="md-nav__link">
         
   
   
@@ -5596,7 +5748,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0023-async-monitor-polling/" class="md-nav__link">
+      <a href="../adrs/0023-async-monitor-polling/" class="md-nav__link">
         
   
   
@@ -5624,7 +5776,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0024-resource-locked-error/" class="md-nav__link">
+      <a href="../adrs/0024-resource-locked-error/" class="md-nav__link">
         
   
   
@@ -5652,7 +5804,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
+      <a href="../adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
         
   
   
@@ -5680,7 +5832,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
+      <a href="../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
         
   
   
@@ -5708,7 +5860,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
+      <a href="../adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
         
   
   
@@ -5736,7 +5888,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
+      <a href="../adrs/0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
         
   
   
@@ -5769,8 +5921,6 @@
                 
   
   
-    
-  
   
   
     
@@ -5781,15 +5931,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_9" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_9" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../audits/" class="md-nav__link ">
               
   
   
@@ -5813,7 +5963,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_9_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_9_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_8_9">
             <span class="md-nav__icon md-icon"></span>
             
@@ -5831,7 +5981,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-001-adversarial-review/" class="md-nav__link">
+      <a href="../audits/audit-001-adversarial-review/" class="md-nav__link">
         
   
   
@@ -5859,7 +6009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-002-design-compliance/" class="md-nav__link">
+      <a href="../audits/audit-002-design-compliance/" class="md-nav__link">
         
   
   
@@ -5887,7 +6037,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-003-documentation/" class="md-nav__link">
+      <a href="../audits/audit-003-documentation/" class="md-nav__link">
         
   
   
@@ -5915,7 +6065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-004-docs-structural-consistency/" class="md-nav__link">
+      <a href="../audits/audit-004-docs-structural-consistency/" class="md-nav__link">
         
   
   
@@ -5943,7 +6093,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-005-laziness-memory/" class="md-nav__link">
+      <a href="../audits/audit-005-laziness-memory/" class="md-nav__link">
         
   
   
@@ -5971,7 +6121,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-006-docs-list-completeness/" class="md-nav__link">
+      <a href="../audits/audit-006-docs-list-completeness/" class="md-nav__link">
         
   
   
@@ -5999,7 +6149,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-007-test-behavior-assertions/" class="md-nav__link">
+      <a href="../audits/audit-007-test-behavior-assertions/" class="md-nav__link">
         
   
   
@@ -6027,7 +6177,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-008-package-bugs/" class="md-nav__link">
+      <a href="../audits/audit-008-package-bugs/" class="md-nav__link">
         
   
   
@@ -6055,7 +6205,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-009-backend-specifics-visibility/" class="md-nav__link">
+      <a href="../audits/audit-009-backend-specifics-visibility/" class="md-nav__link">
         
   
   
@@ -6083,7 +6233,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-010-ext-private-imports/" class="md-nav__link">
+      <a href="../audits/audit-010-ext-private-imports/" class="md-nav__link">
         
   
   
@@ -6111,7 +6261,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-011-docs-v023-gaps/" class="md-nav__link">
+      <a href="../audits/audit-011-docs-v023-gaps/" class="md-nav__link">
         
   
   
@@ -6139,7 +6289,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-012-docs-structure/" class="md-nav__link">
+      <a href="../audits/audit-012-docs-structure/" class="md-nav__link">
         
   
   
@@ -6167,7 +6317,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-013-docstring-style/" class="md-nav__link">
+      <a href="../audits/audit-013-docstring-style/" class="md-nav__link">
         
   
   
@@ -6195,7 +6345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
+      <a href="../audits/audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
         
   
   
@@ -6223,7 +6373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-015-spec-traceability/" class="md-nav__link">
+      <a href="../audits/audit-015-spec-traceability/" class="md-nav__link">
         
   
   
@@ -6251,7 +6401,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-016-graph-backend-review/" class="md-nav__link">
+      <a href="../audits/audit-016-graph-backend-review/" class="md-nav__link">
         
   
   
@@ -6276,37 +6426,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    017: Dev-process gate topology (commit / push / lint / PR / CI in sync)
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../audits/audit-017-dev-process-gate-topology/" class="md-nav__link">
         
   
   
@@ -6322,231 +6445,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#summary" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Summary
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#topology-matrix" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Topology matrix
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#high" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🔴 High
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🔴 High">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#h1-ci-hand-duplicates-the-hatch-script-layer-three-divergent-lint-definitions-drift-independently" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        H1 — CI hand-duplicates the hatch script layer; three divergent "lint" definitions drift independently
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#h2-sddspecs-only-changes-skip-the-gates-built-to-validate-them" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        H2 — sdd/specs-only changes skip the gates built to validate them
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#medium" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🟠 Medium
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🟠 Medium">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#m1-pr-never-runs-hatch-run-lint-or-all-it-reconstructs-a-partial-subset" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M1 — /pr never runs hatch run lint (or all); it reconstructs a partial subset
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m2-both-skills-prescribe-hatch-run-test-for-docsspec-diffs-the-least-relevant-gate-and-never-hatch-run-lint" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M2 — Both skills prescribe hatch run test for docs/spec diffs — the least-relevant gate — and never hatch run lint
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m3-docs-only-prs-skip-check_no_tracker_refs-and-check_links-in-ci" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M3 — Docs-only PRs skip check_no_tracker_refs and check_links in CI
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m4-the-mypy-pre-push-hook-is-never-installed-by-the-documented-command" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M4 — The mypy pre-push hook is never installed by the documented command
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m5-redundant-cross-job-runs-and-an-artifact-drift-check-absent-from-pr-ci" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M5 — Redundant cross-job runs and an artifact-drift check absent from PR CI
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#low-nits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🟡 Low / Nits
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🟡 Low / Nits">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#l1-ruff-ruff-format-gen_backlogid-check-run-in-three-places-each" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        L1 — ruff, ruff-format, gen_backlogid --check run in three places each
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#l2-pr-gate-steps-are-numbered-out-of-order" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        L2 — /pr gate steps are numbered out of order
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#l3-hatch-run-lint-is-a-strict-subset-of-ci-lint-the-obvious-command-under-checks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        L3 — hatch run lint is a strict subset of CI lint; the obvious command under-checks
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#verified-strengths-checked-not-rubber-stamped" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verified strengths (checked, not rubber-stamped)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#recommendations-advisory-consolidation-first" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Recommendations (advisory, consolidation-first)
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -6559,7 +6457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-018-ci-operations/" class="md-nav__link">
+      <a href="../audits/audit-018-ci-operations/" class="md-nav__link">
         
   
   
@@ -6610,7 +6508,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../rfcs/" class="md-nav__link ">
+            <a href="../rfcs/" class="md-nav__link ">
               
   
   
@@ -6652,7 +6550,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -6680,7 +6578,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -6708,7 +6606,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -6736,7 +6634,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -6764,7 +6662,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+      <a href="../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
         
   
   
@@ -6792,7 +6690,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+      <a href="../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
         
   
   
@@ -6820,7 +6718,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+      <a href="../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
         
   
   
@@ -6848,7 +6746,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
+      <a href="../rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
         
   
   
@@ -6876,7 +6774,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -6904,7 +6802,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0010-graph-backend/" class="md-nav__link">
+      <a href="../rfcs/rfc-0010-graph-backend/" class="md-nav__link">
         
   
   
@@ -6932,7 +6830,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0011-write-result/" class="md-nav__link">
+      <a href="../rfcs/rfc-0011-write-result/" class="md-nav__link">
         
   
   
@@ -6960,7 +6858,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0012-doc-graph-model/" class="md-nav__link">
+      <a href="../rfcs/rfc-0012-doc-graph-model/" class="md-nav__link">
         
   
   
@@ -6988,7 +6886,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
+      <a href="../rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
         
   
   
@@ -7016,7 +6914,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0014-dagster-compute-log-manager/" class="md-nav__link">
+      <a href="../rfcs/rfc-0014-dagster-compute-log-manager/" class="md-nav__link">
         
   
   
@@ -7067,7 +6965,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../research/" class="md-nav__link ">
+            <a href="../research/" class="md-nav__link ">
               
   
   
@@ -7109,7 +7007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-agent-workflow-substrate/" class="md-nav__link">
+      <a href="../research/research-agent-workflow-substrate/" class="md-nav__link">
         
   
   
@@ -7137,7 +7035,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api-round2/" class="md-nav__link">
+      <a href="../research/research-async-store-api-round2/" class="md-nav__link">
         
   
   
@@ -7165,7 +7063,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api/" class="md-nav__link">
+      <a href="../research/research-async-store-api/" class="md-nav__link">
         
   
   
@@ -7193,7 +7091,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../research/research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -7221,7 +7119,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-backend-contract-completeness/" class="md-nav__link">
+      <a href="../research/research-backend-contract-completeness/" class="md-nav__link">
         
   
   
@@ -7249,7 +7147,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-backend-setup-guides/" class="md-nav__link">
+      <a href="../research/research-backend-setup-guides/" class="md-nav__link">
         
   
   
@@ -7277,7 +7175,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../research/research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -7305,7 +7203,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-bk-181-cassette-replay-poc/" class="md-nav__link">
+      <a href="../research/research-bk-181-cassette-replay-poc/" class="md-nav__link">
         
   
   
@@ -7333,7 +7231,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
+      <a href="../research/research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
         
   
   
@@ -7361,7 +7259,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
+      <a href="../research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
         
   
   
@@ -7389,7 +7287,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-bug-prevention-beyond-testing/" class="md-nav__link">
+      <a href="../research/research-bug-prevention-beyond-testing/" class="md-nav__link">
         
   
   
@@ -7417,7 +7315,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-dagster-extension/" class="md-nav__link">
+      <a href="../research/research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -7445,7 +7343,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-depth-limited-listing/" class="md-nav__link">
+      <a href="../research/research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -7473,7 +7371,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-doc-content-longevity/" class="md-nav__link">
+      <a href="../research/research-doc-content-longevity/" class="md-nav__link">
         
   
   
@@ -7501,7 +7399,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../research/research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -7529,7 +7427,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-example-testing/" class="md-nav__link">
+      <a href="../research/research-example-testing/" class="md-nav__link">
         
   
   
@@ -7557,7 +7455,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../research/research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -7585,7 +7483,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-feature-discoverability/" class="md-nav__link">
+      <a href="../research/research-feature-discoverability/" class="md-nav__link">
         
   
   
@@ -7613,7 +7511,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../research/research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -7641,7 +7539,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-health-check/" class="md-nav__link">
+      <a href="../research/research-health-check/" class="md-nav__link">
         
   
   
@@ -7669,7 +7567,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-id-147-obs003-decomposition/" class="md-nav__link">
+      <a href="../research/research-id-147-obs003-decomposition/" class="md-nav__link">
         
   
   
@@ -7697,7 +7595,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-id-147-tla-augmentation/" class="md-nav__link">
+      <a href="../research/research-id-147-tla-augmentation/" class="md-nav__link">
         
   
   
@@ -7725,7 +7623,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-id-147b-tla-poc/" class="md-nav__link">
+      <a href="../research/research-id-147b-tla-poc/" class="md-nav__link">
         
   
   
@@ -7753,7 +7651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-id-211-flat-ns-file-ancestor-precheck/" class="md-nav__link">
+      <a href="../research/research-id-211-flat-ns-file-ancestor-precheck/" class="md-nav__link">
         
   
   
@@ -7781,7 +7679,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../research/research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -7809,7 +7707,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-lx-llms-context-tooling/" class="md-nav__link">
+      <a href="../research/research-lx-llms-context-tooling/" class="md-nav__link">
         
   
   
@@ -7837,7 +7735,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../research/research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -7865,7 +7763,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-openrouter-integration/" class="md-nav__link">
+      <a href="../research/research-openrouter-integration/" class="md-nav__link">
         
   
   
@@ -7893,7 +7791,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../research/research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -7921,7 +7819,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-resolve-spec-proposal/" class="md-nav__link">
+      <a href="../research/research-resolve-spec-proposal/" class="md-nav__link">
         
   
   
@@ -7949,7 +7847,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-retry-policy/" class="md-nav__link">
+      <a href="../research/research-retry-policy/" class="md-nav__link">
         
   
   
@@ -7977,7 +7875,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-s3-boto3-poc/" class="md-nav__link">
+      <a href="../research/research-s3-boto3-poc/" class="md-nav__link">
         
   
   
@@ -8005,7 +7903,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-s3-error-mapping-fidelity/" class="md-nav__link">
+      <a href="../research/research-s3-error-mapping-fidelity/" class="md-nav__link">
         
   
   
@@ -8033,7 +7931,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-seekable-read/" class="md-nav__link">
+      <a href="../research/research-seekable-read/" class="md-nav__link">
         
   
   
@@ -8061,7 +7959,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-sftpgo-comparison/" class="md-nav__link">
+      <a href="../research/research-sftpgo-comparison/" class="md-nav__link">
         
   
   
@@ -8089,7 +7987,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../research/research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -8117,7 +8015,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../research/research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -8145,7 +8043,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-config/" class="md-nav__link">
+      <a href="../research/research-store-config/" class="md-nav__link">
         
   
   
@@ -8173,7 +8071,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../research/research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -8201,7 +8099,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-testing-best-practices/" class="md-nav__link">
+      <a href="../research/research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -8229,7 +8127,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../research/research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -8280,7 +8178,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../specs/" class="md-nav__link ">
+            <a href="../specs/" class="md-nav__link ">
               
   
   
@@ -8322,7 +8220,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/001-store-api/" class="md-nav__link">
+      <a href="../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -8350,7 +8248,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/002-registry-config/" class="md-nav__link">
+      <a href="../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -8378,7 +8276,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -8406,7 +8304,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/004-path-model/" class="md-nav__link">
+      <a href="../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -8434,7 +8332,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/005-error-model/" class="md-nav__link">
+      <a href="../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -8462,7 +8360,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/006-streaming-io/" class="md-nav__link">
+      <a href="../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -8490,7 +8388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
+      <a href="../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -8518,7 +8416,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/008-s3-backend/" class="md-nav__link">
+      <a href="../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -8546,7 +8444,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
+      <a href="../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -8574,7 +8472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
+      <a href="../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -8602,7 +8500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -8630,7 +8528,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/012-azure-backend/" class="md-nav__link">
+      <a href="../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -8658,7 +8556,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/013-memory-backend/" class="md-nav__link">
+      <a href="../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -8686,7 +8584,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -8714,7 +8612,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/015-store-child/" class="md-nav__link">
+      <a href="../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -8742,7 +8640,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/016-ext-batch/" class="md-nav__link">
+      <a href="../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -8770,7 +8668,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
+      <a href="../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -8798,7 +8696,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/018-glob/" class="md-nav__link">
+      <a href="../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -8826,7 +8724,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/019-ext-observe/" class="md-nav__link">
+      <a href="../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -8854,7 +8752,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
+      <a href="../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -8882,7 +8780,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/021-config-loaders/" class="md-nav__link">
+      <a href="../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -8910,7 +8808,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -8938,7 +8836,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/023-ext-cache/" class="md-nav__link">
+      <a href="../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -8966,7 +8864,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/024-ext-partition/" class="md-nav__link">
+      <a href="../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -8994,7 +8892,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/025-retry-policy/" class="md-nav__link">
+      <a href="../specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -9022,7 +8920,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/026-health-check/" class="md-nav__link">
+      <a href="../specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -9050,7 +8948,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/027-iter-children/" class="md-nav__link">
+      <a href="../specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -9078,7 +8976,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/028-read-text/" class="md-nav__link">
+      <a href="../specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -9106,7 +9004,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
+      <a href="../specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -9134,7 +9032,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/030-write-text/" class="md-nav__link">
+      <a href="../specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -9162,7 +9060,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
+      <a href="../specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -9190,7 +9088,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/032-http-backend/" class="md-nav__link">
+      <a href="../specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -9218,7 +9116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/033-ext-streams/" class="md-nav__link">
+      <a href="../specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -9246,7 +9144,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
+      <a href="../specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -9274,7 +9172,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/035-content-digest/" class="md-nav__link">
+      <a href="../specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -9302,7 +9200,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/036-seekable-read/" class="md-nav__link">
+      <a href="../specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -9330,7 +9228,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/037-depth-limited-listing/" class="md-nav__link">
+      <a href="../specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -9358,7 +9256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -9386,7 +9284,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -9414,7 +9312,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/040-sql-blob-backend/" class="md-nav__link">
+      <a href="../specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -9442,7 +9340,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/041-sql-query-backend/" class="md-nav__link">
+      <a href="../specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -9470,7 +9368,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/042-ext-parquet/" class="md-nav__link">
+      <a href="../specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -9498,7 +9396,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/043-resolution-plan/" class="md-nav__link">
+      <a href="../specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -9526,7 +9424,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/044-graph-backend/" class="md-nav__link">
+      <a href="../specs/044-graph-backend/" class="md-nav__link">
         
   
   
@@ -9554,7 +9452,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/045-write-result/" class="md-nav__link">
+      <a href="../specs/045-write-result/" class="md-nav__link">
         
   
   
@@ -9582,7 +9480,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/046-ext-write/" class="md-nav__link">
+      <a href="../specs/046-ext-write/" class="md-nav__link">
         
   
   
@@ -9610,7 +9508,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/047-docs-framework-tooling/" class="md-nav__link">
+      <a href="../specs/047-docs-framework-tooling/" class="md-nav__link">
         
   
   
@@ -9638,7 +9536,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../specs/048-testing-architecture/" class="md-nav__link">
+      <a href="../specs/048-testing-architecture/" class="md-nav__link">
         
   
   
@@ -9709,10 +9607,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#summary" class="md-nav__link">
+  <a href="#intent-scope" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Summary
+        Intent &amp; Scope
       
     </span>
   </a>
@@ -9720,10 +9618,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#topology-matrix" class="md-nav__link">
+  <a href="#rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Topology matrix
+        Rules
       
     </span>
   </a>
@@ -9731,22 +9629,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#high" class="md-nav__link">
+  <a href="#guides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🔴 High
+        Guides
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="🔴 High">
+    <nav class="md-nav" aria-label="Guides">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#h1-ci-hand-duplicates-the-hatch-script-layer-three-divergent-lint-definitions-drift-independently" class="md-nav__link">
+  <a href="#inventory-at-a-glance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        H1 — CI hand-duplicates the hatch script layer; three divergent "lint" definitions drift independently
+        Inventory at a glance
       
     </span>
   </a>
@@ -9754,10 +9652,54 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#h2-sddspecs-only-changes-skip-the-gates-built-to-validate-them" class="md-nav__link">
+  <a href="#drift-guardyml-transitive-dependency-drift" class="md-nav__link">
     <span class="md-ellipsis">
       
-        H2 — sdd/specs-only changes skip the gates built to validate them
+        drift-guard.yml — transitive dependency drift
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mutationyml-mutation-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mutation.yml — mutation testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependabot-dependabot-auto-mergeyml-dependency-update-prs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dependabot + dependabot-auto-merge.yml — dependency update PRs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#codeqlyml-security-scanning-exception-to-rule-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        codeql.yml — security scanning (exception to Rule 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding a guard
       
     </span>
   </a>
@@ -9766,150 +9708,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#medium" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🟠 Medium
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🟠 Medium">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#m1-pr-never-runs-hatch-run-lint-or-all-it-reconstructs-a-partial-subset" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M1 — /pr never runs hatch run lint (or all); it reconstructs a partial subset
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m2-both-skills-prescribe-hatch-run-test-for-docsspec-diffs-the-least-relevant-gate-and-never-hatch-run-lint" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M2 — Both skills prescribe hatch run test for docs/spec diffs — the least-relevant gate — and never hatch run lint
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m3-docs-only-prs-skip-check_no_tracker_refs-and-check_links-in-ci" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M3 — Docs-only PRs skip check_no_tracker_refs and check_links in CI
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m4-the-mypy-pre-push-hook-is-never-installed-by-the-documented-command" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M4 — The mypy pre-push hook is never installed by the documented command
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m5-redundant-cross-job-runs-and-an-artifact-drift-check-absent-from-pr-ci" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M5 — Redundant cross-job runs and an artifact-drift check absent from PR CI
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#low-nits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🟡 Low / Nits
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🟡 Low / Nits">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#l1-ruff-ruff-format-gen_backlogid-check-run-in-three-places-each" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        L1 — ruff, ruff-format, gen_backlogid --check run in three places each
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#l2-pr-gate-steps-are-numbered-out-of-order" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        L2 — /pr gate steps are numbered out of order
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#l3-hatch-run-lint-is-a-strict-subset-of-ci-lint-the-obvious-command-under-checks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        L3 — hatch run lint is a strict subset of CI lint; the obvious command under-checks
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#verified-strengths-checked-not-rubber-stamped" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verified strengths (checked, not rubber-stamped)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#recommendations-advisory-consolidation-first" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Recommendations (advisory, consolidation-first)
-      
-    </span>
-  </a>
   
 </li>
       
@@ -9930,426 +9728,171 @@
 
 
 
-<h1 id="audit-017-dev-process-gate-topology-commit-push-lint-pr-ci-in-sync">Audit 017 — Dev-process gate topology (commit / push / lint / PR / CI in sync)<a class="headerlink" href="#audit-017-dev-process-gate-topology-commit-push-lint-pr-ci-in-sync" title="Permanent link">&para;</a></h1>
-<p><strong>Backlog item:</strong> — (ad-hoc audit of the change-validation machinery; follow-ups proposed at the end)
-<strong>Date:</strong> 2026-06-09
-<strong>Scope:</strong> The whole gate topology that validates a change before it reaches
-master: the pre-commit / pre-push hooks (<code>.pre-commit-config.yaml</code>), the
-<code>hatch run</code> script layer (<code>pyproject.toml</code> <code>[tool.hatch.envs.default.scripts]</code>),
-the <code>scripts/check_*.py</code> / <code>gen_*.py</code> checkers, the CI workflows
-(<code>.github/workflows/*.yml</code>), the <code>/pr</code> · <code>/fix-pr</code> · <code>/orchestrate</code> · <code>/release</code>
-skills, and the authority docs (<code>CONTRIBUTING.md</code>, <code>CLAUDE.md</code>,
-<code>sdd/CLAUDE-REFERENCE.md</code>). The concern is <strong>over-specialization and drift</strong>:
-each surface encodes its own per-change-type gate logic, the logic overlaps and
-diverges, and some change types reach CI with no meaningful local gate.
-<strong>Method:</strong> Read every real source (no assumptions). Built a change-type ×
-enforcement-point matrix from the actual filters and script lists, then assessed
-each gate on three axes — value, redundancy, drift/sync. This is a
-<strong>report-only</strong> audit: nothing was modified. Findings carry <code>file:line</code>
-evidence; the recommendations are advisory (the user decides what becomes work).</p>
-<p><strong>Severity key:</strong> 🔴 High · 🟠 Medium · 🟡 Low / Nit.
-Each finding tag (H1, M3, …) is referenced by the recommendations table at the end.</p>
-<hr />
-<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
-<p>The CI <strong>gate</strong> job is well-built (it closes the silent-skip hole), the
-path-filter design is sound, and the <code>check_*</code> scripts are scoped with explicit,
-auditable in/out-of-scope docstrings. The machinery's defects are structural, not
-local:</p>
+<h1 id="ci-operations">CI Operations<a class="headerlink" href="#ci-operations" title="Permanent link">&para;</a></h1>
+<!-- doc: dual dest=explanation/design/ci-operations.md -->
+
+<h2 id="intent-scope">Intent &amp; Scope<a class="headerlink" href="#intent-scope" title="Permanent link">&para;</a></h2>
+<p>THE operations handbook for remote-store's scheduled and automated CI guards.
+For each guard it answers the four questions a maintainer has when one fires:
+what it does, when it runs, where its finding shows up, and how to act. Covers
+every workflow under <code>.github/workflows/</code> that runs without a contributor
+present (scheduled sweeps and review-triggered automation) plus the dependabot
+update streams. The gating push/PR test matrix and coverage lanes are merge
+gates, not maintenance guards, and live in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p>
+<h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
-<p><strong>CI re-encodes the <code>hatch</code> script layer by hand.</strong> No CI job calls
-   <code>hatch run lint</code> / <code>preflight</code> / <code>format-check</code>; the <code>lint</code> job inlines all
-   18 commands as <code>- run:</code> steps (<code>ci.yml:100-117</code>). There are now <strong>three
-   divergent definitions of "lint"</strong> — the pre-commit subset, <code>hatch run lint</code>,
-   and the CI <code>lint</code> job — and adding a check to one does not propagate to the
-   others. This is drift-by-construction against CLAUDE.md principle 4 (single
-   source of truth: link, don't copy).</p>
+<p><strong>Durable-TODO principle.</strong> Every scheduled-maintenance guard emits a durable
+   GitHub Issue as its TODO and has a triage entry point (a skill or a runbook
+   in this doc). A red X, a green check, and GitHub's actor email are
+   insufficient alone: each is transient or filterable, so a guard whose only
+   output is one of those is not a guard a maintainer can rely on.</p>
 </li>
 <li>
-<p><strong><code>sdd/specs</code>-only changes fall through the gates that exist to validate
-   them.</strong> The CI <code>CODE_PAT</code> does not match <code>sdd/</code>, so a spec-only PR <strong>skips the
-   entire <code>lint</code> job</strong> — <code>check_spec_marks</code> and <code>check_formal_trace</code> (the spec ↔
-   test / spec ↔ Dafny drift gates) never run, neither in CI nor at commit
-   (locally the only gate at commit is the backlog-id check). These are existing
-   gates firing in the wrong place, not missing ones.</p>
+<p><strong>Three layers, kept in agreement.</strong> Every guard is documented in three
+   places: the workflow file header (what it does and its non-goals), the
+   runbook below (when it runs, where its finding lands, how to act), and its
+   triage skill where one exists. Adding or changing a guard means updating all
+   three in the same change.</p>
 </li>
 <li>
-<p><strong>The skills hand-roll a partial subset of the gate instead of delegating.</strong>
-   <code>/pr</code> never runs <code>hatch run lint</code> or <code>hatch run all</code> (CONTRIBUTING's
-   prescribed pre-PR command); it reconstructs a coverage + manual-review + trace</p>
+<p><strong>Exceptions are recorded, never implicit.</strong> A guard that deliberately does
+   not satisfy Rule 1 — because it reports to a channel GitHub owns — is listed
+   as an exception with its reason and review cadence. An undocumented scheduled
+   or review-triggered workflow fails <code>scripts/check_ci_inventory.py</code>.</p>
 </li>
-<li>local-machine subset, and for "docs/config-only" diffs prescribes
-   <code>hatch run test</code> — the suite least relevant to a doc/spec change — while never
-   prescribing <code>hatch run lint</code>, the gate most relevant to it.</li>
 </ol>
-<p>The rest are redundancy and dead-config findings: a mypy pre-push hook that the
-documented install command never wires up, doc-only PRs that skip
-<code>check_no_tracker_refs</code> / <code>check_links</code> in CI, and <code>drift render-docs --check</code>
-that runs in no PR CI lane.</p>
-<hr />
-<h2 id="topology-matrix">Topology matrix<a class="headerlink" href="#topology-matrix" title="Permanent link">&para;</a></h2>
-<p>What actually runs, per change type, at each enforcement point. Cells:
-✅ runs · — does not run · ⚠ runs but see finding.</p>
-<p><strong>Local enforcement</strong> (<code>pre-commit</code> = <code>git commit</code>; <code>pre-push</code> = <code>git push</code>;
-<code>lint</code>/<code>all</code> = the <code>hatch run</code> targets a contributor types):</p>
+<h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
+<h3 id="inventory-at-a-glance">Inventory at a glance<a class="headerlink" href="#inventory-at-a-glance" title="Permanent link">&para;</a></h3>
+<p>The scheduled/automated family is every workflow that runs on <code>schedule</code> or
+<code>pull_request_review</code>, plus the dependabot update streams. Each row below has a
+runbook in this section. <code>scripts/check_ci_inventory.py</code> (wired into
+<code>hatch run lint</code>) parses <code>.github/workflows/*.yml</code> and fails if a family
+workflow is not named here.</p>
 <table>
 <thead>
 <tr>
-<th>Change type</th>
-<th>pre-commit</th>
-<th>pre-push (mypy)</th>
-<th><code>hatch run lint</code></th>
-<th><code>hatch run all</code></th>
+<th>Guard</th>
+<th>When</th>
+<th>Finding shows up in</th>
+<th>How to act</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>src/**.py</code></td>
-<td>ruff, ruff-format, pygrep×2, backlog-id</td>
-<td>⚠ M4 (<code>^src/</code>)</td>
-<td>✅ 13 checks</td>
-<td>✅</td>
+<td><code>drift-guard.yml</code></td>
+<td>Mon 07:00 UTC</td>
+<td>rolling <code>[drift-guard]</code> Issue</td>
+<td><code>/drift</code> skill</td>
 </tr>
 <tr>
-<td><code>tests/**.py</code></td>
-<td>ruff, ruff-format, no-rst-roles, backlog-id</td>
-<td>—</td>
-<td>✅</td>
-<td>✅</td>
+<td><code>mutation.yml</code></td>
+<td>Sat 05:00 UTC</td>
+<td>Actions run summary + actor email</td>
+<td>runbook below</td>
 </tr>
 <tr>
-<td><code>scripts/**.py</code></td>
-<td>ruff, ruff-format, no-rst-roles, backlog-id</td>
-<td>—</td>
-<td>✅</td>
-<td>✅</td>
+<td>dependabot + <code>dependabot-auto-merge.yml</code></td>
+<td>Mon (weekly)</td>
+<td>update PR + its CI status</td>
+<td>per-ecosystem runbook below</td>
 </tr>
 <tr>
-<td><code>sdd/specs/**.md</code></td>
-<td><strong>backlog-id only</strong></td>
-<td>—</td>
-<td>✅ (spec-marks, formal-trace)</td>
-<td>✅</td>
-</tr>
-<tr>
-<td><code>sdd/traces/*.yml</code></td>
-<td>backlog-id only</td>
-<td>—</td>
-<td>— (trace-schema check parked: ID-179)</td>
-<td>—</td>
-</tr>
-<tr>
-<td><code>sdd/audits, research</code></td>
-<td>backlog-id only</td>
-<td>—</td>
-<td>⚠ docs-framework only</td>
-<td>✅</td>
-</tr>
-<tr>
-<td><code>docs-src/guides/*.md</code></td>
-<td><strong>backlog-id only</strong></td>
-<td>—</td>
-<td>✅ (tracker-refs, docs-framework)</td>
-<td>✅ (+ links)</td>
-</tr>
-<tr>
-<td><code>pyproject.toml</code></td>
-<td>backlog-id only</td>
-<td>—</td>
-<td>⚠ (no toml-specific gate)</td>
-<td>✅</td>
+<td><code>codeql.yml</code></td>
+<td>push / PR + Mon 06:00 UTC</td>
+<td>Security tab alerts</td>
+<td>runbook below (exception)</td>
 </tr>
 </tbody>
 </table>
-<p><strong>CI routing</strong> (<code>ci.yml</code> <code>setup</code> job path filters; a job runs only if its filter
-matches):</p>
-<table>
-<thead>
-<tr>
-<th>Change type</th>
-<th><code>lint</code> (code)</th>
-<th><code>typecheck</code>/<code>test*</code> (code)</th>
-<th><code>docs</code> (docs)</th>
-<th><code>verify-formal</code> (formal)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>src</code> / <code>tests</code> / <code>scripts</code> / <code>pyproject</code></td>
-<td>✅</td>
-<td>✅</td>
-<td>✅ (src/docs paths)</td>
-<td>⚠ specs/formal only</td>
-</tr>
-<tr>
-<td><code>sdd/specs/**</code></td>
-<td><strong>— skipped</strong></td>
-<td><strong>— skipped</strong></td>
-<td>✅ docs-framework + mkdocs</td>
-<td>✅ dafny + capability-parity</td>
-</tr>
-<tr>
-<td><code>sdd/traces</code>, <code>sdd/audits</code>, <code>sdd/adrs</code>, <code>sdd/rfcs</code></td>
-<td><strong>— skipped</strong></td>
-<td><strong>— skipped</strong></td>
-<td>✅ docs-framework + mkdocs</td>
-<td>—</td>
-</tr>
-<tr>
-<td><code>docs-src/guides/*.md</code> (no FEATURES)</td>
-<td><strong>— skipped</strong></td>
-<td><strong>— skipped</strong></td>
-<td>✅ docs-framework + mkdocs</td>
-<td>—</td>
-</tr>
-</tbody>
-</table>
-<p>The two <strong>bold "skipped"</strong> columns are the load-bearing observation: every gate
-that lives only in the CI <code>lint</code> job — <code>check_spec_marks</code>, <code>check_formal_trace</code>,
-<code>check_no_tracker_refs</code>, <code>check_rst_roles</code>, <code>check_infra_settings</code>,
-<code>check_test_*</code>, <code>check_mock_spec</code>, the four artifact-drift checks (<code>gen_graph</code> /
-<code>gen_features</code> / <code>gen_graph_viz --check</code> + plain <code>check_api_docs</code>) — is invisible
-to any PR whose diff does not match <code>CODE_PAT</code>
-(<code>ci.yml:40</code>).</p>
-<hr />
-<h2 id="high">🔴 High<a class="headerlink" href="#high" title="Permanent link">&para;</a></h2>
-<h3 id="h1-ci-hand-duplicates-the-hatch-script-layer-three-divergent-lint-definitions-drift-independently">H1 — CI hand-duplicates the <code>hatch</code> script layer; three divergent "lint" definitions drift independently<a class="headerlink" href="#h1-ci-hand-duplicates-the-hatch-script-layer-three-divergent-lint-definitions-drift-independently" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> <code>ci.yml:100-117</code> (inline lint steps) vs
-<code>pyproject.toml:163</code> (<code>preflight</code>), <code>:164</code> (<code>lint</code>), <code>:166</code> (<code>format-check</code>);
-<code>.pre-commit-config.yaml:1-35</code> (the commit subset).</p>
-<p>No CI job invokes <code>hatch run</code>. The <code>lint</code> job re-lists all 18 commands inline:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ruff check src/ tests/ examples/ scripts/</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ruff format --check src/ tests/ examples/ scripts/</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python scripts/check_test_assertions.py tests</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">…</span><span class="w">                                       </span><span class="c1"># 13 more, ending in:</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python scripts/gen_backlogid.py --check</span>
-</code></pre></div>
-<p>This is the union of three separate <code>hatch</code> targets — <code>lint</code> (13 checks),
-<code>format-check</code> (1), and four of <code>preflight</code>'s artifact-drift checks (<code>gen_graph</code>
-/ <code>gen_features</code> / <code>gen_graph_viz --check</code>, plus plain <code>check_api_docs</code>) —
-transcribed by hand. The consequence is three definitions of "lint" that must be
-kept in sync manually:</p>
-<table>
-<thead>
-<tr>
-<th>"lint"</th>
-<th>Source</th>
-<th>Contents</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>commit</td>
-<td><code>.pre-commit-config.yaml</code></td>
-<td><code>ruff --fix</code>, <code>ruff-format</code>, 2 pygrep, <code>backlog-id</code></td>
-</tr>
-<tr>
-<td><code>hatch run lint</code></td>
-<td><code>pyproject.toml:164</code></td>
-<td>13 checks (incl. <code>gen_backlogid --check</code>; no <code>format-check</code>, no artifact-drift <code>gen_*</code>)</td>
-</tr>
-<tr>
-<td>CI <code>lint</code> job</td>
-<td><code>ci.yml:100-117</code></td>
-<td>18 checks (= <code>hatch lint</code> + <code>format-check</code> + 4 artifact-drift)</td>
-</tr>
-</tbody>
-</table>
-<p>Adding a checker to <code>hatch run lint</code> does <strong>not</strong> add it to CI, and vice-versa;
-the two lists already diverge (CI carries <code>ruff format --check</code> and the four
-artifact-drift checks; <code>hatch run lint</code> carries none of them). A contributor who types
-the obvious <code>hatch run lint</code> runs a <em>different and smaller</em> gate than CI enforces
-(see L3). This is the central principle-4 violation in the topology.</p>
-<p><strong>Note:</strong> <code>mutation.yml:121</code> documents a <em>deliberate</em> reason one job avoids
-<code>hatch run</code> (it re-derives the env). That rationale is job-specific; it does not
-explain why the <code>lint</code> job inlines a 18-line copy of script lists that already
-exist as named targets.</p>
-<h3 id="h2-sddspecs-only-changes-skip-the-gates-built-to-validate-them">H2 — <code>sdd/specs</code>-only changes skip the gates built to validate them<a class="headerlink" href="#h2-sddspecs-only-changes-skip-the-gates-built-to-validate-them" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> <code>ci.yml:40</code> (<code>CODE_PAT</code>), <code>:49-51</code> (<code>FORMAL_PAT</code>), <code>:66-68</code>
-(<code>lint</code> gated <code>if: needs.setup.outputs.code == 'true'</code>), <code>:364-374</code>
-(<code>verify-formal</code> runs only <code>dafny verify</code> + <code>check_capability_parity</code>);
-<code>.pre-commit-config.yaml:30-35</code> (commit = backlog-id only for non-python).</p>
-<p><code>CODE_PAT</code> matches <code>src|tests|examples|scripts</code>, <code>pyproject.toml</code>, FEATURES,
-graph data, and workflow paths — <strong>not</strong> <code>sdd/</code>. So for a PR that touches only
-<code>sdd/specs/</code>:</p>
+<p><code>ci.yml</code> (push / PR) is the gating test matrix, not a maintenance guard: a
+contributor is present to read its result, so it sits outside this family and is
+documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p>
+<h3 id="drift-guardyml-transitive-dependency-drift"><code>drift-guard.yml</code> — transitive dependency drift<a class="headerlink" href="#drift-guardyml-transitive-dependency-drift" title="Permanent link">&para;</a></h3>
 <ul>
-<li>the CI <code>lint</code> job is <strong>skipped</strong> → <code>check_spec_marks.py</code> (the BK-251 spec ↔
-  mark drift gate) and <code>check_formal_trace.py</code> (the ID-206 spec ↔ Dafny ↔ test
-  gate) <strong>do not run</strong> — neither in CI nor at commit;</li>
-<li><code>verify-formal</code> does run (FORMAL_PAT matches <code>^sdd/specs/</code>), but it executes
-  only <code>dafny verify …</code> and <code>check_capability_parity.py</code> (<code>ci.yml:364-374</code>) —
-  not the two spec-mark checks;</li>
-<li>locally, the only commit-time gate is <code>backlogid-check</code> (<code>always_run</code>); the
-  natural validator (<code>check_spec_marks</code>) fires only if the contributor remembers
-  <code>hatch run lint</code>/<code>all</code>.</li>
+<li><strong>What it does:</strong> re-resolves every <code>remote-store[&lt;extra&gt;]</code> against the latest
+  available transitive versions (including pre-releases), diffs against the
+  committed baselines in <code>infra/drift-locks/</code>, and runs the most-likely-to-break
+  smoke tests for any extra that drifted. It never edits <code>pyproject.toml</code> and
+  never auto-merges a floor/pin — it is early warning, not remediation.</li>
+<li><strong>When:</strong> Monday 07:00 UTC, plus manual <code>workflow_dispatch</code> (optionally for a
+  single extra).</li>
+<li><strong>Where the finding shows up:</strong> a single <strong>rolling <code>[drift-guard]</code> GitHub
+  Issue</strong> — opened or updated when any extra drifts, commented "cleared" and
+  closed when all are clean. The per-extra <strong>smoke verdict</strong> lives in the linked
+  Actions run, not the issue body.</li>
+<li><strong>How to act:</strong> run the <strong><code>/drift</code> skill</strong>. It reads the rolling issue, then
+  for each drifted extra reads that extra's smoke-job conclusion in the linked
+  run — the load-bearing signal — and refreshes only the baselines whose smoke is
+  green and whose bump is non-major. A red smoke is never refreshed until its
+  cause (real regression vs smoke-harness gap) is explained. The skill prepares a
+  pushed branch and stops; the maintainer opens the PR.</li>
 </ul>
-<p><strong>Net:</strong> a new shipped spec ID added without a test (the exact <code>drift</code> failure
-mode <code>check_spec_marks</code> exists to catch — <code>check_spec_marks.py:27-28</code>), or a
-marker citing a renamed ID (the <code>stale</code> mode), ships green on a spec-only PR. The
-fix is routing, not a new gate: the gates already exist; the path filter just
-does not send <code>sdd/specs/</code> changes through them.</p>
-<p><em>(Trace-YAML validation — the adjacent "<code>sdd/traces</code> reaches no gate" question —
-is deliberately out of scope here: it is a missing-validator request, already
-parked as </em><em>ID-179</em><em>, not a topology/drift defect.)</em></p>
-<hr />
-<h2 id="medium">🟠 Medium<a class="headerlink" href="#medium" title="Permanent link">&para;</a></h2>
-<h3 id="m1-pr-never-runs-hatch-run-lint-or-all-it-reconstructs-a-partial-subset">M1 — <code>/pr</code> never runs <code>hatch run lint</code> (or <code>all</code>); it reconstructs a partial subset<a class="headerlink" href="#m1-pr-never-runs-hatch-run-lint-or-all-it-reconstructs-a-partial-subset" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> <code>pr/SKILL.md:30-54</code> (gates 2a/2b/2c/2e/2d); <code>CONTRIBUTING.md:358</code>
-("Pre-PR validation: run <code>hatch run all</code>"); contrast <code>fix-pr/SKILL.md:107</code>
-("Run <code>hatch run lint</code>. Fix failures, re-run until clean.").</p>
-<p><code>/pr</code>'s pre-PR gate is a hand-rolled subset: a manual TESTING.md read (2a), a
-manual CONTENT-RULES.md read (2b), a coverage run (2c), a local-machine grep
-(2e), and a trace existence check (2d). It runs <strong>no</strong> <code>hatch run lint</code> and <strong>no</strong>
-<code>hatch run all</code>. So <code>/pr</code> will happily open a PR that fails CI on any of the 13+
-<code>lint</code> checks it does not run (<code>check_mock_spec</code>, <code>check_test_placement</code>,
-<code>check_spec_marks</code>, <code>check_formal_trace</code>, <code>check_infra_settings</code>,
-<code>check_no_tracker_refs</code>, the four artifact-drift checks …). <code>/fix-pr</code> runs
-<code>hatch run lint</code> unconditionally; <code>/pr</code> does not — an asymmetry with no stated
-rationale, and a divergence from CONTRIBUTING's own instruction.</p>
-<h3 id="m2-both-skills-prescribe-hatch-run-test-for-docsspec-diffs-the-least-relevant-gate-and-never-hatch-run-lint">M2 — Both skills prescribe <code>hatch run test</code> for docs/spec diffs — the least-relevant gate — and never <code>hatch run lint</code><a class="headerlink" href="#m2-both-skills-prescribe-hatch-run-test-for-docsspec-diffs-the-least-relevant-gate-and-never-hatch-run-lint" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> <code>pr/SKILL.md:36-38</code>, <code>fix-pr/SKILL.md:109-111</code>.</p>
-<p>The coverage gate keys only on <code>src/</code>, <code>tests/</code>, <code>examples/</code>:</p>
-<blockquote>
-<p>If none match (docs/config-only): run <code>hatch run test</code>.</p>
-</blockquote>
-<p>For a zero-code <code>sdd/</code>/markdown diff this runs the <strong>pytest suite</strong> (which
-exercises nothing the diff changed) and skips <code>hatch run lint</code> — the target that
-holds <code>check_docs_framework</code>, <code>check_no_tracker_refs</code>, <code>check_spec_marks</code>, and
-<code>check_formal_trace</code>, i.e. the checks that <em>do</em> validate a doc/spec change. The
-skills run the most expensive irrelevant gate and skip the relevant one. (The
-<code>scripts/</code>-only carve-out in the same branch is correct — those have guard tests
-under <code>tests/scripts/</code> — but it is reasoning about test coverage, not lint.)</p>
-<h3 id="m3-docs-only-prs-skip-check_no_tracker_refs-and-check_links-in-ci">M3 — Docs-only PRs skip <code>check_no_tracker_refs</code> and <code>check_links</code> in CI<a class="headerlink" href="#m3-docs-only-prs-skip-check_no_tracker_refs-and-check_links-in-ci" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> <code>ci.yml:312-326</code> (<code>docs</code> job: <code>check_docs_framework</code> + <code>mkdocs build
---strict</code> only); <code>check_no_tracker_refs.py:14-49</code> (scope = <code>docs-src/**</code>, README,
-FEATURES, CONTRIBUTING, src docstrings); <code>pyproject.toml:259</code> (<code>all</code> includes
-<code>check-links</code>, CI does not).</p>
-<p>A PR that touches only <code>docs-src/guides/*.md</code> is <code>code=false, docs=true</code>, so the
-<code>lint</code> job is skipped and the <code>docs</code> job runs only <code>check_docs_framework</code> and
-<code>mkdocs build --strict</code>. <code>check_no_tracker_refs</code> — the gate written specifically
-for guide prose (its in-scope set is exactly <code>docs-src/**</code>) — lives only in the
-code-gated <code>lint</code> job, so a tracker-ID leak into a guide-only PR reaches master
-unless a human runs <code>hatch run lint</code>/<code>all</code>. <code>check_links</code> (<code>scripts/docs/
-check_links.py</code>) runs in <code>hatch run all</code> but in <strong>no</strong> CI job — <code>mkdocs build
---strict</code> covers internal nav links but not the broader link scan.</p>
-<h3 id="m4-the-mypy-pre-push-hook-is-never-installed-by-the-documented-command">M4 — The mypy pre-push hook is never installed by the documented command<a class="headerlink" href="#m4-the-mypy-pre-push-hook-is-never-installed-by-the-documented-command" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> <code>.pre-commit-config.yaml:8-15</code> (mypy <code>stages: [pre-push]</code>);
-<code>pyproject.toml:256</code> (<code>pre-commit-install = "pre-commit install"</code>); no
-<code>default_install_hook_types</code> in the config; no doc mentions
-<code>--hook-type pre-push</code> (grep over <code>*.md</code> returns zero hits).</p>
-<p><code>pre-commit install</code> with no <code>--hook-type</code> (and no <code>default_install_hook_types</code>
-in the config) installs <strong>only</strong> the <code>pre-commit</code> stage script. The mypy hook,
-gated <code>stages: [pre-push]</code>, therefore never runs on <code>git push</code> for anyone who
-followed the documented setup. Type checking still happens via <code>hatch run
-typecheck</code>/<code>all</code> and CI, so this is not a correctness hole — but it is a declared
-gate that does not fire, i.e. dead config that reads as protection.</p>
-<h3 id="m5-redundant-cross-job-runs-and-an-artifact-drift-check-absent-from-pr-ci">M5 — Redundant cross-job runs and an artifact-drift check absent from PR CI<a class="headerlink" href="#m5-redundant-cross-job-runs-and-an-artifact-drift-check-absent-from-pr-ci" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> <code>ci.yml:107</code> + <code>:373</code> (<code>check_capability_parity</code> twice);
-<code>:105</code> + <code>:388</code> (<code>check_tla_no_emdash</code> twice); <code>:109</code> + <code>:325</code>
-(<code>check_docs_framework</code> twice); <code>pyproject.toml:163</code> (<code>drift_check render-docs
---check</code> in <code>preflight</code>/<code>all</code>) with no counterpart in <code>ci.yml</code>.</p>
-<p>The duplicate <code>capability_parity</code> / <code>tla_no_emdash</code> / <code>docs_framework</code> runs are
-defensible (each fires under a <em>different</em> path filter, so a formal-only or
-docs-only PR still gets the check), but they compound H1: each duplicated command
-is one more hand-maintained copy. Separately, <code>drift_check render-docs --check</code>
-(which verifies <code>docs-src/reference/tested-versions.md</code> is in sync) runs in
-<code>hatch run all</code> and the weekly drift-guard does a different job (resolve/diff) —
-so <strong>tested-versions drift is caught by no PR CI lane</strong>, only by a local <code>all</code>.</p>
-<hr />
-<h2 id="low-nits">🟡 Low / Nits<a class="headerlink" href="#low-nits" title="Permanent link">&para;</a></h2>
-<h3 id="l1-ruff-ruff-format-gen_backlogid-check-run-in-three-places-each">L1 — <code>ruff</code>, <code>ruff-format</code>, <code>gen_backlogid --check</code> run in three places each<a class="headerlink" href="#l1-ruff-ruff-format-gen_backlogid-check-run-in-three-places-each" title="Permanent link">&para;</a></h3>
-<p><code>ruff</code>/<code>ruff-format</code>: pre-commit (<code>--fix</code>) + <code>hatch format-check</code> + CI <code>lint</code>.
-<code>gen_backlogid --check</code>: pre-commit (<code>backlogid-check</code>, <code>always_run</code>) +
-<code>hatch lint</code> + CI <code>lint</code>. The layering itself is sound defense-in-depth (fast
-local feedback, authoritative CI); the cost is that the CI copy is hand-kept (H1).</p>
-<h3 id="l2-pr-gate-steps-are-numbered-out-of-order">L2 — <code>/pr</code> gate steps are numbered out of order<a class="headerlink" href="#l2-pr-gate-steps-are-numbered-out-of-order" title="Permanent link">&para;</a></h3>
-<p><code>pr/SKILL.md</code> runs 2a → 2b → 2c → <strong>2e → 2d</strong> (<code>:40</code> then <code>:44</code>). Harmless, but
-the re-lettered insertion is a visible accretion smell — the gate grew by
-patching rather than by re-deriving from one list.</p>
-<h3 id="l3-hatch-run-lint-is-a-strict-subset-of-ci-lint-the-obvious-command-under-checks">L3 — <code>hatch run lint</code> is a strict subset of CI <code>lint</code>; the obvious command under-checks<a class="headerlink" href="#l3-hatch-run-lint-is-a-strict-subset-of-ci-lint-the-obvious-command-under-checks" title="Permanent link">&para;</a></h3>
-<p>A contributor types <code>hatch run lint</code> and gets 13 checks; CI runs 18
-(<code>+ format-check + 4 artifact-drift</code>). The documented complete gate is <code>hatch run all</code>
-(<code>CONTRIBUTING.md:358</code>, <code>pyproject.toml:259</code>), but <code>lint</code> is the more obvious
-thing to type and silently does less than CI. Subset of H1.</p>
-<hr />
-<h2 id="verified-strengths-checked-not-rubber-stamped">Verified strengths (checked, not rubber-stamped)<a class="headerlink" href="#verified-strengths-checked-not-rubber-stamped" title="Permanent link">&para;</a></h2>
+<h3 id="mutationyml-mutation-testing"><code>mutation.yml</code> — mutation testing<a class="headerlink" href="#mutationyml-mutation-testing" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>The CI <code>gate</code> job closes the silent-skip hole.</strong> <code>ci.yml:419-424</code> fails
-  explicitly if the <code>setup</code> job did not succeed (path filters never ran →
-  downstream auto-skips would otherwise pass vacuously), and <code>:439-443</code> treats
-  only <code>success</code>/<code>skipped</code> as acceptable. This is the correct shape for a
-  fan-out-then-aggregate gate.</li>
-<li><strong>Path-filter design is sound.</strong> Routing the heavy matrix (<code>test</code>,
-  <code>typecheck</code>, <code>e2e</code>, <code>package</code>) behind <code>code==true</code> and docs behind <code>docs==true</code>
-  avoids running the full gauntlet on a typo-fix PR, without weakening the gate
-  for code changes.</li>
-<li><strong><code>check_*</code> scripts are scope-auditable.</strong> <code>check_no_tracker_refs.py:14-49</code>,
-  <code>check_spec_marks.py:45-55</code>, and <code>check_formal_trace.py:29-54</code> each carry an
-  explicit in-scope / out-of-scope / "what this does not prove" docstring. The
-  gates are honest about their own limits — <code>check_spec_marks</code> states it proves
-  <em>citation, not assertion</em>. This is the opposite of drift; it is the part of the
-  topology most resistant to it.</li>
-<li><strong>Coverage strict gate is deliberately CI/publish-only, documented.</strong>
-  <code>pyproject.toml:181-195</code> and <code>CONTRIBUTING.md:367</code> both explain that
-  <code>hatch run all</code> uses the no-Docker <code>test-cov-s1</code> variant and the 95% floor
-  lives in CI / publish. The split is intentional and recorded, not accidental.</li>
-<li><strong><code>/fix-pr</code> runs the right gate.</strong> <code>fix-pr/SKILL.md:107</code> runs <code>hatch run lint</code>
-  unconditionally before committing — the behaviour M1 recommends for <code>/pr</code>.</li>
-<li><strong>The ripple-check has a real anti-drift guard.</strong> <code>CLAUDE-REFERENCE.md:19-22</code>
-  pins "row names, count, and order must match between both presentations" and is
-  reviewer-enforced, with a documented escalation path (promote to a check script
-  if drift recurs).</li>
+<li><strong>What it does:</strong> runs mutation testing across the scopes defined in
+  <code>scripts/mutate_scopes.py</code>; a <code>summary</code> job tabulates each scope's outcome.</li>
+<li><strong>When:</strong> Saturday 05:00 UTC, plus manual <code>workflow_dispatch</code> (optionally for a
+  single scope).</li>
+<li><strong>Where the finding shows up:</strong> today, the <strong>Actions-tab run summary and
+  GitHub's actor email only</strong> — there is no rolling issue yet. This is the open
+  Rule 1 gap, tracked by the <code>mutation</code> item in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md"><code>sdd/BACKLOG.md</code></a>;
+  until it lands, scan the Saturday run even on a quiet inbox.</li>
+<li><strong>How to act:</strong> open the run and classify which of two outcomes occurred — they
+  need different responses:</li>
+<li><strong>Surviving mutant</strong> — a genuine test-coverage gap (a mutated line no test
+    caught). Advisory: fold it into a coverage-hardening pass; not urgent, since
+    strict coverage gates already run in CI.</li>
+<li><strong>Harness / implementation failure</strong> — the run itself broke (an import,
+    config, or tooling error, not a mutant; this is what the weekend break was).
+    Treat it as a regression: fix the harness or code so the weekly run is green
+    again.</li>
 </ul>
-<hr />
-<h2 id="recommendations-advisory-consolidation-first">Recommendations (advisory, consolidation-first)<a class="headerlink" href="#recommendations-advisory-consolidation-first" title="Permanent link">&para;</a></h2>
-<p>The north star is <strong>fewer composable gates and one source of truth</strong>, not more
-special-casing. Grouped by theme; the user accepts, splits, or declines. No
-backlog items are created here (CLAUDE.md § Audits; ask-before-new-followup).</p>
-<table>
-<thead>
-<tr>
-<th>Group</th>
-<th>Findings</th>
-<th>Recommendation</th>
-<th>Effort</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>R1 — CI delegates to <code>hatch</code></strong></td>
-<td>H1, L1, L3</td>
-<td>Replace the inline <code>lint</code>-job steps with <code>hatch run preflight</code> + <code>hatch run lint</code> + <code>hatch run format-check</code> (install hatch in the job, as the publish/drift jobs already reference). The <code>hatch</code> script lists become the single source; CI inherits any future check automatically. Keep <code>mutation.yml</code>'s deliberate no-<code>hatch</code> exception. Optionally fold <code>format-check</code> + the four artifact-drift checks into <code>hatch run lint</code> so the three "lint" definitions collapse toward one.</td>
-<td>Low</td>
-</tr>
-<tr>
-<td><strong>R2 — Close the <code>sdd/specs</code>-only gate gap</strong></td>
-<td>H2</td>
-<td>Pick <strong>one</strong> place: either widen <code>CODE_PAT</code> (<code>ci.yml:40</code>) to include <code>^sdd/specs/</code> so the <code>lint</code> job runs on spec-only PRs, or add <code>check_spec_marks</code> + <code>check_formal_trace</code> to the <code>verify-formal</code> job (which already triggers on <code>sdd/specs/</code>). Widening the filter is the leaner option — it routes spec changes through the existing single gate rather than adding a second copy.</td>
-<td>Low</td>
-</tr>
-<tr>
-<td><strong>R3 — Skills delegate, stop re-encoding</strong></td>
-<td>M1, M2, L2</td>
-<td>Define "what validates a change" <strong>once</strong> as <code>hatch run all</code> and have <code>/pr</code> and <code>/fix-pr</code> both run it, dropping the <code>src/tests/examples</code>-keyed coverage branch and the manual TESTING/CONTENT sub-gates (those rules are already inside <code>check_*</code>/<code>docs-check</code>). This is the largest consolidation: it removes the per-type logic the skills currently duplicate from CONTRIBUTING and CI. If a lighter gate is wanted for fast iteration, document one thin target and have both skills call it — but only one.</td>
-<td>Medium</td>
-</tr>
-<tr>
-<td><strong>R4 — Docs-only PRs get their relevant gate</strong></td>
-<td>M3, M5 (drift-docs)</td>
-<td>Subsumed by R3 for the skill path. For CI: add <code>check_no_tracker_refs</code>, <code>check_links</code>, and <code>drift_check render-docs --check</code> to the <code>docs</code> job (or widen the lint filter), so a docs-only PR is gated by the checks built for docs.</td>
-<td>Low</td>
-</tr>
-<tr>
-<td><strong>R5 — Resolve the dead mypy pre-push hook</strong></td>
-<td>M4</td>
-<td>Either set <code>default_install_hook_types: [pre-commit, pre-push]</code> in <code>.pre-commit-config.yaml</code> (so <code>hatch run pre-commit-install</code> wires both stages), or drop the pre-push mypy hook and rely on <code>hatch run typecheck</code>/<code>all</code> + CI. Don't leave a declared gate that never fires.</td>
-<td>Trivial</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Priority ordering:</strong> R1 + R3 (the two consolidation wins that remove the
-hand-maintained duplication) → R2 + R4 (close the real CI/skill gaps for <code>sdd/specs</code>
-and docs-only changes) → R5 (dead-config cleanup).</p>
+<h3 id="dependabot-dependabot-auto-mergeyml-dependency-update-prs">dependabot + <code>dependabot-auto-merge.yml</code> — dependency update PRs<a class="headerlink" href="#dependabot-dependabot-auto-mergeyml-dependency-update-prs" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>What it does:</strong> dependabot opens weekly update PRs for the <code>pip</code> and
+  <code>github-actions</code> ecosystems (<code>.github/dependabot.yml</code>).
+  <code>dependabot-auto-merge.yml</code> triggers on a maintainer's <code>pull_request_review</code>
+  approval and enables <code>--auto --squash</code> merge to <code>master</code>.</li>
+<li><strong>When:</strong> Monday, weekly.</li>
+<li><strong>Where the finding shows up:</strong> the <strong>PR list</strong> and each PR's CI status. The
+  approval click is the load-bearing gate — it is what fires the merge.</li>
+<li><strong>How to act — verify before approving, per ecosystem:</strong></li>
+<li><strong><code>github-actions</code> (<code>Chore(deps)</code>):</strong> a green check means the workflow still
+    <em>parses</em>, not that the bumped action <em>behaves</em> — most action bumps exercise
+    nothing testable. Diff the action's changelog and confirm no <code>with:</code> input or
+    permission surface changed before approving.</li>
+<li><strong><code>pip</code> dev-dep (<code>Chore(deps-dev)</code>):</strong> a red CI is a real signal. Decide
+    whether the failing ceiling is real (hold the PR, or bump the floor) or
+    transient/unsupported (close it).</li>
+<li>Auto-merge to <code>master</code> is irreversible once approval fires; tightening this
+    control (e.g. dropping auto-merge for <code>github-actions</code>) is tracked by the
+    dependabot-approval item in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md"><code>sdd/BACKLOG.md</code></a>.</li>
+</ul>
+<h3 id="codeqlyml-security-scanning-exception-to-rule-1"><code>codeql.yml</code> — security scanning (exception to Rule 1)<a class="headerlink" href="#codeqlyml-security-scanning-exception-to-rule-1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>What it does:</strong> CodeQL static analysis. The weekly full sweep runs regardless
+  of paths, catching what the path-filtered push/PR runs miss.</li>
+<li><strong>When:</strong> push / PR, plus Monday 06:00 UTC.</li>
+<li><strong>Where the finding shows up:</strong> <strong>code-scanning alerts in the repository
+  Security tab</strong> — GitHub's canonical surface for this class. By design it opens
+  no rolling issue and has no triage skill; this is the one sanctioned exception
+  to Rule 1.</li>
+<li><strong>How to act:</strong> review Security-tab alerts when one appears and during any
+  security pass; fix or dismiss per alert with a recorded reason.</li>
+</ul>
+<h3 id="adding-a-guard">Adding a guard<a class="headerlink" href="#adding-a-guard" title="Permanent link">&para;</a></h3>
+<p>A new scheduled or review-triggered workflow must, in the same change:</p>
+<ol>
+<li>carry a header comment stating what it does and its non-goals
+   (<code>drift-guard.yml</code> is the reference);</li>
+<li>gain a runbook section above — when it runs, where its finding shows up, and
+   how to act — or be recorded as an exception with a reason;</li>
+<li>either reuse the rolling-issue + triage-skill pattern (<code>drift-guard.yml</code> +
+   <code>scripts/drift_report.py</code> + the <code>/drift</code> skill) or record why it does not.</li>
+</ol>
+<p><code>scripts/check_ci_inventory.py</code> enforces that the workflow is named here; the
+runbook content and the issue/skill wiring are reviewer-enforced.</p>
 
 
 
@@ -10385,7 +9928,7 @@ and docs-only changes) → R5 (dead-config cleanup).</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../audit-016-graph-backend-review/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 016: Microsoft Graph Backend (ID-127) Review">
+          <a href="../authoring/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Authoring Standards">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -10395,20 +9938,20 @@ and docs-only changes) → R5 (dead-config cleanup).</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                016: Microsoft Graph Backend (ID-127) Review
+                Authoring Standards
               </div>
             </div>
           </a>
         
         
           
-          <a href="../audit-018-ci-operations/" class="md-footer__link md-footer__link--next" aria-label="Next: 018: CI Operations: scheduled-guard notification surfaces">
+          <a href="../content-rules/" class="md-footer__link md-footer__link--next" aria-label="Next: Content Rules">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                018: CI Operations: scheduled-guard notification surfaces
+                Content Rules
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -10445,10 +9988,10 @@ and docs-only changes) → R5 (dead-config cleanup).</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow", "navigation.footer"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow", "navigation.footer"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
