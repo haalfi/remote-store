@@ -4,7 +4,8 @@ CI-operations handbook.
 `sdd/CI-OPERATIONS.md` is the single authority that inventories the
 scheduled/automated workflow family and states the durable-TODO principle.
 Hand-maintained prose rots the moment a tenth workflow lands, so this gate
-parses `.github/workflows/*.yml` for the family triggers
+parses every workflow file under `.github/workflows/` (`*.yml` and `*.yaml` —
+GitHub Actions honours both) for the family triggers
 (`on.schedule` / `on.pull_request_review`) and fails if a family workflow is
 not named in the handbook. That is the high-value direction: it makes adding a
 guard without documenting it a lint failure.
@@ -74,13 +75,23 @@ def _triggers(on: object) -> set[str]:
     return set()
 
 
+def _workflow_files(workflows_dir: Path) -> list[Path]:
+    """Every workflow file in *workflows_dir*, sorted by name.
+
+    GitHub Actions honours both ``.yml`` and ``.yaml`` for workflow files, so a
+    guard committed as ``foo.yaml`` must be judged too — otherwise it would slip
+    past the gate, which is exactly the "added a guard without documenting it"
+    case the gate exists to catch.
+    """
+    return sorted(
+        (*workflows_dir.glob("*.yml"), *workflows_dir.glob("*.yaml")),
+        key=lambda p: p.name,
+    )
+
+
 def family_workflows(workflows_dir: Path) -> list[str]:
     """Workflow basenames that run on a family trigger, sorted."""
-    names: list[str] = []
-    for wf in sorted(workflows_dir.glob("*.yml")):
-        if _triggers(_on_node(wf)) & FAMILY_TRIGGERS:
-            names.append(wf.name)
-    return names
+    return [wf.name for wf in _workflow_files(workflows_dir) if _triggers(_on_node(wf)) & FAMILY_TRIGGERS]
 
 
 def check(workflows_dir: Path, handbook: Path) -> list[str]:

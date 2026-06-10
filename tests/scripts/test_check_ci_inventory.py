@@ -51,6 +51,12 @@ class TestFamilyDetection:
         _write_workflow(tmp_path, "ci.yml", "  push:\n    branches: [master]\n  pull_request:")
         assert _mod.family_workflows(tmp_path) == []
 
+    def test_yaml_extension_is_also_judged(self, tmp_path):
+        # GitHub Actions honours both .yml and .yaml; a scheduled guard
+        # committed as .yaml must not slip past the gate.
+        _write_workflow(tmp_path, "sweep.yaml", '  schedule:\n    - cron: "0 5 * * 6"')
+        assert _mod.family_workflows(tmp_path) == ["sweep.yaml"]
+
     def test_yaml_on_boolean_key_gotcha(self, tmp_path):
         # PyYAML parses the bare ``on:`` mapping key as the bool True, not "on".
         # The detector must still find the schedule trigger underneath.
