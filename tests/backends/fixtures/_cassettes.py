@@ -373,7 +373,17 @@ GRAPH_FORBIDDEN_CASSETTE_PATTERNS: tuple[tuple[str, bytes], ...] = (
     # Identity keys that escaped ``_GRAPH_PII_BODY_SCRUB`` (the one fixed class
     # with no env-independent marker until now).
     ("unredacted identity key", rb'"(?:email|userPrincipalName)"\s*:\s*"(?!REDACTED)'),
-    # A bare email address anywhere in the tree (account PII).
+    # A bare email address anywhere in the tree (account PII). Unlike every other
+    # marker, this one is NOT anchored to a Graph-specific leak shape the scrub
+    # layer owns (``Bearer`` / ``eyJ`` / ``b!`` / ``-my.sharepoint.com`` / identity
+    # JSON keys), so it has the widest false-positive surface over a tree the PR
+    # can't fully constrain: a future cassette legitimately carrying an
+    # ``x@y.tld``-shaped value (a Microsoft response field, a docs URL fragment)
+    # would turn the creds-free CI sweep red with no real leak (BK-262 review). Kept
+    # deliberately — a raw account email is a real PII failure mode the identity-key
+    # marker (JSON ``"email"`` form only) and the JWT marker (base64 payload) do not
+    # both cover for every surface — but if it ever trips on benign content, scope
+    # it (exclude the matched domain / field) rather than dropping the gate.
     ("bare email address", rb"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
 )
 
@@ -650,6 +660,19 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
             return request
         if _drive_id_re_str is not None:
             request.uri = _drive_id_re_str.sub(FAKE_DRIVE_ID, request.uri)
+        # API-host request URIs deliberately do NOT get the value-based whole-query
+        # wipe ``_scrub_location`` applies to API-host Location *responses*. The
+        # request URI is part of vcrpy's match key (default ``match_on`` includes
+        # the query), so it must keep its query structure for replay: collapsing it
+        # to ``?REDACTED`` would make query-distinguished requests ($top / $select /
+        # $skiptoken pagination) indistinguishable — the same order-dependence
+        # hazard as the pre-signed placeholder. So query tokens on the request URI
+        # are removed surgically by name via vcr's ``filter_query_parameters``
+        # allowlist, not value-based. The asymmetry is safe because a Location is
+        # response-side (never matched) so it can over-wipe; Graph API calls are
+        # bearer-authed via the (scrubbed) Authorization header rather than a query
+        # token, and any token-shaped value that did slip into a query is still
+        # caught by the ``Bearer`` / ``eyJ`` forbidden markers.
         # Normalise the per-test base_path uuid to the stable replay token so the
         # recorded URI matches graph_replay's fixed base_path (runs in both modes).
         request.uri = _GRAPH_CONFORMANCE_ROOT_RE_STR.sub(GRAPH_CONFORMANCE_BASE_PATH, request.uri)

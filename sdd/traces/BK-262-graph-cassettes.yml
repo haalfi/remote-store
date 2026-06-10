@@ -18,7 +18,7 @@ discovery_followups:
   - BK-283
 surprising_ripples:
   - tests/backends/cassettes/graph/TestCopyPostState.test_copy_preserves_source[graph].yaml
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -115,4 +115,9 @@ phases:
         section: "_GRAPH_BODY_SCRUB (id_token / client_info)"
         read_type: verify
         extract: "The new bare-JWT marker validated itself on re-record: it caught a REAL leak the prior process committed only by luck. When MSAL refreshes mid-suite (a warm in-memory token cache hid it before), the login.microsoftonline.com token response is recorded — and beyond access_token/refresh_token (already scrubbed) it carries an id_token (JWT) and client_info (base64) whose payloads embed the account email, name, tenant id, and an oid holding the drive cid. None were caught by the drive-id or email scrubs because they are base64-encoded; the eyJ marker was. Redacted all four token-response fields wholesale. Replay is unaffected (the graph_replay backend uses a constant stub token and never re-issues the token request). This is the 'encode failure modes, not just past leaks' marker design earning its keep"
+        outcome: ok
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "before_record_request API-host query asymmetry comment / bare-email marker trade-off comment"
+        read_type: verify
+        extract: "Review round 3 (2 findings, both 'possible / not blocking', both documentation-only). (1) Asymmetry: _scrub_location value-wipes the whole query of an API-host Location, but the API-host request URI relies on vcr's filter_query_parameters allowlist instead. Verified correct by design, not an oversight: the request URI is part of vcr's match key, so a whole-query collapse would make $top/$select/$skiptoken-distinguished requests ambiguous (the placeholder order-dependence hazard); a Location is response-side and never matched, so it can over-wipe. Documented the deliberate allowlist reliance and that token-shaped query values are still caught by the Bearer/eyJ markers. (2) The bare-email marker is the one marker not anchored to a Graph leak shape, so it has the widest CI false-positive surface; kept (raw account email is a real failure mode) but documented the trade-off and the scope-don't-drop remediation if it ever trips on benign content"
         outcome: ok
