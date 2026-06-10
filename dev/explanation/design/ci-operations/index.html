@@ -9788,8 +9788,8 @@ workflow is not named here.</p>
 <tr>
 <td><code>mutation.yml</code></td>
 <td>Sat 05:00 UTC</td>
-<td>Actions run summary + actor email</td>
-<td>runbook below</td>
+<td>rolling <code>[mutation]</code> Issue (harness failures)</td>
+<td><code>/mutation</code> skill</td>
 </tr>
 <tr>
 <td>dependabot + <code>dependabot-auto-merge.yml</code></td>
@@ -9831,43 +9831,59 @@ documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p
 <h3 id="mutationyml-mutation-testing"><code>mutation.yml</code> — mutation testing<a class="headerlink" href="#mutationyml-mutation-testing" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>What it does:</strong> runs mutation testing across the scopes defined in
-  <code>scripts/mutate_scopes.py</code>; a <code>summary</code> job tabulates each scope's outcome.</li>
+  <code>scripts/mutate_scopes.py</code>. Every <code>mutate-&lt;scope&gt;</code> leg records a per-scope
+  outcome JSON (<code>job.status</code> + the pytest-gremlins report counts), and the
+  <code>summary</code> job classifies them via <code>scripts/mutation_report.py</code> and
+  reconciles the rolling issue.</li>
 <li><strong>When:</strong> Saturday 05:00 UTC, plus manual <code>workflow_dispatch</code> (optionally for a
   single scope).</li>
-<li><strong>Where the finding shows up:</strong> today, the <strong>Actions-tab run summary and
-  GitHub's actor email only</strong> — there is no rolling issue yet. This is the open
-  Rule 1 gap, tracked by the <code>mutation</code> item in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md"><code>sdd/BACKLOG.md</code></a>;
-  until it lands, scan the Saturday run even on a quiet inbox.</li>
-<li><strong>How to act:</strong> open the run and classify which of two outcomes occurred — they
-  need different responses:</li>
-<li><strong>Surviving mutant</strong> — a genuine test-coverage gap (a mutated line no test
-    caught). Advisory: fold it into a coverage-hardening pass; not urgent, since
-    strict coverage gates already run in CI.</li>
-<li><strong>Harness / implementation failure</strong> — the run itself broke (an import,
-    config, or tooling error, not a mutant; this is what the weekend break was).
-    Treat it as a regression: fix the harness or code so the weekly run is green
-    again.</li>
+<li><strong>Where the finding shows up:</strong> depends on which of the two outcomes
+  occurred. They are deliberately split:</li>
+<li><strong>Harness / implementation failure</strong> (the run itself broke: an import,
+    config, or tooling error, a baseline test failure, a leg that recorded no
+    outcome or no readable report): the run is <strong>red</strong> AND the single
+    <strong>rolling <code>[mutation]</code> GitHub Issue</strong> is opened or updated. This diverges
+    from drift-guard's never-red model on purpose: a broken weekly guard is a
+    real regression worth both a red X and a durable TODO.</li>
+<li><strong>Surviving mutant</strong> (a mutated line no test caught): <strong>advisory only</strong>.
+    The run stays green and no issue is opened; counts appear in the
+    run-summary table and the per-scope HTML report artifacts. The mutation
+    runner never fails a run on survivors, and strict coverage gates already
+    run in CI, so survivors feed a coverage-hardening pass rather than a
+    standalone TODO.</li>
+<li><strong>How to act:</strong> run the <strong><code>/mutation</code> skill</strong>. It reads the rolling issue,
+  classifies each failing scope from the linked run's logs (baseline test
+  failure vs harness/tooling break vs setup death), and fixes the regression
+  on a pushed branch. Surviving mutants are noted for a coverage-hardening
+  pass, never patched ad hoc. The issue auto-closes on the next healthy full
+  run; a single-scope dispatch never closes it or rewrites its body (its
+  findings land as comments).</li>
 </ul>
 <h3 id="dependabot-dependabot-auto-mergeyml-dependency-update-prs">dependabot + <code>dependabot-auto-merge.yml</code> — dependency update PRs<a class="headerlink" href="#dependabot-dependabot-auto-mergeyml-dependency-update-prs" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>What it does:</strong> dependabot opens weekly update PRs for the <code>pip</code> and
   <code>github-actions</code> ecosystems (<code>.github/dependabot.yml</code>).
   <code>dependabot-auto-merge.yml</code> triggers on a maintainer's <code>pull_request_review</code>
-  approval and enables <code>--auto --squash</code> merge to <code>master</code>.</li>
+  approval and enables <code>--auto --squash</code> merge to <code>master</code>, for the <strong><code>pip</code>
+  ecosystem only</strong>. <code>github-actions</code> PRs are excluded from auto-merge by the
+  workflow's head-ref guard (<code>dependabot/github_actions/</code>): an action bump
+  usually exercises nothing in the test suite, so a green check means the
+  workflow <em>parses</em>, not that the bumped action <em>behaves</em>, and approval alone
+  carries no real signal there. The exclusion is a control, not a convention;
+  it is pinned by <code>tests/scripts/test_dependabot_automerge_control.py</code>.</li>
 <li><strong>When:</strong> Monday, weekly.</li>
-<li><strong>Where the finding shows up:</strong> the <strong>PR list</strong> and each PR's CI status. The
-  approval click is the load-bearing gate — it is what fires the merge.</li>
-<li><strong>How to act — verify before approving, per ecosystem:</strong></li>
-<li><strong><code>github-actions</code> (<code>Chore(deps)</code>):</strong> a green check means the workflow still
-    <em>parses</em>, not that the bumped action <em>behaves</em> — most action bumps exercise
-    nothing testable. Diff the action's changelog and confirm no <code>with:</code> input or
-    permission surface changed before approving.</li>
+<li><strong>Where the finding shows up:</strong> the <strong>PR list</strong> and each PR's CI status. For
+  <code>pip</code> PRs the approval click is the load-bearing gate: it fires the merge.
+  For <code>github-actions</code> PRs the merge itself is the manual step.</li>
+<li><strong>How to act, per ecosystem:</strong></li>
+<li><strong><code>github-actions</code> (<code>Chore(deps)</code>):</strong> diff the action's changelog and
+    confirm no <code>with:</code> input or permission surface changed. Then merge
+    manually: <code>gh pr merge &lt;N&gt; --squash --delete-branch</code> (approval alone does
+    nothing for this ecosystem).</li>
 <li><strong><code>pip</code> dev-dep (<code>Chore(deps-dev)</code>):</strong> a red CI is a real signal. Decide
     whether the failing ceiling is real (hold the PR, or bump the floor) or
-    transient/unsupported (close it).</li>
-<li>Auto-merge to <code>master</code> is irreversible once approval fires; tightening this
-    control (e.g. dropping auto-merge for <code>github-actions</code>) is tracked by the
-    dependabot-approval item in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md"><code>sdd/BACKLOG.md</code></a>.</li>
+    transient/unsupported (close it). Approve only when green and understood:
+    approval auto-merges to <code>master</code>, irreversibly.</li>
 </ul>
 <h3 id="codeqlyml-security-scanning-exception-to-rule-1"><code>codeql.yml</code> — security scanning (exception to Rule 1)<a class="headerlink" href="#codeqlyml-security-scanning-exception-to-rule-1" title="Permanent link">&para;</a></h3>
 <ul>
