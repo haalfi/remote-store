@@ -110,14 +110,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `email` / `displayName` / `userPrincipalName` / `loginName` / `siteId` (none
   read by the backend or asserted by conformance; the load-bearing item `name`
   shares no key so survives), and a pre-signed-host `Location` collapses whole
-  to the placeholder. Hardened the recorder to match: `min_cassettes` `0 → 100`
-  (full slice records 118, headroom for capability skips) and the Step-4
-  scrub-verify is now case-insensitive (it caught the upper-cased cid the
-  case-sensitive check had missed). Recorded 118 cassettes (PII-swept clean:
-  zero cid / `b!` id / email / siteId / Bearer); `graph_replay` Stage-1 runs
-  109 passed / 9 capability-skips / 0 missing-cassette. No CHANGELOG
-  (infra.test). Consolidated the former BK-260; the example-test replay
-  extension is carried forward as BK-283. Trace:
+  to the placeholder. PR review then caught a fourth leak the body scrub could
+  not reach: the `docID` response header
+  (`microsoftpersonalcontent.com_<site-guid>_<doc-guid>`) carried the same site
+  GUID in 26 cassettes — dropped the whole header (the backend never reads it).
+  Hardened the recorder to match: `min_cassettes` `0 → 100` (full slice records
+  118, headroom for capability skips), the Step-4 scrub-verify is now
+  case-insensitive (it caught the upper-cased cid the case-sensitive check had
+  missed), and Step-4 additionally asserts env-independent `forbidden_patterns`
+  (bare `Bearer`, the `docID` site-GUID host form, the long `b!…` id) so a
+  re-record cannot silently reintroduce them. Recorded 118 cassettes (PII-swept
+  clean: zero cid / `b!` id / email / siteId / Bearer / docID GUID);
+  `graph_replay` Stage-1 runs 109 passed / 9 capability-skips / 0
+  missing-cassette. No CHANGELOG (infra.test). Consolidated the former BK-260;
+  the example-test replay extension is carried forward as BK-283. Trace:
   `sdd/traces/BK-262-graph-cassettes.yml`.
 
 - [x] **BK-282 — Forward CLI args through the `gen-*` hatch script targets**

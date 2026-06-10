@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -147,6 +148,19 @@ _BACKENDS: dict[str, dict] = {
         # tests while still failing loudly if pytest silently selects zero
         # (k-filter mismatch, stage gate, missing live opt-in).
         "min_cassettes": 100,
+        # Extra Step-4 leak markers beyond the drive id (BK-262 review): the
+        # scrub layer is responsible for these, so the gate asserts a re-record
+        # cannot silently reintroduce them. Env-independent regexes (case-
+        # insensitive), so they need no live creds to check.
+        "forbidden_patterns": (
+            # A bearer token that did NOT get redacted to "Bearer REDACTED".
+            ("bare bearer token", rb"Bearer (?!REDACTED)\S"),
+            # The pre-signed-content ``docID`` header carries the OneDrive
+            # site-collection GUID as ``...content.com_<site-guid>_<doc-guid>``.
+            ("pre-signed docID / site GUID", rb"microsoftpersonalcontent\.com_[0-9a-fA-F-]{36}_"),
+            # The long ``b!…`` drive resource id (the cid's full form).
+            ("long b! drive id", rb"b![A-Za-z0-9_-]{20,}"),
+        ),
     },
 }
 
@@ -346,13 +360,25 @@ def main() -> None:
     # substring check missed the upper-cased copies. Lower-case both sides.
     account_bytes = account.encode().lower()
     files = list(cassette_dir.glob("*.yaml"))
-    bad = [f.name for f in files if account_bytes in f.read_bytes().lower()]
+    raws = {f: f.read_bytes() for f in files}
+    bad = [f.name for f, raw in raws.items() if account_bytes in raw.lower()]
     if bad:
         print("  LEAK detected in:")
         for name in bad:
             print(f"    {name}")
         _die("real account name survived scrubbing — do NOT commit these cassettes")
-    print(f"  Clean: {len(files)} cassette(s) checked, account name absent.")
+    # Beyond the account name, assert the scrub layer's broader PII guarantee so a
+    # future re-record cannot silently reintroduce a secret the gate never checks.
+    for label, pattern in cfg.get("forbidden_patterns", ()):
+        rx = re.compile(pattern, re.IGNORECASE)
+        hits = [f.name for f, raw in raws.items() if rx.search(raw)]
+        if hits:
+            print(f"  LEAK detected ({label}) in:")
+            for name in hits:
+                print(f"    {name}")
+            _die(f"{label} survived scrubbing — do NOT commit these cassettes")
+    n_markers = len(cfg.get("forbidden_patterns", ()))
+    print(f"  Clean: {len(files)} cassette(s) checked, account name + {n_markers} marker(s) absent.")
 
     _section("Step 5 — replay smoke test (Stage 1)")
     _run(

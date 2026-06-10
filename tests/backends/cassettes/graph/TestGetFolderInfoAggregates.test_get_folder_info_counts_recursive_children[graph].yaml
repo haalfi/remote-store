@@ -26,7 +26,7 @@ interactions:
       Content-Length:
       - '1775'
       Content-Security-Policy-Report-Only:
-      - object-src 'none'; base-uri 'self'; script-src 'self' 'nonce-jbT1qy6JweRVLXzGuJ97eg'
+      - object-src 'none'; base-uri 'self'; script-src 'self' 'nonce-SRB8o966MKfA9Yw710cCOQ'
         'unsafe-inline' 'unsafe-eval' https://*.msauth.net https://*.msftauth.net
         https://*.msftauthimages.net https://*.msauthimages.net https://*.msidentity.com
         https://*.microsoftonline-p.com https://*.microsoftazuread-sso.com https://*.azureedge.net
@@ -45,7 +45,7 @@ interactions:
       x-ms-ests-server:
       - 2.1.24503.7 - SEC ProdSlices
       x-ms-request-id:
-      - 48d498bb-a38c-4e2f-b311-32933956d801
+      - fca79d58-0ec3-455f-adc0-2c527c848c01
       x-ms-srs:
       - 1.P
     status:
@@ -72,7 +72,7 @@ interactions:
     uri: https://graph.microsoft.com/v1.0/drives/graphreplaydrive/root:/rs-conformance/gfr/a.txt:/content?%40microsoft.graph.conflictBehavior=fail
   response:
     body:
-      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/$entity","@microsoft.graph.downloadUrl":"https://graph-download.invalid/REDACTED","createdDateTime":"2026-06-10T05:08:40Z","eTag":"\"{CB2F0FDA-E059-4E31-A4C0-608DA0F38E9D},1\"","id":"graphreplaydrive!scb2f0fdae0594e31a4c0608da0f38e9d","lastModifiedDateTime":"2026-06-10T05:08:40Z","name":"a.txt","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!scb2f0fdae0594e31a4c0608da0f38e9d","cTag":"\"c:{CB2F0FDA-E059-4E31-A4C0-608DA0F38E9D},1\"","isAuthoritative":false,"size":3,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!sa602ecc30362445599b0c7c179390704","name":"gfr","path":"/drives/graphreplaydrive/root:/rs-conformance/gfr","siteId":"REDACTED"},"file":{"mimeType":"text/plain","hashes":{"quickXorHash":"YQhDGAAAAAAAAAAAAwAAAAAAAAA="}},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:08:40Z","lastModifiedDateTime":"2026-06-10T05:08:40Z"}}'
+      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/$entity","@microsoft.graph.downloadUrl":"https://graph-download.invalid/REDACTED","createdDateTime":"2026-06-10T05:51:33Z","eTag":"\"{68DB8643-4676-4624-A28E-27B859229EBF},1\"","id":"graphreplaydrive!s68db864346764624a28e27b859229ebf","lastModifiedDateTime":"2026-06-10T05:51:33Z","name":"a.txt","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!s68db864346764624a28e27b859229ebf","cTag":"\"c:{68DB8643-4676-4624-A28E-27B859229EBF},1\"","isAuthoritative":false,"size":3,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!s7069f417283b482ba9ccfd522ffa7d5a","name":"gfr","path":"/drives/graphreplaydrive/root:/rs-conformance/gfr","siteId":"REDACTED"},"file":{"mimeType":"text/plain","hashes":{"quickXorHash":"YQhDGAAAAAAAAAAAAwAAAAAAAAA="}},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:51:33Z","lastModifiedDateTime":"2026-06-10T05:51:33Z"}}'
     headers:
       Cache-Control:
       - no-store, no-cache
@@ -81,7 +81,7 @@ interactions:
       OData-Version:
       - '4.0'
       SPLogId:
-      - b9211ca2-008b-d000-9cbc-6956bc491497
+      - 2d241ca2-e0a1-d000-9cbc-6f5367f9b327
       Strict-Transport-Security:
       - max-age=31536000
       Transfer-Encoding:
@@ -114,7 +114,7 @@ interactions:
     uri: https://graph.microsoft.com/v1.0/drives/graphreplaydrive/root:/rs-conformance/gfr/sub/b.txt:/content?%40microsoft.graph.conflictBehavior=fail
   response:
     body:
-      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/$entity","@microsoft.graph.downloadUrl":"https://graph-download.invalid/REDACTED","createdDateTime":"2026-06-10T05:08:42Z","eTag":"\"{027975C6-6A46-4183-96A7-36D95CF9F2CF},1\"","id":"graphreplaydrive!s027975c66a46418396a736d95cf9f2cf","lastModifiedDateTime":"2026-06-10T05:08:42Z","name":"b.txt","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!s027975c66a46418396a736d95cf9f2cf","cTag":"\"c:{027975C6-6A46-4183-96A7-36D95CF9F2CF},1\"","isAuthoritative":false,"size":2,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!sbee817d159bd468e97987b5870db84e3","name":"sub","path":"/drives/graphreplaydrive/root:/rs-conformance/gfr/sub","siteId":"REDACTED"},"file":{"mimeType":"text/plain","hashes":{"quickXorHash":"YhADAAAAAAAAAAAAAgAAAAAAAAA="}},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:08:42Z","lastModifiedDateTime":"2026-06-10T05:08:42Z"}}'
+      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/$entity","@microsoft.graph.downloadUrl":"https://graph-download.invalid/REDACTED","createdDateTime":"2026-06-10T05:51:34Z","eTag":"\"{273E27C5-ADA2-4D06-8692-1E67394DCA23},1\"","id":"graphreplaydrive!s273e27c5ada24d0686921e67394dca23","lastModifiedDateTime":"2026-06-10T05:51:34Z","name":"b.txt","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!s273e27c5ada24d0686921e67394dca23","cTag":"\"c:{273E27C5-ADA2-4D06-8692-1E67394DCA23},1\"","isAuthoritative":false,"size":2,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!sf9e3040af5484dd8a171ed0e4fb1dd6f","name":"sub","path":"/drives/graphreplaydrive/root:/rs-conformance/gfr/sub","siteId":"REDACTED"},"file":{"mimeType":"text/plain","hashes":{"quickXorHash":"YhADAAAAAAAAAAAAAgAAAAAAAAA="}},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:51:34Z","lastModifiedDateTime":"2026-06-10T05:51:34Z"}}'
     headers:
       Cache-Control:
       - no-store, no-cache
@@ -123,7 +123,7 @@ interactions:
       OData-Version:
       - '4.0'
       SPLogId:
-      - b9211ca2-60d2-d000-9cbc-613ab656a55e
+      - 2d241ca2-40ea-d000-9cbc-6800d9e5833e
       Strict-Transport-Security:
       - max-age=31536000
       Transfer-Encoding:
@@ -152,7 +152,7 @@ interactions:
     uri: 'https://graph.microsoft.com/v1.0/drives/graphreplaydrive/root:/rs-conformance/gfr:'
   response:
     body:
-      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/$entity","createdDateTime":"2026-06-10T05:08:40Z","eTag":"\"{A602ECC3-0362-4455-99B0-C7C179390704},1\"","id":"graphreplaydrive!sa602ecc30362445599b0c7c179390704","lastModifiedDateTime":"2026-06-10T05:08:40Z","name":"gfr","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!sa602ecc30362445599b0c7c179390704","cTag":"\"c:{A602ECC3-0362-4455-99B0-C7C179390704},0\"","isAuthoritative":false,"size":0,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!s8a203db391c648b49bd58ae3a3bcda55","name":"rs-conformance","path":"/drives/graphreplaydrive/root:/rs-conformance","siteId":"REDACTED"},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:08:40Z","lastModifiedDateTime":"2026-06-10T05:08:40Z"},"folder":{"childCount":2,"view":{"sortBy":"name","sortOrder":"ascending","viewType":"thumbnails"}}}'
+      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/$entity","createdDateTime":"2026-06-10T05:51:33Z","eTag":"\"{7069F417-283B-482B-A9CC-FD522FFA7D5A},1\"","id":"graphreplaydrive!s7069f417283b482ba9ccfd522ffa7d5a","lastModifiedDateTime":"2026-06-10T05:51:33Z","name":"gfr","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!s7069f417283b482ba9ccfd522ffa7d5a","cTag":"\"c:{7069F417-283B-482B-A9CC-FD522FFA7D5A},0\"","isAuthoritative":false,"size":0,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!s5536cddcf7ff42818f5412ce05be4211","name":"rs-conformance","path":"/drives/graphreplaydrive/root:/rs-conformance","siteId":"REDACTED"},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:51:33Z","lastModifiedDateTime":"2026-06-10T05:51:33Z"},"folder":{"childCount":2,"view":{"sortBy":"name","sortOrder":"ascending","viewType":"thumbnails"}}}'
     headers:
       Cache-Control:
       - no-store, no-cache
@@ -161,7 +161,7 @@ interactions:
       OData-Version:
       - '4.0'
       SPLogId:
-      - b9211ca2-70fe-d000-9cbc-68a4969c6cf0
+      - 2e241ca2-6030-d000-9cbc-687d0e90084d
       Strict-Transport-Security:
       - max-age=31536000
       Transfer-Encoding:
@@ -190,7 +190,7 @@ interactions:
     uri: https://graph.microsoft.com/v1.0/drives/graphreplaydrive/root:/rs-conformance/gfr:/children
   response:
     body:
-      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/children","value":[{"createdDateTime":"2026-06-10T05:08:41Z","eTag":"\"{BEE817D1-59BD-468E-9798-7B5870DB84E3},1\"","id":"graphreplaydrive!sbee817d159bd468e97987b5870db84e3","lastModifiedDateTime":"2026-06-10T05:08:41Z","name":"sub","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!sbee817d159bd468e97987b5870db84e3","cTag":"\"c:{BEE817D1-59BD-468E-9798-7B5870DB84E3},0\"","isAuthoritative":false,"size":0,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!sa602ecc30362445599b0c7c179390704","name":"gfr","path":"/drives/graphreplaydrive/root:/rs-conformance/gfr","siteId":"REDACTED"},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:08:41Z","lastModifiedDateTime":"2026-06-10T05:08:41Z"},"folder":{"childCount":1,"view":{"sortBy":"name","sortOrder":"ascending","viewType":"thumbnails"}}},{"@microsoft.graph.downloadUrl":"https://graph-download.invalid/REDACTED","createdDateTime":"2026-06-10T05:08:40Z","eTag":"\"{CB2F0FDA-E059-4E31-A4C0-608DA0F38E9D},1\"","id":"graphreplaydrive!scb2f0fdae0594e31a4c0608da0f38e9d","lastModifiedDateTime":"2026-06-10T05:08:40Z","name":"a.txt","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!scb2f0fdae0594e31a4c0608da0f38e9d","cTag":"\"c:{CB2F0FDA-E059-4E31-A4C0-608DA0F38E9D},1\"","isAuthoritative":false,"size":3,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!sa602ecc30362445599b0c7c179390704","name":"gfr","path":"/drives/graphreplaydrive/root:/rs-conformance/gfr","siteId":"REDACTED"},"file":{"mimeType":"text/plain","hashes":{"quickXorHash":"YQhDGAAAAAAAAAAAAwAAAAAAAAA="}},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:08:40Z","lastModifiedDateTime":"2026-06-10T05:08:40Z"}}]}'
+      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/children","value":[{"createdDateTime":"2026-06-10T05:51:34Z","eTag":"\"{F9E3040A-F548-4DD8-A171-ED0E4FB1DD6F},1\"","id":"graphreplaydrive!sf9e3040af5484dd8a171ed0e4fb1dd6f","lastModifiedDateTime":"2026-06-10T05:51:34Z","name":"sub","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!sf9e3040af5484dd8a171ed0e4fb1dd6f","cTag":"\"c:{F9E3040A-F548-4DD8-A171-ED0E4FB1DD6F},0\"","isAuthoritative":false,"size":0,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!s7069f417283b482ba9ccfd522ffa7d5a","name":"gfr","path":"/drives/graphreplaydrive/root:/rs-conformance/gfr","siteId":"REDACTED"},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:51:34Z","lastModifiedDateTime":"2026-06-10T05:51:34Z"},"folder":{"childCount":1,"view":{"sortBy":"name","sortOrder":"ascending","viewType":"thumbnails"}}},{"@microsoft.graph.downloadUrl":"https://graph-download.invalid/REDACTED","createdDateTime":"2026-06-10T05:51:33Z","eTag":"\"{68DB8643-4676-4624-A28E-27B859229EBF},1\"","id":"graphreplaydrive!s68db864346764624a28e27b859229ebf","lastModifiedDateTime":"2026-06-10T05:51:33Z","name":"a.txt","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!s68db864346764624a28e27b859229ebf","cTag":"\"c:{68DB8643-4676-4624-A28E-27B859229EBF},1\"","isAuthoritative":false,"size":3,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!s7069f417283b482ba9ccfd522ffa7d5a","name":"gfr","path":"/drives/graphreplaydrive/root:/rs-conformance/gfr","siteId":"REDACTED"},"file":{"mimeType":"text/plain","hashes":{"quickXorHash":"YQhDGAAAAAAAAAAAAwAAAAAAAAA="}},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:51:33Z","lastModifiedDateTime":"2026-06-10T05:51:33Z"}}]}'
     headers:
       Cache-Control:
       - no-store, no-cache
@@ -199,7 +199,7 @@ interactions:
       OData-Version:
       - '4.0'
       SPLogId:
-      - ba211ca2-c02d-d000-9cbc-67c16f410c1d
+      - 2e241ca2-604a-d000-9cbc-6e6dc3f8fef7
       Strict-Transport-Security:
       - max-age=31536000
       Transfer-Encoding:
@@ -228,7 +228,7 @@ interactions:
     uri: https://graph.microsoft.com/v1.0/drives/graphreplaydrive/root:/rs-conformance/gfr/sub:/children
   response:
     body:
-      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/children","value":[{"@microsoft.graph.downloadUrl":"https://graph-download.invalid/REDACTED","createdDateTime":"2026-06-10T05:08:42Z","eTag":"\"{027975C6-6A46-4183-96A7-36D95CF9F2CF},1\"","id":"graphreplaydrive!s027975c66a46418396a736d95cf9f2cf","lastModifiedDateTime":"2026-06-10T05:08:42Z","name":"b.txt","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!s027975c66a46418396a736d95cf9f2cf","cTag":"\"c:{027975C6-6A46-4183-96A7-36D95CF9F2CF},1\"","isAuthoritative":false,"size":2,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!sbee817d159bd468e97987b5870db84e3","name":"sub","path":"/drives/graphreplaydrive/root:/rs-conformance/gfr/sub","siteId":"REDACTED"},"file":{"mimeType":"text/plain","hashes":{"quickXorHash":"YhADAAAAAAAAAAAAAgAAAAAAAAA="}},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:08:42Z","lastModifiedDateTime":"2026-06-10T05:08:42Z"}}]}'
+      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/children","value":[{"@microsoft.graph.downloadUrl":"https://graph-download.invalid/REDACTED","createdDateTime":"2026-06-10T05:51:34Z","eTag":"\"{273E27C5-ADA2-4D06-8692-1E67394DCA23},1\"","id":"graphreplaydrive!s273e27c5ada24d0686921e67394dca23","lastModifiedDateTime":"2026-06-10T05:51:34Z","name":"b.txt","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!s273e27c5ada24d0686921e67394dca23","cTag":"\"c:{273E27C5-ADA2-4D06-8692-1E67394DCA23},1\"","isAuthoritative":false,"size":2,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!sf9e3040af5484dd8a171ed0e4fb1dd6f","name":"sub","path":"/drives/graphreplaydrive/root:/rs-conformance/gfr/sub","siteId":"REDACTED"},"file":{"mimeType":"text/plain","hashes":{"quickXorHash":"YhADAAAAAAAAAAAAAgAAAAAAAAA="}},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:51:34Z","lastModifiedDateTime":"2026-06-10T05:51:34Z"}}]}'
     headers:
       Cache-Control:
       - no-store, no-cache
@@ -237,7 +237,7 @@ interactions:
       OData-Version:
       - '4.0'
       SPLogId:
-      - ba211ca2-c061-d000-9cbc-69cb5dfeee97
+      - 2e241ca2-d082-d000-9cbc-6cc532b24294
       Strict-Transport-Security:
       - max-age=31536000
       Transfer-Encoding:
@@ -266,7 +266,7 @@ interactions:
     uri: 'https://graph.microsoft.com/v1.0/drives/graphreplaydrive/root:/rs-conformance:'
   response:
     body:
-      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/$entity","createdDateTime":"2026-06-10T05:08:40Z","eTag":"\"{8A203DB3-91C6-48B4-9BD5-8AE3A3BCDA55},1\"","id":"graphreplaydrive!s8a203db391c648b49bd58ae3a3bcda55","lastModifiedDateTime":"2026-06-10T05:08:40Z","name":"rs-conformance","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!s8a203db391c648b49bd58ae3a3bcda55","cTag":"\"c:{8A203DB3-91C6-48B4-9BD5-8AE3A3BCDA55},0\"","isAuthoritative":false,"size":0,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!sea8cc6beffdb43d7976fbc7da445c639","name":"Documents","path":"/drives/graphreplaydrive/root:","siteId":"REDACTED"},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:08:40Z","lastModifiedDateTime":"2026-06-10T05:08:40Z"},"folder":{"childCount":1,"view":{"sortBy":"name","sortOrder":"ascending","viewType":"thumbnails"}}}'
+      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/$entity","createdDateTime":"2026-06-10T05:51:33Z","eTag":"\"{5536CDDC-F7FF-4281-8F54-12CE05BE4211},1\"","id":"graphreplaydrive!s5536cddcf7ff42818f5412ce05be4211","lastModifiedDateTime":"2026-06-10T05:51:33Z","name":"rs-conformance","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!s5536cddcf7ff42818f5412ce05be4211","cTag":"\"c:{5536CDDC-F7FF-4281-8F54-12CE05BE4211},0\"","isAuthoritative":false,"size":0,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!sea8cc6beffdb43d7976fbc7da445c639","name":"Documents","path":"/drives/graphreplaydrive/root:","siteId":"REDACTED"},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:51:33Z","lastModifiedDateTime":"2026-06-10T05:51:33Z"},"folder":{"childCount":1,"view":{"sortBy":"name","sortOrder":"ascending","viewType":"thumbnails"}}}'
     headers:
       Cache-Control:
       - no-store, no-cache
@@ -275,7 +275,7 @@ interactions:
       OData-Version:
       - '4.0'
       SPLogId:
-      - ba211ca2-0097-d000-9cbc-622afca919c5
+      - 2e241ca2-b0a0-d000-9cbc-63ed4ec3fdb3
       Strict-Transport-Security:
       - max-age=31536000
       Transfer-Encoding:
@@ -309,7 +309,7 @@ interactions:
       Cache-Control:
       - no-store, no-cache
       SPLogId:
-      - ba211ca2-60d1-d000-9cbc-6cc9af57710b
+      - 2e241ca2-20d2-d000-9cbc-654cde67bf44
       Strict-Transport-Security:
       - max-age=31536000
     status:

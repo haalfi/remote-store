@@ -142,6 +142,25 @@ class TestGraphCassetteScrub:
         assert "x-ms-ags-diagnostic" not in remaining
         assert "content-type" in remaining
 
+    def test_docid_header_dropped(self) -> None:
+        """BK-262 review: the ``docID`` response header on pre-signed-content
+        interactions embeds the OneDrive site-collection GUID (the same value
+        ``"siteId"`` is blanked to in bodies) as
+        ``...content.com_<site-guid>_<doc-guid>``. The body regex never runs on
+        headers, so the header is dropped wholesale here."""
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        site_guid = "52b575dd-9200-466f-a853-18401ad957cb"
+        resp: dict[str, Any] = {
+            "headers": {
+                "docID": [f"my.microsoftpersonalcontent.com_{site_guid}_6a30444f-3aac-4f4c-a049-deadbeef"],
+                "Content-Type": ["application/json"],
+            },
+            "body": {"string": b"{}"},
+        }
+        out = cfg["before_record_response"](resp)["headers"]
+        assert "docid" not in {k.lower() for k in out}
+        assert site_guid not in " ".join(str(v) for v in out.values())
+
     def test_download_token_redacted_from_302_location_header(self) -> None:
         """GR-015: GET /content -> 302 whose Location is the pre-signed downloadUrl.
 

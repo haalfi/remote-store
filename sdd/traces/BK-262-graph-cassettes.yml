@@ -16,6 +16,9 @@ audience:
   - infra.test
 discovery_followups:
   - BK-283
+surprising_ripples:
+  - tests/backends/cassettes/graph/TestCopyPostState.test_copy_preserves_source[graph].yaml
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -79,4 +82,17 @@ phases:
         section: "[Unreleased] — BK-262"
         read_type: reference
         extract: "Move BK-262 as [x]; infra.test → skip CHANGELOG; gen-backlogid then --check"
+        outcome: ok
+  - id: review
+    name: Review fixups
+    steps:
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "_GRAPH_SCRUB_RESPONSE_HEADERS (docID)"
+        read_type: verify
+        extract: "Review caught my own PII grep blind spot: the docID response header (microsoftpersonalcontent.com_<site-guid>_<doc-guid>) leaked the OneDrive site-collection GUID — the same value redacted as siteId in BODIES — in 26 cassettes. The body siteId regex never runs on headers; my pre-commit grep only checked the JSON key form. Backend never reads docID, so dropped the whole header; re-recorded and re-grepped (GUID gone)"
+        outcome: misleading
+      - file: scripts/record_cassettes.py
+        section: "Step 4 forbidden_patterns"
+        read_type: verify
+        extract: "Second review point: Step-4 only grepped the drive id, so the broader 'PII-swept clean' guarantee was a one-time manual grep a re-record could silently break. Added env-independent forbidden_patterns (bare Bearer, the docID site-GUID host form, the long b! drive id) the gate now asserts on every record; unit test seeds a leaky cassette and asserts SystemExit"
         outcome: ok

@@ -163,7 +163,13 @@ every outgoing request matches. Not a secret — a normalisation token.
 
 _GRAPH_SCRUB_REQUEST_HEADERS: frozenset[str] = frozenset({"authorization", "cookie", "client-request-id"})
 _GRAPH_SCRUB_RESPONSE_HEADERS: frozenset[str] = frozenset(
-    {"request-id", "client-request-id", "x-ms-ags-diagnostic", "set-cookie", "date"}
+    # ``docID`` rides on every pre-signed-content response as
+    # ``microsoftpersonalcontent.com_<site-collection-guid>_<doc-guid>`` — the
+    # middle GUID is the personal-OneDrive site id, the same value
+    # ``_GRAPH_PII_BODY_SCRUB`` blanks as ``"siteId"`` in bodies (the body regex
+    # never runs on headers, so it survived here). The backend never reads it, so
+    # drop the whole header rather than partially id-normalise it (BK-262 review).
+    {"request-id", "client-request-id", "x-ms-ags-diagnostic", "set-cookie", "date", "docid"}
 )
 # Pre-signed download-URL query parameters. Consumer OneDrive uses
 # ``tempauth`` / ``Expires``; SharePoint uses the SAS-style set already listed

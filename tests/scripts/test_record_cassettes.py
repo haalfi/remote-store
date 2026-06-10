@@ -193,6 +193,32 @@ class TestMainAsyncOnlyBackend:
             rc.main()
         assert exc.value.code == 1
 
+    def test_step4_fails_on_forbidden_pii_marker(self, rc, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """BK-262 review: Step-4 enforces the scrub layer's broader PII guarantee,
+        not just the drive id. A cassette carrying the pre-signed ``docID`` site
+        GUID (a forbidden_patterns marker) makes ``main()`` exit non-zero even
+        though the account name itself is absent — so a re-record cannot silently
+        reintroduce it."""
+        # --verify-only skips the Step-1 delete (and Steps 2-3 / count guard), so
+        # the seeded leaky cassette survives to Step 4 — the gate under test.
+        monkeypatch.setattr(sys, "argv", ["record_cassettes.py", "--backend", "graph", "--verify-only"])
+        monkeypatch.setenv("GRAPH_DRIVE_ID", "b!drive-xyz")
+        monkeypatch.setattr(rc, "_preflight_env", lambda cfg, *, verify_only: None)
+        monkeypatch.setattr(rc, "_run", lambda *args: None)
+        leaky = tmp_path / "leaky.yaml"
+        # docID site-collection GUID, no drive id → only the forbidden marker trips.
+        leaky.write_bytes(
+            b"headers:\n  docID:\n  - my.microsoftpersonalcontent.com_"
+            b"52b575dd-9200-466f-a853-18401ad957cb_6a30444f-3aac-4f4c-a049-deadbeef\n"
+        )
+        graph_cfg = dict(rc._BACKENDS["graph"])
+        graph_cfg["cassette_dir"] = tmp_path
+        monkeypatch.setitem(rc._BACKENDS, "graph", graph_cfg)
+
+        with pytest.raises(SystemExit) as exc:
+            rc.main()
+        assert exc.value.code == 1
+
 
 class TestPreflightEnvGuard:
     """BUG-212: env validation must precede the destructive Step 1 delete.
