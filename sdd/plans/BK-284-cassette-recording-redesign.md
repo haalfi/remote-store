@@ -29,15 +29,32 @@ the invariants BK-262 surfaced stop living only in code comments.
 ## Baseline and merge order (load-bearing)
 
 Everything below describes the tree **after PR #787
-(`bk-262-graph-cassettes`) merges**. That PR creates
-`_GRAPH_PII_BODY_SCRUB` (the fourth scrub list), the Step-4
+(`bk-262-graph-cassettes`) merged** (master `831f34f`). That PR
+created `_GRAPH_PII_BODY_SCRUB` (the fourth scrub list), the Step-4
 `forbidden_patterns` gate in `scripts/record_cassettes.py`, the
 `graph_live` / `graph_replay` fixtures, and the 118-cassette Graph
-corpus this refactor must keep replaying. As of this plan's authoring,
-PR #787 is **open**: neither BK-284 PR can branch from or merge to
-master before it lands. Re-verify file/line references against the
-merged tree before starting; if #787 changed in review, the references
-here are stale, not the design.
+corpus this refactor must keep replaying.
+
+Review-adapted scrub logic that landed with the merge (deltas vs the
+PR draft this plan was first written against — all must survive PR 2's
+rewrite as profile declarations):
+
+- `GRAPH_FORBIDDEN_CASSETTE_PATTERNS` moved into `_cassettes.py` as
+  the **single source for two gates**: the recorder's Step-4
+  scrub-verify *and* a creds-free CI sweep over the committed tree
+  (`test_cassettes.py::TestGraphCommittedCassettePIISweep`). It also
+  grew markers: bare JWT (`eyJ…`), tenant SharePoint host, unredacted
+  credential forms, unredacted identity keys, bare email address.
+- The token-response body scrub covers `id_token` / `client_info`
+  (base64-encoded account identity), not just
+  `access_token` / `refresh_token`.
+- The pre-signed request branch additionally rewrites the `Host`
+  header to the placeholder host and runs the credential-form body
+  scrub before its early return (token exchange against a non-API
+  auth host such as `login.live.com`).
+- `_GRAPH_SCRUB_RESPONSE_HEADERS` grew the ESTS / SharePoint / CDN
+  correlation ids (`x-ms-request-id`, `x-ms-ests-server`,
+  `sprequestguid`, `splogid`, `ms-cv`, `x-msedge-ref`).
 
 Independent of BK-283 (example-test replay extension).
 
@@ -122,7 +139,12 @@ different path fits better.
 
 ---
 
-## PR 1 — vcrpy-native filter migration (warm-up, effort S)
+## PR 1 — vcrpy-native filter migration (warm-up, effort S) — IMPLEMENTED
+
+**Status: implemented** (this branch). The header half migrated; the
+OAuth POST-body half was **evaluated and rejected** on empirical
+grounds — see below. Divergence recorded here, in the backlog entry,
+and in the trace, per the cross-cutting decisions preamble.
 
 **Scope.** Move the scrubs vcrpy ships native filters for out of the
 hand-rolled `before_record_*` callbacks, in both `build_vcr_config`
@@ -130,20 +152,36 @@ and `build_graph_vcr_config`. Pure behaviour-preserving refactor of
 `_cassettes.py` + its unit tests; no cassette file changes, no
 conftest changes, no new concepts.
 
-**The migration map.**
+**The migration map (as implemented).**
 
-| Today (hand-rolled) | After PR 1 (vcr-native) |
+| Today (hand-rolled) | After PR 1 |
 |---|---|
-| `_SCRUB_REQUEST_HEADERS` delete loop (azure) | `filter_headers=["authorization", "x-ms-date", "x-ms-client-request-id", "cookie"]` |
-| `_GRAPH_SCRUB_REQUEST_HEADERS` delete loop | `filter_headers=["authorization", "cookie", "client-request-id"]` |
-| `user-agent` rewrite branch (both) | tuple form appended: `("user-agent", "azsdk-python-replay")` |
-| `_GRAPH_REQUEST_BODY_SCRUB` regex list | `filter_post_data_parameters=[("client_secret", "REDACTED"), ("client_assertion", "REDACTED"), ("assertion", "REDACTED"), ("refresh_token", "REDACTED")]` |
+| `_SCRUB_REQUEST_HEADERS` delete loop (azure) | `filter_headers=["authorization", "x-ms-date", "x-ms-client-request-id", "cookie", ...]` |
+| `_GRAPH_SCRUB_REQUEST_HEADERS` delete loop | `filter_headers=["authorization", "cookie", "client-request-id", ...]` |
+| `User-Agent` rewrite branch (both) | tuple form appended: `("User-Agent", "azsdk-python-replay")` |
+| `_GRAPH_REQUEST_BODY_SCRUB` regex list | **kept as regex** — native filter rejected, see below |
 
-Tuple form is load-bearing on both rows (backlog decision 5): list
-form would *delete* the header value pair / POST parameter, where
-today's behaviour keeps the key and replaces the value
-(`client_secret=REDACTED`), and deletion would break the
-byte-identity claim on the first re-record diff.
+Tuple form is load-bearing on the User-Agent row (backlog decision
+5): list form would *delete* the header, where today's behaviour
+keeps the key and replaces the value. The tuple key is capitalised
+`User-Agent` because vcrpy re-inserts under the given key's case
+after its case-insensitive pop, and every committed cassette records
+the capitalised form — the lowercase key the filing sketch used would
+case-flip the header on every re-record.
+
+**Why `filter_post_data_parameters` was rejected** (the empirical
+finding that re-decided the filing sketch's fourth row): in vcrpy
+8.1.1 (`vcr/filters.py:replace_post_data_parameters`) the filter is
+POST-only and re-serialises every body whose `Content-Type` is
+`application/json` through `json.loads`/`json.dumps` **even when no
+parameter matches** — whitespace-churning every Graph JSON POST
+(copy, createFolder, createUploadSession) on the next re-record and
+polluting the security-review diff the forbidden-pattern defence
+model relies on (REC-005). The targeted bytes regexes are
+byte-preserving and method-agnostic, so they stay. Revisit only if
+vcrpy gains a non-rewriting filter. (The originally-named fallback
+trigger — bytes bodies choking the filter — turned out fine; the
+JSON-rewrite collateral is what disqualified it.)
 
 **What stays custom, on purpose** (vcrpy has no native equivalent):
 
@@ -151,9 +189,9 @@ byte-identity claim on the first re-record diff.
   *rewrites* (account + filesystem + tmp-uuid normalisation), the URI
   rewrites, all of `before_record_response` (response-header deletes
   and rewrites, body scrubs — vcrpy has no response-side filters).
-- Graph: the pre-signed-host URI collapse, drive-id / conformance-root
-  rewrites, the request-body **drive-id** rewrite (the OAuth-param
-  half leaves; the JSON `parentReference` rewrite stays), and all of
+- Graph: the pre-signed-host URI collapse + `Host`-header rewrite,
+  drive-id / conformance-root rewrites, the whole
+  `_GRAPH_REQUEST_BODY_SCRUB` body scrub (both branches), and all of
   `before_record_response`.
 
 After the move, `build_graph_vcr_config`'s `_scrub_request_headers`
@@ -169,49 +207,55 @@ anyway (see tests).
 
 **Files touched.**
 
-- `tests/backends/fixtures/_cassettes.py` — both config builders;
-  delete `_GRAPH_REQUEST_BODY_SCRUB`; module docstring updated to name
-  the native/custom split.
+- `tests/backends/fixtures/_cassettes.py` — both config builders gain
+  `filter_headers`; `_GRAPH_REQUEST_BODY_SCRUB` stays (rejection
+  rationale documented at its definition); docstrings name the
+  native/custom split.
 - `tests/backends/fixtures/test_cassettes.py` — **the load-bearing
-  test rework.** Today's security-gate tests call
+  test rework.** The security-gate tests called
   `cfg["before_record_request"]` directly; after PR 1 that callable no
   longer drops `Authorization`, so the tests would fail (or worse,
-  be weakened to pass). Rework them to exercise the *composed*
-  pipeline the way vcrpy does — build `vcr.VCR(**cfg)` and obtain the
-  composed filter via `_build_before_record_request()` — so the gate
-  asserts what a real recording run does. Add: a mixed-case
-  `AUTHORIZATION` deletion test (confirms vcrpy's filter is
-  case-insensitive like today's `.lower()` loop); a bytes-body and a
-  str-body OAuth POST test through the composed chain (confirms
-  `filter_post_data_parameters` handles both body types MSAL can
-  send); a native-before-custom ordering smoke test.
+  be weakened to pass). Reworked to exercise the *composed*
+  pipeline the way vcrpy does — `vcr.VCR(**cfg)` + its
+  `_build_before_record_request({})` — with real `vcr.request.Request`
+  objects, so the gate asserts what a real recording run does. Added:
+  a mixed-case `AUTHORIZATION` deletion test (vcrpy's `HeadersDict`
+  is case-insensitive like today's `.lower()` loop); a
+  native-before-custom ordering test; a first-ever
+  `TestAzureCassetteScrub` unit class (the azure scrub previously had
+  only the replay conformance suite as proof). One direct-hook
+  `SimpleNamespace` test remains for the custom hook's `str`-body
+  dispatch (real vcrpy requests byte-encode `str` bodies on
+  assignment, so the branch is unreachable through the composed
+  chain).
 
-**Acceptance criteria.**
+**Acceptance criteria** (status at implementation):
 
 - All existing scrub assertions pass through the composed pipeline —
-  same secrets in, same redactions out, for every test in
-  `TestGraphCassetteScrub` and the azure scrub tests.
-- `hatch run all` green; `graph_replay` and `azure_replay*` Stage-1
-  conformance slices pass against the **unchanged** committed corpus.
-- `python scripts/record_cassettes.py --backend graph --verify-only`
-  and `--backend azure --verify-only` pass (steps 4–5 on the existing
-  corpus).
+  same secrets in, same redactions out. ✓ (35 passed)
+- `graph_replay` and `azure_replay*` Stage-1 conformance slices pass
+  against the **unchanged** committed corpus. ✓ (109 + 296 passed,
+  zero cassette files modified)
+- `hatch run all` green. ✓
+- `record_cassettes.py --verify-only` for both backends — requires
+  live creds (`account_fn` resolves them even in verify-only mode),
+  not available in the implementing environment; the creds-free CI
+  sweep covers the forbidden-marker half. Run by whoever next holds
+  creds; the replay slices above are the replay half of steps 4–5.
 - Optional, requires live creds: one `--node` single-cassette
-  re-record per backend; diff shows byte-identical output modulo
-  nothing (the filter-source change must not alter recorded bytes).
-  If no live access, state so in the PR per the dogfood-honesty rule.
+  re-record per backend; with the body migration rejected the
+  expected diff is **header-only-volatile** (no filter-attributable
+  change). Not run here; state so in the PR.
 
-**Risks.**
+**Risks (resolved at implementation).**
 
-- `filter_post_data_parameters` choking on a bytes form body
-  (vcrpy parses form bodies; MSAL may send `str` or `bytes`). The new
-  unit tests catch this before any recording does; fallback is keeping
-  the bytes-domain regex for the body and migrating only headers —
-  record the divergence in the trace and the backlog entry.
+- ~~`filter_post_data_parameters` choking on a bytes form body~~ —
+  superseded: the filter was rejected outright for its JSON-rewrite
+  collateral (see above). The named fallback path was taken.
 - Tests reaching into `VCR._build_before_record_request` (private
   API). Accepted: equivalence with vcrpy's real composition is
   exactly the property under test; a vcrpy bump that breaks it should
-  break loudly here. Pin with a comment.
+  break loudly here. Pinned with a comment in the test helper.
 
 ---
 
@@ -245,12 +289,17 @@ shapes, not aspiration.
     BK-262 root cause (`"REDACTED"` is not a URL) is the
     counter-example the clause forbids.
   - **REC-005 Native-filter half and its defence boundary.**
-    Request-header and POST-param scrubs run through vcrpy's
-    `filter_headers` / `filter_post_data_parameters`, never touch a
-    `RedactPattern`, and are therefore invisible to the named audit;
-    their defence is the forbidden-pattern envelope plus per-PR diff
-    review. Named explicitly so neither half is assumed to cover the
-    other (backlog sketch point 3, second constraint).
+    Request-header deletes and the User-Agent rewrite run through
+    vcrpy's `filter_headers`, never touch a `RedactPattern`, and are
+    therefore invisible to the named audit; their defence is the
+    forbidden-pattern envelope plus per-PR diff review. Named
+    explicitly so neither half is assumed to cover the other (backlog
+    sketch point 3, second constraint). The clause must also record
+    the PR-1 finding that `filter_post_data_parameters` is excluded
+    from the native half (vcrpy 8.1.1 re-serialises `application/json`
+    POST bodies even on no match): the OAuth POST-param scrub stays in
+    the declarative half as named `RedactPattern`s — which means it
+    *is* audit-visible, unlike the filing sketch assumed.
   - **REC-006 Scrub audit gate.** Step 4 asserts by rule name;
     `required-to-fire` rules fail at zero, `opportunistic` rules
     don't; exact counts never gate (workload-dependent). The
@@ -296,9 +345,10 @@ New shapes (frozen dataclasses, names indicative):
 - `RedactPattern(name, pattern: re.Pattern[bytes], replacement: bytes,
   expectation: Literal["required-to-fire", "opportunistic"])` —
   replaces `_BODY_SCRUB`, `_GRAPH_BODY_SCRUB`, `_GRAPH_PII_BODY_SCRUB`
-  (PR 1 already removed `_GRAPH_REQUEST_BODY_SCRUB`). Bytes-domain;
-  the core owns the encode/decode dispatch for str bodies (today
-  duplicated in both builders).
+  *and* `_GRAPH_REQUEST_BODY_SCRUB` (the OAuth POST-param scrub stays
+  declarative; PR 1 rejected its native-filter migration — see PR 1).
+  Bytes-domain; the core owns the encode/decode dispatch for str
+  bodies (today duplicated in both builders).
 - `EnvRedact(name, resolve, fake, case_insensitive=False)` — per
   cross-cutting decision 1. Azure: account name via
   `parse_account_name(live_connection_string())`. Graph:
@@ -311,8 +361,8 @@ New shapes (frozen dataclasses, names indicative):
   `backend` name; `cassette_dir`; `fixture_aliases`
   (`{"azure_live": "azure", "azure_replay": "azure", ...}` — replaces
   `_CASSETTE_ID_ALIASES` *and* `_FIXTURE_CASSETTE_DIRS`);
-  `filter_headers` / `filter_post_data_parameters` /
-  `filter_query_parameters` (the native half, from PR 1);
+  `filter_headers` / `filter_query_parameters` (the native half,
+  from PR 1; no `filter_post_data_parameters` — rejected in PR 1);
   `response_header_deletes`; `response_header_rewrites` (the
   `x-ms-copy-source` / `Location` handling, host-aware);
   `presigned_host_predicate` + `presigned_placeholder` (None for
@@ -329,11 +379,20 @@ New shapes (frozen dataclasses, names indicative):
   list-vs-scalar header values, presigned-host collapse, and the
   REC-004 cross-field invariant (URI ↔ `Location` ↔ body to the same
   placeholder, request hook active in both modes).
-- `FORBIDDEN_ENVELOPE` — module-level: bare non-redacted `Bearer`,
-  generic `email@host` form, common token shapes. Graph's profile adds
-  the `docID` site-GUID host form and the long `b!…` id (today in
-  `record_cassettes.py`'s `_BACKENDS["graph"]["forbidden_patterns"]`,
-  which moves here).
+- `FORBIDDEN_ENVELOPE` — module-level: the universal markers of
+  today's `GRAPH_FORBIDDEN_CASSETTE_PATTERNS` (bare non-redacted
+  `Bearer`, bare JWT `eyJ…`, bare email, unredacted credential forms);
+  Graph's profile keeps its specifics (`docID` site-GUID host form,
+  long `b!…` id, tenant SharePoint host, identity keys). #787's merge
+  already centralised the combined tuple in `_cassettes.py` as the
+  single source for the recorder's Step-4 gate AND the creds-free CI
+  sweep (`TestGraphCommittedCassettePIISweep`) — the split into
+  envelope + profile additions must keep feeding **both** consumers,
+  and the CI sweep generalises to iterate every registered profile
+  with a non-empty cassette dir, not just Graph. Likewise the
+  `id_token` / `client_info` token-response redaction and the
+  pre-signed `Host`-header rewrite are review-hardened guarantees the
+  profile declarations must reproduce, not regress.
 
 The behaviour bar: every redaction the two builders perform today is
 reproduced exactly — the reworked PR-1 unit tests (which assert
@@ -400,19 +459,23 @@ Grep for `from tests.backends.fixtures._cassettes import` and
   the manifest half is skipped (printed as such), the byte-scan half
   runs always.
 - The byte-scan half iterates `FORBIDDEN_ENVELOPE` + the profile's
-  `forbidden_patterns` (now sourced from the profile, deleting the
-  hand-maintained tuple in `_BACKENDS["graph"]`).
+  `forbidden_patterns` (the `GRAPH_FORBIDDEN_CASSETTE_PATTERNS` tuple
+  the script already imports from `_cassettes.py` splits along that
+  line; the creds-free CI sweep keeps consuming the same combined
+  view, generalised over profiles).
 - `_BACKENDS` keeps only CLI/workflow facts (k-filters, opt-in env,
   setup doc, `min_cassettes`); cassette dir + scrub knowledge come
   from the profile registry (the script already sys.path-inserts the
   repo root and imports from the fixtures package).
 - Expectation calibration from BK-262's known corpus: the OAuth
-  POST-param scrubs and the error-XML `RequestId:`/`Time:` scrubs are
-  `opportunistic` (documented zero-hit cases); the bearer body scrub,
-  downloadUrl/uploadUrl placeholders, drive-id and account/filesystem
-  env-redacts are `required-to-fire` on a full-slice recording.
-  Note: OAuth params are native-filter territory after PR 1 and never
-  reach the named registry at all (REC-005).
+  POST-param scrubs (named `RedactPattern`s after PR 1's
+  native-filter rejection) and the error-XML `RequestId:`/`Time:`
+  scrubs are `opportunistic` (documented zero-hit cases); the bearer
+  body scrub, downloadUrl/uploadUrl placeholders, the
+  `id_token`/`client_info` token-response scrub, drive-id and
+  account/filesystem env-redacts are `required-to-fire` on a
+  full-slice recording (token-response: required only if a token POST
+  was recorded — calibrate against the corpus before wiring).
 - `tests/scripts/test_record_cassettes.py` — extend: manifest
   read/gate logic, required-vs-opportunistic behaviour, verify-only
   skip path, envelope + profile-additions merge.
@@ -471,7 +534,8 @@ Grep for `from tests.backends.fixtures._cassettes import` and
 |---|---|---|
 | `hatch run all` (pre-commit gate) | ✓ | ✓ |
 | Stage-1 replay slices vs unchanged corpus | ✓ | ✓ |
-| `record_cassettes.py --verify-only` (azure + graph) | ✓ | ✓ |
+| `record_cassettes.py --verify-only` (azure + graph) | creds-gated | creds-gated |
+| Creds-free CI PII sweep over committed cassettes | ✓ | ✓ (per profile) |
 | Composed-pipeline scrub unit tests | ✓ (introduced) | ✓ (carried) |
 | `check_spec_marks.py` REC coverage | — | ✓ |
 | `hatch run docs-gate` + `gen-graph` | — | ✓ |

@@ -1,0 +1,98 @@
+id: BK-284
+title: "Cassette recording layer redesign: backend-agnostic core + REC-NNN spec"
+trigger: >-
+  tests/backends/fixtures/_cassettes.py grew Azure-first and absorbed Graph by
+  accretion: two parallel build_*_vcr_config stacks, four body-scrub lists, and
+  hand-rolled request-header/OAuth-body scrubs where vcrpy ships native
+  filters. BK-284 was filed from PR #787 review with a two-PR migration
+  decision; this trace covers the planning pass and PR 1 (native-filter
+  warm-up). PR 2 (profile core + spec 049 + ADR-0029 + named audit) is open.
+source_items:
+  - BK-284
+  - BK-262
+audience:
+  - infra.test
+  - library.maintainer
+expected_ripples:
+  - sdd/BACKLOG.md
+phases:
+  - id: orient
+    name: Orient (plan authoring)
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-284"
+        read_type: gate
+        extract: "Five filing decisions, sketch, touches list, #787 merge-order dependency"
+        outcome: ok
+      - file: sdd/plans/ID-127-graph-backend-implementation.md
+        section: "(full, from git history; deleted at ID-127 close)"
+        read_type: reference
+        extract: "Plan-doc format precedent: repo-only marker, temporary-artefact banner, per-PR scope/acceptance/risks"
+        outcome: ok
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "(full, from the open PR #787 branch)"
+        read_type: gate
+        extract: "Both config builders, four scrub lists, helpers to relocate; post-merge deltas re-read after #787 landed"
+        outcome: ok
+      - file: tests/backends/conformance/conftest.py
+        section: "TEST-007 wiring"
+        read_type: gate
+        extract: "_FIXTURE_CASSETTE_DIRS / _CASSETTE_ID_ALIASES consumers the PR-2 profile must replace"
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "Step 4 scrub-verify"
+        read_type: gate
+        extract: "forbidden_patterns gate + account sweep the named-pattern audit extends"
+        outcome: ok
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-007"
+        read_type: gate
+        extract: "Implementation-choice deferral paragraph that spec 049 will take over"
+        outcome: ok
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?"
+        read_type: reference
+        extract: "sdd/plans/ has no directory default; explicit repo-only marker required"
+        outcome: ok
+  - id: implement
+    name: Implement PR 1 (native filter migration)
+    steps:
+      - file: sdd/plans/BK-284-cassette-recording-redesign.md
+        section: "PR 1"
+        read_type: gate
+        extract: "Migration map, test-rework mandate, pre-authorized fallback for the POST-param half"
+        outcome: ok
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "build_vcr_config / build_graph_vcr_config"
+        read_type: gate
+        extract: >-
+          Verified vcrpy 8.1.1 internals (.venv vcr/config.py, vcr/filters.py,
+          vcr/request.py) before migrating: native filters compose BEFORE the
+          custom hook; HeadersDict is case-insensitive; Request.body str-encodes
+          on assignment; replace_post_data_parameters is POST-only and
+          re-serialises application/json bodies even on no match -> POST-param
+          migration REJECTED (fallback taken), headers + User-Agent migrated
+        outcome: ok
+      - file: tests/backends/cassettes/graph/
+        section: "request header casing"
+        read_type: verify
+        extract: "Corpus records capitalised User-Agent; tuple key must match it to stay byte-identical on re-record"
+        outcome: ok
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "TestGraphCassetteScrub"
+        read_type: gate
+        extract: "Security-gate tests called the bare hook; reworked onto vcrpy's composed chain + new TestAzureCassetteScrub"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Spec section + Backlog item touched"
+        read_type: verify
+        extract: "Trace mandatory; TEST-007 marks unchanged; no spec text edited in PR 1; CHANGELOG N/A (infra.test)"
+        outcome: ok
+      - file: tests/backends/conformance/
+        section: "graph_replay + azure_replay Stage-1 slices"
+        read_type: verify
+        extract: "109 + 296 passed against unchanged committed cassettes; zero cassette files modified"
+        outcome: ok

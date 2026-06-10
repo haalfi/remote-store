@@ -90,7 +90,17 @@ vcrpy against the scrubbed cassette URLs.
 # Scrub lists
 # ---------------------------------------------------------------------------
 
-_SCRUB_REQUEST_HEADERS: frozenset[str] = frozenset({"authorization", "x-ms-date", "x-ms-client-request-id", "cookie"})
+# Request-header deletes and the User-Agent rewrite ride vcrpy's native
+# ``filter_headers`` (BK-284 PR 1): a plain entry deletes the header, the
+# ``("User-Agent", ...)`` tuple appended in each config builder rewrites its
+# value in place. vcrpy composes these BEFORE the custom
+# ``before_record_request`` hook (``VCR._build_before_record_request``) and
+# matches header names case-insensitively (``HeadersDict``). Tuples, not sets,
+# so the emitted vcr_config is deterministic. The tuple key is capitalised
+# ``User-Agent`` to match the case every committed cassette records — vcrpy
+# re-inserts under the given key's case after its case-insensitive pop, so the
+# capitalised form keeps re-records byte-identical.
+_SCRUB_REQUEST_HEADERS: tuple[str, ...] = ("authorization", "x-ms-date", "x-ms-client-request-id", "cookie")
 _SCRUB_RESPONSE_HEADERS: frozenset[str] = frozenset(
     {"x-ms-request-id", "x-ms-client-request-id", "x-ms-correlation-request-id", "set-cookie", "date"}
 )
@@ -161,7 +171,8 @@ path. ``graph_replay`` constructs its backend with this same ``base_path`` so
 every outgoing request matches. Not a secret — a normalisation token.
 """
 
-_GRAPH_SCRUB_REQUEST_HEADERS: frozenset[str] = frozenset({"authorization", "cookie", "client-request-id"})
+# Native ``filter_headers`` deletes, like ``_SCRUB_REQUEST_HEADERS`` above.
+_GRAPH_SCRUB_REQUEST_HEADERS: tuple[str, ...] = ("authorization", "cookie", "client-request-id")
 _GRAPH_SCRUB_RESPONSE_HEADERS: frozenset[str] = frozenset(
     # ``docID`` rides on every pre-signed-content response as
     # ``microsoftpersonalcontent.com_<site-collection-guid>_<doc-guid>`` — the
@@ -333,6 +344,16 @@ _GRAPH_CONFORMANCE_ROOT_RE_BYTES: re.Pattern[bytes] = re.compile(rb"rs-conforman
 # would otherwise capture the credential in the request body. The device-code
 # flow carries none of these, but the app-only recipe shipped in graph-setup.md
 # does — so the gate scrubs them rather than only covering the device-code path.
+#
+# Deliberately NOT migrated to vcrpy's native ``filter_post_data_parameters``
+# (BK-284 PR 1 evaluated it; the header half DID migrate): in vcrpy 8.1.1
+# (``vcr/filters.py:replace_post_data_parameters``) that filter only runs on
+# POST requests, and — worse — re-serialises every body whose Content-Type is
+# ``application/json`` through ``json.loads``/``json.dumps`` even when no
+# parameter matches, whitespace-churning every Graph JSON POST (copy /
+# createFolder / createUploadSession) on the next re-record and polluting the
+# security-review diff. The targeted bytes regexes below are byte-preserving
+# and method-agnostic. Revisit only if vcrpy gains a non-rewriting filter.
 _GRAPH_REQUEST_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
     (re.compile(rb"(client_secret=)[^&\r\n]+"), rb"\1REDACTED"),
     (re.compile(rb"(client_assertion=)[^&\r\n]+"), rb"\1REDACTED"),
@@ -456,7 +477,16 @@ def build_vcr_config(real_account: str | None) -> dict[str, Any]:
       directly (using ``_FILESYSTEM_PATTERN_BYTES``) rather than decoding the
       body as UTF-8, which would crash on raw binary payloads (e.g. ``\\xff``).
     * ``User-Agent`` normalisation to ``azsdk-python-replay`` so recording
-      machine Python/OS details don't appear in committed cassettes.
+      machine Python/OS details don't appear in committed cassettes — via the
+      native ``filter_headers`` tuple form, alongside the request-header
+      deletes (BK-284 PR 1).
+
+    Native/custom split (BK-284 PR 1): request-header deletes and the
+    User-Agent rewrite run through vcrpy's native ``filter_headers``, which
+    vcrpy composes *before* this hook in record and replay mode alike. The
+    ``before_record_request`` below keeps only what has no native filter:
+    URI rewrites and the ``x-ms-rename-source`` / ``x-ms-copy-source``
+    header *value* rewrites.
     """
 
     def before_record_request(request: Any) -> Any:
@@ -467,12 +497,7 @@ def build_vcr_config(real_account: str | None) -> dict[str, Any]:
         # cassette path is deterministic across record and replay runs.
         request.uri = _TMP_UUID_PATTERN.sub(r"\1", request.uri)
         for key in list(request.headers):
-            lower = key.lower()
-            if lower in _SCRUB_REQUEST_HEADERS:
-                del request.headers[key]
-            elif lower == "user-agent":
-                request.headers[key] = _USER_AGENT_NORMALIZED
-            elif lower in ("x-ms-rename-source", "x-ms-copy-source"):
+            if key.lower() in ("x-ms-rename-source", "x-ms-copy-source"):
                 # These headers carry live account name and container; scrub both.
                 # Also normalise write_atomic temp-file UUIDs so re-records don't
                 # churn the header value unnecessarily.
@@ -532,6 +557,7 @@ def build_vcr_config(real_account: str | None) -> dict[str, Any]:
         # Decoded bodies keep cassettes diff-reviewable (TEST-009) and let
         # the response-body scrub above run against plain text.
         "decode_compressed_response": True,
+        "filter_headers": [*_SCRUB_REQUEST_HEADERS, ("User-Agent", _USER_AGENT_NORMALIZED)],
         "filter_query_parameters": list(_SCRUB_QUERY_PARAMS),
         "before_record_request": before_record_request,
         "before_record_response": before_record_response,
@@ -552,7 +578,10 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
     What it strips (the GR-FOUNDATION security gate, GR-035 / TEST-007):
 
     * ``Authorization`` (the bearer token), ``Cookie``, and the
-      ``client-request-id`` correlation header from requests;
+      ``client-request-id`` correlation header from requests — plus the
+      ``User-Agent`` normalisation — via the native ``filter_headers``,
+      which vcrpy composes *before* the custom hook in both modes
+      (BK-284 PR 1);
     * the OAuth credentials (``client_secret`` / ``client_assertion`` /
       ``assertion`` / ``refresh_token``) from the token-exchange **request**
       body — MSAL sends these form-encoded over ``requests``, which vcrpy
@@ -618,14 +647,6 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
             val = _drive_id_re_str.sub(FAKE_DRIVE_ID, val)
         return _GRAPH_CONFORMANCE_ROOT_RE_STR.sub(GRAPH_CONFORMANCE_BASE_PATH, val)
 
-    def _scrub_request_headers(request: Any) -> None:
-        for key in list(request.headers):
-            lower = key.lower()
-            if lower in _GRAPH_SCRUB_REQUEST_HEADERS:
-                del request.headers[key]
-            elif lower == "user-agent":
-                request.headers[key] = _USER_AGENT_NORMALIZED
-
     def before_record_request(request: Any) -> Any:
         # A pre-signed content host (downloadUrl / uploadUrl / copy-move monitor
         # URL) carries an access token in its URI, so the whole URI is replaced
@@ -636,7 +657,6 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
         # them.
         if _graph_is_presigned_host(request.uri):
             request.uri = GRAPH_PRESIGNED_PLACEHOLDER
-            _scrub_request_headers(request)
             # The Host header still names the live pre-signed content host (the
             # placeholder guarantees *nothing* of the live URL survives), so
             # rewrite it to the placeholder host. Generic for consumer OneDrive,
@@ -676,7 +696,6 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
         # Normalise the per-test base_path uuid to the stable replay token so the
         # recorded URI matches graph_replay's fixed base_path (runs in both modes).
         request.uri = _GRAPH_CONFORMANCE_ROOT_RE_STR.sub(GRAPH_CONFORMANCE_BASE_PATH, request.uri)
-        _scrub_request_headers(request)
         # Scrub credentials out of the OAuth token-exchange POST body (login host).
         # The bytes-domain sub is a no-op on the device-code flow (no secret present).
         body = getattr(request, "body", None)
@@ -723,6 +742,7 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
 
     return {
         "decode_compressed_response": True,
+        "filter_headers": [*_GRAPH_SCRUB_REQUEST_HEADERS, ("User-Agent", _USER_AGENT_NORMALIZED)],
         "filter_query_parameters": list(_GRAPH_SCRUB_QUERY_PARAMS),
         "before_record_request": before_record_request,
         "before_record_response": before_record_response,

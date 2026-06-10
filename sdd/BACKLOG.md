@@ -585,7 +585,7 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Maintenance / Long-horizon
 
-- [ ] **BK-284 — Cassette recording layer redesign: backend-agnostic core + REC-NNN spec**
+- [~] **BK-284 — Cassette recording layer redesign: backend-agnostic core + REC-NNN spec**
   spec: TEST-007 (cross-link); new `049-live-recording-architecture.md` (REC-NNN clauses) · effort: L · audience: infra.test, library.maintainer
   `tests/backends/fixtures/_cassettes.py` grew Azure-first (BK-181 PoC →
   BK-225 ADLS hardening) and then absorbed Graph (BK-262) by accretion.
@@ -779,6 +779,22 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   — PR-level decomposition of the two PRs above (files, acceptance
   criteria, REC clause map). Temporary artefact; deleted in the PR
   that closes this item.
+
+  **Status: PR 1 of 2 implemented** (in-flight per decision 5's
+  two-PR migration; PR 2 — profile core + spec 049 + ADR-0029 +
+  named audit — remains). One divergence from the decision-5 sketch,
+  taken on empirical grounds and detailed in the plan: the OAuth
+  POST-param scrub was NOT moved to `filter_post_data_parameters` —
+  vcrpy 8.1.1's filter is POST-only and re-serialises every
+  `application/json` POST body even on no match, which would
+  whitespace-churn every Graph JSON POST on re-record. Headers +
+  User-Agent migrated natively; the body scrub stays a bytes regex.
+  **PR 2 must preserve the #787 review hardening:** the
+  `id_token`/`client_info` token-response scrub,
+  `GRAPH_FORBIDDEN_CASSETTE_PATTERNS` as the single source for both
+  the recorder Step-4 gate and the creds-free CI sweep
+  (`TestGraphCommittedCassettePIISweep`), and the pre-signed
+  `Host`-header rewrite — as profile declarations, not regressions.
 
   Surfaced during PR #787 review (BK-262).
 
