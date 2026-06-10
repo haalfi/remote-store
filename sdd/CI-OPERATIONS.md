@@ -106,21 +106,26 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 - **What it does:** dependabot opens weekly update PRs for the `pip` and
   `github-actions` ecosystems (`.github/dependabot.yml`).
   `dependabot-auto-merge.yml` triggers on a maintainer's `pull_request_review`
-  approval and enables `--auto --squash` merge to `master`.
+  approval and enables `--auto --squash` merge to `master` — for the **`pip`
+  ecosystem only**. `github-actions` PRs are excluded from auto-merge by the
+  workflow's head-ref guard (`dependabot/github_actions/`), because an action
+  bump usually exercises nothing in the test suite: a green check means the
+  workflow *parses*, not that the bumped action *behaves*, so approval there
+  had no real signal to act on. The exclusion is a control, not a convention —
+  pinned by `tests/scripts/test_dependabot_automerge_control.py`.
 - **When:** Monday, weekly.
-- **Where the finding shows up:** the **PR list** and each PR's CI status. The
-  approval click is the load-bearing gate — it is what fires the merge.
-- **How to act — verify before approving, per ecosystem:**
-  - **`github-actions` (`Chore(deps)`):** a green check means the workflow still
-    *parses*, not that the bumped action *behaves* — most action bumps exercise
-    nothing testable. Diff the action's changelog and confirm no `with:` input or
-    permission surface changed before approving.
+- **Where the finding shows up:** the **PR list** and each PR's CI status. For
+  `pip` PRs the approval click is the load-bearing gate — it is what fires the
+  merge. For `github-actions` PRs the merge itself is the manual step.
+- **How to act, per ecosystem:**
+  - **`github-actions` (`Chore(deps)`):** diff the action's changelog and
+    confirm no `with:` input or permission surface changed. Then merge
+    manually: `gh pr merge <N> --squash --delete-branch` (approval alone does
+    nothing for this ecosystem).
   - **`pip` dev-dep (`Chore(deps-dev)`):** a red CI is a real signal. Decide
     whether the failing ceiling is real (hold the PR, or bump the floor) or
-    transient/unsupported (close it).
-  - Auto-merge to `master` is irreversible once approval fires; tightening this
-    control (e.g. dropping auto-merge for `github-actions`) is tracked by the
-    dependabot-approval item in [`sdd/BACKLOG.md`](BACKLOG.md).
+    transient/unsupported (close it). Approve only when green and understood —
+    approval auto-merges to `master`, irreversibly.
 
 ### `codeql.yml` — security scanning (exception to Rule 1)
 

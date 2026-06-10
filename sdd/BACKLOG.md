@@ -304,41 +304,6 @@ credential leak — shipped first; see BACKLOG-DONE.md.)
 
 ---
 
-## CI Operations
-
-Scheduled-guard observability follow-ups from
-[audit-018](audits/audit-018-ci-operations.md), prompted by the weekend mutation
-failure (#763) reaching the maintainer by email only. `drift-guard` is the proven
-pattern (scheduled finding → rolling GitHub issue → triage skill); these items
-generalise it to the guards that lack it.
-**Order:** the handbook + principle (BK-275, the SSoT the others point at) shipped
-as [`sdd/CI-OPERATIONS.md`](CI-OPERATIONS.md); the mutation issue surface (BK-273)
-shipped next, closing the #763 class. Remaining: dependabot approval safety
-(BK-274). The adversarial section of audit-018 challenges it — read it before
-picking it up; in particular the disposition below may narrow.
-
-- [ ] **BK-274 — Dependabot approval is the only gate before auto-merge to `master`, with no codified criteria**
-  spec: — · effort: S · audience: library.maintainer
-  `dependabot-auto-merge.yml` fires on a maintainer `approved` review and runs
-  `gh pr merge --auto --squash` (`:33-41`) — by design, the human review is the
-  gate. So the approval click is the load-bearing safety control, yet nothing
-  documents what to verify per ecosystem before clicking: `Chore(deps)`
-  (github-actions) goes green because the bump exercises nothing testable (#766 was
-  approved on the green check); `Chore(deps-dev)` (pip) can go red on an
-  upper-pin (#767) with no "real-ceiling-vs-transient" runbook.
-  **Decide first (audit-018 A2 — the real risk may be the control, not the
-  runbook):** the strongest option is to **drop auto-merge for the `github-actions`
-  ecosystem** (low volume; a manual `gh pr merge` costs seconds and removes the
-  rubber-stamp path), optionally gating any remaining auto-merge behind an explicit
-  label so the irreversible step is deliberate. If a control is adopted, this item
-  shrinks to a small "triage a red pip dev-dep" checklist; whether it needs a
-  `/deps` skill or just a handbook checklist in [`sdd/CI-OPERATIONS.md`](CI-OPERATIONS.md)
-  is itself deferred until the triage proves multi-step (audit-018 A4). Codify the
-  surviving checklist in that handbook rather than a standalone doc.
-  Audit-018 M1.
-
----
-
 ## Lint / CI Completeness
 
 - [ ] **ID-179 — Trace schema validator: wire `audience` field check into `hatch run lint`**
