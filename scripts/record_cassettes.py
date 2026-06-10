@@ -45,6 +45,9 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+# Single source of truth for the env-independent Graph leak markers, shared with
+# the creds-free CI sweep in tests/backends/fixtures/test_cassettes.py (BK-262).
+from tests.backends.fixtures._cassettes import GRAPH_FORBIDDEN_CASSETTE_PATTERNS  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Per-backend account-name resolvers
@@ -150,17 +153,10 @@ _BACKENDS: dict[str, dict] = {
         "min_cassettes": 100,
         # Extra Step-4 leak markers beyond the drive id (BK-262 review): the
         # scrub layer is responsible for these, so the gate asserts a re-record
-        # cannot silently reintroduce them. Env-independent regexes (case-
-        # insensitive), so they need no live creds to check.
-        "forbidden_patterns": (
-            # A bearer token that did NOT get redacted to "Bearer REDACTED".
-            ("bare bearer token", rb"Bearer (?!REDACTED)\S"),
-            # The pre-signed-content ``docID`` header carries the OneDrive
-            # site-collection GUID as ``...content.com_<site-guid>_<doc-guid>``.
-            ("pre-signed docID / site GUID", rb"microsoftpersonalcontent\.com_[0-9a-fA-F-]{36}_"),
-            # The long ``b!…`` drive resource id (the cid's full form).
-            ("long b! drive id", rb"b![A-Za-z0-9_-]{20,}"),
-        ),
+        # cannot silently reintroduce them. Defined once in _cassettes.py and
+        # shared with the creds-free CI sweep so the recorder gate and CI assert
+        # the identical guarantee (env-independent, case-insensitive).
+        "forbidden_patterns": GRAPH_FORBIDDEN_CASSETTE_PATTERNS,
     },
 }
 

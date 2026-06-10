@@ -169,7 +169,33 @@ _GRAPH_SCRUB_RESPONSE_HEADERS: frozenset[str] = frozenset(
     # ``_GRAPH_PII_BODY_SCRUB`` blanks as ``"siteId"`` in bodies (the body regex
     # never runs on headers, so it survived here). The backend never reads it, so
     # drop the whole header rather than partially id-normalise it (BK-262 review).
-    {"request-id", "client-request-id", "x-ms-ags-diagnostic", "set-cookie", "date", "docid"}
+    #
+    # The trailing group are per-request correlation / diagnostic ids the backend
+    # never reads: ``x-ms-request-id`` (the ESTS variant on ``login.microsoftonline.com``
+    # responses that the ``request-id`` entry, no ``x-ms-`` prefix, missed — and
+    # which the Azure profile already drops), ``x-ms-ests-server`` (ESTS
+    # datacenter), and the SharePoint/CDN correlation ids ``sprequestguid`` /
+    # ``splogid`` / ``ms-cv`` / ``x-msedge-ref`` on pre-signed-content responses.
+    # None are credentials or account PII, but dropping them keeps cassette diffs
+    # stable across re-records and matches the Azure profile's posture (BK-262
+    # review). The transient ``innerError`` ``request-id`` / ``client-request-id``
+    # GUIDs nested inside Graph error *bodies* are left as-is: they are not
+    # identity/credential, and a JSON-body regex on those generic keys would add
+    # matching surface for a churn-only gain.
+    {
+        "request-id",
+        "client-request-id",
+        "x-ms-ags-diagnostic",
+        "set-cookie",
+        "date",
+        "docid",
+        "x-ms-request-id",
+        "x-ms-ests-server",
+        "sprequestguid",
+        "splogid",
+        "ms-cv",
+        "x-msedge-ref",
+    }
 )
 # Pre-signed download-URL query parameters. Consumer OneDrive uses
 # ``tempauth`` / ``Expires``; SharePoint uses the SAS-style set already listed
@@ -212,9 +238,28 @@ the placeholder is obviously fake and non-routable; nothing of the live URL
 the backend issues on replay — built from the placeholder it read out of the
 scrubbed body / ``Location`` header — normalises to the same value the recorded
 request was rewritten to, and vcrpy matches them. This is the half that makes
-Graph reads/writes/copies replay-able (BK-262)."""
+Graph reads/writes/copies replay-able (BK-262).
+
+Replay is order-dependent because every pre-signed interaction in a cassette
+collapses to this one method+URI: vcrpy disambiguates the otherwise-identical
+``GET https://graph-download.invalid/REDACTED`` entries (e.g. a copy cassette's
+async monitor poll and its content download) solely by recorded order. That
+holds for today's sequential conformance tests, but a backend change in
+pre-signed call order/count (an extra poll, a retry, concurrent range reads)
+will mis-serve or exhaust interactions with a confusing vcrpy mismatch rather
+than an obvious one. Concurrent pre-signed requests within a single test are
+unsupported under replay (BK-262 review)."""
 
 _GRAPH_PRESIGNED_PLACEHOLDER_BYTES = GRAPH_PRESIGNED_PLACEHOLDER.encode()
+_GRAPH_PRESIGNED_PLACEHOLDER_HOST = urlsplit(GRAPH_PRESIGNED_PLACEHOLDER).hostname or "graph-download.invalid"
+"""Host of ``GRAPH_PRESIGNED_PLACEHOLDER`` (``graph-download.invalid``).
+
+Written over the ``Host`` request header of any pre-signed-host request so the
+live content host — generic ``my.microsoftpersonalcontent.com`` for consumer
+OneDrive, but a tenant-identifying ``<tenant>-my.sharepoint.com`` on a business
+drive — does not survive next to the redacted URI. vcrpy's default matcher
+ignores ``Host``, so replay is unaffected.
+"""
 
 
 def _graph_is_presigned_host(uri: str) -> bool:
@@ -242,7 +287,18 @@ _GRAPH_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
         rb"\1" + _GRAPH_PRESIGNED_PLACEHOLDER_BYTES + rb"\2",
     ),
     (re.compile(rb'("uploadUrl"\s*:\s*")[^"]*(")'), rb"\1" + _GRAPH_PRESIGNED_PLACEHOLDER_BYTES + rb"\2"),
-    (re.compile(rb'("(?:access_token|refresh_token)"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
+    # The OAuth token-exchange response (``login.microsoftonline.com/.../token``)
+    # is recorded whenever MSAL refreshes mid-suite (a warm in-memory cache hides
+    # it, which is why earlier recordings happened to omit it). Beyond
+    # ``access_token`` / ``refresh_token``, it carries an ``id_token`` (a JWT) and
+    # ``client_info`` (base64) whose payloads embed the account email, display
+    # name, tenant id, and an ``oid`` containing the drive cid — none caught by the
+    # drive-id / email scrubs because they are base64-encoded. Redact all four
+    # token-response fields wholesale (BK-262 review: the ``bare JWT`` marker
+    # caught this on re-record). Replay never re-issues the token request — the
+    # ``graph_replay`` backend uses a constant stub token — so the redacted value
+    # is never parsed back.
+    (re.compile(rb'("(?:access_token|refresh_token|id_token|client_info)"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
     (re.compile(rb"Bearer\s+[A-Za-z0-9._~+/=\-]+"), b"Bearer REDACTED"),
 ]
 
@@ -283,6 +339,43 @@ _GRAPH_REQUEST_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
     (re.compile(rb"(assertion=)[^&\r\n]+"), rb"\1REDACTED"),
     (re.compile(rb"(refresh_token=)[^&\r\n]+"), rb"\1REDACTED"),
 ]
+
+# Env-independent "must never appear in a committed Graph cassette" markers. Each
+# asserts a guarantee the scrub layer above is responsible for, so a re-record (or
+# a hand edit / bad merge) cannot silently reintroduce the secret. The single
+# source for two gates: the recorder's Step-4 scrub-verify (record_cassettes.py,
+# live-creds path) AND a creds-free CI sweep over the committed tree
+# (test_cassettes.py). Patterns are bytes and matched case-insensitively. They
+# encode failure modes, not just leaks already found — the credential-form,
+# tenant-host, identity-key, and JWT markers guard the surfaces a future scrub
+# regression would expose (BK-262 review).
+GRAPH_FORBIDDEN_CASSETTE_PATTERNS: tuple[tuple[str, bytes], ...] = (
+    # A bearer token that did NOT get redacted to ``Bearer REDACTED``.
+    ("bare bearer token", rb"Bearer (?!REDACTED)\S"),
+    # Any JWT (access / id token) — base64url ``eyJ<header>.`` — regardless of the
+    # surrounding key, so a token leaking outside an ``Authorization`` header is
+    # still caught.
+    ("bare JWT", rb"eyJ[A-Za-z0-9_-]{10,}\."),
+    # The pre-signed-content ``docID`` header carries the OneDrive site-collection
+    # GUID as ``...content.com_<site-guid>_<doc-guid>``.
+    ("pre-signed docID / site GUID", rb"microsoftpersonalcontent\.com_[0-9a-fA-F-]{36}_"),
+    # A business-drive / SharePoint pre-signed content host is tenant-identifying
+    # (``<tenant>-my.sharepoint.com``); the placeholder must have replaced it.
+    # Consumer recordings never contain ``sharepoint.com``, so any hit is a leak.
+    ("tenant SharePoint host", rb"-my\.sharepoint\.com"),
+    # The long ``b!…`` drive resource id (the cid's full form).
+    ("long b! drive id", rb"b![A-Za-z0-9_-]{20,}"),
+    # OAuth credential form fields that escaped ``_GRAPH_REQUEST_BODY_SCRUB`` (e.g.
+    # a token exchange against an auth host outside ``_GRAPH_API_HOSTS``).
+    ("unredacted client_secret", rb"client_secret=(?!REDACTED)"),
+    ("unredacted refresh_token", rb"refresh_token=(?!REDACTED)"),
+    ("unredacted assertion", rb"(?:client_)?assertion=(?!REDACTED)"),
+    # Identity keys that escaped ``_GRAPH_PII_BODY_SCRUB`` (the one fixed class
+    # with no env-independent marker until now).
+    ("unredacted identity key", rb'"(?:email|userPrincipalName)"\s*:\s*"(?!REDACTED)'),
+    # A bare email address anywhere in the tree (account PII).
+    ("bare email address", rb"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
+)
 
 
 # ---------------------------------------------------------------------------
@@ -464,7 +557,9 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
       named or not;
     * the ``@microsoft.graph.downloadUrl`` value, the upload-session
       ``uploadUrl`` value (pre-authorised, token in its query), and any
-      ``Bearer`` / ``access_token`` / ``refresh_token`` from response bodies;
+      ``Bearer`` / ``access_token`` / ``refresh_token`` / ``id_token`` /
+      ``client_info`` from response bodies (the last two carry the base64-encoded
+      account identity in the OAuth token-exchange response);
     * the pre-signed download query parameters;
     * the live ``drive_id`` (rewritten to ``FAKE_DRIVE_ID``) from request
       URIs and response bodies, so a cassette recorded against a real drive
@@ -528,11 +623,30 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
         # the request the backend issues on replay — built from the placeholder it
         # read out of the scrubbed response body / Location header — normalises to
         # the same value the recorded request was rewritten to, so vcrpy matches
-        # them. The body is left untouched: a pre-signed request body is opaque
-        # content (an upload chunk), never a credential-bearing token form.
+        # them.
         if _graph_is_presigned_host(request.uri):
             request.uri = GRAPH_PRESIGNED_PLACEHOLDER
             _scrub_request_headers(request)
+            # The Host header still names the live pre-signed content host (the
+            # placeholder guarantees *nothing* of the live URL survives), so
+            # rewrite it to the placeholder host. Generic for consumer OneDrive,
+            # but tenant-identifying (``<tenant>-my.sharepoint.com``) on a
+            # business drive (BK-262 review).
+            for key in list(request.headers):
+                if key.lower() == "host":
+                    request.headers[key] = _GRAPH_PRESIGNED_PLACEHOLDER_HOST
+            # Defense-in-depth on the body: a pre-signed request body is normally
+            # opaque content (an upload chunk), but an OAuth token exchange against
+            # an auth host *outside* ``_GRAPH_API_HOSTS`` (``login.live.com``, a
+            # sovereign-cloud endpoint) lands in this branch too — so run the
+            # credential-form scrub before recording. A no-op on an upload chunk
+            # (no ``client_secret=`` / ``assertion=`` / ``refresh_token=`` bytes).
+            body = getattr(request, "body", None)
+            if isinstance(body, (str, bytes)):
+                raw = body.encode() if isinstance(body, str) else body
+                for pattern, replacement in _GRAPH_REQUEST_BODY_SCRUB:
+                    raw = pattern.sub(replacement, raw)
+                request.body = raw.decode() if isinstance(body, str) else raw
             return request
         if _drive_id_re_str is not None:
             request.uri = _drive_id_re_str.sub(FAKE_DRIVE_ID, request.uri)
@@ -600,6 +714,7 @@ __all__ = [
     "FAKE_DRIVE_ID",
     "FAKE_FILESYSTEM",
     "GRAPH_CONFORMANCE_BASE_PATH",
+    "GRAPH_FORBIDDEN_CASSETTE_PATTERNS",
     "GRAPH_PRESIGNED_PLACEHOLDER",
     "build_graph_vcr_config",
     "build_vcr_config",

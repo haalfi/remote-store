@@ -26,7 +26,7 @@ interactions:
       Content-Length:
       - '1775'
       Content-Security-Policy-Report-Only:
-      - object-src 'none'; base-uri 'self'; script-src 'self' 'nonce-I0sDcw9QEMmUERTAMma3Pw'
+      - object-src 'none'; base-uri 'self'; script-src 'self' 'nonce-Rrp2bYYBb2QTmloL-7Q_MQ'
         'unsafe-inline' 'unsafe-eval' https://*.msauth.net https://*.msftauth.net
         https://*.msftauthimages.net https://*.msauthimages.net https://*.msidentity.com
         https://*.microsoftonline-p.com https://*.microsoftazuread-sso.com https://*.azureedge.net
@@ -42,10 +42,6 @@ interactions:
       - nosniff
       X-XSS-Protection:
       - '0'
-      x-ms-ests-server:
-      - 2.1.24503.7 - FRC ProdSlices
-      x-ms-request-id:
-      - 8b5bac54-421d-4735-8fbe-9b6700905f02
       x-ms-srs:
       - 1.P
     status:
@@ -69,14 +65,12 @@ interactions:
   response:
     body:
       string: '{"error":{"code":"itemNotFound","message":"The resource could not be
-        found.","innerError":{"date":"2026-06-10T05:55:46","request-id":"8c6df339-00dd-4a83-a4e8-cb377171a953","client-request-id":"8c6df339-00dd-4a83-a4e8-cb377171a953"}}}'
+        found.","innerError":{"date":"2026-06-10T18:49:18","request-id":"ceafdaaf-ab2c-4a08-b7fe-c9de0d40b6c3","client-request-id":"ceafdaaf-ab2c-4a08-b7fe-c9de0d40b6c3"}}}'
     headers:
       Cache-Control:
       - no-store, no-cache
       Content-Type:
       - application/json
-      SPLogId:
-      - 6b241ca2-a07d-d000-9cbc-65983ebf148e
       Strict-Transport-Security:
       - max-age=31536000
       Transfer-Encoding:

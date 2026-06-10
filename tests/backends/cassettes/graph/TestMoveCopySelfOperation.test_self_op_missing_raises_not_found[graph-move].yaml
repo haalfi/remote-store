@@ -26,7 +26,7 @@ interactions:
       Content-Length:
       - '1775'
       Content-Security-Policy-Report-Only:
-      - object-src 'none'; base-uri 'self'; script-src 'self' 'nonce-pGQmDcJi7IJsOkQwDJWu5Q'
+      - object-src 'none'; base-uri 'self'; script-src 'self' 'nonce-NJ3Ht2n9zHmMKAY355AyJQ'
         'unsafe-inline' 'unsafe-eval' https://*.msauth.net https://*.msftauth.net
         https://*.msftauthimages.net https://*.msauthimages.net https://*.msidentity.com
         https://*.microsoftonline-p.com https://*.microsoftazuread-sso.com https://*.azureedge.net
@@ -42,10 +42,6 @@ interactions:
       - nosniff
       X-XSS-Protection:
       - '0'
-      x-ms-ests-server:
-      - 2.1.24503.7 - SEC ProdSlices
-      x-ms-request-id:
-      - 82988d4a-9be3-4f08-a9c2-5865dbe7ee02
       x-ms-srs:
       - 1.P
     status:
@@ -69,14 +65,12 @@ interactions:
   response:
     body:
       string: '{"error":{"code":"itemNotFound","message":"The resource could not be
-        found.","innerError":{"date":"2026-06-10T05:55:04","request-id":"57844a69-b280-4b7e-963f-00dfe5c4ca3b","client-request-id":"57844a69-b280-4b7e-963f-00dfe5c4ca3b"}}}'
+        found.","innerError":{"date":"2026-06-10T18:48:36","request-id":"dc431b3f-f10a-4674-8192-e2f9090d017c","client-request-id":"dc431b3f-f10a-4674-8192-e2f9090d017c"}}}'
     headers:
       Cache-Control:
       - no-store, no-cache
       Content-Type:
       - application/json
-      SPLogId:
-      - 61241ca2-a039-d000-9cbc-604033bd267f
       Strict-Transport-Security:
       - max-age=31536000
       Transfer-Encoding:
@@ -106,14 +100,12 @@ interactions:
   response:
     body:
       string: '{"error":{"code":"itemNotFound","message":"The resource could not be
-        found.","innerError":{"date":"2026-06-10T05:55:04","request-id":"73db5abb-d296-4f0a-847a-37f52ac76a60","client-request-id":"73db5abb-d296-4f0a-847a-37f52ac76a60"}}}'
+        found.","innerError":{"date":"2026-06-10T18:48:37","request-id":"723a61e6-b63e-42f0-9c72-b8ba2085e22d","client-request-id":"723a61e6-b63e-42f0-9c72-b8ba2085e22d"}}}'
     headers:
       Cache-Control:
       - no-store, no-cache
       Content-Type:
       - application/json
-      SPLogId:
-      - 61241ca2-f050-d000-9cbc-60762ed4dcf7
       Strict-Transport-Security:
       - max-age=31536000
       Transfer-Encoding:

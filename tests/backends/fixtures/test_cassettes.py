@@ -11,14 +11,17 @@ safe to record against a real tenant.
 from __future__ import annotations
 
 import json
+import re
 import types
 from typing import Any
+from urllib.parse import urlsplit
 
 import pytest
 
 from tests.backends.fixtures._cassettes import (
     CASSETTE_DIR_GRAPH,
     FAKE_DRIVE_ID,
+    GRAPH_FORBIDDEN_CASSETTE_PATTERNS,
     GRAPH_PRESIGNED_PLACEHOLDER,
     build_graph_vcr_config,
 )
@@ -271,6 +274,33 @@ class TestGraphCassetteScrub:
         assert b'"displayName":"REDACTED"' in scrubbed
         assert b'"siteId":"REDACTED"' in scrubbed
 
+    def test_token_response_identity_fields_redacted(self) -> None:
+        """BK-262 review: the OAuth token-exchange response (recorded when MSAL
+        refreshes mid-suite) carries ``id_token`` (a JWT) and ``client_info``
+        (base64) alongside ``access_token`` / ``refresh_token``. The JWT/base64
+        payloads embed the account email, name, tenant id, and an ``oid`` holding
+        the drive cid — none caught by the drive-id or email scrubs because they
+        are base64-encoded, so all four token-response fields are redacted
+        wholesale. The ``bare JWT`` forbidden marker caught this on re-record."""
+        cfg = build_graph_vcr_config(real_drive_id="4fde4d5aac63bdf1")
+        # A realistic token response: the id_token / client_info base64 would
+        # decode to rs@alferi.de / the tenant id / an oid embedding the cid.
+        jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJwcmVmZXJyZWRfdXNlcm5hbWUiOiJyc0BhbGZlcmkuZGU"
+        body = (
+            b'{"token_type":"Bearer","scope":"Files.ReadWrite",'
+            b'"access_token":"' + jwt.encode() + b'.sig",'
+            b'"refresh_token":"0.AXkA-secret",'
+            b'"id_token":"' + jwt.encode() + b'.sig2",'
+            b'"client_info":"eyJ2ZXIiOiIxLjAiLCJzdWIiOiJBQUE"}'
+        )
+        scrubbed = cfg["before_record_response"]({"body": {"string": body}})["body"]["string"]
+        for field in (b"access_token", b"refresh_token", b"id_token", b"client_info"):
+            assert b'"' + field + b'":"REDACTED"' in scrubbed
+        # No JWT prefix survives anywhere, so the base64'd identity is gone.
+        assert b"eyJ" not in scrubbed
+        # The non-secret scope field is untouched.
+        assert b'"scope":"Files.ReadWrite"' in scrubbed
+
     def test_presigned_host_request_uri_rewritten_to_placeholder(self) -> None:
         """BK-262: a request to a pre-signed content host (downloadUrl / uploadUrl /
         copy-move monitor URL) has its whole URI replaced with the placeholder, so
@@ -309,6 +339,69 @@ class TestGraphCassetteScrub:
         ).uri
         assert replay_uri == recorded_uri == GRAPH_PRESIGNED_PLACEHOLDER
 
+    def test_presigned_request_host_header_normalised(self) -> None:
+        """BK-262 review: the pre-signed branch rewrites the URI to the placeholder
+        but the ``Host`` header named the live content host (generic for consumer
+        OneDrive, but tenant-identifying ``<tenant>-my.sharepoint.com`` on a
+        business drive). It is rewritten to the placeholder host so nothing of the
+        live URL survives, honouring the placeholder's docstring guarantee."""
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        out = cfg["before_record_request"](
+            _request(
+                {"Host": "tenant-my.sharepoint.com", "User-Agent": "x"},
+                uri="https://tenant-my.sharepoint.com/personal/x/f.bin?tempauth=SECRET",
+            )
+        )
+        assert out.uri == GRAPH_PRESIGNED_PLACEHOLDER
+        expected_host = urlsplit(GRAPH_PRESIGNED_PLACEHOLDER).hostname
+        assert out.headers["Host"] == expected_host
+        assert "sharepoint.com" not in out.headers["Host"]
+
+    def test_presigned_request_body_credential_form_scrubbed(self) -> None:
+        """BK-262 review: the pre-signed branch took an early return that left the
+        request body untouched. An OAuth token exchange against an auth host outside
+        ``_GRAPH_API_HOSTS`` (login.live.com, a sovereign cloud) lands there too, so
+        the credential-form scrub now runs before the return."""
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        out = cfg["before_record_request"](
+            types.SimpleNamespace(
+                headers={},
+                uri="https://login.live.com/oauth20_token.srf",
+                body="grant_type=refresh_token&refresh_token=REALSECRET&client_secret=ALSOSECRET",
+            )
+        )
+        # login.live.com is NOT in _GRAPH_API_HOSTS, so this is the pre-signed path.
+        assert out.uri == GRAPH_PRESIGNED_PLACEHOLDER
+        assert "REALSECRET" not in out.body
+        assert "ALSOSECRET" not in out.body
+        assert "refresh_token=REDACTED" in out.body
+        assert "client_secret=REDACTED" in out.body
+
+    def test_correlation_diagnostic_headers_dropped(self) -> None:
+        """BK-262 review: per-request correlation / diagnostic headers (the ESTS
+        ``x-ms-request-id`` the bare ``request-id`` entry missed, ``x-ms-ests-server``,
+        and the SharePoint/CDN ``sprequestguid`` / ``splogid`` / ``ms-cv`` /
+        ``x-msedge-ref``) are dropped — parity with the Azure profile and stable
+        cassette diffs across re-records."""
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        resp: dict[str, Any] = {
+            "headers": {
+                "x-ms-request-id": ["abc-123"],
+                "x-ms-ests-server": ["2.1 FRC ProdSlices"],
+                "SPRequestGuid": ["guid-1"],
+                "SPLogId": ["log-1"],
+                "MS-CV": ["cv-1"],
+                "X-MSEdge-Ref": ["edge-1"],
+                "Content-Type": ["application/json"],
+            },
+            "body": {"string": b"{}"},
+        }
+        out = cfg["before_record_response"](resp)["headers"]
+        survivors = {k.lower() for k in out}
+        for dropped in ("x-ms-request-id", "x-ms-ests-server", "sprequestguid", "splogid", "ms-cv", "x-msedge-ref"):
+            assert dropped not in survivors
+        assert "content-type" in survivors  # unrelated headers kept
+
     def test_query_params_filtered(self) -> None:
         cfg = build_graph_vcr_config(real_drive_id=None)
         for param in ("tempauth", "Expires", "access_token", "sig"):
@@ -317,3 +410,27 @@ class TestGraphCassetteScrub:
     def test_cassette_dir_is_per_backend_graph(self) -> None:
         assert CASSETTE_DIR_GRAPH.name == "graph"
         assert CASSETTE_DIR_GRAPH.parent.name == "cassettes"
+
+
+class TestGraphCommittedCassettePIISweep:
+    """Creds-free guard over the *committed* Graph cassette tree (BK-262 review).
+
+    The recorder's Step-4 scrub-verify asserts ``GRAPH_FORBIDDEN_CASSETTE_PATTERNS``
+    only on the live-record path. This sweep runs the identical markers over the
+    checked-in ``.yaml`` files with no live tier, so a hand edit, a bad merge, or a
+    re-record on a machine without the env var (the recorder ``_die``s before its
+    sweep if the drive id is unset, but the cassettes are already written) that
+    reintroduces a bearer token / JWT / ``b!…`` id / site GUID / tenant host /
+    credential form / identity key is caught in CI, not by a one-time manual grep.
+    """
+
+    def test_committed_graph_cassettes_carry_no_forbidden_pii(self) -> None:
+        files = sorted(CASSETTE_DIR_GRAPH.glob("*.yaml"))
+        assert files, f"no committed Graph cassettes found under {CASSETTE_DIR_GRAPH}; sweep would be vacuous"
+        leaks: list[str] = []
+        for path in files:
+            raw = path.read_bytes()
+            for label, pattern in GRAPH_FORBIDDEN_CASSETTE_PATTERNS:
+                if re.search(pattern, raw, re.IGNORECASE):
+                    leaks.append(f"{path.name}: {label}")
+        assert not leaks, "forbidden PII markers found in committed cassettes:\n" + "\n".join(leaks)

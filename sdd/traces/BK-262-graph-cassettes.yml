@@ -18,7 +18,7 @@ discovery_followups:
   - BK-283
 surprising_ripples:
   - tests/backends/cassettes/graph/TestCopyPostState.test_copy_preserves_source[graph].yaml
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -95,4 +95,24 @@ phases:
         section: "Step 4 forbidden_patterns"
         read_type: verify
         extract: "Second review point: Step-4 only grepped the drive id, so the broader 'PII-swept clean' guarantee was a one-time manual grep a re-record could silently break. Added env-independent forbidden_patterns (bare Bearer, the docID site-GUID host form, the long b! drive id) the gate now asserts on every record; unit test seeds a leaky cassette and asserts SystemExit"
+        outcome: ok
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "before_record_request pre-signed branch (Host header + body scrub) / _GRAPH_PRESIGNED_PLACEHOLDER_HOST"
+        read_type: verify
+        extract: "Review round 2 (8 findings, all valid self-review). The pre-signed branch collapsed the URI to the placeholder but left the live Host header — generic my.microsoftpersonalcontent.com for consumer, but tenant-identifying <tenant>-my.sharepoint.com on a business drive — contradicting the placeholder's 'nothing of the live URL survives' guarantee in 18 cassettes; now rewritten to the placeholder host (matcher ignores Host, replay unaffected). Same branch's early return left the request body untouched, so a token exchange against an auth host outside _GRAPH_API_HOSTS (login.live.com, sovereign clouds) would commit client_secret/refresh_token/assertion verbatim; _GRAPH_REQUEST_BODY_SCRUB now runs before the return (no-op on opaque upload chunks)"
+        outcome: misleading
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "_GRAPH_SCRUB_RESPONSE_HEADERS (correlation/diagnostic) + GRAPH_PRESIGNED_PLACEHOLDER order-dependence docstring"
+        read_type: verify
+        extract: "Dropped the per-request correlation/diagnostic headers (x-ms-request-id — the ESTS variant the bare request-id entry missed and that the Azure profile already drops — x-ms-ests-server, sprequestguid, splogid, ms-cv, x-msedge-ref) for parity + stable re-record diffs; nested innerError request-id GUIDs in error bodies left as-is (transient, non-identity, documented). Added the replay order-dependence caveat (collapsed same-URI pre-signed GETs disambiguate only by recorded order; concurrent pre-signed requests unsupported) the retired backlog body carried but the code lost"
+        outcome: ok
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "GRAPH_FORBIDDEN_CASSETTE_PATTERNS (shared constant) + TestGraphCommittedCassettePIISweep"
+        read_type: verify
+        extract: "Closed the strongest finding: the forbidden-marker sweep ran only on the live-record path, so a hand edit / bad merge / cred-less re-record could reintroduce a secret with no CI gate. Moved the markers to one shared constant in _cassettes.py (recorder Step-4 AND a new creds-free pytest both assert it), and expanded them to encode failure modes not just past leaks — JWT (eyJ), tenant SharePoint host, credential form fields, identity keys, bare email. Verified false-positive-free against the committed tree (@odata.* keys do not match the email regex)"
+        outcome: ok
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "_GRAPH_BODY_SCRUB (id_token / client_info)"
+        read_type: verify
+        extract: "The new bare-JWT marker validated itself on re-record: it caught a REAL leak the prior process committed only by luck. When MSAL refreshes mid-suite (a warm in-memory token cache hid it before), the login.microsoftonline.com token response is recorded — and beyond access_token/refresh_token (already scrubbed) it carries an id_token (JWT) and client_info (base64) whose payloads embed the account email, name, tenant id, and an oid holding the drive cid. None were caught by the drive-id or email scrubs because they are base64-encoded; the eyJ marker was. Redacted all four token-response fields wholesale. Replay is unaffected (the graph_replay backend uses a constant stub token and never re-issues the token request). This is the 'encode failure modes, not just past leaks' marker design earning its keep"
         outcome: ok

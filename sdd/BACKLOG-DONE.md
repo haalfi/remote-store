@@ -119,8 +119,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   case-insensitive (it caught the upper-cased cid the case-sensitive check had
   missed), and Step-4 additionally asserts env-independent `forbidden_patterns`
   (bare `Bearer`, the `docID` site-GUID host form, the long `b!…` id) so a
-  re-record cannot silently reintroduce them. Recorded 118 cassettes (PII-swept
-  clean: zero cid / `b!` id / email / siteId / Bearer / docID GUID);
+  re-record cannot silently reintroduce them. A second review round hardened
+  the redaction guarantee further: the pre-signed branch now rewrites the
+  `Host` request header to the placeholder host (the live URI was redacted but
+  the live content host — tenant-identifying on a business drive — survived
+  next to it) and scrubs the request body before its early return (an OAuth
+  exchange against an auth host outside the API allow-list would otherwise
+  commit the credential form verbatim); the per-request correlation/diagnostic
+  response headers (`x-ms-request-id`, `x-ms-ests-server`, SharePoint/CDN ids)
+  are dropped for parity with the Azure profile and stable re-record diffs; and
+  the leak markers moved to one shared `GRAPH_FORBIDDEN_CASSETTE_PATTERNS`
+  constant — expanded to JWT, tenant SharePoint host, credential form fields,
+  identity keys, and bare email — asserted by **both** the recorder's Step-4
+  gate **and** a new creds-free CI sweep over the committed tree, so the
+  guarantee no longer rests on a one-time manual grep. The new JWT marker then
+  earned its keep on re-record: it caught a *real* leak the prior process had
+  committed only by luck — when MSAL refreshes mid-suite (a warm token cache hid
+  it before), the OAuth token response carries an `id_token` (JWT) and
+  `client_info` (base64) whose payloads embed the account email / tenant id / an
+  `oid` holding the cid, none caught by the drive-id or email scrubs because they
+  are base64-encoded. All four token-response fields are now redacted wholesale
+  (replay is unaffected: the replay backend uses a constant stub token).
+  Recorded 118 cassettes
+  (PII-swept clean: zero cid / `b!` id / email / siteId / Bearer / docID GUID);
   `graph_replay` Stage-1 runs 109 passed / 9 capability-skips / 0
   missing-cassette. No CHANGELOG (infra.test). Consolidated the former BK-260;
   the example-test replay extension is carried forward as BK-283. Trace:
