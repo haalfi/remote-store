@@ -28,6 +28,7 @@ import os
 import re
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 # ---------------------------------------------------------------------------
 # Directory constant
@@ -180,16 +181,80 @@ _GRAPH_SCRUB_QUERY_PARAMS: tuple[str, ...] = (*_SCRUB_QUERY_PARAMS, "tempauth", 
 # so the cassette stays reviewable.
 _GRAPH_URL_QUERY_RE: re.Pattern[str] = re.compile(r"\?\S*")
 
+# Hosts whose request URIs are preserved (id-normalised only): the Graph API and
+# the MSAL token endpoint. Every *other* host a recording touches is a pre-signed
+# content host — the ``@microsoft.graph.downloadUrl`` / ``uploadUrl`` CDN
+# (consumer OneDrive) or the copy/move monitor URL — whose URI carries an access
+# token. Those are rewritten wholesale to GRAPH_PRESIGNED_PLACEHOLDER below.
+_GRAPH_API_HOSTS: tuple[str, ...] = ("graph.microsoft.com", "login.microsoftonline.com")
+
+GRAPH_PRESIGNED_PLACEHOLDER = "https://graph-download.invalid/REDACTED"
+"""Stable replacement for every pre-signed Graph URL in recorded cassettes.
+
+A pre-signed URL (``@microsoft.graph.downloadUrl``, the upload-session
+``uploadUrl``, the copy/move monitor URL) carries its own access token and must
+not survive into a committed cassette. It is wiped to this one valid placeholder
+in two coupled places so record and replay agree: the response-body value
+(``_GRAPH_BODY_SCRUB``) and the request URI of any pre-signed-host request
+(``before_record_request``). The ``.invalid`` TLD (RFC 6761) never resolves, so
+the placeholder is obviously fake and non-routable; nothing of the live URL
+(host, path, token) survives — strictly stronger redaction than the bare
+``"REDACTED"`` token it replaces, which was not a URL and so broke replay
+(the backend reads the value back out of the body and re-requests it).
+
+``before_record_request`` runs in both record and replay mode, so the request
+the backend issues on replay — built from the placeholder it read out of the
+scrubbed body / ``Location`` header — normalises to the same value the recorded
+request was rewritten to, and vcrpy matches them. This is the half that makes
+Graph reads/writes/copies replay-able (BK-262)."""
+
+_GRAPH_PRESIGNED_PLACEHOLDER_BYTES = GRAPH_PRESIGNED_PLACEHOLDER.encode()
+
+
+def _graph_is_presigned_host(uri: str) -> bool:
+    """True when *uri*'s host is a pre-signed content host (not the Graph API / MSAL).
+
+    A URI with no host (relative, or a bare token) is treated as *not* pre-signed
+    so it is left for the normal id-normalisation path rather than being blanked —
+    a defensive default that never over-redacts.
+    """
+    host = (urlsplit(uri).hostname or "").lower()
+    if not host:
+        return False
+    return not any(host == h or host.endswith("." + h) for h in _GRAPH_API_HOSTS)
+
+
 # Body-level redactions, applied in the bytes domain so binary payloads are
 # safe. Each preserves surrounding JSON structure and replaces only the
 # secret-bearing value. The ``uploadUrl`` returned by ``createUploadSession``
 # is pre-authorised and carries its own token in the query (the same threat as
-# ``downloadUrl``), so it is wiped alongside it.
+# ``downloadUrl``), so it is wiped alongside it — both to the placeholder URL so
+# the value the backend reads back is a valid, replay-matchable URL.
 _GRAPH_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
-    (re.compile(rb'("@microsoft\.graph\.downloadUrl"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
-    (re.compile(rb'("uploadUrl"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
+    (
+        re.compile(rb'("@microsoft\.graph\.downloadUrl"\s*:\s*")[^"]*(")'),
+        rb"\1" + _GRAPH_PRESIGNED_PLACEHOLDER_BYTES + rb"\2",
+    ),
+    (re.compile(rb'("uploadUrl"\s*:\s*")[^"]*(")'), rb"\1" + _GRAPH_PRESIGNED_PLACEHOLDER_BYTES + rb"\2"),
     (re.compile(rb'("(?:access_token|refresh_token)"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
     (re.compile(rb"Bearer\s+[A-Za-z0-9._~+/=\-]+"), b"Bearer REDACTED"),
+]
+
+# Identity / tenant PII redactions for response bodies. Graph item responses
+# embed ``createdBy`` / ``lastModifiedBy`` user objects (real account email +
+# display name) and a ``siteId`` (the personal-OneDrive site GUID); none of
+# these are read by the backend or asserted by the conformance suite, so they
+# can be blanked without breaking replay. Keys are matched whole (the opening
+# quote is part of the match) so ``"displayName"`` is redacted while the
+# load-bearing ``"name"`` item field — which the backend *does* read — is left
+# untouched. The live ``drive_id`` (cid) embedded in item ids / eTags is handled
+# separately by the case-insensitive ``real_drive_id`` rewrite, since Graph
+# returns it upper-cased in those fields.
+_GRAPH_PII_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
+    (
+        re.compile(rb'("(?:email|displayName|userPrincipalName|loginName|siteId)"\s*:\s*")[^"]*(")'),
+        rb"\1REDACTED\2",
+    ),
 ]
 
 # Per-test conformance-root normalisation (GR-058 isolation ↔ replay): rewrite
@@ -394,27 +459,83 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
     * the ``@microsoft.graph.downloadUrl`` value, the upload-session
       ``uploadUrl`` value (pre-authorised, token in its query), and any
       ``Bearer`` / ``access_token`` / ``refresh_token`` from response bodies;
-    * the pre-signed download query parameters; and
+    * the pre-signed download query parameters;
     * the live ``drive_id`` (rewritten to ``FAKE_DRIVE_ID``) from request
       URIs and response bodies, so a cassette recorded against a real drive
-      replays against the fake one.
+      replays against the fake one — matched **case-insensitively** because
+      Graph echoes the id (cid) upper-cased inside item ids / eTags / webUrls
+      but lower-cased in URIs; and
+    * the account identity and tenant PII Graph embeds in item responses —
+      ``email`` / ``displayName`` / ``userPrincipalName`` / ``loginName`` (the
+      ``createdBy`` / ``lastModifiedBy`` user objects) and ``siteId`` (the
+      personal-OneDrive site GUID) — none of which the backend reads or the
+      conformance suite asserts.
     """
 
-    def before_record_request(request: Any) -> Any:
-        if real_drive_id:
-            request.uri = request.uri.replace(real_drive_id, FAKE_DRIVE_ID)
-        # Normalise the per-test base_path uuid to the stable replay token so the
-        # recorded URI matches graph_replay's fixed base_path (runs in both modes).
-        request.uri = _GRAPH_CONFORMANCE_ROOT_RE_STR.sub(GRAPH_CONFORMANCE_BASE_PATH, request.uri)
+    # The drive_id (cid) is rewritten case-insensitively: Graph echoes it
+    # lower-cased in URIs / parentReference paths but UPPER-cased inside item
+    # ids, eTags, cTags, and webUrls (``4FDE...!s<hex>``). A plain ``.replace``
+    # of the lower-cased env value misses the upper-cased copies, leaking the
+    # real resource id. One case-insensitive pattern catches every casing and
+    # maps them all to the same ``FAKE_DRIVE_ID`` so eTag/id self-comparisons
+    # within a cassette still match.
+    _drive_id_re_str = re.compile(re.escape(real_drive_id), re.IGNORECASE) if real_drive_id else None
+    _drive_id_re_bytes = re.compile(re.escape(real_drive_id.encode()), re.IGNORECASE) if real_drive_id else None
+
+    def _scrub_location(val: str) -> str:
+        """Redact a ``Location`` / ``Content-Location`` response-header URL.
+
+        A pre-signed-host Location — the ``302`` from ``GET /content`` pointing
+        at ``@microsoft.graph.downloadUrl`` (GR-015), or the ``202`` async
+        copy/move monitor URL — collapses to ``GRAPH_PRESIGNED_PLACEHOLDER``,
+        the same value its request URI and body twin are rewritten to. This
+        removes not only the query token but the drive id (the cid and the long
+        ``b!…`` form) Graph embeds in the *path* of a consumer-OneDrive
+        pre-signed URL (``/personal/<cid>/_api/v2.0/drives/b!…``) — a path the
+        old query-only wipe left intact (BK-262). It stays replay-able because
+        ``before_record_request`` rewrites the poll/download request the backend
+        issues from this header to the same placeholder, so vcrpy matches.
+
+        A Graph-API-host Location (e.g. a ``201 Created`` item URL the backend
+        never re-requests) keeps its host + path for review: the token query is
+        wiped value-based and the drive id in the path is id-normalised.
+        """
+        if _graph_is_presigned_host(val):
+            return GRAPH_PRESIGNED_PLACEHOLDER
+        val = _GRAPH_URL_QUERY_RE.sub("?REDACTED", val)
+        if _drive_id_re_str is not None:
+            val = _drive_id_re_str.sub(FAKE_DRIVE_ID, val)
+        return _GRAPH_CONFORMANCE_ROOT_RE_STR.sub(GRAPH_CONFORMANCE_BASE_PATH, val)
+
+    def _scrub_request_headers(request: Any) -> None:
         for key in list(request.headers):
             lower = key.lower()
             if lower in _GRAPH_SCRUB_REQUEST_HEADERS:
                 del request.headers[key]
             elif lower == "user-agent":
                 request.headers[key] = _USER_AGENT_NORMALIZED
-        # Scrub credentials out of the OAuth token-exchange POST body. The
-        # bytes-domain sub is a no-op on binary upload payloads (no form keys
-        # match) and on the device-code flow (no secret present).
+
+    def before_record_request(request: Any) -> Any:
+        # A pre-signed content host (downloadUrl / uploadUrl / copy-move monitor
+        # URL) carries an access token in its URI, so the whole URI is replaced
+        # with the stable placeholder. This runs in both record and replay mode:
+        # the request the backend issues on replay — built from the placeholder it
+        # read out of the scrubbed response body / Location header — normalises to
+        # the same value the recorded request was rewritten to, so vcrpy matches
+        # them. The body is left untouched: a pre-signed request body is opaque
+        # content (an upload chunk), never a credential-bearing token form.
+        if _graph_is_presigned_host(request.uri):
+            request.uri = GRAPH_PRESIGNED_PLACEHOLDER
+            _scrub_request_headers(request)
+            return request
+        if _drive_id_re_str is not None:
+            request.uri = _drive_id_re_str.sub(FAKE_DRIVE_ID, request.uri)
+        # Normalise the per-test base_path uuid to the stable replay token so the
+        # recorded URI matches graph_replay's fixed base_path (runs in both modes).
+        request.uri = _GRAPH_CONFORMANCE_ROOT_RE_STR.sub(GRAPH_CONFORMANCE_BASE_PATH, request.uri)
+        _scrub_request_headers(request)
+        # Scrub credentials out of the OAuth token-exchange POST body (login host).
+        # The bytes-domain sub is a no-op on the device-code flow (no secret present).
         body = getattr(request, "body", None)
         if isinstance(body, (str, bytes)):
             raw = body.encode() if isinstance(body, str) else body
@@ -423,8 +544,8 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
             # The move/copy parentReference body carries the live drive_id (driveId
             # field + a /drives/{drive_id}/root: path), so the URI replace above is
             # not enough — rewrite it in the request body too (mirrors the response).
-            if real_drive_id:
-                raw = raw.replace(real_drive_id.encode(), FAKE_DRIVE_ID.encode())
+            if _drive_id_re_bytes is not None:
+                raw = _drive_id_re_bytes.sub(FAKE_DRIVE_ID.encode(), raw)
             raw = _GRAPH_CONFORMANCE_ROOT_RE_BYTES.sub(GRAPH_CONFORMANCE_BASE_PATH.encode(), raw)
             request.body = raw.decode() if isinstance(body, str) else raw
         return request
@@ -436,14 +557,11 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
             if lower in _GRAPH_SCRUB_RESPONSE_HEADERS:
                 del headers[key]
             elif lower in ("location", "content-location"):
-                # The 302 from GET /content carries the pre-signed download
-                # token in the Location query (GR-015); wipe the whole query,
-                # keeping host/path so the cassette stays reviewable.
                 val = headers[key]
                 if isinstance(val, list):
-                    headers[key] = [_GRAPH_URL_QUERY_RE.sub("?REDACTED", v) if isinstance(v, str) else v for v in val]
+                    headers[key] = [_scrub_location(v) if isinstance(v, str) else v for v in val]
                 elif isinstance(val, str):
-                    headers[key] = _GRAPH_URL_QUERY_RE.sub("?REDACTED", val)
+                    headers[key] = _scrub_location(val)
         body = response.get("body", {})
         raw = body.get("string")
         if isinstance(raw, str):
@@ -452,9 +570,9 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
         else:
             was_str = False
         if isinstance(raw, bytes):
-            if real_drive_id:
-                raw = raw.replace(real_drive_id.encode(), FAKE_DRIVE_ID.encode())
-            for pattern, replacement in _GRAPH_BODY_SCRUB:
+            if _drive_id_re_bytes is not None:
+                raw = _drive_id_re_bytes.sub(FAKE_DRIVE_ID.encode(), raw)
+            for pattern, replacement in (*_GRAPH_BODY_SCRUB, *_GRAPH_PII_BODY_SCRUB):
                 raw = pattern.sub(replacement, raw)
             raw = _GRAPH_CONFORMANCE_ROOT_RE_BYTES.sub(GRAPH_CONFORMANCE_BASE_PATH.encode(), raw)
             body["string"] = raw.decode() if was_str else raw
@@ -476,6 +594,7 @@ __all__ = [
     "FAKE_DRIVE_ID",
     "FAKE_FILESYSTEM",
     "GRAPH_CONFORMANCE_BASE_PATH",
+    "GRAPH_PRESIGNED_PLACEHOLDER",
     "build_graph_vcr_config",
     "build_vcr_config",
     "live_connection_string",

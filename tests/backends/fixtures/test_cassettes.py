@@ -10,6 +10,7 @@ safe to record against a real tenant.
 
 from __future__ import annotations
 
+import json
 import types
 from typing import Any
 
@@ -18,6 +19,7 @@ import pytest
 from tests.backends.fixtures._cassettes import (
     CASSETTE_DIR_GRAPH,
     FAKE_DRIVE_ID,
+    GRAPH_PRESIGNED_PLACEHOLDER,
     build_graph_vcr_config,
 )
 
@@ -88,7 +90,9 @@ class TestGraphCassetteScrub:
         resp: dict[str, Any] = {"headers": {"Content-Type": ["application/json"]}, "body": {"string": body}}
         scrubbed = cfg["before_record_response"](resp)["body"]["string"]
         assert b"SECRETSIG123" not in scrubbed
-        assert b"REDACTED" in scrubbed
+        # The value is replaced with the valid placeholder URL (not a bare token),
+        # so the backend reads back a real URL it can re-request on replay (BK-262).
+        assert GRAPH_PRESIGNED_PLACEHOLDER.encode() in scrubbed
         # Structure preserved: the key stays, only its value is redacted.
         assert b"@microsoft.graph.downloadUrl" in scrubbed
         assert b'"name":"f.txt"' in scrubbed
@@ -104,7 +108,9 @@ class TestGraphCassetteScrub:
         resp: dict[str, Any] = {"headers": {"Content-Type": ["application/json"]}, "body": {"string": body}}
         scrubbed = cfg["before_record_response"](resp)["body"]["string"]
         assert b"UPLOADSECRET999" not in scrubbed
-        assert b"REDACTED" in scrubbed
+        # Replaced with the placeholder URL (not a bare token) so chunk PUTs on
+        # replay target a valid, recorded-and-matchable host (BK-262).
+        assert GRAPH_PRESIGNED_PLACEHOLDER.encode() in scrubbed
         # Structure preserved: the key and the non-secret fields stay.
         assert b'"uploadUrl"' in scrubbed
         assert b'"nextExpectedRanges":["0-"]' in scrubbed
@@ -139,8 +145,11 @@ class TestGraphCassetteScrub:
     def test_download_token_redacted_from_302_location_header(self) -> None:
         """GR-015: GET /content -> 302 whose Location is the pre-signed downloadUrl.
 
-        The token in its query must not survive in the recorded response headers
-        (PR #750 review — the primary leak path the streaming proof de-risks).
+        The Location points at a pre-signed content host, so it collapses to the
+        placeholder — removing the query token AND the drive id Graph embeds in
+        the path (BK-262). Replay-safe: the download request the backend issues
+        from this header normalises to the same placeholder (PR #750 review — the
+        primary leak path the streaming proof de-risks).
         """
         cfg = build_graph_vcr_config(real_drive_id=None)
         loc = (
@@ -151,24 +160,41 @@ class TestGraphCassetteScrub:
         scrubbed = cfg["before_record_response"](resp)["headers"]["Location"][0]
         assert "TEMPAUTHSECRET" not in scrubbed
         assert "ACCESSTOKENSECRET" not in scrubbed
-        # The whole query is wiped value-based; host + path stay for review.
-        assert scrubbed == "https://abc.microsoftpersonalcontent.com/personal/x/Documents/f.bin?REDACTED"
+        assert scrubbed == GRAPH_PRESIGNED_PLACEHOLDER
 
-    def test_location_redaction_catches_unnamed_token_param(self) -> None:
-        """Value-based wipe: a token under a param name NOT in the enumerated
-        set is still redacted (PR #750 round-3 review — name-based was brittle)."""
-        cfg = build_graph_vcr_config(real_drive_id=None)
-        loc = "https://host/path?novel_token=SURVIVESNAMEBASED&tempauth=ALSOSECRET"
+    def test_presigned_location_drops_drive_id_in_path(self) -> None:
+        """BK-262 regression: the async copy/move monitor Location at a pre-signed
+        host carries the drive id (the cid AND the long ``b!…`` form) in its PATH,
+        which the old query-only wipe left intact. The pre-signed-host collapse
+        removes both."""
+        cfg = build_graph_vcr_config(real_drive_id="4fde4d5aac63bdf1")
+        loc = (
+            "https://my.microsoftpersonalcontent.com/personal/4FDE4D5AAC63BDF1"
+            "/_api/v2.0/drives/b!3XW1UgCSb0aoUxhAGtlXy8vVrIsFxBxJm9hrzwaK5lr1q/operations/copy"
+        )
         resp: dict[str, Any] = {"headers": {"Location": loc}, "body": {"string": b""}}
         scrubbed = cfg["before_record_response"](resp)["headers"]["Location"]
-        assert "SURVIVESNAMEBASED" not in scrubbed  # the unnamed param's value is gone
-        assert "ALSOSECRET" not in scrubbed
-        assert scrubbed == "https://host/path?REDACTED"
+        assert scrubbed == GRAPH_PRESIGNED_PLACEHOLDER
+        assert "4FDE4D5AAC63BDF1" not in scrubbed
+        assert "b!3XW1Ug" not in scrubbed
 
-    def test_location_without_query_is_unchanged(self) -> None:
+    def test_api_host_location_preserved_and_id_normalised(self) -> None:
+        """A Graph-API-host Location (a 201 Created item URL the backend never
+        re-requests) keeps host + path for review; only the token query is wiped
+        and the drive id in the path is id-normalised."""
+        cfg = build_graph_vcr_config(real_drive_id="realdrive123")
+        loc = "https://graph.microsoft.com/v1.0/drives/realdrive123/items/01ABC?novel_token=SECRET"
+        resp: dict[str, Any] = {"headers": {"Location": loc}, "body": {"string": b""}}
+        scrubbed = cfg["before_record_response"](resp)["headers"]["Location"]
+        assert "SECRET" not in scrubbed  # value-based query wipe
+        assert "realdrive123" not in scrubbed  # drive id id-normalised
+        assert scrubbed == f"https://graph.microsoft.com/v1.0/drives/{FAKE_DRIVE_ID}/items/01ABC?REDACTED"
+
+    def test_api_host_location_without_query_is_unchanged(self) -> None:
         cfg = build_graph_vcr_config(real_drive_id=None)
-        resp: dict[str, Any] = {"headers": {"Location": "https://host/path"}, "body": {"string": b""}}
-        assert cfg["before_record_response"](resp)["headers"]["Location"] == "https://host/path"
+        loc = "https://graph.microsoft.com/v1.0/drives/d/items/01ABC"
+        resp: dict[str, Any] = {"headers": {"Location": loc}, "body": {"string": b""}}
+        assert cfg["before_record_response"](resp)["headers"]["Location"] == loc
 
     def test_drive_id_rewritten_in_uri_and_body(self) -> None:
         cfg = build_graph_vcr_config(real_drive_id="realdrive123")
@@ -182,6 +208,87 @@ class TestGraphCassetteScrub:
         )
         assert b"realdrive123" not in scrubbed["body"]["string"]
         assert FAKE_DRIVE_ID.encode() in scrubbed["body"]["string"]
+
+    def test_drive_id_rewrite_is_case_insensitive(self) -> None:
+        """BK-262: Graph echoes the drive id (cid) UPPER-cased inside item ids,
+        eTags, and webUrls but lower-cased in URIs. A case-sensitive replace of
+        the lower-cased env value leaked the upper-cased copies; the rewrite is
+        case-insensitive and maps every casing to the same ``FAKE_DRIVE_ID`` so
+        id/eTag self-comparisons within a cassette still match."""
+        cfg = build_graph_vcr_config(real_drive_id="4fde4d5aac63bdf1")
+        body = (
+            b'{"id":"4FDE4D5AAC63BDF1!s0123abcd",'
+            b'"eTag":"\\"4FDE4D5AAC63BDF1!112.0\\"",'
+            b'"name":"f.txt",'
+            b'"webUrl":"https://onedrive.live.com?cid=4fde4d5aac63bdf1&id=4FDE4D5AAC63BDF1!112"}'
+        )
+        scrubbed = cfg["before_record_response"]({"body": {"string": body}})["body"]["string"]
+        # No casing of the real cid survives, in either the lower- or upper-cased form.
+        assert b"4FDE4D5AAC63BDF1" not in scrubbed
+        assert b"4fde4d5aac63bdf1" not in scrubbed
+        # Every occurrence maps to the same fake id, so the eTag/id/webUrl agree.
+        assert scrubbed.count(FAKE_DRIVE_ID.encode()) == 4
+        # The load-bearing item name is untouched.
+        assert b'"name":"f.txt"' in scrubbed
+
+    def test_identity_and_site_pii_redacted_from_body(self) -> None:
+        """BK-262: the createdBy / lastModifiedBy user objects (email, displayName,
+        userPrincipalName, loginName) and the siteId Graph embeds in item responses
+        are blanked; none are read by the backend or asserted by conformance. The
+        load-bearing ``name`` field — which IS read — must survive intact."""
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        body = (
+            b'{"name":"keep.txt","siteId":"site-guid-1234",'
+            b'"createdBy":{"user":{"email":"real@example.com",'
+            b'"displayName":"Real Name","userPrincipalName":"real@tenant.onmicrosoft.com"}},'
+            b'"lastModifiedBy":{"user":{"loginName":"i:0#.f|membership|real@example.com"}}}'
+        )
+        scrubbed = cfg["before_record_response"]({"body": {"string": body}})["body"]["string"]
+        for leaked in (b"real@example.com", b"Real Name", b"real@tenant.onmicrosoft.com", b"site-guid-1234"):
+            assert leaked not in scrubbed
+        # The item name is NOT redacted (it shares no key with displayName).
+        assert b'"name":"keep.txt"' in scrubbed
+        assert b'"email":"REDACTED"' in scrubbed
+        assert b'"displayName":"REDACTED"' in scrubbed
+        assert b'"siteId":"REDACTED"' in scrubbed
+
+    def test_presigned_host_request_uri_rewritten_to_placeholder(self) -> None:
+        """BK-262: a request to a pre-signed content host (downloadUrl / uploadUrl /
+        copy-move monitor URL) has its whole URI replaced with the placeholder, so
+        the recorded request matches what the backend re-issues on replay."""
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        out = cfg["before_record_request"](
+            _request({}, uri="https://abc.microsoftpersonalcontent.com/personal/x/f.bin?tempauth=SECRET")
+        )
+        assert out.uri == GRAPH_PRESIGNED_PLACEHOLDER
+
+    def test_graph_api_host_request_uri_preserved(self) -> None:
+        """An API-host request (graph.microsoft.com) is id-normalised, not blanked:
+        the placeholder rewrite is reserved for pre-signed content hosts."""
+        cfg = build_graph_vcr_config(real_drive_id=None)
+        uri = "https://graph.microsoft.com/v1.0/drives/d/root:/a.txt:/content"
+        assert cfg["before_record_request"](_request({}, uri=uri)).uri == uri
+
+    def test_downloadurl_body_value_replays_against_recorded_request(self) -> None:
+        """End-to-end BK-262 proof: the scrubbed downloadUrl the backend reads from
+        a response body, fed back as the URI of the GET it then issues, normalises
+        to the same placeholder the recorded live GET was rewritten to — so vcrpy
+        matches them. The bare ``"REDACTED"`` token it replaced did not (it is not
+        a URL), which is exactly why Graph reads could not replay."""
+        cfg = build_graph_vcr_config(real_drive_id="realdrive123")
+        # Record side: scrub the metadata body carrying the live downloadUrl.
+        body = b'{"@microsoft.graph.downloadUrl":"https://live-cdn.example/path?tempauth=SECRET"}'
+        scrubbed = cfg["before_record_response"]({"body": {"string": body}})["body"]["string"]
+        # The backend reads that value back out of the body on replay...
+        download_url = json.loads(scrubbed)["@microsoft.graph.downloadUrl"]
+        assert download_url == GRAPH_PRESIGNED_PLACEHOLDER
+        # ...and issues a GET to it; before_record_request normalises that request
+        # the same way it normalised the recorded live GET → identical URIs match.
+        replay_uri = cfg["before_record_request"](_request({}, uri=download_url)).uri
+        recorded_uri = cfg["before_record_request"](
+            _request({}, uri="https://live-cdn.example/path?tempauth=SECRET")
+        ).uri
+        assert replay_uri == recorded_uri == GRAPH_PRESIGNED_PLACEHOLDER
 
     def test_query_params_filtered(self) -> None:
         cfg = build_graph_vcr_config(real_drive_id=None)

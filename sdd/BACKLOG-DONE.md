@@ -83,6 +83,43 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   dependabot rows from "partial" to the rolling-issue + triage shape. Audit-018 M2
   / L1. Trace: `sdd/traces/bk-275-ci-operations-handbook.yml`.
 
+- [x] **BK-262 — Graph conformance cassettes: replay-able pre-signed URLs**
+  spec: GR-015, GR-019 · effort: M · audience: infra.test
+  ID-127 GR-DONE recorded the Graph conformance suite live (green) but never
+  committed the cassettes, and `record_cassettes.py` kept graph
+  `min_cassettes=0`, so the cross-backend conformance spine **skip-cleaned** for
+  Graph in CI. The blocker was a redaction *format* bug, not a security
+  weakening: the GR-035 scrub redacted `@microsoft.graph.downloadUrl` and the
+  upload-session `uploadUrl` to the bare string `"REDACTED"`, which is not a URL
+  — on replay the backend reads it back and issues `GET :///REDACTED`, no
+  cassette matches, and the read/write slices fail. Fix: redact every
+  pre-signed-host URL (downloadUrl / uploadUrl / copy-move monitor `Location`)
+  to one **valid placeholder URL** (`https://graph-download.invalid/REDACTED`)
+  consistently in the response body, the `Location` header, **and** the recorded
+  pre-signed-host request URI. `before_record_request` runs on record *and*
+  replay, so the request the backend re-issues from the scrubbed body/header
+  normalises to the same placeholder and vcrpy matches it. The first live
+  recording then exposed a PII leak the prior scrub never covered: the
+  case-sensitive `drive_id` replace of the lower-cased env value missed the
+  UPPER-cased cid Graph echoes inside item ids / eTags / webUrls, and
+  `createdBy` / `lastModifiedBy` carried the account email + displayName + a
+  `siteId`, and the async copy/move monitor `Location` embedded the cid and the
+  long `b!…` drive id in its **path** (not query). Closed all three: the
+  `drive_id` rewrite is now case-insensitive (every casing → one `FAKE_DRIVE_ID`
+  so eTag/id self-comparisons still match), an identity/site key scrub blanks
+  `email` / `displayName` / `userPrincipalName` / `loginName` / `siteId` (none
+  read by the backend or asserted by conformance; the load-bearing item `name`
+  shares no key so survives), and a pre-signed-host `Location` collapses whole
+  to the placeholder. Hardened the recorder to match: `min_cassettes` `0 → 100`
+  (full slice records 118, headroom for capability skips) and the Step-4
+  scrub-verify is now case-insensitive (it caught the upper-cased cid the
+  case-sensitive check had missed). Recorded 118 cassettes (PII-swept clean:
+  zero cid / `b!` id / email / siteId / Bearer); `graph_replay` Stage-1 runs
+  109 passed / 9 capability-skips / 0 missing-cassette. No CHANGELOG
+  (infra.test). Consolidated the former BK-260; the example-test replay
+  extension is carried forward as BK-283. Trace:
+  `sdd/traces/BK-262-graph-cassettes.yml`.
+
 - [x] **BK-282 — Forward CLI args through the `gen-*` hatch script targets**
   spec: — · effort: S · audience: contributor.tooling
   The bare generator targets (`gen-graph`, `gen-features`, `gen-graph-viz`,

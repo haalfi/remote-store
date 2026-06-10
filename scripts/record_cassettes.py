@@ -142,10 +142,11 @@ _BACKENDS: dict[str, dict] = {
         "account_fn": _resolve_graph_drive_id,
         "live_opt_in_env": "RS_TEST_LIVE_GRAPH",
         "setup_doc": "docs-src/guides/backends/graph-setup.md",
-        # No min-cassette guard yet: the recordable count grows as GR-READ /
-        # GR-WRITE / GR-MUTATE implement the data-plane ops. Raise it once the
-        # first real op slice records (so a zero-selection run fails loudly).
-        "min_cassettes": 0,
+        # Lower-bound guard: the full conformance slice records ~118 cassettes
+        # (BK-262). A floor of 100 leaves headroom for skipped/capability-gated
+        # tests while still failing loudly if pytest silently selects zero
+        # (k-filter mismatch, stage gate, missing live opt-in).
+        "min_cassettes": 100,
     },
 }
 
@@ -327,10 +328,10 @@ def main() -> None:
                 "pytest likely selected zero tests — check the k-filter and --stage value"
             )
         if recorded == 0:
-            # A min_cassettes=0 backend (e.g. graph before GR-READ) makes the
-            # count guard vacuous, so make a zero-recording run LOUD rather than
-            # let main() print "All steps passed" as if it had recorded
-            # something. Raise min_cassettes once the first op slice lands.
+            # A backend left at min_cassettes=0 makes the count guard vacuous, so
+            # make a zero-recording run LOUD rather than let main() print "All
+            # steps passed" as if it had recorded something. Raise its
+            # min_cassettes once its first recordable op slice lands.
             print(
                 f"  WARNING: recorded 0 cassettes for {opts.backend!r} — nothing to replay. "
                 "Either no recordable ops exist yet, or the -k filter / --stage selected zero tests."
@@ -340,9 +341,12 @@ def main() -> None:
 
     _section("Step 4 — verify scrub (no real credentials in cassettes)")
     account: str = cfg["account_fn"]()
-    account_bytes = account.encode()
+    # Case-insensitive: Graph echoes the drive id (cid) upper-cased inside item
+    # ids / eTags / webUrls but lower-cased in URIs (BK-262), so a case-sensitive
+    # substring check missed the upper-cased copies. Lower-case both sides.
+    account_bytes = account.encode().lower()
     files = list(cassette_dir.glob("*.yaml"))
-    bad = [f.name for f in files if account_bytes in f.read_bytes()]
+    bad = [f.name for f in files if account_bytes in f.read_bytes().lower()]
     if bad:
         print("  LEAK detected in:")
         for name in bad:

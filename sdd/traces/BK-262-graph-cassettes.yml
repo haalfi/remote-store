@@ -1,0 +1,82 @@
+id: BK-262
+title: "Graph conformance cassettes: replay-able pre-signed URLs"
+trigger: >-
+  ID-127 GR-DONE recorded the Graph conformance suite live (green) but the
+  cassettes were never committed and record_cassettes.py kept graph
+  min_cassettes=0, so the cross-backend conformance spine skip-cleaned for
+  Graph in CI. The GR-035 scrub redacted @microsoft.graph.downloadUrl and the
+  upload-session uploadUrl to the bare string "REDACTED", which is not a URL —
+  on replay the backend reads it back and issues GET :///REDACTED, no cassette
+  matches, and the read/write slices fail.
+source_items:
+  - BK-262
+  - BK-260
+  - ID-127
+audience:
+  - infra.test
+discovery_followups:
+  - BK-283
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-262 (item)"
+        read_type: gate
+        extract: "Blocker is a redaction FORMAT bug not a security weakening: pre-signed URLs must redact to a VALID placeholder URL so record and replay agree; raise min_cassettes off 0; the example-test extension (former BK-260) is gated on the core landing first"
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "build_graph_vcr_config / before_record_request / before_record_response / _GRAPH_BODY_SCRUB"
+        read_type: gate
+        extract: "The scrub layer to change: downloadUrl/uploadUrl body scrub, the Location query-wipe, and the case-sensitive real_drive_id .replace() in URI + both bodies"
+      - file: tests/backends/conformance/conftest.py
+        section: "graph cassette-dir dispatch / build_graph_vcr_config dispatch / missing-cassette skip"
+        read_type: reference
+        extract: "Graph replay is already fully wired (cassette dir, vcr config, skip-on-missing) — no conftest change needed; the only gap is the cassettes + min_cassettes floor"
+      - file: scripts/record_cassettes.py
+        section: "_BACKENDS['graph'] / Step 4 scrub-verify"
+        read_type: gate
+        extract: "min_cassettes=0 makes the count guard vacuous (warns, never fails); Step-4 verify checks only the drive_id bytes, case-sensitively"
+  - id: implement
+    name: Implement scrub
+    steps:
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "GRAPH_PRESIGNED_PLACEHOLDER / _graph_is_presigned_host / before_record_request presigned-host rewrite"
+        read_type: reference
+        extract: "Core fix: redact every pre-signed-host URL (downloadUrl/uploadUrl/copy-move monitor) to one valid placeholder in BOTH the response body and the request URI. before_record_request runs on record AND replay, so the GET the backend re-issues from the scrubbed body normalises to the recorded placeholder and vcrpy matches"
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "_GRAPH_PII_BODY_SCRUB / case-insensitive _drive_id_re_str|bytes"
+        read_type: reference
+        extract: "First live recording leaked PII: the case-sensitive drive_id .replace() of the lower-cased env value missed the UPPER-cased cid Graph echoes inside item ids / eTags / webUrls, and createdBy/lastModifiedBy carry email + displayName + a siteId. Made the drive_id rewrite case-insensitive (all casings → one FAKE_DRIVE_ID so eTag self-comparisons still match) and added a key-whole identity/site scrub (email/displayName/userPrincipalName/loginName/siteId) — none read by the backend or asserted by conformance, and the load-bearing item 'name' field shares no key so survives"
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "_BACKENDS['graph'] min_cassettes / Step 4 case-insensitive"
+        read_type: reference
+        extract: "Raised min_cassettes 0 → 100 (full slice records ~118, headroom for capability-gated skips); lower-cased both sides of the Step-4 leak check so it would catch the upper-cased cid"
+  - id: tests
+    name: Unit tests
+    steps:
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "test_drive_id_rewrite_is_case_insensitive / test_identity_and_site_pii_redacted_from_body / test_*presigned* / test_downloadurl_body_value_replays_against_recorded_request"
+        read_type: verify
+        extract: "21 pass: case-variant cid maps to one fake id; email/displayName/siteId blanked while item 'name' survives; presigned-host URI → placeholder while API-host URI preserved; end-to-end body-value-replays-against-request proof"
+  - id: record
+    name: Record live
+    steps:
+      - file: scripts/record_cassettes.py
+        section: "RS_TEST_LIVE_GRAPH=1 hatch run record-graph"
+        read_type: verify
+        extract: "118 recorded; first live run leaked the cid in the copy/move Location-header path (caught by the now case-insensitive Step-4); after the pre-signed-Location collapse, Step-4 clean and Stage-1 replay 109 passed / 9 capability-skips / 0 missing-cassette"
+        outcome: ok
+      - file: tests/backends/cassettes/graph/
+        section: "git status / grep PII"
+        read_type: verify
+        extract: "Confirm email / siteId / both casings of the cid absent from the committed tree"
+        outcome: ok
+  - id: close
+    name: Close out
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "[Unreleased] — BK-262"
+        read_type: reference
+        extract: "Move BK-262 as [x]; infra.test → skip CHANGELOG; gen-backlogid then --check"
+        outcome: ok

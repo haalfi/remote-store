@@ -1,0 +1,413 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+    method: GET
+    uri: https://login.microsoftonline.com/consumers/v2.0/.well-known/openid-configuration
+  response:
+    body:
+      string: '{"token_endpoint":"https://login.microsoftonline.com/consumers/oauth2/v2.0/token","token_endpoint_auth_methods_supported":["client_secret_post","private_key_jwt","client_secret_basic","self_signed_tls_client_auth"],"jwks_uri":"https://login.microsoftonline.com/consumers/discovery/v2.0/keys","response_modes_supported":["query","fragment","form_post"],"subject_types_supported":["pairwise"],"id_token_signing_alg_values_supported":["RS256"],"response_types_supported":["code","id_token","code
+        id_token","id_token token"],"scopes_supported":["openid","profile","email","offline_access"],"issuer":"https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0","request_uri_parameter_supported":false,"userinfo_endpoint":"https://graph.microsoft.com/oidc/userinfo","authorization_endpoint":"https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize","device_authorization_endpoint":"https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode","http_logout_supported":true,"frontchannel_logout_supported":true,"end_session_endpoint":"https://login.microsoftonline.com/consumers/oauth2/v2.0/logout","claims_supported":["sub","iss","cloud_instance_name","cloud_instance_host_name","cloud_graph_host_name","msgraph_host","aud","exp","iat","auth_time","acr","nonce","preferred_username","name","tid","ver","at_hash","c_hash","email"],"kerberos_endpoint":"https://login.microsoftonline.com/consumers/kerberos","mtls_endpoint_aliases":{"token_endpoint":"https://mtlsauth.microsoft.com/consumers/oauth2/v2.0/token"},"tls_client_certificate_bound_access_tokens":true,"tenant_region_scope":null,"cloud_instance_name":"microsoftonline.com","cloud_graph_host_name":"graph.windows.net","msgraph_host":"graph.microsoft.com","rbac_url":"https://pas.windows.net"}'
+    headers:
+      Access-Control-Allow-Methods:
+      - GET, OPTIONS
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - max-age=86400, private
+      Content-Length:
+      - '1775'
+      Content-Security-Policy-Report-Only:
+      - object-src 'none'; base-uri 'self'; script-src 'self' 'nonce-tYR10B7YS40wWZdaOiAvfw'
+        'unsafe-inline' 'unsafe-eval' https://*.msauth.net https://*.msftauth.net
+        https://*.msftauthimages.net https://*.msauthimages.net https://*.msidentity.com
+        https://*.microsoftonline-p.com https://*.microsoftazuread-sso.com https://*.azureedge.net
+        https://*.outlook.com https://*.office.com https://*.office365.com https://*.microsoft.com
+        https://*.bing.com 'report-sample'; report-uri https://csp.microsoft.com/report/ESTS-UX-All
+      Content-Type:
+      - application/json; charset=utf-8
+      P3P:
+      - CP="DSP CUR OTPi IND OTRi ONL FIN"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      X-Content-Type-Options:
+      - nosniff
+      X-XSS-Protection:
+      - '0'
+      x-ms-ests-server:
+      - 2.1.24503.7 - WEULR1 ProdSlices
+      x-ms-request-id:
+      - 2774797a-797a-4453-a6fa-d5e0702ebd02
+      x-ms-srs:
+      - 1.P
+    status:
+      code: 200
+      message: OK
+- request:
+    body: data
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '4'
+      Content-Type:
+      - application/octet-stream
+      Host:
+      - graph.microsoft.com
+      User-Agent:
+      - azsdk-python-replay
+    method: PUT
+    uri: https://graph.microsoft.com/v1.0/drives/graphreplaydrive/root:/rs-conformance/mvps_src.txt:/content?%40microsoft.graph.conflictBehavior=fail
+  response:
+    body:
+      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/$entity","@microsoft.graph.downloadUrl":"https://graph-download.invalid/REDACTED","createdDateTime":"2026-06-10T05:12:05Z","eTag":"\"{340225BB-EAE4-4104-BB5F-DCCB742D9574},1\"","id":"graphreplaydrive!s340225bbeae44104bb5fdccb742d9574","lastModifiedDateTime":"2026-06-10T05:12:05Z","name":"mvps_src.txt","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!s340225bbeae44104bb5fdccb742d9574","cTag":"\"c:{340225BB-EAE4-4104-BB5F-DCCB742D9574},1\"","isAuthoritative":false,"size":4,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!se6763b5e14e74b31afc083d6cc8bd756","name":"rs-conformance","path":"/drives/graphreplaydrive/root:/rs-conformance","siteId":"REDACTED"},"file":{"mimeType":"text/plain","hashes":{"quickXorHash":"ZAgDHcIAAAAAAAAABAAAAAAAAAA="}},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:12:05Z","lastModifiedDateTime":"2026-06-10T05:12:05Z"}}'
+    headers:
+      Cache-Control:
+      - no-store, no-cache
+      Content-Type:
+      - application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false;charset=utf-8
+      OData-Version:
+      - '4.0'
+      SPLogId:
+      - eb211ca2-105d-d000-9cbc-67482449dd16
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      content-length:
+      - '2641'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - graph.microsoft.com
+      User-Agent:
+      - azsdk-python-replay
+    method: GET
+    uri: 'https://graph.microsoft.com/v1.0/drives/graphreplaydrive/root:/rs-conformance/mvps_src.txt:'
+  response:
+    body:
+      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/$entity","@microsoft.graph.downloadUrl":"https://graph-download.invalid/REDACTED","createdDateTime":"2026-06-10T05:12:05Z","eTag":"\"{340225BB-EAE4-4104-BB5F-DCCB742D9574},1\"","id":"graphreplaydrive!s340225bbeae44104bb5fdccb742d9574","lastModifiedDateTime":"2026-06-10T05:12:05Z","name":"mvps_src.txt","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!s340225bbeae44104bb5fdccb742d9574","cTag":"\"c:{340225BB-EAE4-4104-BB5F-DCCB742D9574},1\"","isAuthoritative":false,"size":4,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!se6763b5e14e74b31afc083d6cc8bd756","name":"rs-conformance","path":"/drives/graphreplaydrive/root:/rs-conformance","siteId":"REDACTED"},"file":{"mimeType":"text/plain","hashes":{"quickXorHash":"ZAgDHcIAAAAAAAAABAAAAAAAAAA="}},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:12:05Z","lastModifiedDateTime":"2026-06-10T05:12:05Z"}}'
+    headers:
+      Cache-Control:
+      - no-store, no-cache
+      Content-Type:
+      - application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false;charset=utf-8
+      OData-Version:
+      - '4.0'
+      SPLogId:
+      - eb211ca2-2090-d000-9cbc-6a86689d9dc2
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      content-length:
+      - '2641'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"parentReference":{"driveId":"graphreplaydrive","path":"/drives/graphreplaydrive/root:/rs-conformance"},"name":"mvps_dst.txt"}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '136'
+      Content-Type:
+      - application/json
+      Host:
+      - graph.microsoft.com
+      User-Agent:
+      - azsdk-python-replay
+    method: PATCH
+    uri: https://graph.microsoft.com/v1.0/drives/graphreplaydrive/root:/rs-conformance/mvps_src.txt:?%40microsoft.graph.conflictBehavior=fail
+  response:
+    body:
+      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/$entity","@microsoft.graph.downloadUrl":"https://graph-download.invalid/REDACTED","createdDateTime":"2026-06-10T05:12:05Z","eTag":"\"{340225BB-EAE4-4104-BB5F-DCCB742D9574},2\"","id":"graphreplaydrive!s340225bbeae44104bb5fdccb742d9574","lastModifiedDateTime":"2026-06-10T05:12:06Z","name":"mvps_dst.txt","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!s340225bbeae44104bb5fdccb742d9574","cTag":"\"c:{340225BB-EAE4-4104-BB5F-DCCB742D9574},1\"","isAuthoritative":false,"size":4,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!se6763b5e14e74b31afc083d6cc8bd756","name":"rs-conformance","path":"/drives/graphreplaydrive/root:/rs-conformance","siteId":"REDACTED"},"file":{"mimeType":"text/plain","hashes":{"quickXorHash":"ZAgDHcIAAAAAAAAABAAAAAAAAAA="}},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:12:05Z","lastModifiedDateTime":"2026-06-10T05:12:06Z"}}'
+    headers:
+      Cache-Control:
+      - no-store, no-cache
+      Content-Type:
+      - application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false;charset=utf-8
+      OData-Version:
+      - '4.0'
+      SPLogId:
+      - eb211ca2-60bd-d000-9cbc-6d6154a10765
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      content-length:
+      - '2641'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - graph.microsoft.com
+      User-Agent:
+      - azsdk-python-replay
+    method: GET
+    uri: 'https://graph.microsoft.com/v1.0/drives/graphreplaydrive/root:/rs-conformance/mvps_src.txt:'
+  response:
+    body:
+      string: '{"error":{"code":"itemNotFound","message":"The resource could not be
+        found.","innerError":{"date":"2026-06-10T05:12:06","request-id":"46f1d8ad-085e-4f7c-92a5-82e133bafdac","client-request-id":"46f1d8ad-085e-4f7c-92a5-82e133bafdac"}}}'
+    headers:
+      Cache-Control:
+      - no-store, no-cache
+      Content-Type:
+      - application/json
+      SPLogId:
+      - eb211ca2-30f5-d000-9cbc-6ea85bee4d4c
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      content-length:
+      - '233'
+    status:
+      code: 404
+      message: Not Found
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - graph.microsoft.com
+      User-Agent:
+      - azsdk-python-replay
+    method: GET
+    uri: 'https://graph.microsoft.com/v1.0/drives/graphreplaydrive/root:/rs-conformance/mvps_dst.txt:'
+  response:
+    body:
+      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/$entity","@microsoft.graph.downloadUrl":"https://graph-download.invalid/REDACTED","createdDateTime":"2026-06-10T05:12:05Z","eTag":"\"{340225BB-EAE4-4104-BB5F-DCCB742D9574},2\"","id":"graphreplaydrive!s340225bbeae44104bb5fdccb742d9574","lastModifiedDateTime":"2026-06-10T05:12:06Z","name":"mvps_dst.txt","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!s340225bbeae44104bb5fdccb742d9574","cTag":"\"c:{340225BB-EAE4-4104-BB5F-DCCB742D9574},1\"","isAuthoritative":false,"size":4,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!se6763b5e14e74b31afc083d6cc8bd756","name":"rs-conformance","path":"/drives/graphreplaydrive/root:/rs-conformance","siteId":"REDACTED"},"file":{"mimeType":"text/plain","hashes":{"quickXorHash":"ZAgDHcIAAAAAAAAABAAAAAAAAAA="}},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:12:05Z","lastModifiedDateTime":"2026-06-10T05:12:06Z"}}'
+    headers:
+      Cache-Control:
+      - no-store, no-cache
+      Content-Type:
+      - application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false;charset=utf-8
+      OData-Version:
+      - '4.0'
+      SPLogId:
+      - ec211ca2-5025-d000-9cbc-6cad20d592fb
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      content-length:
+      - '2641'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - my.microsoftpersonalcontent.com
+      User-Agent:
+      - azsdk-python-replay
+    method: GET
+    uri: https://graph-download.invalid/REDACTED
+  response:
+    body:
+      string: data
+    headers:
+      Accept-Ranges:
+      - bytes
+      Alt-Svc:
+      - h3=":443";ma=86400
+      CTag:
+      - '{340225BB-EAE4-4104-BB5F-DCCB742D9574},2,1'
+      Cache-Control:
+      - private
+      Content-Disposition:
+      - attachment;filename*=utf-8''mvps%5Fdst%2Etxt;filename="mvps_dst.txt"
+      Content-Security-Policy:
+      - frame-ancestors 'self' teams.microsoft.com *.teams.microsoft.com *.skype.com
+        *.teams.microsoft.us local.teams.office.com teams.cloud.microsoft teams.live.com
+        *.teams.live.com *.office365.com goals.cloud.microsoft *.powerapps.com *.powerbi.com
+        *.yammer.com engage.cloud.microsoft word.cloud.microsoft excel.cloud.microsoft
+        powerpoint.cloud.microsoft *.officeapps.live.com *.office.com *.microsoft365.com
+        m365.cloud.microsoft *.cloud.microsoft *.stream.azure-test.net *.dynamics.com
+        *.microsoft.com onedrive.live.com *.onedrive.live.com teams.microsoft.com
+        *.teams.microsoft.com securebroker.sharepointonline.com;
+      Content-Type:
+      - text/plain
+      ETag:
+      - '"{340225BB-EAE4-4104-BB5F-DCCB742D9574},2"'
+      IsOCDI:
+      - '0'
+      MS-CV:
+      - ohwh7D/AANCcvGvTKwZWbg.0
+      MicrosoftSharePointTeamServices:
+      - 16.0.0.27320
+      P3P:
+      - CP="ALL IND DSP COR ADM CONo CUR CUSo IVAo IVDo PSA PSD TAI TELo OUR SAMo
+        CNT COM INT NAV ONL PHY PRE PUR UNI"
+      SPLogId:
+      - ec211ca2-c03f-d000-9cbc-6bd32b06566e
+      SPRequestDuration:
+      - '64'
+      SPRequestGuid:
+      - ec211ca2-c03f-d000-9cbc-6bd32b06566e
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-1DSCollectorUrl:
+      - https://mobile.events.data.microsoft.com/OneCollector/1.0/
+      X-AriaCollectorURL:
+      - https://browser.pipe.aria.microsoft.com/Collector/3.0/
+      X-AspNet-Version:
+      - 4.0.30319
+      X-Cache:
+      - CONFIG_NOCACHE
+      X-Content-Type-Options:
+      - nosniff
+      X-DataBoundary:
+      - NONE
+      X-Download-Options:
+      - noopen
+      X-FRAME-OPTIONS:
+      - SAMEORIGIN
+      X-MS-InvokeApp:
+      - 1; RequireReadOnly
+      X-MSEdge-Ref:
+      - 'Ref A: B8D2D907D86C4008BD22708708145FA7 Ref B: LON21EDGE2212 Ref C: 2026-06-10T05:12:07Z'
+      X-NetworkStatistics:
+      - 0,65535,0,114,674779,282139,282139,112302
+      X-Powered-By:
+      - ASP.NET
+      X-SharePointHealthScore:
+      - '3'
+      content-length:
+      - '4'
+      docID:
+      - my.microsoftpersonalcontent.com_52b575dd-9200-466f-a853-18401ad957cb_340225bb-eae4-4104-bb5f-dccb742d9574
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - graph.microsoft.com
+      User-Agent:
+      - azsdk-python-replay
+    method: GET
+    uri: 'https://graph.microsoft.com/v1.0/drives/graphreplaydrive/root:/rs-conformance:'
+  response:
+    body:
+      string: '{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#drives(''graphreplaydrive'')/root/$entity","createdDateTime":"2026-06-10T05:12:04Z","eTag":"\"{E6763B5E-14E7-4B31-AFC0-83D6CC8BD756},1\"","id":"graphreplaydrive!se6763b5e14e74b31afc083d6cc8bd756","lastModifiedDateTime":"2026-06-10T05:12:04Z","name":"rs-conformance","webUrl":"https://onedrive.live.com?cid=graphreplaydrive&id=graphreplaydrive!se6763b5e14e74b31afc083d6cc8bd756","cTag":"\"c:{E6763B5E-14E7-4B31-AFC0-83D6CC8BD756},0\"","isAuthoritative":false,"size":0,"createdBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"lastModifiedBy":{"application":{"id":"4a930d6e-6194-4149-8dd8-183f99689089","displayName":"REDACTED"},"user":{"email":"REDACTED","id":"graphreplaydrive","displayName":"REDACTED"}},"parentReference":{"driveType":"personal","driveId":"graphreplaydrive","id":"graphreplaydrive!sea8cc6beffdb43d7976fbc7da445c639","name":"Documents","path":"/drives/graphreplaydrive/root:","siteId":"REDACTED"},"fileSystemInfo":{"createdDateTime":"2026-06-10T05:12:04Z","lastModifiedDateTime":"2026-06-10T05:12:04Z"},"folder":{"childCount":1,"view":{"sortBy":"name","sortOrder":"ascending","viewType":"thumbnails"}}}'
+    headers:
+      Cache-Control:
+      - no-store, no-cache
+      Content-Type:
+      - application/json;odata.metadata=minimal;odata.streaming=true;IEEE754Compatible=false;charset=utf-8
+      OData-Version:
+      - '4.0'
+      SPLogId:
+      - ec211ca2-a071-d000-9cbc-64301cccccef
+      Strict-Transport-Security:
+      - max-age=31536000
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      content-length:
+      - '1529'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - graph.microsoft.com
+      User-Agent:
+      - azsdk-python-replay
+    method: DELETE
+    uri: 'https://graph.microsoft.com/v1.0/drives/graphreplaydrive/root:/rs-conformance:'
+  response:
+    body:
+      string: ''
+    headers:
+      Cache-Control:
+      - no-store, no-cache
+      SPLogId:
+      - ec211ca2-408b-d000-9cbc-664568fa3069
+      Strict-Transport-Security:
+      - max-age=31536000
+    status:
+      code: 204
+      message: No Content
+version: 1

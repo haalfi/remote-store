@@ -158,7 +158,11 @@ class TestMainAsyncOnlyBackend:
         runs: list[tuple[str, ...]] = []
         monkeypatch.setattr(rc, "_run", lambda *args: runs.append(args))
         graph_cfg = dict(rc._BACKENDS["graph"])
-        graph_cfg["cassette_dir"] = tmp_path  # empty → min_cassettes=0 passes, scrub-verify clean
+        graph_cfg["cassette_dir"] = tmp_path  # empty dir → scrub-verify clean
+        # _run is mocked, so no cassettes are written; pin the floor to 0 here so
+        # this test exercises the Step-2-skip path independent of the production
+        # min_cassettes value (which the count-guard test owns).
+        graph_cfg["min_cassettes"] = 0
         monkeypatch.setitem(rc._BACKENDS, "graph", graph_cfg)
 
         rc.main()
@@ -167,6 +171,27 @@ class TestMainAsyncOnlyBackend:
         # Async record (Step 3) + replay smoke (Step 5) only — no sync record (Step 2).
         assert k_values == ["graph_live", "graph_replay"]
         assert all("not async" not in k for k in k_values)
+
+    def test_count_guard_fails_when_fewer_than_min_recorded(
+        self, rc, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """A non-zero ``min_cassettes`` floor makes a zero-selection record run
+        fail loudly (audit-016 H2): with ``_run`` mocked nothing is written, so the
+        empty cassette dir falls below the floor and ``main()`` exits non-zero
+        rather than printing "All steps passed". Uses its own floor so the guard
+        mechanism is tested independent of the production graph value."""
+        monkeypatch.setattr(sys, "argv", ["record_cassettes.py", "--backend", "graph"])
+        monkeypatch.setenv("GRAPH_DRIVE_ID", "b!drive-xyz")
+        monkeypatch.setattr(rc, "_preflight_env", lambda cfg, *, verify_only: None)
+        monkeypatch.setattr(rc, "_run", lambda *args: None)
+        graph_cfg = dict(rc._BACKENDS["graph"])
+        graph_cfg["cassette_dir"] = tmp_path  # empty → 0 recorded
+        graph_cfg["min_cassettes"] = 5
+        monkeypatch.setitem(rc._BACKENDS, "graph", graph_cfg)
+
+        with pytest.raises(SystemExit) as exc:
+            rc.main()
+        assert exc.value.code == 1
 
 
 class TestPreflightEnvGuard:
