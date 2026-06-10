@@ -312,41 +312,10 @@ failure (#763) reaching the maintainer by email only. `drift-guard` is the prove
 pattern (scheduled finding → rolling GitHub issue → triage skill); these items
 generalise it to the guards that lack it.
 **Order:** the handbook + principle (BK-275, the SSoT the others point at) shipped
-as [`sdd/CI-OPERATIONS.md`](CI-OPERATIONS.md); remaining: mutation issue surface
-(BK-273, closes the #763 class) → dependabot approval safety (BK-274). The
-adversarial section of audit-018 challenges each — read it before picking one up;
-in particular the disposition below may narrow.
-
-- [ ] **BK-273 — `mutation` testing produces no durable TODO; failures reach the maintainer by email only**
-  spec: — · effort: M · audience: library.maintainer, infra.test
-  `mutation.yml` lets its job fail, so the only signals are a red X in the Actions
-  tab and GitHub's default actor email — that is how the weekend run (#763, an
-  *implementation* failure, not even a surviving mutant) surfaced. No issue, no
-  dedup, no triage skill. Contrast `drift-guard`: it never fails the job, writes
-  structured JSON, and a `report` job (`drift_report.py`) reconciles a single
-  rolling issue. Give mutation the same surface: redirect the `summary` job
-  (`mutation.yml:188-218`, which already aggregates per-scope outcomes) into a
-  `scripts/mutation_report.py` modeled on `drift_report.py` that reconciles a
-  rolling `[mutation]` issue, and add a `.claude/skills/mutation/SKILL.md`
-  mirroring `/drift`.
-  **The body must distinguish two outcomes** (drift has one axis; mutation has
-  two): a **surviving mutant** (test-coverage gap, advisory) vs a
-  **harness/implementation failure** (the run itself broke — #763). Note the
-  `summary` job today aggregates only `job.status` (success/failure/skipped), which
-  cannot tell those two apart, so the reconciler must derive the distinction from
-  the per-scope reports / exit semantics — this is closer to A5's "more code than
-  it looks" than to a pure redirect.
-  **Decide first (audit-018 C-DECISION / A3):** `drift-guard` chose
-  never-red-issue-only; mutation should likely diverge — *surviving mutant → issue
-  only, run stays green*; *harness/impl failure → issue AND red run*. The choice
-  shapes whether the `mutate` job swallows or propagates its exit code. A3 raises
-  a prior question: if surviving mutants are rarely actioned in practice, drop the
-  issue for them entirely (report artifact only) and keep just the loud-fail on
-  harness breaks — check the base rate across recent Saturday runs before building
-  the full reconciler. The harness/impl-failure half is worth it unconditionally.
-  If `mutation_report.py` is built, lift `drift-guard`'s single-writer concurrency
-  guard (`drift-guard.yml:37-44`) deliberately, not approximately (audit-018 A5).
-  Audit-018 H1 / L2.
+as [`sdd/CI-OPERATIONS.md`](CI-OPERATIONS.md); the mutation issue surface (BK-273)
+shipped next, closing the #763 class. Remaining: dependabot approval safety
+(BK-274). The adversarial section of audit-018 challenges it — read it before
+picking it up; in particular the disposition below may narrow.
 
 - [ ] **BK-274 — Dependabot approval is the only gate before auto-merge to `master`, with no codified criteria**
   spec: — · effort: S · audience: library.maintainer

@@ -43,7 +43,7 @@ workflow is not named here.
 | Guard | When | Finding shows up in | How to act |
 |---|---|---|---|
 | `drift-guard.yml` | Mon 07:00 UTC | rolling `[drift-guard]` Issue | `/drift` skill |
-| `mutation.yml` | Sat 05:00 UTC | Actions run summary + actor email | runbook below |
+| `mutation.yml` | Sat 05:00 UTC | rolling `[mutation]` Issue (harness failures) | `/mutation` skill |
 | dependabot + `dependabot-auto-merge.yml` | Mon (weekly) | update PR + its CI status | per-ecosystem runbook below |
 | `codeql.yml` | push / PR + Mon 06:00 UTC | Security tab alerts | runbook below (exception) |
 
@@ -74,22 +74,32 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 ### `mutation.yml` — mutation testing
 
 - **What it does:** runs mutation testing across the scopes defined in
-  `scripts/mutate_scopes.py`; a `summary` job tabulates each scope's outcome.
+  `scripts/mutate_scopes.py`. Every `mutate-<scope>` leg records a per-scope
+  outcome JSON (`job.status` + the pytest-gremlins report counts), and the
+  `summary` job classifies them via `scripts/mutation_report.py` and
+  reconciles the rolling issue.
 - **When:** Saturday 05:00 UTC, plus manual `workflow_dispatch` (optionally for a
   single scope).
-- **Where the finding shows up:** today, the **Actions-tab run summary and
-  GitHub's actor email only** — there is no rolling issue yet. This is the open
-  Rule 1 gap, tracked by the `mutation` item in [`sdd/BACKLOG.md`](BACKLOG.md);
-  until it lands, scan the Saturday run even on a quiet inbox.
-- **How to act:** open the run and classify which of two outcomes occurred — they
-  need different responses:
-  - **Surviving mutant** — a genuine test-coverage gap (a mutated line no test
-    caught). Advisory: fold it into a coverage-hardening pass; not urgent, since
-    strict coverage gates already run in CI.
-  - **Harness / implementation failure** — the run itself broke (an import,
-    config, or tooling error, not a mutant; this is what the weekend break was).
-    Treat it as a regression: fix the harness or code so the weekly run is green
-    again.
+- **Where the finding shows up:** depends on which of the two outcomes
+  occurred — they are deliberately split:
+  - **Harness / implementation failure** (the run itself broke: an import,
+    config, or tooling error, a baseline test failure, a leg that recorded no
+    outcome): the run is **red** AND the single **rolling `[mutation]` GitHub
+    Issue** is opened or updated. This diverges from drift-guard's never-red
+    model on purpose: a broken weekly guard is a real regression worth both a
+    red X and a durable TODO.
+  - **Surviving mutant** (a mutated line no test caught): **advisory only** —
+    the run stays green and no issue is opened. Counts appear in the run-summary
+    table and the per-scope HTML report artifacts. Decided on run-history
+    evidence: the mutation runner never fails on survivors, strict coverage
+    gates already run in CI, and survivors were not actioned as standalone
+    TODOs in practice.
+- **How to act:** run the **`/mutation` skill**. It reads the rolling issue,
+  classifies each failing scope from the linked run's logs (baseline test
+  failure vs harness/tooling break vs setup death), and fixes the regression
+  on a pushed branch. Surviving mutants are noted for a coverage-hardening
+  pass, never patched ad hoc. The issue auto-closes on the next healthy full
+  run; a single-scope dispatch never closes it.
 
 ### dependabot + `dependabot-auto-merge.yml` — dependency update PRs
 

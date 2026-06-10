@@ -1,5 +1,24 @@
 name: Mutation Testing
 
+# BK-273: weekly mutation testing across the scopes in scripts/mutate_scopes.py.
+# Mutation has two outcomes and they are deliberately split (audit-018
+# C-DECISION / A3, decided on run-history evidence):
+#  - Harness / implementation failure (the run itself broke): the mutate leg
+#    stays red AND the summary job opens/updates the rolling "[mutation]"
+#    issue via scripts/mutation_report.py. The issue is the durable TODO;
+#    a red X and the actor email alone are not.
+#  - Surviving mutants (test-coverage gaps): advisory only. pytest-gremlins
+#    never fails the run on survivors; counts land in the run-summary table
+#    and the per-scope HTML artifacts, and never open the issue.
+#
+# Explicit non-goals:
+#  - This workflow NEVER gates merges; it is a scheduled maintenance guard.
+#  - It NEVER fails a run because mutants survived.
+#
+# This is one of the scheduled/automated CI guards; the cross-guard inventory
+# and the durable-TODO principle live in sdd/CI-OPERATIONS.md. Triage with
+# the /mutation skill.
+
 on:
   schedule:
     - cron: "0 5 * * 6"  # Every Saturday at 05:00 UTC
@@ -10,6 +29,20 @@ on:
         required: false
         default: "all"
         type: string
+
+permissions:
+  contents: read
+  issues: write
+
+# Single-writer guarantee on the rolling issue, lifted deliberately from
+# drift-guard.yml (audit-018 A5): a manual workflow_dispatch launched while
+# the scheduled Saturday run is still in a long mutate leg would otherwise
+# race the summary job and last-writer-wins on `gh issue edit` / `close`.
+# Queue dispatches behind a running schedule rather than cancelling, so the
+# schedule's full matrix always completes.
+concurrency:
+  group: mutation
+  cancel-in-progress: false
 
 env:
   UV_SYSTEM_PYTHON: 1
@@ -153,9 +186,13 @@ jobs:
       # --- Run mutation testing ---
       # Invoke the manifest-driven scope runner directly. Report flags
       # are injected via PYTEST_ADDOPTS (pytest picks them up automatically).
+      # `json` (written to coverage/gremlins/gremlins.json) feeds the
+      # outcome record below: job.status alone cannot see survivors, because
+      # pytest-gremlins exits 0 on them. A non-zero exit here is therefore
+      # always a harness/impl failure — the leg stays red by design.
       - name: Run mutate ${{ matrix.scope }}
         env:
-          PYTEST_ADDOPTS: "--no-cov -W ignore::UserWarning:pytest_gremlins.plugin --gremlin-report=html --gremlins-html-dir=mutation-report"
+          PYTEST_ADDOPTS: "--no-cov -W ignore::UserWarning:pytest_gremlins.plugin --gremlin-report=html,json --gremlins-html-dir=mutation-report"
         run: python scripts/run_mutate.py ${{ matrix.scope }}
 
       # --- Upload HTML report ---
@@ -167,12 +204,19 @@ jobs:
           path: mutation-report/
           retention-days: 30
 
-      # --- Record scope outcome for summary job ---
+      # --- Record scope outcome for the summary job ---
+      # job.status + the gremlins JSON report, combined into one outcome
+      # JSON per scope (a missing/corrupt report records counts: null,
+      # which reconcile classifies as a harness failure).
       - name: Record outcome
         if: always()
+        env:
+          SCOPE: ${{ matrix.scope }}
         run: |
-          mkdir -p outcome
-          echo "${{ job.status }}" > outcome/${{ matrix.scope }}
+          python scripts/mutation_report.py record "$SCOPE" \
+            --job-status "${{ job.status }}" \
+            --gremlins-json coverage/gremlins/gremlins.json \
+            --out "outcome/$SCOPE.json"
 
       - name: Upload outcome
         if: always()
@@ -200,6 +244,10 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
       - name: Download all outcomes
         uses: actions/download-artifact@v8
         with:
@@ -207,21 +255,27 @@ jobs:
           path: outcomes
           merge-multiple: true
 
-      - name: Aggregate results
+      # Classify every scope from its outcome JSON, write the per-scope
+      # verdict table to the run summary, then reconcile the rolling issue:
+      #  - any harness/impl failure -> create/update the rolling issue (the
+      #    mutate leg is already red; the issue is the durable TODO).
+      #  - surviving mutants alone -> advisory; no issue.
+      #  - all clear on a full run -> comment "healthy" and close the issue.
+      #    A partial (single-scope) dispatch never closes it.
+      # ALL_SCOPES empty means setup died before listing scopes — reconcile
+      # treats that as a harness failure too (the no-pytest setup break
+      # surfaced exactly that way).
+      - name: Reconcile rolling mutation issue
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           ALL_SCOPES: ${{ needs.setup.outputs.scopes }}
+          FULL_RUN: ${{ github.event_name == 'schedule' || github.event.inputs.scope == 'all' || github.event.inputs.scope == '' }}
         run: |
-          echo "## Mutation Testing Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Scope | Result |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|-------|--------|" >> "$GITHUB_STEP_SUMMARY"
-          for scope in $(echo "$ALL_SCOPES" | python -c "import json,sys; print(' '.join(json.load(sys.stdin)))"); do
-            if [ -f "outcomes/${scope}" ]; then
-              result=$(cat "outcomes/${scope}")
-            else
-              result="skipped"
-            fi
-            echo "| ${scope} | ${result} |" >> "$GITHUB_STEP_SUMMARY"
-          done
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Download individual HTML reports from the **Artifacts** section above." >> "$GITHUB_STEP_SUMMARY"
+          python scripts/mutation_report.py reconcile outcomes \
+            --repo "$REPO" \
+            --run-url "$RUN_URL" \
+            --title "[mutation] Weekly mutation run health" \
+            --scopes "$ALL_SCOPES" \
+            --full-run "$FULL_RUN"

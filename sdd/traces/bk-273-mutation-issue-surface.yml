@@ -1,0 +1,108 @@
+id: BK-273
+title: "`mutation` testing produces no durable TODO; failures reach the maintainer by email only"
+trigger: >
+  mutation.yml let its jobs fail with no durable surface: the only signals
+  were a red X in the Actions tab and GitHub's default actor email — exactly
+  how the weekend implementation failure (#763) surfaced. No rolling issue,
+  no dedup, no triage skill, and the summary job aggregated only job.status,
+  which cannot tell a surviving mutant from a harness break.
+source_items:
+  - BK-273
+audience:
+  - library.maintainer
+  - infra.ci
+co_shipped_items: []
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples: []
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/audits/audit-018-ci-operations.md
+        section: "H1, L2, C-DECISION, A3, A5"
+        read_type: gate
+        extract: "the two-outcome model to resolve before coding; A3's base-rate question; A5's single-writer warning"
+      - file: sdd/BACKLOG.md
+        section: "CI Operations / BK-273 (item)"
+        read_type: gate
+        extract: "scope: mutation_report.py reconciler + /mutation skill; decide C-DECISION/A3 first"
+      - file: sdd/CI-OPERATIONS.md
+        section: "mutation.yml runbook + inventory row"
+        read_type: gate
+        extract: "the open Rule 1 gap this item closes; the row to flip when it lands"
+  - id: classify
+    name: Classify (A3 base-rate evidence)
+    steps:
+      - file: .github/workflows/mutation.yml
+        section: "(full)"
+        read_type: gate
+        extract: "summary job aggregates job.status only; mutate leg propagates exit code; no permissions/concurrency blocks"
+      - file: scripts/run_mutate.py
+        section: "(full)"
+        read_type: reference
+        extract: "subprocess.run + returncode passthrough — leg redness is pytest's exit code"
+      - file: "tests/backends/fixtures/registry.py"
+        section: "(via GitHub run logs, not local)"
+        read_type: reference
+        extract: "run history 2026-04..06: all three scheduled failures were harness breaks (timeout cascade/exit 4, setup ModuleNotFoundError, INTERNALERROR); sampled green scopes 100% zapped, 0 survived; pytest-gremlins has no fail-on-survivor mechanism, so survivors never turn a run red and were never actioned"
+  - id: design
+    name: Design
+    steps:
+      - file: .github/workflows/drift-guard.yml
+        section: "permissions + concurrency + report job"
+        read_type: gate
+        extract: "lift the single-writer concurrency guard and report-job shape deliberately (A5)"
+      - file: scripts/drift_report.py
+        section: "(full)"
+        read_type: gate
+        extract: "rolling-issue reconcile pattern: _gh helper, _find_open_issue by title, create/edit/comment+close"
+      - file: .claude/skills/drift/SKILL.md
+        section: "(full)"
+        read_type: reference
+        extract: "skill shape: authority pointers, core rule, numbered steps, never close the issue by hand"
+  - id: tests
+    name: Tests (failing first)
+    steps:
+      - file: tests/scripts/test_check_ci_inventory.py
+        section: "importlib loader + hermetic tmp_path fixtures"
+        read_type: reference
+        extract: "spec-mark-free check-script test pattern (BK-273 has no spec)"
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "assertion depth; monkeypatch function replacement over bare MagicMock"
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/mutation_report.py
+        section: "(full)"
+        read_type: reference
+        extract: "authored: record (per-scope outcome JSON from job.status + gremlins JSON report) + reconcile (classify, rolling issue, step-summary table)"
+      - file: .github/workflows/mutation.yml
+        section: "(full)"
+        read_type: reference
+        extract: "header, permissions, concurrency, --gremlin-report=html,json, record step, summary job reconciles"
+      - file: .claude/skills/mutation/SKILL.md
+        section: "(full)"
+        read_type: reference
+        extract: "authored /mutation triage skill mirroring /drift"
+  - id: docs
+    name: Docs / pointers
+    steps:
+      - file: sdd/CI-OPERATIONS.md
+        section: "Inventory at a glance + mutation.yml runbook"
+        read_type: gate
+        extract: "flip the row to rolling issue + /mutation; record the deliberate divergence from drift's never-red model"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Backlog item touched"
+        read_type: verify
+        extract: "trace ships in same PR; audience has no user.* entry, so no CHANGELOG"
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased / BK-273 (item)"
+        read_type: verify
+        extract: "archive BK-273 [x] with the A3 disposition recorded; run gen-backlogid"
