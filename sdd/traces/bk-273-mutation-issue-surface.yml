@@ -15,7 +15,7 @@ co_shipped_items: []
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples: []
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -43,10 +43,10 @@ phases:
         section: "(full)"
         read_type: reference
         extract: "subprocess.run + returncode passthrough — leg redness is pytest's exit code"
-      - file: "tests/backends/fixtures/registry.py"
-        section: "(via GitHub run logs, not local)"
+      - file: .github/workflows/mutation.yml
+        section: "(run history via GitHub Actions logs, 2026-04..06)"
         read_type: reference
-        extract: "run history 2026-04..06: all three scheduled failures were harness breaks (timeout cascade/exit 4, setup ModuleNotFoundError, INTERNALERROR); sampled green scopes 100% zapped, 0 survived; pytest-gremlins has no fail-on-survivor mechanism, so survivors never turn a run red and were never actioned"
+        extract: "run history: all three scheduled failures were harness breaks (timeout cascade/exit 4, setup ModuleNotFoundError, INTERNALERROR); sampled green scopes 100% zapped, 0 survived; pytest-gremlins has no fail-on-survivor mechanism, so survivors never turn a run red and were never actioned"
   - id: design
     name: Design
     steps:

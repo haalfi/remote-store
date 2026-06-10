@@ -209,12 +209,29 @@ jobs:
           path: mutation-report/
           retention-days: 30
 
+      # --- Per-scope job summary ---
+      - name: Write job summary
+        if: always()
+        run: |
+          echo "## Mutation Testing: \`${{ matrix.scope }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f mutation-report/index.html ]; then
+            echo "HTML report uploaded as artifact **mutation-report-${{ matrix.scope }}**." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No HTML report generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       # --- Record scope outcome for the summary job ---
       # job.status + the gremlins JSON report, combined into one outcome
       # JSON per scope. A missing/corrupt report records counts: null, which
       # reconcile classifies as a harness failure — and when the leg was
       # otherwise green, record exits non-zero so the leg goes red too
       # (the issue must never fire on an apparently green run).
+      #
+      # ORDERING CONSTRAINT: these two steps must stay the job's final steps.
+      # job.status is a snapshot taken when Record runs, not the job's final
+      # conclusion; a failure-capable step after the upload would leave a red
+      # leg whose recorded outcome says success, and the issue would not fire.
       - name: Record outcome
         if: always()
         env:
@@ -232,18 +249,6 @@ jobs:
           name: mutation-outcome-${{ matrix.scope }}
           path: outcome/
           retention-days: 1
-
-      # --- Per-scope job summary ---
-      - name: Write job summary
-        if: always()
-        run: |
-          echo "## Mutation Testing: \`${{ matrix.scope }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          if [ -f mutation-report/index.html ]; then
-            echo "HTML report uploaded as artifact **mutation-report-${{ matrix.scope }}**." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No HTML report generated." >> "$GITHUB_STEP_SUMMARY"
-          fi
 
   summary:
     name: Mutation Summary
