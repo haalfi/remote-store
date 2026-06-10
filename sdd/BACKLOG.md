@@ -91,69 +91,24 @@ and the highest ID already in this file, then take the next integer. Run
 
 ID-127 (Microsoft Graph / OneDrive / SharePoint) follow-ups, in execution order;
 full findings in [audit-016](audits/audit-016-graph-backend-review.md).
-**Order:** load-bearing CI coverage (BK-262) → cheap spec/doc fixes (BK-264/265) →
-correctness + tests (BK-266/267) → blocked or hygiene tail (BK-259/261/268). Each
-item's own rationale lives in its body. (Security item BK-263 — the upload-session
-credential leak — shipped first; see BACKLOG-DONE.md.)
+**Order:** cheap spec/doc fixes (BK-264/265) → correctness + tests (BK-266/267) →
+blocked or hygiene tail (BK-259/261/268/283). Each item's own rationale lives in
+its body. (Security item BK-263 — the upload-session credential leak — and the
+load-bearing CI-coverage item BK-262 — replay-able cassettes — shipped first; see
+BACKLOG-DONE.md.)
 
-- [ ] **BK-262 — Graph conformance cassettes: replay-able pre-signed URLs**
-  spec: GR-015, GR-019 · effort: M · audience: infra.test
-  ID-127 GR-DONE recorded the Graph conformance suite live (green, 109/0/9) but
-  the cassettes are **not committed**, and `record_cassettes.py` keeps
-  `min_cassettes=0` for graph (no committed cassette under
-  `tests/backends/cassettes/graph/`). Replaying reads/writes fails because the
-  GR-035 scrub redacts `@microsoft.graph.downloadUrl` (read) and the upload-session
-  `uploadUrl` (write) to the bare string `"REDACTED"`, which is not a URL the
-  backend can `GET`/`PUT` on replay (it issues `GET :///REDACTED` → no cassette
-  match; the read conformance slices write-then-read, so they hit it too). The
-  token also rides the request *query* on those pre-signed hosts, so a naive
-  host+path+query match would either leak the token (if kept) or fail to match (if
-  filtered asymmetrically between record and replay). The GR-FOUNDATION streaming
-  proof never exercised this because it recorded and replayed the **same** URL.
-
-  **Solution sketch (decide when picked up):** redact pre-signed URLs (downloadUrl
-  / uploadUrl / `Location`) to a **valid placeholder URL** (e.g.
-  `https://graph-download.invalid/REDACTED`) — or, equivalently, wipe the *query
-  only* (preserve host+path, mirroring the existing `Location`-header scrub) via a
-  `before_record_request` that normalises the query to empty on the
-  non-`graph.microsoft.com` pre-signed hosts (so record and replay agree) and/or a
-  custom `match_on` that ignores the query for those hosts — consistently in
-  response bodies, the `Location` header, and the recorded pre-signed-host
-  **request** URIs, so `graph_replay` matches the recorded (rewritten) request:
-  the same full redaction, just replay-able. Then re-record, validate Stage-1
-  replay, raise `scripts/record_cassettes.py` graph `min_cassettes` off `0` (see
-  the Audit-016 note below), move the slices off the missing-cassette skip, and
-  commit the cassettes so the cross-backend conformance spine runs for Graph in CI
-  (today it skips-clean). Watch for vcr replay-ordering on multiple same-placeholder
-  `GET`s within one cassette. Prerequisite scrub infra (vcr-mark hook extended to
-  `graph_live`, request-body `drive_id` scrub, per-test `base_path` uuid scrub,
-  `graph_replay` `base_path`) already landed in the ID-127 GR-DONE PR. Until then
-  the live device-code probe (`tmp/validate_graph_*_live.py`) is the Stage-3
-  reality-check (the GR-TRANSFER precedent). Touches
-  `tests/backends/fixtures/_cassettes.py`,
-  `tests/backends/conformance/conftest.py`, `scripts/record_cassettes.py`, and the
-  recorded cassette tree. Discovered in ID-127 GR-WRITE; re-confirmed in GR-DONE.
-  (Consolidates the former BK-260, retired into this item per PR #770 review.)
-
-  **Extension (example tests, ID-127 GR-DOCS-E2E review, PR #764):** the same
-  recorded cassettes could drive the env-gated `examples/backends/graph_backend.py`
-  snippet, which today only runs under live credentials (and is excluded from the
-  `run_examples.py` CI sweep entirely). Once the pre-signed-URL replay above is
-  solved, a replayed variant could exercise the example in CI without creds —
-  same blocker, second beneficiary. Gated on the solution sketch landing first.
-
-  **Audit-016 (H2):** until cassettes land, the Graph conformance matrix is 100%
-  skip in CI *and* the integration/live tier (GR-007/020/026/034/054 + the 10 MiB
-  round-trip) runs in no lane — so the only *automated* coverage is the ~300 respx
-  unit tests (the code was live-validated per-PR during implementation, but
-  manually — no CI gate captures it; the first live run of the conformance
-  *matrix* at GR-DONE proved those mocks wrong in 23/118 cases). Raising
-  the `min_cassettes` floor off `0` is part of this work for a second reason: at
-  `0` the record gate *warns* but does not *fail* on an empty corpus
-  (`record_cassettes.py:329-337` prints a loud zero-cassette WARNING, but it is
-  non-fatal), so the fix should promote that existing warning to a hard failure
-  rather than add a redundant one. The spec-honesty disclosure of this gap is
-  tracked in BK-264.
+- [ ] **BK-283 — Drive the Graph example snippet from replayed cassettes in CI**
+  spec: GR-015, GR-019 · effort: S · audience: infra.test
+  The replay-able cassettes BK-262 committed could also drive the env-gated
+  `examples/backends/graph_backend.py` snippet, which today only runs under live
+  credentials and is excluded from the `run_examples.py` CI sweep entirely. With
+  the pre-signed-URL replay now solved (BK-262), a replayed variant could
+  exercise the example in CI without creds — same `graph_replay` vcr config,
+  second beneficiary. Sketch: record a cassette for the example's request
+  sequence (or reuse the conformance ones if the call shapes line up) and wire a
+  replayed path into `run_examples.py` so the snippet is covered without the
+  live opt-in. Carried forward from BK-262 (the consolidated former BK-260);
+  was gated on the cassette-replay core landing first, which it now has.
 
 - [ ] **BK-264 — Graph spec / RFC reality-sync**
   spec: GR-001, GR-005, GR-018, GR-019, GR-034 · effort: S · audience: library.maintainer

@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -44,6 +45,9 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+# Single source of truth for the env-independent Graph leak markers, shared with
+# the creds-free CI sweep in tests/backends/fixtures/test_cassettes.py (BK-262).
+from tests.backends.fixtures._cassettes import GRAPH_FORBIDDEN_CASSETTE_PATTERNS  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Per-backend account-name resolvers
@@ -142,10 +146,17 @@ _BACKENDS: dict[str, dict] = {
         "account_fn": _resolve_graph_drive_id,
         "live_opt_in_env": "RS_TEST_LIVE_GRAPH",
         "setup_doc": "docs-src/guides/backends/graph-setup.md",
-        # No min-cassette guard yet: the recordable count grows as GR-READ /
-        # GR-WRITE / GR-MUTATE implement the data-plane ops. Raise it once the
-        # first real op slice records (so a zero-selection run fails loudly).
-        "min_cassettes": 0,
+        # Lower-bound guard: the full conformance slice records ~118 cassettes
+        # (BK-262). A floor of 100 leaves headroom for skipped/capability-gated
+        # tests while still failing loudly if pytest silently selects zero
+        # (k-filter mismatch, stage gate, missing live opt-in).
+        "min_cassettes": 100,
+        # Extra Step-4 leak markers beyond the drive id (BK-262 review): the
+        # scrub layer is responsible for these, so the gate asserts a re-record
+        # cannot silently reintroduce them. Defined once in _cassettes.py and
+        # shared with the creds-free CI sweep so the recorder gate and CI assert
+        # the identical guarantee (env-independent, case-insensitive).
+        "forbidden_patterns": GRAPH_FORBIDDEN_CASSETTE_PATTERNS,
     },
 }
 
@@ -327,10 +338,10 @@ def main() -> None:
                 "pytest likely selected zero tests — check the k-filter and --stage value"
             )
         if recorded == 0:
-            # A min_cassettes=0 backend (e.g. graph before GR-READ) makes the
-            # count guard vacuous, so make a zero-recording run LOUD rather than
-            # let main() print "All steps passed" as if it had recorded
-            # something. Raise min_cassettes once the first op slice lands.
+            # A backend left at min_cassettes=0 makes the count guard vacuous, so
+            # make a zero-recording run LOUD rather than let main() print "All
+            # steps passed" as if it had recorded something. Raise its
+            # min_cassettes once its first recordable op slice lands.
             print(
                 f"  WARNING: recorded 0 cassettes for {opts.backend!r} — nothing to replay. "
                 "Either no recordable ops exist yet, or the -k filter / --stage selected zero tests."
@@ -340,15 +351,30 @@ def main() -> None:
 
     _section("Step 4 — verify scrub (no real credentials in cassettes)")
     account: str = cfg["account_fn"]()
-    account_bytes = account.encode()
+    # Case-insensitive: Graph echoes the drive id (cid) upper-cased inside item
+    # ids / eTags / webUrls but lower-cased in URIs (BK-262), so a case-sensitive
+    # substring check missed the upper-cased copies. Lower-case both sides.
+    account_bytes = account.encode().lower()
     files = list(cassette_dir.glob("*.yaml"))
-    bad = [f.name for f in files if account_bytes in f.read_bytes()]
+    raws = {f: f.read_bytes() for f in files}
+    bad = [f.name for f, raw in raws.items() if account_bytes in raw.lower()]
     if bad:
         print("  LEAK detected in:")
         for name in bad:
             print(f"    {name}")
         _die("real account name survived scrubbing — do NOT commit these cassettes")
-    print(f"  Clean: {len(files)} cassette(s) checked, account name absent.")
+    # Beyond the account name, assert the scrub layer's broader PII guarantee so a
+    # future re-record cannot silently reintroduce a secret the gate never checks.
+    for label, pattern in cfg.get("forbidden_patterns", ()):
+        rx = re.compile(pattern, re.IGNORECASE)
+        hits = [f.name for f, raw in raws.items() if rx.search(raw)]
+        if hits:
+            print(f"  LEAK detected ({label}) in:")
+            for name in hits:
+                print(f"    {name}")
+            _die(f"{label} survived scrubbing — do NOT commit these cassettes")
+    n_markers = len(cfg.get("forbidden_patterns", ()))
+    print(f"  Clean: {len(files)} cassette(s) checked, account name + {n_markers} marker(s) absent.")
 
     _section("Step 5 — replay smoke test (Stage 1)")
     _run(
