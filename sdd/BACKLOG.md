@@ -712,6 +712,131 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
 
+- [ ] **BK-284 — Cassette recording layer redesign: backend-agnostic core + REC-NNN spec**
+  spec: TEST-007 (cross-link); new `049-live-recording-architecture.md` (REC-NNN clauses) · effort: L · audience: infra.test, library.maintainer
+  `tests/backends/fixtures/_cassettes.py` grew Azure-first (BK-181 PoC →
+  BK-225 ADLS hardening) and then absorbed Graph (BK-262) by accretion.
+  Today: parallel `build_vcr_config` and `build_graph_vcr_config` with no
+  shared structural core; two near-identical
+  `before_record_request` / `before_record_response` shapes; four parallel
+  body-scrub regex lists (`_BODY_SCRUB`, `_GRAPH_BODY_SCRUB`,
+  `_GRAPH_PII_BODY_SCRUB`, `_GRAPH_REQUEST_BODY_SCRUB`) with no naming
+  convention or audit identity; Azure-specific helpers
+  (`live_connection_string`, `parse_account_name`, `FAKE_CONN_STR`) sitting
+  in the supposedly shared module; and the request-header / OAuth POST-body
+  scrubs hand-rolled inside `before_record_*` callbacks where vcrpy already
+  ships native filters (`filter_headers`, `filter_post_data_parameters`).
+  A third HTTP backend (e.g. a future SharePoint app-only Graph tier, an
+  HTTP backend cassette, an S3 range-fallback cassette) would either
+  copy-paste a third `build_X_vcr_config` or wedge into one of the two
+  existing ones. Neither scales.
+
+  **Sketch (decide details when picked up):**
+  1. **Declarative scrubs** — idea borrowed from
+     [`subprocess-vcr.RedactFilter`](https://pypi.org/project/subprocess-vcr/);
+     the package itself doesn't apply (it's `subprocess.run`-only, no vcrpy
+     hooks). A `RedactPattern(name, regex_bytes, replacement_bytes)`
+     dataclass replaces the four module-level tuple lists; an
+     `EnvRedact(env_var, fake, case_insensitive=False)` companion declares
+     "this env-var's value must not survive into a cassette" once, and the
+     orchestrator applies it across URI, header values, request body,
+     response body, bytes + str — the manual case-insensitive `drive_id`
+     weave today.
+  2. **Per-backend `CassetteProfile`** registered alongside `BackendFixture`:
+     filter list + `presigned_host` predicate + per-host URI-rewrite policy +
+     header allow/deny + body-key allow/deny. A generic
+     `before_record_request` / `before_record_response` in the core consumes
+     the profile, handles the bytes/str dispatch once, and preserves the
+     cross-field invariants BK-262 surfaced (URI ↔ `Location` ↔ body must
+     all rewrite to the same placeholder so vcrpy matches on replay).
+  3. **Named-pattern audit identity.** The Step-4 record-cassettes audit
+     today asserts on opaque counts and a hand-maintained forbidden-string
+     list (BK-262 review). With named patterns it asserts by rule
+     (`graph.pii.email_displayname redacted 47 occurrences`,
+     `graph.bearer redacted 12 occurrences`), so a silently-removed rule
+     fails the gate rather than passing with zero hits.
+  4. **Fold in vcrpy-native filters BK-262 left on the table:**
+     request-header deletes → `filter_headers=[...]`; User-Agent
+     normalisation → the tuple form
+     `filter_headers=[("user-agent", "azsdk-python-replay")]`; OAuth
+     POST-body params (`client_secret`, `client_assertion`, `assertion`,
+     `refresh_token`) → `filter_post_data_parameters=[...]`. The
+     `before_record_*` callbacks shrink to the URI / `Location` / body-regex /
+     cross-field-coupling work that genuinely needs them (response-header
+     rewrites, URI host-aware redaction, JSON-body regex — none of which
+     have vcr-native equivalents).
+  5. **Move Azure-specific helpers** out of `_cassettes.py` into
+     `azure_live.py` (or a new `_cassettes_azure.py`) so the shared module
+     becomes the backend-agnostic core. Graph already lives alongside.
+
+  **Spec gap (the load-bearing half):** spec 048 § TEST-007/008/009 covers
+  *kind* (cassette + replay fixture), *scope* (HTTP-transport only), and
+  *refresh* (explicit `--record`) — but explicitly defers "implementation
+  choice (cassette tech, scrubbing rules, async transports) … to the
+  implementing fixture layer's concern"
+  ([`048-testing-architecture.md:280`](specs/048-testing-architecture.md)).
+  That punt was reasonable when only Azure recorded; BK-262 surfaced
+  invariants that aren't ad-hoc per-backend decisions:
+  - **Pre-signed-URL round-trip consistency** — record and replay must
+    normalise URI, `Location` header, and body to the *same* placeholder,
+    and `before_record_request` must run in *both* modes for vcrpy to match.
+    (BK-262 root cause: the old `"REDACTED"` body value wasn't a URL, so the
+    backend re-issued `GET :///REDACTED` and no cassette matched.)
+  - **Env-var → fake coverage** — a declared "scrub this env-var's value"
+    must hit URI, header values, request body (form + JSON), response body,
+    in bytes and str, case-insensitively when the API echoes the value in
+    multiple cases (the Graph cid lower/upper-case story).
+  - **Scrub audit identity** — the forbidden-pattern check (BK-262 review,
+    `record_cassettes.py` Step-4) is the only defence against a re-record
+    silently reintroducing a redacted value; it needs named rules to assert
+    against rather than a hand-maintained string list.
+  - **Per-backend extension contract** — what a third HTTP backend must
+    register and what the shared core promises.
+
+  Author a new spec (`sdd/specs/049-live-recording-architecture.md`, REC-NNN
+  clauses) rather than extending 048: 048's authority is fixture
+  layout/stage/kind, the recording transport stands on its own and gets
+  ripple-checked separately. Cross-link from 048 § TEST-007's
+  deferred-design note. Pair with an ADR (`adrs/0029-…md`) capturing the
+  named-pattern + profile-registry decision after ADR-0028's
+  kind-stage-replay decision.
+
+  **Open questions for whoever picks this up:**
+  1. **New spec doc (049) vs extend 048?** Lean: new. Decide first.
+  2. **`CassetteProfile` registration: alongside `BackendFixture` or a
+     separate registry?** Piggybacking is one fewer registry but mixes
+     concerns; lean: alongside, since the profile is per-fixture-family.
+  3. **Async-transport notes** (the `AsyncioRequestsTransport` shim
+     `azure_live_async` needs so vcrpy captures bodies; the no-shim story
+     for httpx-based Graph; the `_RS_CASSETTE_RECORDING=1` flag wiring) —
+     same spec or carved out? Lean: same — they're constraints on what
+     vcrpy can capture, which is the spec's subject.
+  4. **`forbidden_patterns` ownership:** module-level envelope list (bare
+     `Bearer`, generic email forms) that every profile inherits + per-profile
+     additions, or fully per-profile? Lean: hybrid (envelope shared, specifics
+     per profile).
+  5. **Migration strategy:** big-bang one PR vs Azure-then-Graph two PRs.
+     The body-scrub registry refactor is the largest single change; the
+     vcrpy-native-filter migration (item 4 above) could ship first as a
+     low-risk warm-up.
+
+  **Dependencies:** BK-262 must land (PR #787) so the refactor moves a
+  known-good baseline, not a moving target. Independent of BK-283
+  (example-test replay extension).
+
+  **Touches:** `tests/backends/fixtures/_cassettes.py` (rewrite),
+  `tests/backends/fixtures/test_cassettes.py` (extended unit + integration
+  tests for the registry + named-pattern audit),
+  `tests/backends/conformance/conftest.py` (delegate to profile registry
+  instead of two-branch `vcr_config`), `tests/backends/fixtures/{graph,azure}_{live,replay}*.py`
+  (register their profile), `scripts/record_cassettes.py` (Step-4
+  named-pattern assertions), `sdd/specs/049-live-recording-architecture.md`
+  (new), `sdd/specs/048-testing-architecture.md` (cross-link TEST-007),
+  `sdd/adrs/0029-cassette-recording-architecture.md` (new). CHANGELOG —
+  N/A (audience `infra.test`, not user-facing).
+
+  Surfaced during PR #787 review (BK-262).
+
 - [ ] **BK-242 — Flat-NS file-ancestor pre-check perf (SQLBlob IN-list, memoisation)**
   spec: — · effort: S · audience: infra.test, library.maintainer
   ID-211 review surfaced two perf optimisations the disposition (b)
