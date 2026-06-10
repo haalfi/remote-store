@@ -774,6 +774,12 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `sdd/adrs/0029-cassette-recording-architecture.md` (new). CHANGELOG —
   N/A (audience `infra.test`, not user-facing).
 
+  **Implementation plan:**
+  [`sdd/plans/BK-284-cassette-recording-redesign.md`](plans/BK-284-cassette-recording-redesign.md)
+  — PR-level decomposition of the two PRs above (files, acceptance
+  criteria, REC clause map). Temporary artefact; deleted in the PR
+  that closes this item.
+
   Surfaced during PR #787 review (BK-262).
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
