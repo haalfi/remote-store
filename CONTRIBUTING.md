@@ -34,7 +34,7 @@ Sections 1 and 2 alone must be sufficient to understand the document's purpose a
 
 ### Scope
 
-Applies to root-level process documents in `sdd/` ([`000-process.md`](sdd/000-process.md), [`AUTHORING.md`](sdd/AUTHORING.md), [`DESIGN.md`](sdd/DESIGN.md), [`DOCUMENTATION.md`](sdd/DOCUMENTATION.md), [`TESTING.md`](sdd/TESTING.md), [`CONTENT-RULES.md`](sdd/CONTENT-RULES.md), [`CLAUDE-REFERENCE.md`](sdd/CLAUDE-REFERENCE.md)). Does not apply to specs, ADRs, RFCs, research, audits, [`BACKLOG.md`](sdd/BACKLOG.md), [`README`](README.md), [`CHANGELOG`](CHANGELOG.md), [`DEVELOPMENT_STORY`](DEVELOPMENT_STORY.md), [`CLAUDE.md`](CLAUDE.md), or [`CONTRIBUTING.md`](CONTRIBUTING.md) (which follow their own formats).
+Applies to root-level process documents in `sdd/` ([`000-process.md`](sdd/000-process.md), [`AUTHORING.md`](sdd/AUTHORING.md), [`CI-OPERATIONS.md`](sdd/CI-OPERATIONS.md), [`DESIGN.md`](sdd/DESIGN.md), [`DOCUMENTATION.md`](sdd/DOCUMENTATION.md), [`TESTING.md`](sdd/TESTING.md), [`CONTENT-RULES.md`](sdd/CONTENT-RULES.md), [`CLAUDE-REFERENCE.md`](sdd/CLAUDE-REFERENCE.md)). Does not apply to specs, ADRs, RFCs, research, audits, [`BACKLOG.md`](sdd/BACKLOG.md), [`README`](README.md), [`CHANGELOG`](CHANGELOG.md), [`DEVELOPMENT_STORY`](DEVELOPMENT_STORY.md), [`CLAUDE.md`](CLAUDE.md), or [`CONTRIBUTING.md`](CONTRIBUTING.md) (which follow their own formats).
 
 ### Cross-check
 
@@ -294,6 +294,10 @@ Visual output is not checked — the runner validates that cells execute without
 errors.
 
 ## Dependency drift guard
+
+The drift guard is one of the scheduled/automated CI guards; for the full
+inventory of those guards, where each one's finding lands, and the durable-TODO
+principle they follow, see [`sdd/CI-OPERATIONS.md`](sdd/CI-OPERATIONS.md).
 
 Every `[<extra>]` in `pyproject.toml` declares a floor and in most cases
 deliberately no ceiling (the `arrow` and `sql-query` extras carry a

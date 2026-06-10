@@ -1,0 +1,111 @@
+id: BK-275
+title: "CI-operations handbook + the scheduled-guard consistency principle"
+trigger: >
+  No document inventoried the scheduled/automated workflows (what runs when,
+  what finding each produces, where it shows up, which skill actions it); the
+  knowledge existed only for one guard (drift-guard / /drift / CONTRIBUTING §
+  Dependency drift guard). Adding a new scheduled workflow had no gate forcing
+  it to be documented.
+source_items:
+  - BK-275
+audience:
+  - library.maintainer
+  - contributor.tooling
+  - infra.ci
+co_shipped_items: []
+expected_ripples:
+  - sdd/backlogid.json
+  - docs-src/explanation/design/_nav.yml
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "CI Operations / BK-275 (item)"
+        read_type: gate
+        extract: "scope: authority doc + principle + codeql exception; A1 decision = generated inventory over prose"
+      - file: sdd/audits/audit-018-ci-operations.md
+        section: "M2, L1, A1, proposals C3"
+        read_type: gate
+        extract: "the inventory table skeleton, the durable-TODO principle, and A1's generate-don't-hand-maintain counter-proposal"
+      - file: .claude/skills/drift/SKILL.md
+        section: "(full)"
+        read_type: reference
+        extract: "the proven scheduled-finding → rolling-issue → triage-skill pattern the handbook generalises"
+      - file: .github/workflows/drift-guard.yml
+        section: "header + on: triggers"
+        read_type: reference
+        extract: "reference guard: header non-goals, Mon 07:00 schedule, rolling-issue report job"
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go? / Classification markers"
+        read_type: gate
+        extract: "top-level sdd/*.md process doc → explicit dual marker; dest=explanation/design/<slug>.md"
+      - file: CONTRIBUTING.md
+        section: "Authoritative Document Format"
+        read_type: gate
+        extract: "doc must be Intent & Scope + Rules + optional Guides; add the new doc to the Scope list"
+      - file: scripts/check_no_tracker_refs.py
+        section: "Scope docstring"
+        read_type: gate
+        extract: "sdd/** is out of scope, so the handbook may cite BK-273/274; but CONTRIBUTING.md edits must stay tracker-ID-free"
+        outcome: ok
+      - file: scripts/check_docs_framework.py
+        section: "_CHECKS / main"
+        read_type: reference
+        extract: "structural model for the new check script (ROOT discovery, sorted stderr violations, summary line)"
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/CI-OPERATIONS.md
+        section: "(full)"
+        read_type: reference
+        extract: "authored the handbook: principle (Rules), inventory table + Exceptions + Adding-a-guard (Guides)"
+      - file: scripts/check_ci_inventory.py
+        section: "(full)"
+        read_type: reference
+        extract: "family-trigger parser + presence gate; handles the YAML on:→True boolean-key gotcha"
+      - file: pyproject.toml
+        section: "lint script array"
+        read_type: gate
+        extract: "wire the check into lint; CI runs `uvx hatch run lint` so one wiring point dual-wires it"
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_check_ci_inventory.py
+        section: "(full)"
+        read_type: reference
+        extract: "hermetic tmp_path fixtures: family detection (incl. on:→True), documented-pass, undocumented-fail, exception-pass, live-repo-honest"
+      - file: tests/scripts/test_check_no_tracker_refs.py
+        section: "importlib loader"
+        read_type: reference
+        extract: "spec-mark-free check-script test pattern via importlib.util (BK-275 has no spec)"
+  - id: docs
+    name: Docs / pointers
+    steps:
+      - file: docs-src/explanation/design/_nav.yml
+        section: "design sub-nav"
+        read_type: gate
+        extract: "add `CI Operations: ci-operations.md` so the dual page is not an orphan under mkdocs --strict"
+      - file: .claude/skills/drift/SKILL.md
+        section: "Authority block"
+        read_type: reference
+        extract: "thin pointer to the handbook (skill-overlay convention), no duplication"
+      - file: CONTRIBUTING.md
+        section: "Dependency drift guard"
+        read_type: reference
+        extract: "pointer from the drift section to the cross-guard handbook"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / New authoritative process doc in sdd/"
+        read_type: verify
+        extract: "ripples: CONTRIBUTING Scope list, sibling/skill pointers, design _nav.yml, this ripple-check"
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased / BK-275 (item)"
+        read_type: verify
+        extract: "archive BK-275 [x]; run gen-backlogid; no CHANGELOG (audience has no user.* entry)"

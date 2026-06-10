@@ -11,6 +11,9 @@ name: Drift Guard
 #  - This workflow NEVER auto-merges a pin / floor update.
 #  - The point is early warning, not automated remediation.
 #
+# This is one of the scheduled/automated CI guards; the cross-guard inventory
+# and the durable-TODO principle live in sdd/CI-OPERATIONS.md.
+#
 # Refreshing baselines: maintainer runs `hatch run drift-check refresh-baseline <extra>`
 # locally (on the repo's pinned Python in `.python-version`, matching this
 # workflow's runner) and commits the

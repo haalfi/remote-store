@@ -10,6 +10,8 @@ re-baseline, refresh those locks, and prepare a pushed branch for the user to
 open the PR via `/pr`.
 
 **Authority (do not duplicate — read these):**
+- `sdd/CI-OPERATIONS.md` — the cross-guard handbook: where this guard sits in
+  the scheduled/automated family and the durable-TODO principle it follows.
 - `.github/workflows/drift-guard.yml` header — refresh procedure + the three
   hard non-goals (the workflow never edits `pyproject.toml`, never auto-merges
   a floor/pin, never auto-remediates).
