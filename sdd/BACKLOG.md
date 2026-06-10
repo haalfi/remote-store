@@ -696,22 +696,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Maintenance / Long-horizon
 
-- [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
-  spec: — · effort: S · audience: library.maintainer
-  First revisit ticket for the informational `verify-tla` job landed under
-  ID-147 on 2026-04-19. Per [`sdd/formal/README.md` § Authoring rules](formal/README.md#authoring-rules) (3),
-  the status is revisited every 6 months or every 10 spec amendments touching
-  TLA-backed sections (whichever first). At the revisit, record one of:
-  **promote** (check caught a real regression — add to the gate's `needs`),
-  **remove** (no catches, no active modules — drop the job), or **re-defer**
-  (still useful but no catch yet — open the next revisit ticket). A calendar
-  without a ticket is the same as no calendar, which is why this item exists.
-
-  **Exit criteria:** decision logged in the ticket's close note; if re-deferred,
-  the successor ticket is linked here; if promoted, `verify-tla` joins the
-  `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
-  `sdd/formal/README.md` is updated.
-
 - [ ] **BK-284 — Cassette recording layer redesign: backend-agnostic core + REC-NNN spec**
   spec: TEST-007 (cross-link); new `049-live-recording-architecture.md` (REC-NNN clauses) · effort: L · audience: infra.test, library.maintainer
   `tests/backends/fixtures/_cassettes.py` grew Azure-first (BK-181 PoC →
@@ -744,17 +728,46 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
      weave today.
   2. **Per-backend `CassetteProfile`** registered alongside `BackendFixture`:
      filter list + `presigned_host` predicate + per-host URI-rewrite policy +
-     header allow/deny + body-key allow/deny. A generic
+     header allow/deny + body-key allow/deny + `cassette_dir` (or a
+     fixture-name → `cassettes/<backend>/` convention per TEST-007) +
+     `match_on` (BK-262's pre-signed-host story already flirted with a
+     custom matcher; a third HTTP backend may need its own). A generic
      `before_record_request` / `before_record_response` in the core consumes
      the profile, handles the bytes/str dispatch once, and preserves the
      cross-field invariants BK-262 surfaced (URI ↔ `Location` ↔ body must
      all rewrite to the same placeholder so vcrpy matches on replay).
+     The profile must replace `_FIXTURE_CASSETTE_DIRS` for **all** its
+     consumers — `vcr_cassette_dir` (sync + async), the missing-cassette
+     skip hook (`_cassette_path_for_item` / `_cassette_dir_for_node_name`),
+     and the fail-loud "register its fixture id" guard — not just the
+     `vcr_config` branch. Otherwise a third HTTP backend would still
+     register in two places, undercutting the per-backend extension
+     contract below.
   3. **Named-pattern audit identity.** The Step-4 record-cassettes audit
      today asserts on opaque counts and a hand-maintained forbidden-string
      list (BK-262 review). With named patterns it asserts by rule
      (`graph.pii.email_displayname redacted 47 occurrences`,
      `graph.bearer redacted 12 occurrences`), so a silently-removed rule
-     fails the gate rather than passing with zero hits.
+     fails the gate rather than passing with zero hits. Two constraints
+     the 049 spec must encode so this doesn't trip on legitimate
+     zero-counts:
+     - **Per-rule expectation, not a blanket gate.** Some rules
+       legitimately record zero hits in a given corpus — the OAuth
+       POST-body scrubs hit zero on the device-code recording path
+       (`_cassettes.py` says so), and the error-XML `RequestId:` /
+       `Time:` scrubs hit zero when no error-path test records. Each
+       `RedactPattern` declares its expectation (`required-to-fire`
+       vs `opportunistic`); only `required-to-fire` rules fail the
+       gate on zero. Exact-count assertions are workload-dependent
+       and would flake across recordings.
+     - **Native-filter rules don't flow through the named registry.**
+       After PR 1, the request-header and POST-param scrubs run via
+       vcrpy's `filter_headers` / `filter_post_data_parameters` and
+       never touch a `RedactPattern`, so the named-pattern audit can't
+       count them. The native-half defence is the `forbidden_patterns`
+       envelope check (sketch point 4 below) plus per-PR diff
+       inspection — name both halves in the 049 spec so neither is
+       assumed to cover the other.
   4. **Fold in vcrpy-native filters BK-262 left on the table:**
      request-header deletes → `filter_headers=[...]`; User-Agent
      normalisation → the tuple form
@@ -772,9 +785,11 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   **Spec gap (the load-bearing half):** spec 048 § TEST-007/008/009 covers
   *kind* (cassette + replay fixture), *scope* (HTTP-transport only), and
   *refresh* (explicit `--record`) — but explicitly defers "implementation
-  choice (cassette tech, scrubbing rules, async transports) … to the
-  implementing fixture layer's concern"
-  ([`048-testing-architecture.md:280`](specs/048-testing-architecture.md)).
+  choice (cassette tech, scrubbing rules, async pipeline coverage) … to
+  the implementing BK item"
+  ([spec 048 § TEST-007, "Implementation choice" paragraph](specs/048-testing-architecture.md#test-007-http-cassette-and-replay-layer)).
+  The deferral targets the implementing BK item, not a layer — which is
+  exactly the role this entry now picks up.
   That punt was reasonable when only Azure recorded; BK-262 surfaced
   invariants that aren't ad-hoc per-backend decisions:
   - **Pre-signed-URL round-trip consistency** — record and replay must
@@ -806,9 +821,12 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
      `cassette_profile: CassetteProfile | None = None` as a field on the
      fixture record (like `capabilities` / `marks`). One registry, profile
      co-locates with the fixture it serves; non-HTTP fixtures simply leave
-     it `None`. `conformance/conftest.py:vcr_config` reads
-     `request.fixture._cassette_profile` instead of branching on
-     `_FIXTURE_CASSETTE_DIRS`.
+     it `None`. The conformance-conftest lookup is implementation detail
+     for PR 2: pytest's `FixtureRequest` exposes no fixture-record handle,
+     so the registry is reached either via the existing node-name helper
+     (`_cassette_dir_for_node_name` already does this) or via
+     `request.node.callspec` introspection — to be decided when picked
+     up.
   3. **Async-transport notes: same spec.** `AsyncioRequestsTransport`
      (the shim `azure_live_async` needs so vcrpy captures bodies), the
      no-shim story for httpx-based Graph (vcrpy 8.1.1 patches httpx
@@ -823,12 +841,19 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   5. **Migration: phased.** Ship two PRs.
      - **PR 1 (warm-up, low risk):** migrate the bits vcrpy has native
        filters for — request-header deletes →
-       `filter_headers=[...]`; User-Agent replace →
-       `filter_headers=[("user-agent", ...)]`; OAuth POST-body params
-       (`client_secret` / `client_assertion` / `assertion` /
-       `refresh_token`) → `filter_post_data_parameters=[...]`. No
-       structural change; cassettes should be byte-identical modulo
-       the filter-source attribution.
+       `filter_headers=[...]` (list form deletes, matches today's
+       behaviour); User-Agent replace →
+       `filter_headers=[("user-agent", "azsdk-python-replay")]` (tuple
+       form rewrites); OAuth POST-body params → tuple form
+       `filter_post_data_parameters=[("client_secret", "REDACTED"), ...]`
+       for `client_assertion`, `assertion`, `refresh_token` too.
+       Tuple form is load-bearing here: the current
+       `_GRAPH_REQUEST_BODY_SCRUB` rewrites `client_secret=REDACTED`
+       (keeps the key, replaces the value); the list form
+       `filter_post_data_parameters=["client_secret"]` would *delete*
+       the parameter from the recorded body, breaking the byte-identity
+       claim on first diff. No structural change; cassettes should be
+       byte-identical modulo the filter-source attribution.
      - **PR 2 (the rewrite):** introduce `RedactPattern` / `EnvRedact` /
        `CassetteProfile`, the generic `before_record_*` core, register
        Azure and Graph profiles, ship the 049 spec + ADR-0029, wire
@@ -842,6 +867,13 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   known-good baseline, not a moving target. Independent of BK-283
   (example-test replay extension).
 
+  **Merge order (load-bearing).** This entry describes post-#787 reality:
+  `_GRAPH_PII_BODY_SCRUB` (the fourth scrub list), the Step-4
+  `forbidden_patterns` gate, and BK-283 itself are all created by
+  PR #787. Per principle 3 (repo describes reality at every commit),
+  this PR must merge **after** PR #787; merging it first would leave
+  the backlog describing code and an ID that don't exist on master.
+
   **Touches:** `tests/backends/fixtures/_cassettes.py` (rewrite),
   `tests/backends/fixtures/test_cassettes.py` (extended unit + integration
   tests for the registry + named-pattern audit),
@@ -854,6 +886,22 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   N/A (audience `infra.test`, not user-facing).
 
   Surfaced during PR #787 review (BK-262).
+
+- [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
+  spec: — · effort: S · audience: library.maintainer
+  First revisit ticket for the informational `verify-tla` job landed under
+  ID-147 on 2026-04-19. Per [`sdd/formal/README.md` § Authoring rules](formal/README.md#authoring-rules) (3),
+  the status is revisited every 6 months or every 10 spec amendments touching
+  TLA-backed sections (whichever first). At the revisit, record one of:
+  **promote** (check caught a real regression — add to the gate's `needs`),
+  **remove** (no catches, no active modules — drop the job), or **re-defer**
+  (still useful but no catch yet — open the next revisit ticket). A calendar
+  without a ticket is the same as no calendar, which is why this item exists.
+
+  **Exit criteria:** decision logged in the ticket's close note; if re-deferred,
+  the successor ticket is linked here; if promoted, `verify-tla` joins the
+  `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
+  `sdd/formal/README.md` is updated.
 
 - [ ] **BK-242 — Flat-NS file-ancestor pre-check perf (SQLBlob IN-list, memoisation)**
   spec: — · effort: S · audience: infra.test, library.maintainer
