@@ -101,6 +101,17 @@ class TestGraphCassetteScrub:
         assert out.headers["User-Agent"] == "azsdk-python-replay"
         assert "User-Agent" in list(out.headers.keys())  # exact key case kept
 
+    def test_user_agent_absent_stays_absent(self) -> None:
+        """The ``("User-Agent", ...)`` tuple *rewrites* an existing header but must
+        never *add* one when absent — vcrpy 8.1.1 ``filters.replace_headers`` guards
+        the rewrite with ``if k in new_headers:``, matching the old in-loop
+        ``elif lower == "user-agent"`` (which only touched present keys). Byte-identity
+        of re-records depends on it: a request that carried no User-Agent must record
+        none, so this pins the add-vs-replace semantics the migration rests on."""
+        scrub = _composed_request_filter(build_graph_vcr_config(real_drive_id=None))
+        out = scrub(_request({"Accept": "application/json"}))  # no User-Agent in
+        assert "user-agent" not in {k.lower() for k in out.headers}
+
     def test_native_filters_run_before_custom_hook(self) -> None:
         """Pin vcrpy's composition order (``VCR._build_before_record_request``):
         the native header filter runs first, then the custom hook — so a single
@@ -527,6 +538,15 @@ class TestAzureCassetteScrub:
         )
         assert out.headers["User-Agent"] == "azsdk-python-replay"
         assert "User-Agent" in list(out.headers.keys())  # exact key case kept
+
+    def test_user_agent_absent_stays_absent(self) -> None:
+        """The ``("User-Agent", ...)`` tuple rewrites but never adds (vcrpy
+        ``replace_headers`` guards on ``if k in new_headers:``), matching the old
+        in-loop rewrite. A request with no User-Agent must record none — the
+        byte-identity property the migration rests on."""
+        scrub = _composed_request_filter(build_vcr_config(real_account=None))
+        out = scrub(_request({"Accept": "application/xml"}, uri="https://azreplay.dfs.core.windows.net/fs/path"))
+        assert "user-agent" not in {k.lower() for k in out.headers}
 
     def test_account_filesystem_and_tmp_uuid_normalised_in_uri(self) -> None:
         """Record mode: the live account, the per-call conformance filesystem

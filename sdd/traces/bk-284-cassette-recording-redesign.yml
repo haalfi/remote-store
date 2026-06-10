@@ -15,6 +15,7 @@ audience:
   - library.maintainer
 expected_ripples:
   - sdd/BACKLOG.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient (plan authoring)
@@ -130,4 +131,16 @@ phases:
           PR 1 (file PR 1 already owns): cid -> obviously-fake deadbeefcafe0123 both cases, email ->
           user@example.com, zero test-behaviour change (3 affected tests still pass). Not a local-path
           gate hit; judgment-based catch.
+        outcome: ok
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "test_user_agent_absent_stays_absent (PR #791 review)"
+        read_type: verify
+        extract: >-
+          PR #791 review (one inline thread) noted the migration's load-bearing add-vs-replace
+          semantics were unpinned: the native ("User-Agent", ...) tuple rewrites a present header but
+          must never ADD one when absent (vcrpy replace_headers guards on `if k in new_headers:`),
+          and both existing UA tests only covered the present-header path. Added a no-UA-in/no-UA-out
+          test to TestGraphCassetteScrub and TestAzureCassetteScrub so a future vcrpy that materialised
+          missing replacement headers would fail loud instead of silently injecting UA into cassettes
+          that never carried one. Verified the claim against vcrpy 8.1.1 source before applying.
         outcome: ok
