@@ -96,3 +96,13 @@ phases:
         read_type: verify
         extract: "109 + 296 passed against unchanged committed cassettes; zero cassette files modified"
         outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "--verify-only (graph + azure)"
+        read_type: verify
+        extract: >-
+          Re-ran live on a creds-bearing machine after the initial implementation: graph Step 4
+          clean over 118 cassettes (live drive-id + 10 markers absent), azure clean over 303
+          (live account name absent), Step 5 replay green both. Proves the native-filter code
+          path keeps the real .env-resolved secrets out of the corpus. Single-node live re-record
+          (byte-identity dogfood) NOT run: RS_TEST_LIVE_GRAPH/HNS opt-in unset + writes to real account.
+        outcome: ok

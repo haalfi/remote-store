@@ -237,15 +237,24 @@ anyway (see tests).
   against the **unchanged** committed corpus. ✓ (109 + 296 passed,
   zero cassette files modified)
 - `hatch run all` green. ✓
-- `record_cassettes.py --verify-only` for both backends — requires
-  live creds (`account_fn` resolves them even in verify-only mode),
-  not available in the implementing environment; the creds-free CI
-  sweep covers the forbidden-marker half. Run by whoever next holds
-  creds; the replay slices above are the replay half of steps 4–5.
-- Optional, requires live creds: one `--node` single-cassette
-  re-record per backend; with the body migration rejected the
-  expected diff is **header-only-volatile** (no filter-attributable
-  change). Not run here; state so in the PR.
+- `record_cassettes.py --verify-only` for both backends — **✓ run
+  live** (session teleported to a machine with `.env` creds): graph
+  Step 4 clean over 118 cassettes (live drive-id + all 10 forbidden
+  markers absent), azure Step 4 clean over 303 cassettes (live
+  account name absent), and Step 5 replay smoke green for both
+  (109 / 296). This is the load-bearing creds-gated gate: it resolves
+  the **real** account name / drive-id from `.env` and confirms
+  neither survives into any committed cassette under the new
+  native-filter code path.
+- Optional, requires the live-record opt-in flag
+  (`RS_TEST_LIVE_GRAPH=1` / `RS_TEST_LIVE_HNS=1`, deliberately distinct
+  from holding creds) **and live account writes**: one `--node`
+  single-cassette re-record per backend; with the body migration
+  rejected the expected diff is **header-only-volatile** (no
+  filter-attributable byte change). Not run — the opt-in flag is
+  unset and a re-record writes to the real OneDrive / ADLS account;
+  `--verify-only` above already proves the scrub guarantee on the
+  live-resolved secrets, so the re-record is confirmatory only.
 
 **Risks (resolved at implementation).**
 
@@ -534,7 +543,7 @@ Grep for `from tests.backends.fixtures._cassettes import` and
 |---|---|---|
 | `hatch run all` (pre-commit gate) | ✓ | ✓ |
 | Stage-1 replay slices vs unchanged corpus | ✓ | ✓ |
-| `record_cassettes.py --verify-only` (azure + graph) | creds-gated | creds-gated |
+| `record_cassettes.py --verify-only` (azure + graph) | ✓ live | creds-gated |
 | Creds-free CI PII sweep over committed cassettes | ✓ | ✓ (per profile) |
 | Composed-pipeline scrub unit tests | ✓ (introduced) | ✓ (carried) |
 | `check_spec_marks.py` REC coverage | — | ✓ |
