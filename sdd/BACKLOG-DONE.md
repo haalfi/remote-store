@@ -42,8 +42,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `x-anchormailbox` delete, and an oid-anchor envelope marker. Expectations
   calibrated against the corpus before wiring (uploadUrl and the Azure
   body-filesystem rule demoted to opportunistic — zero-hit on the recorded
-  slice). Spec 049 (REC-001..REC-008) carries the invariants; no ADR per
-  user decision at implementation (test tooling beneath ADR-0028). The
+  slice). Spec 049 (REC-001..REC-008) carries the invariants; spec-only
+  per review discussion — the layer sits beneath ADR-0028's threshold, so
+  design rationale lives in the clauses, not a separate ADR. The
   unchanged corpus was the oracle throughout: full Stage-1 replay green with
   zero cassette diffs, and the #787 review hardening survives as profile
   declarations. CHANGELOG N/A (audience `infra.test`). Trace:

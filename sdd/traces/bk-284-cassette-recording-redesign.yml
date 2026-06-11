@@ -6,8 +6,8 @@ trigger: >-
   hand-rolled request-header/OAuth-body scrubs where vcrpy ships native
   filters. BK-284 was filed from PR #787 review with a two-PR migration
   decision; this trace covers the planning pass, PR 1 (native-filter
-  warm-up), and PR 2 (profile core + spec 049 + named audit; no ADR per
-  user decision at implementation), which closes the item.
+  warm-up), and PR 2 (profile core + spec 049 + named audit; spec-only per
+  review discussion, beneath ADR-0028's threshold), which closes the item.
 source_items:
   - BK-284
   - BK-262
@@ -155,8 +155,9 @@ phases:
         section: "PR 2 (workstreams A-E, cross-cutting decisions)"
         read_type: gate
         extract: >-
-          Decomposition followed with three recorded divergences: (1) no ADR-0029 (user decision
-          mid-implementation: test tooling beneath ADR-0028, rationale lives in spec clauses);
+          Decomposition followed with three recorded divergences: (1) no ADR-0029 — spec-only
+          per mid-implementation review discussion (user suggested, agent concurred on the
+          ADR-threshold merits): test tooling beneath ADR-0028, rationale lives in spec clauses;
           (2) expectation calibration against the corpus demoted uploadUrl and the azure
           body-filesystem rule to opportunistic (the plan's required list assumed both fire;
           grep showed zero hits on the recorded slice); (3) implementation order ran B+C+D+E
