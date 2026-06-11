@@ -158,5 +158,7 @@ phases:
           Doc-only, zero behaviour change (37 cassette unit tests pass). The round's structural
           findings (flat module -> profile building blocks, Azure-first constants/values incl.
           FAKE_ACCOUNT="azreplay" baked into all 303 committed azure cassettes) are PR-2
-          workstreams B/D territory; disposition deferred to user decision.
+          workstreams B/D territory; user decided: PR 2 as planned (relocation answers the
+          history concern; value rename evaluated there — rsreplay shape, isolated textual
+          commit if taken). Plan workstream D records both obligations.
         outcome: ok

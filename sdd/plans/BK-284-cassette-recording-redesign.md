@@ -482,6 +482,26 @@ implementer's call, symmetric either way). Update all importers:
 Grep for `from tests.backends.fixtures._cassettes import` and
 `_cassettes.` across the tree before claiming done (principle 2).
 
+PR #791 review round 2 (user decision: handle here, not PR 1) adds two
+obligations to this workstream:
+
+- **Azure-first naming.** Relocation is the primary answer: once
+  `FAKE_ACCOUNT` / `FAKE_FILESYSTEM` live in `_cassettes_azure.py`,
+  Azure-flavored placeholder values are domain vocabulary, not history.
+  Decide there whether the *values* also rename (`azreplay` →
+  `rsreplay`; account names allow lowercase alphanumerics only, so
+  `rs_replay` / `stage3_replay` are invalid shapes). A value rename
+  rewrites all 303 committed Azure cassettes — if taken, it must be one
+  isolated, purely-textual commit so cross-cutting decision 5 ("the
+  corpus is the oracle") stays reviewable, and the "zero cassette files
+  modified" acceptance criterion gains that single explicit exception.
+- **Remaining comment bulk.** The round flagged the file's
+  over-documentation generally (CONTENT-RULES); PR 1 fixed the four
+  flagged sites. The rewrite must land the surviving long rationales
+  (response-header roster, `GRAPH_PRESIGNED_PLACEHOLDER`, forbidden
+  markers) in spec 049 / ADR-0029 clauses, leaving code comments to
+  state constraints only.
+
 ### E. Step-4 named-pattern audit (`scripts/record_cassettes.py`)
 
 - Steps 2–3 export `_RS_SCRUB_MANIFEST` (cross-cutting decision 2);
