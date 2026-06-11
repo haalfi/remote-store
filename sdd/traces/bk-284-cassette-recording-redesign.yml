@@ -15,7 +15,7 @@ audience:
   - library.maintainer
 expected_ripples:
   - sdd/BACKLOG.md
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient (plan authoring)
@@ -143,4 +143,20 @@ phases:
           test to TestGraphCassetteScrub and TestAzureCassetteScrub so a future vcrpy that materialised
           missing replacement headers would fail loud instead of silently injecting UA into cassettes
           that never carried one. Verified the claim against vcrpy 8.1.1 source before applying.
+        outcome: ok
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "content-rules doc cleanup (PR #791 review round 2)"
+        read_type: verify
+        extract: >-
+          Human review round 2 flagged history-narrating docs against CONTENT-RULES rule 1 (6-month
+          test): the module docstring's BK-181 "Porting notes", the filter_headers comment's
+          migration narrative, the filter_post_data_parameters rejection preamble, and
+          build_vcr_config's "Additions over the PoC" list. All four rewritten present-tense to
+          state only the load-bearing constraints (tuple-rewrites-never-adds, native-before-custom
+          composition, capitalised-key byte-identity, JSON-reserialisation rejection trigger); the
+          SAS zero-hit rationale moved from the deleted history section to _SCRUB_QUERY_PARAMS.
+          Doc-only, zero behaviour change (37 cassette unit tests pass). The round's structural
+          findings (flat module -> profile building blocks, Azure-first constants/values incl.
+          FAKE_ACCOUNT="azreplay" baked into all 303 committed azure cassettes) are PR-2
+          workstreams B/D territory; disposition deferred to user decision.
         outcome: ok

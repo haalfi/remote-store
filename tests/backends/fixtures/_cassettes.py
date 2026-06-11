@@ -1,25 +1,14 @@
-"""Shared HTTP cassette helpers: constants, scrubbing, live-connection utilities.
+"""Cassette scrub layer: vcrpy config builders and replay identifiers for HTTP backends.
 
-Used by ``azure_replay`` / ``azure_replay_async`` fixtures and the
-conformance conftest's ``vcr_config`` fixture.  The scrubbing layer
-(``build_vcr_config``) is the single source of truth for what gets
-stripped out of every recorded cassette so that replays carry no
-credentials, per-run identifiers, or machine-specific strings.
-
-Porting notes
--------------
-* Carried forward from ``sdd/research/bk-181-poc/conftest.py`` (frozen
-  spike) with the following additions required by BK-181 proper:
-  - Filesystem-UUID rewrite (``_FILESYSTEM_PATTERN``) to normalise the
-    per-call ``conformance-<uuid>`` filesystem name to the fixed
-    ``FAKE_FILESYSTEM`` so live and replay cassettes share URLs.
-  - Body-level regex scrub for ``RequestId:`` / ``Time:`` fragments that
-    survive header scrubbing (error-response XML).
-  - ``User-Agent`` normalisation so cassettes don't capture the recording
-    machine's Python/OS version string.
-* ``_SCRUB_QUERY_PARAMS`` carries the SAS-token parameters even though
-  SharedKey auth keeps the signature in headers; listed so S3 replay (PR 2)
-  and any future SAS-authenticated fixture inherit the intent.
+``build_vcr_config`` (Azure Storage) and ``build_graph_vcr_config``
+(Microsoft Graph) are the single source of truth for what is stripped
+from every recorded cassette — credentials, account identity, per-run
+identifiers, machine-specific strings — so committed cassettes replay
+deterministically and leak nothing.  Consumed by the conformance
+conftest's ``vcr_config`` fixture and the replay fixtures; the recorder
+(``scripts/record_cassettes.py``) and the creds-free CI sweep in
+``test_cassettes.py`` share ``GRAPH_FORBIDDEN_CASSETTE_PATTERNS`` as
+their leak gate.
 """
 
 from __future__ import annotations
@@ -90,20 +79,20 @@ vcrpy against the scrubbed cassette URLs.
 # Scrub lists
 # ---------------------------------------------------------------------------
 
-# Request-header deletes and the User-Agent rewrite ride vcrpy's native
-# ``filter_headers`` (BK-284 PR 1): a plain entry deletes the header, the
-# ``("User-Agent", ...)`` tuple appended in each config builder rewrites its
-# value in place. vcrpy composes these BEFORE the custom
-# ``before_record_request`` hook (``VCR._build_before_record_request``) and
-# matches header names case-insensitively (``HeadersDict``). Tuples, not sets,
-# so the emitted vcr_config is deterministic. The tuple key is capitalised
-# ``User-Agent`` to match the case every committed cassette records — vcrpy
-# re-inserts under the given key's case after its case-insensitive pop, so the
-# capitalised form keeps re-records byte-identical.
+# Request-header scrubs ride vcrpy's native ``filter_headers``: a plain entry
+# deletes the header; the ``("User-Agent", ...)`` tuple appended in each config
+# builder rewrites its value in place (and never adds it when absent). vcrpy
+# composes these before the custom ``before_record_request`` hook and matches
+# header names case-insensitively. Tuples keep the emitted config
+# deterministic; the capitalised ``User-Agent`` key matches the case cassettes
+# record, so re-records stay byte-identical.
 _SCRUB_REQUEST_HEADERS: tuple[str, ...] = ("authorization", "x-ms-date", "x-ms-client-request-id", "cookie")
 _SCRUB_RESPONSE_HEADERS: frozenset[str] = frozenset(
     {"x-ms-request-id", "x-ms-client-request-id", "x-ms-correlation-request-id", "set-cookie", "date"}
 )
+# SAS-token parameters. SharedKey auth keeps its signature in headers, so
+# these are zero-hit on today's recordings; listed so any future
+# SAS-authenticated fixture inherits the scrub.
 _SCRUB_QUERY_PARAMS: tuple[str, ...] = (
     "sig",
     "se",
@@ -338,22 +327,15 @@ _GRAPH_PII_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
 _GRAPH_CONFORMANCE_ROOT_RE_STR: re.Pattern[str] = re.compile(r"rs-conformance-[0-9a-f]+")
 _GRAPH_CONFORMANCE_ROOT_RE_BYTES: re.Pattern[bytes] = re.compile(rb"rs-conformance-[0-9a-f]+")
 
-# Request-body redactions for the OAuth token-exchange POST. MSAL sends this
-# form-encoded over ``requests`` (which vcrpy also patches), so a recording made
-# while the client-credentials / certificate / refresh flows acquire a token
-# would otherwise capture the credential in the request body. The device-code
-# flow carries none of these, but the app-only recipe shipped in graph-setup.md
-# does — so the gate scrubs them rather than only covering the device-code path.
-#
-# Deliberately NOT migrated to vcrpy's native ``filter_post_data_parameters``
-# (BK-284 PR 1 evaluated it; the header half DID migrate): in vcrpy 8.1.1
-# (``vcr/filters.py:replace_post_data_parameters``) that filter only runs on
-# POST requests, and — worse — re-serialises every body whose Content-Type is
-# ``application/json`` through ``json.loads``/``json.dumps`` even when no
-# parameter matches, whitespace-churning every Graph JSON POST (copy /
-# createFolder / createUploadSession) on the next re-record and polluting the
-# security-review diff. The targeted bytes regexes below are byte-preserving
-# and method-agnostic. Revisit only if vcrpy gains a non-rewriting filter.
+# Request-body redactions for the OAuth token-exchange POST: MSAL sends the
+# client-credentials / certificate / refresh flows form-encoded over
+# ``requests`` (which vcrpy also patches), so the credential fields must never
+# reach a cassette. The device-code flow carries none of them; the app-only
+# recording path (graph-setup.md) does. Kept as byte-preserving,
+# method-agnostic regexes rather than vcrpy's ``filter_post_data_parameters``,
+# which is POST-only and re-serialises every ``application/json`` body even
+# when nothing matches — churning the security-review diff on re-record.
+# Revisit only if vcrpy gains a non-rewriting filter.
 _GRAPH_REQUEST_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
     (re.compile(rb"(client_secret=)[^&\r\n]+"), rb"\1REDACTED"),
     (re.compile(rb"(client_assertion=)[^&\r\n]+"), rb"\1REDACTED"),
@@ -453,40 +435,32 @@ def live_connection_string() -> str:
 
 
 def build_vcr_config(real_account: str | None) -> dict[str, Any]:
-    """Return a ``vcr_config`` dict for the conformance conftest fixture.
+    """Return a ``vcr_config`` dict for recording/replaying Azure Storage.
 
     ``real_account`` is the storage account name extracted from the live
     connection string (record mode) or ``None`` (replay mode).  The
     ``before_record_*`` hooks apply in both modes — vcrpy normalises
     outgoing requests for matching against the cassette even during replay,
-    so the ``if real:`` guards below are load-bearing on the replay path.
+    so the ``if real_account:`` guards below are load-bearing on the replay
+    path.
 
-    Additions over the PoC scrubbing layer:
+    What it strips:
 
-    * Filesystem-UUID rewrite: ``conformance-<uuid8>`` → ``FAKE_FILESYSTEM``
-      so live and replay fixtures share cassette URLs (plan challenge 2).
-    * Temp-file UUID normalisation: ``write_atomic`` appends a random 8-char
-      hex UUID to temp filenames (``_TMP_UUID_PATTERN``); normalising it out
-      keeps the cassette path deterministic across record and replay runs.
-    * ``x-ms-rename-source`` / ``x-ms-copy-source`` header scrubbing: the live
-      account name and container name leak into these headers during move/copy
-      operations; both are replaced with ``FAKE_ACCOUNT`` / ``FAKE_FILESYSTEM``.
-    * Body-level ``RequestId:`` / ``Time:`` scrub for error-response XML
-      (PoC gap; cosmetic but keeps cassette diffs clean).
-    * Binary-safe bytes handling: ``before_record_response`` operates on bytes
-      directly (using ``_FILESYSTEM_PATTERN_BYTES``) rather than decoding the
-      body as UTF-8, which would crash on raw binary payloads (e.g. ``\\xff``).
-    * ``User-Agent`` normalisation to ``azsdk-python-replay`` so recording
-      machine Python/OS details don't appear in committed cassettes — via the
-      native ``filter_headers`` tuple form, alongside the request-header
-      deletes (BK-284 PR 1).
+    * ``Authorization`` / ``x-ms-date`` / correlation / ``Cookie`` request
+      headers, plus the ``User-Agent`` normalisation, via the native
+      ``filter_headers`` (composed before the custom hook in both modes);
+    * SAS-token query parameters;
+    * the live account name and the per-call ``conformance-<uuid>``
+      filesystem name from request URIs, the ``x-ms-rename-source`` /
+      ``x-ms-copy-source`` header values, and response bodies — handled in
+      the bytes domain so binary payloads are never decoded;
+    * the random temp-file UUID ``write_atomic`` appends, so the cassette
+      path is deterministic across record and replay runs; and
+    * per-request response headers (request ids, ``Set-Cookie``, ``Date``)
+      and the ``RequestId:`` / ``Time:`` fragments in error-response XML.
 
-    Native/custom split (BK-284 PR 1): request-header deletes and the
-    User-Agent rewrite run through vcrpy's native ``filter_headers``, which
-    vcrpy composes *before* this hook in record and replay mode alike. The
-    ``before_record_request`` below keeps only what has no native filter:
-    URI rewrites and the ``x-ms-rename-source`` / ``x-ms-copy-source``
-    header *value* rewrites.
+    The custom hooks keep only what vcrpy has no native filter for: URI and
+    header-value rewrites and all response-side scrubbing.
     """
 
     def before_record_request(request: Any) -> Any:
@@ -580,8 +554,7 @@ def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
     * ``Authorization`` (the bearer token), ``Cookie``, and the
       ``client-request-id`` correlation header from requests — plus the
       ``User-Agent`` normalisation — via the native ``filter_headers``,
-      which vcrpy composes *before* the custom hook in both modes
-      (BK-284 PR 1);
+      which vcrpy composes *before* the custom hook in both modes;
     * the OAuth credentials (``client_secret`` / ``client_assertion`` /
       ``assertion`` / ``refresh_token``) from the token-exchange **request**
       body — MSAL sends these form-encoded over ``requests``, which vcrpy
