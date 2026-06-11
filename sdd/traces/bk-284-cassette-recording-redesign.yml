@@ -1,0 +1,164 @@
+id: BK-284
+title: "Cassette recording layer redesign: backend-agnostic core + REC-NNN spec"
+trigger: >-
+  tests/backends/fixtures/_cassettes.py grew Azure-first and absorbed Graph by
+  accretion: two parallel build_*_vcr_config stacks, four body-scrub lists, and
+  hand-rolled request-header/OAuth-body scrubs where vcrpy ships native
+  filters. BK-284 was filed from PR #787 review with a two-PR migration
+  decision; this trace covers the planning pass and PR 1 (native-filter
+  warm-up). PR 2 (profile core + spec 049 + ADR-0029 + named audit) is open.
+source_items:
+  - BK-284
+  - BK-262
+audience:
+  - infra.test
+  - library.maintainer
+expected_ripples:
+  - sdd/BACKLOG.md
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient (plan authoring)
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-284"
+        read_type: gate
+        extract: "Five filing decisions, sketch, touches list, #787 merge-order dependency"
+        outcome: ok
+      - file: sdd/plans/ID-127-graph-backend-implementation.md
+        section: "(full, from git history; deleted at ID-127 close)"
+        read_type: reference
+        extract: "Plan-doc format precedent: repo-only marker, temporary-artefact banner, per-PR scope/acceptance/risks"
+        outcome: ok
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "(full, from the open PR #787 branch)"
+        read_type: gate
+        extract: "Both config builders, four scrub lists, helpers to relocate; post-merge deltas re-read after #787 landed"
+        outcome: ok
+      - file: tests/backends/conformance/conftest.py
+        section: "TEST-007 wiring"
+        read_type: gate
+        extract: "_FIXTURE_CASSETTE_DIRS / _CASSETTE_ID_ALIASES consumers the PR-2 profile must replace"
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "Step 4 scrub-verify"
+        read_type: gate
+        extract: "forbidden_patterns gate + account sweep the named-pattern audit extends"
+        outcome: ok
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-007"
+        read_type: gate
+        extract: "Implementation-choice deferral paragraph that spec 049 will take over"
+        outcome: ok
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?"
+        read_type: reference
+        extract: "sdd/plans/ has no directory default; explicit repo-only marker required"
+        outcome: ok
+  - id: implement
+    name: Implement PR 1 (native filter migration)
+    steps:
+      - file: sdd/plans/BK-284-cassette-recording-redesign.md
+        section: "PR 1"
+        read_type: gate
+        extract: "Migration map, test-rework mandate, pre-authorized fallback for the POST-param half"
+        outcome: ok
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "build_vcr_config / build_graph_vcr_config"
+        read_type: gate
+        extract: >-
+          Verified vcrpy 8.1.1 internals (.venv vcr/config.py, vcr/filters.py,
+          vcr/request.py) before migrating: native filters compose BEFORE the
+          custom hook; HeadersDict is case-insensitive; Request.body str-encodes
+          on assignment; replace_post_data_parameters is POST-only and
+          re-serialises application/json bodies even on no match -> POST-param
+          migration REJECTED (fallback taken), headers + User-Agent migrated
+        outcome: ok
+      - file: tests/backends/cassettes/graph/
+        section: "request header casing"
+        read_type: verify
+        extract: "Corpus records capitalised User-Agent; tuple key must match it to stay byte-identical on re-record"
+        outcome: ok
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "TestGraphCassetteScrub"
+        read_type: gate
+        extract: "Security-gate tests called the bare hook; reworked onto vcrpy's composed chain + new TestAzureCassetteScrub"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Spec section + Backlog item touched"
+        read_type: verify
+        extract: "Trace mandatory; TEST-007 marks unchanged; no spec text edited in PR 1; CHANGELOG N/A (infra.test)"
+        outcome: ok
+      - file: tests/backends/conformance/
+        section: "graph_replay + azure_replay Stage-1 slices"
+        read_type: verify
+        extract: "109 + 296 passed against unchanged committed cassettes; zero cassette files modified"
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "--verify-only (graph + azure)"
+        read_type: verify
+        extract: >-
+          Re-ran live on a creds-bearing machine after the initial implementation: graph Step 4
+          clean over 118 cassettes (live drive-id + 10 markers absent), azure clean over 303
+          (live account name absent), Step 5 replay green both. Proves the native-filter code
+          path keeps the real .env-resolved secrets out of the corpus.
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "--node single-cassette re-record (graph + azure, byte-identity dogfood)"
+        read_type: verify
+        extract: >-
+          Opt-in flags exported; one node re-recorded per backend, both reverted (nothing committed).
+          PR-1 byte-equivalence confirmed: azure diff = ETag/Last-Modified volatile only; graph shared
+          interactions = volatile churn only, plus a cold-cache MSAL refresh_token POST proving the
+          native User-Agent filter, the kept refresh_token= bytes regex, and the id_token/client_info
+          response redaction all fire live. Surfaced a pre-existing scrub gap (not a PR-1 regression):
+          the X-AnchorMailbox request header on that refresh POST embeds the drive cid in hyphen-split
+          oid form, missed by the contiguous drive-id rewrite and all Step-4 markers. Corpus clean today
+          (warm cache => no real token POST recorded); folded into PR 2 (EnvRedact hyphen form + drop
+          X-AnchorMailbox + oid-anchor forbidden marker) per user decision, not a separate item.
+        outcome: ok
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "TestGraphCassetteScrub real-literal scrub (PR gate qualitative review)"
+        read_type: verify
+        extract: >-
+          PR-gate qualitative review caught the real OneDrive drive cid hardcoded as a test literal
+          (the live X-AnchorMailbox oid low-64 matched it exactly) plus a base64 JWT payload encoding
+          the real account email — both pre-existing from #787, carried forward unchanged by PR 1's
+          rewrite, present only in test source (cassettes were clean). Per user decision, scrubbed in
+          PR 1 (file PR 1 already owns): cid -> obviously-fake deadbeefcafe0123 both cases, email ->
+          user@example.com, zero test-behaviour change (3 affected tests still pass). Not a local-path
+          gate hit; judgment-based catch.
+        outcome: ok
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "test_user_agent_absent_stays_absent (PR #791 review)"
+        read_type: verify
+        extract: >-
+          PR #791 review (one inline thread) noted the migration's load-bearing add-vs-replace
+          semantics were unpinned: the native ("User-Agent", ...) tuple rewrites a present header but
+          must never ADD one when absent (vcrpy replace_headers guards on `if k in new_headers:`),
+          and both existing UA tests only covered the present-header path. Added a no-UA-in/no-UA-out
+          test to TestGraphCassetteScrub and TestAzureCassetteScrub so a future vcrpy that materialised
+          missing replacement headers would fail loud instead of silently injecting UA into cassettes
+          that never carried one. Verified the claim against vcrpy 8.1.1 source before applying.
+        outcome: ok
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "content-rules doc cleanup (PR #791 review round 2)"
+        read_type: verify
+        extract: >-
+          Human review round 2 flagged history-narrating docs against CONTENT-RULES rule 1 (6-month
+          test): the module docstring's BK-181 "Porting notes", the filter_headers comment's
+          migration narrative, the filter_post_data_parameters rejection preamble, and
+          build_vcr_config's "Additions over the PoC" list. All four rewritten present-tense to
+          state only the load-bearing constraints (tuple-rewrites-never-adds, native-before-custom
+          composition, capitalised-key byte-identity, JSON-reserialisation rejection trigger); the
+          SAS zero-hit rationale moved from the deleted history section to _SCRUB_QUERY_PARAMS.
+          Doc-only, zero behaviour change (37 cassette unit tests pass). The round's structural
+          findings (flat module -> profile building blocks, Azure-first constants/values incl.
+          FAKE_ACCOUNT="azreplay" baked into all 303 committed azure cassettes) are PR-2
+          workstreams B/D territory; user decided: PR 2 as planned (relocation answers the
+          history concern; value rename evaluated there — rsreplay shape, isolated textual
+          commit if taken). Plan workstream D records both obligations.
+        outcome: ok
