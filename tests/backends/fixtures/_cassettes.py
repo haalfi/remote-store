@@ -1,739 +1,463 @@
-"""Cassette scrub layer: vcrpy config builders and replay identifiers for HTTP backends.
+"""Backend-agnostic cassette scrub core: declarative profiles for vcrpy.
 
-``build_vcr_config`` (Azure Storage) and ``build_graph_vcr_config``
-(Microsoft Graph) are the single source of truth for what is stripped
-from every recorded cassette — credentials, account identity, per-run
-identifiers, machine-specific strings — so committed cassettes replay
-deterministically and leak nothing.  Consumed by the conformance
-conftest's ``vcr_config`` fixture and the replay fixtures; the recorder
-(``scripts/record_cassettes.py``) and the creds-free CI sweep in
-``test_cassettes.py`` share ``GRAPH_FORBIDDEN_CASSETTE_PATTERNS`` as
-their leak gate.
+Each HTTP backend family declares one ``CassetteProfile`` naming everything
+its cassettes must never carry — credentials, account identity, per-run
+identifiers, machine-specific strings — plus where its cassettes live and
+which fixture ids share them. ``build_profile_vcr_config`` turns a profile
+into the ``vcr_config`` dict the conformance conftest feeds to vcrpy. This
+module holds the shapes and the one generic config factory; the per-backend
+profile declarations live in ``_cassettes_azure.py`` / ``_cassettes_graph.py``
+(spec 049, REC-001).
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
+from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import urlsplit
 
-# ---------------------------------------------------------------------------
-# Directory constant
-# ---------------------------------------------------------------------------
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping
 
-CASSETTE_DIR_AZURE: Path = Path(__file__).resolve().parent.parent / "cassettes" / "azure"
-"""Absolute path to ``tests/backends/cassettes/azure/``.
+Expectation = Literal["required-to-fire", "opportunistic"]
+"""Audit expectation of a named rule (REC-002 / REC-006).
 
-Used by ``tests/backends/conformance/conftest.py`` for both the
-``vcr_cassette_dir`` fixture override and the missing-cassette skip hook.
+``required-to-fire`` rules must redact at least once over a full-slice
+recording — zero fires means the scrub layer silently stopped seeing the
+secret it owns. ``opportunistic`` rules guard shapes a normal recording
+may legitimately never produce. Exact counts never gate: they are
+workload-dependent.
 """
 
-CASSETTE_DIR_GRAPH: Path = Path(__file__).resolve().parent.parent / "cassettes" / "graph"
-"""Absolute path to ``tests/backends/cassettes/graph/`` (TEST-007).
-
-Per-backend cassette directory for the Microsoft Graph backend (ID-127 /
-GR-FOUNDATION). The conformance ``vcr_cassette_dir`` dispatch will route
-``graph_*`` fixtures here once the backend's replay fixtures land in
-GR-CORE; the constant exists now so the scrub profile below and its
-security-gate test have a stable home to reference.
-"""
-
-# ---------------------------------------------------------------------------
-# Fixed identifiers used in replay and scrubbing
-# ---------------------------------------------------------------------------
-
-FAKE_ACCOUNT = "azreplay"
-"""Placeholder account name written into every recorded cassette URL.
-
-The replay fixtures build the backend from a connection string naming this
-same account so that the host in every outgoing request matches the cassette.
-Not a secret — it is just a well-formed DNS label.
-"""
-
-FAKE_FILESYSTEM = "conformance-azure-replay"
-"""Fixed filesystem (container) name used by replay fixtures.
-
-Live fixtures mint a per-call ``conformance-<uuid>``; the scrubbing layer
-rewrites those to this fixed name so cassettes are replay-compatible.
-"""
-
-_FAKE_KEY = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
-"""Azurite's well-known emulator key.
-
-Valid base64 (so the SharedKey signer and ``from_connection_string`` both
-accept it); publicly documented and not a secret.
-"""
-
-FAKE_CONN_STR = (
-    f"DefaultEndpointsProtocol=https;AccountName={FAKE_ACCOUNT};AccountKey={_FAKE_KEY};EndpointSuffix=core.windows.net"
-)
-"""Fake connection string used by replay fixtures.
-
-Contains no real credentials; the ``FAKE_ACCOUNT`` host is matched by
-vcrpy against the scrubbed cassette URLs.
-"""
-
-# ---------------------------------------------------------------------------
-# Scrub lists
-# ---------------------------------------------------------------------------
-
-# Request-header scrubs ride vcrpy's native ``filter_headers``: a plain entry
-# deletes the header; the ``("User-Agent", ...)`` tuple appended in each config
-# builder rewrites its value in place (and never adds it when absent). vcrpy
-# composes these before the custom ``before_record_request`` hook and matches
-# header names case-insensitively. Tuples keep the emitted config
-# deterministic; the capitalised ``User-Agent`` key matches the case cassettes
-# record, so re-records stay byte-identical.
-_SCRUB_REQUEST_HEADERS: tuple[str, ...] = ("authorization", "x-ms-date", "x-ms-client-request-id", "cookie")
-_SCRUB_RESPONSE_HEADERS: frozenset[str] = frozenset(
-    {"x-ms-request-id", "x-ms-client-request-id", "x-ms-correlation-request-id", "set-cookie", "date"}
-)
-# SAS-token parameters. SharedKey auth keeps its signature in headers, so
-# these are zero-hit on today's recordings; listed so any future
-# SAS-authenticated fixture inherits the scrub.
-_SCRUB_QUERY_PARAMS: tuple[str, ...] = (
-    "sig",
-    "se",
-    "st",
-    "sp",
-    "sv",
-    "sr",
-    "skoid",
-    "sktid",
-    "skt",
-    "ske",
-    "sks",
-    "skv",
-)
-
-# Matches both ``conformance-12ab34cd`` (sync live) and
-# ``conformance-async-12ab34cd`` (async live); replaced with FAKE_FILESYSTEM.
-_FILESYSTEM_PATTERN: re.Pattern[str] = re.compile(r"conformance(?:-async)?-[0-9a-f]{8}")
-# Bytes version used when the response body is raw binary (non-decodable).
-_FILESYSTEM_PATTERN_BYTES: re.Pattern[bytes] = re.compile(_FILESYSTEM_PATTERN.pattern.encode())
-
-# Matches the 8-char hex UUID suffix that write_atomic appends to temp files:
-#   .~tmp.{basename}.{uuid8}
-# The suffix differs between record and replay runs, so normalise it out so
-# the cassette path matches on replay.  Applied to request URIs only.
-_TMP_UUID_PATTERN: re.Pattern[str] = re.compile(r"(\.~tmp\.[^?/]*)\.[0-9a-f]{8}(?=[?/]|$)")
-
-# Error-response XML body fragments that carry per-run identifiers.
-# Applied to bytes bodies and (if they somehow arrive as str) str bodies alike.
-_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
-    (re.compile(rb"RequestId:[0-9a-f-]+"), b"RequestId:SCRUBBED"),
-    (re.compile(rb"Time:\d{4}-\d{2}-\d{2}T[^<\"&\r\n]+"), b"Time:SCRUBBED"),
-]
-
-_USER_AGENT_NORMALIZED = "azsdk-python-replay"
-
-# ---------------------------------------------------------------------------
-# Microsoft Graph scrub profile (ID-127 / GR-FOUNDATION; GR-035, TEST-007)
-# ---------------------------------------------------------------------------
-#
-# Security gate: the Graph backend sends an ``Authorization: Bearer <token>``
-# on every request and downloads content from a pre-signed
-# ``@microsoft.graph.downloadUrl`` whose query carries its own access token.
-# Neither may survive into a committed cassette. The profile below drops the
-# bearer + cookies + correlation ids, redacts the downloadUrl and any
-# bearer/access/refresh token from response bodies, filters the pre-signed
-# download query params, and rewrites the live ``drive_id`` to a placeholder.
-
-FAKE_DRIVE_ID = "graphreplaydrive"
-"""Placeholder drive id written into every recorded Graph cassette URL.
-
-Replay fixtures (GR-CORE) construct the backend with this same drive id so
-the ``/drives/{drive_id}/...`` path in every outgoing request matches the
-cassette. Not a secret — an arbitrary well-formed token.
-"""
-
-GRAPH_CONFORMANCE_BASE_PATH = "rs-conformance"
-"""Canonical ``base_path`` (GR-058) the ``graph_replay`` fixture roots under.
-
-``graph_live`` isolates each conformance test in a unique
-``rs-conformance-<uuid>`` drive subfolder; the scrub below rewrites that
-per-test uuid form back to this stable token in recorded cassette URIs and
-bodies, so a cassette recorded under a random folder replays against this fixed
-path. ``graph_replay`` constructs its backend with this same ``base_path`` so
-every outgoing request matches. Not a secret — a normalisation token.
-"""
-
-# Native ``filter_headers`` deletes, like ``_SCRUB_REQUEST_HEADERS`` above.
-_GRAPH_SCRUB_REQUEST_HEADERS: tuple[str, ...] = ("authorization", "cookie", "client-request-id")
-_GRAPH_SCRUB_RESPONSE_HEADERS: frozenset[str] = frozenset(
-    # ``docID`` rides on every pre-signed-content response as
-    # ``microsoftpersonalcontent.com_<site-collection-guid>_<doc-guid>`` — the
-    # middle GUID is the personal-OneDrive site id, the same value
-    # ``_GRAPH_PII_BODY_SCRUB`` blanks as ``"siteId"`` in bodies (the body regex
-    # never runs on headers, so it survived here). The backend never reads it, so
-    # drop the whole header rather than partially id-normalise it (BK-262 review).
-    #
-    # The trailing group are per-request correlation / diagnostic ids the backend
-    # never reads: ``x-ms-request-id`` (the ESTS variant on ``login.microsoftonline.com``
-    # responses that the ``request-id`` entry, no ``x-ms-`` prefix, missed — and
-    # which the Azure profile already drops), ``x-ms-ests-server`` (ESTS
-    # datacenter), and the SharePoint/CDN correlation ids ``sprequestguid`` /
-    # ``splogid`` / ``ms-cv`` / ``x-msedge-ref`` on pre-signed-content responses.
-    # None are credentials or account PII, but dropping them keeps cassette diffs
-    # stable across re-records and matches the Azure profile's posture (BK-262
-    # review). The transient ``innerError`` ``request-id`` / ``client-request-id``
-    # GUIDs nested inside Graph error *bodies* are left as-is: they are not
-    # identity/credential, and a JSON-body regex on those generic keys would add
-    # matching surface for a churn-only gain.
-    {
-        "request-id",
-        "client-request-id",
-        "x-ms-ags-diagnostic",
-        "set-cookie",
-        "date",
-        "docid",
-        "x-ms-request-id",
-        "x-ms-ests-server",
-        "sprequestguid",
-        "splogid",
-        "ms-cv",
-        "x-msedge-ref",
-    }
-)
-# Pre-signed download-URL query parameters. Consumer OneDrive uses
-# ``tempauth`` / ``Expires``; SharePoint uses the SAS-style set already listed
-# for Azure. ``access_token`` covers the rare in-query token form.
-_GRAPH_SCRUB_QUERY_PARAMS: tuple[str, ...] = (*_SCRUB_QUERY_PARAMS, "tempauth", "Expires", "access_token")
-
-# The pre-signed download token also rides the ``Location`` response header:
-# ``GET /content`` answers ``302`` whose ``Location`` IS the
-# ``@microsoft.graph.downloadUrl`` with the token in its query (spec 044
-# GR-015). ``filter_query_parameters`` only touches request URIs, so the header
-# is redacted here. The *whole query* is wiped value-based — mirroring the
-# JSON-body downloadUrl scrub — rather than enumerating param names: the entire
-# query of a downloadUrl is token machinery, so a novel/undocumented param name
-# must not survive on the strength of not being in a list. Host + path are kept
-# so the cassette stays reviewable.
-_GRAPH_URL_QUERY_RE: re.Pattern[str] = re.compile(r"\?\S*")
-
-# Hosts whose request URIs are preserved (id-normalised only): the Graph API and
-# the MSAL token endpoint. Every *other* host a recording touches is a pre-signed
-# content host — the ``@microsoft.graph.downloadUrl`` / ``uploadUrl`` CDN
-# (consumer OneDrive) or the copy/move monitor URL — whose URI carries an access
-# token. Those are rewritten wholesale to GRAPH_PRESIGNED_PLACEHOLDER below.
-_GRAPH_API_HOSTS: tuple[str, ...] = ("graph.microsoft.com", "login.microsoftonline.com")
-
-GRAPH_PRESIGNED_PLACEHOLDER = "https://graph-download.invalid/REDACTED"
-"""Stable replacement for every pre-signed Graph URL in recorded cassettes.
-
-A pre-signed URL (``@microsoft.graph.downloadUrl``, the upload-session
-``uploadUrl``, the copy/move monitor URL) carries its own access token and must
-not survive into a committed cassette. It is wiped to this one valid placeholder
-in two coupled places so record and replay agree: the response-body value
-(``_GRAPH_BODY_SCRUB``) and the request URI of any pre-signed-host request
-(``before_record_request``). The ``.invalid`` TLD (RFC 6761) never resolves, so
-the placeholder is obviously fake and non-routable; nothing of the live URL
-(host, path, token) survives — strictly stronger redaction than the bare
-``"REDACTED"`` token it replaces, which was not a URL and so broke replay
-(the backend reads the value back out of the body and re-requests it).
-
-``before_record_request`` runs in both record and replay mode, so the request
-the backend issues on replay — built from the placeholder it read out of the
-scrubbed body / ``Location`` header — normalises to the same value the recorded
-request was rewritten to, and vcrpy matches them. This is the half that makes
-Graph reads/writes/copies replay-able (BK-262).
-
-Replay is order-dependent because every pre-signed interaction in a cassette
-collapses to this one method+URI: vcrpy disambiguates the otherwise-identical
-``GET https://graph-download.invalid/REDACTED`` entries (e.g. a copy cassette's
-async monitor poll and its content download) solely by recorded order. That
-holds for today's sequential conformance tests, but a backend change in
-pre-signed call order/count (an extra poll, a retry, concurrent range reads)
-will mis-serve or exhaust interactions with a confusing vcrpy mismatch rather
-than an obvious one. Concurrent pre-signed requests within a single test are
-unsupported under replay (BK-262 review)."""
-
-_GRAPH_PRESIGNED_PLACEHOLDER_BYTES = GRAPH_PRESIGNED_PLACEHOLDER.encode()
-_GRAPH_PRESIGNED_PLACEHOLDER_HOST = urlsplit(GRAPH_PRESIGNED_PLACEHOLDER).hostname or "graph-download.invalid"
-"""Host of ``GRAPH_PRESIGNED_PLACEHOLDER`` (``graph-download.invalid``).
-
-Written over the ``Host`` request header of any pre-signed-host request so the
-live content host — generic ``my.microsoftpersonalcontent.com`` for consumer
-OneDrive, but a tenant-identifying ``<tenant>-my.sharepoint.com`` on a business
-drive — does not survive next to the redacted URI. vcrpy's default matcher
-ignores ``Host``, so replay is unaffected.
-"""
+# region: named rule shapes (REC-002)
 
 
-def _graph_is_presigned_host(uri: str) -> bool:
-    """True when *uri*'s host is a pre-signed content host (not the Graph API / MSAL).
+@dataclass(frozen=True)
+class RedactPattern:
+    """A named bytes-domain redaction applied to request/response bodies.
 
-    A URI with no host (relative, or a bare token) is treated as *not* pre-signed
-    so it is left for the normal id-normalisation path rather than being blanked —
-    a defensive default that never over-redacts.
+    Bytes, not str, so binary payloads are scrubbed without a decode that
+    would crash on raw bytes; the core owns the str round-trip dispatch.
     """
-    host = (urlsplit(uri).hostname or "").lower()
-    if not host:
-        return False
-    return not any(host == h or host.endswith("." + h) for h in _GRAPH_API_HOSTS)
+
+    name: str
+    pattern: re.Pattern[bytes]
+    replacement: bytes
+    expectation: Expectation = "opportunistic"
+
+    def apply(self, raw: bytes) -> bytes:
+        out, fires = self.pattern.subn(self.replacement, raw)
+        _record_fires(self.name, fires)
+        return out
 
 
-# Body-level redactions, applied in the bytes domain so binary payloads are
-# safe. Each preserves surrounding JSON structure and replaces only the
-# secret-bearing value. The ``uploadUrl`` returned by ``createUploadSession``
-# is pre-authorised and carries its own token in the query (the same threat as
-# ``downloadUrl``), so it is wiped alongside it — both to the placeholder URL so
-# the value the backend reads back is a valid, replay-matchable URL.
-_GRAPH_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
-    (
-        re.compile(rb'("@microsoft\.graph\.downloadUrl"\s*:\s*")[^"]*(")'),
-        rb"\1" + _GRAPH_PRESIGNED_PLACEHOLDER_BYTES + rb"\2",
-    ),
-    (re.compile(rb'("uploadUrl"\s*:\s*")[^"]*(")'), rb"\1" + _GRAPH_PRESIGNED_PLACEHOLDER_BYTES + rb"\2"),
-    # The OAuth token-exchange response (``login.microsoftonline.com/.../token``)
-    # is recorded whenever MSAL refreshes mid-suite (a warm in-memory cache hides
-    # it, which is why earlier recordings happened to omit it). Beyond
-    # ``access_token`` / ``refresh_token``, it carries an ``id_token`` (a JWT) and
-    # ``client_info`` (base64) whose payloads embed the account email, display
-    # name, tenant id, and an ``oid`` containing the drive cid — none caught by the
-    # drive-id / email scrubs because they are base64-encoded. Redact all four
-    # token-response fields wholesale (BK-262 review: the ``bare JWT`` marker
-    # caught this on re-record). Replay never re-issues the token request — the
-    # ``graph_replay`` backend uses a constant stub token — so the redacted value
-    # is never parsed back.
-    (re.compile(rb'("(?:access_token|refresh_token|id_token|client_info)"\s*:\s*")[^"]*(")'), rb"\1REDACTED\2"),
-    (re.compile(rb"Bearer\s+[A-Za-z0-9._~+/=\-]+"), b"Bearer REDACTED"),
-]
+@dataclass(frozen=True)
+class UriRewrite:
+    """A named str-domain rewrite applied to request URIs and header values.
 
-# Identity / tenant PII redactions for response bodies. Graph item responses
-# embed ``createdBy`` / ``lastModifiedBy`` user objects (real account email +
-# display name) and a ``siteId`` (the personal-OneDrive site GUID); none of
-# these are read by the backend or asserted by the conformance suite, so they
-# can be blanked without breaking replay. Keys are matched whole (the opening
-# quote is part of the match) so ``"displayName"`` is redacted while the
-# load-bearing ``"name"`` item field — which the backend *does* read — is left
-# untouched. The live ``drive_id`` (cid) embedded in item ids / eTags is handled
-# separately by the case-insensitive ``real_drive_id`` rewrite, since Graph
-# returns it upper-cased in those fields.
-_GRAPH_PII_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
-    (
-        re.compile(rb'("(?:email|displayName|userPrincipalName|loginName|siteId)"\s*:\s*")[^"]*(")'),
-        rb"\1REDACTED\2",
-    ),
-]
+    ``replacement`` may use backreferences (``\\1``). Body-side application
+    of the same pattern is declared separately as a ``RedactPattern`` bytes
+    twin, so each surface has its own audit identity.
+    """
 
-# Per-test conformance-root normalisation (GR-058 isolation ↔ replay): rewrite
-# the unique ``rs-conformance-<uuid>`` subfolder graph_live roots each test under
-# back to the stable ``GRAPH_CONFORMANCE_BASE_PATH`` token, in both request URIs
-# and request/response bodies (parentReference paths), so cassettes are
-# reproducible on replay regardless of the random per-record uuid.
-_GRAPH_CONFORMANCE_ROOT_RE_STR: re.Pattern[str] = re.compile(r"rs-conformance-[0-9a-f]+")
-_GRAPH_CONFORMANCE_ROOT_RE_BYTES: re.Pattern[bytes] = re.compile(rb"rs-conformance-[0-9a-f]+")
+    name: str
+    pattern: re.Pattern[str]
+    replacement: str
+    expectation: Expectation = "opportunistic"
 
-# Request-body redactions for the OAuth token-exchange POST: MSAL sends the
-# client-credentials / certificate / refresh flows form-encoded over
-# ``requests`` (which vcrpy also patches), so the credential fields must never
-# reach a cassette. The device-code flow carries none of them; the app-only
-# recording path (graph-setup.md) does. Kept as byte-preserving,
-# method-agnostic regexes rather than vcrpy's ``filter_post_data_parameters``,
-# which is POST-only and re-serialises every ``application/json`` body even
-# when nothing matches — churning the security-review diff on re-record.
-# Revisit only if vcrpy gains a non-rewriting filter.
-_GRAPH_REQUEST_BODY_SCRUB: list[tuple[re.Pattern[bytes], bytes]] = [
-    (re.compile(rb"(client_secret=)[^&\r\n]+"), rb"\1REDACTED"),
-    (re.compile(rb"(client_assertion=)[^&\r\n]+"), rb"\1REDACTED"),
-    (re.compile(rb"(assertion=)[^&\r\n]+"), rb"\1REDACTED"),
-    (re.compile(rb"(refresh_token=)[^&\r\n]+"), rb"\1REDACTED"),
-]
+    def apply(self, value: str) -> str:
+        out, fires = self.pattern.subn(self.replacement, value)
+        _record_fires(self.name, fires)
+        return out
 
-# Env-independent "must never appear in a committed Graph cassette" markers. Each
-# asserts a guarantee the scrub layer above is responsible for, so a re-record (or
-# a hand edit / bad merge) cannot silently reintroduce the secret. The single
-# source for two gates: the recorder's Step-4 scrub-verify (record_cassettes.py,
-# live-creds path) AND a creds-free CI sweep over the committed tree
-# (test_cassettes.py). Patterns are bytes and matched case-insensitively. They
-# encode failure modes, not just leaks already found — the credential-form,
-# tenant-host, identity-key, and JWT markers guard the surfaces a future scrub
-# regression would expose (BK-262 review).
-GRAPH_FORBIDDEN_CASSETTE_PATTERNS: tuple[tuple[str, bytes], ...] = (
+
+def _single_form(value: str) -> tuple[str, ...]:
+    return (value,)
+
+
+@dataclass(frozen=True)
+class EnvRedact:
+    """A live value resolved at record time and redacted everywhere (REC-003).
+
+    ``resolve`` returns the live value in record mode (``None`` disables the
+    rule, e.g. replay mode or an unset env var). The core rewrites every
+    ``forms(value)`` variant to ``fake`` across request URIs, request-header
+    values, request bodies, and response bodies — bytes and str alike.
+    ``forms`` exists for values a service echoes in more than one shape
+    (the Graph cid appears hyphen-split inside an MSAL ``Oid:`` header).
+    """
+
+    name: str
+    resolve: Callable[[], str | None]
+    fake: str
+    case_insensitive: bool = False
+    forms: Callable[[str], tuple[str, ...]] = _single_form
+    expectation: Expectation = "required-to-fire"
+
+
+# endregion
+
+# region: pre-signed URL policy (REC-004)
+
+
+@dataclass(frozen=True)
+class PresignedPolicy:
+    """Collapse every pre-signed URL to one stable placeholder.
+
+    A pre-signed URL carries its own access token, so nothing of it (host,
+    path, query) may survive into a cassette. Any request whose host is not
+    one of ``api_hosts`` is treated as pre-signed content traffic and has
+    its URI (and ``Host`` header) replaced with ``placeholder`` — in record
+    and replay mode alike, so the request the backend re-issues from a
+    scrubbed body/header normalises to the same value the recorded request
+    was rewritten to, and vcrpy matches them.
+
+    Replay is therefore order-dependent: every pre-signed interaction in a
+    cassette collapses to one method+URI and vcrpy disambiguates solely by
+    recorded order. Concurrent pre-signed requests within a single test are
+    unsupported under replay.
+    """
+
+    api_hosts: tuple[str, ...]
+    placeholder: str
+
+    @property
+    def placeholder_host(self) -> str:
+        return urlsplit(self.placeholder).hostname or self.placeholder
+
+    def is_presigned(self, uri: str) -> bool:
+        """True when *uri*'s host is a pre-signed content host.
+
+        A URI with no host (relative, or a bare token) is *not* pre-signed,
+        so it falls through to the normal id-normalisation path — a
+        defensive default that never over-redacts.
+        """
+        host = (urlsplit(uri).hostname or "").lower()
+        if not host:
+            return False
+        return not any(host == h or host.endswith("." + h) for h in self.api_hosts)
+
+
+# endregion
+
+# region: forbidden-pattern envelope (REC-006)
+
+# Env-independent "must never appear in a committed cassette" markers shared
+# by EVERY profile. Each encodes a failure mode — a credential form, token
+# shape, or identity leak the scrub layer owns — so a re-record, hand edit,
+# or bad merge cannot silently reintroduce one. Two consumers run the same
+# combined view (``CassetteProfile.all_forbidden_patterns``): the recorder's
+# Step-4 scrub-verify and the creds-free CI sweep in ``test_cassettes.py``.
+# Patterns are bytes, matched case-insensitively.
+FORBIDDEN_ENVELOPE: tuple[tuple[str, bytes], ...] = (
     # A bearer token that did NOT get redacted to ``Bearer REDACTED``.
     ("bare bearer token", rb"Bearer (?!REDACTED)\S"),
-    # Any JWT (access / id token) — base64url ``eyJ<header>.`` — regardless of the
-    # surrounding key, so a token leaking outside an ``Authorization`` header is
-    # still caught.
+    # Any JWT (``eyJ<base64url>.``) regardless of the surrounding key, so a
+    # token leaking outside an Authorization header is still caught.
     ("bare JWT", rb"eyJ[A-Za-z0-9_-]{10,}\."),
-    # The pre-signed-content ``docID`` header carries the OneDrive site-collection
-    # GUID as ``...content.com_<site-guid>_<doc-guid>``.
-    ("pre-signed docID / site GUID", rb"microsoftpersonalcontent\.com_[0-9a-fA-F-]{36}_"),
-    # A business-drive / SharePoint pre-signed content host is tenant-identifying
-    # (``<tenant>-my.sharepoint.com``); the placeholder must have replaced it.
-    # Consumer recordings never contain ``sharepoint.com``, so any hit is a leak.
-    ("tenant SharePoint host", rb"-my\.sharepoint\.com"),
-    # The long ``b!…`` drive resource id (the cid's full form).
-    ("long b! drive id", rb"b![A-Za-z0-9_-]{20,}"),
-    # OAuth credential form fields that escaped ``_GRAPH_REQUEST_BODY_SCRUB`` (e.g.
-    # a token exchange against an auth host outside ``_GRAPH_API_HOSTS``).
+    # OAuth credential form fields that escaped the request-body scrub.
     ("unredacted client_secret", rb"client_secret=(?!REDACTED)"),
     ("unredacted refresh_token", rb"refresh_token=(?!REDACTED)"),
     ("unredacted assertion", rb"(?:client_)?assertion=(?!REDACTED)"),
-    # Identity keys that escaped ``_GRAPH_PII_BODY_SCRUB`` (the one fixed class
-    # with no env-independent marker until now).
-    ("unredacted identity key", rb'"(?:email|userPrincipalName)"\s*:\s*"(?!REDACTED)'),
-    # A bare email address anywhere in the tree (account PII). Unlike every other
-    # marker, this one is NOT anchored to a Graph-specific leak shape the scrub
-    # layer owns (``Bearer`` / ``eyJ`` / ``b!`` / ``-my.sharepoint.com`` / identity
-    # JSON keys), so it has the widest false-positive surface over a tree the PR
-    # can't fully constrain: a future cassette legitimately carrying an
-    # ``x@y.tld``-shaped value (a Microsoft response field, a docs URL fragment)
-    # would turn the creds-free CI sweep red with no real leak (BK-262 review). Kept
-    # deliberately — a raw account email is a real PII failure mode the identity-key
-    # marker (JSON ``"email"`` form only) and the JWT marker (base64 payload) do not
-    # both cover for every surface — but if it ever trips on benign content, scope
-    # it (exclude the matched domain / field) rather than dropping the gate.
+    # An MSAL ``Oid:`` anchor (``X-AnchorMailbox``) embeds the account id as
+    # a full GUID whose low bits are the drive cid in hyphen-split form —
+    # missed by a contiguous-id rewrite, so it gets its own marker.
+    ("oid anchor (hyphen-split account id)", rb"Oid:[0-9a-fA-F-]{36}"),
+    # A bare email address anywhere in the tree (account PII). The widest
+    # false-positive surface of any marker: a future cassette legitimately
+    # carrying an ``x@y.tld``-shaped value would turn the sweep red with no
+    # real leak. Kept deliberately — a raw account email is a real failure
+    # mode no other marker covers on every surface. If it ever trips on
+    # benign content, scope it (exclude the matched domain/field) rather
+    # than dropping the gate.
     ("bare email address", rb"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
 )
 
+# endregion
 
-# ---------------------------------------------------------------------------
-# Connection-string helpers
-# ---------------------------------------------------------------------------
-
-
-def parse_account_name(conn_str: str) -> str:
-    """Extract the ``AccountName`` value from a connection string."""
-    for part in conn_str.split(";"):
-        if part.strip().lower().startswith("accountname="):
-            return part.split("=", 1)[1].strip()
-    raise ValueError(f"connection string has no AccountName= segment: {conn_str!r}")
+# region: profile
 
 
-# Azurite-detection fragments (mirrors ``_live_env.py``).
-_AZURITE_FRAGMENTS = ("UseDevelopmentStorage=true", "AccountName=devstoreaccount1")
+@dataclass(frozen=True)
+class CassetteProfile:
+    """Everything one HTTP backend family declares about its cassettes (REC-007).
 
-
-def live_connection_string() -> str:
-    """Return a real ADLS Gen2 connection string for recording mode.
-
-    Fails loud when ``RS_TEST_LIVE_HNS`` is absent, the connection string
-    is missing, or it points at Azurite.  Mirrors the fail-loud convention
-    in ``tests/backends/fixtures/_live_env.py``.
+    Registering a fixture with a profile (``BackendFixture.cassette_profile``)
+    is the single registration act: directory routing, cassette-name aliasing,
+    the missing-cassette skip, scrub config, and audit inclusion all derive
+    from the profile — there is no second table to extend. A fixture id
+    carrying a profile must appear in that profile's ``fixture_aliases``;
+    the conformance conftest fails loud at routing-map build otherwise.
     """
-    import pytest  # noqa: PLC0415 -- lazy: only on the record path
-    from dotenv import load_dotenv  # noqa: PLC0415 -- lazy: only on the record path
 
-    load_dotenv(override=False)
-    if os.environ.get("RS_TEST_LIVE_HNS") != "1":
-        pytest.fail("recording requires RS_TEST_LIVE_HNS=1 (a real ADLS Gen2 account)")
-    conn = (os.environ.get("AZURE_STORAGE_CONNECTION_STRING") or "").strip()
-    if not conn:
-        pytest.fail("recording requires AZURE_STORAGE_CONNECTION_STRING (a real ADLS Gen2 account)")
-    if any(frag in conn for frag in _AZURITE_FRAGMENTS):
-        pytest.fail("AZURE_STORAGE_CONNECTION_STRING points at Azurite; recording needs a real HNS account")
-    return conn
+    backend: str
+    """Backend family name (``"azure"``, ``"graph"``)."""
+    cassette_dir: Path
+    """Per-backend cassette directory (``tests/backends/cassettes/<backend>/``)."""
+    fixture_aliases: Mapping[str, str]
+    """fixture id → canonical cassette suffix (``{"azure_live": "azure", ...}``).
 
-
-# ---------------------------------------------------------------------------
-# Scrubbing layer (vcrpy configuration factory)
-# ---------------------------------------------------------------------------
-
-
-def build_vcr_config(real_account: str | None) -> dict[str, Any]:
-    """Return a ``vcr_config`` dict for recording/replaying Azure Storage.
-
-    ``real_account`` is the storage account name extracted from the live
-    connection string (record mode) or ``None`` (replay mode).  The
-    ``before_record_*`` hooks apply in both modes — vcrpy normalises
-    outgoing requests for matching against the cassette even during replay,
-    so the ``if real_account:`` guards below are load-bearing on the replay
-    path.
-
-    What it strips:
-
-    * ``Authorization`` / ``x-ms-date`` / correlation / ``Cookie`` request
-      headers, plus the ``User-Agent`` normalisation, via the native
-      ``filter_headers`` (composed before the custom hook in both modes);
-    * SAS-token query parameters;
-    * the live account name and the per-call ``conformance-<uuid>``
-      filesystem name from request URIs, the ``x-ms-rename-source`` /
-      ``x-ms-copy-source`` header values, and response bodies — handled in
-      the bytes domain so binary payloads are never decoded;
-    * the random temp-file UUID ``write_atomic`` appends, so the cassette
-      path is deterministic across record and replay runs; and
-    * per-request response headers (request ids, ``Set-Cookie``, ``Date``)
-      and the ``RequestId:`` / ``Time:`` fragments in error-response XML.
-
-    The custom hooks keep only what vcrpy has no native filter for: URI and
-    header-value rewrites and all response-side scrubbing.
+    Live (record) and replay (playback) fixture ids map to one shared suffix
+    so both read and write the same cassette file.
     """
+    filter_headers: tuple[Any, ...] = ()
+    """vcrpy-native request-header filter: a plain entry deletes the header,
+    a ``(name, value)`` tuple rewrites a *present* header in place (and never
+    adds one when absent). Composed by vcrpy BEFORE the custom hook, matched
+    case-insensitively; the declared key case is what a rewrite re-inserts,
+    so it must match the case cassettes record (REC-005)."""
+    filter_query_parameters: tuple[str, ...] = ()
+    env_redacts: tuple[EnvRedact, ...] = ()
+    uri_rewrites: tuple[UriRewrite, ...] = ()
+    presigned: PresignedPolicy | None = None
+    request_body_redactions: tuple[RedactPattern, ...] = ()
+    response_body_redactions: tuple[RedactPattern, ...] = ()
+    response_header_deletes: frozenset[str] = frozenset()
+    rewrite_response_headers: tuple[str, ...] = ()
+    """Response headers whose *values* get the env-redact + uri-rewrite chain
+    (e.g. ``x-ms-copy-source`` echoing the live account)."""
+    url_response_headers: tuple[str, ...] = ()
+    """Response headers whose values are URLs (``Location``): a pre-signed
+    host collapses to the placeholder; an API-host value keeps host + path
+    for review but has its whole query wiped value-based (it is response-side
+    and never matched, so over-wiping is safe — unlike request URIs, which
+    keep their query structure because it is part of vcrpy's match key)."""
+    forbidden_patterns: tuple[tuple[str, bytes], ...] = ()
+    """Per-profile additions to ``FORBIDDEN_ENVELOPE``."""
+    match_on: tuple[str, ...] | None = None
+    """Custom vcrpy matcher set, or ``None`` for vcrpy's default."""
+    decode_compressed_response: bool = True
+
+    def resolve_live_values(self) -> dict[str, str | None]:
+        """Resolve every ``EnvRedact`` to its live value (record mode only)."""
+        return {er.name: er.resolve() for er in self.env_redacts}
+
+    def all_forbidden_patterns(self) -> tuple[tuple[str, bytes], ...]:
+        """The envelope plus this profile's additions — the Step-4/CI gate set."""
+        return (*FORBIDDEN_ENVELOPE, *self.forbidden_patterns)
+
+    def named_rules(self) -> tuple[tuple[str, Expectation], ...]:
+        """Audit inventory: ``(rule_name, expectation)`` for every named rule."""
+        rules: list[tuple[str, Expectation]] = [(er.name, er.expectation) for er in self.env_redacts]
+        rules.extend((uw.name, uw.expectation) for uw in self.uri_rewrites)
+        rules.extend(
+            (rp.name, rp.expectation) for rp in (*self.request_body_redactions, *self.response_body_redactions)
+        )
+        return tuple(rules)
+
+
+# endregion
+
+# region: scrub-fire manifest (REC-006)
+
+# Per-rule fire counts for the recorder's named-pattern audit. Counting is
+# always on (a Counter increment per applied rule); the dump is gated on the
+# manifest path so a normal test run writes nothing.
+_SCRUB_MANIFEST_ENV = "_RS_SCRUB_MANIFEST"
+_FIRE_COUNTS: Counter[str] = Counter()
+
+
+def _record_fires(rule_name: str, fires: int) -> None:
+    if fires:
+        _FIRE_COUNTS[rule_name] += fires
+
+
+def reset_scrub_fire_counts() -> None:
+    """Clear the fire counters (test isolation)."""
+    _FIRE_COUNTS.clear()
+
+
+def scrub_fire_counts() -> dict[str, int]:
+    """Snapshot of the per-rule fire counts accumulated so far."""
+    return dict(_FIRE_COUNTS)
+
+
+def dump_scrub_manifest() -> Path | None:
+    """Write ``{rule_name: count}`` to the ``_RS_SCRUB_MANIFEST`` path.
+
+    No-op (returns ``None``) unless the env var is set. Under xdist each
+    worker writes its own ``<path>.<worker>`` file; the reader aggregates
+    by glob. Called from the conformance conftest at session finish.
+    """
+    path_str = os.environ.get(_SCRUB_MANIFEST_ENV)
+    if not path_str:
+        return None
+    worker = os.environ.get("PYTEST_XDIST_WORKER")
+    path = Path(f"{path_str}.{worker}" if worker else path_str)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(dict(_FIRE_COUNTS), sort_keys=True), encoding="utf-8")
+    return path
+
+
+# endregion
+
+# region: generic vcr_config factory
+
+# Wipes the whole query of a URL-valued response header. Value-based rather
+# than an enumerated param list: the entire query of a pre-signed URL is
+# token machinery, so a novel/undocumented param name must not survive on
+# the strength of not being in a list.
+_URL_QUERY_RE: re.Pattern[str] = re.compile(r"\?\S*")
+
+
+def _compile_env(
+    profile: CassetteProfile, live_values: Mapping[str, str | None] | None
+) -> list[tuple[EnvRedact, re.Pattern[str], re.Pattern[bytes]]]:
+    """Compile the active env-redacts against their resolved live values."""
+    live_values = live_values or {}
+    compiled: list[tuple[EnvRedact, re.Pattern[str], re.Pattern[bytes]]] = []
+    for er in profile.env_redacts:
+        value = live_values.get(er.name)
+        if not value:
+            continue
+        source = "|".join(re.escape(form) for form in er.forms(value))
+        flags = re.IGNORECASE if er.case_insensitive else 0
+        compiled.append((er, re.compile(source, flags), re.compile(source.encode(), flags)))
+    return compiled
+
+
+def build_profile_vcr_config(
+    profile: CassetteProfile,
+    live_values: Mapping[str, str | None] | None = None,
+) -> dict[str, Any]:
+    """Build the ``vcr_config`` dict for *profile*.
+
+    ``live_values`` maps each ``EnvRedact.name`` to its resolved live value
+    (record mode — see ``CassetteProfile.resolve_live_values``) or is ``None``
+    in replay mode, which deactivates every env-redact. The hooks below run
+    in both modes — vcrpy normalises outgoing requests for cassette matching
+    during replay too — so everything except the response hook must be
+    deterministic without live values.
+
+    Scrub order is fixed (REC-003): env-redacts first, then uri-rewrites
+    (URIs and header values) and declared body redactions in declaration
+    order. Native filters (``filter_headers``, ``filter_query_parameters``)
+    are composed by vcrpy BEFORE the custom hooks (REC-005).
+    """
+    env = _compile_env(profile, live_values)
+    presigned = profile.presigned
+    url_headers = frozenset(h.lower() for h in profile.url_response_headers)
+    rewrite_headers = frozenset(h.lower() for h in profile.rewrite_response_headers)
+
+    def _env_str(value: str) -> str:
+        for er, pattern, _ in env:
+            value, fires = pattern.subn(er.fake, value)
+            _record_fires(er.name, fires)
+        return value
+
+    def _env_bytes(raw: bytes) -> bytes:
+        for er, _, pattern in env:
+            raw, fires = pattern.subn(er.fake.encode(), raw)
+            _record_fires(er.name, fires)
+        return raw
+
+    def _rewrite_str(value: str) -> str:
+        value = _env_str(value)
+        for uw in profile.uri_rewrites:
+            value = uw.apply(value)
+        return value
+
+    def _scrub_body(body: Any, redactions: tuple[RedactPattern, ...]) -> Any:
+        """Bytes-domain scrub with str round-trip (str in -> str out)."""
+        if not isinstance(body, (str, bytes)):
+            return body
+        raw = body.encode() if isinstance(body, str) else body
+        raw = _env_bytes(raw)
+        for rp in redactions:
+            raw = rp.apply(raw)
+        return raw.decode() if isinstance(body, str) else raw
+
+    def _scrub_url_value(value: str) -> str:
+        """Scrub a URL-valued response header (``Location``)."""
+        if presigned is not None and presigned.is_presigned(value):
+            return presigned.placeholder
+        value = _URL_QUERY_RE.sub("?REDACTED", value)
+        return _rewrite_str(value)
+
+    def _map_header_value(value: Any, fn: Callable[[str], str]) -> Any:
+        if isinstance(value, list):
+            return [fn(v) if isinstance(v, str) else v for v in value]
+        return fn(value) if isinstance(value, str) else value
 
     def before_record_request(request: Any) -> Any:
-        if real_account:
-            request.uri = request.uri.replace(real_account, FAKE_ACCOUNT)
-            request.uri = _FILESYSTEM_PATTERN.sub(FAKE_FILESYSTEM, request.uri)
-        # Normalise the 8-char hex UUID in atomic write temp-file paths so the
-        # cassette path is deterministic across record and replay runs.
-        request.uri = _TMP_UUID_PATTERN.sub(r"\1", request.uri)
-        for key in list(request.headers):
-            if key.lower() in ("x-ms-rename-source", "x-ms-copy-source"):
-                # These headers carry live account name and container; scrub both.
-                # Also normalise write_atomic temp-file UUIDs so re-records don't
-                # churn the header value unnecessarily.
-                val = request.headers[key]
-                if real_account:
-                    val = val.replace(real_account, FAKE_ACCOUNT)
-                val = _FILESYSTEM_PATTERN.sub(FAKE_FILESYSTEM, val)
-                request.headers[key] = _TMP_UUID_PATTERN.sub(r"\1", val)
-        return request
-
-    def before_record_response(response: dict[str, Any]) -> dict[str, Any]:
-        headers = response.get("headers", {})
-        for key in list(headers):
-            lower = key.lower()
-            if lower in _SCRUB_RESPONSE_HEADERS:
-                del headers[key]
-            elif lower == "x-ms-copy-source":
-                # Azure echoes the copy-source URL back in the response;
-                # apply the same account/filesystem replacement as on the request.
-                val = headers[key]
-                if isinstance(val, list):
-                    val = [
-                        _FILESYSTEM_PATTERN.sub(
-                            FAKE_FILESYSTEM,
-                            (v.replace(real_account, FAKE_ACCOUNT) if real_account else v),
-                        )
-                        for v in val
-                    ]
-                else:
-                    if real_account:
-                        val = val.replace(real_account, FAKE_ACCOUNT)
-                    val = _FILESYSTEM_PATTERN.sub(FAKE_FILESYSTEM, val)
-                headers[key] = val
-        body = response.get("body", {})
-        raw = body.get("string")
-        if real_account:
-            if isinstance(raw, bytes):
-                # Stay in bytes throughout — don't decode() binary bodies.
-                raw = raw.replace(real_account.encode(), FAKE_ACCOUNT.encode())
-                raw = _FILESYSTEM_PATTERN_BYTES.sub(FAKE_FILESYSTEM.encode(), raw)
-            elif isinstance(raw, str):
-                raw = raw.replace(real_account, FAKE_ACCOUNT)
-                raw = _FILESYSTEM_PATTERN.sub(FAKE_FILESYSTEM, raw)
-        # Body-level scrub for error-response XML (both paths).
-        if isinstance(raw, bytes):
-            for pattern, replacement in _BODY_SCRUB:
-                raw = pattern.sub(replacement, raw)
-            body["string"] = raw
-        elif isinstance(raw, str):
-            raw_b = raw.encode()
-            for pattern, replacement in _BODY_SCRUB:
-                raw_b = pattern.sub(replacement, raw_b)
-            body["string"] = raw_b.decode()
-        return response
-
-    return {
-        # Decoded bodies keep cassettes diff-reviewable (TEST-009) and let
-        # the response-body scrub above run against plain text.
-        "decode_compressed_response": True,
-        "filter_headers": [*_SCRUB_REQUEST_HEADERS, ("User-Agent", _USER_AGENT_NORMALIZED)],
-        "filter_query_parameters": list(_SCRUB_QUERY_PARAMS),
-        "before_record_request": before_record_request,
-        "before_record_response": before_record_response,
-        # Default match_on (method, scheme, host, port, path, query) is
-        # sufficient: SharedKey auth keeps signatures in the Authorization
-        # header (scrubbed, unmatched); x-ms-client-request-id is a header.
-    }
-
-
-def build_graph_vcr_config(real_drive_id: str | None) -> dict[str, Any]:
-    """Return a ``vcr_config`` dict for recording/replaying Microsoft Graph.
-
-    ``real_drive_id`` is the live drive id (record mode) or ``None`` (replay
-    mode). The ``before_record_*`` hooks run in both modes because vcrpy
-    normalises outgoing requests for matching during replay too, so the
-    ``if real_drive_id:`` guards are load-bearing on the replay path.
-
-    What it strips (the GR-FOUNDATION security gate, GR-035 / TEST-007):
-
-    * ``Authorization`` (the bearer token), ``Cookie``, and the
-      ``client-request-id`` correlation header from requests — plus the
-      ``User-Agent`` normalisation — via the native ``filter_headers``,
-      which vcrpy composes *before* the custom hook in both modes;
-    * the OAuth credentials (``client_secret`` / ``client_assertion`` /
-      ``assertion`` / ``refresh_token``) from the token-exchange **request**
-      body — MSAL sends these form-encoded over ``requests``, which vcrpy
-      records too (the app-only recording path; the device-code path carries
-      none of them);
-    * ``request-id`` / ``client-request-id`` / ``x-ms-ags-diagnostic`` /
-      ``Set-Cookie`` / ``Date`` from responses;
-    * the pre-signed download token from the ``Location`` /
-      ``Content-Location`` response header — the ``302`` from ``GET /content``
-      redirects to ``@microsoft.graph.downloadUrl`` (GR-015); its **whole
-      query** is wiped (value-based, like the body scrub) so no token survives,
-      named or not;
-    * the ``@microsoft.graph.downloadUrl`` value, the upload-session
-      ``uploadUrl`` value (pre-authorised, token in its query), and any
-      ``Bearer`` / ``access_token`` / ``refresh_token`` / ``id_token`` /
-      ``client_info`` from response bodies (the last two carry the base64-encoded
-      account identity in the OAuth token-exchange response);
-    * the pre-signed download query parameters;
-    * the live ``drive_id`` (rewritten to ``FAKE_DRIVE_ID``) from request
-      URIs and response bodies, so a cassette recorded against a real drive
-      replays against the fake one — matched **case-insensitively** because
-      Graph echoes the id (cid) upper-cased inside item ids / eTags / webUrls
-      but lower-cased in URIs; and
-    * the account identity and tenant PII Graph embeds in item responses —
-      ``email`` / ``displayName`` / ``userPrincipalName`` / ``loginName`` (the
-      ``createdBy`` / ``lastModifiedBy`` user objects) and ``siteId`` (the
-      personal-OneDrive site GUID) — none of which the backend reads or the
-      conformance suite asserts.
-    """
-
-    # The drive_id (cid) is rewritten case-insensitively: Graph echoes it
-    # lower-cased in URIs / parentReference paths but UPPER-cased inside item
-    # ids, eTags, cTags, and webUrls (``4FDE...!s<hex>``). A plain ``.replace``
-    # of the lower-cased env value misses the upper-cased copies, leaking the
-    # real resource id. One case-insensitive pattern catches every casing and
-    # maps them all to the same ``FAKE_DRIVE_ID`` so eTag/id self-comparisons
-    # within a cassette still match.
-    _drive_id_re_str = re.compile(re.escape(real_drive_id), re.IGNORECASE) if real_drive_id else None
-    _drive_id_re_bytes = re.compile(re.escape(real_drive_id.encode()), re.IGNORECASE) if real_drive_id else None
-
-    def _scrub_location(val: str) -> str:
-        """Redact a ``Location`` / ``Content-Location`` response-header URL.
-
-        A pre-signed-host Location — the ``302`` from ``GET /content`` pointing
-        at ``@microsoft.graph.downloadUrl`` (GR-015), or the ``202`` async
-        copy/move monitor URL — collapses to ``GRAPH_PRESIGNED_PLACEHOLDER``,
-        the same value its request URI and body twin are rewritten to. This
-        removes not only the query token but the drive id (the cid and the long
-        ``b!…`` form) Graph embeds in the *path* of a consumer-OneDrive
-        pre-signed URL (``/personal/<cid>/_api/v2.0/drives/b!…``) — a path the
-        old query-only wipe left intact (BK-262). It stays replay-able because
-        ``before_record_request`` rewrites the poll/download request the backend
-        issues from this header to the same placeholder, so vcrpy matches.
-
-        A Graph-API-host Location (e.g. a ``201 Created`` item URL the backend
-        never re-requests) keeps its host + path for review: the token query is
-        wiped value-based and the drive id in the path is id-normalised.
-        """
-        if _graph_is_presigned_host(val):
-            return GRAPH_PRESIGNED_PLACEHOLDER
-        val = _GRAPH_URL_QUERY_RE.sub("?REDACTED", val)
-        if _drive_id_re_str is not None:
-            val = _drive_id_re_str.sub(FAKE_DRIVE_ID, val)
-        return _GRAPH_CONFORMANCE_ROOT_RE_STR.sub(GRAPH_CONFORMANCE_BASE_PATH, val)
-
-    def before_record_request(request: Any) -> Any:
-        # A pre-signed content host (downloadUrl / uploadUrl / copy-move monitor
-        # URL) carries an access token in its URI, so the whole URI is replaced
-        # with the stable placeholder. This runs in both record and replay mode:
-        # the request the backend issues on replay — built from the placeholder it
-        # read out of the scrubbed response body / Location header — normalises to
-        # the same value the recorded request was rewritten to, so vcrpy matches
-        # them.
-        if _graph_is_presigned_host(request.uri):
-            request.uri = GRAPH_PRESIGNED_PLACEHOLDER
-            # The Host header still names the live pre-signed content host (the
-            # placeholder guarantees *nothing* of the live URL survives), so
-            # rewrite it to the placeholder host. Generic for consumer OneDrive,
-            # but tenant-identifying (``<tenant>-my.sharepoint.com``) on a
-            # business drive (BK-262 review).
+        if presigned is not None and presigned.is_presigned(request.uri):
+            # Nothing of a pre-signed URL survives: URI and Host header both
+            # collapse to the placeholder. The body still gets the declared
+            # redactions — an OAuth token exchange against an auth host
+            # outside ``api_hosts`` lands in this branch too, and its
+            # credential form fields must not record (a no-op on the usual
+            # opaque upload-chunk body).
+            request.uri = presigned.placeholder
             for key in list(request.headers):
                 if key.lower() == "host":
-                    request.headers[key] = _GRAPH_PRESIGNED_PLACEHOLDER_HOST
-            # Defense-in-depth on the body: a pre-signed request body is normally
-            # opaque content (an upload chunk), but an OAuth token exchange against
-            # an auth host *outside* ``_GRAPH_API_HOSTS`` (``login.live.com``, a
-            # sovereign-cloud endpoint) lands in this branch too — so run the
-            # credential-form scrub before recording. A no-op on an upload chunk
-            # (no ``client_secret=`` / ``assertion=`` / ``refresh_token=`` bytes).
+                    request.headers[key] = presigned.placeholder_host
             body = getattr(request, "body", None)
-            if isinstance(body, (str, bytes)):
-                raw = body.encode() if isinstance(body, str) else body
-                for pattern, replacement in _GRAPH_REQUEST_BODY_SCRUB:
-                    raw = pattern.sub(replacement, raw)
-                request.body = raw.decode() if isinstance(body, str) else raw
+            if body is not None:
+                request.body = _scrub_body(body, profile.request_body_redactions)
             return request
-        if _drive_id_re_str is not None:
-            request.uri = _drive_id_re_str.sub(FAKE_DRIVE_ID, request.uri)
-        # API-host request URIs deliberately do NOT get the value-based whole-query
-        # wipe ``_scrub_location`` applies to API-host Location *responses*. The
-        # request URI is part of vcrpy's match key (default ``match_on`` includes
-        # the query), so it must keep its query structure for replay: collapsing it
-        # to ``?REDACTED`` would make query-distinguished requests ($top / $select /
-        # $skiptoken pagination) indistinguishable — the same order-dependence
-        # hazard as the pre-signed placeholder. So query tokens on the request URI
-        # are removed surgically by name via vcr's ``filter_query_parameters``
-        # allowlist, not value-based. The asymmetry is safe because a Location is
-        # response-side (never matched) so it can over-wipe; Graph API calls are
-        # bearer-authed via the (scrubbed) Authorization header rather than a query
-        # token, and any token-shaped value that did slip into a query is still
-        # caught by the ``Bearer`` / ``eyJ`` forbidden markers.
-        # Normalise the per-test base_path uuid to the stable replay token so the
-        # recorded URI matches graph_replay's fixed base_path (runs in both modes).
-        request.uri = _GRAPH_CONFORMANCE_ROOT_RE_STR.sub(GRAPH_CONFORMANCE_BASE_PATH, request.uri)
-        # Scrub credentials out of the OAuth token-exchange POST body (login host).
-        # The bytes-domain sub is a no-op on the device-code flow (no secret present).
+        request.uri = _rewrite_str(request.uri)
+        # Every request-header VALUE gets the same chain, so a live value
+        # riding an unanticipated header (the X-AnchorMailbox class of leak)
+        # is rewritten without per-header enumeration (REC-003).
+        for key in list(request.headers):
+            value = request.headers[key]
+            if isinstance(value, str):
+                rewritten = _rewrite_str(value)
+                if rewritten != value:
+                    request.headers[key] = rewritten
         body = getattr(request, "body", None)
-        if isinstance(body, (str, bytes)):
-            raw = body.encode() if isinstance(body, str) else body
-            for pattern, replacement in _GRAPH_REQUEST_BODY_SCRUB:
-                raw = pattern.sub(replacement, raw)
-            # The move/copy parentReference body carries the live drive_id (driveId
-            # field + a /drives/{drive_id}/root: path), so the URI replace above is
-            # not enough — rewrite it in the request body too (mirrors the response).
-            if _drive_id_re_bytes is not None:
-                raw = _drive_id_re_bytes.sub(FAKE_DRIVE_ID.encode(), raw)
-            raw = _GRAPH_CONFORMANCE_ROOT_RE_BYTES.sub(GRAPH_CONFORMANCE_BASE_PATH.encode(), raw)
-            request.body = raw.decode() if isinstance(body, str) else raw
+        if body is not None:
+            request.body = _scrub_body(body, profile.request_body_redactions)
         return request
 
     def before_record_response(response: dict[str, Any]) -> dict[str, Any]:
         headers = response.get("headers", {})
         for key in list(headers):
             lower = key.lower()
-            if lower in _GRAPH_SCRUB_RESPONSE_HEADERS:
+            if lower in profile.response_header_deletes:
                 del headers[key]
-            elif lower in ("location", "content-location"):
-                val = headers[key]
-                if isinstance(val, list):
-                    headers[key] = [_scrub_location(v) if isinstance(v, str) else v for v in val]
-                elif isinstance(val, str):
-                    headers[key] = _scrub_location(val)
+            elif lower in url_headers:
+                headers[key] = _map_header_value(headers[key], _scrub_url_value)
+            elif lower in rewrite_headers:
+                headers[key] = _map_header_value(headers[key], _rewrite_str)
         body = response.get("body", {})
         raw = body.get("string")
-        if isinstance(raw, str):
-            raw = raw.encode()
-            was_str = True
-        else:
-            was_str = False
-        if isinstance(raw, bytes):
-            if _drive_id_re_bytes is not None:
-                raw = _drive_id_re_bytes.sub(FAKE_DRIVE_ID.encode(), raw)
-            for pattern, replacement in (*_GRAPH_BODY_SCRUB, *_GRAPH_PII_BODY_SCRUB):
-                raw = pattern.sub(replacement, raw)
-            raw = _GRAPH_CONFORMANCE_ROOT_RE_BYTES.sub(GRAPH_CONFORMANCE_BASE_PATH.encode(), raw)
-            body["string"] = raw.decode() if was_str else raw
+        if isinstance(raw, (str, bytes)):
+            body["string"] = _scrub_body(raw, profile.response_body_redactions)
         return response
 
-    return {
-        "decode_compressed_response": True,
-        "filter_headers": [*_GRAPH_SCRUB_REQUEST_HEADERS, ("User-Agent", _USER_AGENT_NORMALIZED)],
-        "filter_query_parameters": list(_GRAPH_SCRUB_QUERY_PARAMS),
+    config: dict[str, Any] = {
+        # Decoded bodies keep cassettes diff-reviewable (TEST-009) and let
+        # the body redactions run against plain text.
+        "decode_compressed_response": profile.decode_compressed_response,
+        "filter_headers": list(profile.filter_headers),
+        "filter_query_parameters": list(profile.filter_query_parameters),
         "before_record_request": before_record_request,
         "before_record_response": before_record_response,
     }
+    if profile.match_on is not None:
+        config["match_on"] = list(profile.match_on)
+    return config
+
+
+# endregion
 
 
 __all__ = [
-    "CASSETTE_DIR_AZURE",
-    "CASSETTE_DIR_GRAPH",
-    "FAKE_ACCOUNT",
-    "FAKE_CONN_STR",
-    "FAKE_DRIVE_ID",
-    "FAKE_FILESYSTEM",
-    "GRAPH_CONFORMANCE_BASE_PATH",
-    "GRAPH_FORBIDDEN_CASSETTE_PATTERNS",
-    "GRAPH_PRESIGNED_PLACEHOLDER",
-    "build_graph_vcr_config",
-    "build_vcr_config",
-    "live_connection_string",
-    "parse_account_name",
+    "FORBIDDEN_ENVELOPE",
+    "CassetteProfile",
+    "EnvRedact",
+    "Expectation",
+    "PresignedPolicy",
+    "RedactPattern",
+    "UriRewrite",
+    "build_profile_vcr_config",
+    "dump_scrub_manifest",
+    "reset_scrub_fire_counts",
+    "scrub_fire_counts",
 ]

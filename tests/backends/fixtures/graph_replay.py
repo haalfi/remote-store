@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.backends.fixtures._cassettes import FAKE_DRIVE_ID, GRAPH_CONFORMANCE_BASE_PATH
+from tests.backends.fixtures._cassettes_graph import FAKE_DRIVE_ID, GRAPH_CONFORMANCE_BASE_PATH, GRAPH_PROFILE
 from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
 
@@ -62,6 +62,7 @@ register(
         aclose=_aclose,
         # record_mode="none" forces replay even when --record is active.
         marks=(pytest.mark.vcr(record_mode="none"),),
+        cassette_profile=GRAPH_PROFILE,
         **_meta.to_kwargs(),
     )
 )

@@ -43,6 +43,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from tests.backends.fixtures._cassettes_azure import AZURE_PROFILE
 from tests.backends.fixtures._live_env import require_azure_live_connection_string
 from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
@@ -139,6 +140,7 @@ register(
         cleanup=_cleanup,
         aclose=_aclose,
         marks=(pytest.mark.live,),
+        cassette_profile=AZURE_PROFILE,
         **_meta.to_kwargs(),
     )
 )

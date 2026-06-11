@@ -1,4 +1,4 @@
-"""Tests for the HTTP cassette scrub profiles (ID-127 / GR-FOUNDATION; BK-284).
+"""Tests for the cassette scrub core and the per-backend profiles (spec 049).
 
 The **security gate** for the cassette spine: a cassette recorded from a
 live run must never carry the bearer token, the pre-signed
@@ -9,9 +9,8 @@ survives — the assertion that makes it safe to record against a real
 tenant / account.
 
 Request-side tests run the **composed** filter chain exactly as vcrpy
-builds it (``_composed_request_filter``): since BK-284 PR 1 the
-request-header deletes and the User-Agent rewrite ride vcrpy's native
-``filter_headers`` rather than the custom ``before_record_request`` hook,
+builds it (``_composed_request_filter``): the request-header deletes and
+the User-Agent rewrite ride vcrpy's native ``filter_headers`` (REC-005),
 so calling the custom hook alone would assert a weaker gate than a real
 recording run applies.
 """
@@ -28,15 +27,21 @@ import pytest
 import vcr
 from vcr.request import Request as VcrRequest
 
+import tests.backends.fixtures._cassettes as _cassettes_core
+from tests.backends.fixtures import all_fixtures
 from tests.backends.fixtures._cassettes import (
-    CASSETTE_DIR_GRAPH,
-    FAKE_ACCOUNT,
+    FORBIDDEN_ENVELOPE,
+    CassetteProfile,
+    build_profile_vcr_config,
+    dump_scrub_manifest,
+    reset_scrub_fire_counts,
+    scrub_fire_counts,
+)
+from tests.backends.fixtures._cassettes_azure import AZURE_PROFILE, FAKE_ACCOUNT, FAKE_FILESYSTEM
+from tests.backends.fixtures._cassettes_graph import (
     FAKE_DRIVE_ID,
-    FAKE_FILESYSTEM,
-    GRAPH_FORBIDDEN_CASSETTE_PATTERNS,
     GRAPH_PRESIGNED_PLACEHOLDER,
-    build_graph_vcr_config,
-    build_vcr_config,
+    GRAPH_PROFILE,
 )
 
 _FAKE_BEARER = "eyJ0eXAiOiThisLooksLikeAJwt.payload-segment.signature-segment"
@@ -72,12 +77,31 @@ def _composed_request_filter(cfg: dict[str, Any]) -> Any:
     return vcr.VCR(**cfg)._build_before_record_request({})
 
 
+def _graph_cfg(real_drive_id: str | None = None) -> dict[str, Any]:
+    """The Graph profile's config; a non-None id stands in for record mode."""
+    return build_profile_vcr_config(GRAPH_PROFILE, {"graph.drive-id": real_drive_id})
+
+
+def _azure_cfg(real_account: str | None = None) -> dict[str, Any]:
+    """The Azure profile's config; a non-None account stands in for record mode."""
+    return build_profile_vcr_config(AZURE_PROFILE, {"azure.account": real_account})
+
+
+def _registered_profiles() -> list[CassetteProfile]:
+    """Every distinct cassette profile carried by a registered fixture."""
+    seen: dict[int, CassetteProfile] = {}
+    for fixture in all_fixtures():
+        if fixture.cassette_profile is not None:
+            seen[id(fixture.cassette_profile)] = fixture.cassette_profile
+    return sorted(seen.values(), key=lambda p: p.backend)
+
+
 @pytest.mark.spec("TEST-007")
 class TestGraphCassetteScrub:
     """The bearer token and download-URL token must not survive scrubbing."""
 
     def test_bearer_token_dropped_from_request(self) -> None:
-        scrub = _composed_request_filter(build_graph_vcr_config(real_drive_id=None))
+        scrub = _composed_request_filter(_graph_cfg())
         out = scrub(_request({"Authorization": f"Bearer {_FAKE_BEARER}", "Accept": "application/json"}))
         blob = " ".join(out.headers) + " " + " ".join(out.headers.values())
         assert "Authorization" not in out.headers
@@ -87,37 +111,45 @@ class TestGraphCassetteScrub:
         assert out.headers["Accept"] == "application/json"
 
     def test_correlation_request_header_dropped(self) -> None:
-        scrub = _composed_request_filter(build_graph_vcr_config(real_drive_id=None))
+        scrub = _composed_request_filter(_graph_cfg())
         out = scrub(_request({"client-request-id": "abc-123", "Cookie": "session=1"}))
         survivors = {k.lower() for k in out.headers}
         assert "client-request-id" not in survivors
         assert "cookie" not in survivors
 
+    def test_anchor_mailbox_header_dropped(self) -> None:
+        """The MSAL token POST carries ``X-AnchorMailbox: Oid:<guid>@<tenant>``
+        whose GUID embeds the drive cid hyphen-split — the backend never reads
+        it on replay, so the whole header is deleted natively."""
+        scrub = _composed_request_filter(_graph_cfg())
+        out = scrub(_request({"X-AnchorMailbox": "Oid:00000000-0000-0000-dead-beefcafe0123@72f988bf"}))
+        assert "x-anchormailbox" not in {k.lower() for k in out.headers}
+
     def test_user_agent_normalised(self) -> None:
         """The native ``("User-Agent", ...)`` tuple rewrites the value in place,
         preserving the capitalised key every committed cassette records."""
-        scrub = _composed_request_filter(build_graph_vcr_config(real_drive_id=None))
+        scrub = _composed_request_filter(_graph_cfg())
         out = scrub(_request({"User-Agent": "python-httpx/0.27.0 CPython/3.11 Linux/6.1"}))
         assert out.headers["User-Agent"] == "azsdk-python-replay"
         assert "User-Agent" in list(out.headers.keys())  # exact key case kept
 
+    @pytest.mark.spec("REC-005")
     def test_user_agent_absent_stays_absent(self) -> None:
         """The ``("User-Agent", ...)`` tuple *rewrites* an existing header but must
         never *add* one when absent — vcrpy 8.1.1 ``filters.replace_headers`` guards
-        the rewrite with ``if k in new_headers:``, matching the old in-loop
-        ``elif lower == "user-agent"`` (which only touched present keys). Byte-identity
-        of re-records depends on it: a request that carried no User-Agent must record
-        none, so this pins the add-vs-replace semantics the migration rests on."""
-        scrub = _composed_request_filter(build_graph_vcr_config(real_drive_id=None))
+        the rewrite with ``if k in new_headers:``. Byte-identity of re-records
+        depends on it: a request that carried no User-Agent must record none."""
+        scrub = _composed_request_filter(_graph_cfg())
         out = scrub(_request({"Accept": "application/json"}))  # no User-Agent in
         assert "user-agent" not in {k.lower() for k in out.headers}
 
+    @pytest.mark.spec("REC-005")
     def test_native_filters_run_before_custom_hook(self) -> None:
         """Pin vcrpy's composition order (``VCR._build_before_record_request``):
         the native header filter runs first, then the custom hook — so a single
         pre-signed request gets BOTH the Authorization delete (native) and the
         URI/Host placeholder collapse (custom)."""
-        scrub = _composed_request_filter(build_graph_vcr_config(real_drive_id=None))
+        scrub = _composed_request_filter(_graph_cfg())
         out = scrub(
             _request(
                 {"Authorization": f"Bearer {_FAKE_BEARER}", "Host": "tenant-my.sharepoint.com"},
@@ -128,8 +160,8 @@ class TestGraphCassetteScrub:
         assert out.uri == GRAPH_PRESIGNED_PLACEHOLDER  # custom half applied
 
     def test_client_secret_redacted_from_request_body(self) -> None:
-        """The client-credentials token POST body must not leak the secret (PR #750 review)."""
-        scrub = _composed_request_filter(build_graph_vcr_config(real_drive_id=None))
+        """The client-credentials token POST body must not leak the secret."""
+        scrub = _composed_request_filter(_graph_cfg())
         out = scrub(
             _request(
                 {"Content-Type": "application/x-www-form-urlencoded"},
@@ -151,7 +183,7 @@ class TestGraphCassetteScrub:
         encodes on assignment), so this defensive branch is exercised against
         the bare hook with a stand-in object.
         """
-        cfg = build_graph_vcr_config(real_drive_id=None)
+        cfg = _graph_cfg()
         req = types.SimpleNamespace(headers={}, uri="https://login.microsoftonline.com/tenant/token")
         req.body = "client_assertion=JWTSECRET&assertion=CERTJWT&refresh_token=RT123&grant_type=refresh_token"
         out = cfg["before_record_request"](req)
@@ -162,7 +194,7 @@ class TestGraphCassetteScrub:
 
     def test_binary_request_body_left_intact(self) -> None:
         """A non-form (binary upload chunk) body has no credential keys, so it is untouched."""
-        scrub = _composed_request_filter(build_graph_vcr_config(real_drive_id=None))
+        scrub = _composed_request_filter(_graph_cfg())
         out = scrub(
             _request(
                 {},
@@ -174,7 +206,7 @@ class TestGraphCassetteScrub:
         assert out.body == bytes(range(256))
 
     def test_downloadurl_redacted_from_body(self) -> None:
-        cfg = build_graph_vcr_config(real_drive_id=None)
+        cfg = _graph_cfg()
         body = (
             b'{"id":"01ABC","name":"f.txt",'
             b'"@microsoft.graph.downloadUrl":"https://host/path?tempauth=SECRETSIG123&e=2026-01-01"}'
@@ -183,7 +215,7 @@ class TestGraphCassetteScrub:
         scrubbed = cfg["before_record_response"](resp)["body"]["string"]
         assert b"SECRETSIG123" not in scrubbed
         # The value is replaced with the valid placeholder URL (not a bare token),
-        # so the backend reads back a real URL it can re-request on replay (BK-262).
+        # so the backend reads back a real URL it can re-request on replay (REC-004).
         assert GRAPH_PRESIGNED_PLACEHOLDER.encode() in scrubbed
         # Structure preserved: the key stays, only its value is redacted.
         assert b"@microsoft.graph.downloadUrl" in scrubbed
@@ -192,7 +224,7 @@ class TestGraphCassetteScrub:
     def test_uploadurl_redacted_from_body(self) -> None:
         # createUploadSession returns a pre-authorised uploadUrl whose query
         # carries its own token — the same leak threat as downloadUrl (GR-019).
-        cfg = build_graph_vcr_config(real_drive_id=None)
+        cfg = _graph_cfg()
         body = (
             b'{"uploadUrl":"https://up.example.com/session/abc?tempauth=UPLOADSECRET999",'
             b'"expirationDateTime":"2026-01-01T00:00:00Z","nextExpectedRanges":["0-"]}'
@@ -201,14 +233,14 @@ class TestGraphCassetteScrub:
         scrubbed = cfg["before_record_response"](resp)["body"]["string"]
         assert b"UPLOADSECRET999" not in scrubbed
         # Replaced with the placeholder URL (not a bare token) so chunk PUTs on
-        # replay target a valid, recorded-and-matchable host (BK-262).
+        # replay target a valid, recorded-and-matchable host (REC-004).
         assert GRAPH_PRESIGNED_PLACEHOLDER.encode() in scrubbed
         # Structure preserved: the key and the non-secret fields stay.
         assert b'"uploadUrl"' in scrubbed
         assert b'"nextExpectedRanges":["0-"]' in scrubbed
 
     def test_oauth_tokens_redacted_from_body(self) -> None:
-        cfg = build_graph_vcr_config(real_drive_id=None)
+        cfg = _graph_cfg()
         body = b'{"access_token":"AAAsecretAAA","refresh_token":"RRRsecretRRR","expires_in":3600}'
         scrubbed = cfg["before_record_response"]({"body": {"string": body}})["body"]["string"]
         assert b"AAAsecretAAA" not in scrubbed
@@ -217,14 +249,14 @@ class TestGraphCassetteScrub:
 
     def test_string_body_round_trips_as_str(self) -> None:
         """A ``str`` body is scrubbed and returned as ``str`` (not bytes)."""
-        cfg = build_graph_vcr_config(real_drive_id=None)
+        cfg = _graph_cfg()
         body = '{"@microsoft.graph.downloadUrl":"https://host?tempauth=SECRET"}'
         scrubbed = cfg["before_record_response"]({"body": {"string": body}})["body"]["string"]
         assert isinstance(scrubbed, str)
         assert "SECRET" not in scrubbed
 
     def test_response_correlation_headers_dropped(self) -> None:
-        cfg = build_graph_vcr_config(real_drive_id=None)
+        cfg = _graph_cfg()
         resp: dict[str, Any] = {
             "headers": {"request-id": ["r1"], "x-ms-ags-diagnostic": ["d1"], "Content-Type": ["application/json"]},
             "body": {"string": b"{}"},
@@ -235,12 +267,12 @@ class TestGraphCassetteScrub:
         assert "content-type" in remaining
 
     def test_docid_header_dropped(self) -> None:
-        """BK-262 review: the ``docID`` response header on pre-signed-content
-        interactions embeds the OneDrive site-collection GUID (the same value
-        ``"siteId"`` is blanked to in bodies) as
-        ``...content.com_<site-guid>_<doc-guid>``. The body regex never runs on
-        headers, so the header is dropped wholesale here."""
-        cfg = build_graph_vcr_config(real_drive_id=None)
+        """The ``docID`` response header on pre-signed-content interactions
+        embeds the OneDrive site-collection GUID (the same value ``"siteId"``
+        is blanked to in bodies) as ``...content.com_<site-guid>_<doc-guid>``.
+        The body regexes never run on headers, so the header is dropped
+        wholesale."""
+        cfg = _graph_cfg()
         site_guid = "52b575dd-9200-466f-a853-18401ad957cb"
         resp: dict[str, Any] = {
             "headers": {
@@ -253,16 +285,16 @@ class TestGraphCassetteScrub:
         assert "docid" not in {k.lower() for k in out}
         assert site_guid not in " ".join(str(v) for v in out.values())
 
+    @pytest.mark.spec("REC-004")
     def test_download_token_redacted_from_302_location_header(self) -> None:
         """GR-015: GET /content -> 302 whose Location is the pre-signed downloadUrl.
 
         The Location points at a pre-signed content host, so it collapses to the
         placeholder — removing the query token AND the drive id Graph embeds in
-        the path (BK-262). Replay-safe: the download request the backend issues
-        from this header normalises to the same placeholder (PR #750 review — the
-        primary leak path the streaming proof de-risks).
+        the path. Replay-safe: the download request the backend issues from this
+        header normalises to the same placeholder.
         """
-        cfg = build_graph_vcr_config(real_drive_id=None)
+        cfg = _graph_cfg()
         loc = (
             "https://abc.microsoftpersonalcontent.com/personal/x/Documents/f.bin"
             "?tempauth=TEMPAUTHSECRET&Expires=1700000000&access_token=ACCESSTOKENSECRET"
@@ -274,11 +306,11 @@ class TestGraphCassetteScrub:
         assert scrubbed == GRAPH_PRESIGNED_PLACEHOLDER
 
     def test_presigned_location_drops_drive_id_in_path(self) -> None:
-        """BK-262 regression: the async copy/move monitor Location at a pre-signed
-        host carries the drive id (the cid AND the long ``b!…`` form) in its PATH,
-        which the old query-only wipe left intact. The pre-signed-host collapse
-        removes both."""
-        cfg = build_graph_vcr_config(real_drive_id="deadbeefcafe0123")
+        """The async copy/move monitor Location at a pre-signed host carries the
+        drive id (the cid AND the long ``b!…`` form) in its PATH, which a
+        query-only wipe would leave intact. The pre-signed-host collapse removes
+        both."""
+        cfg = _graph_cfg("deadbeefcafe0123")
         loc = (
             "https://my.microsoftpersonalcontent.com/personal/DEADBEEFCAFE0123"
             "/_api/v2.0/drives/b!3XW1UgCSb0aoUxhAGtlXy8vVrIsFxBxJm9hrzwaK5lr1q/operations/copy"
@@ -293,7 +325,7 @@ class TestGraphCassetteScrub:
         """A Graph-API-host Location (a 201 Created item URL the backend never
         re-requests) keeps host + path for review; only the token query is wiped
         and the drive id in the path is id-normalised."""
-        cfg = build_graph_vcr_config(real_drive_id="realdrive123")
+        cfg = _graph_cfg("realdrive123")
         loc = "https://graph.microsoft.com/v1.0/drives/realdrive123/items/01ABC?novel_token=SECRET"
         resp: dict[str, Any] = {"headers": {"Location": loc}, "body": {"string": b""}}
         scrubbed = cfg["before_record_response"](resp)["headers"]["Location"]
@@ -302,13 +334,13 @@ class TestGraphCassetteScrub:
         assert scrubbed == f"https://graph.microsoft.com/v1.0/drives/{FAKE_DRIVE_ID}/items/01ABC?REDACTED"
 
     def test_api_host_location_without_query_is_unchanged(self) -> None:
-        cfg = build_graph_vcr_config(real_drive_id=None)
+        cfg = _graph_cfg()
         loc = "https://graph.microsoft.com/v1.0/drives/d/items/01ABC"
         resp: dict[str, Any] = {"headers": {"Location": loc}, "body": {"string": b""}}
         assert cfg["before_record_response"](resp)["headers"]["Location"] == loc
 
     def test_drive_id_rewritten_in_uri_and_body(self) -> None:
-        cfg = build_graph_vcr_config(real_drive_id="realdrive123")
+        cfg = _graph_cfg("realdrive123")
         scrub = _composed_request_filter(cfg)
         out = scrub(_request({}, uri="https://graph.microsoft.com/v1.0/drives/realdrive123/root:/a.txt:"))
         assert "realdrive123" not in out.uri
@@ -320,12 +352,12 @@ class TestGraphCassetteScrub:
         assert FAKE_DRIVE_ID.encode() in scrubbed["body"]["string"]
 
     def test_drive_id_rewrite_is_case_insensitive(self) -> None:
-        """BK-262: Graph echoes the drive id (cid) UPPER-cased inside item ids,
-        eTags, and webUrls but lower-cased in URIs. A case-sensitive replace of
-        the lower-cased env value leaked the upper-cased copies; the rewrite is
+        """Graph echoes the drive id (cid) UPPER-cased inside item ids, eTags,
+        and webUrls but lower-cased in URIs. A case-sensitive replace of the
+        lower-cased env value would leak the upper-cased copies; the rewrite is
         case-insensitive and maps every casing to the same ``FAKE_DRIVE_ID`` so
         id/eTag self-comparisons within a cassette still match."""
-        cfg = build_graph_vcr_config(real_drive_id="deadbeefcafe0123")
+        cfg = _graph_cfg("deadbeefcafe0123")
         body = (
             b'{"id":"DEADBEEFCAFE0123!s0123abcd",'
             b'"eTag":"\\"DEADBEEFCAFE0123!112.0\\"",'
@@ -341,12 +373,34 @@ class TestGraphCassetteScrub:
         # The load-bearing item name is untouched.
         assert b'"name":"f.txt"' in scrubbed
 
+    @pytest.mark.spec("REC-003")
+    def test_drive_id_hyphen_split_form_rewritten_in_header_values(self) -> None:
+        """The drive cid rides request headers in hyphen-split oid form (the
+        last two GUID groups of an MSAL ``Oid:`` anchor) — a shape the
+        contiguous-id rewrite misses. Every request-header value gets the
+        env-redact chain, and the Graph profile's ``forms`` declares the split
+        shape, so the cid is rewritten wherever it rides."""
+        scrub = _composed_request_filter(_graph_cfg("deadbeefcafe0123"))
+        out = scrub(
+            _request(
+                # Not X-AnchorMailbox (deleted natively) — an arbitrary header
+                # proves the generic value-rewrite half.
+                {"X-Diag": "Oid:00000000-0000-0000-DEAD-BEEFCAFE0123@72f988bf"},
+                uri="https://graph.microsoft.com/v1.0/me/drive",
+            )
+        )
+        value = out.headers["X-Diag"]
+        assert "dead-beefcafe0123" not in value.lower()
+        assert "deadbeefcafe0123" not in value.lower()
+        assert FAKE_DRIVE_ID in value
+
     def test_identity_and_site_pii_redacted_from_body(self) -> None:
-        """BK-262: the createdBy / lastModifiedBy user objects (email, displayName,
-        userPrincipalName, loginName) and the siteId Graph embeds in item responses
-        are blanked; none are read by the backend or asserted by conformance. The
-        load-bearing ``name`` field — which IS read — must survive intact."""
-        cfg = build_graph_vcr_config(real_drive_id=None)
+        """The createdBy / lastModifiedBy user objects (email, displayName,
+        userPrincipalName, loginName) and the siteId Graph embeds in item
+        responses are blanked; none are read by the backend or asserted by
+        conformance. The load-bearing ``name`` field — which IS read — must
+        survive intact."""
+        cfg = _graph_cfg()
         body = (
             b'{"name":"keep.txt","siteId":"site-guid-1234",'
             b'"createdBy":{"user":{"email":"real@example.com",'
@@ -363,14 +417,14 @@ class TestGraphCassetteScrub:
         assert b'"siteId":"REDACTED"' in scrubbed
 
     def test_token_response_identity_fields_redacted(self) -> None:
-        """BK-262 review: the OAuth token-exchange response (recorded when MSAL
-        refreshes mid-suite) carries ``id_token`` (a JWT) and ``client_info``
-        (base64) alongside ``access_token`` / ``refresh_token``. The JWT/base64
-        payloads embed the account email, name, tenant id, and an ``oid`` holding
-        the drive cid — none caught by the drive-id or email scrubs because they
+        """The OAuth token-exchange response (recorded when MSAL refreshes
+        mid-suite) carries ``id_token`` (a JWT) and ``client_info`` (base64)
+        alongside ``access_token`` / ``refresh_token``. The JWT/base64 payloads
+        embed the account email, name, tenant id, and an ``oid`` holding the
+        drive cid — none caught by the drive-id or email scrubs because they
         are base64-encoded, so all four token-response fields are redacted
-        wholesale. The ``bare JWT`` forbidden marker caught this on re-record."""
-        cfg = build_graph_vcr_config(real_drive_id="deadbeefcafe0123")
+        wholesale."""
+        cfg = _graph_cfg("deadbeefcafe0123")
         # A synthetic token response: the id_token / client_info base64 stands in
         # for the account email / tenant id / oid-embedded cid a live response carries.
         jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJwcmVmZXJyZWRfdXNlcm5hbWUiOiAidXNlckBleGFtcGxlLmNvbSJ9"
@@ -389,28 +443,32 @@ class TestGraphCassetteScrub:
         # The non-secret scope field is untouched.
         assert b'"scope":"Files.ReadWrite"' in scrubbed
 
+    @pytest.mark.spec("REC-004")
     def test_presigned_host_request_uri_rewritten_to_placeholder(self) -> None:
-        """BK-262: a request to a pre-signed content host (downloadUrl / uploadUrl /
-        copy-move monitor URL) has its whole URI replaced with the placeholder, so
-        the recorded request matches what the backend re-issues on replay."""
-        scrub = _composed_request_filter(build_graph_vcr_config(real_drive_id=None))
+        """A request to a pre-signed content host (downloadUrl / uploadUrl /
+        copy-move monitor URL) has its whole URI replaced with the placeholder,
+        so the recorded request matches what the backend re-issues on replay."""
+        scrub = _composed_request_filter(_graph_cfg())
         out = scrub(_request({}, uri="https://abc.microsoftpersonalcontent.com/personal/x/f.bin?tempauth=SECRET"))
         assert out.uri == GRAPH_PRESIGNED_PLACEHOLDER
 
     def test_graph_api_host_request_uri_preserved(self) -> None:
-        """An API-host request (graph.microsoft.com) is id-normalised, not blanked:
-        the placeholder rewrite is reserved for pre-signed content hosts."""
-        scrub = _composed_request_filter(build_graph_vcr_config(real_drive_id=None))
+        """An API-host request (graph.microsoft.com) is id-normalised, not
+        blanked: the placeholder rewrite is reserved for pre-signed content
+        hosts."""
+        scrub = _composed_request_filter(_graph_cfg())
         uri = "https://graph.microsoft.com/v1.0/drives/d/root:/a.txt:/content"
         assert scrub(_request({}, uri=uri)).uri == uri
 
+    @pytest.mark.spec("REC-004")
     def test_downloadurl_body_value_replays_against_recorded_request(self) -> None:
-        """End-to-end BK-262 proof: the scrubbed downloadUrl the backend reads from
-        a response body, fed back as the URI of the GET it then issues, normalises
-        to the same placeholder the recorded live GET was rewritten to — so vcrpy
-        matches them. The bare ``"REDACTED"`` token it replaced did not (it is not
-        a URL), which is exactly why Graph reads could not replay."""
-        cfg = build_graph_vcr_config(real_drive_id="realdrive123")
+        """End-to-end round-trip proof: the scrubbed downloadUrl the backend
+        reads from a response body, fed back as the URI of the GET it then
+        issues, normalises to the same placeholder the recorded live GET was
+        rewritten to — so vcrpy matches them. A bare ``"REDACTED"`` token would
+        not (it is not a URL), which is exactly why Graph reads could not
+        replay before the placeholder."""
+        cfg = _graph_cfg("realdrive123")
         scrub = _composed_request_filter(cfg)
         # Record side: scrub the metadata body carrying the live downloadUrl.
         body = b'{"@microsoft.graph.downloadUrl":"https://live-cdn.example/path?tempauth=SECRET"}'
@@ -419,18 +477,18 @@ class TestGraphCassetteScrub:
         download_url = json.loads(scrubbed)["@microsoft.graph.downloadUrl"]
         assert download_url == GRAPH_PRESIGNED_PLACEHOLDER
         # ...and issues a GET to it; the composed filter normalises that request
-        # the same way it normalised the recorded live GET → identical URIs match.
+        # the same way it normalised the recorded live GET -> identical URIs match.
         replay_uri = scrub(_request({}, uri=download_url)).uri
         recorded_uri = scrub(_request({}, uri="https://live-cdn.example/path?tempauth=SECRET")).uri
         assert replay_uri == recorded_uri == GRAPH_PRESIGNED_PLACEHOLDER
 
     def test_presigned_request_host_header_normalised(self) -> None:
-        """BK-262 review: the pre-signed branch rewrites the URI to the placeholder
-        but the ``Host`` header named the live content host (generic for consumer
+        """The pre-signed branch rewrites the URI to the placeholder; the
+        ``Host`` header naming the live content host (generic for consumer
         OneDrive, but tenant-identifying ``<tenant>-my.sharepoint.com`` on a
-        business drive). It is rewritten to the placeholder host so nothing of the
-        live URL survives, honouring the placeholder's docstring guarantee."""
-        scrub = _composed_request_filter(build_graph_vcr_config(real_drive_id=None))
+        business drive) is rewritten to the placeholder host so nothing of the
+        live URL survives."""
+        scrub = _composed_request_filter(_graph_cfg())
         out = scrub(
             _request(
                 {"Host": "tenant-my.sharepoint.com", "User-Agent": "x"},
@@ -443,11 +501,10 @@ class TestGraphCassetteScrub:
         assert "sharepoint.com" not in out.headers["Host"]
 
     def test_presigned_request_body_credential_form_scrubbed(self) -> None:
-        """BK-262 review: the pre-signed branch took an early return that left the
-        request body untouched. An OAuth token exchange against an auth host outside
-        ``_GRAPH_API_HOSTS`` (login.live.com, a sovereign cloud) lands there too, so
-        the credential-form scrub now runs before the return."""
-        scrub = _composed_request_filter(build_graph_vcr_config(real_drive_id=None))
+        """An OAuth token exchange against an auth host outside the API hosts
+        (login.live.com, a sovereign cloud) lands on the pre-signed branch too,
+        so the credential-form scrub runs there before the early return."""
+        scrub = _composed_request_filter(_graph_cfg())
         out = scrub(
             _request(
                 {},
@@ -456,7 +513,7 @@ class TestGraphCassetteScrub:
                 body=b"grant_type=refresh_token&refresh_token=REALSECRET&client_secret=ALSOSECRET",
             )
         )
-        # login.live.com is NOT in _GRAPH_API_HOSTS, so this is the pre-signed path.
+        # login.live.com is NOT an API host, so this is the pre-signed path.
         assert out.uri == GRAPH_PRESIGNED_PLACEHOLDER
         assert b"REALSECRET" not in out.body
         assert b"ALSOSECRET" not in out.body
@@ -464,12 +521,12 @@ class TestGraphCassetteScrub:
         assert b"client_secret=REDACTED" in out.body
 
     def test_correlation_diagnostic_headers_dropped(self) -> None:
-        """BK-262 review: per-request correlation / diagnostic headers (the ESTS
-        ``x-ms-request-id`` the bare ``request-id`` entry missed, ``x-ms-ests-server``,
-        and the SharePoint/CDN ``sprequestguid`` / ``splogid`` / ``ms-cv`` /
-        ``x-msedge-ref``) are dropped — parity with the Azure profile and stable
-        cassette diffs across re-records."""
-        cfg = build_graph_vcr_config(real_drive_id=None)
+        """Per-request correlation / diagnostic headers (the ESTS
+        ``x-ms-request-id`` a bare ``request-id`` entry would miss,
+        ``x-ms-ests-server``, and the SharePoint/CDN ``sprequestguid`` /
+        ``splogid`` / ``ms-cv`` / ``x-msedge-ref``) are dropped — parity with
+        the Azure profile and stable cassette diffs across re-records."""
+        cfg = _graph_cfg()
         resp: dict[str, Any] = {
             "headers": {
                 "x-ms-request-id": ["abc-123"],
@@ -489,31 +546,26 @@ class TestGraphCassetteScrub:
         assert "content-type" in survivors  # unrelated headers kept
 
     def test_query_params_filtered(self) -> None:
-        cfg = build_graph_vcr_config(real_drive_id=None)
+        cfg = _graph_cfg()
         for param in ("tempauth", "Expires", "access_token", "sig"):
             assert param in cfg["filter_query_parameters"]
 
     def test_cassette_dir_is_per_backend_graph(self) -> None:
-        assert CASSETTE_DIR_GRAPH.name == "graph"
-        assert CASSETTE_DIR_GRAPH.parent.name == "cassettes"
+        assert GRAPH_PROFILE.cassette_dir.name == "graph"
+        assert GRAPH_PROFILE.cassette_dir.parent.name == "cassettes"
 
 
 @pytest.mark.spec("TEST-007")
 class TestAzureCassetteScrub:
-    """The SharedKey signature headers and live account identity must not survive.
-
-    First unit-level coverage for the Azure request-side scrub (BK-284 PR 1):
-    until the native-filter migration the replay conformance suite was its only
-    proof, which could not catch a silently weakened header list.
-    """
+    """The SharedKey signature headers and live account identity must not survive."""
 
     def test_credential_headers_dropped_case_insensitively(self) -> None:
-        scrub = _composed_request_filter(build_vcr_config(real_account=None))
+        scrub = _composed_request_filter(_azure_cfg())
         out = scrub(
             _request(
                 {
                     # Mixed case on purpose: vcrpy's HeadersDict matches filter
-                    # entries case-insensitively, like the old .lower() loop did.
+                    # entries case-insensitively.
                     "AUTHORIZATION": "SharedKey liveacct:c2lnbmF0dXJl",
                     "x-ms-date": "Tue, 09 Jun 2026 10:00:00 GMT",
                     "X-Ms-Client-Request-Id": "abc-123",
@@ -529,7 +581,7 @@ class TestAzureCassetteScrub:
         assert out.headers["Accept"] == "application/xml"
 
     def test_user_agent_normalised(self) -> None:
-        scrub = _composed_request_filter(build_vcr_config(real_account=None))
+        scrub = _composed_request_filter(_azure_cfg())
         out = scrub(
             _request(
                 {"User-Agent": "azsdk-python-storage-file-datalake/12.14 Python/3.11 (Linux)"},
@@ -539,12 +591,13 @@ class TestAzureCassetteScrub:
         assert out.headers["User-Agent"] == "azsdk-python-replay"
         assert "User-Agent" in list(out.headers.keys())  # exact key case kept
 
+    @pytest.mark.spec("REC-005")
     def test_user_agent_absent_stays_absent(self) -> None:
         """The ``("User-Agent", ...)`` tuple rewrites but never adds (vcrpy
-        ``replace_headers`` guards on ``if k in new_headers:``), matching the old
-        in-loop rewrite. A request with no User-Agent must record none — the
-        byte-identity property the migration rests on."""
-        scrub = _composed_request_filter(build_vcr_config(real_account=None))
+        ``replace_headers`` guards on ``if k in new_headers:``). A request with
+        no User-Agent must record none — the byte-identity property the native
+        half rests on."""
+        scrub = _composed_request_filter(_azure_cfg())
         out = scrub(_request({"Accept": "application/xml"}, uri="https://azreplay.dfs.core.windows.net/fs/path"))
         assert "user-agent" not in {k.lower() for k in out.headers}
 
@@ -552,7 +605,7 @@ class TestAzureCassetteScrub:
         """Record mode: the live account, the per-call conformance filesystem
         UUID, and the write_atomic temp suffix all normalise; the SAS-style
         query params ride the native ``filter_query_parameters`` delete."""
-        scrub = _composed_request_filter(build_vcr_config(real_account="liveacct"))
+        scrub = _composed_request_filter(_azure_cfg("liveacct"))
         out = scrub(
             _request(
                 {},
@@ -569,9 +622,10 @@ class TestAzureCassetteScrub:
         assert "QUERYSECRET" not in out.uri  # native query filter ran
 
     def test_copy_source_header_rewritten_not_deleted(self) -> None:
-        """The ``x-ms-copy-source`` / ``x-ms-rename-source`` value rewrites have
-        no vcrpy-native equivalent and stay in the custom hook."""
-        scrub = _composed_request_filter(build_vcr_config(real_account="liveacct"))
+        """The ``x-ms-copy-source`` / ``x-ms-rename-source`` value rewrites
+        have no vcrpy-native equivalent and ride the generic header-value
+        chain in the custom hook."""
+        scrub = _composed_request_filter(_azure_cfg("liveacct"))
         out = scrub(
             _request(
                 {"x-ms-rename-source": "/liveacct/conformance-12ab34cd/dir/.~tmp.f.txt.0a1b2c3d"},
@@ -584,31 +638,166 @@ class TestAzureCassetteScrub:
         assert FAKE_FILESYSTEM in val
         assert "0a1b2c3d" not in val
 
+    def test_copy_source_response_header_rewritten(self) -> None:
+        """Azure echoes the copy-source URL back in the response; the same
+        account/filesystem rewrite applies (list- and scalar-valued alike)."""
+        cfg = _azure_cfg("liveacct")
+        resp: dict[str, Any] = {
+            "headers": {"x-ms-copy-source": ["https://liveacct.dfs.core.windows.net/conformance-12ab34cd/src.txt"]},
+            "body": {"string": b""},
+        }
+        val = cfg["before_record_response"](resp)["headers"]["x-ms-copy-source"][0]
+        assert "liveacct" not in val
+        assert FAKE_ACCOUNT in val
+        assert FAKE_FILESYSTEM in val
+
+    def test_account_and_request_id_scrubbed_from_response_body(self) -> None:
+        """Response bodies (error XML, listings) carry the live account,
+        filesystem uuid, and per-run RequestId/Time fragments — all normalised
+        in the bytes domain so binary payloads never crash a decode."""
+        cfg = _azure_cfg("liveacct")
+        body = (
+            b"<Error><Message>RequestId:0a1b2c3d-9999-4f4c-a049-deadbeefcafe\n"
+            b"Time:2026-06-11T12:00:00.000Z</Message>"
+            b"<Detail>https://liveacct.dfs.core.windows.net/conformance-12ab34cd/f.txt</Detail></Error>"
+        )
+        scrubbed = cfg["before_record_response"]({"body": {"string": body}})["body"]["string"]
+        assert b"liveacct" not in scrubbed
+        assert FAKE_ACCOUNT.encode() in scrubbed
+        assert FAKE_FILESYSTEM.encode() in scrubbed
+        assert b"RequestId:SCRUBBED" in scrubbed
+        assert b"Time:SCRUBBED" in scrubbed
+
     def test_query_params_filtered(self) -> None:
-        cfg = build_vcr_config(real_account=None)
+        cfg = _azure_cfg()
         for param in ("sig", "se", "skoid"):
             assert param in cfg["filter_query_parameters"]
 
 
-class TestGraphCommittedCassettePIISweep:
-    """Creds-free guard over the *committed* Graph cassette tree (BK-262 review).
+class TestScrubCore:
+    """Invariants of the backend-agnostic core (spec 049)."""
 
-    The recorder's Step-4 scrub-verify asserts ``GRAPH_FORBIDDEN_CASSETTE_PATTERNS``
-    only on the live-record path. This sweep runs the identical markers over the
-    checked-in ``.yaml`` files with no live tier, so a hand edit, a bad merge, or a
-    re-record on a machine without the env var (the recorder ``_die``s before its
-    sweep if the drive id is unset, but the cassettes are already written) that
-    reintroduces a bearer token / JWT / ``b!…`` id / site GUID / tenant host /
-    credential form / identity key is caught in CI, not by a one-time manual grep.
+    @pytest.mark.spec("REC-001")
+    def test_core_module_is_backend_agnostic(self) -> None:
+        """The shared module exposes no backend-specific names: every constant
+        or helper naming a concrete backend belongs in that backend's profile
+        module, so a third backend extends the system without touching the
+        core."""
+        backend_tokens = ("azure", "graph", "s3", "sftp")
+        offenders = [name for name in vars(_cassettes_core) if any(token in name.lower() for token in backend_tokens)]
+        assert not offenders, f"backend-specific names in the shared core: {offenders}"
+
+    @pytest.mark.spec("REC-002")
+    @pytest.mark.parametrize("profile", _registered_profiles(), ids=lambda p: p.backend)
+    def test_named_rules_unique_prefixed_and_typed(self, profile: CassetteProfile) -> None:
+        """Every redaction rule carries a unique, backend-prefixed audit name
+        and a declared expectation — the identity the Step-4 named audit
+        gates on."""
+        rules = profile.named_rules()
+        assert rules, f"profile {profile.backend!r} declares no named rules"
+        names = [name for name, _ in rules]
+        assert len(names) == len(set(names)), f"duplicate rule names: {names}"
+        for name, expectation in rules:
+            assert name.startswith(f"{profile.backend}."), name
+            assert expectation in ("required-to-fire", "opportunistic")
+
+    @pytest.mark.spec("REC-003")
+    def test_env_redact_covers_every_surface_and_form(self) -> None:
+        """A declared live value is redacted in the request URI, request-header
+        values, request body, and response body — bytes and str, every declared
+        form, case-insensitively when declared (the Graph cid matrix)."""
+        cid = "deadbeefcafe0123"
+        cfg = _graph_cfg(cid)
+        scrub = _composed_request_filter(cfg)
+        out = scrub(
+            _request(
+                {"X-Diag": "Oid:00000000-0000-0000-DEAD-BEEFCAFE0123@72f988bf"},
+                uri=f"https://graph.microsoft.com/v1.0/drives/{cid}/root:/a.txt:",
+                method="POST",
+                body=b'{"parentReference":{"driveId":"DEADBEEFCAFE0123"}}',
+            )
+        )
+        request_blob = (out.uri + " " + " ".join(out.headers.values())).lower() + " " + out.body.decode().lower()
+        assert cid not in request_blob
+        assert f"{cid[:4]}-{cid[4:]}" not in request_blob
+        assert FAKE_DRIVE_ID in out.uri
+        assert FAKE_DRIVE_ID in out.headers["X-Diag"]
+        assert FAKE_DRIVE_ID.encode() in out.body
+        # Response body: bytes and str dispatch.
+        for body in (b'{"id":"DEADBEEFCAFE0123!s1"}', '{"id":"deadbeefcafe0123!s1"}'):
+            scrubbed = cfg["before_record_response"]({"body": {"string": body}})["body"]["string"]
+            text = scrubbed.decode() if isinstance(scrubbed, bytes) else scrubbed
+            assert isinstance(scrubbed, type(body))  # str in -> str out, bytes in -> bytes out
+            assert cid not in text.lower()
+            assert FAKE_DRIVE_ID in text
+
+    @pytest.mark.spec("REC-006")
+    @pytest.mark.parametrize("profile", _registered_profiles(), ids=lambda p: p.backend)
+    def test_profile_forbidden_set_includes_envelope(self, profile: CassetteProfile) -> None:
+        """Every profile's gate set starts from the shared envelope; per-profile
+        additions extend it, never replace it."""
+        combined = profile.all_forbidden_patterns()
+        assert combined[: len(FORBIDDEN_ENVELOPE)] == FORBIDDEN_ENVELOPE
+        labels = [label for label, _ in combined]
+        assert len(labels) == len(set(labels)), f"duplicate forbidden-pattern labels: {labels}"
+
+    @pytest.mark.spec("REC-006")
+    def test_oid_anchor_marker_matches_live_header_shape(self) -> None:
+        """The envelope's oid-anchor marker catches the X-AnchorMailbox value
+        shape a cold-cache MSAL refresh POST records — the leak the
+        contiguous-cid markers miss."""
+        live_shape = b"X-AnchorMailbox: Oid:00000000-0000-0000-dead-beefcafe0123@9188040d-6c67-4c5b-b112-36a304b66dad"
+        markers = dict(FORBIDDEN_ENVELOPE)
+        assert re.search(markers["oid anchor (hyphen-split account id)"], live_shape, re.IGNORECASE)
+
+    @pytest.mark.spec("REC-006")
+    def test_fire_counts_accumulate_and_manifest_dumps(self, tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Each named rule application increments its audit counter; the
+        manifest dump writes the snapshot only when the recorder exported the
+        path."""
+        reset_scrub_fire_counts()
+        cfg = _graph_cfg("deadbeefcafe0123")
+        scrub = _composed_request_filter(cfg)
+        scrub(_request({}, uri="https://graph.microsoft.com/v1.0/drives/deadbeefcafe0123/root:/rs-conformance-ab12/x:"))
+        cfg["before_record_response"]({"body": {"string": b'{"@microsoft.graph.downloadUrl":"https://h?t=s"}'}})
+        counts = scrub_fire_counts()
+        assert counts.get("graph.drive-id", 0) >= 1
+        assert counts.get("graph.uri.conformance-root", 0) >= 1
+        assert counts.get("graph.body.download-url", 0) >= 1
+        # No env var -> no dump.
+        monkeypatch.delenv("_RS_SCRUB_MANIFEST", raising=False)
+        assert dump_scrub_manifest() is None
+        # Env var set -> snapshot written (xdist workers suffix their own file).
+        monkeypatch.delenv("PYTEST_XDIST_WORKER", raising=False)
+        monkeypatch.setenv("_RS_SCRUB_MANIFEST", str(tmp_path / "manifest.json"))
+        path = dump_scrub_manifest()
+        assert path is not None
+        data = json.loads(path.read_text(encoding="utf-8"))
+        assert data["graph.drive-id"] >= 1
+        reset_scrub_fire_counts()
+
+
+class TestCommittedCassettePIISweep:
+    """Creds-free guard over every profile's *committed* cassette tree.
+
+    The recorder's Step-4 scrub-verify asserts the forbidden patterns only on
+    the live-record path. This sweep runs the identical combined gate set
+    (envelope + per-profile additions) over the checked-in ``.yaml`` files
+    with no live tier, so a hand edit, a bad merge, or a re-record on a
+    machine without the env vars that reintroduces a bearer token / JWT /
+    ``b!…`` id / site GUID / tenant host / credential form / identity key is
+    caught in CI, not by a one-time manual grep.
     """
 
-    def test_committed_graph_cassettes_carry_no_forbidden_pii(self) -> None:
-        files = sorted(CASSETTE_DIR_GRAPH.glob("*.yaml"))
-        assert files, f"no committed Graph cassettes found under {CASSETTE_DIR_GRAPH}; sweep would be vacuous"
+    @pytest.mark.spec("REC-006")
+    @pytest.mark.parametrize("profile", _registered_profiles(), ids=lambda p: p.backend)
+    def test_committed_cassettes_carry_no_forbidden_pii(self, profile: CassetteProfile) -> None:
+        files = sorted(profile.cassette_dir.glob("*.yaml"))
+        assert files, f"no committed cassettes under {profile.cassette_dir}; sweep would be vacuous"
         leaks: list[str] = []
         for path in files:
             raw = path.read_bytes()
-            for label, pattern in GRAPH_FORBIDDEN_CASSETTE_PATTERNS:
+            for label, pattern in profile.all_forbidden_patterns():
                 if re.search(pattern, raw, re.IGNORECASE):
                     leaks.append(f"{path.name}: {label}")
         assert not leaks, "forbidden PII markers found in committed cassettes:\n" + "\n".join(leaks)

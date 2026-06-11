@@ -8,6 +8,47 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-284 — Cassette recording layer redesign: backend-agnostic core + REC-NNN spec**
+  spec: REC-001..REC-008 (new spec 049) + TEST-007 cross-link · effort: L · audience: infra.test, library.maintainer
+  `tests/backends/fixtures/_cassettes.py` had grown two parallel hand-rolled
+  scrub stacks (Azure-first, Graph by accretion): four body-scrub lists with
+  no audit identity, Azure helpers in the shared module, hand-rolled header
+  scrubs where vcrpy ships native filters. Shipped as the planned two PRs.
+  **PR 1 (#791):** request-header deletes + the User-Agent rewrite migrated
+  to vcrpy-native `filter_headers` (tuple form rewrites-never-adds;
+  capitalised key keeps re-records byte-identical); security-gate tests
+  reworked onto vcrpy's composed pipeline; live `--verify-only` + single-node
+  byte-identity dogfood on both backends proved equivalence. Divergence from
+  the filing sketch on empirical grounds: `filter_post_data_parameters`
+  rejected — vcrpy 8.1.1 re-serialises every `application/json` POST body
+  even on no match, churning the security-review diff — so the OAuth POST
+  scrub stays a named bytes regex (and is therefore audit-visible).
+  **PR 2:** the module rewritten as the backend-agnostic core —
+  `RedactPattern` / `UriRewrite` / `EnvRedact` named rules with
+  required-to-fire/opportunistic expectations, `PresignedPolicy`, one frozen
+  `CassetteProfile` per family (`_cassettes_azure.py` / `_cassettes_graph.py`),
+  one generic `build_profile_vcr_config` — registered via
+  `BackendFixture.cassette_profile` as the single registration act (the
+  conformance conftest derives directory routing, name aliases, the
+  missing-cassette skip, and the scrub config from the registry; fail-loud
+  guards intact). Forbidden markers split into `FORBIDDEN_ENVELOPE` +
+  per-profile additions, consumed identically by the recorder's Step-4 gate
+  and a creds-free CI sweep generalised over every profile's committed tree
+  (the Azure corpus now swept too). Step-4 gained the named-rule audit: the
+  core counts per-rule fires, the conformance session dumps a manifest, and
+  required-to-fire rules fail at zero (skipped in `--verify-only`/`--node`).
+  The X-AnchorMailbox gap the PR-1 dogfood surfaced is closed three ways:
+  hyphen-split cid form in the Graph `EnvRedact.forms`, a native
+  `x-anchormailbox` delete, and an oid-anchor envelope marker. Expectations
+  calibrated against the corpus before wiring (uploadUrl and the Azure
+  body-filesystem rule demoted to opportunistic — zero-hit on the recorded
+  slice). Spec 049 (REC-001..REC-008) carries the invariants; no ADR per
+  user decision at implementation (test tooling beneath ADR-0028). The
+  unchanged corpus was the oracle throughout: full Stage-1 replay green with
+  zero cassette diffs, and the #787 review hardening survives as profile
+  declarations. CHANGELOG N/A (audience `infra.test`). Trace:
+  `sdd/traces/bk-284-cassette-recording-redesign.yml`.
+
 - [x] **BK-274 — Dependabot approval is the only gate before auto-merge to `master`, with no codified criteria**
   spec: — · effort: S · audience: library.maintainer, infra.ci
   `dependabot-auto-merge.yml` fired `gh pr merge --auto --squash` on any

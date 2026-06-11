@@ -5,8 +5,9 @@ trigger: >-
   accretion: two parallel build_*_vcr_config stacks, four body-scrub lists, and
   hand-rolled request-header/OAuth-body scrubs where vcrpy ships native
   filters. BK-284 was filed from PR #787 review with a two-PR migration
-  decision; this trace covers the planning pass and PR 1 (native-filter
-  warm-up). PR 2 (profile core + spec 049 + ADR-0029 + named audit) is open.
+  decision; this trace covers the planning pass, PR 1 (native-filter
+  warm-up), and PR 2 (profile core + spec 049 + named audit; no ADR per
+  user decision at implementation), which closes the item.
 source_items:
   - BK-284
   - BK-262
@@ -15,6 +16,9 @@ audience:
   - library.maintainer
 expected_ripples:
   - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - sdd/specs/048-testing-architecture.md
 review_rounds: 2
 phases:
   - id: orient
@@ -143,6 +147,74 @@ phases:
           test to TestGraphCassetteScrub and TestAzureCassetteScrub so a future vcrpy that materialised
           missing replacement headers would fail loud instead of silently injecting UA into cassettes
           that never carried one. Verified the claim against vcrpy 8.1.1 source before applying.
+        outcome: ok
+  - id: implement-pr2
+    name: Implement PR 2 (profile core + spec 049 + named audit)
+    steps:
+      - file: sdd/plans/BK-284-cassette-recording-redesign.md
+        section: "PR 2 (workstreams A-E, cross-cutting decisions)"
+        read_type: gate
+        extract: >-
+          Decomposition followed with three recorded divergences: (1) no ADR-0029 (user decision
+          mid-implementation: test tooling beneath ADR-0028, rationale lives in spec clauses);
+          (2) expectation calibration against the corpus demoted uploadUrl and the azure
+          body-filesystem rule to opportunistic (the plan's required list assumed both fire;
+          grep showed zero hits on the recorded slice); (3) implementation order ran B+C+D+E
+          then A (spec written against shipped shapes) instead of the suggested A-first
+          skeleton commit. Plan file deleted in this PR per its own banner.
+        outcome: ok
+      - file: tests/backends/conformance/conftest.py
+        section: "four cassette consumers"
+        read_type: gate
+        extract: >-
+          _CASSETTE_ID_ALIASES + _FIXTURE_CASSETTE_DIRS deleted; vcr_cassette_dir,
+          default_cassette_name/_normalise_cassette_name, the missing-cassette skip hook, and
+          the fail-loud guards all route through a cached registry-derived map; resolvers moved
+          into the profiles' EnvRedact.resolve; pytest_sessionfinish dumps the scrub manifest.
+        outcome: ok
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture"
+        read_type: gate
+        extract: "cassette_profile field added (TYPE_CHECKING import); six fixture modules pass their profile"
+        outcome: ok
+      - file: tests/backends/cassettes/
+        section: "expectation calibration greps"
+        read_type: verify
+        extract: >-
+          required-to-fire calibrated against the committed corpus before wiring: uploadUrl
+          placeholder zero-hit (no createUploadSession recorded), azure filesystem name absent
+          from response bodies (URI-only), RequestId/Time + tmp-uuid fire but stay opportunistic
+          (cosmetic normalisations, not secrets).
+        outcome: ok
+      - file: .claude/hooks/
+        section: "ruff format / import-sweep PostToolUse hook"
+        read_type: reference
+        extract: >-
+          The formatter hook swept staged-but-not-yet-used imports four times during the rewrite
+          (AZURE_PROFILE/GRAPH_PROFILE in six fixture modules, json/Counter/TYPE_CHECKING in the
+          recorder, the conftest import block); re-added after the consuming code existed.
+        outcome: misleading
+  - id: verify-pr2
+    name: Verify PR 2
+    steps:
+      - file: tests/backends/conformance/
+        section: "Stage-1 replay vs unchanged corpus (acceptance: the corpus is the oracle)"
+        read_type: verify
+        extract: >-
+          405 replay tests (296 azure + 109 graph) green through the profile-built configs;
+          git status shows zero cassette files modified. The generalised creds-free PII sweep
+          ran the envelope over the azure tree for the first time: no false positives from the
+          bare-email/Bearer/JWT/oid markers across 303 cassettes.
+        outcome: ok
+      - file: scripts/check_spec_marks.py
+        section: "REC-001..REC-008 coverage"
+        read_type: verify
+        extract: "All eight clauses declared with colon headings and cited by marks; 0 violations; no allowlist entries needed"
+        outcome: ok
+      - file: pyproject.toml
+        section: "hatch run all + docs-gate + gen-graph"
+        read_type: verify
+        extract: "Full mechanical gate green (6628 passed, 569 skipped); docs graph regenerated; mkdocs --strict green"
         outcome: ok
       - file: tests/backends/fixtures/_cassettes.py
         section: "content-rules doc cleanup (PR #791 review round 2)"

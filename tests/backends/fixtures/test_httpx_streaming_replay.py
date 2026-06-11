@@ -74,6 +74,7 @@ async def _stream_chunks(url: str) -> tuple[bytes, int]:
 
 
 @pytest.mark.spec("TEST-007")
+@pytest.mark.spec("REC-008")
 def test_httpx_stream_records_then_replays_offline(
     loopback_server: ThreadingHTTPServer,
     tmp_path: Path,
