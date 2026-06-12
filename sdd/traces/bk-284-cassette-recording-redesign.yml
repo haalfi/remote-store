@@ -19,7 +19,7 @@ expected_ripples:
   - sdd/BACKLOG-DONE.md
   - sdd/backlogid.json
   - sdd/specs/048-testing-architecture.md
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient (plan authoring)
@@ -234,4 +234,22 @@ phases:
           workstreams B/D territory; user decided: PR 2 as planned (relocation answers the
           history concern; value rename evaluated there — rsreplay shape, isolated textual
           commit if taken). Plan workstream D records both obligations.
+        outcome: ok
+      - file: tests/backends/fixtures/_cassettes_azure.py
+        section: "_resolve_live_account / _compile_env / routing guard (PR #792 review)"
+        read_type: verify
+        extract: >-
+          PR #792 review round (4 threads, none blocking): (1) routing test guarded only
+          kind == "replay"; added the record-side twin scoped to cassette families (s3_live is
+          HTTP + real-live with no cassette tier, so a blanket live assertion would be wrong);
+          (2) _compile_env's `if not value` collapsed None (disable signal) and "" (resolver
+          misconfig) — now fails loud on ""; (3) the Azure resolver was `-> str` + pytest.fail
+          while Graph's was `-> str | None` — aligned to None-on-no-creds, which made
+          live_connection_string dead code (deleted; fail-loud creds gating already lives in
+          _live_env.require_azure_live_connection_string on the fixtures); (4) the claim that
+          _drive_id_forms' len==16 branch is dead for the production b!… drive-id shape was
+          refuted empirically (the live GRAPH_DRIVE_ID is the 16-hex consumer cid — verified
+          via dotenv probe without printing the value), but its valid residue shipped: the
+          docstring now states the consumer-cid premise and a non-16-char passthrough test
+          covers the single-form branch.
         outcome: ok

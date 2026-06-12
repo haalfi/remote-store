@@ -50,6 +50,18 @@ class TestCassetteRouting:
             if fixture.kind == "replay":
                 assert fixture.cassette_profile is not None, fixture.name
 
+    def test_live_fixtures_of_cassette_families_carry_a_profile(self) -> None:
+        """The record-side twin of the replay guard — the higher blast
+        radius: a live fixture that lost its profile would still record,
+        just with no scrub config, silently writing live secrets into a
+        fresh cassette. Scoped to families that have a cassette tier at all
+        (``s3_live`` is HTTP + real-live but records no cassettes)."""
+        cassette_families = {f.backend for f in all_fixtures() if f.cassette_profile is not None}
+        assert cassette_families, "no cassette families registered"
+        for fixture in all_fixtures():
+            if fixture.backend in cassette_families and fixture.kind == "real-live" and fixture.transport == "http":
+                assert fixture.cassette_profile is not None, fixture.name
+
     def test_non_http_fixtures_are_invisible_to_routing(self) -> None:
         """Fixtures without a profile (non-HTTP transports, emulator tiers)
         never appear in the routing map."""

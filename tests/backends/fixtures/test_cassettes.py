@@ -37,11 +37,17 @@ from tests.backends.fixtures._cassettes import (
     reset_scrub_fire_counts,
     scrub_fire_counts,
 )
-from tests.backends.fixtures._cassettes_azure import AZURE_PROFILE, FAKE_ACCOUNT, FAKE_FILESYSTEM
+from tests.backends.fixtures._cassettes_azure import (
+    AZURE_PROFILE,
+    FAKE_ACCOUNT,
+    FAKE_FILESYSTEM,
+    _resolve_live_account,
+)
 from tests.backends.fixtures._cassettes_graph import (
     FAKE_DRIVE_ID,
     GRAPH_PRESIGNED_PLACEHOLDER,
     GRAPH_PROFILE,
+    _drive_id_forms,
 )
 
 _FAKE_BEARER = "eyJ0eXAiOiThisLooksLikeAJwt.payload-segment.signature-segment"
@@ -394,6 +400,19 @@ class TestGraphCassetteScrub:
         assert "deadbeefcafe0123" not in value.lower()
         assert FAKE_DRIVE_ID in value
 
+    @pytest.mark.spec("REC-003")
+    def test_non_cid_drive_id_redacted_as_single_form(self) -> None:
+        """A drive id that is not a 16-hex consumer cid (the business
+        ``b!...`` resource-id shape) embeds no bare cid to hyphen-split:
+        ``forms`` yields only the contiguous value, and the redact still
+        fires on it."""
+        long_id = "b!0123456789abcdefghijklmnopqrstuv"
+        assert _drive_id_forms(long_id) == (long_id,)
+        scrub = _composed_request_filter(_graph_cfg(long_id))
+        out = scrub(_request({}, uri=f"https://graph.microsoft.com/v1.0/drives/{long_id}/root:/a.txt:"))
+        assert long_id not in out.uri
+        assert FAKE_DRIVE_ID in out.uri
+
     def test_identity_and_site_pii_redacted_from_body(self) -> None:
         """The createdBy / lastModifiedBy user objects (email, displayName,
         userPrincipalName, loginName) and the siteId Graph embeds in item
@@ -673,6 +692,24 @@ class TestAzureCassetteScrub:
         for param in ("sig", "se", "skoid"):
             assert param in cfg["filter_query_parameters"]
 
+    def test_account_resolver_returns_none_without_live_creds(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """``None`` — the EnvRedact disable signal, never a crash or ``""``
+        — when no real connection string is configured: blank value or an
+        Azurite signature (its well-known account is not a secret). setenv
+        rather than delenv so ``load_dotenv(override=False)`` cannot pull a
+        real value from a developer's ``.env``."""
+        monkeypatch.setenv("AZURE_STORAGE_CONNECTION_STRING", "   ")
+        assert _resolve_live_account() is None
+        monkeypatch.setenv("AZURE_STORAGE_CONNECTION_STRING", "UseDevelopmentStorage=true")
+        assert _resolve_live_account() is None
+
+    def test_account_resolver_parses_live_connection_string(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv(
+            "AZURE_STORAGE_CONNECTION_STRING",
+            "DefaultEndpointsProtocol=https;AccountName=realacct;AccountKey=abc==;EndpointSuffix=core.windows.net",
+        )
+        assert _resolve_live_account() == "realacct"
+
 
 class TestScrubCore:
     """Invariants of the backend-agnostic core (spec 049)."""
@@ -700,6 +737,14 @@ class TestScrubCore:
         for name, expectation in rules:
             assert name.startswith(f"{profile.backend}."), name
             assert expectation in ("required-to-fire", "opportunistic")
+
+    @pytest.mark.spec("REC-003")
+    def test_empty_string_live_value_fails_loud(self) -> None:
+        """``None`` disables an env-redact; an empty string is a
+        misconfigured resolver, and silently skipping the scrub would
+        record unredacted — config build refuses instead."""
+        with pytest.raises(ValueError, match="graph.drive-id"):
+            build_profile_vcr_config(GRAPH_PROFILE, {"graph.drive-id": ""})
 
     @pytest.mark.spec("REC-003")
     def test_env_redact_covers_every_surface_and_form(self) -> None:

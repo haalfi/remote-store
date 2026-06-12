@@ -117,12 +117,15 @@ def _resolve_live_drive_id() -> str | None:
 def _drive_id_forms(value: str) -> tuple[str, ...]:
     """The shapes Graph echoes the drive cid in.
 
-    Beyond the contiguous 16-hex-char form (lower-cased in URIs, UPPER-cased
-    inside item ids / eTags / webUrls — hence the case-insensitive match),
-    MSAL's ``X-AnchorMailbox: Oid:...`` request header embeds the cid
-    hyphen-split as the last two GUID groups (``XXXX-XXXXXXXXXXXX``). The
-    header itself is deleted (filter_headers), but the split form is matched
-    everywhere as belt and braces.
+    On consumer OneDrive — the recorded tier — the drive id IS the account
+    cid: exactly 16 hex chars, lower-cased in URIs and UPPER-cased inside
+    item ids / eTags / webUrls (hence the case-insensitive match). Beyond
+    that contiguous form, MSAL's ``X-AnchorMailbox: Oid:...`` request header
+    embeds the cid hyphen-split as the last two GUID groups
+    (``XXXX-XXXXXXXXXXXX``). The header itself is deleted (filter_headers),
+    but the split form is matched everywhere as belt and braces. Any other
+    length (e.g. a business ``b!...`` drive resource id, which embeds no
+    bare cid to split) passes through as the single contiguous form.
     """
     if len(value) == 16:
         return (value, f"{value[:4]}-{value[4:]}")

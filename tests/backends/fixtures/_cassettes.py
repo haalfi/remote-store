@@ -85,7 +85,9 @@ class EnvRedact:
     """A live value resolved at record time and redacted everywhere (REC-003).
 
     ``resolve`` returns the live value in record mode (``None`` disables the
-    rule, e.g. replay mode or an unset env var). The core rewrites every
+    rule, e.g. replay mode or an unset env var; an empty string is rejected
+    at config build — that is a misconfigured resolver, not a disable
+    signal). The core rewrites every
     ``forms(value)`` variant to ``fake`` across request URIs, request-header
     values, request bodies, and response bodies — bytes and str alike.
     ``forms`` exists for values a service echoes in more than one shape
@@ -308,13 +310,24 @@ _URL_QUERY_RE: re.Pattern[str] = re.compile(r"\?\S*")
 def _compile_env(
     profile: CassetteProfile, live_values: Mapping[str, str | None] | None
 ) -> list[tuple[EnvRedact, re.Pattern[str], re.Pattern[bytes]]]:
-    """Compile the active env-redacts against their resolved live values."""
+    """Compile the active env-redacts against their resolved live values.
+
+    ``None`` disables a rule (the resolver's documented signal — replay mode
+    or no live creds configured). An empty string is not a disable signal:
+    it is the shape of a misconfigured resolver, and silently skipping the
+    scrub here would record unredacted, so it fails loud instead.
+    """
     live_values = live_values or {}
     compiled: list[tuple[EnvRedact, re.Pattern[str], re.Pattern[bytes]]] = []
     for er in profile.env_redacts:
         value = live_values.get(er.name)
-        if not value:
+        if value is None:
             continue
+        if not value:
+            raise ValueError(
+                f"env-redact {er.name!r} resolved to an empty string; "
+                "a resolver signals 'rule disabled' by returning None"
+            )
         source = "|".join(re.escape(form) for form in er.forms(value))
         flags = re.IGNORECASE if er.case_insensitive else 0
         compiled.append((er, re.compile(source, flags), re.compile(source.encode(), flags)))

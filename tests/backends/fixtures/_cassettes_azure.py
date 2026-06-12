@@ -3,7 +3,8 @@
 Declares ``AZURE_PROFILE`` — the ``CassetteProfile`` shared by the
 ``azure_live*`` (record) and ``azure_replay*`` (playback) fixtures — plus
 the fixed identifiers the replay fixtures build their backend from and the
-live-connection helpers the recording path validates credentials with.
+account-name resolution the record-time scrub keys on. Credential
+validation for the record path lives in ``_live_env``, not here.
 """
 
 from __future__ import annotations
@@ -58,7 +59,7 @@ vcrpy against the scrubbed cassette URLs.
 
 # endregion
 
-# region: live-connection helpers (record path)
+# region: account-name resolution (record path)
 
 
 def parse_account_name(conn_str: str) -> str:
@@ -73,30 +74,24 @@ def parse_account_name(conn_str: str) -> str:
 _AZURITE_FRAGMENTS = ("UseDevelopmentStorage=true", "AccountName=devstoreaccount1")
 
 
-def live_connection_string() -> str:
-    """Return a real ADLS Gen2 connection string for recording mode.
+def _resolve_live_account() -> str | None:
+    """``EnvRedact`` resolver: the real account name, or ``None`` (rule disabled).
 
-    Fails loud when ``RS_TEST_LIVE_HNS`` is absent, the connection string
-    is missing, or it points at Azurite.  Mirrors the fail-loud convention
-    in ``tests/backends/fixtures/_live_env.py``.
+    ``None`` covers every no-live-account state: an unset or blank
+    connection string, or one pointing at Azurite (whose well-known
+    ``devstoreaccount1`` is not a secret). Credential presence for a record
+    run is enforced fail-loud by the live fixtures via
+    ``_live_env.require_azure_live_connection_string``, not here, and the
+    recorder's named-rule audit backstops a full record run whose
+    required ``azure.account`` rule never fired.
     """
-    import pytest  # noqa: PLC0415 -- lazy: only on the record path
     from dotenv import load_dotenv  # noqa: PLC0415 -- lazy: only on the record path
 
     load_dotenv(override=False)
-    if os.environ.get("RS_TEST_LIVE_HNS") != "1":
-        pytest.fail("recording requires RS_TEST_LIVE_HNS=1 (a real ADLS Gen2 account)")
     conn = (os.environ.get("AZURE_STORAGE_CONNECTION_STRING") or "").strip()
-    if not conn:
-        pytest.fail("recording requires AZURE_STORAGE_CONNECTION_STRING (a real ADLS Gen2 account)")
-    if any(frag in conn for frag in _AZURITE_FRAGMENTS):
-        pytest.fail("AZURE_STORAGE_CONNECTION_STRING points at Azurite; recording needs a real HNS account")
-    return conn
-
-
-def _resolve_live_account() -> str:
-    """``EnvRedact`` resolver: the real account name (record mode only)."""
-    return parse_account_name(live_connection_string())
+    if not conn or any(frag in conn for frag in _AZURITE_FRAGMENTS):
+        return None
+    return parse_account_name(conn)
 
 
 # endregion
@@ -192,6 +187,5 @@ __all__ = [
     "FAKE_ACCOUNT",
     "FAKE_CONN_STR",
     "FAKE_FILESYSTEM",
-    "live_connection_string",
     "parse_account_name",
 ]
