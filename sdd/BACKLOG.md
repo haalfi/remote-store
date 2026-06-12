@@ -92,11 +92,12 @@ and the highest ID already in this file, then take the next integer. Run
 ID-127 (Microsoft Graph / OneDrive / SharePoint) follow-ups, in execution order;
 full findings in [audit-016](audits/audit-016-graph-backend-review.md).
 **Order:** tests (BK-267) →
-blocked or hygiene tail (BK-259/261/268). Each item's own rationale lives in
+blocked or hygiene tail (BK-259/268). Each item's own rationale lives in
 its body. (Security item BK-263 — the upload-session credential leak — the
 load-bearing CI-coverage item BK-262 — replay-able cassettes — the spec/RFC
 sync BK-264, the guide/docstring sweep BK-265, the correctness edges BK-266,
-and the example-replay guard BK-283 shipped first; see BACKLOG-DONE.md.)
+the example-replay guard BK-283, and the overwrite-replace limitation BK-261
+shipped first; see BACKLOG-DONE.md.)
 
 - [ ] **BK-267 — Graph test hardening**
   spec: GR-012, GR-040 · effort: S · audience: infra.test
@@ -160,26 +161,6 @@ and the example-replay guard BK-283 shipped first; see BACKLOG-DONE.md.)
   `tests/backends/graph/aio/test_transfer.py`, and
   `sdd/specs/044-graph-backend.md` (GR-015). Discovered in PR #760 (ID-127
   GR-TRANSFER) review.
-
-- [ ] **BK-261 — Graph small-write `overwrite=True`: replace-returns-409-for-files quirk**
-  spec: GR-018 · effort: S · audience: user.api, library.maintainer
-  On the small-file `PUT /content` path, `@microsoft.graph.conflictBehavior=replace`
-  is expected to overwrite an existing file and return `200`. Graph issue reports
-  describe some backing stores (SharePoint-backed drives) instead returning
-  `409 nameAlreadyExists` for a *file* even with `replace`. The 409 discrimination
-  in GR-018 would map that to `AlreadyExists` — a spurious failure for an intended
-  overwrite. **Not reproduced**: the consumer OneDrive drive used for Stage-3 live
-  verification honours `replace`, and our live path is consumer-only / device-code,
-  so the SharePoint-backed edge cannot be live-verified today. No guard is taken in
-  v1 because a speculative one (treating a `file`-faceted 409 on the `replace` path
-  as success-equivalent) risks masking a genuine conflict and would guess at the
-  body shape blind.
-  **When picked up:** reproduce against a SharePoint-backed drive (needs app-only /
-  SharePoint live testing, currently blocked — see the live-testing note), confirm
-  the exact 409 body, then decide between a targeted guard on the `replace` path or
-  documenting it as a hard backend limitation. Touches
-  `src/remote_store/aio/backends/_graph/backend.py` (`_write_small`) and
-  `sdd/specs/044-graph-backend.md` (GR-018). Discovered in ID-127 GR-WRITE review.
 
 - [ ] **BK-268 — File the deferred Graph async-ext follow-ups (backlog hygiene)**
   spec: GR-003 · effort: S · audience: library.maintainer

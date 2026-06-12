@@ -35,6 +35,23 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   forward from BK-262; no CHANGELOG (infra.test, BK-262 precedent). Trace:
   `sdd/traces/bk-283-example-replay.yml`.
 
+- [x] **BK-261 — Graph small-write `overwrite=True`: replace-returns-409-for-files quirk**
+  spec: GR-018 · effort: S · audience: user.api, library.maintainer
+  Disposition: **documented as a hard backend limitation**, not guarded. On the
+  small-file `PUT /content` replace path, some SharePoint-backed drives return
+  `409 nameAlreadyExists` for a *file* even under
+  `@microsoft.graph.conflictBehavior=replace`, which the BE-008 409 discrimination
+  surfaces as `AlreadyExists` — a spurious overwrite failure. The guard disposition
+  needs a live SharePoint-backed reproduction to confirm the exact 409 body, and
+  this project's live tier is consumer-only / device-code, so it stays blocked; a
+  speculative guard would guess the body shape blind and risk masking a genuine
+  conflict. GR-018's known-limitation note promoted from a v1 deferral to a settled
+  hard-limitation statement (with the delete-then-write workaround), the GR-027
+  `parentReference` cross-reference repointed off the BK-261 anchor, and the Graph
+  user guide gains a SharePoint overwrite caveat. No change to `_write_small`; the
+  existing `AlreadyExists` mapping is now the contracted behaviour. Trace:
+  `sdd/traces/bk-261-graph-overwrite-409-limitation.yml`.
+
 - [x] **BK-266 — Graph backend correctness edges**
   spec: GR-031, GR-044, GR-006 · effort: S · audience: user.api, library.maintainer
   Audit-016 L1 / L3 / M7, three independent fixes shipped together:
