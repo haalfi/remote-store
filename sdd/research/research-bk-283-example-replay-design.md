@@ -49,13 +49,23 @@ These facts bound the design space; each was verified against current source.
    `tests/scripts/run_examples.py`). vcrpy patches the HTTP stack of the
    process it runs in; it cannot intercept a child process. Any replayed
    example must execute in the same process as the cassette context.
-2. **Conformance cassettes cannot drive the example.** vcrpy matches on
-   method + URI. The example roots at `remote-store-example` while every
-   conformance cassette records `rs-conformance/...` paths; the example's
-   op sequence also spans what conformance splits across many per-test
-   cassettes (one cassette per test node). A dedicated cassette is required;
-   the backlog sketch's "reuse the conformance ones if the call shapes line
-   up" branch is dead.
+2. **Conformance cassettes cannot drive the example — because a cassette
+   is a session transcript, not an API model.** vcrpy replay does not
+   answer "a write request" with "a write response": it serves the verbatim
+   response recorded for that request in one concrete session, and recorded
+   responses are entangled with their request's specifics — item name,
+   size, eTag, the actual content bytes, and the session's state trajectory
+   (exists-after-move, overwrite conflicts). Replaying the example's
+   `read_bytes("report.csv")` from a conformance read cassette would hand
+   the Store that test's payload, and the snippet would print foreign bytes
+   under its own prose. The Store genuinely cannot tell live from cassette
+   (that is the whole point), but a transcript can only truthfully answer
+   the exact session that produced it; transcripts do not compose across
+   sessions, however the URIs are rewritten. The visible URI mismatch
+   (`remote-store-example` vs `rs-conformance` roots, per-cassette file
+   names) is the symptom, not the cause. A recording of the example's own
+   session is therefore required; the backlog sketch's "reuse the
+   conformance ones if the call shapes line up" branch is dead.
 3. **The auth path cannot replay as recorded.** The example constructs
    `GraphAuth` (MSAL device-code on the recorded consumer tier). On replay
    there is no token cache, `initiate_device_flow` is interactive, and the
@@ -121,14 +131,29 @@ design no existing test chains them end-to-end:
   replayed cassettes; the graph unit tests stub the same boundary with
   respx, offline.
 
+Shape containment was verified op by op against the committed corpus:
+every backend operation the example's Store calls fan out to has recorded
+cassettes — write and overwrite (`TestWriteReadRoundTrip`,
+`TestOperationalConsistency`), `read_bytes` and streaming read
+(`TestAsyncReadStream`), `get_file_info`, recursive `list_files`, `copy`,
+`move`, `exists`, `delete`. The single API call the example can make that
+is absent from the corpus is `GraphUtils.aresolve_drive_id("me")`, which
+is respx-unit-tested (GR-057, `tests/backends/graph/aio/test_utils.py`)
+and skipped symmetrically in both record and replay via `GRAPH_DRIVE_ID`
+(constraint 4) — so its absence is a non-event, not a coverage gap.
+
 So the conformance cassettes already encode every backend↔API expectation
 the example's traffic exercises; a replayed example adds **zero new
 contract coverage**. Its entire value is guarding the published snippet
 itself: the imports resolve, the env gate works, the demonstrated API usage
 still type-matches and sequences correctly, the printed output is what the
 docs show. That is an executable-documentation guard, and the dedicated
-cassette in § 2 constraint 2 is a mechanical consequence of vcrpy URI
-matching — not a coverage instrument. Two corollaries:
+cassette in § 2 constraint 2 is a mechanical consequence of replaying a
+transcript — not a coverage instrument. Containment also yields a design
+assurance: since every interaction shape the example produces is one the
+corpus already records and the profile already scrubs, recording the
+example's session is risk-free — no new scrub rules, no new PII surface,
+no named-rule changes. Corollaries:
 
 - The example test will be the **only** place the full
   `Store → GraphBackend → API` chain executes. That chain's absence from
@@ -283,6 +308,14 @@ the graph unit tests stub — with the env/auth stubbing of Option B. Real
 - Con: A fake this large invites assertions against its own behaviour; the
   unit tests keep respx honest by scoping each route table to one narrow
   contract, which a whole-script fake cannot.
+
+The same verdict covers the variant of synthesizing the example's cassette
+offline from recorded conformance interactions used as templates (rewrite
+names, sizes, content bytes): that is hand-editing transcripts whose
+response fields are internally entangled (size, eTag, hash, pre-signed
+ordering) — a hand-maintained fake in cassette format — and it would break
+the BK-262 invariant that every committed cassette is a scrub-verified
+recording of real traffic, which is what the PII gates assume.
 
 Rejected for the example guard, but it is the fallback if the live tier
 ever becomes unavailable: the guard degrades gracefully to a fake, because
