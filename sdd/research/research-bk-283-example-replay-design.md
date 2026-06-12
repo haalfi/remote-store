@@ -158,6 +158,9 @@ Corollaries:
 test, parametrized over two ids chosen to match the fixture-alias tokens:
 
 ```python
+pytest.importorskip("httpx", reason="httpx not installed (graph extra)")
+pytest.importorskip("msal", reason="msal not installed (graph extra)")
+
 EXAMPLE = Path(__file__).parents[3] / "examples" / "backends" / "graph_backend.py"
 
 @pytest.mark.parametrize(
@@ -182,6 +185,7 @@ def test_graph_backend_example(mode, monkeypatch, capsys):
 
     out = capsys.readouterr().out
     assert "Wrote 2 files." in out
+    assert "revenue,profit" in out  # demonstrated content, not just banners
     assert "Cleaned up all example files." in out
     assert "Done!" in out
 ```
@@ -191,6 +195,16 @@ constant token, mirroring `graph_replay`. `runpy.run_path(...,
 run_name="__main__")` executes the script exactly as a user does
 (module-level env gate, `asyncio.run(main())`, `sys.exit` paths included),
 which a plain `import` + `await main()` would not.
+
+Two details exist for review-identified reasons. The module-level
+`importorskip`s mirror the fixture factories' ImportError-to-skip conversion
+(`graph_replay._factory`, `graph_live._factory`): without the graph extra,
+`remote_store.aio` has no `GraphAuth` attribute to monkeypatch and the
+example's import raises, so both params would hard-fail in an environment
+the conformance suite deliberately passes in. The `revenue,profit`
+assertion pins one line of demonstrated content: the banner lines alone
+would pass even if `read_bytes` handed back foreign bytes, which is the
+failure mode constraint 2 describes and the § 1.2 guard exists to catch.
 
 By constraint 7, the param ids buy the whole stack: cassette-dir routing,
 the shared cassette name (`test_graph_backend_example[graph].yaml`), the
