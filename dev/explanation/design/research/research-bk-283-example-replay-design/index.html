@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/research/research-bk-283-example-replay-design/">
       
       
-        <link rel="prev" href="../reference/changelog/">
+        <link rel="prev" href="../research-bk-198-paramiko-ssh-rsa-empirical/">
       
       
-        <link rel="next" href="architecture/">
+        <link rel="next" href="../research-bug-prevention-beyond-testing/">
       
       
         
       
       
-      <link rel="icon" href="../assets/logo.png">
+      <link rel="icon" href="../../../../assets/logo.png">
       <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.6">
     
     
       
-        <title>Explanation - remote-store</title>
+        <title>Replay-backed example testing for live backends (BK-283) - remote-store</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../css/custom.css">
+      <link rel="stylesheet" href="../../../../css/custom.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#explanation" class="md-skip">
+        <a href="#research-replay-backed-example-testing-for-live-backends-bk-283" class="md-skip">
           Skip to content
         </a>
       
@@ -102,9 +102,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../assets/logo.png" alt="logo">
+  <img src="../../../../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Explanation
+              Replay-backed example testing for live backends (BK-283)
             
           </span>
         </div>
@@ -228,7 +228,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../../../.." class="md-tabs__link">
         
   
   
@@ -247,7 +247,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../tutorial/" class="md-tabs__link">
+      <a href="../../../../tutorial/" class="md-tabs__link">
         
   
   
@@ -266,7 +266,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../guides/" class="md-tabs__link">
+      <a href="../../../../guides/" class="md-tabs__link">
         
   
   
@@ -285,7 +285,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../reference/" class="md-tabs__link">
+      <a href="../../../../reference/" class="md-tabs__link">
         
   
   
@@ -306,7 +306,7 @@
   
   
     <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+      <a href="../../../" class="md-tabs__link">
         
   
   
@@ -347,9 +347,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../assets/logo.png" alt="logo">
+  <img src="../../../../assets/logo.png" alt="logo">
 
     </a>
     remote-store
@@ -376,7 +376,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   
@@ -418,7 +418,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../tutorial/" class="md-nav__link ">
+            <a href="../../../../tutorial/" class="md-nav__link ">
               
   
   
@@ -460,7 +460,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/getting-started/" class="md-nav__link">
+      <a href="../../../../tutorial/getting-started/" class="md-nav__link">
         
   
   
@@ -503,7 +503,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../tutorial/examples/" class="md-nav__link ">
+            <a href="../../../../tutorial/examples/" class="md-nav__link ">
               
   
   
@@ -595,7 +595,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/quickstart/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/quickstart/" class="md-nav__link">
         
   
   
@@ -623,7 +623,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/file-operations/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/file-operations/" class="md-nav__link">
         
   
   
@@ -651,7 +651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/streaming-io/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/streaming-io/" class="md-nav__link">
         
   
   
@@ -679,7 +679,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/atomic-writes/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/atomic-writes/" class="md-nav__link">
         
   
   
@@ -765,7 +765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/configuration/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/configuration/" class="md-nav__link">
         
   
   
@@ -793,7 +793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/config-loaders/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/config-loaders/" class="md-nav__link">
         
   
   
@@ -879,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/error-handling/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/error-handling/" class="md-nav__link">
         
   
   
@@ -907,7 +907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/capabilities-and-errors/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/capabilities-and-errors/" class="md-nav__link">
         
   
   
@@ -993,7 +993,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/path-model/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/path-model/" class="md-nav__link">
         
   
   
@@ -1021,7 +1021,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/memory-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/memory-backend/" class="md-nav__link">
         
   
   
@@ -1049,7 +1049,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/store-child/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/store-child/" class="md-nav__link">
         
   
   
@@ -1077,7 +1077,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/async-store/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/async-store/" class="md-nav__link">
         
   
   
@@ -1105,7 +1105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/retry-policy/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/retry-policy/" class="md-nav__link">
         
   
   
@@ -1133,7 +1133,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/health-check/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/health-check/" class="md-nav__link">
         
   
   
@@ -1219,7 +1219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/s3-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/s3-backend/" class="md-nav__link">
         
   
   
@@ -1247,7 +1247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -1275,7 +1275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/s3-listing-strategies/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/s3-listing-strategies/" class="md-nav__link">
         
   
   
@@ -1303,7 +1303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/sftp-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/sftp-backend/" class="md-nav__link">
         
   
   
@@ -1331,7 +1331,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/azure-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/azure-backend/" class="md-nav__link">
         
   
   
@@ -1359,7 +1359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/graph-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/graph-backend/" class="md-nav__link">
         
   
   
@@ -1387,7 +1387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/sql-blob-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -1415,7 +1415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/http-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/http-backend/" class="md-nav__link">
         
   
   
@@ -1501,7 +1501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/batch-operations/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/batch-operations/" class="md-nav__link">
         
   
   
@@ -1529,7 +1529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/transfer-operations/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/transfer-operations/" class="md-nav__link">
         
   
   
@@ -1557,7 +1557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1585,7 +1585,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/caching/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/caching/" class="md-nav__link">
         
   
   
@@ -1613,7 +1613,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/observe-hooks/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/observe-hooks/" class="md-nav__link">
         
   
   
@@ -1641,7 +1641,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/otel-tracing/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/otel-tracing/" class="md-nav__link">
         
   
   
@@ -1727,7 +1727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1755,7 +1755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/parquet-dataset/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/parquet-dataset/" class="md-nav__link">
         
   
   
@@ -1783,7 +1783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/dagster-io-manager/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/dagster-io-manager/" class="md-nav__link">
         
   
   
@@ -1811,7 +1811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/dagster-v2-resource/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/dagster-v2-resource/" class="md-nav__link">
         
   
   
@@ -1839,7 +1839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/dagster-compute-log-manager/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/dagster-compute-log-manager/" class="md-nav__link">
         
   
   
@@ -1925,7 +1925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorial/examples/medallion-dagster/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/medallion-dagster/" class="md-nav__link">
         
   
   
@@ -1991,7 +1991,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../guides/" class="md-nav__link ">
+            <a href="../../../../guides/" class="md-nav__link ">
               
   
   
@@ -2048,7 +2048,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../guides/backends/" class="md-nav__link ">
+            <a href="../../../../guides/backends/" class="md-nav__link ">
               
   
   
@@ -2090,7 +2090,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/backends/local/" class="md-nav__link">
+      <a href="../../../../guides/backends/local/" class="md-nav__link">
         
   
   
@@ -2118,7 +2118,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/backends/memory/" class="md-nav__link">
+      <a href="../../../../guides/backends/memory/" class="md-nav__link">
         
   
   
@@ -2146,7 +2146,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/backends/http/" class="md-nav__link">
+      <a href="../../../../guides/backends/http/" class="md-nav__link">
         
   
   
@@ -2174,7 +2174,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/backends/s3/" class="md-nav__link">
+      <a href="../../../../guides/backends/s3/" class="md-nav__link">
         
   
   
@@ -2202,7 +2202,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../../guides/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -2230,7 +2230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/backends/sftp/" class="md-nav__link">
+      <a href="../../../../guides/backends/sftp/" class="md-nav__link">
         
   
   
@@ -2258,7 +2258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/backends/azure/" class="md-nav__link">
+      <a href="../../../../guides/backends/azure/" class="md-nav__link">
         
   
   
@@ -2286,7 +2286,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/backends/azure-hns-setup/" class="md-nav__link">
+      <a href="../../../../guides/backends/azure-hns-setup/" class="md-nav__link">
         
   
   
@@ -2314,7 +2314,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/backends/graph/" class="md-nav__link">
+      <a href="../../../../guides/backends/graph/" class="md-nav__link">
         
   
   
@@ -2342,7 +2342,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/backends/graph-setup/" class="md-nav__link">
+      <a href="../../../../guides/backends/graph-setup/" class="md-nav__link">
         
   
   
@@ -2370,7 +2370,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/backends/sql-blob/" class="md-nav__link">
+      <a href="../../../../guides/backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -2398,7 +2398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/backends/sql-query/" class="md-nav__link">
+      <a href="../../../../guides/backends/sql-query/" class="md-nav__link">
         
   
   
@@ -2484,7 +2484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/extensions/" class="md-nav__link">
+      <a href="../../../../guides/extensions/" class="md-nav__link">
         
   
   
@@ -2512,7 +2512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/batch-operations/" class="md-nav__link">
+      <a href="../../../../guides/batch-operations/" class="md-nav__link">
         
   
   
@@ -2540,7 +2540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/cache/" class="md-nav__link">
+      <a href="../../../../guides/cache/" class="md-nav__link">
         
   
   
@@ -2568,7 +2568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../../guides/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -2596,7 +2596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/observe/" class="md-nav__link">
+      <a href="../../../../guides/observe/" class="md-nav__link">
         
   
   
@@ -2624,7 +2624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/transfer-operations/" class="md-nav__link">
+      <a href="../../../../guides/transfer-operations/" class="md-nav__link">
         
   
   
@@ -2652,7 +2652,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../../guides/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -2680,7 +2680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/parquet-datasets/" class="md-nav__link">
+      <a href="../../../../guides/parquet-datasets/" class="md-nav__link">
         
   
   
@@ -2708,7 +2708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/dagster/" class="md-nav__link">
+      <a href="../../../../guides/dagster/" class="md-nav__link">
         
   
   
@@ -2736,7 +2736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/retry/" class="md-nav__link">
+      <a href="../../../../guides/retry/" class="md-nav__link">
         
   
   
@@ -2772,7 +2772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/async/" class="md-nav__link">
+      <a href="../../../../guides/async/" class="md-nav__link">
         
   
   
@@ -2800,7 +2800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/async-sync-bridges/" class="md-nav__link">
+      <a href="../../../../guides/async-sync-bridges/" class="md-nav__link">
         
   
   
@@ -2828,7 +2828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/write-integrity/" class="md-nav__link">
+      <a href="../../../../guides/write-integrity/" class="md-nav__link">
         
   
   
@@ -2856,7 +2856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/health-check/" class="md-nav__link">
+      <a href="../../../../guides/health-check/" class="md-nav__link">
         
   
   
@@ -2884,7 +2884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/data-lake-patterns/" class="md-nav__link">
+      <a href="../../../../guides/data-lake-patterns/" class="md-nav__link">
         
   
   
@@ -2912,7 +2912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/troubleshooting/" class="md-nav__link">
+      <a href="../../../../guides/troubleshooting/" class="md-nav__link">
         
   
   
@@ -2940,7 +2940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/choosing-a-backend/" class="md-nav__link">
+      <a href="../../../../guides/choosing-a-backend/" class="md-nav__link">
         
   
   
@@ -2968,7 +2968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../guides/custom-backend-guide/" class="md-nav__link">
+      <a href="../../../../guides/custom-backend-guide/" class="md-nav__link">
         
   
   
@@ -3018,7 +3018,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/" class="md-nav__link ">
+            <a href="../../../../reference/" class="md-nav__link ">
               
   
   
@@ -3060,7 +3060,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/FEATURES/" class="md-nav__link">
+      <a href="../../../../reference/FEATURES/" class="md-nav__link">
         
   
   
@@ -3088,7 +3088,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/capabilities-matrix/" class="md-nav__link">
+      <a href="../../../../reference/capabilities-matrix/" class="md-nav__link">
         
   
   
@@ -3116,7 +3116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/tested-versions/" class="md-nav__link">
+      <a href="../../../../reference/tested-versions/" class="md-nav__link">
         
   
   
@@ -3159,7 +3159,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/api/" class="md-nav__link ">
+            <a href="../../../../reference/api/" class="md-nav__link ">
               
   
   
@@ -3201,7 +3201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/store/" class="md-nav__link">
+      <a href="../../../../reference/api/store/" class="md-nav__link">
         
   
   
@@ -3229,7 +3229,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/proxy/" class="md-nav__link">
+      <a href="../../../../reference/api/proxy/" class="md-nav__link">
         
   
   
@@ -3257,7 +3257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/registry/" class="md-nav__link">
+      <a href="../../../../reference/api/registry/" class="md-nav__link">
         
   
   
@@ -3285,7 +3285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/config/" class="md-nav__link">
+      <a href="../../../../reference/api/config/" class="md-nav__link">
         
   
   
@@ -3313,7 +3313,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/models/" class="md-nav__link">
+      <a href="../../../../reference/api/models/" class="md-nav__link">
         
   
   
@@ -3341,7 +3341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/capabilities/" class="md-nav__link">
+      <a href="../../../../reference/api/capabilities/" class="md-nav__link">
         
   
   
@@ -3369,7 +3369,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/errors/" class="md-nav__link">
+      <a href="../../../../reference/api/errors/" class="md-nav__link">
         
   
   
@@ -3397,7 +3397,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/backend/" class="md-nav__link">
+      <a href="../../../../reference/api/backend/" class="md-nav__link">
         
   
   
@@ -3425,7 +3425,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/aio/" class="md-nav__link">
+      <a href="../../../../reference/api/aio/" class="md-nav__link">
         
   
   
@@ -3453,7 +3453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/info/" class="md-nav__link">
+      <a href="../../../../reference/api/info/" class="md-nav__link">
         
   
   
@@ -3481,7 +3481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/sftp-utils/" class="md-nav__link">
+      <a href="../../../../reference/api/sftp-utils/" class="md-nav__link">
         
   
   
@@ -3524,7 +3524,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/api/backends/" class="md-nav__link ">
+            <a href="../../../../reference/api/backends/" class="md-nav__link ">
               
   
   
@@ -3566,7 +3566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/backends/local/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/local/" class="md-nav__link">
         
   
   
@@ -3594,7 +3594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/backends/memory/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/memory/" class="md-nav__link">
         
   
   
@@ -3622,7 +3622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/backends/http/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/http/" class="md-nav__link">
         
   
   
@@ -3650,7 +3650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/backends/s3/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/s3/" class="md-nav__link">
         
   
   
@@ -3678,7 +3678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -3706,7 +3706,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/backends/sftp/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/sftp/" class="md-nav__link">
         
   
   
@@ -3734,7 +3734,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/backends/azure/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/azure/" class="md-nav__link">
         
   
   
@@ -3762,7 +3762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/backends/sql-blob/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -3790,7 +3790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/backends/sql-query/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/sql-query/" class="md-nav__link">
         
   
   
@@ -3841,7 +3841,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/api/extensions/" class="md-nav__link ">
+            <a href="../../../../reference/api/extensions/" class="md-nav__link ">
               
   
   
@@ -3883,7 +3883,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/batch/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/batch/" class="md-nav__link">
         
   
   
@@ -3911,7 +3911,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/cache/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/cache/" class="md-nav__link">
         
   
   
@@ -3939,7 +3939,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/glob/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/glob/" class="md-nav__link">
         
   
   
@@ -3967,7 +3967,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/integrity/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/integrity/" class="md-nav__link">
         
   
   
@@ -3995,7 +3995,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/observe/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/observe/" class="md-nav__link">
         
   
   
@@ -4023,7 +4023,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/partition/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/partition/" class="md-nav__link">
         
   
   
@@ -4051,7 +4051,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/streams/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/streams/" class="md-nav__link">
         
   
   
@@ -4079,7 +4079,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/transfer/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/transfer/" class="md-nav__link">
         
   
   
@@ -4107,7 +4107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/write/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/write/" class="md-nav__link">
         
   
   
@@ -4135,7 +4135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/aio-write/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/aio-write/" class="md-nav__link">
         
   
   
@@ -4163,7 +4163,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/arrow/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/arrow/" class="md-nav__link">
         
   
   
@@ -4191,7 +4191,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/dagster/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/dagster/" class="md-nav__link">
         
   
   
@@ -4219,7 +4219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/otel/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/otel/" class="md-nav__link">
         
   
   
@@ -4247,7 +4247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/parquet/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/parquet/" class="md-nav__link">
         
   
   
@@ -4275,7 +4275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/pydantic/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/pydantic/" class="md-nav__link">
         
   
   
@@ -4303,7 +4303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/api/extensions/yaml/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/yaml/" class="md-nav__link">
         
   
   
@@ -4347,7 +4347,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/migration/" class="md-nav__link">
+      <a href="../../../../reference/migration/" class="md-nav__link">
         
   
   
@@ -4375,7 +4375,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/changelog/" class="md-nav__link">
+      <a href="../../../../reference/changelog/" class="md-nav__link">
         
   
   
@@ -4430,7 +4430,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../../../" class="md-nav__link ">
               
   
   
@@ -4448,7 +4448,7 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_5" id="__nav_5_label" tabindex="">
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -4472,7 +4472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="architecture/" class="md-nav__link">
+      <a href="../../../architecture/" class="md-nav__link">
         
   
   
@@ -4500,7 +4500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="graph-ir/" class="md-nav__link">
+      <a href="../../../graph-ir/" class="md-nav__link">
         
   
   
@@ -4528,7 +4528,7 @@
   
   
     <li class="md-nav__item">
-      <a href="performance/" class="md-nav__link">
+      <a href="../../../performance/" class="md-nav__link">
         
   
   
@@ -4556,7 +4556,7 @@
   
   
     <li class="md-nav__item">
-      <a href="concurrency/" class="md-nav__link">
+      <a href="../../../concurrency/" class="md-nav__link">
         
   
   
@@ -4584,7 +4584,7 @@
   
   
     <li class="md-nav__item">
-      <a href="security-model/" class="md-nav__link">
+      <a href="../../../security-model/" class="md-nav__link">
         
   
   
@@ -4612,7 +4612,7 @@
   
   
     <li class="md-nav__item">
-      <a href="contributing/" class="md-nav__link">
+      <a href="../../../contributing/" class="md-nav__link">
         
   
   
@@ -4640,7 +4640,7 @@
   
   
     <li class="md-nav__item">
-      <a href="development-story/" class="md-nav__link">
+      <a href="../../../development-story/" class="md-nav__link">
         
   
   
@@ -4665,6 +4665,8 @@
                 
   
   
+    
+  
   
   
     
@@ -4675,15 +4677,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="design/" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -4707,7 +4709,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_8">
             <span class="md-nav__icon md-icon"></span>
             
@@ -4725,7 +4727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/authoring/" class="md-nav__link">
+      <a href="../../authoring/" class="md-nav__link">
         
   
   
@@ -4753,7 +4755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/ci-operations/" class="md-nav__link">
+      <a href="../../ci-operations/" class="md-nav__link">
         
   
   
@@ -4781,7 +4783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/content-rules/" class="md-nav__link">
+      <a href="../../content-rules/" class="md-nav__link">
         
   
   
@@ -4809,7 +4811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/design/" class="md-nav__link">
+      <a href="../../design/" class="md-nav__link">
         
   
   
@@ -4837,7 +4839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/documentation/" class="md-nav__link">
+      <a href="../../documentation/" class="md-nav__link">
         
   
   
@@ -4865,7 +4867,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/process/" class="md-nav__link">
+      <a href="../../process/" class="md-nav__link">
         
   
   
@@ -4893,7 +4895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/testing/" class="md-nav__link">
+      <a href="../../testing/" class="md-nav__link">
         
   
   
@@ -4936,7 +4938,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="design/adrs/" class="md-nav__link ">
+            <a href="../../adrs/" class="md-nav__link ">
               
   
   
@@ -4978,7 +4980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -5006,7 +5008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -5034,7 +5036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -5062,7 +5064,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -5090,7 +5092,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -5118,7 +5120,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -5146,7 +5148,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -5174,7 +5176,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -5202,7 +5204,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5230,7 +5232,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -5258,7 +5260,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -5286,7 +5288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -5314,7 +5316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -5342,7 +5344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -5370,7 +5372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -5398,7 +5400,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5426,7 +5428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
         
   
   
@@ -5454,7 +5456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
+      <a href="../../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
         
   
   
@@ -5482,7 +5484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0019-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -5510,7 +5512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
+      <a href="../../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
         
   
   
@@ -5538,7 +5540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0021-graph-sdk-choice/" class="md-nav__link">
+      <a href="../../adrs/0021-graph-sdk-choice/" class="md-nav__link">
         
   
   
@@ -5566,7 +5568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0022-graph-auth-model/" class="md-nav__link">
+      <a href="../../adrs/0022-graph-auth-model/" class="md-nav__link">
         
   
   
@@ -5594,7 +5596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0023-async-monitor-polling/" class="md-nav__link">
+      <a href="../../adrs/0023-async-monitor-polling/" class="md-nav__link">
         
   
   
@@ -5622,7 +5624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0024-resource-locked-error/" class="md-nav__link">
+      <a href="../../adrs/0024-resource-locked-error/" class="md-nav__link">
         
   
   
@@ -5650,7 +5652,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
+      <a href="../../adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
         
   
   
@@ -5678,7 +5680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
+      <a href="../../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
         
   
   
@@ -5706,7 +5708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
+      <a href="../../adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
         
   
   
@@ -5734,7 +5736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/adrs/0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
+      <a href="../../adrs/0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
         
   
   
@@ -5785,7 +5787,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="design/audits/" class="md-nav__link ">
+            <a href="../../audits/" class="md-nav__link ">
               
   
   
@@ -5827,7 +5829,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-001-adversarial-review/" class="md-nav__link">
+      <a href="../../audits/audit-001-adversarial-review/" class="md-nav__link">
         
   
   
@@ -5855,7 +5857,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-002-design-compliance/" class="md-nav__link">
+      <a href="../../audits/audit-002-design-compliance/" class="md-nav__link">
         
   
   
@@ -5883,7 +5885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-003-documentation/" class="md-nav__link">
+      <a href="../../audits/audit-003-documentation/" class="md-nav__link">
         
   
   
@@ -5911,7 +5913,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-004-docs-structural-consistency/" class="md-nav__link">
+      <a href="../../audits/audit-004-docs-structural-consistency/" class="md-nav__link">
         
   
   
@@ -5939,7 +5941,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-005-laziness-memory/" class="md-nav__link">
+      <a href="../../audits/audit-005-laziness-memory/" class="md-nav__link">
         
   
   
@@ -5967,7 +5969,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-006-docs-list-completeness/" class="md-nav__link">
+      <a href="../../audits/audit-006-docs-list-completeness/" class="md-nav__link">
         
   
   
@@ -5995,7 +5997,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-007-test-behavior-assertions/" class="md-nav__link">
+      <a href="../../audits/audit-007-test-behavior-assertions/" class="md-nav__link">
         
   
   
@@ -6023,7 +6025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-008-package-bugs/" class="md-nav__link">
+      <a href="../../audits/audit-008-package-bugs/" class="md-nav__link">
         
   
   
@@ -6051,7 +6053,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-009-backend-specifics-visibility/" class="md-nav__link">
+      <a href="../../audits/audit-009-backend-specifics-visibility/" class="md-nav__link">
         
   
   
@@ -6079,7 +6081,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-010-ext-private-imports/" class="md-nav__link">
+      <a href="../../audits/audit-010-ext-private-imports/" class="md-nav__link">
         
   
   
@@ -6107,7 +6109,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-011-docs-v023-gaps/" class="md-nav__link">
+      <a href="../../audits/audit-011-docs-v023-gaps/" class="md-nav__link">
         
   
   
@@ -6135,7 +6137,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-012-docs-structure/" class="md-nav__link">
+      <a href="../../audits/audit-012-docs-structure/" class="md-nav__link">
         
   
   
@@ -6163,7 +6165,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-013-docstring-style/" class="md-nav__link">
+      <a href="../../audits/audit-013-docstring-style/" class="md-nav__link">
         
   
   
@@ -6191,7 +6193,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
+      <a href="../../audits/audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
         
   
   
@@ -6219,7 +6221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-015-spec-traceability/" class="md-nav__link">
+      <a href="../../audits/audit-015-spec-traceability/" class="md-nav__link">
         
   
   
@@ -6247,7 +6249,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-016-graph-backend-review/" class="md-nav__link">
+      <a href="../../audits/audit-016-graph-backend-review/" class="md-nav__link">
         
   
   
@@ -6275,7 +6277,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-017-dev-process-gate-topology/" class="md-nav__link">
+      <a href="../../audits/audit-017-dev-process-gate-topology/" class="md-nav__link">
         
   
   
@@ -6303,7 +6305,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/audits/audit-018-ci-operations/" class="md-nav__link">
+      <a href="../../audits/audit-018-ci-operations/" class="md-nav__link">
         
   
   
@@ -6354,7 +6356,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="design/rfcs/" class="md-nav__link ">
+            <a href="../../rfcs/" class="md-nav__link ">
               
   
   
@@ -6396,7 +6398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -6424,7 +6426,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -6452,7 +6454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -6480,7 +6482,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -6508,7 +6510,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
         
   
   
@@ -6536,7 +6538,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
         
   
   
@@ -6564,7 +6566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
         
   
   
@@ -6592,7 +6594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
         
   
   
@@ -6620,7 +6622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -6648,7 +6650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0010-graph-backend/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0010-graph-backend/" class="md-nav__link">
         
   
   
@@ -6676,7 +6678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0011-write-result/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0011-write-result/" class="md-nav__link">
         
   
   
@@ -6704,7 +6706,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0012-doc-graph-model/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0012-doc-graph-model/" class="md-nav__link">
         
   
   
@@ -6732,7 +6734,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
         
   
   
@@ -6760,7 +6762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/rfcs/rfc-0014-dagster-compute-log-manager/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0014-dagster-compute-log-manager/" class="md-nav__link">
         
   
   
@@ -6793,6 +6795,8 @@
                 
   
   
+    
+  
   
   
     
@@ -6803,15 +6807,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_11" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_11" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="design/research/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -6835,7 +6839,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_11_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_11_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_8_11">
             <span class="md-nav__icon md-icon"></span>
             
@@ -6853,7 +6857,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-agent-workflow-substrate/" class="md-nav__link">
+      <a href="../research-agent-workflow-substrate/" class="md-nav__link">
         
   
   
@@ -6881,7 +6885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-async-store-api-round2/" class="md-nav__link">
+      <a href="../research-async-store-api-round2/" class="md-nav__link">
         
   
   
@@ -6909,7 +6913,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-async-store-api/" class="md-nav__link">
+      <a href="../research-async-store-api/" class="md-nav__link">
         
   
   
@@ -6937,7 +6941,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -6965,7 +6969,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-backend-contract-completeness/" class="md-nav__link">
+      <a href="../research-backend-contract-completeness/" class="md-nav__link">
         
   
   
@@ -6993,7 +6997,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-backend-setup-guides/" class="md-nav__link">
+      <a href="../research-backend-setup-guides/" class="md-nav__link">
         
   
   
@@ -7021,7 +7025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -7049,7 +7053,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-bk-181-cassette-replay-poc/" class="md-nav__link">
+      <a href="../research-bk-181-cassette-replay-poc/" class="md-nav__link">
         
   
   
@@ -7077,7 +7081,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
+      <a href="../research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
         
   
   
@@ -7105,7 +7109,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
+      <a href="../research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
         
   
   
@@ -7130,10 +7134,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="design/research/research-bk-283-example-replay-design/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Replay-backed example testing for live backends (BK-283)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -7149,6 +7180,165 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Problem Statement
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Problem Statement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-constraints-from-the-codebase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Constraints from the codebase
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-what-the-test-guards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 What the test guards
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-survey-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Survey: Options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Survey: Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-option-a-replay-driver-wired-into-run_examplespy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Option A: Replay driver wired into run_examples.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-option-b-example-test-inside-the-conformance-suite-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Option B: Example test inside the conformance suite (recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-option-c-make-the-example-replay-aware-itself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Option C: Make the example replay-aware itself
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-option-d-respx-fake-api-instead-of-a-cassette" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Option D: respx fake API instead of a cassette
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Evaluation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Evaluation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-generalisation-which-live-backends-can-the-pattern-reach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Generalisation: which live backends can the pattern reach?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-recommendation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Recommendation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -7161,7 +7351,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-bug-prevention-beyond-testing/" class="md-nav__link">
+      <a href="../research-bug-prevention-beyond-testing/" class="md-nav__link">
         
   
   
@@ -7189,7 +7379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-dagster-extension/" class="md-nav__link">
+      <a href="../research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -7217,7 +7407,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-depth-limited-listing/" class="md-nav__link">
+      <a href="../research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -7245,7 +7435,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-doc-content-longevity/" class="md-nav__link">
+      <a href="../research-doc-content-longevity/" class="md-nav__link">
         
   
   
@@ -7273,7 +7463,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -7301,7 +7491,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-example-testing/" class="md-nav__link">
+      <a href="../research-example-testing/" class="md-nav__link">
         
   
   
@@ -7329,7 +7519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -7357,7 +7547,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-feature-discoverability/" class="md-nav__link">
+      <a href="../research-feature-discoverability/" class="md-nav__link">
         
   
   
@@ -7385,7 +7575,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -7413,7 +7603,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-health-check/" class="md-nav__link">
+      <a href="../research-health-check/" class="md-nav__link">
         
   
   
@@ -7441,7 +7631,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-id-147-obs003-decomposition/" class="md-nav__link">
+      <a href="../research-id-147-obs003-decomposition/" class="md-nav__link">
         
   
   
@@ -7469,7 +7659,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-id-147-tla-augmentation/" class="md-nav__link">
+      <a href="../research-id-147-tla-augmentation/" class="md-nav__link">
         
   
   
@@ -7497,7 +7687,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-id-147b-tla-poc/" class="md-nav__link">
+      <a href="../research-id-147b-tla-poc/" class="md-nav__link">
         
   
   
@@ -7525,7 +7715,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-id-211-flat-ns-file-ancestor-precheck/" class="md-nav__link">
+      <a href="../research-id-211-flat-ns-file-ancestor-precheck/" class="md-nav__link">
         
   
   
@@ -7553,7 +7743,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -7581,7 +7771,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-lx-llms-context-tooling/" class="md-nav__link">
+      <a href="../research-lx-llms-context-tooling/" class="md-nav__link">
         
   
   
@@ -7609,7 +7799,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -7637,7 +7827,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-openrouter-integration/" class="md-nav__link">
+      <a href="../research-openrouter-integration/" class="md-nav__link">
         
   
   
@@ -7665,7 +7855,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -7693,7 +7883,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-resolve-spec-proposal/" class="md-nav__link">
+      <a href="../research-resolve-spec-proposal/" class="md-nav__link">
         
   
   
@@ -7721,7 +7911,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-retry-policy/" class="md-nav__link">
+      <a href="../research-retry-policy/" class="md-nav__link">
         
   
   
@@ -7749,7 +7939,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-s3-boto3-poc/" class="md-nav__link">
+      <a href="../research-s3-boto3-poc/" class="md-nav__link">
         
   
   
@@ -7777,7 +7967,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-s3-error-mapping-fidelity/" class="md-nav__link">
+      <a href="../research-s3-error-mapping-fidelity/" class="md-nav__link">
         
   
   
@@ -7805,7 +7995,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-seekable-read/" class="md-nav__link">
+      <a href="../research-seekable-read/" class="md-nav__link">
         
   
   
@@ -7833,7 +8023,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-sftpgo-comparison/" class="md-nav__link">
+      <a href="../research-sftpgo-comparison/" class="md-nav__link">
         
   
   
@@ -7861,7 +8051,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -7889,7 +8079,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -7917,7 +8107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-store-config/" class="md-nav__link">
+      <a href="../research-store-config/" class="md-nav__link">
         
   
   
@@ -7945,7 +8135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -7973,7 +8163,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-testing-best-practices/" class="md-nav__link">
+      <a href="../research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -8001,7 +8191,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -8052,7 +8242,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="design/specs/" class="md-nav__link ">
+            <a href="../../specs/" class="md-nav__link ">
               
   
   
@@ -8094,7 +8284,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/001-store-api/" class="md-nav__link">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -8122,7 +8312,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/002-registry-config/" class="md-nav__link">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -8150,7 +8340,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -8178,7 +8368,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/004-path-model/" class="md-nav__link">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -8206,7 +8396,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/005-error-model/" class="md-nav__link">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -8234,7 +8424,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/006-streaming-io/" class="md-nav__link">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -8262,7 +8452,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/007-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -8290,7 +8480,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/008-s3-backend/" class="md-nav__link">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -8318,7 +8508,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/009-sftp-backend/" class="md-nav__link">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -8346,7 +8536,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/010-native-path-resolution/" class="md-nav__link">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -8374,7 +8564,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -8402,7 +8592,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/012-azure-backend/" class="md-nav__link">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -8430,7 +8620,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/013-memory-backend/" class="md-nav__link">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -8458,7 +8648,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -8486,7 +8676,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/015-store-child/" class="md-nav__link">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -8514,7 +8704,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -8542,7 +8732,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -8570,7 +8760,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/018-glob/" class="md-nav__link">
+      <a href="../../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -8598,7 +8788,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/019-ext-observe/" class="md-nav__link">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -8626,7 +8816,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/020-credential-hygiene/" class="md-nav__link">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -8654,7 +8844,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/021-config-loaders/" class="md-nav__link">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -8682,7 +8872,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -8710,7 +8900,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/023-ext-cache/" class="md-nav__link">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -8738,7 +8928,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/024-ext-partition/" class="md-nav__link">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -8766,7 +8956,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/025-retry-policy/" class="md-nav__link">
+      <a href="../../specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -8794,7 +8984,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/026-health-check/" class="md-nav__link">
+      <a href="../../specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -8822,7 +9012,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/027-iter-children/" class="md-nav__link">
+      <a href="../../specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -8850,7 +9040,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/028-read-text/" class="md-nav__link">
+      <a href="../../specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -8878,7 +9068,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -8906,7 +9096,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/030-write-text/" class="md-nav__link">
+      <a href="../../specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -8934,7 +9124,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/031-ext-dagster/" class="md-nav__link">
+      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -8962,7 +9152,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/032-http-backend/" class="md-nav__link">
+      <a href="../../specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -8990,7 +9180,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/033-ext-streams/" class="md-nav__link">
+      <a href="../../specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -9018,7 +9208,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/034-ext-integrity/" class="md-nav__link">
+      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -9046,7 +9236,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/035-content-digest/" class="md-nav__link">
+      <a href="../../specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -9074,7 +9264,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/036-seekable-read/" class="md-nav__link">
+      <a href="../../specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -9102,7 +9292,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/037-depth-limited-listing/" class="md-nav__link">
+      <a href="../../specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -9130,7 +9320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../../specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -9158,7 +9348,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../../specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -9186,7 +9376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/040-sql-blob-backend/" class="md-nav__link">
+      <a href="../../specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -9214,7 +9404,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/041-sql-query-backend/" class="md-nav__link">
+      <a href="../../specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -9242,7 +9432,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/042-ext-parquet/" class="md-nav__link">
+      <a href="../../specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -9270,7 +9460,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/043-resolution-plan/" class="md-nav__link">
+      <a href="../../specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -9298,7 +9488,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/044-graph-backend/" class="md-nav__link">
+      <a href="../../specs/044-graph-backend/" class="md-nav__link">
         
   
   
@@ -9326,7 +9516,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/045-write-result/" class="md-nav__link">
+      <a href="../../specs/045-write-result/" class="md-nav__link">
         
   
   
@@ -9354,7 +9544,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/046-ext-write/" class="md-nav__link">
+      <a href="../../specs/046-ext-write/" class="md-nav__link">
         
   
   
@@ -9382,7 +9572,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/047-docs-framework-tooling/" class="md-nav__link">
+      <a href="../../specs/047-docs-framework-tooling/" class="md-nav__link">
         
   
   
@@ -9410,7 +9600,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/048-testing-architecture/" class="md-nav__link">
+      <a href="../../specs/048-testing-architecture/" class="md-nav__link">
         
   
   
@@ -9438,7 +9628,7 @@
   
   
     <li class="md-nav__item">
-      <a href="design/specs/049-live-recording-architecture/" class="md-nav__link">
+      <a href="../../specs/049-live-recording-architecture/" class="md-nav__link">
         
   
   
@@ -9502,6 +9692,153 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Problem Statement
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Problem Statement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-constraints-from-the-codebase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Constraints from the codebase
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-what-the-test-guards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 What the test guards
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-survey-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Survey: Options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Survey: Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-option-a-replay-driver-wired-into-run_examplespy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Option A: Replay driver wired into run_examples.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-option-b-example-test-inside-the-conformance-suite-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Option B: Example test inside the conformance suite (recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-option-c-make-the-example-replay-aware-itself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Option C: Make the example replay-aware itself
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-option-d-respx-fake-api-instead-of-a-cassette" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Option D: respx fake API instead of a cassette
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Evaluation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Evaluation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-generalisation-which-live-backends-can-the-pattern-reach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Generalisation: which live backends can the pattern reach?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-recommendation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Recommendation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -9516,13 +9853,444 @@
                   
 
 
-  
-  
 
-
-<h1 id="explanation">Explanation<a class="headerlink" href="#explanation" title="Permanent link">&para;</a></h1>
-<p>Why <code>remote-store</code> is shaped the way it is: the reasoning behind design
-choices, not just what they are. Read these when "how" isn't enough.</p>
+<h1 id="research-replay-backed-example-testing-for-live-backends-bk-283">Research: Replay-backed example testing for live backends (BK-283)<a class="headerlink" href="#research-replay-backed-example-testing-for-live-backends-bk-283" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-06-12
+<strong>Backlog items:</strong> BK-283 (Drive the Graph example snippet from replayed cassettes in CI)
+<strong>Status:</strong> Research complete: design settled. Recording requires a
+live-credential session, so implementation is deferred to one; this document
+settles the mechanism so that session is execution, not exploration.
+<strong>Related:</strong> <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">BK-262</a> (the cassette core this builds on),
+<a href="../research-bk-181-cassette-replay-poc/">BK-181 Azure PoC</a>,
+<a href="../research-bk-181-s3-cassette-infeasibility/">BK-181 S3 infeasibility</a>,
+<a href="../../specs/048-testing-architecture/">spec 048</a> (TEST-007/008),
+<a href="../../specs/049-live-recording-architecture/">spec 049</a> (REC-001..007).</p>
+<hr />
+<h2 id="1-problem-statement">1. Problem Statement<a class="headerlink" href="#1-problem-statement" title="Permanent link">&para;</a></h2>
+<p><code>examples/backends/graph_backend.py</code> runs only under live Graph credentials:
+it is excluded from the <code>tests/scripts/run_examples.py</code> CI sweep (which covers
+only credential-free example dirs), and Graph has no emulator the way S3 has
+moto and Azure has Azurite. It is therefore the one published snippet with
+zero CI execution, a doc-drift hazard the repo's example-testing posture
+(<a href="../research-example-testing/">research-example-testing.md</a>) cannot reach.</p>
+<p>BK-262 landed the missing precondition: replay-able Graph cassettes (118 at
+the time of writing), the <code>GRAPH_PROFILE</code> scrub layer, and the <code>graph_replay</code>
+fixture that replays the real <code>GraphBackend</code> + <code>httpx</code> transport with no
+network. BK-283 asks for a second beneficiary: the example itself, replayed
+in CI without the live opt-in.</p>
+<p>Decisions this research informs:</p>
+<ol>
+<li>Where the replayed example runs: <code>run_examples.py</code> (the backlog sketch)
+   or the pytest cassette machinery.</li>
+<li>Whether the conformance cassettes can be reused, or the example needs its
+   own recording.</li>
+<li>How the example's auth path (interactive MSAL device-code) survives replay.</li>
+</ol>
+<h3 id="11-constraints-from-the-codebase">1.1 Constraints from the codebase<a class="headerlink" href="#11-constraints-from-the-codebase" title="Permanent link">&para;</a></h3>
+<p>Each verified against current source; together they bound the design space.</p>
+<ol>
+<li><strong>vcrpy is in-process.</strong> <code>run_examples.py</code> executes examples as
+   subprocesses; vcrpy patches the HTTP stack of the process it runs in and
+   cannot intercept a child. A replayed example must execute in the same
+   process as the cassette context.</li>
+<li><strong>A cassette is a session transcript, not an API model.</strong> Replay serves
+   the verbatim response recorded for that request in one concrete session,
+   and responses are entangled with that session's specifics: item names,
+   sizes, eTags, content bytes, state trajectory. Replaying the example's
+   <code>read_bytes("report.csv")</code> from a conformance cassette would print
+   foreign bytes under the snippet's prose. Transcripts do not compose
+   across sessions, however the URIs are rewritten; the visible URI mismatch
+   (<code>remote-store-example</code> vs <code>rs-conformance</code> roots) is the symptom, not
+   the cause. The example needs a recording of its own session; the backlog
+   sketch's "reuse the conformance ones if the call shapes line up" branch
+   is dead.</li>
+<li><strong>The auth path cannot replay as recorded.</strong> The example constructs
+   <code>GraphAuth</code> (MSAL device-code); on replay there is no token cache, the
+   flow is interactive, and recorded token responses are scrubbed to
+   <code>REDACTED</code>. The solved pattern is <code>graph_replay</code>'s constant stub token
+   provider (<code>token_provider=lambda: "graph-replay-token"</code>); vcrpy does not
+   require every recorded interaction to be played, so the cassette's
+   token-exchange interactions simply stay inert.</li>
+<li><strong>Drive resolution is symmetric via <code>GRAPH_DRIVE_ID</code>.</strong> With the env var
+   set, the example skips <code>GraphUtils.aresolve_drive_id</code>. Record with the
+   real id (the <code>graph.drive-id</code> env-redact rewrites it to <code>FAKE_DRIVE_ID</code>
+   everywhere); replay with <code>GRAPH_DRIVE_ID=FAKE_DRIVE_ID</code>. Request URIs
+   match without recording the resolution round trip.</li>
+<li><strong>The scrub layer needs no new rules.</strong> The example's root
+   (<code>remote-store-example</code>) is a constant, unlike the per-test
+   <code>rs-conformance-&lt;uuid&gt;</code> folders. Bearer tokens, pre-signed URLs, identity
+   PII, and the drive id are owned by existing <code>GRAPH_PROFILE</code> rules, which
+   key on shapes, not on which test produced the traffic.</li>
+<li><strong>A cassette in <code>tests/backends/cassettes/graph/</code> is gate-covered for
+   free.</strong> The recorder's scrub-verify step and the creds-free CI PII sweep
+   both glob <code>*.yaml</code> over the profile's cassette dir. No registration.</li>
+<li><strong>The conformance conftest routes by node-name token.</strong> Cassette dir, vcr
+   config, shared cassette name, missing-cassette skip, and the root
+   conftest's <code>--record</code>-mode marking all key on the fixture-alias tokens
+   <code>graph_live</code> / <code>graph_replay</code> appearing in the node name. Any test under
+   <code>tests/backends/conformance/</code> whose param ids are those tokens inherits
+   the entire cassette stack with zero conftest or recorder changes.</li>
+<li><strong><code>record_cassettes.py</code> wipes the whole cassette dir on a full record</strong>
+   and re-records via <code>-k graph_live</code> over <code>tests/backends/conformance/</code>.
+   A cassette recorded by anything outside that selection is silently
+   destroyed by the next <code>record-graph</code> run, and skip-on-missing makes the
+   loss invisible. The example's record path must be selected by the same
+   k-filter and directory, or the recorder must be extended.</li>
+<li><strong>Streaming replay is proven.</strong> vcrpy 8.1.1 replays
+   <code>httpx.AsyncClient.stream()</code> with no transport shim
+   (<code>test_httpx_streaming_replay.py</code>), so the example's streaming-read
+   section replays as-is.</li>
+<li><strong>Pre-signed replay is order-dependent</strong> (REC-004): pre-signed
+    interactions disambiguate by recorded order. Safe for the strictly
+    sequential example, and a standing constraint on what it may ever do
+    concurrently.</li>
+</ol>
+<h3 id="12-what-the-test-guards">1.2 What the test guards<a class="headerlink" href="#12-what-the-test-guards" title="Permanent link">&para;</a></h3>
+<p>Every layer the example traverses is already contract-covered, and by design
+no existing test chains them end-to-end: Store → backend is tested over the
+memory backends (<code>tests/aio/conftest.py</code>); GraphBackend → API is owned by the
+conformance suite, which drives the backend directly against the replayed
+cassettes. Shape containment was verified op by op against the committed
+corpus: every backend operation the example's Store calls fan out to has
+recorded conformance cassettes. The single absent API call,
+<code>GraphUtils.aresolve_drive_id("me")</code>, is respx-unit-tested (GR-057) and
+skipped symmetrically in record and replay via constraint 4: a non-event,
+not a coverage gap.</p>
+<p>A replayed example therefore adds <strong>zero new contract coverage</strong>. Its value
+is guarding the published snippet itself: imports resolve, the env gate
+works, the demonstrated API usage still type-matches and sequences, the
+printed output is what the docs show. That is an executable-documentation
+guard; the dedicated cassette (constraint 2) is a mechanical consequence of
+replaying a transcript, not a coverage instrument. Containment also makes
+recording risk-free: every interaction shape the example produces is one the
+profile already scrubs, so no new scrub rules and no new PII surface.
+Corollaries:</p>
+<ul>
+<li>The example test will be the <strong>only</strong> place the full
+  <code>Store → GraphBackend → API</code> chain executes. That chain's absence from
+  unit tests is correct layering, not a gap; never position the test (in
+  docstrings, traces, or reviews) as the integration test for it.</li>
+<li>Assertions belong on the script's observable behaviour (exit, stdout),
+  never on backend semantics; those live in conformance.</li>
+</ul>
+<hr />
+<h2 id="2-survey-options">2. Survey: Options<a class="headerlink" href="#2-survey-options" title="Permanent link">&para;</a></h2>
+<h3 id="21-option-a-replay-driver-wired-into-run_examplespy">2.1 Option A: Replay driver wired into <code>run_examples.py</code><a class="headerlink" href="#21-option-a-replay-driver-wired-into-run_examplespy" title="Permanent link">&para;</a></h3>
+<p><strong>Pattern:</strong> A driver script that, inside the subprocess, builds the
+<code>GRAPH_PROFILE</code> vcr config, enters <code>vcr.use_cassette(...)</code>, stubs env +
+<code>GraphAuth</code>, and <code>runpy.run_path</code>s the example; <code>run_examples.py</code> gains a
+"replayed scripts" table.</p>
+<p><strong>Trade-offs:</strong></p>
+<ul>
+<li>Pro: Lands where the backlog sketch pointed; the examples CI job stays the
+  single place examples run.</li>
+<li>Con: Re-implements outside pytest what the cassette machinery owns:
+  record-mode wiring, missing-cassette skip, scrub-manifest dump, live
+  gating. A second copy of spec-049 behaviour (violates SSOT, CLAUDE.md
+  principle 4).</li>
+<li>Con: Recording has no home: the driver needs its own <code>--record</code> mode plus
+  scrub-verify/replay-check equivalents, and constraint 8 (full-record wipe)
+  requires bespoke recorder surgery either way.</li>
+<li>Con: Couples the examples CI job (currently <code>.[dev,arrow]</code>, no cassettes)
+  to the graph extra and the cassette tree, putting two CI jobs on the
+  corpus instead of one.</li>
+</ul>
+<h3 id="22-option-b-example-test-inside-the-conformance-suite-recommended">2.2 Option B: Example test inside the conformance suite (recommended)<a class="headerlink" href="#22-option-b-example-test-inside-the-conformance-suite-recommended" title="Permanent link">&para;</a></h3>
+<p><strong>Pattern:</strong> A new <code>tests/backends/conformance/test_examples.py</code> with one
+test, parametrized over two ids chosen to match the fixture-alias tokens:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">pytest</span><span class="o">.</span><span class="n">importorskip</span><span class="p">(</span><span class="s2">&quot;httpx&quot;</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;httpx not installed (graph extra)&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">pytest</span><span class="o">.</span><span class="n">importorskip</span><span class="p">(</span><span class="s2">&quot;msal&quot;</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;msal not installed (graph extra)&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">EXAMPLE</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">/</span> <span class="s2">&quot;examples&quot;</span> <span class="o">/</span> <span class="s2">&quot;backends&quot;</span> <span class="o">/</span> <span class="s2">&quot;graph_backend.py&quot;</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="s2">&quot;mode&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="p">[</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="n">pytest</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;live&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;graph_live&quot;</span><span class="p">,</span> <span class="n">marks</span><span class="o">=</span><span class="n">pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">live</span><span class="p">),</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">pytest</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;replay&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;graph_replay&quot;</span><span class="p">,</span> <span class="n">marks</span><span class="o">=</span><span class="n">pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">vcr</span><span class="p">(</span><span class="n">record_mode</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">)),</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="p">],</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_graph_backend_example</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="n">monkeypatch</span><span class="p">,</span> <span class="n">capsys</span><span class="p">):</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;live&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;RS_TEST_LIVE_GRAPH&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>            <span class="n">pytest</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s2">&quot;graph_live opt-in via RS_TEST_LIVE_GRAPH=1&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="n">require_graph_live_credentials</span><span class="p">()</span>  <span class="c1"># real env vars stay in place</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        <span class="n">monkeypatch</span><span class="o">.</span><span class="n">setenv</span><span class="p">(</span><span class="s2">&quot;GRAPH_TENANT_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;consumers&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="n">monkeypatch</span><span class="o">.</span><span class="n">setenv</span><span class="p">(</span><span class="s2">&quot;GRAPH_CLIENT_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;00000000-0000-0000-0000-000000000000&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        <span class="n">monkeypatch</span><span class="o">.</span><span class="n">setenv</span><span class="p">(</span><span class="s2">&quot;GRAPH_DRIVE_ID&quot;</span><span class="p">,</span> <span class="n">FAKE_DRIVE_ID</span><span class="p">)</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>        <span class="n">monkeypatch</span><span class="o">.</span><span class="n">setattr</span><span class="p">(</span><span class="s2">&quot;remote_store.aio.GraphAuth&quot;</span><span class="p">,</span> <span class="n">_StubGraphAuth</span><span class="p">)</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="n">runpy</span><span class="o">.</span><span class="n">run_path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">EXAMPLE</span><span class="p">),</span> <span class="n">run_name</span><span class="o">=</span><span class="s2">&quot;__main__&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="n">out</span> <span class="o">=</span> <span class="n">capsys</span><span class="o">.</span><span class="n">readouterr</span><span class="p">()</span><span class="o">.</span><span class="n">out</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>    <span class="k">assert</span> <span class="s2">&quot;Wrote 2 files.&quot;</span> <span class="ow">in</span> <span class="n">out</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    <span class="k">assert</span> <span class="s2">&quot;revenue,profit&quot;</span> <span class="ow">in</span> <span class="n">out</span>  <span class="c1"># demonstrated content, not just banners</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>    <span class="k">assert</span> <span class="s2">&quot;Cleaned up all example files.&quot;</span> <span class="ow">in</span> <span class="n">out</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>    <span class="k">assert</span> <span class="s2">&quot;Done!&quot;</span> <span class="ow">in</span> <span class="n">out</span>
+</code></pre></div>
+<p><code>_StubGraphAuth</code> accepts the example's constructor arguments and returns a
+constant token, mirroring <code>graph_replay</code>. <code>runpy.run_path(...,
+run_name="__main__")</code> executes the script exactly as a user does
+(module-level env gate, <code>asyncio.run(main())</code>, <code>sys.exit</code> paths included),
+which a plain <code>import</code> + <code>await main()</code> would not.</p>
+<p>Two details exist for review-identified reasons. The module-level
+<code>importorskip</code>s mirror the fixture factories' ImportError-to-skip conversion
+(<code>graph_replay._factory</code>, <code>graph_live._factory</code>): without the graph extra,
+<code>remote_store.aio</code> has no <code>GraphAuth</code> attribute to monkeypatch and the
+example's import raises, so both params would hard-fail in an environment
+the conformance suite deliberately passes in. The <code>revenue,profit</code>
+assertion pins one line of demonstrated content: the banner lines alone
+would pass even if <code>read_bytes</code> handed back foreign bytes, which is the
+failure mode constraint 2 describes and the § 1.2 guard exists to catch.</p>
+<p>By constraint 7, the param ids buy the whole stack: cassette-dir routing,
+the shared cassette name (<code>test_graph_backend_example[graph].yaml</code>), the
+<code>GRAPH_PROFILE</code> record/replay configs, the missing-cassette skip (which
+keeps the replay param inert until the cassette lands, here in the very
+next live session), and <code>--record</code>-mode marking of the live param. By
+constraint 8's own mechanism, <code>record_cassettes.py</code> needs <strong>zero changes</strong>:
+the <code>-k graph_live</code> sweep records the example cassette alongside the
+conformance corpus, scrub-verifies it, and replays it; a full <code>record-graph</code>
+regenerates it instead of orphaning it (<code>min_cassettes=100</code> keeps headroom).</p>
+<p><strong>Trade-offs:</strong></p>
+<ul>
+<li>Pro: Single source of truth for record/replay/scrub/skip; the example
+  becomes one more cassette consumer, exactly the BK-283 framing.</li>
+<li>Pro: Replay runs in the normal Stage-1 sweep (<code>hatch run all</code>, CI test
+  jobs), so the snippet is exercised on every push, not only in the
+  examples job.</li>
+<li>Pro: stdout assertions upgrade the example from "no crash" to
+  output-verified, the Go-<code>Example</code> posture
+  <a href="../research-example-testing/">research-example-testing.md</a> recommended.</li>
+<li>Con: Diverges from the backlog sketch's <code>run_examples.py</code> wiring. The
+  sketch is advisory (CLAUDE.md audit-disposition rule); the diagnosed pain
+  — no CI coverage for the snippet — is resolved with less machinery.
+  <code>run_examples.py</code> keeps its credential-free scope; its docstring gains one
+  pointer line.</li>
+<li>Con: A test about an example under <code>tests/backends/conformance/</code> stretches
+  the dir's name. Accepted: the placement is what makes the machinery reuse
+  free; the module docstring states the rationale.</li>
+</ul>
+<h3 id="23-option-c-make-the-example-replay-aware-itself">2.3 Option C: Make the example replay-aware itself<a class="headerlink" href="#23-option-c-make-the-example-replay-aware-itself" title="Permanent link">&para;</a></h3>
+<p><strong>Pattern:</strong> Teach the example a replay mode (env switch selecting a stub
+token provider) so it runs under a thin vcr wrapper anywhere.</p>
+<p><strong>Trade-offs:</strong></p>
+<ul>
+<li>Pro: No auth monkeypatching.</li>
+<li>Con: Test scaffolding leaks into published documentation: the example is
+  rendered verbatim into the docs site, and its entire job is to show the
+  real auth flow. Rejected.</li>
+</ul>
+<h3 id="24-option-d-respx-fake-api-instead-of-a-cassette">2.4 Option D: respx fake API instead of a cassette<a class="headerlink" href="#24-option-d-respx-fake-api-instead-of-a-cassette" title="Permanent link">&para;</a></h3>
+<p><strong>Pattern:</strong> Since the test is an executable-documentation guard (§ 1.2),
+replay fidelity is arguably negotiable: run the script under a respx route
+table faking the Graph API (the boundary the graph unit tests stub), with
+Option B's env/auth stubbing. No cassette, no live session ever needed.</p>
+<p><strong>Trade-offs:</strong></p>
+<ul>
+<li>Pro: Zero recording dependency, implementable in a creds-free session;
+  immune to the full-record wipe (constraint 8) and pre-signed
+  order-dependence (constraint 10).</li>
+<li>Con: The example's op sequence (write ×2, read, metadata, recursive list,
+  copy, move, exists ×2, streaming read, delete sweep) needs a stateful
+  hand-written fake of a dozen Graph endpoints including the pre-signed
+  download redirect: a second, drifting model of the Graph API, precisely
+  what BK-262 built the recording pipeline to avoid. The unit tests keep
+  respx honest by scoping each route table to one narrow contract; a
+  whole-script fake cannot.</li>
+</ul>
+<p>The same verdict covers synthesizing the example's cassette offline from
+conformance interactions used as templates: response fields are internally
+entangled (size, eTag, hash, pre-signed ordering), so that is a
+hand-maintained fake in cassette format, and it breaks the BK-262 invariant
+that every committed cassette is a scrub-verified recording of real traffic,
+which the PII gates assume.</p>
+<p>Rejected for the guard, but it is the fallback if the live tier ever becomes
+unrecordable: the guard degrades gracefully to a fake because nothing in it
+asserts backend semantics.</p>
+<hr />
+<h2 id="3-evaluation">3. Evaluation<a class="headerlink" href="#3-evaluation" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>A: run_examples driver</th>
+<th>B: conformance test</th>
+<th>C: replay-aware example</th>
+<th>D: respx fake API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reuses spec-049 machinery</td>
+<td>partial (config only)</td>
+<td>full</td>
+<td>partial</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Recorder integration</td>
+<td>bespoke</td>
+<td>zero changes</td>
+<td>bespoke</td>
+<td>— (no cassette)</td>
+</tr>
+<tr>
+<td>Survives full <code>record-graph</code> wipe</td>
+<td>needs recorder surgery</td>
+<td>automatic</td>
+<td>needs recorder surgery</td>
+<td>immune</td>
+</tr>
+<tr>
+<td>Needs a live session once</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+<td>no</td>
+</tr>
+<tr>
+<td>API fidelity</td>
+<td>recorded</td>
+<td>recorded</td>
+<td>recorded</td>
+<td>hand-maintained fake</td>
+</tr>
+<tr>
+<td>Example file untouched</td>
+<td>yes</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Output verified</td>
+<td>exit code only</td>
+<td>stdout assertions</td>
+<td>exit code only</td>
+<td>stdout assertions</td>
+</tr>
+<tr>
+<td>New code surface</td>
+<td>driver + runner table</td>
+<td>one test module</td>
+<td>example churn</td>
+<td>test module + fake API model</td>
+</tr>
+</tbody>
+</table>
+<p>Option B dominates A and C on every criterion except fidelity to the
+original sketch. Against D the trade is one live recording session versus a
+permanently hand-maintained fake of a dozen stateful endpoints; B wins on
+maintenance, D remains the documented fallback (§ 2.4).</p>
+<h3 id="31-generalisation-which-live-backends-can-the-pattern-reach">3.1 Generalisation: which live backends can the pattern reach?<a class="headerlink" href="#31-generalisation-which-live-backends-can-the-pattern-reach" title="Permanent link">&para;</a></h3>
+<p>Bounded by
+<a href="../../specs/048-testing-architecture/#test-008-replay-scope-is-http-transport-only">TEST-008</a>:
+replay scope is HTTP transport only, and within that, only stacks vcrpy can
+intercept.</p>
+<table>
+<thead>
+<tr>
+<th>Backend example</th>
+<th>Transport</th>
+<th>Replay-example feasible?</th>
+<th>Worth it?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>graph_backend.py</code></td>
+<td>httpx (vcrpy-proven)</td>
+<td>yes: this design</td>
+<td>yes: no emulator; only creds-free path</td>
+</tr>
+<tr>
+<td><code>azure_backend.py</code></td>
+<td>azure.core/requests (BK-181 PoC)</td>
+<td>yes: same pattern over <code>AZURE_PROFILE</code></td>
+<td>low: Azurite-driven CI is simpler than a cassette</td>
+</tr>
+<tr>
+<td><code>s3_backend.py</code>, <code>s3_*.py</code></td>
+<td>aiobotocore via s3fs</td>
+<td>no: vcrpy cannot intercept (<a href="../research-bk-181-s3-cassette-infeasibility/">BK-181 spike</a>)</td>
+<td>moto/MinIO are the right tools</td>
+</tr>
+<tr>
+<td><code>sftp_backend.py</code></td>
+<td>SSH (paramiko)</td>
+<td>no: not HTTP</td>
+<td>Docker sftp fixture territory</td>
+</tr>
+<tr>
+<td><code>sql_blob_backend.py</code></td>
+<td>DB driver</td>
+<td>no: not HTTP</td>
+<td>SQLite/local DB runs without creds</td>
+</tr>
+<tr>
+<td><code>http_backend.py</code></td>
+<td>httpx</td>
+<td>technically yes</td>
+<td>unnecessary: any local HTTP server suffices</td>
+</tr>
+</tbody>
+</table>
+<p>The honest generalisation is narrow: the pattern earns its keep exactly
+where a live HTTP service has no emulator. Today that is Graph alone. The
+test module stays a plain parametrized test, not a registration framework;
+if a second example ever joins, factor the stub pairs into a table then,
+not before.</p>
+<hr />
+<h2 id="4-recommendation">4. Recommendation<a class="headerlink" href="#4-recommendation" title="Permanent link">&para;</a></h2>
+<p>Implement Option B in a live-credential session: one new test module under
+<code>tests/backends/conformance/</code>, one recorded cassette, zero changes to
+<code>record_cassettes.py</code> or the conformance conftest. Effort matches the
+backlog's S estimate. The BK-283 body's <code>run_examples.py</code> wiring is
+superseded (sketches are advisory, and the Stage-1 replay test fully
+resolves the diagnosed pain of no CI coverage for the snippet). Frame it
+honestly when closing the item: the test guards the published snippet, it
+does not extend backend coverage (§ 1.2). If the live tier ever becomes
+unrecordable, degrade to the respx fallback (§ 2.4) rather than letting the
+guard rot behind a permanent missing-cassette skip.</p>
+<p>Plan for the implementing session:</p>
+<ol>
+<li><strong>Add <code>tests/backends/conformance/test_examples.py</code></strong> as sketched in
+   § 2.2, with a module docstring covering the param-id routing trick, the
+   <code>run_examples.py</code> division of labour, and the § 1.2 framing.</li>
+<li><strong>Live-param hygiene:</strong> before and after the live run, best-effort delete
+   the drive's <code>remote-store-example</code> folder via an unrooted helper backend
+   (mirror <code>graph_live._aclose</code>'s teardown). The example cleans its files
+   but leaves empty folders; pre-cleaning keeps re-records deterministic.</li>
+<li><strong>Record:</strong> a single-cassette <code>record_cassettes.py --backend graph
+   --node ...[graph_live]</code> run, or a full <code>hatch run record-graph</code> (which
+   now includes the example). Scrub-verify + Stage-1 replay run unchanged.</li>
+<li><strong>Verify replay</strong> (principle 6): <code>pytest tests/backends/conformance/
+   -k graph_replay --stage=1</code> green including the new test; then the full
+   <code>hatch run all</code> gate.</li>
+<li><strong>Ripples</strong> (pre-checked against <code>sdd/CLAUDE-REFERENCE.md</code>; no backend,
+   error, capability, version, or dependency surface changes):
+   <code>run_examples.py</code> docstring pointer; close BK-283 per the completing-work
+   procedure (audience <code>infra.test</code>, so no CHANGELOG, per BK-262 precedent);
+   trace <code>sdd/traces/bk-283-example-replay.yml</code> in the same PR. Spec 049
+   needs no change (the test consumes existing REC surfaces); if review
+   disagrees, the anchor is a one-line "consumers" note under REC-007.</li>
+</ol>
+<p>Open verification points, cheap to confirm and listed so they are checked
+rather than assumed:</p>
+<ul>
+<li><code>--stage</code> does not deselect the new test (stage gating is
+  registry-fixture-driven; this test is not registry-backed; confirm by
+  collection at <code>--stage=1</code>).</li>
+<li>The cassette's MSAL token-exchange interactions stay inert under
+  <code>record_mode="none"</code> with the stub auth (confirm on first replay).</li>
+<li>The <code>GraphAuth</code> monkeypatch lands before <code>runpy</code> executes the example's
+  import (it does: the example binds the name at exec time), but assert
+  the stub was actually called, e.g. via a call counter, so a silent
+  fall-through to real MSAL fails loudly.</li>
+<li><code>examples/_categories.yml</code> / docs rendering are unaffected (the example
+  file is untouched; gen_pages parses it via <code>ast.parse</code>).</li>
+</ul>
 
 
 
@@ -9558,7 +10326,7 @@ choices, not just what they are. Read these when "how" isn't enough.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../reference/changelog/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Changelog">
+          <a href="../research-bk-198-paramiko-ssh-rsa-empirical/" class="md-footer__link md-footer__link--prev" aria-label="Previous: paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -9568,20 +10336,20 @@ choices, not just what they are. Read these when "how" isn't enough.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Changelog
+                paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)
               </div>
             </div>
           </a>
         
         
           
-          <a href="architecture/" class="md-footer__link md-footer__link--next" aria-label="Next: Architecture Overview">
+          <a href="../research-bug-prevention-beyond-testing/" class="md-footer__link md-footer__link--next" aria-label="Next: Bug Prevention Beyond Testing">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Architecture Overview
+                Bug Prevention Beyond Testing
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -9618,10 +10386,10 @@ choices, not just what they are. Read these when "how" isn't enough.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow", "navigation.footer"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow", "navigation.footer"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
