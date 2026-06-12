@@ -10,13 +10,11 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/specs/031-ext-dagster/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/specs/049-live-recording-architecture/">
       
       
-        <link rel="prev" href="../030-write-text/">
+        <link rel="prev" href="../048-testing-architecture/">
       
-      
-        <link rel="next" href="../032-http-backend/">
       
       
         
@@ -27,7 +25,7 @@
     
     
       
-        <title>031: ext.dagster - Dagster Integration Specification - remote-store</title>
+        <title>049: Spec 049 — Live Recording Architecture - remote-store</title>
       
     
     
@@ -82,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#extdagster-dagster-integration-specification" class="md-skip">
+        <a href="#spec-049-live-recording-architecture" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              031: ext.dagster - Dagster Integration Specification
+              049: Spec 049 — Live Recording Architecture
             
           </span>
         </div>
@@ -8907,37 +8905,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    031: ext.dagster - Dagster Integration Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -8953,519 +8924,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#serializer-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Serializer Protocol
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Serializer Protocol">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-001-serializer-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-001: Serializer Protocol
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-002-pickleserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-002: PickleSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-003-jsonserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-003: JsonSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-004-parquetserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-004: ParquetSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#path-generation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Path Generation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Path Generation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-005-asset-path-derivation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-005: Asset Path Derivation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-006-multi-segment-asset-key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-006: Multi-Segment Asset Key
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#io-manager-behavior" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        IO Manager Behavior
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="IO Manager Behavior">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-007-handle_output-writes-and-adds-metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-007: handle_output Writes and Adds Metadata
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-008-load_input-reads-and-deserializes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-008: load_input Reads and Deserializes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-009-custom-serializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-009: Custom Serializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-010-missing-pyarrow-error" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-010: Missing PyArrow Error
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#factory-function" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Factory Function
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Factory Function">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-011-dagster_io_manager-signature" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-011: dagster_io_manager Signature
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#v2-dagster-config-driven-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        v2: Dagster-Config-Driven Store
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="v2: Dagster-Config-Driven Store">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-012-dagsterstoreresource-builds-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-012: DagsterStoreResource Builds Store
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-013-dagsterstoreresource-teardown" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-013: DagsterStoreResource Teardown
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-014-unknown-backend-type" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-014: Unknown Backend Type
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-015-remotestoreiomanager-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-015: RemoteStoreIOManager Factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-016-remotestoreiomanager-roundtrip" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-016: RemoteStoreIOManager Roundtrip
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-017-dagster_dataset_io_manager-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-017: dagster_dataset_io_manager Factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-018-dataset-io-manager-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-018: Dataset IO Manager Path
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-019-dataset-mode-via-remotestoreiomanager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-019: Dataset Mode via RemoteStoreIOManager
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#multi-partition-loading" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Partition Loading
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Multi-Partition Loading">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-020-load_input-with-multiple-partition-keys" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-020: load_input with Multiple Partition Keys
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#v3-compute-log-manager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        v3: Compute Log Manager
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="v3: Compute Log Manager">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-021-configurableclass-plumbing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-021: ConfigurableClass Plumbing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-022-store-construction-and-capability-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-022: Store Construction and Capability Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-023-local_manager-and-upload_interval-properties" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-023: local_manager and upload_interval Properties
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-024-remote-path-scheme" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-024: Remote Path Scheme
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-025-_upload_file_obj" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-025: _upload_file_obj
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-026-download_from_cloud_storage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-026: download_from_cloud_storage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-027-cloud_storage_has_logs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-027: cloud_storage_has_logs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-028-display_path_for_type-download_url_for_type" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-028: display_path_for_type / download_url_for_type
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-029-delete_logs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-029: delete_logs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-030-on_subscribe-on_unsubscribe" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-030: on_subscribe / on_unsubscribe
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-031-get_log_keys_for_log_key_prefix" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-031: get_log_keys_for_log_key_prefix
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-032-lifecycle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-032: Lifecycle
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-033-credential-masking-in-_build_store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-033: Credential Masking in _build_store
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -9951,10 +9409,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../049-live-recording-architecture/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    049: Spec 049 — Live Recording Architecture
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -9970,6 +9455,114 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rec-001-backend-agnostic-recording-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REC-001: Backend-Agnostic Recording Core
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rec-002-named-redaction-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REC-002: Named Redaction Rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rec-003-live-value-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REC-003: Live-Value Coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rec-004-pre-signed-round-trip-consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REC-004: Pre-Signed Round-Trip Consistency
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rec-005-native-filter-half-and-its-defence-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REC-005: Native-Filter Half and Its Defence Boundary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rec-006-scrub-audit-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REC-006: Scrub Audit Gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rec-007-per-backend-extension-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REC-007: Per-Backend Extension Contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rec-008-async-transport-capture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REC-008: Async-Transport Capture
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -10025,10 +9618,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#rec-001-backend-agnostic-recording-core" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        REC-001: Backend-Agnostic Recording Core
       
     </span>
   </a>
@@ -10036,484 +9629,79 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#serializer-protocol" class="md-nav__link">
+  <a href="#rec-002-named-redaction-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Serializer Protocol
+        REC-002: Named Redaction Rules
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Serializer Protocol">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-001-serializer-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-001: Serializer Protocol
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-002-pickleserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-002: PickleSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-003-jsonserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-003: JsonSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-004-parquetserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-004: ParquetSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#path-generation" class="md-nav__link">
+  <a href="#rec-003-live-value-coverage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Path Generation
+        REC-003: Live-Value Coverage
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Path Generation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-005-asset-path-derivation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-005: Asset Path Derivation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-006-multi-segment-asset-key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-006: Multi-Segment Asset Key
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#io-manager-behavior" class="md-nav__link">
+  <a href="#rec-004-pre-signed-round-trip-consistency" class="md-nav__link">
     <span class="md-ellipsis">
       
-        IO Manager Behavior
+        REC-004: Pre-Signed Round-Trip Consistency
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="IO Manager Behavior">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-007-handle_output-writes-and-adds-metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-007: handle_output Writes and Adds Metadata
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-008-load_input-reads-and-deserializes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-008: load_input Reads and Deserializes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-009-custom-serializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-009: Custom Serializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-010-missing-pyarrow-error" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-010: Missing PyArrow Error
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#factory-function" class="md-nav__link">
+  <a href="#rec-005-native-filter-half-and-its-defence-boundary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Factory Function
+        REC-005: Native-Filter Half and Its Defence Boundary
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Factory Function">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-011-dagster_io_manager-signature" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-011: dagster_io_manager Signature
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#v2-dagster-config-driven-store" class="md-nav__link">
+  <a href="#rec-006-scrub-audit-gate" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v2: Dagster-Config-Driven Store
+        REC-006: Scrub Audit Gate
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="v2: Dagster-Config-Driven Store">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-012-dagsterstoreresource-builds-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-012: DagsterStoreResource Builds Store
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-013-dagsterstoreresource-teardown" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-013: DagsterStoreResource Teardown
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-014-unknown-backend-type" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-014: Unknown Backend Type
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-015-remotestoreiomanager-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-015: RemoteStoreIOManager Factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-016-remotestoreiomanager-roundtrip" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-016: RemoteStoreIOManager Roundtrip
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-017-dagster_dataset_io_manager-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-017: dagster_dataset_io_manager Factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-018-dataset-io-manager-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-018: Dataset IO Manager Path
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-019-dataset-mode-via-remotestoreiomanager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-019: Dataset Mode via RemoteStoreIOManager
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#multi-partition-loading" class="md-nav__link">
+  <a href="#rec-007-per-backend-extension-contract" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Multi-Partition Loading
+        REC-007: Per-Backend Extension Contract
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Multi-Partition Loading">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-020-load_input-with-multiple-partition-keys" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-020: load_input with Multiple Partition Keys
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#v3-compute-log-manager" class="md-nav__link">
+  <a href="#rec-008-async-transport-capture" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v3: Compute Log Manager
+        REC-008: Async-Transport Capture
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="v3: Compute Log Manager">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-021-configurableclass-plumbing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-021: ConfigurableClass Plumbing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-022-store-construction-and-capability-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-022: Store Construction and Capability Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-023-local_manager-and-upload_interval-properties" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-023: local_manager and upload_interval Properties
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-024-remote-path-scheme" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-024: Remote Path Scheme
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-025-_upload_file_obj" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-025: _upload_file_obj
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-026-download_from_cloud_storage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-026: download_from_cloud_storage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-027-cloud_storage_has_logs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-027: cloud_storage_has_logs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-028-display_path_for_type-download_url_for_type" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-028: display_path_for_type / download_url_for_type
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-029-delete_logs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-029: delete_logs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-030-on_subscribe-on_unsubscribe" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-030: on_subscribe / on_unsubscribe
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-031-get_log_keys_for_log_key_prefix" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-031: get_log_keys_for_log_key_prefix
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-032-lifecycle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-032: Lifecycle
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-033-credential-masking-in-_build_store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-033: Credential Masking in _build_store
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -10534,438 +9722,173 @@
 
 
 
-<h1 id="extdagster-dagster-integration-specification">ext.dagster - Dagster Integration Specification<a class="headerlink" href="#extdagster-dagster-integration-specification" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>ext.dagster</code> covers both of Dagster's storage extension points. The
-<code>IOManager</code> adapter wraps any existing <code>Store</code> so teams already using
-remote-store can reuse their Store configuration (credentials, retry policy,
-caching, observability) inside Dagster pipelines without duplicating config
-into <code>dagster-aws</code> / <code>dagster-azure</code>. The <code>RemoteStoreComputeLogManager</code>
-(v3) is a Dagster <em>instance</em> component, configured in <code>dagster.yaml</code>, that
-persists op/step <code>stdout</code> / <code>stderr</code> to any remote-store backend.</p>
-<p><strong>Module:</strong> <code>src/remote_store/ext/dagster.py</code>
-<strong>Dependencies:</strong> <code>dagster&gt;=1.9</code> (optional extra)
-<strong>Related:</strong> <a href="../001-store-api/">001-store-api.md</a> (Store API),
-research (<code>sdd/research/research-dagster-extension.md</code>),
-<a href="../../rfcs/rfc-0014-dagster-compute-log-manager/">RFC-0014</a>, ID-075, ID-208.</p>
-<p><strong>Scope:</strong> v1 — <code>dagster_io_manager(store)</code> factory function (DAG-001 – DAG-011).
-v2 adds <code>DagsterStoreResource</code> and <code>RemoteStoreIOManager</code> (DAG-012 – DAG-020).
-v3 adds <code>RemoteStoreComputeLogManager</code> (DAG-021 – DAG-033).</p>
+<h1 id="spec-049-live-recording-architecture">Spec 049 — Live Recording Architecture<a class="headerlink" href="#spec-049-live-recording-architecture" title="Permanent link">&para;</a></h1>
+<p><strong>Scope:</strong> Test infrastructure. Specifies the HTTP cassette <em>recording
+transport</em>: the backend-agnostic scrub core, the per-backend cassette
+profiles, the pre-signed URL policy, and the scrub audit gates that make
+recording against real cloud accounts safe. Not library source code.
+The contracts here govern <code>tests/backends/fixtures/_cassettes*.py</code>, the
+cassette wiring in <code>tests/backends/conformance/conftest.py</code>, and
+<code>scripts/record_cassettes.py</code>.</p>
+<p><strong>Prefix:</strong> <code>REC</code></p>
+<p><strong>Companion docs:</strong> <a href="../048-testing-architecture/">Spec 048</a> governs the
+fixture model and the cassette/replay <em>contract</em> (TEST-007 — what a replay
+fixture promises); this spec governs the recording <em>mechanism</em> TEST-007
+deliberately deferred. <a href="../../testing/"><code>sdd/TESTING.md</code></a> quality rules
+apply to the tests tracing these clauses.</p>
+<p><strong>Related decisions:</strong>
+<a href="../../adrs/0028-testing-architecture-kind-stage-replay/">ADR-0028</a> records
+the kind/stage axes and the HTTP-only replay demotion this layer
+implements. The recording layer's own design rationale is carried inline
+in the clauses below; it is test tooling beneath ADR-0028, not a separate
+architecture decision.</p>
+<p><strong>Tracks:</strong> BK-284 (the redesign that introduced the profile core),
+building on the scrub hardening from BK-262.</p>
 <hr />
-<h2 id="serializer-protocol">Serializer Protocol<a class="headerlink" href="#serializer-protocol" title="Permanent link">&para;</a></h2>
-<h3 id="dag-001-serializer-protocol">DAG-001: Serializer Protocol<a class="headerlink" href="#dag-001-serializer-protocol" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>Serializer</code> is a <code>typing.Protocol</code> (runtime-checkable) with:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@runtime_checkable</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">Serializer</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">extension</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span> <span class="o">...</span>
-</code></pre></div>
-<ul>
-<li><code>extension</code>: file extension including the dot (e.g., <code>".pkl"</code>, <code>".json"</code>,
-  <code>".parquet"</code>).</li>
-<li><code>serialize(obj)</code>: converts a Python object to bytes.</li>
-<li><code>deserialize(data)</code>: converts bytes back to a Python object.</li>
-</ul>
-<h3 id="dag-002-pickleserializer">DAG-002: PickleSerializer<a class="headerlink" href="#dag-002-pickleserializer" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>PickleSerializer</code> implements <code>Serializer</code> with:
-- <code>extension = ".pkl"</code>
-- <code>serialize</code>: uses <code>pickle.dumps(obj)</code>.
-- <code>deserialize</code>: uses <code>pickle.loads(data)</code>.</p>
-<p><strong>Roundtrip:</strong> for any picklable object <code>obj</code>,
-<code>PickleSerializer().deserialize(PickleSerializer().serialize(obj)) == obj</code>.</p>
-<h3 id="dag-003-jsonserializer">DAG-003: JsonSerializer<a class="headerlink" href="#dag-003-jsonserializer" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>JsonSerializer</code> implements <code>Serializer</code> with:
-- <code>extension = ".json"</code>
-- <code>serialize</code>: uses <code>json.dumps(obj).encode("utf-8")</code>.
-- <code>deserialize</code>: uses <code>json.loads(data)</code>.</p>
-<p><strong>Roundtrip:</strong> for any JSON-serializable object <code>obj</code>,
-<code>JsonSerializer().deserialize(JsonSerializer().serialize(obj)) == obj</code>.</p>
-<h3 id="dag-004-parquetserializer">DAG-004: ParquetSerializer<a class="headerlink" href="#dag-004-parquetserializer" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>ParquetSerializer</code> implements <code>Serializer</code> with:
-- <code>extension = ".parquet"</code>
-- <code>serialize</code>: converts a pandas DataFrame, polars DataFrame, or PyArrow Table
-  to Parquet bytes via <code>pyarrow</code>.
-- <code>deserialize</code>: reads Parquet bytes back to a PyArrow Table.
-  Callers needing pandas or polars convert the result themselves
-  (e.g. <code>table.to_pandas()</code> or <code>pl.from_arrow(table)</code>).</p>
-<p><strong>Guard:</strong> instantiating <code>ParquetSerializer</code> when <code>pyarrow</code> is not installed
-raises <code>ModuleNotFoundError</code> with the message:
-<code>"PyArrow is required for the parquet serializer. Install it with: pip install 'remote-store[dagster,arrow]'"</code>.</p>
+<h2 id="rec-001-backend-agnostic-recording-core">REC-001: Backend-Agnostic Recording Core<a class="headerlink" href="#rec-001-backend-agnostic-recording-core" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> One shared module holds the recording machinery — the
+declarative rule shapes, the cassette-profile dataclass, and the single
+generic <code>vcr_config</code> factory. It contains no backend-specific constants,
+helpers, or hooks. Everything one backend family declares about its
+cassettes lives in that family's profile module as one <code>CassetteProfile</code>.</p>
+<p><strong>Postcondition:</strong> A third HTTP backend gains recording, replay routing,
+and the audit gates by writing a profile module and registering it
+(REC-007) — without editing the core, the conformance conftest, or the
+recorder's verification steps.</p>
+<p><strong>Rationale:</strong> The previous shape — parallel hand-rolled
+<code>before_record_*</code> stacks per backend — duplicated bytes/str dispatch,
+header-value handling, and live-value threading per family, and every
+scrub guarantee lived only in code. Profiles make the guarantees
+declarations the audit (REC-006) can enumerate.</p>
 <hr />
-<h2 id="path-generation">Path Generation<a class="headerlink" href="#path-generation" title="Permanent link">&para;</a></h2>
-<h3 id="dag-005-asset-path-derivation">DAG-005: Asset Path Derivation<a class="headerlink" href="#dag-005-asset-path-derivation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> the storage path for an asset is derived from
-<code>context.asset_key.path</code> (joined with <code>/</code>) plus the partition key
-(when <code>context.has_partition_key</code> is true) plus the serializer extension:</p>
-<table>
-<thead>
-<tr>
-<th>Asset key</th>
-<th>Partition key</th>
-<th>Derived path</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>["foo", "bar"]</code></td>
-<td><em>(none)</em></td>
-<td><code>foo/bar.&lt;ext&gt;</code></td>
-</tr>
-<tr>
-<td><code>["foo", "bar"]</code></td>
-<td><code>"2026-01"</code></td>
-<td><code>foo/bar/2026-01.&lt;ext&gt;</code></td>
-</tr>
-<tr>
-<td><code>["report"]</code></td>
-<td><em>(none)</em></td>
-<td><code>report.&lt;ext&gt;</code></td>
-</tr>
-</tbody>
-</table>
-<p>The <code>Store</code>'s <code>root_path</code> acts as a namespace prefix — path generation
-does not embed it.</p>
-<h3 id="dag-006-multi-segment-asset-key">DAG-006: Multi-Segment Asset Key<a class="headerlink" href="#dag-006-multi-segment-asset-key" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> asset keys with multiple path segments produce nested paths.
-<code>AssetKey(["ns", "group", "table"])</code> → <code>ns/group/table.&lt;ext&gt;</code>.</p>
+<h2 id="rec-002-named-redaction-rules">REC-002: Named Redaction Rules<a class="headerlink" href="#rec-002-named-redaction-rules" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> Every body, URI, and live-value scrub is a named rule — a
+<code>RedactPattern</code> (bytes-domain body redaction), <code>UriRewrite</code> (str-domain
+URI/header rewrite), or <code>EnvRedact</code> (live-value redaction) — carrying an
+audit identity prefixed with its backend family (<code>graph.body.download-url</code>
+style) and a declared expectation: <code>required-to-fire</code> or <code>opportunistic</code>.</p>
+<p>A <code>required-to-fire</code> rule must redact at least once over a full-slice
+recording: zero fires means the scrub layer silently stopped seeing the
+value it owns. An <code>opportunistic</code> rule guards a shape a normal recording
+may legitimately never produce. Exact counts never gate — they are
+workload-dependent.</p>
+<p><strong>Postcondition:</strong> The audit gate (REC-006) asserts by rule name; a rule
+cannot exist without an audit identity, and an identity cannot drift from
+the pattern it names.</p>
 <hr />
-<h2 id="io-manager-behavior">IO Manager Behavior<a class="headerlink" href="#io-manager-behavior" title="Permanent link">&para;</a></h2>
-<h3 id="dag-007-handle_output-writes-and-adds-metadata">DAG-007: handle_output Writes and Adds Metadata<a class="headerlink" href="#dag-007-handle_output-writes-and-adds-metadata" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>handle_output(context, obj)</code>:</p>
+<h2 id="rec-003-live-value-coverage">REC-003: Live-Value Coverage<a class="headerlink" href="#rec-003-live-value-coverage" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> A declared live value (<code>EnvRedact</code>) is redacted wherever
+the service can echo it: the request URI, every request-header value
+(no per-header enumeration — a value riding an unanticipated header is
+still rewritten), the request body, and the response body — bytes and
+str domains alike, case-insensitively when declared, and in every
+declared <code>forms</code> variant (a service may echo a value reshaped: the Graph
+drive cid appears both contiguous and hyphen-split inside an MSAL <code>Oid:</code>
+anchor).</p>
+<p>The scrub order is fixed: env-redacts first, then uri-rewrites and body
+redactions in declaration order. Resolution happens only in record mode;
+in replay mode every env-redact is inactive and the remaining hooks are
+deterministic, because vcrpy runs the request hook in both modes to
+normalise outgoing requests for cassette matching.</p>
+<p><strong>Rationale:</strong> The header-value half exists because a live value once rode
+a request header no scrub list anticipated; per-header enumeration is
+exactly the failure mode this clause forbids.</p>
+<hr />
+<h2 id="rec-004-pre-signed-round-trip-consistency">REC-004: Pre-Signed Round-Trip Consistency<a class="headerlink" href="#rec-004-pre-signed-round-trip-consistency" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> For a profile declaring a <code>PresignedPolicy</code>, every
+pre-signed URL — request URIs to non-API hosts, <code>Location</code> /
+<code>Content-Location</code> response headers, and URL-valued body fields — rewrites
+to the <em>same, valid-URL</em> placeholder. The request hook runs in record and
+replay mode alike, so the request a backend re-issues from a scrubbed
+body or header normalises to the value the recorded request was rewritten
+to, and vcrpy matches them.</p>
+<p>The placeholder must be a well-formed, non-routable URL. The
+counter-example this clause forbids: replacing the value with a bare
+token — the backend reads it back and issues a request that matches
+nothing, which is exactly how Graph reads failed to replay before the
+placeholder.</p>
+<p><strong>Consequence:</strong> Replay of pre-signed traffic is order-dependent — every
+pre-signed interaction in a cassette collapses to one method+URI and
+vcrpy disambiguates solely by recorded order. Concurrent pre-signed
+requests within a single test are unsupported under replay.</p>
+<hr />
+<h2 id="rec-005-native-filter-half-and-its-defence-boundary">REC-005: Native-Filter Half and Its Defence Boundary<a class="headerlink" href="#rec-005-native-filter-half-and-its-defence-boundary" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> Request-header deletes and the User-Agent rewrite run
+through vcrpy's native <code>filter_headers</code>, declared on the profile. vcrpy
+composes the native filters <em>before</em> the custom hooks in both modes,
+matches header names case-insensitively, and re-inserts a rewritten
+header under the declared key's case — so the declared case must match
+what cassettes record. The tuple form rewrites a <em>present</em> header and
+never adds one when absent; re-record byte-identity rests on that.</p>
+<p>The native half never touches a named rule and is therefore invisible to
+the named-rule audit; its defence is the forbidden-pattern envelope
+(REC-006) plus per-PR cassette diff review. Neither half may be assumed
+to cover the other.</p>
+<p><code>filter_post_data_parameters</code> is excluded from the native half: vcrpy's
+implementation is POST-only and re-serialises every <code>application/json</code>
+body even when no parameter matches, churning the security-review diff on
+re-record. The OAuth credential-form scrub therefore stays in the
+declarative half as named <code>RedactPattern</code>s — which also makes it
+audit-visible. Revisit only if vcrpy gains a non-rewriting filter.</p>
+<hr />
+<h2 id="rec-006-scrub-audit-gate">REC-006: Scrub Audit Gate<a class="headerlink" href="#rec-006-scrub-audit-gate" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> Two independent gates verify every recording, fed by the
+same profile declarations:</p>
 <ol>
-<li>Serializes <code>obj</code> using the configured serializer.</li>
-<li>Writes the serialized bytes to the Store at the derived path via
-   <code>store.write(path, data, overwrite=True)</code>.</li>
-<li>Calls <code>context.add_output_metadata({"path": path, "size": len(data)})</code>.</li>
+<li><strong>Forbidden-pattern byte-scan</strong> (env-independent). A module-level
+   <code>FORBIDDEN_ENVELOPE</code> of universal leak markers — credential forms,
+   token shapes, account PII — that every profile inherits, plus
+   per-profile additions, combined by <code>all_forbidden_patterns()</code>. Two
+   consumers run the identical set: the recorder's scrub-verify step on
+   the live path, and a creds-free CI sweep over every registered
+   profile's <em>committed</em> cassette tree — so a hand edit, bad merge, or
+   mis-configured re-record is caught in CI, not by a manual grep.</li>
+<li><strong>Named-rule audit</strong> (full recordings only). The scrub core counts
+   each named rule's fires; the conformance session dumps the counts to a
+   manifest when the recorder exports the manifest path, and the
+   recorder's verify step fails any <code>required-to-fire</code> rule at zero.
+   Verify-only and single-cassette runs skip this half — fire counts are
+   workload-dependent — while the byte-scan half always runs.</li>
 </ol>
-<p>When <code>obj</code> is <code>None</code>, it is still serialized and written (Dagster convention:
-allows distinguishing "never materialized" from "materialized as None").</p>
-<h3 id="dag-008-load_input-reads-and-deserializes">DAG-008: load_input Reads and Deserializes<a class="headerlink" href="#dag-008-load_input-reads-and-deserializes" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>load_input(context)</code>:</p>
-<ol>
-<li>Derives the path from the upstream output context's asset identifier.</li>
-<li>Reads bytes from the Store via <code>store.read_bytes(path)</code>.</li>
-<li>Deserializes the bytes using the configured serializer.</li>
-<li>Returns the deserialized object.</li>
-</ol>
-<p><strong>Raises:</strong> <code>NotFound</code> (from Store) when the file does not exist.</p>
-<h3 id="dag-009-custom-serializer">DAG-009: Custom Serializer<a class="headerlink" href="#dag-009-custom-serializer" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> any object satisfying the <code>Serializer</code> protocol can be passed
-to <code>dagster_io_manager(store, serializer=my_serializer)</code>. The IO manager
-uses <code>my_serializer.extension</code>, <code>.serialize()</code>, and <code>.deserialize()</code>.</p>
-<h3 id="dag-010-missing-pyarrow-error">DAG-010: Missing PyArrow Error<a class="headerlink" href="#dag-010-missing-pyarrow-error" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> passing <code>serializer="parquet"</code> when <code>pyarrow</code> is not installed
-raises <code>ModuleNotFoundError</code> with a message containing
-<code>"pip install 'remote-store[dagster,arrow]'"</code>.</p>
+<p><strong>Postcondition:</strong> A scrub regression surfaces as a named rule at zero or
+a forbidden marker hit <em>before</em> the cassettes can be committed, and a
+leak that slips past recording is still caught by the CI sweep.</p>
 <hr />
-<h2 id="factory-function">Factory Function<a class="headerlink" href="#factory-function" title="Permanent link">&para;</a></h2>
-<h3 id="dag-011-dagster_io_manager-signature">DAG-011: dagster_io_manager Signature<a class="headerlink" href="#dag-011-dagster_io_manager-signature" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">dagster_io_manager</span><span class="p">(</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">store</span><span class="p">:</span> <span class="n">Store</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">serializer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Serializer</span> <span class="o">=</span> <span class="s2">&quot;pickle&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IOManager</span><span class="p">:</span> <span class="o">...</span>
-</code></pre></div>
-<p><strong>Parameters:</strong>
-- <code>store</code>: an existing <code>Store</code> instance. The caller owns its lifecycle.
-- <code>serializer</code>: <code>"pickle"</code> (default), <code>"json"</code>, <code>"parquet"</code>, or a custom
-  <code>Serializer</code> object.</p>
-<p><strong>Postconditions:</strong>
-- Returns an <code>IOManager</code> instance wrapping the Store.
-- The Store is not closed by the IO manager.</p>
-<p><strong>Raises:</strong>
-- <code>ValueError</code> when <code>serializer</code> is an unrecognized string.</p>
+<h2 id="rec-007-per-backend-extension-contract">REC-007: Per-Backend Extension Contract<a class="headerlink" href="#rec-007-per-backend-extension-contract" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> Registering a fixture with <code>cassette_profile=&lt;PROFILE&gt;</code>
+(a field on the fixture registry record, TEST-004) is the <em>single
+registration act</em>. The profile declares the family's cassette directory,
+the fixture-id → canonical-cassette-suffix aliases (live and replay ids
+collapse to one shared cassette file), the native filters, the named
+redaction rules, the optional pre-signed policy, the forbidden-pattern
+additions, and the optional vcrpy matcher override.</p>
+<p>In return the core provides: cassette-directory routing, cassette-name
+normalisation, the missing-cassette skip (TEST-007), the scrub config,
+and inclusion in both audit gates (REC-006). There is no second
+registration point; the one cross-check — a profile-bearing fixture must
+appear in its profile's aliases — fails loud at routing-map build, and a
+vcr-marked test whose fixture carries no profile fails loud rather than
+falling back. Fixtures without a profile are invisible to all cassette
+machinery.</p>
 <hr />
-<h2 id="v2-dagster-config-driven-store">v2: Dagster-Config-Driven Store<a class="headerlink" href="#v2-dagster-config-driven-store" title="Permanent link">&para;</a></h2>
-<h3 id="dag-012-dagsterstoreresource-builds-store">DAG-012: DagsterStoreResource Builds Store<a class="headerlink" href="#dag-012-dagsterstoreresource-builds-store" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>DagsterStoreResource</code> is a <code>ConfigurableResource</code> with fields:
-- <code>backend_type: str</code> — registered backend type identifier
-- <code>backend_options: dict[str, Any]</code> — kwargs for backend constructor (default <code>{}</code>)
-- <code>root_path: str</code> — Store root path (default <code>""</code>)</p>
-<p><code>setup_for_execution</code> constructs the backend via the factory registry and creates a <code>Store</code>. <code>get_store()</code> returns the cached Store instance.</p>
-<p><strong>Postcondition:</strong> After <code>setup_for_execution</code>, <code>get_store()</code> returns a functional Store.</p>
-<h3 id="dag-013-dagsterstoreresource-teardown">DAG-013: DagsterStoreResource Teardown<a class="headerlink" href="#dag-013-dagsterstoreresource-teardown" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>teardown_after_execution</code> calls <code>store.close()</code> on the cached Store and resets the internal reference to <code>None</code>. If called before <code>setup_for_execution</code> (no Store exists), it is a no-op — does not raise.</p>
-<h3 id="dag-014-unknown-backend-type">DAG-014: Unknown Backend Type<a class="headerlink" href="#dag-014-unknown-backend-type" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>setup_for_execution</code> with an unregistered <code>backend_type</code> raises <code>ValueError</code> with a message containing the unknown type name and the list of registered types.</p>
-<h3 id="dag-015-remotestoreiomanager-factory">DAG-015: RemoteStoreIOManager Factory<a class="headerlink" href="#dag-015-remotestoreiomanager-factory" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>RemoteStoreIOManager</code> is a <code>ConfigurableIOManagerFactory</code> with fields:
-- <code>backend_type: str</code> — registered backend type identifier
-- <code>backend_options: dict[str, Any]</code> — kwargs for backend constructor (default <code>{}</code>)
-- <code>root_path: str</code> — Store root path (default <code>""</code>)
-- <code>serializer: str</code> — serializer name (default <code>"pickle"</code>)</p>
-<p><code>setup_for_execution</code> constructs the Store (same as <code>DagsterStoreResource</code>).
-<code>teardown_after_execution</code> closes the Store.
-<code>create_io_manager</code> returns an <code>IOManager</code> instance backed by the Store.</p>
-<p><strong>Raises:</strong> <code>ValueError</code> when <code>serializer</code> is an unrecognized string (same as DAG-011).</p>
-<h3 id="dag-016-remotestoreiomanager-roundtrip">DAG-016: RemoteStoreIOManager Roundtrip<a class="headerlink" href="#dag-016-remotestoreiomanager-roundtrip" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> An object written via <code>handle_output</code> through the <code>RemoteStoreIOManager</code>-created IO manager can be read back via <code>load_input</code> with the same asset key.</p>
-<h3 id="dag-017-dagster_dataset_io_manager-factory">DAG-017: dagster_dataset_io_manager Factory<a class="headerlink" href="#dag-017-dagster_dataset_io_manager-factory" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">dagster_dataset_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">Store</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IOManager</span><span class="p">:</span> <span class="o">...</span>
-</code></pre></div>
-<p>Returns an IO manager that uses <code>ParquetDatasetStore</code> for dataset-level I/O. Accepts DataFrames (pandas, polars, Arrow Table) on <code>handle_output</code> and returns Arrow Tables on <code>load_input</code>.</p>
-<p><strong>Raises:</strong> <code>ModuleNotFoundError</code> when <code>pyarrow</code> is not installed, with message containing <code>"pip install 'remote-store[dagster,arrow]'"</code>.</p>
-<h3 id="dag-018-dataset-io-manager-path">DAG-018: Dataset IO Manager Path<a class="headerlink" href="#dag-018-dataset-io-manager-path" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The dataset key is derived from <code>context.asset_key.path</code> (joined with <code>/</code>) plus the partition key when partitioned. No file extension — datasets are directories.</p>
-<table>
-<thead>
-<tr>
-<th>Asset key</th>
-<th>Partition</th>
-<th>Dataset key</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>["data", "orders"]</code></td>
-<td><em>(none)</em></td>
-<td><code>data/orders</code></td>
-</tr>
-<tr>
-<td><code>["data", "orders"]</code></td>
-<td><code>"2026-01"</code></td>
-<td><code>data/orders/2026-01</code></td>
-</tr>
-</tbody>
-</table>
-<h3 id="dag-019-dataset-mode-via-remotestoreiomanager">DAG-019: Dataset Mode via RemoteStoreIOManager<a class="headerlink" href="#dag-019-dataset-mode-via-remotestoreiomanager" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>RemoteStoreIOManager(backend_type=..., serializer="parquet-dataset")</code> creates an IO manager that uses <code>ParquetDatasetStore</code> instead of the bytes-based Serializer protocol.</p>
-<hr />
-<h2 id="multi-partition-loading">Multi-Partition Loading<a class="headerlink" href="#multi-partition-loading" title="Permanent link">&para;</a></h2>
-<h3 id="dag-020-load_input-with-multiple-partition-keys">DAG-020: load_input with Multiple Partition Keys<a class="headerlink" href="#dag-020-load_input-with-multiple-partition-keys" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When <code>load_input</code> receives an <code>InputContext</code> with multiple
-partition keys (e.g. a downstream asset consuming a time-window aggregation
-of an upstream partitioned asset), both <code>_RemoteStoreIOManagerImpl</code> and
-<code>_DatasetIOManagerImpl</code> return <code>dict[str, Any]</code> mapping each partition key
-to its deserialized object.</p>
-<p><strong>Behaviour:</strong></p>
-<ol>
-<li>If <code>context.has_asset_partitions</code> is true <strong>and</strong>
-   <code>len(context.asset_partition_keys) &gt; 1</code>:</li>
-<li>For each key in <code>context.asset_partition_keys</code>, derive the storage
-     path (or dataset key) using the asset key plus that partition key.</li>
-<li>Read and deserialize each partition independently.</li>
-<li>Return <code>{partition_key: deserialized_object, ...}</code>.</li>
-<li>Otherwise (single or no partition): existing behaviour — return a single
-   deserialized object.</li>
-</ol>
-<p><strong>Applies to:</strong> both the bytes-serializer IO manager (<code>_RemoteStoreIOManagerImpl</code>)
-and the dataset IO manager (<code>_DatasetIOManagerImpl</code>).</p>
-<p><strong>Raises:</strong> The first missing partition raises immediately (no partial results).
-The bytes-serializer IO manager raises <code>NotFound</code>; the dataset IO manager
-raises <code>DatasetIncomplete</code> (from <code>ext.parquet</code>) when the <code>_SUCCESS</code> marker
-is absent.</p>
-<p><strong>Note:</strong> <code>handle_output</code> remains single-partition per Dagster convention —
-Dagster calls <code>handle_output</code> once per partition key. Multi-partition
-aggregation only applies on the <code>load_input</code> side.</p>
-<hr />
-<h2 id="v3-compute-log-manager">v3: Compute Log Manager<a class="headerlink" href="#v3-compute-log-manager" title="Permanent link">&para;</a></h2>
-<p><code>RemoteStoreComputeLogManager</code> is a Dagster
-<a href="https://docs.dagster.io/api/dagster/internals"><code>ComputeLogManager</code></a> that
-captures op/step <code>stdout</code> / <code>stderr</code> and persists it to any remote-store
-backend. Unlike the <code>IOManager</code> (a resource), it is a Dagster <em>instance</em>
-component wired in <code>dagster.yaml</code>, so Dagster instantiates it from a config
-dict rather than from a live <code>Store</code>. It subclasses Dagster's
-<code>TruncatingCloudStorageComputeLogManager</code> (capture-locally-then-upload
-machinery, partial-upload polling, 50 MB upload truncation) and
-<code>ConfigurableClass</code> (<code>dagster.yaml</code> plumbing). Design: RFC-0014.</p>
-<h3 id="dag-021-configurableclass-plumbing">DAG-021: ConfigurableClass Plumbing<a class="headerlink" href="#dag-021-configurableclass-plumbing" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>RemoteStoreComputeLogManager</code> subclasses
-<code>TruncatingCloudStorageComputeLogManager</code> and <code>ConfigurableClass</code>. It is
-referenced by string from <code>dagster.yaml</code> (<code>module: remote_store.ext.dagster</code>,
-<code>class: RemoteStoreComputeLogManager</code>), so the import path is part of the
-public contract. The <code>ConfigurableClass</code> hooks are:</p>
+<h2 id="rec-008-async-transport-capture">REC-008: Async-Transport Capture<a class="headerlink" href="#rec-008-async-transport-capture" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> What vcrpy can capture per async HTTP stack is pinned, not
+assumed:</p>
 <ul>
-<li><code>config_type()</code> returns a config schema with fields:</li>
+<li><strong>httpx</strong> (the Graph backend): vcrpy patches <code>httpx.AsyncClient</code>
+  directly, including <code>stream()</code> — no transport shim. Proven by the
+  streaming record-then-replay-offline test in the fixtures package.</li>
+<li><strong>aiohttp via azure.core</strong> (the async Azure backend): vcrpy's aiohttp
+  stub drops streamed bodies on record and deadlocks on replay, so the
+  async Azure fixtures inject <code>AsyncioRequestsTransport</code> (requests/urllib3
+  in a thread pool) through the backend's existing <code>client_options</code> —
+  production code unchanged. The live fixture injects it only while
+  recording (the runner exports <code>_RS_CASSETTE_RECORDING=1</code>); the replay
+  fixture always uses it.</li>
 </ul>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>backend_type</code></td>
-<td><code>StringSource</code></td>
-<td>yes</td>
-<td>—</td>
-</tr>
-<tr>
-<td><code>backend_options</code></td>
-<td><code>Permissive</code> dict</td>
-<td>no</td>
-<td><code>{}</code></td>
-</tr>
-<tr>
-<td><code>root_path</code></td>
-<td><code>StringSource</code></td>
-<td>no</td>
-<td><code>""</code></td>
-</tr>
-<tr>
-<td><code>local_dir</code></td>
-<td><code>StringSource</code></td>
-<td>no</td>
-<td>system temp dir</td>
-</tr>
-<tr>
-<td><code>prefix</code></td>
-<td><code>StringSource</code></td>
-<td>no</td>
-<td><code>"dagster"</code></td>
-</tr>
-<tr>
-<td><code>skip_empty_files</code></td>
-<td><code>bool</code></td>
-<td>no</td>
-<td><code>false</code></td>
-</tr>
-<tr>
-<td><code>upload_interval</code></td>
-<td><code>Noneable(int)</code></td>
-<td>no</td>
-<td><code>None</code></td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li><code>inst_data</code> (property) returns the <code>ConfigurableClassData</code> passed to the
-  constructor, or <code>None</code> when constructed directly.</li>
-<li><code>from_config_value(inst_data, config_value)</code> returns
-  <code>cls(inst_data=inst_data, **config_value)</code>.</li>
-</ul>
-<h3 id="dag-022-store-construction-and-capability-validation">DAG-022: Store Construction and Capability Validation<a class="headerlink" href="#dag-022-store-construction-and-capability-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> the constructor builds its own <code>Store</code> from config via the
-shared <code>_build_store(backend_type, backend_options, root_path)</code> helper (the
-same helper used by <code>DagsterStoreResource</code> and <code>RemoteStoreIOManager</code>). After
-construction it validates that the backend declares every capability the
-manager needs: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>METADATA</code>, and <code>LIST</code>, queried via
-<code>store.supports(...)</code>.</p>
-<p><strong>Raises:</strong> <code>ValueError</code> if <code>backend_type</code> is not registered, if the backend
-constructor rejects <code>backend_options</code> (both from <code>_build_store</code>), or if any
-required capability is missing — the message names the missing capabilities.
-When a required capability is missing the Store is closed before the error is
-raised.</p>
-<h3 id="dag-023-local_manager-and-upload_interval-properties">DAG-023: <code>local_manager</code> and <code>upload_interval</code> Properties<a class="headerlink" href="#dag-023-local_manager-and-upload_interval-properties" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>local_manager</code> returns a <code>LocalComputeLogManager</code> rooted at
-<code>local_dir</code> (the configured directory, or the system temp directory when
-unset). Capture is performed against this local manager before upload.
-<code>upload_interval</code> returns the configured interval in seconds, or <code>None</code> when
-unset or zero — <code>None</code> disables the partial-upload polling thread (no live
-tailing).</p>
-<h3 id="dag-024-remote-path-scheme">DAG-024: Remote Path Scheme<a class="headerlink" href="#dag-024-remote-path-scheme" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> the Store-relative path for one captured log stream is:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>{prefix}/storage/{*log_key[:-1]}/{log_key[-1]}.{ext}[.partial]
-</code></pre></div>
-<p>where <code>ext</code> is <code>out</code> for <code>ComputeIOType.STDOUT</code> and <code>err</code> for
-<code>ComputeIOType.STDERR</code> (Dagster's <code>IO_TYPE_EXTENSION</code>), and the <code>.partial</code>
-suffix is appended for in-progress partial uploads. Empty path segments (e.g.
-an empty <code>prefix</code>) are dropped. The Store's <code>root_path</code> is a separate
-namespace prefix and is <strong>not</strong> embedded in this derivation — identical to the
-path-derivation contract for the IOManager (DAG-005).</p>
-<table>
-<thead>
-<tr>
-<th><code>log_key</code></th>
-<th><code>io_type</code></th>
-<th><code>partial</code></th>
-<th>Path (default <code>prefix="dagster"</code>)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>["run1", "compute_logs", "step_a"]</code></td>
-<td><code>STDOUT</code></td>
-<td><code>False</code></td>
-<td><code>dagster/storage/run1/compute_logs/step_a.out</code></td>
-</tr>
-<tr>
-<td><code>["run1", "compute_logs", "step_a"]</code></td>
-<td><code>STDERR</code></td>
-<td><code>True</code></td>
-<td><code>dagster/storage/run1/compute_logs/step_a.err.partial</code></td>
-</tr>
-<tr>
-<td><code>["report"]</code></td>
-<td><code>STDOUT</code></td>
-<td><code>False</code></td>
-<td><code>dagster/storage/report.out</code></td>
-</tr>
-</tbody>
-</table>
-<h3 id="dag-025-_upload_file_obj">DAG-025: <code>_upload_file_obj</code><a class="headerlink" href="#dag-025-_upload_file_obj" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>_upload_file_obj(data, log_key, io_type, partial=False)</code> writes
-the captured local log file to the Store at the DAG-024 path via
-<code>store.write(path, data, overwrite=True)</code>, where <code>data</code> is the open binary
-file object. When <code>skip_empty_files</code> is set, or the upload is <code>partial</code>, a
-zero-byte local file is not uploaded.</p>
-<h3 id="dag-026-download_from_cloud_storage">DAG-026: <code>download_from_cloud_storage</code><a class="headerlink" href="#dag-026-download_from_cloud_storage" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>download_from_cloud_storage(log_key, io_type, partial=False)</code>
-reads the Store object at the DAG-024 path via <code>store.read(path)</code> and streams
-it into the local staging file
-<code>local_manager.get_captured_local_path(log_key, ext, partial=partial)</code>,
-creating the parent directory if needed. This is how the Dagster webserver
-serves logs for a completed run whose worker is gone.</p>
-<h3 id="dag-027-cloud_storage_has_logs">DAG-027: <code>cloud_storage_has_logs</code><a class="headerlink" href="#dag-027-cloud_storage_has_logs" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>cloud_storage_has_logs(log_key, io_type, partial=False)</code>
-returns <code>store.is_file(path)</code> for the DAG-024 path.</p>
-<h3 id="dag-028-display_path_for_type-download_url_for_type">DAG-028: <code>display_path_for_type</code> / <code>download_url_for_type</code><a class="headerlink" href="#dag-028-display_path_for_type-download_url_for_type" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>display_path_for_type(log_key, io_type)</code> returns
-<code>store.native_path(path)</code> for the DAG-024 path — a human-readable location for
-the Dagster UI — once capture is complete, and <code>None</code> otherwise.
-<code>download_url_for_type(log_key, io_type)</code> returns <code>None</code>: remote-store has no
-URL-minting primitive, so the Dagster webserver streams log bytes through
-itself via <code>get_log_data</code> (the same behaviour as <code>LocalComputeLogManager</code>).</p>
-<h3 id="dag-029-delete_logs">DAG-029: <code>delete_logs</code><a class="headerlink" href="#dag-029-delete_logs" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>delete_logs</code> deletes both the local copies (via
-<code>local_manager.delete_logs</code>) and the Store copies.</p>
-<ul>
-<li>Called with <code>log_key</code>: deletes the Store object for each <code>io_type</code>
-  (<code>STDOUT</code>, <code>STDERR</code>) × each partial variant (<code>False</code>, <code>True</code>) via
-  <code>store.delete(path, missing_ok=True)</code>.</li>
-<li>Called with <code>prefix</code>: deletes the Store folder
-  <code>{prefix}/storage/{*prefix}</code> via
-  <code>store.delete_folder(folder, recursive=True, missing_ok=True)</code>.</li>
-</ul>
-<p><strong>Raises:</strong> a <code>dagster._check</code> failure when neither <code>log_key</code> nor <code>prefix</code> is
-passed — matching <code>LocalComputeLogManager.delete_logs</code>.</p>
-<h3 id="dag-030-on_subscribe-on_unsubscribe">DAG-030: <code>on_subscribe</code> / <code>on_unsubscribe</code><a class="headerlink" href="#dag-030-on_subscribe-on_unsubscribe" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> the manager holds a <code>PollingComputeLogSubscriptionManager</code>.
-<code>on_subscribe</code> delegates to its <code>add_subscription</code>, <code>on_unsubscribe</code> to its
-<code>remove_subscription</code>. This drives the Dagster UI's live-tail polling.</p>
-<h3 id="dag-031-get_log_keys_for_log_key_prefix">DAG-031: <code>get_log_keys_for_log_key_prefix</code><a class="headerlink" href="#dag-031-get_log_keys_for_log_key_prefix" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>get_log_keys_for_log_key_prefix(log_key_prefix, io_type)</code>
-lists the files under <code>{prefix}/storage/{*log_key_prefix}</code> via
-<code>store.list_files</code> and returns one log key <code>[*log_key_prefix, filebase]</code> per
-file whose extension matches <code>io_type</code> (<code>out</code> for <code>STDOUT</code>, <code>err</code> for
-<code>STDERR</code>). Partial-upload files (<code>.partial</code>) are excluded. Returns an empty
-list when the prefix contains no matching files. This enables the Dagster
-UI's per-run log-file listing.</p>
-<h3 id="dag-032-lifecycle">DAG-032: Lifecycle<a class="headerlink" href="#dag-032-lifecycle" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> the manager is a process-lifetime singleton. The <code>Store</code> is
-built once in <code>__init__</code> and closed in <code>dispose()</code>, which also disposes the
-<code>PollingComputeLogSubscriptionManager</code> and the <code>LocalComputeLogManager</code>.</p>
-<h3 id="dag-033-credential-masking-in-_build_store">DAG-033: Credential Masking in <code>_build_store</code><a class="headerlink" href="#dag-033-credential-masking-in-_build_store" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>_build_store</code> wraps any value in <code>backend_options</code> whose key
-name is in <code>_SENSITIVE_KEYS</code> (the authoritative set in <code>remote_store._config</code>,
-not re-enumerated here per principle 4) in a <code>Secret</code> before passing it to the
-backend constructor, so credentials are masked in <code>repr()</code> and tracebacks.
-Wrapping is applied to a copy; the caller's <code>backend_options</code> mapping is not
-mutated. Because <code>_build_store</code> is the shared construction helper, this masking
-applies equally to <code>DagsterStoreResource</code> (DAG-012) and <code>RemoteStoreIOManager</code>
-(DAG-015). It reuses the exact <code>_SENSITIVE_KEYS</code> set that
-<code>RegistryConfig._from_dict</code> applies, so the two config paths mask the same keys.</p>
-<p><strong>Scope note:</strong> the <code>ConfigurableClass</code> <code>inst_data</code> config-YAML fragment is
-owned and serialised by Dagster, not by <code>_build_store</code>; masking it is out of
-scope. Credentials in <code>dagster.yaml</code> should be supplied through environment
-indirection where the field type allows it.</p>
+<p><strong>Fidelity caveat:</strong> under the shim, defects living purely in
+<code>AioHttpTransport</code> itself are invisible to replay; the live Stage-3
+fixture remains the source of truth for that layer.</p>
 
 
 
@@ -11001,7 +9924,7 @@ indirection where the field type allows it.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../030-write-text/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 030: write_text Specification">
+          <a href="../048-testing-architecture/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 048: Spec 048 — Testing Architecture">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -11011,27 +9934,11 @@ indirection where the field type allows it.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                030: write_text Specification
+                048: Spec 048 — Testing Architecture
               </div>
             </div>
           </a>
         
-        
-          
-          <a href="../032-http-backend/" class="md-footer__link md-footer__link--next" aria-label="Next: 032: HTTP Backend Specification">
-            <div class="md-footer__title">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              <div class="md-ellipsis">
-                032: HTTP Backend Specification
-              </div>
-            </div>
-            <div class="md-footer__button md-icon">
-              
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
-            </div>
-          </a>
         
       </nav>
     

@@ -16,6 +16,8 @@
         <link rel="prev" href="../047-docs-framework-tooling/">
       
       
+        <link rel="next" href="../049-live-recording-architecture/">
+      
       
         
       
@@ -9623,6 +9625,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../049-live-recording-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    049: Spec 049 — Live Recording Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10108,8 +10138,11 @@ the live fixture remains the source of truth. If a cassette is
 missing for a test, the replay fixture skips that parametrize id
 rather than failing.</p>
 <p><strong>Implementation choice</strong> (cassette tech, scrubbing rules, async
-pipeline coverage) is deferred to the implementing BK item. This
-spec fixes the contract, not the mechanism.</p>
+pipeline coverage) is specified separately: this spec fixes the
+contract, not the mechanism. See
+<a href="../049-live-recording-architecture/">spec 049</a> for the recording
+transport — the scrub core, per-backend cassette profiles, pre-signed
+URL policy, and audit gates.</p>
 <p><strong>Scope:</strong> <a href="#test-008-replay-scope-is-http-transport-only">TEST-008</a>
 narrows this invariant — see its "Noted exception — S3" paragraph for
 the one HTTP backend that does not ship a <code>&lt;backend&gt;_replay</code> fixture.</p>
@@ -10331,6 +10364,22 @@ back via <code>@pytest.mark.spec("TEST-NNN")</code> per
             </div>
           </a>
         
+        
+          
+          <a href="../049-live-recording-architecture/" class="md-footer__link md-footer__link--next" aria-label="Next: 049: Spec 049 — Live Recording Architecture">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                049: Spec 049 — Live Recording Architecture
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
         
       </nav>
     
