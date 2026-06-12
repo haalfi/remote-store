@@ -2448,10 +2448,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#upload-spooling-and-tmpdir" class="md-nav__link">
+  <a href="#spooling-and-tmpdir" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Upload spooling and TMPDIR
+        Spooling and TMPDIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sharepoint-backed-drives-are-less-exercised" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SharePoint-backed drives are less exercised
       
     </span>
   </a>
@@ -2490,6 +2501,17 @@
     <span class="md-ellipsis">
       
         Capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extensions-sync-vs-async" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extensions: sync vs async
       
     </span>
   </a>
@@ -10038,10 +10060,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#upload-spooling-and-tmpdir" class="md-nav__link">
+  <a href="#spooling-and-tmpdir" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Upload spooling and TMPDIR
+        Spooling and TMPDIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sharepoint-backed-drives-are-less-exercised" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SharePoint-backed drives are less exercised
       
     </span>
   </a>
@@ -10080,6 +10113,17 @@
     <span class="md-ellipsis">
       
         Capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extensions-sync-vs-async" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extensions: sync vs async
       
     </span>
   </a>
@@ -10440,6 +10484,14 @@ tokens from <a href="https://learn.microsoft.com/en-us/entra/msal/python/"><code
 string, so it is constructed directly and used through <code>AsyncStore</code>. For the
 one-time credential and app-registration setup, follow the
 <a href="../graph-setup/">Microsoft Graph access setup</a> guide first.</p>
+<div class="admonition note">
+<p class="admonition-title">Verification coverage</p>
+<p>The backend is live-verified against <strong>consumer OneDrive</strong> (device-code
+auth). SharePoint and OneDrive for Business drives go through the same
+Graph API and are covered by mocked tests, but are less exercised in
+practice — see the <a href="#operational-caveats">operational caveats</a> for the
+known SharePoint-specific behaviours.</p>
+</div>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[graph]&quot;</span>
 </code></pre></div>
@@ -10447,20 +10499,30 @@ one-time credential and app-registration setup, follow the
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <p>A backend instance targets one drive, identified by an opaque <code>drive_id</code>.
 Resolve the id once at wiring time, then hand it to the backend:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.aio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncStore</span><span class="p">,</span> <span class="n">GraphAuth</span><span class="p">,</span> <span class="n">GraphBackend</span><span class="p">,</span> <span class="n">GraphUtils</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># 1. A token provider. Device-code (interactive) auth against a personal</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1">#    Microsoft account needs only tenant + client id — no secret.</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">auth</span> <span class="o">=</span> <span class="n">GraphAuth</span><span class="p">(</span><span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;consumers&quot;</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;&lt;entra-app-id&gt;&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># 2. Resolve the target drive (&quot;me&quot; = the signed-in user&#39;s OneDrive).</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">drive_id</span> <span class="o">=</span> <span class="n">GraphUtils</span><span class="o">.</span><span class="n">resolve_drive_id</span><span class="p">(</span><span class="s2">&quot;me&quot;</span><span class="p">,</span> <span class="n">token_provider</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># 3. Construct the backend and use it through AsyncStore.</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">GraphBackend</span><span class="p">(</span><span class="n">drive_id</span><span class="p">,</span> <span class="n">token_provider</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="k">async</span> <span class="k">with</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;Documents&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;col1,col2</span><span class="se">\n</span><span class="s2">1,2</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.aio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncStore</span><span class="p">,</span> <span class="n">GraphAuth</span><span class="p">,</span> <span class="n">GraphBackend</span><span class="p">,</span> <span class="n">GraphUtils</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="c1"># 1. A token provider. Device-code (interactive) auth against a personal</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="c1">#    Microsoft account needs only tenant + client id — no secret.</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">auth</span> <span class="o">=</span> <span class="n">GraphAuth</span><span class="p">(</span><span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;consumers&quot;</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;&lt;entra-app-id&gt;&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="c1"># 2. Resolve the target drive (&quot;me&quot; = the signed-in user&#39;s OneDrive).</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="c1">#    Inside async code, use the async resolver — the sync</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="c1">#    GraphUtils.resolve_drive_id runs its own event loop internally and</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="c1">#    raises RuntimeError when called from a running one.</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">drive_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">GraphUtils</span><span class="o">.</span><span class="n">aresolve_drive_id</span><span class="p">(</span><span class="s2">&quot;me&quot;</span><span class="p">,</span> <span class="n">token_provider</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="c1"># 3. Construct the backend and use it through AsyncStore.</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">backend</span> <span class="o">=</span> <span class="n">GraphBackend</span><span class="p">(</span><span class="n">drive_id</span><span class="p">,</span> <span class="n">token_provider</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;Documents&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>        <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;col1,col2</span><span class="se">\n</span><span class="s2">1,2</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>        <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </code></pre></div>
 <p><code>token_provider</code> is any <code>Callable[[], str]</code> or <code>Callable[[], Awaitable[str]]</code>
 returning a bearer token; <code>GraphAuth</code> is the built-in MSAL implementation but
@@ -10536,6 +10598,10 @@ human-meaningful target into the opaque <code>drive_id</code> the backend needs:
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">token_provider</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">)</span>
 </code></pre></div>
+<p>The sync <code>resolve_drive_id</code> is for synchronous wiring code (config loading,
+CLI setup): it runs its own event loop internally, so calling it from inside
+a running event loop raises <code>RuntimeError</code>. Inside <code>async def</code> code, always
+use <code>await GraphUtils.aresolve_drive_id(...)</code>.</p>
 <p>A <code>drive_id</code> is immutable for the life of a backend instance — point a second
 <code>GraphBackend</code> at a different drive rather than mutating one.</p>
 <h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
@@ -10606,7 +10672,7 @@ human-meaningful target into the opaque <code>drive_id</code> the backend needs:
 </tbody>
 </table>
 <h2 id="operational-caveats">Operational caveats<a class="headerlink" href="#operational-caveats" title="Permanent link">&para;</a></h2>
-<h3 id="upload-spooling-and-tmpdir">Upload spooling and <code>TMPDIR</code><a class="headerlink" href="#upload-spooling-and-tmpdir" title="Permanent link">&para;</a></h3>
+<h3 id="spooling-and-tmpdir">Spooling and <code>TMPDIR</code><a class="headerlink" href="#spooling-and-tmpdir" title="Permanent link">&para;</a></h3>
 <p>When you <code>write()</code> an <code>AsyncIterator[bytes]</code> of unknown length, Graph's
 upload-session protocol requires the total size up front, so the backend
 spools the stream to a <code>SpooledTemporaryFile</code> (system temp, no explicit
@@ -10616,6 +10682,19 @@ the spill by setting <strong><code>TMPDIR</code></strong> (or the platform equiv
 large unknown-length streams. Passing <code>bytes</code> instead of an iterator avoids
 the spool pass entirely. Spill events are logged at DEBUG with the marker
 <code>graph.upload.spool_spilled</code>.</p>
+<p>The same concern exists on the <strong>read side</strong>: the backend does not declare
+<code>SEEKABLE_READ</code>, so <code>read_seekable()</code> — which the <code>ext.arrow</code> / <code>ext.parquet</code>
+extensions use for large files (through the
+<a href="#extensions-sync-vs-async">sync adapter</a>) — is synthesised by spooling the
+entire file to the temp volume before the consumer can seek. Reading a large
+Parquet file over Graph therefore needs temp space for the whole file; size
+<code>TMPDIR</code> accordingly.</p>
+<h3 id="sharepoint-backed-drives-are-less-exercised">SharePoint-backed drives are less exercised<a class="headerlink" href="#sharepoint-backed-drives-are-less-exercised" title="Permanent link">&para;</a></h3>
+<p>Live verification runs against consumer OneDrive only. SharePoint-backed
+drives have known divergences the backend already accounts for — some ignore
+HTTP range requests (see <a href="#streaming">Streaming</a>) — and others that the live
+tier cannot reach. Treat SharePoint/business deployments as less-travelled
+ground and validate your workload before relying on it in production.</p>
 <h3 id="copy_timeoutnone-is-unbounded-by-default"><code>copy_timeout=None</code> is unbounded by default<a class="headerlink" href="#copy_timeoutnone-is-unbounded-by-default" title="Permanent link">&para;</a></h3>
 <p>Graph performs <code>copy()</code> (and sometimes <code>move()</code>) asynchronously: the backend
 polls a monitor URL until completion. With the default <code>copy_timeout=None</code>
@@ -10633,9 +10712,42 @@ with the (query-stripped) monitor URL, poll count, and last status.</p>
 <code>metadata=</code> raises <code>CapabilityNotSupported</code>; <code>{}</code> / <code>None</code> are no-ops.</p>
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
 <p>Supports all capabilities except <code>GLOB</code>, <code>SEEKABLE_READ</code>, <code>ATOMIC_MOVE</code>, and
-<code>USER_METADATA</code>. For glob, use the portable <code>ext.glob.glob_files()</code> fallback
-(Graph is <code>LIST</code>-capable). See the
+<code>USER_METADATA</code>. For glob, the portable <code>ext.glob.glob_files()</code> fallback works
+(Graph is <code>LIST</code>-capable) — but only through the sync adapter, since the
+<code>ext.*</code> suite is sync-only (see <a href="#extensions-sync-vs-async">below</a>). See the
 <a href="../../../reference/capabilities-matrix/">capabilities matrix</a> for full details.</p>
+<h2 id="extensions-sync-vs-async">Extensions: sync vs async<a class="headerlink" href="#extensions-sync-vs-async" title="Permanent link">&para;</a></h2>
+<p>The extension ecosystem is split between the two Store surfaces, and the
+async side is much smaller:</p>
+<table>
+<thead>
+<tr>
+<th>Extension surface</th>
+<th>Native <code>AsyncStore</code></th>
+<th>Sync <code>Store</code> (via adapter)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>aio.ext.write</code> — <code>write_with_hash</code></td>
+<td>Yes</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="../../../reference/api/extensions/"><code>ext.*</code></a> — the sync suite (glob, cache, arrow, …)</td>
+<td>—</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<p>Because <code>GraphBackend</code> is async-only, a native <code>AsyncStore</code> consumer has no
+<code>ext.*</code> surface at all — only <code>aio.ext.write.write_with_hash</code>. To use a sync
+extension over Graph, wrap the backend in
+<a href="../../async-sync-bridges/"><code>AsyncBackendSyncAdapter</code></a> and drive it through a
+sync <code>Store</code>. That works, but every call then hops through a bridged event
+loop and forfeits the native async streaming this backend exists to provide —
+reserve it for extension features you actually need (e.g. an occasional
+<code>glob_files()</code> or a Parquet read), not as the default way to use the backend.</p>
 <h2 id="streaming">Streaming<a class="headerlink" href="#streaming" title="Permanent link">&para;</a></h2>
 <p><code>AsyncStore.read()</code> returns a forward-only <code>AsyncIterator[bytes]</code> streamed from
 the item's pre-authenticated download URL. Some SharePoint-backed drives ignore
@@ -11099,6 +11211,14 @@ unread byte with a <code>Range</code> request, provided the <code>eTag</code> is
           </div>
         </li>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access to the
+item (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
             –
           <div class="doc-md-description">
@@ -11153,6 +11273,22 @@ in one place.</p>
             <p>If the path names a folder.</p>
           </div>
         </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access to the
+item (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>As for <code>read</code> (missing URL, expiry, eTag change,
+host or transport failure).</p>
+          </div>
+        </li>
     </ul>
 
 
@@ -11182,6 +11318,26 @@ in one place.</p>
 <code>NotFound</code>.</p>
 
 
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access to the
+item (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>On throttling, 5xx, or transport failure.</p>
+          </div>
+        </li>
+    </ul>
+
+
     </div>
 
 </div>
@@ -11205,6 +11361,26 @@ in one place.</p>
 
         <p>Return <code>True</code> if <em>path</em> exists and carries the <code>file</code> facet.</p>
 <p>A missing item returns <code>False</code> (the 404 is suppressed).</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access to the
+item (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>On throttling, 5xx, or transport failure.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -11231,6 +11407,26 @@ in one place.</p>
         <p>Return <code>True</code> if <em>path</em> exists and carries the <code>folder</code> facet.</p>
 <p>A missing item returns <code>False</code> (the 404 is suppressed). The drive root
 (<code>""</code>) carries the <code>folder</code> facet and reports <code>True</code>.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access to the
+item (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>On throttling, 5xx, or transport failure.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -11281,6 +11477,21 @@ is left unset.</p>
             <p>If the path names a folder.</p>
           </div>
         </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access to the
+item (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>On throttling, 5xx, or transport failure.</p>
+          </div>
+        </li>
     </ul>
 
 
@@ -11325,6 +11536,27 @@ become <code>FileInfo</code>, in the order Graph returns them. A missing or file
 path yields nothing.</p>
 
 
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access
+(401/403), surfaced during iteration.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>On throttling, 5xx, or transport failure,
+surfaced during iteration.</p>
+          </div>
+        </li>
+    </ul>
+
+
     </div>
 
 </div>
@@ -11362,6 +11594,27 @@ ignored; otherwise <code>recursive=True</code> walks the subtree unbounded and t
 default lists only immediate files. A missing or file path yields nothing.</p>
 
 
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access
+(401/403), surfaced during iteration.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>On throttling, 5xx, or transport failure,
+surfaced during iteration.</p>
+          </div>
+        </li>
+    </ul>
+
+
     </div>
 
 </div>
@@ -11390,6 +11643,27 @@ default lists only immediate files. A missing or file path yields nothing.</p>
 
         <p>List immediate subfolders under <em>path</em>.</p>
 <p>A missing or file path yields nothing.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access
+(401/403), surfaced during iteration.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>On throttling, 5xx, or transport failure,
+surfaced during iteration.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -11439,6 +11713,21 @@ timestamp.</p>
             –
           <div class="doc-md-description">
             <p>If the path names a file.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access to the
+item (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>On throttling, 5xx, or transport failure.</p>
           </div>
         </li>
     </ul>
@@ -11516,6 +11805,14 @@ backend directly (<code>USER_METADATA</code> is not declared).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access to the
+item (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
             –
           <div class="doc-md-description">
@@ -11576,7 +11873,8 @@ exposed in the exception.</p>
 <p>Graph's own write paths already provide the no-partial-content guarantee
 (<code>PUT /content</code> is service-atomic; an upload session commits only on the
 final chunk), so no client-side temp-rename is taken. The <code>WriteResult</code>
-shape and the <code>metadata=</code> gate are inherited verbatim from <code>write</code>.</p>
+shape, the <code>metadata=</code> gate, and the raised exceptions are inherited
+verbatim from <code>write</code>.</p>
 
 
     </div>
@@ -11620,6 +11918,21 @@ contents). A missing item is <code>NotFound</code> unless <code>missing_ok</code
             –
           <div class="doc-md-description">
             <p>If the path names a folder (use <code>delete_folder</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access to the
+item (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>On throttling, 5xx, or transport failure.</p>
           </div>
         </li>
     </ul>
@@ -11682,6 +11995,21 @@ folder is empty (via the item's <code>folder.childCount</code>, falling back to 
             <p>If non-empty and <code>recursive</code> is <code>False</code>.</p>
           </div>
         </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access to the
+item (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>On throttling, 5xx, or transport failure.</p>
+          </div>
+        </li>
     </ul>
 
 
@@ -11740,6 +12068,14 @@ folder or descends through a file ancestor.</p>
           <div class="doc-md-description">
             <p>If <code>dst</code> exists, <code>src != dst</code>, and <code>overwrite</code> is
 <code>False</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access to the
+item (401/403).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -11808,6 +12144,14 @@ folder or descends through a file ancestor.</p>
           <div class="doc-md-description">
             <p>If <code>dst</code> exists, <code>src != dst</code>, and <code>overwrite</code> is
 <code>False</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access to the
+item (401/403).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

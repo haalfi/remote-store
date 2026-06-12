@@ -9953,9 +9953,9 @@ OneDrive for Business (<code>/users/{id}/drive</code>). A certificate may be use
 instead of a secret; see the
 <a href="https://learn.microsoft.com/entra/identity-platform/v2-oauth2-client-creds-grant-flow">Microsoft client-credentials reference</a>.</p>
 <h2 id="resolve-the-drive-id">Resolve the drive id<a class="headerlink" href="#resolve-the-drive-id" title="Permanent link">&para;</a></h2>
-<p>The forthcoming Graph backend will take one opaque <code>drive_id</code>. Its public
-helper <code>GraphUtils.resolve_drive_id(...)</code> (shipping with the backend) will
-accept three target shapes and return that id:</p>
+<p>The Graph backend takes one opaque <code>drive_id</code>. Its public helper
+<code>GraphUtils.resolve_drive_id(...)</code> accepts three target shapes and returns
+that id:</p>
 <ul>
 <li><strong><code>"me"</code></strong> — the signed-in user's OneDrive, via <code>GET /me/drive</code>.
   Delegated (device-code) only.</li>
@@ -9964,50 +9964,61 @@ accept three target shapes and return that id:</p>
 <li><strong>A Teams channel</strong> <code>{team_id, channel_id}</code> mapping — via the channel's
   <code>filesFolder</code>. Works with app-only.</li>
 </ul>
-<p>The verification snippet below resolves the <code>"me"</code> shape directly so you can
-capture a <code>drive_id</code> before any backend code is installed.</p>
-<h2 id="verify-and-capture-the-drive-id-device-code">Verify and capture the drive id (device-code)<a class="headerlink" href="#verify-and-capture-the-drive-id-device-code" title="Permanent link">&para;</a></h2>
-<p>This snippet completes a device-code sign-in and reads back your drive id.
-It uses <code>msal</code> and <code>httpx</code> (the libraries the built-in <code>GraphAuth</code> helper
-will wrap), so it works before the <code>graph</code> extra is installed. It is
-hand-written rather than sourced from <code>examples/snippets/</code> because it needs
-real interactive credentials and cannot run in CI.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span><span class="o">,</span><span class="w"> </span><span class="nn">msal</span>
+<p>With the backend installed, resolving and capturing the id is three lines:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># pip install &quot;remote-store[graph]&quot;</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.aio</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphAuth</span><span class="p">,</span> <span class="n">GraphUtils</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">CLIENT_ID</span> <span class="o">=</span> <span class="s2">&quot;&lt;GRAPH_CLIENT_ID&gt;&quot;</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">AUTHORITY</span> <span class="o">=</span> <span class="s2">&quot;https://login.microsoftonline.com/consumers&quot;</span>  <span class="c1"># personal accounts</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">SCOPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Files.ReadWrite&quot;</span><span class="p">,</span> <span class="s2">&quot;User.Read&quot;</span><span class="p">]</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">CACHE_PATH</span> <span class="o">=</span> <span class="s2">&quot;graph_token_cache.json&quot;</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">cache</span> <span class="o">=</span> <span class="n">msal</span><span class="o">.</span><span class="n">SerializableTokenCache</span><span class="p">()</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">CACHE_PATH</span><span class="p">):</span>
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">cache</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">CACHE_PATH</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
-<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
-<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">app</span> <span class="o">=</span> <span class="n">msal</span><span class="o">.</span><span class="n">PublicClientApplication</span><span class="p">(</span><span class="n">CLIENT_ID</span><span class="p">,</span> <span class="n">authority</span><span class="o">=</span><span class="n">AUTHORITY</span><span class="p">,</span> <span class="n">token_cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
-<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>
-<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="k">if</span> <span class="n">app</span><span class="o">.</span><span class="n">get_accounts</span><span class="p">():</span>
-<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">acquire_token_silent</span><span class="p">(</span><span class="n">SCOPES</span><span class="p">,</span> <span class="n">account</span><span class="o">=</span><span class="n">app</span><span class="o">.</span><span class="n">get_accounts</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
-<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
-<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>    <span class="n">flow</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">initiate_device_flow</span><span class="p">(</span><span class="n">scopes</span><span class="o">=</span><span class="n">SCOPES</span><span class="p">)</span>
-<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">flow</span><span class="p">[</span><span class="s2">&quot;message&quot;</span><span class="p">],</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>        <span class="c1"># open the URL, enter the code</span>
-<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">acquire_token_by_device_flow</span><span class="p">(</span><span class="n">flow</span><span class="p">)</span>
-<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>
-<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="k">if</span> <span class="s2">&quot;access_token&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;error_description&quot;</span><span class="p">,</span> <span class="s2">&quot;auth failed&quot;</span><span class="p">))</span>
-<a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a><span class="k">if</span> <span class="n">cache</span><span class="o">.</span><span class="n">has_state_changed</span><span class="p">:</span>
-<a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a>    <span class="nb">open</span><span class="p">(</span><span class="n">CACHE_PATH</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cache</span><span class="o">.</span><span class="n">serialize</span><span class="p">())</span>
-<a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>
-<a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;access_token&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
-<a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a><span class="n">drive</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-<a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a>    <span class="s2">&quot;https://graph.microsoft.com/v1.0/me/drive&quot;</span><span class="p">,</span>
-<a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a>    <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;$select&quot;</span><span class="p">:</span> <span class="s2">&quot;id,driveType,owner,webUrl&quot;</span><span class="p">},</span>
-<a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a>    <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
-<a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a>    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-<a id="__codelineno-6-34" name="__codelineno-6-34" href="#__codelineno-6-34"></a><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
-<a id="__codelineno-6-35" name="__codelineno-6-35" href="#__codelineno-6-35"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;driveType:&quot;</span><span class="p">,</span> <span class="n">drive</span><span class="p">[</span><span class="s2">&quot;driveType&quot;</span><span class="p">])</span>       <span class="c1"># &#39;personal&#39; for consumer OneDrive</span>
-<a id="__codelineno-6-36" name="__codelineno-6-36" href="#__codelineno-6-36"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;GRAPH_DRIVE_ID=&quot;</span> <span class="o">+</span> <span class="n">drive</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">auth</span> <span class="o">=</span> <span class="n">GraphAuth</span><span class="p">(</span><span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;consumers&quot;</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;&lt;GRAPH_CLIENT_ID&gt;&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;GRAPH_DRIVE_ID=&quot;</span> <span class="o">+</span> <span class="n">GraphUtils</span><span class="o">.</span><span class="n">resolve_drive_id</span><span class="p">(</span><span class="s2">&quot;me&quot;</span><span class="p">,</span> <span class="n">token_provider</span><span class="o">=</span><span class="n">auth</span><span class="p">))</span>
+</code></pre></div>
+<p>The first run completes a device-code sign-in in the terminal; <code>GraphAuth</code>
+caches the token, so later runs are non-interactive. If you prefer to
+validate the app registration without installing anything, the hand-rolled
+verification snippet below does the same with raw <code>msal</code> + <code>httpx</code>.</p>
+<h2 id="verify-and-capture-the-drive-id-device-code">Verify and capture the drive id (device-code)<a class="headerlink" href="#verify-and-capture-the-drive-id-device-code" title="Permanent link">&para;</a></h2>
+<p>An alternative to the <code>GraphUtils</code> route above: this snippet completes a
+device-code sign-in and reads back your drive id using <code>msal</code> and <code>httpx</code>
+directly (the libraries the built-in <code>GraphAuth</code> helper wraps), so it works
+without the <code>graph</code> extra installed — useful for verifying the app
+registration in isolation. It is hand-written rather than sourced from
+<code>examples/snippets/</code> because it needs real interactive credentials and
+cannot run in CI.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span><span class="o">,</span><span class="w"> </span><span class="nn">msal</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">CLIENT_ID</span> <span class="o">=</span> <span class="s2">&quot;&lt;GRAPH_CLIENT_ID&gt;&quot;</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">AUTHORITY</span> <span class="o">=</span> <span class="s2">&quot;https://login.microsoftonline.com/consumers&quot;</span>  <span class="c1"># personal accounts</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">SCOPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Files.ReadWrite&quot;</span><span class="p">,</span> <span class="s2">&quot;User.Read&quot;</span><span class="p">]</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">CACHE_PATH</span> <span class="o">=</span> <span class="s2">&quot;graph_token_cache.json&quot;</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="n">cache</span> <span class="o">=</span> <span class="n">msal</span><span class="o">.</span><span class="n">SerializableTokenCache</span><span class="p">()</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">CACHE_PATH</span><span class="p">):</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="n">cache</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">CACHE_PATH</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="n">app</span> <span class="o">=</span> <span class="n">msal</span><span class="o">.</span><span class="n">PublicClientApplication</span><span class="p">(</span><span class="n">CLIENT_ID</span><span class="p">,</span> <span class="n">authority</span><span class="o">=</span><span class="n">AUTHORITY</span><span class="p">,</span> <span class="n">token_cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="k">if</span> <span class="n">app</span><span class="o">.</span><span class="n">get_accounts</span><span class="p">():</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">acquire_token_silent</span><span class="p">(</span><span class="n">SCOPES</span><span class="p">,</span> <span class="n">account</span><span class="o">=</span><span class="n">app</span><span class="o">.</span><span class="n">get_accounts</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>    <span class="n">flow</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">initiate_device_flow</span><span class="p">(</span><span class="n">scopes</span><span class="o">=</span><span class="n">SCOPES</span><span class="p">)</span>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">flow</span><span class="p">[</span><span class="s2">&quot;message&quot;</span><span class="p">],</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>        <span class="c1"># open the URL, enter the code</span>
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">acquire_token_by_device_flow</span><span class="p">(</span><span class="n">flow</span><span class="p">)</span>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="k">if</span> <span class="s2">&quot;access_token&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;error_description&quot;</span><span class="p">,</span> <span class="s2">&quot;auth failed&quot;</span><span class="p">))</span>
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a><span class="k">if</span> <span class="n">cache</span><span class="o">.</span><span class="n">has_state_changed</span><span class="p">:</span>
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>    <span class="nb">open</span><span class="p">(</span><span class="n">CACHE_PATH</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cache</span><span class="o">.</span><span class="n">serialize</span><span class="p">())</span>
+<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a>
+<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;access_token&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a><span class="n">drive</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a>    <span class="s2">&quot;https://graph.microsoft.com/v1.0/me/drive&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a>    <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;$select&quot;</span><span class="p">:</span> <span class="s2">&quot;id,driveType,owner,webUrl&quot;</span><span class="p">},</span>
+<a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a>    <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+<a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a>    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+<a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;driveType:&quot;</span><span class="p">,</span> <span class="n">drive</span><span class="p">[</span><span class="s2">&quot;driveType&quot;</span><span class="p">])</span>       <span class="c1"># &#39;personal&#39; for consumer OneDrive</span>
+<a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;GRAPH_DRIVE_ID=&quot;</span> <span class="o">+</span> <span class="n">drive</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
 </code></pre></div>
 <p>Sign in with the account that owns the target OneDrive. The <code>consumers</code>
 authority rejects work/school accounts, which keeps a personal-account run
@@ -10021,24 +10032,24 @@ tenant, acquire a token with <code>acquire_token_for_client</code>, and call
 variables, loaded from your project <code>.env</code>. The opt-in flag is
 <code>RS_TEST_LIVE_GRAPH=1</code>; the remaining variables differ by flow.</p>
 <p>Device-code (personal account) — no secret:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nv">RS_TEST_LIVE_GRAPH</span><span class="o">=</span><span class="m">1</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nv">GRAPH_CLIENT_ID</span><span class="o">=</span>&lt;your<span class="w"> </span>app<span class="w"> </span>client<span class="w"> </span>id&gt;
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nv">GRAPH_TENANT_ID</span><span class="o">=</span>consumers
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nv">GRAPH_DRIVE_ID</span><span class="o">=</span>&lt;id<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>verification<span class="w"> </span>snippet&gt;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nv">RS_TEST_LIVE_GRAPH</span><span class="o">=</span><span class="m">1</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nv">GRAPH_CLIENT_ID</span><span class="o">=</span>&lt;your<span class="w"> </span>app<span class="w"> </span>client<span class="w"> </span>id&gt;
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nv">GRAPH_TENANT_ID</span><span class="o">=</span>consumers
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nv">GRAPH_DRIVE_ID</span><span class="o">=</span>&lt;id<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>verification<span class="w"> </span>snippet&gt;
 </code></pre></div>
 <p>App-only (work/school tenant) — with secret:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nv">RS_TEST_LIVE_GRAPH</span><span class="o">=</span><span class="m">1</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nv">GRAPH_TENANT_ID</span><span class="o">=</span>&lt;your<span class="w"> </span>tenant<span class="w"> </span>GUID&gt;
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nv">GRAPH_CLIENT_ID</span><span class="o">=</span>&lt;your<span class="w"> </span>app<span class="w"> </span>client<span class="w"> </span>id&gt;
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nv">GRAPH_CLIENT_SECRET</span><span class="o">=</span>&lt;the<span class="w"> </span>secret<span class="w"> </span>from<span class="w"> </span>az<span class="w"> </span>ad<span class="w"> </span>app<span class="w"> </span>credential<span class="w"> </span>reset&gt;
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nv">GRAPH_DRIVE_ID</span><span class="o">=</span>&lt;id<span class="w"> </span>resolved<span class="w"> </span>from<span class="w"> </span>your<span class="w"> </span>SharePoint<span class="w"> </span>or<span class="w"> </span>OneDrive<span class="w"> </span>target&gt;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nv">RS_TEST_LIVE_GRAPH</span><span class="o">=</span><span class="m">1</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nv">GRAPH_TENANT_ID</span><span class="o">=</span>&lt;your<span class="w"> </span>tenant<span class="w"> </span>GUID&gt;
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="nv">GRAPH_CLIENT_ID</span><span class="o">=</span>&lt;your<span class="w"> </span>app<span class="w"> </span>client<span class="w"> </span>id&gt;
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="nv">GRAPH_CLIENT_SECRET</span><span class="o">=</span>&lt;the<span class="w"> </span>secret<span class="w"> </span>from<span class="w"> </span>az<span class="w"> </span>ad<span class="w"> </span>app<span class="w"> </span>credential<span class="w"> </span>reset&gt;
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="nv">GRAPH_DRIVE_ID</span><span class="o">=</span>&lt;id<span class="w"> </span>resolved<span class="w"> </span>from<span class="w"> </span>your<span class="w"> </span>SharePoint<span class="w"> </span>or<span class="w"> </span>OneDrive<span class="w"> </span>target&gt;
 </code></pre></div>
 <p><code>.env</code> is gitignored. Never commit <code>GRAPH_CLIENT_SECRET</code> or the MSAL token
 cache (it holds a refresh token).</p>
-<p>The built-in <code>GraphAuth</code> helper, when it ships with the Graph backend, will
-persist its MSAL cache under your user config directory
-(<code>platformdirs.user_config_dir("remote-store")</code>). The verification snippet
-above uses a local cache file instead, to stay self-contained.</p>
+<p>The built-in <code>GraphAuth</code> helper persists its MSAL cache under your user
+config directory (<code>platformdirs.user_config_dir("remote-store")</code>). The
+hand-rolled verification snippet above uses a local cache file instead, to
+stay self-contained.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <p><strong><code>AADSTS50076</code> on app creation or sign-in.</strong> Per-resource MFA. Sign in to
 the specific tenant: <code>az login --tenant &lt;TENANT_ID&gt;</code>.</p>
@@ -10058,7 +10069,7 @@ licenses; use a personal account (device-code) or add an M365 license to
 the tenant.</p>
 <h2 id="cleanup">Cleanup<a class="headerlink" href="#cleanup" title="Permanent link">&para;</a></h2>
 <p>Delete the app registration when you are done:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>az<span class="w"> </span>ad<span class="w"> </span>app<span class="w"> </span>delete<span class="w"> </span>--id<span class="w"> </span>&lt;APP_ID&gt;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>az<span class="w"> </span>ad<span class="w"> </span>app<span class="w"> </span>delete<span class="w"> </span>--id<span class="w"> </span>&lt;APP_ID&gt;
 </code></pre></div>
 <p>There is nothing to delete on the drive side — no resource was provisioned;
 you used an existing OneDrive or SharePoint library. To revoke a personal
