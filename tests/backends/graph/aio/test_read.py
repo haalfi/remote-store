@@ -14,7 +14,7 @@ import httpx
 import pytest
 import respx
 
-from remote_store._errors import BackendUnavailable, InvalidPath, NotFound
+from remote_store._errors import BackendUnavailable, InvalidPath, NotFound, PermissionDenied
 from remote_store.aio.backends._graph.backend import GraphBackend
 from remote_store.aio.backends._graph.items import parse_graph_datetime
 
@@ -238,6 +238,36 @@ class TestRead:
                     pass
 
     @respx.mock
+    @pytest.mark.spec("GR-012")
+    async def test_folder_raises_on_first_anext_before_any_byte(self) -> None:
+        # read() is an async generator, so _get_item + the folder check defer to
+        # the first __anext__ pull. Pin that timing (audit-016 L7): the very first
+        # pull raises InvalidPath, so no byte is ever yielded before the directory
+        # check fires. Driving __anext__ directly distinguishes a first-iteration
+        # raise from a raise after partial yields — the bare async-for above cannot.
+        respx.get(_meta_url("a")).mock(return_value=httpx.Response(200, json=_folder_item()))
+        async with _make() as backend:
+            agen = backend.read("a")
+            with pytest.raises(InvalidPath):
+                await agen.__anext__()
+            await agen.aclose()
+
+    @respx.mock
+    @pytest.mark.spec("GR-031")
+    async def test_missing_raises_on_first_anext_before_any_byte(self) -> None:
+        # The not-found mapping defers to the first pull the same way: a missing
+        # item raises NotFound on the first __anext__, before any byte and before
+        # the download URL is ever reached (the download route is left unmocked).
+        respx.get(_meta_url("gone.txt")).mock(
+            return_value=httpx.Response(404, json={"error": {"code": "itemNotFound"}})
+        )
+        async with _make() as backend:
+            agen = backend.read("gone.txt")
+            with pytest.raises(NotFound):
+                await agen.__anext__()
+            await agen.aclose()
+
+    @respx.mock
     @pytest.mark.spec("GR-031")
     async def test_missing_raises_not_found(self) -> None:
         respx.get(_meta_url("gone.txt")).mock(
@@ -278,6 +308,36 @@ class TestRead:
         respx.get(_DOWNLOAD).mock(side_effect=httpx.ConnectError("boom"))
         async with _make() as backend:
             with pytest.raises(BackendUnavailable):
+                async for _ in backend.read("a.txt"):
+                    pass
+
+
+class TestPermissionDeniedPerMethod:
+    """GR-030: a ``403 accessDenied`` surfaces as ``PermissionDenied`` through the
+    read-path data-plane methods, not just centrally at ``graph_send``.
+
+    The 403→PermissionDenied mapping lives once in ``classify_graph_error``
+    (asserted in ``test_http_mapping.py`` / ``test_http.py``). These pin that the
+    centralised mapping actually reaches the public methods unchanged — the
+    per-method guard audit-016 L7 found missing on the data plane.
+    """
+
+    @respx.mock
+    @pytest.mark.spec("GR-030")
+    async def test_get_file_info_maps_403(self) -> None:
+        respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(403, json={"error": {"code": "accessDenied"}}))
+        async with _make() as backend:
+            with pytest.raises(PermissionDenied):
+                await backend.get_file_info("a.txt")
+
+    @respx.mock
+    @pytest.mark.spec("GR-030")
+    async def test_read_maps_403(self) -> None:
+        # The metadata GET 403s before the stream starts; no download is attempted
+        # (the pre-signed route is left unmocked).
+        respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(403, json={"error": {"code": "accessDenied"}}))
+        async with _make() as backend:
+            with pytest.raises(PermissionDenied):
                 async for _ in backend.read("a.txt"):
                     pass
 
