@@ -22848,11 +22848,13 @@ a <code>401</code> refreshes through MSAL's cache.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><span title="PermissionError">PermissionError</span></code>
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
             <p>If MSAL returns no token (auth failure); the
-<code>error_description</code> is included, never the secret.</p>
+<code>error_description</code> is included, never the secret. A typed
+<code>RemoteStoreError</code> so a failure surfacing mid-<code>read</code> /
+<code>write</code> stays catchable via <code>except RemoteStoreError</code>.</p>
           </div>
         </li>
     </ul>

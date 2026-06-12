@@ -11342,8 +11342,10 @@ host or transport failure).</p>
     <div class="doc doc-contents ">
 
         <p>Return <code>True</code> if a file or folder exists at <em>path</em>.</p>
-<p>A 404 <code>itemNotFound</code> is suppressed to <code>False</code>; never raises
-<code>NotFound</code>.</p>
+<p>Any 404 — including a drive-identity <code>resourceNotFound</code> — is
+suppressed to <code>False</code>; never raises <code>NotFound</code>. A misconfigured
+or deleted drive therefore probes as missing rather than raising;
+it surfaces on the first error-raising operation.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11388,7 +11390,8 @@ item (401/403).</p>
     <div class="doc doc-contents ">
 
         <p>Return <code>True</code> if <em>path</em> exists and carries the <code>file</code> facet.</p>
-<p>A missing item returns <code>False</code> (the 404 is suppressed).</p>
+<p>A missing item returns <code>False</code> (any 404 is suppressed, including a
+drive-identity <code>resourceNotFound</code>).</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11433,8 +11436,9 @@ item (401/403).</p>
     <div class="doc doc-contents ">
 
         <p>Return <code>True</code> if <em>path</em> exists and carries the <code>folder</code> facet.</p>
-<p>A missing item returns <code>False</code> (the 404 is suppressed). The drive root
-(<code>""</code>) carries the <code>folder</code> facet and reports <code>True</code>.</p>
+<p>A missing item returns <code>False</code> (any 404 is suppressed, including a
+drive-identity <code>resourceNotFound</code>). The drive root (<code>""</code>) carries
+the <code>folder</code> facet and reports <code>True</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
