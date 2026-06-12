@@ -919,7 +919,10 @@ and by the resource scope of the failing URL:
   — whatever its `error.code` — is suppressed and returns `False` per
   BE-004 and BE-005 (probe scope). A drive-identity `404` therefore
   cannot escape a probe as `BackendUnavailable`; a misconfigured or
-  deleted drive surfaces on the first error-raising operation instead.
+  deleted drive surfaces on the first error-raising operation instead
+  (as `BackendUnavailable` when Graph reports `resourceNotFound`, or
+  as `NotFound` when it reports `itemNotFound` — see the verification
+  note below).
 - For error-raising operations, a `404` at drive scope (the
   `/drives/{drive_id}` resource itself) or carrying
   `error.code == "resourceNotFound"` — Graph's drive-identity code,
@@ -927,6 +930,21 @@ and by the resource scope of the failing URL:
   item-by-path URL embeds the drive — maps to `BackendUnavailable`:
   the configured drive is deleted or misconfigured, which is a
   backend identity failure, not a per-item condition.
+
+**Verification note (live, consumer OneDrive, 2026-06):** a
+nonexistent drive id returned `404 itemNotFound` on **both** URL
+forms — the item-by-path address and the bare `/drives/{drive_id}`
+resource; `resourceNotFound` was not observed. Two consequences.
+First, `error.code` is not a reliable scope signal in either
+direction, which is why the probe scope suppresses every `404`
+rather than trusting the code. Second, the `resourceNotFound` →
+`BackendUnavailable` escalation is defensive: it rests on Graph's
+documented error contract and business/SharePoint-tier reports, not
+on verified consumer wire behaviour, and on a consumer drive a dead
+drive surfaces as `NotFound` from error-raising operations and
+`False` from probes. SharePoint-backed drives cannot be
+live-verified on the current consumer-only tier (see the
+coverage-disclosure paragraph in § Integration-only).
 - The backend does **not** attempt to discriminate "404 masking
   403" (Graph occasionally returns `404 itemNotFound` where `403
   accessDenied` would be semantically correct on restricted
