@@ -91,10 +91,11 @@ and the highest ID already in this file, then take the next integer. Run
 
 ID-127 (Microsoft Graph / OneDrive / SharePoint) follow-ups, in execution order;
 full findings in [audit-016](audits/audit-016-graph-backend-review.md).
-**Order:** cheap doc fixes (BK-265) → correctness + tests (BK-266/267) →
+**Order:** correctness + tests (BK-266/267) →
 blocked or hygiene tail (BK-259/261/268/283). Each item's own rationale lives in
-its body. (Security item BK-263 — the upload-session credential leak — and the
-load-bearing CI-coverage item BK-262 — replay-able cassettes — shipped first; see
+its body. (Security item BK-263 — the upload-session credential leak — the
+load-bearing CI-coverage item BK-262 — replay-able cassettes — the spec/RFC
+sync BK-264, and the guide/docstring sweep BK-265 shipped first; see
 BACKLOG-DONE.md.)
 
 - [ ] **BK-283 — Drive the Graph example snippet from replayed cassettes in CI**
@@ -109,25 +110,6 @@ BACKLOG-DONE.md.)
   replayed path into `run_examples.py` so the snippet is covered without the
   live opt-in. Carried forward from BK-262 (the consolidated former BK-260);
   was gated on the cassette-replay core landing first, which it now has.
-
-- [ ] **BK-265 — Graph guide & docstring accuracy**
-  spec: GR-058, GR-001 · effort: S · audience: user.api, user.site
-  User-facing doc fixes (M4 / M5 are the cheapest, highest-value):
-  - `graph-setup.md` is written in the future tense ("the forthcoming Graph backend
-    will…") and steers readers to hand-roll `msal` instead of the shipped
-    `pip install "remote-store[graph]"` + `GraphUtils.resolve_drive_id` — rewrite to
-    present tense, reframe the hand-rolled snippet as an alternative.
-  - The `graph.md` headline Usage snippet calls the sync `resolve_drive_id` (which
-    runs `asyncio.run`) inside an `async with`, so it throws `RuntimeError` on
-    copy-paste — fix to `await aresolve_drive_id` or resolve outside the async scope
-    (the runnable example already does it right).
-  - Add an async-vs-sync extension note/matrix: a native-async Graph consumer has no
-    `ext.*` surface (only `aio.ext.write`).
-  - Complete the `Raises:` clauses (`PermissionDenied`, consistent
-    `BackendUnavailable`) across public methods.
-  - Add a "verified against consumer OneDrive; SharePoint/business less exercised"
-    caveat, and note read-side `TMPDIR` spooling for large arrow/parquet reads.
-  Audit-016 M4 / M5 / M6 / L5 / L6 / L9.
 
 - [ ] **BK-266 — Graph backend correctness edges**
   spec: GR-031, GR-044 · effort: S · audience: user.api, library.maintainer

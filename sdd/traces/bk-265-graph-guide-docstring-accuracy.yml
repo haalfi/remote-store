@@ -1,0 +1,85 @@
+id: BK-265
+title: "Graph guide & docstring accuracy"
+trigger: >-
+  Audit-016 found the Graph user-facing docs lagging the shipped backend:
+  graph-setup.md spoke of a "forthcoming" backend in the future tense (M4),
+  graph.md's headline Usage snippet called the sync resolve_drive_id inside
+  an async context and raised RuntimeError on copy-paste (M5), the
+  async-vs-sync extension cliff was documented nowhere a consumer would see
+  it (M6), public-method Raises: clauses omitted PermissionDenied and listed
+  BackendUnavailable inconsistently (L5), the consumer-OneDrive-only live
+  verification had no guide caveat (L6), and read-side TMPDIR spooling for
+  large arrow/parquet reads was undocumented (L9).
+source_items:
+  - BK-265
+audience:
+  - user.site
+  - user.api_docs
+expected_ripples:
+  - sdd/backlogid.json
+co_shipped_items: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-265"
+        read_type: gate
+        extract: "Scope: six audit findings, all doc/docstring; no behavior change"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Docstring ripple (graph regen), CHANGELOG required for user.* audience, trace mandatory, no tracker IDs in published prose"
+        outcome: ok
+      - file: sdd/audits/audit-016-graph-backend-review.md
+        section: "M4, M5, M6, L5, L6, L9"
+        read_type: gate
+        extract: "Exact findings with file/line evidence for each doc gap"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: docs-src/guides/backends/graph.md
+        section: "(full)"
+        read_type: reference
+        extract: "Usage snippet to fix; placement for extension matrix, caveats, spooling note"
+        outcome: ok
+      - file: docs-src/guides/backends/graph-setup.md
+        section: "Resolve the drive id, Verify and capture the drive id, Wire credentials"
+        read_type: reference
+        extract: "Future-tense spots to rewrite; hand-rolled snippet to reframe as alternative"
+        outcome: ok
+      - file: examples/backends/graph_backend.py
+        section: "(full)"
+        read_type: reference
+        extract: "Canonical await aresolve_drive_id usage the guide snippet must match"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "public data-plane methods"
+        read_type: reference
+        extract: "Existing Raises: blocks to complete with PermissionDenied / BackendUnavailable"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "classify_graph_error"
+        read_type: reference
+        extract: "Confirm 401/403 map to PermissionDenied on every authenticated request"
+        outcome: ok
+      - file: docs-src/guides/async-sync-bridges.md
+        section: "AsyncBackendSyncAdapter"
+        read_type: reference
+        extract: "Link target for the extension-matrix adapter guidance"
+        outcome: ok
+      - file: docs-src/reference/capabilities-matrix.md
+        section: "capability table"
+        read_type: reference
+        extract: "Table convention: Yes for supported, em dash for not"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist"
+        read_type: verify
+        extract: "Docstring → graph.json regen; CHANGELOG one-liner; BACKLOG-DONE move + gen-backlogid"
+        outcome: ok
