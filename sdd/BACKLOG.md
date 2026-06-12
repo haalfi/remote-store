@@ -91,7 +91,7 @@ and the highest ID already in this file, then take the next integer. Run
 
 ID-127 (Microsoft Graph / OneDrive / SharePoint) follow-ups, in execution order;
 full findings in [audit-016](audits/audit-016-graph-backend-review.md).
-**Order:** cheap spec/doc fixes (BK-264/265) → correctness + tests (BK-266/267) →
+**Order:** cheap doc fixes (BK-265) → correctness + tests (BK-266/267) →
 blocked or hygiene tail (BK-259/261/268/283). Each item's own rationale lives in
 its body. (Security item BK-263 — the upload-session credential leak — and the
 load-bearing CI-coverage item BK-262 — replay-able cassettes — shipped first; see
@@ -109,26 +109,6 @@ BACKLOG-DONE.md.)
   replayed path into `run_examples.py` so the snippet is covered without the
   live opt-in. Carried forward from BK-262 (the consolidated former BK-260);
   was gated on the cassette-replay core landing first, which it now has.
-
-- [ ] **BK-264 — Graph spec / RFC reality-sync**
-  spec: GR-001, GR-005, GR-018, GR-019, GR-034 · effort: S · audience: library.maintainer
-  Sweep `sdd/specs/044-graph-backend.md` + `sdd/rfcs/rfc-0010-graph-backend.md`
-  where the spec lags shipped code (all `sdd/`-only):
-  - GR-018 / GR-019 say `WriteResult.size` comes from the driveItem body, but the
-    code uses the written byte count (the better choice — amend the spec, not the
-    code; principle 5).
-  - `base_path` (GR-058) is missing from the GR-001 signature block and the GR-005
-    validation list, and unmentioned in the RFC.
-  - The Integration-only env-var list and RFC Stage 3 describe a client-credentials
-    tier (4 vars incl. `GRAPH_CLIENT_SECRET`); the shipped tier is
-    device-code / consumer (3 vars, no secret).
-  - GR-034's "Retry-After propagated via the error's context" describes a surface
-    that does not exist — reword to the in-loop honouring that GR-048 already
-    states correctly.
-  - Disclose in the Integration-only section that the conformance matrix is
-    skip-only and the integration tier never runs in automated CI, and that the
-    live tier is consumer-OneDrive-only (no SharePoint/business coverage).
-  Audit-016 M1 / M2 / M3 / L4 / L6 / H2.
 
 - [ ] **BK-265 — Graph guide & docstring accuracy**
   spec: GR-058, GR-001 · effort: S · audience: user.api, user.site

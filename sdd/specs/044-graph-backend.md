@@ -40,6 +40,7 @@ GraphBackend(
     retry: RetryPolicy | None = None,
     upload_chunk_size: int = 10 * 1024 * 1024,  # 10 MiB
     copy_timeout: float | None = None,
+    base_path: str = "",
     client_options: dict[str, Any] | None = None,
 )
 ```
@@ -53,6 +54,9 @@ GraphBackend(
   values raise `ValueError`.
 - `drive_id` is a non-empty string; empty or whitespace-only values
   raise `ValueError`.
+- `base_path` scopes every operation under a drive subfolder; the
+  empty default targets the drive root. Semantics and normalisation
+  in GR-058.
 
 ### GR-002: Backend Name
 
@@ -73,7 +77,8 @@ GraphBackend(
   chunk response return a full `driveItem` body carrying `size`, `eTag`,
   `lastModifiedDateTime`, and (for SharePoint-backed drives)
   version identifiers. `WriteResult` is populated from that response per
-  WR-004 — no post-write `HEAD` round trip needed (see GR-018, GR-019).
+  WR-004 — no post-write `HEAD` round trip needed — except `size`, which
+  is the byte count the backend wrote (WR-003; see GR-018, GR-019).
 - `ATOMIC_MOVE` is withheld because Graph move may go async (GR-027);
   atomicity is not guaranteed.
 - `SEEKABLE_READ` is withheld. The Graph content stream is
@@ -130,7 +135,8 @@ first use.
 ### GR-005: Construction Validation
 
 **Invariant:** `drive_id` must be a non-empty string. `token_provider`
-must be callable. `upload_chunk_size` must be a positive multiple of
+must be callable. `base_path` must be a `str` (any string is accepted;
+trimming and segment handling per GR-058). `upload_chunk_size` must be a positive multiple of
 320 KiB (Graph's alignment requirement) and strictly less than 60 MiB
 (Graph rejects any single upload-session chunk PUT at or above that
 per-request ceiling). `copy_timeout`, when set, must be a positive
@@ -437,8 +443,12 @@ per ASYNC-021) with content size <= 4 MiB uses
   writes.
 - The write is atomic at the service level.
 - The returned `WriteResult` carries `source="native"` (WR-004) with
-  `size`, `etag`, `last_modified`, and `version_id` populated from the
-  `driveItem` body Graph returns in the `200 OK` response. `digest` is
+  `etag`, `last_modified`, and `version_id` populated from the
+  `driveItem` body Graph returns in the `200 OK` response. `size` is
+  the byte count the backend wrote (WR-003) — authoritative even when
+  the response body omits or under-reports `size` — and may therefore
+  diverge from a later `get_file_info().size`, which reads
+  `driveItem.size` (GR-013). `digest` is
   left `None` until a future extension selects a canonical hash from
   `driveItem.file.hashes` (see GR-049). `metadata` echoes the caller's
   input mapping when one is supplied (WR-012), `None` otherwise.
@@ -543,9 +553,11 @@ There is no separate `content_length` keyword on `AsyncBackend.write()`
 - The upload is atomic on commit: the item becomes visible only
   after the final chunk succeeds.
 - The returned `WriteResult` carries `source="native"` (WR-004) with
-  `size`, `etag`, `last_modified`, and (where present) `version_id`
+  `etag`, `last_modified`, and (where present) `version_id`
   populated from the `driveItem` body Graph returns in the **final**
-  chunk's `201 Created` / `200 OK` response. `digest` is left `None`
+  chunk's `201 Created` / `200 OK` response. `size` is the byte count
+  the backend wrote (WR-003), not re-derived from the body — same rule
+  and rationale as GR-018. `digest` is left `None`
   per GR-049. `metadata` echoes the caller's input mapping when one is
   supplied (WR-012), `None` otherwise.
 - On unrecoverable failure, the session is deleted as a best-effort
@@ -927,8 +939,10 @@ to `BackendUnavailable` and are retryable per `RetryPolicy`.
 ### GR-034: 429 activityLimitReached
 
 **Invariant:** `429 activityLimitReached` maps to
-`BackendUnavailable`. The `Retry-After` header value is propagated
-via the error's context so the retry policy can honour it.
+`BackendUnavailable`. The `Retry-After` header value is honoured
+in-loop by the in-backend retry before the next attempt (GR-048);
+it is not carried on the raised error — `RemoteStoreError` has no
+structured context surface (spec 005; see also GR-045).
 **Postconditions:** No new `RateLimitError` is introduced. The
 five-field `RetryPolicy` drives the in-backend retry (`httpx` has
 no native retry); see RET-015.
@@ -1220,11 +1234,17 @@ its root.
 
 Some invariants cannot be validated against `respx` fixtures because
 they depend on Graph service-imposed behaviour that the mock does
-not reproduce. These IDs require a real tenant. The gate is
-two-layered (matching the Azure live-test pattern): `RS_TEST_LIVE_GRAPH=1`
-**plus** the four credential env vars `GRAPH_TENANT_ID`,
-`GRAPH_CLIENT_ID`, `GRAPH_CLIENT_SECRET`, `GRAPH_DRIVE_ID`. Either
-layer missing → skip cleanly. Marked `@pytest.mark.integration`:
+not reproduce. These IDs require a real tenant. The shipped live
+tier is device-code / consumer (GR-007): delegated permissions
+against a personal Microsoft account, no client secret — the MSAL
+refresh token arrives out of band via the token cache the first
+interactive sign-in writes. The gate is two-layered (matching the
+Azure live-test pattern): the `RS_TEST_LIVE_GRAPH=1` opt-in **plus**
+the three credential env vars `GRAPH_CLIENT_ID`, `GRAPH_TENANT_ID`
+(`consumers`), `GRAPH_DRIVE_ID`. Opt-in absent → skip cleanly;
+opt-in set with a credential var missing → fail loud, not skip — a
+silent skip would read as "tested" when it was not. Marked
+`@pytest.mark.integration`:
 
 - **GR-007** — device-code flow end-to-end. MSAL's device-code
   handshake cannot be meaningfully mocked at the protocol layer.
@@ -1243,3 +1263,16 @@ layer missing → skip cleanly. Marked `@pytest.mark.integration`:
 `respx`-based unit tests cover the request/response mapping for
 every ID, including the ones listed above. Integration runs are the
 only place the service-imposed invariants are exercised.
+
+**Coverage disclosure:** this tier never runs in automated CI. The
+integration module is additionally marked `live`, the default pytest
+addopts carry `-m 'not live'`, and no scheduled live lane exists,
+so it executes only when a maintainer opts in locally. Default CI's
+behavioural coverage of the backend is the `respx` unit suites plus
+the cross-backend conformance matrix replayed from committed
+cassettes (`graph_replay`, Stage 1), which were recorded against
+this same consumer tier. Every live exercise of the backend — this
+tier and the cassette recordings alike — has therefore been
+consumer-OneDrive-only: SharePoint / business-backed drives have no
+live or recorded coverage, and the SharePoint-specific caveats noted
+at GR-018, GR-025, GR-027, and GR-049 are unverified ground.

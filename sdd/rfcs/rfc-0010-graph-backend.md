@@ -64,7 +64,7 @@ gap is the point of this RFC.
 **Name:** `"graph"`
 **Optional extra:** `pip install "remote-store[graph]"`
 **Dependencies:** see ADR-0021 for the locked dependency set.
-**Spec:** `sdd/specs/044-graph-backend.md` (GR-001 through GR-057,
+**Spec:** `sdd/specs/044-graph-backend.md` (GR-001 through GR-058,
 grouped by topic, with later additions slotted under the section
 they belong to rather than appended at the end — IDs are
 allocation-order, not section-order)
@@ -121,6 +121,12 @@ Single `drive_id` per backend instance, required at construction.
 Identity-stable: it never changes for the lifetime of the backend,
 which is important for `ext.cache` safety (the cache key derives from
 backend identity).
+
+An optional `base_path` constructor parameter (added during
+implementation; GR-058) scopes the backend to a drive subfolder:
+keys resolve to `{base_path}/{key}` under the drive root and keys
+returned by listing stay `base_path`-relative, mirroring
+`SFTPBackend.base_path`.
 
 Path-only. Store paths are `/`-rooted POSIX strings. The backend
 translates:
@@ -213,8 +219,9 @@ complete mapping table.
 ### Throttling
 
 Graph throttling is mapped to `BackendUnavailable` with the
-`Retry-After` header value propagated so the retry policy can honour
-it. No new `RateLimitError` is introduced; the existing `RetryPolicy`
+`Retry-After` header value honoured by the in-backend retry loop
+before the next attempt (it is not carried on the raised error; see
+GR-034 / GR-048). No new `RateLimitError` is introduced; the existing `RetryPolicy`
 extension handles the backoff. Because `httpx` has no native retry,
 the backend itself honours the full five-field `RetryPolicy`
 (`max_attempts`, `backoff_base`, `backoff_max`, `jitter`, `timeout`)
@@ -404,14 +411,17 @@ authoritative tier; Stage 1 replay is what runs in default CI.
   shrinks to the operations that don't require streaming and the
   conformance matrix runs against Graph at Stage 3 only — call this
   out explicitly in the impl PR.
-- **Stage 3 — live (`graph_live` fixture).** Gated by
-  `RS_TEST_LIVE_GRAPH=1` **plus** the four credential env vars
-  `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`, `GRAPH_CLIENT_SECRET`,
-  `GRAPH_DRIVE_ID`. Skip cleanly when either layer is missing. This
+- **Stage 3 — live (`graph_live` fixture).** Gated by the
+  `RS_TEST_LIVE_GRAPH=1` opt-in **plus** the three credential env
+  vars `GRAPH_CLIENT_ID`, `GRAPH_TENANT_ID` (`consumers`),
+  `GRAPH_DRIVE_ID`. The shipped tier is device-code / consumer — no
+  client secret; the MSAL token cache the first interactive sign-in
+  writes keeps later runs non-interactive. Missing opt-in skips
+  cleanly; opt-in with a missing credential var fails loud. This
   mirrors the Azure live-test pattern at
   `tests/backends/fixtures/fixtures.toml` and `_live_env.py` —
-  secret-presence alone is deliberately not enough to opt into live
-  runs. Stage 3 is the authoritative tier for any behaviour that
+  credential presence alone is deliberately not enough to opt into
+  live runs. Stage 3 is the authoritative tier for any behaviour that
   depends on Graph service semantics (chunk alignment, real
   throttling with authentic `Retry-After`, real `423 resourceLocked`,
   real `507`/quota responses); Stage 3 discoveries get cassetted

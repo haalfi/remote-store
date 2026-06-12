@@ -1,0 +1,133 @@
+id: BK-264
+title: "Graph spec / RFC reality-sync"
+trigger: >
+  Audit-016 (M1/M2/M3/L4/L6/H2) diagnosed five places where spec
+  044-graph-backend.md and rfc-0010 lagged the shipped ID-127 code:
+  WriteResult.size source, the missing base_path in GR-001/GR-005 and the
+  RFC, a client-credentials live-tier description for a shipped device-code
+  tier, GR-034 naming an error-context surface that does not exist, and an
+  undisclosed CI-coverage / consumer-only-live-verification gap.
+source_items:
+  - BK-264
+audience:
+  - library.maintainer
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-264"
+        read_type: gate
+        extract: "Five sub-items, all framed sdd/-only; audit-016 M1/M2/M3/L4/L6/H2"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: >
+          Spec-section trigger → spec-marked tests + BACKLOG; backlog-item
+          trigger → live trace, audience drives CHANGELOG rule
+        outcome: ok
+      - file: sdd/audits/audit-016-graph-backend-review.md
+        section: "M1, M2, M3, L4, L6, H2, G2 proposal row"
+        read_type: gate
+        extract: >
+          file:line evidence for each finding; G2 disposition. H2's
+          "conformance matrix is skip-only" framing predates BK-262 and
+          needed re-evaluation against current reality
+        outcome: ok
+  - id: verify_reality
+    name: Verify shipped reality against each claim
+    steps:
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "GraphBackend.__init__ + docstring"
+        read_type: gate
+        extract: >
+          base_path: str = "" sits between copy_timeout and client_options;
+          isinstance-str validation raises ValueError — feeds the GR-001
+          signature block and GR-005 list
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/items.py
+        section: "item_to_write_result"
+        read_type: gate
+        extract: >
+          size is the caller-supplied written byte count, authoritative even
+          when the body omits/under-reports; etag/version_id/last_modified
+          from the driveItem body
+        outcome: ok
+      - file: sdd/specs/045-write-result.md
+        section: "WR-003"
+        read_type: reference
+        extract: >
+          WR-003 already mandates size == bytes written on every backend, so
+          the old GR-018/GR-019 wording contradicted spec 045, not just the
+          code — amended spec cites WR-003
+        outcome: ok
+      - file: tests/backends/fixtures/_live_env.py
+        section: "require_graph_live_credentials"
+        read_type: gate
+        extract: >
+          Three vars (GRAPH_CLIENT_ID, GRAPH_TENANT_ID=consumers,
+          GRAPH_DRIVE_ID), no secret; fails loud (not skip) when opt-in set
+          but a var missing — both halves fed the Integration-only rewrite
+        outcome: ok
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "graph_live / graph_replay"
+        read_type: reference
+        extract: "live_creds_env three-var list; graph_replay Stage-1 replay fixture"
+        outcome: ok
+      - file: tests/backends/cassettes/graph/
+        section: "(full)"
+        read_type: gate
+        extract: >
+          118 committed cassettes exist (BK-262 shipped after the audit), so
+          the audit's "matrix is skip-only" disclosure is stale — the
+          disclosure written instead says the matrix replays in default CI
+          and the recordings are consumer-tier
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-262, BK-263"
+        read_type: reference
+        extract: >
+          BK-262 confirms 109-passed Stage-1 replay from consumer-recorded
+          cassettes; BK-263 confirms GR-045 was already amended for the
+          credential-leak fix (no overlap with the GR-034 reword)
+        outcome: ok
+  - id: implement
+    name: Amend spec and RFC
+    steps:
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-001, GR-003, GR-005, GR-018, GR-019, GR-034, Integration-only"
+        read_type: reference
+        extract: >
+          base_path into signature + validation; size-source reword citing
+          WR-003 (plus the GR-003 WRITE_RESULT_NATIVE rationale that repeated
+          the body claim); GR-034 → in-loop Retry-After per GR-048;
+          Integration-only → three-var device-code tier, fail-loud
+          semantics, coverage-disclosure paragraph
+        outcome: ok
+      - file: sdd/rfcs/rfc-0010-graph-backend.md
+        section: "Addressing, Throttling, Test plan Stage 3, spec-range note"
+        read_type: reference
+        extract: >
+          base_path paragraph; Retry-After wording aligned; Stage 3 →
+          three-var device-code tier; GR-001..GR-057 range bumped to GR-058
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist"
+        read_type: verify
+        extract: >
+          Spec-section trigger: test_integration.py's module docstring mirrors
+          the Integration-only section (claimed "four" vars, cited raw spec
+          line numbers already stale before this change) — corrected, which
+          flips the PR gate from lint+docs-gate to hatch run all; no user.*
+          audience so no CHANGELOG
+        outcome: ok
+surprising_ripples:
+  - tests/backends/graph/aio/test_integration.py
