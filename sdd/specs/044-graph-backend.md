@@ -936,21 +936,6 @@ and by the resource scope of the failing URL:
   item-by-path URL embeds the drive — maps to `BackendUnavailable`:
   the configured drive is deleted or misconfigured, which is a
   backend identity failure, not a per-item condition.
-
-**Verification note (live, consumer OneDrive, 2026-06):** a
-nonexistent drive id returned `404 itemNotFound` on **both** URL
-forms — the item-by-path address and the bare `/drives/{drive_id}`
-resource; `resourceNotFound` was not observed. Two consequences.
-First, `error.code` is not a reliable scope signal in either
-direction, which is why the probe scope suppresses every `404`
-rather than trusting the code. Second, the `resourceNotFound` →
-`BackendUnavailable` escalation is defensive: it rests on Graph's
-documented error contract and business/SharePoint-tier reports, not
-on verified consumer wire behaviour, and on a consumer drive a dead
-drive surfaces as `NotFound` from error-raising operations and
-`False` from probes. SharePoint-backed drives cannot be
-live-verified on the current consumer-only tier (see the
-coverage-disclosure paragraph in § Integration-only).
 - The backend does **not** attempt to discriminate "404 masking
   403" (Graph occasionally returns `404 itemNotFound` where `403
   accessDenied` would be semantically correct on restricted
@@ -963,6 +948,21 @@ coverage-disclosure paragraph in § Integration-only).
   drive root always exists, so `False` means the drive itself is
   unreachable) to confirm the drive is reachable, then treat
   `NotFound` as authoritative for the item.
+
+**Verification note (live, consumer OneDrive, 2026-06):** a
+nonexistent drive id returned `404 itemNotFound` on **both** URL
+forms — the item-by-path address and the bare `/drives/{drive_id}`
+resource; `resourceNotFound` was not observed. Two consequences.
+First, `error.code` is not a reliable scope signal in either
+direction, which is why the probe scope suppresses every `404`
+rather than trusting the code. Second, the `resourceNotFound` →
+`BackendUnavailable` escalation is defensive: it rests on Graph's
+documented error contract and business/SharePoint-tier reports, not
+on verified consumer wire behaviour, and on a consumer drive a dead
+drive surfaces as `NotFound` from error-raising operations and
+`False` from probes. SharePoint-backed drives are outside the live
+tier's coverage (see the coverage-disclosure paragraph in
+§ Integration-only).
 
 ### GR-032: 409 nameAlreadyExists
 
