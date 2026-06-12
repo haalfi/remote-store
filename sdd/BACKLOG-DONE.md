@@ -8,6 +8,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-266 — Graph backend correctness edges**
+  spec: GR-031, GR-044, GR-006 · effort: S · audience: user.api, library.maintainer
+  Audit-016 L1 / L3 / M7, three independent fixes shipped together:
+  - **L1**: `classify_graph_error` gained a `"probe"` scope; `exists` /
+    `is_file` / `is_folder` request it via `_get_item(scope="probe")`, so any
+    404 — including a drive-identity `resourceNotFound` — maps to `NotFound`
+    and is suppressed to `False` (BE-004/BE-005). Diverged from the item's
+    literal "scope the mapping to drive scope" sketch per the audit-authority
+    principle: no call site ever passes `scope="drive"`, so `resourceNotFound`
+    is the *only* drive-identity signal and the write path deliberately relies
+    on it (`_write_small` routes its 404 back through the classifier); a
+    strict drive-scope-only mapping would have regressed deleted-drive writes
+    from `BackendUnavailable` to `NotFound`. Error-raising operations keep the
+    escalation; GR-031 amended to authorise both halves.
+  - **L3**: `_short_circuit_self_op` compares `native_path(src) ==
+    native_path(dst)` instead of raw strings, so direct-backend
+    `copy("/a.txt", "a.txt")` short-circuits per GR-044 instead of POSTing and
+    surfacing `AlreadyExists`. GR-044 postcondition added.
+  - **M7**: the bundled `GraphAuth.get_token` raises typed `PermissionDenied`
+    (`backend="graph"`) instead of stdlib `PermissionError`, keeping MSAL's
+    `error_description` and never the secret; GR-006 postcondition added. The
+    device-flow-start `ValueError` (`auth.py`) is deliberately kept — it is a
+    config-shaped failure mirroring `__init__`'s `ValueError`s, and M7 scoped
+    the finding to the no-token path.
+  Trace: `sdd/traces/bk-266-graph-correctness-edges.yml`.
+
 - [x] **BK-265 — Graph guide & docstring accuracy**
   spec: GR-058, GR-001 · effort: S · audience: user.site, user.api_docs
   Audit-016 M4 / M5 / M6 / L5 / L6 / L9. `graph-setup.md` rewritten to present

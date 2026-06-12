@@ -303,6 +303,19 @@ class TestCopy:
 
     @respx.mock
     @pytest.mark.spec("GR-044")
+    async def test_self_copy_unnormalised_paths_short_circuit(self) -> None:
+        # "/a.txt" and "a.txt" address the same item (native_path drops empty
+        # segments), so the self-op equality is over normalised keys — a direct
+        # backend call must short-circuit, not POST and 409.
+        get = respx.get(_ITEM_RE).mock(return_value=httpx.Response(200, json=_file_item()))
+        post = respx.post(_COPY_RE).mock(return_value=httpx.Response(202, headers={"Location": _MONITOR}))
+        async with _make() as backend:
+            await backend.copy("/a.txt", "a.txt")
+        assert get.call_count == 1
+        assert not post.called
+
+    @respx.mock
+    @pytest.mark.spec("GR-044")
     async def test_self_copy_missing_src_raises_not_found(self) -> None:
         respx.get(_ITEM_RE).mock(return_value=httpx.Response(404, json={"error": {"code": "itemNotFound"}}))
         async with _make() as backend:
@@ -450,6 +463,18 @@ class TestMove:
         patch = respx.patch(_MOVE_RE).mock(return_value=httpx.Response(200, json=_file_item()))
         async with _make() as backend:
             await backend.move("a.txt", "a.txt")
+        assert get.call_count == 1
+        assert not patch.called
+
+    @respx.mock
+    @pytest.mark.spec("GR-044")
+    async def test_self_move_unnormalised_paths_short_circuit(self) -> None:
+        # Same normalised-equality contract as the copy twin: "a//b.txt" and
+        # "a/b.txt" are the same item, so no PATCH may be issued.
+        get = respx.get(_ITEM_RE).mock(return_value=httpx.Response(200, json=_file_item()))
+        patch = respx.patch(_MOVE_RE).mock(return_value=httpx.Response(200, json=_file_item()))
+        async with _make() as backend:
+            await backend.move("a//b.txt", "a/b.txt")
         assert get.call_count == 1
         assert not patch.called
 

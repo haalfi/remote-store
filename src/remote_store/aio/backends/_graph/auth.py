@@ -16,6 +16,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from remote_store._config import Secret, _reveal
+from remote_store._errors import PermissionDenied
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -170,8 +171,10 @@ class GraphAuth:
         a ``401`` refreshes through MSAL's cache.
 
         Raises:
-            PermissionError: If MSAL returns no token (auth failure); the
-                ``error_description`` is included, never the secret.
+            PermissionDenied: If MSAL returns no token (auth failure); the
+                ``error_description`` is included, never the secret. A typed
+                ``RemoteStoreError`` so a failure surfacing mid-``read`` /
+                ``write`` stays catchable via ``except RemoteStoreError``.
         """
         result = self._acquire()
         token = result.get("access_token") if isinstance(result, dict) else None
@@ -181,7 +184,7 @@ class GraphAuth:
                 if isinstance(result, dict)
                 else "unknown error"
             )
-            raise PermissionError(f"Graph token acquisition failed: {detail}")
+            raise PermissionDenied(f"Graph token acquisition failed: {detail}", backend="graph")
         self.flush_cache()
         return str(token)
 

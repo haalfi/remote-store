@@ -1,0 +1,108 @@
+id: BK-266
+title: "Graph backend correctness edges"
+trigger: >
+  Audit-016 (L1/L3/M7) diagnosed three small Graph backend correctness gaps:
+  the resourceNotFound->BackendUnavailable mapping applied at any scope and
+  could escape exists()/is_file()/is_folder(); the self-op short-circuit
+  compared raw strings so direct-backend copy("/a.txt", "a.txt") issued a real
+  POST and 409'd; the bundled GraphAuth.get_token raised stdlib
+  PermissionError, uncatchable via except RemoteStoreError.
+source_items:
+  - BK-266
+audience:
+  - user.api
+  - library.maintainer
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 3
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-266"
+        read_type: gate
+        extract: "Three independent fixes; spec anchors GR-031/GR-044; audit-016 L1/L3/M7"
+        outcome: ok
+      - file: sdd/audits/audit-016-graph-backend-review.md
+        section: "L1, L3, M7"
+        read_type: gate
+        extract: "Diagnosis detail: probe escape hazard is latent; self-op masked through Store; M7 scoped to bundled GraphAuth"
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-031, GR-044, GR-006..GR-008"
+        read_type: gate
+        extract: "GR-031 ties resourceNotFound to drive scope; GR-044 self-op is one GET then short-circuit; auth spec does not pin the failure exception type"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "classify_graph_error, graph_send"
+        read_type: gate
+        extract: "scope literal item|drive; no call site ever passes scope=drive — code==resourceNotFound is the only drive-identity signal"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_get_item, exists/is_file/is_folder, _write_small 404 branch, _short_circuit_self_op"
+        read_type: gate
+        extract: "Write path deliberately routes 404 back through classifier to keep resourceNotFound->BackendUnavailable; literal drive-scope-only fix would regress it"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: CLAUDE.md
+        section: "Audits"
+        read_type: reference
+        extract: "Audit prescription is advisory — diverged from the literal 'scope to drive' sketch to a probe-scope suppression so error-raising ops keep the drive-identity signal"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Error-mapping change ripples: spec, backend mapping tests, docstring raised-by, troubleshooting guide"
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/backends/graph/test_http_mapping.py
+        section: "TestClassifyGraphError"
+        read_type: gate
+        extract: "Existing GR-031 cases; probe-scope cases added and seen failing before the fix"
+        outcome: ok
+      - file: tests/backends/graph/aio/test_mutate.py
+        section: "GR-044 self-op tests"
+        read_type: gate
+        extract: "Pattern for one-GET short-circuit assertions; unnormalised-equality cases added and seen failing"
+        outcome: ok
+      - file: tests/backends/graph/aio/test_auth.py
+        section: "test_acquisition_failure_raises"
+        read_type: gate
+        extract: "Flip PermissionError expectation to PermissionDenied; seen failing before the fix"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "classify_graph_error"
+        read_type: gate
+        extract: "Add probe scope: any 404 at probe scope maps to NotFound regardless of error.code"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_get_item / probes / _short_circuit_self_op"
+        read_type: gate
+        extract: "Thread scope through _get_item; probes pass probe; self-op compares native_path forms"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/auth.py
+        section: "get_token"
+        read_type: gate
+        extract: "Raise PermissionDenied(backend=graph) keeping error_description, never the secret; device-flow-start ValueError deliberately kept (config-shaped, mirrors __init__)"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "Error-mapping row: spec amended, mapping tests updated, probe docstrings updated, CHANGELOG entry present; the Tracker-ID-in-published-prose row caught GR-031 citations I had put into the public probe docstrings — rewritten behaviourally per CONTENT-RULES 1+5"
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-031, GR-044, GR-006"
+        read_type: verify
+        extract: "Spec amended same commit: probe suppression, normalised self-op equality, typed auth failure"
+        outcome: ok

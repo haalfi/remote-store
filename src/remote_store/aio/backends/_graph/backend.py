@@ -11,7 +11,7 @@ backend-local ``monitor`` poller when Graph answers ``202 Accepted``).
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeVar
 from urllib.parse import quote, unquote
 
 import httpx
@@ -345,13 +345,16 @@ class GraphBackend(AsyncBackend):
 
     # region: data-plane reads (GR-012, GR-013, GR-031, GR-049)
 
-    async def _get_item(self, path: str) -> dict[str, Any]:
+    async def _get_item(self, path: str, *, scope: Literal["item", "probe"] = "item") -> dict[str, Any]:
         """Fetch the Graph ``driveItem`` body for *path* (one metadata GET).
 
         The single item-by-path metadata round trip shared by the read and
         type-probe operations. A missing item surfaces as ``NotFound`` (404
         ``itemNotFound`` at item scope, mapped by ``graph_send``); drive-scope,
-        transport, and other failures map through the same primitive.
+        transport, and other failures map through the same primitive. The type
+        probes pass ``scope="probe"`` so **every** 404 — including a
+        drive-identity ``resourceNotFound`` — maps to ``NotFound`` and is
+        suppressed to ``False`` instead of escaping as ``BackendUnavailable``.
         """
         response = await graph_send(
             self._client,
@@ -359,7 +362,7 @@ class GraphBackend(AsyncBackend):
             self._item_url(path),
             token_provider=self._token_provider,
             path=path,
-            scope="item",
+            scope=scope,
             retry=self._retry,
         )
         body: dict[str, Any] = response.json()
@@ -544,8 +547,10 @@ class GraphBackend(AsyncBackend):
     async def exists(self, path: str) -> bool:
         """Return ``True`` if a file or folder exists at *path*.
 
-        A 404 ``itemNotFound`` is suppressed to ``False``; never raises
-        ``NotFound``.
+        Any 404 — including a drive-identity ``resourceNotFound`` — is
+        suppressed to ``False``; never raises ``NotFound``. A misconfigured
+        or deleted drive therefore probes as missing rather than raising;
+        it surfaces on the first error-raising operation.
 
         Raises:
             PermissionDenied: If the token is rejected or lacks access to the
@@ -553,7 +558,7 @@ class GraphBackend(AsyncBackend):
             BackendUnavailable: On throttling, 5xx, or transport failure.
         """
         try:
-            await self._get_item(path)
+            await self._get_item(path, scope="probe")
         except NotFound:
             return False
         return True
@@ -561,7 +566,8 @@ class GraphBackend(AsyncBackend):
     async def is_file(self, path: str) -> bool:
         """Return ``True`` if *path* exists and carries the ``file`` facet.
 
-        A missing item returns ``False`` (the 404 is suppressed).
+        A missing item returns ``False`` (any 404 is suppressed, including a
+        drive-identity ``resourceNotFound``).
 
         Raises:
             PermissionDenied: If the token is rejected or lacks access to the
@@ -569,7 +575,7 @@ class GraphBackend(AsyncBackend):
             BackendUnavailable: On throttling, 5xx, or transport failure.
         """
         try:
-            item = await self._get_item(path)
+            item = await self._get_item(path, scope="probe")
         except NotFound:
             return False
         return is_file_item(item)
@@ -577,8 +583,9 @@ class GraphBackend(AsyncBackend):
     async def is_folder(self, path: str) -> bool:
         """Return ``True`` if *path* exists and carries the ``folder`` facet.
 
-        A missing item returns ``False`` (the 404 is suppressed). The drive root
-        (``""``) carries the ``folder`` facet and reports ``True``.
+        A missing item returns ``False`` (any 404 is suppressed, including a
+        drive-identity ``resourceNotFound``). The drive root (``""``) carries
+        the ``folder`` facet and reports ``True``.
 
         Raises:
             PermissionDenied: If the token is rejected or lacks access to the
@@ -586,7 +593,7 @@ class GraphBackend(AsyncBackend):
             BackendUnavailable: On throttling, 5xx, or transport failure.
         """
         try:
-            item = await self._get_item(path)
+            item = await self._get_item(path, scope="probe")
         except NotFound:
             return False
         return is_folder_item(item)
@@ -1106,14 +1113,18 @@ class GraphBackend(AsyncBackend):
 
         Issues the single existence ``GET`` the self-op contract requires: a
         missing ``src`` is ``NotFound`` and a folder ``src`` is ``InvalidPath``,
-        both raised before any mutation. Returns ``True`` when ``src == dst`` (the
-        caller then short-circuits after this one GET), ``False`` otherwise.
+        both raised before any mutation. Returns ``True`` when *src* and *dst*
+        address the same item (the caller then short-circuits after this one
+        GET), ``False`` otherwise. Equality is over the normalised
+        ``native_path`` forms, not the raw strings, so a direct backend call
+        like ``copy("/a.txt", "a.txt")`` is a no-op rather than a real request
+        Graph would 409.
         """
         # BE-019 / BE-021 self-op preconditions; GR-044 single-GET short-circuit.
         src_item = await self._get_item(src)
         if is_folder_item(src_item):
             raise InvalidPath(f"Cannot move/copy — '{src}' is a folder", path=src, backend=self.name)
-        return src == dst
+        return self.native_path(src) == self.native_path(dst)
 
     def _move_copy_body(self, dst: str) -> dict[str, Any]:
         """Build the ``parentReference`` + ``name`` body for a move / copy to *dst*.

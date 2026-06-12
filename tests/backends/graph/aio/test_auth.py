@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 
 from remote_store._config import Secret
+from remote_store._errors import PermissionDenied
 from remote_store.aio.backends._graph.auth import GraphAuth
 
 
@@ -151,9 +152,14 @@ class TestGetToken:
             return {"error": "invalid_client", "error_description": "bad secret"}
 
         monkeypatch.setattr(_FakeConfidentialApp, "acquire_token_for_client", _fail)
-        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
-        with pytest.raises(PermissionError, match="bad secret"):
+        auth = GraphAuth("t", "c", client_secret="sup3r-s3cret", cache_path=str(tmp_path / "c.json"))
+        # Typed error, catchable via `except RemoteStoreError` — never the
+        # stdlib PermissionError (audit-016 M7); the detail carries the MSAL
+        # error_description, never the secret.
+        with pytest.raises(PermissionDenied, match="bad secret") as excinfo:
             auth.get_token()
+        assert excinfo.value.backend == "graph"
+        assert "sup3r-s3cret" not in str(excinfo.value)
 
     @pytest.mark.spec("GR-006")
     def test_app_is_built_once(self, fake_msal: None, tmp_path: Any) -> None:

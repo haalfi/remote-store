@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-266: Graph backend correctness edges
 - BK-265: Graph guide & docstring accuracy — present-tense setup guide, copy-paste-safe usage snippet, sync-vs-async extension matrix, complete `Raises:` clauses, read-side spooling and SharePoint-coverage caveats
 - ID-127: Microsoft Graph backend setup guide
 - ID-127: `ResourceLocked` error type for resources held by another session

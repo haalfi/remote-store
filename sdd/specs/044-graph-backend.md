@@ -158,7 +158,13 @@ client certificate), producing a token provider consumable by
 **Postconditions:** Application permissions must be admin-consented
 on the tenant. Tokens acquired via this flow carry app-only claims;
 operations that require delegated permissions raise
-`PermissionDenied` mapped from `403 accessDenied`.
+`PermissionDenied` mapped from `403 accessDenied`. When MSAL returns
+no token (auth failure), `GraphAuth.get_token` raises the typed
+`PermissionDenied` (`backend="graph"`) — not a stdlib exception — so
+a failure surfacing mid-operation stays catchable via
+`except RemoteStoreError`; the message carries MSAL's
+`error_description`, never the secret. (User-supplied token
+providers remain free to raise anything — GR-008.)
 
 ### GR-007: Device-Code Flow
 
@@ -168,7 +174,13 @@ code and URL; completion yields a token and refresh token cached by
 MSAL.
 **Postconditions:** The MSAL cache is serialised to a persistent
 file; see ADR-0022 § Token caching for the canonical path and
-override rules (single source of truth).
+override rules (single source of truth). A no-token acquisition
+failure raises the same typed `PermissionDenied` as GR-006 — the
+branch in `get_token` is shared by both flows. A device-flow
+*initiation* failure (MSAL's `initiate_device_flow` returning no
+`user_code`) deliberately raises stdlib `ValueError` instead: it is
+a configuration-shaped failure, mirroring the `ValueError`s
+`GraphAuth.__init__` raises for invalid arguments.
 
 ### GR-008: Token-Provider Protocol
 
@@ -847,6 +859,11 @@ issues a single `GET` (item-by-path metadata fetch) to verify that
 confirmed, no further HTTP traffic is issued — no `POST /copy`, no
 `PATCH`, no monitor poll. The behaviour is therefore "one metadata
 GET, then short-circuit", not "zero HTTP calls".
+**Postconditions:** `src == dst` is evaluated over the normalised
+native-path forms, not the raw caller strings, so a direct backend
+call with un-normalised input (`copy("/a.txt", "a.txt")`,
+`move("a//b.txt", "a/b.txt")`) short-circuits the same way
+Store-normalised input does.
 
 ### GR-056: Cross-Drive Operations Are Structurally Impossible
 
@@ -903,14 +920,22 @@ and by the resource scope of the failing URL:
 - `404` with `error.code == "itemNotFound"` at an item or path scope
   (e.g. `/drives/{drive_id}/root:{path}:`) maps to `NotFound` for
   operations where missing-path is an error (read, get_file_info,
-  delete without `missing_ok`, move/copy source). For `exists`,
-  `is_file`, `is_folder`, it is suppressed and returns `False` per
-  BE-004 and BE-005.
-- `404` at drive scope (the `/drives/{drive_id}` resource itself, or
-  `error.code == "resourceNotFound"` at drive scope) maps to
-  `BackendUnavailable` — the configured drive is deleted or
-  misconfigured, which is a backend identity failure, not a per-item
-  condition.
+  delete without `missing_ok`, move/copy source).
+- For the type probes `exists`, `is_file`, `is_folder`, **any** `404`
+  — whatever its `error.code` — is suppressed and returns `False` per
+  BE-004 and BE-005 (probe scope). A drive-identity `404` therefore
+  cannot escape a probe as `BackendUnavailable`; a misconfigured or
+  deleted drive surfaces on the first error-raising operation instead
+  (as `BackendUnavailable` when Graph reports `resourceNotFound`, or
+  as `NotFound` when it reports `itemNotFound` — see the verification
+  note below).
+- For error-raising operations, a `404` at drive scope (the
+  `/drives/{drive_id}` resource itself) or carrying
+  `error.code == "resourceNotFound"` — Graph's drive-identity code,
+  honoured regardless of the failing URL's scope because every
+  item-by-path URL embeds the drive — maps to `BackendUnavailable`:
+  the configured drive is deleted or misconfigured, which is a
+  backend identity failure, not a per-item condition.
 - The backend does **not** attempt to discriminate "404 masking
   403" (Graph occasionally returns `404 itemNotFound` where `403
   accessDenied` would be semantically correct on restricted
@@ -919,9 +944,25 @@ and by the resource scope of the failing URL:
   signal to tell a real not-found from a hidden permission denial,
   and guessing would require the backend to track what the caller
   "should" be able to enumerate — which it cannot. Callers that
-  need to distinguish run a drive-root probe (`exists("/")`) to
-  confirm the drive is reachable, then treat `NotFound` as
-  authoritative for the item.
+  need to distinguish run a drive-root probe (`exists("")`; the
+  drive root always exists, so `False` means the drive itself is
+  unreachable) to confirm the drive is reachable, then treat
+  `NotFound` as authoritative for the item.
+
+**Verification note (live, consumer OneDrive, 2026-06):** a
+nonexistent drive id returned `404 itemNotFound` on **both** URL
+forms — the item-by-path address and the bare `/drives/{drive_id}`
+resource; `resourceNotFound` was not observed. Two consequences.
+First, `error.code` is not a reliable scope signal in either
+direction, which is why the probe scope suppresses every `404`
+rather than trusting the code. Second, the `resourceNotFound` →
+`BackendUnavailable` escalation is defensive: it rests on Graph's
+documented error contract and business/SharePoint-tier reports, not
+on verified consumer wire behaviour, and on a consumer drive a dead
+drive surfaces as `NotFound` from error-raising operations and
+`False` from probes. SharePoint-backed drives are outside the live
+tier's coverage (see the coverage-disclosure paragraph in
+§ Integration-only).
 
 ### GR-032: 409 nameAlreadyExists
 
