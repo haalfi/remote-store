@@ -10,6 +10,13 @@ string, so it is constructed directly and used through `AsyncStore`. For the
 one-time credential and app-registration setup, follow the
 [Microsoft Graph access setup](graph-setup.md) guide first.
 
+!!! note "Verification coverage"
+    The backend is live-verified against **consumer OneDrive** (device-code
+    auth). SharePoint and OneDrive for Business drives go through the same
+    Graph API and are covered by mocked tests, but are less exercised in
+    practice — see the [operational caveats](#operational-caveats) for the
+    known SharePoint-specific behaviours.
+
 ## Installation
 
 ```bash
@@ -24,20 +31,30 @@ A backend instance targets one drive, identified by an opaque `drive_id`.
 Resolve the id once at wiring time, then hand it to the backend:
 
 ```python
+import asyncio
+
 from remote_store.aio import AsyncStore, GraphAuth, GraphBackend, GraphUtils
 
-# 1. A token provider. Device-code (interactive) auth against a personal
-#    Microsoft account needs only tenant + client id — no secret.
-auth = GraphAuth(tenant_id="consumers", client_id="<entra-app-id>")
 
-# 2. Resolve the target drive ("me" = the signed-in user's OneDrive).
-drive_id = GraphUtils.resolve_drive_id("me", token_provider=auth)
+async def main() -> None:
+    # 1. A token provider. Device-code (interactive) auth against a personal
+    #    Microsoft account needs only tenant + client id — no secret.
+    auth = GraphAuth(tenant_id="consumers", client_id="<entra-app-id>")
 
-# 3. Construct the backend and use it through AsyncStore.
-backend = GraphBackend(drive_id, token_provider=auth)
-async with AsyncStore(backend, root_path="Documents") as store:
-    await store.write("report.csv", b"col1,col2\n1,2\n", overwrite=True)
-    data = await store.read_bytes("report.csv")
+    # 2. Resolve the target drive ("me" = the signed-in user's OneDrive).
+    #    Inside async code, use the async resolver — the sync
+    #    GraphUtils.resolve_drive_id runs its own event loop internally and
+    #    raises RuntimeError when called from a running one.
+    drive_id = await GraphUtils.aresolve_drive_id("me", token_provider=auth)
+
+    # 3. Construct the backend and use it through AsyncStore.
+    backend = GraphBackend(drive_id, token_provider=auth)
+    async with AsyncStore(backend, root_path="Documents") as store:
+        await store.write("report.csv", b"col1,col2\n1,2\n", overwrite=True)
+        data = await store.read_bytes("report.csv")
+
+
+asyncio.run(main())
 ```
 
 `token_provider` is any `Callable[[], str]` or `Callable[[], Awaitable[str]]`
@@ -86,6 +103,11 @@ drive_id = GraphUtils.resolve_drive_id(
 )
 ```
 
+The sync `resolve_drive_id` is for synchronous wiring code (config loading,
+CLI setup): it runs its own event loop internally, so calling it from inside
+a running event loop raises `RuntimeError`. Inside `async def` code, always
+use `await GraphUtils.aresolve_drive_id(...)`.
+
 A `drive_id` is immutable for the life of a backend instance — point a second
 `GraphBackend` at a different drive rather than mutating one.
 
@@ -105,7 +127,7 @@ A `drive_id` is immutable for the life of a backend instance — point a second
 
 ## Operational caveats
 
-### Upload spooling and `TMPDIR`
+### Spooling and `TMPDIR`
 
 When you `write()` an `AsyncIterator[bytes]` of unknown length, Graph's
 upload-session protocol requires the total size up front, so the backend
@@ -116,6 +138,22 @@ the spill by setting **`TMPDIR`** (or the platform equivalent) before writing
 large unknown-length streams. Passing `bytes` instead of an iterator avoids
 the spool pass entirely. Spill events are logged at DEBUG with the marker
 `graph.upload.spool_spilled`.
+
+The same concern exists on the **read side**: the backend does not declare
+`SEEKABLE_READ`, so `read_seekable()` — which the `ext.arrow` / `ext.parquet`
+extensions use for large files (through the
+[sync adapter](#extensions-sync-vs-async)) — is synthesised by spooling the
+entire file to the temp volume before the consumer can seek. Reading a large
+Parquet file over Graph therefore needs temp space for the whole file; size
+`TMPDIR` accordingly.
+
+### SharePoint-backed drives are less exercised
+
+Live verification runs against consumer OneDrive only. SharePoint-backed
+drives have known divergences the backend already accounts for — some ignore
+HTTP range requests (see [Streaming](#streaming)) — and others that the live
+tier cannot reach. Treat SharePoint/business deployments as less-travelled
+ground and validate your workload before relying on it in production.
 
 ### `copy_timeout=None` is unbounded by default
 
@@ -139,9 +177,29 @@ The backend declares `WRITE_RESULT_NATIVE`. Writes return a
 ## Capabilities
 
 Supports all capabilities except `GLOB`, `SEEKABLE_READ`, `ATOMIC_MOVE`, and
-`USER_METADATA`. For glob, use the portable `ext.glob.glob_files()` fallback
-(Graph is `LIST`-capable). See the
+`USER_METADATA`. For glob, the portable `ext.glob.glob_files()` fallback works
+(Graph is `LIST`-capable) — but only through the sync adapter, since the
+`ext.*` suite is sync-only (see [below](#extensions-sync-vs-async)). See the
 [capabilities matrix](../../reference/capabilities-matrix.md) for full details.
+
+## Extensions: sync vs async
+
+The extension ecosystem is split between the two Store surfaces, and the
+async side is much smaller:
+
+| Extension surface | Native `AsyncStore` | Sync `Store` (via adapter) |
+|-------------------|---------------------|----------------------------|
+| `aio.ext.write` — `write_with_hash` | Yes | — |
+| [`ext.*`](../../reference/api/extensions/index.md) — the sync suite (glob, cache, arrow, …) | — | Yes |
+
+Because `GraphBackend` is async-only, a native `AsyncStore` consumer has no
+`ext.*` surface at all — only `aio.ext.write.write_with_hash`. To use a sync
+extension over Graph, wrap the backend in
+[`AsyncBackendSyncAdapter`](../async-sync-bridges.md) and drive it through a
+sync `Store`. That works, but every call then hops through a bridged event
+loop and forfeits the native async streaming this backend exists to provide —
+reserve it for extension features you actually need (e.g. an occasional
+`glob_files()` or a Parquet read), not as the default way to use the backend.
 
 ## Streaming
 

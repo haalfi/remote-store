@@ -467,6 +467,8 @@ class GraphBackend(AsyncBackend):
         Raises:
             NotFound: If the path does not exist.
             InvalidPath: If the path names a folder.
+            PermissionDenied: If the token is rejected or lacks access to the
+                item (401/403).
             BackendUnavailable: If the download URL is missing, the file changed
                 mid-read (``eTag`` mismatch), the pre-signed host returns a
                 non-success status, or the download fails at the transport level
@@ -498,6 +500,8 @@ class GraphBackend(AsyncBackend):
         Raises:
             NotFound: If the path does not exist.
             InvalidPath: If the path names a folder.
+            PermissionDenied: If the token is rejected or lacks access to the
+                item (401/403).
             BackendUnavailable: As for ``read`` (missing URL, expiry, eTag change,
                 host or transport failure).
             RemoteStoreError: A ``416`` provoked by a malformed (inverted) range.
@@ -530,6 +534,10 @@ class GraphBackend(AsyncBackend):
         Raises:
             NotFound: If the path does not exist.
             InvalidPath: If the path names a folder.
+            PermissionDenied: If the token is rejected or lacks access to the
+                item (401/403).
+            BackendUnavailable: As for ``read`` (missing URL, expiry, eTag change,
+                host or transport failure).
         """
         return b"".join([chunk async for chunk in self.read(path)])
 
@@ -538,6 +546,11 @@ class GraphBackend(AsyncBackend):
 
         A 404 ``itemNotFound`` is suppressed to ``False``; never raises
         ``NotFound``.
+
+        Raises:
+            PermissionDenied: If the token is rejected or lacks access to the
+                item (401/403).
+            BackendUnavailable: On throttling, 5xx, or transport failure.
         """
         try:
             await self._get_item(path)
@@ -549,6 +562,11 @@ class GraphBackend(AsyncBackend):
         """Return ``True`` if *path* exists and carries the ``file`` facet.
 
         A missing item returns ``False`` (the 404 is suppressed).
+
+        Raises:
+            PermissionDenied: If the token is rejected or lacks access to the
+                item (401/403).
+            BackendUnavailable: On throttling, 5xx, or transport failure.
         """
         try:
             item = await self._get_item(path)
@@ -561,6 +579,11 @@ class GraphBackend(AsyncBackend):
 
         A missing item returns ``False`` (the 404 is suppressed). The drive root
         (``""``) carries the ``folder`` facet and reports ``True``.
+
+        Raises:
+            PermissionDenied: If the token is rejected or lacks access to the
+                item (401/403).
+            BackendUnavailable: On throttling, 5xx, or transport failure.
         """
         try:
             item = await self._get_item(path)
@@ -578,6 +601,9 @@ class GraphBackend(AsyncBackend):
         Raises:
             NotFound: If the path does not exist.
             InvalidPath: If the path names a folder.
+            PermissionDenied: If the token is rejected or lacks access to the
+                item (401/403).
+            BackendUnavailable: On throttling, 5xx, or transport failure.
         """
         item = await self._get_item(path)
         if is_folder_item(item):
@@ -658,6 +684,12 @@ class GraphBackend(AsyncBackend):
         ``folder``-faceted items become ``FolderEntry``, ``file``-faceted items
         become ``FileInfo``, in the order Graph returns them. A missing or file
         path yields nothing.
+
+        Raises:
+            PermissionDenied: If the token is rejected or lacks access
+                (401/403), surfaced during iteration.
+            BackendUnavailable: On throttling, 5xx, or transport failure,
+                surfaced during iteration.
         """
         async for item in self._iter_child_items(path):
             name = item.get("name")
@@ -677,6 +709,12 @@ class GraphBackend(AsyncBackend):
         When ``max_depth`` is set it governs traversal depth and ``recursive`` is
         ignored; otherwise ``recursive=True`` walks the subtree unbounded and the
         default lists only immediate files. A missing or file path yields nothing.
+
+        Raises:
+            PermissionDenied: If the token is rejected or lacks access
+                (401/403), surfaced during iteration.
+            BackendUnavailable: On throttling, 5xx, or transport failure,
+                surfaced during iteration.
         """
         if max_depth is not None:
             limit: int | None = max_depth
@@ -691,6 +729,12 @@ class GraphBackend(AsyncBackend):
         """List immediate subfolders under *path*.
 
         A missing or file path yields nothing.
+
+        Raises:
+            PermissionDenied: If the token is rejected or lacks access
+                (401/403), surfaced during iteration.
+            BackendUnavailable: On throttling, 5xx, or transport failure,
+                surfaced during iteration.
         """
         async for item in self._iter_child_items(path):
             name = item.get("name")
@@ -708,6 +752,9 @@ class GraphBackend(AsyncBackend):
         Raises:
             NotFound: If the path does not exist.
             InvalidPath: If the path names a file.
+            PermissionDenied: If the token is rejected or lacks access to the
+                item (401/403).
+            BackendUnavailable: On throttling, 5xx, or transport failure.
         """
         item = await self._get_item(path)
         if not is_folder_item(item):
@@ -782,6 +829,8 @@ class GraphBackend(AsyncBackend):
                 or descends through a file ancestor.
             CapabilityNotSupported: If a non-empty ``metadata=`` reaches the
                 backend directly (``USER_METADATA`` is not declared).
+            PermissionDenied: If the token is rejected or lacks access to the
+                item (401/403).
             BackendUnavailable: On 5xx / throttling / transport failure, or a
                 Graph contract gap (missing ``uploadUrl`` / ``nextExpectedRanges``).
             ResourceLocked: If the item is locked mid-session. The session
@@ -870,7 +919,8 @@ class GraphBackend(AsyncBackend):
         Graph's own write paths already provide the no-partial-content guarantee
         (``PUT /content`` is service-atomic; an upload session commits only on the
         final chunk), so no client-side temp-rename is taken. The ``WriteResult``
-        shape and the ``metadata=`` gate are inherited verbatim from ``write``.
+        shape, the ``metadata=`` gate, and the raised exceptions are inherited
+        verbatim from ``write``.
         """
         return await self.write(path, content, overwrite=overwrite, metadata=metadata)
 
@@ -888,6 +938,9 @@ class GraphBackend(AsyncBackend):
         Raises:
             NotFound: If the file does not exist and ``missing_ok`` is ``False``.
             InvalidPath: If the path names a folder (use ``delete_folder``).
+            PermissionDenied: If the token is rejected or lacks access to the
+                item (401/403).
+            BackendUnavailable: On throttling, 5xx, or transport failure.
         """
         # GR-041: type-check via one GET, then DELETE the resolved item.
         try:
@@ -920,6 +973,9 @@ class GraphBackend(AsyncBackend):
             NotFound: If the folder does not exist and ``missing_ok`` is ``False``.
             InvalidPath: If the path names a file.
             DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
+            PermissionDenied: If the token is rejected or lacks access to the
+                item (401/403).
+            BackendUnavailable: On throttling, 5xx, or transport failure.
         """
         # GR-042 (recursive) / GR-043 (non-recursive empty-check).
         try:
@@ -980,6 +1036,8 @@ class GraphBackend(AsyncBackend):
                 folder or descends through a file ancestor.
             AlreadyExists: If ``dst`` exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
+            PermissionDenied: If the token is rejected or lacks access to the
+                item (401/403).
             BackendUnavailable: On a ``202`` without a ``Location`` monitor URL, a
                 ``copy_timeout`` expiry, or a transient/5xx failure.
         """
@@ -1020,6 +1078,8 @@ class GraphBackend(AsyncBackend):
                 folder or descends through a file ancestor.
             AlreadyExists: If ``dst`` exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
+            PermissionDenied: If the token is rejected or lacks access to the
+                item (401/403).
             BackendUnavailable: On a ``202`` without a ``Location`` monitor URL, a
                 ``copy_timeout`` expiry, or a transient/5xx failure.
         """

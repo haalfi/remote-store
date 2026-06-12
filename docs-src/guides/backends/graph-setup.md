@@ -152,9 +152,9 @@ instead of a secret; see the
 
 ## Resolve the drive id
 
-The forthcoming Graph backend will take one opaque `drive_id`. Its public
-helper `GraphUtils.resolve_drive_id(...)` (shipping with the backend) will
-accept three target shapes and return that id:
+The Graph backend takes one opaque `drive_id`. Its public helper
+`GraphUtils.resolve_drive_id(...)` accepts three target shapes and returns
+that id:
 
 - **`"me"`** — the signed-in user's OneDrive, via `GET /me/drive`.
   Delegated (device-code) only.
@@ -163,16 +163,30 @@ accept three target shapes and return that id:
 - **A Teams channel** `{team_id, channel_id}` mapping — via the channel's
   `filesFolder`. Works with app-only.
 
-The verification snippet below resolves the `"me"` shape directly so you can
-capture a `drive_id` before any backend code is installed.
+With the backend installed, resolving and capturing the id is three lines:
+
+```python
+# pip install "remote-store[graph]"
+from remote_store.aio import GraphAuth, GraphUtils
+
+auth = GraphAuth(tenant_id="consumers", client_id="<GRAPH_CLIENT_ID>")
+print("GRAPH_DRIVE_ID=" + GraphUtils.resolve_drive_id("me", token_provider=auth))
+```
+
+The first run completes a device-code sign-in in the terminal; `GraphAuth`
+caches the token, so later runs are non-interactive. If you prefer to
+validate the app registration without installing anything, the hand-rolled
+verification snippet below does the same with raw `msal` + `httpx`.
 
 ## Verify and capture the drive id (device-code)
 
-This snippet completes a device-code sign-in and reads back your drive id.
-It uses `msal` and `httpx` (the libraries the built-in `GraphAuth` helper
-will wrap), so it works before the `graph` extra is installed. It is
-hand-written rather than sourced from `examples/snippets/` because it needs
-real interactive credentials and cannot run in CI.
+An alternative to the `GraphUtils` route above: this snippet completes a
+device-code sign-in and reads back your drive id using `msal` and `httpx`
+directly (the libraries the built-in `GraphAuth` helper wraps), so it works
+without the `graph` extra installed — useful for verifying the app
+registration in isolation. It is hand-written rather than sourced from
+`examples/snippets/` because it needs real interactive credentials and
+cannot run in CI.
 
 ```python
 import json, os, sys
@@ -250,10 +264,10 @@ GRAPH_DRIVE_ID=<id resolved from your SharePoint or OneDrive target>
 `.env` is gitignored. Never commit `GRAPH_CLIENT_SECRET` or the MSAL token
 cache (it holds a refresh token).
 
-The built-in `GraphAuth` helper, when it ships with the Graph backend, will
-persist its MSAL cache under your user config directory
-(`platformdirs.user_config_dir("remote-store")`). The verification snippet
-above uses a local cache file instead, to stay self-contained.
+The built-in `GraphAuth` helper persists its MSAL cache under your user
+config directory (`platformdirs.user_config_dir("remote-store")`). The
+hand-rolled verification snippet above uses a local cache file instead, to
+stay self-contained.
 
 ## Troubleshooting
 

@@ -8,6 +8,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-265 — Graph guide & docstring accuracy**
+  spec: GR-058, GR-001 · effort: S · audience: user.site, user.api_docs
+  Audit-016 M4 / M5 / M6 / L5 / L6 / L9. `graph-setup.md` rewritten to present
+  tense; the shipped `GraphUtils.resolve_drive_id` route now leads the
+  drive-id section and the hand-rolled `msal`/`httpx` snippet is reframed as
+  the no-install alternative. `graph.md`'s headline Usage snippet became a
+  runnable `asyncio.run(main())` program using `await aresolve_drive_id`
+  (the sync resolver runs its own event loop and raised `RuntimeError` on
+  copy-paste), with sync-vs-async resolver guidance in the drive-id section.
+  Added an "Extensions: sync vs async" matrix (native `AsyncStore` has only
+  `aio.ext.write.write_with_hash`; the `ext.*` suite reaches Graph only via
+  `AsyncBackendSyncAdapter`), a consumer-OneDrive verification admonition
+  plus a "SharePoint-backed drives are less exercised" caveat, and read-side
+  `TMPDIR` spooling for `read_seekable` / arrow / parquet reads. Completed
+  `Raises:` clauses on `GraphBackend` public methods — `PermissionDenied`
+  everywhere it can surface, `BackendUnavailable` made consistent across
+  read/list/info/delete/copy/move.
+
 - [x] **BK-264 — Graph spec / RFC reality-sync**
   spec: GR-001, GR-005, GR-018, GR-019, GR-034 · effort: S · audience: library.maintainer, contributor.process
   Swept `sdd/specs/044-graph-backend.md` + `rfc-0010` where they lagged shipped
