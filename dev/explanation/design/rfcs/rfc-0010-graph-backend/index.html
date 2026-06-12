@@ -10356,7 +10356,7 @@ gap is the point of this RFC.</p>
 <strong>Name:</strong> <code>"graph"</code>
 <strong>Optional extra:</strong> <code>pip install "remote-store[graph]"</code>
 <strong>Dependencies:</strong> see ADR-0021 for the locked dependency set.
-<strong>Spec:</strong> <code>sdd/specs/044-graph-backend.md</code> (GR-001 through GR-057,
+<strong>Spec:</strong> <code>sdd/specs/044-graph-backend.md</code> (GR-001 through GR-058,
 grouped by topic, with later additions slotted under the section
 they belong to rather than appended at the end — IDs are
 allocation-order, not section-order)</p>
@@ -10419,6 +10419,11 @@ metadata surfaces in logs, error messages, or debug dumps (AF-008).</p>
 Identity-stable: it never changes for the lifetime of the backend,
 which is important for <code>ext.cache</code> safety (the cache key derives from
 backend identity).</p>
+<p>An optional <code>base_path</code> constructor parameter (added during
+implementation; GR-058) scopes the backend to a drive subfolder:
+keys resolve to <code>{base_path}/{key}</code> under the drive root and keys
+returned by listing stay <code>base_path</code>-relative, mirroring
+<code>SFTPBackend.base_path</code>.</p>
 <p>Path-only. Store paths are <code>/</code>-rooted POSIX strings. The backend
 translates:</p>
 <ul>
@@ -10495,8 +10500,9 @@ on every mapped error. See GR-028 through GR-034 plus GR-045 / GR-046
 complete mapping table.</p>
 <h3 id="throttling">Throttling<a class="headerlink" href="#throttling" title="Permanent link">&para;</a></h3>
 <p>Graph throttling is mapped to <code>BackendUnavailable</code> with the
-<code>Retry-After</code> header value propagated so the retry policy can honour
-it. No new <code>RateLimitError</code> is introduced; the existing <code>RetryPolicy</code>
+<code>Retry-After</code> header value honoured by the in-backend retry loop
+before the next attempt (it is not carried on the raised error; see
+GR-034 / GR-048). No new <code>RateLimitError</code> is introduced; the existing <code>RetryPolicy</code>
 extension handles the backoff. Because <code>httpx</code> has no native retry,
 the backend itself honours the full five-field <code>RetryPolicy</code>
 (<code>max_attempts</code>, <code>backoff_base</code>, <code>backoff_max</code>, <code>jitter</code>, <code>timeout</code>)
@@ -10671,14 +10677,17 @@ authoritative tier; Stage 1 replay is what runs in default CI.</p>
   shrinks to the operations that don't require streaming and the
   conformance matrix runs against Graph at Stage 3 only — call this
   out explicitly in the impl PR.
-- <strong>Stage 3 — live (<code>graph_live</code> fixture).</strong> Gated by
-  <code>RS_TEST_LIVE_GRAPH=1</code> <strong>plus</strong> the four credential env vars
-  <code>GRAPH_TENANT_ID</code>, <code>GRAPH_CLIENT_ID</code>, <code>GRAPH_CLIENT_SECRET</code>,
-  <code>GRAPH_DRIVE_ID</code>. Skip cleanly when either layer is missing. This
+- <strong>Stage 3 — live (<code>graph_live</code> fixture).</strong> Gated by the
+  <code>RS_TEST_LIVE_GRAPH=1</code> opt-in <strong>plus</strong> the three credential env
+  vars <code>GRAPH_CLIENT_ID</code>, <code>GRAPH_TENANT_ID</code> (<code>consumers</code>),
+  <code>GRAPH_DRIVE_ID</code>. The shipped tier is device-code / consumer — no
+  client secret; the MSAL token cache the first interactive sign-in
+  writes keeps later runs non-interactive. Missing opt-in skips
+  cleanly; opt-in with a missing credential var fails loud. This
   mirrors the Azure live-test pattern at
   <code>tests/backends/fixtures/fixtures.toml</code> and <code>_live_env.py</code> —
-  secret-presence alone is deliberately not enough to opt into live
-  runs. Stage 3 is the authoritative tier for any behaviour that
+  credential presence alone is deliberately not enough to opt into
+  live runs. Stage 3 is the authoritative tier for any behaviour that
   depends on Graph service semantics (chunk alignment, real
   throttling with authentic <code>Retry-After</code>, real <code>423 resourceLocked</code>,
   real <code>507</code>/quota responses); Stage 3 discoveries get cassetted

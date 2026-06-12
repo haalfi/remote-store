@@ -11331,8 +11331,9 @@ ADRs: <a href="../../adrs/0021-graph-sdk-choice/">0021</a> (SDK),
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n">RetryPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">upload_chunk_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>  <span class="c1"># 10 MiB</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">copy_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span>
 </code></pre></div>
 <strong>Postconditions:</strong>
 - The backend stores configuration but performs no network I/O in
@@ -11343,7 +11344,10 @@ ADRs: <a href="../../adrs/0021-graph-sdk-choice/">0021</a> (SDK),
   less than 60 MiB (Graph's per-request ceiling); non-conforming
   values raise <code>ValueError</code>.
 - <code>drive_id</code> is a non-empty string; empty or whitespace-only values
-  raise <code>ValueError</code>.</p>
+  raise <code>ValueError</code>.
+- <code>base_path</code> scopes every operation under a drive subfolder; the
+  empty default targets the drive root. Semantics and normalisation
+  in GR-058.</p>
 <h3 id="gr-002-backend-name">GR-002: Backend Name<a class="headerlink" href="#gr-002-backend-name" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>name</code> property returns <code>"graph"</code>.</p>
 <h3 id="gr-003-capability-declaration">GR-003: Capability Declaration<a class="headerlink" href="#gr-003-capability-declaration" title="Permanent link">&para;</a></h3>
@@ -11360,7 +11364,8 @@ ADRs: <a href="../../adrs/0021-graph-sdk-choice/">0021</a> (SDK),
   chunk response return a full <code>driveItem</code> body carrying <code>size</code>, <code>eTag</code>,
   <code>lastModifiedDateTime</code>, and (for SharePoint-backed drives)
   version identifiers. <code>WriteResult</code> is populated from that response per
-  WR-004 — no post-write <code>HEAD</code> round trip needed (see GR-018, GR-019).
+  WR-004 — no post-write <code>HEAD</code> round trip needed — except <code>size</code>, which
+  is the byte count the backend wrote (WR-003; see GR-018, GR-019).
 - <code>ATOMIC_MOVE</code> is withheld because Graph move may go async (GR-027);
   atomicity is not guaranteed.
 - <code>SEEKABLE_READ</code> is withheld. The Graph content stream is
@@ -11411,7 +11416,8 @@ first use.
 <code>S3Backend</code> (S3-004) and <code>AzureBackend</code> (AZ-004).</p>
 <h3 id="gr-005-construction-validation">GR-005: Construction Validation<a class="headerlink" href="#gr-005-construction-validation" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>drive_id</code> must be a non-empty string. <code>token_provider</code>
-must be callable. <code>upload_chunk_size</code> must be a positive multiple of
+must be callable. <code>base_path</code> must be a <code>str</code> (any string is accepted;
+trimming and segment handling per GR-058). <code>upload_chunk_size</code> must be a positive multiple of
 320 KiB (Graph's alignment requirement) and strictly less than 60 MiB
 (Graph rejects any single upload-session chunk PUT at or above that
 per-request ceiling). <code>copy_timeout</code>, when set, must be a positive
@@ -11680,8 +11686,12 @@ per ASYNC-021) with content size &lt;= 4 MiB uses
   writes.
 - The write is atomic at the service level.
 - The returned <code>WriteResult</code> carries <code>source="native"</code> (WR-004) with
-  <code>size</code>, <code>etag</code>, <code>last_modified</code>, and <code>version_id</code> populated from the
-  <code>driveItem</code> body Graph returns in the <code>200 OK</code> response. <code>digest</code> is
+  <code>etag</code>, <code>last_modified</code>, and <code>version_id</code> populated from the
+  <code>driveItem</code> body Graph returns in the <code>200 OK</code> response. <code>size</code> is
+  the byte count the backend wrote (WR-003) — authoritative even when
+  the response body omits or under-reports <code>size</code> — and may therefore
+  diverge from a later <code>get_file_info().size</code>, which reads
+  <code>driveItem.size</code> (GR-013). <code>digest</code> is
   left <code>None</code> until a future extension selects a canonical hash from
   <code>driveItem.file.hashes</code> (see GR-049). <code>metadata</code> echoes the caller's
   input mapping when one is supplied (WR-012), <code>None</code> otherwise.
@@ -11782,9 +11792,11 @@ is therefore binary:
 - The upload is atomic on commit: the item becomes visible only
   after the final chunk succeeds.
 - The returned <code>WriteResult</code> carries <code>source="native"</code> (WR-004) with
-  <code>size</code>, <code>etag</code>, <code>last_modified</code>, and (where present) <code>version_id</code>
+  <code>etag</code>, <code>last_modified</code>, and (where present) <code>version_id</code>
   populated from the <code>driveItem</code> body Graph returns in the <strong>final</strong>
-  chunk's <code>201 Created</code> / <code>200 OK</code> response. <code>digest</code> is left <code>None</code>
+  chunk's <code>201 Created</code> / <code>200 OK</code> response. <code>size</code> is the byte count
+  the backend wrote (WR-003), not re-derived from the body — same rule
+  and rationale as GR-018. <code>digest</code> is left <code>None</code>
   per GR-049. <code>metadata</code> echoes the caller's input mapping when one is
   supplied (WR-012), <code>None</code> otherwise.
 - On unrecoverable failure, the session is deleted as a best-effort
@@ -12114,8 +12126,10 @@ errors (connect, read, write timeouts; DNS; connection reset) map
 to <code>BackendUnavailable</code> and are retryable per <code>RetryPolicy</code>.</p>
 <h3 id="gr-034-429-activitylimitreached">GR-034: 429 activityLimitReached<a class="headerlink" href="#gr-034-429-activitylimitreached" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>429 activityLimitReached</code> maps to
-<code>BackendUnavailable</code>. The <code>Retry-After</code> header value is propagated
-via the error's context so the retry policy can honour it.
+<code>BackendUnavailable</code>. The <code>Retry-After</code> header value is honoured
+in-loop by the in-backend retry before the next attempt (GR-048);
+it is not carried on the raised error — <code>RemoteStoreError</code> has no
+structured context surface (spec 005; see also GR-045).
 <strong>Postconditions:</strong> No new <code>RateLimitError</code> is introduced. The
 five-field <code>RetryPolicy</code> drives the in-backend retry (<code>httpx</code> has
 no native retry); see RET-015.</p>
@@ -12363,11 +12377,17 @@ its root.
 <h2 id="integration-only">Integration-only<a class="headerlink" href="#integration-only" title="Permanent link">&para;</a></h2>
 <p>Some invariants cannot be validated against <code>respx</code> fixtures because
 they depend on Graph service-imposed behaviour that the mock does
-not reproduce. These IDs require a real tenant. The gate is
-two-layered (matching the Azure live-test pattern): <code>RS_TEST_LIVE_GRAPH=1</code>
-<strong>plus</strong> the four credential env vars <code>GRAPH_TENANT_ID</code>,
-<code>GRAPH_CLIENT_ID</code>, <code>GRAPH_CLIENT_SECRET</code>, <code>GRAPH_DRIVE_ID</code>. Either
-layer missing → skip cleanly. Marked <code>@pytest.mark.integration</code>:</p>
+not reproduce. These IDs require a real tenant. The shipped live
+tier is device-code / consumer (GR-007): delegated permissions
+against a personal Microsoft account, no client secret — the MSAL
+refresh token arrives out of band via the token cache the first
+interactive sign-in writes. The gate is two-layered (matching the
+Azure live-test pattern): the <code>RS_TEST_LIVE_GRAPH=1</code> opt-in <strong>plus</strong>
+the three credential env vars <code>GRAPH_CLIENT_ID</code>, <code>GRAPH_TENANT_ID</code>
+(<code>consumers</code>), <code>GRAPH_DRIVE_ID</code>. Opt-in absent → skip cleanly;
+opt-in set with a credential var missing → fail loud, not skip — a
+silent skip would read as "tested" when it was not. Marked
+<code>@pytest.mark.integration</code>:</p>
 <ul>
 <li><strong>GR-007</strong> — device-code flow end-to-end. MSAL's device-code
   handshake cannot be meaningfully mocked at the protocol layer.</li>
@@ -12386,6 +12406,18 @@ layer missing → skip cleanly. Marked <code>@pytest.mark.integration</code>:</p
 <p><code>respx</code>-based unit tests cover the request/response mapping for
 every ID, including the ones listed above. Integration runs are the
 only place the service-imposed invariants are exercised.</p>
+<p><strong>Coverage disclosure:</strong> this tier never runs in automated CI. The
+integration module is additionally marked <code>live</code>, the default pytest
+addopts carry <code>-m 'not live'</code>, and no scheduled live lane exists,
+so it executes only when a maintainer opts in locally. Default CI's
+behavioural coverage of the backend is the <code>respx</code> unit suites plus
+the cross-backend conformance matrix replayed from committed
+cassettes (<code>graph_replay</code>, Stage 1), which were recorded against
+this same consumer tier. Every live exercise of the backend — this
+tier and the cassette recordings alike — has therefore been
+consumer-OneDrive-only: SharePoint / business-backed drives have no
+live or recorded coverage, and the SharePoint-specific caveats noted
+at GR-018, GR-025, GR-027, and GR-049 are unverified ground.</p>
 
 
 
