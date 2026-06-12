@@ -174,7 +174,13 @@ code and URL; completion yields a token and refresh token cached by
 MSAL.
 **Postconditions:** The MSAL cache is serialised to a persistent
 file; see ADR-0022 § Token caching for the canonical path and
-override rules (single source of truth).
+override rules (single source of truth). A no-token acquisition
+failure raises the same typed `PermissionDenied` as GR-006 — the
+branch in `get_token` is shared by both flows. A device-flow
+*initiation* failure (MSAL's `initiate_device_flow` returning no
+`user_code`) deliberately raises stdlib `ValueError` instead: it is
+a configuration-shaped failure, mirroring the `ValueError`s
+`GraphAuth.__init__` raises for invalid arguments.
 
 ### GR-008: Token-Provider Protocol
 

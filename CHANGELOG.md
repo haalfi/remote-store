@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BK-266: Graph correctness edges — `exists` / `is_file` / `is_folder` suppress any 404 to `False` (a drive-identity `resourceNotFound` can no longer escape a probe as `BackendUnavailable`); the `move` / `copy` self-op short-circuit compares normalised paths, so direct-backend `copy("/a.txt", "a.txt")` is a no-op instead of raising `AlreadyExists`; the bundled `GraphAuth.get_token` raises the typed `PermissionDenied` instead of stdlib `PermissionError` on token-acquisition failure (catchable via `except RemoteStoreError`)
+- BK-266: Graph backend correctness edges
 - BK-265: Graph guide & docstring accuracy — present-tense setup guide, copy-paste-safe usage snippet, sync-vs-async extension matrix, complete `Raises:` clauses, read-side spooling and SharePoint-coverage caveats
 - ID-127: Microsoft Graph backend setup guide
 - ID-127: `ResourceLocked` error type for resources held by another session
