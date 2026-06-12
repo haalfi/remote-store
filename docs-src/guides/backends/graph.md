@@ -151,8 +151,8 @@ Parquet file over Graph therefore needs temp space for the whole file; size
 
 Live verification runs against consumer OneDrive only. SharePoint-backed
 drives have known divergences the backend already accounts for — some ignore
-HTTP range requests (see [Streaming](#streaming)) — and others that cannot be
-live-verified today. Treat SharePoint/business deployments as less-travelled
+HTTP range requests (see [Streaming](#streaming)) — and others that the live
+tier cannot reach. Treat SharePoint/business deployments as less-travelled
 ground and validate your workload before relying on it in production.
 
 ### `copy_timeout=None` is unbounded by default
@@ -190,7 +190,7 @@ async side is much smaller:
 | Extension surface | Native `AsyncStore` | Sync `Store` (via adapter) |
 |-------------------|---------------------|----------------------------|
 | `aio.ext.write` — `write_with_hash` | Yes | — |
-| `ext.*` — glob, observe, otel, cache, integrity, arrow, parquet, dagster, and the rest | — | Yes |
+| [`ext.*`](../../reference/api/extensions/index.md) — the sync suite (glob, cache, arrow, …) | — | Yes |
 
 Because `GraphBackend` is async-only, a native `AsyncStore` consumer has no
 `ext.*` surface at all — only `aio.ext.write.write_with_hash`. To use a sync
