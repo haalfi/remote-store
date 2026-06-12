@@ -253,3 +253,17 @@ phases:
           docstring now states the consumer-cid premise and a non-16-char passthrough test
           covers the single-form branch.
         outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "--verify-only (graph + azure) and --node byte-identity dogfood (PR-2 live verification)"
+        read_type: verify
+        extract: >-
+          Re-ran the PR-1 live procedure on the post-review profile code: --verify-only clean
+          both backends (azure 303 cassettes / 7 markers, graph 118 / 11 markers, replay green).
+          One node re-recorded live per backend with opt-in flags, diffed, reverted: azure diff =
+          ETag/Last-Modified volatile only; graph = volatile churn plus a cold-cache MSAL
+          refresh_token POST in which the declarative pipeline fired live — refresh_token=REDACTED
+          request body, all four token-response fields REDACTED, User-Agent tuple rewrite, drive id
+          as the fake everywhere, and NO X-AnchorMailbox header recorded: the native delete closed
+          the hyphen-split-cid leak PR 1's dogfood surfaced, observed on exactly the request class
+          that produced it. Step-4 envelope (incl. the Oid: marker) clean over both trees.
+        outcome: ok
