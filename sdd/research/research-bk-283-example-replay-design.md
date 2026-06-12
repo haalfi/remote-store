@@ -109,6 +109,35 @@ These facts bound the design space; each was verified against current source.
     order. The example is strictly sequential, so this is safe — but it is a
     standing constraint on what the example may ever do concurrently.
 
+### What a replayed example does and does not cover
+
+Every layer the example traverses is already contract-covered, and by
+design no existing test chains them end-to-end:
+
+- `AsyncStore → backend` is backend-generic, tested over
+  `AsyncMemoryBackend` / adapted `MemoryBackend` (`tests/aio/conftest.py`).
+- `GraphBackend → Graph API` is owned by the conformance suite, which
+  drives `async_backend` **directly** — no Store in the loop — against the
+  replayed cassettes; the graph unit tests stub the same boundary with
+  respx, offline.
+
+So the conformance cassettes already encode every backend↔API expectation
+the example's traffic exercises; a replayed example adds **zero new
+contract coverage**. Its entire value is guarding the published snippet
+itself: the imports resolve, the env gate works, the demonstrated API usage
+still type-matches and sequences correctly, the printed output is what the
+docs show. That is an executable-documentation guard, and the dedicated
+cassette in § 2 constraint 2 is a mechanical consequence of vcrpy URI
+matching — not a coverage instrument. Two corollaries:
+
+- The example test will be the **only** place the full
+  `Store → GraphBackend → API` chain executes. That chain's absence from
+  unit tests is correct layering, not a gap; the example test must never be
+  positioned (in docstrings, traces, or reviews) as the integration test
+  for it.
+- Assertions belong on the script's observable behaviour (exit, stdout),
+  never on backend semantics — those assertions live in conformance.
+
 ---
 
 ## 3. Options
@@ -231,22 +260,55 @@ token provider), so it can run under a thin vcr wrapper anywhere.
   rendered verbatim into the docs site. Readers would see replay plumbing in
   a snippet whose entire job is to show the real auth flow. Rejected.
 
+### 3.4 Option D — respx fake API instead of a cassette
+
+**Pattern:** Since the example test is an executable-documentation guard
+(§ 2), not backend coverage, replay fidelity is arguably negotiable: run the
+script under a respx route table faking the Graph API — the same boundary
+the graph unit tests stub — with the env/auth stubbing of Option B. Real
+`GraphBackend` + real `httpx`, no cassette, no live session ever needed.
+
+**Trade-offs:**
+
+- Pro: Zero recording dependency — implementable and verifiable entirely in
+  a creds-free session; immune to the full-record wipe (constraint 8) and
+  the pre-signed order-dependence (constraint 10).
+- Con: The example's op sequence (write ×2, read, metadata, recursive list,
+  server-side copy, move, exists ×2, streaming read, delete sweep) needs a
+  stateful hand-written fake of a dozen Graph endpoints, including the
+  pre-signed download redirect. That is a second, drifting model of the
+  Graph API maintained by hand — precisely what BK-262 built the recording
+  pipeline to avoid. A cassette gets real-service fidelity for the cost of
+  one recorded test in a sweep that already runs.
+- Con: A fake this large invites assertions against its own behaviour; the
+  unit tests keep respx honest by scoping each route table to one narrow
+  contract, which a whole-script fake cannot.
+
+Rejected for the example guard, but it is the fallback if the live tier
+ever becomes unavailable: the guard degrades gracefully to a fake, because
+nothing in it asserts backend semantics.
+
 ---
 
 ## 4. Evaluation
 
-| Criterion | A: run_examples driver | B: conformance test | C: replay-aware example |
-|-----------|------------------------|---------------------|--------------------------|
-| Reuses spec-049 machinery | partial (config only) | full | partial |
-| Recorder integration | bespoke | zero changes | bespoke |
-| PII gates cover new cassette | yes (dir glob) | yes (dir glob) | yes (dir glob) |
-| Survives full `record-graph` wipe | needs recorder surgery | automatic | needs recorder surgery |
-| Example file untouched | yes | yes | no |
-| Executes script as `__main__` | yes | yes (runpy) | yes |
-| Output verified | exit code only | stdout assertions | exit code only |
-| New process/code surface | driver + runner table | one test module | example churn |
+| Criterion | A: run_examples driver | B: conformance test | C: replay-aware example | D: respx fake API |
+|-----------|------------------------|---------------------|--------------------------|-------------------|
+| Reuses spec-049 machinery | partial (config only) | full | partial | — |
+| Recorder integration | bespoke | zero changes | bespoke | — (no cassette) |
+| PII gates cover new cassette | yes (dir glob) | yes (dir glob) | yes (dir glob) | — (no cassette) |
+| Survives full `record-graph` wipe | needs recorder surgery | automatic | needs recorder surgery | immune |
+| Needs a live session once | yes | yes | yes | no |
+| API fidelity | recorded | recorded | recorded | hand-maintained fake |
+| Example file untouched | yes | yes | no | yes |
+| Executes script as `__main__` | yes | yes (runpy) | yes | yes |
+| Output verified | exit code only | stdout assertions | exit code only | stdout assertions |
+| New process/code surface | driver + runner table | one test module | example churn | test module + fake API model |
 
-Option B dominates on every criterion except fidelity to the original sketch.
+Option B dominates A and C on every criterion except fidelity to the
+original sketch. Against D the trade is one live recording session versus a
+permanently hand-maintained fake of a dozen stateful Graph endpoints; B wins
+on maintenance, D remains the documented fallback (§ 3.4).
 
 ---
 
@@ -256,8 +318,11 @@ For the live-capable session that implements BK-283:
 
 1. **Add `tests/backends/conformance/test_examples.py`** as sketched in
    § 3.2: the parametrized test, `_StubGraphAuth`, stdout assertions, and a
-   module docstring explaining the param-id routing trick and the
-   `run_examples.py` division of labour.
+   module docstring explaining the param-id routing trick, the
+   `run_examples.py` division of labour, and the coverage framing from § 2:
+   this is an executable-documentation guard — backend↔API expectations
+   live in conformance, Store↔backend in `tests/aio/`; assert on the
+   script's output, never on backend semantics.
 2. **Live-param hygiene:** before and after the live run, best-effort delete
    the drive's `remote-store-example` folder via an unrooted helper backend
    (mirror `graph_live._aclose`'s teardown pattern). The example cleans its
@@ -342,3 +407,10 @@ Effort matches the backlog's S estimate. The BK-283 body's `run_examples.py`
 wiring is superseded by this design (sketches are advisory; the diagnosed
 pain — no CI coverage for the snippet — is fully resolved by the Stage-1
 replay test).
+
+Frame it honestly when closing the item: the test guards the published
+snippet, it does not extend backend coverage — every backend↔API
+expectation in its traffic is already owned by the conformance cassettes
+(§ 2). If the live tier ever becomes unrecordable, degrade to the respx
+fallback (§ 3.4) rather than letting the guard rot behind a permanent
+missing-cassette skip.
