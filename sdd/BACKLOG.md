@@ -110,6 +110,12 @@ BACKLOG-DONE.md.)
   replayed path into `run_examples.py` so the snippet is covered without the
   live opt-in. Carried forward from BK-262 (the consolidated former BK-260);
   was gated on the cassette-replay core landing first, which it now has.
+  Design (2026-06-12):
+  [research-bk-283-example-replay-design.md](research/research-bk-283-example-replay-design.md)
+  — recommends a conformance-suite `runpy` test (param ids `graph_live` /
+  `graph_replay` reuse the whole cassette stack, zero recorder changes) over
+  the `run_examples.py` wiring this sketch named; recording needs a
+  live-credential session.
 
 - [ ] **BK-266 — Graph backend correctness edges**
   spec: GR-031, GR-044 · effort: S · audience: user.api, library.maintainer
