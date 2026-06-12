@@ -122,14 +122,18 @@ def classify_graph_error(
     *,
     path: str = "",
     backend: str = BACKEND_NAME,
-    scope: Literal["item", "drive"] = "item",
+    scope: Literal["item", "drive", "probe"] = "item",
 ) -> RemoteStoreError:
     """Map an HTTP status plus Graph ``error.code`` to a ``remote_store`` error.
 
     The single mapping table for the backend. ``scope`` disambiguates the
     ``404`` case: an item/path-scoped ``itemNotFound`` is a per-item
-    ``NotFound``, while a drive-scoped ``404`` (or ``resourceNotFound``) is a
-    backend-identity failure mapped to ``BackendUnavailable``.
+    ``NotFound``, while a drive-scoped ``404`` (or ``resourceNotFound``,
+    Graph's drive-identity code, at any URL scope) is a backend-identity
+    failure mapped to ``BackendUnavailable``. ``"probe"`` is the type-probe
+    scope (``exists`` / ``is_file`` / ``is_folder``): every ``404`` maps to
+    ``NotFound`` regardless of ``code``, so the drive-identity escalation
+    cannot escape a probe that suppresses ``NotFound`` to ``False``.
 
     Never inspects the error *message* — only ``status`` and ``code``.
     """
@@ -140,7 +144,7 @@ def classify_graph_error(
     if status == 403:  # GR-030 accessDenied
         return PermissionDenied(f"Permission denied: {path}", path=path, backend=backend)
     if status == 404:  # GR-031 item-vs-drive discrimination
-        if scope == "drive" or code == "resourceNotFound":
+        if scope != "probe" and (scope == "drive" or code == "resourceNotFound"):
             return BackendUnavailable(
                 f"Drive unavailable (404 {code or 'notFound'}): {path}", path=path, backend=backend
             )
@@ -370,7 +374,7 @@ async def graph_send(
     *,
     token_provider: TokenProvider,
     path: str = "",
-    scope: Literal["item", "drive"] = "item",
+    scope: Literal["item", "drive", "probe"] = "item",
     retry: RetryPolicy | None = None,
     return_on: frozenset[int] = frozenset(),
     authenticated: bool = True,

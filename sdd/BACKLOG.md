@@ -91,12 +91,12 @@ and the highest ID already in this file, then take the next integer. Run
 
 ID-127 (Microsoft Graph / OneDrive / SharePoint) follow-ups, in execution order;
 full findings in [audit-016](audits/audit-016-graph-backend-review.md).
-**Order:** correctness + tests (BK-266/267) →
+**Order:** tests (BK-267) →
 blocked or hygiene tail (BK-259/261/268/283). Each item's own rationale lives in
 its body. (Security item BK-263 — the upload-session credential leak — the
 load-bearing CI-coverage item BK-262 — replay-able cassettes — the spec/RFC
-sync BK-264, and the guide/docstring sweep BK-265 shipped first; see
-BACKLOG-DONE.md.)
+sync BK-264, the guide/docstring sweep BK-265, and the correctness edges
+BK-266 shipped first; see BACKLOG-DONE.md.)
 
 - [ ] **BK-283 — Drive the Graph example snippet from replayed cassettes in CI**
   spec: GR-015, GR-019 · effort: S · audience: infra.test
@@ -116,21 +116,6 @@ BACKLOG-DONE.md.)
   `graph_replay` reuse the whole cassette stack, zero recorder changes) over
   the `run_examples.py` wiring this sketch named; recording needs a
   live-credential session.
-
-- [ ] **BK-266 — Graph backend correctness edges**
-  spec: GR-031, GR-044 · effort: S · audience: user.api, library.maintainer
-  Three small, independent fixes (split if preferred):
-  - Scope the `resourceNotFound`→`BackendUnavailable` mapping to drive scope so it
-    cannot escape `exists()` / `is_file()` / `is_folder()` when seen at item scope
-    (`http.py:124`, GR-031).
-  - Normalise paths before the self-op `src == dst` short-circuit, or document that
-    GR-044 assumes Store-normalised input — direct-to-backend `copy("/a.txt",
-    "a.txt")` skips the no-op today (`backend.py:_short_circuit_self_op`).
-  - Decide whether the bundled `GraphAuth.get_token` should raise a
-    `RemoteStoreError` subtype instead of stdlib `PermissionError` (`auth.py:184`),
-    which currently propagates through `read` / `write` uncatchable by
-    `except RemoteStoreError`.
-  Audit-016 L1 / L3 / M7.
 
 - [ ] **BK-267 — Graph test hardening**
   spec: GR-012, GR-040 · effort: S · audience: infra.test

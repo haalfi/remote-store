@@ -46,9 +46,18 @@ class TestClassifyGraphError:
 
     @pytest.mark.spec("GR-031")
     def test_404_resource_not_found_is_backend_unavailable(self) -> None:
-        # resourceNotFound at item scope still escalates to a drive-identity failure.
+        # resourceNotFound at item scope still escalates to a drive-identity
+        # failure for error-raising operations (read/write/delete/move/copy).
         exc = classify_graph_error(404, "resourceNotFound", scope="item")
         assert isinstance(exc, BackendUnavailable)
+
+    @pytest.mark.spec("GR-031")
+    @pytest.mark.parametrize("code", ["itemNotFound", "resourceNotFound", None])
+    def test_404_probe_scope_is_not_found(self, code: str | None) -> None:
+        # Probe scope (exists/is_file/is_folder) treats ANY 404 as missing — the
+        # drive-identity escalation must not escape the probes (BE-004/BE-005).
+        exc = classify_graph_error(404, code, path="maybe", scope="probe")
+        assert isinstance(exc, NotFound)
 
     @pytest.mark.spec("GR-032")
     def test_409_already_exists(self) -> None:
