@@ -3,7 +3,9 @@
 Discovers and executes every ``*.py`` in the example subdirectories that
 are safe to run locally (no cloud credentials, no optional extras).
 Backends and integrations are excluded — they need live services or
-packages like PyArrow / Dagster.
+packages like PyArrow / Dagster. The Graph backend example does run in CI,
+replayed from a recorded cassette: see
+``tests/backends/conformance/test_examples.py`` (BK-283).
 
 Usage:
 

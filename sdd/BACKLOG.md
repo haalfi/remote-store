@@ -92,30 +92,11 @@ and the highest ID already in this file, then take the next integer. Run
 ID-127 (Microsoft Graph / OneDrive / SharePoint) follow-ups, in execution order;
 full findings in [audit-016](audits/audit-016-graph-backend-review.md).
 **Order:** tests (BK-267) →
-blocked or hygiene tail (BK-259/261/268/283). Each item's own rationale lives in
+blocked or hygiene tail (BK-259/261/268). Each item's own rationale lives in
 its body. (Security item BK-263 — the upload-session credential leak — the
 load-bearing CI-coverage item BK-262 — replay-able cassettes — the spec/RFC
-sync BK-264, the guide/docstring sweep BK-265, and the correctness edges
-BK-266 shipped first; see BACKLOG-DONE.md.)
-
-- [ ] **BK-283 — Drive the Graph example snippet from replayed cassettes in CI**
-  spec: GR-015, GR-019 · effort: S · audience: infra.test
-  The replay-able cassettes BK-262 committed could also drive the env-gated
-  `examples/backends/graph_backend.py` snippet, which today only runs under live
-  credentials and is excluded from the `run_examples.py` CI sweep entirely. With
-  the pre-signed-URL replay now solved (BK-262), a replayed variant could
-  exercise the example in CI without creds — same `graph_replay` vcr config,
-  second beneficiary. Sketch: record a cassette for the example's request
-  sequence (or reuse the conformance ones if the call shapes line up) and wire a
-  replayed path into `run_examples.py` so the snippet is covered without the
-  live opt-in. Carried forward from BK-262 (the consolidated former BK-260);
-  was gated on the cassette-replay core landing first, which it now has.
-  Design (2026-06-12):
-  [research-bk-283-example-replay-design.md](research/research-bk-283-example-replay-design.md)
-  — recommends a conformance-suite `runpy` test (param ids `graph_live` /
-  `graph_replay` reuse the whole cassette stack, zero recorder changes) over
-  the `run_examples.py` wiring this sketch named; recording needs a
-  live-credential session.
+sync BK-264, the guide/docstring sweep BK-265, the correctness edges BK-266,
+and the example-replay guard BK-283 shipped first; see BACKLOG-DONE.md.)
 
 - [ ] **BK-267 — Graph test hardening**
   spec: GR-012, GR-040 · effort: S · audience: infra.test

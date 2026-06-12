@@ -1,0 +1,120 @@
+id: BK-283
+title: "Drive the Graph example snippet from replayed cassettes in CI"
+trigger: >-
+  examples/backends/graph_backend.py was the one published snippet with zero
+  CI execution (live-creds-only, excluded from the run_examples.py sweep, no
+  emulator); the BK-283 design (PR #795) settled Option B so a
+  live-credential session could execute it without exploration.
+source_items:
+  - BK-283
+  - BK-262
+audience:
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-bk-283-example-replay-design.md
+        section: "(full)"
+        read_type: gate
+        extract: "Option B design, constraints 1-10, § 1.2 framing, § 4 plan and open verification points"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-283"
+        read_type: gate
+        extract: "item attributes (spec GR-015/GR-019, effort S, audience infra.test); run_examples.py sketch pre-flagged as superseded by the design"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: gate
+        extract: "trace schema and authoring discipline"
+        outcome: ok
+  - id: implement
+    name: Implement the example test
+    steps:
+      - file: tests/backends/conformance/conftest.py
+        section: "(full)"
+        read_type: gate
+        extract: "fixture-token routing, cassette-name normalisation, missing-cassette skip - what the graph_live/graph_replay param ids buy"
+        outcome: ok
+      - file: tests/conftest.py
+        section: "pytest_collection_modifyitems / --record"
+        read_type: reference
+        extract: "vcr mark added dynamically to *graph_live* items only under --record; --stage wiring is registry-side"
+        outcome: ok
+      - file: tests/backends/fixtures/graph_live.py
+        section: "(full)"
+        read_type: reference
+        extract: "_aclose unrooted-sibling teardown pattern to mirror for live-param hygiene; device-code tier and opt-in gate"
+        outcome: ok
+      - file: tests/backends/fixtures/graph_replay.py
+        section: "(full)"
+        read_type: reference
+        extract: "constant stub token provider and record_mode='none' mark to mirror"
+        outcome: ok
+      - file: tests/backends/fixtures/_cassettes_graph.py
+        section: "GRAPH_PROFILE, FAKE_DRIVE_ID"
+        read_type: reference
+        extract: "replay identifiers and scrub-rule ownership (example root needs no new rules); profile sets no custom match_on"
+        outcome: ok
+      - file: tests/backends/fixtures/_live_env.py
+        section: "require_graph_live_credentials"
+        read_type: reference
+        extract: "three required device-code env vars; fail-loud contract; lazy .env backstop"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/auth.py
+        section: "GraphAuth"
+        read_type: reference
+        extract: "constructor signature and __call__ token-provider protocol the stub must mirror"
+        outcome: ok
+      - file: examples/backends/graph_backend.py
+        section: "(full)"
+        read_type: gate
+        extract: "module-level env gate, GRAPH_DRIVE_ID skip of drive resolution, op sequence, printed lines to assert"
+        outcome: ok
+      - file: tests/backends/fixtures/test_httpx_streaming_replay.py
+        section: "spec marks"
+        read_type: reference
+        extract: "TEST-007 spec-mark precedent for infra replay tests; chosen over GR-015/GR-019 because the test guards the snippet, not op contracts"
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Rules"
+        read_type: reference
+        extract: "traceability is no-spec-without-tests, not no-test-without-spec; TEST-007 mark suffices"
+        outcome: ok
+  - id: record
+    name: Record the cassette
+    steps:
+      - file: scripts/record_cassettes.py
+        section: "(full)"
+        read_type: gate
+        extract: "--node single-cassette mode (no tree-wipe, no min-cassette guard), preflight env validation, steps 4-5 run unchanged"
+        outcome: ok
+      - file: pyproject.toml
+        section: "addopts / markers"
+        read_type: reference
+        extract: "-m 'not live' default deselects the live param; live marker registered"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: verify
+        extract: "New test file row (os_sensitive not applicable - HTTP replay, no OS-specific behaviour); no backend/error/capability/version/dependency surface touched"
+        outcome: ok
+  - id: ripples
+    name: Ripples and close-out
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Completing work"
+        read_type: gate
+        extract: "move item to BACKLOG-DONE as [x] in the same commit; run gen-backlogid (no-op here, BK-284 already DONE-max)"
+        outcome: ok
+      - file: tests/scripts/run_examples.py
+        section: "module docstring"
+        read_type: verify
+        extract: "one-line pointer to the replayed Graph example's new home"
+        outcome: ok

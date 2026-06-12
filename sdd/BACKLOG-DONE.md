@@ -8,6 +8,33 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-283 — Drive the Graph example snippet from replayed cassettes in CI**
+  spec: GR-015, GR-019 · effort: S · audience: infra.test
+  `examples/backends/graph_backend.py` was the one published snippet with zero
+  CI execution: live-credentials-only, excluded from the `run_examples.py`
+  sweep, no emulator. Shipped as Option B of the settled design
+  ([research-bk-283-example-replay-design.md](research/research-bk-283-example-replay-design.md),
+  PR #795) rather than the item's `run_examples.py` sketch (sketches are
+  advisory): one parametrized `runpy` test in
+  `tests/backends/conformance/test_examples.py` whose param ids `graph_live` /
+  `graph_replay` inherit the entire cassette stack — per-backend dir routing,
+  the shared cassette name, the `GRAPH_PROFILE` record/replay scrub configs,
+  the missing-cassette skip, and `--record`-mode vcr marking — with zero
+  conftest or `record_cassettes.py` changes; the recorder's `-k graph_live`
+  sweep records (and a full `record-graph` regenerates) the example cassette
+  alongside the conformance corpus. The test is an executable-documentation
+  guard asserting the script's stdout (including one line of demonstrated
+  file content), not backend coverage — every layer it traverses is
+  contract-covered elsewhere. On replay a `_StubGraphAuth` with a call
+  counter replaces MSAL (a silent fall-through to the real device-code flow
+  fails loudly); the cassette's recorded token-exchange interactions stay
+  inert under `record_mode="none"`, verified on first replay. Live-param
+  hygiene best-effort-purges the drive's `remote-store-example` folder before
+  and after the run, mirroring `graph_live._aclose`. `run_examples.py` keeps
+  its credential-free subprocess scope (docstring pointer added). Carried
+  forward from BK-262; no CHANGELOG (infra.test, BK-262 precedent). Trace:
+  `sdd/traces/bk-283-example-replay.yml`.
+
 - [x] **BK-266 — Graph backend correctness edges**
   spec: GR-031, GR-044, GR-006 · effort: S · audience: user.api, library.maintainer
   Audit-016 L1 / L3 / M7, three independent fixes shipped together:
