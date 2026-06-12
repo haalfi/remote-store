@@ -8,6 +8,33 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-264 — Graph spec / RFC reality-sync**
+  spec: GR-001, GR-005, GR-018, GR-019, GR-034 · effort: S · audience: library.maintainer, contributor.process
+  Swept `sdd/specs/044-graph-backend.md` + `rfc-0010` where they lagged shipped
+  code (audit-016 M1/M2/M3/L4/L6/H2). GR-018/GR-019 now state `WriteResult.size`
+  is the byte count the backend wrote (the WR-003 contract) while
+  `etag`/`last_modified`/`version_id` still come from the returned `driveItem`
+  body — the spec was the less-authoritative side per principle 5; the GR-003
+  `WRITE_RESULT_NATIVE` rationale carries the same size exception. `base_path`
+  (GR-058) joined the GR-001 signature block and the GR-005 validation list,
+  and the RFC's Addressing section + spec-range note now mention it. The
+  Integration-only section and RFC Stage 3 describe the shipped live tier:
+  device-code / consumer, three env vars (no `GRAPH_CLIENT_SECRET`), opt-in
+  absent → skip, opt-in with a missing var → fail loud. GR-034 drops the
+  nonexistent "Retry-After propagated via the error's context" surface in
+  favour of the in-loop honouring GR-048 states (RFC Throttling aligned). A
+  new coverage-disclosure paragraph records that the integration tier never
+  runs in automated CI and that all live exercise — that tier plus the BK-262
+  cassette recordings driving Stage-1 replay — is consumer-OneDrive-only, with
+  no SharePoint/business coverage. The audit predated BK-262, so its
+  "conformance matrix is skip-only" disclosure was re-evaluated: the matrix
+  now replays in default CI and the disclosure says so instead. One ripple
+  beyond the item's `sdd/`-only framing: the `test_integration.py` module
+  docstring claimed "four" credential vars against its own three-var fixture
+  and cited the spec section by raw line numbers — both corrected. No
+  CHANGELOG (no `user.*` audience). Audit-016 M1 / M2 / M3 / L4 / L6 / H2.
+  Trace: `sdd/traces/bk-264-graph-spec-reality-sync.yml`.
+
 - [x] **BK-284 — Cassette recording layer redesign: backend-agnostic core + REC-NNN spec**
   spec: REC-001..REC-008 (new spec 049) + TEST-007 cross-link · effort: L · audience: infra.test, library.maintainer
   `tests/backends/fixtures/_cassettes.py` had grown two parallel hand-rolled

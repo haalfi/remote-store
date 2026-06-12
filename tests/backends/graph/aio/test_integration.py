@@ -2,7 +2,7 @@
 
 Some Graph invariants cannot be validated against ``respx`` fixtures because they
 depend on service-imposed behaviour the mock does not reproduce (spec 044
-lines 1175-1201): the device-code handshake (GR-007), real 320 KiB chunk
+§ Integration-only): the device-code handshake (GR-007), real 320 KiB chunk
 alignment (GR-020), genuine async copy monitor polling (GR-026), authentic
 ``Retry-After`` throttling (GR-034), and ``507`` quota exhaustion (GR-054). This
 module carries those plus the RFC-0010 10 MiB upload-session + range-read
@@ -20,7 +20,7 @@ Two skip-gates, both required to run:
 2. ``RS_TEST_LIVE_GRAPH=1`` env var — the same opt-in the ``graph_live``
    conformance fixture uses.
 
-Fixture-time precondition (fails loudly, does not skip): the four ``GRAPH_*``
+Fixture-time precondition (fails loudly, does not skip): the three ``GRAPH_*``
 credential vars must be present once the opt-in is set —
 ``require_graph_live_credentials`` calls ``pytest.fail`` (not skip) for a missing
 var, because a silent skip here would read as "tested" when it was not.
