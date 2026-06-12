@@ -3,19 +3,26 @@
 ``record_cassettes.py`` embeds assumptions that can silently drift when tests
 or fixtures change:
 
-1. ``cassette_dir`` — must resolve to the same path as the matching
-   ``CASSETTE_DIR_<BACKEND>`` constant in ``tests/backends/fixtures/_cassettes.py``.
+1. ``_PROFILES`` — every ``_BACKENDS`` key must map to the matching
+   ``CassetteProfile`` (the single source for cassette dirs and scrub/audit
+   knowledge, spec 049).
 2. ``_CONFORMANCE`` — must be a real directory on disk.
 3. k-filter fixture IDs — every fixture-name token in ``sync_k`` / ``async_k`` /
    ``replay_k`` must be a substring of at least one registered ``BackendFixture``
    name (else ``pytest -k`` selects nothing and exits 0 — silent zero-selection).
 
-The registration / cassette-dir guards are parametrized over **every**
+Plus the Step-4 gates: the forbidden-pattern byte scan and the named-rule
+audit (REC-006) that fails a full recording when a required-to-fire rule
+never fired.
+
+The registration / profile guards are parametrized over **every**
 ``_BACKENDS`` key, so a future backend addition cannot drift silently.
 """
 
 from __future__ import annotations
 
+import dataclasses
+import json
 import re
 import sys
 from pathlib import Path
@@ -33,9 +40,6 @@ import record_cassettes as _rc  # noqa: E402
 
 _ALL_BACKENDS = sorted(_rc._BACKENDS)
 
-# Each backend's cassette_dir must equal this constant from _cassettes.py.
-_CASSETTE_DIR_CONSTANT = {"azure": "CASSETTE_DIR_AZURE", "graph": "CASSETTE_DIR_GRAPH"}
-
 # pytest -k expression keywords that are not fixture-name tokens.
 _K_KEYWORDS = frozenset({"and", "or", "not"})
 
@@ -44,6 +48,12 @@ _K_KEYWORDS = frozenset({"and", "or", "not"})
 def rc():
     """Import ``record_cassettes`` from the scripts directory."""
     return _rc
+
+
+def _redirect_profile_dir(monkeypatch: pytest.MonkeyPatch, backend: str, cassette_dir: Path) -> None:
+    """Point *backend*'s profile at *cassette_dir* (frozen dataclass → replace)."""
+    profile = dataclasses.replace(_rc._PROFILES[backend], cassette_dir=cassette_dir)
+    monkeypatch.setitem(_rc._PROFILES, backend, profile)
 
 
 def _k_fixture_tokens(expr: str) -> list[str]:
@@ -55,21 +65,18 @@ class TestBackendConfigTable:
     """Structural guards parametrized over every _BACKENDS entry."""
 
     @pytest.mark.parametrize("backend", _ALL_BACKENDS)
-    def test_cassette_dir_matches_canonical_constant(self, rc, backend: str) -> None:
-        """_BACKENDS cassette_dir must equal the backend's CASSETTE_DIR_* constant."""
-        import tests.backends.fixtures._cassettes as cassettes
+    def test_backend_has_matching_profile(self, rc, backend: str) -> None:
+        """Every _BACKENDS key maps to the profile of the same backend family.
 
-        constant_name = _CASSETTE_DIR_CONSTANT.get(backend)
-        assert constant_name is not None, (
-            f"no cassette-dir constant mapped for backend {backend!r}; "
-            "add it to _CASSETTE_DIR_CONSTANT when registering a new backend"
+        The profile is the single source for the cassette directory and the
+        Step-4 gate set; a key without one would crash main() at lookup.
+        """
+        profile = rc._PROFILES.get(backend)
+        assert profile is not None, (
+            f"no cassette profile mapped for backend {backend!r}; add it to _PROFILES when registering a new backend"
         )
-        expected = getattr(cassettes, constant_name).resolve()
-        script_dir = rc._BACKENDS[backend]["cassette_dir"].resolve()
-        assert script_dir == expected, (
-            f"record_cassettes._BACKENDS[{backend!r}]['cassette_dir'] ({script_dir}) "
-            f"diverges from {constant_name} ({expected}); keep them in sync"
-        )
+        assert profile.backend == backend
+        assert profile.cassette_dir.is_dir(), f"{profile.cassette_dir} does not exist"
 
     @pytest.mark.parametrize("backend", _ALL_BACKENDS)
     def test_k_filter_fixture_ids_are_registered(self, rc, backend: str) -> None:
@@ -155,13 +162,15 @@ class TestMainAsyncOnlyBackend:
         monkeypatch.setattr(sys, "argv", ["record_cassettes.py", "--backend", "graph"])
         monkeypatch.setenv("GRAPH_DRIVE_ID", "b!drive-xyz")
         monkeypatch.setattr(rc, "_preflight_env", lambda cfg, *, verify_only: None)
+        monkeypatch.setattr(rc, "_audit_named_rules", lambda profile, manifest_base: None)
+        monkeypatch.chdir(tmp_path)  # manifest files land in tmp_path/tmp/
         runs: list[tuple[str, ...]] = []
         monkeypatch.setattr(rc, "_run", lambda *args: runs.append(args))
-        graph_cfg = dict(rc._BACKENDS["graph"])
-        graph_cfg["cassette_dir"] = tmp_path  # empty dir → scrub-verify clean
+        _redirect_profile_dir(monkeypatch, "graph", tmp_path)  # empty dir → scrub-verify clean
         # _run is mocked, so no cassettes are written; pin the floor to 0 here so
         # this test exercises the Step-2-skip path independent of the production
         # min_cassettes value (which the count-guard test owns).
+        graph_cfg = dict(rc._BACKENDS["graph"])
         graph_cfg["min_cassettes"] = 0
         monkeypatch.setitem(rc._BACKENDS, "graph", graph_cfg)
 
@@ -184,8 +193,9 @@ class TestMainAsyncOnlyBackend:
         monkeypatch.setenv("GRAPH_DRIVE_ID", "b!drive-xyz")
         monkeypatch.setattr(rc, "_preflight_env", lambda cfg, *, verify_only: None)
         monkeypatch.setattr(rc, "_run", lambda *args: None)
+        monkeypatch.chdir(tmp_path)
+        _redirect_profile_dir(monkeypatch, "graph", tmp_path)  # empty → 0 recorded
         graph_cfg = dict(rc._BACKENDS["graph"])
-        graph_cfg["cassette_dir"] = tmp_path  # empty → 0 recorded
         graph_cfg["min_cassettes"] = 5
         monkeypatch.setitem(rc._BACKENDS, "graph", graph_cfg)
 
@@ -194,11 +204,11 @@ class TestMainAsyncOnlyBackend:
         assert exc.value.code == 1
 
     def test_step4_fails_on_forbidden_pii_marker(self, rc, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-        """BK-262 review: Step-4 enforces the scrub layer's broader PII guarantee,
-        not just the drive id. A cassette carrying the pre-signed ``docID`` site
-        GUID (a forbidden_patterns marker) makes ``main()`` exit non-zero even
-        though the account name itself is absent — so a re-record cannot silently
-        reintroduce it."""
+        """Step-4 enforces the scrub layer's broader PII guarantee, not just the
+        drive id. A cassette carrying the pre-signed ``docID`` site GUID (a
+        Graph forbidden-pattern addition) makes ``main()`` exit non-zero even
+        though the account name itself is absent — so a re-record cannot
+        silently reintroduce it."""
         # --verify-only skips the Step-1 delete (and Steps 2-3 / count guard), so
         # the seeded leaky cassette survives to Step 4 — the gate under test.
         monkeypatch.setattr(sys, "argv", ["record_cassettes.py", "--backend", "graph", "--verify-only"])
@@ -211,13 +221,74 @@ class TestMainAsyncOnlyBackend:
             b"headers:\n  docID:\n  - my.microsoftpersonalcontent.com_"
             b"52b575dd-9200-466f-a853-18401ad957cb_6a30444f-3aac-4f4c-a049-deadbeef\n"
         )
-        graph_cfg = dict(rc._BACKENDS["graph"])
-        graph_cfg["cassette_dir"] = tmp_path
-        monkeypatch.setitem(rc._BACKENDS, "graph", graph_cfg)
+        _redirect_profile_dir(monkeypatch, "graph", tmp_path)
 
         with pytest.raises(SystemExit) as exc:
             rc.main()
         assert exc.value.code == 1
+
+
+class TestNamedRuleAudit:
+    """REC-006: the Step-4 named-rule audit gates required-to-fire rules at zero."""
+
+    def test_aggregate_manifest_sums_step_and_worker_files(self, rc, tmp_path: Path) -> None:
+        base = tmp_path / "scrub-manifest-graph"
+        (tmp_path / "scrub-manifest-graph-sync.json").write_text(json.dumps({"graph.drive-id": 2}))
+        (tmp_path / "scrub-manifest-graph-async.json.gw0").write_text(
+            json.dumps({"graph.drive-id": 3, "graph.body.download-url": 1})
+        )
+        assert rc._aggregate_manifest(base) == {"graph.drive-id": 5, "graph.body.download-url": 1}
+
+    def test_aggregate_manifest_returns_none_without_files(self, rc, tmp_path: Path) -> None:
+        assert rc._aggregate_manifest(tmp_path / "scrub-manifest-graph") is None
+
+    def test_audit_dies_when_required_rule_never_fired(self, rc, tmp_path: Path) -> None:
+        """Zero fires on a required-to-fire rule means the scrub layer silently
+        stopped seeing the value it owns — the audit must refuse the corpus."""
+        base = tmp_path / "scrub-manifest-graph"
+        counts = {name: 1 for name, _ in rc._PROFILES["graph"].named_rules()}
+        counts["graph.drive-id"] = 0  # required rule at zero
+        (tmp_path / "scrub-manifest-graph-async.json").write_text(json.dumps(counts))
+        with pytest.raises(SystemExit) as exc:
+            rc._audit_named_rules(rc._PROFILES["graph"], base)
+        assert exc.value.code == 1
+
+    def test_audit_passes_when_required_rules_fired(
+        self, rc, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Opportunistic rules at zero never gate; required rules >= 1 pass."""
+        base = tmp_path / "scrub-manifest-graph"
+        counts = {
+            name: (1 if expectation == "required-to-fire" else 0)
+            for name, expectation in rc._PROFILES["graph"].named_rules()
+        }
+        (tmp_path / "scrub-manifest-graph-async.json").write_text(json.dumps(counts))
+        rc._audit_named_rules(rc._PROFILES["graph"], base)  # must not raise
+        out = capsys.readouterr().out
+        # Every rule's fire count is printed for the review record.
+        assert "graph.drive-id: 1 (required-to-fire)" in out
+
+    def test_audit_dies_when_manifest_missing(self, rc, tmp_path: Path) -> None:
+        """A full recording with no manifest is a wiring defect, not a pass."""
+        with pytest.raises(SystemExit) as exc:
+            rc._audit_named_rules(rc._PROFILES["graph"], tmp_path / "scrub-manifest-graph")
+        assert exc.value.code == 1
+
+    def test_verify_only_skips_named_audit(self, rc, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """Fire counts are workload-dependent: without a full recording the
+        audit cannot assert anything, so --verify-only (and --node) skip it."""
+        monkeypatch.setattr(sys, "argv", ["record_cassettes.py", "--backend", "graph", "--verify-only"])
+        monkeypatch.setenv("GRAPH_DRIVE_ID", "b!drive-xyz")
+        monkeypatch.setattr(rc, "_preflight_env", lambda cfg, *, verify_only: None)
+        monkeypatch.setattr(rc, "_run", lambda *args: None)
+        calls = {"count": 0}
+        monkeypatch.setattr(
+            rc, "_audit_named_rules", lambda profile, manifest_base: calls.__setitem__("count", calls["count"] + 1)
+        )
+        _redirect_profile_dir(monkeypatch, "graph", tmp_path)  # empty dir → byte scan clean
+
+        rc.main()
+        assert calls["count"] == 0
 
 
 class TestPreflightEnvGuard:
@@ -237,7 +308,6 @@ class TestPreflightEnvGuard:
         sentinel.write_bytes(b"interactions: []\n")
 
         cfg = dict(rc._BACKENDS["azure"])
-        cfg["cassette_dir"] = cassette_dir
 
         monkeypatch.delenv("RS_TEST_LIVE_HNS", raising=False)
 

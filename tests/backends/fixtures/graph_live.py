@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.backends.fixtures._cassettes import GRAPH_CONFORMANCE_BASE_PATH
+from tests.backends.fixtures._cassettes_graph import GRAPH_CONFORMANCE_BASE_PATH, GRAPH_PROFILE
 from tests.backends.fixtures._live_env import require_graph_live_credentials
 from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
@@ -97,6 +97,7 @@ register(
         capabilities=_capabilities(),
         aclose=_aclose,
         marks=(pytest.mark.live,),
+        cassette_profile=GRAPH_PROFILE,
         **_meta.to_kwargs(),
     )
 )

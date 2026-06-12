@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
     from remote_store._capabilities import Capability
+    from tests.backends.fixtures._cassettes import CassetteProfile
 
 
 AnyBackend = Backend | AsyncBackend
@@ -139,6 +140,16 @@ class BackendFixture:
     name. For example, ``pytest.mark.os_sensitive`` on the ``local``
     fixture so that LocalBackend conformance is included in the
     macOS/Windows CI matrix that selects ``-m "os_sensitive"``.
+    """
+    cassette_profile: CassetteProfile | None = None
+    """The cassette profile of this fixture's backend family, or ``None``.
+
+    Set on HTTP record/replay fixtures only (spec 049, REC-007): carrying a
+    profile is the single registration act that opts the fixture into
+    cassette-directory routing, name aliasing, the missing-cassette skip,
+    the scrub config, and the leak audit. Non-HTTP fixtures (and HTTP
+    fixtures without a cassette tier, e.g. Azurite) leave it ``None`` and
+    are invisible to cassette routing.
     """
 
 

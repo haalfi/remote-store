@@ -278,8 +278,11 @@ missing for a test, the replay fixture skips that parametrize id
 rather than failing.
 
 **Implementation choice** (cassette tech, scrubbing rules, async
-pipeline coverage) is deferred to the implementing BK item. This
-spec fixes the contract, not the mechanism.
+pipeline coverage) is specified separately: this spec fixes the
+contract, not the mechanism. See
+[spec 049](049-live-recording-architecture.md) for the recording
+transport — the scrub core, per-backend cassette profiles, pre-signed
+URL policy, and audit gates.
 
 **Scope:** [TEST-008](#test-008-replay-scope-is-http-transport-only)
 narrows this invariant — see its "Noted exception — S3" paragraph for

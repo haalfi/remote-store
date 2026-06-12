@@ -22,94 +22,118 @@ Tests can still opt in to capability filtering at the class level::
 The hook detects an explicit ``parametrize`` and skips its own walk in
 that case, so explicit markers and the auto-walk cohabit cleanly.
 
-HTTP cassette / replay (TEST-007)
-----------------------------------
-This conftest also hosts the pytest-recording wiring that bridges
-``azure_live`` (record source) and ``azure_replay`` (replay consumer):
+HTTP cassette / replay (TEST-007 / spec 049)
+--------------------------------------------
+This conftest also hosts the pytest-recording wiring that bridges each
+``<backend>_live`` (record source) and ``<backend>_replay`` (playback
+consumer) fixture pair. Everything routes through the fixture registry:
+a fixture registered with a ``cassette_profile`` opts into all of it
+(REC-007); there is no per-backend table here.
 
 * ``pytest_configure`` — plugin guard: fails fast when pytest-recording is
   not installed so the ``record_mode`` fixture is never missing.
-* ``vcr_cassette_dir`` — directs all azure cassettes to the spec-mandated
-  path ``tests/backends/cassettes/azure/``.
-* ``default_cassette_name`` — normalises ``[azure_live]`` / ``[azure_replay]``
-  to ``[azure]`` (and the async variants to ``[azure_async]``) so that the
-  cassette recorded from the live fixture is the same file read by the
-  replay fixture (plan challenge 1).
-* ``vcr_config`` — the scrubbing layer; drops credentials, rewrites the real
-  account name and per-call filesystem UUID to fixed placeholders.
+* ``vcr_cassette_dir`` — routes each cassette to its profile's per-backend
+  directory (``tests/backends/cassettes/<backend>/``).
+* ``default_cassette_name`` — normalises live/replay fixture ids to the
+  profile's canonical suffix so both share one cassette file.
+* ``vcr_config`` — the scrubbing layer, built from the node's profile.
 * ``pytest_collection_modifyitems`` — missing-cassette → skip hook (TEST-007:
   if the cassette is absent, skip rather than raise).
+* ``pytest_sessionfinish`` — dumps the scrub-fire manifest for the
+  recorder's named-pattern audit (REC-006).
 """
 
 from __future__ import annotations
 
+import functools
 import importlib.util
 import logging
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from tests.backends.fixtures import BackendFixture, fixture_params
-from tests.backends.fixtures._cassettes import (
-    CASSETTE_DIR_AZURE,
-    CASSETTE_DIR_GRAPH,
-    build_graph_vcr_config,
-    build_vcr_config,
-    live_connection_string,
-    parse_account_name,
-)
+from tests.backends.fixtures import BackendFixture, all_fixtures, fixture_params
+from tests.backends.fixtures._cassettes import CassetteProfile, build_profile_vcr_config, dump_scrub_manifest
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterator
 
     from remote_store._backend import Backend
 
+# Harmless fallback for the non-vcr nodes pytest-recording resolves
+# ``vcr_cassette_dir`` for (the value is unused on those nodes).
+_CASSETTES_ROOT: Path = Path(__file__).resolve().parent.parent / "cassettes"
+
 
 _LOG = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Cassette name normalisation (TEST-007 / plan challenge 1)
+# Cassette routing (TEST-007 / spec 049 REC-007)
 # ---------------------------------------------------------------------------
 
-# Maps each parametrize-id suffix that carries cassette traffic to a
-# backend-canonical suffix shared by both the live (recording) and replay
-# (playback) parametrizations.  The normalisation ensures that
-# ``test_foo[azure_live]`` and ``test_foo[azure_replay]`` share one cassette
-# file (``test_foo[azure].yaml``) — and similarly for the async variants.
-_CASSETTE_ID_ALIASES: dict[str, str] = {
-    "azure_live": "azure",
-    "azure_live_async": "azure_async",
-    "azure_replay": "azure",
-    "azure_replay_async": "azure_async",
-    # Graph is async-only (no sync twin), so live (record) and replay (playback)
-    # share one canonical "graph" suffix.
-    "graph_live": "graph",
-    "graph_replay": "graph",
-}
-
-# Each cassette-bearing fixture id maps to its spec-mandated per-backend cassette
-# directory (TEST-007). A node id carrying no listed fixture has no cassette.
-_FIXTURE_CASSETTE_DIRS: dict[str, Any] = {
-    "azure_live": CASSETTE_DIR_AZURE,
-    "azure_live_async": CASSETTE_DIR_AZURE,
-    "azure_replay": CASSETTE_DIR_AZURE,
-    "azure_replay_async": CASSETTE_DIR_AZURE,
-    "graph_live": CASSETTE_DIR_GRAPH,
-    "graph_replay": CASSETTE_DIR_GRAPH,
-}
+# All cassette routing derives from the fixture registry: a fixture
+# registered with ``cassette_profile=<PROFILE>`` opts into directory routing,
+# name aliasing, the missing-cassette skip, and the scrub config in that one
+# act. A node id carrying no profile-bearing fixture has no cassette.
 
 
-def _cassette_dir_for_node_name(name: str) -> None | Any:
-    """Return the cassette ``Path`` for the fixture id in *name*, or ``None``.
+@functools.cache
+def _cassette_routing() -> dict[str, CassetteProfile]:
+    """fixture id → cassette profile, from the registry.
 
-    Matches each fixture id as a whole parametrize-bracket component so no
-    partial-name collision can occur (mirrors ``_normalise_cassette_name``).
+    Cached on first use (collection time), after the ``tests.backends``
+    conftest has imported every per-fixture module for side-effectful
+    registration. Fails loud on a profile-bearing fixture missing from its
+    profile's ``fixture_aliases`` — the one declaration the profile owner
+    must extend per fixture.
     """
-    for fid, cassette_dir in _FIXTURE_CASSETTE_DIRS.items():
-        if f"[{fid}]" in name or f"[{fid}-" in name or f"-{fid}]" in name or f"-{fid}-" in name:
-            return cassette_dir
+    routing: dict[str, CassetteProfile] = {}
+    for fixture in all_fixtures():
+        profile = fixture.cassette_profile
+        if profile is None:
+            continue
+        if fixture.name not in profile.fixture_aliases:
+            raise RuntimeError(
+                f"fixture {fixture.name!r} carries the {profile.backend!r} cassette profile "
+                "but has no fixture_aliases entry; add it to the profile declaration"
+            )
+        routing[fixture.name] = profile
+    return routing
+
+
+def _contains_fixture_token(name: str, fid: str) -> bool:
+    """True when *fid* appears as a whole parametrize-bracket component.
+
+    Bounded by ``[``, ``]``, or ``-`` so no partial-name collision can occur.
+    """
+    return f"[{fid}]" in name or f"[{fid}-" in name or f"-{fid}]" in name or f"-{fid}-" in name
+
+
+def _profile_for_node_name(name: str) -> CassetteProfile | None:
+    """Return the cassette profile for the fixture id in *name*, or ``None``."""
+    for fid, profile in _cassette_routing().items():
+        if _contains_fixture_token(name, fid):
+            return profile
     return None
+
+
+def _profile_for_vcr_node(node: Any) -> CassetteProfile | None:
+    """Profile for *node*, failing loud when a vcr-marked node has none.
+
+    pytest-recording resolves the cassette fixtures for every async
+    conformance test, not only vcr-marked ones (a non-cassette param shares
+    the parametrized class with the cassette params) — so a missing profile
+    is an error only when the node actually carries ``pytest.mark.vcr``.
+    """
+    profile = _profile_for_node_name(node.name)
+    if profile is None and node.get_closest_marker("vcr") is not None:
+        raise RuntimeError(
+            f"vcr-marked test {node.name!r} has no cassette profile; "
+            "register its fixture with cassette_profile=<PROFILE> (REC-007)"
+        )
+    return profile
 
 
 # Forbidden characters replaced by pytest-recording's get_default_cassette_name.
@@ -130,7 +154,8 @@ def _normalise_cassette_name(node_name: str, cls: type | None) -> str:
     ``-`` so no partial-name collisions can occur.
     """
     name = node_name
-    for fixture_name, canonical in _CASSETTE_ID_ALIASES.items():
+    for fixture_name, profile in _cassette_routing().items():
+        canonical = profile.fixture_aliases[fixture_name]
         name = name.replace(f"[{fixture_name}]", f"[{canonical}]")
         name = name.replace(f"[{fixture_name}-", f"[{canonical}-")
         name = name.replace(f"-{fixture_name}]", f"-{canonical}]")
@@ -148,14 +173,12 @@ def _cassette_path_for_item(item: pytest.Item) -> None | Any:
     fixture (and therefore has no cassette path to check). The directory is the
     fixture's per-backend cassette dir (``azure`` / ``graph``), per TEST-007.
     """
-    from pathlib import Path  # noqa: PLC0415 -- local to avoid top-level Path import noise
-
-    cassette_dir = _cassette_dir_for_node_name(item.name)
-    if cassette_dir is None:
+    profile = _profile_for_node_name(item.name)
+    if profile is None:
         return None
     cls = getattr(item, "cls", None)
     cassette_name = _normalise_cassette_name(item.name, cls)
-    return Path(cassette_dir) / f"{cassette_name}.yaml"
+    return profile.cassette_dir / f"{cassette_name}.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -202,20 +225,15 @@ def vcr_cassette_dir(request: pytest.FixtureRequest) -> str:
     pytest-recording resolves this fixture for *every* async conformance test,
     not only vcr-marked ones (a non-cassette param like ``memory_async_native``
     shares the parametrized class with the cassette params). So a missing
-    ``_FIXTURE_CASSETTE_DIRS`` entry only fails loudly when the node actually
-    carries ``pytest.mark.vcr`` — a genuinely-vcr-marked id with no registered
-    directory. For non-vcr nodes the returned value is unused, so an arbitrary
+    profile only fails loudly when the node actually carries
+    ``pytest.mark.vcr`` — a genuinely-vcr-marked id with no registered
+    profile. For non-vcr nodes the returned value is unused, so an arbitrary
     valid directory is harmless.
     """
-    cassette_dir = _cassette_dir_for_node_name(request.node.name)
-    if cassette_dir is not None:
-        return str(cassette_dir)
-    if request.node.get_closest_marker("vcr") is not None:
-        raise RuntimeError(
-            f"vcr-marked test {request.node.name!r} has no cassette directory; "
-            "register its fixture id in _FIXTURE_CASSETTE_DIRS"
-        )
-    return str(CASSETTE_DIR_AZURE)  # unused: this node has no vcr marker
+    profile = _profile_for_vcr_node(request.node)
+    if profile is not None:
+        return str(profile.cassette_dir)
+    return str(_CASSETTES_ROOT)  # unused: this node has no vcr marker
 
 
 @pytest.fixture
@@ -225,66 +243,44 @@ def default_cassette_name(request: pytest.FixtureRequest) -> str:
     ``test_foo[azure_live]`` and ``test_foo[azure_replay]`` must read and write
     the same cassette file.  pytest-recording's default uses the raw node name,
     which would produce two different files.  This fixture applies the
-    ``_CASSETTE_ID_ALIASES`` map to collapse them to a shared canonical suffix
-    (``[azure]`` / ``[azure_async]``).
+    profiles' ``fixture_aliases`` to collapse them to a shared canonical
+    suffix (``[azure]`` / ``[azure_async]``).
     """
     return _normalise_cassette_name(request.node.name, request.cls)
 
 
 # ---------------------------------------------------------------------------
-# Scrubbing layer — vcr_config fixture (TEST-007)
+# Scrubbing layer — vcr_config fixture (TEST-007 / spec 049)
 # ---------------------------------------------------------------------------
-
-
-# The real-credential resolvers are plain functions, not fixtures, so
-# ``vcr_config`` can call ONLY the one matching the test's backend family.
-# As session fixtures they were both eagerly evaluated for every vcr test, so a
-# graph ``--record`` run would trip the azure live-connection-string check even
-# though graph needs only ``GRAPH_DRIVE_ID``. Both still short-circuit to
-# ``None`` in replay mode, so a normal ``hatch run test`` touches no creds.
-
-
-def _real_azure_account(record_mode: str) -> str | None:
-    """Real storage-account name (record mode) or ``None`` (replay mode)."""
-    if record_mode == "none":
-        return None
-    return parse_account_name(live_connection_string())
-
-
-def _real_graph_drive_id(record_mode: str) -> str | None:
-    """Real Graph ``drive_id`` (record mode) or ``None`` (replay mode).
-
-    The value is rewritten to ``FAKE_DRIVE_ID`` in every recorded graph cassette.
-    """
-    if record_mode == "none":
-        return None
-    return os.environ.get("GRAPH_DRIVE_ID")
 
 
 @pytest.fixture
 def vcr_config(request: pytest.FixtureRequest, record_mode: str) -> dict[str, Any]:
-    """Scrubbing layer for vcrpy, dispatched per backend family.
+    """Scrubbing layer for vcrpy: the node's profile builds its config.
 
-    Delegates to ``_cassettes.build_graph_vcr_config`` for graph fixtures
-    (bearer token, download-URL, drive-id scrub) and ``build_vcr_config`` for
-    azure (SharedKey, account name, filesystem UUID) — each the single source
-    of truth for what gets stripped out of its cassettes. Only the resolver for
-    the test's own backend family runs, so neither family's live config is
-    required to record the other's cassettes.
+    The profile is the single source of truth for what gets stripped out of
+    its cassettes. Its ``EnvRedact`` resolvers run only in record mode and
+    only for the test's own backend family, so neither family's live config
+    is required to record the other's cassettes.
 
-    As with ``vcr_cassette_dir``, pytest-recording resolves this for every async
-    conformance test; an unregistered id only fails loudly when the node is
-    actually ``pytest.mark.vcr``. For a non-vcr node the value is unused.
+    As with ``vcr_cassette_dir``, pytest-recording resolves this for every
+    async conformance test; an unregistered id only fails loudly when the
+    node is actually ``pytest.mark.vcr``. For a non-vcr node the value is
+    unused, so the empty dict is harmless.
     """
-    cassette_dir = _cassette_dir_for_node_name(request.node.name)
-    if cassette_dir == CASSETTE_DIR_GRAPH:
-        return build_graph_vcr_config(_real_graph_drive_id(record_mode))
-    if cassette_dir != CASSETTE_DIR_AZURE and request.node.get_closest_marker("vcr") is not None:
-        raise RuntimeError(
-            f"vcr-marked test {request.node.name!r} has no scrub config; "
-            "register its fixture id in _FIXTURE_CASSETTE_DIRS"
-        )
-    return build_vcr_config(_real_azure_account(record_mode))
+    profile = _profile_for_vcr_node(request.node)
+    if profile is None:
+        return {}
+    live_values = profile.resolve_live_values() if record_mode != "none" else None
+    return build_profile_vcr_config(profile, live_values)
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Dump the per-rule scrub-fire manifest for the recorder's Step-4 audit.
+
+    No-op unless ``record_cassettes.py`` exported ``_RS_SCRUB_MANIFEST``.
+    """
+    dump_scrub_manifest()
 
 
 # ---------------------------------------------------------------------------

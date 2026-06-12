@@ -12,7 +12,9 @@ Steps (all backends):
     1. Delete existing cassettes for the backend.
     2. Record sync fixtures against the live service.
     3. Record async fixtures against the live service.
-    4. Verify no real account name survived scrubbing.
+    4. Verify the scrub: no live account identity or forbidden leak marker
+       in any cassette, and (full recordings only) every required-to-fire
+       named rule fired at least once (spec 049, REC-006).
     5. Replay smoke test (Stage 1) — confirms cassettes are replay-compatible.
 
 Pass ``--verify-only`` to skip steps 1-3 and re-run only 4-5 (useful after
@@ -26,17 +28,26 @@ run unchanged. ``SELECTOR`` is a pytest node id (or path) and must name the
 *live* variant of the test, e.g. ``...::test_y[azure_live]`` or
 ``...::test_y[azure_live_async]``. Use this to add or refresh one cassette
 without churning every other file's volatile headers.
+
+The named-rule audit (Step 4) reads the scrub-fire manifest the conformance
+conftest dumps when this script exports ``_RS_SCRUB_MANIFEST`` to the
+recording subprocesses. It is skipped in ``--verify-only`` / ``--node`` mode:
+fire counts are workload-dependent, so only a full-slice recording can
+meaningfully assert a required rule fired. The byte-scan half (forbidden
+patterns) runs always.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
-from typing import NoReturn
+from typing import TYPE_CHECKING, NoReturn
 
 _CONFORMANCE = "tests/backends/conformance/"
 
@@ -45,9 +56,16 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-# Single source of truth for the env-independent Graph leak markers, shared with
-# the creds-free CI sweep in tests/backends/fixtures/test_cassettes.py (BK-262).
-from tests.backends.fixtures._cassettes import GRAPH_FORBIDDEN_CASSETTE_PATTERNS  # noqa: E402
+# Cassette directories, forbidden leak markers, and the named-rule inventory
+# all come from the per-backend profiles — the same single source the
+# conformance conftest and the creds-free CI sweep consume (spec 049).
+from tests.backends.fixtures._cassettes_azure import AZURE_PROFILE  # noqa: E402
+from tests.backends.fixtures._cassettes_graph import GRAPH_PROFILE  # noqa: E402
+
+if TYPE_CHECKING:
+    from tests.backends.fixtures._cassettes import CassetteProfile
+
+_PROFILES = {profile.backend: profile for profile in (AZURE_PROFILE, GRAPH_PROFILE)}
 
 # ---------------------------------------------------------------------------
 # Per-backend account-name resolvers
@@ -61,7 +79,7 @@ def _resolve_azure_account() -> str:
     Exits with a clear message if the env var is missing, malformed, or points
     at the Azurite emulator (which would produce a false-clean scrub result).
     """
-    from tests.backends.fixtures._cassettes import _AZURITE_FRAGMENTS, parse_account_name  # noqa: PLC0415
+    from tests.backends.fixtures._cassettes_azure import _AZURITE_FRAGMENTS, parse_account_name  # noqa: PLC0415
 
     try:
         from dotenv import load_dotenv  # noqa: PLC0415
@@ -122,9 +140,10 @@ def _resolve_graph_drive_id() -> str:
     return drive_id
 
 
+# CLI / workflow facts only — k-filters, opt-in env vars, setup docs, count
+# floors. Cassette directories and scrub/audit knowledge live on the profiles.
 _BACKENDS: dict[str, dict] = {
     "azure": {
-        "cassette_dir": Path("tests/backends/cassettes/azure"),
         "sync_k": "azure_live and not async",
         "async_k": "azure_live_async",
         "replay_k": "azure_replay",
@@ -138,7 +157,6 @@ _BACKENDS: dict[str, dict] = {
         "min_cassettes": 200,
     },
     "graph": {
-        "cassette_dir": Path("tests/backends/cassettes/graph"),
         # Graph is async-only: no sync fixtures, so Step 2 is skipped.
         "sync_k": None,
         "async_k": "graph_live",
@@ -151,12 +169,6 @@ _BACKENDS: dict[str, dict] = {
         # tests while still failing loudly if pytest silently selects zero
         # (k-filter mismatch, stage gate, missing live opt-in).
         "min_cassettes": 100,
-        # Extra Step-4 leak markers beyond the drive id (BK-262 review): the
-        # scrub layer is responsible for these, so the gate asserts a re-record
-        # cannot silently reintroduce them. Defined once in _cassettes.py and
-        # shared with the creds-free CI sweep so the recorder gate and CI assert
-        # the identical guarantee (env-independent, case-insensitive).
-        "forbidden_patterns": GRAPH_FORBIDDEN_CASSETTE_PATTERNS,
     },
 }
 
@@ -168,6 +180,49 @@ _BACKENDS: dict[str, dict] = {
 def _die(msg: str) -> NoReturn:
     print(f"\nERROR: {msg}", file=sys.stderr)
     sys.exit(1)
+
+
+def _aggregate_manifest(manifest_base: Path) -> dict[str, int] | None:
+    """Sum the per-step (and per-xdist-worker) scrub-fire manifests.
+
+    Returns ``None`` when no manifest file exists — a recording ran but the
+    conformance conftest never dumped counts, which is itself a wiring defect
+    the audit must not paper over.
+    """
+    files = sorted(manifest_base.parent.glob(manifest_base.name + "*"))
+    if not files:
+        return None
+    counts: Counter[str] = Counter()
+    for path in files:
+        counts.update(json.loads(path.read_text(encoding="utf-8")))
+    return dict(counts)
+
+
+def _audit_named_rules(profile: CassetteProfile, manifest_base: Path) -> None:
+    """Named-rule audit (REC-006): every required-to-fire rule fired >= once.
+
+    Prints each rule's fire count for the review record; exact counts never
+    gate (workload-dependent) — only required-at-zero fails.
+    """
+    print("  Named-rule audit (required-to-fire rules must have fired):")
+    counts = _aggregate_manifest(manifest_base)
+    if counts is None:
+        _die(
+            f"no scrub manifest found under {manifest_base}* — the recording ran but "
+            "the conformance conftest dumped no fire counts (manifest wiring broken)"
+        )
+    failures: list[str] = []
+    for name, expectation in profile.named_rules():
+        fired = counts.get(name, 0)
+        print(f"    {name}: {fired} ({expectation})")
+        if expectation == "required-to-fire" and fired == 0:
+            failures.append(name)
+    if failures:
+        _die(
+            "required-to-fire rule(s) never fired during recording: "
+            + ", ".join(failures)
+            + " — the scrub layer no longer sees the value it owns; do NOT commit these cassettes"
+        )
 
 
 def _run(*args: str) -> None:
@@ -250,8 +305,13 @@ def main() -> None:
     opts = parser.parse_args()
 
     cfg = _BACKENDS[opts.backend]
-    cassette_dir: Path = cfg["cassette_dir"]
+    profile = _PROFILES[opts.backend]
+    cassette_dir: Path = profile.cassette_dir
     single = opts.node is not None
+    # Where the conformance conftest dumps per-rule scrub-fire counts when a
+    # full recording runs (one file per recording step; xdist workers add
+    # their own suffix). Ephemeral and gitignored — only zero/non-zero gates.
+    manifest_base = Path("tmp") / f"scrub-manifest-{opts.backend}"
 
     # Single mode records against live too, so it runs the recording preflight
     # (opt-in flag + cred validation). It performs no Step-1 delete, so the
@@ -294,8 +354,13 @@ def main() -> None:
             deleted += 1
         print(f"  Deleted {deleted} file(s) from {cassette_dir}/")
 
+        manifest_base.parent.mkdir(exist_ok=True)
+        for stale in manifest_base.parent.glob(manifest_base.name + "*"):
+            stale.unlink()
+
         if cfg["sync_k"]:
             _section("Step 2 — record sync fixtures")
+            os.environ["_RS_SCRUB_MANIFEST"] = f"{manifest_base}-sync.json"
             _run(
                 sys.executable,
                 "-m",
@@ -314,6 +379,7 @@ def main() -> None:
             _section("Step 2 — record sync fixtures (skipped: async-only backend)")
 
         _section("Step 3 — record async fixtures")
+        os.environ["_RS_SCRUB_MANIFEST"] = f"{manifest_base}-async.json"
         _run(
             sys.executable,
             "-m",
@@ -328,6 +394,8 @@ def main() -> None:
             "--tb=short",
             "-q",
         )
+        # The Step-5 replay subprocess must not overwrite the recording manifests.
+        os.environ.pop("_RS_SCRUB_MANIFEST", None)
 
     if not opts.verify_only and not single:
         min_expected = cfg.get("min_cassettes", 0)
@@ -365,7 +433,9 @@ def main() -> None:
         _die("real account name survived scrubbing — do NOT commit these cassettes")
     # Beyond the account name, assert the scrub layer's broader PII guarantee so a
     # future re-record cannot silently reintroduce a secret the gate never checks.
-    for label, pattern in cfg.get("forbidden_patterns", ()):
+    # Same combined set (envelope + profile additions) the creds-free CI sweep runs.
+    forbidden = profile.all_forbidden_patterns()
+    for label, pattern in forbidden:
         rx = re.compile(pattern, re.IGNORECASE)
         hits = [f.name for f, raw in raws.items() if rx.search(raw)]
         if hits:
@@ -373,8 +443,12 @@ def main() -> None:
             for name in hits:
                 print(f"    {name}")
             _die(f"{label} survived scrubbing — do NOT commit these cassettes")
-    n_markers = len(cfg.get("forbidden_patterns", ()))
-    print(f"  Clean: {len(files)} cassette(s) checked, account name + {n_markers} marker(s) absent.")
+    print(f"  Clean: {len(files)} cassette(s) checked, account name + {len(forbidden)} marker(s) absent.")
+
+    if not opts.verify_only and not single:
+        _audit_named_rules(profile, manifest_base)
+    else:
+        print("  Named-rule audit skipped (fire counts need a full recording run).")
 
     _section("Step 5 — replay smoke test (Stage 1)")
     _run(

@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.backends.fixtures._cassettes import FAKE_CONN_STR, FAKE_FILESYSTEM
+from tests.backends.fixtures._cassettes_azure import AZURE_PROFILE, FAKE_CONN_STR, FAKE_FILESYSTEM
 from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
 
@@ -74,6 +74,7 @@ register(
         aclose=_aclose,
         # record_mode="none" forces replay even when --record is active.
         marks=(pytest.mark.vcr(record_mode="none"),),
+        cassette_profile=AZURE_PROFILE,
         **_meta.to_kwargs(),
     )
 )
