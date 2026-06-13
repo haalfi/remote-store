@@ -18,6 +18,15 @@ audience:
 expected_ripples:
   - CHANGELOG.md
   - sdd/backlogid.json
+review_rounds: 1
+# PR #805 review (one fix round): trimmed over-detailed prose the ripple-check
+# does not gate — the BACKLOG Graph section (no history kept here), the
+# _range_capable field comment, the CHANGELOG entry (ID+title only) — fixed a
+# CONTENT-RULES violation in the _note_range_capable docstring (described the
+# change, not the behaviour), named ID-217 in GR-015 itself for single-source
+# traceability (it had landed only in BACKLOG-DONE), and closed a test gap: the
+# 4xx-rejection fallback's no-Range 200 re-read must not clear the incapable
+# mark (the sent_range guard), now asserted directly.
 phases:
   - id: orient
     name: Orient

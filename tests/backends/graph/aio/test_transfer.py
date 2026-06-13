@@ -300,6 +300,26 @@ class TestRangeFallbackDriveScope:
         assert stale.extra[RANGE_FALLBACK_FLAG] is True
         assert RANGE_FALLBACK_FLAG not in healed.extra
 
+    @respx.mock
+    @pytest.mark.spec("GR-015")
+    async def test_flag_persists_after_4xx_rejection_fallback(self) -> None:
+        # A 4xx range rejection re-issues a no-Range GET answered 200 *within the
+        # same read* (sent_range is False on that re-read). on_range_success is
+        # gated by sent_range, so the no-Range 200 must NOT clear the incapable
+        # mark the 4xx just set — guards against a regression that keyed the
+        # self-heal on is_success and silently self-defeated the 4xx path.
+        respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(200, json=_file_item()))
+        respx.get(_DL1).mock(
+            side_effect=[
+                httpx.Response(400, json={"error": {"code": "invalidRequest"}}),  # rejects Range
+                httpx.Response(200, content=b"0123456789"),  # no-Range re-read → spool
+            ]
+        )
+        async with _make() as backend:
+            await backend._read_bytes("a.txt", 5, 4)
+            info = await backend.get_file_info("a.txt")
+        assert info.extra[RANGE_FALLBACK_FLAG] is True
+
 
 class TestMidStreamResume:
     """GR-017: a connection drop after partial delivery resumes from the next byte."""

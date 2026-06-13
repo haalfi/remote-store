@@ -201,13 +201,9 @@ class GraphBackend(AsyncBackend):
         self._upload_chunk_size = upload_chunk_size
         self._copy_timeout = copy_timeout
         self._client_options = client_options or {}
-        # Most-recent range observation for this drive (SharePoint
-        # range-fallback, GR-015). None = no ranged read yet, True = a 206
-        # honoured Range, False = the drive ignored/rejected Range and the read
-        # fell back to the spool. Range capability is a tenant/drive property,
-        # so one tri-state per backend (one drive) covers every path — no
-        # per-path set to grow or go stale — and a later honoured ranged read
-        # self-heals the mark. get_file_info flags FileInfo while this is False.
+        # SharePoint range-fallback (GR-015): None = untested, True = drive
+        # honoured Range (206), False = drive ignored/rejected it. Drive-scoped;
+        # get_file_info flags FileInfo while False.
         self._range_capable: bool | None = None
         # Upload-session URLs with a write mid-chunk-loop: close() aborts each
         # via best-effort DELETE (GR-051 upload-session-abort half).
@@ -467,9 +463,8 @@ class GraphBackend(AsyncBackend):
     def _note_range_capable(self) -> None:
         """Record that this drive honoured a ranged read (``206``).
 
-        Clears any prior range-incapable mark so the fallback flag tracks the
-        most-recent observed behaviour rather than "ever fell back" (the
-        self-heal that keeps the hint from going stale).
+        Clears any range-incapable mark, so ``get_file_info`` stops flagging
+        ``extra[graph.read.range_fallback]`` once the drive serves a range.
         """
         self._range_capable = True
 

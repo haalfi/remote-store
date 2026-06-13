@@ -399,8 +399,8 @@ The signal is therefore a drive-scoped hint surfaced on a subsequent
 read: the read returns bytes, not a `FileInfo`, and the backend has no
 handle on the read's `StoreEvent` (see below), so a later metadata
 call is the only in-band delivery channel until native-async
-observability lands (that item is the proper home for an
-operation-scoped marker on `StoreEvent.metadata`).
+observability (tracked as ID-217) lands — the proper home for an
+operation-scoped marker on `StoreEvent.metadata`.
 The `extra` channel is the v0.27.0 supported surface for
 backend-specific signal (see GR-049 for `graph.file.hashes`);
 `ext.observe` is **not** used as a delivery channel —

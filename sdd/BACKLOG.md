@@ -87,22 +87,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ---
 
-## Graph
-
-ID-127 (Microsoft Graph / OneDrive / SharePoint) follow-ups. All filed
-follow-ups have now shipped; full findings in
-[audit-016](audits/audit-016-graph-backend-review.md), completed items in
-BACKLOG-DONE.md (the security item BK-263, the CI-coverage item BK-262, the
-spec/RFC sync BK-264, the guide/docstring sweep BK-265, the correctness edges
-BK-266, the test hardening BK-267, the example-replay guard BK-283, the
-overwrite-replace limitation BK-261, the range-fallback-flag lifecycle BK-259,
-and the async-ext hygiene BK-268). Remaining async-ext work is tracked outside
-this section as ID-217 / ID-218.
-
-*(no active items)*
-
----
-
 ## Lint / CI Completeness
 
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
