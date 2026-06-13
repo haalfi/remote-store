@@ -38,7 +38,7 @@ phases:
         read_type: gate
         extract: "CI runs pytest directly; needs the same two-pass shape"
         outcome: ok
-  - id: prior-art
+  - id: prior_art
     name: Review prior attempt (PR 631)
     steps:
       - file: tests/backends/fixtures/sftp_docker.py

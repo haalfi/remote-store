@@ -148,7 +148,7 @@ phases:
           missing replacement headers would fail loud instead of silently injecting UA into cassettes
           that never carried one. Verified the claim against vcrpy 8.1.1 source before applying.
         outcome: ok
-  - id: implement-pr2
+  - id: implement_pr2
     name: Implement PR 2 (profile core + spec 049 + named audit)
     steps:
       - file: sdd/plans/BK-284-cassette-recording-redesign.md
@@ -195,7 +195,7 @@ phases:
           (AZURE_PROFILE/GRAPH_PROFILE in six fixture modules, json/Counter/TYPE_CHECKING in the
           recorder, the conftest import block); re-added after the consuming code existed.
         outcome: misleading
-  - id: verify-pr2
+  - id: verify_pr2
     name: Verify PR 2
     steps:
       - file: tests/backends/conformance/

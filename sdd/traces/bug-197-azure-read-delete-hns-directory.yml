@@ -148,11 +148,8 @@ phases:
           test_read_bytes_on_directory_raises_error, test_delete_on_directory_raises_error,
           test_delete_on_directory_raises_invalid_path, test_delete_on_directory_missing_ok_still_raises.
           Remaining 8 entries cover unrelated open bugs.
+          Worktree caveat: the mock-level test_config.py tests that exercise the fix
+          cannot pass via `hatch run` from the main repo (its venv resolves to the
+          unpatched main-repo install); they were validated by CI on the feature branch.
 discovery_followups: []
 co_shipped_items: []
-notes: |
-  Worktree-based development: tests that exercise the fix (mock-level unit tests in
-  test_config.py) cannot pass when run via `hatch run` from the main repo because the
-  venv resolves to the unpatched main-repo install. These tests are validated by CI
-  on the feature branch. The cassette-based conformance tests were updated to match
-  the new HTTP interaction sequence (HEAD pre-check fires, stopping further requests).

@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-179 — Trace schema validator: jsonschema-validate every trace in `hatch run lint`**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  `sdd/traces/_schema.yml` declared the trace shape (`audience` required,
+  id/phase patterns, `additionalProperties: false`) but nothing validated a
+  trace at commit time — BK-193 left enforcement as an authoring convention
+  pending an aggregator that never landed, so drift accumulated unnoticed.
+  Added `scripts/check_traces.py`, which `jsonschema`-validates every
+  `sdd/traces/[!_]*.yml` against the *whole* schema (draft selected from the
+  schema's `$schema` keyword), plus two self-checks: the schema itself via
+  `check_schema`, and every entry in the schema's `examples` block (a JSON
+  Schema annotation jsonschema never validates on its own). Wired into the
+  `lint` hatch script list; the CI `lint` job picks it up automatically via
+  `uvx hatch run lint` (single-source delegation, BK-269), satisfying the
+  dual-wire convention without a second listing. Fixed three pre-existing
+  violations the new gate surfaced: hyphenated phase ids in
+  `bk-284` (`implement-pr2`/`verify-pr2`) and `id-195` (`prior-art`) →
+  snake_case per the `^[a-z][a-z0-9_]*$` pattern, and a disallowed top-level
+  `notes` field in `bug-197` (relocated the worktree caveat into the
+  `verify_replay` step extract). Added `jsonschema>=4.18` to dev deps and
+  `tests/scripts/test_check_traces.py`. No CHANGELOG
+  (contributor.tooling / contributor.process, no `user.*` audience). Trace:
+  `sdd/traces/ID-179-trace-schema-validator.yml`.
+
 - [x] **BK-268 — File the deferred Graph async-ext follow-ups (backlog hygiene)**
   spec: GR-003 · effort: S · audience: library.maintainer, contributor.process
   Audit-016 L10 flagged two promised async-ext follow-ups with no tracked owner.
