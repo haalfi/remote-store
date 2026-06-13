@@ -11585,6 +11585,11 @@ callers reach the backend through <code>AsyncBackendSyncAdapter</code>
 (ADR-0025), which converts the async iterator to a <code>BinaryIO</code> via
 the spool-and-pump pattern; that conversion is the adapter's
 responsibility, not the backend's.
+<strong>Ordering:</strong> the item-metadata fetch and the directory check happen
+<em>before</em> the body stream opens, so a path that does not exist
+(<code>NotFound</code>) or names a directory (<code>InvalidPath</code>) raises on the first
+iteration — before any byte is yielded. A consumer that begins
+iterating and then aborts on the raise has received no partial content.
 <strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if
 the path names a directory (per BE-021).</p>
 <h3 id="gr-013-get_file_info">GR-013: get_file_info()<a class="headerlink" href="#gr-013-get_file_info" title="Permanent link">&para;</a></h3>
