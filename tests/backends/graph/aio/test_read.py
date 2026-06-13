@@ -331,13 +331,18 @@ class TestPermissionDeniedPerMethod:
     @respx.mock
     @pytest.mark.spec("GR-030")
     async def test_read_maps_403(self) -> None:
-        # The metadata GET 403s before the stream starts; no download is attempted
-        # (the pre-signed route is left unmocked).
+        # The metadata GET 403s before the stream starts. Mock the pre-signed
+        # download route and assert it saw zero calls, so "no download attempted"
+        # is an explicit assertion rather than an emergent property of strict-mock
+        # routing — a later catch-all/pass-through router would otherwise drop the
+        # guarantee silently (PR #799 review).
         respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(403, json={"error": {"code": "accessDenied"}}))
+        dl = respx.get(_DOWNLOAD).mock(return_value=httpx.Response(200, content=b"x"))
         async with _make() as backend:
             with pytest.raises(PermissionDenied):
                 async for _ in backend.read("a.txt"):
                     pass
+        assert dl.called is False
 
 
 class TestParseGraphDatetime:
