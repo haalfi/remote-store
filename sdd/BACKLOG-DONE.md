@@ -25,9 +25,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   and kills the raw-string-key divergence (no path keys at all). GR-015 was
   amended: the marker is now documented as a drive-scoped, self-healing hint
   surfaced on a subsequent `get_file_info`, not an operation-scoped marker on
-  the read — with native-async observability (the deferred separate item)
-  named as the eventual home for a true operation-scoped `StoreEvent.metadata`
-  signal. Tests: drive-scope (flag rides a *different* path's `get_file_info`)
+  the read — with native-async observability (tracked as ID-217, the deferred
+  async-native `ext.*` surface) named as the eventual home for a true
+  operation-scoped `StoreEvent.metadata` signal; building it was explicitly
+  deferred to ID-217 rather than taken on here. Tests: drive-scope (flag rides
+  a *different* path's `get_file_info`)
   and self-heal (a `206` clears the stale flag) added to
   `tests/backends/graph/aio/test_transfer.py`. Trace:
   `sdd/traces/BK-259-range-fallback-drive-scope.yml`.
