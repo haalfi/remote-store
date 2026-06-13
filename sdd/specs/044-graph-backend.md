@@ -503,11 +503,22 @@ destinations.
 target is expected to be overwritten (`200`). Some backing stores
 (observed on SharePoint-backed drives in Graph issue reports) instead
 return `409 nameAlreadyExists` for a file even under `replace`, which
-the discrimination above would surface as `AlreadyExists` — a spurious
-failure for an intended overwrite. This is not reproduced on the
-consumer OneDrive drive used for live verification, so no guard is
-taken in v1; the edge is unverified on SharePoint-backed drives and
-tracked in BK-261.
+the discrimination above surfaces as `AlreadyExists` — a spurious
+failure for an intended overwrite. This is a **documented hard backend
+limitation, not a guarded case**: the backend takes no special-casing of
+a `replace`-path 409, so an affected drive raises `AlreadyExists` despite
+`overwrite=True`. The decision is deliberate. The quirk does not
+reproduce on the consumer OneDrive drive used for live verification, and
+this project's live tier is consumer-only / device-code, so the
+SharePoint-backed edge cannot be live-verified to confirm the exact 409
+body; a speculative guard (treating a `file`-faceted 409 on the
+`replace` path as success-equivalent) would have to guess at that body
+shape blind and would risk masking a genuine conflict. Callers on
+SharePoint-backed drives that require overwrite-replace semantics should
+validate the behaviour against their drive and, where affected,
+delete-then-write rather than rely on `overwrite=True`. Revisit with a
+targeted guard only once a live SharePoint-backed reproduction pins the
+409 body.
 **Note on the 4 MiB threshold:** Graph documents the
 `PUT .../content` endpoint as suitable for files up to ~4 MiB and
 recommends upload sessions beyond that. In practice the endpoint
@@ -726,7 +737,8 @@ this project can reach — device-code / consumer), but path-only
 `parentReference` is a known soft spot on SharePoint / business drives
 and is **unverified** there; the `id` form would cost an extra parent-id
 resolution round trip and is deferred. Tracked alongside the other
-SharePoint-unverified edges (cf. the GR-018 BK-261 note).
+SharePoint-unverified edges (cf. the GR-018 overwrite-replace
+known-limitation note).
 **Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if
 `dst` exists and `overwrite=False`. `InvalidPath` per BE-021.
 

@@ -155,6 +155,17 @@ HTTP range requests (see [Streaming](#streaming)) — and others that the live
 tier cannot reach. Treat SharePoint/business deployments as less-travelled
 ground and validate your workload before relying on it in production.
 
+### `overwrite=True` may still fail on SharePoint-backed drives
+
+Overwriting an existing **file** with `overwrite=True` is expected to replace
+it and succeed. Some SharePoint-backed drives instead reject the replace with a
+conflict, which the backend surfaces as an `AlreadyExists` error even though you
+asked to overwrite. This does not happen on consumer OneDrive (the
+live-verified tier), and the backend deliberately does **not** paper over it —
+silently treating the conflict as success could mask a genuine one and would
+have to guess at a response shape the project cannot reproduce. If you hit this,
+delete the target first and then write instead of relying on `overwrite=True`.
+
 ### `copy_timeout=None` is unbounded by default
 
 Graph performs `copy()` (and sometimes `move()`) asynchronously: the backend

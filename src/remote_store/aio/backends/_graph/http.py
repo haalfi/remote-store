@@ -261,9 +261,14 @@ def discriminate_write_conflict(body: object, path: str, *, backend: str = BACKE
       ``InvalidPath`` regardless of ``overwrite``;
     * otherwise the target is a file at the requested name → ``AlreadyExists``.
 
-    The ancestor and folder cases are overwrite-independent: ``overwrite=True``
-    sends ``conflictBehavior=replace``, so a plain target-file never reaches
-    this discriminator — only the structurally-invalid cases do.
+    The ancestor and folder cases are overwrite-independent. On the normal
+    ``overwrite=True`` path ``conflictBehavior=replace`` overwrites an existing
+    file (``200``), so a plain target-file does not reach this discriminator —
+    only the structurally-invalid cases do. The exception is a known
+    SharePoint-backed-drive divergence: some such drives return ``409`` for a
+    plain file even under ``replace``, and it then falls through here to
+    ``AlreadyExists`` despite the overwrite request (a documented hard backend
+    limitation, not guarded — see the backend write-path spec).
     """
     # GR-018 / BE-008 precondition discrimination; ancestor-file is ID-209.
     target = path.rsplit("/", 1)[-1]
