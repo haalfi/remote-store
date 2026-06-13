@@ -9,14 +9,18 @@ stream (GR-015/017/055) lands with ``transfer.py`` in a later step.
 from __future__ import annotations
 
 from datetime import timezone
+from typing import TYPE_CHECKING
 
 import httpx
 import pytest
 import respx
 
-from remote_store._errors import BackendUnavailable, InvalidPath, NotFound
+from remote_store._errors import BackendUnavailable, InvalidPath, NotFound, PermissionDenied
 from remote_store.aio.backends._graph.backend import GraphBackend
 from remote_store.aio.backends._graph.items import parse_graph_datetime
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 _DRIVE = "b!driveid123"
 _BASE = "https://graph.microsoft.com/v1.0"
@@ -25,6 +29,18 @@ _DOWNLOAD = "https://my.sharepoint.example/download/presigned?tempauth=secret"
 
 def _make() -> GraphBackend:
     return GraphBackend(_DRIVE, token_provider=lambda: "tok")
+
+
+async def _collect(stream: AsyncIterator[bytes], sink: list[bytes]) -> None:
+    """Drain *stream* into *sink* as bytes arrive.
+
+    Appending per chunk (rather than building a comprehension) keeps any bytes
+    yielded *before* an exception, so a caller can assert the sink stayed empty
+    to prove the raise preceded the first byte. A comprehension would discard
+    the partial list when the iteration raises, hiding a yield-then-raise.
+    """
+    async for chunk in stream:
+        sink.append(chunk)
 
 
 def _meta_url(path: str) -> str:
@@ -231,22 +247,34 @@ class TestRead:
     @respx.mock
     @pytest.mark.spec("GR-012")
     async def test_folder_raises_before_yield(self) -> None:
+        # read() is an async generator: _get_item + the folder check defer to the
+        # first __anext__, then the stream loop runs. Collecting into a list and
+        # asserting it stayed empty pins the GR-012 ordering contract — the folder
+        # check fires before any byte. A bare `async for ...: pass` would also pass
+        # on a yield-then-raise, so it could not catch a future reorder that moved
+        # the directory check after the stream (audit-016 L7).
         respx.get(_meta_url("a")).mock(return_value=httpx.Response(200, json=_folder_item()))
+        chunks: list[bytes] = []
         async with _make() as backend:
             with pytest.raises(InvalidPath):
-                async for _ in backend.read("a"):
-                    pass
+                await _collect(backend.read("a"), chunks)
+        assert chunks == []
 
     @respx.mock
-    @pytest.mark.spec("GR-031")
+    @pytest.mark.spec("GR-012")  # ordering: existence check precedes any byte
+    @pytest.mark.spec("GR-031")  # mapping: itemNotFound -> NotFound
     async def test_missing_raises_not_found(self) -> None:
+        # Same GR-012 ordering pin for the not-found path: _get_item raises before
+        # the stream loop, so no byte is yielded and the download URL is never
+        # reached (its route is left unmocked).
         respx.get(_meta_url("gone.txt")).mock(
             return_value=httpx.Response(404, json={"error": {"code": "itemNotFound"}})
         )
+        chunks: list[bytes] = []
         async with _make() as backend:
             with pytest.raises(NotFound):
-                async for _ in backend.read("gone.txt"):
-                    pass
+                await _collect(backend.read("gone.txt"), chunks)
+        assert chunks == []
 
     @respx.mock
     @pytest.mark.spec("GR-012")
@@ -280,6 +308,41 @@ class TestRead:
             with pytest.raises(BackendUnavailable):
                 async for _ in backend.read("a.txt"):
                     pass
+
+
+class TestPermissionDeniedPerMethod:
+    """GR-030: a ``403 accessDenied`` surfaces as ``PermissionDenied`` through the
+    read-path data-plane methods, not just centrally at ``graph_send``.
+
+    The 403→PermissionDenied mapping lives once in ``classify_graph_error``
+    (asserted in ``test_http_mapping.py`` / ``test_http.py``). These pin that the
+    centralised mapping actually reaches the public methods unchanged — the
+    per-method guard audit-016 L7 found missing on the data plane.
+    """
+
+    @respx.mock
+    @pytest.mark.spec("GR-030")
+    async def test_get_file_info_maps_403(self) -> None:
+        respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(403, json={"error": {"code": "accessDenied"}}))
+        async with _make() as backend:
+            with pytest.raises(PermissionDenied):
+                await backend.get_file_info("a.txt")
+
+    @respx.mock
+    @pytest.mark.spec("GR-030")
+    async def test_read_maps_403(self) -> None:
+        # The metadata GET 403s before the stream starts. Mock the pre-signed
+        # download route and assert it saw zero calls, so "no download attempted"
+        # is an explicit assertion rather than an emergent property of strict-mock
+        # routing — a later catch-all/pass-through router would otherwise drop the
+        # guarantee silently (PR #799 review).
+        respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(403, json={"error": {"code": "accessDenied"}}))
+        dl = respx.get(_DOWNLOAD).mock(return_value=httpx.Response(200, content=b"x"))
+        async with _make() as backend:
+            with pytest.raises(PermissionDenied):
+                async for _ in backend.read("a.txt"):
+                    pass
+        assert dl.called is False
 
 
 class TestParseGraphDatetime:

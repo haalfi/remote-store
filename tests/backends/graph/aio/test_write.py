@@ -26,6 +26,7 @@ from remote_store._errors import (
     CapabilityNotSupported,
     InvalidPath,
     NotFound,
+    PermissionDenied,
     RemoteStoreError,
     ResourceLocked,
 )
@@ -322,6 +323,29 @@ class TestWriteGuards:
             result = await backend.write_atomic("a.txt", b"data")
         assert result.source == "native"
         assert route.calls.last.request.url.params["@microsoft.graph.conflictBehavior"] == "fail"
+
+    @respx.mock
+    @pytest.mark.spec("GR-030")
+    async def test_write_maps_403_to_permission_denied(self) -> None:
+        # Per-method guard (audit-016 L7): the centralised 403->PermissionDenied
+        # mapping reaches the write data-plane method unchanged. 403 is not in the
+        # small-PUT return_on set, so graph_send raises it directly.
+        respx.put(_CONTENT_RE).mock(return_value=httpx.Response(403, json={"error": {"code": "accessDenied"}}))
+        async with _make() as backend:
+            with pytest.raises(PermissionDenied):
+                await backend.write("a.txt", b"data")
+
+    @respx.mock
+    @pytest.mark.spec("GR-040")
+    async def test_write_atomic_propagates_write_failure(self) -> None:
+        # write_atomic inherits write's exceptions verbatim. Pin the failure path
+        # directly rather than only transitively (audit-016 L7): an existing file
+        # with the default overwrite=False 409s and surfaces AlreadyExists, naming
+        # the path, straight through write_atomic.
+        respx.put(_CONTENT_RE).mock(return_value=httpx.Response(409, json={"error": {"code": "nameAlreadyExists"}}))
+        async with _make() as backend:
+            with pytest.raises(AlreadyExists, match="a.txt"):
+                await backend.write_atomic("a.txt", b"data")
 
 
 # ===========================================================================

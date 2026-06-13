@@ -1,0 +1,81 @@
+id: BK-267
+title: "Graph test hardening"
+trigger: >
+  Audit-016 L7 found three gaps in the sole (respx) coverage tier of the Graph
+  backend: read()'s first-iteration failure timing was not pinned
+  (test_folder_raises_before_yield wraps the whole async-for in pytest.raises and
+  would pass whether the raise fires on the first __anext__ or after partial
+  yields); write_atomic had no direct failure-path test (only delegation was
+  asserted); and no per-method 403->PermissionDenied test existed on any
+  data-plane method (the mapping was exercised only centrally at graph_send).
+source_items:
+  - BK-267
+audience:
+  - infra.test
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-267"
+        read_type: gate
+        extract: "Three respx-tier gaps to close; spec anchors GR-012/GR-040; audit-016 L7"
+        outcome: ok
+      - file: sdd/audits/audit-016-graph-backend-review.md
+        section: "L7, G5"
+        read_type: gate
+        extract: "Detail: timing pin must assert no bytes yielded before the raise; write_atomic needs its own pytest.raises (TESTING.md Rule 1); 403 guard may be a test or a documented centralised-mapping rationale"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "read, write, write_atomic, _get_item"
+        read_type: gate
+        extract: "read is an async generator deferring _get_item+folder check to first __anext__; write_atomic delegates verbatim to write; 403 is not in any return_on set so graph_send raises classify_graph_error(403) directly"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "classify_graph_error"
+        read_type: gate
+        extract: "403 accessDenied -> PermissionDenied lives once in the central table; the per-method tests pin that it reaches the public methods unchanged rather than re-testing the table"
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/backends/graph/aio/test_read.py
+        section: "TestRead, TestPermissionDeniedPerMethod"
+        read_type: gate
+        extract: "Drive __anext__ directly to pin first-iteration raise (folder->InvalidPath, missing->NotFound) before any byte; add get_file_info/read 403->PermissionDenied"
+        outcome: ok
+      - file: tests/backends/graph/aio/test_write.py
+        section: "TestWriteGuards"
+        read_type: gate
+        extract: "Direct write_atomic failure path (409->AlreadyExists naming the path); per-method write 403->PermissionDenied"
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rule 1 (every public method its own pytest.raises)"
+        read_type: reference
+        extract: "Justifies a direct write_atomic failure test over transitive coverage via write"
+        outcome: ok
+  - id: fix
+    name: Review-driven refactor + spec sync
+    steps:
+      - file: tests/backends/graph/aio/test_read.py
+        section: "TestRead first-iteration tests"
+        read_type: gate
+        extract: "PR #799 review: the two __anext__ tests duplicated the pre-existing async-for tests (which they strictly subsume). Replaced in place — strengthen the existing folder/missing tests to collect chunks and assert empty — instead of adding alongside; net 2 tests not 4"
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-012"
+        read_type: gate
+        extract: "Lifted the read() timing guarantee (docstring-only) into a GR-012 Ordering invariant so the tests trace to a contract, not an implementation accident; no behaviour change, so no CHANGELOG (infra.test + contributor.process, existing-clause amendment)"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/graph/aio/test_read.py
+        section: "(full)"
+        read_type: verify
+        extract: "PermissionDenied import re-added after ruff autofix stripped it as unused (added before the usages) — both read/write suites green"
+        outcome: misleading

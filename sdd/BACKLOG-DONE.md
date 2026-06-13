@@ -8,6 +8,36 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-267 — Graph test hardening**
+  spec: GR-012, GR-040 · effort: S · audience: infra.test, contributor.process
+  Closed the three respx-tier gaps audit-016 L7 / G5 flagged in the Graph
+  backend's sole automated coverage:
+  - **read() first-iteration timing**: `test_folder_raises_before_yield` and
+    `test_missing_raises_not_found` wrapped the whole `async for` in
+    `pytest.raises`, so they would pass whether the raise fired on the first
+    `__anext__` or after partial yields. Strengthened both in place to collect
+    yielded chunks and assert the list stayed empty — pinning that the
+    folder→`InvalidPath` / missing→`NotFound` raise fires before any byte (and,
+    for the missing case, before the download URL is reached; that route is
+    left unmocked). To make this a contract rather than an implementation
+    accident, **GR-012 gained an `Ordering` invariant** stating the
+    metadata-fetch and directory check precede the body stream; the tests trace
+    to it. (PR #799 review flagged that an earlier draft *added* two
+    `__anext__`-driven tests alongside the originals, strictly subsuming them —
+    replaced-in-place instead, net 2 tests not 4.)
+  - **write_atomic failure path**: it had only a delegation test
+    (`test_write_atomic_delegates_to_write`). Added a direct failure-path test
+    (409→`AlreadyExists` naming the path) so the public method carries its own
+    `pytest.raises` per TESTING.md Rule 1, not only transitive coverage via
+    `write`.
+  - **per-method 403→`PermissionDenied`**: the mapping was exercised only
+    centrally at `graph_send` / `classify_graph_error`. Added per-method guards
+    on `get_file_info`, `read`, and `write` pinning that the centralised
+    mapping reaches the public data-plane methods unchanged.
+  No CHANGELOG: the GR-012 amendment documents an already-shipped guarantee (the
+  `read()` docstring already promised it), not new behaviour or a new spec.
+  Trace: `sdd/traces/bk-267-graph-test-hardening.yml`.
+
 - [x] **BK-283 — Drive the Graph example snippet from replayed cassettes in CI**
   spec: GR-015, GR-019 · effort: S · audience: infra.test
   `examples/backends/graph_backend.py` was the one published snippet with zero

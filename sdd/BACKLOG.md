@@ -91,25 +91,12 @@ and the highest ID already in this file, then take the next integer. Run
 
 ID-127 (Microsoft Graph / OneDrive / SharePoint) follow-ups, in execution order;
 full findings in [audit-016](audits/audit-016-graph-backend-review.md).
-**Order:** tests (BK-267) →
-blocked or hygiene tail (BK-259/268). Each item's own rationale lives in
-its body. (Security item BK-263 — the upload-session credential leak — the
-load-bearing CI-coverage item BK-262 — replay-able cassettes — the spec/RFC
-sync BK-264, the guide/docstring sweep BK-265, the correctness edges BK-266,
-the example-replay guard BK-283, and the overwrite-replace limitation BK-261
-shipped first; see BACKLOG-DONE.md.)
-
-- [ ] **BK-267 — Graph test hardening**
-  spec: GR-012, GR-040 · effort: S · audience: infra.test
-  Close respx-tier gaps in the sole-coverage suite:
-  - Pin `read()` first-iteration failure timing — assert no bytes are yielded
-    before the `NotFound` / `InvalidPath` raise (the async-generator body defers;
-    `test_read.py:207` does not catch this).
-  - Add a direct `write_atomic` failure-path test (today only delegation is
-    asserted).
-  - Add at least one per-method `403`→`PermissionDenied` test, or document the
-    centralised-mapping rationale.
-  Audit-016 L7.
+**Order:** blocked or hygiene tail (BK-259/268). Each item's own rationale
+lives in its body. (Security item BK-263 — the upload-session credential
+leak — the load-bearing CI-coverage item BK-262 — replay-able cassettes — the
+spec/RFC sync BK-264, the guide/docstring sweep BK-265, the correctness edges
+BK-266, the test hardening BK-267, the example-replay guard BK-283, and the
+overwrite-replace limitation BK-261 shipped first; see BACKLOG-DONE.md.)
 
 - [ ] **BK-259 — Graph `_range_fallback_paths` flag: scope to operation, not backend lifetime**
   spec: GR-015 · effort: S · audience: user.api, library.maintainer
