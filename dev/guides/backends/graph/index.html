@@ -2470,6 +2470,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#overwritetrue-may-still-fail-on-sharepoint-backed-drives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        overwrite=True may still fail on SharePoint-backed drives
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#copy_timeoutnone-is-unbounded-by-default" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10110,6 +10121,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#overwritetrue-may-still-fail-on-sharepoint-backed-drives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        overwrite=True may still fail on SharePoint-backed drives
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#copy_timeoutnone-is-unbounded-by-default" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10723,6 +10745,15 @@ drives have known divergences the backend already accounts for — some ignore
 HTTP range requests (see <a href="#streaming">Streaming</a>) — and others that the live
 tier cannot reach. Treat SharePoint/business deployments as less-travelled
 ground and validate your workload before relying on it in production.</p>
+<h3 id="overwritetrue-may-still-fail-on-sharepoint-backed-drives"><code>overwrite=True</code> may still fail on SharePoint-backed drives<a class="headerlink" href="#overwritetrue-may-still-fail-on-sharepoint-backed-drives" title="Permanent link">&para;</a></h3>
+<p>Overwriting an existing <strong>file</strong> with <code>overwrite=True</code> is expected to replace
+it and succeed. Some SharePoint-backed drives instead reject the replace with a
+conflict, which the backend surfaces as an <code>AlreadyExists</code> error even though you
+asked to overwrite. This does not happen on consumer OneDrive (the
+live-verified tier), and the backend deliberately does <strong>not</strong> paper over it —
+silently treating the conflict as success could mask a genuine one and would
+have to guess at a response shape the project cannot reproduce. If you hit this,
+delete the target first and then write instead of relying on <code>overwrite=True</code>.</p>
 <h3 id="copy_timeoutnone-is-unbounded-by-default"><code>copy_timeout=None</code> is unbounded by default<a class="headerlink" href="#copy_timeoutnone-is-unbounded-by-default" title="Permanent link">&para;</a></h3>
 <p>Graph performs <code>copy()</code> (and sometimes <code>move()</code>) asynchronously: the backend
 polls a monitor URL until completion. With the default <code>copy_timeout=None</code>
