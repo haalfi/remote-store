@@ -1,12 +1,12 @@
 # extra: azure
 # python: 3.13
-# captured: 2026-06-09
+# captured: 2026-06-13
 # Regenerate with: hatch run drift-check refresh-baseline azure
 
 azure-core==1.41.0
 azure-identity==1.26.0b2
 azure-storage-blob==12.30.0
-azure-storage-file-datalake==12.25.0b1
+azure-storage-file-datalake==12.25.0
 certifi==2026.5.20
 cffi==2.0.0
 charset-normalizer==3.4.7

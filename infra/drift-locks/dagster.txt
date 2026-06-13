@@ -1,6 +1,6 @@
 # extra: dagster
 # python: 3.13
-# captured: 2026-06-09
+# captured: 2026-06-13
 # Regenerate with: hatch run drift-check refresh-baseline dagster
 
 alembic==1.18.4
@@ -44,7 +44,7 @@ tabulate==0.10.0
 tomli==2.4.1
 tomlkit==0.15.0
 toposort==1.10
-tqdm==4.68.1
+tqdm==4.68.2
 typing-extensions==4.15.0
 typing-inspection==0.4.2
 tzdata==2026.2
