@@ -83,6 +83,15 @@ yaml = ["pyyaml>=5.1"]
 pydantic = ["pydantic-settings>=2.0.0"]
 dagster = ["dagster>=1.9"]
 
+# -- Mutation testing (dev/CI tooling, not a user-facing feature) --
+# Single source of truth for the pytest-gremlins pin: the hatch default env
+# (via `features` below) and both .github/workflows/{mutation,ci}.yml install
+# `.[mutate]` rather than re-pinning. Marker-gated because pytest-gremlins
+# requires py>=3.11; an install on an older interpreter resolves to nothing.
+# Excluded from the user-facing install-extras list (gen_features.py) and from
+# the transitive-drift guard (drift_check.py), like the other dev/build extras.
+mutate = ["pytest-gremlins>=1.5; python_version>='3.11'"]
+
 # -- Benchmark suite (all backends + charting) --
 bench = [
   "remote-store[s3-pyarrow,sftp,azure]",
@@ -150,11 +159,10 @@ dev = [
 [tool.hatch.envs.default]
 installer = "uv"
 path = ".venv"
-features = ["dev", "docs", "bench"]
-dependencies = [
-  # Not in any optional-dependencies extra:
-  "pytest-gremlins>=1.5; python_version>='3.11'",
-]
+# `mutate` carries the pytest-gremlins pin (single source of truth); it is a
+# real optional-dependencies extra rather than an env-only `dependencies` entry
+# so the two mutation workflows can install the same pin via `.[mutate]`.
+features = ["dev", "docs", "bench", "mutate"]
 
 [tool.hatch.envs.default.overrides]
 # BK-269: force the pip installer in CI. With `installer = "uv"` above, hatch's

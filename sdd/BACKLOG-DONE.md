@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-215 — Mutation run goes red on a scope with zero mutation candidates**
+  spec: — · effort: S · audience: infra.ci, contributor.tooling
+  The weekly `[mutation]` run opened the rolling issue for `ext-glob` with
+  "job was green but wrote no gremlins JSON report (reporting half broke)".
+  Root cause: `src/remote_store/ext/glob.py` has zero mutation candidates under
+  pytest-gremlins' operator set (no arithmetic / boolean / comparison /
+  boundary operator, no literals, only a value-less `return`), so the plugin
+  returns from `pytest_terminal_summary` *before* the report write (plugin.py
+  `if not gremlin_session.gremlins: ... return`). `mutation_report.py record`
+  treats a green leg with no `coverage/gremlins/gremlins.json` as a silent
+  reporting break (counts `None` → harness failure), which fires the issue and
+  reddens the leg — a scope with nothing to mutate would stay red forever.
+  Not a regression in glob.py and not silenceable per the `/mutation` skill
+  (skip / filter / pardon are forbidden), so the fix lives in the harness:
+  `scripts/run_mutate.py` now synthesises the canonical all-zero report the
+  plugin would write for an empty score, but only when the scope is positively
+  confirmed to have zero candidates via pytest-gremlins' own `transform_source`
+  (so it can never drift from what the plugin counts). The genuine break case —
+  gremlins exist but no report — still leaves the file absent and fails the leg,
+  preserving the original guard. `record`/`classify_scopes` are unchanged: an
+  all-zero report classifies `ok`. No CHANGELOG (infra.ci / contributor.tooling,
+  no `user.*` audience). Trace: `sdd/traces/bug-215-mutation-zero-candidate-scope.yml`.
+
 - [x] **BK-267 — Graph test hardening**
   spec: GR-012, GR-040 · effort: S · audience: infra.test, contributor.process
   Closed the three respx-tier gaps audit-016 L7 / G5 flagged in the Graph
