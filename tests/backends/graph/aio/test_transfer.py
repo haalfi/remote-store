@@ -256,6 +256,51 @@ class TestSharePointRangeFallback:
         assert data == body[2:]
 
 
+class TestRangeFallbackDriveScope:
+    """GR-015: the range-fallback signal is a self-healing, drive-scoped hint.
+
+    Range capability is a tenant/drive property, so the backend tracks a single
+    drive-scoped state rather than a per-path set that grows and never clears
+    (BK-259): the flag rides any FileInfo while the drive is marked incapable,
+    and a later honoured ranged read clears it.
+    """
+
+    @respx.mock
+    @pytest.mark.spec("GR-015")
+    async def test_flag_is_drive_scoped_not_per_path(self) -> None:
+        # A range read on one path falls back; the flag then rides get_file_info
+        # for a *different* path on the same drive, because incapability is a
+        # drive property — not keyed on the (raw) caller path that fell back.
+        respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(200, json=_file_item()))
+        respx.get(_meta_url("dir/other.txt")).mock(return_value=httpx.Response(200, json=_file_item()))
+        respx.get(_DL1).mock(return_value=httpx.Response(200, content=b"0123456789"))
+        async with _make() as backend:
+            await backend._read_bytes("a.txt", 5, 4)  # ranged GET answered with full entity → fallback
+            info = await backend.get_file_info("dir/other.txt")
+        assert info.extra[RANGE_FALLBACK_FLAG] is True
+
+    @respx.mock
+    @pytest.mark.spec("GR-015")
+    async def test_flag_self_heals_on_later_honoured_range(self) -> None:
+        # First ranged read falls back (200 full entity) and marks the drive
+        # incapable; a later ranged read the drive honours (206) clears the mark,
+        # so get_file_info stops reporting the stale fallback flag.
+        respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(200, json=_file_item()))
+        respx.get(_DL1).mock(
+            side_effect=[
+                httpx.Response(200, content=b"0123456789"),  # ignores Range → fallback
+                httpx.Response(206, content=b"5678"),  # honours Range → self-heal
+            ]
+        )
+        async with _make() as backend:
+            await backend._read_bytes("a.txt", 5, 4)
+            stale = await backend.get_file_info("a.txt")
+            await backend._read_bytes("a.txt", 5, 4)
+            healed = await backend.get_file_info("a.txt")
+        assert stale.extra[RANGE_FALLBACK_FLAG] is True
+        assert RANGE_FALLBACK_FLAG not in healed.extra
+
+
 class TestMidStreamResume:
     """GR-017: a connection drop after partial delivery resumes from the next byte."""
 

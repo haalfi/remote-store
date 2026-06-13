@@ -382,9 +382,25 @@ this fallback: a start at or past EOF is a legitimate empty read and
 an inverted-bounds `416` is a backend bug, both owned by GR-055 (the
 single source of truth for `416` on a range read). When the fallback
 fires, the backend logs a WARNING with the `graph.read.range_fallback`
-marker and sets
-`FileInfo.extra["graph.read.range_fallback"] = True` on any
-`FileInfo` returned for the same item within the operation context.
+marker and records the **drive** as range-incapable. Range capability
+is a property of the drive/tenant (WebDAV-style backings ignore
+`Range`), not of an individual read, so the backend tracks a single
+drive-scoped state rather than a per-path record: while the drive is
+marked range-incapable, `get_file_info` sets
+`FileInfo.extra["graph.read.range_fallback"] = True` on the `FileInfo`
+it returns (for any path on the drive, not only the one that fell
+back). The mark is **self-healing** — a later ranged read the drive
+honours (a `206`) clears it — so the flag reflects the most-recent
+observed behaviour rather than "ever fell back," is bounded to one
+tri-state per backend (it cannot grow with the number of paths read),
+and never reports a stale fallback after the drive's behaviour changes.
+The signal is therefore a drive-scoped hint surfaced on a subsequent
+`get_file_info`, **not** an operation-scoped marker on the triggering
+read: the read returns bytes, not a `FileInfo`, and the backend has no
+handle on the read's `StoreEvent` (see below), so a later metadata
+call is the only in-band delivery channel until native-async
+observability lands (that item is the proper home for an
+operation-scoped marker on `StoreEvent.metadata`).
 The `extra` channel is the v0.27.0 supported surface for
 backend-specific signal (see GR-049 for `graph.file.hashes`);
 `ext.observe` is **not** used as a delivery channel —

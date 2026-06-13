@@ -19,8 +19,9 @@ header. This module drives reads against that URL:
   the driver then treats the URL as range-incapable, falls back to the spool
   strategy (re-read the full entity into a ``SpooledTemporaryFile``, serve the
   requested window), emits a WARNING carrying the ``graph.read.range_fallback``
-  marker, and lets the backend flag the condition on any ``FileInfo`` it returns
-  for the same item;
+  marker, and lets the backend mark the drive range-incapable so it flags the
+  condition on the ``FileInfo`` it later returns; a subsequent ``206`` clears
+  that mark (the signal is drive-scoped and self-healing, not per-path);
 * a ``416`` whose start is at or past EOF yields an empty remainder (no error);
   a ``416`` provoked by a malformed (inverted) range is a backend bug and
   surfaces as ``RemoteStoreError`` carrying the HTTP status.
@@ -58,6 +59,7 @@ if TYPE_CHECKING:
 
     Refetch = Callable[[], Awaitable[Mapping[str, Any]]]
     OnFallback = Callable[[], None]
+    OnRangeSuccess = Callable[[], None]
     TokenProvider = Callable[[], str] | Callable[[], Awaitable[str]]
 
 log = logging.getLogger("remote_store.aio.backends._graph")
@@ -120,6 +122,7 @@ async def stream_range(
     length: int | None = None,
     refetch: Refetch,
     on_fallback: OnFallback,
+    on_range_success: OnRangeSuccess,
     retry: RetryPolicy | None = None,
     backend: str = BACKEND_NAME,
 ) -> AsyncIterator[bytes]:
@@ -137,7 +140,9 @@ async def stream_range(
     * a drive that ignores ``Range`` (``200`` full entity) or rejects it with a
       non-``416`` ``4xx`` is treated as range-incapable: the full entity is
       re-read into a spool and the requested window served from it
-      (*on_fallback* fires once).
+      (*on_fallback* fires once). A ``206`` to a ``Range`` request confirms the
+      drive honours ranges and fires *on_range_success* — the backend uses the
+      two callbacks to maintain a self-healing, drive-scoped fallback hint.
 
     Raises:
         BackendUnavailable: Missing download URL, recovery that does not clear
@@ -196,6 +201,13 @@ async def stream_range(
                 if not response.is_success:
                     await response.aread()
                     raise BackendUnavailable(f"Graph download failed ({status}): {path}", path=path, backend=backend)
+                if sent_range:
+                    # A 206 to a Range request: the drive honoured the range, so
+                    # clear any prior range-incapable mark (GR-015 self-heal). A
+                    # 200 to a Range was caught above; range-incapable mode sends
+                    # no Range (sent_range is False), so a fallback re-read here
+                    # never claims capability.
+                    on_range_success()
                 # 2xx body. In range-incapable mode the response is the full entity
                 # (no Range honoured), so window it through the spool; otherwise
                 # stream it straight. A drop mid-body raises below and resumes.
