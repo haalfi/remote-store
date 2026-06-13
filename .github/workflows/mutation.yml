@@ -168,16 +168,16 @@ jobs:
       # ``hatch run`` here would re-derive the environment via hatch's
       # features key; hatch 1.16.5 + uv installer silently leaves features
       # out of the venv, so the matrix shard ran ``python -m pytest`` against
-      # a venv that did not have pytest. ``pytest-gremlins`` is the only
-      # mutate-specific dep that isn't in ``[dev]``, so it goes in the same
-      # install command.
+      # a venv that did not have pytest. The mutate-specific dep
+      # (``pytest-gremlins``) lives in the ``[mutate]`` extra — the single
+      # source of truth for the pin — installed alongside ``[dev]``.
       - uses: actions/setup-python@v6
         with:
           python-version-file: .python-version
       - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false
-      - run: uv pip install -e ".[dev]" "pytest-gremlins>=1.5"
+      - run: uv pip install -e ".[dev,mutate]"
 
       # --- Gremlins cache (content-hash based, survives across runs) ---
       - name: Restore gremlins cache

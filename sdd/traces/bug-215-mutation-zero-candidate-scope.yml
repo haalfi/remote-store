@@ -13,12 +13,19 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
-  # PR #801 review caught that the alignment guard (TestScopeCandidateDiscovery)
+  # PR #801 review, round 1: the alignment guard (TestScopeCandidateDiscovery)
   # importorskips pytest-gremlins, which is not in [dev] — so it silently
   # skipped in every CI job. The tooling-tests job had to install the plugin
-  # for the guard to actually run; the ripple-check table did not anticipate it.
+  # for the guard to run; the ripple-check table did not anticipate it.
   - .github/workflows/ci.yml
-review_rounds: 1
+  # Round 2: deduplicating the pytest-gremlins pin into a [mutate] extra (SSOT)
+  # rippled into the install-extras generator and the transitive-drift guard,
+  # both of which enumerate optional-dependencies and needed mutate excluded.
+  - pyproject.toml
+  - scripts/gen_features.py
+  - scripts/drift_check.py
+  - .github/workflows/mutation.yml
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

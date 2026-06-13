@@ -272,6 +272,12 @@ class TestListExtras:
         # dependent in a way that breaks the lock model. Drift guard skips.
         assert "toml" not in drift_check.list_extras()
 
+    def test_excludes_dev_tooling_mutate(self, drift_check):
+        # `mutate` carries the pytest-gremlins pin — a dev/CI test tool, not a
+        # runtime dependency, and marker-gated to py>=3.11. Excluded for the
+        # same reasons as the dev aggregates and `toml` (BUG-215).
+        assert "mutate" not in drift_check.list_extras()
+
     def test_returns_sorted(self, drift_check):
         extras = drift_check.list_extras()
         assert extras == sorted(extras)

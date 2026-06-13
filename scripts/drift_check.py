@@ -56,9 +56,9 @@ LOCK_DIR = ROOT / "infra" / "drift-locks"
 DOCS_PAGE = ROOT / "docs-src" / "reference" / "tested-versions.md"
 
 # Extras excluded from drift checking: developer-only aggregates (dev, docs,
-# bench) and marker-gated extras whose resolution depends on the running
-# Python version in a way that breaks the lock model.
-_EXCLUDED_EXTRAS: frozenset[str] = frozenset({"dev", "docs", "bench", "toml"})
+# bench, mutate) and marker-gated extras whose resolution depends on the running
+# Python version in a way that breaks the lock model (toml; mutate is both).
+_EXCLUDED_EXTRAS: frozenset[str] = frozenset({"dev", "docs", "bench", "toml", "mutate"})
 
 _LOCK_HEADER_RE = re.compile(
     r"^# extra: (?P<extra>[\w-]+)\s*\n"

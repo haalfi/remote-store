@@ -56,8 +56,8 @@ _EXTRA_COMMENTS: dict[str, str] = {
     "httpx": "httpx HTTP adapter for ReadOnlyHttpBackend",
 }
 
-# Extras omitted from the install extras section (dev / build tooling).
-_EXCLUDE_EXTRAS: frozenset[str] = frozenset({"bench", "dev", "docs"})
+# Extras omitted from the install extras section (dev / build / CI tooling).
+_EXCLUDE_EXTRAS: frozenset[str] = frozenset({"bench", "dev", "docs", "mutate"})
 
 # Override the auto-derived Extra cell for backends whose install story cannot be
 # expressed as a single pip extra (e.g. stdlib-first with optional adapters).
