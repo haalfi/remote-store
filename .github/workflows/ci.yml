@@ -264,7 +264,14 @@ jobs:
       - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: false
-      - run: uv pip install -e ".[dev]"
+      # pytest-gremlins is NOT in the [dev] extra (it lives only in the hatch
+      # default env — pyproject.toml [tool.hatch.envs.default]). Install it here,
+      # mirroring mutation.yml's pattern, so tests/scripts/test_run_mutate.py's
+      # TestScopeCandidateDiscovery actually runs (it importorskips the plugin):
+      # those tests are the only automated gate that _scope_has_no_mutation_candidates
+      # still imports the right pytest-gremlins internals and agrees with the
+      # plugin's own gremlin count (BUG-215). Without the plugin they silently skip.
+      - run: uv pip install -e ".[dev]" "pytest-gremlins>=1.5"
       - run: pytest tests/scripts/ -q
 
   # BK-172: verify that S3-PyArrow tests run (not skip) against MinIO when

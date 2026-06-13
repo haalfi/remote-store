@@ -97,8 +97,12 @@ class TestEnsureReportForEmptyScope:
 
 class TestScopeCandidateDiscovery:
     """Asks pytest-gremlins' own transformer, so it matches what the plugin
-    counts. Skips when the plugin is absent (bare introspection runners and
-    the <3.11 matrix do not install it)."""
+    counts and goes red if the plugin moves the internals
+    ``_scope_has_no_mutation_candidates`` imports. Runs in CI via the
+    ``tooling-tests`` job, which installs pytest-gremlins alongside ``.[dev]``
+    for exactly this reason (ci.yml). Skips only where the plugin is genuinely
+    absent: bare introspection runners and the <3.11 matrix (it is marker-gated
+    to py>=3.11)."""
 
     def test_glob_has_no_mutation_candidates(self):
         pytest.importorskip("pytest_gremlins")
