@@ -15,16 +15,16 @@ _Captured 2026-05-25 on Python 3.13._
 
 ## `[azure]`
 
-_Captured 2026-06-09 on Python 3.13._
+_Captured 2026-06-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
 | `azure-identity` | `1.26.0b2` |
-| `azure-storage-file-datalake` | `12.25.0b1` |
+| `azure-storage-file-datalake` | `12.25.0` |
 
 ## `[dagster]`
 
-_Captured 2026-06-09 on Python 3.13._
+_Captured 2026-06-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -75,7 +75,7 @@ _Captured 2026-06-09 on Python 3.13._
 
 ## `[s3]`
 
-_Captured 2026-06-01 on Python 3.13._
+_Captured 2026-06-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
