@@ -153,19 +153,6 @@ overwrite-replace limitation BK-261 shipped first; see BACKLOG-DONE.md.)
 
 ## Lint / CI Completeness
 
-- [ ] **ID-179 — Trace schema validator: wire `audience` field check into `hatch run lint`**
-  spec: — · effort: S · audience: library.maintainer
-  `sdd/traces/_schema.yml` declares `audience` as `required`, but BK-193
-  deliberately left that field as an authoring convention — enforced "on the
-  next aggregator run," not at commit time — rather than wiring a gate (no
-  aggregator exists yet, so nothing validates it today). Add
-  `scripts/check_traces.py` that jsonschema-validates every
-  `sdd/traces/[!_]*.yml` against the schema. Wire into the existing
-  `hatch run lint` script list and into the lint CI job. Per
-  `feedback_check_scripts_dual_wire`. Promotes BK-193's convention to
-  mechanical enforcement. No priority while trace authoring is still
-  ad-hoc; promote to BK-prefix when trace volume justifies enforcement.
-
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
   spec: — · effort: L · audience: platform.tooling
   ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review

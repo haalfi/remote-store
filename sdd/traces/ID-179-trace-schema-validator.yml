@@ -1,0 +1,77 @@
+id: ID-179
+title: "Trace schema validator: jsonschema-validate every sdd/traces/[!_]*.yml in lint"
+trigger: "sdd/traces/_schema.yml declared the trace shape (audience required, patterns on ids, additionalProperties:false) but nothing validated traces at commit time — BK-193 left enforcement as an authoring convention pending an aggregator that never landed. Agents authoring traces had no mechanical check, so drift accumulated (3 traces already violated the schema)."
+source_items:
+  - ID-179
+  - BK-193
+audience:
+  - contributor.tooling
+  - contributor.process
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Lint / CI Completeness / ID-179"
+        read_type: gate
+        extract: "Add scripts/check_traces.py that jsonschema-validates every sdd/traces/[!_]*.yml; wire into hatch lint + CI; per feedback_check_scripts_dual_wire"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: gate
+        extract: "Draft 2020-12 schema; required [id,title,trigger,source_items,audience,phases]; additionalProperties:false; phase id pattern ^[a-z][a-z0-9_]*$; top-level examples block to self-validate"
+        outcome: ok
+      - file: sdd/traces/bk-193-trace-schema-audience.yml
+        section: "(full)"
+        read_type: reference
+        extract: "BK-193 made audience required but deferred enforcement; ID-179 promotes the convention to a mechanical gate"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/check_no_tracker_refs.py
+        section: "(full)"
+        read_type: reference
+        extract: "check-script idiom: module docstring (scope/exit codes), argparse main, ROOT anchor, one violation per line to stderr, exit 0/1"
+        outcome: ok
+      - file: scripts/check_ci_inventory.py
+        section: "(full)"
+        read_type: reference
+        extract: "yaml.safe_load idiom + the 'live repo must pass its own gate' test pattern"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint, dev deps"
+        read_type: gate
+        extract: "Add jsonschema to dev deps; append python scripts/check_traces.py to the lint list (CI lint job delegates via uvx hatch run lint, so dual-wire is automatic)"
+        outcome: ok
+      - file: sdd/traces/bk-284-cassette-recording-redesign.yml
+        section: "phases / implement-pr2, verify-pr2"
+        read_type: gate
+        extract: "Pre-existing violation: phase ids used hyphens; snake_case them to satisfy ^[a-z][a-z0-9_]*$"
+        outcome: ok
+      - file: sdd/traces/id-195-speed-up-hatch.yml
+        section: "phases / prior-art"
+        read_type: gate
+        extract: "Pre-existing violation: phase id prior-art → prior_art"
+        outcome: ok
+      - file: sdd/traces/bug-197-azure-read-delete-hns-directory.yml
+        section: "notes"
+        read_type: gate
+        extract: "Pre-existing violation: top-level notes field disallowed by additionalProperties:false; relocate the worktree caveat into the verify_replay step extract"
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_check_ci_inventory.py
+        section: "(full)"
+        read_type: reference
+        extract: "importlib loader for a scripts/*.py module; hermetic tmp_path fixtures + a repo-honesty test"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / New check script"
+        read_type: verify
+        extract: "Move ID-179 to BACKLOG-DONE, regen backlogid.json, ship trace; audience=contributor.tooling/process skips CHANGELOG per _schema.yml audience-derived rule"
+        outcome: ok
