@@ -95,7 +95,8 @@ GraphBackend(
   `AsyncBackendSyncAdapter` (ADR-0025) and use `ext.glob` over
   `list_files` (the extension takes a sync `Store`). Async callers
   compose pattern matching over `list_files` themselves until an
-  async equivalent of `ext.glob` lands as a separate backlog item.
+  async equivalent of `ext.glob` lands (tracked as ID-217, the
+  async-native `ext.*` surface owner).
 - `USER_METADATA` is withheld. Graph exposes per-item user properties
   only on SharePoint-backed drives (via `driveItem.listItem.fields`,
   scoped to a backing site list); personal OneDrive has no equivalent

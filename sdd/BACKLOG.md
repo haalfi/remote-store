@@ -149,16 +149,6 @@ overwrite-replace limitation BK-261 shipped first; see BACKLOG-DONE.md.)
   `sdd/specs/044-graph-backend.md` (GR-015). Discovered in PR #760 (ID-127
   GR-TRANSFER) review.
 
-- [ ] **BK-268 — File the deferred Graph async-ext follow-ups (backlog hygiene)**
-  spec: GR-003 · effort: S · audience: library.maintainer
-  Two promised follow-ups have no tracked owner: GR-003 says async callers compose
-  pattern matching themselves "until an async equivalent of `ext.glob` lands as a
-  separate backlog item" (no such item exists), and ADR-0025 § Risks says the cache
-  extension "should learn to warn when wrapped over a bridged backend (tracked
-  separately)" (not filed). File or explicitly decline each so the deferred
-  async-ext surface (glob / observe / otel / cache / integrity) has owners.
-  Audit-016 L10.
-
 ---
 
 ## Lint / CI Completeness
@@ -381,6 +371,37 @@ overwrite-replace limitation BK-261 shipped first; see BACKLOG-DONE.md.)
   the case identity-derived keys would close.
   - Spec: RES-100 (proposed in [043](specs/043-resolution-plan.md))
   - Depends on: ID-121 (CompositeStore)
+
+- [ ] **ID-217 — Async-native extension surface (owner for the deferred async `ext.*`)**
+  spec: GR-003 · effort: L · audience: user.api
+  `src/remote_store/aio/ext/` ships only `write.py` (`write_with_hash`); there is
+  no async equivalent of `ext.glob`, `ext.observe`, `ext.otel`, or `ext.integrity`
+  (audit-016 M6). A native `AsyncStore` consumer — the natural audience for an
+  async-native backend such as Graph — reaches the full `ext.*` surface only by
+  dropping to `AsyncBackendSyncAdapter` (ADR-0025), which forfeits the async
+  streaming the backend exists to provide. GR-003 calls this out for `GLOB`
+  specifically: async callers compose pattern matching over `list_files`
+  themselves "until an async equivalent of `ext.glob` lands as a separate backlog
+  item" — this is that item, and it owns the surface as a whole, not just glob.
+  **Decision pending:** build per-extension async equivalents (glob first, as the
+  smallest and the one a spec promises), or formally decline the ecosystem and
+  document the sync-adapter route as the supported path for extension features
+  over async backends. The `ext.cache`-over-bridged-backend guard is tracked
+  separately as ID-218. Filed (not yet scoped) per audit-016 L10 / BK-268.
+
+- [ ] **ID-218 — `ext.cache`: warn when wrapping a bridged (async-native) backend**
+  spec: — · effort: S · audience: user.api
+  `CachedStore` with an unset `max_content_size` materialises whatever the wrapped
+  backend yields (`ext/cache.py`). Over a sync REST backend that is merely
+  inconvenient; over an async-native backend reached through
+  `AsyncBackendSyncAdapter` (ADR-0025) — a backend that exists precisely to
+  *avoid* materialisation — it silently defeats the streaming the user chose the
+  backend for. ADR-0025 § Risks flags this and promises the cache extension
+  "should learn to warn when wrapped over a bridged backend (tracked separately)";
+  this is that owner. Scope: emit a warning (or require an explicit
+  `max_content_size`) when `cache()` wraps a `Store` whose backend is an
+  `AsyncBackendSyncAdapter` and `max_content_size` is unset. Sibling of ID-217
+  (async-native `ext.*`). Filed per audit-016 L10 / BK-268.
 
 ---
 

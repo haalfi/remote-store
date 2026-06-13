@@ -8,6 +8,28 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-268 — File the deferred Graph async-ext follow-ups (backlog hygiene)**
+  spec: GR-003 · effort: S · audience: library.maintainer, contributor.process
+  Audit-016 L10 flagged two promised async-ext follow-ups with no tracked owner.
+  Both are now filed (the audit's "file or explicitly decline" resolved toward
+  *file*, since each is a legitimate deferred improvement, not a dead promise):
+  - **ID-217 — Async-native extension surface.** Owns GR-003's promised "async
+    equivalent of `ext.glob`" and broadens it to the whole deferred async `ext.*`
+    cliff (glob / observe / otel / integrity; audit-016 M6) — a native
+    `AsyncStore` consumer reaches `ext.*` only via `AsyncBackendSyncAdapter`,
+    forfeiting async streaming. Decision (build vs. formally decline) left to
+    scoping.
+  - **ID-218 — `ext.cache` warn over a bridged backend.** Owns ADR-0025 § Risks'
+    promised guard: `CachedStore` with unset `max_content_size` over an
+    async-native backend silently materialises what the backend exists to stream.
+  Closing the loop on the source side: GR-003 now cites ID-217 instead of "a
+  separate backlog item", and ADR-0025 § Risks cites ID-218 instead of "(tracked
+  separately)" — so neither promise dangles. The named async-ext surface
+  (glob / observe / otel / cache / integrity) now has owners: glob / observe /
+  otel / integrity under ID-217, the sync-cache guard under ID-218. No code, no
+  spec-behaviour change, no CHANGELOG (library.maintainer / contributor.process,
+  no `user.*` audience). Trace: `sdd/traces/BK-268-file-deferred-async-ext-followups.yml`.
+
 - [x] **BUG-215 — Mutation run goes red on a scope with zero mutation candidates**
   spec: — · effort: S · audience: infra.ci, contributor.tooling
   The weekly `[mutation]` run opened the rolling issue for `ext-glob` with
