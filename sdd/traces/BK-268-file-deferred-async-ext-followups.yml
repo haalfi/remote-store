@@ -1,0 +1,81 @@
+id: BK-268
+title: "File the deferred Graph async-ext follow-ups (backlog hygiene)"
+trigger: >
+  Audit-016 L10 found two promised async-ext follow-ups with no tracked owner:
+  GR-003 deferred an "async equivalent of ext.glob" to "a separate backlog item"
+  that was never filed, and ADR-0025 § Risks deferred an ext.cache "warn when
+  wrapped over a bridged backend" guard "(tracked separately)" that was never
+  filed. The deferred async-ext surface (glob / observe / otel / cache /
+  integrity) was largely without owners.
+source_items:
+  - BK-268
+audience:
+  - library.maintainer
+  - contributor.process
+discovery_followups:
+  - ID-217
+  - ID-218
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-268 (item)"
+        read_type: gate
+        extract: "Two promises to file-or-decline; goal is owners for the async-ext surface"
+        outcome: ok
+      - file: sdd/audits/audit-016-graph-backend-review.md
+        section: "L10, M6, G6 disposition"
+        read_type: reference
+        extract: "L10 names the two untracked promises; M6 scopes the wider async-ext cliff (no async observe/otel/glob/cache/integrity)"
+        outcome: ok
+  - id: classify
+    name: Locate the dangling promises
+    steps:
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-003"
+        read_type: reference
+        extract: "Exact wording: async ext.glob 'lands as a separate backlog item' — the dangling promise to re-point"
+        outcome: ok
+      - file: sdd/adrs/0025-async-to-sync-backend-adapter.md
+        section: "Risks (ext.cache default-unbounded read_bytes)"
+        read_type: reference
+        extract: "Exact wording: cache 'should learn to warn when wrapped over a bridged backend (tracked separately)'"
+        outcome: ok
+  - id: implement
+    name: File the items and re-point the promises
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID prefixes / Assigning a new ID"
+        read_type: gate
+        extract: "Next IDs: backlogid.json max (ID-214) vs highest active (ID-216) → take 217, 218; ID prefix fits deferred/unscheduled ideas"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "New Extensions"
+        read_type: reference
+        extract: "Filed ID-217 (async-native ext.* owner) and ID-218 (ext.cache bridged-backend guard); first placed under API Ergonomics next to ID-123, moved to a new 'New Extensions' section on PR review (sibling of 'New Backends')"
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-003"
+        read_type: reference
+        extract: "Re-point the glob promise to ID-217 so the spec no longer dangles (single-source-of-truth)"
+        outcome: ok
+      - file: sdd/adrs/0025-async-to-sync-backend-adapter.md
+        section: "Risks"
+        read_type: reference
+        extract: "Re-point the cache-warning promise to ID-218"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: reference
+        extract: "Move BK-268 to done with the file-not-decline rationale and the two new owners recorded"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / BACKLOG edit"
+        read_type: verify
+        extract: "BACKLOG↔BACKLOG-DONE move, spec/ADR cross-refs consistent; ran gen-backlogid --check (confirmed no-op: BK-268 < BK:284 floor, ID-217/218 active so JSON unchanged); no code/CHANGELOG (no user.* audience)"
+        outcome: ok
