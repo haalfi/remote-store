@@ -1,0 +1,77 @@
+id: BUG-215
+title: "Mutation run goes red on a scope with zero mutation candidates"
+trigger: >
+  The weekly [mutation] rolling issue (#800) listed ext-glob under "Harness /
+  implementation failures" with reason "job was green but wrote no gremlins JSON
+  report (reporting half broke)". The mutate-ext-glob leg was red, but the scope
+  had simply nothing to mutate.
+source_items:
+  - BUG-215
+audience:
+  - infra.ci
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .claude/skills/mutation/SKILL.md
+        section: "The core rule / Steps"
+        read_type: gate
+        extract: "Issue tracks run health; harness failures are fixed like bugs, never silenced (no skip/filter/pardon)"
+      - file: .github/workflows/mutation.yml
+        section: "header (two-outcome model) + Record outcome step"
+        read_type: reference
+        extract: "A green leg with no readable gremlins JSON is forced red by the record step"
+      - file: scripts/mutation_report.py
+        section: "record / classify_scopes"
+        read_type: gate
+        extract: "job_status==success and counts is None -> exit 1 AND classify harness_failure (the misclassification)"
+  - id: classify
+    name: Classify the failure
+    steps:
+      - file: scripts/run_mutate.py
+        section: "_build_pytest_argv / main"
+        read_type: reference
+        extract: "Scope runner execs pytest-gremlins and returns its exit code; nothing guarantees a report"
+      - file: src/remote_store/ext/glob.py
+        section: "(full)"
+        read_type: reference
+        extract: "Only a value-less return, bare-call conditionals; no operator or literal a gremlin can mutate"
+      - file: scripts/mutate_scopes.py
+        section: "_add_ext_scope"
+        read_type: reference
+        extract: "ext scopes are derived from src+test file existence — glob.py qualifies despite having no candidates"
+  - id: reproduce
+    name: Reproduce locally
+    steps:
+      - file: scripts/run_mutate.py
+        section: "hatch run mutate ext-glob"
+        read_type: verify
+        extract: "Clean-cache run prints 'No gremlins found in source code' and writes no report (exit 0) — matches CI"
+  - id: implement
+    name: Implement the harness fix
+    steps:
+      - file: scripts/run_mutate.py
+        section: "_scope_has_no_mutation_candidates / _ensure_report_for_empty_scope"
+        read_type: reference
+        extract: "Synthesise the canonical empty report only when gremlins' own transform_source confirms zero candidates"
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_run_mutate.py
+        section: "TestEnsureReportForEmptyScope / TestScopeCandidateDiscovery"
+        read_type: gate
+        extract: "Synthesis fires only on a green zero-candidate scope; classifies ok; discovery matches the plugin (glob 0, yaml 6)"
+      - file: tests/scripts/test_mutation_report.py
+        section: "TestRecord / TestClassify"
+        read_type: verify
+        extract: "Existing record guard (green + no report -> fail) is preserved for the genuine reporting-break case"
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG-DONE entry, trace, failing-test-first; no CHANGELOG (no user.* audience); no spec/capability ripple"
