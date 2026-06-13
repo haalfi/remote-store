@@ -17,7 +17,7 @@ discovery_followups:
   - ID-218
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -54,9 +54,9 @@ phases:
         extract: "Next IDs: backlogid.json max (ID-214) vs highest active (ID-216) → take 217, 218; ID prefix fits deferred/unscheduled ideas"
         outcome: ok
       - file: sdd/BACKLOG.md
-        section: "API Ergonomics"
+        section: "New Extensions"
         read_type: reference
-        extract: "Placed ID-217 (async-native ext.* owner) and ID-218 (ext.cache bridged-backend guard) next to ID-123 (cache)"
+        extract: "Filed ID-217 (async-native ext.* owner) and ID-218 (ext.cache bridged-backend guard); first placed under API Ergonomics next to ID-123, moved to a new 'New Extensions' section on PR review (sibling of 'New Backends')"
         outcome: ok
       - file: sdd/specs/044-graph-backend.md
         section: "GR-003"
