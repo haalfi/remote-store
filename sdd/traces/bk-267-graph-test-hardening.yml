@@ -12,9 +12,10 @@ source_items:
   - BK-267
 audience:
   - infra.test
+  - contributor.process
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -57,11 +58,24 @@ phases:
         read_type: reference
         extract: "Justifies a direct write_atomic failure test over transitive coverage via write"
         outcome: ok
+  - id: fix
+    name: Review-driven refactor + spec sync
+    steps:
+      - file: tests/backends/graph/aio/test_read.py
+        section: "TestRead first-iteration tests"
+        read_type: gate
+        extract: "PR #799 review: the two __anext__ tests duplicated the pre-existing async-for tests (which they strictly subsume). Replaced in place — strengthen the existing folder/missing tests to collect chunks and assert empty — instead of adding alongside; net 2 tests not 4"
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-012"
+        read_type: gate
+        extract: "Lifted the read() timing guarantee (docstring-only) into a GR-012 Ordering invariant so the tests trace to a contract, not an implementation accident; no behaviour change, so no CHANGELOG (infra.test + contributor.process, existing-clause amendment)"
+        outcome: ok
   - id: verify
     name: Verify
     steps:
       - file: tests/backends/graph/aio/test_read.py
         section: "(full)"
         read_type: verify
-        extract: "PermissionDenied import re-added after ruff autofix stripped it as unused (added before the usages) — both read/write suites green, 74 passed"
+        extract: "PermissionDenied import re-added after ruff autofix stripped it as unused (added before the usages) — both read/write suites green"
         outcome: misleading

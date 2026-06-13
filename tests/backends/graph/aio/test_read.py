@@ -9,6 +9,7 @@ stream (GR-015/017/055) lands with ``transfer.py`` in a later step.
 from __future__ import annotations
 
 from datetime import timezone
+from typing import TYPE_CHECKING
 
 import httpx
 import pytest
@@ -18,6 +19,9 @@ from remote_store._errors import BackendUnavailable, InvalidPath, NotFound, Perm
 from remote_store.aio.backends._graph.backend import GraphBackend
 from remote_store.aio.backends._graph.items import parse_graph_datetime
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
 _DRIVE = "b!driveid123"
 _BASE = "https://graph.microsoft.com/v1.0"
 _DOWNLOAD = "https://my.sharepoint.example/download/presigned?tempauth=secret"
@@ -25,6 +29,18 @@ _DOWNLOAD = "https://my.sharepoint.example/download/presigned?tempauth=secret"
 
 def _make() -> GraphBackend:
     return GraphBackend(_DRIVE, token_provider=lambda: "tok")
+
+
+async def _collect(stream: AsyncIterator[bytes], sink: list[bytes]) -> None:
+    """Drain *stream* into *sink* as bytes arrive.
+
+    Appending per chunk (rather than building a comprehension) keeps any bytes
+    yielded *before* an exception, so a caller can assert the sink stayed empty
+    to prove the raise preceded the first byte. A comprehension would discard
+    the partial list when the iteration raises, hiding a yield-then-raise.
+    """
+    async for chunk in stream:
+        sink.append(chunk)
 
 
 def _meta_url(path: str) -> str:
@@ -231,52 +247,34 @@ class TestRead:
     @respx.mock
     @pytest.mark.spec("GR-012")
     async def test_folder_raises_before_yield(self) -> None:
+        # read() is an async generator: _get_item + the folder check defer to the
+        # first __anext__, then the stream loop runs. Collecting into a list and
+        # asserting it stayed empty pins the GR-012 ordering contract — the folder
+        # check fires before any byte. A bare `async for ...: pass` would also pass
+        # on a yield-then-raise, so it could not catch a future reorder that moved
+        # the directory check after the stream (audit-016 L7).
         respx.get(_meta_url("a")).mock(return_value=httpx.Response(200, json=_folder_item()))
+        chunks: list[bytes] = []
         async with _make() as backend:
             with pytest.raises(InvalidPath):
-                async for _ in backend.read("a"):
-                    pass
+                await _collect(backend.read("a"), chunks)
+        assert chunks == []
 
     @respx.mock
-    @pytest.mark.spec("GR-012")
-    async def test_folder_raises_on_first_anext_before_any_byte(self) -> None:
-        # read() is an async generator, so _get_item + the folder check defer to
-        # the first __anext__ pull. Pin that timing (audit-016 L7): the very first
-        # pull raises InvalidPath, so no byte is ever yielded before the directory
-        # check fires. Driving __anext__ directly distinguishes a first-iteration
-        # raise from a raise after partial yields — the bare async-for above cannot.
-        respx.get(_meta_url("a")).mock(return_value=httpx.Response(200, json=_folder_item()))
-        async with _make() as backend:
-            agen = backend.read("a")
-            with pytest.raises(InvalidPath):
-                await agen.__anext__()
-            await agen.aclose()
-
-    @respx.mock
-    @pytest.mark.spec("GR-031")
-    async def test_missing_raises_on_first_anext_before_any_byte(self) -> None:
-        # The not-found mapping defers to the first pull the same way: a missing
-        # item raises NotFound on the first __anext__, before any byte and before
-        # the download URL is ever reached (the download route is left unmocked).
-        respx.get(_meta_url("gone.txt")).mock(
-            return_value=httpx.Response(404, json={"error": {"code": "itemNotFound"}})
-        )
-        async with _make() as backend:
-            agen = backend.read("gone.txt")
-            with pytest.raises(NotFound):
-                await agen.__anext__()
-            await agen.aclose()
-
-    @respx.mock
-    @pytest.mark.spec("GR-031")
+    @pytest.mark.spec("GR-012")  # ordering: existence check precedes any byte
+    @pytest.mark.spec("GR-031")  # mapping: itemNotFound -> NotFound
     async def test_missing_raises_not_found(self) -> None:
+        # Same GR-012 ordering pin for the not-found path: _get_item raises before
+        # the stream loop, so no byte is yielded and the download URL is never
+        # reached (its route is left unmocked).
         respx.get(_meta_url("gone.txt")).mock(
             return_value=httpx.Response(404, json={"error": {"code": "itemNotFound"}})
         )
+        chunks: list[bytes] = []
         async with _make() as backend:
             with pytest.raises(NotFound):
-                async for _ in backend.read("gone.txt"):
-                    pass
+                await _collect(backend.read("gone.txt"), chunks)
+        assert chunks == []
 
     @respx.mock
     @pytest.mark.spec("GR-012")
