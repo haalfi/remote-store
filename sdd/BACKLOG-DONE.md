@@ -8,6 +8,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-259 — Graph `_range_fallback_paths` flag: scope to drive, self-heal, not backend-lifetime per-path set**
+  spec: GR-015 · effort: S · audience: user.api, library.maintainer
+  The per-instance `set[str]` of range-failed paths grew unbounded, never
+  cleared, keyed on the raw caller string (so `"/x"` and `"x"` diverged), and
+  reported a stale `extra["graph.read.range_fallback"]` long after the read
+  that set it (audit-016 L2 / PR #760 review). Resolved with **solution-space
+  option 1 + 3** (self-heal + spec align), landed as a single drive-scoped
+  tri-state rather than a still-growing per-path set: range capability is a
+  tenant/drive property, so `GraphBackend` now tracks one `_range_capable:
+  bool | None` (None = untested, True = a `206` honoured Range, False = the
+  drive ignored/rejected it). `stream_range` gained an `on_range_success`
+  callback (mirroring `on_fallback`) that fires on a `206`, so a later honoured
+  ranged read clears the mark; `get_file_info` flags `FileInfo` while the mark
+  is False. This is O(1) (no per-path growth), self-healing (no stale flag),
+  and kills the raw-string-key divergence (no path keys at all). GR-015 was
+  amended: the marker is now documented as a drive-scoped, self-healing hint
+  surfaced on a subsequent `get_file_info`, not an operation-scoped marker on
+  the read — with native-async observability (tracked as ID-217, the deferred
+  async-native `ext.*` surface) named as the eventual home for a true
+  operation-scoped `StoreEvent.metadata` signal; building it was explicitly
+  deferred to ID-217 rather than taken on here. Tests: drive-scope (flag rides
+  a *different* path's `get_file_info`)
+  and self-heal (a `206` clears the stale flag) added to
+  `tests/backends/graph/aio/test_transfer.py`. Trace:
+  `sdd/traces/BK-259-range-fallback-drive-scope.yml`.
+
 - [x] **ID-179 — Trace schema validator: jsonschema-validate every trace in `hatch run lint`**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
   `sdd/traces/_schema.yml` declared the trace shape (`audience` required,

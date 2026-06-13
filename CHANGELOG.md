@@ -23,6 +23,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - ID-127: `GraphBackend` write / move / copy raise `InvalidPath` for folder targets, file-ancestor descents, and directory destinations (live-conformance error fidelity)
 - ID-127: `GraphBackend(base_path=…)` scopes a backend to a drive subfolder (GR-058)
 - BK-263: Graph upload-session `ResourceLocked` no longer leaks the pre-signed session-URL credential
+- BK-259: Graph range-fallback flag scoped to the drive and self-healing
 
 ## [0.27.0] - 2026-06-02
 

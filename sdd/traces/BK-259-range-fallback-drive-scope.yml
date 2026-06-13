@@ -1,0 +1,95 @@
+id: BK-259
+title: "Graph range-fallback flag: scope to drive, self-heal, drop the per-path set"
+trigger: |
+  GraphBackend._range_fallback_paths was a per-instance set[str] that grew
+  unbounded, never cleared, keyed on the raw caller string (so "/x" and "x"
+  diverged), and reported a stale extra["graph.read.range_fallback"] from a
+  later unrelated get_file_info — flagged in PR #760 review and audit-016 L2.
+source_items:
+  - BK-259
+  - ID-127
+audience:
+  # user.api dominant → CHANGELOG entry required (trace-schema derived rule):
+  # the flag's runtime semantics change (per-path-permanent → drive-scoped,
+  # self-healing) and docstrings gain the new wording.
+  - user.api
+  - user.api_docs
+  - library.maintainer
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/backlogid.json
+review_rounds: 1
+# PR #805 review (one fix round): trimmed over-detailed prose the ripple-check
+# does not gate — the BACKLOG Graph section (no history kept here), the
+# _range_capable field comment, the CHANGELOG entry (ID+title only) — fixed a
+# CONTENT-RULES violation in the _note_range_capable docstring (described the
+# change, not the behaviour), named ID-217 in GR-015 itself for single-source
+# traceability (it had landed only in BACKLOG-DONE), and closed a test gap: the
+# 4xx-rejection fallback's no-Range 200 re-read must not clear the incapable
+# mark (the sent_range guard), now asserted directly.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-259 (item)"
+        read_type: gate
+        extract: "Solution space + the (1)+(3) lean: self-heal on 206 and align the spec"
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-015"
+        read_type: gate
+        extract: >-
+          The OBS-layering constraint: read returns bytes, the backend has no
+          StoreEvent handle, so a later get_file_info is the only delivery channel
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_mark_range_fallback, read, _read_bytes, get_file_info"
+        read_type: reference
+        extract: "Per-path set, two on_fallback call sites, the get_file_info check"
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "stream_range, on_fallback firing"
+        read_type: reference
+        extract: "Where 206 success lands (final 2xx branch, sent_range True) to hook on_range_success"
+      - file: tests/e2e/test_async_streaming_integrity.py
+        section: "graph_range_fallback exemption"
+        read_type: reference
+        extract: >-
+          The only real consumer reads the flag on a separate get_file_info after the
+          hop — confirms cross-operation use, so the drive-scoped hint framing matches reality
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/backends/graph/aio/test_transfer.py
+        section: "TestRangeFallbackDriveScope"
+        read_type: gate
+        extract: >-
+          Drive-scope (flag rides a different path's get_file_info) and self-heal
+          (a 206 clears the stale flag); both fail on the per-path set before the fix
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "stream_range on_range_success"
+        read_type: reference
+        extract: "Add on_range_success callback; fire on a 206 to a Range request (sent_range True)"
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_range_capable, _note_range_incapable, _note_range_capable, get_file_info"
+        read_type: reference
+        extract: >-
+          Replace the set with one tri-state (bool | None); flag FileInfo while False;
+          wire both callbacks at the two stream_range call sites
+  - id: spec
+    name: Spec align
+    steps:
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-015"
+        read_type: reference
+        extract: >-
+          Reword from "within the operation context" to a drive-scoped, self-healing
+          hint surfaced on a later get_file_info; name native-async observability as the eventual home
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Spec section, Bug fix"
+        read_type: verify
+        extract: "Spec-tagged tests, BACKLOG→DONE move, CHANGELOG stub, failing test before fix"

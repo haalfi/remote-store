@@ -201,9 +201,10 @@ class GraphBackend(AsyncBackend):
         self._upload_chunk_size = upload_chunk_size
         self._copy_timeout = copy_timeout
         self._client_options = client_options or {}
-        # Paths whose drive ignored a Range request (SharePoint range-fallback,
-        # GR-015): get_file_info flags any FileInfo it returns for them.
-        self._range_fallback_paths: set[str] = set()
+        # SharePoint range-fallback (GR-015): None = untested, True = drive
+        # honoured Range (206), False = drive ignored/rejected it. Drive-scoped;
+        # get_file_info flags FileInfo while False.
+        self._range_capable: bool | None = None
         # Upload-session URLs with a write mid-chunk-loop: close() aborts each
         # via best-effort DELETE (GR-051 upload-session-abort half).
         self._active_upload_sessions: set[str] = set()
@@ -448,13 +449,24 @@ class GraphBackend(AsyncBackend):
             return f"{self._base_url}/drives/{self._drive_id}/root"
         return f"{self._base_url}{native}"
 
-    def _mark_range_fallback(self, path: str) -> None:
-        """Record that *path*'s drive ignored ``Range`` (SharePoint range-fallback).
+    def _note_range_incapable(self) -> None:
+        """Record that this drive ignored/rejected ``Range`` (SharePoint range-fallback).
 
-        ``get_file_info`` consults this set to flag any ``FileInfo`` it later
-        returns for the same item with ``extra[graph.read.range_fallback]``.
+        Drive-scoped, not per-path: range capability is a tenant/drive property,
+        so one mark per backend covers every path. ``get_file_info`` flags any
+        ``FileInfo`` it returns with ``extra[graph.read.range_fallback]`` while
+        the mark holds; a later honoured ranged read clears it via
+        ``_note_range_capable``.
         """
-        self._range_fallback_paths.add(path)
+        self._range_capable = False
+
+    def _note_range_capable(self) -> None:
+        """Record that this drive honoured a ranged read (``206``).
+
+        Clears any range-incapable mark, so ``get_file_info`` stops flagging
+        ``extra[graph.read.range_fallback]`` once the drive serves a range.
+        """
+        self._range_capable = True
 
     async def read(self, path: str) -> AsyncIterator[bytes]:
         """Stream file content from the pre-signed download URL.
@@ -485,7 +497,8 @@ class GraphBackend(AsyncBackend):
             path,
             item,
             refetch=lambda: self._get_item(path),
-            on_fallback=lambda: self._mark_range_fallback(path),
+            on_fallback=self._note_range_incapable,
+            on_range_success=self._note_range_capable,
             retry=self._retry,
             backend=self.name,
         ):
@@ -521,7 +534,8 @@ class GraphBackend(AsyncBackend):
                 start=start,
                 length=length,
                 refetch=lambda: self._get_item(path),
-                on_fallback=lambda: self._mark_range_fallback(path),
+                on_fallback=self._note_range_incapable,
+                on_range_success=self._note_range_capable,
                 retry=self._retry,
                 backend=self.name,
             )
@@ -616,9 +630,10 @@ class GraphBackend(AsyncBackend):
         if is_folder_item(item):
             raise InvalidPath(f"Cannot get file info — '{path}' is a folder", path=path, backend=self.name)
         info = item_to_fileinfo(item, path)
-        if path in self._range_fallback_paths:
-            # A prior range read on this path fell back because the drive ignored
-            # Range; surface the signal on the FileInfo (GR-015).
+        if self._range_capable is False:
+            # A prior ranged read fell back because this drive ignored Range;
+            # surface the drive-scoped signal on the FileInfo (GR-015). Cleared
+            # by a later honoured ranged read.
             info.extra[RANGE_FALLBACK_FLAG] = True
         return info
 
