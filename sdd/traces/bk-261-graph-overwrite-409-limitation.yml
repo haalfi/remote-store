@@ -14,6 +14,16 @@ source_items:
 audience:
   - user.api
   - library.maintainer
+surprising_ripples:
+  # PR #798 review caught that settling GR-018 from a deferral to a contracted
+  # hard limitation contradicted the discriminate_write_conflict docstring,
+  # which still asserted a plain target-file 409 "never" reaches the
+  # discriminator on the replace path. The ripple-check table did not flag the
+  # http.py helper docstring as a co-edit of a spec-contract change; softened
+  # it to name the SharePoint-backed exception (tracker-free per
+  # check_no_tracker_refs, which scans src/ docstrings).
+  - src/remote_store/aio/backends/_graph/http.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
