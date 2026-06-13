@@ -15,8 +15,6 @@ audience:
 discovery_followups:
   - ID-217
   - ID-218
-expected_ripples:
-  - sdd/backlogid.json
 review_rounds: 1
 phases:
   - id: orient
@@ -79,5 +77,5 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / BACKLOG edit"
         read_type: verify
-        extract: "BACKLOG↔BACKLOG-DONE move, backlogid.json regen, spec/ADR cross-refs consistent; no code/CHANGELOG (no user.* audience)"
+        extract: "BACKLOG↔BACKLOG-DONE move, spec/ADR cross-refs consistent; ran gen-backlogid --check (confirmed no-op: BK-268 < BK:284 floor, ID-217/218 active so JSON unchanged); no code/CHANGELOG (no user.* audience)"
         outcome: ok
