@@ -10434,7 +10434,7 @@ agnostic.</p>
   <em>avoid</em> materialisation, this is more dangerous than over a sync
   REST backend. Users wrapping an async backend should set
   <code>max_content_size</code> explicitly; the cache extension should learn to
-  warn when wrapped over a bridged backend (tracked separately).</li>
+  warn when wrapped over a bridged backend (tracked as ID-218).</li>
 <li><strong>Bridged read streams are forward-only.</strong> The <code>BinaryIO</code> returned
   by <code>read()</code> is not natively seekable: <code>seekable()</code> returns <code>False</code>
   and <code>seek()</code>, <code>tell()</code>, and <code>fileno()</code> are not provided.

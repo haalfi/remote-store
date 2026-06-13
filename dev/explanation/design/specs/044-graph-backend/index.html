@@ -11410,7 +11410,8 @@ ADRs: <a href="../../adrs/0021-graph-sdk-choice/">0021</a> (SDK),
   <code>AsyncBackendSyncAdapter</code> (ADR-0025) and use <code>ext.glob</code> over
   <code>list_files</code> (the extension takes a sync <code>Store</code>). Async callers
   compose pattern matching over <code>list_files</code> themselves until an
-  async equivalent of <code>ext.glob</code> lands as a separate backlog item.
+  async equivalent of <code>ext.glob</code> lands (tracked as ID-217, the
+  async-native <code>ext.*</code> surface owner).
 - <code>USER_METADATA</code> is withheld. Graph exposes per-item user properties
   only on SharePoint-backed drives (via <code>driveItem.listItem.fields</code>,
   scoped to a backing site list); personal OneDrive has no equivalent
