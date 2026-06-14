@@ -14,7 +14,7 @@ audience:
   - infra.test
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient on the coverage gap
@@ -87,4 +87,9 @@ phases:
         section: "Ripple-check table"
         read_type: verify
         extract: "Test/fixture + backlog touch; gen-backlogid (BUG 216→217), lint/traceability green; no src/CHANGELOG ripple"
+        outcome: ok
+      - file: tests/backends/fixtures/azurite_async.py
+        section: "module docstring"
+        read_type: reference
+        extract: "PR review: prefer spec ids over backlog ids in the docstring — BUG-217→WR-001a (large-write consistency), ID-211→BE-008 (file-ancestor write gate)"
         outcome: ok

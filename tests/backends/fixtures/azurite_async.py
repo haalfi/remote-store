@@ -3,13 +3,13 @@
 Stage 2, real-local, async. The async siblings of the sync ``azurite`` /
 ``azurite_strict`` pair, registered together via a parametrised factory.
 
-- ``azurite_async`` (BUG-217): the non-strict baseline. Gives the async Azurite
+- ``azurite_async``: the non-strict baseline. Gives the async Azurite
   staged-write path offline conformance coverage — notably the large
-  WriteResult↔FileInfo consistency test, which before this ran on no offline
-  async fixture (only the live ``azure_live_async``, skipped without
-  ``RS_TEST_LIVE_HNS=1``).
-- ``azurite_async_strict`` (ID-211): ``strict_only`` variant driving the
-  file-ancestor gate through ``AsyncAzureBackend._maybe_check_no_file_ancestor``
+  WriteResult↔FileInfo consistency invariant (WR-001a), which before this ran
+  on no offline async fixture (only the live ``azure_live_async``, skipped
+  without ``RS_TEST_LIVE_HNS=1``).
+- ``azurite_async_strict``: ``strict_only`` variant driving the file-ancestor
+  write gate (BE-008) through ``AsyncAzureBackend._maybe_check_no_file_ancestor``
   / ``_acheck_no_file_ancestor`` / the SDK ``get_blob_properties`` closure
   end-to-end against a real (emulated) Azure target — otherwise covered only by
   the stub-callable unit tests in ``tests/backends/test_flat_ns.py``.
