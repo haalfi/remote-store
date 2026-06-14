@@ -80,7 +80,20 @@ consistent fields. Verified in `MemoryBackend.dfy`. Python backstop in
 (`test_result_is_write_result_with_path_and_size`,
 `test_size_matches_written_bytes_for_streaming_input`,
 `test_native_populates_last_modified`,
-`test_write_result_rich_fields_match_file_info`). The field set itself is
+`test_write_result_rich_fields_match_file_info`,
+`test_large_streamed_write_result_matches_file_info`), mirrored for the
+async backends in
+`tests/backends/conformance/test_async_extended.py::TestAsyncWriteResultConformance`.
+`test_write_result_rich_fields_match_file_info` cross-checks `size` (alongside
+`etag`/`digest`/`last_modified`) against `get_file_info()`, and BK-286's
+`test_large_streamed_write_result_matches_file_info` extends that consistency
+check to the multipart / block-staged / upload-session write paths on backends
+declaring a distinct large-write path (gated by the `large_write_distinct`
+fixture opt-in; Graph's upload-session path is verified live). Azure's
+block-staged path is a known exception — `WriteResult.digest` is populated from
+the commit response while the staged blob stores no `Content-MD5`, so
+`FileInfo.digest` is `None` (BUG-216) — tracked as a `strict=False` xfail
+pending a real-ADLS fix. The field set itself is
 pinned to this schema by the module-level
 `test_field_capability_map_covers_every_write_result_field` (BK-239), which
 fails if a new `WriteResult` field lands without a capability classification.

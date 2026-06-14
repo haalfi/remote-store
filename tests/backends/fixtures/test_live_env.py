@@ -118,6 +118,7 @@ def _synthetic_descriptor(
         self_op_supported=True,
         rejects_write_under_file_ancestor=True,
         strict_only=False,
+        large_write_distinct=False,
         transport="memory",
         live_opt_in_env=live_opt_in_env,
         live_creds_env=live_creds_env,

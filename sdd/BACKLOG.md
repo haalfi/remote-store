@@ -75,6 +75,25 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Azure
 
+- [ ] **BUG-216 — Azure large/block-staged write: `WriteResult.digest` diverges from `get_file_info().digest`**
+  spec: WR-001a · effort: M · audience: user.api
+  On a write past the 1 MiB single-put threshold, `AzureBackend` /
+  `AsyncAzureBackend` stage blocks and commit a block list. `WriteResult.digest`
+  is filled from the commit response's `content_md5` (the build-from-response
+  path in `src/remote_store/backends/_azure_common.py`), but the committed block
+  blob stores no `Content-MD5`, so `get_file_info()` → `FileInfo.digest` is
+  `None`. The two disagree, violating the WR-001a "rich fields match
+  `get_file_info()`" consistency the backend's `WRITE_RESULT_NATIVE` declaration
+  promises. Small single-put writes set both sides and stay consistent.
+  Surfaced by BK-286's `test_large_streamed_write_result_matches_file_info`,
+  xfailed via `_LARGE_RICH_FIELDS_XFAIL` (`strict=False`). Observed on Azurite;
+  **real ADLS Gen2 unverified** — confirm against live HNS before fixing
+  (Azurite ≠ real ADLS). Fix options (user decides): (a) set the blob
+  `Content-MD5` on block-list commit so `get_file_info` returns it; or (b) leave
+  `WriteResult.digest=None` on the staged path since the store cannot corroborate
+  it — align with whatever WR-007 should promise. On fix, flip the roster entry
+  to `strict=True` (or remove it) and re-verify live.
+
 - [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
   spec: — · effort: S · audience: library.maintainer, user.api
   The `examples/medallion_dagster/` showcase demonstrates a realistic user journey

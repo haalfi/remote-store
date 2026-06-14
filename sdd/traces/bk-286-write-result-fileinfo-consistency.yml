@@ -1,0 +1,107 @@
+id: BK-286
+title: "Conformance: WriteResult↔FileInfo size cross-check + large/streamed-path consistency"
+trigger: >-
+  An e2e observation flagged that a WriteResult could disagree with a
+  subsequent get_file_info(). The WR-001a consistency backstop
+  (test_write_result_rich_fields_match_file_info) compared etag/digest/
+  last_modified but never size, and only ever ran a tiny single-bytes write —
+  so the multipart / block-staged / upload-session write paths were never
+  checked for result/info agreement.
+source_items:
+  - BK-286
+audience:
+  - infra.test
+  - library.maintainer
+discovery_followups:
+  - BUG-216
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestWriteResultConformance::test_write_result_rich_fields_match_file_info"
+        read_type: gate
+        extract: "Confirm the consistency test asserts etag/digest/last_modified but not size, and uses a tiny bytes payload"
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestAsyncWriteResultConformance (WR-001a backstops)"
+        read_type: gate
+        extract: "Async sibling has the same omissions; both need the size assert and a large-path test"
+  - id: classify
+    name: Classify the gaps and the gating mechanism
+    steps:
+      - file: src/remote_store/_models.py
+        section: "class FileInfo / class WriteResult"
+        read_type: gate
+        extract: "FileInfo has no version_id field → gap 3 (version_id cross-check) is a non-gap; size exists on both"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_SMALL_FILE_MAX_SIZE / write / upload_session"
+        read_type: reference
+        extract: "Graph switches to createUploadSession above 4 MiB; an 8 MiB payload trips it"
+      - file: src/remote_store/backends/_azure.py
+        section: "_AZURE_BLOCK_SIZE / max_single_put_size"
+        read_type: reference
+        extract: "Azure single-put default is 1 MiB, so >1 MiB stages blocks — no fixture threshold tuning needed"
+      - file: tests/backends/fixtures/_loader.py
+        section: "_parse_fixture / FixtureDescriptor.to_kwargs"
+        read_type: gate
+        extract: "Per-fixture opt-in flags merge over family defaults; strict_only is the no-family-default precedent to mirror for large_write_distinct"
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "(full)"
+        read_type: reference
+        extract: "Map differ backends to real-vs-mock fixtures: opt in azurite/s3_live/s3_pyarrow_minio/s3_pyarrow_live/graph_live + the live azure variants; exclude moto and graph_replay"
+  - id: implement
+    name: Add size assert, flag, helper, and large test
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "size assert + _LARGE_WRITE_SIZE + test_large_streamed_write_result_matches_file_info"
+        read_type: gate
+        extract: "Add result.size==info.size; stream an 8 MiB payload over both write ops; gate on the large_write_distinct opt-in"
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture.large_write_distinct"
+        read_type: gate
+        extract: "New per-fixture bool flag (default False), threaded through loader + to_kwargs + TOML"
+      - file: tests/backends/conformance/_helpers.py
+        section: "_skip_unless_large_write_distinct"
+        read_type: reference
+        extract: "Shared skip helper reading the fixture record, mirroring _skip_flat_namespace"
+      - file: tests/backends/fixtures/test_registry.py
+        section: "round-trip + bk286 opt-in-set guard + bool-validation negative path"
+        read_type: reference
+        extract: "Pin the flag round-trips and the exact opted-in fixture set so the gate cannot silently drift"
+  - id: verify
+    name: Verify live + Stage 2
+    steps:
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "graph_live large + full WriteResultConformance"
+        read_type: verify
+        extract: "RS_TEST_LIVE_GRAPH=1 --stage=3 -m live: Graph upload-session WriteResult is consistent — first live coverage of that path"
+        outcome: ok
+      - file: tests/backends/conformance/test_atomic.py
+        section: "test_large_streamed_write_result_matches_file_info[*-azurite]"
+        read_type: verify
+        extract: "Stage-2 Azurite FAILED — WriteResult.digest(md5) vs FileInfo.digest(None) on the staged path; s3_pyarrow_minio passed. Real defect, not a test error"
+        outcome: misleading
+      - file: src/remote_store/backends/_azure_common.py
+        section: "build-from-content_settings (L138) vs build-from-response (L213)"
+        read_type: verify
+        extract: "Root cause: WriteResult.digest from the commit response, FileInfo.digest from the stored blob's content_md5 — diverge when the staged blob stores none. Filed BUG-216 + large-path xfail roster"
+        outcome: ok
+  - id: docs
+    name: Spec backstop + backlog + trace
+    steps:
+      - file: sdd/specs/045-write-result.md
+        section: "WR-001a Python backstop"
+        read_type: reference
+        extract: "Name the new test, the size cross-check, and the BUG-216 Azure exception in the formal-coverage list"
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: reference
+        extract: "Close BK-286; file BUG-216 in active BACKLOG.md Azure section; no CHANGELOG (infra.test)"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "Test + spec + backlog touch: gen-backlogid current, lint/traceability green; no src or CHANGELOG ripple for the test work itself"

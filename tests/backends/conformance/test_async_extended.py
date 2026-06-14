@@ -36,8 +36,12 @@ from remote_store._errors import (
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderEntry, WriteResult
-from tests.backends.conformance._helpers import _depth, _fixture_record
-from tests.backends.conformance.test_atomic import _FIELD_CAPABILITY
+from tests.backends.conformance._helpers import _depth, _fixture_record, _skip_unless_large_write_distinct
+from tests.backends.conformance.test_atomic import (
+    _FIELD_CAPABILITY,
+    _LARGE_RICH_FIELDS_XFAIL,
+    _LARGE_WRITE_SIZE,
+)
 from tests.backends.fixtures import fixture_params
 
 if TYPE_CHECKING:
@@ -1060,6 +1064,48 @@ class TestAsyncWriteResultConformance:
         key = f"wr/{op}-rich-fields-match.txt"
         result = await getattr(async_backend, op)(key, b"rich-fields-payload")
         info = await async_backend.get_file_info(key)
+        assert result.size == info.size
+        assert result.etag == info.etag
+        assert result.digest == info.digest
+        if info.modified_at is not None:
+            assert result.last_modified == info.modified_at
+
+    @pytest.mark.spec("WR-001a")
+    @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
+    async def test_large_streamed_write_result_matches_file_info(
+        self,
+        async_backend: AsyncBackend,
+        op: str,
+        cap: Capability,
+        request: pytest.FixtureRequest,
+    ) -> None:
+        """BK-286: async WriteResult↔FileInfo consistency on the large/streamed path.
+
+        Async sibling of the sync ``test_atomic.py`` guard. Streams an
+        ``_LARGE_WRITE_SIZE`` payload as an ``AsyncIterator[bytes]`` so a
+        backend with a size-thresholded upload path (Azure block staging,
+        Graph ``createUploadSession``) takes its large-write branch — a path
+        the tiny-``bytes`` sibling test never reaches. The returned
+        ``WriteResult`` must still match ``get_file_info()`` on ``size`` and
+        the rich fields. Gated to fixtures whose backend runs that path
+        against a real endpoint (the ``large_write_distinct`` opt-in).
+        """
+        _require(async_backend, cap, Capability.METADATA)
+        _skip_unless_large_write_distinct(async_backend)
+        if async_backend.name in _LARGE_RICH_FIELDS_XFAIL:
+            reason, strict = _LARGE_RICH_FIELDS_XFAIL[async_backend.name]
+            request.applymarker(pytest.mark.xfail(reason=reason, strict=strict))
+        chunk = b"\xab" * (1024 * 1024)
+        n_chunks = _LARGE_WRITE_SIZE // len(chunk)
+
+        async def _stream() -> AsyncIterator[bytes]:
+            for _ in range(n_chunks):
+                yield chunk
+
+        key = f"wr/{op}-large-streamed.bin"
+        result = await getattr(async_backend, op)(key, _stream())
+        info = await async_backend.get_file_info(key)
+        assert result.size == info.size == _LARGE_WRITE_SIZE
         assert result.etag == info.etag
         assert result.digest == info.digest
         if info.modified_at is not None:
