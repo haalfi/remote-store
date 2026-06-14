@@ -7,11 +7,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BUG-218: Graph copy/move monitor — a non-throttle `4xx` during polling (`403` permission revoked mid-operation, `404` monitor URL expired/deleted) now raises immediately instead of looping until `copy_timeout`, which is `None`/unbounded by default
+- BUG-218: Graph copy/move monitor — terminal `4xx` on the poll request, no unbounded `copy_timeout` hang
 - BK-285: API reference restructured to mirror the package — async surface split into a `reference/api/aio/` subtree, async-native backends surfaced
 - BK-261: Graph `overwrite=True` replace-409 quirk on SharePoint-backed drives documented as a hard backend limitation (no speculative guard taken; delete-then-write is the workaround)
 - BK-266: Graph backend correctness edges
-- BK-265: Graph guide & docstring accuracy — present-tense setup guide, copy-paste-safe usage snippet (incl. the async guide's drive-resolution snippet, a missed sibling now using `await aresolve_drive_id`), sync-vs-async extension matrix, complete `Raises:` clauses, read-side spooling and SharePoint-coverage caveats
+- BK-265: Graph guide & docstring accuracy — present-tense setup guide, copy-paste-safe usage snippet, sync-vs-async extension matrix, complete `Raises:` clauses, read-side spooling and SharePoint-coverage caveats
 - ID-127: Microsoft Graph backend setup guide
 - ID-127: `ResourceLocked` error type for resources held by another session
 - ID-127: config auto-wraps `client_secret` / `client_certificate` in `Secret`

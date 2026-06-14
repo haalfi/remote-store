@@ -827,6 +827,19 @@ shared-helper design backend-local.
   like a `5xx`. Without this, a mid-operation 4xx loops until
   `copy_timeout`, which defaults to `None` (unbounded), hanging the
   caller (BUG-218).
+- The `404` poll case is deliberately mapped to a terminal **error**,
+  not a terminal **success**. A `404` cannot be distinguished between a
+  monitor URL reaped *after* the operation completed (the op in fact
+  succeeded) and a monitor that is invalid or whose operation failed.
+  Erring toward raising is the safe default for a storage contract: a
+  false negative (raising on an op that did complete) is recoverable —
+  the caller re-checks and finds the item — whereas a false positive
+  (reporting success on an op that did not complete) is data-shaped and
+  silent. The residual risk is therefore a *rare* false negative, if
+  Graph reaps a `completed` monitor before the poll observes its terminal
+  `303`/`completed`; the short poll cadence (1 s floor) makes this
+  unlikely but not impossible, and it is not reproducible on the
+  consumer-OneDrive live tier.
 - A poll-response payload with `status: "failed"` has the shape
   `{"status": "failed", "error": {"code": str, "message": str, ...}}`
   with optional resource and operation identifiers. The poller maps

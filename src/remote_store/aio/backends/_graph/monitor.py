@@ -184,7 +184,9 @@ async def poll_monitor(
                 # pending: otherwise the loop runs until copy_timeout, which
                 # defaults to None (unbounded), hanging copy()/move() forever
                 # (BUG-218). 429 is throttling, not failure — it stays pending
-                # below, honouring Retry-After like a 5xx.
+                # below, honouring Retry-After like a 5xx. A 404 errs toward
+                # raising, not false success (a copy/move we cannot confirm must
+                # not silently report done); GR-026 records the rare-reap residual.
                 raise classify_graph_error(
                     response.status_code,
                     error_code(response_json(response)),
