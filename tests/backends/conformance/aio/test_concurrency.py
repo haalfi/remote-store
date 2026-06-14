@@ -22,6 +22,12 @@ Async axis nuance (research §4.1)
   ``single_connection`` so it is not thread/loop-stressed on the shared paramiko
   socket.
 
+``TestAsyncConcurrentLargeUploads`` is the async Tier-3 sibling of the sync
+``TestConcurrentLargeUploads``: N parallel large/streamed ``write_atomic`` over
+the async staged path (``aio/backends/_azure.py`` block staging), gated on
+``large_write_distinct`` so it runs on ``azurite_async`` (Stage 2) and the live
+async fixtures, not the in-process adapters.
+
 Replay (cassette) fixtures are excluded by ``fixture_params_concurrent`` because
 vcrpy matches requests sequentially — not a concurrency-safe substrate. The
 Graph create-once-race contract is exercised against ``respx`` in
@@ -31,13 +37,18 @@ Graph create-once-race contract is exercised against ``respx`` in
 from __future__ import annotations
 
 import asyncio
+import io
 import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from remote_store._capabilities import Capability
-from tests.backends.conformance._helpers import _fixture_record, _require
+from tests.backends.conformance._helpers import (
+    _fixture_record,
+    _require,
+    _skip_unless_large_write_distinct,
+)
 from tests.backends.fixtures import all_fixtures, fixture_params_concurrent
 
 if TYPE_CHECKING:
@@ -45,6 +56,9 @@ if TYPE_CHECKING:
 
 # One loop, modest coroutine fan-out (research §4.3).
 _N_ITEMS = 16
+# Parallel large-upload probe: few but large (4 x 8 MiB), matching the sync lane.
+_LARGE_N = 4
+_LARGE_SIZE = 8 * 1024 * 1024
 
 
 def _xfail_local_async_dir_race_on_windows(async_backend: Any, request: pytest.FixtureRequest) -> None:
@@ -114,6 +128,45 @@ class TestAsyncCoroutineSafe:
 
         results = await asyncio.gather(*(_raw(key, data) for key, data in keys.items()))
         assert all(got == expected for got, expected in results)
+
+
+@pytest.mark.concurrency
+@pytest.mark.spec("BE-028")
+@pytest.mark.spec("ASYNC-094")
+@pytest.mark.parametrize(
+    "async_backend",
+    fixture_params_concurrent(Capability.WRITE, is_async=True, posture="thread_safe"),
+    indirect=True,
+)
+class TestAsyncConcurrentLargeUploads:
+    """Tier 3 — N parallel large/streamed uploads on the async staged write path.
+
+    The async sibling of the sync ``TestConcurrentLargeUploads``. Gated on
+    ``large_write_distinct`` so it runs only where the async multipart /
+    block-staging / upload-session path is faithfully exercised — ``azurite_async``
+    at Stage 2 (the async ``_azure.py`` block-staging path) and the live async
+    fixtures (``azure_live_async`` / ``graph_live``) at Stage 3, whose params carry
+    ``pytest.mark.live``. The in-process adapter fixtures carry
+    ``large_write_distinct = False``, so the test is simply not parametrised onto
+    them. Without this, concurrent large writes over the async staging path were
+    covered nowhere (WR-001a writes a large payload, but never concurrently).
+    """
+
+    @pytest.mark.spec("ASYNC-055")
+    async def test_concurrent_large_streamed_uploads(self, async_backend: AsyncBackend) -> None:
+        _require(async_backend, Capability.ATOMIC_WRITE)
+        _skip_unless_large_write_distinct(async_backend)
+        payload = b"\xab" * _LARGE_SIZE
+
+        async def _upload(item: int) -> int:
+            key = f"acc/large/{item}.bin"
+            # Fresh BytesIO per coroutine: a shared reader would race on its cursor.
+            await async_backend.write_atomic(key, io.BytesIO(payload))
+            info = await async_backend.get_file_info(key)
+            return info.size
+
+        sizes = await asyncio.gather(*(_upload(i) for i in range(_LARGE_N)))
+        assert all(size == _LARGE_SIZE for size in sizes)
 
 
 def _async_memory_record() -> Any:
