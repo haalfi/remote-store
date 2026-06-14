@@ -1,0 +1,119 @@
+# yaml-language-server: $schema=_schema.yml
+id: BK-287
+title: "Cross-backend concurrency-posture contract: GR-059 + per-backend clauses"
+trigger: >-
+  STORE-007 (sync) and ASYNC-055 (async) promised a shared Store/AsyncStore is
+  concurrency-safe, but a Store merely delegates, so the promise bottomed out in
+  the backend with no stated backend-level obligation. Spec 044 had zero
+  concurrency text for GraphBackend, and SFTP's "not safe for concurrent use"
+  caveat lived only in docs-src/guides/async.md + the class docstring, not in
+  spec 009. Memory's MEM-025/026 was the lone per-backend precedent.
+source_items:
+  - BK-287
+audience:
+  - contributor.process
+  - user.api_docs
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-027"
+        read_type: reference
+        extract: "Backend ABC contract surface; where the new BE-028 posture clause attaches"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-089, ASYNC-093"
+        read_type: gate
+        extract: >-
+          Bridge asymmetry source: AsyncBackendSyncAdapter funnels concurrent sync
+          callers onto one private loop (safe); SyncBackendAdapter dispatches via a
+          thread pool (safe only if the wrapped backend is thread_safe)
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-051, GR-032, GR-018"
+        read_type: reference
+        extract: >-
+          Graph close-terminal guard (GR-051/BUG-219), overwrite=False server-atomic
+          conflictBehavior=fail (GR-032 on the GR-018 content PUT)
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-028 (new)"
+        read_type: reference
+        extract: >-
+          Two-value taxonomy (thread_safe default / single_connection); states Local
+          explicitly (no spec file); requires non-default backends document the
+          exception + remedy
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-094 (new)"
+        read_type: reference
+        extract: "Async mirror encoding the bridge asymmetry"
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-059 (new)"
+        read_type: reference
+        extract: >-
+          Graph posture: one-loop-safe, no Lock, bridged-sync-safe unlike SFTP,
+          overwrite=False server-atomic, close-terminal, move-race error-fidelity
+          known limitation
+      - file: sdd/specs/008-s3-backend.md
+        section: "S3-028 (new)"
+        read_type: reference
+        extract: "thread_safe — boto3 client / s3fs per-instance; non-atomic copy-then-delete move"
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-029 (new)"
+        read_type: reference
+        extract: "single_connection — single paramiko socket; pins the async.md/docstring caveat into the spec"
+      - file: sdd/specs/011-s3-pyarrow-backend.md
+        section: "S3PA-028 (new)"
+        read_type: reference
+        extract: "thread_safe, hedged — pyarrow S3FileSystem thread-safety to be confirmed by a Tier-3 live probe"
+      - file: sdd/specs/012-azure-backend.md
+        section: "AZ-037 (new)"
+        read_type: reference
+        extract: "thread_safe — SDK clients immutable; async sibling meets ASYNC-094"
+      - file: sdd/specs/032-http-backend.md
+        section: "HTTP-CONC-001 (new)"
+        read_type: reference
+        extract: "single_connection on urllib (redirect-counter race); thread_safe with injected httpx/requests session"
+      - file: sdd/specs/040-sql-blob-backend.md
+        section: "SQL-BLOB-072 (new)"
+        read_type: reference
+        extract: "thread_safe — per-op SQLAlchemy pool connect()/begin(); no shared Connection held"
+      - file: sdd/specs/041-sql-query-backend.md
+        section: "SQL-QUERY-092 (new)"
+        read_type: reference
+        extract: "thread_safe — same per-op pool pattern"
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/test_store.py
+        section: "TestStoreThreadSafety"
+        read_type: reference
+        extract: "BE-028 real mark — shared Store concurrent reads across threads"
+      - file: tests/aio/test_async_to_sync_adapter.py
+        section: "TestConcurrency (ASYNC-089)"
+        read_type: reference
+        extract: "ASYNC-094 real mark — N=32 concurrent callers funnel onto one loop deadlock-free (the safe half)"
+      - file: tests/backends/graph/aio/test_write.py
+        section: "TestUseAfterClose"
+        read_type: reference
+        extract: "GR-059 real mark — concurrent ops after aclose all surface typed (close-terminal posture)"
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_spec_marks.py
+        section: "_ALLOWLIST_DESIGN"
+        read_type: gate
+        extract: >-
+          BK-251 gate — 3 real marks (BE-028, ASYNC-094, GR-059) + 7 design-allowlist
+          entries (the negative/posture clauses) resolve every new ID; BK-289 later
+          converts the 7 to real marks via the allowlist-stale shrink-only path
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "CHANGELOG stub, BACKLOG->BACKLOG-DONE move, gen-backlogid, trace ship same PR"

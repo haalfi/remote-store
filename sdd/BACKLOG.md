@@ -127,22 +127,6 @@ deadlock-free. The items below are the divergences and the unspecified contract.
   `auth.py` `flush_cache`), not yet reproduced — a multi-process interleave repro
   would promote it.
 
-- [ ] **BK-287 — Graph concurrency contract: `GR-059` + cross-backend `AsyncBackend` clause**
-  spec: GR-059 (new), 003, 029 · effort: M · audience: contributor.process, user.api_docs
-  Spec 044 has zero concurrency text; the obligation that makes `ASYNC-055`
-  ("`AsyncStore` safe for concurrent coroutines on one loop") true for
-  `GraphBackend` is unstated. Add `GR-059` characterizing: one instance safe for
-  concurrent coroutines on a single loop (never across loops); `overwrite=False`
-  is a **server-side atomic create-if-absent** (live-confirmed — the one place
-  Graph is *stronger* than `concurrency.md`'s blanket TOCTOU claim); the bridged
-  sync path is safe (single loop), *unlike* SFTP. Add a cross-backend
-  concurrent-use-posture clause to spec 003/029 so STORE-007/ASYNC-055 become an
-  obligation each backend satisfies or carves out, not orphaned Store-layer
-  claims. No new ADR (consequence of ADR-0012/0025) unless BUG-219's fix
-  introduces a lock. Also pin the minor error-fidelity gap: the move-race loser
-  sometimes surfaces a generic `RemoteStoreError` instead of a typed
-  `NotFound`/`AlreadyExists`.
-
 - [ ] **BK-288 — Graph concurrency & consistency documentation**
   spec: — · effort: M · audience: user.site, user.api_docs
   Graph is absent from every table in `explanation/concurrency.md`, and the

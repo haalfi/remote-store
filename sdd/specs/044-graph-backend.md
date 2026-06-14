@@ -1339,6 +1339,48 @@ its root.
   scoping a backend to a subtree. Enables isolating a `GraphBackend` to a
   SharePoint document-library subfolder or a OneDrive working directory.
 
+### GR-059: Concurrent-Use Posture
+
+**Invariant:** A single `GraphBackend` instance is safe for concurrent coroutines
+on **one** event loop and is never safe across loops (the ASYNC-094 default,
+`thread_safe` on its async axis). All concurrent operations share one
+`httpx.AsyncClient` and the instance's mutable state (the GR-015 range-capability
+tri-state, the GR-051 in-flight upload sessions / monitor pollers / `_closed`
+flag); there is **no** `asyncio.Lock` — correctness rests entirely on asyncio's
+single-threaded cooperative scheduling (state is mutated only between `await`
+points). A lock is deliberately absent: it would add nothing on one loop and
+cannot help across loops.
+**Postconditions:**
+- **Bridged sync path is safe.** Driven synchronously through
+  `AsyncBackendSyncAdapter`, a `GraphBackend` is safe for concurrent sync threads
+  — the adapter serialises them onto its private loop (ASYNC-089). This is the
+  documented way to use Graph from threaded sync code, and is **unlike**
+  `SFTPBackend` (SFTP-029, `single_connection`).
+- **`overwrite=False` is a server-side atomic create-if-absent.** The backend
+  sets `@microsoft.graph.conflictBehavior=fail` (GR-032) on the content `PUT`
+  (GR-018), so two racing creators cannot both succeed — the loser receives
+  `409 nameAlreadyExists` → `AlreadyExists`. There is no client-side
+  check-then-write window. (Live-confirmed on **consumer OneDrive only**, the
+  shipped live tier per this spec's Coverage disclosure; SharePoint /
+  OneDrive-for-Business inherit the same documented Graph contract but are not in
+  the live tier.)
+- **Close is terminal** (GR-051): an operation racing `close()` / `aclose()`
+  fails *typed* (`BackendUnavailable`, never a bare `RuntimeError`); concurrent
+  use *during* close is unsupported, the only guarantee being typed failure.
+- **Known limitation — move-race error fidelity.** When two callers race a
+  `move` / `copy` of the same item, the losing racer can surface a generic
+  `RemoteStoreError` instead of the typed `NotFound` / `AlreadyExists` the
+  single-caller contract specifies (the outcome depends on which Graph response
+  the loser observes — a `404` on the vanished source vs. a non-classified
+  monitor terminal state). The backend adds no lock to make this deterministic;
+  callers needing typed race outcomes serialise externally. Documented, not fixed
+  — consistent with GR-044 / GR-026.
+
+**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
+(BE-028), [029-async-store-backend-api.md](029-async-store-backend-api.md)
+(ASYNC-094, ASYNC-089), GR-051 (close), GR-018 / GR-032 (overwrite), GR-015
+(shared client / range state).
+
 ---
 
 ## Integration-only

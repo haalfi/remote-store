@@ -212,3 +212,9 @@ See [S3-026](008-s3-backend.md#s3-026). Applies to the s3fs control path only; t
 ### S3PA-027: Directory-listing cache defaults off
 
 See [S3-027](008-s3-backend.md#s3-027). Listing runs through the s3fs control path (S3PA-017), so the off-by-default cache applies identically; the PyArrow data path (`_pa_fs`) is unaffected.
+
+### S3PA-028: Concurrent-Use Posture
+
+**Invariant:** `S3PyArrowBackend` is `thread_safe` (the BE-028 default): a single instance is safe to share across threads. The s3fs control path inherits [S3-028](008-s3-backend.md#s3-028) verbatim. The PyArrow data path (`pyarrow.fs.S3FileSystem`, S3PA-017) is held thread-safe on the same per-instance-immutable-client basis, **to be confirmed by a Tier-3 live probe** — PyArrow does not pin a thread-safety guarantee for `S3FileSystem` upstream, so the declaration is the safe-by-construction default pending empirical confirmation. `move` / `copy` are non-atomic copy-then-delete (CAP-007, BE-018), independent of thread-safety.
+
+**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md) (BE-028).

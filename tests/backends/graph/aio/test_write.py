@@ -723,6 +723,7 @@ class TestUseAfterClose:
 
     @respx.mock
     @pytest.mark.spec("GR-051")
+    @pytest.mark.spec("GR-059")
     async def test_concurrent_ops_after_aclose_all_typed(self) -> None:
         # Many ops issued after close (the FastAPI-shutdown shape): each hits the
         # _closed guard on the central _client accessor and must surface a typed

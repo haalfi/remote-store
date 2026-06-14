@@ -315,3 +315,16 @@ is deferred to a future version.
 **Invariant:** The `ArrowSerializer` converts SQL rows to a PyArrow Table,
 then serializes. This is a full copy. Zero-copy paths (ADBC) are deferred
 to v3.
+
+### SQL-QUERY-092: Concurrent-Use Posture
+
+**Invariant:** `SQLQueryBackend` is `thread_safe` (the BE-028 default): a single
+instance is safe to share across threads. Each query acquires its own connection
+from the SQLAlchemy pool via `connect()` / `begin()` and returns it on
+completion; no `Connection` is held on the instance across operations. A backend
+built around a single shared `Connection` would not be thread-safe, but this
+backend does not do that. Each operation runs in its own transaction; there is
+no cross-operation transactionality.
+
+**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
+(BE-028).
