@@ -35,8 +35,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   surfaced **BUG-216**: Azure's large/block-staged write fills `WriteResult.digest`
   from the commit response while the staged blob stores no Content-MD5, so
   `get_file_info().digest` is `None` and the two diverge; xfailed via a
-  large-path-only roster (`_LARGE_RICH_FIELDS_XFAIL`, `strict=False` pending
+  large-path-only roster (`_LARGE_RICH_FIELDS_XFAIL` / `_ASYNC_LARGE_RICH_FIELDS_XFAIL`
+  keyed by the divergent sync/async backend names, `strict=False` pending
   real-ADLS verification) so the test lands green while tracking the defect.
+  This effort began from the e2e-Graph-coverage question, so it also wires the
+  live-only Graph hop (async-only `GraphBackend` bridged to sync via
+  `AsyncBackendSyncAdapter`) into the e2e tests that lacked async Graph coverage:
+  `test_transfer.py` (memory↔Graph pairs), `test_data_lake.py` (full medallion
+  pipeline), and `test_ext_write_e2e.py` (via the shared `store_chain`). The sync
+  streaming chain stays Graph-free on purpose — the async streaming test already
+  covers Graph. All six paths verified live against the real drive.
   No CHANGELOG (infra.test). Trace:
   `sdd/traces/bk-286-write-result-fileinfo-consistency.yml`.
 

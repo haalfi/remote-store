@@ -487,3 +487,12 @@ class TestDataLakeMedallion:
         """Full pipeline on AzureBackend via Azurite Docker."""
         self._run_pipeline(azurite_lake)
         assert {"bronze", "silver", "gold"} <= {f.name for f in azurite_lake.list_folders("")}
+
+    def test_graph(self, graph_lake: Store) -> None:
+        """Full pipeline on the live Graph drive (async-only backend bridged to sync).
+
+        Live-only: the ``graph_lake`` fixture skips unless the ``RS_TEST_LIVE_GRAPH``
+        gate is satisfied (Graph has no emulator).
+        """
+        self._run_pipeline(graph_lake)
+        assert {"bronze", "silver", "gold"} <= {f.name for f in graph_lake.list_folders("")}

@@ -96,6 +96,30 @@ phases:
         read_type: verify
         extract: "Root cause: WriteResult.digest from the commit response, FileInfo.digest from the stored blob's content_md5 — diverge when the staged blob stores none. Filed BUG-216 + large-path xfail roster"
         outcome: ok
+  - id: e2e_extend
+    name: Extend live-only Graph hop into the other e2e tests
+    steps:
+      - file: tests/e2e/test_async_streaming_integrity.py
+        section: "live Graph hop + azure-bridged precedent"
+        read_type: reference
+        extract: "Only async e2e test; already covers Graph live. Decision: skip the sync streaming chain, wire Graph into the e2e tests with no async coverage"
+      - file: tests/e2e/conftest.py
+        section: "build_graph_live_sync_store / graph_lake / store_chain"
+        read_type: gate
+        extract: "Graph is async-only — bridge via AsyncBackendSyncAdapter (azure-bridged pattern); root via Store.root_path so an unrooted sibling cleans the scratch folder; live-gated"
+      - file: tests/e2e/test_transfer.py
+        section: "TestCrossBackendTransfer (memory<->graph)"
+        read_type: reference
+        extract: "Add memory<->Graph transfer pairs; graph_lake fixture gates live-only"
+      - file: tests/e2e/test_data_lake.py
+        section: "TestDataLakeMedallion::test_graph"
+        read_type: reference
+        extract: "Full medallion pipeline against the bridged live Graph drive"
+      - file: tests/e2e/test_ext_write_e2e.py
+        section: "store_chain"
+        read_type: verify
+        extract: "No code change — shared store_chain now carries graph-bridged when live; write_with_hash/open_atomic exercised on Graph, metadata branch correctly skips it (no USER_METADATA). All six paths passed live (91s)"
+        outcome: ok
   - id: docs
     name: Spec backstop + backlog + trace
     steps:
