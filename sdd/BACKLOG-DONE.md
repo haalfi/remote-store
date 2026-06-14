@@ -8,6 +8,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-218 — Graph copy/move monitor hangs on a non-throttle `4xx` poll response**
+  spec: GR-026 · effort: S · audience: user.api, user.api_docs, user.site
+  Found in the ID-127 release-readiness review (live consumer-OneDrive
+  validated). `poll_monitor` special-cased only `>=500` as transient-pending;
+  every other non-2xx fell to the status-parser, whose `4xx` error body carries
+  no `status` field, so it returned pending-unclassified and the loop re-polled.
+  With `copy_timeout` defaulting to `None` (unbounded), a permission revoked
+  mid-operation (`403`) or an expired/deleted monitor URL (`404`) hung
+  `copy()`/`move()` forever — the only backend branch with neither replay nor
+  live coverage (the live copy test exercises the success path only). Fix: a
+  non-throttle `4xx` on the poll request is now terminal — mapped through the
+  GR-028 table (`status` + `error.code`) and raised immediately; `429` stays
+  pending (throttle, `Retry-After`) like a `5xx`. Reproduced with a test that
+  hung pre-fix (`TestPollHttpError`, GR-026); spec GR-026 gained the symmetric
+  4xx-terminal clause. Co-shipped the missed sibling of audit-016 M5 / BK-265:
+  the async guide's drive-resolution snippet (`docs-src/guides/async.md`) used
+  the sync `resolve_drive_id` adjacent to `async with AsyncStore`, which raises
+  `RuntimeError` from a running loop — now `await aresolve_drive_id`. Trace:
+  `sdd/traces/bug-218-graph-monitor-4xx-terminal.yml`.
+
 - [x] **BUG-217 — Register a non-strict `azurite_async` fixture for the large-write consistency path**
   spec: WR-001a · effort: S · audience: infra.test
   BUG-216's resolution left the async large/streamed WriteResult↔FileInfo

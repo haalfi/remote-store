@@ -818,6 +818,15 @@ shared-helper design backend-local.
   when larger.
 - `5xx` responses during polling are treated as `pending`, not
   `failed`.
+- A non-throttle `4xx` on the poll request itself (e.g. `403`
+  permission revoked mid-operation, `404` monitor URL expired or
+  deleted) is **terminal**: the poller maps it through the GR-028
+  table (`status` + `error.code`) and raises immediately rather than
+  treating it as `pending`. A `429` is the sole exception — it is
+  throttling, not failure, and stays `pending` (honouring `Retry-After`)
+  like a `5xx`. Without this, a mid-operation 4xx loops until
+  `copy_timeout`, which defaults to `None` (unbounded), hanging the
+  caller (BUG-218).
 - A poll-response payload with `status: "failed"` has the shape
   `{"status": "failed", "error": {"code": str, "message": str, ...}}`
   with optional resource and operation identifiers. The poller maps

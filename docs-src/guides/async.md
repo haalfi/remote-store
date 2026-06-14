@@ -130,7 +130,9 @@ from remote_store.aio import AsyncStore, GraphAuth, GraphBackend, GraphUtils
 
 # Device-code auth against a personal Microsoft account (consumer OneDrive).
 auth = GraphAuth(tenant_id="consumers", client_id="<entra-app-id>")
-drive_id = GraphUtils.resolve_drive_id("me", token_provider=auth)
+# Inside async code, use the async resolver — the sync GraphUtils.resolve_drive_id
+# runs its own event loop internally and raises RuntimeError from a running one.
+drive_id = await GraphUtils.aresolve_drive_id("me", token_provider=auth)
 
 backend = GraphBackend(drive_id, token_provider=auth)
 async with AsyncStore(backend, root_path="Documents") as store:
