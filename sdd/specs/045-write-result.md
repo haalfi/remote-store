@@ -85,7 +85,7 @@ consistent fields. Verified in `MemoryBackend.dfy`. Python backstop in
 async backends in
 `tests/backends/conformance/test_async_extended.py::TestAsyncWriteResultConformance`.
 `test_write_result_rich_fields_match_file_info` cross-checks `size` (alongside
-`etag`/`digest`/`last_modified`) against `get_file_info()`, and BK-286's
+`etag`/`digest`/`last_modified`) against `get_file_info()`, and
 `test_large_streamed_write_result_matches_file_info` extends that consistency
 check to the multipart / block-staged / upload-session write paths on backends
 declaring a distinct large-write path (gated by the `large_write_distinct`

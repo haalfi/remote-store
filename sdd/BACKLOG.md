@@ -85,8 +85,9 @@ and the highest ID already in this file, then take the next integer. Run
   `None`. The two disagree, violating the WR-001a "rich fields match
   `get_file_info()`" consistency the backend's `WRITE_RESULT_NATIVE` declaration
   promises. Small single-put writes set both sides and stay consistent.
-  Surfaced by BK-286's `test_large_streamed_write_result_matches_file_info`,
-  xfailed via `_LARGE_RICH_FIELDS_XFAIL` (`strict=False`). Observed on Azurite;
+  Surfaced by the WR-001a large/streamed consistency test
+  `test_large_streamed_write_result_matches_file_info` (BK-286), xfailed via the
+  large-path rosters (`strict=False`). Observed on Azurite;
   **real ADLS Gen2 unverified** — confirm against live HNS before fixing
   (Azurite ≠ real ADLS). Fix options (user decides): (a) set the blob
   `Content-MD5` on block-list commit so `get_file_info` returns it; or (b) leave

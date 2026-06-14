@@ -207,7 +207,7 @@ _LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {}
 # disagrees with get_file_info() on etag, digest, or last_modified.
 _RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {}
 
-# BK-286: a single payload size that trips every distinct large-write path —
+# A single payload size that trips every distinct large-write path —
 # Graph's 4 MiB ``createUploadSession`` boundary (GR-018), S3's 5 MiB multipart
 # part floor, and Azure's 1 MiB single-put default. Imported by the async
 # conformance suite so sync and async exercise the same threshold.
@@ -384,7 +384,7 @@ class TestWriteResultConformance:
         cap: Capability,
         request: pytest.FixtureRequest,
     ) -> None:
-        """BK-286: WriteResult↔FileInfo consistency on the large/streamed write path.
+        """WR-001a: WriteResult↔FileInfo consistency on the large/streamed write path.
 
         Backends with a size-thresholded upload mechanism (S3 multipart,
         Azure block staging, Graph ``createUploadSession``) take a different

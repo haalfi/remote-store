@@ -235,7 +235,7 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
     # default conformance enumeration. Per-fixture only; no backend-family
     # default (the strict variants are always opt-in additions).
     strict_only = raw.get("strict_only", False)
-    # BK-286: per-fixture opt-in (no backend-family default, like strict_only)
+    # Per-fixture opt-in (no backend-family default, like strict_only)
     # marking fixtures whose backend takes a distinct large/streamed write path
     # against a real endpoint — gates the large WriteResult↔FileInfo test.
     large_write_distinct = raw.get("large_write_distinct", False)

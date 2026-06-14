@@ -37,11 +37,7 @@ from remote_store._errors import (
 )
 from remote_store._models import FileInfo, FolderEntry, WriteResult
 from tests.backends.conformance._helpers import _depth, _fixture_record, _skip_unless_large_write_distinct
-from tests.backends.conformance.test_atomic import (
-    _FIELD_CAPABILITY,
-    _LARGE_RICH_FIELDS_XFAIL,
-    _LARGE_WRITE_SIZE,
-)
+from tests.backends.conformance.test_atomic import _FIELD_CAPABILITY, _LARGE_WRITE_SIZE
 from tests.backends.fixtures import fixture_params
 
 if TYPE_CHECKING:
@@ -955,6 +951,20 @@ _WRITE_OPS = [
 # test_atomic.py registries; empty until a real async-backend gap is recorded).
 _ASYNC_LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {}
 _ASYNC_RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {}
+# Large/streamed-path divergence, keyed by the ASYNC backend name ("async-azure",
+# not the sync "azure") — the async analogue of test_atomic.py's
+# _LARGE_RICH_FIELDS_XFAIL. A separate roster is required because async backend
+# names differ from their sync twins; sharing the sync dict would silently never
+# match, so AsyncAzureBackend would hard-fail the large-path consistency check on
+# the live HNS lane instead of xfailing.
+_ASYNC_LARGE_RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {
+    "async-azure": (
+        "BUG-216: Azure large/block-staged write fills WriteResult.digest from the commit "
+        "response, but the staged blob stores no Content-MD5, so get_file_info().digest is "
+        "None — they diverge (observed on Azurite; real ADLS Gen2 unverified)",
+        False,
+    ),
+}
 
 
 class TestAsyncWriteResultConformance:
@@ -1079,7 +1089,7 @@ class TestAsyncWriteResultConformance:
         cap: Capability,
         request: pytest.FixtureRequest,
     ) -> None:
-        """BK-286: async WriteResult↔FileInfo consistency on the large/streamed path.
+        """WR-001a: async WriteResult↔FileInfo consistency on the large/streamed path.
 
         Async sibling of the sync ``test_atomic.py`` guard. Streams an
         ``_LARGE_WRITE_SIZE`` payload as an ``AsyncIterator[bytes]`` so a
@@ -1092,8 +1102,8 @@ class TestAsyncWriteResultConformance:
         """
         _require(async_backend, cap, Capability.METADATA)
         _skip_unless_large_write_distinct(async_backend)
-        if async_backend.name in _LARGE_RICH_FIELDS_XFAIL:
-            reason, strict = _LARGE_RICH_FIELDS_XFAIL[async_backend.name]
+        if async_backend.name in _ASYNC_LARGE_RICH_FIELDS_XFAIL:
+            reason, strict = _ASYNC_LARGE_RICH_FIELDS_XFAIL[async_backend.name]
             request.applymarker(pytest.mark.xfail(reason=reason, strict=strict))
         chunk = b"\xab" * (1024 * 1024)
         n_chunks = _LARGE_WRITE_SIZE // len(chunk)

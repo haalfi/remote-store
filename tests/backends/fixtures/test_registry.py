@@ -193,7 +193,7 @@ class TestRegistryShape:
         assert by_name["azurite"].backend == by_name["azure_live"].backend == "azure"
 
     def test_bk286_large_write_distinct_opt_in_set(self) -> None:
-        """BK-286: the large-write opt-in covers real differ backends only.
+        """The large-write opt-in covers real differ backends only.
 
         The flag gates the large/streamed WriteResult↔FileInfo consistency
         test. It is set on fixtures whose backend takes a distinct

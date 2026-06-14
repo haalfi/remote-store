@@ -116,7 +116,7 @@ class BackendFixture:
     ``createUploadSession``) AND runs against a real endpoint — emulator or
     live cloud — where that path is faithfully exercised.
 
-    Gates the BK-286 large/streamed WriteResult↔FileInfo consistency test:
+    Gates the large/streamed WriteResult↔FileInfo consistency test (WR-001a):
     only fixtures with this flag run it, so the multipart / upload-session
     write path is checked for ``size``/``etag``/``digest`` agreement with a
     subsequent ``get_file_info()``. Per-fixture opt-in (no backend-family
