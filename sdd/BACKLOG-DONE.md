@@ -31,7 +31,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   is the cost `GRAPH_PROFILE` avoids, so Graph's upload-session path is a
   live-lane concern). Validated live against the real Graph drive
   (`RS_TEST_LIVE_GRAPH=1 --stage=3 -m live -k graph_live`): the upload-session
-  WriteResult is consistent — first live coverage of that path. The Azurite run
+  WriteResult is consistent — first live coverage of that path. PR-review caught
+  that `s3_live`'s large path was opted in but never executed; confirmed live on
+  real AWS (`RS_TEST_LIVE_S3`): `s3_live` and `s3_pyarrow_live` both pass.
+  Note: plain s3fs does a single PUT even at the 8 MiB test size (the
+  always-multipart S3 lane is `s3_pyarrow`); S3 reads `etag`/`digest` from
+  `head_object` on write and `get_file_info` alike (same source), so it agrees by
+  construction and needs no xfail — structurally unlike Azure. The Azurite run
   surfaced **BUG-216**: Azure's large/block-staged write fills `WriteResult.digest`
   from the commit response while the staged blob stores no Content-MD5, so
   `get_file_info().digest` is `None` and the two diverge; xfailed via a

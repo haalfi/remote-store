@@ -294,7 +294,11 @@ live_opt_in_env = "RS_TEST_LIVE_S3"
 live_creds_env  = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_REGION"]
 # Inherits flat_namespace=true, self_op_supported=true from [backend.s3].
 # Per-call bucket creation (rs-conformance-<uuid>) makes RS_TEST_LIVE_S3_BUCKET redundant.
-# real S3 multipart above the 5 MiB part floor; large-write consistency, live lane.
+# Large streamed-write consistency, verified live (RS_TEST_LIVE_S3). Plain s3fs
+# does a single PUT even at the 8 MiB test size (no multipart path here —
+# s3_pyarrow is the always-multipart lane); etag/digest come from head_object on
+# both write and get_file_info (same source), so they agree by construction and
+# need no xfail net (unlike Azure's two-source BUG-216 divergence).
 large_write_distinct = true
 
 # S3-PyArrow sibling of s3_live: same real-AWS gating and per-call

@@ -22,7 +22,7 @@ surprising_ripples:
   # and azure_live_async would have hard-failed. Required a separate async roster
   # (the existing _ASYNC_*_XFAIL precedent) and a read of the async backend name.
   - src/remote_store/aio/backends/_azure.py
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -95,6 +95,11 @@ phases:
         section: "build-from-content_settings (L138) vs build-from-response (L213)"
         read_type: verify
         extract: "Root cause: WriteResult.digest from the commit response, FileInfo.digest from the stored blob's content_md5 — diverge when the staged blob stores none. Filed BUG-216 + large-path xfail roster"
+        outcome: ok
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "s3_live large_write_distinct (PR-review blind-spot)"
+        read_type: verify
+        extract: "Review flagged s3_live's large path was opted in but never run. Confirmed live on real AWS (RS_TEST_LIVE_S3): s3_live + s3_pyarrow_live pass. Finding: plain s3fs does a single PUT even at 10 MiB (no multipart at test sizes — s3_pyarrow is the multipart lane); etag/digest from head_object on both sides means no xfail needed, unlike Azure. Corrected the misleading 'multipart' comment"
         outcome: ok
   - id: e2e_extend
     name: Extend live-only Graph hop into the other e2e tests
