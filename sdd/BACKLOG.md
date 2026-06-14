@@ -85,6 +85,133 @@ and the highest ID already in this file, then take the next integer. Run
   see BACKLOG-DONE.md). Findings inform the next release scope; no code changes
   are produced by this item itself.
 
+- [ ] **ID-219 — Apply the expectation-driven review to the Azure backend**
+  spec: — · effort: M · audience: library.maintainer, user.api
+  Run the user-expectation / DX methodology
+  ([research-expectation-driven-review.md](research/research-expectation-driven-review.md))
+  on the Azure backend — the other async-native backend, reached from sync code
+  through the same `AsyncBackendSyncAdapter` bridge, so it likely shares the
+  lifecycle / concurrency / contract gaps the Graph review surfaced. Broad sweep
+  over the lens catalog (mostly static) to find hot lenses, then a live "go-hard"
+  deep-dive against real ADLS Gen2 (`RS_TEST_LIVE_HNS`) on the ones that look
+  fragile. Likely hotspots: `aclose()`-during-in-flight (the BUG-219 analog); the
+  concurrency contract (the BK-287 cross-backend `AsyncBackend` clause must cover
+  `AsyncAzureBackend`); conflict / overwrite semantics; bridge concurrency under
+  load; and the **HNS-vs-flat cross-consistency lens** (the azurite emulator vs
+  real ADLS Gen2 divergence is a known hotspot). Audit semantics: report findings
+  and route them (conformance spine / live tier / docs); no fixes. The research
+  doc sequences a Graph broad-sweep first as the cheapest catalog check; this
+  item is the cross-backend generalization.
+
+---
+
+## Graph (OneDrive / SharePoint)
+
+Filed from the Graph concurrency / real-world-DX review (multi-expert panel +
+live consumer-OneDrive validation, "go-hard" throwaway drive). The review
+confirmed the core expectations hold — `overwrite=False` is a race-free
+server-side atomic create, concurrent writes never tear, copy/move races
+resolve to one winner, read-your-writes and listing held, streaming reads are
+version-pinned, and the sync bridge (`ThreadPoolExecutor` + `ext.batch`) is
+deadlock-free. The items below are the divergences and the unspecified contract.
+
+- [ ] **BUG-219 — `GraphBackend.aclose()` concurrent with in-flight ops raises untyped `RuntimeError`**
+  spec: GR-051 · effort: S · audience: user.api, library.maintainer
+  Calling `aclose()` while writes/copies are in flight from other coroutines
+  closes the shared `httpx.AsyncClient` out from under them: `aclose()` itself
+  does not raise (good), but every in-flight op dies with a bare `RuntimeError`
+  (closed client), not a typed `BackendClosed` or a clean cancellation. There is
+  no `_closed` use-after-close guard, and `aclose()`'s `list(...)` snapshot of
+  `_active_upload_sessions`/`_pending_pollers` misses any session/poller
+  registered after the snapshot. Live-reproduced (a FastAPI-shutdown shape: 5/5
+  in-flight ops → `RuntimeError`, both rounds). Fix candidates: add a `_closed`
+  flag that fails fast with a typed error on new ops after `aclose()`, and decide
+  the lifecycle contract (concurrent-op-during-close is unsupported and must
+  surface typed, not as a transport error).
+
+- [ ] **BK-291 — `GraphAuth` MSAL token-cache write is non-atomic and unlocked**
+  spec: GR-007 · effort: S · audience: user.api, library.maintainer
+  `flush_cache` does a plain `open(path, "w").write(...)` at the default shared
+  path (`platformdirs.user_config_dir("remote-store")/graph_token_cache.json`)
+  with no temp-rename and no lock. Multiple `GraphAuth`/`GraphBackend` instances
+  or processes sharing that default cache — the common multi-worker deployment —
+  can interleave writes and truncate/corrupt the cache, forcing a re-login. Fix:
+  atomic write (temp file + `os.replace`) plus an advisory lock (or per-process
+  cache path). Filed as `BK`, not `BUG`: an inspection finding (verified in
+  `auth.py` `flush_cache`), not yet reproduced — a multi-process interleave repro
+  would promote it.
+
+- [ ] **BK-287 — Graph concurrency contract: `GR-059` + cross-backend `AsyncBackend` clause**
+  spec: GR-059 (new), 003, 029 · effort: M · audience: contributor.process, user.api_docs
+  Spec 044 has zero concurrency text; the obligation that makes `ASYNC-055`
+  ("`AsyncStore` safe for concurrent coroutines on one loop") true for
+  `GraphBackend` is unstated. Add `GR-059` characterizing: one instance safe for
+  concurrent coroutines on a single loop (never across loops); `overwrite=False`
+  is a **server-side atomic create-if-absent** (live-confirmed — the one place
+  Graph is *stronger* than `concurrency.md`'s blanket TOCTOU claim); the bridged
+  sync path is safe (single loop), *unlike* SFTP. Add a cross-backend
+  concurrent-use-posture clause to spec 003/029 so STORE-007/ASYNC-055 become an
+  obligation each backend satisfies or carves out, not orphaned Store-layer
+  claims. No new ADR (consequence of ADR-0012/0025) unless BUG-219's fix
+  introduces a lock. Also pin the minor error-fidelity gap: the move-race loser
+  sometimes surfaces a generic `RemoteStoreError` instead of a typed
+  `NotFound`/`AlreadyExists`.
+
+- [ ] **BK-288 — Graph concurrency & consistency documentation**
+  spec: — · effort: M · audience: user.site, user.api_docs
+  Graph is absent from every table in `explanation/concurrency.md`, and the
+  `async.md` FastAPI example shows a module-level store shared across request
+  handlers without ever stating the concurrency contract (while the Limitations
+  section warns about SFTP but not Graph). Add a Graph row to `concurrency.md`, a
+  "Concurrency & consistency" section to the Graph guide, and a one-line contract
+  to the FastAPI example. Document `overwrite=False` as the create-if-absent
+  primitive (it is currently misframed as racy), `move`/`copy` non-atomicity at
+  point of use, and read-your-writes. **Widen the BK-261 caveat**: the
+  `overwrite=True` replace-409 quirk is documented as SharePoint-only but the
+  review live-reproduced it on **consumer OneDrive under a concurrent create
+  race** (writers racing to create the same new key can get `AlreadyExists` even
+  with `overwrite=True`; content integrity holds). Also evaluate the code-side
+  alternative to documenting it: retrying Graph's `409`-under-`replace` as
+  transient.
+
+- [ ] **BK-289 — Graph concurrency test lane**
+  spec: TEST-007 · effort: M · audience: infra.test
+  No test exercises concurrent ops on one instance. Add a split lane:
+  deterministic contract guards (respx) in a new
+  `tests/backends/graph/aio/test_concurrency.py` for CI (the `overwrite=False`
+  atomicity contract via 409-mapping, the stream-vs-mutate eTag/delete branches,
+  the BUG-219 aclose no-raise/no-warning property, bridge deadlock-freedom), plus
+  live race probes behind the existing `RS_TEST_LIVE_GRAPH` gate (concurrent
+  create/overwrite/move/copy, N-parallel large uploads, token-call counting).
+  Mirror the public-`Store`-surface subset (create-once race, read-after-write,
+  ThreadPool + `ext.batch`) into `../remote-store-expectations` as black-box DX
+  validation. The review built a re-runnable harness for the live probes.
+
+- [ ] **BK-290 — Graph async I/O robustness under concurrent load**
+  spec: GR-008, GR-019 · effort: S · audience: user.api, library.maintainer
+  Two independent I/O-robustness gaps surfaced by the review:
+  1. **No `httpx.Limits` exposed.** The shared client uses the silent 100-conn
+     default; very high fan-out surfaces as opaque `BackendUnavailable`. Expose a
+     first-class limit (or document the `client_options` knob).
+  2. **Blocking spool I/O on the event-loop thread** (`reader.read(10 MiB)` /
+     spool writes in `transfer.py`) head-of-line-blocks sibling callers during
+     large disk-spilled transfers. **ADR-0025 § Risks misattributes this to
+     "chunk hashing," which does not exist** (no `hashlib` in `transfer.py`);
+     wrap the blocking I/O in `asyncio.to_thread` and correct the ADR risk text.
+  Related: `ext.cache` stampede over Graph (no per-key dedup) compounds ID-218 —
+  track the cache side there. Token single-flight is split out as BK-292.
+
+- [ ] **BK-292 — Graph token acquisition: async `GraphAuth` path + single-flight refresh**
+  spec: GR-008 · effort: M · audience: user.api, library.maintainer
+  N concurrent requests make N independent token-provider calls (live-confirmed:
+  16 calls for 16 ops). The built-in **sync** `GraphAuth` serializes them on the
+  event loop, and a cold/expired token blocks the whole loop during the MSAL
+  fetch; a user-supplied **async** provider without its own dedup would stampede
+  the IdP N-way (the one-shot 401 refresh multiplies it). Add an async
+  `GraphAuth` acquisition path and an in-flight refresh single-flight (dedup
+  concurrent refreshes to one). Non-trivial — the async-auth path is the bulk of
+  the work; split from BK-290 per the PR #814 review.
+
 ---
 
 ## Lint / CI Completeness
