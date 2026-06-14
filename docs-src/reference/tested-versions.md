@@ -24,7 +24,7 @@ _Captured 2026-06-13 on Python 3.13._
 
 ## `[dagster]`
 
-_Captured 2026-06-13 on Python 3.13._
+_Captured 2026-06-14 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
