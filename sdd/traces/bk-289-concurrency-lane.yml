@@ -24,6 +24,7 @@ expected_ripples:
   - sdd/BACKLOG-DONE.md
 surprising_ripples:
   - tests/backends/fixtures/test_live_env.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

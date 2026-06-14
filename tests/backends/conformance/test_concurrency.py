@@ -257,11 +257,12 @@ class TestConcurrentLargeUploads:
 class TestSingleConnectionCarveOut:
     """Tier 2 — the ``single_connection`` posture carve-out.
 
-    SFTP (shared paramiko socket) and HTTP (shared redirect-counter opener) are
-    declared ``single_connection``: concurrent ops on ONE instance race. The
-    documented, supported pattern is **one instance per thread**, and this test
-    asserts exactly that — each thread builds its own backend via the registry
-    ``factory`` and operates on it independently.
+    SFTP (shared paramiko socket), HTTP (shared redirect-counter opener), and the
+    ``sqlite:///:memory:`` SQLBlob fixture (SingletonThreadPool → one isolated DB
+    per thread) are declared ``single_connection``: concurrent ops on ONE instance
+    race or fail. The documented, supported pattern is **one instance per
+    thread**, and this test asserts exactly that — each thread builds its own
+    backend via the registry ``factory`` and operates on it independently.
 
     The lane deliberately never subjects a *shared* single-connection instance
     to the thread-stress: ``fixture_params_concurrent(posture="thread_safe")``
@@ -271,11 +272,12 @@ class TestSingleConnectionCarveOut:
     posture and be caught by the registry posture guard
     (``test_registry.py::test_bk289_concurrency_posture_is_declared_and_split``).
 
-    HTTP carries no ``WRITE`` capability and its in-process fixture mutates a
-    shared test server on construct, so it is not a clean per-thread-instance
-    write substrate; its ``single_connection`` posture is pinned at the registry
-    level. SFTP (``sftp_inproc`` at Stage 1, ``sftp_docker`` in the serial lane)
-    carries the load-bearing demonstration here.
+    This carve-out runs over the WRITE-capable ``single_connection`` set —
+    ``sftp_inproc`` (Stage 1, ``sftp_docker`` in the serial lane) and ``sqlblob``
+    (each thread owns its own engine + isolated ``:memory:`` DB). HTTP carries no
+    ``WRITE`` capability and its in-process fixture mutates a shared test server
+    on construct, so it is not a clean per-thread-instance write substrate; its
+    ``single_connection`` posture is pinned at the registry level instead.
     """
 
     @pytest.mark.spec("STORE-007")

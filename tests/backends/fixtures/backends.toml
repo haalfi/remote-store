@@ -51,7 +51,7 @@ self_op_supported = true
 [backend.s3_pyarrow]
 sources   = ["src/remote_store/backends/_s3_pyarrow.py"]
 transport = "http"
-# pyarrow S3FileSystem (Arrow C++); posture confirmed by the Tier-3 live probe.
+# pyarrow S3FileSystem (Arrow C++); thread_safe per S3PA-028 (Tier-3 live probe pending).
 concurrency       = "thread_safe"
 flat_namespace    = true
 self_op_supported = true

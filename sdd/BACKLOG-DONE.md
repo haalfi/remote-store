@@ -9,7 +9,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ## Unreleased
 
 - [x] **BK-289 — Cross-backend posture-gated concurrency conformance lane**
-  spec: TEST-007, 003, 029 · effort: L · audience: infra.test
+  spec: TEST-010, TEST-003, 003, 029 · effort: L · audience: infra.test
   Design: [research-bk-289-concurrency-test-lane.md](research/research-bk-289-concurrency-test-lane.md).
   Added a posture-gated concurrency lane: each fixture declares a `concurrency`
   posture (`thread_safe` / `single_connection`, sourced from `backends.toml` like

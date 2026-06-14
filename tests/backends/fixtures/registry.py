@@ -293,25 +293,27 @@ def fixture_params_concurrent(
     same gating discipline ``fixture_params(Capability.X)`` applies for
     capabilities (research §2). The default ``posture="thread_safe"`` returns
     the set that the positive in-process thread-stress may safely run against;
-    pass ``posture="single_connection"`` to enumerate SFTP/HTTP for the
-    carve-out guards that assert the one-instance-per-thread contract instead.
+    pass ``posture="single_connection"`` to enumerate the non-thread-safe set
+    (SFTP/HTTP, plus the ``sqlite:///:memory:`` SQLBlob fixture) for the carve-out
+    guards that assert the one-instance-per-thread contract instead.
 
     The SFTP-under-xdist carve-out from ``fixture_params`` carries over (its
     serial lane picks ``sftp_docker`` up); for the ``single_connection``
     posture that means the SFTP carve-out guard runs only in the serial pass,
     which is exactly where ``single_connection`` backends belong.
 
-    Two exclusions beyond ``fixture_params``:
+    One filter beyond a default ``fixture_params(...)`` call (plus the posture
+    gate itself):
 
-    * **Strict-only** fixtures are never included: the concurrency lane
-      exercises the default conformance surface, not the narrow ID-211
-      contracts.
-    * **Replay (cassette)** fixtures are never included: cassette playback
-      matches requests *sequentially* (vcrpy), so it is not a concurrency-safe
-      substrate (research §4.2). Concurrent ops over a replay fixture would race
-      the single ordered cassette, not the backend. The Graph create-once-race
-      contract is exercised against ``respx``/``moto`` in the backend homes
-      instead.
+    * **Replay (cassette)** fixtures are excluded: cassette playback matches
+      requests *sequentially* (vcrpy), so it is not a concurrency-safe substrate
+      (research §4.2). Concurrent ops over a replay fixture would race the single
+      ordered cassette, not the backend. The Graph create-once-race contract is
+      exercised against ``respx``/``moto`` in the backend homes instead.
+
+    **Strict-only** fixtures are likewise absent, but that is *not* new — it is
+    inherited from ``fixtures(..., include_strict_only=False)``; this selector
+    simply offers no opt-in back in.
     """
     is_xdist_worker = "PYTEST_XDIST_WORKER" in os.environ
     return [

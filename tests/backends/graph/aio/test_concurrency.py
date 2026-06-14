@@ -258,10 +258,16 @@ class TestGraphConcurrencyLive:
         inner = GraphAuth(live_creds["GRAPH_TENANT_ID"], live_creds["GRAPH_CLIENT_ID"], scopes=self._LIVE_SCOPES)
         provider = _CountingProvider(inner)
         backend = await self._backend(live_creds, provider=provider)
+        n_ops = 8
         try:
-            await asyncio.gather(*(backend.write(f"{scratch}/tok-{i}.txt", b"x") for i in range(8)))
-            # Token-call probe (BK-292 context: today every op acquires independently).
-            assert provider.calls >= 1
+            await asyncio.gather(*(backend.write(f"{scratch}/tok-{i}.txt", b"x") for i in range(n_ops)))
+            # BK-292 probe. Today each op acquires a token independently
+            # (live-confirmed ~1 call/op), so N concurrent writes make >= N
+            # acquisitions. This is deliberately tight: when BK-292's async-auth
+            # single-flight / in-flight refresh dedup lands, the count drops below
+            # N and this assertion breaks *by design* — the signal that the dedup
+            # took effect (at which point this probe is updated alongside it).
+            assert provider.calls >= n_ops
         finally:
             import contextlib
 

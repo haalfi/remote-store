@@ -223,15 +223,17 @@ class TestRegistryShape:
         assert by_name["graph_replay"].large_write_distinct is False
 
     def test_bk289_concurrency_posture_is_declared_and_split(self) -> None:
-        """BK-289: every fixture carries a valid posture, and SFTP/HTTP are single_connection.
+        """BK-289: every fixture carries a valid posture; pin the single_connection set.
 
         The concurrency lane is posture-gated, so an undeclared or wrong posture
         is the failure the carve-out guards cannot catch on their own (research
         §6 #2: an undeclared posture must fail, not default). Pins the
-        load-bearing split: the ``single_connection`` set is exactly the
-        non-thread-safe transports (SFTP shared socket, HTTP shared opener);
-        everything else is ``thread_safe``. A backend that silently flips
-        posture — or a new family that forgets to declare one — trips here.
+        load-bearing split: the ``single_connection`` set is the two non-thread-safe
+        transports (SFTP shared socket, HTTP shared opener) **plus** the
+        ``sqlite:///:memory:`` SQLBlob fixture (SingletonThreadPool gives each
+        thread an isolated DB); everything else is ``thread_safe``. A backend that
+        silently flips posture — or a new family that forgets to declare one —
+        trips here.
         """
         by_name = {f.name: f for f in all_fixtures()}
         for f in all_fixtures():
