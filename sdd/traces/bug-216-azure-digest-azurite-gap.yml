@@ -1,0 +1,105 @@
+id: BUG-216
+title: "Azure large/block-staged WriteResult.digest vs get_file_info().digest: Azurite emulator gap, not a backend defect"
+trigger: >
+  BK-286's new test_large_streamed_write_result_matches_file_info failed on the
+  azurite fixture (WriteResult.digest carried the commit-response MD5 while
+  get_file_info().digest was None) and was xfailed strict=False pending real-ADLS
+  verification. The backlog item required confirming the divergence against live
+  ADLS Gen2 before any fix, because Azurite ≠ real ADLS.
+source_items:
+  - BUG-216
+  - BK-286
+audience:
+  - infra.test
+  - contributor.process
+discovery_followups:
+  - BUG-217
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient on the reported divergence
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Azure / BUG-216 (item)"
+        read_type: gate
+        extract: "Confirm against live HNS before fixing (Azurite ≠ real ADLS); fix options a/b are user-decided, not yet warranted"
+        outcome: ok
+      - file: src/remote_store/backends/_azure_common.py
+        section: "_build_azure_write_result (L202) vs props_to_fileinfo (L116)"
+        read_type: reference
+        extract: "WriteResult.digest comes from resp['content_md5']; FileInfo.digest from the stored blob's content_settings.content_md5 — two sources that diverge only when the staged blob stores none"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "write (L500) + get_file_info (L911) + _AZURE_BLOCK_SIZE / max_single_put_size (L1234)"
+        read_type: reference
+        extract: "write() always uses bc.upload_blob and get_file_info() always reads bc.get_blob_properties() regardless of HNS — so the staged-commit MD5 behaviour is a blob-service property, identical for HNS and flat; the live HNS lane is representative of the flat path"
+        outcome: ok
+  - id: verify
+    name: Verify against real ADLS Gen2
+    steps:
+      - file: tests/backends/fixtures/azure_live.py
+        section: "_factory gating (RS_TEST_LIVE_HNS=1, --stage=3, -m live)"
+        read_type: gate
+        extract: "Live lane creates a fresh HNS filesystem; connection string loaded from .env by require_azure_live_connection_string"
+        outcome: ok
+      - file: tests/backends/conformance/test_atomic.py
+        section: "test_large_streamed_write_result_matches_file_info[*-azure_live]"
+        read_type: verify
+        extract: "RS_TEST_LIVE_HNS=1 ... --runxfail (mask lifted): write + write_atomic both PASS on real ADLS — real Azure stores Content-MD5 on block-list commit. Divergence is Azurite-only"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "test_large_streamed_write_result_matches_file_info[azure_live_async-*]"
+        read_type: verify
+        extract: "Async live lane also PASSES both ops. Confirms no backend defect; the proposed code fixes (a/b) are unnecessary"
+        outcome: ok
+  - id: classify
+    name: Scope the xfail rosters
+    steps:
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "azurite / azure_live / azure_live_async (large_write_distinct)"
+        read_type: reference
+        extract: "Sync large path runs on azurite (emulator) AND azure_live (live); async large path runs only on azure_live_async (no non-strict async Azurite baseline). Both Azure fixtures share backend.name 'azure'/'async-azure'"
+        outcome: ok
+      - file: tests/backends/conformance/test_atomic.py
+        section: "_LARGE_RICH_FIELDS_XFAIL + application site"
+        read_type: reference
+        extract: "Re-key on _fixture_record(backend).name so the xfail hits only 'azurite', flip to strict=True; azure_live now runs strict (was a masked xpass)"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "_ASYNC_LARGE_RICH_FIELDS_XFAIL + application site"
+        read_type: reference
+        extract: "Remove the 'async-azure' entry entirely (it masked the live lane as an allowed xpass); re-key the lookup on the fixture name too so a future emulator entry cannot remask the live lane"
+        outcome: ok
+  - id: docs
+    name: Reclassify spec/comment, close item, file follow-up
+    steps:
+      - file: sdd/specs/045-write-result.md
+        section: "WR-001a Python backstop note"
+        read_type: reference
+        extract: "Reword from 'Azure block-staged is a known exception pending a real-ADLS fix' to 'Azurite emulator-only; real ADLS Gen2 verified consistent live; only the azurite fixture carries a strict xfail'"
+        outcome: ok
+      - file: src/remote_store/backends/_s3.py
+        section: "head_object write-result contrast comment (L204)"
+        read_type: reference
+        extract: "Reword the Azure contrast to say the Azurite emulator drops Content-MD5 while real Azure stores it (BUG-216)"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "[Unreleased]"
+        read_type: reference
+        extract: "Close BUG-216 as an emulator gap (no code fix); record the live-verification command and the masked-live-lane discovery; no CHANGELOG (infra.test)"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Azure / BUG-217 (item)"
+        read_type: reference
+        extract: "File BUG-217: no non-strict async Azurite baseline exercises the large-write consistency path; add azurite_async fixture + strict xfail entry"
+        outcome: ok
+  - id: ripple
+    name: Ripple-check + offline verification
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "Test + spec + backlog + src-comment touch; run gen-backlogid (BUG max 215→216), lint, traceability; offline azurite large test still xfails strictly"
+        outcome: ok

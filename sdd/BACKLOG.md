@@ -75,25 +75,22 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Azure
 
-- [ ] **BUG-216 — Azure large/block-staged write: `WriteResult.digest` diverges from `get_file_info().digest`**
-  spec: WR-001a · effort: M · audience: user.api
-  On a write past the 1 MiB single-put threshold, `AzureBackend` /
-  `AsyncAzureBackend` stage blocks and commit a block list. `WriteResult.digest`
-  is filled from the commit response's `content_md5` (the build-from-response
-  path in `src/remote_store/backends/_azure_common.py`), but the committed block
-  blob stores no `Content-MD5`, so `get_file_info()` → `FileInfo.digest` is
-  `None`. The two disagree, violating the WR-001a "rich fields match
-  `get_file_info()`" consistency the backend's `WRITE_RESULT_NATIVE` declaration
-  promises. Small single-put writes set both sides and stay consistent.
-  Surfaced by the WR-001a large/streamed consistency test
-  `test_large_streamed_write_result_matches_file_info` (BK-286), xfailed via the
-  large-path rosters (`strict=False`). Observed on Azurite;
-  **real ADLS Gen2 unverified** — confirm against live HNS before fixing
-  (Azurite ≠ real ADLS). Fix options (user decides): (a) set the blob
-  `Content-MD5` on block-list commit so `get_file_info` returns it; or (b) leave
-  `WriteResult.digest=None` on the staged path since the store cannot corroborate
-  it — align with whatever WR-007 should promise. On fix, flip the roster entry
-  to `strict=True` (or remove it) and re-verify live.
+- [ ] **BUG-217 — No non-strict async Azurite fixture exercises the large-write consistency path**
+  spec: WR-001a · effort: S · audience: infra.test
+  The sync side has a non-strict `azurite` fixture (`large_write_distinct =
+  true`) that runs `test_large_streamed_write_result_matches_file_info` against
+  the flat-NS emulator. The async side has no equivalent: only
+  `azurite_async_strict` exists (`strict_only = true`, excluded from default
+  enumeration), so in the default async conformance run the large-write
+  consistency test runs **only** on the live `azure_live_async` fixture
+  (skipped unless `RS_TEST_LIVE_HNS=1`). The async Azurite staged path therefore
+  has zero offline coverage. Surfaced while resolving BUG-216 (the broad async
+  xfail keyed on `backend.name` was masking the live lane and was removed; see
+  BACKLOG-DONE.md). Fix: register a non-strict `azurite_async` baseline mirroring
+  the sync `azurite` fixture, and — since Azurite drops `Content-MD5` on the
+  staged commit (BUG-216) — add an `"azurite_async"` entry to
+  `_ASYNC_LARGE_RICH_FIELDS_XFAIL` (`strict=True`) so the emulator gap is pinned
+  on the async side too.
 
 - [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
   spec: — · effort: S · audience: library.maintainer, user.api
