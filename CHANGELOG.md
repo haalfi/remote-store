@@ -11,7 +11,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - BK-285: API reference restructured to mirror the package — async surface split into a `reference/api/aio/` subtree, async-native backends surfaced
 - BK-261: Graph `overwrite=True` replace-409 quirk on SharePoint-backed drives documented as a hard backend limitation (no speculative guard taken; delete-then-write is the workaround)
 - BK-266: Graph backend correctness edges
-- BK-265: Graph guide & docstring accuracy — present-tense setup guide, copy-paste-safe usage snippet, sync-vs-async extension matrix, complete `Raises:` clauses, read-side spooling and SharePoint-coverage caveats
+- BK-265: Graph guide & docstring accuracy — present-tense setup guide, copy-paste-safe usage snippets (incl. the async guide's drive-resolution snippet + prose, a missed M5 sibling now using `await aresolve_drive_id`), sync-vs-async extension matrix, complete `Raises:` clauses, read-side spooling and SharePoint-coverage caveats
 - ID-127: Microsoft Graph backend setup guide
 - ID-127: `ResourceLocked` error type for resources held by another session
 - ID-127: config auto-wraps `client_secret` / `client_certificate` in `Secret`

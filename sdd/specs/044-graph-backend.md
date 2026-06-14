@@ -822,9 +822,10 @@ shared-helper design backend-local.
   permission revoked mid-operation, `404` monitor URL expired or
   deleted) is **terminal**: the poller maps it through the GR-028
   table (`status` + `error.code`) and raises immediately rather than
-  treating it as `pending`. A `429` is the sole exception — it is
-  throttling, not failure, and stays `pending` (honouring `Retry-After`)
-  like a `5xx`. Without this, a mid-operation 4xx loops until
+  treating it as `pending`. Two `4xx` are excepted as transient and
+  stay `pending` like a `5xx`: `429` (throttle, honouring `Retry-After`)
+  and `408` (request timeout, retryable by convention). Without this, a
+  mid-operation terminal 4xx loops until
   `copy_timeout`, which defaults to `None` (unbounded), hanging the
   caller (BUG-218).
 - The `404` poll case is deliberately mapped to a terminal **error**,

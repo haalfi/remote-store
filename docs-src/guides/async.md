@@ -141,8 +141,10 @@ async with AsyncStore(backend, root_path="Documents") as store:
 
 `GraphAuth` selects device-code (interactive) or client-credentials
 (app-only) auth depending on whether a `client_secret` / `client_certificate`
-is supplied. `GraphUtils.resolve_drive_id` turns `"me"`, a SharePoint site
-URL, or a Teams `{"team_id", "channel_id"}` mapping into a `drive_id`.
+is supplied. `GraphUtils.resolve_drive_id` (and its async twin
+`aresolve_drive_id`, used above — call the async form inside a running loop)
+turns `"me"`, a SharePoint site URL, or a Teams `{"team_id", "channel_id"}`
+mapping into a `drive_id`.
 
 Install the extra:
 

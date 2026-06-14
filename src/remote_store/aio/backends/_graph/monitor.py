@@ -137,11 +137,11 @@ async def poll_monitor(
     Polls with exponential backoff (``initial_interval`` floor, ``max_interval``
     ceiling, ``backoff_factor`` growth — defaults 1 s / 30 s / 2). A
     ``Retry-After`` header on a poll response raises the wait to at least its
-    value. Transient ``5xx`` responses, ``429`` throttles, and transport errors
-    during polling are treated as *pending*, not failure. A non-throttle ``4xx``
-    on the poll request itself (e.g. ``403`` permission revoked mid-operation,
-    ``404`` monitor expired/deleted) is **terminal** and raises immediately
-    rather than looping until the timeout. ``timeout`` (the backend's
+    value. Transient ``5xx`` responses, ``408`` request timeouts, ``429``
+    throttles, and transport errors during polling are treated as *pending*, not
+    failure. Any other ``4xx`` on the poll request itself (e.g. ``403`` permission
+    revoked mid-operation, ``404`` monitor expired/deleted) is **terminal** and
+    raises immediately rather than looping until the timeout. ``timeout`` (the backend's
     ``copy_timeout``) bounds the total wall-clock; ``None`` means no ceiling — the
     poll runs until Graph reports a terminal state.
 
@@ -175,7 +175,9 @@ async def poll_monitor(
         except httpx.TransportError:
             last_status = "5xx"  # a dropped poll is transient, like a 5xx
         else:
-            if response.status_code >= 500:
+            if response.status_code >= 500 or response.status_code == 408:
+                # 5xx and 408 Request Timeout are transient — re-poll, like a
+                # dropped connection (BUG-218 review).
                 last_status = "5xx"
             elif 400 <= response.status_code < 500 and response.status_code != 429:
                 # GR-026: a non-throttle 4xx on the poll request itself is
@@ -183,10 +185,11 @@ async def poll_monitor(
                 # expired / deleted monitor URL (404). Raise rather than treat as
                 # pending: otherwise the loop runs until copy_timeout, which
                 # defaults to None (unbounded), hanging copy()/move() forever
-                # (BUG-218). 429 is throttling, not failure — it stays pending
-                # below, honouring Retry-After like a 5xx. A 404 errs toward
-                # raising, not false success (a copy/move we cannot confirm must
-                # not silently report done); GR-026 records the rare-reap residual.
+                # (BUG-218). The transient 4xx are excluded: 429 (throttle) stays
+                # pending below honouring Retry-After, and 408 is handled above.
+                # A 404 errs toward raising, not false success (a copy/move we
+                # cannot confirm must not silently report done); GR-026 records
+                # the rare-reap residual.
                 raise classify_graph_error(
                     response.status_code,
                     error_code(response_json(response)),

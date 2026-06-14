@@ -254,6 +254,20 @@ class TestPollHttpError:
         await _poll(path="dst.txt")
         assert route.call_count == 2
 
+    @respx.mock
+    @pytest.mark.spec("GR-026")
+    async def test_408_during_poll_stays_pending(self) -> None:
+        # 408 Request Timeout is transient (retryable by convention), not a
+        # terminal failure: keep polling like a 5xx rather than raising.
+        route = respx.get(_MONITOR).mock(
+            side_effect=[
+                httpx.Response(408),
+                httpx.Response(200, json={"status": "completed"}),
+            ]
+        )
+        await _poll(path="dst.txt")
+        assert route.call_count == 2
+
 
 # ===========================================================================
 # poll_monitor — timeout expiry (GR-026 closed-set last_status)
