@@ -15,6 +15,14 @@ audience:
   - contributor.tooling
 expected_ripples:
   - sdd/backlogid.json
+surprising_ripples:
+  # PR review caught an active-backlog narrative (ID-161 prerequisites) carrying
+  # a present-tense reference to the deleted aio.md. The ripple-check "Docs
+  # navigation" row covers _nav.yml + guides/backends/index.md, and the
+  # "Tracker ID in published prose" row explicitly excludes sdd/**, so neither
+  # anticipated stale prose inside sdd/BACKLOG.md.
+  - sdd/BACKLOG.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

@@ -18,8 +18,9 @@ extensions in `remote_store.ext`, and the entire async surface in
 
 ## Backends
 
-Synchronous storage backends (`remote_store.backends`). Native async-only
-backends — including Microsoft Graph — live under [Async › Backends](aio/backends/index.md).
+Synchronous storage backends (`remote_store.backends`). Native async
+backends — including the async-only Microsoft Graph backend — live under
+[Async › Backends](aio/backends/index.md).
 
 | Class | Description |
 |-------|-------------|
