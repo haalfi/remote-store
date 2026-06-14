@@ -24,6 +24,7 @@ from tests.backends.conformance._helpers import (
     _require,
     _seed,
     _skip_flat_namespace,
+    _skip_unless_large_write_distinct,
 )
 from tests.backends.fixtures import fixture_params
 
@@ -206,6 +207,26 @@ _LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {}
 # disagrees with get_file_info() on etag, digest, or last_modified.
 _RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {}
 
+# A single payload size that trips every distinct large-write path —
+# Graph's 4 MiB ``createUploadSession`` boundary (GR-018), S3's 5 MiB multipart
+# part floor, and Azure's 1 MiB single-put default. Imported by the async
+# conformance suite so sync and async exercise the same threshold.
+_LARGE_WRITE_SIZE = 8 * 1024 * 1024
+
+# name → (reason, strict).  Like _RICH_FIELDS_XFAIL but for the large/streamed
+# write path only — a backend may agree with get_file_info() on a small single
+# write yet diverge once the multipart / staged / upload-session path runs.
+# strict=False where the divergence is confirmed on the emulator but unverified
+# against the real cloud (Azurite ≠ real ADLS Gen2).
+_LARGE_RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {
+    "azure": (
+        "BUG-216: Azure large/block-staged write fills WriteResult.digest from the commit "
+        "response, but the staged blob stores no Content-MD5, so get_file_info().digest is "
+        "None — they diverge (observed on Azurite; real ADLS Gen2 unverified)",
+        False,
+    ),
+}
+
 # (op, cap) for the copy/move user-metadata round-trip (BK-195 / BK-233).
 # Per-param @spec marks differ by op: copy carries BE-019, move BE-018;
 # both carry WR-013, the user-metadata round-trip invariant.
@@ -348,6 +369,42 @@ class TestWriteResultConformance:
         key = f"wr/{op}-rich-fields-match.txt"
         result = getattr(backend, op)(key, b"rich-fields-payload")
         info = backend.get_file_info(key)
+        assert result.size == info.size
+        assert result.etag == info.etag
+        assert result.digest == info.digest
+        if info.modified_at is not None:
+            assert result.last_modified == info.modified_at
+
+    @pytest.mark.spec("WR-001a")
+    @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
+    def test_large_streamed_write_result_matches_file_info(
+        self,
+        backend: Backend,
+        op: str,
+        cap: Capability,
+        request: pytest.FixtureRequest,
+    ) -> None:
+        """WR-001a: WriteResult↔FileInfo consistency on the large/streamed write path.
+
+        Backends with a size-thresholded upload mechanism (S3 multipart,
+        Azure block staging, Graph ``createUploadSession``) take a different
+        code path for large payloads than the single-PUT path the sibling
+        ``test_write_result_rich_fields_match_file_info`` exercises with a tiny
+        ``bytes`` payload. A streamed ``_LARGE_WRITE_SIZE`` payload trips that
+        path; the returned ``WriteResult`` must still agree with a subsequent
+        ``get_file_info()`` on ``size`` and the rich fields. Gated to fixtures
+        whose backend runs that path against a real endpoint (the
+        ``large_write_distinct`` opt-in).
+        """
+        _require(backend, cap, Capability.METADATA)
+        _skip_unless_large_write_distinct(backend)
+        if backend.name in _LARGE_RICH_FIELDS_XFAIL:
+            reason, strict = _LARGE_RICH_FIELDS_XFAIL[backend.name]
+            request.applymarker(pytest.mark.xfail(reason=reason, strict=strict))
+        key = f"wr/{op}-large-streamed.bin"
+        result = getattr(backend, op)(key, io.BytesIO(b"\xab" * _LARGE_WRITE_SIZE))
+        info = backend.get_file_info(key)
+        assert result.size == info.size == _LARGE_WRITE_SIZE
         assert result.etag == info.etag
         assert result.digest == info.digest
         if info.modified_at is not None:

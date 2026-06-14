@@ -114,6 +114,18 @@ class TestCrossBackendTransfer:
         _assert_transfer(memory_lake, azurite_lake, SMALL_PAYLOAD)
         assert not azurite_lake.exists("xfer-dest.bin")  # cleaned up
 
+    # -- Memory <-> live Graph (async-only backend bridged to sync; live-only) --
+
+    def test_memory_to_graph(self, memory_lake: Store, graph_lake: Store) -> None:
+        """Transfer from Memory to the live Graph drive (bridged)."""
+        _assert_transfer(memory_lake, graph_lake, SMALL_PAYLOAD)
+        assert not graph_lake.exists("xfer-dest.bin")  # cleaned up
+
+    def test_graph_to_memory(self, memory_lake: Store, graph_lake: Store) -> None:
+        """Transfer from the live Graph drive to Memory with progress tracking."""
+        _assert_transfer(graph_lake, memory_lake, LARGE_PAYLOAD, track_progress=True)
+        assert not memory_lake.exists("xfer-dest.bin")  # cleaned up
+
     # -- Docker backend -> Docker backend --
 
     @minio_skip

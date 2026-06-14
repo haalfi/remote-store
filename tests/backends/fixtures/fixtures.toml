@@ -189,6 +189,9 @@ flat_namespace = true
 # BUG-201: sync AzureBackend.move/copy src==dst short-circuit is backend-wide
 # (not HNS-gated); Azurite handles it the same as the real Azure flat namespace.
 self_op_supported = true
+# Azurite stages block blobs above the 1 MiB single-put default, so the
+# large/streamed WriteResult↔FileInfo consistency test runs here.
+large_write_distinct = true
 
 # ID-211 strict variant of azurite: opt-in pre-check on the flat-NS emulator.
 # strict_only=true keeps it out of the default conformance enumeration.
@@ -234,6 +237,8 @@ stage     = 2
 kind      = "real-local"
 container = "minio"
 is_async  = false
+# PyArrow S3 path is always-multipart against real MinIO; consistency test.
+large_write_distinct = true
 
 # ID-211 review follow-up: Stage-2 strict variant against real MinIO.
 # Complements the Stage-1 s3_pyarrow_moto_strict so the S3-PyArrow opt-in
@@ -263,6 +268,8 @@ live_opt_in_env = "RS_TEST_LIVE_HNS"
 live_creds_env  = ["AZURE_STORAGE_CONNECTION_STRING"]
 # BUG-201: AzureBackend short-circuits src==dst; live fixtures are green.
 self_op_supported = true
+# real ADLS Gen2 stages large writes; exercise the consistency test live.
+large_write_distinct = true
 
 [fixture.azure_live_async]
 backend   = "azure"
@@ -274,6 +281,8 @@ live_opt_in_env = "RS_TEST_LIVE_HNS"
 live_creds_env  = ["AZURE_STORAGE_CONNECTION_STRING"]
 # BUG-201: AsyncAzureBackend short-circuits src==dst; async fixtures are green.
 self_op_supported = true
+# async sibling of azure_live; large-write consistency, live lane.
+large_write_distinct = true
 
 [fixture.s3_live]
 backend   = "s3"
@@ -285,6 +294,12 @@ live_opt_in_env = "RS_TEST_LIVE_S3"
 live_creds_env  = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_REGION"]
 # Inherits flat_namespace=true, self_op_supported=true from [backend.s3].
 # Per-call bucket creation (rs-conformance-<uuid>) makes RS_TEST_LIVE_S3_BUCKET redundant.
+# Large streamed-write consistency, verified live (RS_TEST_LIVE_S3). Plain s3fs
+# does a single PUT even at the 8 MiB test size (no multipart path here —
+# s3_pyarrow is the always-multipart lane); etag/digest come from head_object on
+# both write and get_file_info (same source), so they agree by construction and
+# need no xfail net (unlike Azure's two-source BUG-216 divergence).
+large_write_distinct = true
 
 # S3-PyArrow sibling of s3_live: same real-AWS gating and per-call
 # rs-conformance-<uuid> bucket, but exercises the PyArrow C++ S3 data path
@@ -299,6 +314,8 @@ is_async  = false
 live_opt_in_env = "RS_TEST_LIVE_S3"
 live_creds_env  = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_REGION"]
 # Inherits flat_namespace=true, self_op_supported=true from [backend.s3_pyarrow].
+# PyArrow always-multipart against real AWS; large-write consistency, live lane.
+large_write_distinct = true
 
 # ---------------------------------------------------------------------------
 # Replay fixtures: HTTP cassette playback (TEST-007). Stage 1, zero-network.
@@ -338,6 +355,10 @@ container = "none"
 is_async  = true
 live_opt_in_env = "RS_TEST_LIVE_GRAPH"
 live_creds_env  = ["GRAPH_CLIENT_ID", "GRAPH_TENANT_ID", "GRAPH_DRIVE_ID"]
+# Graph routes writes >4 MiB through createUploadSession; the large-write
+# consistency test runs live only (a >4 MiB committed cassette is the cost
+# GRAPH_PROFILE deliberately avoids — graph_replay stays opted out).
+large_write_distinct = true
 
 [fixture.graph_replay]
 backend   = "graph"

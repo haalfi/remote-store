@@ -116,6 +116,7 @@ class FixtureDescriptor:
     self_op_supported: bool
     rejects_write_under_file_ancestor: bool
     strict_only: bool
+    large_write_distinct: bool
     transport: Transport
     live_opt_in_env: str | None = None
     live_creds_env: tuple[str, ...] = field(default_factory=tuple)
@@ -140,6 +141,7 @@ class FixtureDescriptor:
             "self_op_supported": self.self_op_supported,
             "rejects_write_under_file_ancestor": self.rejects_write_under_file_ancestor,
             "strict_only": self.strict_only,
+            "large_write_distinct": self.large_write_distinct,
             "transport": self.transport,
         }
 
@@ -233,6 +235,10 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
     # default conformance enumeration. Per-fixture only; no backend-family
     # default (the strict variants are always opt-in additions).
     strict_only = raw.get("strict_only", False)
+    # Per-fixture opt-in (no backend-family default, like strict_only)
+    # marking fixtures whose backend takes a distinct large/streamed write path
+    # against a real endpoint — gates the large WriteResult↔FileInfo test.
+    large_write_distinct = raw.get("large_write_distinct", False)
     if not isinstance(flat_ns, bool):
         raise ValueError(f"fixture.{name}: flat_namespace must be bool, got {flat_ns!r}")
     if not isinstance(self_op, bool):
@@ -241,6 +247,8 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
         raise ValueError(f"fixture.{name}: rejects_write_under_file_ancestor must be bool, got {rejects!r}")
     if not isinstance(strict_only, bool):
         raise ValueError(f"fixture.{name}: strict_only must be bool, got {strict_only!r}")
+    if not isinstance(large_write_distinct, bool):
+        raise ValueError(f"fixture.{name}: large_write_distinct must be bool, got {large_write_distinct!r}")
 
     live_opt_in_env = raw.get("live_opt_in_env")
     if live_opt_in_env is not None and not isinstance(live_opt_in_env, str):
@@ -258,6 +266,7 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
         self_op_supported=self_op,
         rejects_write_under_file_ancestor=rejects,
         strict_only=strict_only,
+        large_write_distinct=large_write_distinct,
         transport=backend.transport,
         live_opt_in_env=live_opt_in_env,
         live_creds_env=live_creds_env,

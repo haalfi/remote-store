@@ -118,6 +118,23 @@ def _skip_unless_rejects_file_ancestor(
         pytest.skip(reason)
 
 
+def _skip_unless_large_write_distinct(
+    backend: object,
+    reason: str = "fixture's backend has no distinct large/streamed write path (large_write_distinct opt-in off)",
+) -> None:
+    """Skip unless the fixture exercises a distinct large/streamed write path.
+
+    Per-fixture gate: reads ``large_write_distinct`` from the
+    attached ``BackendFixture`` record. Set only on fixtures whose backend
+    switches code path for large/streamed writes (S3 multipart, Azure block
+    staging, Graph ``createUploadSession``) AND runs against a real
+    emulator or live endpoint — so the large WriteResult↔FileInfo
+    consistency test stays off on in-process mocks and cassette replay.
+    """
+    if not _fixture_record(backend).large_write_distinct:
+        pytest.skip(reason)
+
+
 def _do_op(backend: object, op: str, src: str, dst: str, **kw: Any) -> None:
     """Invoke ``backend.<op>(src, dst, **kw)``."""
     getattr(backend, op)(src, dst, **kw)

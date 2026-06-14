@@ -8,6 +8,52 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-286 — Conformance: WriteResult↔FileInfo `size` cross-check + large/streamed-path consistency**
+  spec: WR-001a · effort: S · audience: infra.test, library.maintainer
+  The WR-001a consistency backstop (`test_write_result_rich_fields_match_file_info`,
+  sync + async) compared `etag`/`digest`/`last_modified` against `get_file_info()`
+  but never `size`, and only ever exercised a tiny single-`bytes` write — so the
+  multipart / block-staged / upload-session write paths went unchecked for
+  result/info agreement. Gap 3 (a `version_id` cross-check) is a non-gap:
+  `FileInfo` carries no `version_id` field, so there is nothing to round-trip
+  against (it stays covered as a capability-implication via
+  `test_populated_field_implies_declared_capability`). Closed by: (1) adding
+  `assert result.size == info.size` to both consistency tests; (2) a new
+  `test_large_streamed_write_result_matches_file_info` (sync + async) that
+  streams an 8 MiB payload — over Graph's 4 MiB `createUploadSession` boundary,
+  S3's 5 MiB multipart floor, and Azure's 1 MiB single-put default — and asserts
+  the returned `WriteResult` still matches `get_file_info()`. Gated by a new
+  per-fixture `large_write_distinct` opt-in (registry + `backends`/`fixtures`
+  TOML + loader), set only on real emulator/live fixtures of the distinct-path
+  backends (`azurite`, `azure_live`(`_async`), `s3_live`, `s3_pyarrow_minio`,
+  `s3_pyarrow_live`, `graph_live`) — deliberately off on the moto mocks
+  (multipart fidelity untrusted) and `graph_replay` (a >4 MiB committed cassette
+  is the cost `GRAPH_PROFILE` avoids, so Graph's upload-session path is a
+  live-lane concern). Validated live against the real Graph drive
+  (`RS_TEST_LIVE_GRAPH=1 --stage=3 -m live -k graph_live`): the upload-session
+  WriteResult is consistent — first live coverage of that path. PR-review caught
+  that `s3_live`'s large path was opted in but never executed; confirmed live on
+  real AWS (`RS_TEST_LIVE_S3`): `s3_live` and `s3_pyarrow_live` both pass.
+  Note: plain s3fs does a single PUT even at the 8 MiB test size (the
+  always-multipart S3 lane is `s3_pyarrow`); S3 reads `etag`/`digest` from
+  `head_object` on write and `get_file_info` alike (same source), so it agrees by
+  construction and needs no xfail — structurally unlike Azure. The Azurite run
+  surfaced **BUG-216**: Azure's large/block-staged write fills `WriteResult.digest`
+  from the commit response while the staged blob stores no Content-MD5, so
+  `get_file_info().digest` is `None` and the two diverge; xfailed via a
+  large-path-only roster (`_LARGE_RICH_FIELDS_XFAIL` / `_ASYNC_LARGE_RICH_FIELDS_XFAIL`
+  keyed by the divergent sync/async backend names, `strict=False` pending
+  real-ADLS verification) so the test lands green while tracking the defect.
+  This effort began from the e2e-Graph-coverage question, so it also wires the
+  live-only Graph hop (async-only `GraphBackend` bridged to sync via
+  `AsyncBackendSyncAdapter`) into the e2e tests that lacked async Graph coverage:
+  `test_transfer.py` (memory↔Graph pairs), `test_data_lake.py` (full medallion
+  pipeline), and `test_ext_write_e2e.py` (via the shared `store_chain`). The sync
+  streaming chain stays Graph-free on purpose — the async streaming test already
+  covers Graph. All six paths verified live against the real drive.
+  No CHANGELOG (infra.test). Trace:
+  `sdd/traces/bk-286-write-result-fileinfo-consistency.yml`.
+
 - [x] **BK-285 — API reference: mirror the package, split the async monolith, surface async-only backends**
   spec: — · effort: M · audience: user.site, user.discoverability.human, contributor.tooling
   The sync API reference mirrored the `remote_store` package (one page per

@@ -129,6 +129,7 @@ class TestRegistryShape:
             assert f.is_async == desc.is_async
             assert f.flat_namespace == desc.flat_namespace
             assert f.self_op_supported == desc.self_op_supported
+            assert f.large_write_distinct == desc.large_write_distinct
             assert f.transport == desc.transport, f"{f.name!r} transport drift"
             assert f.container == desc.container, f"{f.name!r} container drift"
             assert f.transport in VALID_TRANSPORTS
@@ -190,6 +191,32 @@ class TestRegistryShape:
         assert by_name["azure_live_async"].flat_namespace is False, "async live HNS has real directories"
         # Both fixtures still share the same backend family.
         assert by_name["azurite"].backend == by_name["azure_live"].backend == "azure"
+
+    def test_bk286_large_write_distinct_opt_in_set(self) -> None:
+        """The large-write opt-in covers real differ backends only.
+
+        The flag gates the large/streamed WriteResult↔FileInfo consistency
+        test. It is set on fixtures whose backend takes a distinct
+        large-write path (S3 multipart, Azure block staging, Graph
+        upload-session) AND runs against a real emulator or live endpoint;
+        it is deliberately off on the in-process moto mocks (multipart
+        fidelity not trusted) and on ``graph_replay`` (no >4 MiB cassette).
+        """
+        by_name = {f.name: f for f in all_fixtures()}
+        opted_in = {f.name for f in all_fixtures() if f.large_write_distinct}
+        assert opted_in == {
+            "azurite",
+            "azure_live",
+            "azure_live_async",
+            "s3_live",
+            "s3_pyarrow_minio",
+            "s3_pyarrow_live",
+            "graph_live",
+        }
+        # Spot-check the load-bearing exclusions: mocks and replay stay off.
+        assert by_name["s3_moto"].large_write_distinct is False
+        assert by_name["s3_pyarrow_moto"].large_write_distinct is False
+        assert by_name["graph_replay"].large_write_distinct is False
 
 
 def _valid_backend_raw() -> dict[str, object]:
@@ -337,6 +364,13 @@ class TestClosedEnumValidation:
         raw = _valid_fixture_raw()
         raw["self_op_supported"] = self_op
         with pytest.raises(ValueError, match="self_op_supported must be bool"):
+            _parse_fixture("x", raw, _backends_for_fixture_tests())
+
+    @pytest.mark.parametrize("large_write_distinct", [0, 1, "yes", None])
+    def test_parse_fixture_rejects_non_bool_large_write_distinct(self, large_write_distinct: object) -> None:
+        raw = _valid_fixture_raw()
+        raw["large_write_distinct"] = large_write_distinct
+        with pytest.raises(ValueError, match="large_write_distinct must be bool"):
             _parse_fixture("x", raw, _backends_for_fixture_tests())
 
     @pytest.mark.parametrize("opt_in", [1, ["RS_X"], {"name": "RS_X"}])

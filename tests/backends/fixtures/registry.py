@@ -110,6 +110,21 @@ class BackendFixture:
     the full conformance suite. Without this guard a strict fixture
     would run the entire applicable surface twice on flat-NS backends.
     """
+    large_write_distinct: bool = False
+    """True when this fixture's backend takes a distinct code path for large
+    or streamed writes (S3 multipart, Azure block staging, Graph
+    ``createUploadSession``) AND runs against a real endpoint — emulator or
+    live cloud — where that path is faithfully exercised.
+
+    Gates the large/streamed WriteResult↔FileInfo consistency test (WR-001a):
+    only fixtures with this flag run it, so the multipart / upload-session
+    write path is checked for ``size``/``etag``/``digest`` agreement with a
+    subsequent ``get_file_info()``. Per-fixture opt-in (no backend-family
+    default, like ``strict_only``): deliberately ``False`` on the in-process
+    moto mocks (multipart fidelity not trusted) and on ``graph_replay`` (a
+    >4 MiB committed cassette is the cost GRAPH_PROFILE avoids — Graph's
+    upload-session consistency is a live-lane concern).
+    """
     transport: Literal["http", "ssh", "fs", "memory", "sql"] = "fs"
     """Transport family of the backend.
 

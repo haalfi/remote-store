@@ -142,6 +142,43 @@ def build_graph_live_store(root_path: str) -> Any:
     return AsyncStore(backend=backend, root_path=root_path)
 
 
+def build_graph_live_sync_store(root_path: str) -> Store:
+    """Build a sync ``Store`` on the real Graph drive, bridged via the adapter.
+
+    Graph is async-only; ``AsyncBackendSyncAdapter`` wraps ``GraphBackend`` so the
+    live Graph hop can join the *sync* e2e lake / transfer / chain tests — the
+    same bridging the ``azure-bridged`` hop uses in the async streaming test.
+    Roots via ``Store.root_path`` (not ``GraphBackend.base_path``) so an unrooted
+    sibling can delete the scratch folder, mirroring ``build_graph_live_store``.
+    Caller owns ``close()`` and scratch-folder cleanup.
+    """
+    from remote_store._async_to_sync_adapter import AsyncBackendSyncAdapter
+    from remote_store.aio import GraphAuth, GraphBackend
+    from tests.backends.fixtures._live_env import require_graph_live_credentials
+
+    creds = require_graph_live_credentials()
+    auth = GraphAuth(creds["GRAPH_TENANT_ID"], creds["GRAPH_CLIENT_ID"], scopes=_GRAPH_LIVE_SCOPES)
+    backend = AsyncBackendSyncAdapter(GraphBackend(creds["GRAPH_DRIVE_ID"], token_provider=auth))
+    return Store(backend=backend, root_path=root_path)
+
+
+def _graph_scratch_cleanup(scratch: str) -> None:
+    """Best-effort delete of a Graph scratch folder via an unrooted bridged sibling.
+
+    The rooted store cannot address its own root's parent, so teardown uses an
+    unrooted sibling (mirrors ``graph_live._aclose``). A teardown race must never
+    turn a green test red.
+    """
+    try:
+        cleaner = build_graph_live_sync_store("")
+        try:
+            cleaner.delete_folder(scratch, recursive=True, missing_ok=True)
+        finally:
+            cleaner.close()
+    except Exception:  # noqa: BLE001 -- teardown best-effort
+        pass
+
+
 # ---------------------------------------------------------------------------
 # SFTP cleanup helpers
 # ---------------------------------------------------------------------------
@@ -381,6 +418,25 @@ def sql_lake() -> Iterator[Store]:
     store.close()
 
 
+@pytest.fixture
+def graph_lake() -> Iterator[Store]:
+    """Live Graph lake store, bridged to sync via ``AsyncBackendSyncAdapter``.
+
+    Graph has no emulator, so this fixture is live-only: it skips unless the
+    ``RS_TEST_LIVE_GRAPH`` two-layer gate is satisfied. Each test gets a fresh
+    scratch folder on the drive, removed on teardown.
+    """
+    if not _graph_live_available():
+        pytest.skip("Graph live gate unmet (RS_TEST_LIVE_GRAPH=1 + graph extra + creds)")
+    scratch = f"e2e-lake-{uuid.uuid4().hex[:8]}"
+    store = build_graph_live_sync_store(scratch)
+    try:
+        yield store
+    finally:
+        store.close()
+        _graph_scratch_cleanup(scratch)
+
+
 # ---------------------------------------------------------------------------
 # Shared multi-backend store chain
 # ---------------------------------------------------------------------------
@@ -552,14 +608,38 @@ def _teardown_store_chain(stores: list[tuple[str, Store]], cleanups: list[_Clean
 def store_chain() -> Iterator[list[tuple[str, Store]]]:
     """Yield all available backend stores for multi-backend e2e tests.
 
-    Standard set: Memory, S3/MinIO, SFTP, Azure/Azurite, S3-PyArrow, SQLBlob.
-    Memory and SQLBlob are always present; Docker backends are included only
-    when their service is reachable.
+    Standard set: Memory, S3/MinIO, SFTP, Azure/Azurite, S3-PyArrow, SQLBlob,
+    plus a live-gated ``graph-bridged`` hop (``AsyncBackendSyncAdapter`` over the
+    real Graph drive) when the ``RS_TEST_LIVE_GRAPH`` gate is satisfied. Memory
+    and SQLBlob are always present; Docker backends are included only when their
+    service is reachable; Graph only on a live run.
 
     Tests that need ``azure-bridged`` define a local ``store_chain`` fixture
     that calls ``_build_store_chain()``, extends the list, and then calls
-    ``_teardown_store_chain()``; the local fixture shadows this one.
+    ``_teardown_store_chain()``; the local fixture shadows this one — so it does
+    not inherit the Graph hop, which is intentional: the async streaming test
+    already covers Graph, so the sync streaming chain stays Graph-free.
     """
     stores, cleanups = _build_store_chain()
-    yield stores
-    _teardown_store_chain(stores, cleanups)
+    graph_scratch: str | None = None
+    graph_appended = False
+    try:
+        # Build the live Graph hop *inside* the try: a build failure (live-lane
+        # auth/network hiccup) must still reach the finally so
+        # _teardown_store_chain() releases the Docker resources
+        # _build_store_chain() already opened — otherwise they leak.
+        if _graph_live_available():
+            graph_scratch = f"e2e-chain-{uuid.uuid4().hex[:8]}"
+            stores.append(("graph-bridged", build_graph_live_sync_store(graph_scratch)))
+            graph_appended = True
+        yield stores
+    finally:
+        # Nested finally so a failure closing the Graph hop can never skip the
+        # Docker teardown.
+        try:
+            if graph_appended:
+                _name, graph_store = stores.pop()
+                graph_store.close()
+                _graph_scratch_cleanup(graph_scratch)
+        finally:
+            _teardown_store_chain(stores, cleanups)
