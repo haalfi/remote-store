@@ -13354,6 +13354,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BUG-219: Graph backend use-after-close raises typed <code>BackendUnavailable</code> instead of a bare <code>RuntimeError</code></li>
 <li>BUG-218: Graph copy/move monitor — terminal <code>4xx</code> on the poll request, no unbounded <code>copy_timeout</code> hang</li>
 <li>BK-285: API reference restructured to mirror the package — async surface split into a <code>reference/api/aio/</code> subtree, async-native backends surfaced</li>
 <li>BK-261: Graph <code>overwrite=True</code> replace-409 quirk on SharePoint-backed drives documented as a hard backend limitation (no speculative guard taken; delete-then-write is the workaround)</li>

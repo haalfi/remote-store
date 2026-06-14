@@ -12817,11 +12817,24 @@ disk if the built-in <code>GraphAuth</code> owns it, cancels any pending
 monitor-URL pollers, and issues best-effort <code>DELETE</code> against any
 upload sessions the backend currently owns.
 <strong>Postconditions:</strong>
-- Safe to call multiple times.
+- Safe to call multiple times (idempotent — a second <code>close()</code> is a no-op).
 - User-supplied <code>http_client</code> instances are not closed — the caller
   owns that resource.
-- After close, subsequent operations re-initialise the HTTP client
-  on demand (consistent with <code>AzureBackend.close()</code> — AZ-029).
+- <strong>After close, the backend is terminal (BUG-219).</strong> A subsequent
+  operation raises a typed <code>BackendUnavailable</code>: the <code>_client</code> accessor
+  guards on a <code>_closed</code> flag flipped at the <em>start</em> of <code>close()</code> (before
+  the cleanup awaits, so a concurrent caller cannot slip a fresh op past
+  the guard). It does <strong>not</strong> silently re-initialise a fresh client — the
+  prior contract, which let a use-after-close succeed unnoticed. An
+  operation still in flight when <code>close()</code> fires also surfaces typed, not
+  a bare <code>RuntimeError</code>: a request issued on the closing client raises
+  <code>httpx</code>'s closed-client <code>RuntimeError</code>, which the request layer
+  translates to <code>BackendUnavailable</code> (detected via <code>client.is_closed</code>);
+  a cancelled monitor poller surfaces <code>CancelledError</code>. Concurrent
+  operation during close is unsupported — the only guarantee is that it
+  fails typed. (This deliberately diverges from <code>AzureBackend.close()</code>'s
+  AZ-029 re-initialise-on-demand; the cross-backend posture is tracked
+  for review under the concurrency-contract work.)
 - <strong>Upload-session abort on close:</strong> For every in-flight upload
   session whose URL is reachable from the backend (i.e. a <code>write()</code>
   call is mid-chunk-loop when <code>close()</code> fires), the backend issues

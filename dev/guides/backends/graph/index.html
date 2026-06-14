@@ -11583,6 +11583,9 @@ cancelled cooperatively, and any upload session a <code>write()</code> left
 mid-chunk-loop is aborted via best-effort <code>DELETE</code> — every cleanup
 error is swallowed so <code>close()</code> never raises. The server-side copy /
 move continues (Graph monitor URLs have no cancel endpoint).</p>
+<p>After this returns, any new op raises <code>BackendUnavailable</code> via the
+<code>_client</code> guard, and any op still in flight surfaces a typed error
+rather than a bare <code>RuntimeError</code> from the closing client.</p>
 
 
     </div>
