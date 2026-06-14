@@ -85,6 +85,24 @@ and the highest ID already in this file, then take the next integer. Run
   see BACKLOG-DONE.md). Findings inform the next release scope; no code changes
   are produced by this item itself.
 
+- [ ] **ID-219 — Apply the expectation-driven review to the Azure backend**
+  spec: — · effort: M · audience: library.maintainer, user.api
+  Run the user-expectation / DX methodology
+  ([research-expectation-driven-review.md](research/research-expectation-driven-review.md))
+  on the Azure backend — the other async-native backend, reached from sync code
+  through the same `AsyncBackendSyncAdapter` bridge, so it likely shares the
+  lifecycle / concurrency / contract gaps the Graph review surfaced. Broad sweep
+  over the lens catalog (mostly static) to find hot lenses, then a live "go-hard"
+  deep-dive against real ADLS Gen2 (`RS_TEST_LIVE_HNS`) on the ones that look
+  fragile. Likely hotspots: `aclose()`-during-in-flight (the BUG-219 analog); the
+  concurrency contract (the BK-287 cross-backend `AsyncBackend` clause must cover
+  `AsyncAzureBackend`); conflict / overwrite semantics; bridge concurrency under
+  load; and the **HNS-vs-flat cross-consistency lens** (the azurite emulator vs
+  real ADLS Gen2 divergence is a known hotspot). Audit semantics: report findings
+  and route them (conformance spine / live tier / docs); no fixes. The research
+  doc sequences a Graph broad-sweep first as the cheapest catalog check; this
+  item is the cross-backend generalization.
+
 ---
 
 ## Graph (OneDrive / SharePoint)
