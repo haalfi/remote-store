@@ -16,6 +16,19 @@ For usage guides, see [Backends](../../../guides/backends/index.md).
 | [SQLBlobBackend](sql-blob.md) | SQL database blob storage via SQLAlchemy |
 | [SQLQueryBackend](sql-query.md) | Read-only SQL query materialization via SQLAlchemy + PyArrow |
 
+## Async-native backends
+
+These backends run natively on the event loop under
+[`AsyncStore`](../aio/store.md); they live in `remote_store.aio.backends`.
+Any synchronous backend above also works under `AsyncStore` via the
+thread-pool [`SyncBackendAdapter`](../aio/adapters.md).
+
+| Class | Description |
+|-------|-------------|
+| [AsyncMemoryBackend](../aio/backends/memory.md) | In-memory async backend for testing |
+| [AsyncAzureBackend](../aio/backends/azure.md) | Native async Azure Blob Storage and ADLS Gen2 |
+| [GraphBackend](../aio/backends/graph.md) | Microsoft Graph backend (OneDrive, SharePoint, Teams files) — async-only |
+
 ## See also
 
 - [Backend guides](../../../guides/backends/index.md) — configuration and usage guides for all backends

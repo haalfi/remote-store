@@ -9,7 +9,7 @@ with `path` and `size` only.
 
 When you need a content hash regardless of backend, use the helpers in
 [`ext.write`](../reference/api/extensions/write.md) (sync) or
-[`aio.ext.write`](../reference/api/extensions/aio-write.md) (async). They compute the
+[`aio.ext.write`](../reference/api/aio/extensions/write.md) (async). They compute the
 digest client-side as bytes flow through the stream, so the hash is always
 available.
 
@@ -89,7 +89,7 @@ without buffering:
 ## See also
 
 - [`ext.write` API reference](../reference/api/extensions/write.md)
-- [`aio.ext.write` API reference](../reference/api/extensions/aio-write.md)
+- [`aio.ext.write` API reference](../reference/api/aio/extensions/write.md)
 - [`WriteResult` and `ContentDigest`](../reference/api/models.md#remote_store.WriteResult)
 - [Capabilities Matrix](../reference/capabilities-matrix.md) — `WRITE_RESULT_NATIVE` and `USER_METADATA` rows
 - [Concurrency guide](../explanation/concurrency.md) — atomicity semantics for `write_atomic` and `open_atomic`

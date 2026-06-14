@@ -236,7 +236,7 @@ client = backend.unwrap(httpx.AsyncClient)
 - [Microsoft Graph access setup](graph-setup.md) — app registration, auth flows, drive resolution
 - [Async Store guide](../async.md) — the async API the backend is used through
 - [Capabilities matrix](../../reference/capabilities-matrix.md)
-- [API reference](../../reference/api/aio.md#graphbackend)
+- [API reference](../../reference/api/aio/backends/graph.md)
 - [Example script](../../../examples/backends/graph_backend.py)
 
 ## API Reference

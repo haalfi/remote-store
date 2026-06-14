@@ -2,6 +2,11 @@
 
 Complete reference for all public exports of `remote-store`.
 
+Symbols below are grouped by role. The import path is `remote_store` unless a
+group says otherwise: storage backends live in `remote_store.backends`,
+extensions in `remote_store.ext`, and the entire async surface in
+`remote_store.aio` (see the [Async section](#async), whose layout mirrors this page).
+
 ## Core
 
 | Class | Description |
@@ -12,6 +17,9 @@ Complete reference for all public exports of `remote-store`.
 | [Backend](backend.md) | Abstract base class for storage backends |
 
 ## Backends
+
+Synchronous storage backends (`remote_store.backends`). Native async-only
+backends — including Microsoft Graph — live under [Async › Backends](aio/backends/index.md).
 
 | Class | Description |
 |-------|-------------|
@@ -27,23 +35,28 @@ Complete reference for all public exports of `remote-store`.
 
 ## Async
 
+The `remote_store.aio` namespace — the async counterpart of the core API,
+laid out to mirror this page. See the [async overview](aio/index.md) for the
+full sync ↔ async map.
+
 | Class | Description |
 |-------|-------------|
-| [AsyncStore](aio.md#asyncstore) | Async counterpart to `Store` with coroutine methods for all operations |
-| [AsyncBackend](aio.md#asyncbackend) | Abstract base class for native async backends |
-| [SyncBackendAdapter](aio.md#syncbackendadapter) | Wraps any synchronous backend for async use via thread-pool executor |
-| [AsyncBackendSyncAdapter](aio.md#asyncbackendsyncadapter) | Wraps any `AsyncBackend` as a synchronous `Backend` via a private event loop |
-| [AsyncMemoryBackend](aio.md#asyncmemorybackend) | In-memory async backend for testing |
-| [GraphBackend](aio.md#graphbackend) | Microsoft Graph backend (OneDrive, SharePoint, Teams files) |
-| [AsyncWritableContent](aio.md#asyncwritablecontent) | Type alias: ``bytes`` or ``AsyncIterator[bytes]`` |
+| [AsyncStore](aio/store.md) | Async counterpart to `Store` with coroutine methods for all operations |
+| [AsyncBackend](aio/backend.md) | Abstract base class for native async backends |
+| [SyncBackendAdapter](aio/adapters.md#syncbackendadapter) | Wraps any synchronous backend for async use via thread-pool executor |
+| [AsyncBackendSyncAdapter](aio/adapters.md#asyncbackendsyncadapter) | Wraps any `AsyncBackend` as a synchronous `Backend` via a private event loop |
+| [AsyncMemoryBackend](aio/backends/memory.md) | In-memory async backend for testing |
+| [AsyncAzureBackend](aio/backends/azure.md) | Native async Azure Blob Storage and ADLS Gen2 |
+| [GraphBackend](aio/backends/graph.md) | Microsoft Graph backend (OneDrive, SharePoint, Teams files) |
+| [AsyncWritableContent](aio/adapters.md#asyncwritablecontent) | Type alias: ``bytes`` or ``AsyncIterator[bytes]`` |
 
 ## Utilities
 
 | Class | Description |
 |-------|-------------|
 | [SFTPUtils](sftp-utils.md) | Key loading and host-key verification helpers for SFTP |
-| [GraphAuth](aio.md#graphauth) | MSAL token provider (client-credentials / device-code) for Graph |
-| [GraphUtils](aio.md#graphutils) | Resolve a Graph `drive_id` from OneDrive / SharePoint / Teams targets |
+| [GraphAuth](aio/backends/graph.md#graphauth) | MSAL token provider (client-credentials / device-code) for Graph |
+| [GraphUtils](aio/backends/graph.md#graphutils) | Resolve a Graph `drive_id` from OneDrive / SharePoint / Teams targets |
 
 ## Configuration
 
@@ -123,5 +136,5 @@ Complete reference for all public exports of `remote-store`.
 | [ext.streams](extensions/streams.md) | Composable BinaryIO wrappers for progress and checksums |
 | [ext.transfer](extensions/transfer.md) | Upload, download, and cross-store transfer |
 | [ext.write](extensions/write.md) | Write helpers with guaranteed client-side content hashing |
-| [aio.ext.write](extensions/aio-write.md) | Async write helpers with guaranteed client-side content hashing |
+| [aio.ext.write](aio/extensions/write.md) | Async write helpers with guaranteed client-side content hashing |
 | [ext.yaml](extensions/yaml.md) | YAML config loader (PyYAML / ruamel.yaml) |

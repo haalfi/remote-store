@@ -8,6 +8,36 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-285 — API reference: mirror the package, split the async monolith, surface async-only backends**
+  spec: — · effort: M · audience: user.site, user.discoverability.human, contributor.tooling
+  The sync API reference mirrored the `remote_store` package (one page per
+  namespace member; backends under `backends/`, extensions under
+  `extensions/`), but the entire `remote_store.aio` namespace collapsed into a
+  single ~660-line `aio.md`. Three reader-facing symptoms followed: (1) the
+  index grouped symbols by role without disclosing the grouping basis or the
+  import paths; (2) async-only backends — `GraphBackend`, `AsyncAzureBackend`,
+  `AsyncMemoryBackend` — appeared only inside the async dump, so a reader
+  scanning Backends concluded Graph was not a backend; (3) `aio.md` mixed five
+  page-types (Rich class, Protocol/ABC, support classes, backends, utilities)
+  the framework documents as separate pages. A latent fourth: `aio.ext.write`
+  was filed under the sync `extensions/` directory.
+  Resolved with the **full mirror** option: added a `reference/api/aio/`
+  subtree whose internal shape parallels the top level —
+  `aio/store.md` (AsyncStore), `aio/backend.md` (AsyncBackend),
+  `aio/adapters.md` (SyncBackendAdapter, AsyncBackendSyncAdapter,
+  AsyncWritableContent), `aio/backends/` (memory, azure, graph — Graph now a
+  first-class backend page carrying GraphAuth + GraphUtils), and
+  `aio/extensions/write.md` (moved from `extensions/aio-write.md`). The async
+  section index (`aio/index.md`) carries a sync ↔ async counterpart table; the
+  main `index.md` states its grouping basis and cross-links async-native
+  backends from the Backends section, and `backends/index.md` gained an
+  "Async-native backends" block. `aio.md` and `extensions/aio-write.md` were
+  deleted; every inbound link (guides, the async-store example, the API index)
+  was repointed. Tooling: `scripts/check_api_docs.py` `PAGES` now points at the
+  split pages and `AsyncAzureBackend` left `_INDEX_EXEMPT` for a real index row.
+  Verified: `check-links`, `docs-check`, `gen-api-check`, `docs-build --strict`,
+  full test suite. Trace: `sdd/traces/BK-285-api-docs-async-mirror.yml`.
+
 - [x] **BK-259 — Graph `_range_fallback_paths` flag: scope to drive, self-heal, not backend-lifetime per-path set**
   spec: GR-015 · effort: S · audience: user.api, library.maintainer
   The per-instance `set[str]` of range-failed paths grew unbounded, never

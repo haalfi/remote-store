@@ -202,7 +202,7 @@ async counterpart of `remote_store.ext.write.write_with_hash`. See the
 
 ## See also
 
-- [API reference](../reference/api/aio.md) — `AsyncStore`, `AsyncBackend`, `AsyncAzureBackend`, `GraphBackend`, `SyncBackendAdapter`
+- [API reference](../reference/api/aio/index.md) — `AsyncStore`, `AsyncBackend`, `AsyncAzureBackend`, `GraphBackend`, `SyncBackendAdapter`
 - [Async-Sync Bridges](async-sync-bridges.md) — `AsyncBackendSyncAdapter` for calling an async backend from sync code
 - [Azure Backend](backends/azure.md) — sync Azure backend configuration and usage
 - [Graph Backend](backends/graph.md) — async-only OneDrive / SharePoint / Teams backend

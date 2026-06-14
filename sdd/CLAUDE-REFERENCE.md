@@ -46,8 +46,8 @@ Read this before starting. One line per trigger.
 | Extension                     | `__init__.py` exports (ADR-0013 rules), `pyproject` extras, README extensions table, `reference/api/extensions/*` + index + `_nav.yml`, guides, examples, CHANGELOG, BACKLOG |
 | Dependency                    | `pyproject` extras + pins, README install, docs prerequisites |
 | `CAPABILITIES` ClassVar       | `003-backend-adapter-contract.md` (BE-003), `test_capabilities.py`, `conformance/test_identity.py`, custom-backend guide, `examples/snippets/` |
-| `_GATING` dict                | `001-store-api.md` (STORE-gate entries), `test_store.py`, guides if a method's cap docs change, `store.md` admonitions (verified by `gen-api-check`, ID-170). Two independent constants: sync in `_store.py`, async in `aio/_async_store.py` (ID-194); both verified against their pages (`store.md`, `aio.md`) by `gen-api-check` (ID-172); keep both in step with their classes |
-| `_BACKEND_GATING` dict        | `003-backend-adapter-contract.md` (BE-027), `backend.md` admonitions (verified by `gen-api-check`, ID-171). Async counterpart `_ASYNC_BACKEND_GATING` (`gen_graph.py`, ASYNC-045a) → `aio.md` `AsyncBackend` admonitions (verified by `gen-api-check`, ID-172) |
+| `_GATING` dict                | `001-store-api.md` (STORE-gate entries), `test_store.py`, guides if a method's cap docs change, `store.md` admonitions (verified by `gen-api-check`, ID-170). Two independent constants: sync in `_store.py`, async in `aio/_async_store.py` (ID-194); both verified against their pages (`store.md`, `aio/store.md`) by `gen-api-check` (ID-172); keep both in step with their classes |
+| `_BACKEND_GATING` dict        | `003-backend-adapter-contract.md` (BE-027), `backend.md` admonitions (verified by `gen-api-check`, ID-171). Async counterpart `_ASYNC_BACKEND_GATING` (`gen_graph.py`, ASYNC-045a) → `aio/backend.md` `AsyncBackend` admonitions (verified by `gen-api-check`, ID-172) |
 | `__mirror__` attribute        | Async spec (mirror invariant), `gen_graph.py` (mirrors-edge), `tests/` mirror test on add/remove |
 
 #### Tests
@@ -145,8 +145,9 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | (key→Capability mapping     | sync constant minus `read_seekable` / `open_atomic`      |
 | in `aio/_async_store.py`)   | (no async equivalents). Consumed at runtime by           |
 |                            | `AsyncStore._gate()` and statically by                   |
-|                            | `scripts/gen_graph.py` (ID-194). `aio.md` `AsyncStore`   |
-|                            | admonitions verified by `hatch run gen-api-check` (ID-172)|
+|                            | `scripts/gen_graph.py` (ID-194). `aio/store.md`          |
+|                            | `AsyncStore` admonitions verified by `hatch run          |
+|                            | gen-api-check` (ID-172)                                   |
 | **`_BACKEND_GATING` dict**  | `sdd/specs/003-backend-adapter-contract.md` (BE-027),    |
 | (key→cap-name strings       | `docs-src/reference/api/backend.md` `!!! note            |
 | in `scripts/gen_graph.py`)  | "Requires …"` admonitions — verified by `hatch run       |
@@ -154,7 +155,7 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | (static-extraction only; Backend has no runtime           |
 |                            | `_gate()` equivalent).                                    |
 | **`_ASYNC_BACKEND_GATING`** | `sdd/specs/029-async-store-backend-api.md` (ASYNC-045a), |
-| (key→cap-name strings       | `docs-src/reference/api/aio.md` `AsyncBackend` `!!! note  |
+| (key→cap-name strings       | `docs-src/reference/api/aio/backend.md` `AsyncBackend` `!!! note  |
 | in `scripts/gen_graph.py`)  | "Requires …"` admonitions — verified by `hatch run        |
 |                            | gen-api-check` (ID-172). Mirrors `_BACKEND_GATING` minus  |
 |                            | `read_seekable` / `open_atomic`; same gen_graph.py        |
