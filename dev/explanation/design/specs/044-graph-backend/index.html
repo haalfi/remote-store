@@ -12391,6 +12391,29 @@ shared-helper design backend-local.
   when larger.
 - <code>5xx</code> responses during polling are treated as <code>pending</code>, not
   <code>failed</code>.
+- A non-throttle <code>4xx</code> on the poll request itself (e.g. <code>403</code>
+  permission revoked mid-operation, <code>404</code> monitor URL expired or
+  deleted) is <strong>terminal</strong>: the poller maps it through the GR-028
+  table (<code>status</code> + <code>error.code</code>) and raises immediately rather than
+  treating it as <code>pending</code>. Two <code>4xx</code> are excepted as transient and
+  stay <code>pending</code> like a <code>5xx</code>: <code>429</code> (throttle, honouring <code>Retry-After</code>)
+  and <code>408</code> (request timeout, retryable by convention). Without this, a
+  mid-operation terminal 4xx loops until
+  <code>copy_timeout</code>, which defaults to <code>None</code> (unbounded), hanging the
+  caller (BUG-218).
+- The <code>404</code> poll case is deliberately mapped to a terminal <strong>error</strong>,
+  not a terminal <strong>success</strong>. A <code>404</code> cannot be distinguished between a
+  monitor URL reaped <em>after</em> the operation completed (the op in fact
+  succeeded) and a monitor that is invalid or whose operation failed.
+  Erring toward raising is the safe default for a storage contract: a
+  false negative (raising on an op that did complete) is recoverable —
+  the caller re-checks and finds the item — whereas a false positive
+  (reporting success on an op that did not complete) is data-shaped and
+  silent. The residual risk is therefore a <em>rare</em> false negative, if
+  Graph reaps a <code>completed</code> monitor before the poll observes its terminal
+  <code>303</code>/<code>completed</code>; the short poll cadence (1 s floor) makes this
+  unlikely but not impossible, and it is not reproducible on the
+  consumer-OneDrive live tier.
 - A poll-response payload with <code>status: "failed"</code> has the shape
   <code>{"status": "failed", "error": {"code": str, "message": str, ...}}</code>
   with optional resource and operation identifiers. The poller maps

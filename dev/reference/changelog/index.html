@@ -13326,10 +13326,11 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BUG-218: Graph copy/move monitor — terminal <code>4xx</code> on the poll request, no unbounded <code>copy_timeout</code> hang</li>
 <li>BK-285: API reference restructured to mirror the package — async surface split into a <code>reference/api/aio/</code> subtree, async-native backends surfaced</li>
 <li>BK-261: Graph <code>overwrite=True</code> replace-409 quirk on SharePoint-backed drives documented as a hard backend limitation (no speculative guard taken; delete-then-write is the workaround)</li>
 <li>BK-266: Graph backend correctness edges</li>
-<li>BK-265: Graph guide &amp; docstring accuracy — present-tense setup guide, copy-paste-safe usage snippet, sync-vs-async extension matrix, complete <code>Raises:</code> clauses, read-side spooling and SharePoint-coverage caveats</li>
+<li>BK-265: Graph guide &amp; docstring accuracy — present-tense setup guide, copy-paste-safe usage snippets (incl. the async guide's drive-resolution snippet + prose, a missed M5 sibling now using <code>await aresolve_drive_id</code>), sync-vs-async extension matrix, complete <code>Raises:</code> clauses, read-side spooling and SharePoint-coverage caveats</li>
 <li>ID-127: Microsoft Graph backend setup guide</li>
 <li>ID-127: <code>ResourceLocked</code> error type for resources held by another session</li>
 <li>ID-127: config auto-wraps <code>client_secret</code> / <code>client_certificate</code> in <code>Secret</code></li>

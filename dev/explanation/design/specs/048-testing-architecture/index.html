@@ -10475,6 +10475,15 @@ without Docker), fixtures of the unavailable tier skip via their
 fixture-level <code>pytest.skip(...)</code> reason. Collection still succeeds
 and tests parametrised over fixtures of available tiers run. The CLI
 flag does not abort the session.</p>
+<p><strong>Running Stage-3 (live) fixtures needs <code>-m live</code> as well.</strong> Live
+fixtures additionally carry <code>pytest.mark.live</code>, and the default
+<code>addopts</code> carry <code>-m 'not live'</code>. So <code>--stage=3</code> alone is not enough —
+a live run needs <code>--stage=3</code> <strong>and</strong> <code>-m live</code> together (plus the
+per-backend opt-in env var). <code>--stage=3</code> without <code>-m live</code> collects
+the live fixtures but deselects every live-marked node; <code>-m live</code>
+without <code>--stage=3</code> finds none (the stage filter excludes them). For a
+single backend's live conformance, e.g.:
+<code>RS_TEST_LIVE_GRAPH=1 pytest tests/backends/conformance -k graph_live --stage=3 -m live</code>.</p>
 <p><strong>CI mapping:</strong> The default-CI job runs Stage 2. A separate
 manually-triggered or scheduled job runs Stage 3. Per-backend cost
 guardrails for Stage 3 are out of scope for this spec. See Notes.</p>
