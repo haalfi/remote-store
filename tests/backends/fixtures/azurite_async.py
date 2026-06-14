@@ -1,16 +1,20 @@
-"""``azurite_async_strict`` fixture: AsyncAzureBackend (strict) against Azurite.
+"""Async Azurite fixtures: ``azurite_async`` + ``azurite_async_strict``.
 
-Stage 2, real-local, async, ``strict_only``. Mirrors the sync ``azurite_strict``
-for the ID-211 file-ancestor opt-in. Exists to drive the file-ancestor
-conformance gate through ``AsyncAzureBackend._maybe_check_no_file_ancestor`` /
-``_acheck_no_file_ancestor`` / the SDK ``get_blob_properties`` closure
-end-to-end against a real (emulated) Azure target. Without it, that path
-has only stub-callable unit-test coverage in ``tests/backends/test_flat_ns.py``.
+Stage 2, real-local, async. The async siblings of the sync ``azurite`` /
+``azurite_strict`` pair, registered together via a parametrised factory.
 
-Only the strict variant is registered: the broader async Azurite emulator
-surface is out of scope for ID-211. ``strict_only=true`` keeps this fixture
-out of the default conformance enumeration; the async file-ancestor tests
-opt in via ``include_strict_only=True`` at the class parametrize.
+- ``azurite_async`` (BUG-217): the non-strict baseline. Gives the async Azurite
+  staged-write path offline conformance coverage — notably the large
+  WriteResult↔FileInfo consistency test, which before this ran on no offline
+  async fixture (only the live ``azure_live_async``, skipped without
+  ``RS_TEST_LIVE_HNS=1``).
+- ``azurite_async_strict`` (ID-211): ``strict_only`` variant driving the
+  file-ancestor gate through ``AsyncAzureBackend._maybe_check_no_file_ancestor``
+  / ``_acheck_no_file_ancestor`` / the SDK ``get_blob_properties`` closure
+  end-to-end against a real (emulated) Azure target — otherwise covered only by
+  the stub-callable unit tests in ``tests/backends/test_flat_ns.py``.
+  ``strict_only=true`` keeps it out of the default enumeration; the
+  file-ancestor tests opt in via ``include_strict_only=True``.
 """
 
 from __future__ import annotations
@@ -34,39 +38,43 @@ _LOG = logging.getLogger(__name__)
 _CONTAINERS: dict[int, tuple[str, object]] = {}
 
 
-def _factory() -> AsyncBackend:
-    if INFRA.azurite_conn_str is None:
-        pytest.skip(f"Azure SDK not installed or Azurite not reachable on {AZURITE_HOST}:{AZURITE_PORT}")
-    from azure.storage.blob import BlobServiceClient
+def _make_factory(reject_write_under_file_ancestor: bool):
+    def _factory() -> AsyncBackend:
+        if INFRA.azurite_conn_str is None:
+            pytest.skip(f"Azure SDK not installed or Azurite not reachable on {AZURITE_HOST}:{AZURITE_PORT}")
+        from azure.storage.blob import BlobServiceClient
 
-    from remote_store.aio.backends._azure import AsyncAzureBackend
+        from remote_store.aio.backends._azure import AsyncAzureBackend
 
-    container = f"conformance-{uuid.uuid4().hex[:8]}"
-    # Container provisioning uses the sync SDK because it's a one-shot
-    # setup/teardown step; the backend under test exercises the async SDK.
-    service = BlobServiceClient.from_connection_string(INFRA.azurite_conn_str)
-    try:
-        service.create_container(container)
-    except Exception:
-        service.close()
-        raise
-    # Construct the backend inside a guard so a failure during AsyncAzureBackend
-    # __init__ (validation error, import-path drift) doesn't leak the just-
-    # created container — _CONTAINERS registration only happens on success, so
-    # without the guard the teardown path never reaches it.
-    try:
-        backend = AsyncAzureBackend(
-            container=container,
-            connection_string=INFRA.azurite_conn_str,
-            reject_write_under_file_ancestor=True,
-        )
-    except Exception:
-        with contextlib.suppress(Exception):
-            service.delete_container(container)
-        service.close()
-        raise
-    _CONTAINERS[id(backend)] = (container, service)
-    return backend
+        container = f"conformance-{uuid.uuid4().hex[:8]}"
+        # Container provisioning uses the sync SDK because it's a one-shot
+        # setup/teardown step; the backend under test exercises the async SDK.
+        service = BlobServiceClient.from_connection_string(INFRA.azurite_conn_str)
+        try:
+            service.create_container(container)
+        except Exception:
+            service.close()
+            raise
+        # Construct the backend inside a guard so a failure during
+        # AsyncAzureBackend __init__ (validation error, import-path drift)
+        # doesn't leak the just-created container — _CONTAINERS registration
+        # only happens on success, so without the guard the teardown path
+        # never reaches it.
+        try:
+            backend = AsyncAzureBackend(
+                container=container,
+                connection_string=INFRA.azurite_conn_str,
+                reject_write_under_file_ancestor=reject_write_under_file_ancestor,
+            )
+        except Exception:
+            with contextlib.suppress(Exception):
+                service.delete_container(container)
+            service.close()
+            raise
+        _CONTAINERS[id(backend)] = (container, service)
+        return backend
+
+    return _factory
 
 
 async def _aclose(backend: AsyncBackend) -> None:
@@ -96,14 +104,15 @@ def _capabilities() -> frozenset:
     return frozenset(AsyncAzureBackend.CAPABILITIES)
 
 
-_meta = load_fixture("azurite_async_strict")
-register(
-    BackendFixture(
-        factory=_factory,
-        capabilities=_capabilities(),
-        aclose=_aclose,
-        cleanup=_cleanup,
-        marks=(pytest.mark.requires_docker,),
-        **_meta.to_kwargs(),
+for _name in ("azurite_async", "azurite_async_strict"):
+    _meta = load_fixture(_name)
+    register(
+        BackendFixture(
+            factory=_make_factory(_meta.rejects_write_under_file_ancestor),
+            capabilities=_capabilities(),
+            aclose=_aclose,
+            cleanup=_cleanup,
+            marks=(pytest.mark.requires_docker,),
+            **_meta.to_kwargs(),
+        )
     )
-)

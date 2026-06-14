@@ -952,14 +952,21 @@ _WRITE_OPS = [
 _ASYNC_LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {}
 _ASYNC_RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {}
 # Large/streamed-path divergence, keyed by *fixture* name (not backend.name) —
-# the async analogue of test_atomic.py's _LARGE_RICH_FIELDS_XFAIL. Empty: BUG-216
-# was the lone entry and it is an Azurite emulator-only gap. The only non-strict
-# async Azure fixture running this test is azure_live_async (live HNS), which is
-# verified consistent, so no async entry is needed. (A non-strict async Azurite
-# baseline does not exist yet — see BUG-217.) Keyed on _fixture_record(...).name
-# so a future emulator entry cannot also mask the live lane, which shares
-# backend.name "async-azure" with the emulator.
-_ASYNC_LARGE_RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {}
+# the async analogue of test_atomic.py's _LARGE_RICH_FIELDS_XFAIL. Keyed on
+# _fixture_record(...).name (not backend.name) so the emulator entry below cannot
+# also mask the live azure_live_async lane, which shares backend.name
+# "async-azure" with the emulator (the masking bug BUG-216 removed). The live
+# lane runs strict and is verified consistent.
+_ASYNC_LARGE_RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {
+    "azurite_async": (
+        "BUG-216: Azurite does not persist Content-MD5 on block-list commit, so the staged "
+        "blob's get_file_info().digest is None while WriteResult.digest carries the commit "
+        "response's MD5 — they diverge. Azurite emulator-fidelity gap only: real ADLS Gen2 "
+        "stores the MD5 and is verified consistent live (azure_live_async, both ops). "
+        "strict=True so a future Azurite that starts persisting it fails loud to prompt removal.",
+        True,
+    ),
+}
 
 
 class TestAsyncWriteResultConformance:

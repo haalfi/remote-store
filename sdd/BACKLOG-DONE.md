@@ -8,6 +8,28 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-217 — Register a non-strict `azurite_async` fixture for the large-write consistency path**
+  spec: WR-001a · effort: S · audience: infra.test
+  BUG-216's resolution left the async large/streamed WriteResult↔FileInfo
+  consistency test (`test_large_streamed_write_result_matches_file_info`) running
+  on **no offline** async fixture: the sync side had the non-strict `azurite`
+  baseline, but the async side only had `azurite_async_strict` (`strict_only`,
+  excluded from default enumeration), so the test ran solely on the live
+  `azure_live_async` (skipped without `RS_TEST_LIVE_HNS=1`). Registered a
+  non-strict **`azurite_async`** fixture mirroring the sync `azurite`
+  (`large_write_distinct = true`, flat-NS, not `strict_only`): added the TOML
+  entry and refactored `azurite_async.py` to register both the baseline and the
+  strict variant via a parametrised `_make_factory(reject_…)`, matching the sync
+  `azurite.py` shape. Pinned the emulator gap on the async side with an
+  `"azurite_async"` entry in `_ASYNC_LARGE_RICH_FIELDS_XFAIL` (`strict=True`,
+  keyed on the fixture name so it cannot mask the live lane). Updated the
+  `test_bk286_large_write_distinct_opt_in_set` opted-in set. Verified against the
+  Azurite emulator (`--stage=2 -k azurite_async`): full async conformance is
+  96 passed / 40 skipped / 2 strict XFAIL (the staged-path divergence), no
+  unexpected failures, and the refactor leaves `azurite_async_strict`
+  file-ancestor coverage intact. No CHANGELOG (infra.test). Trace:
+  `sdd/traces/bug-217-azurite-async-baseline.yml`.
+
 - [x] **BUG-216 — Azure large/block-staged `WriteResult.digest` vs `get_file_info().digest`: Azurite emulator gap, not a backend defect**
   spec: WR-001a · effort: S · audience: infra.test, contributor.process
   Filed by BK-286 when the new `test_large_streamed_write_result_matches_file_info`

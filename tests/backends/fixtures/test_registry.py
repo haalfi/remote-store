@@ -206,6 +206,7 @@ class TestRegistryShape:
         opted_in = {f.name for f in all_fixtures() if f.large_write_distinct}
         assert opted_in == {
             "azurite",
+            "azurite_async",
             "azure_live",
             "azure_live_async",
             "s3_live",
