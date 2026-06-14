@@ -188,7 +188,7 @@ deadlock-free. The items below are the divergences and the unspecified contract.
   validation. The review built a re-runnable harness for the live probes.
 
 - [ ] **BK-290 — Graph async I/O robustness under concurrent load**
-  spec: GR-008, GR-034 · effort: S · audience: user.api, library.maintainer
+  spec: GR-008, GR-019 · effort: S · audience: user.api, library.maintainer
   Two independent I/O-robustness gaps surfaced by the review:
   1. **No `httpx.Limits` exposed.** The shared client uses the silent 100-conn
      default; very high fan-out surfaces as opaque `BackendUnavailable`. Expose a
