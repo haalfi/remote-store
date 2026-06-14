@@ -289,3 +289,9 @@ argument 'config'` (BUG-178, BUG-185).
 - Callers who want caching re-enable it via `client_options` or the `ext.cache` extension.
 
 **Scope:** Applies to both `S3Backend` and `S3PyArrowBackend` (both use the `_S3Base._build_s3fs_kwargs()` builder).
+
+### S3-028: Concurrent-Use Posture { #s3-028 }
+
+**Invariant:** `S3Backend` is `thread_safe` (the BE-028 default): a single instance is safe to share across threads. The underlying `boto3` client — and the `s3fs` filesystem, which runs its own dedicated event-loop thread — is documented thread-safe for concurrent per-instance use; each operation is atomic at the object level (S3 has no native directory state to corrupt). `move` / `copy` remain copy-then-delete and are therefore not atomic across the pair (CAP-007, BE-018), independent of thread-safety.
+
+**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md) (BE-028).

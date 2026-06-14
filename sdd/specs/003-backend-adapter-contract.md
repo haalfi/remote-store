@@ -402,3 +402,51 @@ raising `InvalidPath`. All other operations MUST raise appropriate errors.
 **Enforcement:** Runtime capability enforcement for these methods is performed by `Store._gate()`, not by `Backend` directly. `_BACKEND_GATING` is the authoritative source for graph-IR generation only; keeping it in sync with the Backend ABC is enforced by `tests/scripts/test_gen_graph.py::test_backend_gating_keys_match_backend_members`.
 **Async counterpart:** `AsyncBackend` carries the same table minus `read_seekable` / `open_atomic` in `_ASYNC_BACKEND_GATING` — see [ASYNC-045a](029-async-store-backend-api.md).
 **See also:** `sdd/CLAUDE-REFERENCE.md` ripple-check row for `_BACKEND_GATING`.
+
+---
+
+## Concurrency
+
+### BE-028: Concurrent-Use Posture
+
+**Invariant:** Every concrete `Backend` declares a **concurrent-use posture**,
+one of two values:
+
+- **`thread_safe`** (the default — a backend spec need not restate it): a single
+  instance is safe to share across threads, and each `Backend` operation is
+  atomic with respect to other operations on the same instance.
+- **`single_connection`**: a single instance is **not** safe under concurrent
+  use — it wraps a non-thread-safe native client (e.g. one SFTP channel, or a
+  `urllib` opener whose redirect counter is shared). Such a backend MUST document
+  the posture in its spec **and** class docstring, and MUST state the remedy: one
+  instance per thread, or an external serializing wrapper.
+
+No backend provides multi-operation transactionality: atomicity is per-operation
+only (MEM-026), and ordering between concurrent callers is not guaranteed.
+
+**Postconditions:**
+- `thread_safe` is the posture of `LocalBackend` (stateless; delegates to
+  `os`/`shutil`, serialised by the kernel), `MemoryBackend` (a single
+  `threading.Lock`, MEM-025), the cloud and SQL backends (their native clients —
+  the boto3/s3fs client, the Azure SDK service clients, the SQLAlchemy
+  engine/pool — are documented thread-safe for concurrent per-instance use), and
+  `GraphBackend` on the async axis (GR-059).
+- `single_connection` is the posture of `SFTPBackend` (SFTP-029) and
+  `ReadOnlyHttpBackend` on its default `urllib` transport (HTTP-CONC-001).
+- An **undeclared** posture is a contract violation, not a silent default: every
+  concrete backend states its posture, or inherits the `thread_safe` default by
+  the terms of this clause (`LocalBackend`, which has no numbered spec, is
+  `thread_safe` by this paragraph).
+
+**Rationale:** STORE-007 promises a `Store` is "safe to share across threads,"
+but a `Store` is immutable and merely delegates — the guarantee bottoms out in
+the backend. This clause turns "thread-safe" from an unstated assumption into an
+explicit per-backend obligation a caller can read from the spec without reading
+source. Like CAP-007's quality flags, declaring the posture gates no method; it
+documents a property every method has. The posture is the authoritative source
+for the machine-readable `concurrency` registry field the cross-backend
+concurrency conformance lane tests against.
+
+**See also:** [001-store-api.md](001-store-api.md) (STORE-007),
+[013-memory-backend.md](013-memory-backend.md) (MEM-025/026),
+[029-async-store-backend-api.md](029-async-store-backend-api.md) (ASYNC-094).

@@ -269,3 +269,24 @@ the backend persists newly accepted host keys to disk on disconnect.
 - Save failures are suppressed — they must not prevent connection teardown.
 - Inline keys (`known_host_keys` parameter, config dict, or env var) are never
   persisted to disk.
+
+## Concurrency
+
+### SFTP-029: Concurrent-Use Posture
+
+**Invariant:** `SFTPBackend` is `single_connection` (the BE-028 non-default
+posture): a single instance drives one paramiko `SFTPClient` over one SSH
+channel, which is **not** safe for concurrent use. Concurrent operations on one
+instance race on the shared channel and may interleave or corrupt protocol
+state.
+
+**Remedy:** Use one instance per thread, or drive it through
+`AsyncBackendSyncAdapter` (which funnels concurrent callers onto a single
+private loop and serializes them — ASYNC-089). A `single_connection` backend
+wrapped by `SyncBackendAdapter` and driven with `asyncio.gather` is **not** safe
+(ASYNC-094). This pins the caveat previously stated only in the class docstring
+and `docs-src/guides/async.md`.
+
+**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
+(BE-028), [029-async-store-backend-api.md](029-async-store-backend-api.md)
+(ASYNC-094).

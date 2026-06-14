@@ -302,3 +302,26 @@ tokens.
 503, 504 and connection errors) are retried according to `RetryPolicy` fields:
 `max_attempts`, `backoff_base`, `backoff_max`, `jitter`, `timeout`. The
 `Retry-After` header is honoured when present.
+
+## Concurrency
+
+### HTTP-CONC-001: Concurrent-Use Posture
+
+**Invariant:** `ReadOnlyHttpBackend`'s posture depends on the selected
+transport (HTTP-TR-001):
+
+- On the stdlib `urllib` baseline the backend is `single_connection` (the
+  BE-028 non-default posture): the `urllib` opener carries a shared
+  redirect counter and is not safe for concurrent use on one instance.
+- With an injected `httpx` or `requests` session the backend is
+  `thread_safe`: those clients are documented safe for concurrent
+  per-instance use, and each read is an independent request.
+
+**Remedy (urllib path):** Use one instance per thread, install the `httpx` or
+`requests` extra, or drive the backend through `AsyncBackendSyncAdapter`
+(ASYNC-089). A `single_connection` backend wrapped by `SyncBackendAdapter` and
+driven with `asyncio.gather` is **not** safe (ASYNC-094).
+
+**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
+(BE-028), [029-async-store-backend-api.md](029-async-store-backend-api.md)
+(ASYNC-094).

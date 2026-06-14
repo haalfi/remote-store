@@ -960,9 +960,15 @@ class TestCloseSemantics:
 
 
 class TestConcurrency:
-    """ASYNC-089: N=32 threads, M≥16 iterations each, no deadlock."""
+    """ASYNC-089: N=32 threads, M≥16 iterations each, no deadlock.
+
+    Also pins ASYNC-094's safe half: funnelling N concurrent sync callers onto
+    the adapter's single private loop serializes them deadlock-free, so an
+    ``AsyncBackendSyncAdapter`` wrapping an async backend is safe to share.
+    """
 
     @pytest.mark.spec("ASYNC-089")
+    @pytest.mark.spec("ASYNC-094")
     def test_concurrent_calls_no_deadlock(self) -> None:
         """Mixed read/write/list/delete with per-thread payload tagging.
 

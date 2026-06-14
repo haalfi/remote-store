@@ -678,3 +678,42 @@ connectivity probe of its own, but it also does not swallow the
 backend's probe errors.
 **See also:** [026-health-check.md](026-health-check.md), ASYNC-057,
 ASYNC-087.
+
+### ASYNC-094: Concurrent-Use Posture (Async Mirror) { #async-094 }
+
+**Invariant:** Every concrete `AsyncBackend` declares a concurrent-use posture —
+the async mirror of BE-028. The **default** is: one instance is safe for
+concurrent coroutines driven by a **single** event loop, and is **never** safe
+across multiple event loops — each loop needs its own instance (ASYNC-055
+applied at the backend layer). Correctness rests on cooperative single-threaded
+scheduling, not locks: state mutated only between `await` points is race-free on
+one loop. An `AsyncBackend` whose shared transport is not loop-confined MUST
+document the exception.
+
+**Bridge asymmetry — the cross-adapter rule callers MUST know:** the two adapters
+that cross the sync/async boundary do **not** confer the same safety, because the
+direction of the bridge determines it.
+
+- `AsyncBackendSyncAdapter` (async backend → sync callers; e.g. a `GraphBackend`
+  driven synchronously) owns one private event loop in a daemon thread and
+  **serialises** every concurrent sync caller onto it. It is therefore safe under
+  the ASYNC-089 invariant (≥32 concurrent sync threads, no deadlock, no
+  result/exception crossover). Wrapping a loop-safe async backend this way
+  *manufactures* a thread-safe sync backend.
+- `SyncBackendAdapter` (sync backend → async callers) dispatches each call via
+  `asyncio.to_thread` onto a **thread pool**, adding no serialisation of its own.
+  It is safe **only if the wrapped sync backend is `thread_safe`** (BE-028).
+  Wrapping a `single_connection` backend (SFTP's single paramiko channel, or
+  `urllib`'s shared opener) and driving it with `asyncio.gather` is **unsafe** —
+  concurrent `to_thread` workers touch the same non-thread-safe client. The
+  remedy is BE-028's: one instance per worker, or an external lock.
+
+**Rationale:** sync→async *borrows* the backend's thread-safety (or its lack);
+async→sync *manufactures* thread-safety by funnelling through one loop. Encoding
+the asymmetry stops callers from assuming `SyncBackendAdapter` confers the
+protection `AsyncBackendSyncAdapter` does.
+
+**See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
+(BE-028), ASYNC-055 (one-loop rule), ASYNC-089 (serialisation invariant),
+[009-sftp-backend.md](009-sftp-backend.md) (SFTP-029),
+[../adrs/0025-async-to-sync-backend-adapter.md](../adrs/0025-async-to-sync-backend-adapter.md).

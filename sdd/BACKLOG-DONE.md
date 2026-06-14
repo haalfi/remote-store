@@ -8,6 +8,30 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-287 — Cross-backend concurrency-posture contract: `GR-059` + per-backend clauses**
+  spec: BE-028 (new), ASYNC-094 (new), GR-059 (new), 008, 009, 011, 012, 032, 040, 041 · effort: M · audience: contributor.process, user.api_docs
+  `STORE-007`/`ASYNC-055` promise a shared `Store`/`AsyncStore` is concurrency-safe,
+  but a `Store` merely delegates, so the promise bottoms out in the backend — and
+  the backend-level obligation was unstated (spec 044 had zero concurrency text;
+  SFTP's caveat lived only in `async.md` + the docstring). Added a two-value
+  posture taxonomy (`thread_safe` default / `single_connection`) as an explicit
+  per-backend spec obligation: `BE-028` (003) for the sync contract, `ASYNC-094`
+  (029) for the async mirror encoding the bridge asymmetry
+  (`AsyncBackendSyncAdapter` safe vs `SyncBackendAdapter` + `single_connection`
+  unsafe), and `GR-059` (044) declaring Graph's posture — one-loop-safe, no
+  `Lock`, bridged-sync-safe unlike SFTP, `overwrite=False` server-atomic
+  create-if-absent (live-confirmed consumer-OneDrive), close-terminal (GR-051),
+  with the move-race error-fidelity gap pinned as a known limitation. Per-backend
+  posture clauses added for S3 (S3-028), S3-PyArrow (S3PA-028, Tier-3 probe
+  pending), Azure (AZ-037), SFTP (SFTP-029, pins the docstring caveat), HTTP
+  (HTTP-CONC-001, transport-dependent), SQLBlob (SQL-BLOB-072), SQLQuery
+  (SQL-QUERY-092). User chose all-backends scope. Spec-only (no code change);
+  no ADR (a `bool` flag under asyncio's single thread, not a new mechanism).
+  The taxonomy is the authoritative source for **BK-289**'s registry
+  `concurrency` enum, which later converts the subset its conformance fixtures
+  cover (S3-028, AZ-037, SFTP-029) to real marks; S3PA-028 (live-probe only) and
+  the SQL clauses (no conformance fixture) stay allowlisted. Trace: `sdd/traces/bk-287-concurrency-contract.yml`.
+
 - [x] **BUG-219 — `GraphBackend.aclose()` concurrent with in-flight ops raises untyped `RuntimeError`**
   spec: GR-051 · effort: S · audience: user.api, library.maintainer
   Found in the Graph concurrency / DX review and live-reproduced (FastAPI-shutdown

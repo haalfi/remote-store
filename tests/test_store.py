@@ -985,6 +985,7 @@ class TestStoreThreadSafety:
     """
 
     @pytest.mark.spec("STORE-007")
+    @pytest.mark.spec("BE-028")
     def test_shared_store_concurrent_reads(self) -> None:
         import threading
 

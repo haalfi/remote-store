@@ -95,8 +95,10 @@ and the highest ID already in this file, then take the next integer. Run
   over the lens catalog (mostly static) to find hot lenses, then a live "go-hard"
   deep-dive against real ADLS Gen2 (`RS_TEST_LIVE_HNS`) on the ones that look
   fragile. Likely hotspots: `aclose()`-during-in-flight (the BUG-219 analog); the
-  concurrency contract (the BK-287 cross-backend `AsyncBackend` clause must cover
-  `AsyncAzureBackend`); conflict / overwrite semantics; bridge concurrency under
+  concurrency contract (validate `AsyncAzureBackend` against the now-shipped
+  AZ-037 / ASYNC-094 posture clauses — does the live emulator/ADLS behaviour
+  match the declared `thread_safe` mirror?); conflict / overwrite semantics;
+  bridge concurrency under
   load; and the **HNS-vs-flat cross-consistency lens** (the azurite emulator vs
   real ADLS Gen2 divergence is a known hotspot). Audit semantics: report findings
   and route them (conformance spine / live tier / docs); no fixes. The research
@@ -126,22 +128,6 @@ deadlock-free. The items below are the divergences and the unspecified contract.
   cache path). Filed as `BK`, not `BUG`: an inspection finding (verified in
   `auth.py` `flush_cache`), not yet reproduced — a multi-process interleave repro
   would promote it.
-
-- [ ] **BK-287 — Graph concurrency contract: `GR-059` + cross-backend `AsyncBackend` clause**
-  spec: GR-059 (new), 003, 029 · effort: M · audience: contributor.process, user.api_docs
-  Spec 044 has zero concurrency text; the obligation that makes `ASYNC-055`
-  ("`AsyncStore` safe for concurrent coroutines on one loop") true for
-  `GraphBackend` is unstated. Add `GR-059` characterizing: one instance safe for
-  concurrent coroutines on a single loop (never across loops); `overwrite=False`
-  is a **server-side atomic create-if-absent** (live-confirmed — the one place
-  Graph is *stronger* than `concurrency.md`'s blanket TOCTOU claim); the bridged
-  sync path is safe (single loop), *unlike* SFTP. Add a cross-backend
-  concurrent-use-posture clause to spec 003/029 so STORE-007/ASYNC-055 become an
-  obligation each backend satisfies or carves out, not orphaned Store-layer
-  claims. No new ADR (consequence of ADR-0012/0025) unless BUG-219's fix
-  introduces a lock. Also pin the minor error-fidelity gap: the move-race loser
-  sometimes surfaces a generic `RemoteStoreError` instead of a typed
-  `NotFound`/`AlreadyExists`.
 
 - [ ] **BK-288 — Graph concurrency & consistency documentation**
   spec: — · effort: M · audience: user.site, user.api_docs
