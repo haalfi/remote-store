@@ -62,12 +62,18 @@ VALID_STAGES: frozenset[int] = frozenset({1, 2, 3})
 VALID_KINDS: frozenset[str] = frozenset({"pure", "mocked", "real-local", "real-live", "replay"})
 VALID_TRANSPORTS: frozenset[str] = frozenset({"http", "ssh", "fs", "memory", "sql"})
 VALID_CONTAINERS: frozenset[str] = frozenset({"minio", "azurite", "sftp", "none"})
+# Concurrency posture (BK-289). The machine-readable shadow of BK-287's
+# cross-backend concurrent-use-posture clause. COUPLING: if BK-287 settles on
+# different posture names than research-bk-289-concurrency-test-lane.md §4.1
+# proposes, update this set + backends.toml's enum together.
+VALID_CONCURRENCY: frozenset[str] = frozenset({"thread_safe", "single_connection"})
 
 
 Stage = Literal[1, 2, 3]
 Kind = Literal["pure", "mocked", "real-local", "real-live", "replay"]
 Transport = Literal["http", "ssh", "fs", "memory", "sql"]
 Container = Literal["minio", "azurite", "sftp", "none"]
+Concurrency = Literal["thread_safe", "single_connection"]
 
 
 # ---------------------------------------------------------------------------
@@ -90,6 +96,7 @@ class BackendDescriptor:
     sources: tuple[str, ...]
     async_sources: tuple[str, ...]
     transport: Transport
+    concurrency: Concurrency
     flat_namespace: bool
     self_op_supported: bool
     rejects_write_under_file_ancestor: bool
@@ -118,6 +125,7 @@ class FixtureDescriptor:
     strict_only: bool
     large_write_distinct: bool
     transport: Transport
+    concurrency: Concurrency
     live_opt_in_env: str | None = None
     live_creds_env: tuple[str, ...] = field(default_factory=tuple)
 
@@ -143,6 +151,7 @@ class FixtureDescriptor:
             "strict_only": self.strict_only,
             "large_write_distinct": self.large_write_distinct,
             "transport": self.transport,
+            "concurrency": self.concurrency,
         }
 
 
@@ -166,6 +175,12 @@ def _parse_backend(name: str, raw: dict[str, Any]) -> BackendDescriptor:
     transport = raw.get("transport")
     if transport not in VALID_TRANSPORTS:
         raise ValueError(f"backend.{name}: transport must be one of {sorted(VALID_TRANSPORTS)}, got {transport!r}")
+    # BK-289: concurrency posture is required per family (no default) so a new
+    # backend cannot float into the conformance lane with an unstated posture —
+    # the carve-out guards must bind to an explicit declaration (research §6 #2).
+    concurrency = raw.get("concurrency")
+    if concurrency not in VALID_CONCURRENCY:
+        raise ValueError(f"backend.{name}: concurrency must be one of {sorted(VALID_CONCURRENCY)}, got {concurrency!r}")
     flat_ns = raw.get("flat_namespace", False)
     self_op = raw.get("self_op_supported", True)
     # ID-211: family default is "rejects = not flat_ns" (hierarchical backends
@@ -184,6 +199,7 @@ def _parse_backend(name: str, raw: dict[str, Any]) -> BackendDescriptor:
         sources=_require_str_list(raw.get("sources", []), where=f"backend.{name}.sources"),
         async_sources=_require_str_list(raw.get("async_sources", []), where=f"backend.{name}.async_sources"),
         transport=transport,  # type: ignore[arg-type]
+        concurrency=concurrency,  # type: ignore[arg-type]
         flat_namespace=flat_ns,
         self_op_supported=self_op,
         rejects_write_under_file_ancestor=rejects,
@@ -268,6 +284,7 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
         strict_only=strict_only,
         large_write_distinct=large_write_distinct,
         transport=backend.transport,
+        concurrency=backend.concurrency,
         live_opt_in_env=live_opt_in_env,
         live_creds_env=live_creds_env,
     )
@@ -334,11 +351,13 @@ def load_fixture(name: str) -> FixtureDescriptor:
 
 
 __all__ = [
+    "VALID_CONCURRENCY",
     "VALID_CONTAINERS",
     "VALID_KINDS",
     "VALID_STAGES",
     "VALID_TRANSPORTS",
     "BackendDescriptor",
+    "Concurrency",
     "Container",
     "FixtureDescriptor",
     "Kind",

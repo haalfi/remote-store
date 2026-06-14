@@ -429,6 +429,7 @@ markers = [
   "pbt: property-based test using Hypothesis",
   "extended_conformance: extended conformance suite derived from Dafny postconditions",
   "live: requires a real cloud account; opt-in via gating env vars (excluded by default addopts)",
+  "concurrency: posture-gated concurrency conformance lane (BK-289); selectable/excludable in isolation",
 ]
 
 [tool.pytest-gremlins]

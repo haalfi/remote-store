@@ -6,15 +6,30 @@
 #
 # Closed enums:
 #   transport: http | ssh | fs | memory | sql
+#   concurrency: thread_safe | single_connection
 #
 # Per-backend defaults that fixtures may override:
 #   flat_namespace      — true when the backend has no real directory entries
 #   self_op_supported   — true when move(p,p)/copy(p,p) is a safe no-op
+#
+# `concurrency` is the machine-readable shadow of BK-287's cross-backend
+# concurrent-use-posture clause (specs 003/029 + GR-059). It gates the
+# BK-289 concurrency conformance lane:
+#   thread_safe        — concurrent threads on ONE instance are safe
+#   single_connection  — one instance per thread; concurrent ops on one
+#                        instance race (SFTP shared paramiko socket, HTTP
+#                        shared redirect-counter opener)
+# COUPLING: until BK-287 lands the spec wording, these values track the
+# taxonomy proposed in research-bk-289-concurrency-test-lane.md §4.1. If
+# BK-287 settles on different posture names, update this enum + _loader's
+# VALID_CONCURRENCY together.
 
 [backend.azure]
 sources       = ["src/remote_store/backends/_azure.py", "src/remote_store/backends/_azure_common.py"]
 async_sources = ["src/remote_store/aio/backends/_azure.py"]
 transport     = "http"
+# Azure SDK service clients are immutable & thread-safe once constructed.
+concurrency   = "thread_safe"
 # Default to HNS-shape (real-live ADLS Gen2) so the conservative
 # Stage 3 fixture inherits correctly; the Azurite emulator overrides
 # to flat_namespace=true at the per-fixture level (BK-185).
@@ -28,12 +43,16 @@ self_op_supported = false
 [backend.s3]
 sources   = ["src/remote_store/backends/_s3.py", "src/remote_store/backends/_s3_base.py"]
 transport = "http"
+# s3fs runs its own dedicated event-loop thread; cross-thread use is safe.
+concurrency       = "thread_safe"
 flat_namespace    = true
 self_op_supported = true
 
 [backend.s3_pyarrow]
 sources   = ["src/remote_store/backends/_s3_pyarrow.py"]
 transport = "http"
+# pyarrow S3FileSystem (Arrow C++); thread_safe per S3PA-028 (Tier-3 live probe pending).
+concurrency       = "thread_safe"
 flat_namespace    = true
 self_op_supported = true
 
@@ -42,18 +61,31 @@ self_op_supported = true
 [backend.s3_boto3]
 sources   = ["src/remote_store/backends/_s3_boto3.py"]
 transport = "http"
+# boto3 *client* (not Session/resource) is thread-safe; the backend uses a client.
+concurrency       = "thread_safe"
 flat_namespace    = true
 self_op_supported = true
 
 [backend.sftp]
 sources   = ["src/remote_store/backends/_sftp.py"]
 transport = "ssh"
+# NOT thread-safe: single paramiko socket. One instance per thread (SFTP-guide).
+concurrency       = "single_connection"
 flat_namespace    = false
 self_op_supported = true
 
 [backend.sqlblob]
 sources   = ["src/remote_store/backends/_sqlalchemy.py"]
 transport = "sql"
+# single_connection for the TESTED config: the fixture uses
+# ``sqlite:///:memory:``, which SQLAlchemy backs with a SingletonThreadPool —
+# one *isolated* in-memory DB per thread, so a shared instance across threads
+# sees "no such table" (BK-289 discovery: the in-process stress proved it). A
+# pooled RDBMS (Postgres) SQLBlob would be thread_safe per the research doc, but
+# that config is untested here; the posture must reflect what is exercised
+# (research §6 #2: confirm, don't assume). The one-instance-per-thread carve-out
+# runs cleanly (each thread owns its engine and closes it in-thread).
+concurrency       = "single_connection"
 flat_namespace    = true
 self_op_supported = true
 
@@ -64,12 +96,16 @@ sources   = [
     "src/remote_store/backends/_http_requests.py",
 ]
 transport = "http"
+# NOT thread-safe: shared redirect-counter on the opener (_http.py docstring).
+concurrency       = "single_connection"
 flat_namespace    = true
 self_op_supported = false
 
 [backend.local]
 sources   = ["src/remote_store/backends/_local.py"]
 transport = "fs"
+# Effectively thread-safe: stateless, delegates to os/shutil.
+concurrency       = "thread_safe"
 flat_namespace    = false
 self_op_supported = true
 
@@ -77,12 +113,16 @@ self_op_supported = true
 sources       = ["src/remote_store/backends/_memory.py", "src/remote_store/backends/_memory_tree.py"]
 async_sources = ["src/remote_store/aio/backends/_memory.py"]
 transport     = "memory"
+# Fully thread-safe under a single coarse lock (MEM-025).
+concurrency       = "thread_safe"
 flat_namespace    = false
 self_op_supported = true
 
 [backend.dafny]
 sources   = ["tests/backends/dafny/_helpers.py"]
 transport = "memory"
+# In-process verification helper backend; in-process, thread_safe like memory.
+concurrency       = "thread_safe"
 flat_namespace    = false
 self_op_supported = true
 
@@ -98,5 +138,8 @@ async_sources = [
     "src/remote_store/aio/backends/_graph/utils.py",
 ]
 transport     = "http"
+# Safe for concurrent coroutines on ONE loop (never across loops); the bridged
+# sync path is single-loop-safe, unlike SFTP (proposed GR-059, BK-287).
+concurrency       = "thread_safe"
 flat_namespace    = false
 self_op_supported = true

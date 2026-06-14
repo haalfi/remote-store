@@ -146,37 +146,15 @@ deadlock-free. The items below are the divergences and the unspecified contract.
   alternative to documenting it: retrying Graph's `409`-under-`replace` as
   transient.
 
-- [ ] **BK-289 — Cross-backend concurrency conformance lane**
-  spec: TEST-007, 003, 029 · effort: L · audience: infra.test
-  Design: [research-bk-289-concurrency-test-lane.md](research/research-bk-289-concurrency-test-lane.md).
-  No test exercises concurrent ops on one instance for **any** backend except
-  in-process Memory, while STORE-007/CHILD-010/ASYNC-055 and several backends
-  claim thread-/coroutine-safety (audit-001 **M-14**, still open). Concurrency is
-  **per-backend and non-uniform** — Memory/Local/cloud/SQLBlob are thread-safe;
-  SFTP and HTTP are explicitly *not* — so the lane is **posture-gated**, not a
-  blanket thread-stress: each fixture declares a `concurrency` posture
-  (`thread_safe` / `single_connection`, sourced from `backends.toml` like
-  `transport`), and the lane tests each backend against its own declaration,
-  exactly as `fixture_params(Capability.X)` gates capability tests. Build a new
-  `tests/backends/conformance/test_concurrency.py` (+ `aio/` sibling) in three
-  tiers: **(1)** deterministic Stage-1 contract guards — in-process
-  ThreadPool stress over the `thread_safe` set (concurrent reads, distinct-key
-  writes, read-after-write) plus the create-once-race `overwrite=False` atomicity
-  contract via respx (Graph) / moto (S3) 409-mapping (cassette replay is **not**
-  concurrency-safe), the stream-vs-mutate eTag/delete branches, the BUG-219 aclose
-  no-raise/no-warning property, and bridge deadlock-freedom; **(2)** carve-out
-  guards over the `single_connection` set (SFTP/HTTP: one-instance-per-thread
-  works, shared instance is not stressed) plus the ASYNC-055 cross-loop negative
-  guard; **(3)** live race probes behind `RS_TEST_LIVE_*` (concurrent
-  create/overwrite/move/copy, N-parallel large uploads, Graph token-call
-  counting). Consolidate the scattered existing tests (STORE-007, CHILD-010,
-  memory ASYNC-055, the sync-adapter SFTP carve-out) into the lane rather than
-  duplicating. Mirror the public-`Store`-surface subset (create-once race,
-  read-after-write, ThreadPool + `ext.batch`) into `../remote-store-expectations`
-  as black-box DX validation (separate-repo sub-task). **Depends on BK-287** to
-  declare the posture clause in specs 003/029 — co-sequence: posture clause +
-  registry field first, lane second. Closing Tier 1 discharges M-14. The review
-  built a re-runnable harness for the live probes.
+- [ ] **BK-293 — Mirror the concurrency Store-surface into `../remote-store-expectations`**
+  spec: — · effort: S · audience: infra.test
+  Carved out of BK-289 (the in-repo lane shipped; see BACKLOG-DONE). Mirror the
+  public-`Store`-surface concurrency subset — create-once race, read-after-write,
+  `ThreadPoolExecutor` + `ext.batch` — into the separate
+  `../remote-store-expectations` repo as black-box DX validation, the way that
+  repo validates the rest of the surface. Out of scope for the BK-289 PR because
+  that repo is not present in this container. Keep the assertions invariant-only
+  and posture-aware (do not thread-stress a shared SFTP/HTTP store).
 
 - [ ] **BK-290 — Graph async I/O robustness under concurrent load**
   spec: GR-008, GR-019 · effort: S · audience: user.api, library.maintainer
@@ -552,6 +530,27 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 ---
 
 ## Maintenance / Long-horizon
+
+- [ ] **BUG-220 — LocalBackend `_resolve` races on concurrent intermediate-dir creation (Windows)**
+  spec: BE-008 · effort: S · audience: user.api, library.maintainer
+  Discovered by the BK-289 concurrency lane. `LocalBackend._resolve` does
+  `(self._root / path).resolve()` then `relative_to(self._root)` to reject
+  root escapes. `Path.resolve()` canonicalises against the filesystem, and on
+  Windows a directory that a sibling thread is concurrently creating
+  (`full.parent.mkdir(parents=True, exist_ok=True)`) transiently canonicalises
+  to a form (short 8.3 / in-flight final-path name) that is **not**
+  `relative_to` the init-time `self._root`, so a legitimate write raises a
+  spurious `InvalidPath("Path escapes root directory")`. Reproduced
+  deterministically: 8 threads writing distinct nested keys → 20/20 runs fail
+  when the intermediate dir is created concurrently, 0/20 when it is
+  pre-created (repro in the PR). The lane marks `local` thread-safe **write**
+  tests `xfail(strict=False)` on Windows pending this fix (concurrent *reads*
+  are unaffected). Fix must stay concurrency-safe **and** preserve the
+  symlink-escape rejection the current `resolve()` provides — a purely lexical
+  `os.path.normpath` + `commonpath` check loses symlink protection, so the fix
+  resolves the root once and validates containment without re-canonicalising
+  the (possibly in-flight) child. Confirm whether POSIX `realpath` exhibits the
+  same race before narrowing the fix to Windows.
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer

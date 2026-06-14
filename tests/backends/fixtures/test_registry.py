@@ -32,6 +32,7 @@ from tests.backends.fixtures import (
 # because they are not part of the runtime calling contract — only tests
 # pinning the closed-enum branches consume them.
 from tests.backends.fixtures._loader import (
+    VALID_CONCURRENCY,
     VALID_CONTAINERS,
     VALID_KINDS,
     VALID_STAGES,
@@ -132,8 +133,10 @@ class TestRegistryShape:
             assert f.large_write_distinct == desc.large_write_distinct
             assert f.transport == desc.transport, f"{f.name!r} transport drift"
             assert f.container == desc.container, f"{f.name!r} container drift"
+            assert f.concurrency == desc.concurrency, f"{f.name!r} concurrency drift"
             assert f.transport in VALID_TRANSPORTS
             assert f.container in VALID_CONTAINERS
+            assert f.concurrency in VALID_CONCURRENCY
 
     def test_live_env_fields_parse_on_descriptor(self) -> None:
         """``FixtureDescriptor`` carries the live-cloud env metadata that
@@ -219,6 +222,33 @@ class TestRegistryShape:
         assert by_name["s3_pyarrow_moto"].large_write_distinct is False
         assert by_name["graph_replay"].large_write_distinct is False
 
+    def test_bk289_concurrency_posture_is_declared_and_split(self) -> None:
+        """BK-289: every fixture carries a valid posture; pin the single_connection set.
+
+        The concurrency lane is posture-gated, so an undeclared or wrong posture
+        is the failure the carve-out guards cannot catch on their own (research
+        §6 #2: an undeclared posture must fail, not default). Pins the
+        load-bearing split: the ``single_connection`` set is the two non-thread-safe
+        transports (SFTP shared socket, HTTP shared opener) **plus** the
+        ``sqlite:///:memory:`` SQLBlob fixture (SingletonThreadPool gives each
+        thread an isolated DB); everything else is ``thread_safe``. A backend that
+        silently flips posture — or a new family that forgets to declare one —
+        trips here.
+        """
+        by_name = {f.name: f for f in all_fixtures()}
+        for f in all_fixtures():
+            assert f.concurrency in VALID_CONCURRENCY, f"{f.name!r} has invalid posture {f.concurrency!r}"
+        # The single_connection set: SFTP (shared socket), HTTP (shared opener),
+        # and sqlblob (the tested ``sqlite:///:memory:`` SingletonThreadPool
+        # config — one isolated in-memory DB per thread; BK-289 discovery).
+        single_conn_backends = {f.backend for f in all_fixtures() if f.concurrency == "single_connection"}
+        assert single_conn_backends == {"sftp", "http", "sqlblob"}, (
+            f"unexpected single_connection set: {sorted(single_conn_backends)}"
+        )
+        # Spot-check the in-process thread_safe anchors used by the Tier-1 lane.
+        assert by_name["memory"].concurrency == "thread_safe"
+        assert by_name["local"].concurrency == "thread_safe"
+
 
 def _valid_backend_raw() -> dict[str, object]:
     """Return a minimal valid raw dict for ``_parse_backend``.
@@ -226,7 +256,7 @@ def _valid_backend_raw() -> dict[str, object]:
     The negative-path tests below mutate one field at a time off this
     baseline so each test exercises a single branch.
     """
-    return {"transport": "fs", "sources": [], "async_sources": []}
+    return {"transport": "fs", "concurrency": "thread_safe", "sources": [], "async_sources": []}
 
 
 def _valid_fixture_raw() -> dict[str, object]:
@@ -270,6 +300,20 @@ class TestClosedEnumValidation:
         raw = _valid_backend_raw()
         raw["transport"] = transport
         with pytest.raises(ValueError, match="transport must be one of"):
+            _parse_backend("x", raw)
+
+    @pytest.mark.parametrize("concurrency", ["", "threadsafe", "THREAD_SAFE", "locked", None, 1])
+    def test_parse_backend_rejects_invalid_concurrency(self, concurrency: object) -> None:
+        raw = _valid_backend_raw()
+        raw["concurrency"] = concurrency
+        with pytest.raises(ValueError, match="concurrency must be one of"):
+            _parse_backend("x", raw)
+
+    def test_parse_backend_rejects_missing_concurrency(self) -> None:
+        """BK-289: posture is required per family — a new backend cannot omit it."""
+        raw = _valid_backend_raw()
+        del raw["concurrency"]
+        with pytest.raises(ValueError, match="concurrency must be one of"):
             _parse_backend("x", raw)
 
     @pytest.mark.parametrize("flat_ns", [0, 1, "yes", None, "true"])
@@ -406,6 +450,7 @@ class TestClosedEnumValidation:
         """
         result = _parse_backend("x", _valid_backend_raw())
         assert result.transport == "fs"
+        assert result.concurrency == "thread_safe"
         assert result.flat_namespace is False
         assert result.self_op_supported is True
 

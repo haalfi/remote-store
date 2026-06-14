@@ -262,7 +262,15 @@ class TestAdapterMoveCopyDelete:
 
 @pytest.mark.spec("ASYNC-031", "ASYNC-055")
 class TestAdapterConcurrency:
-    """``asyncio.to_thread`` dispatch under concurrent operations."""
+    """``asyncio.to_thread`` dispatch under concurrent operations.
+
+    The ``live_adapted_backend_concurrent`` SFTP exclusion below is the
+    precedent the BK-289 lane generalises: SFTP's ``single_connection`` posture
+    is now a registry field (``backends.toml``), and the posture-gated lane
+    (``tests/backends/conformance/test_concurrency.py``) drives the
+    one-instance-per-thread carve-out from it rather than from a hand-maintained
+    exclusion. This adapter test stays as the bridge-specific case.
+    """
 
     async def test_concurrent_writes(self, adapted_backend: SyncBackendAdapter) -> None:
         await asyncio.gather(*[adapted_backend.write(f"f{i}.txt", f"c{i}".encode()) for i in range(10)])

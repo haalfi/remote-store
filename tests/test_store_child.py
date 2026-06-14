@@ -165,7 +165,12 @@ class TestChildPathRoundTrip:
 
 
 class TestChildThreadSafety:
-    """CHILD-010: Thread safety."""
+    """CHILD-010: Thread safety.
+
+    Concurrent ``child()`` on one parent Store. CHILD-010 inherits STORE-007's
+    share-across-threads guarantee; the backend-level generalisation lives in
+    the BK-289 concurrency lane (``tests/backends/conformance/test_concurrency.py``).
+    """
 
     @pytest.mark.spec("CHILD-010")
     def test_concurrent_child_creation(self, backend: MemoryBackend) -> None:

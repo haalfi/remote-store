@@ -131,6 +131,32 @@ class BackendFixture:
     Sourced from ``[backend.<x>].transport`` in ``backends.toml`` and copied
     onto every fixture of that family.
     """
+    concurrency: Literal["thread_safe", "single_connection"] = "thread_safe"
+    """Concurrent-use posture of the backend (BK-289).
+
+    Sourced from ``[backend.<x>].concurrency`` in ``backends.toml`` and copied
+    onto every fixture of that family, exactly like ``transport``. The
+    machine-readable shadow of BK-287's cross-backend concurrent-use-posture
+    clause (specs 003/029 + GR-059):
+
+    * ``thread_safe`` — concurrent threads on one instance are safe (Memory,
+      Local, S3, S3-PyArrow, Azure, SQLBlob, Graph's single-loop bridge).
+    * ``single_connection`` — one instance per thread; concurrent ops on one
+      instance race (SFTP shared paramiko socket, HTTP shared redirect-counter
+      opener).
+
+    Gates the BK-289 concurrency conformance lane: ``fixture_params_concurrent``
+    selects the ``thread_safe`` set for the positive thread-stress, and the
+    ``single_connection`` set is enumerated separately for the carve-out guards.
+
+    COUPLING: the default is ``thread_safe`` for the bare-constructor path
+    (e.g. the ``test_register_rejects_duplicates`` clone), but every registered
+    fixture's value is required and validated through ``backends.toml`` /
+    ``_loader``. Until BK-287 lands the spec wording, these values track the
+    taxonomy in ``research-bk-289-concurrency-test-lane.md`` §4.1; if BK-287
+    settles on different posture names, update this enum, ``backends.toml``, and
+    ``_loader.VALID_CONCURRENCY`` together.
+    """
     container: Literal["minio", "azurite", "sftp", "none"] = "none"
     """External container the fixture talks to, or ``"none"`` for in-process.
 
@@ -255,11 +281,54 @@ def fixture_params(*caps: Capability, is_async: bool = False, include_strict_onl
     ]
 
 
+def fixture_params_concurrent(
+    *caps: Capability,
+    is_async: bool = False,
+    posture: Literal["thread_safe", "single_connection"] = "thread_safe",
+) -> list[Any]:
+    """Posture-gated parametrize entries for the BK-289 concurrency lane.
+
+    Mirrors ``fixture_params`` but adds a ``concurrency`` filter so a test
+    runs only on backends whose declared posture matches ``posture`` — the
+    same gating discipline ``fixture_params(Capability.X)`` applies for
+    capabilities (research §2). The default ``posture="thread_safe"`` returns
+    the set that the positive in-process thread-stress may safely run against;
+    pass ``posture="single_connection"`` to enumerate the non-thread-safe set
+    (SFTP/HTTP, plus the ``sqlite:///:memory:`` SQLBlob fixture) for the carve-out
+    guards that assert the one-instance-per-thread contract instead.
+
+    The SFTP-under-xdist carve-out from ``fixture_params`` carries over (its
+    serial lane picks ``sftp_docker`` up); for the ``single_connection``
+    posture that means the SFTP carve-out guard runs only in the serial pass,
+    which is exactly where ``single_connection`` backends belong.
+
+    One filter beyond a default ``fixture_params(...)`` call (plus the posture
+    gate itself):
+
+    * **Replay (cassette)** fixtures are excluded: cassette playback matches
+      requests *sequentially* (vcrpy), so it is not a concurrency-safe substrate
+      (research §4.2). Concurrent ops over a replay fixture would race the single
+      ordered cassette, not the backend. The Graph create-once-race contract is
+      exercised against ``respx``/``moto`` in the backend homes instead.
+
+    **Strict-only** fixtures are likewise absent, but that is *not* new — it is
+    inherited from ``fixtures(..., include_strict_only=False)``; this selector
+    simply offers no opt-in back in.
+    """
+    is_xdist_worker = "PYTEST_XDIST_WORKER" in os.environ
+    return [
+        pytest.param(f, id=f.name, marks=list(f.marks))
+        for f in fixtures(*caps, is_async=is_async)
+        if f.concurrency == posture and f.kind != "replay" and not (is_xdist_worker and f.container == "sftp")
+    ]
+
+
 __all__ = [
     "AnyBackend",
     "BackendFixture",
     "all_fixtures",
     "fixture_params",
+    "fixture_params_concurrent",
     "fixtures",
     "register",
 ]
