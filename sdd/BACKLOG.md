@@ -115,20 +115,6 @@ resolve to one winner, read-your-writes and listing held, streaming reads are
 version-pinned, and the sync bridge (`ThreadPoolExecutor` + `ext.batch`) is
 deadlock-free. The items below are the divergences and the unspecified contract.
 
-- [ ] **BUG-219 — `GraphBackend.aclose()` concurrent with in-flight ops raises untyped `RuntimeError`**
-  spec: GR-051 · effort: S · audience: user.api, library.maintainer
-  Calling `aclose()` while writes/copies are in flight from other coroutines
-  closes the shared `httpx.AsyncClient` out from under them: `aclose()` itself
-  does not raise (good), but every in-flight op dies with a bare `RuntimeError`
-  (closed client), not a typed `BackendClosed` or a clean cancellation. There is
-  no `_closed` use-after-close guard, and `aclose()`'s `list(...)` snapshot of
-  `_active_upload_sessions`/`_pending_pollers` misses any session/poller
-  registered after the snapshot. Live-reproduced (a FastAPI-shutdown shape: 5/5
-  in-flight ops → `RuntimeError`, both rounds). Fix candidates: add a `_closed`
-  flag that fails fast with a typed error on new ops after `aclose()`, and decide
-  the lifecycle contract (concurrent-op-during-close is unsupported and must
-  surface typed, not as a transport error).
-
 - [ ] **BK-291 — `GraphAuth` MSAL token-cache write is non-atomic and unlocked**
   spec: GR-007 · effort: S · audience: user.api, library.maintainer
   `flush_cache` does a plain `open(path, "w").write(...)` at the default shared

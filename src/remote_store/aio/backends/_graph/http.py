@@ -436,6 +436,15 @@ async def graph_send(
             )
         except _TRANSPORT_ERRORS as exc:
             last_error = BackendUnavailable(f"Graph transport error: {exc}", path=path, backend=BACKEND_NAME)
+        except RuntimeError as exc:
+            # A closed client (aclose() pulled it out from under an in-flight op,
+            # or a caller closed their shared client) raises a bare RuntimeError
+            # from httpx — surface it typed (GR-051 / BUG-219). Terminal: a closed
+            # client never reopens, so this is not retried. Any other RuntimeError
+            # is a real bug and propagates unchanged.
+            if not client.is_closed:
+                raise
+            raise BackendUnavailable("Graph backend is closed", path=path, backend=BACKEND_NAME) from exc
         else:
             if response.is_success or response.status_code in return_on:
                 return response

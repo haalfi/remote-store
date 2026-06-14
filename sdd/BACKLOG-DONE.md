@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-219 — `GraphBackend.aclose()` concurrent with in-flight ops raises untyped `RuntimeError`**
+  spec: GR-051 · effort: S · audience: user.api, library.maintainer
+  Found in the Graph concurrency / DX review and live-reproduced (FastAPI-shutdown
+  shape: 5/5 in-flight ops → bare `RuntimeError`). `aclose()` closed the shared
+  `httpx.AsyncClient` out from under in-flight ops, and there was no
+  use-after-close guard — a new op after close *silently re-initialised* a fresh
+  client (the old GR-051 contract) or hit a closed caller-client with httpx's bare
+  `RuntimeError`. Fix: a `_closed` flag flipped at the start of `aclose()` gates
+  the central `_client` accessor (every op reaches the client through it), so a
+  use-after-close raises typed `BackendUnavailable` instead of re-initialising;
+  and the request layer (`graph_send`, `transfer.stream_range`) translates httpx's
+  closed-client `RuntimeError` (detected via `client.is_closed`, no string-match)
+  to `BackendUnavailable` so an in-flight op surfaces typed. `aclose()` stays
+  non-raising and idempotent; the abort loop uses the raw client ref (the guard
+  would otherwise raise) and lazily creates a client only if sessions need
+  aborting. No `Lock` added — a `bool` flag suffices under asyncio's single
+  thread, so no ADR (BK-287 threshold not crossed). GR-051 amended (the old
+  "re-initialise on demand" postcondition was the bug); the deliberate divergence
+  from `AzureBackend.close()`'s AZ-029 re-initialise behavior is flagged for the
+  cross-backend concurrency-contract work (BK-287 / ID-219). Reproduced with a
+  failing test (`TestUseAfterClose`, GR-051) that hung/leaked pre-fix. Trace:
+  `sdd/traces/bug-219-graph-aclose-guard.yml`.
+
 - [x] **BUG-218 — Graph copy/move monitor hangs on a non-throttle `4xx` poll response**
   spec: GR-026 · effort: S · audience: user.api, user.api_docs, user.site
   Found in the ID-127 release-readiness review (live consumer-OneDrive

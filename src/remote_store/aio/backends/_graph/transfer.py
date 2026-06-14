@@ -228,6 +228,13 @@ async def stream_range(
             if attempts >= max_attempts:
                 raise BackendUnavailable(f"Graph download transport error: {exc}", path=path, backend=backend) from None
             url = _resume_url(await refetch(), etag, path, backend)
+        except RuntimeError as exc:
+            # Closed client (GR-051 / BUG-219): the client was pulled out from
+            # under this in-flight stream. Surface typed, do not retry; any other
+            # RuntimeError is a real bug and propagates unchanged.
+            if not client.is_closed:
+                raise
+            raise BackendUnavailable("Graph backend is closed", path=path, backend=backend) from exc
 
 
 async def _spooled_window(

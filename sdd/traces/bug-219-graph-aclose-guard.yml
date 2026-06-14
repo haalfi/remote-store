@@ -1,0 +1,86 @@
+id: BUG-219
+title: "GraphBackend.aclose() concurrent with in-flight ops raises untyped RuntimeError"
+trigger: >
+  The Graph concurrency / DX review live-reproduced a FastAPI-shutdown shape:
+  calling aclose() while writes/copies were in flight closed the shared
+  httpx.AsyncClient out from under them, so 5/5 in-flight ops died with a bare
+  RuntimeError instead of a typed error or a clean cancellation. There was no
+  use-after-close guard either — a new op after close silently re-initialised a
+  fresh client (the old GR-051 "re-initialise on demand" postcondition) or hit a
+  closed caller-supplied client with httpx's RuntimeError.
+source_items:
+  - BUG-219
+audience:
+  - user.api
+  - library.maintainer
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_client property, aclose(), __init__ instance sets"
+        read_type: gate
+        extract: "Every data-plane op reaches the client through the _client property, which lazily (re)creates the owned client — so a use-after-close silently re-opens. aclose() snapshots the sets with list() and closes the client last"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "_send_attempt (client.request), graph_send retry loop"
+        read_type: gate
+        extract: "graph_send catches httpx.TransportError for retry but NOT RuntimeError; httpx raises a bare RuntimeError on a closed client (verified at httpx _client.py: ClientState.CLOSED). client.is_closed is the deterministic signal (no string-match)"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "stream_range client.stream try/except"
+        read_type: gate
+        extract: "Streaming reads hit client.stream directly; the try catches only httpx.TransportError, so a closed-client RuntimeError there also escapes untyped"
+        outcome: ok
+      - file: sdd/specs/005-error-model.md
+        section: "ERR-007 BackendUnavailable"
+        read_type: gate
+        extract: "BackendUnavailable ('cannot be reached') is the right reuse for a closed backend — no new error type (which would need an ERR-id + flat hierarchy + Dafny), keeping effort:S"
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-051 close()"
+        read_type: gate
+        extract: "The 'After close, subsequent operations re-initialise the HTTP client on demand' postcondition IS the bug; it cross-references AzureBackend AZ-029 — so Azure likely shares the footgun (ID-219)"
+        outcome: misleading
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/backends/graph/aio/test_write.py
+        section: "TestCloseAbortsSessions, TestUseAfterClose"
+        read_type: gate
+        extract: "Mirror the GR-051 close-test style. New TestUseAfterClose: op-after-aclose (silent recreate), op-on-closed-client (bare RuntimeError — the live shape), idempotent, concurrent-after-close all-typed. Pre-fix: 3/4 failed (DID NOT RAISE / RuntimeError); confirmed for the right reason"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_closed flag, _client guard, aclose()"
+        read_type: gate
+        extract: "Add _closed bool; _client raises BackendUnavailable when closed (central guard); aclose() is idempotent, flips _closed first, resolves the cleanup client via the raw ref (lazily creating only if sessions need aborting, since the guard would raise)"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "graph_send except RuntimeError"
+        read_type: gate
+        extract: "Translate the closed-client RuntimeError to a terminal BackendUnavailable via client.is_closed; re-raise any other RuntimeError"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "stream_range except RuntimeError"
+        read_type: gate
+        extract: "Same closed-client translation for the streaming-read path"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-051 close()"
+        read_type: verify
+        extract: "Amended the postcondition: after close the backend is terminal (typed BackendUnavailable), not re-initialise-on-demand; idempotent; in-flight surfaces typed; deliberate divergence from AZ-029 flagged for BK-287/ID-219. No Lock added -> no ADR (BK-287 threshold)"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "Backend behaviour + error-surface change: spec amended, failing test before fix, CHANGELOG stub (user.api), aclose docstring updated, BACKLOG-DONE + backlogid.json"
+        outcome: ok

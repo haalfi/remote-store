@@ -1273,11 +1273,24 @@ disk if the built-in `GraphAuth` owns it, cancels any pending
 monitor-URL pollers, and issues best-effort `DELETE` against any
 upload sessions the backend currently owns.
 **Postconditions:**
-- Safe to call multiple times.
+- Safe to call multiple times (idempotent — a second `close()` is a no-op).
 - User-supplied `http_client` instances are not closed — the caller
   owns that resource.
-- After close, subsequent operations re-initialise the HTTP client
-  on demand (consistent with `AzureBackend.close()` — AZ-029).
+- **After close, the backend is terminal (BUG-219).** A subsequent
+  operation raises a typed `BackendUnavailable`: the `_client` accessor
+  guards on a `_closed` flag flipped at the *start* of `close()` (before
+  the cleanup awaits, so a concurrent caller cannot slip a fresh op past
+  the guard). It does **not** silently re-initialise a fresh client — the
+  prior contract, which let a use-after-close succeed unnoticed. An
+  operation still in flight when `close()` fires also surfaces typed, not
+  a bare `RuntimeError`: a request issued on the closing client raises
+  `httpx`'s closed-client `RuntimeError`, which the request layer
+  translates to `BackendUnavailable` (detected via `client.is_closed`);
+  a cancelled monitor poller surfaces `CancelledError`. Concurrent
+  operation during close is unsupported — the only guarantee is that it
+  fails typed. (This deliberately diverges from `AzureBackend.close()`'s
+  AZ-029 re-initialise-on-demand; the cross-backend posture is tracked
+  for review under the concurrency-contract work.)
 - **Upload-session abort on close:** For every in-flight upload
   session whose URL is reachable from the backend (i.e. a `write()`
   call is mid-chunk-loop when `close()` fires), the backend issues
