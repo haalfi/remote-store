@@ -160,18 +160,37 @@ deadlock-free. The items below are the divergences and the unspecified contract.
   alternative to documenting it: retrying Graph's `409`-under-`replace` as
   transient.
 
-- [ ] **BK-289 — Graph concurrency test lane**
-  spec: TEST-007 · effort: M · audience: infra.test
-  No test exercises concurrent ops on one instance. Add a split lane:
-  deterministic contract guards (respx) in a new
-  `tests/backends/graph/aio/test_concurrency.py` for CI (the `overwrite=False`
-  atomicity contract via 409-mapping, the stream-vs-mutate eTag/delete branches,
-  the BUG-219 aclose no-raise/no-warning property, bridge deadlock-freedom), plus
-  live race probes behind the existing `RS_TEST_LIVE_GRAPH` gate (concurrent
-  create/overwrite/move/copy, N-parallel large uploads, token-call counting).
-  Mirror the public-`Store`-surface subset (create-once race, read-after-write,
-  ThreadPool + `ext.batch`) into `../remote-store-expectations` as black-box DX
-  validation. The review built a re-runnable harness for the live probes.
+- [ ] **BK-289 — Cross-backend concurrency conformance lane**
+  spec: TEST-007, 003, 029 · effort: L · audience: infra.test
+  Design: [research-bk-289-concurrency-test-lane.md](research/research-bk-289-concurrency-test-lane.md).
+  No test exercises concurrent ops on one instance for **any** backend except
+  in-process Memory, while STORE-007/CHILD-010/ASYNC-055 and several backends
+  claim thread-/coroutine-safety (audit-001 **M-14**, still open). Concurrency is
+  **per-backend and non-uniform** — Memory/Local/cloud/SQLBlob are thread-safe;
+  SFTP and HTTP are explicitly *not* — so the lane is **posture-gated**, not a
+  blanket thread-stress: each fixture declares a `concurrency` posture
+  (`thread_safe` / `single_connection`, sourced from `backends.toml` like
+  `transport`), and the lane tests each backend against its own declaration,
+  exactly as `fixture_params(Capability.X)` gates capability tests. Build a new
+  `tests/backends/conformance/test_concurrency.py` (+ `aio/` sibling) in three
+  tiers: **(1)** deterministic Stage-1 contract guards — in-process
+  ThreadPool stress over the `thread_safe` set (concurrent reads, distinct-key
+  writes, read-after-write) plus the create-once-race `overwrite=False` atomicity
+  contract via respx (Graph) / moto (S3) 409-mapping (cassette replay is **not**
+  concurrency-safe), the stream-vs-mutate eTag/delete branches, the BUG-219 aclose
+  no-raise/no-warning property, and bridge deadlock-freedom; **(2)** carve-out
+  guards over the `single_connection` set (SFTP/HTTP: one-instance-per-thread
+  works, shared instance is not stressed) plus the ASYNC-055 cross-loop negative
+  guard; **(3)** live race probes behind `RS_TEST_LIVE_*` (concurrent
+  create/overwrite/move/copy, N-parallel large uploads, Graph token-call
+  counting). Consolidate the scattered existing tests (STORE-007, CHILD-010,
+  memory ASYNC-055, the sync-adapter SFTP carve-out) into the lane rather than
+  duplicating. Mirror the public-`Store`-surface subset (create-once race,
+  read-after-write, ThreadPool + `ext.batch`) into `../remote-store-expectations`
+  as black-box DX validation (separate-repo sub-task). **Depends on BK-287** to
+  declare the posture clause in specs 003/029 — co-sequence: posture clause +
+  registry field first, lane second. Closing Tier 1 discharges M-14. The review
+  built a re-runnable harness for the live probes.
 
 - [ ] **BK-290 — Graph async I/O robustness under concurrent load**
   spec: GR-008, GR-019 · effort: S · audience: user.api, library.maintainer
