@@ -37,7 +37,6 @@ Graph create-once-race contract is exercised against ``respx`` in
 from __future__ import annotations
 
 import asyncio
-import io
 import sys
 from typing import TYPE_CHECKING, Any
 
@@ -52,6 +51,8 @@ from tests.backends.conformance._helpers import (
 from tests.backends.fixtures import all_fixtures, fixture_params_concurrent
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from remote_store.aio import AsyncBackend
 
 # One loop, modest coroutine fan-out (research §4.3).
@@ -156,12 +157,19 @@ class TestAsyncConcurrentLargeUploads:
     async def test_concurrent_large_streamed_uploads(self, async_backend: AsyncBackend) -> None:
         _require(async_backend, Capability.ATOMIC_WRITE)
         _skip_unless_large_write_distinct(async_backend)
-        payload = b"\xab" * _LARGE_SIZE
+        chunk = b"\xab" * (1024 * 1024)
+        n_chunks = _LARGE_SIZE // len(chunk)
 
         async def _upload(item: int) -> int:
+            # Each coroutine gets its own single-use AsyncIterator — the async
+            # large/streamed write path consumes content via ``async for`` (a sync
+            # BytesIO is rejected), and a shared generator would be drained once.
+            async def _stream() -> AsyncIterator[bytes]:
+                for _ in range(n_chunks):
+                    yield chunk
+
             key = f"acc/large/{item}.bin"
-            # Fresh BytesIO per coroutine: a shared reader would race on its cursor.
-            await async_backend.write_atomic(key, io.BytesIO(payload))
+            await async_backend.write_atomic(key, _stream())
             info = await async_backend.get_file_info(key)
             return info.size
 
