@@ -203,8 +203,9 @@ class S3Backend(_S3Base):
                     f.close()
             # WriteResult.etag/digest are sourced from this head_object call --
             # the SAME call get_file_info() reads (S3-024) -- so the two agree by
-            # construction and need no consistency xfail. (Contrast Azure, whose
-            # write-response digest can diverge from the stored blob's: BUG-216.)
+            # construction and need no consistency xfail. (Contrast the Azurite
+            # emulator, whose staged blob drops Content-MD5 so its write-response
+            # digest diverges from the stored blob's; real Azure stores it: BUG-216.)
             # s3fs uploads normal-sized objects in a single PUT (no multipart
             # WriteResult path here even at ~10 MiB); the always-multipart S3 lane
             # is S3PyArrowBackend.

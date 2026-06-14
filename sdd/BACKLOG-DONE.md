@@ -8,6 +8,30 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-216 — Azure large/block-staged `WriteResult.digest` vs `get_file_info().digest`: Azurite emulator gap, not a backend defect**
+  spec: WR-001a · effort: S · audience: infra.test, contributor.process
+  Filed by BK-286 when the new `test_large_streamed_write_result_matches_file_info`
+  failed on the `azurite` fixture: on the staged path `WriteResult.digest` carries
+  the commit response's MD5 while `get_file_info().digest` is `None`. The backlog
+  required confirming against **real ADLS Gen2** before fixing (Azurite ≠ real
+  ADLS). Verified live this session (`RS_TEST_LIVE_HNS=1 --stage=3 -m live -k
+  azure_live`, `--runxfail` to lift the mask): both `write` and `write_atomic`,
+  sync (`azure_live`) and async (`azure_live_async`), **pass** — real Azure stores
+  `Content-MD5` on block-list commit and the two sides agree. The divergence is an
+  Azurite emulator-fidelity gap, so no production code change is warranted (rules
+  out the proposed fix options a/b). Resolution: (1) scoped the sync
+  `_LARGE_RICH_FIELDS_XFAIL` to the `azurite` fixture by keying on
+  `_fixture_record(backend).name` instead of `backend.name` (the emulator and the
+  live fixture share `backend.name == "azure"`), and flipped it to `strict=True`
+  so a future Azurite that starts persisting the MD5 fails loud to prompt removal;
+  (2) **removed** the `_ASYNC_LARGE_RICH_FIELDS_XFAIL["async-azure"]` entry — it
+  was masking the live `azure_live_async` lane as an allowed xpass (no async
+  Azurite baseline runs this test), and re-keyed the async lookup on the fixture
+  name too; (3) reworded the WR-001a spec note and the `_s3.py` contrast comment
+  to say emulator-only. Discovery follow-up: the async side has no non-strict
+  Azurite baseline for this path → **BUG-217** (see BACKLOG.md).
+  No CHANGELOG (infra.test). Trace: `sdd/traces/bug-216-azure-digest-azurite-gap.yml`.
+
 - [x] **BK-286 — Conformance: WriteResult↔FileInfo `size` cross-check + large/streamed-path consistency**
   spec: WR-001a · effort: S · audience: infra.test, library.maintainer
   The WR-001a consistency backstop (`test_write_result_rich_fields_match_file_info`,

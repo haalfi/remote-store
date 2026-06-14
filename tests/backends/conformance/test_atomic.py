@@ -213,17 +213,21 @@ _RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {}
 # conformance suite so sync and async exercise the same threshold.
 _LARGE_WRITE_SIZE = 8 * 1024 * 1024
 
-# name → (reason, strict).  Like _RICH_FIELDS_XFAIL but for the large/streamed
-# write path only — a backend may agree with get_file_info() on a small single
-# write yet diverge once the multipart / staged / upload-session path runs.
-# strict=False where the divergence is confirmed on the emulator but unverified
-# against the real cloud (Azurite ≠ real ADLS Gen2).
+# fixture name → (reason, strict).  Like _RICH_FIELDS_XFAIL but for the
+# large/streamed write path only — a backend may agree with get_file_info() on a
+# small single write yet diverge once the multipart / staged / upload-session
+# path runs.  Keyed on the *fixture* name (_fixture_record(backend).name), not
+# backend.name: the Azurite emulator and live ADLS Gen2 share backend.name
+# "azure", and only the emulator diverges — keying on backend.name would mask
+# the live lane (azure_live) as an allowed xpass (BUG-216).
 _LARGE_RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {
-    "azure": (
-        "BUG-216: Azure large/block-staged write fills WriteResult.digest from the commit "
-        "response, but the staged blob stores no Content-MD5, so get_file_info().digest is "
-        "None — they diverge (observed on Azurite; real ADLS Gen2 unverified)",
-        False,
+    "azurite": (
+        "BUG-216: Azurite does not persist Content-MD5 on block-list commit, so the staged "
+        "blob's get_file_info().digest is None while WriteResult.digest carries the commit "
+        "response's MD5 — they diverge. Azurite emulator-fidelity gap only: real ADLS Gen2 "
+        "stores the MD5 and is verified consistent live (azure_live, sync+async, both ops). "
+        "strict=True so a future Azurite that starts persisting it fails loud to prompt removal.",
+        True,
     ),
 }
 
@@ -398,8 +402,9 @@ class TestWriteResultConformance:
         """
         _require(backend, cap, Capability.METADATA)
         _skip_unless_large_write_distinct(backend)
-        if backend.name in _LARGE_RICH_FIELDS_XFAIL:
-            reason, strict = _LARGE_RICH_FIELDS_XFAIL[backend.name]
+        fixture_name = _fixture_record(backend).name
+        if fixture_name in _LARGE_RICH_FIELDS_XFAIL:
+            reason, strict = _LARGE_RICH_FIELDS_XFAIL[fixture_name]
             request.applymarker(pytest.mark.xfail(reason=reason, strict=strict))
         key = f"wr/{op}-large-streamed.bin"
         result = getattr(backend, op)(key, io.BytesIO(b"\xab" * _LARGE_WRITE_SIZE))

@@ -951,20 +951,15 @@ _WRITE_OPS = [
 # test_atomic.py registries; empty until a real async-backend gap is recorded).
 _ASYNC_LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {}
 _ASYNC_RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {}
-# Large/streamed-path divergence, keyed by the ASYNC backend name ("async-azure",
-# not the sync "azure") — the async analogue of test_atomic.py's
-# _LARGE_RICH_FIELDS_XFAIL. A separate roster is required because async backend
-# names differ from their sync twins; sharing the sync dict would silently never
-# match, so AsyncAzureBackend would hard-fail the large-path consistency check on
-# the live HNS lane instead of xfailing.
-_ASYNC_LARGE_RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {
-    "async-azure": (
-        "BUG-216: Azure large/block-staged write fills WriteResult.digest from the commit "
-        "response, but the staged blob stores no Content-MD5, so get_file_info().digest is "
-        "None — they diverge (observed on Azurite; real ADLS Gen2 unverified)",
-        False,
-    ),
-}
+# Large/streamed-path divergence, keyed by *fixture* name (not backend.name) —
+# the async analogue of test_atomic.py's _LARGE_RICH_FIELDS_XFAIL. Empty: BUG-216
+# was the lone entry and it is an Azurite emulator-only gap. The only non-strict
+# async Azure fixture running this test is azure_live_async (live HNS), which is
+# verified consistent, so no async entry is needed. (A non-strict async Azurite
+# baseline does not exist yet — see BUG-217.) Keyed on _fixture_record(...).name
+# so a future emulator entry cannot also mask the live lane, which shares
+# backend.name "async-azure" with the emulator.
+_ASYNC_LARGE_RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {}
 
 
 class TestAsyncWriteResultConformance:
@@ -1102,8 +1097,9 @@ class TestAsyncWriteResultConformance:
         """
         _require(async_backend, cap, Capability.METADATA)
         _skip_unless_large_write_distinct(async_backend)
-        if async_backend.name in _ASYNC_LARGE_RICH_FIELDS_XFAIL:
-            reason, strict = _ASYNC_LARGE_RICH_FIELDS_XFAIL[async_backend.name]
+        fixture_name = _fixture_record(async_backend).name
+        if fixture_name in _ASYNC_LARGE_RICH_FIELDS_XFAIL:
+            reason, strict = _ASYNC_LARGE_RICH_FIELDS_XFAIL[fixture_name]
             request.applymarker(pytest.mark.xfail(reason=reason, strict=strict))
         chunk = b"\xab" * (1024 * 1024)
         n_chunks = _LARGE_WRITE_SIZE // len(chunk)
