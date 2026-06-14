@@ -28,11 +28,11 @@ _Captured 2026-06-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `dagster` | `1.13.8` |
+| `dagster` | `1.13.9` |
 
 ## `[graph]`
 
-_Captured 2026-06-09 on Python 3.13._
+_Captured 2026-06-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -92,7 +92,7 @@ _Captured 2026-06-09 on Python 3.13._
 
 ## `[sftp]`
 
-_Captured 2026-05-25 on Python 3.13._
+_Captured 2026-06-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
