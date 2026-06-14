@@ -132,7 +132,6 @@ class TestAsyncCoroutineSafe:
 
 
 @pytest.mark.concurrency
-@pytest.mark.spec("BE-028")
 @pytest.mark.spec("ASYNC-094")
 @pytest.mark.parametrize(
     "async_backend",
