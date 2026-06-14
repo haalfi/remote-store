@@ -16,7 +16,7 @@ lessons learned, industry best practices, and proposes enforceable guardrails.
 |----|---------|-------------|--------|
 | M-12 | Azure HNS tested via unconstrained `MagicMock()` | Mock accepts any call/signature | **Open** |
 | M-13 | `test_coverage_gaps.py` inflated coverage with `assert X is not None` | Pure-import assertions | Fixed (BK-014) |
-| M-14 | Zero concurrency tests despite thread-safety spec claims | Missing behavioral tests | **Open** |
+| M-14 | Zero concurrency tests despite thread-safety spec claims | Missing behavioral tests | Fixed (BK-289) |
 | M-16 | No tests for `PermissionDenied`/`BackendUnavailable` in S3/SFTP | Untested error paths | Fixed (AF-013) |
 | M-17 | SFTP retry logic (tenacity) never tested | Untested retry paths | **Open** |
 | L-18 | `test_list_files_round_trip` checks `len(data) == 3`, not content | Weak assertions | **Open** |
@@ -343,7 +343,8 @@ actual CLAUDE.md edit will be reviewed in its own implementation PR.
   `test_cache.py`, `test_proxy.py` with public API checks
 - [ ] Add `diff-cover` to PR CI (fail-under=90 for new code)
 - [ ] Run `pytest-gremlins` baseline (diagnostic only, establish starting score)
-- [ ] Add concurrency test suite for thread-safety claims (M-14)
+- [x] Add concurrency test suite for thread-safety claims (M-14) — BK-289
+  posture-gated lane (`tests/backends/conformance/test_concurrency.py` + `aio/`)
 
 ### Phase 3: Advanced Quality Measures (Future)
 

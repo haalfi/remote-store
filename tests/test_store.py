@@ -982,6 +982,12 @@ class TestStoreThreadSafety:
     Store (MemoryBackend serializes under a single lock, MEM-025). The companion
     *immutability* clause of STORE-007 is by-convention — Store exposes no public
     mutators and is not a frozen dataclass — so it has no raise to assert here.
+
+    The *backend-level* generalisation of this property — concurrent reads,
+    distinct-key writes, and read-after-write over every ``thread_safe`` backend
+    — lives in the BK-289 posture-gated concurrency lane
+    (``tests/backends/conformance/test_concurrency.py``). This Store-layer test
+    is the immutable-wrapper case it consolidates, not duplicates.
     """
 
     @pytest.mark.spec("STORE-007")

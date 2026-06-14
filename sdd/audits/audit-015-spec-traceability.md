@@ -33,7 +33,7 @@ remaining 212 are type (a) or (b) and actionable.
 
 | Spec | ID | Invariant summary | Finding |
 |------|----|-------------------|---------|
-| 001 | STORE-007 | Thread Safety | No mark, no test |
+| 001 | STORE-007 | Thread Safety | No mark, no test → **Resolved (BK-289):** marked + tested in the posture-gated concurrency lane (sync; the async mirror ASYNC-055 likewise) |
 | 001 | STORE-009 | Context manager / resource management | Test exists (`tests/test_coverage_gaps.py::TestStoreBehavior::test_context_manager`); mark absent |
 | 001 | STORE-010 | Store equality | No mark, no test |
 | 001 | STORE-011 | Store.to_key | Tests use NPR marks; STORE-011 absent |
@@ -219,7 +219,7 @@ unbuilt-Graph IDs owned by ID-127.
 Not full type (a), but flagged for completeness — these invariants are covered except
 for one clause:
 
-- **STORE-007** — share-across-threads is tested (CHILD-010 concurrency test); the *immutability* clause has no dedicated test (Store is not a frozen dataclass).
+- **STORE-007** — share-across-threads is tested (CHILD-010 concurrency test); the *immutability* clause has no dedicated test (Store is not a frozen dataclass). **BK-289** adds a dedicated, backend-level share-across-threads test carrying the `STORE-007` mark across every `thread_safe` backend.
 - **PA-005** — root-as-empty-string mapping is tested; *file ops on root raising `FileNotFoundError`* is not.
 - **HTTP-TR-002** — auto-detect + urllib fallback is tested; the *httpx-before-requests preference ordering* is not directly asserted.
 - **HTTP-TR-003** — explicit transport override is tested; the *ImportError-when-library-missing* branch is `pytest.skip`-ped, never asserted.

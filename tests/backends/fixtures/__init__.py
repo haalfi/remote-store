@@ -39,10 +39,13 @@ if TYPE_CHECKING:
         BackendFixture,
         all_fixtures,
         fixture_params,
+        fixture_params_concurrent,
         fixtures,
     )
 
-_LAZY_REGISTRY_NAMES = frozenset({"AnyBackend", "BackendFixture", "all_fixtures", "fixture_params", "fixtures"})
+_LAZY_REGISTRY_NAMES = frozenset(
+    {"AnyBackend", "BackendFixture", "all_fixtures", "fixture_params", "fixture_params_concurrent", "fixtures"}
+)
 
 
 def __getattr__(name: str) -> Any:
@@ -105,5 +108,6 @@ __all__ = [
     "BackendFixture",
     "all_fixtures",
     "fixture_params",
+    "fixture_params_concurrent",
     "fixtures",
 ]

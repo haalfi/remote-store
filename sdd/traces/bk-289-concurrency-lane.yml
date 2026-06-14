@@ -1,0 +1,127 @@
+# yaml-language-server: $schema=_schema.yml
+id: BK-289
+title: "Cross-backend posture-gated concurrency conformance lane"
+trigger: >-
+  No test exercised concurrent operations on a single backend instance for any
+  backend except in-process Memory, while STORE-007 / CHILD-010 / ASYNC-055 and
+  several backends claimed thread-/coroutine-safety (audit-001 finding M-14, open
+  since 2026-06-01). Concurrency is per-backend and non-uniform — Memory / Local /
+  cloud are thread_safe; SFTP and HTTP are explicitly not — so a blanket
+  thread-stress over fixture_params() would assert a property SFTP/HTTP do not
+  have. The design (research-bk-289-concurrency-test-lane.md) called for a
+  posture-gated lane mirroring the capability system.
+source_items:
+  - BK-289
+  - BK-287
+audience:
+  - infra.test
+discovery_followups:
+  - BUG-220
+  - BK-293
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  - tests/backends/fixtures/test_live_env.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-bk-289-concurrency-test-lane.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          The lane is posture-gated, not a blanket thread-stress; thread_safe /
+          single_connection taxonomy; three tiers; invariant-only assertions; the
+          consolidation map and the BK-287 dependency
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture, fixture_params"
+        read_type: gate
+        extract: "How transport/container are carried per-fixture — the model to mirror for the concurrency field"
+      - file: tests/backends/fixtures/_loader.py
+        section: "_parse_backend, FixtureDescriptor.to_kwargs"
+        read_type: gate
+        extract: "Required per-family validation + the to_kwargs round-trip a new field must thread through"
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestBackendWriteAtomic, xfail dicts"
+        read_type: reference
+        extract: "Conformance idiom: fixture_params(Cap), @pytest.mark.spec, per-fixture xfail keyed on _fixture_record(backend).name"
+      - file: tests/backends/conformance/conftest.py
+        section: "pytest_generate_tests, async_backend"
+        read_type: reference
+        extract: "Registry-driven auto-parametrize; explicit parametrize overrides the walk; the aio/ subtree inherits this conftest"
+  - id: spec
+    name: Spec (coupling, not authored here)
+    steps:
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-051 close-terminal note"
+        read_type: reference
+        extract: >-
+          The cross-backend posture clause was "tracked for review under the
+          concurrency-contract work" (BK-287) — not yet landed. So the registry
+          field is bound to the research-doc taxonomy and the coupling flagged;
+          GR-059 / BE-028 / ASYNC-094 are PR 817's, cited after rebase
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-028 (PR 817, not in base)"
+        read_type: reference
+        extract: >-
+          Reviewed via PR 817: taxonomy names match the registry enum exactly; the
+          seven design-allowlist entries convert to real marks once the lane lands
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/fixtures/backends.toml
+        section: "[backend.*] concurrency"
+        read_type: reference
+        extract: "Declare concurrency per family; required (no default) so a new backend cannot float in with an unstated posture"
+      - file: tests/backends/conformance/test_concurrency.py
+        section: "TestThreadSafeConcurrency, TestSingleConnectionCarveOut"
+        read_type: reference
+        extract: "Tier-1 ThreadPool stress over thread_safe set; Tier-2 one-instance-per-thread carve-out over single_connection set; invariant-only, fixed fan-out"
+      - file: tests/backends/conformance/aio/test_concurrency.py
+        section: "TestAsyncCoroutineSafe, cross-loop guard"
+        read_type: reference
+        extract: "Async gather stress (ASYNC-055); cross-loop no-corruption guard; bridged single_connection has no async fixture — documented, not an empty test"
+      - file: tests/backends/graph/aio/test_concurrency.py
+        section: "TestCreateOnceRace, TestGraphConcurrencyLive"
+        read_type: reference
+        extract: "respx create-once-race (GR-018 mapping + shape); Tier-3 live probes gated by RS_TEST_LIVE_GRAPH; lives in the Graph home (TEST-010 keeps concrete classes out of conformance/)"
+  - id: discover
+    name: Discover
+    steps:
+      - file: tests/backends/fixtures/sqlblob.py
+        section: "_factory (sqlite:///:memory:)"
+        read_type: verify
+        extract: >-
+          The lane proved the sqlblob fixture is NOT thread_safe: SQLAlchemy's
+          SingletonThreadPool gives each thread an isolated :memory: DB ("no such
+          table"). Re-declared single_connection; raised on PR 817 since SQL-BLOB-072
+          claims thread_safe
+        outcome: misleading
+      - file: src/remote_store/backends/_local.py
+        section: "_resolve"
+        read_type: verify
+        extract: >-
+          The lane reproduced a Windows concurrency defect: Path.resolve()
+          canonicalises against the filesystem and transiently escapes root while a
+          sibling thread mkdirs the intermediate dir (20/20 vs 0/20 pre-created).
+          Filed BUG-220; xfail(strict=False) local writes on Windows
+        outcome: misleading
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/fixtures/test_live_env.py
+        section: "_synthetic_descriptor"
+        read_type: verify
+        extract: "Surprising ripple: a second direct FixtureDescriptor(...) constructor needed the new required field — not flagged by the ripple-check"
+      - file: sdd/research/research-testing-best-practices.md
+        section: "M-14"
+        read_type: verify
+        extract: "Tier 1 landed → mark M-14 Fixed (BK-289); update audit-015 STORE-007 gap row"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "BACKLOG→BACKLOG-DONE move, gen-backlogid, CHANGELOG skip (infra.test), trace ships same PR"

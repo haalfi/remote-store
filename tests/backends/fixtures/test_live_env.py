@@ -120,6 +120,7 @@ def _synthetic_descriptor(
         strict_only=False,
         large_write_distinct=False,
         transport="memory",
+        concurrency="thread_safe",
         live_opt_in_env=live_opt_in_env,
         live_creds_env=live_creds_env,
     )

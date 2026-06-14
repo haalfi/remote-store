@@ -497,7 +497,13 @@ class TestAsyncMemoryErrors:
 
 
 class TestAsyncMemoryConcurrency:
-    """ASYNC-055: Concurrent coroutines on the same event loop."""
+    """ASYNC-055: Concurrent coroutines on the same event loop.
+
+    The cross-backend generalisation of this gather-stress — over every async
+    ``thread_safe`` fixture, plus the cross-loop negative guard — lives in the
+    BK-289 async concurrency lane (``tests/backends/conformance/aio/test_concurrency.py``).
+    This memory-substrate test is the case it consolidates, not duplicates.
+    """
 
     @pytest.mark.spec("ASYNC-055")
     async def test_concurrent_writes(self) -> None:

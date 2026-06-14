@@ -8,6 +8,33 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-289 — Cross-backend posture-gated concurrency conformance lane**
+  spec: TEST-007, 003, 029 · effort: L · audience: infra.test
+  Design: [research-bk-289-concurrency-test-lane.md](research/research-bk-289-concurrency-test-lane.md).
+  Added a posture-gated concurrency lane: each fixture declares a `concurrency`
+  posture (`thread_safe` / `single_connection`, sourced from `backends.toml` like
+  `transport`, required per family), and the lane tests each backend against its
+  own declaration — not a blanket thread-stress. New
+  `tests/backends/conformance/test_concurrency.py` (+ `aio/` sibling): Tier-1
+  in-process ThreadPool / `asyncio.gather` stress over the `thread_safe` set
+  (concurrent reads, distinct-key writes, read-after-write) and the
+  `single_connection` one-instance-per-thread carve-out + the ASYNC-055 cross-loop
+  guard; Tier-3 large-upload + live probes ride the registry's stage/live marks.
+  Graph create-once-race (`overwrite=False` → exactly one winner via respx) and
+  the live race probes live in `tests/backends/graph/aio/test_concurrency.py`
+  (TEST-010 keeps concrete backends out of `conformance/`); BUG-219 aclose and
+  bridge deadlock-freedom are cross-referenced, not duplicated. Invariant-only,
+  fixed fan-out, `@pytest.mark.concurrency`. Closes audit-001 **M-14**. Marks cite
+  the backend-posture IDs from BK-287 — `BE-028` (sync), `ASYNC-094` (async),
+  `GR-059` (Graph create-once-race), and the per-backend `S3-028` / `AZ-037` /
+  `SFTP-029` the lane's fixtures exercise (retiring those design-allowlist
+  entries).
+  **Discoveries:** the lane proved the `sqlblob` (`sqlite:///:memory:`,
+  SingletonThreadPool) fixture is `single_connection`, not `thread_safe`; and
+  reproduced a Windows LocalBackend concurrency defect (filed **BUG-220**;
+  `local` writes xfail on Windows). Expectations-repo mirror split to **BK-293**.
+  Trace: `sdd/traces/bk-289-concurrency-lane.yml`.
+
 - [x] **BK-287 — Cross-backend concurrency-posture contract: `GR-059` + per-backend clauses**
   spec: BE-028 (new), ASYNC-094 (new), GR-059 (new), 008, 009, 011, 012, 032, 040, 041 · effort: M · audience: contributor.process, user.api_docs
   `STORE-007`/`ASYNC-055` promise a shared `Store`/`AsyncStore` is concurrency-safe,

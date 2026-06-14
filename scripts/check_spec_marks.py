@@ -258,19 +258,15 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         # Each declares a backend's thread_safe / single_connection posture (a
         # design property, not a runtime behavior a single mark sits on). The
         # cross-backend contract IDs (BE-028, ASYNC-094) and the Graph posture
-        # (GR-059) carry real marks; these seven are documentation-only. BK-289
-        # converts the subset its conformance fixtures cover (S3-028, AZ-037,
-        # SFTP-029) to real marks when its posture-gated lane lands (the
-        # allowlist's shrink-only allowlist-stale path); the rest — S3PA-028
-        # (Tier-3 live probe only) and the SQL clauses (no conformance fixture)
-        # — stay allowlisted until such fixtures exist.
-        "S3-028",  # 008 — S3Backend thread_safe (boto3 client / s3fs per-instance)
-        "S3PA-028",  # 011 — S3PyArrowBackend thread_safe (Tier-3 live probe pending)
-        "AZ-037",  # 012 — AzureBackend thread_safe (SDK clients immutable)
-        "SFTP-029",  # 009 — SFTPBackend single_connection (one paramiko socket)
-        "HTTP-CONC-001",  # 032 — ReadOnlyHttpBackend single_connection on urllib
-        "SQL-BLOB-072",  # 040 — SQLBlobBackend thread_safe (per-op pool connect)
-        "SQL-QUERY-092",  # 041 — SQLQueryBackend thread_safe (per-op pool connect)
+        # (GR-059) carry real marks. BK-289's posture-gated lane converted the
+        # subset its conformance fixtures exercise — S3-028 (s3_moto), AZ-037
+        # (azurite), SFTP-029 (sftp_inproc carve-out) — to real marks, so those
+        # are no longer allowlisted. The four below stay documentation-only: no
+        # conformance fixture exercises them in the lane.
+        "S3PA-028",  # 011 — S3PyArrowBackend thread_safe (Tier-3 live probe only)
+        "HTTP-CONC-001",  # 032 — ReadOnlyHttpBackend single_connection on urllib (no WRITE -> not in carve-out)
+        "SQL-BLOB-072",  # 040 — SQLBlobBackend thread_safe (per-op pool); :memory: test fixture is single_connection
+        "SQL-QUERY-092",  # 041 — SQLQueryBackend thread_safe (per-op pool connect); no conformance fixture
     }
 )
 
