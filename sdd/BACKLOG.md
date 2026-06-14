@@ -75,23 +75,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Azure
 
-- [ ] **BUG-217 — No non-strict async Azurite fixture exercises the large-write consistency path**
-  spec: WR-001a · effort: S · audience: infra.test
-  The sync side has a non-strict `azurite` fixture (`large_write_distinct =
-  true`) that runs `test_large_streamed_write_result_matches_file_info` against
-  the flat-NS emulator. The async side has no equivalent: only
-  `azurite_async_strict` exists (`strict_only = true`, excluded from default
-  enumeration), so in the default async conformance run the large-write
-  consistency test runs **only** on the live `azure_live_async` fixture
-  (skipped unless `RS_TEST_LIVE_HNS=1`). The async Azurite staged path therefore
-  has zero offline coverage. Surfaced while resolving BUG-216 (the broad async
-  xfail keyed on `backend.name` was masking the live lane and was removed; see
-  BACKLOG-DONE.md). Fix: register a non-strict `azurite_async` baseline mirroring
-  the sync `azurite` fixture, and — since Azurite drops `Content-MD5` on the
-  staged commit (BUG-216) — add an `"azurite_async"` entry to
-  `_ASYNC_LARGE_RICH_FIELDS_XFAIL` (`strict=True`) so the emulator gap is pinned
-  on the async side too.
-
 - [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
   spec: — · effort: S · audience: library.maintainer, user.api
   The `examples/medallion_dagster/` showcase demonstrates a realistic user journey

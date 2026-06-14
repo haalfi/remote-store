@@ -1,0 +1,95 @@
+id: BUG-217
+title: "Register a non-strict azurite_async fixture for the large-write consistency path"
+trigger: >
+  BUG-216's resolution removed the over-broad async xfail and revealed that the
+  async large/streamed WriteResult↔FileInfo consistency test ran on no offline
+  fixture: the sync side had the non-strict azurite baseline, but the async side
+  only had azurite_async_strict (strict_only, excluded from default enumeration),
+  so the test ran solely on the live azure_live_async (skipped without
+  RS_TEST_LIVE_HNS=1).
+source_items:
+  - BUG-217
+  - BUG-216
+audience:
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient on the coverage gap
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Azure / BUG-217 (item)"
+        read_type: gate
+        extract: "Register a non-strict azurite_async mirroring sync azurite; add a strict azurite_async xfail entry since Azurite drops Content-MD5 (BUG-216)"
+        outcome: ok
+      - file: tests/backends/fixtures/azurite.py
+        section: "_make_factory loop over (azurite, azurite_strict)"
+        read_type: reference
+        extract: "Sync pattern to mirror: one parametrised factory threading rejects_write_under_file_ancestor, registered for both the baseline and strict names"
+        outcome: ok
+      - file: tests/backends/fixtures/_loader.py
+        section: "rejects derivation (flat_namespace override)"
+        read_type: reference
+        extract: "flat_namespace=true + no explicit rejects → rejects=False, so the azurite_async baseline constructs the backend with reject_write_under_file_ancestor=False"
+        outcome: ok
+  - id: implement
+    name: Register the fixture
+    steps:
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "[fixture.azurite_async]"
+        read_type: reference
+        extract: "Add non-strict async sibling of azurite: is_async=true, flat_namespace=true, self_op_supported=true, large_write_distinct=true; replace the stale 'no baseline registered' note"
+        outcome: ok
+      - file: tests/backends/fixtures/azurite_async.py
+        section: "_make_factory + register loop"
+        read_type: reference
+        extract: "Refactor the single _factory into _make_factory(reject) and register both azurite_async and azurite_async_strict, mirroring azurite.py"
+        outcome: ok
+      - file: tests/backends/fixtures/__init__.py
+        section: "_MODULE_FOR mapping"
+        read_type: verify
+        extract: "azurite_async maps 1:1 to its module (no entry needed); azurite_async_strict already maps to azurite_async — the module registers both, loader dedups by module"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "_ASYNC_LARGE_RICH_FIELDS_XFAIL"
+        read_type: reference
+        extract: "Add 'azurite_async' → strict=True (fixture-name keyed, cannot mask the live lane); rewrite the comment that said the baseline did not exist"
+        outcome: ok
+      - file: tests/backends/fixtures/test_registry.py
+        section: "test_bk286_large_write_distinct_opt_in_set"
+        read_type: reference
+        extract: "Add azurite_async to the opted-in fixture set"
+        outcome: ok
+  - id: verify
+    name: Verify against the Azurite emulator
+    steps:
+      - file: tests/backends/fixtures/test_registry.py
+        section: "(full)"
+        read_type: verify
+        extract: "87 passed: opted-in set + parse round-trips green after adding the fixture"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "azurite_async full async conformance (--stage=2 -k azurite_async)"
+        read_type: verify
+        extract: "96 passed / 40 skipped / 2 strict XFAIL (large-streamed write+write_atomic diverge as expected); no unexpected failures; azurite_async_strict file-ancestor path intact through the refactored factory"
+        outcome: ok
+  - id: docs
+    name: Close item + trace
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "[Unreleased]"
+        read_type: reference
+        extract: "Close BUG-217 (infra.test, no CHANGELOG); record the emulator verification counts"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "Test/fixture + backlog touch; gen-backlogid (BUG 216→217), lint/traceability green; no src/CHANGELOG ripple"
+        outcome: ok
+      - file: tests/backends/fixtures/azurite_async.py
+        section: "module docstring"
+        read_type: reference
+        extract: "PR review: prefer spec ids over backlog ids in the docstring — BUG-217→WR-001a (large-write consistency), ID-211→BE-008 (file-ancestor write gate)"
+        outcome: ok
