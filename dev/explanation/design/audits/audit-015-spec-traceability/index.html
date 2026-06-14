@@ -10177,7 +10177,7 @@ this line, for the actionable counts.</p>
 <td>001</td>
 <td>STORE-007</td>
 <td>Thread Safety</td>
-<td>No mark, no test</td>
+<td>No mark, no test → <strong>Resolved (BK-289):</strong> marked + tested in the posture-gated concurrency lane (sync; the async mirror ASYNC-055 likewise)</td>
 </tr>
 <tr>
 <td>001</td>
@@ -11104,7 +11104,7 @@ unbuilt-Graph IDs owned by ID-127.</p>
 <p>Not full type (a), but flagged for completeness — these invariants are covered except
 for one clause:</p>
 <ul>
-<li><strong>STORE-007</strong> — share-across-threads is tested (CHILD-010 concurrency test); the <em>immutability</em> clause has no dedicated test (Store is not a frozen dataclass).</li>
+<li><strong>STORE-007</strong> — share-across-threads is tested (CHILD-010 concurrency test); the <em>immutability</em> clause has no dedicated test (Store is not a frozen dataclass). <strong>BK-289</strong> adds a dedicated, backend-level share-across-threads test carrying the <code>STORE-007</code> mark across every <code>thread_safe</code> backend.</li>
 <li><strong>PA-005</strong> — root-as-empty-string mapping is tested; <em>file ops on root raising <code>FileNotFoundError</code></em> is not.</li>
 <li><strong>HTTP-TR-002</strong> — auto-detect + urllib fallback is tested; the <em>httpx-before-requests preference ordering</em> is not directly asserted.</li>
 <li><strong>HTTP-TR-003</strong> — explicit transport override is tested; the <em>ImportError-when-library-missing</em> branch is <code>pytest.skip</code>-ped, never asserted.</li>

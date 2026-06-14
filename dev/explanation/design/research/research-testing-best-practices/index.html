@@ -10734,7 +10734,7 @@ lessons learned, industry best practices, and proposes enforceable guardrails.</
 <td>M-14</td>
 <td>Zero concurrency tests despite thread-safety spec claims</td>
 <td>Missing behavioral tests</td>
-<td><strong>Open</strong></td>
+<td>Fixed (BK-289)</td>
 </tr>
 <tr>
 <td>M-16</td>
@@ -11165,7 +11165,8 @@ actual CLAUDE.md edit will be reviewed in its own implementation PR.</p>
   <code>test_cache.py</code>, <code>test_proxy.py</code> with public API checks</li>
 <li>[ ] Add <code>diff-cover</code> to PR CI (fail-under=90 for new code)</li>
 <li>[ ] Run <code>pytest-gremlins</code> baseline (diagnostic only, establish starting score)</li>
-<li>[ ] Add concurrency test suite for thread-safety claims (M-14)</li>
+<li>[x] Add concurrency test suite for thread-safety claims (M-14) — BK-289
+  posture-gated lane (<code>tests/backends/conformance/test_concurrency.py</code> + <code>aio/</code>)</li>
 </ul>
 <h3 id="phase-3-advanced-quality-measures-future">Phase 3: Advanced Quality Measures (Future)<a class="headerlink" href="#phase-3-advanced-quality-measures-future" title="Permanent link">&para;</a></h3>
 <ul>
