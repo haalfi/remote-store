@@ -10441,6 +10441,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#async-094" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-094: Concurrent-Use Posture (Async Mirror)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -12173,6 +12184,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#async-094" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-094: Concurrent-Use Posture (Async Mirror)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -12676,6 +12698,41 @@ connectivity probe of its own, but it also does not swallow the
 backend's probe errors.
 <strong>See also:</strong> <a href="../026-health-check/">026-health-check.md</a>, ASYNC-057,
 ASYNC-087.</p>
+<h3 id="async-094">ASYNC-094: Concurrent-Use Posture (Async Mirror)<a class="headerlink" href="#async-094" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Every concrete <code>AsyncBackend</code> declares a concurrent-use posture —
+the async mirror of BE-028. The <strong>default</strong> is: one instance is safe for
+concurrent coroutines driven by a <strong>single</strong> event loop, and is <strong>never</strong> safe
+across multiple event loops — each loop needs its own instance (ASYNC-055
+applied at the backend layer). Correctness rests on cooperative single-threaded
+scheduling, not locks: state mutated only between <code>await</code> points is race-free on
+one loop. An <code>AsyncBackend</code> whose shared transport is not loop-confined MUST
+document the exception.</p>
+<p><strong>Bridge asymmetry — the cross-adapter rule callers MUST know:</strong> the two adapters
+that cross the sync/async boundary do <strong>not</strong> confer the same safety, because the
+direction of the bridge determines it.</p>
+<ul>
+<li><code>AsyncBackendSyncAdapter</code> (async backend → sync callers; e.g. a <code>GraphBackend</code>
+  driven synchronously) owns one private event loop in a daemon thread and
+  <strong>serialises</strong> every concurrent sync caller onto it. It is therefore safe under
+  the ASYNC-089 invariant (≥32 concurrent sync threads, no deadlock, no
+  result/exception crossover). Wrapping a loop-safe async backend this way
+  <em>manufactures</em> a thread-safe sync backend.</li>
+<li><code>SyncBackendAdapter</code> (sync backend → async callers) dispatches each call via
+  <code>asyncio.to_thread</code> onto a <strong>thread pool</strong>, adding no serialisation of its own.
+  It is safe <strong>only if the wrapped sync backend is <code>thread_safe</code></strong> (BE-028).
+  Wrapping a <code>single_connection</code> backend (SFTP's single paramiko channel, or
+  <code>urllib</code>'s shared opener) and driving it with <code>asyncio.gather</code> is <strong>unsafe</strong> —
+  concurrent <code>to_thread</code> workers touch the same non-thread-safe client. The
+  remedy is BE-028's: one instance per worker, or an external lock.</li>
+</ul>
+<p><strong>Rationale:</strong> sync→async <em>borrows</em> the backend's thread-safety (or its lack);
+async→sync <em>manufactures</em> thread-safety by funnelling through one loop. Encoding
+the asymmetry stops callers from assuming <code>SyncBackendAdapter</code> confers the
+protection <code>AsyncBackendSyncAdapter</code> does.</p>
+<p><strong>See also:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a>
+(BE-028), ASYNC-055 (one-loop rule), ASYNC-089 (serialisation invariant),
+<a href="../009-sftp-backend/">009-sftp-backend.md</a> (SFTP-029),
+<a href="../../adrs/0025-async-to-sync-backend-adapter/">../adrs/0025-async-to-sync-backend-adapter.md</a>.</p>
 
 
 

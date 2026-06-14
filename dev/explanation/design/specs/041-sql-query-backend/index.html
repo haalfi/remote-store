@@ -10180,6 +10180,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#sql-query-092-concurrent-use-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQL-QUERY-092: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10979,6 +10990,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#sql-query-092-concurrent-use-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQL-QUERY-092: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11260,6 +11282,22 @@ is deferred to a future version.</p>
 <p><strong>Invariant:</strong> The <code>ArrowSerializer</code> converts SQL rows to a PyArrow Table,
 then serializes. This is a full copy. Zero-copy paths (ADBC) are deferred
 to v3.</p>
+<h3 id="sql-query-092-concurrent-use-posture">SQL-QUERY-092: Concurrent-Use Posture<a class="headerlink" href="#sql-query-092-concurrent-use-posture" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>SQLQueryBackend</code> is <code>thread_safe</code> <strong>when backed by a
+connection-pooled engine</strong> (the BE-028 default for the network-attached case): a
+single instance is safe to share across threads. Each query acquires its own
+connection from the SQLAlchemy pool via <code>connect()</code> / <code>begin()</code> and returns it on
+completion; no <code>Connection</code> is held on the instance across operations. A backend
+built around a single shared <code>Connection</code> would not be thread-safe, but this
+backend does not do that. Each operation runs in its own transaction; there is
+no cross-operation transactionality.</p>
+<p><strong>Carve-out (per-thread-isolated engines):</strong> as for <a href="../040-sql-blob-backend/#sql-blob-072">SQL-BLOB-072</a> — the posture follows the engine's pool
+class. A <code>sqlite:///:memory:</code> URL (<code>SingletonThreadPool</code>) is effectively
+<code>single_connection</code> (one in-memory database per thread); confine the instance to
+one thread or give each thread its own. <code>QueuePool</code>-backed engines are
+<code>thread_safe</code>.</p>
+<p><strong>See also:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a>
+(BE-028).</p>
 
 
 

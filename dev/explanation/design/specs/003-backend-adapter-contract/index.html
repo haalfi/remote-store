@@ -9023,6 +9023,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concurrency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#be-028-concurrent-use-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BE-028: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -10788,6 +10816,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concurrency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#be-028-concurrent-use-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BE-028: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -11186,6 +11242,47 @@ raising <code>InvalidPath</code>. All other operations MUST raise appropriate er
 <p><strong>Enforcement:</strong> Runtime capability enforcement for these methods is performed by <code>Store._gate()</code>, not by <code>Backend</code> directly. <code>_BACKEND_GATING</code> is the authoritative source for graph-IR generation only; keeping it in sync with the Backend ABC is enforced by <code>tests/scripts/test_gen_graph.py::test_backend_gating_keys_match_backend_members</code>.
 <strong>Async counterpart:</strong> <code>AsyncBackend</code> carries the same table minus <code>read_seekable</code> / <code>open_atomic</code> in <code>_ASYNC_BACKEND_GATING</code> — see <a href="../029-async-store-backend-api/">ASYNC-045a</a>.
 <strong>See also:</strong> <code>sdd/CLAUDE-REFERENCE.md</code> ripple-check row for <code>_BACKEND_GATING</code>.</p>
+<hr />
+<h2 id="concurrency">Concurrency<a class="headerlink" href="#concurrency" title="Permanent link">&para;</a></h2>
+<h3 id="be-028-concurrent-use-posture">BE-028: Concurrent-Use Posture<a class="headerlink" href="#be-028-concurrent-use-posture" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Every concrete <code>Backend</code> declares a <strong>concurrent-use posture</strong>,
+one of two values:</p>
+<ul>
+<li><strong><code>thread_safe</code></strong> (the default — a backend spec need not restate it): a single
+  instance is safe to share across threads, and each <code>Backend</code> operation is
+  atomic with respect to other operations on the same instance.</li>
+<li><strong><code>single_connection</code></strong>: a single instance is <strong>not</strong> safe under concurrent
+  use — it wraps a non-thread-safe native client (e.g. one SFTP channel, or a
+  <code>urllib</code> opener whose redirect counter is shared). Such a backend MUST document
+  the posture in its spec <strong>and</strong> class docstring, and MUST state the remedy: one
+  instance per thread, or an external serializing wrapper.</li>
+</ul>
+<p>No backend provides multi-operation transactionality: atomicity is per-operation
+only (MEM-026), and ordering between concurrent callers is not guaranteed.</p>
+<p><strong>Postconditions:</strong>
+- <code>thread_safe</code> is the posture of <code>LocalBackend</code> (stateless; delegates to
+  <code>os</code>/<code>shutil</code>, serialised by the kernel), <code>MemoryBackend</code> (a single
+  <code>threading.Lock</code>, MEM-025), the cloud and SQL backends (their native clients —
+  the boto3/s3fs client, the Azure SDK service clients, the SQLAlchemy
+  engine/pool — are documented thread-safe for concurrent per-instance use), and
+  <code>GraphBackend</code> on the async axis (GR-059).
+- <code>single_connection</code> is the posture of <code>SFTPBackend</code> (SFTP-029) and
+  <code>ReadOnlyHttpBackend</code> on its default <code>urllib</code> transport (HTTP-CONC-001).
+- An <strong>undeclared</strong> posture is a contract violation, not a silent default: every
+  concrete backend states its posture, or inherits the <code>thread_safe</code> default by
+  the terms of this clause (<code>LocalBackend</code>, which has no numbered spec, is
+  <code>thread_safe</code> by this paragraph).</p>
+<p><strong>Rationale:</strong> STORE-007 promises a <code>Store</code> is "safe to share across threads,"
+but a <code>Store</code> is immutable and merely delegates — the guarantee bottoms out in
+the backend. This clause turns "thread-safe" from an unstated assumption into an
+explicit per-backend obligation a caller can read from the spec without reading
+source. Like CAP-007's quality flags, declaring the posture gates no method; it
+documents a property every method has. The posture is the authoritative source
+for the machine-readable <code>concurrency</code> registry field the cross-backend
+concurrency conformance lane tests against.</p>
+<p><strong>See also:</strong> <a href="../001-store-api/">001-store-api.md</a> (STORE-007),
+<a href="../013-memory-backend/">013-memory-backend.md</a> (MEM-025/026),
+<a href="../029-async-store-backend-api/">029-async-store-backend-api.md</a> (ASYNC-094).</p>
 
 
 

@@ -9193,6 +9193,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concurrency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sftp-029-concurrent-use-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SFTP-029: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -10792,6 +10820,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concurrency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sftp-029-concurrent-use-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SFTP-029: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -11005,6 +11061,22 @@ the backend persists newly accepted host keys to disk on disconnect.</p>
 <li>Inline keys (<code>known_host_keys</code> parameter, config dict, or env var) are never
   persisted to disk.</li>
 </ul>
+<h2 id="concurrency">Concurrency<a class="headerlink" href="#concurrency" title="Permanent link">&para;</a></h2>
+<h3 id="sftp-029-concurrent-use-posture">SFTP-029: Concurrent-Use Posture<a class="headerlink" href="#sftp-029-concurrent-use-posture" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>SFTPBackend</code> is <code>single_connection</code> (the BE-028 non-default
+posture): a single instance drives one paramiko <code>SFTPClient</code> over one SSH
+channel, which is <strong>not</strong> safe for concurrent use. Concurrent operations on one
+instance race on the shared channel and may interleave or corrupt protocol
+state.</p>
+<p><strong>Remedy:</strong> Use one instance per thread, or drive it through
+<code>AsyncBackendSyncAdapter</code> (which funnels concurrent callers onto a single
+private loop and serializes them — ASYNC-089). A <code>single_connection</code> backend
+wrapped by <code>SyncBackendAdapter</code> and driven with <code>asyncio.gather</code> is <strong>not</strong> safe
+(ASYNC-094). This pins the caveat previously stated only in the class docstring
+and <code>docs-src/guides/async.md</code>.</p>
+<p><strong>See also:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a>
+(BE-028), <a href="../029-async-store-backend-api/">029-async-store-backend-api.md</a>
+(ASYNC-094).</p>
 
 
 

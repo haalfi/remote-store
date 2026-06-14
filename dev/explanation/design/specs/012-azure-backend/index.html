@@ -9394,6 +9394,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#az-037-concurrent-use-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AZ-037: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11031,6 +11042,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#az-037-concurrent-use-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AZ-037: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11313,6 +11335,9 @@
 <strong>Probe placement:</strong> Sync <code>read()</code> and <code>read_seekable()</code> pre-probe via <code>BlobClient.get_blob_properties()</code> (HEAD) before opening the stream — the stream is lazy and may never be drained, so a post-probe would leak the response. Async <code>read()</code> post-probes via <code>downloader.properties</code> (populated by the awaited <code>download_blob</code>) and explicitly closes the downloader before raising so the unconsumed HTTP body is returned to the pool — no separate HEAD round-trip is incurred. <code>read_bytes()</code> post-probes (the full body has already been read). Sync and async <code>delete()</code> pre-probe so the marker is preserved on the failure path. Folder-API operations probe <code>DataLakeDirectoryClient.get_directory_properties().metadata.hdi_isfolder</code> and treat absence-of-marker as "this is a file, not a folder." Root-path carve-out: <code>get_folder_info("")</code> skips the per-path probe entirely (see <a href="#az-024-get_folder_info">AZ-024</a>) — the root is always a folder and the SDK rejects the empty path.
 <strong>Postconditions:</strong> Adds one HEAD round-trip per affected sync read/delete call on HNS; async paths reuse the eager-awaited SDK response for the probe (no extra RTT).
 <strong>Originated in:</strong> BUG-190, BUG-192 (write/open_atomic), then extended by BUG-195 (get_file_info), BUG-197 (read/delete), BUG-198 (folder-API on file), BUG-200 (move/copy directory checks), BUG-203 (is_file/is_folder).</p>
+<h3 id="az-037-concurrent-use-posture">AZ-037: Concurrent-Use Posture<a class="headerlink" href="#az-037-concurrent-use-posture" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>AzureBackend</code> is <code>thread_safe</code> (the BE-028 default): a single instance is safe to share across threads. The Azure SDK service clients (<code>BlobServiceClient</code>, <code>DataLakeServiceClient</code>) are immutable after construction and documented safe for concurrent use; per-blob operations are atomic at the object level. The async sibling <code>AsyncAzureBackend</code> meets the async mirror <a href="../029-async-store-backend-api/#async-094">ASYNC-094</a>: safe for concurrent coroutines on one loop, never across loops. On non-HNS accounts <code>move</code> is a non-atomic copy-then-delete (BE-018); HNS rename is server-side but still not transactional across a concurrent racer.</p>
+<p><strong>See also:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a> (BE-028), <a href="../029-async-store-backend-api/">029-async-store-backend-api.md</a> (ASYNC-094).</p>
 
 
 

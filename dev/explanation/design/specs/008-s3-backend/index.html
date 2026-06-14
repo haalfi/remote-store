@@ -9166,6 +9166,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3-028" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3-028: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10799,6 +10810,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3-028" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3-028: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11029,6 +11051,9 @@ argument 'config'</code> (BUG-178, BUG-185).</p>
 - A caller passing <code>client_options={"use_listings_cache": True}</code> (or <code>False</code>) keeps their value unchanged (<code>setdefault</code> semantics, matching <code>anon</code>).
 - Callers who want caching re-enable it via <code>client_options</code> or the <code>ext.cache</code> extension.</p>
 <p><strong>Scope:</strong> Applies to both <code>S3Backend</code> and <code>S3PyArrowBackend</code> (both use the <code>_S3Base._build_s3fs_kwargs()</code> builder).</p>
+<h3 id="s3-028">S3-028: Concurrent-Use Posture<a class="headerlink" href="#s3-028" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>S3Backend</code> is <code>thread_safe</code> (the BE-028 default): a single instance is safe to share across threads. The underlying <code>boto3</code> client — and the <code>s3fs</code> filesystem, which runs its own dedicated event-loop thread — is documented thread-safe for concurrent per-instance use; each operation is atomic at the object level (S3 has no native directory state to corrupt). <code>move</code> / <code>copy</code> remain copy-then-delete and are therefore not atomic across the pair (CAP-007, BE-018), independent of thread-safety.</p>
+<p><strong>See also:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a> (BE-028).</p>
 
 
 

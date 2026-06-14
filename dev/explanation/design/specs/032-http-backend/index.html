@@ -9956,6 +9956,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concurrency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#http-conc-001-concurrent-use-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP-CONC-001: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -11030,6 +11058,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concurrency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#http-conc-001-concurrent-use-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP-CONC-001: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -11320,6 +11376,25 @@ tokens.</p>
 503, 504 and connection errors) are retried according to <code>RetryPolicy</code> fields:
 <code>max_attempts</code>, <code>backoff_base</code>, <code>backoff_max</code>, <code>jitter</code>, <code>timeout</code>. The
 <code>Retry-After</code> header is honoured when present.</p>
+<h2 id="concurrency">Concurrency<a class="headerlink" href="#concurrency" title="Permanent link">&para;</a></h2>
+<h3 id="http-conc-001-concurrent-use-posture">HTTP-CONC-001: Concurrent-Use Posture<a class="headerlink" href="#http-conc-001-concurrent-use-posture" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>ReadOnlyHttpBackend</code>'s posture depends on the selected
+transport (HTTP-TR-001):</p>
+<ul>
+<li>On the stdlib <code>urllib</code> baseline the backend is <code>single_connection</code> (the
+  BE-028 non-default posture): the <code>urllib</code> opener carries a shared
+  redirect counter and is not safe for concurrent use on one instance.</li>
+<li>With an injected <code>httpx</code> or <code>requests</code> session the backend is
+  <code>thread_safe</code>: those clients are documented safe for concurrent
+  per-instance use, and each read is an independent request.</li>
+</ul>
+<p><strong>Remedy (urllib path):</strong> Use one instance per thread, install the <code>httpx</code> or
+<code>requests</code> extra, or drive the backend through <code>AsyncBackendSyncAdapter</code>
+(ASYNC-089). A <code>single_connection</code> backend wrapped by <code>SyncBackendAdapter</code> and
+driven with <code>asyncio.gather</code> is <strong>not</strong> safe (ASYNC-094).</p>
+<p><strong>See also:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a>
+(BE-028), <a href="../029-async-store-backend-api/">029-async-store-backend-api.md</a>
+(ASYNC-094).</p>
 
 
 

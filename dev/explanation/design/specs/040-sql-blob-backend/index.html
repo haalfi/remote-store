@@ -10106,6 +10106,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#sql-blob-072" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQL-BLOB-072: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10887,6 +10898,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#sql-blob-072" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQL-BLOB-072: Concurrent-Use Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11167,6 +11189,26 @@ trailing slash prevents <code>"data"</code> from matching <code>"dataset/file.tx
 <p><strong>Invariant:</strong> Uses SQLAlchemy's default connection pool. No custom pool
 configuration. Users can tune via engine kwargs when passing a pre-built
 engine.</p>
+<h3 id="sql-blob-072">SQL-BLOB-072: Concurrent-Use Posture<a class="headerlink" href="#sql-blob-072" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>SQLBlobBackend</code> is <code>thread_safe</code> <strong>when backed by a
+connection-pooled engine</strong> (the BE-028 default for the network-attached case): a
+single instance is safe to share across threads. Each operation acquires its own
+connection from the SQLAlchemy pool (SQL-BLOB-071) via <code>connect()</code> / <code>begin()</code>
+and returns it on completion; no <code>Connection</code> is held on the instance across
+operations. A backend built around a single shared <code>Connection</code> would not be
+thread-safe — SQLAlchemy <code>Connection</code> objects are not concurrency-safe — but
+this backend does not do that. Each blob write is atomic within its own
+transaction; there is no cross-operation transactionality.</p>
+<p><strong>Carve-out (per-thread-isolated engines):</strong> the posture follows the engine's
+pool class, not the backend code. A <code>sqlite:///:memory:</code> URL — SQLAlchemy's
+default <code>SingletonThreadPool</code> — hands each thread its <em>own</em> in-memory database,
+so a shared instance is effectively <code>single_connection</code>: confine it to one
+thread, or give each thread its own backend. The same applies to any engine
+configured with a per-thread or single-connection pool. <code>QueuePool</code>-backed
+engines (PostgreSQL, MySQL, file-backed SQLite with a shared cache) are
+<code>thread_safe</code> as stated above.</p>
+<p><strong>See also:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a>
+(BE-028).</p>
 
 
 
