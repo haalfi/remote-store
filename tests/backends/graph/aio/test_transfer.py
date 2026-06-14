@@ -377,3 +377,51 @@ class TestMidStreamResume:
             with pytest.raises(BackendUnavailable) as exc:
                 await backend.read_bytes("a.txt")
         assert "transport" in str(exc.value).lower()
+
+
+class TestClosedClientStream:
+    """GR-051 / BUG-219: a closed client during a streaming read surfaces typed.
+
+    The op-after-close case hits the backend's ``_client`` guard before reaching
+    ``stream_range``; this branch is only reachable when the client closes mid
+    stream, so ``stream_range`` is driven directly here.
+    """
+
+    @staticmethod
+    async def _no_refetch() -> dict[str, object]:
+        raise AssertionError("refetch must not be called")
+
+    @pytest.mark.spec("GR-051")
+    async def test_stream_on_closed_client_raises_backend_unavailable(self) -> None:
+        client = httpx.AsyncClient()
+        await client.aclose()
+        agen = graph_transfer.stream_range(
+            client,
+            "a.txt",
+            _file_item(),
+            refetch=self._no_refetch,
+            on_fallback=lambda: None,
+            on_range_success=lambda: None,
+        )
+        with pytest.raises(BackendUnavailable):
+            async for _ in agen:
+                pass
+
+    @respx.mock
+    @pytest.mark.spec("GR-051")
+    async def test_stream_reraises_unrelated_runtimeerror(self) -> None:
+        # An unrelated RuntimeError on an *open* client must propagate, never be
+        # masked as BackendUnavailable (the translation keys on client.is_closed).
+        respx.get(_DL1).mock(side_effect=RuntimeError("boom"))
+        async with httpx.AsyncClient() as client:
+            agen = graph_transfer.stream_range(
+                client,
+                "a.txt",
+                _file_item(),
+                refetch=self._no_refetch,
+                on_fallback=lambda: None,
+                on_range_success=lambda: None,
+            )
+            with pytest.raises(RuntimeError, match="boom"):
+                async for _ in agen:
+                    pass

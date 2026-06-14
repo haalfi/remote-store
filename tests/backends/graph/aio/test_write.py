@@ -724,12 +724,25 @@ class TestUseAfterClose:
     @respx.mock
     @pytest.mark.spec("GR-051")
     async def test_concurrent_ops_after_aclose_all_typed(self) -> None:
-        # The FastAPI-shutdown shape: many ops racing a close. Every one must
-        # surface a typed error, never a bare RuntimeError (BUG-219 live-repro:
-        # 5/5 in-flight ops were RuntimeError before the guard).
+        # Many ops issued after close (the FastAPI-shutdown shape): each hits the
+        # _closed guard on the central _client accessor and must surface a typed
+        # BackendUnavailable, never a silent recreate. (The mid-flight closed-client
+        # RuntimeError-translation path is covered by
+        # test_op_on_closed_client_raises_typed_not_runtimeerror.)
         respx.get(url__regex=r".*/root:/.+:$").mock(return_value=httpx.Response(200, json=_drive_item()))
         backend = _make()
         await backend.get_file_info("warm.txt")
         await backend.aclose()
         results = await asyncio.gather(*(backend.get_file_info(f"f{i}.txt") for i in range(8)), return_exceptions=True)
         assert all(isinstance(r, BackendUnavailable) for r in results), results
+
+    @respx.mock
+    @pytest.mark.spec("GR-051")
+    async def test_unrelated_runtimeerror_is_not_swallowed(self) -> None:
+        # The closed-client translation keys on client.is_closed, so an unrelated
+        # RuntimeError on an *open* client must propagate — never be masked as
+        # BackendUnavailable (that would hide a real bug).
+        respx.get(url__regex=r".*/root:/.+:$").mock(side_effect=RuntimeError("boom"))
+        backend = _make()
+        with pytest.raises(RuntimeError, match="boom"):
+            await backend.get_file_info("x.txt")
