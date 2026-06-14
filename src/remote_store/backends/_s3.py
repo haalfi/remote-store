@@ -201,6 +201,13 @@ class S3Backend(_S3Base):
                     raise
                 else:
                     f.close()
+            # WriteResult.etag/digest are sourced from this head_object call --
+            # the SAME call get_file_info() reads (S3-024) -- so the two agree by
+            # construction and need no consistency xfail. (Contrast Azure, whose
+            # write-response digest can diverge from the stored blob's: BUG-216.)
+            # s3fs uploads normal-sized objects in a single PUT (no multipart
+            # WriteResult path here even at ~10 MiB); the always-multipart S3 lane
+            # is S3PyArrowBackend.
             raw = self._fs.call_s3("head_object", Bucket=self._bucket, Key=path, ChecksumMode="ENABLED")
         etag_raw: str | None = raw.get("ETag")
         etag = etag_raw.strip('"').lower() if etag_raw else None
