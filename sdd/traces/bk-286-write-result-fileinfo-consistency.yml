@@ -22,7 +22,7 @@ surprising_ripples:
   # and azure_live_async would have hard-failed. Required a separate async roster
   # (the existing _ASYNC_*_XFAIL precedent) and a read of the async backend name.
   - src/remote_store/aio/backends/_azure.py
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -112,6 +112,11 @@ phases:
         section: "build_graph_live_sync_store / graph_lake / store_chain"
         read_type: gate
         extract: "Graph is async-only — bridge via AsyncBackendSyncAdapter (azure-bridged pattern); root via Store.root_path so an unrooted sibling cleans the scratch folder; live-gated"
+      - file: tests/e2e/conftest.py
+        section: "store_chain teardown (PR-review leak finding)"
+        read_type: verify
+        extract: "Review caught: building the live Graph hop before the try leaks the already-open Docker resources if the build raises. Moved the build inside the try (graph_appended flag) + nested finally so _teardown_store_chain always runs. Verified against live MinIO/Azurite: forced graph-build failure leaks zero buckets/containers; happy-path ext_write live still passes"
+        outcome: ok
       - file: tests/e2e/test_transfer.py
         section: "TestCrossBackendTransfer (memory<->graph)"
         read_type: reference

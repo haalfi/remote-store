@@ -622,14 +622,24 @@ def store_chain() -> Iterator[list[tuple[str, Store]]]:
     """
     stores, cleanups = _build_store_chain()
     graph_scratch: str | None = None
-    if _graph_live_available():
-        graph_scratch = f"e2e-chain-{uuid.uuid4().hex[:8]}"
-        stores.append(("graph-bridged", build_graph_live_sync_store(graph_scratch)))
+    graph_appended = False
     try:
+        # Build the live Graph hop *inside* the try: a build failure (live-lane
+        # auth/network hiccup) must still reach the finally so
+        # _teardown_store_chain() releases the Docker resources
+        # _build_store_chain() already opened — otherwise they leak.
+        if _graph_live_available():
+            graph_scratch = f"e2e-chain-{uuid.uuid4().hex[:8]}"
+            stores.append(("graph-bridged", build_graph_live_sync_store(graph_scratch)))
+            graph_appended = True
         yield stores
     finally:
-        if graph_scratch is not None:
-            _name, graph_store = stores.pop()
-            graph_store.close()
-            _graph_scratch_cleanup(graph_scratch)
-        _teardown_store_chain(stores, cleanups)
+        # Nested finally so a failure closing the Graph hop can never skip the
+        # Docker teardown.
+        try:
+            if graph_appended:
+                _name, graph_store = stores.pop()
+                graph_store.close()
+                _graph_scratch_cleanup(graph_scratch)
+        finally:
+            _teardown_store_chain(stores, cleanups)
