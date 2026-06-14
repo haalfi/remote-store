@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BK-285: API reference restructured so the async surface mirrors the package — `remote_store.aio` now has its own `reference/api/aio/` subtree (AsyncStore, AsyncBackend, adapters, async backends, async extensions) instead of one monolithic page; `GraphBackend` and the other async-native backends are discoverable under Backends; the index explains its grouping and links a sync ↔ async map
+- BK-285: API reference restructured to mirror the package — async surface split into a `reference/api/aio/` subtree, async-native backends surfaced
 - BK-261: Graph `overwrite=True` replace-409 quirk on SharePoint-backed drives documented as a hard backend limitation (no speculative guard taken; delete-then-write is the workaround)
 - BK-266: Graph backend correctness edges
 - BK-265: Graph guide & docstring accuracy — present-tense setup guide, copy-paste-safe usage snippet, sync-vs-async extension matrix, complete `Raises:` clauses, read-side spooling and SharePoint-coverage caveats
