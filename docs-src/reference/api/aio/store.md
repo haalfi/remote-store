@@ -1,30 +1,29 @@
-# Store
+# AsyncStore
 
-<!-- Capability admonition placement rules (applies to this file and aio/store.md):
+<!-- Capability admonition placement rules (applies to this file and ../store.md):
      - Section-level (capability applies to ALL methods in the section):
        place the admonition directly after the section heading, before the first ::: directive.
      - Method-level (capability applies to ONE method only):
        place the admonition after that method's ::: directive block (end of method section).
 -->
 
-::: remote_store.Store
+`AsyncStore` is the async counterpart of [`Store`](../store.md): the same
+methods, the same errors, the same capability model, exposed as coroutines.
+It lives in `remote_store.aio`.
+
+::: remote_store.aio.AsyncStore
     options:
       members: false
 
-!!! info "Root path creation"
-    The root path does not need to exist before constructing the store.
-    `write()` creates intermediate folders implicitly on all backends:
-
-    ```python
-    store = Store(backend, root_path="brand-new-folder")
-    store.write("hello.txt", b"works")  # folder created automatically
-    ```
+!!! info "Async counterpart to `Store`"
+    Same methods, same errors, same capability model. See the
+    [Async Store Guide](../../../guides/async.md) for usage patterns and
+    [Store](../store.md) for the synchronous counterpart.
 
 !!! info "Thread safety"
-    `Store` is immutable after construction and can be shared across threads.
-    Backend thread safety depends on the backend implementation.
-
----
+    `AsyncStore` is immutable after construction and can be shared across
+    tasks on the same event loop. Backend thread safety depends on the
+    backend implementation.
 
 ## Reading
 
@@ -32,7 +31,7 @@
     All read methods raise `CapabilityNotSupported` on backends that do not
     declare this capability. Most backends declare it.
 
-::: remote_store.Store.read
+::: remote_store.aio.AsyncStore.read
     options:
       show_root_heading: true
       heading_level: 3
@@ -41,42 +40,29 @@
     When declared, data is fetched lazily — partial reads avoid loading the whole
     file. Without it, the backend may buffer content before returning the stream.
 
-::: remote_store.Store.read_bytes
+::: remote_store.aio.AsyncStore.read_bytes
     options:
       show_root_heading: true
       heading_level: 3
 
-::: remote_store.Store.read_seekable
+::: remote_store.aio.AsyncStore.read_text
     options:
       show_root_heading: true
       heading_level: 3
-
-!!! info "Quality flag: `Capability.SEEKABLE_READ`"
-    When declared, the stream is natively seekable. Without it, the Store falls
-    back to a `SpooledTemporaryFile` (RAM-first, spilling to disk beyond the
-    threshold). Backends may provide a more efficient implementation — for
-    example, Azure issues HTTP Range requests instead of spooling.
-
-::: remote_store.Store.read_text
-    options:
-      show_root_heading: true
-      heading_level: 3
-
----
 
 ## Writing
 
 !!! note "Requires `Capability.WRITE`"
-    `write()` and `write_text()` raise `CapabilityNotSupported` on backends that do not
-    declare this capability. Most backends declare it.
-    `write_atomic()` and `open_atomic()` additionally require `Capability.ATOMIC_WRITE`.
+    `write()` and `write_text()` raise `CapabilityNotSupported` on backends that
+    do not declare this capability. Most backends declare it.
+    `write_atomic()` additionally requires `Capability.ATOMIC_WRITE`.
 
 !!! info "Quality flag: `Capability.WRITE_RESULT_NATIVE`"
     When declared, the returned `WriteResult` fields (`etag`, `version_id`,
     `last_modified`, `digest`) are populated from the backend's write response.
     Without it, only locally computable fields are set.
 
-::: remote_store.Store.write
+::: remote_store.aio.AsyncStore.write
     options:
       show_root_heading: true
       heading_level: 3
@@ -85,7 +71,7 @@
     Passing `metadata` raises `CapabilityNotSupported` on backends that do not
     declare `Capability.USER_METADATA`. Passing `None` or `{}` is safe on all backends.
 
-::: remote_store.Store.write_text
+::: remote_store.aio.AsyncStore.write_text
     options:
       show_root_heading: true
       heading_level: 3
@@ -94,7 +80,7 @@
     Passing `metadata` raises `CapabilityNotSupported` on backends that do not
     declare `Capability.USER_METADATA`. Passing `None` or `{}` is safe on all backends.
 
-::: remote_store.Store.write_atomic
+::: remote_store.aio.AsyncStore.write_atomic
     options:
       show_root_heading: true
       heading_level: 3
@@ -105,20 +91,6 @@
 !!! note "Backend-conditional argument: `metadata=`"
     Passing `metadata` raises `CapabilityNotSupported` on backends that do not
     declare `Capability.USER_METADATA`. Passing `None` or `{}` is safe on all backends.
-
-!!! info
-    Most backends implement this as temp-file + rename. See the
-    [Backend Behavior Matrix](#backend-behavior-matrix) for details.
-
-::: remote_store.Store.open_atomic
-    options:
-      show_root_heading: true
-      heading_level: 3
-
-!!! note "Requires `Capability.ATOMIC_WRITE`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
-
----
 
 ## Deleting
 
@@ -126,17 +98,15 @@
     All delete methods raise `CapabilityNotSupported` on backends that do not
     declare this capability.
 
-::: remote_store.Store.delete
+::: remote_store.aio.AsyncStore.delete
     options:
       show_root_heading: true
       heading_level: 3
 
-::: remote_store.Store.delete_folder
+::: remote_store.aio.AsyncStore.delete_folder
     options:
       show_root_heading: true
       heading_level: 3
-
----
 
 ## Listing and Iteration
 
@@ -144,7 +114,7 @@
     All listing methods raise `CapabilityNotSupported` on backends that do not
     declare this capability.
 
-::: remote_store.Store.list_files
+::: remote_store.aio.AsyncStore.list_files
     options:
       show_root_heading: true
       heading_level: 3
@@ -154,7 +124,7 @@
     support it still return correct results — the Store applies client-side filtering
     as a safety net.
 
-::: remote_store.Store.list_folders
+::: remote_store.aio.AsyncStore.list_folders
     options:
       show_root_heading: true
       heading_level: 3
@@ -164,12 +134,12 @@
     support it still return correct results — the Store applies client-side filtering
     as a safety net.
 
-::: remote_store.Store.iter_children
+::: remote_store.aio.AsyncStore.iter_children
     options:
       show_root_heading: true
       heading_level: 3
 
-::: remote_store.Store.glob
+::: remote_store.aio.AsyncStore.glob
     options:
       show_root_heading: true
       heading_level: 3
@@ -186,15 +156,13 @@
     **Results are yielded lazily.** Backends may use pagination internally.
     Memory usage stays bounded for large directories.
 
----
-
 ## File Operations
 
 !!! note "Requires `Capability.MOVE` / `Capability.COPY`"
     `move()` requires `Capability.MOVE`; `copy()` requires `Capability.COPY`.
     Each raises `CapabilityNotSupported` on backends that do not declare the respective capability.
 
-::: remote_store.Store.move
+::: remote_store.aio.AsyncStore.move
     options:
       show_root_heading: true
       heading_level: 3
@@ -208,7 +176,7 @@
     atomicity depends on the server.
     Check `store.supports(Capability.ATOMIC_MOVE)` to query this at runtime.
 
-::: remote_store.Store.copy
+::: remote_store.aio.AsyncStore.copy
     options:
       show_root_heading: true
       heading_level: 3
@@ -220,8 +188,6 @@
     Metadata preservation is backend-dependent. S3 copies metadata;
     local preserves metadata (`copy2`); SFTP does not (stream copy).
 
----
-
 ## Metadata
 
 !!! note "Partially requires `Capability.METADATA`"
@@ -230,7 +196,7 @@
     or `Capability.LIST` when `max_depth` is set.
     `exists()`, `is_file()`, and `is_folder()` are always available.
 
-::: remote_store.Store.head
+::: remote_store.aio.AsyncStore.head
     options:
       show_root_heading: true
       heading_level: 3
@@ -238,22 +204,22 @@
 !!! note "Requires `Capability.METADATA`"
     Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
-::: remote_store.Store.exists
+::: remote_store.aio.AsyncStore.exists
     options:
       show_root_heading: true
       heading_level: 3
 
-::: remote_store.Store.is_file
+::: remote_store.aio.AsyncStore.is_file
     options:
       show_root_heading: true
       heading_level: 3
 
-::: remote_store.Store.is_folder
+::: remote_store.aio.AsyncStore.is_folder
     options:
       show_root_heading: true
       heading_level: 3
 
-::: remote_store.Store.get_file_info
+::: remote_store.aio.AsyncStore.get_file_info
     options:
       show_root_heading: true
       heading_level: 3
@@ -261,7 +227,7 @@
 !!! note "Requires `Capability.METADATA`"
     Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
-::: remote_store.Store.get_folder_info
+::: remote_store.aio.AsyncStore.get_folder_info
     options:
       show_root_heading: true
       heading_level: 3
@@ -275,11 +241,9 @@
     support it still return correct results — the Store applies client-side filtering
     as a safety net.
 
----
-
 ## Introspection
 
-::: remote_store.Store.resolve
+::: remote_store.aio.AsyncStore.resolve
     options:
       show_root_heading: true
       heading_level: 3
@@ -287,53 +251,49 @@
 !!! info
     `resolve()` is a pure introspection method — it performs no I/O and is
     never called implicitly by other Store methods. The returned
-    [`ResolutionPlan`](models.md) describes how a key maps to its storage
+    [`ResolutionPlan`](../models.md) describes how a key maps to its storage
     location.
-
----
 
 ## Lifecycle
 
-::: remote_store.Store.ping
+::: remote_store.aio.AsyncStore.ping
     options:
       show_root_heading: true
       heading_level: 3
 
-::: remote_store.Store.close
+::: remote_store.aio.AsyncStore.aclose
     options:
       show_root_heading: true
       heading_level: 3
 
-::: remote_store.Store.child
+::: remote_store.aio.AsyncStore.child
     options:
       show_root_heading: true
       heading_level: 3
-
----
 
 ## Interop (Backend-Specific)
 
 !!! warning "Backend-specific methods"
     Methods in this section expose backend internals. Using them ties your
-    code to a specific backend. For portable alternatives, use the methods
-    above.
+    code to a specific backend. For portable alternatives, see
+    [Store](../store.md) or the [Async Store Guide](../../../guides/async.md).
 
-::: remote_store.Store.unwrap
+::: remote_store.aio.AsyncStore.unwrap
     options:
       show_root_heading: true
       heading_level: 3
 
-::: remote_store.Store.native_path
+::: remote_store.aio.AsyncStore.native_path
     options:
       show_root_heading: true
       heading_level: 3
 
-::: remote_store.Store.to_key
+::: remote_store.aio.AsyncStore.to_key
     options:
       show_root_heading: true
       heading_level: 3
 
-::: remote_store.Store.supports
+::: remote_store.aio.AsyncStore.supports
     options:
       show_root_heading: true
       heading_level: 3
@@ -342,23 +302,10 @@
     `supports()` itself is portable — it works on all backends. Only the
     capability-gated methods it guards are backend-specific.
 
----
-
-## Backend Behavior Matrix
-
-How key operations behave across backends. Verify against actual code before
-relying on these in production.
-
-| Behavior | [Local](../../guides/backends/local.md) | [S3](../../guides/backends/s3.md) | [S3-PyArrow](../../guides/backends/s3-pyarrow.md) | [SFTP](../../guides/backends/sftp.md) | [Azure](../../guides/backends/azure.md) | [Memory](../../guides/backends/memory.md) | [HTTP](../../guides/backends/http.md) | [SQLBlob](../../guides/backends/sql-blob.md) | [SQLQuery](../../guides/backends/sql-query.md) |
-|----------|-------|----|------------|------|-------|--------|------|---------|-----------|
-| `move()` atomicity | Atomic (same FS) | Copy+delete | Copy+delete | Server-dependent | Copy+delete | Atomic | — | Atomic (SQL transaction) | — |
-| `copy()` preserves metadata | Yes (`copy2`) | Yes | Yes | — | Yes | — | — | Yes | — |
-| `write_atomic()` mechanism | temp+rename | Direct PUT (atomic) | Direct PUT (atomic) | temp+rename | Direct PUT or temp+rename | Direct (atomic) | — | Direct (atomic) | — |
-| Native `glob()` | Yes | Yes | Yes | — | Yes | — | — | Yes (SQL GLOB/LIKE) | Yes (in-memory) |
-| `list_files()` ordering | OS-dependent | Lexicographic | Lexicographic | OS-dependent | Lexicographic | Insertion order | — | DB-dependent | Lexicographic |
-
 ## See also
 
-- [Getting Started](../../tutorial/getting-started.md) — step-by-step guide to reading and writing files
-- [Concurrency](../../explanation/concurrency.md) — thread safety, atomic writes, and move semantics
-- [Quickstart example](../../../examples/getting_started/quickstart.py) — minimal config, write, and read
+- [Async Store Guide](../../../guides/async.md) — usage patterns, streaming, FastAPI integration
+- [Example: Async Store](../../../../examples/advanced/async_store.py) — runnable demo script
+- [Store](../store.md) — synchronous counterpart
+- [AsyncBackend](backend.md) — the backend protocol `AsyncStore` drives
+- [Concurrency](../../../explanation/concurrency.md) — thread safety and atomicity semantics

@@ -40,7 +40,7 @@ but your calling code is synchronous.
 
 ## See also
 
-- [API reference](../reference/api/aio.md) — `AsyncBackendSyncAdapter`, `SyncBackendAdapter`, `AsyncStore`
+- [API reference](../reference/api/aio/adapters.md) — `AsyncBackendSyncAdapter`, `SyncBackendAdapter`, `AsyncStore`
 - [Async guide](async.md) — `AsyncStore`, native async backends, and the
   `SyncBackendAdapter` direction
 - [Async-to-sync adapter decision record](../../sdd/adrs/0025-async-to-sync-backend-adapter.md)

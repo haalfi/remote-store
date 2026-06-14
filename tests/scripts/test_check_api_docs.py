@@ -362,7 +362,7 @@ class TestPageClassMethods:
         assert ir["b_method"] == frozenset()
 
     def test_aio_submodule_public_prefix_matched(self, mod):
-        # aio.md uses the submodule public re-export ``remote_store.aio.AsyncStore.``,
+        # aio/store.md uses the submodule public re-export ``remote_store.aio.AsyncStore.``,
         # which is neither the internal qname nor the top-level re-export. The
         # public prefix is derived by dropping ``_``-prefixed module segments (ID-172).
         text = _page("""
@@ -381,7 +381,7 @@ class TestPageClassMethods:
         assert ir == {"read": frozenset({"READ"})}
 
     def test_h3_subsections_scope_admonitions(self, mod):
-        # On the multi-class aio.md, capability groups are H3 nested under each
+        # On a multi-class page, capability groups are H3 nested under each
         # class's H2. A section-level note in one H3 group must NOT bleed into a
         # sibling H3 group (ID-172). Without H3 splitting, READ would leak onto write.
         text = _page("""
@@ -594,7 +594,7 @@ class TestIndexLinkSymbols:
 | Module | Description |
 |--------|-------------|
 | [ext.batch](extensions/batch.md) | Batch ops |
-| [aio.ext.write](extensions/aio-write.md) | Async write helpers |
+| [aio.ext.write](aio/extensions/write.md) | Async write helpers |
 """)
         assert mod.index_link_symbols(text) == set()
 

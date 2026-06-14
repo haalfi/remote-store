@@ -18,7 +18,8 @@ isolation.
 
 Phase 1: Store -> ``docs-src/reference/api/store.md``.
 Phase 2: Backend -> ``docs-src/reference/api/backend.md``.
-Phase 3: AsyncStore/AsyncBackend -> ``docs-src/reference/api/aio.md`` (ID-172).
+Phase 3: AsyncStore -> ``docs-src/reference/api/aio/store.md``; AsyncBackend ->
+``docs-src/reference/api/aio/backend.md`` (ID-172).
 Phase 4: ``__all__`` <-> ``docs-src/reference/api/index.md`` parity (ID-173).
 
 Phase 4 is a *different IR* from the method-caps check above -- a
@@ -71,8 +72,8 @@ INDEX_PAGE = API_DIR / "index.md"
 PAGES: dict[str, Path] = {
     "remote_store._store.Store": ROOT / "docs-src" / "reference" / "api" / "store.md",
     "remote_store._backend.Backend": ROOT / "docs-src" / "reference" / "api" / "backend.md",
-    "remote_store.aio._async_store.AsyncStore": ROOT / "docs-src" / "reference" / "api" / "aio.md",
-    "remote_store.aio._async_backend.AsyncBackend": ROOT / "docs-src" / "reference" / "api" / "aio.md",
+    "remote_store.aio._async_store.AsyncStore": ROOT / "docs-src" / "reference" / "api" / "aio" / "store.md",
+    "remote_store.aio._async_backend.AsyncBackend": ROOT / "docs-src" / "reference" / "api" / "aio" / "backend.md",
 }
 
 # Admonition-title prefixes that introduce a capability requirement claim.
@@ -88,10 +89,10 @@ _CAP_RE = re.compile(r"`Capability\.(\w+)`")
 _DIRECTIVE_RE = re.compile(r"^:::\s+([\w.]+)\s*$")
 _ADMONITION_RE = re.compile(r'^!!!\s+(\w+)\s+"([^"]+)"\s*$')
 # Capability groups delimit the sections that scope admonitions.  Single-class
-# pages (store.md, backend.md) use ``## H2`` group headings; the multi-class
-# aio.md nests groups as ``### H3`` under each class's ``## H2``.  Splitting on
-# H2 *or* H3 scopes admonitions to their group on both shapes -- the page H1
-# (``#``) stays in the leading section either way.
+# pages (store.md, backend.md, aio/store.md, aio/backend.md) use ``## H2`` group
+# headings; a multi-class page nests groups as ``### H3`` under each class's
+# ``## H2``.  Splitting on H2 *or* H3 scopes admonitions to their group on both
+# shapes -- the page H1 (``#``) stays in the leading section either way.
 _SECTION_RE = re.compile(r"^#{2,3}\s+(.+)$")
 
 
@@ -337,7 +338,7 @@ _PUBLIC_NAMESPACES: tuple[str, ...] = (
 # Why an explicit allowlist and not a derived ``:::``-render exemption: a
 # render cannot distinguish a row-less companion from a primary class that
 # *lost* its row, because most classes (and all classes on the shared pages
-# ``aio.md`` / ``errors.md`` / ``models.md`` / ...) are ``:::``-rendered on a
+# ``errors.md`` / ``models.md`` / ...) are ``:::``-rendered on a
 # page co-owned by siblings.  Deriving the exemption from renders would mask a
 # dropped row for any such class.  This list is small, stable, and self-policed
 # by ``TestLiveIndex`` (each entry must be public, ``:::``-rendered, and
@@ -346,7 +347,6 @@ _INDEX_EXEMPT: frozenset[str] = frozenset(
     {
         "ArrowSerializer",  # on backends/sql-query.md, with SQLQueryBackend
         "ResultSerializer",  # on backends/sql-query.md, with SQLQueryBackend
-        "AsyncAzureBackend",  # on aio.md, with the other async classes
     }
 )
 

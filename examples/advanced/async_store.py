@@ -9,7 +9,7 @@ see_also:
     url: ../../guides/async.md
     note: async usage guide
   - label: Async API
-    url: ../../reference/api/aio.md
+    url: ../../reference/api/aio/index.md
     note: API reference
 """
 

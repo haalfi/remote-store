@@ -20,10 +20,17 @@ to enable each one. For usage guides, see [Extensions](../../../guides/extension
 | [ext.streams](streams.md) | Composable BinaryIO wrappers for progress and checksums |
 | [ext.transfer](transfer.md) | Upload, download, and cross-store transfer |
 | [ext.write](write.md) | Write helpers with guaranteed client-side content hashing |
-| [aio.ext.write](aio-write.md) | Async write helpers with guaranteed client-side content hashing |
 | [ext.yaml](yaml.md) | YAML config loader (PyYAML / ruamel.yaml) |
+
+The async-native extensions live under
+[Async › Extensions](../aio/extensions/index.md):
+
+| Module | Description |
+|--------|-------------|
+| [aio.ext.write](../aio/extensions/write.md) | Async write helpers with guaranteed client-side content hashing |
 
 ## See also
 
 - [Extensions guide](../../../guides/extensions.md) — overview of all extensions with installation instructions
+- [Async extensions](../aio/extensions/index.md) — native async extension surface
 - [Choosing a Backend](../../../guides/choosing-a-backend.md) — backend selection guide

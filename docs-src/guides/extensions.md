@@ -16,7 +16,7 @@ on top of the core Store API.
 | [`ext.streams`](../reference/api/extensions/streams.md) | *(none)* | Composable BinaryIO wrappers for progress and checksums | — | — |
 | [`ext.transfer`](../reference/api/extensions/transfer.md) | *(none)* | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](../../examples/extensions/transfer_operations.py) |
 | [`ext.write`](../reference/api/extensions/write.md) | *(none)* | Write helpers with guaranteed client-side content hashing | [Guide](write-integrity.md) | — |
-| [`aio.ext.write`](../reference/api/extensions/aio-write.md) | *(none)* | Async write helpers with guaranteed client-side content hashing | [Guide](write-integrity.md) | — |
+| [`aio.ext.write`](../reference/api/aio/extensions/write.md) | *(none)* | Async write helpers with guaranteed client-side content hashing | [Guide](write-integrity.md) | — |
 | [`ext.arrow`](../reference/api/extensions/arrow.md) | `arrow` | PyArrow FileSystem adapter | [Guide](pyarrow-adapter.md) | [Example](../../examples/integrations/pyarrow_adapter.py) |
 | [`ext.parquet`](../reference/api/extensions/parquet.md) | `arrow` | Managed Parquet datasets with manifests and completion markers | [Guide](parquet-datasets.md) | [Example](../../examples/integrations/parquet_dataset.py) |
 | [`ext.otel`](../reference/api/extensions/otel.md) | `otel` | OpenTelemetry tracing and metrics bridge | [Guide](observe.md) | [Example](../../examples/extensions/otel_tracing.py) |

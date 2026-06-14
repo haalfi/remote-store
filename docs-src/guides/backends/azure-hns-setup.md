@@ -300,6 +300,6 @@ account and re-run on a single line.
 
 - [Azure backend guide](azure.md) — using the account from `remote-store`
 - [`AzureBackend` API reference](../../reference/api/backends/azure.md) — backend constructor options and method index
-- [`AsyncStore` API reference](../../reference/api/aio.md) — async surface that the live HNS test suite exercises
+- [`AsyncStore` API reference](../../reference/api/aio/store.md) — async surface that the live HNS test suite exercises
 - [Azure Storage Account documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview)
 - [Hierarchical namespace overview](https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-namespace)

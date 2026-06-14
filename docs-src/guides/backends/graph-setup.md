@@ -313,7 +313,7 @@ account's delegated consent, remove the app from
   trade-offs
 - [Capabilities matrix](../../reference/capabilities-matrix.md) — full
   backend × capability table
-- [`AsyncStore` API reference](../../reference/api/aio.md) — the async
+- [`AsyncStore` API reference](../../reference/api/aio/store.md) — the async
   surface the Graph backend implements
 - [Microsoft Graph authentication overview](https://learn.microsoft.com/graph/auth/auth-concepts)
 - [OAuth 2.0 device-code flow](https://learn.microsoft.com/entra/identity-platform/v2-oauth2-device-code)

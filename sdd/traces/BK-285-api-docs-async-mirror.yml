@@ -1,0 +1,95 @@
+id: BK-285
+title: "API reference: mirror the package, split the async monolith, surface async-only backends"
+trigger: >
+  The sync API reference mirrored the remote_store package one page per
+  namespace member, but the entire remote_store.aio namespace collapsed into a
+  single aio.md. The index disclosed neither its grouping basis nor the import
+  paths, async-only backends (Graph, AsyncAzure, AsyncMemory) appeared only in
+  the async dump so Graph looked absent from Backends, and aio.md mixed five
+  framework page-types on one page.
+source_items:
+  - BK-285
+audience:
+  - user.site
+  - user.discoverability.human
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  # PR review caught an active-backlog narrative (ID-161 prerequisites) carrying
+  # a present-tense reference to the deleted aio.md. The ripple-check "Docs
+  # navigation" row covers _nav.yml + guides/backends/index.md, and the
+  # "Tracker ID in published prose" row explicitly excludes sdd/**, so neither
+  # anticipated stale prose inside sdd/BACKLOG.md.
+  - sdd/BACKLOG.md
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: mkdocs.yml
+        section: "plugins (gen-files, literate-nav, section-index, mkdocstrings)"
+        read_type: reference
+        extract: "API pages are authored static md under docs-src/reference/api/; nav assembled from _nav.yml + index.md per directory"
+      - file: docs-src/reference/api/aio.md
+        section: "(full)"
+        read_type: reference
+        extract: "660-line monolith: AsyncStore + AsyncBackend + adapters + 3 backends + GraphAuth/GraphUtils + type alias"
+      - file: docs-src/reference/api/index.md
+        section: "Async, Backends, Utilities, Extensions"
+        read_type: reference
+        extract: "grouping is role-based, undisclosed; Graph only under Async; aio.ext.write filed under sync extensions/"
+      - file: scripts/docs/nav.py
+        section: "build_summary / process"
+        read_type: gate
+        extract: "subsection entries end with / and recurse into <dir>/_nav.yml using <dir>/index.md as section landing"
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/DOCUMENTATION.md
+        section: "API page building blocks / Page-type templates"
+        read_type: gate
+        extract: "AsyncStore is a Rich class, AsyncBackend a Protocol/ABC, adapters Support classes — distinct pages; admonition vocabulary and block shapes"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Public API + Docs navigation rows"
+        read_type: gate
+        extract: "_nav.yml per section, index.md parity machine-verified by gen-api-check; aio.md referenced from _GATING/_ASYNC_BACKEND_GATING rows"
+      - file: docs-src/reference/api/store.md
+        section: "(full)"
+        read_type: reference
+        extract: "canonical Rich-class shape to mirror for aio/store.md: H2 groups, methods at heading_level 3"
+  - id: implement
+    name: Implement
+    steps:
+      - file: docs-src/reference/api/aio/store.md
+        section: "(new)"
+        read_type: reference
+        extract: "relocate AsyncStore, convert H3 groups to H2, fix one-level-deeper relative links"
+      - file: docs-src/reference/api/aio/backends/graph.md
+        section: "(new)"
+        read_type: reference
+        extract: "Graph as a first-class backend page carrying GraphBackend + GraphAuth + GraphUtils"
+      - file: docs-src/reference/api/index.md
+        section: "intro + Async + Backends"
+        read_type: reference
+        extract: "state grouping basis, add sync<->async links, add AsyncAzureBackend row, repoint async links to aio/ subtree"
+      - file: scripts/check_api_docs.py
+        section: "PAGES, _INDEX_EXEMPT"
+        read_type: gate
+        extract: "repoint AsyncStore/AsyncBackend PAGES to aio/store.md and aio/backend.md; drop AsyncAzureBackend from _INDEX_EXEMPT (now has a row)"
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/docs/check_links.py
+        section: "check_repo_links + fragment gate"
+        read_type: verify
+        extract: "hatch run check-links: all relative links and fragments resolve after the move"
+      - file: scripts/check_api_docs.py
+        section: "compare_exports / allowlist_staleness_errors"
+        read_type: verify
+        extract: "hatch run gen-api-check: caught a phantom [Async](#async) identifier link; fixed to non-identifier text"
+        outcome: misleading
+      - file: scripts/check_docs_framework.py
+        section: "G-01..G-07"
+        read_type: verify
+        extract: "hatch run docs-check + docs-build --strict: nav, classification, URL alignment clean"

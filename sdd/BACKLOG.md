@@ -180,7 +180,7 @@ and the highest ID already in this file, then take the next integer. Run
 
   **Sequence — prerequisites met (all landed, see BACKLOG-DONE.md):**
   ID-174 (docs reorg, stable source URLs), ID-172 + ID-173 (aio verifiers:
-  `aio.md` and `index.md` now reflect the async API), ID-192 (aio.md rework),
+  `aio/store.md`/`aio/backend.md` and `index.md` now reflect the async API), ID-192 (aio.md rework),
   and ID-193 (async conformance) have all shipped. Nothing gates this item;
   the link list can be written against the current stable docs.
 
