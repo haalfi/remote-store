@@ -130,7 +130,9 @@ from remote_store.aio import AsyncStore, GraphAuth, GraphBackend, GraphUtils
 
 # Device-code auth against a personal Microsoft account (consumer OneDrive).
 auth = GraphAuth(tenant_id="consumers", client_id="<entra-app-id>")
-drive_id = GraphUtils.resolve_drive_id("me", token_provider=auth)
+# Inside async code, use the async resolver — the sync GraphUtils.resolve_drive_id
+# runs its own event loop internally and raises RuntimeError from a running one.
+drive_id = await GraphUtils.aresolve_drive_id("me", token_provider=auth)
 
 backend = GraphBackend(drive_id, token_provider=auth)
 async with AsyncStore(backend, root_path="Documents") as store:
@@ -139,8 +141,10 @@ async with AsyncStore(backend, root_path="Documents") as store:
 
 `GraphAuth` selects device-code (interactive) or client-credentials
 (app-only) auth depending on whether a `client_secret` / `client_certificate`
-is supplied. `GraphUtils.resolve_drive_id` turns `"me"`, a SharePoint site
-URL, or a Teams `{"team_id", "channel_id"}` mapping into a `drive_id`.
+is supplied. `GraphUtils.resolve_drive_id` (and its async twin
+`aresolve_drive_id`, used above — call the async form inside a running loop)
+turns `"me"`, a SharePoint site URL, or a Teams `{"team_id", "channel_id"}`
+mapping into a `drive_id`.
 
 Install the extra:
 

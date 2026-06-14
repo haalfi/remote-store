@@ -1,0 +1,78 @@
+id: BUG-218
+title: "Graph copy/move monitor hangs on a non-throttle 4xx poll response"
+trigger: >
+  The ID-127 release-readiness review (deep multi-expert audit, live
+  consumer-OneDrive validated) found that poll_monitor special-cased only
+  status >= 500 as transient-pending. A non-throttle 4xx on the poll request
+  (403 permission revoked mid-operation, 404 monitor URL expired/deleted) fell
+  to the status-parser, whose error body has no `status` field, so it was
+  classified pending-unclassified and the loop re-polled. With copy_timeout
+  defaulting to None (unbounded), copy()/move() hung forever. This is the one
+  backend branch with neither replay nor live coverage: the live copy-monitor
+  test exercises only the success path.
+source_items:
+  - BUG-218
+audience:
+  - user.api
+  - user.api_docs
+  - user.site
+  - library.maintainer
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: src/remote_store/aio/backends/_graph/monitor.py
+        section: "poll_monitor, parse_graph_monitor_response"
+        read_type: gate
+        extract: "Loop special-cases only >=500 as 5xx-pending; parser returns pending(classified=False) for any body lacking a status field, so a 4xx error envelope re-polls forever under copy_timeout=None"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "classify_graph_error, error_code"
+        read_type: gate
+        extract: "Single status+code mapping table already available; 429 maps to BackendUnavailable but must stay transient on the poll path; error_code extracts the envelope code for the terminal branch"
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-026"
+        read_type: gate
+        extract: "Contract enumerates 5xx->pending and status:failed payload mapping but is silent on a transport-level 4xx on the poll request itself; copy_timeout=None unbounded-hang is disclosed but not the 4xx classification"
+        outcome: ok
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/backends/graph/aio/test_monitor.py
+        section: "TestPollTransient, TestPollHttpError"
+        read_type: gate
+        extract: "Mirror the 5xx-pending respx pattern; new TestPollHttpError asserts 404->NotFound, 403->PermissionDenied (terminal, one poll), 429->stays pending; pre-fix the 404 case HUNG (infinite fast-poll) — the bug's failure mode is an unbounded loop, confirmed by a bounded run that never terminated"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/aio/backends/_graph/monitor.py
+        section: "poll_monitor (4xx branch), imports, docstring"
+        read_type: gate
+        extract: "Add elif 400<=status<500 and status!=429 -> raise classify_graph_error(status, error_code(response_json(response))); import classify_graph_error + error_code; docstring prose + Raises updated. 429 stays in the else branch (pending, Retry-After)"
+        outcome: ok
+  - id: docs
+    name: Docs (co-shipped sibling)
+    steps:
+      - file: docs-src/guides/async.md
+        section: "GraphBackend snippet"
+        read_type: gate
+        extract: "Missed sibling of audit-016 M5 / BK-265: sync GraphUtils.resolve_drive_id adjacent to `async with AsyncStore` raises RuntimeError from a running loop; switched to `await aresolve_drive_id`, mirroring the shipped graph.md fix. Folded under BK-265 in CHANGELOG"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "Backend behaviour change ripples: spec amended (GR-026 4xx clause), failing test before fix, CHANGELOG entry (user.api), docstring Raises updated, BACKLOG-DONE + backlogid.json"
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-026"
+        read_type: verify
+        extract: "Spec gained the symmetric 4xx-terminal clause same commit; 429 carve-out and copy_timeout=None rationale recorded"
+        outcome: ok

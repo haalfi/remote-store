@@ -17,7 +17,7 @@ import httpx
 import pytest
 import respx
 
-from remote_store._errors import AlreadyExists, BackendUnavailable, NotFound
+from remote_store._errors import AlreadyExists, BackendUnavailable, NotFound, PermissionDenied
 from remote_store.aio.backends._graph import monitor as graph_monitor
 from remote_store.aio.backends._graph.monitor import (
     POLL_COMPLETE_MARKER,
@@ -203,6 +203,65 @@ class TestPollTransient:
         route = respx.get(_MONITOR).mock(
             side_effect=[
                 httpx.ConnectError("boom"),
+                httpx.Response(200, json={"status": "completed"}),
+            ]
+        )
+        await _poll(path="dst.txt")
+        assert route.call_count == 2
+
+
+# ===========================================================================
+# poll_monitor — terminal HTTP 4xx on the poll request (BUG-218, GR-026)
+# ===========================================================================
+
+
+@pytest.mark.usefixtures("_fast_poll")
+class TestPollHttpError:
+    """A non-throttle 4xx on the poll *request* is terminal, not pending.
+
+    A permission revoked mid-operation (403) or an expired / deleted monitor
+    URL (404) must surface as a typed error rather than loop until
+    ``copy_timeout`` — which defaults to ``None`` (unbounded), so treating
+    these as pending would hang ``copy()``/``move()`` forever (BUG-218). A
+    ``429`` is throttling, not failure, and must stay pending like a ``5xx``.
+    """
+
+    @respx.mock
+    @pytest.mark.spec("GR-026")
+    async def test_404_during_poll_raises_not_found(self) -> None:
+        route = respx.get(_MONITOR).mock(return_value=httpx.Response(404, json={"error": {"code": "itemNotFound"}}))
+        with pytest.raises(NotFound):
+            await _poll(path="dst.txt")
+        assert route.call_count == 1  # raised on the first 4xx; no re-poll
+
+    @respx.mock
+    @pytest.mark.spec("GR-026")
+    async def test_403_during_poll_raises_permission_denied(self) -> None:
+        respx.get(_MONITOR).mock(return_value=httpx.Response(403, json={"error": {"code": "accessDenied"}}))
+        with pytest.raises(PermissionDenied):
+            await _poll(path="dst.txt")
+
+    @respx.mock
+    @pytest.mark.spec("GR-026")
+    async def test_429_during_poll_stays_pending(self) -> None:
+        # Throttling is transient, not terminal: keep polling like a 5xx.
+        route = respx.get(_MONITOR).mock(
+            side_effect=[
+                httpx.Response(429),
+                httpx.Response(200, json={"status": "completed"}),
+            ]
+        )
+        await _poll(path="dst.txt")
+        assert route.call_count == 2
+
+    @respx.mock
+    @pytest.mark.spec("GR-026")
+    async def test_408_during_poll_stays_pending(self) -> None:
+        # 408 Request Timeout is transient (retryable by convention), not a
+        # terminal failure: keep polling like a 5xx rather than raising.
+        route = respx.get(_MONITOR).mock(
+            side_effect=[
+                httpx.Response(408),
                 httpx.Response(200, json={"status": "completed"}),
             ]
         )

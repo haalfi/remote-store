@@ -818,6 +818,29 @@ shared-helper design backend-local.
   when larger.
 - `5xx` responses during polling are treated as `pending`, not
   `failed`.
+- A non-throttle `4xx` on the poll request itself (e.g. `403`
+  permission revoked mid-operation, `404` monitor URL expired or
+  deleted) is **terminal**: the poller maps it through the GR-028
+  table (`status` + `error.code`) and raises immediately rather than
+  treating it as `pending`. Two `4xx` are excepted as transient and
+  stay `pending` like a `5xx`: `429` (throttle, honouring `Retry-After`)
+  and `408` (request timeout, retryable by convention). Without this, a
+  mid-operation terminal 4xx loops until
+  `copy_timeout`, which defaults to `None` (unbounded), hanging the
+  caller (BUG-218).
+- The `404` poll case is deliberately mapped to a terminal **error**,
+  not a terminal **success**. A `404` cannot be distinguished between a
+  monitor URL reaped *after* the operation completed (the op in fact
+  succeeded) and a monitor that is invalid or whose operation failed.
+  Erring toward raising is the safe default for a storage contract: a
+  false negative (raising on an op that did complete) is recoverable —
+  the caller re-checks and finds the item — whereas a false positive
+  (reporting success on an op that did not complete) is data-shaped and
+  silent. The residual risk is therefore a *rare* false negative, if
+  Graph reaps a `completed` monitor before the poll observes its terminal
+  `303`/`completed`; the short poll cadence (1 s floor) makes this
+  unlikely but not impossible, and it is not reproducible on the
+  consumer-OneDrive live tier.
 - A poll-response payload with `status: "failed"` has the shape
   `{"status": "failed", "error": {"code": str, "message": str, ...}}`
   with optional resource and operation identifiers. The poller maps

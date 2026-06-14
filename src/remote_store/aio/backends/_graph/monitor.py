@@ -30,7 +30,9 @@ import httpx
 from remote_store._errors import BackendUnavailable
 from remote_store.aio.backends._graph.http import (
     BACKEND_NAME,
+    classify_graph_error,
     classify_graph_error_code,
+    error_code,
     redact_presigned_url,
     response_json,
 )
@@ -135,8 +137,11 @@ async def poll_monitor(
     Polls with exponential backoff (``initial_interval`` floor, ``max_interval``
     ceiling, ``backoff_factor`` growth — defaults 1 s / 30 s / 2). A
     ``Retry-After`` header on a poll response raises the wait to at least its
-    value. Transient ``5xx`` responses and transport errors during polling are
-    treated as *pending*, not failure. ``timeout`` (the backend's
+    value. Transient ``5xx`` responses, ``408`` request timeouts, ``429``
+    throttles, and transport errors during polling are treated as *pending*, not
+    failure. Any other ``4xx`` on the poll request itself (e.g. ``403`` permission
+    revoked mid-operation, ``404`` monitor expired/deleted) is **terminal** and
+    raises immediately rather than looping until the timeout. ``timeout`` (the backend's
     ``copy_timeout``) bounds the total wall-clock; ``None`` means no ceiling — the
     poll runs until Graph reports a terminal state.
 
@@ -145,7 +150,9 @@ async def poll_monitor(
             URL, the poll count, and a ``last_status`` token), or mapped from a
             ``failed`` poll whose ``error.code`` is unknown.
         RemoteStoreError: Mapped from a ``failed`` poll body's ``error.code`` via
-            the standard table (e.g. ``AlreadyExists`` for ``nameAlreadyExists``).
+            the standard table (e.g. ``AlreadyExists`` for ``nameAlreadyExists``),
+            or from a terminal ``4xx`` on the poll request via ``status`` + code
+            (e.g. ``NotFound`` for ``404``, ``PermissionDenied`` for ``403``).
     """
     # GR-026 / ADR-0023. Cancellation (asyncio.CancelledError from close()) is not
     # caught — it propagates out so the awaiting caller unwinds cleanly.
@@ -168,8 +175,27 @@ async def poll_monitor(
         except httpx.TransportError:
             last_status = "5xx"  # a dropped poll is transient, like a 5xx
         else:
-            if response.status_code >= 500:
+            if response.status_code >= 500 or response.status_code == 408:
+                # 5xx and 408 Request Timeout are transient — re-poll, like a
+                # dropped connection (BUG-218 review).
                 last_status = "5xx"
+            elif 400 <= response.status_code < 500 and response.status_code != 429:
+                # GR-026: a non-throttle 4xx on the poll request itself is
+                # terminal — a permission revoked mid-operation (403) or an
+                # expired / deleted monitor URL (404). Raise rather than treat as
+                # pending: otherwise the loop runs until copy_timeout, which
+                # defaults to None (unbounded), hanging copy()/move() forever
+                # (BUG-218). The transient 4xx are excluded: 429 (throttle) stays
+                # pending below honouring Retry-After, and 408 is handled above.
+                # A 404 errs toward raising, not false success (a copy/move we
+                # cannot confirm must not silently report done); GR-026 records
+                # the rare-reap residual.
+                raise classify_graph_error(
+                    response.status_code,
+                    error_code(response_json(response)),
+                    path=path,
+                    backend=backend,
+                )
             else:
                 result = parser(response)
                 if result.state == "succeeded":

@@ -247,6 +247,16 @@ fixture-level `pytest.skip(...)` reason. Collection still succeeds
 and tests parametrised over fixtures of available tiers run. The CLI
 flag does not abort the session.
 
+**Running Stage-3 (live) fixtures needs `-m live` as well.** Live
+fixtures additionally carry `pytest.mark.live`, and the default
+`addopts` carry `-m 'not live'`. So `--stage=3` alone is not enough —
+a live run needs `--stage=3` **and** `-m live` together (plus the
+per-backend opt-in env var). `--stage=3` without `-m live` collects
+the live fixtures but deselects every live-marked node; `-m live`
+without `--stage=3` finds none (the stage filter excludes them). For a
+single backend's live conformance, e.g.:
+`RS_TEST_LIVE_GRAPH=1 pytest tests/backends/conformance -k graph_live --stage=3 -m live`.
+
 **CI mapping:** The default-CI job runs Stage 2. A separate
 manually-triggered or scheduled job runs Stage 3. Per-backend cost
 guardrails for Stage 3 are out of scope for this spec. See Notes.
