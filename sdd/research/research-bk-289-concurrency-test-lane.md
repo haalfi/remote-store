@@ -29,10 +29,12 @@ two axes (sync threads vs. async coroutines).
 | `AsyncStore` | Safe for concurrent coroutines on **one** loop; never across loops | ASYNC-055 (spec 029) | Memory + sync-adapter bridge only |
 | Memory | Fully thread-safe (single coarse lock) | MEM-025 (spec 013) | Yes |
 | Local | Effectively thread-safe (stateless; delegates to `os`/`shutil`) | — (undocumented) | — |
-| S3 / S3-PyArrow | Safe via thread-safe `boto3`/`s3fs` connection pools | custom-backend-guide | — |
-| Azure | Safe via thread-safe SDK HTTP client | — | — |
+| S3 (s3fs, default `s3` extra) | Safe — s3fs runs its own dedicated event-loop thread; its cross-thread story is distinct from raw boto3 | s3fs / aiobotocore docs | — |
+| S3 (boto3) | Safe — boto3 **client** is thread-safe (`_s3_boto3.py` uses `boto3.client`); boto3 **resources / `Session` are not** | [boto3 clients guide](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/clients.html) | — |
+| S3-PyArrow | Distinct client — pyarrow `S3FileSystem` (Arrow C++), not boto3/s3fs; posture to be confirmed by the Tier-3 live probe (cf. Local, §6 risk #2) | pyarrow `fs.S3FileSystem` | — |
+| Azure | Safe — service clients are immutable & thread-safe once constructed (`BlobServiceClient`/`ContainerClient`/`BlobClient`); the storage-blob *service* docs only state "no concurrent writes to the same blob" | [Azure SDK for Python design guidelines](https://azure.github.io/azure-sdk/python_design.html) | — |
 | Graph | Safe for concurrent coroutines on one loop; `overwrite=False` is a **server-side atomic create-if-absent** | live-confirmed (review); spec gap — proposed GR-059 | **none** |
-| SQLBlob | Thread-safe (SQL transaction) | concurrency.md | — |
+| SQLBlob | Safe — SQLAlchemy `Engine`/pool is thread-safe and each op opens its own `engine.connect()`/`begin()`; a **shared `Connection` would not be** thread-safe | [SQLAlchemy engine/connection docs](https://docs.sqlalchemy.org/en/20/core/connections.html) | — |
 | **SFTP** | **NOT thread-safe** — single paramiko socket; one instance per thread | SFTP-guide, `_sftp.py` docstring, async.md | Carve-out asserted in `test_sync_adapter_conformance.py` |
 | **HTTP** | **NOT thread-safe** — shared redirect-counter on the opener | `_http.py` docstring | — |
 
@@ -111,10 +113,22 @@ concurrency: Literal["thread_safe", "single_connection"] = "thread_safe"
 - `single_connection` — one instance per thread; concurrent ops on one instance
   race (SFTP, HTTP).
 
-The **async axis** is universal: every `AsyncBackend` is `coroutine_safe` on a
-single loop and unsafe across loops (ASYNC-055), so it needs no per-fixture flag —
-it is asserted uniformly over the async fixture set, with the single
-"never across loops" negative guard.
+The **async axis** splits by *how* a backend reaches async:
+
+- **Native `AsyncBackend`s** (async Memory, async Azure, Graph) are
+  `coroutine_safe` on a single loop and unsafe across loops (ASYNC-055). These
+  need no per-fixture flag — they are asserted uniformly over the native-async
+  fixture set, with the single "never across loops" negative guard.
+- **Bridged `single_connection` backends** (SFTP, HTTP — sync-only `Backend`s,
+  `SFTPBackend(Backend)` / `ReadOnlyHttpBackend(Backend)`, with no native
+  `AsyncBackend`) reach async *only* through `AsyncBackendSyncAdapter`, and carry
+  their sync posture **into** the async lane: concurrent coroutines on one loop
+  dispatch concurrent `to_thread` work onto the single paramiko socket / shared
+  redirect-counter opener and race — exactly why `live_adapted_backend_concurrent`
+  excludes SFTP today (§3). So the `concurrency` flag **does** gate part of the
+  async lane (the §4.4 carve-out is registry-driven there too); the async fixture
+  set is *not* uniformly `coroutine_safe`, and an implementer who drops the
+  carve-out reintroduces the paramiko shared-socket hang.
 
 Add a selector mirroring `fixture_params`:
 `fixture_params_concurrent()` returns only `thread_safe` fixtures for the positive
@@ -224,9 +238,15 @@ BK-287 (declare posture in specs 003/029 + GR-059)  --->  BK-289 (test the postu
    "in-process-lock" Memory), the registry enum must follow. Recommend the
    two-value enum unless BK-287 finds a third posture that an actual backend
    exhibits.
-2. **Local backend posture is undocumented.** The table marks Local
-   `thread_safe` by inference (stateless, OS-level). BK-287 should state it
-   explicitly, or the carve-out guard should treat "undeclared" as a failure.
+2. **Inferred / unsourced postures must be confirmed, not assumed.** Local is
+   marked `thread_safe` by inference (stateless, OS-level), and S3-PyArrow's
+   pyarrow `S3FileSystem` basis is not yet pinned to an upstream guarantee — both
+   are deferred to the Tier-3 live probe. The cloud/SQL rows are now grounded in
+   the *client* guarantee actually relied on (boto3 client, Azure SDK
+   design-guideline immutability, SQLAlchemy per-op `Connection`), each with a
+   carve-out (boto3 resource / shared `Connection` would *not* be `thread_safe`).
+   BK-287 should state Local explicitly, and the carve-out guard should treat an
+   "undeclared" posture as a failure rather than a default.
 3. **moto/respx fidelity for the create-once race.** In-process mocks may not
    reproduce true server-side atomic create semantics; the *authoritative*
    create-once-race evidence is the Tier-3 live probe. Tier-1 mock guards protect
