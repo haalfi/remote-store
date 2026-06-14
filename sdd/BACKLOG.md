@@ -95,8 +95,10 @@ and the highest ID already in this file, then take the next integer. Run
   over the lens catalog (mostly static) to find hot lenses, then a live "go-hard"
   deep-dive against real ADLS Gen2 (`RS_TEST_LIVE_HNS`) on the ones that look
   fragile. Likely hotspots: `aclose()`-during-in-flight (the BUG-219 analog); the
-  concurrency contract (the BK-287 cross-backend `AsyncBackend` clause must cover
-  `AsyncAzureBackend`); conflict / overwrite semantics; bridge concurrency under
+  concurrency contract (validate `AsyncAzureBackend` against the now-shipped
+  AZ-037 / ASYNC-094 posture clauses — does the live emulator/ADLS behaviour
+  match the declared `thread_safe` mirror?); conflict / overwrite semantics;
+  bridge concurrency under
   load; and the **HNS-vs-flat cross-consistency lens** (the azurite emulator vs
   real ADLS Gen2 divergence is a known hotspot). Audit semantics: report findings
   and route them (conformance spine / live tier / docs); no fixes. The research

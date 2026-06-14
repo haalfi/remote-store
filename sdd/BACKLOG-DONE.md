@@ -28,8 +28,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (SQL-QUERY-092). User chose all-backends scope. Spec-only (no code change);
   no ADR (a `bool` flag under asyncio's single thread, not a new mechanism).
   The taxonomy is the authoritative source for **BK-289**'s registry
-  `concurrency` enum, which later converts the 7 design-allowlist entries to
-  real conformance marks. Trace: `sdd/traces/bk-287-concurrency-contract.yml`.
+  `concurrency` enum, which later converts the subset its conformance fixtures
+  cover (S3-028, AZ-037, SFTP-029) to real marks; S3PA-028 (live-probe only) and
+  the SQL clauses (no conformance fixture) stay allowlisted. Trace: `sdd/traces/bk-287-concurrency-contract.yml`.
 
 - [x] **BUG-219 — `GraphBackend.aclose()` concurrent with in-flight ops raises untyped `RuntimeError`**
   spec: GR-051 · effort: S · audience: user.api, library.maintainer

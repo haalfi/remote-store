@@ -318,13 +318,20 @@ to v3.
 
 ### SQL-QUERY-092: Concurrent-Use Posture
 
-**Invariant:** `SQLQueryBackend` is `thread_safe` (the BE-028 default): a single
-instance is safe to share across threads. Each query acquires its own connection
-from the SQLAlchemy pool via `connect()` / `begin()` and returns it on
+**Invariant:** `SQLQueryBackend` is `thread_safe` **when backed by a
+connection-pooled engine** (the BE-028 default for the network-attached case): a
+single instance is safe to share across threads. Each query acquires its own
+connection from the SQLAlchemy pool via `connect()` / `begin()` and returns it on
 completion; no `Connection` is held on the instance across operations. A backend
 built around a single shared `Connection` would not be thread-safe, but this
 backend does not do that. Each operation runs in its own transaction; there is
 no cross-operation transactionality.
+
+**Carve-out (per-thread-isolated engines):** as for [SQL-BLOB-072](040-sql-blob-backend.md#sql-blob-072) — the posture follows the engine's pool
+class. A `sqlite:///:memory:` URL (`SingletonThreadPool`) is effectively
+`single_connection` (one in-memory database per thread); confine the instance to
+one thread or give each thread its own. `QueuePool`-backed engines are
+`thread_safe`.
 
 **See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
 (BE-028).

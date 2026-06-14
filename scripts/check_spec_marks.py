@@ -259,8 +259,11 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         # design property, not a runtime behavior a single mark sits on). The
         # cross-backend contract IDs (BE-028, ASYNC-094) and the Graph posture
         # (GR-059) carry real marks; these seven are documentation-only. BK-289
-        # converts them to real marks when its posture-gated conformance lane
-        # lands (the allowlist's shrink-only allowlist-stale path).
+        # converts the subset its conformance fixtures cover (S3-028, AZ-037,
+        # SFTP-029) to real marks when its posture-gated lane lands (the
+        # allowlist's shrink-only allowlist-stale path); the rest — S3PA-028
+        # (Tier-3 live probe only) and the SQL clauses (no conformance fixture)
+        # — stay allowlisted until such fixtures exist.
         "S3-028",  # 008 — S3Backend thread_safe (boto3 client / s3fs per-instance)
         "S3PA-028",  # 011 — S3PyArrowBackend thread_safe (Tier-3 live probe pending)
         "AZ-037",  # 012 — AzureBackend thread_safe (SDK clients immutable)

@@ -13,6 +13,15 @@ source_items:
 audience:
   - contributor.process
   - user.api_docs
+review_rounds: 1
+surprising_ripples:
+  # PR review (BK-289 consumer side) caught that SQL-BLOB-072/SQL-QUERY-092's
+  # unqualified thread_safe over-promised: the default sqlite:///:memory: engine
+  # uses SingletonThreadPool (one in-memory DB per thread), so a shared instance
+  # is effectively single_connection. Scoped both clauses to the engine pool
+  # class. The _sqlalchemy.py docstring already documented the SingletonThreadPool
+  # behaviour, but the ripple-check table did not flag it as a posture input.
+  - src/remote_store/backends/_sqlalchemy.py
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
