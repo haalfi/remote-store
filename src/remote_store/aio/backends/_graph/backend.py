@@ -211,6 +211,10 @@ class GraphBackend(AsyncBackend):
         # In-flight copy/move monitor-poll tasks: close() cancels each
         # cooperatively (GR-051 poller-cancel half).
         self._pending_pollers: set[asyncio.Task[None]] = set()
+        # GR-051 use-after-close guard (BUG-219): once aclose() runs, any new op
+        # must fail typed (BackendUnavailable) rather than silently recreate the
+        # owned client or hit a closed one with a bare RuntimeError.
+        self._closed = False
 
     # region: properties
 
@@ -231,7 +235,15 @@ class GraphBackend(AsyncBackend):
 
     @property
     def _client(self) -> httpx.AsyncClient:
-        """Lazily-created (or caller-supplied) ``httpx.AsyncClient``."""
+        """Lazily-created (or caller-supplied) ``httpx.AsyncClient``.
+
+        After ``aclose()`` this raises ``BackendUnavailable``: every data-plane op
+        reaches the client through here, so the guard turns a use-after-close into
+        a typed error instead of silently recreating the owned client (or
+        returning a closed caller-supplied one).
+        """
+        if self._closed:
+            raise BackendUnavailable("Graph backend is closed", backend=self.name)
         if self._http_client is not None:
             return self._http_client
         if self._owned_client is None:
@@ -321,8 +333,27 @@ class GraphBackend(AsyncBackend):
         mid-chunk-loop is aborted via best-effort ``DELETE`` — every cleanup
         error is swallowed so ``close()`` never raises. The server-side copy /
         move continues (Graph monitor URLs have no cancel endpoint).
+
+        After this returns, any new op raises ``BackendUnavailable`` via the
+        ``_client`` guard, and any op still in flight surfaces a typed error
+        rather than a bare ``RuntimeError`` from the closing client.
         """
         # GR-051: poller-cancel half + upload-session-abort half (mirrors GR-024).
+        if self._closed:
+            return  # idempotent — already closed
+        # Gate new ops immediately (BUG-219): flip the flag *before* the cleanup
+        # awaits so a concurrent caller cannot slip a fresh op past the guard
+        # while close drains. The abort loop below uses the raw client reference,
+        # since self._client now raises once _closed is set.
+        self._closed = True
+        # Resolve the client for cleanup WITHOUT the _client guard (which now
+        # raises). Lazily create the owned client only if sessions still need
+        # aborting and none exists yet — mirrors the pre-guard self._client.
+        client = self._http_client
+        if client is None:
+            if self._owned_client is None and self._active_upload_sessions:
+                self._owned_client = httpx.AsyncClient(**self._client_options)
+            client = self._owned_client
         pollers = list(self._pending_pollers)
         for task in pollers:
             task.cancel()
@@ -332,8 +363,9 @@ class GraphBackend(AsyncBackend):
             # (filterwarnings=error would turn the latter into a failure).
             await asyncio.gather(*pollers, return_exceptions=True)
         self._pending_pollers.clear()
-        for session_url in list(self._active_upload_sessions):
-            await abort_upload_session(self._client, session_url, token_provider=self._token_provider)
+        if client is not None:
+            for session_url in list(self._active_upload_sessions):
+                await abort_upload_session(client, session_url, token_provider=self._token_provider)
         self._active_upload_sessions.clear()
         if self._owned_client is not None:
             await self._owned_client.aclose()
