@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BK-287: Every backend now declares an explicit concurrency posture (`thread_safe` / `single_connection`) — a cross-backend spec obligation (BE-028 / ASYNC-094), the Graph posture (GR-059), and per-backend clauses for S3, S3-PyArrow, Azure, SFTP, HTTP, and SQL
+- BK-287: Cross-backend concurrency-posture contract — `GR-059` + per-backend `thread_safe` / `single_connection` clauses
 - BUG-219: Graph backend use-after-close raises typed `BackendUnavailable` instead of a bare `RuntimeError`
 - BUG-218: Graph copy/move monitor — terminal `4xx` on the poll request, no unbounded `copy_timeout` hang
 - BK-285: API reference restructured to mirror the package — async surface split into a `reference/api/aio/` subtree, async-native backends surfaced
