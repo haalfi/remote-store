@@ -10476,11 +10476,14 @@ async backends in
 <code>test_large_streamed_write_result_matches_file_info</code> extends that consistency
 check to the multipart / block-staged / upload-session write paths on backends
 declaring a distinct large-write path (gated by the <code>large_write_distinct</code>
-fixture opt-in; Graph's upload-session path is verified live). Azure's
-block-staged path is a known exception — <code>WriteResult.digest</code> is populated from
-the commit response while the staged blob stores no <code>Content-MD5</code>, so
-<code>FileInfo.digest</code> is <code>None</code> (BUG-216) — tracked as a <code>strict=False</code> xfail
-pending a real-ADLS fix. The field set itself is
+fixture opt-in; Graph's upload-session path is verified live). The Azurite
+emulator is a known exception — it does not persist <code>Content-MD5</code> on block-list
+commit, so on its staged path <code>WriteResult.digest</code> (from the commit response)
+carries the MD5 while <code>FileInfo.digest</code> is <code>None</code> and the two diverge (BUG-216).
+This is emulator-only: real ADLS Gen2 stores the MD5 and is verified consistent
+live (<code>azure_live</code> / <code>azure_live_async</code>, sync+async, both ops), so the live
+lanes run strict and only the <code>azurite</code> fixture carries a <code>strict=True</code> xfail.
+The field set itself is
 pinned to this schema by the module-level
 <code>test_field_capability_map_covers_every_write_result_field</code> (BK-239), which
 fails if a new <code>WriteResult</code> field lands without a capability classification.
