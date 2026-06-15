@@ -13,6 +13,8 @@ source_items:
 audience:
   - user.api
   - library.maintainer
+discovery_followups:
+  - BUG-221
 phases:
   - id: reproduce
     name: Reproduce
@@ -84,7 +86,9 @@ phases:
           mechanism but lower severity (transient skip of a listed item, not an
           error) and reads/listing are not the reported bug; a robust fix risks
           weakening symlink-dir-escape detection. Left as-is and flagged, not
-          fixed, to keep scope on the proven write-path bug
+          fixed, to keep scope on the proven write-path bug. PR #820 review
+          decided to track it: filed as BUG-221 (see discovery_followups) so the
+          follow-up survives independent of this trace
         outcome: unclear
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / Bug fix"

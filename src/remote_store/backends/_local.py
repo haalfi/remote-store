@@ -532,8 +532,11 @@ class LocalBackend(Backend):
           (``../../etc/passwd``) is rejected even when nothing on the path
           exists yet.
         * **Symlink-escape rejection.** Only the deepest component that
-          actually exists is resolved (an existing symlink is followed to its
-          real target); if that anchor escapes root, the path is rejected.
+          *lexically* exists is resolved -- a symlink, **even a broken one**, is
+          followed to its real target (``os.path.lexists`` stops the walk at the
+          link itself rather than stepping past it); if that anchor escapes root,
+          the path is rejected. This keeps parity with the old whole-path
+          ``resolve(strict=False)``, which followed broken symlinks too.
 
         The non-existent tail is deliberately **not** passed through
         ``Path.resolve()``. ``resolve()`` over a path whose intermediate
@@ -547,9 +550,11 @@ class LocalBackend(Backend):
             InvalidPath: If the resolved path escapes the root.
         """
         target = Path(os.path.normpath(self._root / path))
-        # Walk up to the deepest existing ancestor for the symlink check.
+        # Walk up to the deepest lexically-existing ancestor for the symlink
+        # check. ``lexists`` (not ``exists``) so a broken symlink stops the walk
+        # at the link itself and is resolved, instead of being stepped over.
         anchor = target
-        while not anchor.exists():
+        while not os.path.lexists(anchor):
             parent = anchor.parent
             if parent == anchor:  # reached the filesystem root
                 break

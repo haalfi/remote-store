@@ -104,3 +104,51 @@ class TestLocalResolveSymlinkEscape:
             # Reaching the outside target through an in-root symlink must be rejected.
             with pytest.raises(InvalidPath, match="escapes root"):
                 backend.read_bytes("escape.txt")
+
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="symlink creation requires SeCreateSymbolicLinkPrivilege on Windows",
+    )
+    @pytest.mark.spec("BE-008")
+    def test_write_through_intermediate_symlink_dir_escaping_root_rejected(self) -> None:
+        """Non-existent leaf under an in-root symlink *directory* still rejected.
+
+        This is the branch the fix introduced: the leaf does not exist, so the
+        anchor walk steps up to the symlink directory and must resolve+reject it.
+        The existing direct-leaf test stops the walk immediately (target exists),
+        so it never exercises this path.
+        """
+        with tempfile.TemporaryDirectory() as outside, tempfile.TemporaryDirectory() as root:
+            symdir = Path(root) / "symdir"
+            try:
+                symdir.symlink_to(outside, target_is_directory=True)
+            except OSError:
+                pytest.skip("symlink creation not permitted on this platform")
+            backend = LocalBackend(root=root)
+            # symdir/ -> existing outside dir; the leaf does not exist yet.
+            with pytest.raises(InvalidPath, match="escapes root"):
+                backend.write("symdir/newfile.bin", b"x")
+
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="symlink creation requires SeCreateSymbolicLinkPrivilege on Windows",
+    )
+    @pytest.mark.spec("BE-008")
+    def test_write_through_broken_symlink_dir_escaping_root_rejected(self) -> None:
+        """A *broken* in-root symlink (missing target) escaping root is rejected.
+
+        Regression guard for the ``lexists`` (not ``exists``) walk condition:
+        ``exists()`` follows the link and reports False for a broken symlink, so
+        the walk would step *past* it and miss the escape. ``lexists`` stops at
+        the link itself, resolves it, and rejects the out-of-root target.
+        """
+        with tempfile.TemporaryDirectory() as outside, tempfile.TemporaryDirectory() as root:
+            missing_target = Path(outside) / "not-created-yet"
+            symdir = Path(root) / "symdir"
+            try:
+                symdir.symlink_to(missing_target, target_is_directory=True)
+            except OSError:
+                pytest.skip("symlink creation not permitted on this platform")
+            backend = LocalBackend(root=root)
+            with pytest.raises(InvalidPath, match="escapes root"):
+                backend.write("symdir/newfile.bin", b"x")

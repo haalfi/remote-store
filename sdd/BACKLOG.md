@@ -575,6 +575,25 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `src/remote_store/backends/_azure.py`,
   `src/remote_store/aio/backends/_azure.py`. Discovered in PR #686 review.
 
+- [ ] **BUG-221 — `LocalBackend.glob()` resolve race can transiently skip a listed item (Windows 8.3)**
+  spec: — · effort: S · audience: user.api, library.maintainer
+  The same 8.3 short-name mechanism fixed for the write path in BUG-220 is
+  still latent in `glob()` (`src/remote_store/backends/_local.py`, the
+  `item.resolve().relative_to(self._root)` containment check). While sibling
+  threads create intermediate directories, `item.resolve()` can transiently
+  return an 8.3 short-name form (`LONGDI~1`) that is not `relative_to` the
+  init-time root, so the `except ValueError: continue` branch silently **skips
+  a legitimately in-root file** from the listing. Lower severity than BUG-220:
+  the symptom is a transient omission from `glob()` results under concurrent
+  directory creation, not a raised error, and listing is not the reported bug.
+  A naive fix (drop `resolve()`) would weaken symlink-dir-escape detection on
+  the listing path, so the fix needs the same care as BUG-220 (`os.path.lexists`
+  anchor walk, or a per-item lexical containment check that still rejects
+  symlinked-out entries). Assessed and deferred in
+  [`sdd/traces/bug-220-local-resolve-race.yml`](traces/bug-220-local-resolve-race.yml)
+  (verify phase, `outcome: unclear`); filed here so it survives independent of
+  the trace. Surfaced in PR #820 review.
+
 - [~] **ID-018 — conda-forge publishing**
   spec: — · effort: — · audience: library.maintainer
   Recipe, CI validation, release checklist steps all done.
