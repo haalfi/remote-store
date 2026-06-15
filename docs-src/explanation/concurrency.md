@@ -10,7 +10,7 @@ Before the per-operation guarantees below, there is a more basic question: **is 
 |---------|---------|----------------------------------------|
 | [Local](../guides/backends/local.md) | Thread-safe | Stateless; delegates to the OS filesystem. |
 | [Memory](../guides/backends/memory.md) | Thread-safe | Guarded by a single internal lock. |
-| [HTTP](../guides/backends/http.md) | Single-connection | The `urllib` opener shares a redirect counter. **Remedy:** one instance per thread, or inject a `requests` / `httpx` session. |
+| [HTTP](../guides/backends/http.md) | Single-connection | The default `urllib` opener shares a redirect counter. **Remedy:** select `http_client='requests'` or `'httpx'` (each uses a pooled client safe for concurrent per-instance use), or use one instance per thread. |
 | [S3](../guides/backends/s3.md) | Thread-safe | The boto3 client / s3fs is safe for concurrent per-instance use. |
 | [S3-PyArrow](../guides/backends/s3-pyarrow.md) | Thread-safe ‡ | Arrow's C++ `S3FileSystem` is safe per instance. |
 | [SFTP](../guides/backends/sftp.md) | Single-connection | One paramiko channel over one socket. **Remedy:** one instance per thread (or a native async SFTP client). |

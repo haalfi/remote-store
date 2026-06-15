@@ -20,6 +20,11 @@ expected_ripples:
   - CHANGELOG.md
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  # PR #821 review: correcting the overwrite=False "all backends" universal in
+  # concurrency.md left a contradicting "Like all backends" TOCTOU note in the
+  # SFTP guide — a cross-guide ripple the ripple-check table did not anticipate.
+  - docs-src/guides/backends/sftp.md
 phases:
   - id: orient
     name: Orient
