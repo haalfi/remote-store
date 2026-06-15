@@ -12388,9 +12388,18 @@ nameAlreadyExists</code> (live-reproduced on consumer OneDrive): the loser's
 replace lands while the winner's create is in flight. The write
 re-attempts the replace a bounded number of times — the winner's create
 has committed by the time the 409 returns, so the re-issue overwrites it.
-A terminal conflict (a SharePoint-backed drive that rejects the replace
-outright) keeps 409-ing and surfaces <code>AlreadyExists</code> once the budget is
-spent; the retry re-issues the replace, it never swallows the conflict.</p>
+On the large-file upload-session path the same race can surface
+<em>mid-session</em> instead: the session opens cleanly, then a racing replace
+swaps the item and the next chunk <code>PUT</code> draws a <code>404</code>; under
+<code>overwrite=True</code> that is treated as the same create-race signal and the
+write re-opens a fresh session and retries. Large-file retries re-upload the
+whole body, so this convergence is best-effort: under sustained concurrent
+same-key overwrite a loser may still exhaust the budget and raise
+<code>AlreadyExists</code> (last-writer-wins still holds — one writer's content lands
+intact). A terminal conflict (a SharePoint-backed drive that rejects the
+replace outright) likewise keeps 409-ing and surfaces <code>AlreadyExists</code> once
+the budget is spent; the retry re-issues the replace, it never swallows the
+conflict.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12400,8 +12409,9 @@ spent; the retry re-issues the replace, it never swallows the conflict.</p>
             –
           <div class="doc-md-description">
             <p>If the file exists and <code>overwrite=False</code>, or an
-<code>overwrite=True</code> replace keeps drawing a <code>409</code> past the
-bounded re-attempt budget (a SharePoint-backed replace-rejection).</p>
+<code>overwrite=True</code> replace keeps drawing a <code>409</code> past the bounded
+re-attempt budget (a SharePoint-backed replace-rejection, or a loser
+in a sustained concurrent large-file same-key overwrite).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

@@ -12278,6 +12278,41 @@ single-winner outcome (GR-059) and is <strong>not</strong> retried — and re-at
 only the <code>AlreadyExists</code> discrimination; the folder-target / file-ancestor
 <code>409</code>s discriminate to <code>InvalidPath</code> and propagate on the first attempt.
 The re-attempt re-issues the actual <code>replace</code>; it never swallows a 409.</p>
+<p>The same retry covers the large-file upload-session path (GR-019), which
+shares this dispatch. There the create-race surfaces two ways: as a
+<code>createUploadSession</code> <code>409 nameAlreadyExists</code> (the direct analog, retried
+by re-opening the session), or — when a racing <code>replace</code> swaps the item
+<em>after</em> the session opened — as a chunk <code>PUT</code> <code>404</code>. Under <code>overwrite=True</code>
+that mid-session <code>404</code> is the same create-race signal and is raised as
+<code>AlreadyExists</code> so the bounded re-attempt re-opens a fresh session and
+wins; under <code>overwrite=False</code> it stays <code>NotFound</code> (there is no
+create-or-replace contract to honour, so a genuine mid-session
+disappearance is not masked). The spool is rewound between re-attempts so
+each re-upload sends the full body. This removes the size-only divergence
+where a larger concurrent overwrite surfaced a raw <code>NotFound</code>: it now
+surfaces the same typed create-race signal the small path does and is
+retried.</p>
+<p>The upload-session path uses its <strong>own</strong> backoff posture — a longer cap and
+a larger attempt budget than the small-file path. A re-attempt there
+re-opens a session and re-uploads the whole body (seconds for a multi-MiB
+file), so the small-file sub-second backoff would let retriers re-enter
+mid-upload and never drain (live-measured: a 4-way 5 MiB race did not
+converge at all under the small-file constants, and the aggressive cadence
+also tripped Graph throttling). A backoff that exceeds a competitor's upload
+window plus a larger budget desynchronises the writers and resolves the race
+for most concurrent writers (live-tuned). The budget is also load-bearing
+for the no-data-loss invariant: a round in which <em>every</em> writer exhausts
+aborts every session, which on a brand-new key leaves no file — the larger
+budget keeps at least one winner so the item always survives.</p>
+<p><strong>Best-effort, not guaranteed (large concurrent same-key overwrite):</strong>
+unlike the small-file path, full convergence is <strong>not</strong> guaranteed for
+concurrent large-file overwrites of one key. Each re-attempt re-uploads the
+whole body, so the budget is bounded; under sustained contention a loser can
+still exhaust it and surface <code>AlreadyExists</code> (the same terminal outcome as a
+persistent conflict). The invariant that always holds is last-writer-wins:
+at least one writer commits and its content lands intact (no tear, no empty
+key). Callers needing every concurrent large overwrite to succeed should
+serialise writes to the same key.</p>
 <p><strong>Known limitation — <code>overwrite=True</code> on a SharePoint-backed file
 conflict:</strong> an existing <em>file</em> at the target is expected to be overwritten
 (<code>200</code>). Some backing stores (observed on SharePoint-backed drives in Graph
@@ -12740,7 +12775,10 @@ raised or the write overwrites. On the <code>replace</code> path a <code>409</co
 discriminates to <code>AlreadyExists</code> is re-attempted a bounded number of
 times to win a concurrent create-of-a-new-key race before it surfaces
 (GR-018, <code>overwrite=True</code> create-race retry); a terminal SharePoint-backed
-replace-rejection exhausts the budget and still raises <code>AlreadyExists</code>.</p>
+replace-rejection exhausts the budget and still raises <code>AlreadyExists</code>. On
+the large-file upload-session path the same race can arrive as a chunk
+<code>404</code> mid-session, which under <code>overwrite=True</code> is likewise raised as
+<code>AlreadyExists</code> to feed that retry (GR-018, GR-019).</p>
 <h3 id="gr-033-5xx-and-network-errors">GR-033: 5xx and Network Errors<a class="headerlink" href="#gr-033-5xx-and-network-errors" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>500</code>, <code>502</code>, <code>503</code>, <code>504</code>, and httpx transport
 errors (connect, read, write timeouts; DNS; connection reset) map

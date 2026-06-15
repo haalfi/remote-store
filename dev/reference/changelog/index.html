@@ -13413,6 +13413,7 @@
 <li>BK-292: <code>GraphAuth.aget_token</code> — async token provider that offloads the blocking MSAL acquisition off the event loop and single-flights concurrent acquisitions</li>
 <li>BK-291: Graph MSAL token cache is now persisted under a cross-process lock (<code>msal-extensions</code>) — concurrent workers sharing the default cache no longer corrupt it or force a re-login</li>
 <li>BK-294: Graph <code>overwrite=True</code> now retries a concurrent create-race <code>409</code> so the write wins (last-writer-wins); a terminal SharePoint-backed replace-rejection still surfaces <code>AlreadyExists</code></li>
+<li>BK-296: Treat the upload-session mid-session 404 as the large-file create-race signal</li>
 <li>BK-290: Graph async I/O robustness under concurrent load</li>
 <li>BK-288: Cross-backend concurrent-use-posture documentation</li>
 <li>BUG-220: <code>LocalBackend</code> concurrent writes to nested keys no longer raise a spurious <code>InvalidPath</code> (Windows <code>_resolve</code> 8.3 short-name race)</li>
