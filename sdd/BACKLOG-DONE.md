@@ -6,7 +6,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## Unreleased
+## v0.28.0
 
 - [x] **BK-296 — Treat the upload-session mid-session 404 as the large-file create-race signal**
   spec: GR-018, GR-032 · effort: S · audience: user.api

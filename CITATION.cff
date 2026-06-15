@@ -3,10 +3,10 @@ message: "If you use this software, please cite it using the metadata below."
 title: "remote-store"
 abstract: >-
   Write file storage code once. Run it against local files,
-  S3, SFTP, or Azure.
+  S3, SFTP, Azure, or OneDrive.
 type: software
-version: 0.27.0
-date-released: 2026-06-02
+version: 0.28.0
+date-released: 2026-06-15
 license: MIT
 repository-code: https://github.com/haalfi/remote-store
 url: https://docs.remotestore.dev/
