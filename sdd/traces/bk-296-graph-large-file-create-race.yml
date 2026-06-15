@@ -1,0 +1,166 @@
+# yaml-language-server: $schema=_schema.yml
+id: BK-296
+title: "Treat the upload-session mid-session 404 as the large-file create-race signal"
+trigger: >-
+  A Graph release-readiness rerun of the throwaway concurrency probe
+  (sandbox graph_concurrency_experiments.py, GC-02) showed a size-only split after
+  BK-294 landed: a sub-4-MiB concurrent overwrite=True race converged
+  (all_succeeded=true) but a 5-MiB one still raised — now NotFound instead of the
+  pre-BK-294 AlreadyExists. The create-or-replace contract (GR-018 last-writer-wins)
+  held for small files and broke for large, with integrity intact (no tear/blend).
+source_items:
+  - BK-296
+  - BK-294
+audience:
+  - user.api
+  - user.api_docs
+  - library.maintainer
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient / diagnose
+    steps:
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_write_replacing / _write_dispatch"
+        read_type: gate
+        extract: >-
+          The original backlog framing ("the large path never got the retry") was
+          wrong. _write_replacing wraps _write_dispatch, which routes to BOTH
+          _write_small AND upload_session; the spool-rewind in _write_dispatch was
+          written for the large branch. So the large path is already inside the
+          retry — but the catch is AlreadyExists-only.
+        outcome: misleading
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "upload_session / _upload_chunks (chunk PUT switch)"
+        read_type: gate
+        extract: >-
+          The residual gap: a racing replace swaps the item after the session opens,
+          so a chunk PUT draws 404. 404 is not in the chunk PUT return_on
+          ({409,423}), so graph_send maps it to terminal NotFound before the status
+          switch — never recognised as a create-race signal.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "classify_graph_error (404 branch); graph_send return_on/terminal"
+        read_type: reference
+        extract: >-
+          404 -> NotFound (item scope), terminal in graph_send. To classify it in
+          _upload_chunks the status must be added to return_on so graph_send returns
+          the response instead of raising.
+        outcome: ok
+      - file: tests/backends/graph/aio/test_concurrency.py
+        section: "test_overwrite_create_race_retries_upload_session_branch"
+        read_type: reference
+        extract: >-
+          The createUploadSession-409 create-race is already retried and tested for
+          the large path. Confirms only the mid-session 404 is unhandled — the fix
+          is narrow (S, not the M first filed).
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/backends/graph/aio/test_concurrency.py
+        section: "TestOverwriteReplaceRetry (mid-session 404 cases)"
+        read_type: gate
+        extract: >-
+          respx: overwrite=True mid-session 404 then 201 -> success + session
+          re-opened; overwrite=False 404 -> NotFound, one session (scope gate);
+          persistent 404 -> AlreadyExists after _REPLACE_RACE_MAX_ATTEMPTS sessions.
+          Ran pre-fix: 2 fail with NotFound leaking, scope-gate passes.
+        outcome: ok
+  - id: implement
+    name: Map the mid-session 404
+    steps:
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "_upload_chunks (return_on += 404; overwrite-gated 404 handling)"
+        read_type: gate
+        extract: >-
+          Add 404 to the chunk PUT return_on; thread overwrite into _upload_chunks;
+          under overwrite=True raise AlreadyExists (feeds the existing
+          _write_replacing retry, which rewinds the spool and re-opens the session);
+          under overwrite=False reuse classify_graph_error -> NotFound. (First cut
+          stopped here assuming no backend.py change; the live finding below forced the
+          path-specific backoff in _write_replacing.)
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "write / _write_replacing docstrings"
+        read_type: gate
+        extract: >-
+          Document that the large-path mid-session 404 is also a retried create-race
+          signal. Public write() docstring change — ripples to graph.json /
+          graph_viz.html (regen).
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-018 (create-race retry) / GR-032"
+        read_type: gate
+        extract: >-
+          Extend GR-018's create-race clause and GR-032 to state the upload-session
+          mid-session 404 is treated as the same retryable create-race under
+          overwrite=True (NotFound under overwrite=False). Closes the small-vs-large
+          divergence.
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: "user.api -> one-line entry beneath BK-294."
+  - id: reproduce
+    name: Live-tune the large-path backoff
+    steps:
+      - file: sandbox/graph_concurrency_experiments.py
+        section: "GC-02-large"
+        read_type: gate
+        extract: >-
+          First cut (mapping only, sharing BK-294's small-tuned constants) changed the
+          live error NotFound -> AlreadyExists but did NOT converge: a 4-way 5 MiB race
+          stayed all_succeeded=false. The "feed it into the existing retry and it wins"
+          assumption (true for fast small re-PUTs) was wrong for whole-session
+          re-uploads. Some rounds ballooned to ~130s — the 0.8s cap hammered Graph into
+          throttling.
+        outcome: misleading
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_REPLACE_RACE_LARGE_* / _write_replacing (path-specific backoff)"
+        read_type: gate
+        extract: >-
+          A focused live sweep showed it is tunable but needs BOTH a longer backoff and
+          a larger budget: shared (6/0.05/0.8s) = 0/5; longer cap but attempts kept at 6
+          (6/0.5/6.0s) = 2/5; 8/0.5/6.0s = 5/5 in that sample. So the upload-session path
+          gets its own constants, selected by total > _SMALL_FILE_MAX_SIZE; the small
+          path keeps the fast cap. Budget is also a correctness floor — an
+          all-writers-exhaust round aborts every session and leaves the new key empty
+          (successes:0), so the larger budget keeps a winner.
+        outcome: ok
+      - file: sandbox/graph_concurrency_experiments.py
+        section: "GC-02-large (re-run with constants baked in)"
+        read_type: gate
+        extract: >-
+          The 5/5 sweep was optimistic: a later full-suite round STILL showed a loser
+          exhausting to AlreadyExists (~5/6 overall). Each large re-attempt re-uploads
+          the whole body, so the budget is bounded and full convergence is not
+          guaranteed. Disposition (maintainer): ship the typed-error + path-specific
+          backoff (integrity always holds, no NotFound, no empty key, most writers win)
+          and document the residual as best-effort, rather than chase ~100% with an
+          ever-larger budget. The live probe was reframed to assert last-writer-wins, not
+          all-succeed.
+        outcome: misleading
+  - id: verify
+    name: Verify gates + live
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / backends + errors"
+        read_type: verify
+        extract: >-
+          Write-path behaviour change ripples to spec 044 (GR-018/GR-032), the
+          public write() docstring (graph.json + graph_viz.html), CHANGELOG, BACKLOG
+          + backlogid.json. Item closes [x] in the same PR.
+        outcome: ok
+      - file: sandbox/graph_concurrency_experiments.py
+        section: "GC-02-large"
+        read_type: verify
+        extract: >-
+          Live: GC-02-large keeps matches_single_writer=true, torn_or_blended=false, item
+          present (last-writer-wins), and no longer surfaces NotFound. all_succeeded is
+          NOT asserted — best-effort, a loser may still surface AlreadyExists.
+        outcome: ok

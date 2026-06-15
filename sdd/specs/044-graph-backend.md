@@ -568,6 +568,44 @@ only the `AlreadyExists` discrimination; the folder-target / file-ancestor
 `409`s discriminate to `InvalidPath` and propagate on the first attempt.
 The re-attempt re-issues the actual `replace`; it never swallows a 409.
 
+The same retry covers the large-file upload-session path (GR-019), which
+shares this dispatch. There the create-race surfaces two ways: as a
+`createUploadSession` `409 nameAlreadyExists` (the direct analog, retried
+by re-opening the session), or — when a racing `replace` swaps the item
+*after* the session opened — as a chunk `PUT` `404`. Under `overwrite=True`
+that mid-session `404` is the same create-race signal and is raised as
+`AlreadyExists` so the bounded re-attempt re-opens a fresh session and
+wins; under `overwrite=False` it stays `NotFound` (there is no
+create-or-replace contract to honour, so a genuine mid-session
+disappearance is not masked). The spool is rewound between re-attempts so
+each re-upload sends the full body. This removes the size-only divergence
+where a larger concurrent overwrite surfaced a raw `NotFound`: it now
+surfaces the same typed create-race signal the small path does and is
+retried.
+
+The upload-session path uses its **own** backoff posture — a longer cap and
+a larger attempt budget than the small-file path. A re-attempt there
+re-opens a session and re-uploads the whole body (seconds for a multi-MiB
+file), so the small-file sub-second backoff would let retriers re-enter
+mid-upload and never drain (live-measured: a 4-way 5 MiB race did not
+converge at all under the small-file constants, and the aggressive cadence
+also tripped Graph throttling). A backoff that exceeds a competitor's upload
+window plus a larger budget desynchronises the writers and resolves the race
+for most concurrent writers (live-tuned). The budget is also load-bearing
+for the no-data-loss invariant: a round in which *every* writer exhausts
+aborts every session, which on a brand-new key leaves no file — the larger
+budget keeps at least one winner so the item always survives.
+
+**Best-effort, not guaranteed (large concurrent same-key overwrite):**
+unlike the small-file path, full convergence is **not** guaranteed for
+concurrent large-file overwrites of one key. Each re-attempt re-uploads the
+whole body, so the budget is bounded; under sustained contention a loser can
+still exhaust it and surface `AlreadyExists` (the same terminal outcome as a
+persistent conflict). The invariant that always holds is last-writer-wins:
+at least one writer commits and its content lands intact (no tear, no empty
+key). Callers needing every concurrent large overwrite to succeed should
+serialise writes to the same key.
+
 **Known limitation — `overwrite=True` on a SharePoint-backed file
 conflict:** an existing *file* at the target is expected to be overwritten
 (`200`). Some backing stores (observed on SharePoint-backed drives in Graph
@@ -1082,7 +1120,10 @@ raised or the write overwrites. On the `replace` path a `409` that
 discriminates to `AlreadyExists` is re-attempted a bounded number of
 times to win a concurrent create-of-a-new-key race before it surfaces
 (GR-018, `overwrite=True` create-race retry); a terminal SharePoint-backed
-replace-rejection exhausts the budget and still raises `AlreadyExists`.
+replace-rejection exhausts the budget and still raises `AlreadyExists`. On
+the large-file upload-session path the same race can arrive as a chunk
+`404` mid-session, which under `overwrite=True` is likewise raised as
+`AlreadyExists` to feed that retry (GR-018, GR-019).
 
 ### GR-033: 5xx and Network Errors
 
