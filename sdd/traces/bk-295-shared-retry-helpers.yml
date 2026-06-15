@@ -1,0 +1,114 @@
+# yaml-language-server: $schema=_schema.yml
+id: BK-295
+title: "Shared pure backoff/retry helpers (_retry.py)"
+trigger: >-
+  BK-294 (PR #825) added the sixth hand-rolled retry surface — the Graph
+  overwrite=True create-race write re-attempt — alongside graph_send, the
+  copy/move monitor poller, the Graph read-path resume loop, and the sync HTTP
+  backend's _request_with_retry. Each had independently re-derived the same
+  arithmetic (exponential envelope, jitter, Retry-After floor, wall-clock budget,
+  Retry-After header parsing), with parse_retry_after duplicated near-verbatim in
+  two modules. The PR #825 review left the "reuse an existing retry?" thread open
+  for the maintainer's call; the disposition was a separate behaviour-preserving
+  extraction.
+source_items:
+  - BK-295
+  - BK-294
+audience:
+  - library.maintainer
+expected_ripples:
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+surprising_ripples:
+  # The ruff PostToolUse hook stripped each `from remote_store._retry import ...`
+  # line when it was added before its consumers existed (imports-before-usage are
+  # F401-unused at that instant); re-added once the call sites were in place. A
+  # known gotcha, but it bit every one of the four migrated modules.
+  - src/remote_store/aio/backends/_graph/http.py
+  - src/remote_store/aio/backends/_graph/monitor.py
+  - src/remote_store/backends/_http.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "graph_send retry loop; _parse_retry_after; _RETRYABLE_STATUSES"
+        read_type: gate
+        extract: >-
+          The async transient-retry loop: envelope + additive jitter, Retry-After
+          floor, look-ahead wall-clock budget, terminal-vs-transient classify and
+          the return_on escape hatch. The control flow is call-site-specific; only
+          the arithmetic is shareable.
+        outcome: ok
+      - file: src/remote_store/backends/_http.py
+        section: "_request_with_retry; _parse_retry_after; _TRANSIENT_STATUSES"
+        read_type: gate
+        extract: >-
+          The sync sibling loop — same envelope+jitter+Retry-After maths but with
+          two divergences to preserve: it treats 408 as transient and checks the
+          budget at the loop top (no look-ahead).
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/monitor.py
+        section: "poll_monitor delay/budget; parse_retry_after import"
+        read_type: reference
+        extract: >-
+          Growing-interval poll loop (not the exponential envelope) but shares the
+          Retry-After floor and the look-ahead budget check, and already re-imports
+          the Graph parse_retry_after — appetite to share confirmed.
+        outcome: ok
+      - file: sdd/specs/025-retry-policy.md
+        section: "RET-015"
+        read_type: gate
+        extract: >-
+          RET-015 specifies the Graph backoff maths (min(backoff_max, base *
+          2**attempt) + uniform[0,jitter], Retry-After precedence, retryable
+          statuses, timeout budget). The helpers implement an existing spec; the
+          refactor is behaviour-preserving, so no spec change is needed.
+        outcome: ok
+  - id: implement
+    name: Extract and migrate
+    steps:
+      - file: src/remote_store/_retry.py
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          New Layer-1 module: parse_retry_after (now-injectable), backoff_envelope,
+          equal_jitter_delay / full_jitter_delay (rng-injectable), apply_retry_after,
+          budget_exhausted, RETRYABLE_STATUSES. No sleeping/async/loops.
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_write_replacing (full-jitter); drop import random"
+        read_type: gate
+        extract: >-
+          Replace the inline full-jitter sleep with full_jitter_delay(attempt,
+          base=_REPLACE_RACE_BACKOFF_BASE, cap=_REPLACE_RACE_BACKOFF_MAX); the
+          create-race constants stay local (they are not RetryPolicy-driven).
+      - file: src/remote_store/backends/_http.py
+        section: "_TRANSIENT_STATUSES = RETRYABLE_STATUSES | {408}"
+        read_type: gate
+        extract: >-
+          Compose the 408 at the call site rather than widening the shared set, and
+          keep the loop-top budget check via budget_exhausted(next_delay=0.0) so the
+          sync backend's semantics are byte-for-byte preserved.
+  - id: verify
+    name: Verify gates
+    steps:
+      - file: tests/test_retry.py
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Table + Hypothesis unit tests: envelope monotonic/cap-bounded, equal-jitter
+          in [env, env+jitter], full-jitter in [0, env], Retry-After parse with
+          injected now, budget look-ahead. Existing graph/http Retry-After tests
+          (GR-048, TestParseRetryAfter) re-point at the shared helper via each
+          module's local alias and stay green.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / backends"
+        read_type: verify
+        extract: >-
+          Internal refactor, behaviour-preserving: library.maintainer-only audience
+          → no CHANGELOG; RET-015/HTTP-RETRY-001 describe behaviour (unchanged) so no
+          spec edit. backend.py line-shift regenerates graph.json + graph_viz.html.
+        outcome: ok

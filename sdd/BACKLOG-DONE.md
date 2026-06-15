@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-295 — Shared pure backoff/retry helpers (`_retry.py`)**
+  spec: RET-015, HTTP-RETRY-001 · effort: S · audience: library.maintainer
+  Follow-up to BK-294 (PR #825). Several backends run their own retry loops
+  because their transport has no native hook — Graph's `graph_send`, its copy/move
+  monitor poller, its `overwrite=True` create-race write re-attempt, and the sync
+  HTTP backend's `_request_with_retry` — and each had independently re-derived the
+  same arithmetic: the exponential envelope, jitter, the `Retry-After` floor, the
+  wall-clock budget check, and `Retry-After` header parsing (the last duplicated
+  near-verbatim in `_graph/http.py` and `_http.py`). Factored the pure maths into
+  `remote_store._retry`: `parse_retry_after`, `backoff_envelope`,
+  `equal_jitter_delay`, `full_jitter_delay`, `apply_retry_after`,
+  `budget_exhausted`, and the `RETRYABLE_STATUSES` set. **Layer 1 only** — no
+  sleeping, no async, no loops; the per-backend loops stay put and consume the
+  helpers, so each keeps the control flow its transport needs. Behaviour-preserving
+  by construction: both jitter strategies are first-class and **not** unified
+  (equal-jitter is policy-driven; full-jitter carries the create-race constants),
+  the sync HTTP backend keeps its extra `408` (`RETRYABLE_STATUSES | {408}`) and
+  its loop-top budget semantics (`next_delay=0.0`), and the consolidated
+  `parse_retry_after` adopts the Graph naive-date-assumed-UTC behaviour (a strict
+  superset that satisfies both backends' existing tests). `rng`/`now` injectable
+  for deterministic tests. No public API or behaviour change → no CHANGELOG.
+  Trace `sdd/traces/bk-295-shared-retry-helpers.yml`.
+
 - [x] **BK-292 — Graph token acquisition: async `GraphAuth` path + single-flight refresh**
   spec: GR-008 · effort: M · audience: user.api, library.maintainer
   The built-in `GraphAuth` was sync-only: used as the backend's `token_provider`
