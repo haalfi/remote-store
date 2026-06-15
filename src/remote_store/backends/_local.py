@@ -538,13 +538,20 @@ class LocalBackend(Backend):
           the path is rejected. This keeps parity with the old whole-path
           ``resolve(strict=False)``, which followed broken symlinks too.
 
-        The non-existent tail is deliberately **not** passed through
-        ``Path.resolve()``. ``resolve()`` over a path whose intermediate
-        directories are being created by sibling threads can transiently return
-        an 8.3 short-name form (Windows) that is not ``relative_to`` the
-        init-time root, which made concurrent nested writes raise a spurious
-        ``InvalidPath``. ``self._root`` is resolved once at init and is stable;
-        only it and already-settled ancestors are canonicalised here.
+        The load-bearing invariant is that the **non-existent tail is never
+        canonicalised** -- *not* that in-flight intermediate dirs are skipped.
+        ``anchor`` can itself be a long-named directory a sibling created
+        microseconds ago, and it *is* resolved. The distinction that matters:
+        a *fully existing* path resolves by opening that object directly (its
+        long name is committed by the time ``lexists`` reports True), whereas
+        ``resolve()`` over a path with a non-existent tail must canonicalise the
+        existing prefix and re-append the tail, and on Windows that boundary
+        handling can transiently surface an 8.3 short-name form (``LONGDI~1``)
+        that is not ``relative_to`` the init-time root -- the spurious
+        ``InvalidPath``. ``self._root`` is resolved once at init and is stable.
+        The depth-2 regression test deliberately makes ``anchor`` a
+        sibling-created long-named directory and is 24/24 green: the evidence
+        that resolving the deepest *existing* anchor does not itself flicker.
 
         Raises:
             InvalidPath: If the resolved path escapes the root.

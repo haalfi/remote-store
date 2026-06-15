@@ -16,7 +16,9 @@ points outside it.
 
 from __future__ import annotations
 
+import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import threading
@@ -152,3 +154,43 @@ class TestLocalResolveSymlinkEscape:
             backend = LocalBackend(root=root)
             with pytest.raises(InvalidPath, match="escapes root"):
                 backend.write("symdir/newfile.bin", b"x")
+
+    @pytest.mark.skipif(
+        sys.platform != "win32",
+        reason="directory junctions are a Windows-only reparse point",
+    )
+    @pytest.mark.spec("BE-008")
+    def test_write_through_junction_dir_escaping_root_rejected(self) -> None:
+        """Windows proof of the escape boundary via a directory **junction**.
+
+        The symlink guards above skip on Windows (symlinks need
+        ``SeCreateSymbolicLinkPrivilege``), leaving the platform this fix targets
+        with no escape assertion. A directory junction needs no privilege, is a
+        reparse point ``resolve()`` follows, and -- like a symlink dir -- is
+        **not** ``is_symlink()`` yet **is** ``os.path.lexists`` True, so it
+        exercises the same anchor-walk branch the fix introduced. The leaf does
+        not exist, so the walk steps up to the junction and must reject it.
+        """
+        outside = tempfile.mkdtemp(prefix="bug220_jout_")
+        root = tempfile.mkdtemp(prefix="bug220_jroot_")
+        junction = Path(root) / "jdir"
+        try:
+            created = subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(junction), outside],
+                capture_output=True,
+                check=False,
+            )
+            if created.returncode != 0 or not junction.exists():
+                pytest.skip("directory junction creation not permitted on this runner")
+            backend = LocalBackend(root=root)
+            # jdir/ -> existing outside dir; the leaf does not exist yet.
+            with pytest.raises(InvalidPath, match="escapes root"):
+                backend.write("jdir/newfile.bin", b"x")
+        finally:
+            # Unlink the junction reparse point *before* removing the tree, so
+            # rmtree cannot traverse into (and delete) the outside target. A
+            # bare ``os.rmdir`` removes the junction itself, not its contents.
+            if junction.exists():
+                os.rmdir(junction)
+            shutil.rmtree(root, ignore_errors=True)
+            shutil.rmtree(outside, ignore_errors=True)
