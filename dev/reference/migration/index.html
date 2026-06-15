@@ -10344,9 +10344,8 @@ unaffected. Sync and async siblings behave identically.</p>
 The file no-op case is unchanged.</p>
 <p><strong><code>hatch run test-cov</code> no longer enforces <code>--cov-fail-under=95</code>:</strong></p>
 <p>The coverage floor moved to a new <code>hatch run test-cov-strict</code> script. Local
-<code>test-cov</code> is now a coverage <em>report</em> only; CI and the publish workflow run the
-strict variant. If your tooling or CI relied on <code>test-cov</code> failing under 95% switch
-to <code>test-cov-strict</code>.</p>
+<code>test-cov</code> is now a coverage <em>report</em> only; CI runs the strict variant. If your
+tooling or CI relied on <code>test-cov</code> failing under 95% switch to <code>test-cov-strict</code>.</p>
 <h2 id="v0240-to-v0241">v0.24.0 to v0.24.1<a class="headerlink" href="#v0240-to-v0241" title="Permanent link">&para;</a></h2>
 <p><strong>S3 botocore Config options route through <code>config_kwargs</code>:</strong></p>
 <p>Pre-built <code>botocore.config.Config</code> objects are no longer accepted in
