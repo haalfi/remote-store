@@ -524,19 +524,54 @@ class LocalBackend(Backend):
     def _resolve(self, path: str) -> Path:
         """Resolve a relative path to an absolute path within root.
 
-        Safety: ``.resolve()`` follows symlinks to their real target, and
-        ``relative_to(self._root)`` then rejects any path that escapes the
-        root — including symlinks pointing outside it.
+        Safety is enforced on two axes without canonicalising the (possibly
+        in-flight) leaf:
+
+        * **Lexical containment.** ``os.path.normpath`` collapses ``.``/``..``
+          without touching the filesystem, so a lexical escape
+          (``../../etc/passwd``) is rejected even when nothing on the path
+          exists yet.
+        * **Symlink-escape rejection.** Only the deepest component that
+          *lexically* exists is resolved -- a symlink, **even a broken one**, is
+          followed to its real target (``os.path.lexists`` stops the walk at the
+          link itself rather than stepping past it); if that anchor escapes root,
+          the path is rejected. This keeps parity with the old whole-path
+          ``resolve(strict=False)``, which followed broken symlinks too.
+
+        The load-bearing invariant is that the **non-existent tail is never
+        canonicalised** -- *not* that in-flight intermediate dirs are skipped.
+        ``anchor`` can itself be a long-named directory a sibling created
+        microseconds ago, and it *is* resolved. The distinction that matters:
+        a *fully existing* path resolves by opening that object directly (its
+        long name is committed by the time ``lexists`` reports True), whereas
+        ``resolve()`` over a path with a non-existent tail must canonicalise the
+        existing prefix and re-append the tail, and on Windows that boundary
+        handling can transiently surface an 8.3 short-name form (``LONGDI~1``)
+        that is not ``relative_to`` the init-time root -- the spurious
+        ``InvalidPath``. ``self._root`` is resolved once at init and is stable.
+        The depth-2 regression test deliberately makes ``anchor`` a
+        sibling-created long-named directory and is 24/24 green: the evidence
+        that resolving the deepest *existing* anchor does not itself flicker.
 
         Raises:
             InvalidPath: If the resolved path escapes the root.
         """
-        resolved = (self._root / path).resolve()
+        target = Path(os.path.normpath(self._root / path))
+        # Walk up to the deepest lexically-existing ancestor for the symlink
+        # check. ``lexists`` (not ``exists``) so a broken symlink stops the walk
+        # at the link itself and is resolved, instead of being stepped over.
+        anchor = target
+        while not os.path.lexists(anchor):
+            parent = anchor.parent
+            if parent == anchor:  # reached the filesystem root
+                break
+            anchor = parent
         try:
-            resolved.relative_to(self._root)
+            anchor.resolve().relative_to(self._root)
+            target.relative_to(self._root)
         except ValueError:
             raise InvalidPath(f"Path escapes root directory: {path}", path=path, backend=self.name) from None
-        return resolved
+        return target
 
     def _stat_to_fileinfo(self, path: str, full: Path) -> FileInfo:
         st = full.stat()

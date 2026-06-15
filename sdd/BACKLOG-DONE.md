@@ -8,6 +8,30 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-220 — LocalBackend `_resolve` races on concurrent intermediate-dir creation (Windows)**
+  spec: BE-008 · effort: S · audience: user.api, library.maintainer
+  Discovered by the BK-289 concurrency lane. `LocalBackend._resolve` did
+  `(self._root / path).resolve()` then `relative_to(self._root)`; on Windows,
+  `Path.resolve()` over a path whose intermediate dirs are being created by
+  sibling threads transiently returns an 8.3 short-name form that is **not**
+  `relative_to` the init-time root, so a legitimate concurrent write raised a
+  spurious `InvalidPath("Path escapes root directory")`. **Repro recipe
+  corrected:** the bug needs **long (>8 char) path components** to trigger 8.3
+  short-name generation — short components reproduce 0/20 (the BACKLOG recipe
+  under-specified this; the lane's own `cc/write/{i}` write-stress uses short
+  components and likely never reproduced it, so its `xfail(strict=False)` was
+  defensive/xpassing). Fix: lexical `os.path.normpath` containment for the `..`
+  case, plus a symlink-escape check that resolves only the deepest **existing**
+  ancestor — the non-existent / in-flight tail is never re-canonicalised, killing
+  the flicker, while existing symlinks are still followed and rejected if they
+  escape root. Cross-platform (POSIX `realpath` shares the resolve()-based escape
+  contract; the fix preserves it). Removed the sync + aio lane xfail helpers so
+  `local` / `local_async_adapted` assert for real on Windows. New regression +
+  symlink-escape tests in `tests/backends/local/test_concurrency.py`. The sibling
+  `glob()` `.resolve().relative_to` site (lower-severity latent skip, not the
+  reported bug) was assessed and left to a focused follow-up. Trace:
+  `sdd/traces/bug-220-local-resolve-race.yml`.
+
 - [x] **BK-289 — Cross-backend posture-gated concurrency conformance lane**
   spec: TEST-010, TEST-003, 003, 029 · effort: L · audience: infra.test
   Design: [research-bk-289-concurrency-test-lane.md](research/research-bk-289-concurrency-test-lane.md).

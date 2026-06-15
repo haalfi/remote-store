@@ -60,7 +60,6 @@ Store-layer share-across-threads property it generalises). The registry
 from __future__ import annotations
 
 import io
-import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, Any
 
@@ -118,29 +117,6 @@ def _run_concurrently(
     return results, errors
 
 
-def _xfail_local_dir_race_on_windows(backend: Backend, request: pytest.FixtureRequest) -> None:
-    """xfail the ``local`` write-stress on Windows for BUG-220.
-
-    ``LocalBackend._resolve`` canonicalises with ``Path.resolve()``; on Windows
-    a directory a sibling thread is concurrently creating transiently
-    canonicalises outside the init-time root, so a legitimate concurrent write
-    to a nested key raises a spurious ``InvalidPath`` (reproduced 20/20). The
-    posture itself is sound — concurrent *reads* and pre-created-dir writes pass
-    — so the mark is ``strict=False`` and Windows-only: when BUG-220 is fixed the
-    xpass on Windows prompts its removal, and POSIX runs the test for real.
-    """
-    if sys.platform == "win32" and _fixture_record(backend).name == "local":
-        # No ``raises=``: the spurious InvalidPath is captured by
-        # ``_run_concurrently`` and surfaces as the ``assert not errors``
-        # AssertionError, so the xfail keys on failure alone (strict=False).
-        request.applymarker(
-            pytest.mark.xfail(
-                reason="BUG-220: LocalBackend._resolve races on concurrent intermediate-dir creation (Windows)",
-                strict=False,
-            )
-        )
-
-
 @pytest.mark.concurrency
 @pytest.mark.spec("BE-028")
 @pytest.mark.spec("S3-028")
@@ -180,9 +156,8 @@ class TestThreadSafeConcurrency:
         assert all(got == expected for got, expected in results.values())
 
     @pytest.mark.spec("STORE-007")
-    def test_concurrent_distinct_key_writes_all_land(self, backend: Backend, request: pytest.FixtureRequest) -> None:
+    def test_concurrent_distinct_key_writes_all_land(self, backend: Backend) -> None:
         """N threads writing distinct keys: every write is durable (no lost writes)."""
-        _xfail_local_dir_race_on_windows(backend, request)
         items = [(f"cc/write/{i}.bin", f"w{i}".encode()) for i in range(_N_ITEMS)]
 
         def _write(idx: int, item: tuple[str, bytes]) -> None:
@@ -195,9 +170,8 @@ class TestThreadSafeConcurrency:
             assert backend.read_bytes(key) == data
 
     @pytest.mark.spec("STORE-007")
-    def test_concurrent_read_after_write_consistent(self, backend: Backend, request: pytest.FixtureRequest) -> None:
+    def test_concurrent_read_after_write_consistent(self, backend: Backend) -> None:
         """Each thread reads back exactly what it just wrote to its own key."""
-        _xfail_local_dir_race_on_windows(backend, request)
         items = [(f"cc/raw/{i}.txt", f"raw-{i}".encode()) for i in range(_N_ITEMS)]
 
         def _raw(idx: int, item: tuple[str, bytes]) -> tuple[bytes, bytes]:

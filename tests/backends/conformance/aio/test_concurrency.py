@@ -37,14 +37,12 @@ Graph create-once-race contract is exercised against ``respx`` in
 from __future__ import annotations
 
 import asyncio
-import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from remote_store._capabilities import Capability
 from tests.backends.conformance._helpers import (
-    _fixture_record,
     _require,
     _skip_unless_large_write_distinct,
 )
@@ -60,24 +58,6 @@ _N_ITEMS = 16
 # Parallel large-upload probe: few but large (4 x 8 MiB), matching the sync lane.
 _LARGE_N = 4
 _LARGE_SIZE = 8 * 1024 * 1024
-
-
-def _xfail_local_async_dir_race_on_windows(async_backend: Any, request: pytest.FixtureRequest) -> None:
-    """xfail the ``local_async_adapted`` write-stress on Windows for BUG-220.
-
-    The async Local fixture is the sync ``LocalBackend`` behind
-    ``AsyncBackendSyncAdapter``; concurrent ``gather`` writes dispatch concurrent
-    ``to_thread`` work that hits the same ``_resolve`` dir-creation race as the
-    sync lane (BUG-220). Windows-only, ``strict=False``: POSIX runs it for real
-    and a fixed backend xpasses.
-    """
-    if sys.platform == "win32" and _fixture_record(async_backend).name == "local_async_adapted":
-        request.applymarker(
-            pytest.mark.xfail(
-                reason="BUG-220: LocalBackend._resolve races on concurrent intermediate-dir creation (Windows)",
-                strict=False,
-            )
-        )
 
 
 @pytest.mark.concurrency
@@ -105,22 +85,16 @@ class TestAsyncCoroutineSafe:
         assert list(got) == list(keys.values())
 
     @pytest.mark.spec("ASYNC-055")
-    async def test_concurrent_distinct_key_writes_all_land(
-        self, async_backend: AsyncBackend, request: pytest.FixtureRequest
-    ) -> None:
+    async def test_concurrent_distinct_key_writes_all_land(self, async_backend: AsyncBackend) -> None:
         _require(async_backend, Capability.WRITE)
-        _xfail_local_async_dir_race_on_windows(async_backend, request)
         keys = {f"acc/write/{i}.bin": f"w{i}".encode() for i in range(_N_ITEMS)}
         await asyncio.gather(*(async_backend.write(key, data) for key, data in keys.items()))
         for key, data in keys.items():
             assert await async_backend.read_bytes(key) == data
 
     @pytest.mark.spec("ASYNC-055")
-    async def test_concurrent_read_after_write_consistent(
-        self, async_backend: AsyncBackend, request: pytest.FixtureRequest
-    ) -> None:
+    async def test_concurrent_read_after_write_consistent(self, async_backend: AsyncBackend) -> None:
         _require(async_backend, Capability.WRITE)
-        _xfail_local_async_dir_race_on_windows(async_backend, request)
         keys = {f"acc/raw/{i}.txt": f"raw-{i}".encode() for i in range(_N_ITEMS)}
 
         async def _raw(key: str, data: bytes) -> tuple[bytes, bytes]:
