@@ -384,7 +384,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 - [ ] CHANGELOG.md `[Unreleased]` is complete — every completed item has a stub line (see ripple-check row **CHANGELOG entry**)
 - [ ] CHANGELOG.md `[Unreleased]` condensed — stubs expanded to prose at release time (release skill Phase 1)
-- [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here, marked `[x]` with version (e.g. `(v0.8.0)`)
+- [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here under the `## Unreleased` heading, each marked `[x]` (Phase 2 versions the heading)
 - [ ] `FEATURES.md` updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; `bump-my-version` handles it in Phase 2)
 - [ ] README.md: backends table, installation extras, API table, badges are current
 - [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
@@ -397,21 +397,23 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 - [ ] Create release branch: `git checkout -b release-vX.Y.Z`
 - [ ] CHANGELOG.md: rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, add fresh empty `[Unreleased]` above
+- [ ] `sdd/BACKLOG-DONE.md`: rename `## Unreleased` to `## vX.Y.Z`, add a fresh empty `## Unreleased` (`*(none)*`) above
 - [ ] Update `date-released` in `CITATION.cff` to today (bump-my-version only updates `version:`, not this field)
 - [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
 - [ ] Conda recipe: update `context.version` in `packaging/conda-forge/recipe.yaml` to X.Y.Z
-- [ ] `bump-my-version bump patch|minor|major` (modifies the files listed in `[[tool.bumpversion.files]]` in `pyproject.toml` — does NOT commit or tag)
+- [ ] `bump-my-version bump patch|minor|major --allow-dirty` (modifies the files listed in `[[tool.bumpversion.files]]` in `pyproject.toml` — does NOT commit or tag; `--allow-dirty` is required because the Phase 1/2 edits above are still uncommitted)
 - [ ] `hatch run gen-graph` (stamps `source_version` + `snapshot` in `docs-src/_data/graph/graph.json` from the bumped version)
 - [ ] `hatch run gen-features` (regenerates mechanical sections of `FEATURES.md` from updated `graph.json`)
-- [ ] Review and commit: `git diff` to verify, then stage the bump-my-version-modified files (see `[[tool.bumpversion.files]]` in `pyproject.toml`) plus `CHANGELOG.md`, `packaging/conda-forge/recipe.yaml`, `docs-src/_data/graph/graph.json`, and `FEATURES.md`, and commit as `Release vX.Y.Z`
+- [ ] `hatch run gen-graph-viz` (regenerates `docs-src/explanation/graph_viz.html` from `graph.json`; `hatch run all` gates on its freshness, so skipping it fails Phase 3)
+- [ ] Review and commit: `git diff` to verify nothing unexpected is staged, then `git add -A` (covers the bump-my-version files, the manual tagline/date edits, `CHANGELOG.md`, `sdd/BACKLOG-DONE.md`, `packaging/conda-forge/recipe.yaml`, `docs-src/_data/graph/graph.json`, `docs-src/explanation/graph_viz.html`, and `FEATURES.md`) and commit as `Release vX.Y.Z`
 
 ### Phase 3: Validate
 
 - [ ] `hatch run all` passes (constituent scripts in `pyproject.toml`)
 - [ ] `hatch run test-cov-strict` passes locally with Azurite running (enforces the 95% floor that `hatch run all` deliberately skips)
 - [ ] `mkdocs build --strict` passes
-- [ ] `python -m build && twine check dist/*` — package builds cleanly
+- [ ] `hatch build && hatch run twine check dist/*` — package builds cleanly (the `build` PyPI package is not in the hatch env, so `python -m build` fails; `hatch build` uses the hatchling backend and `twine` is available via `hatch run`)
 - [ ] `pip install dist/*.whl && python -c "import remote_store; print(remote_store.__version__)"` — version matches
 - [ ] Conda recipe: version in `packaging/conda-forge/recipe.yaml` matches release version
 
