@@ -4,6 +4,10 @@
 
 Proposed | Accepted | Superseded by ADR-XXXX
 
+A supersession may target the whole ADR or a single clause. When partial, place
+the `Superseded by ADR-XXXX` pointer at the affected clause instead of this line
+(see ADR-0015, ADR-0029).
+
 ## Context
 
 What problem or tension led to this decision? Include relevant constraints —
