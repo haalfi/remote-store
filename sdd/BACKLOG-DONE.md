@@ -9,7 +9,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ## Unreleased
 
 - [x] **BK-290 — Graph async I/O robustness under concurrent load**
-  spec: GR-008, GR-019 · effort: S · audience: user.api, library.maintainer
+  spec: GR-015, GR-019 · effort: S · audience: user.api, library.maintainer
   Closed the two I/O-robustness gaps the expectation-driven review surfaced.
   **(1) Blocking spool I/O off the loop:** `transfer.py` ran `SpooledTemporaryFile`
   `write` / `seek` / `read` / `tell` synchronously on the event-loop thread in
