@@ -1933,7 +1933,7 @@
       "file": "src/remote_store/backends/_http.py",
       "id": "cls:remote_store.backends._http.ReadOnlyHttpBackend",
       "kind": "class",
-      "line": 212,
+      "line": 217,
       "role": "backend",
       "runtime": "sync",
       "summary": "Read-only backend for HTTP/HTTPS URLs."
