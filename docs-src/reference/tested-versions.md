@@ -32,12 +32,13 @@ _Captured 2026-06-14 on Python 3.13._
 
 ## `[graph]`
 
-_Captured 2026-06-13 on Python 3.13._
+_Captured 2026-06-15 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
 | `httpx` | `1.0.dev3` |
 | `msal` | `1.38.0rc1` |
+| `msal-extensions` | `1.3.1` |
 | `platformdirs` | `4.10.0` |
 
 ## `[httpx]`

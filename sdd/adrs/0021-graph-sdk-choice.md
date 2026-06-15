@@ -50,6 +50,10 @@ The `graph` optional extra pins:
 
 - `httpx` — async HTTP transport.
 - `msal` — token acquisition (used by the built-in `GraphAuth` helper).
+- `msal-extensions` (`>=1.3`) — multi-process-safe token-cache
+  persistence (`PersistedTokenCache` + cross-process file lock, BK-291);
+  the `>=1.3` floor keeps `portalocker` an optional extra rather than a
+  hard transitive dependency. Consumed only by `GraphAuth`, lazily.
 - `platformdirs` — resolves the MSAL token-cache path under
   `user_config_dir("remote-store")`; consumed only by `GraphAuth` and
   imported lazily so callers supplying their own token-provider
@@ -64,8 +68,9 @@ is out of scope (legacy SharePoint REST is not a goal — see RFC-0010).
 
 ## Consequences
 
-- **Narrow dependency footprint.** `httpx` + `msal` + `platformdirs`
-  is lighter than `msgraph-sdk` + Kiota runtime + `azure-identity`.
+- **Narrow dependency footprint.** `httpx` + `msal` +
+  `msal-extensions` + `platformdirs` is lighter than `msgraph-sdk` +
+  Kiota runtime + `azure-identity`.
   `httpx` is not in the base install — users who install only the
   `graph` extra pay for it once; users who already had
   `remote-store[httpx]` for `ReadOnlyHttpBackend` pay for nothing

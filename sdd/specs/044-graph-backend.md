@@ -173,9 +173,21 @@ providers remain free to raise anything — GR-008.)
 interactive scenarios. On first use, the user is prompted with a
 code and URL; completion yields a token and refresh token cached by
 MSAL.
-**Postconditions:** The MSAL cache is serialised to a persistent
-file; see ADR-0022 § Token caching for the canonical path and
-override rules (single source of truth). A no-token acquisition
+**Postconditions:** The MSAL cache is persisted to a file
+**multi-process-safely** — each acquisition writes through to disk with
+concurrent writers serialized by a cross-process file lock and readers
+retrying past a dirty read, so a consumer sharing the default cache path
+(the common multi-worker deployment) never observes a corrupt cache
+(BK-291). The on-disk write is an in-place truncate-and-write, **not** an
+atomic rename; corruption-freedom comes from the lock + read-retry, not
+atomicity. See ADR-0022 § Token caching for the canonical path, the lock
+mechanism, and override rules (single source of truth). Cache access is **best-effort on both paths**: a
+write/lock-contention failure (the write-through under the lock) *and* a read
+failure (a corrupt or persistently-contended cache making the reload re-raise)
+are logged and swallowed — a read miss degrades to a fresh acquisition, a write
+miss to a re-acquisition next run — never raised, so neither breaks the
+in-flight `read` / `write`. The GR-006 / GR-008 typed-error contract still holds
+(a persistence error is not a token-acquisition failure). A no-token acquisition
 failure raises the same typed `PermissionDenied` as GR-006 — the
 branch in `get_token` is shared by both flows. A device-flow
 *initiation* failure (MSAL's `initiate_device_flow` returning no
@@ -1279,10 +1291,14 @@ HTTP backend's `repr`-only precedent in HTTP-CRED-001).
 ### GR-051: close()
 
 **Invariant:** `close()` (and `aclose()` on the async path) closes
-the backend's `httpx.AsyncClient`, flushes the MSAL token cache to
-disk if the built-in `GraphAuth` owns it, cancels any pending
+the backend's `httpx.AsyncClient`, invokes the token provider's
+`flush_cache` hook if present, cancels any pending
 monitor-URL pollers, and issues best-effort `DELETE` against any
-upload sessions the backend currently owns.
+upload sessions the backend currently owns. For the built-in
+`GraphAuth` the cache is already persisted continuously (each
+acquisition writes through under a cross-process lock — GR-007 /
+BK-291), so its `flush_cache` is a best-effort no-op; the duck-typed
+hook remains for user-supplied providers that buffer their own cache.
 **Postconditions:**
 - Safe to call multiple times (idempotent — a second `close()` is a no-op).
 - User-supplied `http_client` instances are not closed — the caller

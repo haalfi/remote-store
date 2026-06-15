@@ -5,9 +5,9 @@ exposes the acquired bearer token through the token-provider protocol: a
 ``GraphAuth`` instance is itself a ``Callable[[], str]``, so
 ``GraphBackend(token_provider=GraphAuth(...))`` works directly.
 
-``msal`` and ``platformdirs`` are imported lazily inside the methods that
-need them so a caller supplying their own token-provider callable never
-loads them.
+``msal``, ``msal_extensions`` (the multi-process-safe token cache), and
+``platformdirs`` are imported lazily inside the methods that need them so a
+caller supplying their own token-provider callable never loads them.
 """
 
 from __future__ import annotations
@@ -38,6 +38,52 @@ _DEFAULT_CC_SCOPES = ("https://graph.microsoft.com/.default",)
 _DEFAULT_DEVICE_SCOPES = ("Files.ReadWrite", "User.Read")
 _CACHE_FILENAME = "graph_token_cache.json"
 
+_PERSISTED_CACHE_CLS: Any = None
+
+
+def _build_token_cache(path: str) -> Any:
+    """Build the multi-process-safe token cache, with best-effort persistence.
+
+    ``msal_extensions.PersistedTokenCache`` reads and writes the on-disk cache
+    on every acquisition: ``modify()`` writes through under a cross-process
+    ``CrossPlatLock``, and ``search()`` reload-merges (re-raising after its
+    dirty-read retries). A lock-contention timeout, a disk error, or a
+    corrupt/half-written cache file there must **not** break token acquisition
+    or escape ``get_token`` as an untyped exception mid-``read`` / ``write`` (a
+    persistence error is not a token failure). The subclass below makes **both**
+    the write (``modify``) and read (``search``) paths best-effort — swallow,
+    log, and degrade to a re-acquisition — the guarantee the old ``flush_cache``
+    provided. The class is built once and cached so the ``msal_extensions``
+    import stays lazy (never loaded for user-supplied providers).
+    """
+    global _PERSISTED_CACHE_CLS
+    if _PERSISTED_CACHE_CLS is None:
+        from msal_extensions import PersistedTokenCache  # noqa: PLC0415
+
+        class _BestEffortPersistedTokenCache(PersistedTokenCache):  # type: ignore[misc]
+            def modify(self, credential_type: Any, old_entry: Any, new_key_value_pairs: Any = None) -> None:
+                try:
+                    super().modify(credential_type, old_entry, new_key_value_pairs=new_key_value_pairs)
+                except Exception:  # noqa: BLE001 -- persistence is best-effort; never break acquisition
+                    log.warning("failed to persist Graph token cache", exc_info=True)
+
+            def search(self, credential_type: Any, **kwargs: Any) -> Any:
+                # A corrupt / persistently-contended cache file makes search()
+                # (and the find() that delegates to it) re-raise after its
+                # dirty-read retries. Degrade to "no cached token" so MSAL
+                # re-acquires instead of breaking the in-flight read/write.
+                try:
+                    return super().search(credential_type, **kwargs)
+                except Exception:  # noqa: BLE001 -- read is best-effort; degrade to a cache miss
+                    log.warning("failed to read Graph token cache; treating as empty", exc_info=True)
+                    return []
+
+        _PERSISTED_CACHE_CLS = _BestEffortPersistedTokenCache
+
+    from msal_extensions import FilePersistence  # noqa: PLC0415
+
+    return _PERSISTED_CACHE_CLS(FilePersistence(path))
+
 
 class GraphAuth:
     """MSAL-backed token provider for ``GraphBackend``.
@@ -62,7 +108,10 @@ class GraphAuth:
             (the signed-in user's OneDrive — consumer-compatible). Add
             ``Sites.ReadWrite.All`` for delegated SharePoint access.
         cache_path: Override the MSAL token-cache file location. Defaults to
-            ``<user_config_dir("remote-store")>/graph_token_cache.json``.
+            ``<user_config_dir("remote-store")>/graph_token_cache.json``. The
+            cache is persisted multi-process-safely: a sibling
+            ``<cache_path>.lockfile`` coordinates concurrent writers so a
+            shared default cache survives the common multi-worker deployment.
         prompt_callback: Invoked with the MSAL device-flow dict on device-code
             login; defaults to printing ``flow["message"]``.
 
@@ -116,15 +165,15 @@ class GraphAuth:
         return os.path.join(platformdirs.user_config_dir("remote-store"), _CACHE_FILENAME)
 
     def _load_cache(self) -> Any:
-        import os  # noqa: PLC0415
-
-        from msal import SerializableTokenCache  # noqa: PLC0415
-
-        cache = SerializableTokenCache()
-        path = self._resolve_cache_path()
-        if os.path.exists(path):
-            with open(path, encoding="utf-8") as fh:
-                cache.deserialize(fh.read())
+        # BK-291: a PersistedTokenCache makes the on-disk token cache
+        # multi-process-safe. Every MSAL acquisition routes through its
+        # lock-coordinated modify() (cross-process CrossPlatLock + reload-merge
+        # + write-through) and read-retrying search(), so concurrent workers
+        # sharing the default cache path can no longer truncate or tear it (the
+        # plain truncate-then-write that flush_cache used to do). The sibling
+        # ``<path>.lockfile`` is the cross-process lock. See ADR-0022 § Token
+        # caching.
+        cache = _build_token_cache(self._resolve_cache_path())
         self._cache = cache
         return cache
 
@@ -165,10 +214,13 @@ class GraphAuth:
         return app.acquire_token_by_device_flow(flow)  # type: ignore[no-any-return]
 
     def get_token(self) -> str:
-        """Acquire (or silently refresh) a bearer token, flushing the cache.
+        """Acquire (or silently refresh) a bearer token.
 
         The token-provider callable the backend invokes. Re-invoking it after
-        a ``401`` refreshes through MSAL's cache.
+        a ``401`` refreshes through MSAL's cache. The acquisition writes the
+        refreshed cache through to disk itself — the backing
+        ``PersistedTokenCache`` persists under a cross-process lock on every
+        change, so no explicit flush is needed here.
 
         Raises:
             PermissionDenied: If MSAL returns no token (auth failure); the
@@ -185,7 +237,6 @@ class GraphAuth:
                 else "unknown error"
             )
             raise PermissionDenied(f"Graph token acquisition failed: {detail}", backend="graph")
-        self.flush_cache()
         return str(token)
 
     def __call__(self) -> str:
@@ -193,28 +244,16 @@ class GraphAuth:
         return self.get_token()
 
     def flush_cache(self) -> None:
-        """Persist the MSAL token cache to disk when it has changed.
+        """Best-effort no-op retained for the ``GraphBackend.close()`` hook.
 
-        Called by ``get_token`` after every acquisition and by
-        ``GraphBackend.close()``. Best-effort: a serialization or write
-        failure is logged, not raised.
+        The token cache is a ``PersistedTokenCache`` that writes through to
+        disk under a cross-process lock on every acquisition, so there is
+        nothing to flush at close. The method stays because
+        ``GraphBackend.close()`` invokes it duck-typed and user-supplied
+        providers may implement their own. Never raises — teardown must not
+        fail.
         """
-        if self._cache is None or not self._cache.has_state_changed:
-            return
-        import os  # noqa: PLC0415
-
-        path = self._resolve_cache_path()
-        # Best-effort: flush_cache is called from get_token and from close(), so
-        # neither a write error (OSError) nor a serialization error (MSAL's
-        # JSON-backed serialize() can raise ValueError / TypeError) may
-        # propagate and break token acquisition or teardown.
-        try:
-            payload = self._cache.serialize()
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as fh:
-                fh.write(payload)
-        except Exception:  # noqa: BLE001 -- cleanup must never raise
-            log.warning("failed to persist Graph token cache to %s", path, exc_info=True)
+        return
 
     def __repr__(self) -> str:
         flow = "client_credentials" if self._app_only else "device_code"

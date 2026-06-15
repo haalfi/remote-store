@@ -8,6 +8,28 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-291 — `GraphAuth` MSAL token-cache write is non-atomic and unlocked**
+  spec: GR-007 · effort: M (filed S) · audience: user.api, library.maintainer
+  `flush_cache` did a plain `open(path, "w").write(...)` at the default shared
+  cache path with no atomicity and no lock; concurrent `GraphAuth`/`GraphBackend`
+  instances or processes sharing it (the common multi-worker deployment) could
+  truncate/tear the cache, forcing a re-login. **Reproduced** (sandbox repro, 6
+  writers + 2 readers): the current pattern produced empty reads (the truncate
+  window is payload-independent — `open(path,"w")` zeroes the file before any
+  write) and torn JSON. **A bare temp-file + `os.replace` was rejected**: the
+  same repro showed `os.replace` raises `PermissionError` (`WinError 5`) on
+  Windows when the destination is held open by a concurrent reader / contended
+  by another replace, and since `flush_cache` is best-effort that would become a
+  *silent* non-persistence → re-login. Fixed by adopting
+  `msal_extensions.PersistedTokenCache` (`FilePersistence`): every acquisition
+  writes through under a cross-process `CrossPlatLock` with reload-merge, and the
+  read path retries on a dirty read — corruption **and** lost-updates resolved
+  with no `os.replace`. `flush_cache` is now a best-effort no-op kept for the
+  GR-051 `close()` hook. Added `msal-extensions>=1.3` to the `graph` extra
+  (`>=1.3` keeps `portalocker` optional). Effort reclassified S→M (dependency +
+  ADR/spec/test rework). GR-007 / GR-051 amended; ADR-0021 / ADR-0022 updated.
+  Trace: `sdd/traces/BK-291-token-cache-atomic.yml`.
+
 - [x] **BK-290 — Graph async I/O robustness under concurrent load**
   spec: GR-015, GR-019 · effort: S · audience: user.api, library.maintainer
   Closed the two I/O-robustness gaps the expectation-driven review surfaced.

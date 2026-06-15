@@ -1,7 +1,8 @@
 """Microsoft Graph backend sub-package (OneDrive / SharePoint / Teams files).
 
 Re-exports the three public symbols. Importing this package requires the
-``graph`` extra (``httpx`` / ``msal`` / ``platformdirs``); the parent
+``graph`` extra (``httpx`` / ``msal`` / ``msal-extensions`` / ``platformdirs``);
+the parent
 ``remote_store.aio.backends`` package guards the import so ``import
 remote_store`` works without the extra installed.
 """

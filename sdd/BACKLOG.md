@@ -117,18 +117,6 @@ resolve to one winner, read-your-writes and listing held, streaming reads are
 version-pinned, and the sync bridge (`ThreadPoolExecutor` + `ext.batch`) is
 deadlock-free. The items below are the divergences and the unspecified contract.
 
-- [ ] **BK-291 — `GraphAuth` MSAL token-cache write is non-atomic and unlocked**
-  spec: GR-007 · effort: S · audience: user.api, library.maintainer
-  `flush_cache` does a plain `open(path, "w").write(...)` at the default shared
-  path (`platformdirs.user_config_dir("remote-store")/graph_token_cache.json`)
-  with no temp-rename and no lock. Multiple `GraphAuth`/`GraphBackend` instances
-  or processes sharing that default cache — the common multi-worker deployment —
-  can interleave writes and truncate/corrupt the cache, forcing a re-login. Fix:
-  atomic write (temp file + `os.replace`) plus an advisory lock (or per-process
-  cache path). Filed as `BK`, not `BUG`: an inspection finding (verified in
-  `auth.py` `flush_cache`), not yet reproduced — a multi-process interleave repro
-  would promote it.
-
 - [ ] **BK-294 — Evaluate retrying Graph `overwrite=True` 409-under-replace as transient**
   spec: GR-018, GR-032 · effort: M · audience: user.api
   BK-288 documented that `overwrite=True` can still surface `AlreadyExists`: on

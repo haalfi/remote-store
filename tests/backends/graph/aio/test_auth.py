@@ -17,17 +17,6 @@ from remote_store._errors import PermissionDenied
 from remote_store.aio.backends._graph.auth import GraphAuth
 
 
-class _FakeCache:
-    def __init__(self) -> None:
-        self.has_state_changed = False
-
-    def deserialize(self, data: str) -> None:  # pragma: no cover - unused on fresh path
-        self.has_state_changed = False
-
-    def serialize(self) -> str:
-        return "{}"
-
-
 class _FakeConfidentialApp:
     def __init__(self, client_id: str, *, authority: str, client_credential: Any, token_cache: Any) -> None:
         self.client_credential = client_credential
@@ -60,7 +49,9 @@ class _FakePublicApp:
 def fake_msal(monkeypatch: pytest.MonkeyPatch) -> None:
     import msal
 
-    monkeypatch.setattr(msal, "SerializableTokenCache", _FakeCache)
+    # The token cache is a real msal_extensions.PersistedTokenCache over the
+    # test's tmp_path (BK-291); the fake apps ignore the token_cache arg, so no
+    # cache monkeypatch is needed — only the two MSAL app classes are faked.
     monkeypatch.setattr(msal, "ConfidentialClientApplication", _FakeConfidentialApp)
     monkeypatch.setattr(msal, "PublicClientApplication", _FakePublicApp)
     # Reset the device-code fake's class state between tests.
@@ -199,7 +190,12 @@ class TestGetToken:
 
 
 class TestCachePersistence:
-    """GR-007 token-cache persistence (GraphAuth.flush_cache, GR-051 caller)."""
+    """GR-007 token-cache persistence via msal_extensions.PersistedTokenCache.
+
+    BK-291: the cache writes through to disk multi-process-safely on every
+    acquisition; ``flush_cache`` is a best-effort no-op kept only for the
+    GR-051 ``close()`` hook.
+    """
 
     @pytest.mark.spec("GR-007")
     def test_default_cache_path_uses_user_config_dir(self) -> None:
@@ -207,45 +203,114 @@ class TestCachePersistence:
         assert path.endswith("graph_token_cache.json")
         assert "remote-store" in path
 
-    @pytest.mark.spec("GR-051")
-    def test_flush_writes_changed_cache(self, tmp_path: Any) -> None:
-        class _ChangedCache:
-            has_state_changed = True
+    @pytest.mark.spec("GR-007")
+    def test_cache_is_multiprocess_safe_persisted_cache(self, tmp_path: Any) -> None:
+        # BK-291: the cache must be a lock-coordinated, multi-process-safe
+        # PersistedTokenCache (not a bare SerializableTokenCache whose
+        # truncate-then-write corrupts under concurrent writers). Assert the
+        # public type, not msal-extensions' private `_lock_location` attr — the
+        # lockfile-backed guarantee is exercised behaviourally by the
+        # write-through and best-effort tests below.
+        from msal_extensions import PersistedTokenCache
 
-            def serialize(self) -> str:
-                return '{"persisted": true}'
+        cache = GraphAuth("consumers", "c", cache_path=str(tmp_path / "c.json"))._load_cache()
+        assert isinstance(cache, PersistedTokenCache)
+
+    @pytest.mark.spec("GR-007")
+    def test_persistence_failure_is_best_effort(
+        self, tmp_path: Any, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # BK-291 review: persistence now happens inside MSAL's lock-coordinated
+        # modify() (not a separate flush). A disk/lock failure there must be
+        # swallowed + logged (best-effort), never escape token acquisition as an
+        # untyped exception — preserving the GR-006/GR-008 typed-error contract.
+        cache = GraphAuth("consumers", "c", cache_path=str(tmp_path / "c.json"))._load_cache()
+
+        def _boom(_content: str) -> None:
+            raise OSError("disk full")
+
+        monkeypatch.setattr(cache._persistence, "save", _boom)
+        cache.add(  # add() -> modify() -> save(); the OSError must not propagate
+            {
+                "client_id": "c",
+                "scope": ["s1"],
+                "token_endpoint": "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
+                "response": {"access_token": "atoken", "token_type": "Bearer", "expires_in": 3600},
+            }
+        )
+        assert any("token cache" in r.getMessage() for r in caplog.records)
+
+    @pytest.mark.spec("GR-007")
+    def test_read_failure_is_best_effort(
+        self, tmp_path: Any, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # BK-291 review round 2: the READ path must also be best-effort. A
+        # corrupt / persistently-contended cache makes PersistedTokenCache's
+        # search() (and the find() that delegates to it) re-raise after its
+        # dirty-read retries; that must degrade to a cache miss, not escape
+        # acquisition as an untyped json/OS error.
+        import msal_extensions.token_cache as mxtc
+
+        monkeypatch.setattr(mxtc.time, "sleep", lambda *_a, **_k: None)  # skip retry backoff
+        cache = GraphAuth("consumers", "c", cache_path=str(tmp_path / "c.json"))._load_cache()
+
+        def _boom() -> None:
+            raise OSError("cache unreadable")
+
+        monkeypatch.setattr(cache, "_reload_if_necessary", _boom)
+        result = cache.search(cache.CredentialType.ACCESS_TOKEN)
+        assert result == []  # degraded to "no cached token", not raised
+        assert any("token cache" in r.getMessage() for r in caplog.records)
+
+    @pytest.mark.spec("GR-007")
+    def test_second_instance_reads_first_instances_write(self, tmp_path: Any) -> None:
+        # BK-291: the multi-process-safety guarantee, exercised behaviourally
+        # (not just isinstance) across two cache instances over the SAME file —
+        # the multi-worker shape, in-process and deterministic. Instance A
+        # persists a token; instance B, built fresh over the same path,
+        # reload-merges from disk and finds it (read-your-writes across the
+        # shared lock-coordinated cache).
+        path = str(tmp_path / "c.json")
+        event = {
+            "client_id": "c",
+            "scope": ["s1"],
+            "token_endpoint": "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
+            "response": {"access_token": "atoken", "token_type": "Bearer", "expires_in": 3600},
+        }
+        GraphAuth("consumers", "c", cache_path=path)._load_cache().add(event)
+
+        reader = GraphAuth("consumers", "c", cache_path=path)._load_cache()
+        found = list(reader.search(reader.CredentialType.ACCESS_TOKEN))
+        assert [e.get("secret") for e in found] == ["atoken"]
+
+    @pytest.mark.spec("GR-007")
+    def test_acquired_token_is_written_through_to_disk(self, tmp_path: Any) -> None:
+        # BK-291: an MSAL token acquisition routes through PersistedTokenCache's
+        # lock-coordinated modify(), which writes the cache through to disk
+        # immediately — no separate flush. The directory is created lazily by
+        # FilePersistence, mirroring the old auto-mkdir behaviour.
+        import json
 
         target = tmp_path / "nested" / "c.json"
-        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(target))
-        auth._cache = _ChangedCache()
-        auth.flush_cache()
-        assert target.read_text(encoding="utf-8") == '{"persisted": true}'
+        cache = GraphAuth("consumers", "c", cache_path=str(target))._load_cache()
+        cache.add(
+            {
+                "client_id": "c",
+                "scope": ["s1"],
+                "token_endpoint": "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
+                "response": {"access_token": "atoken", "token_type": "Bearer", "expires_in": 3600},
+            }
+        )
+        assert "AccessToken" in json.loads(target.read_text(encoding="utf-8"))
 
     @pytest.mark.spec("GR-051")
-    def test_flush_noop_when_no_cache(self, tmp_path: Any) -> None:
+    def test_flush_cache_is_noop_and_never_raises(self, tmp_path: Any) -> None:
+        # The close() hook (GR-051) calls flush_cache duck-typed; with
+        # PersistedTokenCache persistence is continuous, so flush is a no-op
+        # that must never raise and must not write a separate file.
         target = tmp_path / "c.json"
         auth = GraphAuth("t", "c", client_secret="s", cache_path=str(target))
-        auth.flush_cache()  # _cache is None — early return, no file written
+        auth.flush_cache()  # no cache loaded yet
+        auth._cache = auth._load_cache()
+        auth.flush_cache()  # cache loaded — still a no-op
         assert not target.exists()
-
-    @pytest.mark.spec("GR-051")
-    @pytest.mark.parametrize(
-        "exc",
-        # OSError is the write path; ValueError is the realistic MSAL JSON
-        # serialize() failure mode the OSError-only except used to miss.
-        [OSError("disk full"), ValueError("not serializable")],
-        ids=["write_error", "serialize_error"],
-    )
-    def test_flush_swallows_persist_error(
-        self, tmp_path: Any, caplog: pytest.LogCaptureFixture, exc: Exception
-    ) -> None:
-        class _BadCache:
-            has_state_changed = True
-
-            def serialize(self) -> str:
-                raise exc
-
-        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
-        auth._cache = _BadCache()
-        auth.flush_cache()  # best-effort: must not raise, regardless of failure kind
-        assert any("token cache" in r.getMessage() for r in caplog.records)

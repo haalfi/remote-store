@@ -69,8 +69,10 @@ sftp = ["paramiko>=3.0", "tenacity>=4.0"]
 azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
 # graph (ID-127, ADR-0021): direct REST over httpx + msal for token
 # acquisition; platformdirs resolves the MSAL token-cache path (loaded lazily
-# by GraphAuth only).
-graph = ["httpx>=0.24.0", "msal>=1.20.0", "platformdirs>=3.0.0"]
+# by GraphAuth only). msal-extensions (BK-291) makes the token-cache write
+# atomic and multi-process-safe via PersistedTokenCache + a cross-platform
+# file lock; >=1.3 keeps portalocker an optional extra, not a hard dependency.
+graph = ["httpx>=0.24.0", "msal>=1.20.0", "msal-extensions>=1.3", "platformdirs>=3.0.0"]
 sql = ["sqlalchemy>=2.0"]
 sql-query = ["sqlalchemy>=2.0", "pyarrow>=12.0.0,<25"]
 requests = ["requests>=2.25.0", "urllib3>=1.26.0"]
@@ -342,6 +344,11 @@ ignore_missing_imports = true
 # msal (ID-127 Graph auth) does not ship py.typed and has no third-party stubs.
 [[tool.mypy.overrides]]
 module = "msal.*"
+ignore_missing_imports = true
+
+# msal-extensions (BK-291 token-cache persistence) likewise ships no py.typed.
+[[tool.mypy.overrides]]
+module = "msal_extensions.*"
 ignore_missing_imports = true
 
 # ext/dagster.py uses `# type: ignore[import-untyped]` on dagster imports.
