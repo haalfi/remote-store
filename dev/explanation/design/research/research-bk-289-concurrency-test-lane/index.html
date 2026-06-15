@@ -10427,7 +10427,7 @@ another such gated property.</p>
   exactly one winner where the backend claims server-side atomicity, e.g. Graph?).</li>
 <li>No stream-vs-mutate, N-parallel-large-upload, or token-call-count probes
   (Graph-specific, from the review).</li>
-<li>No black-box <code>Store</code>-surface DX validation in the downstream expectations repo.</li>
+<li>No black-box <code>Store</code>-surface DX validation in the downstream companion DX suite.</li>
 </ul>
 <hr />
 <h2 id="4-design-posture-gated-concurrency-conformance-lane">4. Design: posture-gated concurrency conformance lane<a class="headerlink" href="#4-design-posture-gated-concurrency-conformance-lane" title="Permanent link">&para;</a></h2>
@@ -10544,10 +10544,9 @@ are folded in or cross-referenced, not duplicated:</p>
 </table>
 <h3 id="45-expectations-mirror-separate-repo">4.5 Expectations mirror (separate repo)<a class="headerlink" href="#45-expectations-mirror-separate-repo" title="Permanent link">&para;</a></h3>
 <p>The public-<code>Store</code>-surface subset (create-once race, read-after-write,
-<code>ThreadPoolExecutor</code> + <code>ext.batch</code>) is mirrored into
-<code>../remote-store-expectations</code> as black-box DX validation. <strong>Note:</strong> that repo is
-<em>not</em> present in this container — it is a separate-repo follow-up, tracked as a
-sub-task of BK-289, not part of the in-repo lane.</p>
+<code>ThreadPoolExecutor</code> + <code>ext.batch</code>) is mirrored into the companion black-box DX
+suite as consumer-facing validation. It is a separate-repo follow-up, tracked as
+BK-293, not part of the in-repo lane.</p>
 <hr />
 <h2 id="5-dependencies-and-sequencing">5. Dependencies and sequencing<a class="headerlink" href="#5-dependencies-and-sequencing" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>BK-287 (declare posture in specs 003/029 + GR-059)  ---&gt;  BK-289 (test the posture)
