@@ -16,7 +16,7 @@ source_items:
   - BK-294
 audience:
   - library.maintainer
-review_rounds: 1
+review_rounds: 2
 expected_ripples:
   - sdd/BACKLOG-DONE.md
   - sdd/backlogid.json
@@ -134,4 +134,24 @@ phases:
           sync HTTP result for a naive (tz-less) HTTP-date from None to a
           UTC-assumed value. Reworded to name that one intentional, RFC-7231-
           nonconformant, test-uncovered divergence precisely.
+        outcome: ok
+      - file: src/remote_store/_retry.py
+        section: "RETRYABLE_STATUSES comment (round 2)"
+        read_type: gate
+        extract: >-
+          Round-2 review: the comment named the sync HTTP backend's 408
+          composition — a cross-module reference that can go stale. Reformulated as
+          a module-local principle ("a caller that treats additional statuses as
+          transient composes them locally"), no other-module concerns.
+        outcome: ok
+      - file: sdd/adrs/0011-retry-per-backend-native.md
+        section: "Decision (point 4: no new core dependencies)"
+        read_type: reference
+        extract: >-
+          Round-2 review asked "do we reinvent the wheel?". Verdict: no out-of-the-box
+          fit — ADR-0011 keeps retry per-backend-native with no new core dep
+          (tenacity confined to the SFTP extra), the helpers are a few lines each,
+          and the one non-trivial piece (Retry-After date parsing) already delegates
+          to stdlib email.utils. Recorded the rationale as a module comment and
+          replied on the thread.
         outcome: ok

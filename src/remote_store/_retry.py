@@ -19,6 +19,10 @@ header value. ``rng`` and ``now`` are injectable so every helper is
 deterministically testable.
 """
 
+# No external retry library is pulled in: ADR-0011 keeps retry per-backend-native
+# with no new core dependency (tenacity is confined to the SFTP extra), and these
+# are a few lines of arithmetic each. The one non-trivial piece — Retry-After
+# parsing — already delegates its date handling to the stdlib email.utils.
 from __future__ import annotations
 
 import random
@@ -31,9 +35,9 @@ if TYPE_CHECKING:
 
 # Statuses worth retrying: 5xx server errors (RET-015 / GR-033) plus 429
 # throttling (GR-034). 403 / 404 / 409 / 423 / 507 are terminal — they do not
-# clear on short-term retry. The sync HTTP backend additionally treats 408 as
-# transient; it composes ``RETRYABLE_STATUSES | {408}`` at its own call site
-# rather than widening this shared set (the Graph surface never sees a 408).
+# clear on short-term retry. A caller that treats additional statuses as transient
+# composes them locally (``RETRYABLE_STATUSES | {...}``) rather than widening this
+# shared set.
 RETRYABLE_STATUSES = frozenset({429, 500, 502, 503, 504})
 
 
