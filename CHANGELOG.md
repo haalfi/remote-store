@@ -7,34 +7,55 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BK-292: `GraphAuth.aget_token` — async token provider that offloads the blocking MSAL acquisition off the event loop and single-flights concurrent acquisitions
-- BK-291: Graph MSAL token cache is now persisted under a cross-process lock (`msal-extensions`) — concurrent workers sharing the default cache no longer corrupt it or force a re-login
-- BK-294: Graph `overwrite=True` now retries a concurrent create-race `409` so the write wins (last-writer-wins); a terminal SharePoint-backed replace-rejection still surfaces `AlreadyExists`
-- BK-296: Treat the upload-session mid-session 404 as the large-file create-race signal
-- BK-290: Graph async I/O robustness under concurrent load
-- BK-288: Cross-backend concurrent-use-posture documentation
-- BUG-220: `LocalBackend` concurrent writes to nested keys no longer raise a spurious `InvalidPath` (Windows `_resolve` 8.3 short-name race)
-- BK-287: Cross-backend concurrency-posture contract — `GR-059` + per-backend `thread_safe` / `single_connection` clauses
-- BUG-219: Graph backend use-after-close raises typed `BackendUnavailable` instead of a bare `RuntimeError`
-- BUG-218: Graph copy/move monitor — terminal `4xx` on the poll request, no unbounded `copy_timeout` hang
-- BK-285: API reference restructured to mirror the package — async surface split into a `reference/api/aio/` subtree, async-native backends surfaced
-- BK-261: Graph `overwrite=True` replace-409 quirk on SharePoint-backed drives documented as a hard backend limitation (no speculative guard taken; delete-then-write is the workaround)
-- BK-266: Graph backend correctness edges
-- BK-265: Graph guide & docstring accuracy — present-tense setup guide, copy-paste-safe usage snippets (incl. the async guide's drive-resolution snippet + prose, a missed M5 sibling now using `await aresolve_drive_id`), sync-vs-async extension matrix, complete `Raises:` clauses, read-side spooling and SharePoint-coverage caveats
-- ID-127: Microsoft Graph backend setup guide
-- ID-127: `ResourceLocked` error type for resources held by another session
-- ID-127: config auto-wraps `client_secret` / `client_certificate` in `Secret`
-- ID-127: `GraphBackend` / `GraphAuth` / `GraphUtils` public surface + `graph` extra
-- ID-127: `GraphBackend` read path — `read` / `read_bytes` / `get_file_info` / `exists` / `is_file` / `is_folder`
-- ID-127: `GraphBackend` listing — `iter_children` / `list_files` / `list_folders` / `get_folder_info`
-- ID-127: `GraphBackend` read-path resilience — range reads, download-URL expiry recovery, in-backend retry, SharePoint range fallback
-- ID-127: `GraphBackend` write path — `write` / `write_atomic` (small `PUT /content` + large upload session), auto-mkdir, native `WriteResult`
-- ID-127: `GraphBackend` mutate path — `delete` / `delete_folder` / `move` / `copy` with async copy/move monitor polling
-- ID-127: Microsoft Graph backend usage guide and capability listings (FEATURES, capabilities matrix, choosing-a-backend, README)
-- ID-127: `GraphBackend` write / move / copy raise `InvalidPath` for folder targets, file-ancestor descents, and directory destinations (live-conformance error fidelity)
-- ID-127: `GraphBackend(base_path=…)` scopes a backend to a drive subfolder (GR-058)
-- BK-263: Graph upload-session `ResourceLocked` no longer leaks the pre-signed session-URL credential
-- BK-259: Graph range-fallback flag scoped to the drive and self-healing
+## [0.28.0] - 2026-06-15
+
+### Added
+
+- **Microsoft Graph backend (`GraphBackend`)** (ID-127): a native-async backend
+  for OneDrive, SharePoint, and Teams document libraries via `httpx` + `msal`,
+  installed with `remote-store[graph]`. It is **async-only** — construct it with
+  `AsyncStore(backend=GraphBackend(...))`; there is no sync `Store` wrapper or
+  config `type=` string. It covers the full Store surface:
+  - **Read path** — `read` / `read_bytes` / `get_file_info` / `exists` /
+    `is_file` / `is_folder`, with range reads, download-URL expiry recovery,
+    in-backend retry, and a SharePoint range fallback that is scoped to the
+    drive and self-heals (BK-259).
+  - **Listing** — `iter_children` / `list_files` / `list_folders` /
+    `get_folder_info`.
+  - **Write path** — `write` / `write_atomic` (small `PUT /content` plus a
+    large-file upload session), auto-mkdir, and a native `WriteResult`.
+  - **Mutate path** — `delete` / `delete_folder` / `move` / `copy` with async
+    copy/move monitor polling.
+  - `GraphBackend(base_path=…)` scopes a backend to a drive subfolder (GR-058).
+  - `write` / `move` / `copy` raise `InvalidPath` for folder targets,
+    file-ancestor descents, and directory destinations, matching the
+    hierarchical backends' error fidelity.
+  - Public companions `GraphAuth` and `GraphUtils`; config auto-wraps
+    `client_secret` / `client_certificate` in `Secret`.
+  - Ships with a setup and usage guide plus full capability listings (FEATURES,
+    capabilities matrix, choosing-a-backend, README).
+
+- **`ResourceLocked` error** (ID-127): a new `RemoteStoreError` subtype for a
+  resource held by another session.
+
+- **`GraphAuth.aget_token`** (BK-292): an async token provider that offloads the
+  blocking MSAL acquisition off the event loop and single-flights concurrent
+  acquisitions.
+
+- **Cross-backend concurrency-posture contract** (BK-287): `GR-059` plus
+  per-backend `thread_safe` / `single_connection` clauses define each backend's
+  documented behaviour under concurrent use.
+
+### Fixed
+
+- **`LocalBackend` concurrent nested-key writes** (BUG-220): no longer raise a
+  spurious `InvalidPath` from a Windows `_resolve` 8.3 short-name race.
+
+### Documentation
+
+- **API reference restructured to mirror the package** (BK-285): the async
+  surface is split into a `reference/api/aio/` subtree and async-native backends
+  are surfaced.
 
 ## [0.27.0] - 2026-06-02
 

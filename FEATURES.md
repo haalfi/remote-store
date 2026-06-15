@@ -1,5 +1,5 @@
 <!-- doc: dual dest=reference/FEATURES.md -->
-# Features — remote-store v0.27.0
+# Features — remote-store v0.28.0
 
 Authoritative snapshot of what remote-store delivers in this version.
 Updated each release. **This is the single reference for the package's feature surface.**
@@ -339,6 +339,7 @@ always receive a typed error, never an `S3ServiceError` or `azure.core.…`.
 | `BackendUnavailable` | The backend is unreachable (network, auth, service down) |
 | `PermissionDenied` | Caller lacks access rights |
 | `DirectoryNotEmpty` | Directory is not empty and the operation requires it to be |
+| `ResourceLocked` | Target resource is held by another session (e.g. an open co-authoring session); maps from Graph `423 Locked` |
 | `RemoteStoreError` | Base class for all errors above |
 
 ---
