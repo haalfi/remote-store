@@ -40,6 +40,7 @@ EXTRA_SCRIPTS = [
     EXAMPLES_ROOT / "snippets" / "write_integrity.py",
     EXAMPLES_ROOT / "snippets" / "write_integrity_async.py",
     EXAMPLES_ROOT / "snippets" / "s3_botocore_tuning.py",
+    EXAMPLES_ROOT / "snippets" / "graph_client_tuning.py",
     EXAMPLES_ROOT / "snippets" / "sftp_legacy_servers.py",
 ]
 

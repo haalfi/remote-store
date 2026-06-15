@@ -10,6 +10,8 @@ range request shape (GR-015), ``416`` mapping (GR-055), download-URL expiry with
 from __future__ import annotations
 
 import logging
+import tempfile
+import threading
 from typing import TYPE_CHECKING
 
 import httpx
@@ -425,3 +427,59 @@ class TestClosedClientStream:
             with pytest.raises(RuntimeError, match="boom"):
                 async for _ in agen:
                     pass
+
+
+class TestSpoolOffloadOffLoop:
+    """BK-290 / GR-015: the range-fallback spool's blocking I/O runs off the loop.
+
+    A SharePoint range-fallback re-reads the full entity into a
+    ``SpooledTemporaryFile`` and serves the requested window from it. Once that
+    spool rolls over to disk its ``write`` / ``seek`` / ``read`` calls block the
+    calling thread, so they are dispatched through ``asyncio.to_thread`` rather
+    than run on the event-loop thread, where they would head-of-line-block
+    sibling coroutines during a large disk-spilled read. The observable contract
+    is the thread of execution: every spool I/O call lands on a worker thread,
+    never the loop thread.
+    """
+
+    @respx.mock
+    @pytest.mark.spec("GR-015")
+    async def test_fallback_spool_io_runs_off_the_loop_thread(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        loop_thread = threading.get_ident()
+        io_threads: set[int] = set()
+        real_spool = tempfile.SpooledTemporaryFile
+
+        class _RecordingSpool:
+            """Wrap a real spool, recording the thread each blocking I/O call runs on."""
+
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                self._f = real_spool(*args, **kwargs)
+
+            def write(self, data: bytes) -> int:
+                io_threads.add(threading.get_ident())
+                return self._f.write(data)
+
+            def seek(self, *args: object) -> int:
+                io_threads.add(threading.get_ident())
+                return self._f.seek(*args)
+
+            def read(self, size: int = -1) -> bytes:
+                io_threads.add(threading.get_ident())
+                return self._f.read(size)
+
+            def __enter__(self) -> _RecordingSpool:
+                return self
+
+            def __exit__(self, *exc: object) -> bool:
+                self._f.close()
+                return False
+
+        monkeypatch.setattr(tempfile, "SpooledTemporaryFile", _RecordingSpool)
+        respx.get(_meta_url("a.txt")).mock(return_value=httpx.Response(200, json=_file_item()))
+        # A ranged GET answered with the WHOLE entity (200) forces the spool fallback.
+        respx.get(_DL1).mock(return_value=httpx.Response(200, content=b"0123456789"))
+        async with _make() as backend:
+            data = await backend._read_bytes("a.txt", 5, 4)
+        assert data == b"5678"  # windowed locally from the spooled full entity
+        assert io_threads, "the range-fallback spool path never ran"
+        assert loop_thread not in io_threads  # blocking spool I/O is offloaded off the loop

@@ -1,0 +1,117 @@
+id: BK-290
+title: "Graph async I/O robustness under concurrent load"
+trigger: >
+  An expectation-driven review of the Graph backend surfaced two I/O-robustness
+  gaps: the shared httpx client used the silent 100-conn default (high fan-out
+  surfaced as opaque BackendUnavailable), and blocking spool read/write I/O ran
+  on the event-loop thread, head-of-line-blocking siblings during large
+  disk-spilled transfers. ADR-0025 § Risks misattributed the second to
+  nonexistent "chunk hashing."
+source_items:
+  - BK-290
+audience:
+  - user.api
+  - library.maintainer
+expected_ripples:
+  - tests/scripts/run_examples.py
+surprising_ripples:
+  - sdd/adrs/0025-async-to-sync-backend-adapter.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-290"
+        read_type: gate
+        extract: "Two-part scope: httpx.Limits doc vs first-class; spool to_thread + ADR correction"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "_spooled_window, spool_content, _upload_chunks"
+        read_type: reference
+        extract: "Three blocking spool I/O sites (write/seek/read/tell) on the loop"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_client, client_options"
+        read_type: reference
+        extract: "client_options is verbatim passthrough to httpx.AsyncClient — no Limits param"
+        outcome: ok
+      - file: sdd/adrs/0025-async-to-sync-backend-adapter.md
+        section: "Risks / Worker-thread starvation"
+        read_type: reference
+        extract: "Claims _graph_transfer 'chunk hashing'; no hashlib exists in transfer.py"
+        outcome: misleading
+      - file: examples/snippets/s3_botocore_tuning.py
+        section: "(full)"
+        read_type: reference
+        extract: "Precedent: pool/client tuning documented via client_options + executable snippet"
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/backends/graph/aio/test_transfer.py
+        section: "TestSharePointRangeFallback"
+        read_type: reference
+        extract: "respx 200-to-ranged-GET fallback shape to drive _spooled_window"
+        outcome: ok
+      - file: tests/backends/graph/aio/test_write.py
+        section: "TestSpoolSpill"
+        read_type: reference
+        extract: "Spill-forcing pattern (_UPLOAD_SPOOL_MAX_SIZE/_SMALL_FILE_MAX_SIZE) for the upload spool"
+        outcome: ok
+  - id: implement
+    name: Offload blocking I/O
+    steps:
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "_spooled_window, spool_content, _seek_read, _upload_chunks"
+        read_type: reference
+        extract: "Wrap spool write/seek/read/tell in asyncio.to_thread; one _seek_read hop per chunk"
+        outcome: ok
+  - id: docs
+    name: Document the pool knob
+    steps:
+      - file: docs-src/guides/backends/graph.md
+        section: "Operational caveats / Connection-pool tuning"
+        read_type: reference
+        extract: "New caveat + --8<-- snippet for client_options limits"
+        outcome: ok
+      - file: examples/snippets/graph_client_tuning.py
+        section: "(full)"
+        read_type: reference
+        extract: "Executable proof the limits client_option builds a working client (no network I/O)"
+        outcome: ok
+  - id: supersede
+    name: Supersede the ADR misattribution
+    steps:
+      - file: sdd/000-process.md
+        section: "Rule 4 / Document types"
+        read_type: gate
+        extract: "ADRs immutable once Accepted — supersede with a new ADR, never edit"
+        outcome: ok
+      - file: sdd/adrs/0015-proxystore-publicly-documented.md
+        section: "(full)"
+        read_type: reference
+        extract: "Precedent for narrow partial supersession of one clause"
+        outcome: ok
+      - file: sdd/adrs/0029-graph-transfer-blocking-io-offload.md
+        section: "(full)"
+        read_type: reference
+        extract: "New ADR: real stall is blocking spool I/O, mitigated in-backend; corrects 0025"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-015, GR-019"
+        read_type: verify
+        extract: "Event-loop-liveness postconditions added, citing ADR-0029"
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "BK-290 stub (user.api audience requires CHANGELOG)"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "Backends/specs/ADR/docs touched consistently before commit"
+        outcome: ok

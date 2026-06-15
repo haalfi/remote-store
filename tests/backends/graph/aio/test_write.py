@@ -14,6 +14,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import tempfile
+import threading
 from typing import TYPE_CHECKING
 
 import httpx
@@ -654,6 +656,67 @@ class TestSpoolSpill:
                 await backend.write("a.txt", _agen(b"abc", b"def"))
         assert route.calls.last.request.content == b"abcdef"
         assert UPLOAD_SPOOL_MARKER not in "\n".join(r.getMessage() for r in caplog.records)
+
+
+class TestUploadSpoolOffloadOffLoop:
+    """BK-290 / GR-019: upload-session spool I/O runs off the event-loop thread.
+
+    An unknown-length write spills to a ``SpooledTemporaryFile`` (``spool_content``)
+    and the chunk loop replays it via ``reader.seek`` / ``reader.read``
+    (``_upload_chunks``). Once spilled, those calls block the calling thread, so
+    they are dispatched through ``asyncio.to_thread`` and must never run on the
+    loop thread, where they would head-of-line-block sibling coroutines during a
+    large disk-spilled upload. The observable contract is the thread of execution.
+    """
+
+    @respx.mock
+    @pytest.mark.spec("GR-019")
+    async def test_upload_spool_io_runs_off_the_loop_thread(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        loop_thread = threading.get_ident()
+        io_threads: set[int] = set()
+        real_spool = tempfile.SpooledTemporaryFile
+
+        class _RecordingSpool:
+            """Wrap a real spool, recording the thread each blocking I/O call runs on."""
+
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                self._f = real_spool(*args, **kwargs)
+
+            def write(self, data: bytes) -> int:
+                io_threads.add(threading.get_ident())
+                return self._f.write(data)
+
+            def read(self, size: int = -1) -> bytes:
+                io_threads.add(threading.get_ident())
+                return self._f.read(size)
+
+            def seek(self, *args: object) -> int:
+                io_threads.add(threading.get_ident())
+                return self._f.seek(*args)
+
+            def tell(self) -> int:
+                io_threads.add(threading.get_ident())
+                return self._f.tell()
+
+            def close(self) -> None:
+                self._f.close()
+
+            def __getattr__(self, attr: str) -> object:
+                # Delegate everything else (e.g. ``.name`` read by the spill marker).
+                return getattr(self._f, attr)
+
+        monkeypatch.setattr(tempfile, "SpooledTemporaryFile", _RecordingSpool)
+        # Force a disk spill (shrink the spool threshold) and the upload-session path.
+        monkeypatch.setattr(graph_transfer, "_UPLOAD_SPOOL_MAX_SIZE", 4)
+        monkeypatch.setattr(graph_backend, "_SMALL_FILE_MAX_SIZE", 4)
+        respx.post(_SESSION_RE).mock(return_value=httpx.Response(200, json={"uploadUrl": _UPLOAD_URL}))
+        put = respx.put(_UPLOAD_URL).mock(return_value=httpx.Response(201, json=_drive_item(size=10)))
+        async with _make(_FAST) as backend:
+            backend._upload_chunk_size = 320 * 1024  # single chunk
+            await backend.write("big.bin", _agen(b"01234", b"56789"))
+        assert put.called
+        assert io_threads, "the upload spool path never ran"
+        assert loop_thread not in io_threads  # blocking spool I/O is offloaded off the loop
 
 
 # ===========================================================================

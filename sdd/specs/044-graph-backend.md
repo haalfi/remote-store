@@ -425,6 +425,12 @@ is attached.
 **Postconditions:** Full-file reads use the same download URL with
 no `Range` header. The helper is internal implementation detail and
 may change without a public-API deprecation.
+**Event-loop liveness:** When the spool fallback fires, the full
+entity is buffered into a `SpooledTemporaryFile` that rolls over to
+disk past its threshold; the blocking spool `write` / `seek` / `read`
+calls run via `asyncio.to_thread`, so a large disk-spilled fallback
+read does not head-of-line-block sibling coroutines on the event loop
+(ADR-0029).
 
 ### GR-016: Pagination via `@odata.nextLink`
 
@@ -581,6 +587,11 @@ There is no separate `content_length` keyword on `AsyncBackend.write()`
   this backend must note `TMPDIR` redirection** so callers running on
   small-capacity temp volumes (Windows, restricted containers) can plan
   accordingly.
+- **Event-loop liveness:** The blocking spool I/O — draining the
+  iterator (`write` / `tell` / `seek`) and replaying each chunk
+  (`seek` + `read` of up to one `upload_chunk_size`) — runs via
+  `asyncio.to_thread`, so a large disk-spilled upload does not
+  head-of-line-block sibling coroutines on the event loop (ADR-0029).
 - **Spool-spill observability:** When an on-disk spill occurs, the
   backend logs a DEBUG record with the marker
   `graph.upload.spool_spilled` carrying the spool path. The DEBUG

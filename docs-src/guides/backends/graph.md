@@ -147,6 +147,27 @@ entire file to the temp volume before the consumer can seek. Reading a large
 Parquet file over Graph therefore needs temp space for the whole file; size
 `TMPDIR` accordingly.
 
+### Connection-pool tuning under high fan-out
+
+The internal `httpx.AsyncClient` uses httpx's default connection pool —
+**100 connections** (`max_keepalive_connections=20`). Under very high
+concurrent fan-out (a large `asyncio.gather` over a shared backend, or many
+bridged threads) that ceiling is reached silently: requests queue and, on pool
+exhaustion, surface as an opaque `BackendUnavailable` rather than anything that
+names the pool as the cause.
+
+Raise the ceiling by passing an [`httpx.Limits`](https://www.python-httpx.org/advanced/resource-limits/)
+through `client_options` (forwarded verbatim to the client):
+
+```python
+--8<-- "examples/snippets/graph_client_tuning.py:pool-limits"
+```
+
+Size `max_connections` to your fan-out, not arbitrarily high: each connection is
+a socket against Graph, which itself throttles (`429`). This is the same
+passthrough mechanism every `client_options` key uses; supplying your own
+`http_client` instead lets you set limits on the client you construct.
+
 ### SharePoint-backed drives are less exercised
 
 Live verification runs against consumer OneDrive only. SharePoint-backed
