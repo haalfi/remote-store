@@ -3817,6 +3817,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.aio.GraphAuth.aget_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;aget_token
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.aio.GraphAuth.flush_cache" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10181,6 +10192,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.aio.GraphAuth.aget_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;aget_token
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.aio.GraphAuth.flush_cache" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10506,7 +10528,10 @@ through the token-provider protocol — a <code>GraphAuth</code> instance is its
 <p>Selects the OAuth flow from the supplied credentials: a <code>client_secret</code>
 or <code>client_certificate</code> selects client-credentials (app-only); their
 absence selects device-code (interactive). The resulting bearer token is
-reachable through <code>get_token()</code> and through calling the instance directly.</p>
+reachable synchronously through <code>get_token()</code> (and through calling the
+instance directly) and asynchronously through <code>aget_token()</code>, which
+offloads the blocking MSAL work off the event loop and single-flights
+concurrent acquisitions — prefer it on the event loop.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10704,6 +10729,58 @@ change, so no explicit flush is needed here.</p>
     <div class="doc doc-contents ">
 
         <p>Return a bearer token — makes the instance a token-provider callable.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.aio.GraphAuth.aget_token" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">aget_token</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#remote_store.aio.GraphAuth.aget_token" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">aget_token</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Acquire a bearer token without blocking the event loop.</p>
+<p>The async token-provider entry point: pass <code>token_provider=auth.aget_token</code>
+(a bound async method is a <code>Callable[[], Awaitable[str]]</code>) so the backend
+awaits it instead of calling the synchronous instance. It offloads the
+synchronous MSAL acquisition — including any contended token-cache lock
+wait — to a worker thread so sibling coroutines keep running, and
+single-flights concurrent callers: N coroutines acquiring at once share
+<strong>one</strong> acquisition rather than each hitting the identity provider (which
+also dedupes the one-shot refresh after a <code>401</code>).</p>
+<p>Use this on the event loop; reuse the synchronous <code>get_token</code> /
+<code>__call__</code> from synchronous wiring code that has no running loop. The
+single-flight state is bound to the loop the first caller runs on — share
+one instance per loop, mirroring the backend's own single-loop posture.
+Cancelling one caller (e.g. a <code>gather</code> sibling that times out) neither
+cancels the shared acquisition nor disturbs the other joiners.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>Propagated from <code>get_token</code> to the owning
+caller and every joiner sharing the in-flight acquisition; a
+later call retries afresh.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

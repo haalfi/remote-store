@@ -11954,7 +11954,21 @@ invokes the callable lazily — never from <code>__init__</code>.
   responses (GR-029). A second <code>401</code> after refresh is mapped to
   <code>PermissionDenied</code>.
 - <code>GraphAuth</code> is one implementation of the protocol; user-supplied
-  callables are first-class equivalents (ADR-0022).</p>
+  callables are first-class equivalents (ADR-0022).
+- The built-in <code>GraphAuth</code> offers <strong>both</strong> callable shapes over one
+  instance: the synchronous <code>get_token</code> / <code>__call__</code>, and the
+  asynchronous <code>aget_token</code> (a <code>Callable[[], Awaitable[str]]</code>). On the
+  event loop, <code>aget_token</code> is preferred: it offloads the blocking MSAL
+  acquisition — including a contended token-cache lock wait (GR-007,
+  ADR-0022 § Token caching) — to a worker thread so the loop is never
+  blocked, and <strong>single-flights</strong> concurrent acquisitions so N coroutines
+  acquiring at once (including the re-invocation after a <code>401</code>) share
+  <strong>one</strong> acquisition rather than each reaching the identity provider. A
+  failed acquisition fans out the same typed <code>PermissionDenied</code> to every
+  joiner of the shared in-flight acquisition; a later call retries afresh.
+  The single-flight state is bound to one event loop, matching the
+  backend's single-loop posture (GR-059). User-supplied async providers
+  own their own dedup.</p>
 <hr />
 <h2 id="addressing">Addressing<a class="headerlink" href="#addressing" title="Permanent link">&para;</a></h2>
 <h3 id="gr-009-path-resolution">GR-009: Path Resolution<a class="headerlink" href="#gr-009-path-resolution" title="Permanent link">&para;</a></h3>
