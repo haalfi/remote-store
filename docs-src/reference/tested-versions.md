@@ -38,6 +38,7 @@ _Captured 2026-06-13 on Python 3.13._
 |---|---|
 | `httpx` | `1.0.dev3` |
 | `msal` | `1.38.0rc1` |
+| `msal-extensions` | `—` |
 | `platformdirs` | `4.10.0` |
 
 ## `[httpx]`

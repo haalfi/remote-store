@@ -58,17 +58,34 @@ default helper.
 
 ### Token caching
 
-MSAL's `SerializableTokenCache` is serialized to a file under
-`platformdirs.user_config_dir("remote-store")`. Users can override the
-path or disable persistent caching by passing a
-`SerializableTokenCache` directly or by supplying their own callable.
+The token cache is an `msal_extensions.PersistedTokenCache` backed by a
+`FilePersistence` file under `platformdirs.user_config_dir("remote-store")`
+(default `graph_token_cache.json`). `PersistedTokenCache` is
+**multi-process-safe**: every MSAL acquisition routes through its
+`modify()`, which holds a cross-process `CrossPlatLock` (a sibling
+`<cache_path>.lockfile`), reload-merges the on-disk state, then writes it
+back — and its `search()` read path retries on a dirty read. Concurrent
+`GraphAuth`/`GraphBackend` instances or processes sharing the default cache
+(the common multi-worker deployment) therefore cannot truncate or tear it.
 
-`platformdirs` is a runtime dependency of the built-in `GraphAuth`
-implementation (see ADR-0021 for the full `graph` extra dependency
-set). Callers that supply their own provider and never instantiate
-`GraphAuth` do not load `platformdirs` at import time (standard
-lazy-import pattern, applied here to the
-`aio/backends/_graph/auth` module).
+This replaced the original hand-rolled `SerializableTokenCache` +
+`open(path, "w").write(...)` flush, which truncated the file at `open` before
+writing (BK-291): a concurrent reader could observe an empty/torn cache,
+forcing a re-login. A bare temp-file + `os.replace` was rejected because on
+Windows `os.replace` raises `PermissionError` (`WinError 5`) when the
+destination is held open by a concurrent reader or contended by another
+replace; `PersistedTokenCache` sidesteps that entirely (lock + read-retry,
+no rename). Because persistence is now continuous, `GraphAuth.flush_cache`
+is a best-effort no-op retained only for the GR-051 `close()` hook.
+
+Users can override the path with `cache_path=` or supply their own
+token-provider callable to bypass `GraphAuth` (and MSAL) altogether.
+
+`platformdirs`, `msal`, and `msal-extensions` are runtime dependencies of
+the built-in `GraphAuth` implementation (see ADR-0021 for the full `graph`
+extra dependency set). Callers that supply their own provider and never
+instantiate `GraphAuth` do not load any of them at import time (standard
+lazy-import pattern, applied here to the `aio/backends/_graph/auth` module).
 
 ### What the backend does with the provider
 
@@ -140,3 +157,6 @@ in static config and only apply to direct construction.
 - AF-008: backend `__repr__` credential masking
 - MSAL Python token cache:
   https://learn.microsoft.com/entra/msal/python/msal.token_cache
+- msal-extensions `PersistedTokenCache` (cross-process cache lock):
+  https://github.com/AzureAD/microsoft-authentication-extensions-for-python
+- BK-291: atomic, multi-process-safe token-cache persistence

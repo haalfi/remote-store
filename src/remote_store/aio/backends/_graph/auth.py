@@ -62,7 +62,10 @@ class GraphAuth:
             (the signed-in user's OneDrive — consumer-compatible). Add
             ``Sites.ReadWrite.All`` for delegated SharePoint access.
         cache_path: Override the MSAL token-cache file location. Defaults to
-            ``<user_config_dir("remote-store")>/graph_token_cache.json``.
+            ``<user_config_dir("remote-store")>/graph_token_cache.json``. The
+            cache is persisted multi-process-safely: a sibling
+            ``<cache_path>.lockfile`` coordinates concurrent writers so a
+            shared default cache survives the common multi-worker deployment.
         prompt_callback: Invoked with the MSAL device-flow dict on device-code
             login; defaults to printing ``flow["message"]``.
 
@@ -116,15 +119,17 @@ class GraphAuth:
         return os.path.join(platformdirs.user_config_dir("remote-store"), _CACHE_FILENAME)
 
     def _load_cache(self) -> Any:
-        import os  # noqa: PLC0415
+        # BK-291: a PersistedTokenCache makes the on-disk token cache
+        # multi-process-safe. Every MSAL acquisition routes through its
+        # lock-coordinated modify() (cross-process CrossPlatLock + reload-merge
+        # + write-through) and read-retrying search(), so concurrent workers
+        # sharing the default cache path can no longer truncate or tear it (the
+        # plain truncate-then-write that flush_cache used to do). The sibling
+        # ``<path>.lockfile`` is the cross-process lock. See ADR-0022 § Token
+        # caching.
+        from msal_extensions import FilePersistence, PersistedTokenCache  # noqa: PLC0415
 
-        from msal import SerializableTokenCache  # noqa: PLC0415
-
-        cache = SerializableTokenCache()
-        path = self._resolve_cache_path()
-        if os.path.exists(path):
-            with open(path, encoding="utf-8") as fh:
-                cache.deserialize(fh.read())
+        cache = PersistedTokenCache(FilePersistence(self._resolve_cache_path()))
         self._cache = cache
         return cache
 
@@ -165,10 +170,13 @@ class GraphAuth:
         return app.acquire_token_by_device_flow(flow)  # type: ignore[no-any-return]
 
     def get_token(self) -> str:
-        """Acquire (or silently refresh) a bearer token, flushing the cache.
+        """Acquire (or silently refresh) a bearer token.
 
         The token-provider callable the backend invokes. Re-invoking it after
-        a ``401`` refreshes through MSAL's cache.
+        a ``401`` refreshes through MSAL's cache. The acquisition writes the
+        refreshed cache through to disk itself — the backing
+        ``PersistedTokenCache`` persists under a cross-process lock on every
+        change, so no explicit flush is needed here.
 
         Raises:
             PermissionDenied: If MSAL returns no token (auth failure); the
@@ -185,7 +193,6 @@ class GraphAuth:
                 else "unknown error"
             )
             raise PermissionDenied(f"Graph token acquisition failed: {detail}", backend="graph")
-        self.flush_cache()
         return str(token)
 
     def __call__(self) -> str:
@@ -193,28 +200,16 @@ class GraphAuth:
         return self.get_token()
 
     def flush_cache(self) -> None:
-        """Persist the MSAL token cache to disk when it has changed.
+        """Best-effort no-op retained for the ``GraphBackend.close()`` hook.
 
-        Called by ``get_token`` after every acquisition and by
-        ``GraphBackend.close()``. Best-effort: a serialization or write
-        failure is logged, not raised.
+        The token cache is a ``PersistedTokenCache`` that writes through to
+        disk under a cross-process lock on every acquisition, so there is
+        nothing to flush at close. The method stays because
+        ``GraphBackend.close()`` invokes it duck-typed and user-supplied
+        providers may implement their own. Never raises — teardown must not
+        fail.
         """
-        if self._cache is None or not self._cache.has_state_changed:
-            return
-        import os  # noqa: PLC0415
-
-        path = self._resolve_cache_path()
-        # Best-effort: flush_cache is called from get_token and from close(), so
-        # neither a write error (OSError) nor a serialization error (MSAL's
-        # JSON-backed serialize() can raise ValueError / TypeError) may
-        # propagate and break token acquisition or teardown.
-        try:
-            payload = self._cache.serialize()
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as fh:
-                fh.write(payload)
-        except Exception:  # noqa: BLE001 -- cleanup must never raise
-            log.warning("failed to persist Graph token cache to %s", path, exc_info=True)
+        return
 
     def __repr__(self) -> str:
         flow = "client_credentials" if self._app_only else "device_code"

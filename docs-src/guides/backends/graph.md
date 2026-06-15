@@ -23,7 +23,8 @@ one-time credential and app-registration setup, follow the
 pip install "remote-store[graph]"
 ```
 
-This pulls in `httpx`, `msal`, and `platformdirs` (for the MSAL token cache).
+This pulls in `httpx`, `msal`, `msal-extensions`, and `platformdirs` (the last
+two persist the MSAL token cache multi-process-safely).
 
 ## Usage
 
@@ -81,8 +82,11 @@ auth = GraphAuth(
 
 The token is cached by MSAL on disk (default
 `<user_config_dir("remote-store")>/graph_token_cache.json`; override with
-`cache_path`). Entra app registration, redirect URIs, admin consent, and the
-`AADSTS*` error catalogue are covered in the [setup guide](graph-setup.md).
+`cache_path`). The cache is persisted multi-process-safely — a sibling
+`<cache_path>.lockfile` coordinates concurrent writers, so several workers or
+processes sharing the default cache will not corrupt it. Entra app
+registration, redirect URIs, admin consent, and the `AADSTS*` error catalogue
+are covered in the [setup guide](graph-setup.md).
 
 ## Resolving a drive_id
 
