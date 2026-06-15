@@ -6373,6 +6373,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0029-graph-transfer-blocking-io-offload/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0029: Offload Graph Transfer Spool I/O off the Event Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10808,32 +10836,37 @@ agnostic.</p>
   for I/O backends, but possible for <code>_graph_transfer</code>'s chunk
   hashing) can stall sibling calls. Mitigation deferred to backend
   authors via <code>asyncio.to_thread</code> for hot CPU paths.</li>
-<li><strong>Loop teardown timeout.</strong> If a wrapped backend ignores
+</ul>
+<blockquote>
+<p>Superseded by <a href="../0029-graph-transfer-blocking-io-offload/">ADR-0029</a>:
+the Graph transfer path does no hashing; the real stall source is
+blocking spool <strong>I/O</strong>, now offloaded in-backend via <code>asyncio.to_thread</code>.
+- <strong>Loop teardown timeout.</strong> If a wrapped backend ignores
   cancellation, <code>close()</code>'s bounded join leaves the daemon thread
   to be reaped at process exit; the warning surfaces this but does
-  not force progress.</li>
-<li><strong>Observability fidelity loss across read-streams.</strong> Extensions
+  not force progress.
+- <strong>Observability fidelity loss across read-streams.</strong> Extensions
   that wrap <code>Store</code> via the proxy pattern (ADR-0010) — notably
   <code>ext.observe</code> — fire one event per <em>operation</em>, which for <code>read()</code>
   is one event at stream construction. Per-chunk pumping across the
   bridge is not visible; the duration metric reflects stream-open
   cost only. Acceptable for the Backend-ABC contract; users wanting
-  per-chunk observability should consume <code>AsyncStore</code> directly.</li>
-<li><strong><code>ext.cache</code> default-unbounded <code>read_bytes</code>.</strong> <code>CachedStore</code> with
+  per-chunk observability should consume <code>AsyncStore</code> directly.
+- <strong><code>ext.cache</code> default-unbounded <code>read_bytes</code>.</strong> <code>CachedStore</code> with
   unset <code>max_content_size</code> materialises whatever the wrapped backend
   yields. Over an async-native backend that exists precisely to
   <em>avoid</em> materialisation, this is more dangerous than over a sync
   REST backend. Users wrapping an async backend should set
   <code>max_content_size</code> explicitly; the cache extension should learn to
-  warn when wrapped over a bridged backend (tracked as ID-218).</li>
-<li><strong>Bridged read streams are forward-only.</strong> The <code>BinaryIO</code> returned
+  warn when wrapped over a bridged backend (tracked as ID-218).
+- <strong>Bridged read streams are forward-only.</strong> The <code>BinaryIO</code> returned
   by <code>read()</code> is not natively seekable: <code>seekable()</code> returns <code>False</code>
   and <code>seek()</code>, <code>tell()</code>, and <code>fileno()</code> are not provided.
   <code>readable()</code> returns <code>True</code>. <code>SEEKABLE_READ</code> is masked off so no
   extension that respects the capability gate will attempt random
   access. Random-access callers route through <code>read_seekable</code> and
-  pay the spool fallback (above).</li>
-</ul>
+  pay the spool fallback (above).</p>
+</blockquote>
 <h2 id="followups">Followups<a class="headerlink" href="#followups" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Normative spec block (<code>ASYNC-NNN</code>) — landed.</strong> ID-142 amended

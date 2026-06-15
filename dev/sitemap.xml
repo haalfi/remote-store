@@ -189,6 +189,10 @@
          <lastmod>2026-06-15</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/adrs/0029-graph-transfer-blocking-io-offload/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/audits/</loc>
          <lastmod>2026-06-15</lastmod>
     </url>

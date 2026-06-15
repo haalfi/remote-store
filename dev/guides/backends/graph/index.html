@@ -2459,6 +2459,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#connection-pool-tuning-under-high-fan-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection-pool tuning under high fan-out
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#sharepoint-backed-drives-are-less-exercised" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6624,6 +6635,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../explanation/design/adrs/0029-graph-transfer-blocking-io-offload/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0029: Offload Graph Transfer Spool I/O off the Event Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10512,6 +10551,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#connection-pool-tuning-under-high-fan-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection-pool tuning under high fan-out
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#sharepoint-backed-drives-are-less-exercised" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11152,6 +11202,30 @@ extensions use for large files (through the
 entire file to the temp volume before the consumer can seek. Reading a large
 Parquet file over Graph therefore needs temp space for the whole file; size
 <code>TMPDIR</code> accordingly.</p>
+<h3 id="connection-pool-tuning-under-high-fan-out">Connection-pool tuning under high fan-out<a class="headerlink" href="#connection-pool-tuning-under-high-fan-out" title="Permanent link">&para;</a></h3>
+<p>The internal <code>httpx.AsyncClient</code> uses httpx's default connection pool —
+<strong>100 connections</strong> (<code>max_keepalive_connections=20</code>). Under very high
+concurrent fan-out (a large <code>asyncio.gather</code> over a shared backend, or many
+bridged threads) that ceiling is reached silently: requests queue and, on pool
+exhaustion, surface as an opaque <code>BackendUnavailable</code> rather than anything that
+names the pool as the cause.</p>
+<p>Raise the ceiling by passing an <a href="https://www.python-httpx.org/advanced/resource-limits/"><code>httpx.Limits</code></a>
+through <code>client_options</code> (forwarded verbatim to the client):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">GraphBackend</span><span class="p">(</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">drive_id</span><span class="o">=</span><span class="s2">&quot;b!example-drive-id&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">token_provider</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="s2">&quot;token&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="s2">&quot;limits&quot;</span><span class="p">:</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Limits</span><span class="p">(</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>            <span class="n">max_connections</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>            <span class="n">max_keepalive_connections</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>        <span class="p">),</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="p">},</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">)</span>
+</code></pre></div>
+<p>Size <code>max_connections</code> to your fan-out, not arbitrarily high: each connection is
+a socket against Graph, which itself throttles (<code>429</code>). This is the same
+passthrough mechanism every <code>client_options</code> key uses; supplying your own
+<code>http_client</code> instead lets you set limits on the client you construct.</p>
 <h3 id="sharepoint-backed-drives-are-less-exercised">SharePoint-backed drives are less exercised<a class="headerlink" href="#sharepoint-backed-drives-are-less-exercised" title="Permanent link">&para;</a></h3>
 <p>Live verification runs against consumer OneDrive only. SharePoint-backed
 drives have known divergences the backend already accounts for — some ignore
@@ -11260,9 +11334,9 @@ a full re-read and flags the returned <code>FileInfo.extra</code> (key
 <h2 id="escape-hatch">Escape hatch<a class="headerlink" href="#escape-hatch" title="Permanent link">&para;</a></h2>
 <p>Access the underlying <code>httpx.AsyncClient</code> for Graph-specific calls the Store
 API does not expose:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>

@@ -7843,6 +7843,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/adrs/0029-graph-transfer-blocking-io-offload/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0029: Offload Graph Transfer Spool I/O off the Event Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -13382,6 +13410,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BK-290: Graph async I/O robustness under concurrent load</li>
 <li>BK-288: Cross-backend concurrent-use-posture documentation</li>
 <li>BUG-220: <code>LocalBackend</code> concurrent writes to nested keys no longer raise a spurious <code>InvalidPath</code> (Windows <code>_resolve</code> 8.3 short-name race)</li>
 <li>BK-287: Cross-backend concurrency-posture contract — <code>GR-059</code> + per-backend <code>thread_safe</code> / <code>single_connection</code> clauses</li>

@@ -6092,6 +6092,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0029-graph-transfer-blocking-io-offload/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0029: Offload Graph Transfer Spool I/O off the Event Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -12116,7 +12144,13 @@ reliably. The download URL is pre-signed; no <code>Authorization</code> header
 is attached.
 <strong>Postconditions:</strong> Full-file reads use the same download URL with
 no <code>Range</code> header. The helper is internal implementation detail and
-may change without a public-API deprecation.</p>
+may change without a public-API deprecation.
+<strong>Event-loop liveness:</strong> When the spool fallback fires, the full
+entity is buffered into a <code>SpooledTemporaryFile</code> that rolls over to
+disk past its threshold; the blocking spool <code>write</code> / <code>seek</code> / <code>read</code>
+calls run via <code>asyncio.to_thread</code>, so a large disk-spilled fallback
+read does not head-of-line-block sibling coroutines on the event loop
+(ADR-0029).</p>
 <h3 id="gr-016-pagination-via-odatanextlink">GR-016: Pagination via <code>@odata.nextLink</code><a class="headerlink" href="#gr-016-pagination-via-odatanextlink" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> List operations follow <code>@odata.nextLink</code> in the
 response body until it is absent.
@@ -12261,6 +12295,11 @@ is therefore binary:
   this backend must note <code>TMPDIR</code> redirection</strong> so callers running on
   small-capacity temp volumes (Windows, restricted containers) can plan
   accordingly.</li>
+<li><strong>Event-loop liveness:</strong> The blocking spool I/O — draining the
+  iterator (<code>write</code> / <code>tell</code> / <code>seek</code>) and replaying each chunk
+  (<code>seek</code> + <code>read</code> of up to one <code>upload_chunk_size</code>) — runs via
+  <code>asyncio.to_thread</code>, so a large disk-spilled upload does not
+  head-of-line-block sibling coroutines on the event loop (ADR-0029).</li>
 <li><strong>Spool-spill observability:</strong> When an on-disk spill occurs, the
   backend logs a DEBUG record with the marker
   <code>graph.upload.spool_spilled</code> carrying the spool path. The DEBUG
