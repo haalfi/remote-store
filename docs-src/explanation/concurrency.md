@@ -10,22 +10,22 @@ Before the per-operation guarantees below, there is a more basic question: **is 
 |---------|---------|----------------------------------------|
 | [Local](../guides/backends/local.md) | Thread-safe | Stateless; delegates to the OS filesystem. |
 | [Memory](../guides/backends/memory.md) | Thread-safe | Guarded by a single internal lock. |
-| [HTTP](../guides/backends/http.md) | Single-connection | The default `urllib` opener shares a redirect counter. **Remedy:** select `http_client='requests'` or `'httpx'` (each uses a pooled client safe for concurrent per-instance use), or use one instance per thread. |
+| [HTTP](../guides/backends/http.md) | Single-connection on `urllib` | Only the auto-detect *fallback* `urllib` opener (shared redirect counter) is unsafe; the `httpx` / `requests` transports — auto-selected ahead of it when installed — are thread-safe. **Remedy:** install and select `http_client='requests'` or `'httpx'`, or use one instance per thread. |
 | [S3](../guides/backends/s3.md) | Thread-safe | The boto3 client / s3fs is safe for concurrent per-instance use. |
-| [S3-PyArrow](../guides/backends/s3-pyarrow.md) | Thread-safe ‡ | Arrow's C++ `S3FileSystem` is safe per instance. |
+| [S3-PyArrow](../guides/backends/s3-pyarrow.md) | Thread-safe ¹ | Arrow's C++ `S3FileSystem` is safe per instance. |
 | [SFTP](../guides/backends/sftp.md) | Single-connection | One paramiko channel over one socket. **Remedy:** one instance per thread (or a native async SFTP client). |
 | [Azure](../guides/backends/azure.md) | Thread-safe | The Azure SDK service clients are immutable once built. |
-| [Graph](../guides/backends/graph.md) | Thread-safe § | Async-only: safe for concurrent coroutines on one event loop. |
-| [SQLBlob](../guides/backends/sql-blob.md) | Thread-safe † | The SQLAlchemy engine pools connections. |
-| [SQLQuery](../guides/backends/sql-query.md) | Thread-safe † | Same pooled engine (read-only). |
+| [Graph](../guides/backends/graph.md) | Thread-safe ² | Async-only: safe for concurrent coroutines on one event loop. |
+| [SQLBlob](../guides/backends/sql-blob.md) | Thread-safe ³ | The SQLAlchemy engine pools connections. |
+| [SQLQuery](../guides/backends/sql-query.md) | Thread-safe ³ | Same pooled engine (read-only). |
 
 No backend offers multi-operation transactionality — atomicity is per operation only, and ordering between concurrent callers is never guaranteed.
 
-† On a pooled RDBMS engine (PostgreSQL, MySQL) SQLBlob and SQLQuery are thread-safe. The `sqlite:///:memory:` configuration is the exception: SQLAlchemy gives each thread its own isolated in-memory database, so a shared instance behaves as single-connection — use one instance per thread.
+¹ S3-PyArrow's per-instance thread-safety is expected but not yet pinned by a live concurrency probe; treat heavy concurrent sharing as to-be-confirmed.
 
-‡ S3-PyArrow's per-instance thread-safety is expected but not yet pinned by a live concurrency probe; treat heavy concurrent sharing as to-be-confirmed.
+² One Graph instance is safe for concurrent coroutines on a **single** event loop, and never across loops — use one instance per loop. Driven from synchronous code through the async→sync bridge it is also safe for concurrent threads (unlike SFTP); see [Bridge asymmetry](#bridge-asymmetry) below.
 
-§ One Graph instance is safe for concurrent coroutines on a **single** event loop, and never across loops — use one instance per loop. Driven from synchronous code through the async→sync bridge it is also safe for concurrent threads (unlike SFTP); see [Bridge asymmetry](#bridge-asymmetry) below.
+³ On a pooled RDBMS engine (PostgreSQL, MySQL) SQLBlob and SQLQuery are thread-safe. The `sqlite:///:memory:` configuration is the exception: SQLAlchemy gives each thread its own isolated in-memory database, so a shared instance behaves as single-connection — use one instance per thread.
 
 ### Bridge asymmetry
 
