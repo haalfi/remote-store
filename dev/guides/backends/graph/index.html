@@ -11238,20 +11238,23 @@ tier cannot reach. Treat SharePoint/business deployments as less-travelled
 ground and validate your workload before relying on it in production.</p>
 <h3 id="overwritetrue-can-still-raise-alreadyexists"><code>overwrite=True</code> can still raise <code>AlreadyExists</code><a class="headerlink" href="#overwritetrue-can-still-raise-alreadyexists" title="Permanent link">&para;</a></h3>
 <p>Overwriting an existing <strong>file</strong> with <code>overwrite=True</code> is expected to replace it and
-succeed. Two situations can still surface an <code>AlreadyExists</code> error despite the flag:</p>
+succeed. One situation can still surface an <code>AlreadyExists</code> error despite the flag:</p>
 <ul>
 <li><strong>SharePoint-backed drives</strong> may reject the replace of an existing file with a conflict.
-  This does not happen on consumer OneDrive (the live-verified tier).</li>
-<li><strong>Concurrent creation of the same new key</strong>, reproduced on consumer OneDrive: when several
-  writers race to create the <em>same not-yet-existing</em> key, the losers can receive
-  <code>AlreadyExists</code> even with <code>overwrite=True</code>. <strong>Content integrity holds</strong> — one writer's bytes
-  land intact, with no tearing or interleaving; only the error surfaced to the losers diverges
-  from the single-writer expectation.</li>
+  This does not happen on consumer OneDrive (the live-verified tier). The backend deliberately
+  does <strong>not</strong> paper over it — silently treating the rejection as success could mask a genuine
+  collision and would have to guess at a response shape the project cannot reproduce. If you
+  need overwrite-or-create semantics on such a drive, delete the target first and then write,
+  or serialise the writers.</li>
 </ul>
-<p>In both cases the backend deliberately does <strong>not</strong> paper over the conflict — silently
-treating it as success could mask a genuine collision and would have to guess at a response
-shape the project cannot reproduce. If you need overwrite-or-create semantics under
-contention, delete the target first and then write, or serialise the writers.</p>
+<p>A second situation — <strong>concurrent creation of the same new key</strong> (reproduced on consumer
+OneDrive) — is now <strong>handled</strong>: when several writers race to create the <em>same not-yet-existing</em>
+key with <code>overwrite=True</code>, a loser whose <code>replace</code> lands mid-create is re-attempted a bounded
+number of times. The winner's create has committed by then, so the re-issued <code>replace</code>
+overwrites it and the write succeeds — last-writer-wins, as <code>overwrite=True</code> promises.
+<strong>Content integrity holds</strong> throughout: one writer's bytes land intact, with no tearing or
+interleaving. (With <code>overwrite=False</code> the same race is a race-free create-if-absent: exactly
+one writer wins and the losers get <code>AlreadyExists</code> by design — see below.)</p>
 <h3 id="copy_timeoutnone-is-unbounded-by-default"><code>copy_timeout=None</code> is unbounded by default<a class="headerlink" href="#copy_timeoutnone-is-unbounded-by-default" title="Permanent link">&para;</a></h3>
 <p>Graph performs <code>copy()</code> (and sometimes <code>move()</code>) asynchronously: the backend
 polls a monitor URL until completion. With the default <code>copy_timeout=None</code>
@@ -12365,6 +12368,15 @@ size it first (the session <code>Content-Range</code> needs a known total). The
 returned <code>WriteResult</code> is <code>source="native"</code>, populated from the
 <code>driveItem</code> Graph returns. <code>overwrite</code> maps to Graph's
 <code>@microsoft.graph.conflictBehavior</code> (<code>replace</code> vs <code>fail</code>).</p>
+<p>On <code>overwrite=True</code> (<code>conflictBehavior=replace</code>) a concurrent create
+of the <em>same not-yet-existing</em> key can still draw a <code>409
+nameAlreadyExists</code> (live-reproduced on consumer OneDrive): the loser's
+replace lands while the winner's create is in flight. The write
+re-attempts the replace a bounded number of times — the winner's create
+has committed by the time the 409 returns, so the re-issue overwrites it.
+A terminal conflict (a SharePoint-backed drive that rejects the replace
+outright) keeps 409-ing and surfaces <code>AlreadyExists</code> once the budget is
+spent; the retry re-issues the replace, it never swallows the conflict.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12373,7 +12385,9 @@ returned <code>WriteResult</code> is <code>source="native"</code>, populated fro
               <code><a class="autorefs autorefs-internal" title="            AlreadyExists (remote_store._errors.AlreadyExists)" href="../../../reference/api/errors/#remote_store.AlreadyExists">AlreadyExists</a></code>
             –
           <div class="doc-md-description">
-            <p>If the file exists and <code>overwrite=False</code>.</p>
+            <p>If the file exists and <code>overwrite=False</code>, or an
+<code>overwrite=True</code> replace keeps drawing a <code>409</code> past the
+bounded re-attempt budget (a SharePoint-backed replace-rejection).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

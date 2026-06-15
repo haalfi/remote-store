@@ -12249,27 +12249,41 @@ outcomes. The backend inspects the 409 response body:
   backend raises <code>AlreadyExists</code>.</p>
 <p>This rule applies equally to GR-019, GR-025 (copy), and GR-027 (move)
 destinations.
-<strong>Known limitation — <code>overwrite=True</code> on a file conflict:</strong> with
-<code>@microsoft.graph.conflictBehavior=replace</code>, an existing <em>file</em> at the
-target is expected to be overwritten (<code>200</code>). Some backing stores
-(observed on SharePoint-backed drives in Graph issue reports) instead
-return <code>409 nameAlreadyExists</code> for a file even under <code>replace</code>, which
-the discrimination above surfaces as <code>AlreadyExists</code> — a spurious
-failure for an intended overwrite. This is a <strong>documented hard backend
-limitation, not a guarded case</strong>: the backend takes no special-casing of
-a <code>replace</code>-path 409, so an affected drive raises <code>AlreadyExists</code> despite
-<code>overwrite=True</code>. The decision is deliberate. The quirk does not
-reproduce on the consumer OneDrive drive used for live verification, and
-this project's live tier is consumer-only / device-code, so the
-SharePoint-backed edge cannot be live-verified to confirm the exact 409
-body; a speculative guard (treating a <code>file</code>-faceted 409 on the
-<code>replace</code> path as success-equivalent) would have to guess at that body
-shape blind and would risk masking a genuine conflict. Callers on
-SharePoint-backed drives that require overwrite-replace semantics should
-validate the behaviour against their drive and, where affected,
-delete-then-write rather than rely on <code>overwrite=True</code>. Revisit with a
-targeted guard only once a live SharePoint-backed reproduction pins the
-409 body.
+<strong><code>overwrite=True</code> create-race retry (concurrent create of a new key):</strong>
+with <code>@microsoft.graph.conflictBehavior=replace</code>, a concurrent create of
+the <em>same not-yet-existing</em> key can still draw a <code>409 nameAlreadyExists</code>:
+the loser's <code>replace</code> lands while the winner's create is in flight, and
+the discrimination above surfaces it as <code>AlreadyExists</code> — contradicting
+the create-or-replace contract. This race is live-reproduced on consumer
+OneDrive. The backend re-attempts the <code>replace</code> a bounded number of times
+(<code>_REPLACE_RACE_MAX_ATTEMPTS</code>): the winner's create has committed by the
+time the loser's 409 returns, so the re-issued <code>replace</code> finds the item
+present and overwrites it (<code>200</code>). The retry is gated on <code>overwrite=True</code>
+— <code>overwrite=False</code>'s create-once-race <code>AlreadyExists</code> is the correct
+single-winner outcome (GR-059) and is <strong>not</strong> retried — and re-attempts
+only the <code>AlreadyExists</code> discrimination; the folder-target / file-ancestor
+<code>409</code>s discriminate to <code>InvalidPath</code> and propagate on the first attempt.
+The re-attempt re-issues the actual <code>replace</code>; it never swallows a 409.</p>
+<p><strong>Known limitation — <code>overwrite=True</code> on a SharePoint-backed file
+conflict:</strong> an existing <em>file</em> at the target is expected to be overwritten
+(<code>200</code>). Some backing stores (observed on SharePoint-backed drives in Graph
+issue reports) instead return <code>409 nameAlreadyExists</code> for a file even under
+<code>replace</code>. This is a <strong>terminal</strong> conflict, distinct from the create-race
+above: the item already exists, so the bounded re-attempt finds the same
+rejection each time and, once the budget is spent, raises <code>AlreadyExists</code>
+despite <code>overwrite=True</code>. The decision to let it surface is deliberate.
+The quirk does not reproduce on the consumer OneDrive drive used for live
+verification, and this project's live tier is consumer-only / device-code,
+so the SharePoint-backed edge cannot be live-verified to confirm the exact
+409 body; a guard that treated a <code>file</code>-faceted 409 on the <code>replace</code> path
+as success-equivalent would have to guess at that body shape blind and
+would risk masking a genuine conflict — which the create-race retry
+deliberately avoids by re-issuing the replace rather than swallowing the
+409. Callers on SharePoint-backed drives that require overwrite-replace
+semantics should validate the behaviour against their drive and, where
+affected, delete-then-write rather than rely on <code>overwrite=True</code>. Revisit
+with a targeted guard only once a live SharePoint-backed reproduction pins
+the 409 body.
 <strong>Note on the 4 MiB threshold:</strong> Graph documents the
 <code>PUT .../content</code> endpoint as suitable for files up to ~4 MiB and
 recommends upload sessions beyond that. In practice the endpoint
@@ -12708,7 +12722,11 @@ tier's coverage (see the coverage-disclosure paragraph in
 <p><strong>Invariant:</strong> <code>409 nameAlreadyExists</code> maps to <code>AlreadyExists</code>. For
 write operations, the backend uses Graph's <code>@microsoft.graph.conflictBehavior</code>
 parameter (<code>fail</code> vs <code>replace</code>) to control whether the error is
-raised or the write overwrites.</p>
+raised or the write overwrites. On the <code>replace</code> path a <code>409</code> that
+discriminates to <code>AlreadyExists</code> is re-attempted a bounded number of
+times to win a concurrent create-of-a-new-key race before it surfaces
+(GR-018, <code>overwrite=True</code> create-race retry); a terminal SharePoint-backed
+replace-rejection exhausts the budget and still raises <code>AlreadyExists</code>.</p>
 <h3 id="gr-033-5xx-and-network-errors">GR-033: 5xx and Network Errors<a class="headerlink" href="#gr-033-5xx-and-network-errors" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>500</code>, <code>502</code>, <code>503</code>, <code>504</code>, and httpx transport
 errors (connect, read, write timeouts; DNS; connection reset) map
