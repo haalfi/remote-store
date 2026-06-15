@@ -91,7 +91,7 @@ another such gated property.
   exactly one winner where the backend claims server-side atomicity, e.g. Graph?).
 - No stream-vs-mutate, N-parallel-large-upload, or token-call-count probes
   (Graph-specific, from the review).
-- No black-box `Store`-surface DX validation in the downstream expectations repo.
+- No black-box `Store`-surface DX validation in the downstream companion DX suite.
 
 ---
 

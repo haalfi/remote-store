@@ -137,7 +137,7 @@ The sweep's heatmap is what justifies each expensive deep-dive.
   a lens "dry for now" and move on.
 - **Empirical feedback loop.** The catalog starts as educated guessing and
   becomes empirical: real support questions, GitHub issues, and surprises from
-  the expectations repo each become a new catalog row. This is the direct answer
+  the companion DX suite each become a new catalog row. This is the direct answer
   to "we can only guess" — we guess to seed, then replace guesses with observed
   reality.
 
@@ -208,7 +208,7 @@ natural next pilot, and the cheapest test of whether the catalog earns its keep.
    command.
 3. **Wire the routing** so findings land permanently: backend-agnostic
    expectations into conformance, backend-specific into the live tier, the DX
-   narrative into the expectations repo.
+   narrative into the companion DX suite.
 
 The method's promise is modest but real: it converts "we can only guess at user
 expectations" into "we mechanically walk the sources of expectation, and we know
