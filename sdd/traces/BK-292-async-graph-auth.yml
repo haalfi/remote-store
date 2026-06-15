@@ -15,7 +15,9 @@ audience:
   - library.maintainer
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 1
+surprising_ripples:
+  - examples/backends/graph_backend.py
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -136,3 +138,11 @@ phases:
           acquisition, and `await inflight` forwarded one caller's cancellation to
           all joiners. Fixed: `await asyncio.shield(inflight)` + a done-callback
           (not finally) clears the slot — RED-first cancellation tests added
+      - file: examples/backends/graph_backend.py
+        section: "main() backend construction"
+        read_type: reference
+        extract: >-
+          Round-2 review: the runnable example still used sync token_provider=auth
+          inside async main(), contradicting the guide's new "prefer aget_token"
+          note — doc-vs-example drift the docs sweep missed. Switched to
+          token_provider=auth.aget_token with a matching inline comment
