@@ -84,6 +84,8 @@ async def download(filename: str):
     return StreamingResponse(store.read(filename))
 ```
 
+The module-level `store` is shared across every request handler — safe here because the S3 backend is thread-safe, so the `AsyncStore` thread-pool bridge can drive it concurrently. With a single-connection backend (e.g. SFTP) this sharing would **not** be safe; see [Concurrency](../explanation/concurrency.md#concurrent-use-posture).
+
 ## Native async backends
 
 `SyncBackendAdapter` runs sync backends in a thread pool — good enough for
@@ -194,6 +196,11 @@ calls `aclose()` on exit.
   calls against a single `SFTPBackend` instance race on the shared socket
   and may hang. Create one `SFTPBackend` per thread, or use a native async
   SFTP library. See [SFTP backend guide](backends/sftp.md#connection-behaviour).
+- **Concurrent use depends on the backend's posture.** Sharing one store across concurrent
+  tasks is safe for thread-safe backends (Local, Memory, S3, Azure) and for async-native
+  backends on a single loop (Azure, Graph); it is unsafe for single-connection backends
+  (SFTP, HTTP on `urllib`). See
+  [Concurrency](../explanation/concurrency.md#concurrent-use-posture).
 - **`asyncio` only** — trio and anyio are not supported.
 
 ## Async write helpers

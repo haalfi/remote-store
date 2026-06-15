@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=_schema.yml
+id: BK-288
+title: "Cross-backend concurrent-use-posture documentation (docs leg of the concurrency contract)"
+trigger: >-
+  BK-287 put the concurrent-use posture in the specs (BE-028 / ASYNC-094 /
+  GR-059, the two-value thread_safe / single_connection taxonomy) and BK-289 put
+  it in the test registry (the backends.toml `concurrency` field + posture-gated
+  lane). The docs were the missing third leg: explanation/concurrency.md
+  documented only per-operation atomicity (move / write_atomic / overwrite=False)
+  and had no concurrent-use-posture axis for any backend, and Graph was absent
+  from it entirely. The Graph-only BK-288 was rescoped to the cross-backend docs.
+source_items:
+  - BK-288
+audience:
+  - user.site
+  - user.api_docs
+discovery_followups:
+  - BK-294
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  # PR #821 review: correcting the overwrite=False "all backends" universal in
+  # concurrency.md left a contradicting "Like all backends" TOCTOU note in the
+  # SFTP guide — a cross-guide ripple the ripple-check table did not anticipate.
+  - docs-src/guides/backends/sftp.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: docs-src/explanation/concurrency.md
+        section: "Summary table / Non-atomic move()"
+        read_type: gate
+        extract: >-
+          Confirmed the gap: the doc carries only operation-atomicity tables
+          (move atomic?, write_atomic atomic?, overwrite=False race-free?) and
+          has NO concurrent-use-posture axis for any backend; Graph is absent
+          from every table. So "add a Graph row" first needs the table built.
+        outcome: ok
+      - file: tests/backends/fixtures/backends.toml
+        section: "concurrency field (per backend family)"
+        read_type: reference
+        extract: >-
+          Authoritative per-backend posture (the machine-readable shadow): local
+          / memory / s3 / s3_pyarrow / azure / graph thread_safe; sftp / http /
+          sqlblob single_connection. sqlblob is single_connection only for the
+          tested sqlite:///:memory: config (SingletonThreadPool, one isolated DB
+          per thread); s3_pyarrow carries a Tier-3-pending hedge. The
+          user-facing table is the shadow of this field.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-028"
+        read_type: reference
+        extract: >-
+          The two-value taxonomy + the thread_safe-default / single_connection
+          exception and remedy wording the posture table mirrors in plain English.
+        outcome: ok
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-094"
+        read_type: reference
+        extract: >-
+          The bridge asymmetry: AsyncBackendSyncAdapter serialises sync callers
+          onto one loop (safe); SyncBackendAdapter + a single_connection backend
+          under asyncio.gather is unsafe. Source for the Bridge asymmetry prose.
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-059"
+        read_type: reference
+        extract: >-
+          Graph one-loop posture, bridged-sync safety (unlike SFTP),
+          overwrite=False server-atomic create-if-absent, move/copy non-atomic +
+          move-race error fidelity. Source for the Graph guide narrative and the
+          consumer-OneDrive concurrent-create reproduction widening BK-261.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: docs-src/explanation/concurrency.md
+        section: "Concurrent-use posture (new) + Bridge asymmetry"
+        read_type: reference
+        extract: >-
+          New posture table (per-backend thread-safe / single-connection, with
+          the sqlite-memory and S3-PyArrow footnotes) + Bridge asymmetry
+          subsection; corrected the overwrite=False "all backends" framing for
+          Graph; added Graph rows to the move / summary tables.
+      - file: docs-src/guides/backends/graph.md
+        section: "Concurrency & consistency (new); overwrite=True caveat (widened)"
+        read_type: reference
+        extract: >-
+          New section (one-loop posture, bridged-sync safety, create-if-absent,
+          non-atomic move/copy, read-your-writes). Reframed the SharePoint-only
+          overwrite=True caveat to also document the live-reproduced
+          consumer-OneDrive concurrent-create race (losers get AlreadyExists;
+          content integrity holds) — the BK-261 widening.
+      - file: docs-src/guides/async.md
+        section: "FastAPI example + Limitations"
+        read_type: reference
+        extract: >-
+          One-line contract on the shared module-level store (safe because S3 is
+          thread-safe; unsafe with a single-connection backend) + a posture-aware
+          Limitations bullet, both linking the posture table.
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_no_tracker_refs.py
+        section: "Scope / patterns flagged"
+        read_type: gate
+        extract: >-
+          Decisive constraint: the gate flags spec coordinates (BE-028 /
+          ASYNC-094 / GR-059) as tracker leakage in published surfaces (Rule 1 /
+          Rule 5). So the posture docs name NO spec IDs; concurrency.md is the
+          single user-facing source and the Graph guide / async.md link to it.
+          The spec-coordinate mapping lives in this trace, not the prose.
+        outcome: misleading
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / docs + backlog"
+        read_type: verify
+        extract: "CHANGELOG stub (user.site/user.api_docs -> required), BACKLOG->DONE move, gen-backlogid, trace ships same PR; docs-gate + lint."
+        outcome: ok

@@ -240,7 +240,7 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
     copy + delete as a last resort. Most servers support at least `rename()`.
 
 !!! note "TOCTOU on `overwrite=False`"
-    Like all backends, the exists-check and write are separate operations.
+    Like most backends, the exists-check and write are separate operations.
     Concurrent writers can both pass the check.
 
 See the [Concurrency and Atomicity Guarantees](../../explanation/concurrency.md) guide for details and workarounds.

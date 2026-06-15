@@ -155,16 +155,23 @@ HTTP range requests (see [Streaming](#streaming)) — and others that the live
 tier cannot reach. Treat SharePoint/business deployments as less-travelled
 ground and validate your workload before relying on it in production.
 
-### `overwrite=True` may still fail on SharePoint-backed drives
+### `overwrite=True` can still raise `AlreadyExists`
 
-Overwriting an existing **file** with `overwrite=True` is expected to replace
-it and succeed. Some SharePoint-backed drives instead reject the replace with a
-conflict, which the backend surfaces as an `AlreadyExists` error even though you
-asked to overwrite. This does not happen on consumer OneDrive (the
-live-verified tier), and the backend deliberately does **not** paper over it —
-silently treating the conflict as success could mask a genuine one and would
-have to guess at a response shape the project cannot reproduce. If you hit this,
-delete the target first and then write instead of relying on `overwrite=True`.
+Overwriting an existing **file** with `overwrite=True` is expected to replace it and
+succeed. Two situations can still surface an `AlreadyExists` error despite the flag:
+
+- **SharePoint-backed drives** may reject the replace of an existing file with a conflict.
+  This does not happen on consumer OneDrive (the live-verified tier).
+- **Concurrent creation of the same new key**, reproduced on consumer OneDrive: when several
+  writers race to create the *same not-yet-existing* key, the losers can receive
+  `AlreadyExists` even with `overwrite=True`. **Content integrity holds** — one writer's bytes
+  land intact, with no tearing or interleaving; only the error surfaced to the losers diverges
+  from the single-writer expectation.
+
+In both cases the backend deliberately does **not** paper over the conflict — silently
+treating it as success could mask a genuine collision and would have to guess at a response
+shape the project cannot reproduce. If you need overwrite-or-create semantics under
+contention, delete the target first and then write, or serialise the writers.
 
 ### `copy_timeout=None` is unbounded by default
 
@@ -176,6 +183,32 @@ Callers that cannot tolerate an unbounded wait must either set `copy_timeout`
 to a finite value at construction, or wrap the call in an external ceiling
 (`asyncio.timeout(...)`). On expiry the poller raises `BackendUnavailable`
 with the (query-stripped) monitor URL, poll count, and last status.
+
+## Concurrency & consistency
+
+`GraphBackend` is async-only and built for concurrent use on a single event loop:
+
+- **One instance, one loop.** A `GraphBackend` is safe for concurrent coroutines driven
+  by one event loop — `asyncio.gather` over a shared instance is fine. It is *not* safe to
+  share across event loops; give each loop its own instance.
+- **Safe from threaded sync code.** Driven through
+  [`AsyncBackendSyncAdapter`](../async-sync-bridges.md), a single instance is safe for
+  concurrent threads — the adapter serialises them onto its private loop. This is **unlike**
+  the SFTP backend, where you need one instance per thread.
+- **`overwrite=False` is a race-free create-if-absent.** It maps to a server-side atomic
+  create (Graph's create-if-absent conflict behaviour), so two writers racing to create the
+  same new key cannot both win — the loser gets `AlreadyExists`. There is no client-side
+  check-then-write window, unlike the TOCTOU behaviour described in the
+  [concurrency guide](../../explanation/concurrency.md#overwritefalse-and-toctou).
+- **`move` and `copy` are not atomic at the point of use.** `copy` (and sometimes `move`)
+  runs server-side and is monitor-polled to completion; a crash mid-operation can leave both
+  source and destination. Two callers racing a `move` / `copy` of the same item resolve to
+  one winner, but the loser's error may be generic rather than typed.
+- **Read-your-writes holds.** After a successful `write`, a subsequent `read` on the same
+  instance returns the new content.
+
+See the [concurrency guide](../../explanation/concurrency.md#concurrent-use-posture) for the
+cross-backend posture table and the sync/async bridge rules.
 
 ## Write results
 
