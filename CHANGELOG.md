@@ -46,28 +46,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   per-backend `thread_safe` / `single_connection` clauses define each backend's
   documented behaviour under concurrent use.
 
-### Changed
-
-- **Graph MSAL token cache is now persisted under a cross-process lock**
-  (BK-291) via `msal-extensions`: concurrent workers sharing the default cache
-  no longer corrupt it or force a re-login.
-
 ### Fixed
 
-- **Graph `overwrite=True` create-race retries** (BK-294, BK-296): a concurrent
-  create-race `409` is now retried so the write wins (last-writer-wins). BK-296
-  extends this to the large-file upload session, treating a mid-session `404` as
-  the create-race signal; a terminal SharePoint-backed replace-rejection still
-  surfaces `AlreadyExists`. Convergence is best-effort for large concurrent
-  same-key overwrites.
-- **Graph async I/O robustness under concurrent load** (BK-290).
-- **Graph backend correctness edges** (BK-266).
-- **Graph use-after-close** (BUG-219): now raises a typed `BackendUnavailable`
-  instead of a bare `RuntimeError`.
-- **Graph copy/move monitor** (BUG-218): a terminal `4xx` on the poll request
-  ends the wait instead of hanging until `copy_timeout`.
-- **Graph upload-session credential leak** (BK-263): a `ResourceLocked` raised
-  mid-upload-session no longer leaks the pre-signed session-URL credential.
 - **`LocalBackend` concurrent nested-key writes** (BUG-220): no longer raise a
   spurious `InvalidPath` from a Windows `_resolve` 8.3 short-name race.
 
@@ -76,12 +56,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **API reference restructured to mirror the package** (BK-285): the async
   surface is split into a `reference/api/aio/` subtree and async-native backends
   are surfaced.
-- **Graph guide and docstring accuracy** (BK-265): present-tense setup guide,
-  copy-paste-safe usage snippets, sync-vs-async extension matrix, complete
-  `Raises:` clauses, and read-side spooling / SharePoint-coverage caveats.
-- **Cross-backend concurrent-use posture documented** (BK-288).
-- **Graph `overwrite=True` replace-409 on SharePoint-backed drives** (BK-261)
-  documented as a hard backend limitation; delete-then-write is the workaround.
 
 ## [0.27.0] - 2026-06-02
 
