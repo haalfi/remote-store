@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Write file storage code once. Run it against local files, S3, SFTP, or Azure.">
+        <meta name="description" content="Write file storage code once. Run it against local files, S3, SFTP, Azure, or OneDrive.">
       
       
       
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#features-remote-store-v0270" class="md-skip">
+        <a href="#features-remote-store-v0280" class="md-skip">
           Skip to content
         </a>
       
@@ -10556,7 +10556,7 @@
 
 
 <!-- doc: dual dest=reference/FEATURES.md -->
-<h1 id="features-remote-store-v0270">Features — remote-store v0.27.0<a class="headerlink" href="#features-remote-store-v0270" title="Permanent link">&para;</a></h1>
+<h1 id="features-remote-store-v0280">Features — remote-store v0.28.0<a class="headerlink" href="#features-remote-store-v0280" title="Permanent link">&para;</a></h1>
 <p>Authoritative snapshot of what remote-store delivers in this version.
 Updated each release. <strong>This is the single reference for the package's feature surface.</strong></p>
 <hr />
@@ -11503,6 +11503,10 @@ always receive a typed error, never an <code>S3ServiceError</code> or <code>azur
 <tr>
 <td><code>DirectoryNotEmpty</code></td>
 <td>Directory is not empty and the operation requires it to be</td>
+</tr>
+<tr>
+<td><code>ResourceLocked</code></td>
+<td>Target resource is held by another session (e.g. an open co-authoring session); maps from Graph <code>423 Locked</code></td>
 </tr>
 <tr>
 <td><code>RemoteStoreError</code></td>
