@@ -117,15 +117,16 @@ resolve to one winner, read-your-writes and listing held, streaming reads are
 version-pinned, and the sync bridge (`ThreadPoolExecutor` + `ext.batch`) is
 deadlock-free. The items below are the divergences and the unspecified contract.
 
-- [ ] **BK-293 — Mirror the concurrency Store-surface into `../remote-store-expectations`**
+- [ ] **BK-293 — Mirror the concurrency Store-surface into the companion DX suite**
   spec: — · effort: S · audience: infra.test
   Carved out of BK-289 (the in-repo lane shipped; see BACKLOG-DONE). Mirror the
   public-`Store`-surface concurrency subset — create-once race, read-after-write,
-  `ThreadPoolExecutor` + `ext.batch` — into the separate
-  `../remote-store-expectations` repo as black-box DX validation, the way that
-  repo validates the rest of the surface. Out of scope for the BK-289 PR because
-  that repo is not present in this container. Keep the assertions invariant-only
-  and posture-aware (do not thread-stress a shared SFTP/HTTP store).
+  `ThreadPoolExecutor` + `ext.batch` — into the companion black-box DX suite as
+  consumer-facing validation. The work lands in that separate repo, so this item
+  is tracked here but closed there. The default lane keeps the assertions
+  invariant-only on Memory/Local; the same expectations may also run in the
+  companion's creds-gated cloud DX tier against a real backend (do not
+  thread-stress a shared SFTP/HTTP store).
 
 ---
 

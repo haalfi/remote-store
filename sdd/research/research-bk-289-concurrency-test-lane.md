@@ -205,10 +205,9 @@ are folded in or cross-referenced, not duplicated:
 ### 4.5 Expectations mirror (separate repo)
 
 The public-`Store`-surface subset (create-once race, read-after-write,
-`ThreadPoolExecutor` + `ext.batch`) is mirrored into
-`../remote-store-expectations` as black-box DX validation. **Note:** that repo is
-*not* present in this container — it is a separate-repo follow-up, tracked as a
-sub-task of BK-289, not part of the in-repo lane.
+`ThreadPoolExecutor` + `ext.batch`) is mirrored into the companion black-box DX
+suite as consumer-facing validation. It is a separate-repo follow-up, tracked as
+BK-293, not part of the in-repo lane.
 
 ---
 
