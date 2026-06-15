@@ -11917,9 +11917,21 @@ providers remain free to raise anything — GR-008.)</p>
 interactive scenarios. On first use, the user is prompted with a
 code and URL; completion yields a token and refresh token cached by
 MSAL.
-<strong>Postconditions:</strong> The MSAL cache is serialised to a persistent
-file; see ADR-0022 § Token caching for the canonical path and
-override rules (single source of truth). A no-token acquisition
+<strong>Postconditions:</strong> The MSAL cache is persisted to a file
+<strong>multi-process-safely</strong> — each acquisition writes through to disk with
+concurrent writers serialized by a cross-process file lock and readers
+retrying past a dirty read, so a consumer sharing the default cache path
+(the common multi-worker deployment) never observes a corrupt cache
+(BK-291). The on-disk write is an in-place truncate-and-write, <strong>not</strong> an
+atomic rename; corruption-freedom comes from the lock + read-retry, not
+atomicity. See ADR-0022 § Token caching for the canonical path, the lock
+mechanism, and override rules (single source of truth). Cache access is <strong>best-effort on both paths</strong>: a
+write/lock-contention failure (the write-through under the lock) <em>and</em> a read
+failure (a corrupt or persistently-contended cache making the reload re-raise)
+are logged and swallowed — a read miss degrades to a fresh acquisition, a write
+miss to a re-acquisition next run — never raised, so neither breaks the
+in-flight <code>read</code> / <code>write</code>. The GR-006 / GR-008 typed-error contract still holds
+(a persistence error is not a token-acquisition failure). A no-token acquisition
 failure raises the same typed <code>PermissionDenied</code> as GR-006 — the
 branch in <code>get_token</code> is shared by both flows. A device-flow
 <em>initiation</em> failure (MSAL's <code>initiate_device_flow</code> returning no
@@ -12901,10 +12913,14 @@ HTTP backend's <code>repr</code>-only precedent in HTTP-CRED-001).</p>
 <h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>
 <h3 id="gr-051-close">GR-051: close()<a class="headerlink" href="#gr-051-close" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>close()</code> (and <code>aclose()</code> on the async path) closes
-the backend's <code>httpx.AsyncClient</code>, flushes the MSAL token cache to
-disk if the built-in <code>GraphAuth</code> owns it, cancels any pending
+the backend's <code>httpx.AsyncClient</code>, invokes the token provider's
+<code>flush_cache</code> hook if present, cancels any pending
 monitor-URL pollers, and issues best-effort <code>DELETE</code> against any
-upload sessions the backend currently owns.
+upload sessions the backend currently owns. For the built-in
+<code>GraphAuth</code> the cache is already persisted continuously (each
+acquisition writes through under a cross-process lock — GR-007 /
+BK-291), so its <code>flush_cache</code> is a best-effort no-op; the duck-typed
+hook remains for user-supplied providers that buffer their own cache.
 <strong>Postconditions:</strong>
 - Safe to call multiple times (idempotent — a second <code>close()</code> is a no-op).
 - User-supplied <code>http_client</code> instances are not closed — the caller

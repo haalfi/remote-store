@@ -10573,7 +10573,10 @@ defaults to the delegated <code>["Files.ReadWrite", "User.Read"]</code>
           –
           <div class="doc-md-description">
             <p>Override the MSAL token-cache file location. Defaults to
-<code>&lt;user_config_dir("remote-store")&gt;/graph_token_cache.json</code>.</p>
+<code>&lt;user_config_dir("remote-store")&gt;/graph_token_cache.json</code>. The
+cache is persisted multi-process-safely: a sibling
+<code>&lt;cache_path&gt;.lockfile</code> coordinates concurrent writers so a
+shared default cache survives the common multi-worker deployment.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -10660,9 +10663,12 @@ login; defaults to printing <code>flow["message"]</code>.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Acquire (or silently refresh) a bearer token, flushing the cache.</p>
+        <p>Acquire (or silently refresh) a bearer token.</p>
 <p>The token-provider callable the backend invokes. Re-invoking it after
-a <code>401</code> refreshes through MSAL's cache.</p>
+a <code>401</code> refreshes through MSAL's cache. The acquisition writes the
+refreshed cache through to disk itself — the backing
+<code>PersistedTokenCache</code> persists under a cross-process lock on every
+change, so no explicit flush is needed here.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -10717,10 +10723,13 @@ a <code>401</code> refreshes through MSAL's cache.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Persist the MSAL token cache to disk when it has changed.</p>
-<p>Called by <code>get_token</code> after every acquisition and by
-<code>GraphBackend.close()</code>. Best-effort: a serialization or write
-failure is logged, not raised.</p>
+        <p>Best-effort no-op retained for the <code>GraphBackend.close()</code> hook.</p>
+<p>The token cache is a <code>PersistedTokenCache</code> that writes through to
+disk under a cross-process lock on every acquisition, so there is
+nothing to flush at close. The method stays because
+<code>GraphBackend.close()</code> invokes it duck-typed and user-supplied
+providers may implement their own. Never raises — teardown must not
+fail.</p>
 
 
     </div>

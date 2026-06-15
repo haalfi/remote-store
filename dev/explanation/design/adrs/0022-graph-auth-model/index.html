@@ -10278,16 +10278,57 @@ default helper.</p>
   MSAL caches the resulting refresh token.</li>
 </ul>
 <h3 id="token-caching">Token caching<a class="headerlink" href="#token-caching" title="Permanent link">&para;</a></h3>
-<p>MSAL's <code>SerializableTokenCache</code> is serialized to a file under
-<code>platformdirs.user_config_dir("remote-store")</code>. Users can override the
-path or disable persistent caching by passing a
-<code>SerializableTokenCache</code> directly or by supplying their own callable.</p>
-<p><code>platformdirs</code> is a runtime dependency of the built-in <code>GraphAuth</code>
-implementation (see ADR-0021 for the full <code>graph</code> extra dependency
-set). Callers that supply their own provider and never instantiate
-<code>GraphAuth</code> do not load <code>platformdirs</code> at import time (standard
-lazy-import pattern, applied here to the
-<code>aio/backends/_graph/auth</code> module).</p>
+<p>The token cache is an <code>msal_extensions.PersistedTokenCache</code> backed by a
+<code>FilePersistence</code> file under <code>platformdirs.user_config_dir("remote-store")</code>
+(default <code>graph_token_cache.json</code>). <code>PersistedTokenCache</code> is
+<strong>multi-process-safe</strong>: every MSAL acquisition routes through its
+<code>modify()</code>, which holds a cross-process <code>CrossPlatLock</code> (a sibling
+<code>&lt;cache_path&gt;.lockfile</code>), reload-merges the on-disk state, then writes it
+back — and its <code>search()</code> read path retries on a dirty read. The write
+itself is an in-place truncate-and-write (<code>FilePersistence.save</code>), <strong>not</strong> an
+atomic rename; corruption-freedom is provided not by atomicity but by the lock
+<strong>serializing concurrent writers</strong> and the read-retry <strong>tolerating a torn read</strong>
+(readers do not hold the lock, so they can momentarily observe a truncated file —
+which is exactly why <code>search()</code> retries). The net effect for concurrent
+<code>GraphAuth</code>/<code>GraphBackend</code> instances or processes sharing the default cache (the
+common multi-worker deployment) is that a consumer never observes a corrupt
+cache.</p>
+<p>This replaced the original hand-rolled <code>SerializableTokenCache</code> +
+<code>open(path, "w").write(...)</code> flush, which truncated the file at <code>open</code> before
+writing (BK-291): a concurrent reader could observe an empty/torn cache,
+forcing a re-login. A bare temp-file + <code>os.replace</code> was rejected because on
+Windows <code>os.replace</code> raises <code>PermissionError</code> (<code>WinError 5</code>) when the
+destination is held open by a concurrent reader or contended by another
+replace; <code>PersistedTokenCache</code> sidesteps that entirely (lock + read-retry,
+no rename). Because persistence is now continuous, <code>GraphAuth.flush_cache</code>
+is a best-effort no-op retained only for the GR-051 <code>close()</code> hook.</p>
+<p>Cache access moved <em>inside</em> MSAL's acquisition — <code>modify()</code> writes through
+under the lock, and <code>search()</code> reload-merges on every acquisition — so an
+unguarded write failure (<code>OSError</code> / lock exception) <em>or</em> read failure (a
+corrupt / persistently-contended cache making <code>search()</code> re-raise after its
+dirty-read retries) would escape <code>get_token</code> untyped mid-<code>read</code> / <code>write</code>,
+regressing the best-effort-swallow the old <code>flush_cache</code> provided and the
+GR-006 / GR-008 typed-error contract. The multi-process design makes dirty
+reads a new, more frequent failure mode (every acquisition reloads), so the
+read path matters as much as the write path. <code>GraphAuth</code> therefore wraps the
+cache in a thin <code>PersistedTokenCache</code> subclass: <code>modify()</code> swallows+logs
+persistence failures (degrade to re-acquisition), and <code>search()</code> swallows+logs
+read failures and returns <code>[]</code> (degrade to a cache miss → fresh acquisition),
+keeping acquisition non-breaking while preserving multi-process safety on the
+happy path. The lock wait runs on the calling thread, and because the sync
+provider is invoked directly on the event loop (no <code>to_thread</code>), a <em>contended</em>
+acquisition blocks the loop for the lock backend's timeout — up to ≈5 s with the
+<code>filelock</code> fallback that ships when <code>portalocker</code> is absent (it is not in the
+resolved <code>graph</code> lock). Offloading the acquisition off the event loop belongs to
+the async-<code>GraphAuth</code> path (BK-292), not the sync provider; the bound is stated
+here so the deferral is not misread as negligible.</p>
+<p>Users can override the path with <code>cache_path=</code> or supply their own
+token-provider callable to bypass <code>GraphAuth</code> (and MSAL) altogether.</p>
+<p><code>platformdirs</code>, <code>msal</code>, and <code>msal-extensions</code> are runtime dependencies of
+the built-in <code>GraphAuth</code> implementation (see ADR-0021 for the full <code>graph</code>
+extra dependency set). Callers that supply their own provider and never
+instantiate <code>GraphAuth</code> do not load any of them at import time (standard
+lazy-import pattern, applied here to the <code>aio/backends/_graph/auth</code> module).</p>
 <h3 id="what-the-backend-does-with-the-provider">What the backend does with the provider<a class="headerlink" href="#what-the-backend-does-with-the-provider" title="Permanent link">&para;</a></h3>
 <p>The provider is called lazily: no token acquisition happens in
 <code>__init__</code>. The backend invokes the callable on first request and on
@@ -10353,6 +10394,9 @@ in static config and only apply to direct construction.</p>
 <li>AF-008: backend <code>__repr__</code> credential masking</li>
 <li>MSAL Python token cache:
   https://learn.microsoft.com/entra/msal/python/msal.token_cache</li>
+<li>msal-extensions <code>PersistedTokenCache</code> (cross-process cache lock):
+  https://github.com/AzureAD/microsoft-authentication-extensions-for-python</li>
+<li>BK-291: multi-process-safe token-cache persistence (lock + read-retry)</li>
 </ul>
 
 

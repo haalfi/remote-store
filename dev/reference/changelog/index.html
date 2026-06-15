@@ -13410,6 +13410,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BK-291: Graph MSAL token cache is now persisted under a cross-process lock (<code>msal-extensions</code>) — concurrent workers sharing the default cache no longer corrupt it or force a re-login</li>
 <li>BK-290: Graph async I/O robustness under concurrent load</li>
 <li>BK-288: Cross-backend concurrent-use-posture documentation</li>
 <li>BUG-220: <code>LocalBackend</code> concurrent writes to nested keys no longer raise a spurious <code>InvalidPath</code> (Windows <code>_resolve</code> 8.3 short-name race)</li>

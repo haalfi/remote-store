@@ -10149,6 +10149,10 @@ acquisition and cache serialization.</p>
 <ul>
 <li><code>httpx</code> — async HTTP transport.</li>
 <li><code>msal</code> — token acquisition (used by the built-in <code>GraphAuth</code> helper).</li>
+<li><code>msal-extensions</code> (<code>&gt;=1.3</code>) — multi-process-safe token-cache
+  persistence (<code>PersistedTokenCache</code> + cross-process file lock, BK-291);
+  the <code>&gt;=1.3</code> floor keeps <code>portalocker</code> an optional extra rather than a
+  hard transitive dependency. Consumed only by <code>GraphAuth</code>, lazily.</li>
 <li><code>platformdirs</code> — resolves the MSAL token-cache path under
   <code>user_config_dir("remote-store")</code>; consumed only by <code>GraphAuth</code> and
   imported lazily so callers supplying their own token-provider
@@ -10161,8 +10165,9 @@ pagination, and error mapping.</p>
 is out of scope (legacy SharePoint REST is not a goal — see RFC-0010).</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Narrow dependency footprint.</strong> <code>httpx</code> + <code>msal</code> + <code>platformdirs</code>
-  is lighter than <code>msgraph-sdk</code> + Kiota runtime + <code>azure-identity</code>.
+<li><strong>Narrow dependency footprint.</strong> <code>httpx</code> + <code>msal</code> +
+  <code>msal-extensions</code> + <code>platformdirs</code> is lighter than <code>msgraph-sdk</code> +
+  Kiota runtime + <code>azure-identity</code>.
   <code>httpx</code> is not in the base install — users who install only the
   <code>graph</code> extra pay for it once; users who already had
   <code>remote-store[httpx]</code> for <code>ReadOnlyHttpBackend</code> pay for nothing

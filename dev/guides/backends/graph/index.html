@@ -11008,7 +11008,8 @@ known SharePoint-specific behaviours.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[graph]&quot;</span>
 </code></pre></div>
-<p>This pulls in <code>httpx</code>, <code>msal</code>, and <code>platformdirs</code> (for the MSAL token cache).</p>
+<p>This pulls in <code>httpx</code>, <code>msal</code>, <code>msal-extensions</code>, and <code>platformdirs</code> (the last
+two persist the MSAL token cache multi-process-safely).</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <p>A backend instance targets one drive, identified by an opaque <code>drive_id</code>.
 Resolve the id once at wiring time, then hand it to the backend:</p>
@@ -11075,8 +11076,11 @@ any callable works (e.g. a token minted by your own identity layer).</p>
 </code></pre></div>
 <p>The token is cached by MSAL on disk (default
 <code>&lt;user_config_dir("remote-store")&gt;/graph_token_cache.json</code>; override with
-<code>cache_path</code>). Entra app registration, redirect URIs, admin consent, and the
-<code>AADSTS*</code> error catalogue are covered in the <a href="../graph-setup/">setup guide</a>.</p>
+<code>cache_path</code>). The cache is persisted multi-process-safely — a sibling
+<code>&lt;cache_path&gt;.lockfile</code> coordinates concurrent writers, so several workers or
+processes sharing the default cache will not corrupt it. Entra app
+registration, redirect URIs, admin consent, and the <code>AADSTS*</code> error catalogue
+are covered in the <a href="../graph-setup/">setup guide</a>.</p>
 <h2 id="resolving-a-drive_id">Resolving a drive_id<a class="headerlink" href="#resolving-a-drive_id" title="Permanent link">&para;</a></h2>
 <p><code>GraphUtils.resolve_drive_id</code> (and its async twin <code>aresolve_drive_id</code>) turn a
 human-meaningful target into the opaque <code>drive_id</code> the backend needs:</p>
