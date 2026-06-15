@@ -24,10 +24,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   worker at a time). A failed acquisition fans out the same typed
   `PermissionDenied` to every joiner; the next call retries. The sync
   `get_token` / `__call__` is unchanged (sync-facing callers with no loop). Pass
-  `token_provider=auth.aget_token` on the event loop. Resolves the BK-291 deferral
-  of the event-loop lock-wait offload (the async path); the sync path still blocks
-  by design. GR-008 amended; ADR-0022 updated (deferral note resolved). Split from
-  BK-290 per the PR #814 review. Trace: `sdd/traces/BK-292-async-graph-auth.yml`.
+  `token_provider=auth.aget_token` on the event loop. Closes the event-loop
+  lock-wait offload BK-291 deferred (on the async path); the sync path still
+  blocks by design. A PR #826 review hardened the single-flight against caller
+  cancellation (shield + a done-callback clearing the slot) so a cancelled caller
+  cannot fan `CancelledError` out to siblings or orphan the worker thread into a
+  second concurrent acquisition. GR-008 records the async path + single-flight
+  (ADR-0022 left immutable — the async shape was already its accepted decision).
+  Split from BK-290 per the PR #814 review.
+  Trace: `sdd/traces/BK-292-async-graph-auth.yml`.
 
 - [x] **BK-294 — Retry Graph `overwrite=True` 409-under-replace (create-race) as transient**
   spec: GR-018, GR-032 · effort: M · audience: user.api

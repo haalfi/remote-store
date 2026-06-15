@@ -269,6 +269,8 @@ class GraphAuth:
         ``__call__`` from synchronous wiring code that has no running loop. The
         single-flight state is bound to the loop the first caller runs on — share
         one instance per loop, mirroring the backend's own single-loop posture.
+        Cancelling one caller (e.g. a ``gather`` sibling that times out) neither
+        cancels the shared acquisition nor disturbs the other joiners.
 
         Raises:
             PermissionDenied: Propagated from ``get_token`` to the owning
@@ -284,14 +286,26 @@ class GraphAuth:
         # offloaded get_token therefore runs once (and never two MSAL acquisitions
         # at once, which matters because MSAL's app/cache is not thread-safe — the
         # cross-process lock handles other processes). A raised exception fans out
-        # to every joiner; `finally` clears _inflight so the next call retries.
+        # to every joiner; the done-callback clears _inflight so the next call
+        # retries.
+        #
+        # The shared task's lifetime is decoupled from any one caller, so a caller
+        # cancelled mid-acquisition (e.g. a gather sibling timing out) is handled
+        # safely: `shield` keeps that caller's cancellation from cancelling the
+        # shared task or fanning CancelledError out to the other joiners, and the
+        # slot is cleared by the done-callback (not a per-caller `finally`) so a
+        # cancelled owner cannot orphan the worker thread into a second concurrent
+        # acquisition — the next caller joins the still-running one.
         inflight = self._inflight
-        if inflight is not None:
-            return await inflight
-        inflight = self._inflight = asyncio.ensure_future(asyncio.to_thread(self.get_token))
-        try:
-            return await inflight
-        finally:
+        if inflight is None:
+            inflight = self._inflight = asyncio.ensure_future(asyncio.to_thread(self.get_token))
+            inflight.add_done_callback(self._clear_inflight)
+        return await asyncio.shield(inflight)
+
+    def _clear_inflight(self, task: asyncio.Future[str]) -> None:
+        # Runs when the shared acquisition finishes (success, failure, or
+        # cancellation), reopening the slot for the next acquisition.
+        if self._inflight is task:
             self._inflight = None
 
     def flush_cache(self) -> None:

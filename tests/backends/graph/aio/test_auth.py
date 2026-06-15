@@ -408,3 +408,71 @@ class TestAsyncAcquisition:
         with pytest.raises(PermissionDenied):
             await auth.aget_token()
         assert calls == 2
+
+    @pytest.mark.spec("GR-008")
+    async def test_caller_cancellation_does_not_fan_out_to_siblings(
+        self, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Cancelling one caller (e.g. a gather sibling timing out) must NOT cancel
+        # the shared acquisition or fan CancelledError out to the other joiners.
+        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
+        calls = 0
+        gate = threading.Event()
+
+        def _fake_get_token() -> str:
+            nonlocal calls
+            calls += 1
+            gate.wait(timeout=5)
+            return "tok"
+
+        monkeypatch.setattr(auth, "get_token", _fake_get_token)
+
+        tasks = [asyncio.ensure_future(auth.aget_token()) for _ in range(6)]
+        await asyncio.sleep(0)  # all callers join the one in-flight acquisition
+        tasks[0].cancel()  # the owner is cancelled mid-acquisition
+        gate.set()
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        assert isinstance(results[0], asyncio.CancelledError)
+        assert results[1:] == ["tok"] * 5  # siblings unaffected by the cancellation
+        assert calls == 1  # still one shared acquisition
+
+    @pytest.mark.spec("GR-008")
+    async def test_cancelled_owner_does_not_trigger_second_acquisition(
+        self, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # A cancelled owner must not orphan the worker thread into a second
+        # concurrent acquisition: a new caller arriving while the worker is still
+        # in flight joins the existing acquisition rather than starting another
+        # (two MSAL acquisitions would touch the not-thread-safe app/cache at once).
+        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
+        calls = 0
+        started = threading.Event()
+        gate = threading.Event()
+
+        def _fake_get_token() -> str:
+            nonlocal calls
+            calls += 1
+            started.set()
+            gate.wait(timeout=5)
+            return "tok"
+
+        monkeypatch.setattr(auth, "get_token", _fake_get_token)
+
+        owner = asyncio.ensure_future(auth.aget_token())
+        for _ in range(5000):  # wait until the worker thread is actually running
+            if started.is_set():
+                break
+            await asyncio.sleep(0.001)
+        assert started.is_set()
+        owner.cancel()
+        await asyncio.sleep(0)  # let the cancellation settle
+        joiner = asyncio.ensure_future(auth.aget_token())  # arrives mid-flight
+        await asyncio.sleep(0)
+        gate.set()
+        owner_result = (await asyncio.gather(owner, return_exceptions=True))[0]
+        joiner_result = await joiner
+
+        assert isinstance(owner_result, asyncio.CancelledError)
+        assert joiner_result == "tok"
+        assert calls == 1  # the joiner reused the in-flight acquisition
