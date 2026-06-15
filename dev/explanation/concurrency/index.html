@@ -4951,6 +4951,34 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#concurrent-use-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrent-use posture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concurrent-use posture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bridge-asymmetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bridge asymmetry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#overwritefalse-and-toctou" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10025,6 +10053,34 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#concurrent-use-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrent-use posture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concurrent-use posture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bridge-asymmetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bridge asymmetry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#overwritefalse-and-toctou" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10123,7 +10179,81 @@
 
 
 <h1 id="concurrency-and-atomicity-guarantees">Concurrency and Atomicity Guarantees<a class="headerlink" href="#concurrency-and-atomicity-guarantees" title="Permanent link">&para;</a></h1>
-<p>remote-store wraps multiple storage backends behind a single API, but each backend inherits the concurrency and atomicity characteristics of its underlying platform. This guide documents two inherent limitations that affect all (or most) backends, and suggests practical workarounds.</p>
+<p>remote-store wraps multiple storage backends behind a single API, but each backend inherits the concurrency and atomicity characteristics of its underlying platform. This guide covers three things: whether one backend instance is safe to <strong>share across concurrent callers</strong> (the concurrent-use posture), and two per-operation limitations — non-atomic <code>move()</code> and the <code>overwrite=False</code> race window.</p>
+<h2 id="concurrent-use-posture">Concurrent-use posture<a class="headerlink" href="#concurrent-use-posture" title="Permanent link">&para;</a></h2>
+<p>Before the per-operation guarantees below, there is a more basic question: <strong>is one backend instance safe to share across threads</strong> (or, for async backends, across concurrent coroutines on one event loop)? Most backends are; a few wrap a native client that is not, and must be used one-instance-per-thread instead.</p>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Posture</th>
+<th>Why — and the remedy where it applies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../../guides/backends/local/">Local</a></td>
+<td>Thread-safe</td>
+<td>Stateless; delegates to the OS filesystem.</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/memory/">Memory</a></td>
+<td>Thread-safe</td>
+<td>Guarded by a single internal lock.</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/http/">HTTP</a></td>
+<td>Single-connection on <code>urllib</code></td>
+<td>Only the auto-detect <em>fallback</em> <code>urllib</code> opener (shared redirect counter) is unsafe; the <code>httpx</code> / <code>requests</code> transports — auto-selected ahead of it when installed — are thread-safe. <strong>Remedy:</strong> install and select <code>http_client='requests'</code> or <code>'httpx'</code>, or use one instance per thread.</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/s3/">S3</a></td>
+<td>Thread-safe</td>
+<td>The boto3 client / s3fs is safe for concurrent per-instance use.</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/s3-pyarrow/">S3-PyArrow</a></td>
+<td>Thread-safe ¹</td>
+<td>Arrow's C++ <code>S3FileSystem</code> is safe per instance.</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/sftp/">SFTP</a></td>
+<td>Single-connection</td>
+<td>One paramiko channel over one socket. <strong>Remedy:</strong> one instance per thread (or a native async SFTP client).</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/azure/">Azure</a></td>
+<td>Thread-safe</td>
+<td>The Azure SDK service clients are immutable once built.</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/graph/">Graph</a></td>
+<td>Thread-safe ²</td>
+<td>Async-only: safe for concurrent coroutines on one event loop.</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/sql-blob/">SQLBlob</a></td>
+<td>Thread-safe ³</td>
+<td>The SQLAlchemy engine pools connections.</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/sql-query/">SQLQuery</a></td>
+<td>Thread-safe ³</td>
+<td>Same pooled engine (read-only).</td>
+</tr>
+</tbody>
+</table>
+<p>No backend offers multi-operation transactionality — atomicity is per operation only, and ordering between concurrent callers is never guaranteed.</p>
+<p>¹ S3-PyArrow's per-instance thread-safety is expected but not yet pinned by a live concurrency probe; treat heavy concurrent sharing as to-be-confirmed.</p>
+<p>² One Graph instance is safe for concurrent coroutines on a <strong>single</strong> event loop, and never across loops — use one instance per loop. Driven from synchronous code through the async→sync bridge it is also safe for concurrent threads (unlike SFTP); see <a href="#bridge-asymmetry">Bridge asymmetry</a> below.</p>
+<p>³ On a pooled RDBMS engine (PostgreSQL, MySQL) SQLBlob and SQLQuery are thread-safe. The <code>sqlite:///:memory:</code> configuration is the exception: SQLAlchemy gives each thread its own isolated in-memory database, so a shared instance behaves as single-connection — use one instance per thread.</p>
+<h3 id="bridge-asymmetry">Bridge asymmetry<a class="headerlink" href="#bridge-asymmetry" title="Permanent link">&para;</a></h3>
+<p>remote-store has two adapters that cross the sync/async boundary, and they do <strong>not</strong> confer the same safety — the direction decides it:</p>
+<ul>
+<li><strong>Async backend → sync callers</strong> (<a href="../../guides/async-sync-bridges/"><code>AsyncBackendSyncAdapter</code></a>): owns one private event loop in a background thread and serialises every concurrent sync caller onto it. Wrapping a loop-safe async backend (e.g. Graph) this way <em>manufactures</em> a thread-safe sync backend — concurrent threads are safe.</li>
+<li><strong>Sync backend → async callers</strong> (<code>SyncBackendAdapter</code>, used by <code>AsyncStore</code> when you pass it a sync backend): dispatches each call to a thread pool via <code>asyncio.to_thread</code> and adds no serialisation of its own. It is safe <strong>only if the wrapped sync backend is thread-safe</strong>. Wrapping a single-connection backend (SFTP, or HTTP on <code>urllib</code>) and driving it with <code>asyncio.gather</code> is <strong>unsafe</strong> — the concurrent workers touch the same non-thread-safe client. Use one instance per worker, or an external lock.</li>
+</ul>
+<p>In short: async→sync <em>manufactures</em> thread-safety by funnelling through one loop; sync→async <em>borrows</em> the backend's thread-safety, or its absence.</p>
 <h2 id="overwritefalse-and-toctou"><code>overwrite=False</code> and TOCTOU<a class="headerlink" href="#overwritefalse-and-toctou" title="Permanent link">&para;</a></h2>
 <p>When you call <code>store.write(path, data, overwrite=False)</code>, the backend checks whether the file exists and then writes it. These are two separate operations — a classic <strong>Time-Of-Check-to-Time-Of-Use (TOCTOU)</strong> race window:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Thread A: exists(&quot;report.csv&quot;) -&gt; False
@@ -10131,7 +10261,8 @@
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Thread A: write(&quot;report.csv&quot;, data_a)      # succeeds
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Thread B: write(&quot;report.csv&quot;, data_b)      # also succeeds — overwrites A&#39;s file
 </code></pre></div>
-<p>This affects <strong>all backends</strong>. The check-then-act pattern cannot be made race-free without an external coordination mechanism. <code>overwrite=False</code> is a convenience guard against accidental overwrites in single-writer scenarios — it is <strong>not</strong> a mutual exclusion mechanism.</p>
+<p>This affects <strong>most backends</strong>. The check-then-act pattern cannot be made race-free without an external coordination mechanism. <code>overwrite=False</code> is a convenience guard against accidental overwrites in single-writer scenarios — it is <strong>not</strong> a mutual exclusion mechanism.</p>
+<p>The exception is <strong><a href="../../guides/backends/graph/">Graph</a></strong>: its <code>overwrite=False</code> maps to a server-side atomic <em>create-if-absent</em>, so two writers racing to create the same new key cannot both win — the loser receives <code>AlreadyExists</code>, with no client-side check-then-write window. S3 and Azure expose the same primitive natively (conditional PUT / <code>If-None-Match</code>), but remote-store does not wire it into <code>overwrite=False</code>; only Graph maps to it today.</p>
 <h3 id="mitigations">Mitigations<a class="headerlink" href="#mitigations" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>External locking.</strong> Use a distributed lock (e.g., DynamoDB lock table for S3, blob lease for Azure, advisory locks for SFTP/local) to serialize writers.</li>
@@ -10172,6 +10303,11 @@
 <tr>
 <td><a href="../../guides/backends/azure/">Azure</a> (non-HNS)</td>
 <td>Copy blob + delete blob</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/graph/">Graph</a></td>
+<td>Server-side move / copy (monitor-polled)</td>
 <td>—</td>
 </tr>
 <tr>
@@ -10258,6 +10394,12 @@
 <td>No (copy + delete)</td>
 <td>Yes (direct PUT is atomic)</td>
 <td>No (TOCTOU)</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/graph/">Graph</a></td>
+<td>No (server move/copy)</td>
+<td>Yes (server <code>PUT</code>)</td>
+<td>Yes (server create-if-absent)</td>
 </tr>
 <tr>
 <td><a href="../../guides/backends/sftp/">SFTP</a></td>

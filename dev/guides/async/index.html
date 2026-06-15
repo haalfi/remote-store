@@ -10365,6 +10365,7 @@ to a subfolder. The child shares the parent's backend:</p>
 <a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">starlette.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamingResponse</span>
 <a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>    <span class="k">return</span> <span class="n">StreamingResponse</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
 </code></pre></div>
+<p>The module-level <code>store</code> is shared across every request handler — safe here because the S3 backend is thread-safe, so the <code>AsyncStore</code> thread-pool bridge can drive it concurrently. With a single-connection backend (e.g. SFTP) this sharing would <strong>not</strong> be safe; see <a href="../../explanation/concurrency/#concurrent-use-posture">Concurrency</a>.</p>
 <h2 id="native-async-backends">Native async backends<a class="headerlink" href="#native-async-backends" title="Permanent link">&para;</a></h2>
 <p><code>SyncBackendAdapter</code> runs sync backends in a thread pool — good enough for
 many workloads, but each call still blocks a thread. Native async backends
@@ -10446,6 +10447,11 @@ calls <code>aclose()</code> on exit.</p>
   calls against a single <code>SFTPBackend</code> instance race on the shared socket
   and may hang. Create one <code>SFTPBackend</code> per thread, or use a native async
   SFTP library. See <a href="../backends/sftp/#connection-behaviour">SFTP backend guide</a>.</li>
+<li><strong>Concurrent use depends on the backend's posture.</strong> Sharing one store across concurrent
+  tasks is safe for thread-safe backends (Local, Memory, S3, Azure) and for async-native
+  backends on a single loop (Azure, Graph); it is unsafe for single-connection backends
+  (SFTP, HTTP on <code>urllib</code>). See
+  <a href="../../explanation/concurrency/#concurrent-use-posture">Concurrency</a>.</li>
 <li><strong><code>asyncio</code> only</strong> — trio and anyio are not supported.</li>
 </ul>
 <h2 id="async-write-helpers">Async write helpers<a class="headerlink" href="#async-write-helpers" title="Permanent link">&para;</a></h2>

@@ -10686,7 +10686,7 @@ copy + delete as a last resort. Most servers support at least <code>rename()</co
 </div>
 <div class="admonition note">
 <p class="admonition-title">TOCTOU on <code>overwrite=False</code></p>
-<p>Like all backends, the exists-check and write are separate operations.
+<p>Like most backends, the exists-check and write are separate operations.
 Concurrent writers can both pass the check.</p>
 </div>
 <p>See the <a href="../../../explanation/concurrency/">Concurrency and Atomicity Guarantees</a> guide for details and workarounds.</p>

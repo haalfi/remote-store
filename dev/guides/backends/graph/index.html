@@ -2470,10 +2470,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#overwritetrue-may-still-fail-on-sharepoint-backed-drives" class="md-nav__link">
+  <a href="#overwritetrue-can-still-raise-alreadyexists" class="md-nav__link">
     <span class="md-ellipsis">
       
-        overwrite=True may still fail on SharePoint-backed drives
+        overwrite=True can still raise AlreadyExists
       
     </span>
   </a>
@@ -2493,6 +2493,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#concurrency-consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrency &amp; consistency
+      
+    </span>
+  </a>
   
 </li>
       
@@ -10512,10 +10523,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#overwritetrue-may-still-fail-on-sharepoint-backed-drives" class="md-nav__link">
+  <a href="#overwritetrue-can-still-raise-alreadyexists" class="md-nav__link">
     <span class="md-ellipsis">
       
-        overwrite=True may still fail on SharePoint-backed drives
+        overwrite=True can still raise AlreadyExists
       
     </span>
   </a>
@@ -10535,6 +10546,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#concurrency-consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrency &amp; consistency
+      
+    </span>
+  </a>
   
 </li>
       
@@ -11136,15 +11158,22 @@ drives have known divergences the backend already accounts for — some ignore
 HTTP range requests (see <a href="#streaming">Streaming</a>) — and others that the live
 tier cannot reach. Treat SharePoint/business deployments as less-travelled
 ground and validate your workload before relying on it in production.</p>
-<h3 id="overwritetrue-may-still-fail-on-sharepoint-backed-drives"><code>overwrite=True</code> may still fail on SharePoint-backed drives<a class="headerlink" href="#overwritetrue-may-still-fail-on-sharepoint-backed-drives" title="Permanent link">&para;</a></h3>
-<p>Overwriting an existing <strong>file</strong> with <code>overwrite=True</code> is expected to replace
-it and succeed. Some SharePoint-backed drives instead reject the replace with a
-conflict, which the backend surfaces as an <code>AlreadyExists</code> error even though you
-asked to overwrite. This does not happen on consumer OneDrive (the
-live-verified tier), and the backend deliberately does <strong>not</strong> paper over it —
-silently treating the conflict as success could mask a genuine one and would
-have to guess at a response shape the project cannot reproduce. If you hit this,
-delete the target first and then write instead of relying on <code>overwrite=True</code>.</p>
+<h3 id="overwritetrue-can-still-raise-alreadyexists"><code>overwrite=True</code> can still raise <code>AlreadyExists</code><a class="headerlink" href="#overwritetrue-can-still-raise-alreadyexists" title="Permanent link">&para;</a></h3>
+<p>Overwriting an existing <strong>file</strong> with <code>overwrite=True</code> is expected to replace it and
+succeed. Two situations can still surface an <code>AlreadyExists</code> error despite the flag:</p>
+<ul>
+<li><strong>SharePoint-backed drives</strong> may reject the replace of an existing file with a conflict.
+  This does not happen on consumer OneDrive (the live-verified tier).</li>
+<li><strong>Concurrent creation of the same new key</strong>, reproduced on consumer OneDrive: when several
+  writers race to create the <em>same not-yet-existing</em> key, the losers can receive
+  <code>AlreadyExists</code> even with <code>overwrite=True</code>. <strong>Content integrity holds</strong> — one writer's bytes
+  land intact, with no tearing or interleaving; only the error surfaced to the losers diverges
+  from the single-writer expectation.</li>
+</ul>
+<p>In both cases the backend deliberately does <strong>not</strong> paper over the conflict — silently
+treating it as success could mask a genuine collision and would have to guess at a response
+shape the project cannot reproduce. If you need overwrite-or-create semantics under
+contention, delete the target first and then write, or serialise the writers.</p>
 <h3 id="copy_timeoutnone-is-unbounded-by-default"><code>copy_timeout=None</code> is unbounded by default<a class="headerlink" href="#copy_timeoutnone-is-unbounded-by-default" title="Permanent link">&para;</a></h3>
 <p>Graph performs <code>copy()</code> (and sometimes <code>move()</code>) asynchronously: the backend
 polls a monitor URL until completion. With the default <code>copy_timeout=None</code>
@@ -11154,6 +11183,30 @@ Callers that cannot tolerate an unbounded wait must either set <code>copy_timeou
 to a finite value at construction, or wrap the call in an external ceiling
 (<code>asyncio.timeout(...)</code>). On expiry the poller raises <code>BackendUnavailable</code>
 with the (query-stripped) monitor URL, poll count, and last status.</p>
+<h2 id="concurrency-consistency">Concurrency &amp; consistency<a class="headerlink" href="#concurrency-consistency" title="Permanent link">&para;</a></h2>
+<p><code>GraphBackend</code> is async-only and built for concurrent use on a single event loop:</p>
+<ul>
+<li><strong>One instance, one loop.</strong> A <code>GraphBackend</code> is safe for concurrent coroutines driven
+  by one event loop — <code>asyncio.gather</code> over a shared instance is fine. It is <em>not</em> safe to
+  share across event loops; give each loop its own instance.</li>
+<li><strong>Safe from threaded sync code.</strong> Driven through
+  <a href="../../async-sync-bridges/"><code>AsyncBackendSyncAdapter</code></a>, a single instance is safe for
+  concurrent threads — the adapter serialises them onto its private loop. This is <strong>unlike</strong>
+  the SFTP backend, where you need one instance per thread.</li>
+<li><strong><code>overwrite=False</code> is a race-free create-if-absent.</strong> It maps to a server-side atomic
+  create (Graph's create-if-absent conflict behaviour), so two writers racing to create the
+  same new key cannot both win — the loser gets <code>AlreadyExists</code>. There is no client-side
+  check-then-write window, unlike the TOCTOU behaviour described in the
+  <a href="../../../explanation/concurrency/#overwritefalse-and-toctou">concurrency guide</a>.</li>
+<li><strong><code>move</code> and <code>copy</code> are not atomic at the point of use.</strong> <code>copy</code> (and sometimes <code>move</code>)
+  runs server-side and is monitor-polled to completion; a crash mid-operation can leave both
+  source and destination. Two callers racing a <code>move</code> / <code>copy</code> of the same item resolve to
+  one winner, but the loser's error may be generic rather than typed.</li>
+<li><strong>Read-your-writes holds.</strong> After a successful <code>write</code>, a subsequent <code>read</code> on the same
+  instance returns the new content.</li>
+</ul>
+<p>See the <a href="../../../explanation/concurrency/#concurrent-use-posture">concurrency guide</a> for the
+cross-backend posture table and the sync/async bridge rules.</p>
 <h2 id="write-results">Write results<a class="headerlink" href="#write-results" title="Permanent link">&para;</a></h2>
 <p>The backend declares <code>WRITE_RESULT_NATIVE</code>. Writes return a
 <a href="../../../reference/api/models/"><code>WriteResult</code></a> populated directly from the

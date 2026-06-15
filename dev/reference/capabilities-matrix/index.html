@@ -10049,7 +10049,7 @@ at runtime before calling an operation.</p>
 <th style="text-align: center;"><a href="../../guides/backends/s3-pyarrow/">S3-PyArrow</a></th>
 <th style="text-align: center;"><a href="../../guides/backends/sftp/">SFTP</a></th>
 <th style="text-align: center;"><a href="../../guides/backends/azure/">Azure</a></th>
-<th style="text-align: center;"><a href="../../guides/backends/graph/">Graph</a>‡</th>
+<th style="text-align: center;"><a href="../../guides/backends/graph/">Graph</a>¹</th>
 <th style="text-align: center;"><a href="../../guides/backends/sql-blob/">SQLBlob</a></th>
 <th style="text-align: center;"><a href="../../guides/backends/sql-query/">SQLQuery</a></th>
 </tr>
@@ -10221,7 +10221,7 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: center;">Yes†</td>
+<td style="text-align: center;">Yes²</td>
 <td style="text-align: center;">—</td>
 </tr>
 <tr>
@@ -10234,15 +10234,15 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
-<td style="text-align: center;">Yes†</td>
+<td style="text-align: center;">Yes²</td>
 <td style="text-align: center;">—</td>
 </tr>
 </tbody>
 </table>
-<p>† <code>WRITE_RESULT_NATIVE</code> and <code>USER_METADATA</code> are declared by <code>SQLBlobBackend</code> only when the backing table includes a <code>user_metadata</code> column (see the SQLBlob guide for schema requirements). Legacy tables without this column do not declare either capability.</p>
-<p>‡ Graph is an <strong>async-only</strong> backend — construct it via
+<p>¹ Graph is an <strong>async-only</strong> backend — construct it via
 <code>AsyncStore(backend=GraphBackend(...))</code>; there is no sync <code>Store</code> wrapper or
 config <code>type=</code> string. The column lists its declared capabilities.</p>
+<p>² <code>WRITE_RESULT_NATIVE</code> and <code>USER_METADATA</code> are declared by <code>SQLBlobBackend</code> only when the backing table includes a <code>user_metadata</code> column (see the SQLBlob guide for schema requirements). Legacy tables without this column do not declare either capability.</p>
 <p><strong>Near-full:</strong> Local lacks <code>USER_METADATA</code> — passing non-empty <code>metadata=</code> raises <code>CapabilityNotSupported</code>. S3 and S3-PyArrow lack <code>ATOMIC_MOVE</code> (copy-then-delete
 semantics). SQLBlob lacks <code>LAZY_READ</code> — the entire blob is loaded into memory
 before a stream is returned. Writes also materialize the full stream before
