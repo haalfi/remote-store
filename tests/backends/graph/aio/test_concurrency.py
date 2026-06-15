@@ -50,7 +50,10 @@ from remote_store._models import WriteResult
 
 pytest.importorskip("httpx", reason="httpx not installed (graph extra)")
 
-from remote_store.aio.backends._graph.backend import GraphBackend  # noqa: E402
+from remote_store.aio.backends._graph.backend import (  # noqa: E402
+    _REPLACE_RACE_MAX_ATTEMPTS,
+    GraphBackend,
+)
 
 _DRIVE = "b!driveid123"
 _DOWNLOAD = "https://download.example.test/blob"
@@ -191,7 +194,7 @@ class TestOverwriteReplaceRetry:
         async with _make() as backend:
             with pytest.raises(AlreadyExists, match="race.txt"):
                 await backend.write("race.txt", b"x", overwrite=True)
-        assert route.call_count == 3  # initial + 2 bounded re-attempts
+        assert route.call_count == _REPLACE_RACE_MAX_ATTEMPTS  # initial + bounded re-attempts
 
     @respx.mock
     async def test_overwrite_false_does_not_retry(self) -> None:

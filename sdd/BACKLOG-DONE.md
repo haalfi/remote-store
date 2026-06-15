@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-294 — Retry Graph `overwrite=True` 409-under-replace (create-race) as transient**
+  spec: GR-018, GR-032 · effort: M · audience: user.api
+  BK-288 documented two ways `overwrite=True` (`conflictBehavior=replace`) can
+  still surface `AlreadyExists`: a terminal SharePoint-backed replace-rejection
+  (unreproducible on this project's consumer-only live tier, per **BK-261**) and a
+  live-reproduced concurrent create of the *same new key* (the loser's replace
+  lands mid-create). **Evaluation outcome: retry.** A bounded re-attempt of the
+  `replace` re-issues the *actual* write rather than swallowing the 409, so it
+  sidesteps BK-261's blocker — it needs no SharePoint 409-body classification. The
+  create-race loser re-issues and wins (last-writer-wins); a terminal conflict
+  exhausts the budget and still raises `AlreadyExists`. Gated on `overwrite=True`
+  (the `overwrite=False` create-once-race single-winner outcome, GR-059, is
+  untouched) and only the `AlreadyExists` discrimination is retried — folder /
+  file-ancestor `409`s discriminate to `InvalidPath` and propagate on the first
+  attempt. **Live finding (BK-294 tuning):** the first cut used immediate retries
+  and a live consumer-OneDrive 8-way race left one straggler 409-ing in lockstep;
+  a **full-jitter backoff** (`_REPLACE_RACE_MAX_ATTEMPTS=6`, sub-second cap)
+  desynchronises the retriers and resolves every writer (verified 8/8 and 12/12
+  across repeated rounds, content intact). Spec GR-018/GR-032, Graph guide, respx
+  mechanism tests, and Tier-3 live probe `test_live_overwrite_create_race_all_succeed`
+  (opt-in `RS_TEST_LIVE_GRAPH=1`). SharePoint tier stays documented-as-unverified.
+  Trace `sdd/traces/bk-294-graph-overwrite-replace-retry.yml`.
+
 - [x] **BK-291 — `GraphAuth` MSAL token-cache write is non-atomic and unlocked**
   spec: GR-007 · effort: M (filed S) · audience: user.api, library.maintainer
   `flush_cache` did a plain `open(path, "w").write(...)` at the default shared

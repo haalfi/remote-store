@@ -117,25 +117,6 @@ resolve to one winner, read-your-writes and listing held, streaming reads are
 version-pinned, and the sync bridge (`ThreadPoolExecutor` + `ext.batch`) is
 deadlock-free. The items below are the divergences and the unspecified contract.
 
-- [~] **BK-294 — Retry Graph `overwrite=True` 409-under-replace (create-race) as transient**
-  spec: GR-018, GR-032 · effort: M · audience: user.api
-  BK-288 documented that `overwrite=True` can still surface `AlreadyExists`: on
-  SharePoint-backed drives (replace-conflict) and, live-reproduced on consumer
-  OneDrive, under a concurrent create race for the same new key. **Evaluation
-  outcome: retry.** A bounded re-attempt of the `replace` re-issues the actual
-  write rather than swallowing the 409, so it sidesteps BK-261's blocker (it needs
-  no SharePoint 409-body classification): the create-race loser re-issues and wins
-  (winner's create has committed by then), while a terminal SharePoint
-  replace-rejection exhausts the budget and still raises `AlreadyExists`. Gated on
-  `overwrite=True` (preserves the `overwrite=False` single-winner outcome) and only
-  the `AlreadyExists` discrimination is retried (folder/ancestor `InvalidPath` is
-  not). Code + spec (GR-018/GR-032) + guide + respx mechanism tests drafted; trace
-  `bk-294-graph-overwrite-replace-retry.yml`. **Remaining gate before close:**
-  live consumer-OneDrive verification of the create-race retry (Tier-3 probe
-  `test_live_overwrite_create_race_all_succeed`, opt-in `RS_TEST_LIVE_GRAPH=1`)
-  and a tuning pass on the attempt bound / backoff. SharePoint tier stays
-  documented-as-unverified (consumer-only live tier, per BK-261).
-
 - [ ] **BK-293 — Mirror the concurrency Store-surface into `../remote-store-expectations`**
   spec: — · effort: S · audience: infra.test
   Carved out of BK-289 (the in-repo lane shipped; see BACKLOG-DONE). Mirror the

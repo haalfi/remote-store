@@ -11,6 +11,7 @@ backend-local ``monitor`` poller when Graph answers ``202 Accepted``).
 from __future__ import annotations
 
 import asyncio
+import random
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeVar
 from urllib.parse import quote, unquote
 
@@ -73,14 +74,19 @@ _MAX_UPLOAD_CHUNK_SIZE = 60 * 1024 * 1024  # Graph rejects any single chunk PUT 
 _DEFAULT_UPLOAD_CHUNK_SIZE = 10 * 1024 * 1024  # 10 MiB (GR-001)
 _SMALL_FILE_MAX_SIZE = 4 * 1024 * 1024  # PUT /content vs upload-session boundary (GR-018)
 # GR-018: bounded re-attempts of an overwrite=True (`conflictBehavior=replace`)
-# write that draws a create-race 409. The winner's create has committed by the
-# time the loser's 409 returns, so a re-issued replace finds the item present and
-# overwrites it. A genuine terminal conflict (e.g. a SharePoint-backed drive that
-# rejects the replace) keeps 409-ing and surfaces AlreadyExists once the budget is
-# spent — the retry re-issues the replace, it never swallows the conflict (cf.
-# BK-261). 3 total attempts is a conservative immediate-retry bound; consumer-
-# OneDrive live tuning may revisit the count or add a short backoff (BK-294).
-_REPLACE_RACE_MAX_ATTEMPTS = 3
+# write that draws a create-race 409. Under concurrent creation of the same new
+# key the loser's replace lands while the winner's create is still settling, so a
+# re-issued replace eventually finds the item present and overwrites it. A genuine
+# terminal conflict (e.g. a SharePoint-backed drive that rejects the replace) keeps
+# 409-ing and surfaces AlreadyExists once the budget is spent — the retry re-issues
+# the replace, it never swallows the conflict (cf. BK-261). The bound + jittered
+# backoff were tuned against a live consumer-OneDrive 8-way race (BK-294): immediate
+# retries left a straggler 409-ing in lockstep; full-jitter backoff desynchronises
+# the retriers and a small budget then resolves every writer. Worst-case added
+# latency on a terminal conflict is ~sub-second.
+_REPLACE_RACE_MAX_ATTEMPTS = 6
+_REPLACE_RACE_BACKOFF_BASE = 0.05  # seconds; exponential base for the full-jitter backoff
+_REPLACE_RACE_BACKOFF_MAX = 0.8  # seconds; cap per inter-attempt sleep
 
 # GR-003: the declared capability set. GLOB, ATOMIC_MOVE, SEEKABLE_READ, and
 # USER_METADATA are deliberately withheld (see spec 044 GR-003 for rationale).
@@ -955,6 +961,10 @@ class GraphBackend(AsyncBackend):
                     # offload the blocking seek so a large retry does not stall
                     # sibling coroutines (BK-290).
                     await asyncio.to_thread(reader.seek, 0)
+                    # Full-jitter backoff: desynchronise concurrent retriers so a
+                    # create-race straggler stops colliding in lockstep.
+                    cap = min(_REPLACE_RACE_BACKOFF_BASE * (2**attempt), _REPLACE_RACE_BACKOFF_MAX)
+                    await asyncio.sleep(random.uniform(0, cap))  # noqa: S311 — jitter, not crypto
         assert last is not None  # noqa: S101 — the loop only exits here after an AlreadyExists
         raise last
 

@@ -117,6 +117,28 @@ phases:
         section: "[Unreleased]"
         read_type: gate
         extract: "user.api -> CHANGELOG stub line recording the create-race retry."
+  - id: reproduce
+    name: Live-verify against consumer OneDrive
+    steps:
+      - file: tests/backends/graph/aio/test_concurrency.py
+        section: "test_live_overwrite_create_race_all_succeed (RS_TEST_LIVE_GRAPH=1)"
+        read_type: gate
+        extract: >-
+          First cut used immediate retries with a 3-attempt bound. The live 8-way
+          race FAILED 7/8 — one straggler kept 409-ing in lockstep because the
+          retriers re-issued in sync and the winner's create had not settled. The
+          "winner has committed by the time the 409 returns" assumption was too
+          optimistic under real contention.
+        outcome: misleading
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_write_replacing (backoff)"
+        read_type: gate
+        extract: >-
+          Fix: full-jitter exponential backoff between attempts (desynchronises
+          concurrent retriers) + raise the bound to 6. Re-verified 8/8 and 12/12
+          across repeated live rounds, content intact. The bound/backoff are now
+          live-tuned, not guessed.
+        outcome: ok
   - id: verify
     name: Verify gates
     steps:
@@ -126,6 +148,6 @@ phases:
         extract: >-
           Write-path behaviour change ripples to spec 044 (GR-018/GR-032),
           docstring Raises, the graph guide, and CHANGELOG. Live consumer-OneDrive
-          verification of the create-race retry is the remaining gate before the
-          item closes (BACKLOG stays [~] until then).
+          verification passed after the backoff fix, so the item closes [x] and
+          moves to BACKLOG-DONE in the same PR.
         outcome: ok
