@@ -64,9 +64,15 @@ The token cache is an `msal_extensions.PersistedTokenCache` backed by a
 **multi-process-safe**: every MSAL acquisition routes through its
 `modify()`, which holds a cross-process `CrossPlatLock` (a sibling
 `<cache_path>.lockfile`), reload-merges the on-disk state, then writes it
-back — and its `search()` read path retries on a dirty read. Concurrent
-`GraphAuth`/`GraphBackend` instances or processes sharing the default cache
-(the common multi-worker deployment) therefore cannot truncate or tear it.
+back — and its `search()` read path retries on a dirty read. The write
+itself is an in-place truncate-and-write (`FilePersistence.save`), **not** an
+atomic rename; corruption-freedom is provided not by atomicity but by the lock
+**serializing concurrent writers** and the read-retry **tolerating a torn read**
+(readers do not hold the lock, so they can momentarily observe a truncated file —
+which is exactly why `search()` retries). The net effect for concurrent
+`GraphAuth`/`GraphBackend` instances or processes sharing the default cache (the
+common multi-worker deployment) is that a consumer never observes a corrupt
+cache.
 
 This replaced the original hand-rolled `SerializableTokenCache` +
 `open(path, "w").write(...)` flush, which truncated the file at `open` before
@@ -91,9 +97,13 @@ cache in a thin `PersistedTokenCache` subclass: `modify()` swallows+logs
 persistence failures (degrade to re-acquisition), and `search()` swallows+logs
 read failures and returns `[]` (degrade to a cache miss → fresh acquisition),
 keeping acquisition non-breaking while preserving multi-process safety on the
-happy path. The lock wait is bounded and runs on the calling thread; offloading
-it off the event loop belongs to the async-`GraphAuth` path (BK-292), not the
-sync provider.
+happy path. The lock wait runs on the calling thread, and because the sync
+provider is invoked directly on the event loop (no `to_thread`), a *contended*
+acquisition blocks the loop for the lock backend's timeout — up to ≈5 s with the
+`filelock` fallback that ships when `portalocker` is absent (it is not in the
+resolved `graph` lock). Offloading the acquisition off the event loop belongs to
+the async-`GraphAuth` path (BK-292), not the sync provider; the bound is stated
+here so the deferral is not misread as negligible.
 
 Users can override the path with `cache_path=` or supply their own
 token-provider callable to bypass `GraphAuth` (and MSAL) altogether.
@@ -176,4 +186,4 @@ in static config and only apply to direct construction.
   https://learn.microsoft.com/entra/msal/python/msal.token_cache
 - msal-extensions `PersistedTokenCache` (cross-process cache lock):
   https://github.com/AzureAD/microsoft-authentication-extensions-for-python
-- BK-291: atomic, multi-process-safe token-cache persistence
+- BK-291: multi-process-safe token-cache persistence (lock + read-retry)

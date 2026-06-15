@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=_schema.yml
 id: BK-291
-title: "GraphAuth MSAL token-cache write made atomic + multi-process-safe (msal-extensions)"
+title: "GraphAuth MSAL token-cache write made multi-process-safe via msal-extensions PersistedTokenCache (lock + read-retry, not atomic rename)"
 trigger: >-
   The Graph concurrency review flagged GraphAuth.flush_cache as a plain
   open(path,"w").write(serialize()) at the default shared cache path, with no
@@ -18,7 +18,7 @@ surprising_ripples:
   - docs-src/guides/backends/graph.md
   - docs-src/reference/tested-versions.md
   - infra/drift-locks/graph.txt
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient

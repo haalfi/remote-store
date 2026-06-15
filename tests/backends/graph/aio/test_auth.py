@@ -263,6 +263,27 @@ class TestCachePersistence:
         assert any("token cache" in r.getMessage() for r in caplog.records)
 
     @pytest.mark.spec("GR-007")
+    def test_second_instance_reads_first_instances_write(self, tmp_path: Any) -> None:
+        # BK-291: the multi-process-safety guarantee, exercised behaviourally
+        # (not just isinstance) across two cache instances over the SAME file —
+        # the multi-worker shape, in-process and deterministic. Instance A
+        # persists a token; instance B, built fresh over the same path,
+        # reload-merges from disk and finds it (read-your-writes across the
+        # shared lock-coordinated cache).
+        path = str(tmp_path / "c.json")
+        event = {
+            "client_id": "c",
+            "scope": ["s1"],
+            "token_endpoint": "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
+            "response": {"access_token": "atoken", "token_type": "Bearer", "expires_in": 3600},
+        }
+        GraphAuth("consumers", "c", cache_path=path)._load_cache().add(event)
+
+        reader = GraphAuth("consumers", "c", cache_path=path)._load_cache()
+        found = list(reader.search(reader.CredentialType.ACCESS_TOKEN))
+        assert [e.get("secret") for e in found] == ["atoken"]
+
+    @pytest.mark.spec("GR-007")
     def test_acquired_token_is_written_through_to_disk(self, tmp_path: Any) -> None:
         # BK-291: an MSAL token acquisition routes through PersistedTokenCache's
         # lock-coordinated modify(), which writes the cache through to disk

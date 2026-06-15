@@ -174,12 +174,14 @@ interactive scenarios. On first use, the user is prompted with a
 code and URL; completion yields a token and refresh token cached by
 MSAL.
 **Postconditions:** The MSAL cache is persisted to a file
-**atomically and multi-process-safely** — each acquisition writes
-through to disk under a cross-process file lock, so concurrent
-`GraphAuth`/`GraphBackend` instances or processes sharing the default
-cache path cannot truncate or tear it (BK-291). See ADR-0022 § Token
-caching for the canonical path, the lock mechanism, and override rules
-(single source of truth). Cache access is **best-effort on both paths**: a
+**multi-process-safely** — each acquisition writes through to disk with
+concurrent writers serialized by a cross-process file lock and readers
+retrying past a dirty read, so a consumer sharing the default cache path
+(the common multi-worker deployment) never observes a corrupt cache
+(BK-291). The on-disk write is an in-place truncate-and-write, **not** an
+atomic rename; corruption-freedom comes from the lock + read-retry, not
+atomicity. See ADR-0022 § Token caching for the canonical path, the lock
+mechanism, and override rules (single source of truth). Cache access is **best-effort on both paths**: a
 write/lock-contention failure (the write-through under the lock) *and* a read
 failure (a corrupt or persistently-contended cache making the reload re-raise)
 are logged and swallowed — a read miss degrades to a fresh acquisition, a write
