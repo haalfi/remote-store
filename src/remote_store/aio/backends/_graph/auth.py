@@ -1,9 +1,12 @@
 """``GraphAuth`` — the built-in MSAL-backed token provider.
 
 Wraps MSAL with the two v1 flows (client-credentials and device-code) and
-exposes the acquired bearer token through the token-provider protocol: a
-``GraphAuth`` instance is itself a ``Callable[[], str]``, so
-``GraphBackend(token_provider=GraphAuth(...))`` works directly.
+exposes the acquired bearer token through the token-provider protocol. The
+instance is itself a synchronous ``Callable[[], str]``
+(``GraphBackend(token_provider=GraphAuth(...))`` works directly); its
+``aget_token`` bound method is the asynchronous ``Callable[[], Awaitable[str]]``
+counterpart, which offloads the blocking MSAL work to a worker thread and
+single-flights concurrent acquisitions. Prefer ``aget_token`` on the event loop.
 
 ``msal``, ``msal_extensions`` (the multi-process-safe token cache), and
 ``platformdirs`` are imported lazily inside the methods that need them so a
@@ -12,6 +15,7 @@ caller supplying their own token-provider callable never loads them.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -91,7 +95,10 @@ class GraphAuth:
     Selects the OAuth flow from the supplied credentials: a ``client_secret``
     or ``client_certificate`` selects client-credentials (app-only); their
     absence selects device-code (interactive). The resulting bearer token is
-    reachable through ``get_token()`` and through calling the instance directly.
+    reachable synchronously through ``get_token()`` (and through calling the
+    instance directly) and asynchronously through ``aget_token()``, which
+    offloads the blocking MSAL work off the event loop and single-flights
+    concurrent acquisitions — prefer it on the event loop.
 
     Args:
         tenant_id: Entra tenant id, or ``"consumers"`` / ``"common"`` /
@@ -149,6 +156,9 @@ class GraphAuth:
         self._prompt_callback = prompt_callback
         self._app: Any = None
         self._cache: Any = None
+        # Shared in-flight async acquisition, single-flighting concurrent
+        # aget_token() callers on one event loop (see _single_flight).
+        self._inflight: asyncio.Task[str] | None = None
 
     @property
     def authority(self) -> str:
@@ -242,6 +252,61 @@ class GraphAuth:
     def __call__(self) -> str:
         """Return a bearer token — makes the instance a token-provider callable."""
         return self.get_token()
+
+    async def aget_token(self) -> str:
+        """Acquire a bearer token without blocking the event loop.
+
+        The async token-provider entry point: pass ``token_provider=auth.aget_token``
+        (a bound async method is a ``Callable[[], Awaitable[str]]``) so the backend
+        awaits it instead of calling the synchronous instance. It offloads the
+        synchronous MSAL acquisition — including any contended token-cache lock
+        wait — to a worker thread so sibling coroutines keep running, and
+        single-flights concurrent callers: N coroutines acquiring at once share
+        **one** acquisition rather than each hitting the identity provider (which
+        also dedupes the one-shot refresh after a ``401``).
+
+        Use this on the event loop; reuse the synchronous ``get_token`` /
+        ``__call__`` from synchronous wiring code that has no running loop. The
+        single-flight state is bound to the loop the first caller runs on — share
+        one instance per loop, mirroring the backend's own single-loop posture.
+        Cancelling one caller (e.g. a ``gather`` sibling that times out) neither
+        cancels the shared acquisition nor disturbs the other joiners.
+
+        Raises:
+            PermissionDenied: Propagated from ``get_token`` to the owning
+                caller and every joiner sharing the in-flight acquisition; a
+                later call retries afresh.
+        """
+        return await self._single_flight()
+
+    async def _single_flight(self) -> str:
+        # The None-check and assignment run between await points, so on one event
+        # loop they are atomic — no lock needed. Concurrent callers scheduled
+        # while the first awaits see _inflight set and join the same task; the
+        # offloaded get_token therefore runs once (and never two MSAL acquisitions
+        # at once, which matters because MSAL's app/cache is not thread-safe — the
+        # cross-process lock handles other processes). A raised exception fans out
+        # to every joiner; the done-callback clears _inflight so the next call
+        # retries.
+        #
+        # The shared task's lifetime is decoupled from any one caller, so a caller
+        # cancelled mid-acquisition (e.g. a gather sibling timing out) is handled
+        # safely: `shield` keeps that caller's cancellation from cancelling the
+        # shared task or fanning CancelledError out to the other joiners, and the
+        # slot is cleared by the done-callback (not a per-caller `finally`) so a
+        # cancelled owner cannot orphan the worker thread into a second concurrent
+        # acquisition — the next caller joins the still-running one.
+        inflight = self._inflight
+        if inflight is None:
+            inflight = self._inflight = asyncio.ensure_future(asyncio.to_thread(self.get_token))
+            inflight.add_done_callback(self._clear_inflight)
+        return await asyncio.shield(inflight)
+
+    def _clear_inflight(self, task: asyncio.Future[str]) -> None:
+        # Runs when the shared acquisition finishes (success, failure, or
+        # cancellation), reopening the slot for the next acquisition.
+        if self._inflight is task:
+            self._inflight = None
 
     def flush_cache(self) -> None:
         """Best-effort no-op retained for the ``GraphBackend.close()`` hook.

@@ -127,17 +127,6 @@ deadlock-free. The items below are the divergences and the unspecified contract.
   that repo is not present in this container. Keep the assertions invariant-only
   and posture-aware (do not thread-stress a shared SFTP/HTTP store).
 
-- [ ] **BK-292 — Graph token acquisition: async `GraphAuth` path + single-flight refresh**
-  spec: GR-008 · effort: M · audience: user.api, library.maintainer
-  N concurrent requests make N independent token-provider calls (live-confirmed:
-  16 calls for 16 ops). The built-in **sync** `GraphAuth` serializes them on the
-  event loop, and a cold/expired token blocks the whole loop during the MSAL
-  fetch; a user-supplied **async** provider without its own dedup would stampede
-  the IdP N-way (the one-shot 401 refresh multiplies it). Add an async
-  `GraphAuth` acquisition path and an in-flight refresh single-flight (dedup
-  concurrent refreshes to one). Non-trivial — the async-auth path is the bulk of
-  the work; split from BK-290 per the PR #814 review.
-
 ---
 
 ## Lint / CI Completeness

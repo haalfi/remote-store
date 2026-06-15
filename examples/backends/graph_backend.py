@@ -71,7 +71,10 @@ async def main() -> None:
         drive_id = await GraphUtils.aresolve_drive_id("me", token_provider=auth)
     print(f"Target drive: {drive_id}")
 
-    backend = GraphBackend(drive_id, token_provider=auth)
+    # --- On the event loop, prefer the async auth.aget_token: it offloads the
+    #     blocking MSAL acquisition off the loop and single-flights concurrent
+    #     acquisitions (the sync instance still works for non-async wiring). ---
+    backend = GraphBackend(drive_id, token_provider=auth.aget_token)
     async with AsyncStore(backend, root_path="remote-store-example") as store:
         # --- Write ---
         await store.write("report.csv", b"revenue,profit\n100,20\n200,40\n", overwrite=True)
