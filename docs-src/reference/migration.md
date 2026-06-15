@@ -48,9 +48,8 @@ The file no-op case is unchanged.
 **`hatch run test-cov` no longer enforces `--cov-fail-under=95`:**
 
 The coverage floor moved to a new `hatch run test-cov-strict` script. Local
-`test-cov` is now a coverage *report* only; CI and the publish workflow run the
-strict variant. If your tooling or CI relied on `test-cov` failing under 95% switch
-to `test-cov-strict`.
+`test-cov` is now a coverage *report* only; CI runs the strict variant. If your
+tooling or CI relied on `test-cov` failing under 95% switch to `test-cov-strict`.
 
 ## v0.24.0 to v0.24.1
 

@@ -7,6 +7,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Internal
+
+- Codecov badge now reuses the `test-primary` CI coverage run (full suite + `sftp_docker` conformance), uploaded on master pushes; removed the redundant post-release `coverage` job from `publish.yml`.
+
 ## [0.28.0] - 2026-06-15
 
 ### Added

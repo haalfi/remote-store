@@ -422,9 +422,9 @@ _Automated by skill agent (`/release`). User role: review and merge PR only._
 - [ ] **[Agent]** Push release branch to origin
 - [ ] **[Agent]** Create PR with link to checklist
 - [ ] **[User]** Review, approve, and merge PR to master — then notify agent
-- [ ] **[Agent]** Confirm CI green on merge commit
-- [ ] **[Agent]** Create GitHub Release directly on GitHub using template (no local tags) — this triggers `publish.yml` (PyPI + Codecov) and versioned docs deploy
-- [ ] **[Agent]** Watch `publish.yml` — confirm it completes successfully (PyPI publish + coverage upload)
+- [ ] **[Agent]** Confirm CI green on merge commit — including the Codecov upload from the `test-primary` job (the badge reuses this run; `publish.yml` no longer recomputes coverage)
+- [ ] **[Agent]** Create GitHub Release directly on GitHub using template (no local tags) — this triggers `publish.yml` (PyPI) and versioned docs deploy
+- [ ] **[Agent]** Watch `publish.yml` — confirm it completes successfully (PyPI publish)
 - [ ] **[Agent]** Delete the release branch
 
 _Release template: title = version, description = "What's Changed" header with condensed sections (Added, Fixed, Internal), two links (CHANGELOG.md + git version diff). See `.claude/skills/release/SKILL.md` § Phase 4 for full template._

@@ -245,9 +245,19 @@ jobs:
       - run: uv pip install -e ".[dev]"
       # ID-195 two-pass split with --cov-append for pass 2: the 95% floor is
       # asserted after pass 1's `.coverage` is combined in. --ignore=tests/scripts
-      # keeps those tests out so they don't inflate the denominator.
+      # keeps those tests out so they don't inflate the denominator. Pass 2 also
+      # emits coverage.xml so the Codecov badge is fed from this authoritative
+      # result (full suite + sftp_docker conformance).
       - run: pytest -n auto -p no:benchmark --cov=remote_store --cov-report= --ignore=tests/scripts
-      - run: pytest -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-fail-under=95 -k sftp_docker tests/backends/conformance/
+      - run: pytest -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-report=xml --cov-fail-under=95 -k sftp_docker tests/backends/conformance/
+      # Upload only on the master push (not PRs) — the badge tracks master, and a
+      # release tag points at a master commit, so the badge reflects the shipped
+      # version.
+      - name: Upload coverage to Codecov
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: codecov/codecov-action@v7
+        with:
+          files: ./coverage.xml
 
   # tests/scripts/ exercises scripts/, not remote_store: pure-Python, no
   # backends, no coverage. Runs once on the primary Python in its own job,
