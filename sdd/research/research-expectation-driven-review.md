@@ -106,7 +106,7 @@ the test tiers spec 048 already defines, so a finding is not re-discovered:
 |--------------|----------|
 | Backend-agnostic behavioral expectation (create-once race, read-after-write, aclose-during-inflight, bridge concurrency) | the **cross-backend conformance spine** (`tests/backends/conformance/`), so it runs for *every* backend forever — deterministically where possible |
 | Backend-specific server-semantics (real throttling, real conflict arbitration, listing lag) | the per-backend **live tier** + a re-runnable harness, milestone-gated |
-| Citizen-dev "does the documented story hold" narrative | the `../remote-store-expectations` black-box DX repo |
+| Citizen-dev "does the documented story hold" narrative | the companion black-box DX suite (§10) |
 | Spec/contract gap | a new spec clause / ID (e.g. the proposed `GR-059` concurrency contract) |
 | Doc gap | the relevant guide / explanation page |
 
@@ -137,7 +137,7 @@ The sweep's heatmap is what justifies each expensive deep-dive.
   a lens "dry for now" and move on.
 - **Empirical feedback loop.** The catalog starts as educated guessing and
   becomes empirical: real support questions, GitHub issues, and surprises from
-  the expectations repo each become a new catalog row. This is the direct answer
+  the companion DX suite each become a new catalog row. This is the direct answer
   to "we can only guess" — we guess to seed, then replace guesses with observed
   reality.
 
@@ -208,8 +208,66 @@ natural next pilot, and the cheapest test of whether the catalog earns its keep.
    command.
 3. **Wire the routing** so findings land permanently: backend-agnostic
    expectations into conformance, backend-specific into the live tier, the DX
-   narrative into the expectations repo.
+   narrative into the companion DX suite.
 
 The method's promise is modest but real: it converts "we can only guess at user
 expectations" into "we mechanically walk the sources of expectation, and we know
 which lenses are still dry."
+
+---
+
+## 10. Boundary refinement: public-API vs internals
+
+§4 routes the "does the documented story hold" narrative to a companion
+black-box DX suite. A first cut of that suite's charter drew the boundary at
+*backend availability* — Memory/Local only, "no cloud backends, they need
+credentials." That line is wrong, and naming why sharpens what black-box DX
+actually means.
+
+**The boundary is public-API vs internals — nothing else.** A black-box scenario
+may do anything a real consumer can do; it may not reach into the library's
+implementation. Three tempting disqualifiers are all false:
+
+- **Credentials / live cloud are in scope.** A citizen dev who uses the
+  Graph/S3/Azure backend has their own creds; exercising a real backend with the
+  consumer's creds is the *realistic* case, not a boundary breach. Memory/Local
+  is an operational default (free, deterministic, secret-free CI), not a
+  black-box requirement.
+- **Load intensity is in scope.** A "go-hard" concurrency battery and a real
+  heavy user's FastAPI app hit the same behaviors — create-once races,
+  `aclose`-during-shutdown, listing lag. Stress *is* the persona and scale lenses.
+- **Scenario origin is irrelevant.** Whether a maintainer pictured the scenario
+  or a user hit it in production changes nothing about its nature; only where it
+  *came from* differs.
+
+The single question is always: **is the observation point reachable through the
+public API?** If yes, the scenario is black-box regardless of how aggressive or
+cloud-bound it is. The only true breach is importing a private symbol
+(`remote_store.*._*`, e.g. `...aio.backends._graph`, `remote_store._errors`) or
+asserting on implementation internals (token-call counters wired to private
+hooks, bridge thread identity, internal-only error subclasses).
+
+**Two lanes, one boundary.** The suite runs in two lanes that share the
+public-API rule:
+
+| Lane | Backends | When | Cost |
+|------|----------|------|------|
+| Default | Memory + Local | every CI run | free, deterministic, no secrets |
+| Cloud DX tier | real Graph/S3/Azure, consumer's own creds | on demand / milestone, creds-gated | cloud cost; gated like the live tier (marker + env skipif + creds check) |
+
+**Worked correction — the Graph concurrency battery is black-box-portable.** The
+live "go hard" battery from §8 looked like maintainer-only, cloud-only,
+internals-coupled work. It is none of those. `GraphBackend`, `GraphAuth`, and
+`GraphUtils` are public (`remote_store.aio.__all__`, documented), and
+`token_provider=` is a public constructor parameter — so a consumer can supply
+their *own* counting or thread-recording `token_provider` callable and observe
+token single-flight and pool behavior black-box. The battery's private
+`...backends._graph` imports were convenience, not necessity; rewritten to public
+imports, the whole battery lands in the cloud DX tier (and, where the behavior is
+backend-agnostic, *also* as a Memory/Local invariant). Nothing in it is
+irreducibly whitebox.
+
+This refines §4: the routing axis is not "narrative vs backend-specific" but
+**public-API observability**. One expectation can land in *both* the companion
+(black-box, any backend the runner has creds for) and the conformance spine
+(deterministic, every backend) — same expectation, two altitudes.
