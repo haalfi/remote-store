@@ -26,9 +26,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (equal-jitter is policy-driven; full-jitter carries the create-race constants),
   the sync HTTP backend keeps its extra `408` (`RETRYABLE_STATUSES | {408}`) and
   its loop-top budget semantics (`next_delay=0.0`), and the consolidated
-  `parse_retry_after` adopts the Graph naive-date-assumed-UTC behaviour (a strict
-  superset that satisfies both backends' existing tests). `rng`/`now` injectable
-  for deterministic tests. No public API or behaviour change → no CHANGELOG.
+  `parse_retry_after` adopts the Graph naive-date-assumed-UTC behaviour. That
+  matches the old Graph helper exactly; for the sync HTTP backend it is the one
+  intentional change — a naive (tz-less) HTTP-date now returns a UTC-assumed value
+  rather than `None`. The input is RFC-7231-nonconformant (the header must be GMT)
+  and is covered by neither backend's existing tests, so both suites still pass.
+  `rng`/`now` injectable for deterministic tests. No public API or behaviour
+  change beyond that disclosed naive-date case → no CHANGELOG.
   Trace `sdd/traces/bk-295-shared-retry-helpers.yml`.
 
 - [x] **BK-292 — Graph token acquisition: async `GraphAuth` path + single-flight refresh**

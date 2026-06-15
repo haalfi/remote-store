@@ -56,10 +56,6 @@ _SENSITIVE_HEADERS = frozenset({"authorization"})
 # map to BackendUnavailable per GR-033 — the request never reached a status.
 _TRANSPORT_ERRORS = (httpx.TransportError,)
 
-# Statuses the retry loop treats as transient (GR-033 5xx, GR-034 429) — the
-# shared RET-015 set. Every other non-2xx is terminal and raised on the first
-# attempt: 507 / 423 / 403 / 404 / 409 do not clear on short-term retry.
-
 log = logging.getLogger("remote_store.aio.backends._graph")
 
 

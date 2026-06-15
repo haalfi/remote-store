@@ -16,6 +16,7 @@ source_items:
   - BK-294
 audience:
   - library.maintainer
+review_rounds: 1
 expected_ripples:
   - sdd/BACKLOG-DONE.md
   - sdd/backlogid.json
@@ -111,4 +112,26 @@ phases:
           Internal refactor, behaviour-preserving: library.maintainer-only audience
           → no CHANGELOG; RET-015/HTTP-RETRY-001 describe behaviour (unchanged) so no
           spec edit. backend.py line-shift regenerates graph.json + graph_viz.html.
+        outcome: ok
+  - id: review
+    name: PR #827 review fixes
+    steps:
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "removed dangling _RETRYABLE_STATUSES comment block"
+        read_type: gate
+        extract: >-
+          Review flagged the 3-line comment that annotated the removed
+          _RETRYABLE_STATUSES constant now dangled between _TRANSPORT_ERRORS and
+          log= with no referent. Dropped it — the set's semantics live on
+          RETRYABLE_STATUSES in _retry.py and graph_send's inline terminal comment.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-295 (parse_retry_after wording)"
+        read_type: gate
+        extract: >-
+          Review caught that "strict superset" overstated the parse_retry_after
+          consolidation: it matches the old Graph helper exactly but changes the
+          sync HTTP result for a naive (tz-less) HTTP-date from None to a
+          UTC-assumed value. Reworded to name that one intentional, RFC-7231-
+          nonconformant, test-uncovered divergence precisely.
         outcome: ok
