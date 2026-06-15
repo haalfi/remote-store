@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=_schema.yml
+id: BUG-220
+title: "LocalBackend._resolve spurious InvalidPath under concurrent nested writes (Windows)"
+trigger: >-
+  The BK-289 concurrency lane marked LocalBackend write-stress xfail(strict=False)
+  on Windows: LocalBackend._resolve did (self._root / path).resolve() then
+  relative_to(self._root), and Path.resolve() over a path whose intermediate dirs
+  were being created by sibling threads transiently returned an 8.3 short-name
+  form that broke relative_to(root), raising a spurious InvalidPath on a
+  legitimate concurrent write.
+source_items:
+  - BUG-220
+audience:
+  - user.api
+  - library.maintainer
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-220"
+        read_type: gate
+        extract: >-
+          Recipe (8 threads, distinct nested keys, shared new prefix) and the fix
+          constraints (preserve symlink-escape rejection; don't re-canonicalise
+          the in-flight child; confirm POSIX realpath behaviour)
+        outcome: misleading
+      - file: src/remote_store/backends/_local.py
+        section: "_resolve"
+        read_type: gate
+        extract: >-
+          The buggy (self._root / path).resolve() + relative_to(self._root). The
+          BACKLOG recipe under-specified: it reproduces 0/20 with SHORT path
+          components — Windows only generates 8.3 short names for components >8
+          chars, and the 8.3 canonicalisation is the mechanism. With long
+          components the race fires (7/20 per-iteration here, volume/8dot3name
+          dependent). Corrected the regression recipe accordingly
+        outcome: misleading
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/backends/local/test_config.py
+        section: "test_path_traversal_rejected, TestLocalBackendGlobSymlinkEscape"
+        read_type: reference
+        extract: >-
+          Existing escape coverage the fix must not regress: lexical ../ rejection
+          (through _resolve) and the listing-path symlink filter (line 359)
+      - file: tests/backends/local/test_concurrency.py
+        section: "TestLocalConcurrentNestedWrites, TestLocalResolveSymlinkEscape"
+        read_type: reference
+        extract: >-
+          New failing test: long-component nested keys, Barrier-synchronised,
+          24 iterations -> 24/24 spurious InvalidPath pre-fix on Windows. Plus a
+          POSIX symlink-escape-through-_resolve guard pinning the safety property
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "_resolve"
+        read_type: reference
+        extract: >-
+          Lexical containment (os.path.normpath) for the ../ case + symlink-escape
+          check by resolving only the deepest EXISTING ancestor; the non-existent
+          / in-flight tail is never passed through Path.resolve(), killing the 8.3
+          flicker. self._root is resolved once at init and stays stable
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/conformance/test_concurrency.py
+        section: "_xfail_local_dir_race_on_windows (removed)"
+        read_type: verify
+        extract: >-
+          Removed the sync + aio xfail helpers and their call sites so the lane
+          asserts for real on Windows; local + local_async_adapted now pass.
+          Note: the lane's own write-stress keys (cc/write/{i}) use SHORT
+          components, so that test likely never reproduced the bug — the xfail was
+          defensive (strict=False, xpassing); the dedicated long-component test is
+          the real guard
+      - file: src/remote_store/backends/_local.py
+        section: "glob (line 359 item.resolve().relative_to)"
+        read_type: verify
+        extract: >-
+          Assessed the sibling .resolve().relative_to call site: same latent 8.3
+          mechanism but lower severity (transient skip of a listed item, not an
+          error) and reads/listing are not the reported bug; a robust fix risks
+          weakening symlink-dir-escape detection. Left as-is and flagged, not
+          fixed, to keep scope on the proven write-path bug
+        outcome: unclear
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG->BACKLOG-DONE move, CHANGELOG entry, gen-backlogid, trace ships same PR"

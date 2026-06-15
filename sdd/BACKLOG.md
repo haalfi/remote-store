@@ -531,27 +531,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Maintenance / Long-horizon
 
-- [ ] **BUG-220 — LocalBackend `_resolve` races on concurrent intermediate-dir creation (Windows)**
-  spec: BE-008 · effort: S · audience: user.api, library.maintainer
-  Discovered by the BK-289 concurrency lane. `LocalBackend._resolve` does
-  `(self._root / path).resolve()` then `relative_to(self._root)` to reject
-  root escapes. `Path.resolve()` canonicalises against the filesystem, and on
-  Windows a directory that a sibling thread is concurrently creating
-  (`full.parent.mkdir(parents=True, exist_ok=True)`) transiently canonicalises
-  to a form (short 8.3 / in-flight final-path name) that is **not**
-  `relative_to` the init-time `self._root`, so a legitimate write raises a
-  spurious `InvalidPath("Path escapes root directory")`. Reproduced
-  deterministically: 8 threads writing distinct nested keys → 20/20 runs fail
-  when the intermediate dir is created concurrently, 0/20 when it is
-  pre-created (repro in the PR). The lane marks `local` thread-safe **write**
-  tests `xfail(strict=False)` on Windows pending this fix (concurrent *reads*
-  are unaffected). Fix must stay concurrency-safe **and** preserve the
-  symlink-escape rejection the current `resolve()` provides — a purely lexical
-  `os.path.normpath` + `commonpath` check loses symlink protection, so the fix
-  resolves the root once and validates containment without re-canonicalising
-  the (possibly in-flight) child. Confirm whether POSIX `realpath` exhibits the
-  same race before narrowing the fix to Windows.
-
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer
   First revisit ticket for the informational `verify-tla` job landed under

@@ -524,19 +524,42 @@ class LocalBackend(Backend):
     def _resolve(self, path: str) -> Path:
         """Resolve a relative path to an absolute path within root.
 
-        Safety: ``.resolve()`` follows symlinks to their real target, and
-        ``relative_to(self._root)`` then rejects any path that escapes the
-        root — including symlinks pointing outside it.
+        Safety is enforced on two axes without canonicalising the (possibly
+        in-flight) leaf:
+
+        * **Lexical containment.** ``os.path.normpath`` collapses ``.``/``..``
+          without touching the filesystem, so a lexical escape
+          (``../../etc/passwd``) is rejected even when nothing on the path
+          exists yet.
+        * **Symlink-escape rejection.** Only the deepest component that
+          actually exists is resolved (an existing symlink is followed to its
+          real target); if that anchor escapes root, the path is rejected.
+
+        The non-existent tail is deliberately **not** passed through
+        ``Path.resolve()``. ``resolve()`` over a path whose intermediate
+        directories are being created by sibling threads can transiently return
+        an 8.3 short-name form (Windows) that is not ``relative_to`` the
+        init-time root, which made concurrent nested writes raise a spurious
+        ``InvalidPath``. ``self._root`` is resolved once at init and is stable;
+        only it and already-settled ancestors are canonicalised here.
 
         Raises:
             InvalidPath: If the resolved path escapes the root.
         """
-        resolved = (self._root / path).resolve()
+        target = Path(os.path.normpath(self._root / path))
+        # Walk up to the deepest existing ancestor for the symlink check.
+        anchor = target
+        while not anchor.exists():
+            parent = anchor.parent
+            if parent == anchor:  # reached the filesystem root
+                break
+            anchor = parent
         try:
-            resolved.relative_to(self._root)
+            anchor.resolve().relative_to(self._root)
+            target.relative_to(self._root)
         except ValueError:
             raise InvalidPath(f"Path escapes root directory: {path}", path=path, backend=self.name) from None
-        return resolved
+        return target
 
     def _stat_to_fileinfo(self, path: str, full: Path) -> FileInfo:
         st = full.stat()
