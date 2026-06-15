@@ -8,6 +8,48 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-296 — Treat the upload-session mid-session 404 as the large-file create-race signal**
+  spec: GR-018, GR-032 · effort: S · audience: user.api
+  BK-294's create-race retry (`_write_replacing`) already wrapped **both** upload
+  paths — its `_write_dispatch` rewinds the spool precisely so the large-file branch
+  can be re-attempted — and a large-file `createUploadSession` `409` was already
+  retried and tested (`test_overwrite_create_race_retries_upload_session_branch`).
+  The residual gap was narrower than first filed: the retry catches only
+  `AlreadyExists`, but the upload-session race can also surface as a **mid-session
+  chunk `PUT` `404`** when a concurrent `replace` swaps the item *after* the session
+  opened — `404` was not in the chunk PUT's `return_on`, so `graph_send` mapped it to
+  terminal `NotFound`, which the `AlreadyExists`-only catch let through. So a
+  sub-4-MiB concurrent overwrite converged (BK-294) while a larger one raised
+  `NotFound` — a size-only divergence in the GR-018 last-writer-wins contract,
+  surfaced by the Graph release-readiness concurrency rerun (sandbox GC-02-large).
+  Fix has two parts: (1) add `404` to the chunk PUT `return_on`, thread `overwrite`
+  into `_upload_chunks`, and under `overwrite=True` raise `AlreadyExists` for the
+  mid-session `404` so it feeds the existing bounded full-jitter retry (re-opens a
+  fresh session, re-uploads from the rewound spool); under `overwrite=False` it stays
+  `NotFound` (no create-or-replace contract to mask). (2) **Path-specific backoff**
+  (`_write_replacing` selects by `total > _SMALL_FILE_MAX_SIZE`): the small path keeps
+  BK-294's fast sub-second cap, the large path gets `_REPLACE_RACE_LARGE_*` (8
+  attempts / base 0.5s / cap 6.0s). Part (2) is load-bearing and was a **live
+  finding** — with part (1) alone on the shared small-tuned constants a 4-way 5 MiB
+  race converged 0/5 (a whole-file re-upload takes seconds, so a 0.8s backoff lets
+  retriers re-enter mid-upload; the aggressive cadence also tripped Graph throttling),
+  and the longer backoff with attempts kept at 6 still only made 2/5. With the larger
+  budget it converged in a small live sample. The budget is also a correctness floor:
+  a round where every writer exhausts aborts every session and leaves the brand-new key
+  with no file (`successes: 0`), so a larger budget keeps ≥1 winner. **Best-effort, not
+  guaranteed:** unlike the small-file path, full convergence is not assured for large
+  concurrent same-key overwrite — each re-attempt re-uploads the whole body so the budget
+  is bounded, and a later full-suite live round still showed a loser exhausting to
+  `AlreadyExists` (~5/6 overall). The shipped invariant is last-writer-wins: the winner's
+  content always lands intact and the fixed bug (loser surfacing raw `NotFound`) stays
+  fixed. GR-018 / GR-032 extended with the best-effort note; respx mechanism tests
+  (retry-then-win, scope-gate, exhaustion-to-`AlreadyExists`) and a Tier-3 live probe
+  above the 4 MiB boundary (`test_live_overwrite_large_create_race_last_writer_wins`,
+  `RS_TEST_LIVE_GRAPH=1`, asserts last-writer-wins + no `NotFound`, not all-succeed).
+  Follow-up to BK-294; same live-tuning lesson. Disposition chosen by the maintainer
+  (ship improvements + document residual over chasing fuller convergence).
+  Trace `sdd/traces/bk-296-graph-large-file-create-race.yml`.
+
 - [x] **BK-295 — Shared pure backoff/retry helpers (`_retry.py`)**
   spec: RET-015, HTTP-RETRY-001 · effort: S · audience: library.maintainer
   Follow-up to BK-294 (PR #825). Several backends run their own retry loops

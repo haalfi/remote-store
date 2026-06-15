@@ -10,6 +10,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - BK-292: `GraphAuth.aget_token` — async token provider that offloads the blocking MSAL acquisition off the event loop and single-flights concurrent acquisitions
 - BK-291: Graph MSAL token cache is now persisted under a cross-process lock (`msal-extensions`) — concurrent workers sharing the default cache no longer corrupt it or force a re-login
 - BK-294: Graph `overwrite=True` now retries a concurrent create-race `409` so the write wins (last-writer-wins); a terminal SharePoint-backed replace-rejection still surfaces `AlreadyExists`
+- BK-296: Graph `overwrite=True` large (>4 MiB) create-race — a mid-session chunk `404` from a racing replace is now the typed create-race signal fed into a path-specific retry, so the winner's write lands intact instead of surfacing `NotFound`; concurrent large same-key overwrites are best-effort (last-writer-wins always holds; a loser may still raise `AlreadyExists` under sustained contention)
 - BK-290: Graph async I/O robustness under concurrent load
 - BK-288: Cross-backend concurrent-use-posture documentation
 - BUG-220: `LocalBackend` concurrent writes to nested keys no longer raise a spurious `InvalidPath` (Windows `_resolve` 8.3 short-name race)

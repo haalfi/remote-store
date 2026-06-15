@@ -92,6 +92,25 @@ _REPLACE_RACE_MAX_ATTEMPTS = 6
 _REPLACE_RACE_BACKOFF_BASE = 0.05  # seconds; exponential base for the full-jitter backoff
 _REPLACE_RACE_BACKOFF_MAX = 0.8  # seconds; cap per inter-attempt sleep
 
+# GR-018/GR-019: the large-file (upload-session) path shares the same create-race
+# retry but needs a *slower* posture (BK-296). On that path a re-attempt re-opens a
+# fresh session and re-uploads the whole body, which takes seconds for a multi-MiB
+# file — so the small-file sub-second cap above lets retriers re-enter mid-upload and
+# never drain (live-measured: 0/5 convergence on a 4-way 5 MiB race, and an aggressive
+# cadence also trips Graph throttling). A longer backoff that exceeds a competitor's
+# upload window plus a larger budget desynchronises the writers and resolves the race
+# for most concurrent writers (live-tuned; both knobs are needed — the longer cap with
+# the small budget gave only ~2/5). Convergence is **best-effort, not guaranteed**: each
+# re-attempt re-uploads the whole body so the budget is bounded, and under sustained
+# contention a loser can still exhaust it and surface AlreadyExists (last-writer-wins
+# still holds — see the GR-018 spec note). The budget also matters for correctness, not
+# just success: a round where *every* writer exhausts aborts every session, leaving the
+# brand-new key with no file — a larger budget keeps at least one winner so the item
+# always survives.
+_REPLACE_RACE_LARGE_MAX_ATTEMPTS = 8
+_REPLACE_RACE_LARGE_BACKOFF_BASE = 0.5  # seconds; slower base for whole-session re-uploads
+_REPLACE_RACE_LARGE_BACKOFF_MAX = 6.0  # seconds; cap exceeds a typical large-upload window
+
 # GR-003: the declared capability set. GLOB, ATOMIC_MOVE, SEEKABLE_READ, and
 # USER_METADATA are deliberately withheld (see spec 044 GR-003 for rationale).
 _GRAPH_CAPABILITIES = CapabilitySet(
@@ -904,14 +923,24 @@ class GraphBackend(AsyncBackend):
         replace lands while the winner's create is in flight. The write
         re-attempts the replace a bounded number of times — the winner's create
         has committed by the time the 409 returns, so the re-issue overwrites it.
-        A terminal conflict (a SharePoint-backed drive that rejects the replace
-        outright) keeps 409-ing and surfaces ``AlreadyExists`` once the budget is
-        spent; the retry re-issues the replace, it never swallows the conflict.
+        On the large-file upload-session path the same race can surface
+        *mid-session* instead: the session opens cleanly, then a racing replace
+        swaps the item and the next chunk ``PUT`` draws a ``404``; under
+        ``overwrite=True`` that is treated as the same create-race signal and the
+        write re-opens a fresh session and retries. Large-file retries re-upload the
+        whole body, so this convergence is best-effort: under sustained concurrent
+        same-key overwrite a loser may still exhaust the budget and raise
+        ``AlreadyExists`` (last-writer-wins still holds — one writer's content lands
+        intact). A terminal conflict (a SharePoint-backed drive that rejects the
+        replace outright) likewise keeps 409-ing and surfaces ``AlreadyExists`` once
+        the budget is spent; the retry re-issues the replace, it never swallows the
+        conflict.
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite=False``, or an
-                ``overwrite=True`` replace keeps drawing a ``409`` past the
-                bounded re-attempt budget (a SharePoint-backed replace-rejection).
+                ``overwrite=True`` replace keeps drawing a ``409`` past the bounded
+                re-attempt budget (a SharePoint-backed replace-rejection, or a loser
+                in a sustained concurrent large-file same-key overwrite).
             InvalidPath: If the path names the drive root, an existing folder,
                 or descends through a file ancestor.
             CapabilityNotSupported: If a non-empty ``metadata=`` reaches the
@@ -951,9 +980,30 @@ class GraphBackend(AsyncBackend):
         ``AlreadyExists`` is retried — the folder-target / file-ancestor ``409``s
         discriminate to ``InvalidPath`` and propagate on the first attempt, as
         does every other error.
+
+        The large-file upload-session path is inside this same loop and is retried
+        the same way: its create-race surfaces either as a ``createUploadSession``
+        ``409`` (the direct analog) or, when a racing replace swaps the item
+        mid-session, as a chunk ``404`` that ``upload_session`` raises as
+        ``AlreadyExists`` under ``overwrite=True``. Both feed this catch;
+        the spool is rewound between re-attempts so each re-upload reads the full
+        body from the start. The upload-session path uses the slower, larger-budget
+        ``_REPLACE_RACE_LARGE_*`` posture (a whole-file re-upload takes seconds, so
+        the small-file sub-second backoff would never let concurrent writers drain).
         """
-        # GR-018 create-race retry; see _REPLACE_RACE_MAX_ATTEMPTS for the bound.
-        attempts = _REPLACE_RACE_MAX_ATTEMPTS if overwrite else 1
+        # GR-018 create-race retry. The upload-session path (> _SMALL_FILE_MAX_SIZE)
+        # re-uploads the whole body per attempt, so it needs the slower, larger-budget
+        # posture (see _REPLACE_RACE_LARGE_* for why); the small PUT path keeps the
+        # fast sub-second cadence BK-294 tuned.
+        is_large = total > _SMALL_FILE_MAX_SIZE
+        if not overwrite:
+            attempts, base, cap = 1, _REPLACE_RACE_BACKOFF_BASE, _REPLACE_RACE_BACKOFF_MAX
+        elif is_large:
+            attempts = _REPLACE_RACE_LARGE_MAX_ATTEMPTS
+            base, cap = _REPLACE_RACE_LARGE_BACKOFF_BASE, _REPLACE_RACE_LARGE_BACKOFF_MAX
+        else:
+            attempts = _REPLACE_RACE_MAX_ATTEMPTS
+            base, cap = _REPLACE_RACE_BACKOFF_BASE, _REPLACE_RACE_BACKOFF_MAX
         last: AlreadyExists | None = None
         for attempt in range(attempts):
             try:
@@ -967,9 +1017,7 @@ class GraphBackend(AsyncBackend):
                     await asyncio.to_thread(reader.seek, 0)
                     # Full-jitter backoff: desynchronise concurrent retriers so a
                     # create-race straggler stops colliding in lockstep.
-                    await asyncio.sleep(
-                        full_jitter_delay(attempt, base=_REPLACE_RACE_BACKOFF_BASE, cap=_REPLACE_RACE_BACKOFF_MAX)
-                    )
+                    await asyncio.sleep(full_jitter_delay(attempt, base=base, cap=cap))
         assert last is not None  # noqa: S101 — the loop only exits here after an AlreadyExists
         raise last
 

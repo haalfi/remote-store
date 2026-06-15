@@ -40,7 +40,7 @@ from typing import TYPE_CHECKING
 
 import httpx
 
-from remote_store._errors import BackendUnavailable, RemoteStoreError, ResourceLocked
+from remote_store._errors import AlreadyExists, BackendUnavailable, RemoteStoreError, ResourceLocked
 from remote_store.aio.backends._graph.http import (
     BACKEND_NAME,
     classify_graph_error,
@@ -366,6 +366,7 @@ async def upload_session(
             path=path,
             token_provider=token_provider,
             chunk_size=chunk_size,
+            overwrite=overwrite,
             retry=retry,
             backend=backend,
         )
@@ -433,6 +434,7 @@ async def _upload_chunks(
     path: str,
     token_provider: TokenProvider,
     chunk_size: int,
+    overwrite: bool,
     retry: RetryPolicy | None,
     backend: str,
 ) -> dict[str, Any]:
@@ -452,7 +454,7 @@ async def _upload_chunks(
             token_provider=token_provider,
             path=path,
             retry=retry,
-            return_on=frozenset({409, 423}),
+            return_on=frozenset({404, 409, 423}),
             # The session URL is pre-authorised and lives on a different host; a
             # cross-host bearer leaks the token and is rejected (live-verified).
             authenticated=False,
@@ -462,6 +464,19 @@ async def _upload_chunks(
         status = response.status_code
         if status == 423:
             raise _resource_locked_mid_session(session_url, last_ranges, path, backend)
+        if status == 404:
+            # GR-018/GR-032 (BK-296): a chunk PUT 404 means the item/session was
+            # swapped out from under us mid-session — a concurrent replace of the same
+            # key. Under overwrite=True (conflictBehavior=replace) this is the
+            # large-file analog of the small-file create-race 409: raise AlreadyExists
+            # so the write's bounded replace-retry (_write_replacing) re-opens a fresh
+            # session and wins. Under overwrite=False there is no create-or-replace
+            # contract to honour, so a genuine mid-session disappearance stays NotFound.
+            if overwrite:
+                raise AlreadyExists(
+                    f"Upload target replaced concurrently mid-session (404): {path}", path=path, backend=backend
+                )
+            raise classify_graph_error(404, error_code(response_json(response)), path=path, backend=backend)
         if status == 409:
             body = response_json(response)
             if error_code(body) == "invalidRange":

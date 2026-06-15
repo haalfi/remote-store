@@ -46,7 +46,7 @@ import httpx
 import pytest
 import respx
 
-from remote_store._errors import AlreadyExists, InvalidPath
+from remote_store._errors import AlreadyExists, InvalidPath, NotFound
 from remote_store._models import WriteResult
 
 pytest.importorskip("httpx", reason="httpx not installed (graph extra)")
@@ -54,6 +54,7 @@ pytest.importorskip("httpx", reason="httpx not installed (graph extra)")
 from remote_store.aio.backends._graph import backend as graph_backend  # noqa: E402
 from remote_store.aio.backends._graph.auth import GraphAuth  # noqa: E402
 from remote_store.aio.backends._graph.backend import (  # noqa: E402
+    _REPLACE_RACE_LARGE_MAX_ATTEMPTS,
     _REPLACE_RACE_MAX_ATTEMPTS,
     GraphBackend,
 )
@@ -74,6 +75,14 @@ _N = 12
 
 def _make() -> GraphBackend:
     return GraphBackend(_DRIVE, token_provider=lambda: "tok")
+
+
+def _instant_large_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The upload-session create-race retry uses a multi-second backoff (tuned for
+    # whole-file re-uploads, BK-296); zero it so these respx mechanism tests, which
+    # drive the large-file branch by shrinking _SMALL_FILE_MAX_SIZE, do not sleep.
+    monkeypatch.setattr(graph_backend, "_REPLACE_RACE_LARGE_BACKOFF_BASE", 0.0)
+    monkeypatch.setattr(graph_backend, "_REPLACE_RACE_LARGE_BACKOFF_MAX", 0.0)
 
 
 def _drive_item(name: str = "race.txt") -> dict[str, object]:
@@ -221,6 +230,7 @@ class TestOverwriteReplaceRetry:
         # test_overwrite_create_race_reissues_full_body, which the small-file PUT
         # exercises because it consumes the reader before drawing the 409.)
         monkeypatch.setattr(graph_backend, "_SMALL_FILE_MAX_SIZE", 4)
+        _instant_large_backoff(monkeypatch)
         sessions = {"n": 0}
 
         def _session_responder(request: httpx.Request) -> httpx.Response:
@@ -237,6 +247,88 @@ class TestOverwriteReplaceRetry:
         assert isinstance(result, WriteResult)
         assert sessions["n"] == 2  # createUploadSession retried after the create-race 409
         assert b"".join(c.request.content for c in chunks.calls) == b"abcdef"
+
+    @respx.mock
+    async def test_overwrite_mid_session_404_retries_then_wins(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # The large-file create-race that BK-294's createUploadSession-409 retry does
+        # NOT cover: the session opens cleanly (200) but a concurrent replace swaps the
+        # item before our first chunk lands, so the chunk PUT draws a 404. Under
+        # overwrite=True (conflictBehavior=replace) that is the same create-race signal
+        # as the small-file 409 — the loser re-opens a fresh session and the re-issued
+        # chunk wins. Mirrors test_overwrite_create_race_retries_upload_session_branch,
+        # but the race fires mid-session (chunk PUT) rather than at session creation.
+        monkeypatch.setattr(graph_backend, "_SMALL_FILE_MAX_SIZE", 4)
+        _instant_large_backoff(monkeypatch)
+        sessions = {"n": 0}
+        puts = {"n": 0}
+
+        def _session_responder(request: httpx.Request) -> httpx.Response:
+            sessions["n"] += 1
+            return httpx.Response(200, json={"uploadUrl": _UPLOAD_URL})
+
+        def _chunk_responder(request: httpx.Request) -> httpx.Response:
+            puts["n"] += 1
+            if puts["n"] == 1:
+                return httpx.Response(404, json={"error": {"code": "itemNotFound"}})
+            return httpx.Response(201, json=_drive_item())
+
+        respx.post(_SESSION_RE).mock(side_effect=_session_responder)
+        chunks = respx.put(_UPLOAD_URL).mock(side_effect=_chunk_responder)
+        respx.delete(_UPLOAD_URL).mock(return_value=httpx.Response(204))  # best-effort abort of the lost session
+        async with _make() as backend:
+            backend._upload_chunk_size = 320 * 1024  # single chunk for the 6-byte body
+            result = await backend.write("race.bin", b"abcdef", overwrite=True)
+        assert isinstance(result, WriteResult)
+        assert sessions["n"] == 2  # the mid-session 404 re-opened a fresh session
+        # The winning chunk carried the full body — the spool was rewound for the re-upload.
+        assert chunks.calls[-1].request.content == b"abcdef"
+
+    @respx.mock
+    async def test_overwrite_false_mid_session_404_not_retried(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # The scope gate: overwrite=False has no create-or-replace contract to honour,
+        # so a genuine mid-session 404 must surface as NotFound, not be mapped to a
+        # retryable create-race. One session, no re-attempt.
+        monkeypatch.setattr(graph_backend, "_SMALL_FILE_MAX_SIZE", 4)
+        sessions = {"n": 0}
+
+        def _session_responder(request: httpx.Request) -> httpx.Response:
+            sessions["n"] += 1
+            return httpx.Response(200, json={"uploadUrl": _UPLOAD_URL})
+
+        respx.post(_SESSION_RE).mock(side_effect=_session_responder)
+        respx.put(_UPLOAD_URL).mock(return_value=httpx.Response(404, json={"error": {"code": "itemNotFound"}}))
+        respx.delete(_UPLOAD_URL).mock(return_value=httpx.Response(204))
+        async with _make() as backend:
+            backend._upload_chunk_size = 320 * 1024
+            with pytest.raises(NotFound, match="race.bin"):
+                await backend.write("race.bin", b"abcdef", overwrite=False)
+        assert sessions["n"] == 1  # no re-attempt
+
+    @respx.mock
+    async def test_overwrite_persistent_mid_session_404_exhausts_to_already_exists(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # A mid-session 404 on every attempt (a sustained racer that keeps swapping the
+        # item) spends the bounded budget and surfaces AlreadyExists — the same terminal
+        # outcome the small-file path gives on a persistent 409, so the contract is
+        # size-independent. One createUploadSession per attempt; the large-file branch
+        # uses its own larger budget (_REPLACE_RACE_LARGE_MAX_ATTEMPTS).
+        monkeypatch.setattr(graph_backend, "_SMALL_FILE_MAX_SIZE", 4)
+        _instant_large_backoff(monkeypatch)
+        sessions = {"n": 0}
+
+        def _session_responder(request: httpx.Request) -> httpx.Response:
+            sessions["n"] += 1
+            return httpx.Response(200, json={"uploadUrl": _UPLOAD_URL})
+
+        respx.post(_SESSION_RE).mock(side_effect=_session_responder)
+        respx.put(_UPLOAD_URL).mock(return_value=httpx.Response(404, json={"error": {"code": "itemNotFound"}}))
+        respx.delete(_UPLOAD_URL).mock(return_value=httpx.Response(204))
+        async with _make() as backend:
+            backend._upload_chunk_size = 320 * 1024
+            with pytest.raises(AlreadyExists, match="race.bin"):
+                await backend.write("race.bin", b"abcdef", overwrite=True)
+        assert sessions["n"] == _REPLACE_RACE_LARGE_MAX_ATTEMPTS  # initial + bounded re-attempts
 
     @respx.mock
     async def test_overwrite_persistent_409_exhausts_to_already_exists(self) -> None:
@@ -443,6 +535,45 @@ class TestGraphConcurrencyLive:
             )
             assert all(isinstance(r, WriteResult) for r in results), results
             assert await backend.read_bytes(key) in payloads
+        finally:
+            import contextlib
+
+            with contextlib.suppress(Exception):
+                await backend.delete_folder(scratch, recursive=True)
+            await backend.aclose()
+
+    async def test_live_overwrite_large_create_race_last_writer_wins(
+        self, live_creds: dict[str, str], scratch: str
+    ) -> None:
+        # BK-296: the large-file (upload-session) analog of
+        # test_live_overwrite_create_race_all_succeed. N concurrent overwrite=True
+        # writes of distinct >4 MiB payloads to the SAME new key. The bug fixed here is
+        # that a racing replace swapping the item between session-open and the first
+        # chunk made a loser surface NotFound; it is now the typed create-race signal
+        # (AlreadyExists) fed into the path-specific retry. Unlike the small-file path,
+        # full convergence is NOT guaranteed for large concurrent same-key overwrites —
+        # under sustained contention a loser may still exhaust the budget and raise
+        # AlreadyExists (live ~5/6; the path-specific backoff is best-effort). So this
+        # asserts the invariants that always hold, not all-succeed:
+        #   * last-writer-wins: at least one writer commits and the survivor's bytes are
+        #     one writer's whole payload (no tear/blend, no empty key);
+        #   * the fixed bug stays fixed: no writer surfaces NotFound; a loser, if any,
+        #     is a typed AlreadyExists.
+        backend = await self._backend(live_creds)
+        key = f"{scratch}/overwrite-race-large.bin"
+        # Distinct payloads so the survivor is identifiably one writer's whole upload.
+        payloads = [bytes([65 + i]) * self._LARGE for i in range(4)]
+        try:
+            results = await asyncio.gather(
+                *(backend.write(key, p, overwrite=True) for p in payloads),
+                return_exceptions=True,
+            )
+            assert any(isinstance(r, WriteResult) for r in results), results  # >= 1 winner, key survives
+            assert not any(isinstance(r, NotFound) for r in results), results  # the fixed bug
+            losers = [r for r in results if isinstance(r, Exception)]
+            assert all(isinstance(r, AlreadyExists) for r in losers), results  # typed, not a raw error
+            survivor = await backend.read_bytes(key)
+            assert survivor in payloads  # whole, single-writer — not torn or blended
         finally:
             import contextlib
 
