@@ -207,15 +207,38 @@ class TestCachePersistence:
     def test_cache_is_multiprocess_safe_persisted_cache(self, tmp_path: Any) -> None:
         # BK-291: the cache must be a lock-coordinated, multi-process-safe
         # PersistedTokenCache (not a bare SerializableTokenCache whose
-        # truncate-then-write corrupts under concurrent writers), backed by the
-        # resolved path with a sibling cross-process lock file.
+        # truncate-then-write corrupts under concurrent writers). Assert the
+        # public type, not msal-extensions' private `_lock_location` attr — the
+        # lockfile-backed guarantee is exercised behaviourally by the
+        # write-through and best-effort tests below.
         from msal_extensions import PersistedTokenCache
 
-        target = tmp_path / "c.json"
-        auth = GraphAuth("consumers", "c", cache_path=str(target))
-        cache = auth._load_cache()
+        cache = GraphAuth("consumers", "c", cache_path=str(tmp_path / "c.json"))._load_cache()
         assert isinstance(cache, PersistedTokenCache)
-        assert cache._lock_location == str(target) + ".lockfile"
+
+    @pytest.mark.spec("GR-007")
+    def test_persistence_failure_is_best_effort(
+        self, tmp_path: Any, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # BK-291 review: persistence now happens inside MSAL's lock-coordinated
+        # modify() (not a separate flush). A disk/lock failure there must be
+        # swallowed + logged (best-effort), never escape token acquisition as an
+        # untyped exception — preserving the GR-006/GR-008 typed-error contract.
+        cache = GraphAuth("consumers", "c", cache_path=str(tmp_path / "c.json"))._load_cache()
+
+        def _boom(_content: str) -> None:
+            raise OSError("disk full")
+
+        monkeypatch.setattr(cache._persistence, "save", _boom)
+        cache.add(  # add() -> modify() -> save(); the OSError must not propagate
+            {
+                "client_id": "c",
+                "scope": ["s1"],
+                "token_endpoint": "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
+                "response": {"access_token": "atoken", "token_type": "Bearer", "expires_in": 3600},
+            }
+        )
+        assert any("token cache" in r.getMessage() for r in caplog.records)
 
     @pytest.mark.spec("GR-007")
     def test_acquired_token_is_written_through_to_disk(self, tmp_path: Any) -> None:

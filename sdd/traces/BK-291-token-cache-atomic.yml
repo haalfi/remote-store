@@ -16,6 +16,8 @@ expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
   - docs-src/guides/backends/graph.md
+  - docs-src/reference/tested-versions.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

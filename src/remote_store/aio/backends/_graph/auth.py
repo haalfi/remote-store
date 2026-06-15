@@ -5,9 +5,9 @@ exposes the acquired bearer token through the token-provider protocol: a
 ``GraphAuth`` instance is itself a ``Callable[[], str]``, so
 ``GraphBackend(token_provider=GraphAuth(...))`` works directly.
 
-``msal`` and ``platformdirs`` are imported lazily inside the methods that
-need them so a caller supplying their own token-provider callable never
-loads them.
+``msal``, ``msal_extensions`` (the multi-process-safe token cache), and
+``platformdirs`` are imported lazily inside the methods that need them so a
+caller supplying their own token-provider callable never loads them.
 """
 
 from __future__ import annotations
@@ -37,6 +37,40 @@ log = logging.getLogger("remote_store.aio.backends._graph")
 _DEFAULT_CC_SCOPES = ("https://graph.microsoft.com/.default",)
 _DEFAULT_DEVICE_SCOPES = ("Files.ReadWrite", "User.Read")
 _CACHE_FILENAME = "graph_token_cache.json"
+
+_PERSISTED_CACHE_CLS: Any = None
+
+
+def _build_token_cache(path: str) -> Any:
+    """Build the multi-process-safe token cache, with best-effort persistence.
+
+    ``msal_extensions.PersistedTokenCache.modify()`` persists on every token
+    change inside ``with CrossPlatLock(...)``: it writes through to disk under a
+    cross-process lock. A lock-contention timeout or a disk write error there
+    must **not** break token acquisition or escape ``get_token`` as an untyped
+    exception mid-``read`` / ``write`` (a persistence failure is not a token
+    failure). The subclass below swallows and logs persistence failures,
+    degrading to a re-acquisition next run — the best-effort guarantee the old
+    ``flush_cache`` provided. The class is built once and cached so the
+    ``msal_extensions`` import stays lazy (never loaded for user-supplied
+    providers).
+    """
+    global _PERSISTED_CACHE_CLS
+    if _PERSISTED_CACHE_CLS is None:
+        from msal_extensions import PersistedTokenCache  # noqa: PLC0415
+
+        class _BestEffortPersistedTokenCache(PersistedTokenCache):  # type: ignore[misc]
+            def modify(self, credential_type: Any, old_entry: Any, new_key_value_pairs: Any = None) -> None:
+                try:
+                    super().modify(credential_type, old_entry, new_key_value_pairs=new_key_value_pairs)
+                except Exception:  # noqa: BLE001 -- persistence is best-effort; never break acquisition
+                    log.warning("failed to persist Graph token cache", exc_info=True)
+
+        _PERSISTED_CACHE_CLS = _BestEffortPersistedTokenCache
+
+    from msal_extensions import FilePersistence  # noqa: PLC0415
+
+    return _PERSISTED_CACHE_CLS(FilePersistence(path))
 
 
 class GraphAuth:
@@ -127,9 +161,7 @@ class GraphAuth:
         # plain truncate-then-write that flush_cache used to do). The sibling
         # ``<path>.lockfile`` is the cross-process lock. See ADR-0022 § Token
         # caching.
-        from msal_extensions import FilePersistence, PersistedTokenCache  # noqa: PLC0415
-
-        cache = PersistedTokenCache(FilePersistence(self._resolve_cache_path()))
+        cache = _build_token_cache(self._resolve_cache_path())
         self._cache = cache
         return cache
 

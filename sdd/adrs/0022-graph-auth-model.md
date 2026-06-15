@@ -78,6 +78,18 @@ replace; `PersistedTokenCache` sidesteps that entirely (lock + read-retry,
 no rename). Because persistence is now continuous, `GraphAuth.flush_cache`
 is a best-effort no-op retained only for the GR-051 `close()` hook.
 
+Persistence moved *inside* MSAL's acquisition (`modify()` writes through
+under the lock), so a write or lock-contention failure there would, unguarded,
+escape `get_token` as an untyped `OSError` / lock exception mid-`read` /
+`write` — regressing the best-effort-swallow the old `flush_cache` provided
+and the GR-006 / GR-008 typed-error contract. `GraphAuth` therefore wraps the
+cache in a thin `PersistedTokenCache` subclass whose `modify()` swallows and
+logs persistence failures, keeping acquisition non-breaking (degrade to
+re-acquisition) while preserving the multi-process safety when the write
+succeeds. The lock wait is bounded and runs on the calling thread; offloading
+it off the event loop belongs to the async-`GraphAuth` path (BK-292), not the
+sync provider.
+
 Users can override the path with `cache_path=` or supply their own
 token-provider callable to bypass `GraphAuth` (and MSAL) altogether.
 
