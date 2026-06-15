@@ -406,14 +406,14 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] `hatch run gen-graph` (stamps `source_version` + `snapshot` in `docs-src/_data/graph/graph.json` from the bumped version)
 - [ ] `hatch run gen-features` (regenerates mechanical sections of `FEATURES.md` from updated `graph.json`)
 - [ ] `hatch run gen-graph-viz` (regenerates `docs-src/explanation/graph_viz.html` from `graph.json`; `hatch run all` gates on its freshness, so skipping it fails Phase 3)
-- [ ] Review and commit: `git diff` to verify nothing unexpected is staged, then `git add -A` (covers the bump-my-version files, the manual tagline/date edits, `CHANGELOG.md`, `sdd/BACKLOG-DONE.md`, `packaging/conda-forge/recipe.yaml`, `docs-src/_data/graph/graph.json`, `docs-src/explanation/graph_viz.html`, and `FEATURES.md`) and commit as `Release vX.Y.Z`
+- [ ] Review and commit: `git diff` to verify nothing unexpected, then `git add -A` and commit as `Release vX.Y.Z`
 
 ### Phase 3: Validate
 
 - [ ] `hatch run all` passes (constituent scripts in `pyproject.toml`)
 - [ ] `hatch run test-cov-strict` passes locally with Azurite running (enforces the 95% floor that `hatch run all` deliberately skips)
 - [ ] `mkdocs build --strict` passes
-- [ ] `hatch build && hatch run twine check dist/*` — package builds cleanly (the `build` PyPI package is not in the hatch env, so `python -m build` fails; `hatch build` uses the hatchling backend and `twine` is available via `hatch run`)
+- [ ] `hatch build && hatch run twine check dist/*` — package builds cleanly (not `python -m build`: `build` is not in the hatch env)
 - [ ] `pip install dist/*.whl && python -c "import remote_store; print(remote_store.__version__)"` — version matches
 - [ ] Conda recipe: version in `packaging/conda-forge/recipe.yaml` matches release version
 
