@@ -117,20 +117,6 @@ resolve to one winner, read-your-writes and listing held, streaming reads are
 version-pinned, and the sync bridge (`ThreadPoolExecutor` + `ext.batch`) is
 deadlock-free. The items below are the divergences and the unspecified contract.
 
-- [ ] **BK-294 — Evaluate retrying Graph `overwrite=True` 409-under-replace as transient**
-  spec: GR-018, GR-032 · effort: M · audience: user.api
-  BK-288 documented that `overwrite=True` can still surface `AlreadyExists`: on
-  SharePoint-backed drives (replace-conflict) and, live-reproduced on consumer
-  OneDrive, under a concurrent create race for the same new key. The docs route
-  users to delete-then-write or serialise. Evaluate the code-side alternative:
-  on a `409` from the replace `PUT`, retry (re-resolve the now-existing item and
-  replace it) so `overwrite=True` actually wins. **Tension to resolve first:** this
-  reverses BK-261's deliberate "don't paper over the conflict" stance, must not
-  mask a genuine SharePoint replace-rejection (distinguish the create-race 409 from
-  the SharePoint replace-409), and needs live-Graph verification on both tiers
-  before shipping. Filed from the BK-288 review; if the evaluation says "document,
-  don't retry," close with that reasoning.
-
 - [ ] **BK-293 — Mirror the concurrency Store-surface into `../remote-store-expectations`**
   spec: — · effort: S · audience: infra.test
   Carved out of BK-289 (the in-repo lane shipped; see BACKLOG-DONE). Mirror the
