@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-288: Cross-backend concurrent-use-posture documentation — posture table and sync/async bridge asymmetry in the concurrency guide, a Graph "Concurrency & consistency" section, and the widened OneDrive concurrent-create overwrite-409 caveat
 - BUG-220: `LocalBackend` concurrent writes to nested keys no longer raise a spurious `InvalidPath` (Windows `_resolve` 8.3 short-name race)
 - BK-287: Cross-backend concurrency-posture contract — `GR-059` + per-backend `thread_safe` / `single_connection` clauses
 - BUG-219: Graph backend use-after-close raises typed `BackendUnavailable` instead of a bare `RuntimeError`

@@ -129,22 +129,19 @@ deadlock-free. The items below are the divergences and the unspecified contract.
   `auth.py` `flush_cache`), not yet reproduced — a multi-process interleave repro
   would promote it.
 
-- [ ] **BK-288 — Graph concurrency & consistency documentation**
-  spec: — · effort: M · audience: user.site, user.api_docs
-  Graph is absent from every table in `explanation/concurrency.md`, and the
-  `async.md` FastAPI example shows a module-level store shared across request
-  handlers without ever stating the concurrency contract (while the Limitations
-  section warns about SFTP but not Graph). Add a Graph row to `concurrency.md`, a
-  "Concurrency & consistency" section to the Graph guide, and a one-line contract
-  to the FastAPI example. Document `overwrite=False` as the create-if-absent
-  primitive (it is currently misframed as racy), `move`/`copy` non-atomicity at
-  point of use, and read-your-writes. **Widen the BK-261 caveat**: the
-  `overwrite=True` replace-409 quirk is documented as SharePoint-only but the
-  review live-reproduced it on **consumer OneDrive under a concurrent create
-  race** (writers racing to create the same new key can get `AlreadyExists` even
-  with `overwrite=True`; content integrity holds). Also evaluate the code-side
-  alternative to documenting it: retrying Graph's `409`-under-`replace` as
-  transient.
+- [ ] **BK-294 — Evaluate retrying Graph `overwrite=True` 409-under-replace as transient**
+  spec: GR-018, GR-032 · effort: M · audience: user.api
+  BK-288 documented that `overwrite=True` can still surface `AlreadyExists`: on
+  SharePoint-backed drives (replace-conflict) and, live-reproduced on consumer
+  OneDrive, under a concurrent create race for the same new key. The docs route
+  users to delete-then-write or serialise. Evaluate the code-side alternative:
+  on a `409` from the replace `PUT`, retry (re-resolve the now-existing item and
+  replace it) so `overwrite=True` actually wins. **Tension to resolve first:** this
+  reverses BK-261's deliberate "don't paper over the conflict" stance, must not
+  mask a genuine SharePoint replace-rejection (distinguish the create-race 409 from
+  the SharePoint replace-409), and needs live-Graph verification on both tiers
+  before shipping. Filed from the BK-288 review; if the evaluation says "document,
+  don't retry," close with that reasoning.
 
 - [ ] **BK-293 — Mirror the concurrency Store-surface into `../remote-store-expectations`**
   spec: — · effort: S · audience: infra.test

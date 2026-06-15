@@ -8,6 +8,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-288 — Cross-backend concurrent-use-posture documentation (docs leg of the concurrency contract)**
+  spec: — · effort: M · audience: user.site, user.api_docs
+  **Rescoped** from "Graph concurrency & consistency docs" to the docs leg of the
+  BK-287 (spec) / BK-289 (test-registry) concurrency-contract work: `concurrency.md`
+  documented only per-operation atomicity and had **no** concurrent-use-posture axis
+  for any backend, so adding "a Graph row" meant building the table first. Added a
+  **Concurrent-use posture** section to `explanation/concurrency.md` — a per-backend
+  `thread-safe` / `single-connection` table (the user-facing shadow of the registry
+  `concurrency` field and the BE-028 clause), the SQLBlob/SQLQuery `sqlite:///:memory:`
+  single-connection footnote and the S3-PyArrow to-be-confirmed hedge from the BK-289
+  discoveries, plus a **Bridge asymmetry** subsection (ASYNC-094: `AsyncBackendSyncAdapter`
+  serialises onto one loop = safe; `SyncBackendAdapter` + a single-connection backend under
+  `asyncio.gather` = unsafe). Corrected the `overwrite=False` "all backends" framing — Graph
+  is a server-side atomic create-if-absent, not TOCTOU — and added Graph rows to the move /
+  summary tables. Added a **Concurrency & consistency** section to the Graph guide
+  (one-loop posture, bridged-sync safety, create-if-absent, non-atomic move/copy,
+  read-your-writes), a one-line contract to the async-guide FastAPI example, and a
+  posture-aware Limitations bullet. **Widened the BK-261 caveat**: the `overwrite=True`
+  replace-409 is no longer framed SharePoint-only — the live-reproduced consumer-OneDrive
+  concurrent-create race (losers get `AlreadyExists`; content integrity holds) is now
+  documented. Spec coordinates kept out of the published prose (the `check_no_tracker_refs`
+  gate treats `BE-028` / `ASYNC-094` / `GR-059` as tracker leakage); the mapping lives in
+  the trace. Discovery: the code-side alternative (retry Graph's 409-under-replace as
+  transient) was evaluated and routed to a follow-up (**BK-294**) rather than changed
+  here. Trace: `sdd/traces/bk-288-concurrency-docs.yml`.
+
 - [x] **BUG-220 — LocalBackend `_resolve` races on concurrent intermediate-dir creation (Windows)**
   spec: BE-008 · effort: S · audience: user.api, library.maintainer
   Discovered by the BK-289 concurrency lane. `LocalBackend._resolve` did
