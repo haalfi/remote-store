@@ -19,6 +19,7 @@ import httpx
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy
 from remote_store._errors import (
+    AlreadyExists,
     BackendUnavailable,
     CapabilityNotSupported,
     DirectoryNotEmpty,
@@ -56,6 +57,7 @@ from remote_store.backends._flat_ns import _acheck_no_file_ancestor
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
+    from typing import BinaryIO
 
     from remote_store._models import FileInfo, WriteResult
     from remote_store._resolution import ResolutionPlan
@@ -70,6 +72,15 @@ _CHUNK_ALIGNMENT = 320 * 1024  # Graph's documented upload-chunk alignment (GR-0
 _MAX_UPLOAD_CHUNK_SIZE = 60 * 1024 * 1024  # Graph rejects any single chunk PUT >= 60 MiB (GR-005)
 _DEFAULT_UPLOAD_CHUNK_SIZE = 10 * 1024 * 1024  # 10 MiB (GR-001)
 _SMALL_FILE_MAX_SIZE = 4 * 1024 * 1024  # PUT /content vs upload-session boundary (GR-018)
+# GR-018: bounded re-attempts of an overwrite=True (`conflictBehavior=replace`)
+# write that draws a create-race 409. The winner's create has committed by the
+# time the loser's 409 returns, so a re-issued replace finds the item present and
+# overwrites it. A genuine terminal conflict (e.g. a SharePoint-backed drive that
+# rejects the replace) keeps 409-ing and surfaces AlreadyExists once the budget is
+# spent — the retry re-issues the replace, it never swallows the conflict (cf.
+# BK-261). 3 total attempts is a conservative immediate-retry bound; consumer-
+# OneDrive live tuning may revisit the count or add a short backoff (BK-294).
+_REPLACE_RACE_MAX_ATTEMPTS = 3
 
 # GR-003: the declared capability set. GLOB, ATOMIC_MOVE, SEEKABLE_READ, and
 # USER_METADATA are deliberately withheld (see spec 044 GR-003 for rationale).
@@ -877,8 +888,20 @@ class GraphBackend(AsyncBackend):
         ``driveItem`` Graph returns. ``overwrite`` maps to Graph's
         ``@microsoft.graph.conflictBehavior`` (``replace`` vs ``fail``).
 
+        On ``overwrite=True`` (``conflictBehavior=replace``) a concurrent create
+        of the *same not-yet-existing* key can still draw a ``409
+        nameAlreadyExists`` (live-reproduced on consumer OneDrive): the loser's
+        replace lands while the winner's create is in flight. The write
+        re-attempts the replace a bounded number of times — the winner's create
+        has committed by the time the 409 returns, so the re-issue overwrites it.
+        A terminal conflict (a SharePoint-backed drive that rejects the replace
+        outright) keeps 409-ing and surfaces ``AlreadyExists`` once the budget is
+        spent; the retry re-issues the replace, it never swallows the conflict.
+
         Raises:
-            AlreadyExists: If the file exists and ``overwrite=False``.
+            AlreadyExists: If the file exists and ``overwrite=False``, or an
+                ``overwrite=True`` replace keeps drawing a ``409`` past the
+                bounded re-attempt budget (a SharePoint-backed replace-rejection).
             InvalidPath: If the path names the drive root, an existing folder,
                 or descends through a file ancestor.
             CapabilityNotSupported: If a non-empty ``metadata=`` reaches the
@@ -897,25 +920,71 @@ class GraphBackend(AsyncBackend):
         self._require_writable_key(path)
         reader, total = await spool_content(content, path=path)
         try:
-            if total <= _SMALL_FILE_MAX_SIZE:
-                return await self._write_small(path, reader.read(), overwrite=overwrite, metadata=metadata)
-            item = await upload_session(
-                self._client,
-                self._session_create_url(path),
-                reader,
-                total,
-                path=path,
-                token_provider=self._token_provider,
-                chunk_size=self._upload_chunk_size,
-                overwrite=overwrite,
-                retry=self._retry,
-                on_session_open=self._active_upload_sessions.add,
-                on_session_close=self._active_upload_sessions.discard,
-                backend=self.name,
-            )
-            return item_to_write_result(item, path, total, metadata)
+            return await self._write_replacing(path, reader, total, overwrite=overwrite, metadata=metadata)
         finally:
             reader.close()
+
+    async def _write_replacing(
+        self, path: str, reader: BinaryIO, total: int, *, overwrite: bool, metadata: Mapping[str, str] | None
+    ) -> WriteResult:
+        """Dispatch the write, retrying an ``overwrite=True`` create-race ``409``.
+
+        ``overwrite=True`` maps to ``conflictBehavior=replace``, which is meant to
+        overwrite an existing file. Under a concurrent create of the same new key,
+        Graph can answer the loser with ``409 nameAlreadyExists`` (the
+        discriminator surfaces it as ``AlreadyExists``) — contradicting the
+        create-or-replace contract. Because the winner's create has committed by
+        the time the 409 returns, a bounded re-attempt of the same replace finds
+        the item present and overwrites it. The retry is gated on
+        ``overwrite=True``: ``overwrite=False``'s create-once-race ``AlreadyExists``
+        is the correct single-winner outcome and must not be retried. Only
+        ``AlreadyExists`` is retried — the folder-target / file-ancestor ``409``s
+        discriminate to ``InvalidPath`` and propagate on the first attempt, as
+        does every other error.
+        """
+        # GR-018 create-race retry; see _REPLACE_RACE_MAX_ATTEMPTS for the bound.
+        attempts = _REPLACE_RACE_MAX_ATTEMPTS if overwrite else 1
+        last: AlreadyExists | None = None
+        for attempt in range(attempts):
+            try:
+                return await self._write_dispatch(path, reader, total, overwrite=overwrite, metadata=metadata)
+            except AlreadyExists as exc:
+                last = exc
+                if attempt + 1 < attempts:
+                    # Rewind the (possibly disk-spilled) spool before re-issuing;
+                    # offload the blocking seek so a large retry does not stall
+                    # sibling coroutines (BK-290).
+                    await asyncio.to_thread(reader.seek, 0)
+        assert last is not None  # noqa: S101 — the loop only exits here after an AlreadyExists
+        raise last
+
+    async def _write_dispatch(
+        self, path: str, reader: BinaryIO, total: int, *, overwrite: bool, metadata: Mapping[str, str] | None
+    ) -> WriteResult:
+        """Route to the small ``PUT /content`` or the upload session by size.
+
+        Content ``<= 4 MiB`` rides the in-memory ``PUT /content`` path; larger
+        content streams through a chunked upload session. The *reader* is
+        positioned at ``0`` by the caller (and rewound between create-race
+        re-attempts), so each invocation reads the full body from the start.
+        """
+        if total <= _SMALL_FILE_MAX_SIZE:
+            return await self._write_small(path, reader.read(), overwrite=overwrite, metadata=metadata)
+        item = await upload_session(
+            self._client,
+            self._session_create_url(path),
+            reader,
+            total,
+            path=path,
+            token_provider=self._token_provider,
+            chunk_size=self._upload_chunk_size,
+            overwrite=overwrite,
+            retry=self._retry,
+            on_session_open=self._active_upload_sessions.add,
+            on_session_close=self._active_upload_sessions.discard,
+            backend=self.name,
+        )
+        return item_to_write_result(item, path, total, metadata)
 
     async def _write_small(
         self, path: str, data: bytes, *, overwrite: bool, metadata: Mapping[str, str] | None

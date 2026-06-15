@@ -45,7 +45,7 @@ import httpx
 import pytest
 import respx
 
-from remote_store._errors import AlreadyExists
+from remote_store._errors import AlreadyExists, InvalidPath
 from remote_store._models import WriteResult
 
 pytest.importorskip("httpx", reason="httpx not installed (graph extra)")
@@ -144,6 +144,84 @@ class TestCreateOnceRace:
 
 
 @pytest.mark.concurrency
+@pytest.mark.spec("GR-018")
+class TestOverwriteReplaceRetry:
+    """GR-018 / GR-032 — ``overwrite=True`` retries a create-race ``409``.
+
+    ``overwrite=True`` (``conflictBehavior=replace``) is meant to overwrite, but a
+    concurrent create of the same new key can land a loser's ``replace`` mid-create
+    and draw ``409 nameAlreadyExists`` (live-reproduced on consumer OneDrive). The
+    winner's create has committed by then, so the backend re-issues the ``replace``
+    a bounded number of times and wins. These respx guards pin the mechanism
+    deterministically; the Tier-3 live probe proves it against real Graph.
+
+    The retry is deliberately narrow: gated on ``overwrite=True`` (so the
+    ``overwrite=False`` single-winner outcome is preserved), and only the plain
+    ``AlreadyExists`` discrimination is retried — a folder-target / file-ancestor
+    ``409`` (``InvalidPath``) and a terminal SharePoint replace-rejection are not
+    papered over.
+    """
+
+    @respx.mock
+    async def test_overwrite_create_race_retries_then_wins(self) -> None:
+        # First replace lands mid-create (409); the winner's create has committed
+        # by the re-attempt, so the second replace overwrites it (200).
+        calls = {"n": 0}
+
+        def _responder(request: httpx.Request) -> httpx.Response:
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return httpx.Response(409, json={"error": {"code": "nameAlreadyExists"}})
+            return httpx.Response(200, json=_drive_item())
+
+        respx.put(_CONTENT_RE).mock(side_effect=_responder)
+        async with _make() as backend:
+            result = await backend.write("race.txt", b"x", overwrite=True)
+        assert isinstance(result, WriteResult)
+        assert calls["n"] == 2  # one re-attempt was enough
+
+    @respx.mock
+    async def test_overwrite_persistent_409_exhausts_to_already_exists(self) -> None:
+        # A terminal conflict (e.g. a SharePoint replace-rejection) keeps 409-ing;
+        # the bounded budget is spent and AlreadyExists surfaces unchanged. The
+        # retry re-issued the replace each time — it never swallowed the conflict.
+        route = respx.put(_CONTENT_RE).mock(
+            return_value=httpx.Response(409, json={"error": {"code": "nameAlreadyExists"}})
+        )
+        async with _make() as backend:
+            with pytest.raises(AlreadyExists, match="race.txt"):
+                await backend.write("race.txt", b"x", overwrite=True)
+        assert route.call_count == 3  # initial + 2 bounded re-attempts
+
+    @respx.mock
+    async def test_overwrite_false_does_not_retry(self) -> None:
+        # overwrite=False's create-once-race AlreadyExists is the correct
+        # single-winner outcome (GR-059); it must surface on the first 409.
+        route = respx.put(_CONTENT_RE).mock(
+            return_value=httpx.Response(409, json={"error": {"code": "nameAlreadyExists"}})
+        )
+        async with _make() as backend:
+            with pytest.raises(AlreadyExists):
+                await backend.write("exists.txt", b"x", overwrite=False)
+        assert route.call_count == 1  # no re-attempt
+
+    @respx.mock
+    async def test_overwrite_file_ancestor_409_not_retried(self) -> None:
+        # A file-ancestor 409 discriminates to InvalidPath (ID-209), which is
+        # structural — it propagates on the first attempt, never retried.
+        route = respx.put(_CONTENT_RE).mock(
+            return_value=httpx.Response(
+                409,
+                json={"error": {"code": "nameAlreadyExists", "details": [{"name": "parent", "file": {}}]}},
+            )
+        )
+        async with _make() as backend:
+            with pytest.raises(InvalidPath, match="ancestor"):
+                await backend.write("parent/child.txt", b"x", overwrite=True)
+        assert route.call_count == 1  # no re-attempt
+
+
+@pytest.mark.concurrency
 class TestConcurrentReads:
     """GR-012 — concurrent reads on one instance are version-pinned and consistent.
 
@@ -229,6 +307,28 @@ class TestGraphConcurrencyLive:
             assert len(winners) == 1, results
             assert len(losers) == len(results) - 1, results
             assert await backend.read_bytes(key) == b"payload"
+        finally:
+            import contextlib
+
+            with contextlib.suppress(Exception):
+                await backend.delete_folder(scratch, recursive=True)
+            await backend.aclose()
+
+    async def test_live_overwrite_create_race_all_succeed(self, live_creds: dict[str, str], scratch: str) -> None:
+        # BK-294: N concurrent overwrite=True writes to the SAME new key. With the
+        # create-race retry, every loser re-issues its replace and wins (last-
+        # writer-wins) — so none should surface AlreadyExists, and the surviving
+        # content must be one of the payloads written intact (no tearing).
+        backend = await self._backend(live_creds)
+        key = f"{scratch}/overwrite-race.txt"
+        payloads = [f"writer-{i}".encode() for i in range(8)]
+        try:
+            results = await asyncio.gather(
+                *(backend.write(key, p, overwrite=True) for p in payloads),
+                return_exceptions=True,
+            )
+            assert all(isinstance(r, WriteResult) for r in results), results
+            assert await backend.read_bytes(key) in payloads
         finally:
             import contextlib
 

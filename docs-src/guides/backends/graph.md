@@ -183,20 +183,23 @@ ground and validate your workload before relying on it in production.
 ### `overwrite=True` can still raise `AlreadyExists`
 
 Overwriting an existing **file** with `overwrite=True` is expected to replace it and
-succeed. Two situations can still surface an `AlreadyExists` error despite the flag:
+succeed. One situation can still surface an `AlreadyExists` error despite the flag:
 
 - **SharePoint-backed drives** may reject the replace of an existing file with a conflict.
-  This does not happen on consumer OneDrive (the live-verified tier).
-- **Concurrent creation of the same new key**, reproduced on consumer OneDrive: when several
-  writers race to create the *same not-yet-existing* key, the losers can receive
-  `AlreadyExists` even with `overwrite=True`. **Content integrity holds** — one writer's bytes
-  land intact, with no tearing or interleaving; only the error surfaced to the losers diverges
-  from the single-writer expectation.
+  This does not happen on consumer OneDrive (the live-verified tier). The backend deliberately
+  does **not** paper over it — silently treating the rejection as success could mask a genuine
+  collision and would have to guess at a response shape the project cannot reproduce. If you
+  need overwrite-or-create semantics on such a drive, delete the target first and then write,
+  or serialise the writers.
 
-In both cases the backend deliberately does **not** paper over the conflict — silently
-treating it as success could mask a genuine collision and would have to guess at a response
-shape the project cannot reproduce. If you need overwrite-or-create semantics under
-contention, delete the target first and then write, or serialise the writers.
+A second situation — **concurrent creation of the same new key** (reproduced on consumer
+OneDrive) — is now **handled**: when several writers race to create the *same not-yet-existing*
+key with `overwrite=True`, a loser whose `replace` lands mid-create is re-attempted a bounded
+number of times. The winner's create has committed by then, so the re-issued `replace`
+overwrites it and the write succeeds — last-writer-wins, as `overwrite=True` promises.
+**Content integrity holds** throughout: one writer's bytes land intact, with no tearing or
+interleaving. (With `overwrite=False` the same race is a race-free create-if-absent: exactly
+one writer wins and the losers get `AlreadyExists` by design — see below.)
 
 ### `copy_timeout=None` is unbounded by default
 
