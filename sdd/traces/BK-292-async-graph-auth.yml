@@ -17,6 +17,7 @@ expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
   - examples/backends/graph_backend.py
+  - tests/backends/conformance/test_examples.py
 review_rounds: 2
 phases:
   - id: orient
@@ -146,3 +147,12 @@ phases:
           inside async main(), contradicting the guide's new "prefer aget_token"
           note — doc-vs-example drift the docs sweep missed. Switched to
           token_provider=auth.aget_token with a matching inline comment
+      - file: tests/backends/conformance/test_examples.py
+        section: "_StubGraphAuth"
+        read_type: reference
+        extract: >-
+          CI caught the ripple: backend examples are REPLAYED here (runpy + stub
+          auth + cassettes), not by run_examples.py. The example's switch to
+          auth.aget_token hit `_StubGraphAuth` which had only __call__ ->
+          AttributeError. Added an async aget_token to the stub (returns self()).
+          Lesson: an examples/ edit is a CODE change — run the full suite

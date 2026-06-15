@@ -77,6 +77,11 @@ class _StubGraphAuth:
         type(self).calls += 1
         return "graph-replay-token"
 
+    async def aget_token(self) -> str:
+        # The example wires the backend with the async provider (auth.aget_token);
+        # mirror the real GraphAuth, whose async path ultimately fetches the token.
+        return self()
+
 
 async def _purge_example_root() -> None:
     """Best-effort delete of the drive's example folder (live-run hygiene).
