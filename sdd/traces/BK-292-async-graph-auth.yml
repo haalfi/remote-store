@@ -1,0 +1,114 @@
+# yaml-language-server: $schema=_schema.yml
+id: BK-292
+title: "Async GraphAuth acquisition path (aget_token) — off-loop MSAL offload + single-flight of concurrent acquisitions"
+trigger: >-
+  The built-in GraphAuth was sync-only: invoked directly on the event loop as
+  the backend's token_provider, a cold/expired-token MSAL fetch (and the BK-291
+  contended cross-process cache lock) blocked the loop, and N concurrent ops made
+  N independent acquisitions (live-confirmed 16 calls for 16 ops) — an N-way IdP
+  stampede the one-shot 401 refresh multiplies. BK-291 explicitly deferred the
+  event-loop lock-wait offload here. Split from BK-290 per the PR #814 review.
+source_items:
+  - BK-292
+audience:
+  - user.api
+  - library.maintainer
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-292"
+        read_type: gate
+        extract: >-
+          Scope: add an async GraphAuth acquisition path + single-flight refresh;
+          the async-auth path is the bulk of the work
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "acquire_token (~313), _send_attempt 401 branch (~367)"
+        read_type: gate
+        extract: >-
+          acquire_token already awaits an awaitable result, so the async-provider
+          protocol is ready — no http.py change needed; the 401 re-invoke dedups
+          for free once the provider single-flights
+      - file: src/remote_store/aio/backends/_graph/auth.py
+        section: "__init__, _acquire, get_token, __call__"
+        read_type: gate
+        extract: >-
+          All sync; _app/_cache built lazily once. Add aget_token + an asyncio
+          single-flight wrapping to_thread(get_token); keep the sync path intact
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/adrs/0022-graph-auth-model.md
+        section: "Token caching (BK-291 deferral note), Two callable shapes"
+        read_type: gate
+        extract: >-
+          The deferral note names this work; the async shape is "primary" but was
+          aspirational. Decision: aget_token offloads via asyncio.to_thread and
+          single-flights with a lock-free in-flight task (set/cleared between
+          await points = atomic on one loop), bounded to one event loop per GR-059
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/backends/graph/aio/test_auth.py
+        section: "TestAsyncAcquisition (new)"
+        read_type: reference
+        extract: >-
+          RED-first: aget_token absent -> AttributeError. Gated-Event tests prove
+          single-flight dedup (one get_token for N callers), off-loop execution
+          (worker thread ident != loop ident), and exception fan-out + retry
+      - file: tests/backends/graph/aio/test_concurrency.py
+        section: "TestAsyncTokenProvider (new), live probe rewrite"
+        read_type: reference
+        extract: >-
+          Tier-1 respx e2e through token_provider=auth.aget_token (backend awaits
+          the async shape; acquisitions never multiply past N). Rewrote the BK-292
+          live probe to the async path and the dedup-direction invariant (1<=calls
+          <=N), retiring the old sync >=N assertion the probe flagged for update
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/aio/backends/_graph/auth.py
+        section: "aget_token, _single_flight, __init__ _inflight, docstrings"
+        read_type: reference
+        extract: >-
+          _single_flight records ensure_future(to_thread(get_token)) as _inflight,
+          joiners await the same task, finally clears it. The ruff hook stripped
+          `import asyncio` twice (unused at edit time) — re-added after the
+          consuming code existed
+  - id: docs
+    name: Docs
+    steps:
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-008"
+        read_type: reference
+        extract: >-
+          Amended postconditions in place (no new ID): GraphAuth offers both
+          callable shapes; aget_token offloads + single-flights (incl. the 401
+          re-invoke), fans out the typed error, one-loop-bound
+      - file: docs-src/guides/backends/graph.md
+        section: "Usage, token_provider note"
+        read_type: reference
+        extract: >-
+          Lead example uses token_provider=auth.aget_token; a note explains the
+          off-loop + single-flight payoff and when to keep the sync instance
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: reference
+        extract: "Stub line (audience user.api): GraphAuth.aget_token async provider"
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/graph/aio/test_auth.py
+        section: "(full file)"
+        read_type: verify
+        extract: "All auth tests green against the worktree src (32 + 4 new)"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: >-
+          BACKLOG->BACKLOG-DONE move (DONE newest-first), CHANGELOG stub, GR-008 +
+          ADR-0022 updates, gen-backlogid + gen-graph(-viz) checks, no GR-/BK- IDs
+          in docstrings, trace ships same PR

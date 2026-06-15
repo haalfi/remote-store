@@ -40,6 +40,7 @@ import asyncio
 import os
 import re
 import uuid
+from typing import Any
 
 import httpx
 import pytest
@@ -51,6 +52,7 @@ from remote_store._models import WriteResult
 pytest.importorskip("httpx", reason="httpx not installed (graph extra)")
 
 from remote_store.aio.backends._graph import backend as graph_backend  # noqa: E402
+from remote_store.aio.backends._graph.auth import GraphAuth  # noqa: E402
 from remote_store.aio.backends._graph.backend import (  # noqa: E402
     _REPLACE_RACE_MAX_ATTEMPTS,
     GraphBackend,
@@ -299,21 +301,77 @@ class TestConcurrentReads:
         assert all(r == b"hello world" for r in results)
 
 
+class _CountingGraphAuth(GraphAuth):
+    """A ``GraphAuth`` whose MSAL acquisition is faked and counted (no network).
+
+    Overrides ``get_token`` so the inherited ``aget_token`` / single-flight wraps
+    a deterministic stand-in; ``calls`` counts the underlying acquisitions that
+    single-flight is meant to collapse.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("t", "c", client_secret="s")
+        self.calls = 0
+
+    def get_token(self) -> str:
+        self.calls += 1
+        return "tok"
+
+
+@pytest.mark.concurrency
+class TestAsyncTokenProvider:
+    """GR-008 — the async ``GraphAuth.aget_token`` provider drives a real request.
+
+    Proves the backend awaits the ``Callable[[], Awaitable[str]]`` shape and that
+    N concurrent ops sharing one provider never acquire *more* than once per op
+    (single-flight can only collapse, never multiply). The exactly-one-acquisition
+    dedup is proven deterministically in ``test_auth.py::TestAsyncAcquisition``.
+    """
+
+    @respx.mock
+    @pytest.mark.spec("GR-008")
+    async def test_async_provider_request_path(self) -> None:
+        respx.get(url__regex=_META_RE.pattern).mock(return_value=httpx.Response(200, json=_file_item()))
+        respx.get(_DOWNLOAD).mock(return_value=httpx.Response(200, content=b"hello world"))
+        auth = _CountingGraphAuth()
+        async with GraphBackend(_DRIVE, token_provider=auth.aget_token) as backend:
+            assert await backend.read_bytes("a.txt") == b"hello world"
+        assert auth.calls >= 1  # the async provider was invoked and awaited
+
+    @respx.mock
+    @pytest.mark.spec("GR-008")
+    async def test_concurrent_ops_do_not_multiply_acquisitions(self) -> None:
+        respx.get(url__regex=_META_RE.pattern).mock(return_value=httpx.Response(200, json=_file_item()))
+        respx.get(_DOWNLOAD).mock(return_value=httpx.Response(200, content=b"hello world"))
+        auth = _CountingGraphAuth()
+        async with GraphBackend(_DRIVE, token_provider=auth.aget_token) as backend:
+            results = await asyncio.gather(*(backend.read_bytes("a.txt") for _ in range(_N)))
+        assert all(r == b"hello world" for r in results)
+        # Single-flight: at most one acquisition per op, never the N-multiplied
+        # stampede a naive async provider would cause.
+        assert 1 <= auth.calls <= _N
+
+
 # ---------------------------------------------------------------------------
 # Tier 3 — live race probes (opt-in: RS_TEST_LIVE_GRAPH=1, real OneDrive)
 # ---------------------------------------------------------------------------
 
 
-class _CountingProvider:
-    """Wraps a token provider and counts acquisitions (token-call probe)."""
+class _LiveCountingGraphAuth(GraphAuth):
+    """Real-MSAL ``GraphAuth`` that counts underlying acquisitions (live probe).
 
-    def __init__(self, inner: object) -> None:
-        self._inner = inner
+    Unlike the Tier-1 ``_CountingGraphAuth``, ``get_token`` calls through to the
+    real MSAL acquisition — the single-flight wrapper (``aget_token``) is what is
+    under test, and ``calls`` counts the acquisitions it collapses.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
         self.calls = 0
 
-    def __call__(self) -> str:
+    def get_token(self) -> str:
         self.calls += 1
-        return self._inner()  # type: ignore[operator]
+        return super().get_token()
 
 
 @pytest.mark.live
@@ -408,22 +466,25 @@ class TestGraphConcurrencyLive:
                 await backend.delete_folder(scratch, recursive=True)
             await backend.aclose()
 
-    async def test_live_concurrent_ops_acquire_tokens(self, live_creds: dict[str, str], scratch: str) -> None:
-        from remote_store.aio.backends._graph import GraphAuth
-
-        inner = GraphAuth(live_creds["GRAPH_TENANT_ID"], live_creds["GRAPH_CLIENT_ID"], scopes=self._LIVE_SCOPES)
-        provider = _CountingProvider(inner)
-        backend = await self._backend(live_creds, provider=provider)
+    async def test_live_concurrent_ops_single_flight_acquire_tokens(
+        self, live_creds: dict[str, str], scratch: str
+    ) -> None:
+        auth = _LiveCountingGraphAuth(
+            live_creds["GRAPH_TENANT_ID"], live_creds["GRAPH_CLIENT_ID"], scopes=self._LIVE_SCOPES
+        )
+        # The async single-flight provider (aget_token), not the sync instance:
+        # this is the BK-292 path under probe.
+        backend = await self._backend(live_creds, provider=auth.aget_token)
         n_ops = 8
         try:
             await asyncio.gather(*(backend.write(f"{scratch}/tok-{i}.txt", b"x") for i in range(n_ops)))
-            # BK-292 probe. Today each op acquires a token independently
-            # (live-confirmed ~1 call/op), so N concurrent writes make >= N
-            # acquisitions. This is deliberately tight: when BK-292's async-auth
-            # single-flight / in-flight refresh dedup lands, the count drops below
-            # N and this assertion breaks *by design* — the signal that the dedup
-            # took effect (at which point this probe is updated alongside it).
-            assert provider.calls >= n_ops
+            # BK-292: the async single-flight collapses concurrent acquisitions.
+            # The live invariant is the dedup *direction* — never more than one
+            # acquisition per op, and at least one — not a precise count (live
+            # token warmth and interleaving vary; fully-overlapping cold callers
+            # collapse to one). The deterministic exactly-one dedup is proven in
+            # tests/backends/graph/aio/test_auth.py::TestAsyncAcquisition.
+            assert 1 <= auth.calls <= n_ops
         finally:
             import contextlib
 

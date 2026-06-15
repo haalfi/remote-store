@@ -8,6 +8,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-292 — Graph token acquisition: async `GraphAuth` path + single-flight refresh**
+  spec: GR-008 · effort: M · audience: user.api, library.maintainer
+  The built-in `GraphAuth` was sync-only: used as the backend's `token_provider`
+  it was invoked directly on the event loop, so a cold/expired-token MSAL fetch
+  (and the BK-291 contended cross-process cache lock, ≈5 s with the `filelock`
+  fallback) **blocked the loop**, and N concurrent ops made N independent
+  acquisitions (live-confirmed 16 calls for 16 ops) — an N-way IdP stampede that
+  the one-shot `401` refresh (GR-029) multiplies. Added `GraphAuth.aget_token`, a
+  `Callable[[], Awaitable[str]]` that offloads the sync MSAL work to a worker
+  thread (`asyncio.to_thread`, never blocking the loop) and **single-flights**
+  concurrent acquisitions: N coroutines share one in-flight acquisition (the
+  dedup is lock-free — the in-flight task is set/cleared between `await` points,
+  atomic on one loop — and also keeps MSAL's non-thread-safe app/cache to one
+  worker at a time). A failed acquisition fans out the same typed
+  `PermissionDenied` to every joiner; the next call retries. The sync
+  `get_token` / `__call__` is unchanged (sync-facing callers with no loop). Pass
+  `token_provider=auth.aget_token` on the event loop. Resolves the BK-291 deferral
+  of the event-loop lock-wait offload (the async path); the sync path still blocks
+  by design. GR-008 amended; ADR-0022 updated (deferral note resolved). Split from
+  BK-290 per the PR #814 review. Trace: `sdd/traces/BK-292-async-graph-auth.yml`.
+
 - [x] **BK-294 — Retry Graph `overwrite=True` 409-under-replace (create-race) as transient**
   spec: GR-018, GR-032 · effort: M · audience: user.api
   BK-288 documented two ways `overwrite=True` (`conflictBehavior=replace`) can

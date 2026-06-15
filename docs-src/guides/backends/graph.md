@@ -48,8 +48,9 @@ async def main() -> None:
     #    raises RuntimeError when called from a running one.
     drive_id = await GraphUtils.aresolve_drive_id("me", token_provider=auth)
 
-    # 3. Construct the backend and use it through AsyncStore.
-    backend = GraphBackend(drive_id, token_provider=auth)
+    # 3. Construct the backend and use it through AsyncStore. On the event loop,
+    #    prefer the async auth.aget_token (off-loop acquisition + single-flight).
+    backend = GraphBackend(drive_id, token_provider=auth.aget_token)
     async with AsyncStore(backend, root_path="Documents") as store:
         await store.write("report.csv", b"col1,col2\n1,2\n", overwrite=True)
         data = await store.read_bytes("report.csv")
@@ -61,6 +62,23 @@ asyncio.run(main())
 `token_provider` is any `Callable[[], str]` or `Callable[[], Awaitable[str]]`
 returning a bearer token; `GraphAuth` is the built-in MSAL implementation but
 any callable works (e.g. a token minted by your own identity layer).
+
+`GraphAuth` exposes both shapes over one instance. On the event loop, prefer the
+async `auth.aget_token` over passing the instance directly:
+
+```python
+backend = GraphBackend(drive_id, token_provider=auth.aget_token)
+```
+
+`aget_token` offloads the blocking MSAL acquisition (and any contended
+token-cache lock wait) to a worker thread, so a cold or expired token never
+stalls sibling coroutines, and it **single-flights** concurrent acquisitions: a
+large `asyncio.gather` over a shared backend acquires the token once rather than
+once per coroutine (the same dedup covers the one-shot refresh after a `401`).
+Passing the instance directly (`token_provider=auth`) uses the synchronous
+`get_token`, which runs on the event loop and acquires per request — reserve it
+for synchronous wiring that has no running loop. A user-supplied async provider
+that wants this dedup must implement its own.
 
 ## Authentication
 

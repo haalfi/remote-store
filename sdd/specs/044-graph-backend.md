@@ -213,6 +213,20 @@ invokes the callable lazily — never from `__init__`.
   `PermissionDenied`.
 - `GraphAuth` is one implementation of the protocol; user-supplied
   callables are first-class equivalents (ADR-0022).
+- The built-in `GraphAuth` offers **both** callable shapes over one
+  instance: the synchronous `get_token` / `__call__`, and the
+  asynchronous `aget_token` (a `Callable[[], Awaitable[str]]`). On the
+  event loop, `aget_token` is preferred: it offloads the blocking MSAL
+  acquisition — including a contended token-cache lock wait (GR-007,
+  ADR-0022 § Token caching) — to a worker thread so the loop is never
+  blocked, and **single-flights** concurrent acquisitions so N coroutines
+  acquiring at once (including the re-invocation after a `401`) share
+  **one** acquisition rather than each reaching the identity provider. A
+  failed acquisition fans out the same typed `PermissionDenied` to every
+  joiner of the shared in-flight acquisition; a later call retries afresh.
+  The single-flight state is bound to one event loop, matching the
+  backend's single-loop posture (GR-059). User-supplied async providers
+  own their own dedup.
 
 ---
 

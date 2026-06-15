@@ -97,13 +97,16 @@ cache in a thin `PersistedTokenCache` subclass: `modify()` swallows+logs
 persistence failures (degrade to re-acquisition), and `search()` swallows+logs
 read failures and returns `[]` (degrade to a cache miss → fresh acquisition),
 keeping acquisition non-breaking while preserving multi-process safety on the
-happy path. The lock wait runs on the calling thread, and because the sync
-provider is invoked directly on the event loop (no `to_thread`), a *contended*
-acquisition blocks the loop for the lock backend's timeout — up to ≈5 s with the
-`filelock` fallback that ships when `portalocker` is absent (it is not in the
-resolved `graph` lock). Offloading the acquisition off the event loop belongs to
-the async-`GraphAuth` path (BK-292), not the sync provider; the bound is stated
-here so the deferral is not misread as negligible.
+happy path. The lock wait runs on the calling thread. The **synchronous**
+provider (`get_token` / `__call__`) is invoked directly on the event loop (no
+`to_thread`), so a *contended* sync acquisition still blocks the loop for the
+lock backend's timeout — up to ≈5 s with the `filelock` fallback that ships when
+`portalocker` is absent (it is not in the resolved `graph` lock). The
+**asynchronous** provider (`aget_token`, BK-292) resolves this on the async path:
+it offloads the whole acquisition — the MSAL fetch and any contended lock wait —
+to a worker thread via `asyncio.to_thread`, so the loop is never blocked. The
+sync path is unchanged and blocks by design (it exists for sync-facing callers
+with no running loop); the bound above applies to it.
 
 Users can override the path with `cache_path=` or supply their own
 token-provider callable to bypass `GraphAuth` (and MSAL) altogether.
@@ -167,7 +170,20 @@ in static config and only apply to direct construction.
   both be supported. The backend is async-native (ADR-0012), so the
   async shape is primary; the sync shape exists so sync-facing
   wrapper code can reuse the same `GraphAuth` instance without
-  an event loop.
+  an event loop. `GraphAuth` implements both over one instance: the
+  sync `get_token` / `__call__` and the async `aget_token` bound method
+  (BK-292). `aget_token` offloads the blocking MSAL acquisition to a
+  worker thread (`asyncio.to_thread`) so the event loop is never blocked,
+  and **single-flights** concurrent acquisitions — N coroutines acquiring
+  at once (including the one-shot `401` refresh, GR-029) share one
+  in-flight acquisition rather than stampeding the identity provider
+  N-way. The dedup uses no lock: the in-flight task is recorded and
+  cleared between `await` points, which on one event loop is atomic; it
+  therefore also guarantees only one worker thread touches MSAL's
+  not-thread-safe app/cache at a time (the cross-process lock handles
+  other processes). The single-flight state is bound to one event loop,
+  consistent with the backend's single-loop posture (GR-059). A raised
+  acquisition error fans out to every joiner; the next call retries.
 - **`_SENSITIVE_KEYS` widened.** Adding `"client_secret"` and
   `"client_certificate"` (ID-127) was a one-line config change with
   no behavioural impact on other backends (their config keys do not

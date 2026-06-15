@@ -8,6 +8,8 @@ the GR-CORE PR.
 
 from __future__ import annotations
 
+import asyncio
+import threading
 from typing import Any
 
 import pytest
@@ -314,3 +316,95 @@ class TestCachePersistence:
         auth._cache = auth._load_cache()
         auth.flush_cache()  # cache loaded — still a no-op
         assert not target.exists()
+
+
+class TestAsyncAcquisition:
+    """GR-008 async acquisition path — `aget_token` offloads MSAL to a worker
+    thread and single-flights concurrent callers (BK-292).
+
+    These tests fake `get_token` directly (the sync acquisition is already
+    covered by `TestGetToken`); the point under test is the async wrapper's
+    off-loop offload and single-flight dedup, not the MSAL control flow.
+    """
+
+    @pytest.mark.spec("GR-008")
+    async def test_aget_token_returns_token(self, fake_msal: None, tmp_path: Any) -> None:
+        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
+        assert await auth.aget_token() == "tok-cc"
+
+    @pytest.mark.spec("GR-008")
+    async def test_single_flight_dedups_concurrent_acquisitions(
+        self, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # N concurrent aget_token() callers must share ONE acquisition: the
+        # underlying get_token runs exactly once and every caller gets its token.
+        # A threading.Event gate holds the single in-flight worker open until all
+        # callers have piled onto it, so the dedup is observed deterministically
+        # (not won by the first call finishing before the others schedule).
+        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
+        calls = 0
+        gate = threading.Event()
+
+        def _fake_get_token() -> str:
+            nonlocal calls
+            calls += 1
+            gate.wait(timeout=5)
+            return "tok-shared"
+
+        monkeypatch.setattr(auth, "get_token", _fake_get_token)
+
+        tasks = [asyncio.ensure_future(auth.aget_token()) for _ in range(8)]
+        await asyncio.sleep(0)  # let all callers schedule and join the in-flight task
+        gate.set()  # release the single worker thread
+        results = await asyncio.gather(*tasks)
+
+        assert calls == 1
+        assert results == ["tok-shared"] * 8
+
+    @pytest.mark.spec("GR-008")
+    async def test_acquisition_runs_off_the_event_loop(self, tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+        # The sync MSAL work must run on a worker thread, never the loop thread.
+        # Deterministic (thread-identity), not timing-based.
+        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
+        loop_thread = threading.get_ident()
+        worker_thread: list[int] = []
+
+        def _fake_get_token() -> str:
+            worker_thread.append(threading.get_ident())
+            return "tok"
+
+        monkeypatch.setattr(auth, "get_token", _fake_get_token)
+        await auth.aget_token()
+        assert worker_thread == [worker_thread[0]]
+        assert worker_thread[0] != loop_thread
+
+    @pytest.mark.spec("GR-008")
+    async def test_exception_fans_out_to_all_joiners_then_retries(
+        self, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # An acquisition failure propagates to the owner and every joiner sharing
+        # the in-flight task; a later call starts a fresh acquisition (retry).
+        auth = GraphAuth("t", "c", client_secret="s", cache_path=str(tmp_path / "c.json"))
+        calls = 0
+        gate = threading.Event()
+
+        def _boom() -> str:
+            nonlocal calls
+            calls += 1
+            gate.wait(timeout=5)
+            raise PermissionDenied("nope", backend="graph")
+
+        monkeypatch.setattr(auth, "get_token", _boom)
+
+        tasks = [asyncio.ensure_future(auth.aget_token()) for _ in range(4)]
+        await asyncio.sleep(0)
+        gate.set()
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        assert calls == 1  # single-flight: one shared acquisition
+        assert all(isinstance(r, PermissionDenied) for r in results)
+
+        # The in-flight window is closed, so a subsequent call retries afresh.
+        gate.set()
+        with pytest.raises(PermissionDenied):
+            await auth.aget_token()
+        assert calls == 2
