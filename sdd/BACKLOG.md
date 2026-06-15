@@ -153,20 +153,6 @@ deadlock-free. The items below are the divergences and the unspecified contract.
   that repo is not present in this container. Keep the assertions invariant-only
   and posture-aware (do not thread-stress a shared SFTP/HTTP store).
 
-- [ ] **BK-290 — Graph async I/O robustness under concurrent load**
-  spec: GR-008, GR-019 · effort: S · audience: user.api, library.maintainer
-  Two independent I/O-robustness gaps surfaced by the review:
-  1. **No `httpx.Limits` exposed.** The shared client uses the silent 100-conn
-     default; very high fan-out surfaces as opaque `BackendUnavailable`. Expose a
-     first-class limit (or document the `client_options` knob).
-  2. **Blocking spool I/O on the event-loop thread** (`reader.read(10 MiB)` /
-     spool writes in `transfer.py`) head-of-line-blocks sibling callers during
-     large disk-spilled transfers. **ADR-0025 § Risks misattributes this to
-     "chunk hashing," which does not exist** (no `hashlib` in `transfer.py`);
-     wrap the blocking I/O in `asyncio.to_thread` and correct the ADR risk text.
-  Related: `ext.cache` stampede over Graph (no per-key dedup) compounds ID-218 —
-  track the cache side there. Token single-flight is split out as BK-292.
-
 - [ ] **BK-292 — Graph token acquisition: async `GraphAuth` path + single-flight refresh**
   spec: GR-008 · effort: M · audience: user.api, library.maintainer
   N concurrent requests make N independent token-provider calls (live-confirmed:

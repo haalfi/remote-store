@@ -401,6 +401,10 @@ agnostic.
   for I/O backends, but possible for `_graph_transfer`'s chunk
   hashing) can stall sibling calls. Mitigation deferred to backend
   authors via `asyncio.to_thread` for hot CPU paths.
+
+  > Superseded by [ADR-0029](0029-graph-transfer-blocking-io-offload.md):
+  > the Graph transfer path does no hashing; the real stall source is
+  > blocking spool **I/O**, now offloaded in-backend via `asyncio.to_thread`.
 - **Loop teardown timeout.** If a wrapped backend ignores
   cancellation, `close()`'s bounded join leaves the daemon thread
   to be reaped at process exit; the warning surfaces this but does

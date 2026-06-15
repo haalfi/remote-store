@@ -32,6 +32,7 @@ may change without a public-API deprecation.
 
 from __future__ import annotations
 
+import asyncio
 import io
 import logging
 import tempfile
@@ -253,13 +254,16 @@ async def _spooled_window(
     ``_SPOOL_READ_CHUNK`` slices.
     """
     with tempfile.SpooledTemporaryFile(max_size=_SPOOL_MAX_SIZE) as spool:
+        # The spool rolls over to disk past _SPOOL_MAX_SIZE; once it has, write /
+        # seek / read are blocking file I/O. Offload them so a large fallback read
+        # does not head-of-line-block sibling coroutines on the event loop (BK-290).
         async for chunk in response.aiter_bytes():
-            spool.write(chunk)
-        spool.seek(skip)
+            await asyncio.to_thread(spool.write, chunk)
+        await asyncio.to_thread(spool.seek, skip)
         owed = remaining
         while owed is None or owed > 0:
             want = _SPOOL_READ_CHUNK if owed is None else min(_SPOOL_READ_CHUNK, owed)
-            data = spool.read(want)
+            data = await asyncio.to_thread(spool.read, want)
             if not data:
                 return
             if owed is not None:
@@ -303,12 +307,15 @@ async def spool_content(content: bytes | AsyncIterator[bytes], *, path: str) -> 
     # Returned to the caller, which owns closing it (write()'s finally) — a
     # context manager here would close it before the upload reads from it.
     spool: Any = tempfile.SpooledTemporaryFile(max_size=_UPLOAD_SPOOL_MAX_SIZE)  # noqa: SIM115
+    # Draining an unknown-length iterator spills past _UPLOAD_SPOOL_MAX_SIZE to
+    # disk; offload the blocking write / tell / seek so a large spill does not
+    # head-of-line-block sibling coroutines on the event loop (BK-290).
     async for chunk in content:
-        spool.write(chunk)
-    total = spool.tell()
+        await asyncio.to_thread(spool.write, chunk)
+    total = await asyncio.to_thread(spool.tell)
     if total > _UPLOAD_SPOOL_MAX_SIZE:
         log.debug("%s: spilled %d bytes to %s for %r", UPLOAD_SPOOL_MARKER, total, spool.name, path)
-    spool.seek(0)
+    await asyncio.to_thread(spool.seek, 0)
     return spool, total
 
 
@@ -407,6 +414,16 @@ async def _create_upload_session(
     return session_url
 
 
+def _seek_read(reader: BinaryIO, offset: int, length: int) -> bytes:
+    """Seek *reader* to *offset* and read *length* bytes — one blocking unit for ``to_thread``.
+
+    Bundling the seek and read into a single call keeps a chunk replay to one
+    thread hop (and one atomic position+read on the shared reader) per chunk.
+    """
+    reader.seek(offset)
+    return reader.read(length)
+
+
 async def _upload_chunks(
     client: httpx.AsyncClient,
     session_url: str,
@@ -425,8 +442,9 @@ async def _upload_chunks(
     while offset < total:
         length = min(chunk_size, total - offset)  # chunk_size is pre-aligned; final chunk is the remainder
         end = offset + length - 1
-        reader.seek(offset)
-        data = reader.read(length)
+        # reader may be a disk-spilled spool; offload the blocking seek+read (one
+        # hop) so a large upload does not stall sibling coroutines (BK-290).
+        data = await asyncio.to_thread(_seek_read, reader, offset, length)
         response = await graph_send(
             client,
             "PUT",

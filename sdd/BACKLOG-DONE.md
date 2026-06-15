@@ -8,6 +8,34 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-290 — Graph async I/O robustness under concurrent load**
+  spec: GR-008, GR-019 · effort: S · audience: user.api, library.maintainer
+  Closed the two I/O-robustness gaps the expectation-driven review surfaced.
+  **(1) Blocking spool I/O off the loop:** `transfer.py` ran `SpooledTemporaryFile`
+  `write` / `seek` / `read` / `tell` synchronously on the event-loop thread in
+  three sites — the SharePoint range-fallback (`_spooled_window`) and the
+  unknown-length upload spool (`spool_content` + `_upload_chunks`' per-chunk
+  `reader.read` of up to one `upload_chunk_size`). Once the spool spilled to disk,
+  a large transfer head-of-line-blocked sibling coroutines. All four call shapes
+  now dispatch through `asyncio.to_thread` (the chunk replay bundled into one
+  `_seek_read` hop). Two deterministic tests assert the **thread of execution**
+  (blocking I/O lands on a worker thread, never the loop) rather than timing —
+  `test_transfer.py::TestSpoolOffloadOffLoop`, `test_write.py::TestUploadSpoolOffloadOffLoop`.
+  **(2) Connection-pool ceiling documented, not parameterised:** the silent httpx
+  100-conn default surfaces high fan-out as opaque `BackendUnavailable`. Chose the
+  S3 precedent — document the existing `client_options` passthrough
+  (`{"limits": httpx.Limits(...)}`) with a "Connection-pool tuning" guide caveat
+  and an executable snippet (`examples/snippets/graph_client_tuning.py`) — rather
+  than add a first-class `limits=` parameter (keeps the API surface minimal).
+  **ADR correction:** ADR-0025 § Risks misattributed the loop-stall to
+  "`_graph_transfer` chunk hashing," which does not exist (no `hashlib` in
+  `transfer.py`); per the immutability rule, **ADR-0029** supersedes that one
+  bullet (the real cause is blocking spool I/O, now mitigated in-backend) and a
+  pointer was added at the superseded bullet. Spec: GR-015 / GR-019 gained
+  event-loop-liveness postconditions. Out of scope and left as follow-ups: token
+  single-flight (**BK-292**), `ext.cache` stampede (**ID-218**). Trace:
+  `sdd/traces/BK-290-graph-io-robustness.yml`.
+
 - [x] **BK-288 — Cross-backend concurrent-use-posture documentation (docs leg of the concurrency contract)**
   spec: — · effort: M · audience: user.site, user.api_docs
   **Rescoped** from "Graph concurrency & consistency docs" to the docs leg of the
