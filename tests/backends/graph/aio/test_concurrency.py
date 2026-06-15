@@ -208,10 +208,16 @@ class TestOverwriteReplaceRetry:
 
     @respx.mock
     async def test_overwrite_create_race_retries_upload_session_branch(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        # The >4 MiB dispatch branch retries the same way. Shrink the small-file
+        # Branch coverage for the >4 MiB dispatch path. Shrink the small-file
         # boundary so a tiny body takes the upload-session path; createUploadSession
-        # 409s once (create race -> AlreadyExists), then the re-attempt opens a
-        # session and the chunk PUT carries the full (rewound) body.
+        # 409s once (create race -> AlreadyExists), then the re-attempt opens a fresh
+        # session and the chunk PUT carries the full body. This proves the retry loop
+        # re-enters and re-opens the session for the large-file branch. (Unlike the
+        # small-file path, the create-race 409 here fires at createUploadSession — a
+        # POST with no body — before any reader.read(), so the reader is still at 0
+        # and the seek(0) rewind is a no-op on this path; the rewind guard lives in
+        # test_overwrite_create_race_reissues_full_body, which the small-file PUT
+        # exercises because it consumes the reader before drawing the 409.)
         monkeypatch.setattr(graph_backend, "_SMALL_FILE_MAX_SIZE", 4)
         sessions = {"n": 0}
 

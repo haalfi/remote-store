@@ -23,7 +23,7 @@ expected_ripples:
   - sdd/BACKLOG-DONE.md
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
-review_rounds: 1
+review_rounds: 2
 surprising_ripples:
   # The public-API write() docstring change rippled to graph.json + the derived
   # graph_viz.html; not caught until the full `hatch run all` gate (the lighter
@@ -185,4 +185,15 @@ phases:
           got a pushback reply (graph_send is transport-retry / 409-terminal / cannot
           re-materialise a body; only the duplicated backoff formula is shareable, a
           separate refactor) and was left open for the maintainer's call.
+        outcome: ok
+      - file: tests/backends/graph/aio/test_concurrency.py
+        section: "test_overwrite_create_race_retries_upload_session_branch (comment)"
+        read_type: gate
+        extract: >-
+          Round-2 review: the upload-session test's "(rewound)" wording overstated
+          the guard — on the large-file path the create-race 409 fires at
+          createUploadSession (POST, no body) before any reader.read(), so seek(0)
+          is a no-op there. Reworded to claim only branch coverage (retry re-enters /
+          re-opens the session) and point at the small-file body-capture test as the
+          actual rewind guard. Comment-only; no behaviour change.
         outcome: ok
