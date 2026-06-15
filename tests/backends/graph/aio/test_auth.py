@@ -241,6 +241,28 @@ class TestCachePersistence:
         assert any("token cache" in r.getMessage() for r in caplog.records)
 
     @pytest.mark.spec("GR-007")
+    def test_read_failure_is_best_effort(
+        self, tmp_path: Any, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # BK-291 review round 2: the READ path must also be best-effort. A
+        # corrupt / persistently-contended cache makes PersistedTokenCache's
+        # search() (and the find() that delegates to it) re-raise after its
+        # dirty-read retries; that must degrade to a cache miss, not escape
+        # acquisition as an untyped json/OS error.
+        import msal_extensions.token_cache as mxtc
+
+        monkeypatch.setattr(mxtc.time, "sleep", lambda *_a, **_k: None)  # skip retry backoff
+        cache = GraphAuth("consumers", "c", cache_path=str(tmp_path / "c.json"))._load_cache()
+
+        def _boom() -> None:
+            raise OSError("cache unreadable")
+
+        monkeypatch.setattr(cache, "_reload_if_necessary", _boom)
+        result = cache.search(cache.CredentialType.ACCESS_TOKEN)
+        assert result == []  # degraded to "no cached token", not raised
+        assert any("token cache" in r.getMessage() for r in caplog.records)
+
+    @pytest.mark.spec("GR-007")
     def test_acquired_token_is_written_through_to_disk(self, tmp_path: Any) -> None:
         # BK-291: an MSAL token acquisition routes through PersistedTokenCache's
         # lock-coordinated modify(), which writes the cache through to disk

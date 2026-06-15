@@ -44,16 +44,17 @@ _PERSISTED_CACHE_CLS: Any = None
 def _build_token_cache(path: str) -> Any:
     """Build the multi-process-safe token cache, with best-effort persistence.
 
-    ``msal_extensions.PersistedTokenCache.modify()`` persists on every token
-    change inside ``with CrossPlatLock(...)``: it writes through to disk under a
-    cross-process lock. A lock-contention timeout or a disk write error there
-    must **not** break token acquisition or escape ``get_token`` as an untyped
-    exception mid-``read`` / ``write`` (a persistence failure is not a token
-    failure). The subclass below swallows and logs persistence failures,
-    degrading to a re-acquisition next run — the best-effort guarantee the old
-    ``flush_cache`` provided. The class is built once and cached so the
-    ``msal_extensions`` import stays lazy (never loaded for user-supplied
-    providers).
+    ``msal_extensions.PersistedTokenCache`` reads and writes the on-disk cache
+    on every acquisition: ``modify()`` writes through under a cross-process
+    ``CrossPlatLock``, and ``search()`` reload-merges (re-raising after its
+    dirty-read retries). A lock-contention timeout, a disk error, or a
+    corrupt/half-written cache file there must **not** break token acquisition
+    or escape ``get_token`` as an untyped exception mid-``read`` / ``write`` (a
+    persistence error is not a token failure). The subclass below makes **both**
+    the write (``modify``) and read (``search``) paths best-effort — swallow,
+    log, and degrade to a re-acquisition — the guarantee the old ``flush_cache``
+    provided. The class is built once and cached so the ``msal_extensions``
+    import stays lazy (never loaded for user-supplied providers).
     """
     global _PERSISTED_CACHE_CLS
     if _PERSISTED_CACHE_CLS is None:
@@ -65,6 +66,17 @@ def _build_token_cache(path: str) -> Any:
                     super().modify(credential_type, old_entry, new_key_value_pairs=new_key_value_pairs)
                 except Exception:  # noqa: BLE001 -- persistence is best-effort; never break acquisition
                     log.warning("failed to persist Graph token cache", exc_info=True)
+
+            def search(self, credential_type: Any, **kwargs: Any) -> Any:
+                # A corrupt / persistently-contended cache file makes search()
+                # (and the find() that delegates to it) re-raise after its
+                # dirty-read retries. Degrade to "no cached token" so MSAL
+                # re-acquires instead of breaking the in-flight read/write.
+                try:
+                    return super().search(credential_type, **kwargs)
+                except Exception:  # noqa: BLE001 -- read is best-effort; degrade to a cache miss
+                    log.warning("failed to read Graph token cache; treating as empty", exc_info=True)
+                    return []
 
         _PERSISTED_CACHE_CLS = _BestEffortPersistedTokenCache
 

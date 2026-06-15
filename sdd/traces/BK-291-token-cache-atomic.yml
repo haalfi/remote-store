@@ -17,7 +17,8 @@ expected_ripples:
 surprising_ripples:
   - docs-src/guides/backends/graph.md
   - docs-src/reference/tested-versions.md
-review_rounds: 1
+  - infra/drift-locks/graph.txt
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

@@ -78,15 +78,20 @@ replace; `PersistedTokenCache` sidesteps that entirely (lock + read-retry,
 no rename). Because persistence is now continuous, `GraphAuth.flush_cache`
 is a best-effort no-op retained only for the GR-051 `close()` hook.
 
-Persistence moved *inside* MSAL's acquisition (`modify()` writes through
-under the lock), so a write or lock-contention failure there would, unguarded,
-escape `get_token` as an untyped `OSError` / lock exception mid-`read` /
-`write` — regressing the best-effort-swallow the old `flush_cache` provided
-and the GR-006 / GR-008 typed-error contract. `GraphAuth` therefore wraps the
-cache in a thin `PersistedTokenCache` subclass whose `modify()` swallows and
-logs persistence failures, keeping acquisition non-breaking (degrade to
-re-acquisition) while preserving the multi-process safety when the write
-succeeds. The lock wait is bounded and runs on the calling thread; offloading
+Cache access moved *inside* MSAL's acquisition — `modify()` writes through
+under the lock, and `search()` reload-merges on every acquisition — so an
+unguarded write failure (`OSError` / lock exception) *or* read failure (a
+corrupt / persistently-contended cache making `search()` re-raise after its
+dirty-read retries) would escape `get_token` untyped mid-`read` / `write`,
+regressing the best-effort-swallow the old `flush_cache` provided and the
+GR-006 / GR-008 typed-error contract. The multi-process design makes dirty
+reads a new, more frequent failure mode (every acquisition reloads), so the
+read path matters as much as the write path. `GraphAuth` therefore wraps the
+cache in a thin `PersistedTokenCache` subclass: `modify()` swallows+logs
+persistence failures (degrade to re-acquisition), and `search()` swallows+logs
+read failures and returns `[]` (degrade to a cache miss → fresh acquisition),
+keeping acquisition non-breaking while preserving multi-process safety on the
+happy path. The lock wait is bounded and runs on the calling thread; offloading
 it off the event loop belongs to the async-`GraphAuth` path (BK-292), not the
 sync provider.
 

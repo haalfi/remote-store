@@ -179,12 +179,13 @@ through to disk under a cross-process file lock, so concurrent
 `GraphAuth`/`GraphBackend` instances or processes sharing the default
 cache path cannot truncate or tear it (BK-291). See ADR-0022 § Token
 caching for the canonical path, the lock mechanism, and override rules
-(single source of truth). Cache **persistence is best-effort**: a write
-or lock-contention failure during that write-through is logged and
-swallowed, never raised, so it degrades to a re-acquisition rather than
-breaking the in-flight `read` / `write` — the GR-006 / GR-008 typed-error
-contract still holds (a persistence error is not a token-acquisition
-failure). A no-token acquisition
+(single source of truth). Cache access is **best-effort on both paths**: a
+write/lock-contention failure (the write-through under the lock) *and* a read
+failure (a corrupt or persistently-contended cache making the reload re-raise)
+are logged and swallowed — a read miss degrades to a fresh acquisition, a write
+miss to a re-acquisition next run — never raised, so neither breaks the
+in-flight `read` / `write`. The GR-006 / GR-008 typed-error contract still holds
+(a persistence error is not a token-acquisition failure). A no-token acquisition
 failure raises the same typed `PermissionDenied` as GR-006 — the
 branch in `get_token` is shared by both flows. A device-flow
 *initiation* failure (MSAL's `initiate_device_flow` returning no
