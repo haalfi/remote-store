@@ -50,6 +50,7 @@ from remote_store._models import WriteResult
 
 pytest.importorskip("httpx", reason="httpx not installed (graph extra)")
 
+from remote_store.aio.backends._graph import backend as graph_backend  # noqa: E402
 from remote_store.aio.backends._graph.backend import (  # noqa: E402
     _REPLACE_RACE_MAX_ATTEMPTS,
     GraphBackend,
@@ -57,10 +58,12 @@ from remote_store.aio.backends._graph.backend import (  # noqa: E402
 
 _DRIVE = "b!driveid123"
 _DOWNLOAD = "https://download.example.test/blob"
+_UPLOAD_URL = "https://up.example.test/session/abc?tempauth=secret"
 
 # Whole-URL regex routes (write composes a conflictBehavior query onto the
 # content URL; the metadata GET addresses ``…/root:/<path>:``).
 _CONTENT_RE = re.compile(r"https://graph\.microsoft\.com/v1\.0/drives/.+:/content(\?.*)?$")
+_SESSION_RE = re.compile(r"https://graph\.microsoft\.com/v1\.0/drives/.+:/createUploadSession$")
 _META_RE = re.compile(r".*/root:/.+:$")
 
 # One loop, modest coroutine fan-out (research §4.3).
@@ -182,6 +185,50 @@ class TestOverwriteReplaceRetry:
             result = await backend.write("race.txt", b"x", overwrite=True)
         assert isinstance(result, WriteResult)
         assert calls["n"] == 2  # one re-attempt was enough
+
+    @respx.mock
+    async def test_overwrite_create_race_reissues_full_body(self) -> None:
+        # Guards the load-bearing reader.seek(0) rewind: on the small-file path the
+        # PUT carries the body *and* draws the 409 in one request, so the reader is
+        # consumed before the conflict. Without the rewind the re-issued PUT would
+        # read from EOF and upload b"". Capture every PUT body and assert the second
+        # (post-retry) request carried the full original content, not a truncated one.
+        bodies: list[bytes] = []
+
+        def _responder(request: httpx.Request) -> httpx.Response:
+            bodies.append(request.content)
+            if len(bodies) == 1:
+                return httpx.Response(409, json={"error": {"code": "nameAlreadyExists"}})
+            return httpx.Response(200, json=_drive_item())
+
+        respx.put(_CONTENT_RE).mock(side_effect=_responder)
+        async with _make() as backend:
+            await backend.write("race.txt", b"hello-bytes", overwrite=True)
+        assert bodies == [b"hello-bytes", b"hello-bytes"]  # rewound, not truncated to b""
+
+    @respx.mock
+    async def test_overwrite_create_race_retries_upload_session_branch(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # The >4 MiB dispatch branch retries the same way. Shrink the small-file
+        # boundary so a tiny body takes the upload-session path; createUploadSession
+        # 409s once (create race -> AlreadyExists), then the re-attempt opens a
+        # session and the chunk PUT carries the full (rewound) body.
+        monkeypatch.setattr(graph_backend, "_SMALL_FILE_MAX_SIZE", 4)
+        sessions = {"n": 0}
+
+        def _session_responder(request: httpx.Request) -> httpx.Response:
+            sessions["n"] += 1
+            if sessions["n"] == 1:
+                return httpx.Response(409, json={"error": {"code": "nameAlreadyExists"}})
+            return httpx.Response(200, json={"uploadUrl": _UPLOAD_URL})
+
+        respx.post(_SESSION_RE).mock(side_effect=_session_responder)
+        chunks = respx.put(_UPLOAD_URL).mock(return_value=httpx.Response(201, json=_drive_item()))
+        async with _make() as backend:
+            backend._upload_chunk_size = 320 * 1024  # single chunk for the 6-byte body
+            result = await backend.write("race.bin", b"abcdef", overwrite=True)
+        assert isinstance(result, WriteResult)
+        assert sessions["n"] == 2  # createUploadSession retried after the create-race 409
+        assert b"".join(c.request.content for c in chunks.calls) == b"abcdef"
 
     @respx.mock
     async def test_overwrite_persistent_409_exhausts_to_already_exists(self) -> None:

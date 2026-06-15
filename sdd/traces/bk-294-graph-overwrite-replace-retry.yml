@@ -20,6 +20,17 @@ audience:
 expected_ripples:
   - CHANGELOG.md
   - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+review_rounds: 1
+surprising_ripples:
+  # The public-API write() docstring change rippled to graph.json + the derived
+  # graph_viz.html; not caught until the full `hatch run all` gate (the lighter
+  # lint gate does not run gen-graph --check). Adding the constant block above
+  # GraphBackend shifted its line number, regenerating graph.json a second time.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
 phases:
   - id: orient
     name: Orient
@@ -150,4 +161,28 @@ phases:
           docstring Raises, the graph guide, and CHANGELOG. Live consumer-OneDrive
           verification passed after the backoff fix, so the item closes [x] and
           moves to BACKLOG-DONE in the same PR.
+        outcome: ok
+  - id: review
+    name: PR #825 review fixes
+    steps:
+      - file: tests/backends/graph/aio/test_concurrency.py
+        section: "TestOverwriteReplaceRetry (body-capture + session-branch)"
+        read_type: gate
+        extract: >-
+          Review flagged the load-bearing reader.seek(0) rewind was unverified in
+          CI (respx ignores the request body) and the upload-session retry branch
+          uncovered. Added test_overwrite_create_race_reissues_full_body (captures
+          each PUT body; a broken rewind would upload b"" and fail) and
+          test_overwrite_create_race_retries_upload_session_branch (shrinks the
+          small-file boundary so createUploadSession 409s once then succeeds).
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_REPLACE_RACE_MAX_ATTEMPTS comment"
+        read_type: gate
+        extract: >-
+          Review caught the "~sub-second worst-case latency" comment understated
+          the cumulative bound; corrected to ~1.55s worst (5 sleeps) plus the up-to-6
+          full re-PUTs on a terminal conflict. The "reuse an existing retry?" thread
+          got a pushback reply (graph_send is transport-retry / 409-terminal / cannot
+          re-materialise a body; only the duplicated backoff formula is shareable, a
+          separate refactor) and was left open for the maintainer's call.
         outcome: ok

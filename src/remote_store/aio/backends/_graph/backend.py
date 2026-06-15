@@ -82,8 +82,12 @@ _SMALL_FILE_MAX_SIZE = 4 * 1024 * 1024  # PUT /content vs upload-session boundar
 # the replace, it never swallows the conflict (cf. BK-261). The bound + jittered
 # backoff were tuned against a live consumer-OneDrive 8-way race (BK-294): immediate
 # retries left a straggler 409-ing in lockstep; full-jitter backoff desynchronises
-# the retriers and a small budget then resolves every writer. Worst-case added
-# latency on a terminal conflict is ~sub-second.
+# the retriers and a small budget then resolves every writer. Cost on a *terminal*
+# conflict (a SharePoint-backed drive that rejects every replace): the write is
+# re-issued up to 6 times — up to a full 4 MiB re-PUT each on the small-file path —
+# where it previously failed on the first attempt, plus the 5 inter-attempt sleeps
+# (per-sleep caps 0.05/0.1/0.2/0.4/0.8s → ~1.55s worst case, ~0.78s expected under
+# full jitter). Bounded, and only ever on an already-failing path.
 _REPLACE_RACE_MAX_ATTEMPTS = 6
 _REPLACE_RACE_BACKOFF_BASE = 0.05  # seconds; exponential base for the full-jitter backoff
 _REPLACE_RACE_BACKOFF_MAX = 0.8  # seconds; cap per inter-attempt sleep
