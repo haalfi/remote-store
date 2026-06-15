@@ -16,10 +16,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
-import random
 import time
-from datetime import datetime, timezone
-from email.utils import parsedate_to_datetime
 from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import urlsplit, urlunsplit
 
@@ -34,6 +31,13 @@ from remote_store._errors import (
     RemoteStoreError,
     ResourceLocked,
 )
+from remote_store._retry import (
+    RETRYABLE_STATUSES,
+    apply_retry_after,
+    budget_exhausted,
+    equal_jitter_delay,
+)
+from remote_store._retry import parse_retry_after as _parse_retry_after
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
@@ -51,12 +55,6 @@ _SENSITIVE_HEADERS = frozenset({"authorization"})
 # Transport-level httpx failures (connect/read/write timeouts, DNS, resets)
 # map to BackendUnavailable per GR-033 — the request never reached a status.
 _TRANSPORT_ERRORS = (httpx.TransportError,)
-
-# Statuses the retry loop treats as transient (GR-033 5xx, GR-034 429). Every
-# other non-2xx is terminal and raised on the first attempt. 507 / 423 / 403 /
-# 404 / 409 are deliberately absent — they do not clear on short-term retry
-# (RET-015 terminal conditions).
-_RETRYABLE_STATUSES = frozenset({429, 500, 502, 503, 504})
 
 log = logging.getLogger("remote_store.aio.backends._graph")
 
@@ -281,30 +279,6 @@ def discriminate_write_conflict(body: object, path: str, *, backend: str = BACKE
     return AlreadyExists(f"Already exists: {path}", path=path, backend=backend)
 
 
-def _parse_retry_after(value: str | None) -> float | None:
-    """Parse a ``Retry-After`` header into seconds.
-
-    Supports both forms RFC 7231 allows: delta-seconds (``"120"``) and an
-    HTTP-date (``"Wed, 21 Oct 2025 07:28:00 GMT"``), the latter expressed as the
-    remaining seconds until that instant (never negative). Returns ``None`` when
-    the header is absent or unparseable, so the caller falls back to the
-    computed backoff.
-    """
-    if not value:
-        return None
-    try:
-        return float(value)
-    except ValueError:
-        pass
-    try:
-        target = parsedate_to_datetime(value)
-    except (TypeError, ValueError):
-        return None
-    if target.tzinfo is None:
-        target = target.replace(tzinfo=timezone.utc)
-    return max(0.0, (target - datetime.now(tz=timezone.utc)).total_seconds())
-
-
 # ---------------------------------------------------------------------------
 # Token acquisition (GR-008) and the request primitive (GR-028, GR-029)
 # ---------------------------------------------------------------------------
@@ -449,7 +423,7 @@ async def graph_send(
             if response.is_success or response.status_code in return_on:
                 return response
             code = _parse_error(response)
-            if response.status_code in _RETRYABLE_STATUSES:
+            if response.status_code in RETRYABLE_STATUSES:
                 last_error = classify_graph_error(response.status_code, code, path=path, scope=scope)
                 retry_after = _parse_retry_after(response.headers.get("retry-after"))
             else:
@@ -460,10 +434,11 @@ async def graph_send(
         # or the wall-clock budget is spent; otherwise back off and retry.
         if retry is None or attempt >= attempts - 1:
             break
-        delay = min(retry.backoff_base * (2**attempt), retry.backoff_max) + random.uniform(0, retry.jitter)  # noqa: S311
-        if retry_after is not None:
-            delay = max(delay, retry_after)
-        if retry.timeout is not None and time.monotonic() - start + delay >= retry.timeout:
+        delay = apply_retry_after(
+            equal_jitter_delay(attempt, base=retry.backoff_base, cap=retry.backoff_max, jitter=retry.jitter),
+            retry_after,
+        )
+        if budget_exhausted(elapsed=time.monotonic() - start, next_delay=delay, timeout=retry.timeout):
             break
         await asyncio.sleep(delay)
 

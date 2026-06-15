@@ -11,7 +11,6 @@ backend-local ``monitor`` poller when Graph answers ``202 Accepted``).
 from __future__ import annotations
 
 import asyncio
-import random
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeVar
 from urllib.parse import quote, unquote
 
@@ -30,6 +29,7 @@ from remote_store._errors import (
 )
 from remote_store._models import FolderEntry, FolderInfo
 from remote_store._path import RemotePath
+from remote_store._retry import full_jitter_delay
 from remote_store.aio._async_backend import AsyncBackend
 from remote_store.aio.backends._graph.http import (
     BACKEND_NAME,
@@ -967,8 +967,9 @@ class GraphBackend(AsyncBackend):
                     await asyncio.to_thread(reader.seek, 0)
                     # Full-jitter backoff: desynchronise concurrent retriers so a
                     # create-race straggler stops colliding in lockstep.
-                    cap = min(_REPLACE_RACE_BACKOFF_BASE * (2**attempt), _REPLACE_RACE_BACKOFF_MAX)
-                    await asyncio.sleep(random.uniform(0, cap))  # noqa: S311 — jitter, not crypto
+                    await asyncio.sleep(
+                        full_jitter_delay(attempt, base=_REPLACE_RACE_BACKOFF_BASE, cap=_REPLACE_RACE_BACKOFF_MAX)
+                    )
         assert last is not None  # noqa: S101 — the loop only exits here after an AlreadyExists
         raise last
 

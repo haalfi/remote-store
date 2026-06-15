@@ -25,6 +25,8 @@ from remote_store._errors import (
 )
 from remote_store._models import FileInfo, WriteResult
 from remote_store._path import RemotePath
+from remote_store._retry import RETRYABLE_STATUSES, apply_retry_after, budget_exhausted, equal_jitter_delay
+from remote_store._retry import parse_retry_after as _parse_retry_after
 from remote_store._stream import _ErrorMappingStream
 
 if TYPE_CHECKING:
@@ -40,7 +42,10 @@ T = TypeVar("T")
 
 _CAPABILITIES = CapabilitySet({Capability.READ, Capability.METADATA, Capability.LAZY_READ})
 
-_TRANSIENT_STATUSES = frozenset({408, 429, 500, 502, 503, 504})
+# The shared RET-015 retryable set plus 408 Request Timeout, which the sync HTTP
+# backend additionally treats as transient (both for retry and for classifying a
+# response as BackendUnavailable).
+_TRANSIENT_STATUSES = RETRYABLE_STATUSES | {408}
 
 
 # ---------------------------------------------------------------------------
@@ -540,7 +545,6 @@ class ReadOnlyHttpBackend(Backend):
         path: str,
     ) -> HttpResponse:
         """Execute a request with optional retry on transient errors."""
-        import random
         import time
 
         url = self._url(path)
@@ -553,7 +557,7 @@ class ReadOnlyHttpBackend(Backend):
         start = time.monotonic()
 
         for attempt in range(self._retry.max_attempts):
-            if self._retry.timeout is not None and time.monotonic() - start >= self._retry.timeout:
+            if budget_exhausted(elapsed=time.monotonic() - start, next_delay=0.0, timeout=self._retry.timeout):
                 break
 
             try:
@@ -568,17 +572,17 @@ class ReadOnlyHttpBackend(Backend):
                 last_exc = None
 
             if attempt < self._retry.max_attempts - 1:
-                delay = min(
-                    self._retry.backoff_base * (2**attempt),
-                    self._retry.backoff_max,
+                delay = equal_jitter_delay(
+                    attempt,
+                    base=self._retry.backoff_base,
+                    cap=self._retry.backoff_max,
+                    jitter=self._retry.jitter,
                 )
-                delay += random.uniform(0, self._retry.jitter)  # noqa: S311
-                # Honour Retry-After header as delay floor (HTTP-RETRY-001)
-                if last_resp is not None:
-                    retry_after = _parse_retry_after(last_resp.headers.get("retry-after"))
-                    if retry_after is not None:
-                        delay = max(delay, retry_after)
-                time.sleep(delay)
+                # Honour Retry-After header as delay floor (HTTP-RETRY-001).
+                retry_after = (
+                    _parse_retry_after(last_resp.headers.get("retry-after")) if last_resp is not None else None
+                )
+                time.sleep(apply_retry_after(delay, retry_after))
 
         if last_exc is not None:
             raise last_exc
@@ -647,25 +651,3 @@ def _parse_content_range_total(value: str | None) -> int | None:
     if len(parts) == 2 and parts[1].isdigit():
         return int(parts[1])
     return None
-
-
-def _parse_retry_after(value: str | None) -> float | None:
-    """Parse a ``Retry-After`` header value into seconds.
-
-    Supports both delay-seconds (``120``) and HTTP-date formats.
-    Returns ``None`` if the header is missing or unparseable.
-    """
-    if not value:
-        return None
-    # Try integer seconds first
-    try:
-        return float(value)
-    except ValueError:
-        pass
-    # Try HTTP-date format
-    try:
-        target = parsedate_to_datetime(value)
-        delta = (target - datetime.now(tz=timezone.utc)).total_seconds()
-        return max(0.0, delta)
-    except Exception:  # noqa: BLE001
-        return None

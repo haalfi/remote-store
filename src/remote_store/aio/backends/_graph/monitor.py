@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 import httpx
 
 from remote_store._errors import BackendUnavailable
+from remote_store._retry import apply_retry_after, budget_exhausted, parse_retry_after
 from remote_store.aio.backends._graph.http import (
     BACKEND_NAME,
     classify_graph_error,
@@ -36,7 +37,6 @@ from remote_store.aio.backends._graph.http import (
     redact_presigned_url,
     response_json,
 )
-from remote_store.aio.backends._graph.http import _parse_retry_after as parse_retry_after
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -211,10 +211,8 @@ async def poll_monitor(
                     raise _failed_error(result.error, path=path, backend=backend)
                 last_status = "pending" if result.classified else "parse-error"
                 retry_after = parse_retry_after(response.headers.get("retry-after"))
-        delay = min(interval, ceiling)
-        if retry_after is not None and retry_after > delay:
-            delay = retry_after
-        if timeout is not None and (time.monotonic() - start) + delay >= timeout:
+        delay = apply_retry_after(min(interval, ceiling), retry_after)
+        if budget_exhausted(elapsed=time.monotonic() - start, next_delay=delay, timeout=timeout):
             raise BackendUnavailable(
                 f"Copy/move monitor timed out after {polls} poll(s) "
                 f"(last_status={last_status}, monitorUrl={redact_presigned_url(monitor_url)}): {path}",
