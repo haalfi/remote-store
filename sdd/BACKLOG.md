@@ -75,15 +75,27 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Azure
 
-- [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
-  spec: — · effort: S · audience: library.maintainer, user.api
-  The `examples/medallion_dagster/` showcase demonstrates a realistic user journey
-  combining Dagster orchestration with an Azure HNS backend, but has never executed
-  against a live ADLS Gen2 account. Run the full example end-to-end against real cloud
-  infrastructure to surface testing gaps, implementation TODOs, or edge cases that
-  conformance and unit tests miss. Async patterns are settled (ID-193 landed,
-  see BACKLOG-DONE.md). Findings inform the next release scope; no code changes
-  are produced by this item itself.
+- [ ] **BUG-222 — Azure error classifier drops 429 / 5xx / 412 / 401 to a bare `RemoteStoreError`**
+  spec: AZ-025 · effort: M · audience: user.api
+  From [audit-019](audits/audit-019-azure-backend-review.md) H2 + M2.
+  `classify_azure_error` (`_azure_common.py:104-113`) types only 404/403/409; every
+  other status falls through to the base error (both fall-through lines are
+  `# pragma: no cover`), so a caller backing off on `BackendUnavailable` never catches
+  a throttle — Graph types these as `BackendUnavailable`. Map 429/5xx →
+  `BackendUnavailable`, decide 412/401, reconcile the AZ-025 table (which also
+  enumerates an `error_code` the classifier never reads), and add a deterministic
+  test per status. Characterising which statuses arrive as `HttpResponseError` vs
+  `ServiceResponseError` under real throttling is a live-tier follow-up (do not force
+  throttling per-PR).
+
+- [ ] **BUG-223 — Azure HNS misdetection is sticky for the instance lifetime**
+  spec: AZ-006 · effort: S · audience: user.api
+  From [audit-019](audits/audit-019-azure-backend-review.md) M5. The HNS probe caches
+  `_hns_enabled = False` on any exception (`_azure.py:1293-1305`; `aio/_azure.py:243-259`),
+  so a transient failure on the first probe permanently degrades an HNS account to flat
+  semantics (no atomic rename, no `hdi_isfolder` rejection) with no error. Do not cache
+  a `False` that came from a transient probe failure (distinguish "probed flat" from
+  "probe errored"); spec the stickiness in AZ-006.
 
 - [ ] **BK-298 — Azure credential ownership + cross-backend close posture**
   spec: AZ-029 · effort: M · audience: user.api, library.maintainer
@@ -98,19 +110,6 @@ and the highest ID already in this file, then take the next integer. Run
   `BackendUnavailable`, a cross-backend conformance lane) or bless the divergence in
   AZ-029 / the BK-287 posture family. The cross-backend item the BUG-219 trace
   flagged for ID-219.
-
-- [ ] **BUG-222 — Azure error classifier drops 429 / 5xx / 412 / 401 to a bare `RemoteStoreError`**
-  spec: AZ-025 · effort: M · audience: user.api
-  From [audit-019](audits/audit-019-azure-backend-review.md) H2 + M2.
-  `classify_azure_error` (`_azure_common.py:104-113`) types only 404/403/409; every
-  other status falls through to the base error (both fall-through lines are
-  `# pragma: no cover`), so a caller backing off on `BackendUnavailable` never catches
-  a throttle — Graph types these as `BackendUnavailable`. Map 429/5xx →
-  `BackendUnavailable`, decide 412/401, reconcile the AZ-025 table (which also
-  enumerates an `error_code` the classifier never reads), and add a deterministic
-  test per status. Characterising which statuses arrive as `HttpResponseError` vs
-  `ServiceResponseError` under real throttling is a live-tier follow-up (do not force
-  throttling per-PR).
 
 - [ ] **BK-299 — Azure seekable-read DX: stop steering analytics users into in-RAM reads**
   spec: — · effort: S · audience: user.api_docs, user.site
@@ -130,15 +129,6 @@ and the highest ID already in this file, then take the next integer. Run
   per-method difference in the guide's digest claim or populate `digest` from the
   post-rename properties when available.
 
-- [ ] **BUG-223 — Azure HNS misdetection is sticky for the instance lifetime**
-  spec: AZ-006 · effort: S · audience: user.api
-  From [audit-019](audits/audit-019-azure-backend-review.md) M5. The HNS probe caches
-  `_hns_enabled = False` on any exception (`_azure.py:1293-1305`; `aio/_azure.py:243-259`),
-  so a transient failure on the first probe permanently degrades an HNS account to flat
-  semantics (no atomic rename, no `hdi_isfolder` rejection) with no error. Do not cache
-  a `False` that came from a transient probe failure (distinguish "probed flat" from
-  "probe errored"); spec the stickiness in AZ-006.
-
 - [ ] **BK-301 — Azure doc/docstring parity + correctness edges**
   spec: — · effort: M · audience: user.api_docs, contributor.process
   From [audit-019](audits/audit-019-azure-backend-review.md) M6 + L1/L2/L4/L6/L7. Add
@@ -148,6 +138,16 @@ and the highest ID already in this file, then take the next integer. Run
   data-loss edge) or document the Store-normalised assumption; align sync/async `glob`
   error handling; surface the ASYNC-094 cross-loop rule in the guide; fix the
   `backend="azure"` vs `"async-azure"` drift. Small and independent; split freely.
+
+- [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
+  spec: — · effort: S · audience: library.maintainer, user.api
+  The `examples/medallion_dagster/` showcase demonstrates a realistic user journey
+  combining Dagster orchestration with an Azure HNS backend, but has never executed
+  against a live ADLS Gen2 account. Run the full example end-to-end against real cloud
+  infrastructure to surface testing gaps, implementation TODOs, or edge cases that
+  conformance and unit tests miss. Async patterns are settled (ID-193 landed,
+  see BACKLOG-DONE.md). Findings inform the next release scope; no code changes
+  are produced by this item itself.
 
 ---
 
