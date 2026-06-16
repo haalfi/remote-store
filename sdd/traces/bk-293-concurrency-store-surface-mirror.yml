@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=_schema.yml
+id: BK-293
+title: "Mirror the concurrency Store-surface into the companion DX suite"
+trigger: >-
+  BK-293 (carved from BK-289 as a discovery_followup) tracked mirroring the
+  public-Store-surface concurrency subset — create-once race, read-after-write,
+  ThreadPoolExecutor + ext.batch — into the separate companion DX suite
+  (remote-store-expectations). The work was out of scope for the BK-289 PR
+  because that repo is not present in this container. It was delivered there as
+  live-OneDrive black-box scenarios on the companion's creds-gated cloud DX tier
+  (a companion-side backlog item), leaving BK-293 open in this repo as a pure
+  bookkeeping close-out with no in-repo implementation.
+source_items:
+  - BK-293
+  - BK-289
+audience:
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: classify
+    name: Classify (close-out)
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-293 (item)"
+        read_type: gate
+        extract: >-
+          The open item to close; carved from BK-289, audience infra.test, mirror
+          the Store-surface concurrency subset into the companion DX suite
+        outcome: ok
+      - file: sdd/traces/bk-289-concurrency-lane.yml
+        section: "discovery_followups, source_items"
+        read_type: reference
+        extract: >-
+          BK-293 was a discovery_followup of BK-289; confirms the carve-out
+          lineage and that the in-repo concurrency lane already shipped, so BK-293
+          owns only the cross-repo mirror — delivered in the companion
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased / BK-289 (item)"
+        read_type: verify
+        extract: >-
+          Placement for the closed BK-293 entry (Unreleased, newest-first); update
+          BK-289's BK-293 backref off the stale "Expectations-repo" name
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: >-
+          BACKLOG→BACKLOG-DONE move; backlogid.json is a no-op (moved id ≤
+          DONE-max); CHANGELOG skipped (infra.test, no user-facing artifact);
+          trace ships in the same PR; no in-repo code/spec change to ripple
+        outcome: ok
