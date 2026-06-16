@@ -103,7 +103,9 @@ and the highest ID already in this file, then take the next integer. Run
   real ADLS Gen2 divergence is a known hotspot). Audit semantics: report findings
   and route them (conformance spine / live tier / docs); no fixes. The research
   doc sequences a Graph broad-sweep first as the cheapest catalog check; this
-  item is the cross-backend generalization.
+  item is the cross-backend generalization. The black-box DX narrative routes to
+  the companion suite's cloud DX tier — the Azure cloud DX pilot is the successor
+  to its completed Graph pilot and is tracked there, not by this item.
 
 ---
 
