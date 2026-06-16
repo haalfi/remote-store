@@ -12,6 +12,13 @@ source_items:
 audience:
   - contributor.process
   - library.maintainer
+discovery_followups:
+  - BK-298
+  - BUG-222
+  - BK-299
+  - BK-300
+  - BUG-223
+  - BK-301
 review_rounds: 0
 phases:
   - id: orient
