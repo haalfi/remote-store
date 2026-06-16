@@ -8,7 +8,34 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
-*(none)*
+- [x] **BK-297 — Docstring parity checker for sync/async twins**
+  spec: — · effort: S · audience: contributor.tooling, library.maintainer
+  The `remote_store.aio` tree mirrors the sync API by hand, and a subset of each
+  twin's method docstrings are meant to stay character-identical (e.g.
+  `Store.copy` / `AsyncStore.copy`); they drifted silently because nothing
+  coupled the two strings. Shipped `scripts/check_docstring_parity.py` (wired
+  into `preflight`, alias `check-docstring-parity`), driven by a registry that
+  classifies every shared-docstring method of each twin as `identical` (compared
+  byte-for-byte) or `divergent` (allowlisted — the async contract genuinely
+  differs). It fails on drift in an `identical` method, on an unclassified shared
+  method (a new method must get a parity decision), and on a stale registry
+  entry. `--fix` re-syncs the async side from the canonical sync docstring via
+  source-span replacement (round-trip verified byte-exact on real source).
+  Covers three pairs: `Store`/`AsyncStore`, `Backend`/`AsyncBackend`,
+  `AzureBackend`/`AsyncAzureBackend` — 26 identical docstrings now in lockstep.
+  **Not a size optimisation, by design:** the src/-size analysis that surfaced
+  this proposed deduping docstrings to shrink `src/`, but static griffe renders
+  the aio API pages from docstrings physically present in source (mkdocs
+  `paths: [src]`, no inspection), so the text must remain on each method. The
+  measured opportunity was also far smaller than the raw docstring-line count
+  implied: the async twins are mostly *deliberately* divergent (async-iterator
+  reads, eager-validation notes, cross-ref'd write validation), not lazy copies —
+  only ~26 docstrings across the three pairs are genuinely identical. So the
+  deliverable is a drift gate, not a generator. Deferred: extending to a
+  `mechanical` class (`Store`→`AsyncStore`, await-insertion, "Iterator"→"Async
+  iterator" via declared transforms) — start identical-only, promote if drift
+  shows up there. The larger sync/async *body* unification (Lever 2 from the same
+  analysis) remains a separate, higher-risk item.
 
 ## v0.28.0
 

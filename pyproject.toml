@@ -182,7 +182,7 @@ env.GITHUB_ACTIONS.installer = { value = "pip", if = ["true"] }
 # `hatch run all` catches drift in seconds rather than after the full
 # lint/typecheck/test gauntlet. CI runs this same target via `uvx hatch run
 # preflight` in the `lint` job (BK-269), so the script list is the single source.
-preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/drift_check.py render-docs --check"]
+preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/drift_check.py render-docs --check"]
 lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
@@ -275,6 +275,7 @@ gen-graph-viz-check = "python scripts/gen_graph_viz.py --check"
 gen-backlogid = "python scripts/gen_backlogid.py {args}"
 gen-backlogid-check = "python scripts/gen_backlogid.py --check"
 gen-api-check = "python scripts/check_api_docs.py"
+check-docstring-parity = "python scripts/check_docstring_parity.py {args}"
 # ID-182 drift-guard helpers. `drift-check extras|resolve|diff|refresh-baseline|render-docs`
 # — see scripts/drift_check.py docstring. The scheduled workflow uses the same script.
 drift-check = "python scripts/drift_check.py {args}"
