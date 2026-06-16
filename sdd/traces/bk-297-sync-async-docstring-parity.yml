@@ -1,0 +1,81 @@
+id: BK-297
+title: "Docstring parity checker for sync/async twins"
+trigger: |
+  A src/-size analysis flagged the hand-mirrored aio/ tree as duplicated and
+  proposed single-sourcing docstrings to shrink src/. Investigation found two
+  things that reshaped the work: static griffe renders the aio API pages from
+  docstrings physically present in source (so dedup cannot remove bytes), and
+  the async twins are mostly deliberately divergent, not lazy copies — leaving a
+  small identical subset that drifts silently with nothing to catch it.
+source_items:
+  - BK-297
+audience:
+  - contributor.tooling
+  - library.maintainer
+expected_ripples:
+  - sdd/backlogid.json
+co_shipped_items: []
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Backlog (mandatory) / Trace authoring"
+        read_type: gate
+        extract: "Backlog ID assignment, completing-work moves to BACKLOG-DONE same commit, trace ships in same PR"
+      - file: mkdocs.yml
+        section: "plugins / mkdocstrings python handler"
+        read_type: gate
+        extract: "paths: [src], no inspection -> griffe is static, so async docstrings must physically exist in source to render"
+        outcome: ok
+      - file: docs-src/reference/api/aio/store.md
+        section: "::: remote_store.aio.AsyncStore.* directives"
+        read_type: reference
+        extract: "Each async method rendered by its own ::: directive; confirms byte-shrink would blank the rendered async API pages"
+      - file: sdd/traces/BK-285-api-docs-async-mirror.yml
+        section: "(full)"
+        read_type: reference
+        extract: "AsyncStore was deliberately given first-class per-method API pages; degrading async docstrings would undo that"
+  - id: design
+    name: Design
+    steps:
+      - file: src/remote_store/_store.py
+        section: "Store method docstrings"
+        read_type: reference
+        extract: "AST-compare sync vs async docstrings: only 19/35 Store methods identical; the rest diverge for real (async-iterator reads, eager-validation notes, cross-ref'd write validation)"
+        outcome: ok
+      - file: scripts/check_api_docs.py
+        section: "main / _INDEX_EXEMPT allowlist pattern"
+        read_type: gate
+        extract: "Repo idiom to mirror: pure extractors + explicit self-policed allowlist + main() returns exit code; verification only, no prose generated"
+      - file: sdd/BACKLOG.md
+        section: "Lint / CI Completeness, ID prefixes"
+        read_type: gate
+        extract: "Decision: ship a drift CHECKER with identical/divergent registry, not a generator; classify as committed tooling work (BK)"
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/check_docstring_parity.py
+        section: "(new) TWINS registry + compare + fix_twin"
+        read_type: reference
+        extract: "class-scoped AST extraction (helper classes excluded), identical compared byte-for-byte, divergent allowlisted, --fix source-span replace sync->async"
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] preflight"
+        read_type: reference
+        extract: "Wire into preflight (rides hatch run all + CI) and add check-docstring-parity alias with {args}"
+      - file: tests/scripts/test_check_docstring_parity.py
+        section: "(new)"
+        read_type: reference
+        extract: "Unit-test extractor scoping, compare (identical/drift/unclassified/stale), fix_twin round-trip, live-registry integration"
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_docstring_parity.py
+        section: "real-source drift smoke"
+        read_type: verify
+        extract: "Inject drift into AsyncStore.copy -> checker exits 1; --fix repairs -> git diff clean (byte-exact restore)"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Backlog item touched + new check script"
+        read_type: verify
+        extract: "BACKLOG -> BACKLOG-DONE moved, backlogid.json regenerated, CHANGELOG skipped per audience rule (contributor.tooling / library.maintainer, not user-facing)"
