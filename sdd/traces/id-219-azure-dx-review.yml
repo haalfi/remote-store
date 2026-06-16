@@ -1,0 +1,106 @@
+id: ID-219
+title: "Apply the expectation-driven review to the Azure backend"
+trigger: |
+  The Graph expectation-driven review (audit-016 + the BK-287..292 / BUG-219
+  concurrency work) had landed; ID-219 was queued to generalise the methodology
+  to the Azure backend — the other async-native backend, reached from sync code
+  through the same AsyncBackendSyncAdapter bridge, so it was expected to share
+  Graph's lifecycle / concurrency / contract gaps. No instance had run yet.
+source_items:
+  - ID-219
+  - BUG-219
+audience:
+  - contributor.process
+  - library.maintainer
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-expectation-driven-review.md
+        section: "2 (lens catalog), 3 (pipeline), 4 (routing), 5 (cost discipline)"
+        read_type: gate
+        extract: "The eight-lens catalog, the broad-sweep-then-deep-dive pipeline, the routing table, and the milestone-gated cost discipline that bounds the live leg"
+        outcome: ok
+      - file: sdd/research/research-expectation-driven-review.md
+        section: "8-9 (worked example / recommendation)"
+        read_type: reference
+        extract: "Claimed Graph has seven untried lenses and should be swept first; checked against BACKLOG-DONE and audit-016, this is stale — audit-016 + the concurrency work already cover six of eight lenses, so ID-219 (Azure) is not gated on a fresh Graph sweep"
+        outcome: misleading
+      - file: sdd/audits/audit-016-graph-backend-review.md
+        section: "(full)"
+        read_type: gate
+        extract: "Finding-classes to re-point at Azure (H1 credential leak, M1 size source, M4/M5 doc accuracy, M6 ext cliff, M7 stdlib leak, L1/L3/L5/L9), and the audit-doc shape (severity key, finding tags, proposed-items Amend/New table)"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "ID-219 (item)"
+        read_type: gate
+        extract: "Audit semantics (report findings + route them, no fixes); likely hotspots named (aclose/BUG-219 analog, AZ-037/ASYNC-094 posture, HNS-vs-flat); added the companion-cloud-DX-pilot pointer (B-012 3B successor)"
+        outcome: ok
+  - id: audit
+    name: Lens sweep (static)
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "AzureBackend write/copy/move/close, _hns"
+        read_type: reference
+        extract: "Sync twin: overwrite semantics, HNS atomic-rename vs flat copy+delete, close() credential handling, sticky HNS detection"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "AsyncAzureBackend aclose, lazy client properties, _ensure_hns"
+        read_type: reference
+        extract: "No _closed guard; lazy properties re-create after aclose; the BUG-219 analog"
+        outcome: ok
+      - file: src/remote_store/backends/_azure_common.py
+        section: "classify_azure_error, resolve_credential, _build_azure_write_result"
+        read_type: gate
+        extract: "Classifier branches only on 404/403/409 (429/5xx/412/401 fall through to bare RemoteStoreError); resolve_credential returns the caller credential unchanged with no ownership flag; WriteResult digest/version_id read from the response dict"
+        outcome: ok
+      - file: sdd/specs/012-azure-backend.md
+        section: "AZ-029, AZ-025, AZ-006, AZ-037"
+        read_type: gate
+        extract: "AZ-029 blesses re-initialise-on-demand (the postcondition that was Graph's BUG-219); AZ-025 mandates error_code the classifier never reads; AZ-037 declares thread_safe"
+        outcome: ok
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-094"
+        read_type: reference
+        extract: "Async posture mirror (one-loop-safe, never cross-loop); the bridge manufactures thread-safety"
+        outcome: ok
+      - file: docs-src/guides/backends/azure.md
+        section: "Streaming, Options, behaviour table, digest"
+        read_type: reference
+        extract: "Guide steers seekability to read_bytes()+BytesIO (in-RAM anti-pattern) instead of read_seekable(); Options table omits retry / reject_write_under_file_ancestor; digest claim half-true for HNS write_atomic"
+        outcome: ok
+  - id: deep_dive
+    name: Bounded live HNS battery
+    steps:
+      - file: tests/backends/fixtures/azure_live.py
+        section: "_factory / _cleanup"
+        read_type: reference
+        extract: "Provisioning idiom (fresh conformance-<uuid> filesystem, delete on teardown) mirrored by the throwaway harness; connection-string creds via require_azure_live_connection_string"
+        outcome: ok
+      - file: tests/backends/azure/test_live_hns.py
+        section: "(full)"
+        read_type: reference
+        extract: "Existing live HNS coverage (hdi_isfolder guards, write_atomic etag, is_folder/is_file, root get_folder_info) — trimmed the paid leg to the genuine deltas to avoid redundant spend"
+        outcome: ok
+      - file: sdd/specs/012-azure-backend.md
+        section: "AZ-029 (item)"
+        read_type: verify
+        extract: "Live-confirmed: exists() succeeded after close() (re-init on demand); HNS move(overwrite=True) is a real atomic rename; write_atomic digest=None while write digest is populated"
+        outcome: ok
+  - id: report
+    name: Report
+    steps:
+      - file: sdd/audits/audit-019-azure-backend-review.md
+        section: "(full)"
+        read_type: reference
+        extract: "Wrote findings H1-H2 / M1-M6 / L1-L8 with file:line + spec-ID evidence, verified-strengths, and a proposed-items Amend/New table routing each finding to conformance / live / spec / docs / companion"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "Report-only audit: no code/spec/doc fixes, no backlog items filed (ask-first); new audit file staged; docs-gate green; ID-219 BACKLOG pointer added in the same commit"
+        outcome: ok
