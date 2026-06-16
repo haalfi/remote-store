@@ -15,8 +15,6 @@ source_items:
   - BK-289
 audience:
   - infra.test
-expected_ripples:
-  - sdd/backlogid.json
 phases:
   - id: classify
     name: Classify (close-out)
