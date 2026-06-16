@@ -7,9 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-### Fixed
-
-- **Azure error classifier types throttling / server / auth errors** (BUG-222)
+- BUG-222: Azure error classifier types 429 / 5xx / 401
 
 ### Internal
 

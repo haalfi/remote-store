@@ -48,7 +48,10 @@ from azure.storage.blob.aio import BlobServiceClient as AsyncBlobServiceClient  
 
 from remote_store._errors import PermissionDenied  # noqa: E402
 from remote_store.backends._azure_common import classify_azure_error  # noqa: E402
-from tests.backends.fixtures._live_env import require_azure_live_connection_string  # noqa: E402
+from tests.backends.fixtures._live_env import (  # noqa: E402
+    require_azure_live_connection_string,
+    require_azure_live_hns_container,
+)
 
 pytestmark = [
     pytest.mark.live,
@@ -66,13 +69,6 @@ def _account_url(conn: str) -> str:
             return part[len("BlobEndpoint=") :]
     name = next(p[len("AccountName=") :] for p in conn.split(";") if p.startswith("AccountName="))
     return f"https://{name}.blob.core.windows.net"
-
-
-def _container(conn: str) -> str:
-    fs = os.environ.get("RS_TEST_LIVE_HNS_CONTAINER")
-    if not fs:
-        pytest.fail("RS_TEST_LIVE_HNS=1 set but RS_TEST_LIVE_HNS_CONTAINER is empty")
-    return fs
 
 
 class _BadAsyncToken:
@@ -96,9 +92,17 @@ class TestAsyncLiveAuthErrorMapping:
         Stage-3-only: Azurite returns ``403`` for bad signatures and never a
         ``401``, so this AAD-token-shaped failure is reachable only against a
         real account.
+
+        Coverage intent: the real SDK types a ``401`` as
+        ``ClientAuthenticationError``, so this re-confirms the pre-existing
+        ``isinstance(exc, ClientAuthenticationError)`` branch (which runs
+        before any ``status_code`` check) — it does **not** exercise the new
+        bare-``HttpResponseError`` ``status == 401`` branch BUG-222 adds. That
+        branch is covered deterministically by the ``http-401`` param in
+        ``test_config.py``. The value here is real-SDK subtype characterisation.
         """
         conn = require_azure_live_connection_string()
-        url, container = _account_url(conn), _container(conn)
+        url, container = _account_url(conn), require_azure_live_hns_container()
         svc = AsyncBlobServiceClient(url, credential=_BadAsyncToken())
         try:
             with pytest.raises(HttpResponseError) as exc_info:
@@ -120,7 +124,7 @@ class TestAsyncLiveAuthErrorMapping:
         both must map to ``PermissionDenied``.
         """
         conn = require_azure_live_connection_string()
-        container = _container(conn)
+        container = require_azure_live_hns_container()
         bad_conn = ";".join(
             "AccountKey=" + base64.b64encode(b"wrong-key-padding-wrong-key-padding-xxxx").decode()
             if seg.startswith("AccountKey=")

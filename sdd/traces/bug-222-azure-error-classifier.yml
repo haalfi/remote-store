@@ -16,7 +16,14 @@ audience:
   - user.api
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 0
+surprising_ripples:
+  # PR #839 review: the live-auth suite's container-env helper was a verbatim
+  # copy of both HNS suites' fail-loud lookup; consolidating into a shared
+  # _live_env helper pulled in three files the ripple-check did not anticipate.
+  - tests/backends/fixtures/_live_env.py
+  - tests/backends/azure/test_live_hns.py
+  - tests/backends/azure/aio/test_live_hns.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
