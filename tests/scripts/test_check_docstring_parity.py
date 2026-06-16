@@ -210,6 +210,46 @@ class TestFixTwin:
         mod.fix_twin(twin)
         assert mod.fix_twin(twin) == []  # second pass finds nothing to do
 
+    def test_fix_targets_ast_span_not_substring_match(self, mod, tmp_path):
+        # The drifted `copy` literal text (`"""DUP."""`) also appears earlier as
+        # `keep`'s docstring. A text-match replace(..., 1) would rewrite the first
+        # occurrence (`keep`); splicing by the AST span must hit `copy` only.
+        sync_collision = textwrap.dedent(
+            '''\
+            class Foo:
+                def keep(self):
+                    """DUP."""
+                def copy(self):
+                    """COPY."""
+            '''
+        )
+        async_collision = textwrap.dedent(
+            '''\
+            class AsyncFoo:
+                def keep(self):
+                    """DUP."""
+                def copy(self):
+                    """DUP."""
+            '''
+        )
+        sync_p = tmp_path / "sync.py"
+        async_p = tmp_path / "async_.py"
+        sync_p.write_text(sync_collision, encoding="utf-8")
+        async_p.write_text(async_collision, encoding="utf-8")
+        twin = mod.Twin(
+            sync_path=sync_p,
+            sync_class="Foo",
+            async_path=async_p,
+            async_class="AsyncFoo",
+            identical=frozenset({"copy"}),
+            divergent=frozenset({"keep"}),
+        )
+
+        assert mod.fix_twin(twin) == ["copy"]
+        async_docs = mod.class_method_docstrings(async_p.read_text(), "AsyncFoo")
+        assert async_docs["copy"] == "COPY."  # the intended target, re-synced
+        assert async_docs["keep"] == "DUP."  # the earlier collision, untouched
+
 
 # ---------------------------------------------------------------------------
 # Integration -- the live registry must hold (mirrors CI)

@@ -280,11 +280,12 @@ def compare(
 # ---------------------------------------------------------------------------
 
 
-def _docstring_literal_span(source: str, classname: str, method: str) -> tuple[int, int, int, int] | None:
-    """Return ``(lineno, col, end_lineno, end_col)`` of *method*'s docstring literal.
+def _docstring_node(source: str, classname: str, method: str) -> ast.expr | None:
+    """Return the literal node of *method*'s docstring in *classname*, or ``None``.
 
-    1-based lineno, 0-based col, matching ``ast`` node offsets.  ``None`` when the
-    class/method/docstring is absent.
+    The node carries ``lineno`` / ``col_offset`` / ``end_lineno`` / ``end_col_offset``
+    for exact source-span splicing.  ``None`` when the class/method/docstring is
+    absent.
     """
     tree = ast.parse(source)
     for node in tree.body:
@@ -297,29 +298,32 @@ def _docstring_literal_span(source: str, classname: str, method: str) -> tuple[i
                 ):
                     expr = child.body[0]
                     assert isinstance(expr, ast.Expr)
-                    s = expr.value
-                    assert s.end_lineno is not None
-                    assert s.end_col_offset is not None
-                    return (s.lineno, s.col_offset, s.end_lineno, s.end_col_offset)
+                    return expr.value
     return None
 
 
-def _slice_span(lines: list[str], span: tuple[int, int, int, int]) -> str:
-    lineno, col, end_lineno, end_col = span
-    if lineno == end_lineno:
-        return lines[lineno - 1][col:end_col]
-    parts = [lines[lineno - 1][col:]]
-    parts.extend(lines[lineno : end_lineno - 1])
-    parts.append(lines[end_lineno - 1][:end_col])
-    return "\n".join(parts)
+def _abs_offset(source: str, lineno: int, col: int) -> int:
+    """Absolute character offset in *source* for 1-based *lineno*, 0-based *col*.
+
+    Sums full line lengths via ``splitlines(keepends=True)``, so line terminators
+    (including ``\\r\\n``) are counted exactly -- the splice stays correct on CRLF
+    files.  ``col`` is added as-is; for the docstring spans we touch, the prefix
+    of the line up to the literal is ASCII indentation, so the ``ast`` column maps
+    to a character index.
+    """
+    lines = source.splitlines(keepends=True)
+    return sum(len(line) for line in lines[: lineno - 1]) + col
 
 
 def fix_twin(twin: Twin) -> list[str]:
     """Copy sync docstrings onto the async twin for drifted ``identical`` methods.
 
-    Returns the list of methods rewritten.  Operates on the literal *source*
-    span (preserving the sync side's exact quoting/escaping); requires matching
-    indentation, which holds because both are class methods at the same nesting.
+    Returns the list of methods rewritten.  Splices by the exact AST span the
+    parser reports -- ``source[:start] + sync_literal + source[end:]`` -- rather
+    than text-matching the old literal, so a docstring whose text also appears
+    elsewhere in the file cannot be rewritten at the wrong location.  Requires
+    matching indentation (both twins are class methods at the same nesting), which
+    keeps the spliced-in continuation lines aligned.
     """
     sync_src = twin.sync_path.read_text(encoding="utf-8")
     async_src = twin.async_path.read_text(encoding="utf-8")
@@ -328,29 +332,29 @@ def fix_twin(twin: Twin) -> list[str]:
     shared = set(sync_docs) & set(async_docs)
 
     fixed: list[str] = []
-    sync_lines = sync_src.splitlines()
     for method in sorted(twin.identical & shared):
         if sync_docs[method] == async_docs[method]:
             continue
-        sync_span = _docstring_literal_span(sync_src, twin.sync_class, method)
-        async_span = _docstring_literal_span(async_src, twin.async_class, method)
-        if sync_span is None or async_span is None:
+        sync_node = _docstring_node(sync_src, twin.sync_class, method)
+        # Re-parse the (possibly already-spliced) async source so spans stay valid.
+        async_node = _docstring_node(async_src, twin.async_class, method)
+        if sync_node is None or async_node is None:
             continue
-        if sync_span[1] != async_span[1]:
+        if sync_node.col_offset != async_node.col_offset:
             # Different indentation column: refuse rather than corrupt layout.
             continue
-        sync_literal = _slice_span(sync_lines, sync_span)
-        # Re-read async lines each iteration: a prior fix may have shifted them.
-        async_lines = twin.async_path.read_text(encoding="utf-8").splitlines(keepends=True)
-        flat = "".join(async_lines)
-        async_span = _docstring_literal_span(flat, twin.async_class, method)
-        assert async_span is not None
-        a_lines = flat.splitlines()
-        old_literal = _slice_span(a_lines, async_span)
-        # Replace the first occurrence of the exact async literal block.
-        new_flat = flat.replace(old_literal, sync_literal, 1)
-        twin.async_path.write_text(new_flat, encoding="utf-8")
+        sync_literal = ast.get_source_segment(sync_src, sync_node)
+        if sync_literal is None:
+            continue
+        assert async_node.end_lineno is not None
+        assert async_node.end_col_offset is not None
+        start = _abs_offset(async_src, async_node.lineno, async_node.col_offset)
+        end = _abs_offset(async_src, async_node.end_lineno, async_node.end_col_offset)
+        async_src = async_src[:start] + sync_literal + async_src[end:]
         fixed.append(method)
+
+    if fixed:
+        twin.async_path.write_text(async_src, encoding="utf-8")
     return fixed
 
 
