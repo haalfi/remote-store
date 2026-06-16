@@ -11298,38 +11298,43 @@
 <hr />
 <h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
 <h3 id="az-025-structured-error-classification">AZ-025: Structured Error Classification<a class="headerlink" href="#az-025-structured-error-classification" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Azure SDK exceptions are mapped to <code>remote_store</code> errors using structured attributes (<code>status_code</code>, <code>error_code</code>), not string matching.</p>
+<p><strong>Invariant:</strong> Azure SDK exceptions are mapped to <code>remote_store</code> errors using structured attributes — the exception subtype (which the SDK derives from the HTTP status and <code>error_code</code>) and <code>status_code</code> — not string matching.</p>
 <table>
 <thead>
 <tr>
-<th>Azure SDK exception / code</th>
+<th>Azure SDK exception / status</th>
 <th>remote_store error</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>ResourceNotFoundError</code>; <code>status_code=404</code>; error codes <code>BlobNotFound</code>, <code>PathNotFound</code>, <code>FilesystemNotFound</code>, <code>ContainerNotFound</code></td>
+<td><code>ResourceNotFoundError</code>; <code>status_code=404</code></td>
 <td><code>NotFound</code></td>
 </tr>
 <tr>
-<td><code>status_code=403</code>; error codes <code>AuthorizationFailure</code>, <code>AuthorizationPermissionMismatch</code>, <code>InsufficientAccountPermissions</code></td>
+<td><code>ResourceExistsError</code>; <code>status_code=409</code></td>
+<td><code>AlreadyExists</code></td>
+</tr>
+<tr>
+<td><code>ClientAuthenticationError</code>; <code>status_code=401</code>; <code>status_code=403</code></td>
 <td><code>PermissionDenied</code></td>
 </tr>
 <tr>
-<td><code>ResourceExistsError</code>; <code>status_code=409</code>; error codes <code>PathAlreadyExists</code>, <code>BlobAlreadyExists</code>, <code>ContainerAlreadyExists</code></td>
-<td><code>AlreadyExists</code></td>
+<td><code>status_code=429</code> (throttle); <code>status_code</code> in <code>{500, 502, 503, 504}</code> (server / gateway)</td>
+<td><code>BackendUnavailable</code></td>
 </tr>
 <tr>
 <td><code>ServiceRequestError</code>, <code>ServiceResponseError</code> (connection / DNS / timeout)</td>
 <td><code>BackendUnavailable</code></td>
 </tr>
 <tr>
-<td><code>ClientAuthenticationError</code></td>
-<td><code>PermissionDenied</code></td>
+<td>Any other <code>HttpResponseError</code> status (e.g. <code>412</code> precondition)</td>
+<td><code>RemoteStoreError</code> (base)</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Rationale:</strong> The Azure SDK provides <code>HttpResponseError</code> with <code>status_code</code> and <code>error_code</code> attributes, enabling reliable classification. This is a significant improvement over the S3 backends' fragile string-matching pattern (<code>"404" in msg.lower()</code>).</p>
+<p><strong>Rationale:</strong> The Azure SDK provides <code>HttpResponseError</code> with a <code>status_code</code> attribute and raises typed subclasses (<code>ResourceNotFoundError</code>, <code>ResourceExistsError</code>, <code>ClientAuthenticationError</code>) that it derives from the response status and <code>error_code</code>. Classification keys on those structured attributes — never on the error <em>message</em> — a significant improvement over the S3 backends' fragile string-matching pattern (<code>"404" in msg.lower()</code>). Throttling (<code>429</code>, and server-side <code>503</code> ServerBusy) and <code>5xx</code> map to <code>BackendUnavailable</code> so a caller backing off on it catches a throttle, matching the Graph backend (GR-033/GR-034). <code>412</code> (precondition failed) has no dedicated <code>remote_store</code> error type and is not reachable through the public API (no <code>if_match</code> parameter is exposed), so it stays the generic base error.</p>
+<p><strong>Note:</strong> the classifier does not read <code>error_code</code> directly: the SDK has already consumed it to choose the exception subtype, and <code>status_code</code> distinguishes the remaining HTTP-shaped cases. The one place <code>error_code</code> is read explicitly is the inline <code>DirectoryIsNotEmpty</code> check in <code>delete()</code> (which has no distinct exception subtype). The earlier enumeration of per-status <code>error_code</code> strings has been dropped from this table as redundant.</p>
 <h3 id="az-026-no-native-exception-leakage">AZ-026: No Native Exception Leakage<a class="headerlink" href="#az-026-no-native-exception-leakage" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> No <code>azure-storage-file-datalake</code>, <code>azure-core</code>, or <code>azure-identity</code> exceptions propagate to callers. All are mapped to <code>remote_store</code> error types per BE-021.
 <strong>Postconditions:</strong> <code>backend</code> attribute is set to <code>"azure"</code> on all mapped errors.</p>
