@@ -75,19 +75,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Azure
 
-- [ ] **BUG-222 — Azure error classifier drops 429 / 5xx / 412 / 401 to a bare `RemoteStoreError`**
-  spec: AZ-025 · effort: M · audience: user.api
-  From [audit-019](audits/audit-019-azure-backend-review.md) H2 + M2.
-  `classify_azure_error` (`_azure_common.py:104-113`) types only 404/403/409; every
-  other status falls through to the base error (both fall-through lines are
-  `# pragma: no cover`), so a caller backing off on `BackendUnavailable` never catches
-  a throttle — Graph types these as `BackendUnavailable`. Map 429/5xx →
-  `BackendUnavailable`, decide 412/401, reconcile the AZ-025 table (which also
-  enumerates an `error_code` the classifier never reads), and add a deterministic
-  test per status. Characterising which statuses arrive as `HttpResponseError` vs
-  `ServiceResponseError` under real throttling is a live-tier follow-up (do not force
-  throttling per-PR).
-
 - [ ] **BUG-223 — Azure HNS misdetection is sticky for the instance lifetime**
   spec: AZ-006 · effort: S · audience: user.api
   From [audit-019](audits/audit-019-azure-backend-review.md) M5. The HNS probe caches

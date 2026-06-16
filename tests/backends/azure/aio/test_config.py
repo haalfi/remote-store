@@ -325,9 +325,17 @@ class TestAsyncAzureErrorMapping:
         ("status", "expected_type"),
         [
             pytest.param(404, NotFound, id="http-404"),
+            pytest.param(401, PermissionDenied, id="http-401"),
             pytest.param(403, PermissionDenied, id="http-403"),
             pytest.param(409, AlreadyExists, id="http-409"),
-            pytest.param(500, RemoteStoreError, id="http-500-generic"),
+            pytest.param(429, BackendUnavailable, id="http-429-throttle"),
+            pytest.param(500, BackendUnavailable, id="http-500"),
+            pytest.param(502, BackendUnavailable, id="http-502"),
+            pytest.param(503, BackendUnavailable, id="http-503"),
+            pytest.param(504, BackendUnavailable, id="http-504"),
+            # 412 (precondition) has no dedicated error type and is unreachable
+            # via the public API; it stays the generic base error (BUG-222).
+            pytest.param(412, RemoteStoreError, id="http-412-generic"),
         ],
     )
     def test_classify_http_status(self, status: int, expected_type: type) -> None:

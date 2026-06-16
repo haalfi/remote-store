@@ -7,6 +7,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Fixed
+
+- **Azure error classifier types throttling / server / auth errors** (BUG-222)
+
 ### Internal
 
 - Codecov badge now reuses the `test-primary` CI coverage run (full suite + `sftp_docker` conformance), uploaded on master pushes; removed the redundant post-release `coverage` job from `publish.yml`.

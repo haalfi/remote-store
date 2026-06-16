@@ -380,10 +380,18 @@ class TestAzureErrorMapping:
     @pytest.mark.parametrize(
         ("status", "expected_type"),
         [
+            pytest.param(401, PermissionDenied, id="http-401"),
             pytest.param(403, PermissionDenied, id="http-403"),
             pytest.param(404, NotFound, id="http-404"),
             pytest.param(409, AlreadyExists, id="http-409"),
-            pytest.param(500, RemoteStoreError, id="http-500-generic"),
+            pytest.param(429, BackendUnavailable, id="http-429-throttle"),
+            pytest.param(500, BackendUnavailable, id="http-500"),
+            pytest.param(502, BackendUnavailable, id="http-502"),
+            pytest.param(503, BackendUnavailable, id="http-503"),
+            pytest.param(504, BackendUnavailable, id="http-504"),
+            # 412 (precondition) has no dedicated error type and is unreachable
+            # via the public API; it stays the generic base error (BUG-222).
+            pytest.param(412, RemoteStoreError, id="http-412-generic"),
         ],
     )
     def test_classify_http_status(self, status: int, expected_type: type) -> None:
@@ -400,10 +408,16 @@ class TestAzureErrorMapping:
         assert mapped.backend == "azure"
 
     @pytest.mark.spec("AZ-025")
-    def test_generic_http_excludes_subtypes(self) -> None:
+    def test_unmapped_http_status_is_generic(self) -> None:
+        """An unmapped status (418) falls through to the bare base error (BUG-222).
+
+        Uses a status with no classifier branch so the test stays meaningful:
+        the mapped statuses (401/403/404/409/429/5xx) are covered by
+        ``test_classify_http_status``.
+        """
         backend = _make_backend()
-        mapped = backend._classify(self._http_err("server error", 500), "file.txt")
-        assert not isinstance(mapped, NotFound | AlreadyExists | PermissionDenied)
+        mapped = backend._classify(self._http_err("teapot", 418), "file.txt")
+        assert type(mapped) is RemoteStoreError
 
     @pytest.mark.spec("AZ-025")
     @pytest.mark.spec("SEEK-006")

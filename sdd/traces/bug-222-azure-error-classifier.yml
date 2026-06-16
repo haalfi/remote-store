@@ -1,0 +1,90 @@
+id: BUG-222
+title: "Azure error classifier drops 429 / 5xx / 412 / 401 to a bare RemoteStoreError"
+trigger: |
+  audit-019 (ID-219) H2 + M2 found that classify_azure_error typed only
+  HttpResponseError statuses 404/403/409; every other status — 429 (throttle),
+  500/503 (server), 412 (precondition), 401 (HTTP-shaped auth) — fell through to
+  a bare RemoteStoreError (both fall-through lines # pragma: no cover). A caller
+  backing off on BackendUnavailable never caught an Azure throttle, while the
+  Graph backend types exactly these as BackendUnavailable — a cross-backend
+  inconsistency. AZ-025 also enumerated per-status error_code strings the
+  classifier never reads.
+source_items:
+  - BUG-222
+  - ID-219
+audience:
+  - user.api
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-222 (item)"
+        read_type: gate
+        extract: "Scope: map 429/5xx -> BackendUnavailable, decide 412/401, reconcile AZ-025, deterministic test per status; throttle wire-shape is a deferred live-tier follow-up"
+        outcome: ok
+      - file: sdd/audits/audit-019-azure-backend-review.md
+        section: "H2, M2"
+        read_type: reference
+        extract: "The mapping gap is statically certain; quantifying HttpResponseError vs ServiceResponseError under real throttling needs a live load test, deliberately not run (cost discipline)"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "classify_graph_error (GR-029/033/034)"
+        read_type: reference
+        extract: "Parity target: 401->PermissionDenied, 429->BackendUnavailable, (500,502,503,504)->BackendUnavailable"
+        outcome: ok
+      - file: src/remote_store/_errors.py
+        section: "(full)"
+        read_type: reference
+        extract: "No precondition-specific error type exists; 412 has no home beyond the base RemoteStoreError"
+        outcome: ok
+  - id: tests
+    name: Tests (failing first)
+    steps:
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureErrorMapping.test_classify_http_status"
+        read_type: gate
+        extract: "Extend the status param matrix (401/429/500/502/503/504/412); ran, saw 12 failures across both twins before the fix"
+        outcome: ok
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureErrorMapping.test_classify_http_status, test_generic_http_excludes_subtypes"
+        read_type: gate
+        extract: "Mirror the matrix on the sync twin; repoint the stale 500-based generic test to an unmapped status (418)"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_azure_common.py
+        section: "classify_azure_error"
+        read_type: gate
+        extract: "Add 401->PermissionDenied, 429->BackendUnavailable, (500,502,503,504)->BackendUnavailable; keep 412/unmapped on the generic fall-through; drop both # pragma: no cover (now covered)"
+        outcome: ok
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/012-azure-backend.md
+        section: "AZ-025"
+        read_type: gate
+        extract: "Add 401/429/5xx rows + the 412/unmapped note; reconcile M2 by clarifying the invariant keys on status_code + SDK-derived subtype and dropping the redundant per-status error_code enumeration (the inline DirectoryIsNotEmpty check is the sole error_code reader)"
+        outcome: ok
+  - id: verify
+    name: Verify (live)
+    steps:
+      - file: tests/backends/azure/aio/test_live.py
+        section: "TestAsyncAzureLiveErrorMapping.test_bad_signature_maps_to_permission_denied"
+        read_type: verify
+        extract: "Azurite (Stage 2) surfaces a bad key as a BARE HttpResponseError(403); confirms the status==403 branch on a real wire response. 9 passed."
+        outcome: ok
+      - file: tests/backends/azure/aio/test_live_auth.py
+        section: "TestAsyncLiveAuthErrorMapping"
+        read_type: verify
+        extract: "Stage-3 real ADLS: bad AAD bearer -> ClientAuthenticationError(401), bad shared key -> ClientAuthenticationError(403); both map to PermissionDenied. 2 passed. Probe first established that real Azure types auth failures as ClientAuthenticationError (Azurite does not) — so the two live legs hit complementary code paths."
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG moved, CHANGELOG stub added, failing test before fix, spec reconciled, no guide error-mapping table to update"
+        outcome: ok

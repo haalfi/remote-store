@@ -209,17 +209,20 @@ AzureBackend(
 
 ### AZ-025: Structured Error Classification
 
-**Invariant:** Azure SDK exceptions are mapped to `remote_store` errors using structured attributes (`status_code`, `error_code`), not string matching.
+**Invariant:** Azure SDK exceptions are mapped to `remote_store` errors using structured attributes — the exception subtype (which the SDK derives from the HTTP status and `error_code`) and `status_code` — not string matching.
 
-| Azure SDK exception / code | remote_store error |
+| Azure SDK exception / status | remote_store error |
 |---|---|
-| `ResourceNotFoundError`; `status_code=404`; error codes `BlobNotFound`, `PathNotFound`, `FilesystemNotFound`, `ContainerNotFound` | `NotFound` |
-| `status_code=403`; error codes `AuthorizationFailure`, `AuthorizationPermissionMismatch`, `InsufficientAccountPermissions` | `PermissionDenied` |
-| `ResourceExistsError`; `status_code=409`; error codes `PathAlreadyExists`, `BlobAlreadyExists`, `ContainerAlreadyExists` | `AlreadyExists` |
+| `ResourceNotFoundError`; `status_code=404` | `NotFound` |
+| `ResourceExistsError`; `status_code=409` | `AlreadyExists` |
+| `ClientAuthenticationError`; `status_code=401`; `status_code=403` | `PermissionDenied` |
+| `status_code=429` (throttle); `status_code` in `{500, 502, 503, 504}` (server / gateway) | `BackendUnavailable` |
 | `ServiceRequestError`, `ServiceResponseError` (connection / DNS / timeout) | `BackendUnavailable` |
-| `ClientAuthenticationError` | `PermissionDenied` |
+| Any other `HttpResponseError` status (e.g. `412` precondition) | `RemoteStoreError` (base) |
 
-**Rationale:** The Azure SDK provides `HttpResponseError` with `status_code` and `error_code` attributes, enabling reliable classification. This is a significant improvement over the S3 backends' fragile string-matching pattern (`"404" in msg.lower()`).
+**Rationale:** The Azure SDK provides `HttpResponseError` with a `status_code` attribute and raises typed subclasses (`ResourceNotFoundError`, `ResourceExistsError`, `ClientAuthenticationError`) that it derives from the response status and `error_code`. Classification keys on those structured attributes — never on the error *message* — a significant improvement over the S3 backends' fragile string-matching pattern (`"404" in msg.lower()`). Throttling (`429`, and server-side `503` ServerBusy) and `5xx` map to `BackendUnavailable` so a caller backing off on it catches a throttle, matching the Graph backend (GR-033/GR-034). `412` (precondition failed) has no dedicated `remote_store` error type and is not reachable through the public API (no `if_match` parameter is exposed), so it stays the generic base error.
+
+**Note:** the classifier does not read `error_code` directly: the SDK has already consumed it to choose the exception subtype, and `status_code` distinguishes the remaining HTTP-shaped cases. The one place `error_code` is read explicitly is the inline `DirectoryIsNotEmpty` check in `delete()` (which has no distinct exception subtype). The earlier enumeration of per-status `error_code` strings has been dropped from this table as redundant.
 
 ### AZ-026: No Native Exception Leakage
 
