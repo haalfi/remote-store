@@ -8,6 +8,23 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-219 — Apply the expectation-driven review to the Azure backend**
+  spec: — · effort: M · audience: contributor.process, library.maintainer
+  Ran the user-expectation / DX methodology
+  ([research-expectation-driven-review.md](research/research-expectation-driven-review.md))
+  on the Azure backend as a lens-organized panel (eight catalog lenses) plus a bounded
+  live ADLS Gen2 (HNS) battery (one fresh filesystem, KB payloads, torn down).
+  Delivered [audit-019](audits/audit-019-azure-backend-review.md), report-only: no
+  code/spec/doc fixes. Findings routed to **BK-298** (credential ownership + close
+  posture, H1/M1 — live-confirmed the AZ-029 vs Graph GR-051 divergence the BUG-219
+  trace flagged here), **BUG-222** (error-classifier completeness), **BK-299**
+  (seekable-read DX), **BK-300** (HNS `write_atomic` digest), **BUG-223** (sticky HNS
+  misdetection), **BK-301** (doc/docstring parity + edges); the citizen-dev DX narrative
+  routes to the companion cloud DX pilot (the B-012 Iteration 3B successor, tracked
+  there). Azure was found in better shape than Graph at audit-016 (303 cassettes,
+  accurate present-tense guides, no stdlib-leak classifier). Trace:
+  `sdd/traces/id-219-azure-dx-review.yml`.
+
 - [x] **BK-293 — Mirror the concurrency Store-surface into the companion DX suite**
   spec: — · effort: S · audience: infra.test
   Carved out of BK-289 (the in-repo lane shipped). **Delivered in the companion
