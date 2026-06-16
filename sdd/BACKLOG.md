@@ -107,29 +107,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ---
 
-## Graph (OneDrive / SharePoint)
-
-Filed from the Graph concurrency / real-world-DX review (multi-expert panel +
-live consumer-OneDrive validation, "go-hard" throwaway drive). The review
-confirmed the core expectations hold — `overwrite=False` is a race-free
-server-side atomic create, concurrent writes never tear, copy/move races
-resolve to one winner, read-your-writes and listing held, streaming reads are
-version-pinned, and the sync bridge (`ThreadPoolExecutor` + `ext.batch`) is
-deadlock-free. The items below are the divergences and the unspecified contract.
-
-- [ ] **BK-293 — Mirror the concurrency Store-surface into the companion DX suite**
-  spec: — · effort: S · audience: infra.test
-  Carved out of BK-289 (the in-repo lane shipped; see BACKLOG-DONE). Mirror the
-  public-`Store`-surface concurrency subset — create-once race, read-after-write,
-  `ThreadPoolExecutor` + `ext.batch` — into the companion black-box DX suite as
-  consumer-facing validation. The work lands in that separate repo, so this item
-  is tracked here but closed there. The default lane keeps the assertions
-  invariant-only on Memory/Local; the same expectations may also run in the
-  companion's creds-gated cloud DX tier against a real backend (do not
-  thread-stress a shared SFTP/HTTP store).
-
----
-
 ## Lint / CI Completeness
 
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**

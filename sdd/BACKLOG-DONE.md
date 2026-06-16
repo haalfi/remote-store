@@ -8,6 +8,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-293 — Mirror the concurrency Store-surface into the companion DX suite**
+  spec: — · effort: S · audience: infra.test
+  Carved out of BK-289 (the in-repo lane shipped). **Delivered in the companion
+  black-box DX suite (`remote-store-expectations`), not by a remote-store code
+  change.** The public-`Store`-surface concurrency subset — create-once race,
+  read-after-write, `ThreadPoolExecutor` + `ext.batch` — was ported there as
+  live-OneDrive (Graph) black-box scenarios on the companion's creds-gated cloud
+  DX tier, alongside the companion's own backlog item for that work. Tracked
+  here, closed there; no remote-store artifact changed, so no in-repo trace or
+  CHANGELOG entry.
+
 - [x] **BK-297 — Docstring parity checker for sync/async twins**
   spec: — · effort: S · audience: contributor.tooling, library.maintainer
   The `remote_store.aio` tree mirrors the sync API by hand, and a subset of each
@@ -281,7 +292,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   **Discoveries:** the lane proved the `sqlblob` (`sqlite:///:memory:`,
   SingletonThreadPool) fixture is `single_connection`, not `thread_safe`; and
   reproduced a Windows LocalBackend concurrency defect (filed **BUG-220**;
-  `local` writes xfail on Windows). Expectations-repo mirror split to **BK-293**.
+  `local` writes xfail on Windows). Companion DX-suite mirror split to **BK-293**
+  (delivered there).
   Trace: `sdd/traces/bk-289-concurrency-lane.yml`.
 
 - [x] **BK-287 — Cross-backend concurrency-posture contract: `GR-059` + per-backend clauses**
