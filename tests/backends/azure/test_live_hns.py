@@ -99,7 +99,10 @@ from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 from remote_store._errors import InvalidPath  # noqa: E402
 from remote_store._path import RemotePath  # noqa: E402
 from remote_store.backends._azure import AzureBackend  # noqa: E402
-from tests.backends.fixtures._live_env import require_azure_live_connection_string  # noqa: E402
+from tests.backends.fixtures._live_env import (  # noqa: E402
+    require_azure_live_connection_string,
+    require_azure_live_hns_container,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -120,16 +123,12 @@ pytestmark = [
 def _require_live_env() -> tuple[str, str]:
     """Return ``(connection_string, filesystem)`` or fail loud.
 
-    Connection-string validation (presence + Azurite-signature rejection)
-    is delegated to the shared ``require_azure_live_connection_string``
-    helper. ``RS_TEST_LIVE_HNS_CONTAINER`` is HNS-suite-specific and is
-    checked here.
+    Both values are validated by the shared ``_live_env`` helpers:
+    ``require_azure_live_connection_string`` (presence + Azurite-signature
+    rejection) and ``require_azure_live_hns_container``
+    (``RS_TEST_LIVE_HNS_CONTAINER`` presence).
     """
-    conn = require_azure_live_connection_string()
-    fs = os.environ.get("RS_TEST_LIVE_HNS_CONTAINER")
-    if not fs:
-        pytest.fail("RS_TEST_LIVE_HNS=1 set but RS_TEST_LIVE_HNS_CONTAINER is empty")
-    return conn, fs
+    return require_azure_live_connection_string(), require_azure_live_hns_container()
 
 
 @pytest.fixture(scope="module")

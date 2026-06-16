@@ -27,6 +27,7 @@ Azurite does not emulate Hierarchical Namespace. HNS-specific live tests
 
 from __future__ import annotations
 
+import base64
 import uuid
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
@@ -39,7 +40,7 @@ from azure.core.exceptions import HttpResponseError  # noqa: E402
 from azure.storage.blob import BlobServiceClient  # noqa: E402
 from azure.storage.blob.aio import BlobClient as AsyncBlobClient  # noqa: E402
 
-from remote_store._errors import AlreadyExists, NotFound, RemoteStoreError  # noqa: E402
+from remote_store._errors import AlreadyExists, NotFound, PermissionDenied, RemoteStoreError  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 from remote_store.backends._azure_common import classify_azure_error  # noqa: E402
 from tests.conftest import _azurite_reachable  # noqa: E402
@@ -404,3 +405,39 @@ class TestAsyncAzureLiveErrorMapping:
         assert isinstance(mapped, RemoteStoreError)
         assert mapped.backend == "async-azure"
         assert getattr(exc_info.value, "status_code", None) == 412
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_bad_signature_maps_to_permission_denied(
+        self,
+        async_azure_backend: AsyncAzureBackend,
+        azurite_server: str | None,
+    ) -> None:
+        """A real wire 403 (bad shared-key signature) maps to ``PermissionDenied`` (BUG-222).
+
+        Azurite surfaces a wrong account key as a **bare**
+        ``HttpResponseError(status=403)`` (``AuthenticationFailed``), not a
+        ``ClientAuthenticationError`` — which is real Azure's shape, covered
+        by the Stage-3 sibling in ``test_live_auth.py``. This exercises the
+        ``status_code == 403`` branch of ``classify_azure_error`` against a
+        genuine wire response the mock suite fabricates rather than produces.
+        A bad key is reached by swapping the ``AccountKey`` segment of the
+        Azurite connection string for a well-formed-but-wrong value.
+        """
+        assert azurite_server is not None  # noqa: S101 — type-narrowing under the module-level skip
+        container = async_azure_backend.resolve("probe.txt").details["container"]
+        bad_conn = ";".join(
+            "AccountKey=" + base64.b64encode(b"wrong-key-padding-wrong-key-padding-xxxx").decode()
+            if seg.startswith("AccountKey=")
+            else seg
+            for seg in azurite_server.split(";")
+        )
+        bc = AsyncBlobClient.from_connection_string(bad_conn, container_name=container, blob_name="probe.txt")
+        try:
+            with pytest.raises(HttpResponseError) as exc_info:
+                await bc.download_blob()
+        finally:
+            await bc.close()
+        assert getattr(exc_info.value, "status_code", None) == 403
+        mapped = classify_azure_error(exc_info.value, "probe.txt", "async-azure")
+        assert isinstance(mapped, PermissionDenied)
+        assert mapped.backend == "async-azure"

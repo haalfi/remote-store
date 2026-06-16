@@ -105,12 +105,28 @@ def classify_azure_error(exc: Exception, path: str, backend_name: str) -> Remote
         status = getattr(exc, "status_code", None)
         if status == 404:
             return NotFound(f"Not found: {path}", path=path, backend=backend_name)
+        if status == 401:
+            # HTTP-shaped auth failure (e.g. an invalid/expired AAD bearer
+            # token); the credential-object variant arrives as
+            # ClientAuthenticationError above. Both map to PermissionDenied.
+            return PermissionDenied(f"Authentication failed: {path}", path=path, backend=backend_name)
         if status == 403:
             return PermissionDenied(f"Permission denied: {path}", path=path, backend=backend_name)
         if status == 409:
             return AlreadyExists(f"Already exists: {path}", path=path, backend=backend_name)
-        return RemoteStoreError(str(exc), path=path, backend=backend_name)  # pragma: no cover
-    return RemoteStoreError(str(exc), path=path, backend=backend_name)  # pragma: no cover
+        if status == 429:
+            # Throttling: a caller backing off on BackendUnavailable must
+            # catch this. Matches Graph (GR-034). Azure also signals
+            # server-side throttling as 503 (ServerBusy), covered below.
+            return BackendUnavailable(f"Throttled (429): {path}", path=path, backend=backend_name)
+        if status in (500, 502, 503, 504):
+            # Server / gateway errors. Matches Graph (GR-033).
+            return BackendUnavailable(f"Backend unavailable ({status}): {path}", path=path, backend=backend_name)
+        # Any other status (e.g. 412 precondition) has no dedicated error
+        # type and is not reachable through the public API; surface it as the
+        # generic base error rather than guessing a more specific type.
+        return RemoteStoreError(str(exc), path=path, backend=backend_name)
+    return RemoteStoreError(str(exc), path=path, backend=backend_name)
 
 
 def props_to_fileinfo(props: Any, path: str) -> FileInfo:

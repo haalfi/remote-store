@@ -155,8 +155,8 @@ def require_azure_live_connection_string() -> str:
     Shared by the conformance fixtures ``azure_live`` /
     ``azure_live_async`` and by the per-backend live HNS suites under
     ``tests/backends/azure/test_live_hns.py`` and
-    ``tests/backends/azure/aio/test_live_hns.py``. The HNS suites layer
-    an additional ``RS_TEST_LIVE_HNS_CONTAINER`` env-var check on top.
+    ``tests/backends/azure/aio/test_live_hns.py``. Suites that target a
+    specific filesystem layer ``require_azure_live_hns_container`` on top.
     """
     creds = require_live_credentials(
         load_fixture("azure_live"),
@@ -166,8 +166,25 @@ def require_azure_live_connection_string() -> str:
     return creds["AZURE_STORAGE_CONNECTION_STRING"]
 
 
+def require_azure_live_hns_container() -> str:
+    """Return ``RS_TEST_LIVE_HNS_CONTAINER`` (the real ADLS Gen2 filesystem) or fail loud.
+
+    The filesystem-name companion to ``require_azure_live_connection_string``,
+    shared by every suite that needs a concrete container against the real
+    account: the sync and async live HNS suites and the live auth-mapping
+    suite. Centralising the lookup keeps the fail-loud message from drifting
+    across copies.
+    """
+    _load_dotenv_backstop()
+    fs = os.environ.get("RS_TEST_LIVE_HNS_CONTAINER")
+    if not fs or not fs.strip():
+        pytest.fail("RS_TEST_LIVE_HNS=1 set but RS_TEST_LIVE_HNS_CONTAINER is empty")
+    return fs
+
+
 __all__ = [
     "require_azure_live_connection_string",
+    "require_azure_live_hns_container",
     "require_graph_live_credentials",
     "require_live_credentials",
     "require_s3_live_credentials",

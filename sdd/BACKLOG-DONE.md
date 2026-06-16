@@ -8,6 +8,23 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-222 — Azure error classifier drops 429 / 5xx / 412 / 401 to a bare `RemoteStoreError`**
+  spec: AZ-025 · effort: M · audience: user.api
+  From [audit-019](audits/audit-019-azure-backend-review.md) H2 + M2.
+  `classify_azure_error` typed only 404/403/409; every other `HttpResponseError`
+  status fell through to the base error, so a caller backing off on
+  `BackendUnavailable` never caught a throttle. Now maps **429 and 500/502/503/504 →
+  `BackendUnavailable`** (Graph parity, GR-033/GR-034) and **401 → `PermissionDenied`**;
+  **412** (precondition) stays the generic base error — no dedicated type and not
+  reachable via the public API. Reconciled the AZ-025 table (added the new rows; dropped
+  the per-status `error_code` enumeration the classifier never read — the SDK consumes
+  `error_code` to choose the exception subtype). Deterministic per-status tests on both
+  twins; removed the two `# pragma: no cover` fall-throughs. Live-validated the auth path:
+  Azurite bare-`HttpResponseError(403)` and real-ADLS `ClientAuthenticationError` 401/403
+  both map to `PermissionDenied` (`test_live.py`, Stage-3 `test_live_auth.py`). Forcing
+  429/5xx (which statuses arrive as `HttpResponseError` vs `ServiceResponseError` under
+  real throttling) stays the deliberately-deferred live-tier characterisation.
+
 - [x] **ID-219 — Apply the expectation-driven review to the Azure backend**
   spec: — · effort: M · audience: contributor.process, library.maintainer
   Ran the user-expectation / DX methodology

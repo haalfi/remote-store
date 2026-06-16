@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-222: Azure error classifier types 429 / 5xx / 401
+
 ### Internal
 
 - Codecov badge now reuses the `test-primary` CI coverage run (full suite + `sftp_docker` conformance), uploaded on master pushes; removed the redundant post-release `coverage` job from `publish.yml`.
