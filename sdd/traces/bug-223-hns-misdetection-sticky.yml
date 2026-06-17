@@ -21,7 +21,7 @@ discovery_followups:
   # PR #841 review surfaced that the implicit GetAccountInfo probe is the
   # root cause; the explicit-hns redesign is tracked separately.
   - BK-302
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -105,4 +105,14 @@ phases:
         section: "Azure / BK-302 (item)"
         read_type: reference
         extract: "Filed BK-302: replace implicit HNS auto-detection with explicit hns= + AzureUtils.detect_hns(), mirroring SFTPUtils/GraphUtils; needs ADR + migration"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "_hns comment + AZ-006 + spec note"
+        read_type: gate
+        extract: "Round-3 review: corrected the follow-up ID cited in the spec note and both backend comments from BK-300 (an unrelated WriteResult.digest item) to BK-302"
+        outcome: ok
+      - file: tests/backends/azure/test_config.py
+        section: "test_move_snapshots_hns_once_under_probe_flip"
+        read_type: gate
+        extract: "Round-3 review: the helper-level snapshot test did not prove move/copy read a single snapshot end-to-end; added a test rigging the probe to flip mid-op (side_effect [error, hns=True]) asserting one probe call and a single consistent (non-HNS) path -- both twins"
         outcome: ok

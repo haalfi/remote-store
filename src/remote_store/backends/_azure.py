@@ -1314,7 +1314,7 @@ class AzureBackend(Backend):
                 # unset so the next op re-probes); fall back to non-HNS for this
                 # op only, so a transient blip self-heals rather than degrading
                 # the account for the instance lifetime. Warn once per instance.
-                # KNOWN LIMITATION (BK-300): a *persistently* failing probe
+                # KNOWN LIMITATION (BK-302): a *persistently* failing probe
                 # re-probes once per op, and ops that read ``_hns`` more than once
                 # snapshot it (see ``move``/``copy``) to stay internally
                 # consistent. The full fix replaces this implicit probe with an

@@ -1002,6 +1002,42 @@ class TestAzureHNSPaths:
         fc.rename_file.assert_called_once_with("test/dst.txt")
         assert result is None
 
+    @pytest.mark.spec("AZ-006")
+    def test_move_snapshots_hns_once_under_probe_flip(self) -> None:
+        """BUG-223 (PR #841, thread 4/9): move reads the HNS state once.
+
+        A single ``move`` reads ``_hns`` at several decision points. With the
+        probe uncached, a mid-op recovery (transient fail then success) could
+        otherwise make an early read return ``False`` and a later read ``True``,
+        straddling the non-HNS and HNS paths. The op snapshots ``_hns`` once, so
+        it probes exactly once and stays on the single path that snapshot chose.
+        """
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = _make_backend()  # not pre-cached: _hns_enabled is None
+        svc = MagicMock(spec=BlobServiceClient)
+        svc.get_account_information.side_effect = [
+            Exception("transient blip"),  # first (and only) probe -> fail open to flat
+            {"is_hns_enabled": True},  # would flip to HNS if re-read -- must NOT happen
+        ]
+        backend._blob_service_instance = svc
+        backend._cc_instance = MagicMock(spec=ContainerClient)
+        backend._fs_instance = MagicMock(spec=FileSystemClient)
+        src_bc = MagicMock(spec=BlobClient)
+        src_bc.get_blob_properties.return_value = MagicMock(spec=BlobProperties, metadata={})
+        dst_bc = MagicMock(spec=BlobClient)
+        dst_bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        backend._cc_instance.get_blob_client.side_effect = [src_bc, dst_bc]
+
+        backend.move("src.txt", "dst.txt")
+
+        # Probed exactly once despite multiple HNS-dependent branches in move().
+        assert svc.get_account_information.call_count == 1
+        # ... and the op stayed on the single (non-HNS) path the snapshot chose.
+        dst_bc.start_copy_from_url.assert_called_once_with(src_bc.url)
+        src_bc.delete_blob.assert_called_once()
+        backend._fs_instance.get_file_client.assert_not_called()  # no HNS rename branch
+
     @pytest.mark.spec("BE-018")
     @pytest.mark.parametrize("op", ["move", "copy"])
     def test_source_is_directory_raises_invalid_path(self, op: str) -> None:
