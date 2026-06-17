@@ -11175,7 +11175,10 @@
 <hr />
 <h2 id="hns-detection">HNS Detection<a class="headerlink" href="#hns-detection" title="Permanent link">&para;</a></h2>
 <h3 id="az-006-adaptive-behavior-based-on-hierarchical-namespace">AZ-006: Adaptive Behavior Based on Hierarchical Namespace<a class="headerlink" href="#az-006-adaptive-behavior-based-on-hierarchical-namespace" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> On first use, the backend calls <code>GetAccountInfo</code> to determine whether the storage account has Hierarchical Namespace (HNS) enabled. The result is cached for the lifetime of the backend instance.</p>
+<p><strong>Invariant:</strong> On first use, the backend calls <code>GetAccountInfo</code> to determine whether the storage account has Hierarchical Namespace (HNS) enabled. A <em>successful</em> probe result (HNS or flat) is cached for the lifetime of the backend instance. A probe that <em>errors</em> (BUG-223) is <strong>not</strong> cached: the operation falls back to non-HNS behavior for that call, and the next operation re-probes — so a transient blip does not permanently degrade an HNS account to flat semantics. A warning is logged once per instance. An operation that reads the HNS state more than once (e.g. <code>move</code>/<code>copy</code>) snapshots it once at entry, so a single logical operation stays internally consistent even if an uncached re-probe would otherwise re-evaluate mid-operation.</p>
+<blockquote>
+<p><strong>Auto-detection is interim (BK-302).</strong> This implicit <code>GetAccountInfo</code> probe is the root of BUG-223's failure modes (sticky misdetection, per-operation re-probe under a persistent failure, and the snapshot needed for internal consistency). The committed direction is to remove auto-detection in favor of an <strong>explicit</strong> <code>hns=</code> declaration on the backend/config plus an <code>AzureUtils.detect_hns()</code> helper (mirroring <code>SFTPUtils</code>/<code>GraphUtils</code>), defaulting to a required declaration so the account's nature is never silently inferred. See BK-302.</p>
+</blockquote>
 <p><strong>Behavior matrix:</strong></p>
 <table>
 <thead>
@@ -11214,7 +11217,7 @@
 </tbody>
 </table>
 <p><strong>Rationale:</strong> ADLS Gen2 has real directories and atomic rename — the backend should use these when available. Plain Blob Storage accounts are still supported by falling back to S3-equivalent semantics (virtual folders, copy+delete move, PUT atomicity).</p>
-<p><strong>Postconditions:</strong> The HNS check is performed at most once. If the check itself fails (e.g. permissions), the backend falls back to non-HNS behavior and logs a warning.</p>
+<p><strong>Postconditions:</strong> The HNS check is performed at most once <em>successfully</em>. If the check fails, the backend falls back to non-HNS behavior for that operation, logs a warning (once per instance), and does not cache the failure; the next operation re-probes. <strong>Known limitation (BK-302):</strong> a <em>persistently</em> failing probe re-probes once per operation (it is not cached), which the explicit-declaration redesign removes by replacing the probe with a declared <code>hns=</code> value.</p>
 <hr />
 <h2 id="azure-storage-model">Azure Storage Model<a class="headerlink" href="#azure-storage-model" title="Permanent link">&para;</a></h2>
 <h3 id="az-007-container-scope">AZ-007: Container Scope<a class="headerlink" href="#az-007-container-scope" title="Permanent link">&para;</a></h3>
