@@ -98,16 +98,6 @@ and the highest ID already in this file, then take the next integer. Run
   AZ-029 / the BK-287 posture family. The cross-backend item the BUG-219 trace
   flagged for ID-219.
 
-- [ ] **BK-299 — Azure seekable-read DX: stop steering analytics users into in-RAM reads**
-  spec: — · effort: S · audience: user.api_docs, user.site
-  From [audit-019](audits/audit-019-azure-backend-review.md) M3 + L3 + L5. The guide
-  tells users to `read_bytes()` + `io.BytesIO` for seekability (materialises the whole
-  blob) instead of `Store.read_seekable()`, the API Azure optimised with a native
-  HTTP-Range reader; the async-native / bridged paths have no `read_seekable` and spool
-  to `TMPDIR`. Document the seekable path, the async `ext.*` cliff, and connector
-  tuning. Candidate to fold with the Graph L9/M6 item into one cross-backend doc note;
-  the strongest companion-cloud-DX-pilot narrative.
-
 - [ ] **BK-300 — Azure `WriteResult.digest` is dropped on HNS `write_atomic`**
   spec: — · effort: S · audience: user.api_docs, user.site
   From [audit-019](audits/audit-019-azure-backend-review.md) M4. Live-confirmed: HNS

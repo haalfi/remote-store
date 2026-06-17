@@ -25,6 +25,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   429/5xx (which statuses arrive as `HttpResponseError` vs `ServiceResponseError` under
   real throttling) stays the deliberately-deferred live-tier characterisation.
 
+- [x] **BK-299 — Azure seekable-read DX: stop steering analytics users into in-RAM reads**
+  spec: — · effort: S · audience: user.api_docs, user.site
+  From [audit-019](audits/audit-019-azure-backend-review.md) M3 + L3 + L5. The Streaming
+  guidance in `azure.md` steered readers to `read_bytes()` + `io.BytesIO` (materialises
+  the whole blob) instead of `Store.read_seekable()`, the path Azure optimised with a
+  native HTTP-Range reader (`_AzureRangeReader`, no spill, no in-RAM copy). Reworked the
+  section to recommend `read_seekable()` for random access (with the `ext.arrow`/`parquet`
+  range-seek rationale), kept `io.BytesIO` as the small-blob case, documented the **async
+  cliff** (no async `read_seekable`, `aio.ext` ships only `write`, bridging via
+  `AsyncBackendSyncAdapter` masks the range reader and spools to `TMPDIR`), and added a
+  **Concurrency and connection pooling** section covering the shared aiohttp
+  (`AioHttpTransport`) connector, `max_concurrency` vs the pool ceiling, and the
+  `client_options` transport escape hatch (L5). Docs-only; no code change. The Graph
+  L9/M6 cross-backend fold stays a candidate, not done here.
+
 - [x] **ID-219 — Apply the expectation-driven review to the Azure backend**
   spec: — · effort: M · audience: contributor.process, library.maintainer
   Ran the user-expectation / DX methodology
