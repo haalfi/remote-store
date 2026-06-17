@@ -2430,13 +2430,30 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#streaming" class="md-nav__link">
+  <a href="#streaming-and-seekable-reads" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Streaming
+        Streaming and seekable reads
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Streaming and seekable reads">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#async-caveat-no-native-seekable-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async caveat: no native seekable read
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2445,6 +2462,17 @@
     <span class="md-ellipsis">
       
         Upload tuning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#concurrency-and-connection-pooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrency and connection pooling
       
     </span>
   </a>
@@ -10331,13 +10359,30 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#streaming" class="md-nav__link">
+  <a href="#streaming-and-seekable-reads" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Streaming
+        Streaming and seekable reads
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Streaming and seekable reads">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#async-caveat-no-native-seekable-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async caveat: no native seekable read
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -10346,6 +10391,17 @@
     <span class="md-ellipsis">
       
         Upload tuning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#concurrency-and-connection-pooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrency and connection pooling
       
     </span>
   </a>
@@ -10667,13 +10723,25 @@ on a non-HNS container, <code>version_id</code> is also populated from the uploa
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
 <p>Supports all capabilities except <code>SEEKABLE_READ</code> and <code>ATOMIC_MOVE</code>.
 See the <a href="../../../reference/capabilities-matrix/">capabilities matrix</a> for full details.</p>
-<h2 id="streaming">Streaming<a class="headerlink" href="#streaming" title="Permanent link">&para;</a></h2>
-<p><code>read()</code> returns a forward-only streaming handle (not seekable). Data is fetched on demand, not loaded into memory upfront. If you need seekability, use <code>read_bytes()</code> and wrap in <code>BytesIO</code>:</p>
+<h2 id="streaming-and-seekable-reads">Streaming and seekable reads<a class="headerlink" href="#streaming-and-seekable-reads" title="Permanent link">&para;</a></h2>
+<p><code>read()</code> returns a forward-only streaming handle (not seekable). Data is fetched on demand, not loaded into memory upfront.</p>
+<p>For random access (<code>seek()</code> / <code>tell()</code>) — for example, reading the footer of a large Parquet object — use <strong><code>Store.read_seekable()</code></strong> instead of materialising the whole blob. The Azure backend does not declare the <code>SEEKABLE_READ</code> capability (its <code>read()</code> is forward-only), but <code>read_seekable()</code> is backed by a native HTTP-Range reader that issues one ranged <code>download_blob</code> per <code>read()</code>: it fetches only the bytes the consumer seeks to, with no spill to a temp file and no in-RAM copy of the object.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">data</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;large-file.bin&quot;</span><span class="p">)</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">seekable_stream</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">with</span> <span class="n">Registry</span><span class="p">(</span><span class="n">config</span><span class="p">)</span> <span class="k">as</span> <span class="n">registry</span><span class="p">:</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">read_seekable</span><span class="p">(</span><span class="s2">&quot;large-file.parquet&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">stream</span><span class="p">:</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="n">stream</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="o">-</span><span class="mi">8</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">SEEK_END</span><span class="p">)</span>   <span class="c1"># only this 8-byte range is fetched</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>        <span class="n">magic</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
 </code></pre></div>
+<p>The <code>ext.arrow</code> / <code>ext.parquet</code> extensions read through <code>read_seekable()</code>, so analytical reads over Azure range-seek the footer and prune columns rather than download the whole object. Reaching for <code>read_bytes()</code> + <code>io.BytesIO</code> instead forces the <strong>entire</strong> blob into memory, which defeats the optimisation on multi-GB objects:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Anti-pattern for large objects: materialises the whole blob in RAM.</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;large-file.parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">seekable_stream</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</code></pre></div>
+<p><code>io.BytesIO</code> is still fine for small blobs, where a single download is cheaper than issuing ranged requests.</p>
+<h3 id="async-caveat-no-native-seekable-read">Async caveat: no native seekable read<a class="headerlink" href="#async-caveat-no-native-seekable-read" title="Permanent link">&para;</a></h3>
+<p>The async API has no <code>read_seekable()</code> (see <a href="../../async/#limitations">Async API limitations</a>), and <code>remote_store.aio.ext</code> ships only <code>write</code> — there is no async <code>ext.arrow</code> / <code>ext.parquet</code>. To drive those analytical readers against an <code>AsyncAzureBackend</code> you must bridge to sync with <a href="../../async-sync-bridges/"><code>AsyncBackendSyncAdapter</code></a>, whose <code>read()</code> is forward-only (<code>seekable()</code> is <code>False</code>). That masks Azure's range reader, so <code>read_seekable()</code> falls back to spooling the whole object to a temporary file (sized by <code>TMPDIR</code>) before the reader can seek. For large analytical reads, prefer the <strong>sync</strong> Azure store, which keeps the native range path.</p>
 <h2 id="upload-tuning">Upload tuning<a class="headerlink" href="#upload-tuning" title="Permanent link">&para;</a></h2>
 <p>The library sets conservative upload defaults on the Azure service clients
 to keep memory usage bounded during streaming transfers:</p>
@@ -10706,37 +10774,45 @@ to keep memory usage bounded during streaming transfers:</p>
 <p>These defaults cause uploads to use staged-block requests with small blocks.
 For large files where upload throughput matters more than memory, override
 via <code>client_options</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">AzureBackend</span><span class="p">(</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">container</span><span class="o">=</span><span class="s2">&quot;my-container&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">connection_string</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="s2">&quot;max_single_put_size&quot;</span><span class="p">:</span> <span class="mi">8</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>   <span class="c1"># 8 MiB</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>        <span class="s2">&quot;max_block_size&quot;</span><span class="p">:</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>          <span class="c1"># 4 MiB</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="p">},</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">AzureBackend</span><span class="p">(</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">container</span><span class="o">=</span><span class="s2">&quot;my-container&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">connection_string</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        <span class="s2">&quot;max_single_put_size&quot;</span><span class="p">:</span> <span class="mi">8</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>   <span class="c1"># 8 MiB</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="s2">&quot;max_block_size&quot;</span><span class="p">:</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>          <span class="c1"># 4 MiB</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="p">},</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="p">)</span>
 </code></pre></div>
+<h2 id="concurrency-and-connection-pooling">Concurrency and connection pooling<a class="headerlink" href="#concurrency-and-connection-pooling" title="Permanent link">&para;</a></h2>
+<p>The async Azure SDK rides aiohttp (<code>AioHttpTransport</code>). A single <code>AsyncStore</code> (or <code>AsyncAzureBackend</code>) shared across many coroutines funnels every request through one transport and its connection pool, so under high fan-out — a large <code>asyncio.gather</code>, or one shared store behind a FastAPI app — the pool can become the bottleneck before the storage account's own limits do. (Share one store per event loop; see the <a href="../../../explanation/concurrency/#concurrent-use-posture">concurrency posture</a>.)</p>
+<p>Two independent levers:</p>
+<ul>
+<li><strong><code>max_concurrency</code></strong> (constructor option, default <code>1</code>) sets the parallel connections used <em>within</em> a single upload/download. Raise it for large-file throughput; it does not change how many operations run concurrently.</li>
+<li><strong>Connector pool size.</strong> <code>client_options</code> is forwarded verbatim to the Azure service clients, so for very high concurrent fan-out you can supply a custom <code>transport=</code> (an <a href="https://learn.microsoft.com/en-us/python/api/azure-core/azure.core.pipeline.transport.aiohttptransport"><code>AioHttpTransport</code></a> over an <code>aiohttp.ClientSession</code> whose <code>TCPConnector</code> has a higher <code>limit</code>) to raise the shared-pool ceiling.</li>
+</ul>
+<p>Size the pool to your fan-out, not arbitrarily high: each connection is a socket against the storage account, which itself throttles (<code>429</code>). The right ceiling is best found by measuring against your workload.</p>
 <h2 id="escape-hatch">Escape Hatch<a class="headerlink" href="#escape-hatch" title="Permanent link">&para;</a></h2>
 <p>Access the underlying <code>FileSystemClient</code> when you need Azure-specific features:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">azure.storage.filedatalake</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileSystemClient</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">fs</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">FileSystemClient</span><span class="p">)</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">fs</span><span class="o">.</span><span class="n">get_paths</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;my-prefix&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">azure.storage.filedatalake</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileSystemClient</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">fs</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">FileSystemClient</span><span class="p">)</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">fs</span><span class="o">.</span><span class="n">get_paths</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;my-prefix&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="local-development-with-azurite">Local Development with Azurite<a class="headerlink" href="#local-development-with-azurite" title="Permanent link">&para;</a></h2>
 <p><a href="https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite">Azurite</a> is the official Azure Storage emulator. Start it with Docker:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">10000</span>:10000<span class="w"> </span>mcr.microsoft.com/azure-storage/azurite
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">10000</span>:10000<span class="w"> </span>mcr.microsoft.com/azure-storage/azurite
 </code></pre></div>
 <p>Then connect using the well-known Azurite connection string:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">container</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">connection_string</span><span class="o">=</span><span class="p">(</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>        <span class="s2">&quot;DefaultEndpointsProtocol=http;&quot;</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>        <span class="s2">&quot;AccountName=devstoreaccount1;&quot;</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="s2">&quot;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq&quot;</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>        <span class="s2">&quot;/K1SZFPTOtr/KBHBeksoGMGw==;&quot;</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>        <span class="s2">&quot;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;&quot;</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="p">),</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">container</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">connection_string</span><span class="o">=</span><span class="p">(</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>        <span class="s2">&quot;DefaultEndpointsProtocol=http;&quot;</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>        <span class="s2">&quot;AccountName=devstoreaccount1;&quot;</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="s2">&quot;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq&quot;</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>        <span class="s2">&quot;/K1SZFPTOtr/KBHBeksoGMGw==;&quot;</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>        <span class="s2">&quot;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;&quot;</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="p">),</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="p">)</span>
 </code></pre></div>
 <p>Note: Azurite does not support Hierarchical Namespace. HNS-specific features (atomic rename, real directories) are tested with mocked SDK objects. To validate against a live ADLS Gen2 account, see <a href="../azure-hns-setup/">Azure HNS account setup</a>.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
