@@ -956,19 +956,19 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             An async iterator of matching ``FileInfo`` objects.
         """
+        # No backend-error wrap here: list_files already classifies its own
+        # iteration errors, and pattern-compile errors (re.error from
+        # pattern_to_regex) are caller mistakes that must propagate as-is —
+        # wrapping them as an Azure error would mislabel them. Matches the
+        # sync twin (L2 parity).
         from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
 
-        try:
-            prefix = extract_prefix(pattern)
-            recursive = needs_recursive(pattern)
-            compiled = pattern_to_regex(pattern)
-            async for info in self.list_files(prefix, recursive=recursive):
-                if compiled.match(str(info.path)):
-                    yield info
-        except RemoteStoreError:
-            raise
-        except Exception as exc:  # noqa: BLE001
-            raise classify_azure_error(exc, pattern, self.name) from None
+        prefix = extract_prefix(pattern)
+        recursive = needs_recursive(pattern)
+        compiled = pattern_to_regex(pattern)
+        async for info in self.list_files(prefix, recursive=recursive):
+            if compiled.match(str(info.path)):
+                yield info
 
     async def get_file_info(self, path: str) -> FileInfo:
         """Get metadata for a file.
@@ -1080,7 +1080,11 @@ class AsyncAzureBackend(AsyncBackend):
         # BE-018 / ASYNC-018: self-move is a no-op (src == dst → Ok), but only
         # for files.  Directory-path inputs must still raise InvalidPath per
         # BE-021 — same contract as the non-self-op path below (line 942-943).
-        if src == dst:
+        # Compare normalised keys: a direct-backend caller can pass
+        # non-canonical paths ("a//b" vs "a/b") that name the same blob once
+        # azure_path collapses them; without normalising, the copy+delete
+        # branch below would delete the sole copy (AZ-017 data-loss edge).
+        if _azure_path_fn(src) == _azure_path_fn(dst):
             async with self._errors(src):
                 src_bc = self._blob_client(src)
                 src_props = await src_bc.get_blob_properties()  # raises NotFound if missing
@@ -1160,7 +1164,10 @@ class AsyncAzureBackend(AsyncBackend):
         # BE-019 / ASYNC-019: self-copy is a no-op (src == dst → Ok), but only
         # for files.  Directory-path inputs must still raise InvalidPath per
         # BE-021 — same contract as the non-self-op path below.
-        if src == dst:
+        # Compare normalised keys: a direct-backend caller can pass
+        # non-canonical paths ("a//b" vs "a/b") that name the same blob once
+        # azure_path collapses them (AZ-018 self-op edge).
+        if _azure_path_fn(src) == _azure_path_fn(dst):
             async with self._errors(src):
                 src_bc = self._blob_client(src)
                 src_props = await src_bc.get_blob_properties()  # raises NotFound if missing

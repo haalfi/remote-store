@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import re
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock
@@ -1030,6 +1031,52 @@ class TestAsyncAzureMoveAndCopy:
 
         with pytest.raises(NotFound, match="not found|Not found"):
             await backend.copy("missing.txt", "missing.txt")
+
+    @pytest.mark.spec("AZ-017")
+    async def test_move_self_op_normalised_no_data_loss(self) -> None:
+        """BK-301 / L1: non-canonical paths naming the same blob (``a//b`` vs
+        ``a/b``) are recognised as a self-move after normalisation — no
+        copy-to-self + delete-source data loss."""
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props())
+
+        await backend.move("a//b", "a/b", overwrite=True)
+
+        assert cc.get_blob_client.call_count == 1  # single existence probe; no copy/delete
+        bc.start_copy_from_url.assert_not_called()
+        bc.delete_blob.assert_not_called()
+
+    @pytest.mark.spec("AZ-018")
+    async def test_copy_self_op_normalised_is_noop(self) -> None:
+        """BK-301 / L1: ``copy('a//b', 'a/b')`` is a self-op after normalisation."""
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props())
+
+        await backend.copy("a//b", "a/b", overwrite=True)
+
+        assert cc.get_blob_client.call_count == 1  # single existence probe; no copy
+        bc.start_copy_from_url.assert_not_called()
+
+
+class TestAsyncAzureGlobErrorParity:
+    """BK-301 / L2: a glob pattern-compile error (re.error) propagates as-is
+    rather than being re-wrapped as a backend error — aligning the async twin
+    with the sync one (the async glob previously wrapped the whole body)."""
+
+    @pytest.mark.spec("AZ-019")
+    async def test_glob_propagates_pattern_compile_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        import remote_store._glob as glob_mod
+
+        backend, cc, bc = _setup_non_hns_backend()
+
+        def _boom(_pattern: str) -> Any:
+            raise re.error("bad pattern")
+
+        monkeypatch.setattr(glob_mod, "pattern_to_regex", _boom)
+
+        with pytest.raises(re.error):
+            async for _info in backend.glob("data/*.csv"):
+                pass
 
 
 # =============================================================================

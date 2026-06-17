@@ -1,0 +1,99 @@
+id: BK-301
+title: "Azure doc/docstring parity + correctness edges"
+trigger: >
+  audit-019 (G6) bundled six small, independent Azure findings: the sync
+  constructor docstring and guide Options table omitted real kwargs (retry,
+  reject_write_under_file_ancestor), sync check_health had no docstring, the
+  self-op src==dst short-circuit compared raw strings (a direct-backend
+  data-loss edge), sync/async glob diverged on error handling, the
+  ASYNC-094 cross-loop rule was unsurfaced, and AZ-026 over-promised
+  backend="azure" for both twins.
+source_items:
+  - BK-301
+  - ID-219
+audience:
+  - user.api
+  - user.api_docs
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+surprising_ripples:
+  - docs-src/explanation/concurrency.md
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/audits/audit-019-azure-backend-review.md
+        section: "M6, L1, L2, L4, L6, L7; Proposed items G6"
+        read_type: gate
+        extract: "The six findings BK-301 bundles, with file/line pointers and dispositions"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-301 (item)"
+        read_type: gate
+        extract: "Item scope; 'split freely'; L7 listed in header but no action spelled out"
+        outcome: unclear
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-222, BK-299"
+        read_type: reference
+        extract: "Sibling G2/H2/M2 and G3 already shipped — narrows BK-301 scope (classifier already types 429/5xx; guide cross-loop sentence already added)"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "__init__ docstring; check_health; move/copy self-op"
+        read_type: reference
+        extract: "retry omitted from sync docstring; check_health has none; raw src==dst in move (:994) and copy (:1060)"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "check_health docstring; move/copy self-op; glob"
+        read_type: reference
+        extract: "Async wording to mirror; async self-op uses _azure_path_fn; glob wraps whole body incl pattern_to_regex; all errors use backend=self.name (async-azure)"
+        outcome: ok
+      - file: src/remote_store/backends/_azure_common.py
+        section: "azure_path"
+        read_type: reference
+        extract: "azure_path collapses /+ and lstrips / — the normalisation the raw src==dst compare skipped (L1 root cause)"
+        outcome: ok
+      - file: sdd/specs/012-azure-backend.md
+        section: "AZ-014, AZ-019, AZ-026"
+        read_type: reference
+        extract: "AZ-026 postcondition to amend (L6); AZ-014 to note chunk-granularity divergence (L7); AZ-019 glob contract"
+        outcome: ok
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/guides/backends/azure.md
+        section: "Options table; Concurrency and connection pooling"
+        read_type: reference
+        extract: "Options table omits retry + reject_write_under_file_ancestor; the cross-loop sentence (BK-299) links to the concurrency posture page"
+        outcome: ok
+      - file: docs-src/explanation/concurrency.md
+        section: "Concurrent-use posture table"
+        read_type: reference
+        extract: "Graph row carries the never-across-loops footnote but the Azure row did not — the real L4 gap was here, not in the guide the item named"
+        outcome: misleading
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureNonHnsFolderMarkers; _make_backend"
+        read_type: reference
+        extract: "Mock idiom: _hns_enabled=False + MagicMock ContainerClient/BlobClient; monkeypatch glob_mod.pattern_to_regex for the L2 parity test"
+        outcome: ok
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureMoveAndCopy; _setup_non_hns_backend, _mock_blob_props"
+        read_type: reference
+        extract: "Async self-op tests already exist for identical paths; added normalised-path (a//b vs a/b) variants + async glob parity test"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / backend, spec, version touches"
+        read_type: verify
+        extract: "BACKLOG move + backlogid regen, CHANGELOG entry, spec touch, trace shipped same PR"
+        outcome: ok

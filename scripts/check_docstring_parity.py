@@ -183,6 +183,7 @@ TWINS: tuple[Twin, ...] = (
         identical=frozenset(
             {
                 "_errors",
+                "check_health",
                 "delete_folder",
             }
         ),
