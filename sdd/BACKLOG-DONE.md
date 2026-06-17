@@ -14,12 +14,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (`get_account_information()`) cached `_hns_enabled = False` on *any* exception, so a
   transient failure on the first probe permanently degraded an HNS account to flat-blob
   semantics (no atomic rename, no `hdi_isfolder` rejection) with no error surfaced until
-  `close()`. Now only a **successful** probe is cached; a probe that **errors** is not
-  cached (the failed op falls back to non-HNS, the next op re-probes), so a transient
-  blip self-heals. Warns once per instance to avoid spamming a persistently-failing
-  probe. Symmetric fix on both twins (`_azure.py` `_hns`; `aio/_azure.py` `_ensure_hns`);
-  AZ-006 reworded ("at most once *successfully*"). Mocked transient-then-success
-  re-probe tests on both twins; live-validated real ADLS Gen2 still detected as HNS.
+  `close()`. Now a **successful** probe is cached, and a probe that **errors** is
+  classified (PR #841 review): a **definitive** permission failure (`PermissionDenied`
+  — `ClientAuthenticationError` / 401 / 403) is cached flat (re-probing cannot succeed),
+  while a **transient** failure (throttling / 5xx / transport) is not cached so the next
+  op re-probes and self-heals. Warns once per instance. Symmetric fix on both twins
+  (`_azure.py` `_hns`; `aio/_azure.py` `_ensure_hns`); AZ-006 reworded. Mocked
+  re-probe / warn-once / close-reset / permission-caches-flat tests on both twins;
+  live-validated real ADLS Gen2 still detected as HNS (24/24).
 
 - [x] **BUG-222 — Azure error classifier drops 429 / 5xx / 412 / 401 to a bare `RemoteStoreError`**
   spec: AZ-025 · effort: M · audience: user.api

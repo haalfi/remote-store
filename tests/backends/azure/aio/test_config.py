@@ -8,6 +8,7 @@ for async operations.
 from __future__ import annotations
 
 import contextlib
+import logging
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock
@@ -281,6 +282,44 @@ class TestAsyncAzureHNSDetection:
         assert await backend._ensure_hns() is False  # fail-open, not cached
         assert await backend._ensure_hns() is True  # re-probe recovers
         assert mock_client.get_account_information.call_count == 2
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_hns_probe_transient_failure_warns_once(self, caplog: pytest.LogCaptureFixture) -> None:
+        """BUG-223: a persistently-failing transient probe re-probes but warns once."""
+        backend = _make_backend()
+        mock_client = AsyncMock(spec=BlobServiceClient)
+        mock_client.get_account_information.side_effect = Exception("transient blip")
+        backend._blob_service_instance = mock_client
+        with caplog.at_level(logging.WARNING, logger="remote_store.aio.backends._azure"):
+            assert await backend._ensure_hns() is False
+            assert await backend._ensure_hns() is False
+            assert await backend._ensure_hns() is False
+        assert mock_client.get_account_information.call_count == 3  # transient: re-probed each read
+        warnings = [r for r in caplog.records if "Failed to detect HNS status" in r.message]
+        assert len(warnings) == 1  # throttled to one warning per instance
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_hns_probe_warned_flag_reset_on_aclose(self) -> None:
+        """BUG-223: ``aclose()`` resets the warn-once flag so a reused backend warns again."""
+        backend = _make_backend()
+        mock_client = AsyncMock(spec=BlobServiceClient)
+        mock_client.get_account_information.side_effect = Exception("transient blip")
+        backend._blob_service_instance = mock_client
+        assert await backend._ensure_hns() is False
+        assert backend._hns_probe_warned is True
+        await backend.aclose()
+        assert backend._hns_probe_warned is False
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_hns_probe_permission_error_caches_flat(self) -> None:
+        """BUG-223 (PR #841): a definitive permission failure caches flat, no re-probe."""
+        backend = _make_backend()
+        mock_client = AsyncMock(spec=BlobServiceClient)
+        mock_client.get_account_information.side_effect = ClientAuthenticationError("denied")
+        backend._blob_service_instance = mock_client
+        assert await backend._ensure_hns() is False
+        assert await backend._ensure_hns() is False
+        assert mock_client.get_account_information.call_count == 1  # definitive: cached, not re-probed
 
 
 # =============================================================================
@@ -1728,8 +1767,6 @@ class TestAsyncAzureHNSPaths:
         backend._fs_instance.get_file_client.return_value = tmp_fc
         tmp_fc.upload_data = AsyncMock(return_value=None)
 
-        import logging
-
         with caplog.at_level(logging.WARNING):
             result = await backend.write_atomic("hns/file.txt", b"hello")
 
@@ -2287,7 +2324,6 @@ class TestBuildAzureRetry:
     @pytest.mark.spec("ASYNC-001")
     def test_unmappable_fields_logged(self, caplog: pytest.LogCaptureFixture) -> None:
         """backoff_max != 60 or timeout != None triggers a debug log."""
-        import logging
 
         from remote_store._config import RetryPolicy
 

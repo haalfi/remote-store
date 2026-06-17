@@ -63,7 +63,7 @@ AzureBackend(
 
 ### AZ-006: Adaptive Behavior Based on Hierarchical Namespace
 
-**Invariant:** On first use, the backend calls `GetAccountInfo` to determine whether the storage account has Hierarchical Namespace (HNS) enabled. A *successful* probe result (HNS or flat) is cached for the lifetime of the backend instance. A probe that *errors* (BUG-223) is not cached: the failed operation falls back to non-HNS behavior, but the next operation re-probes, so a transient failure does not permanently degrade an HNS account to flat semantics.
+**Invariant:** On first use, the backend calls `GetAccountInfo` to determine whether the storage account has Hierarchical Namespace (HNS) enabled. A *successful* probe result (HNS or flat) is cached for the lifetime of the backend instance. A probe that *errors* (BUG-223) is classified: a **definitive** permission/auth failure (`PermissionDenied` — `ClientAuthenticationError`, or HTTP 401/403, e.g. a blob-scoped credential denied account-level `GetAccountInfo`) is cached as flat, because re-probing cannot succeed; a **transient** failure (throttling, 5xx, transport) is *not* cached, so the next operation re-probes and a transient blip does not permanently degrade an HNS account to flat semantics. The failed operation itself falls back to non-HNS behavior either way.
 
 **Behavior matrix:**
 
@@ -77,7 +77,7 @@ AzureBackend(
 
 **Rationale:** ADLS Gen2 has real directories and atomic rename — the backend should use these when available. Plain Blob Storage accounts are still supported by falling back to S3-equivalent semantics (virtual folders, copy+delete move, PUT atomicity).
 
-**Postconditions:** The HNS check is performed at most once *successfully*. If the check itself fails (e.g. permissions), the backend falls back to non-HNS behavior for that operation and logs a warning (once per instance); the next operation re-probes. A persistently failing probe therefore re-probes once per operation rather than permanently caching `False`.
+**Postconditions:** The HNS check is performed at most once *successfully*. If the check fails, the backend falls back to non-HNS behavior for that operation and logs a warning (once per instance). A definitive permission failure is then cached flat (no re-probe); a transient failure is not cached and the next operation re-probes. A persistently *transient* probe therefore re-probes once per operation rather than permanently caching `False`; a persistent *permission* failure is cached after the first attempt.
 
 ---
 

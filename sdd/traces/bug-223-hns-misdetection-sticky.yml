@@ -11,6 +11,13 @@ audience:
   - user.api
 expected_ripples:
   - sdd/backlogid.json
+surprising_ripples:
+  # Adding a PermissionDenied import shifted the backend class def line
+  # numbers, so gen_graph --check failed until graph.json (and the
+  # graph_viz.html derived from it) were regenerated.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -76,4 +83,17 @@ phases:
         section: "(full)"
         read_type: verify
         extract: "Stage-3 live: confirm real ADLS Gen2 still detected as HNS after the error-branch change"
+        outcome: ok
+  - id: fix
+    name: Fix (PR review)
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "_hns property except branch"
+        read_type: gate
+        extract: "PR #841 review: blanket 'never cache' re-probes on every _hns read (22 sites, move hits >1) under a persistent 403 -- probe storm with SDK backoff. Classify via classify_azure_error: cache flat on PermissionDenied (definitive), re-probe only on transient"
+        outcome: ok
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSDetection (warn-once / close-reset / permission-caches-flat)"
+        read_type: gate
+        extract: "PR #841 review: _hns_probe_warned throttle + close-reset + definitive-cache branch were unasserted; add caplog warn-once, flag-reset-on-close, and PermissionDenied-caches-flat tests on both twins"
         outcome: ok

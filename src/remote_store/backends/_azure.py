@@ -22,6 +22,7 @@ from remote_store._errors import (
     DirectoryNotEmpty,
     InvalidPath,
     NotFound,
+    PermissionDenied,
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
@@ -1298,18 +1299,26 @@ class AzureBackend(Backend):
             try:
                 info = self._blob_service.get_account_information()
                 self._hns_enabled = bool(info.get("is_hns_enabled", False))
-            except Exception:  # noqa: BLE001
-                # BUG-223: a failed probe is transient until proven otherwise.
-                # Do not cache the failure (leave ``_hns_enabled`` unset so the
-                # next op re-probes); fail open to non-HNS for this op only. Warn
-                # once per instance to avoid spamming a persistently-failing probe.
+            except Exception as exc:  # noqa: BLE001
+                # BUG-223: distinguish a *definitive* probe failure from a
+                # *transient* one (PR #841 review). A permission/auth error
+                # (no account-level GetAccountInfo access, e.g. a blob-scoped SAS
+                # on a flat account) can never succeed, so cache flat -- re-probing
+                # would only repeat the failure, with SDK retry/backoff, on every
+                # one of the ~22 ``_hns`` reads (a single ``move`` reads it more
+                # than once). A transient error (throttling, 5xx, transport) is
+                # not cached, so the next op re-probes and self-heals. Warn once
+                # per instance either way.
                 if not self._hns_probe_warned:
                     log.warning(
                         "Failed to detect HNS status, falling back to non-HNS behavior",
                         exc_info=True,
                     )
                     self._hns_probe_warned = True
-                return False
+                if isinstance(classify_azure_error(exc, "", self.name), PermissionDenied):
+                    self._hns_enabled = False  # definitive: cache flat
+                else:
+                    return False  # transient: fail open for this op, re-probe next
         return self._hns_enabled
 
     def _azure_path(self, path: str) -> str:

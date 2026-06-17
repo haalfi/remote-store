@@ -346,6 +346,55 @@ class TestAzureHNSDetection:
         assert backend._hns is True  # re-probe recovers the real HNS state
         assert mock_client.get_account_information.call_count == 2
 
+    @pytest.mark.spec("AZ-006")
+    def test_hns_probe_transient_failure_warns_once(self, caplog: pytest.LogCaptureFixture) -> None:
+        """BUG-223: a persistently-failing transient probe re-probes but warns once.
+
+        The ``_hns_probe_warned`` throttle suppresses repeated warnings on a probe
+        that keeps failing transiently (re-probed every ``_hns`` read).
+        """
+        backend = _make_backend()
+        mock_client = MagicMock(spec=BlobServiceClient)
+        mock_client.get_account_information.side_effect = Exception("transient blip")
+        backend._blob_service_instance = mock_client
+        with caplog.at_level(logging.WARNING, logger="remote_store.backends._azure"):
+            assert backend._hns is False
+            assert backend._hns is False
+            assert backend._hns is False
+        # Transient errors are not cached -- every read re-probes ...
+        assert mock_client.get_account_information.call_count == 3
+        # ... but the warning fires exactly once per instance.
+        warnings = [r for r in caplog.records if "Failed to detect HNS status" in r.message]
+        assert len(warnings) == 1
+
+    @pytest.mark.spec("AZ-006")
+    def test_hns_probe_warned_flag_reset_on_close(self) -> None:
+        """BUG-223: ``close()`` resets the warn-once flag so a reused backend warns again."""
+        backend = _make_backend()
+        mock_client = MagicMock(spec=BlobServiceClient)
+        mock_client.get_account_information.side_effect = Exception("transient blip")
+        backend._blob_service_instance = mock_client
+        assert backend._hns is False
+        assert backend._hns_probe_warned is True
+        backend.close()
+        assert backend._hns_probe_warned is False
+
+    @pytest.mark.spec("AZ-006")
+    def test_hns_probe_permission_error_caches_flat(self) -> None:
+        """BUG-223 (PR #841): a definitive permission failure caches flat, no re-probe.
+
+        A blob-scoped credential denied account-level ``GetAccountInfo`` (403 /
+        ``ClientAuthenticationError``) can never succeed; re-probing it on every
+        ``_hns`` read would only repeat the failure under SDK retry/backoff. Cache flat.
+        """
+        backend = _make_backend()
+        mock_client = MagicMock(spec=BlobServiceClient)
+        mock_client.get_account_information.side_effect = _azure_exc("ClientAuthenticationError", "denied")
+        backend._blob_service_instance = mock_client
+        assert backend._hns is False
+        assert backend._hns is False
+        assert mock_client.get_account_information.call_count == 1  # definitive: cached, not re-probed
+
 
 # =============================================================================
 # Error mapping (AZ-025 through AZ-028)
