@@ -913,6 +913,14 @@ class AzureBackend(Backend):
                         yield self._props_to_fileinfo(item, item.name)
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
+        """Match files against a glob pattern.
+
+        Args:
+            pattern: Glob pattern (e.g., ``"data/*.csv"``, ``"**/*.txt"``).
+
+        Returns:
+            An iterator of matching ``FileInfo`` objects.
+        """
         from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
 
         prefix = extract_prefix(pattern)

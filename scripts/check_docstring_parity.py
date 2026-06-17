@@ -201,6 +201,7 @@ TWINS: tuple[Twin, ...] = (
                 "_maybe_check_no_file_ancestor",
                 "_raise_invalid_if_hns_file_ancestor",
                 "get_file_info",
+                "glob",
                 "resolve",
             }
         ),

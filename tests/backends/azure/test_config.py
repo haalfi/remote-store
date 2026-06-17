@@ -787,7 +787,8 @@ class TestAzureSelfOpNormalisation:
     falling through to copy-to-self + delete-source (data loss on move)."""
 
     @pytest.mark.spec("AZ-017")
-    def test_move_self_op_normalised_no_data_loss(self) -> None:
+    @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
+    def test_move_self_op_normalised_no_data_loss(self, overwrite: bool) -> None:
         backend = _make_backend()
         backend._hns_enabled = False
         cc = MagicMock(spec=ContainerClient)
@@ -799,16 +800,19 @@ class TestAzureSelfOpNormalisation:
         bc.get_blob_properties.return_value = props
         cc.get_blob_client.return_value = bc
 
-        # "a//b" and "a/b" are the same blob after azure_path normalisation;
-        # without the fix, overwrite=True would copy-to-self then delete it.
-        backend.move("a//b", "a/b", overwrite=True)
+        # "a//b" and "a/b" are the same blob after azure_path normalisation, so
+        # this is a self-move (BE-018 no-op) regardless of overwrite. Without the
+        # fix: overwrite=True copies-to-self then deletes the sole copy;
+        # overwrite=False hits the dst-exists probe and raises AlreadyExists.
+        backend.move("a//b", "a/b", overwrite=overwrite)
 
         assert cc.get_blob_client.call_count == 1  # single existence probe; no copy/delete
         bc.start_copy_from_url.assert_not_called()
         bc.delete_blob.assert_not_called()
 
     @pytest.mark.spec("AZ-018")
-    def test_copy_self_op_normalised_is_noop(self) -> None:
+    @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
+    def test_copy_self_op_normalised_is_noop(self, overwrite: bool) -> None:
         backend = _make_backend()
         backend._hns_enabled = False
         cc = MagicMock(spec=ContainerClient)
@@ -820,7 +824,9 @@ class TestAzureSelfOpNormalisation:
         bc.get_blob_properties.return_value = props
         cc.get_blob_client.return_value = bc
 
-        backend.copy("a//b", "a/b", overwrite=True)
+        # Self-copy (BE-019 no-op) regardless of overwrite; overwrite=False would
+        # otherwise raise AlreadyExists on the dst-exists probe without the fix.
+        backend.copy("a//b", "a/b", overwrite=overwrite)
 
         assert cc.get_blob_client.call_count == 1  # single existence probe; no copy
         bc.start_copy_from_url.assert_not_called()

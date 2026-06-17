@@ -1033,26 +1033,30 @@ class TestAsyncAzureMoveAndCopy:
             await backend.copy("missing.txt", "missing.txt")
 
     @pytest.mark.spec("AZ-017")
-    async def test_move_self_op_normalised_no_data_loss(self) -> None:
+    @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
+    async def test_move_self_op_normalised_no_data_loss(self, overwrite: bool) -> None:
         """BK-301 / L1: non-canonical paths naming the same blob (``a//b`` vs
         ``a/b``) are recognised as a self-move after normalisation — no
-        copy-to-self + delete-source data loss."""
+        copy-to-self + delete-source data loss, and no AlreadyExists when
+        overwrite is False (BE-018 self-move is a no-op)."""
         backend, cc, bc = _setup_non_hns_backend()
         bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props())
 
-        await backend.move("a//b", "a/b", overwrite=True)
+        await backend.move("a//b", "a/b", overwrite=overwrite)
 
         assert cc.get_blob_client.call_count == 1  # single existence probe; no copy/delete
         bc.start_copy_from_url.assert_not_called()
         bc.delete_blob.assert_not_called()
 
     @pytest.mark.spec("AZ-018")
-    async def test_copy_self_op_normalised_is_noop(self) -> None:
-        """BK-301 / L1: ``copy('a//b', 'a/b')`` is a self-op after normalisation."""
+    @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
+    async def test_copy_self_op_normalised_is_noop(self, overwrite: bool) -> None:
+        """BK-301 / L1: ``copy('a//b', 'a/b')`` is a self-op after normalisation
+        (BE-019 no-op regardless of overwrite)."""
         backend, cc, bc = _setup_non_hns_backend()
         bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props())
 
-        await backend.copy("a//b", "a/b", overwrite=True)
+        await backend.copy("a//b", "a/b", overwrite=overwrite)
 
         assert cc.get_blob_client.call_count == 1  # single existence probe; no copy
         bc.start_copy_from_url.assert_not_called()

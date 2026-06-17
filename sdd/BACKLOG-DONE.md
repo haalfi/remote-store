@@ -13,8 +13,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   From [audit-019](audits/audit-019-azure-backend-review.md) M6 + L1/L2/L4/L6/L7.
   - **M6 (docs):** added `retry` to the sync constructor docstring (the async twin
     already had it) and to the guide Options table (with
-    `reject_write_under_file_ancestor`); gave sync `check_health` a docstring so it
-    renders under `show_if_no_docstring: false`.
+    `reject_write_under_file_ancestor`); gave the sync `check_health` and `glob`
+    methods docstrings (their async twins had them) so they render under
+    `show_if_no_docstring: false`.
   - **L1 (data-loss fix):** the self-op `src == dst` short-circuit in `move`/`copy`
     (both twins) now compares **normalised** keys, so a direct-backend caller
     passing non-canonical paths that name the same blob (`a//b` vs `a/b`) is a
