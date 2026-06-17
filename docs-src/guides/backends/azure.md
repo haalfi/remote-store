@@ -132,16 +132,35 @@ Pass `metadata=` to store custom string key-value pairs as Azure blob metadata.
 Supports all capabilities except `SEEKABLE_READ` and `ATOMIC_MOVE`.
 See the [capabilities matrix](../../reference/capabilities-matrix.md) for full details.
 
-## Streaming
+## Streaming and seekable reads
 
-`read()` returns a forward-only streaming handle (not seekable). Data is fetched on demand, not loaded into memory upfront. If you need seekability, use `read_bytes()` and wrap in `BytesIO`:
+`read()` returns a forward-only streaming handle (not seekable). Data is fetched on demand, not loaded into memory upfront.
+
+For random access (`seek()` / `tell()`) — for example, reading the footer of a large Parquet object — use **`Store.read_seekable()`** instead of materialising the whole blob. The Azure backend does not declare the `SEEKABLE_READ` capability (its `read()` is forward-only), but `read_seekable()` is backed by a native HTTP-Range reader that issues one ranged `download_blob` per `read()`: it fetches only the bytes the consumer seeks to, with no spill to a temp file and no in-RAM copy of the object.
 
 ```python
 import io
 
-data = backend.read_bytes("large-file.bin")
+with Registry(config) as registry:
+    store = registry.get_store("data")
+    with store.read_seekable("large-file.parquet") as stream:
+        stream.seek(-8, io.SEEK_END)   # only this 8-byte range is fetched
+        magic = stream.read(8)
+```
+
+The `ext.arrow` / `ext.parquet` extensions read through `read_seekable()`, so analytical reads over Azure range-seek the footer and prune columns rather than download the whole object. Reaching for `read_bytes()` + `io.BytesIO` instead forces the **entire** blob into memory, which defeats the optimisation on multi-GB objects:
+
+```python
+# Anti-pattern for large objects: materialises the whole blob in RAM.
+data = store.read_bytes("large-file.parquet")
 seekable_stream = io.BytesIO(data)
 ```
+
+`io.BytesIO` is still fine for small blobs, where a single download is cheaper than issuing ranged requests.
+
+### Async caveat: no native seekable read
+
+The async API has no `read_seekable()` (see [Async API limitations](../async.md#limitations)), and `remote_store.aio.ext` ships only `write` — there is no async `ext.arrow` / `ext.parquet`. To drive those analytical readers against an `AsyncAzureBackend` you must bridge to sync with [`AsyncBackendSyncAdapter`](../async-sync-bridges.md), whose `read()` is forward-only (`seekable()` is `False`). That masks Azure's range reader, so `read_seekable()` falls back to spooling the whole object to a temporary file (sized by `TMPDIR`) before the reader can seek. For large analytical reads, prefer the **sync** Azure store, which keeps the native range path.
 
 ## Upload tuning
 
@@ -168,6 +187,17 @@ AzureBackend(
     },
 )
 ```
+
+## Concurrency and connection pooling
+
+The async Azure SDK rides aiohttp (`AioHttpTransport`). A single `AsyncStore` (or `AsyncAzureBackend`) shared across many coroutines funnels every request through one transport and its connection pool, so under high fan-out — a large `asyncio.gather`, or one shared store behind a FastAPI app — the pool can become the bottleneck before the storage account's own limits do. (Share one store per event loop; see the [concurrency posture](../../explanation/concurrency.md#concurrent-use-posture).)
+
+Two independent levers:
+
+- **`max_concurrency`** (constructor option, default `1`) sets the parallel connections used *within* a single upload/download. Raise it for large-file throughput; it does not change how many operations run concurrently.
+- **Connector pool size.** `client_options` is forwarded verbatim to the Azure service clients, so for very high concurrent fan-out you can supply a custom `transport=` (an [`AioHttpTransport`](https://learn.microsoft.com/en-us/python/api/azure-core/azure.core.pipeline.transport.aiohttptransport) over an `aiohttp.ClientSession` whose `TCPConnector` has a higher `limit`) to raise the shared-pool ceiling.
+
+Size the pool to your fan-out, not arbitrarily high: each connection is a socket against the storage account, which itself throttles (`429`). The right ceiling is best found by measuring against your workload.
 
 ## Escape Hatch
 

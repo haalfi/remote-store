@@ -1,0 +1,87 @@
+id: BK-299
+title: "Azure seekable-read DX: stop steering analytics users into in-RAM reads"
+trigger: >
+  Audit-019 (M3 + L3 + L5) found the Azure guide's Streaming section
+  steered readers to read_bytes() + io.BytesIO for seekability —
+  materialising the whole blob — and never mentioned Store.read_seekable(),
+  the path Azure optimised with a native HTTP-Range reader. The async cliff
+  (no async read_seekable, aio.ext ships only write, bridging masks the
+  range reader and spools to TMPDIR) and connector-pool tuning under high
+  concurrency were also undocumented.
+source_items:
+  - BK-299
+  - ID-219
+audience:
+  - user.api_docs
+  - user.site
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-299"
+        read_type: gate
+        extract: "Three audit findings (M3/L3/L5); docs-only, audience user.api_docs + user.site; Graph L9/M6 fold is a candidate not a requirement"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index + Detailed checklist"
+        read_type: gate
+        extract: "Update-a-backend-guide → guide + docs nav; backlog-item-touched → trace; audience drives CHANGELOG rule (user.* ⇒ required)"
+        outcome: ok
+      - file: sdd/audits/audit-019-azure-backend-review.md
+        section: "M3, L3, L5"
+        read_type: gate
+        extract: "Exact file:line evidence — azure.md:135-144 in-RAM advice; AsyncStore omits read_seekable; aio/ext ships only write.py; AsyncBackendSyncAdapter masks SEEKABLE_READ; no connector-pool guidance"
+        outcome: ok
+  - id: verify_reality
+    name: Verify shipped reality against each claim
+    steps:
+      - file: src/remote_store/_store.py
+        section: "read_seekable, _GATING"
+        read_type: gate
+        extract: "read_seekable gated on Capability.READ (not SEEKABLE_READ), so it is reachable on Azure despite Azure not declaring SEEKABLE_READ"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "_AzureRangeReader"
+        read_type: gate
+        extract: "io.RawIOBase, seekable()=True, one ranged download_blob(offset,length) per readinto — supports `with` and SEEK_END; grounds the no-spill/no-RAM-copy claim and the footer example"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "_blob_service property, client_options forwarding"
+        read_type: gate
+        extract: "client_options forwarded verbatim (**opts) to BlobServiceClient/DataLakeServiceClient, so a custom transport= is the real pool-sizing lever; SDK rides AioHttpTransport"
+        outcome: ok
+      - file: docs-src/guides/backends/graph.md
+        section: "read-side spool note + Connection-pool tuning under high fan-out"
+        read_type: reference
+        extract: "Canonical phrasing for the same SEEKABLE_READ-absent spool pattern and pool-tuning altitude — mirrored, not copied, for Azure's aiohttp transport"
+        outcome: ok
+      - file: docs-src/guides/async-sync-bridges.md
+        section: "AsyncBackendSyncAdapter — async → sync / Constraints"
+        read_type: reference
+        extract: "Constraint: read() forward-only, seekable() is False — this is the masking the async cliff describes; link target for the bridge"
+        outcome: ok
+      - file: docs-src/guides/async.md
+        section: "Limitations"
+        read_type: reference
+        extract: "read_seekable() not available in async API — stable #limitations anchor to link from azure.md"
+        outcome: ok
+  - id: docs
+    name: Rewrite the guide
+    steps:
+      - file: docs-src/guides/backends/azure.md
+        section: "Streaming and seekable reads; Concurrency and connection pooling"
+        read_type: reference
+        extract: "Recommend read_seekable() for random access (ext.arrow/parquet rationale); keep io.BytesIO as small-blob case; document async cliff + TMPDIR spool; add connection-pooling section (max_concurrency vs pool ceiling, client_options transport escape hatch)"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Update a backend guide"
+        read_type: verify
+        extract: "No new file → no docs-nav change; no capability/signature/behaviour change → ripple set is guide + CHANGELOG + BACKLOG + trace; user.* audience ⇒ CHANGELOG line added"
+        outcome: ok
