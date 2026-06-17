@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextlib
 import io
 import logging
+import re
 import uuid
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
@@ -777,6 +778,82 @@ class TestAzureNonHnsFolderMarkers:
         for call in cc.get_blob_client.call_args_list:
             key = call.args[0] if call.args else call.kwargs.get("blob")
             assert not str(key).endswith("/")
+
+
+class TestAzureSelfOpNormalisation:
+    """BK-301 / L1: the self-op (src == dst) short-circuit compares *normalised*
+    keys, so a direct-backend caller passing non-canonical paths that name the
+    same blob (e.g. ``a//b`` vs ``a/b``) is recognised as a no-op instead of
+    falling through to copy-to-self + delete-source (data loss on move)."""
+
+    @pytest.mark.spec("AZ-017")
+    @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
+    def test_move_self_op_normalised_no_data_loss(self, overwrite: bool) -> None:
+        backend = _make_backend()
+        backend._hns_enabled = False
+        cc = MagicMock(spec=ContainerClient)
+        backend._cc_instance = cc
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+        bc = MagicMock(spec=BlobClient)
+        props = MagicMock(spec=BlobProperties)
+        props.metadata = {}  # a regular file, not an hdi_isfolder directory
+        bc.get_blob_properties.return_value = props
+        cc.get_blob_client.return_value = bc
+
+        # "a//b" and "a/b" are the same blob after azure_path normalisation, so
+        # this is a self-move (BE-018 no-op) regardless of overwrite. Without the
+        # fix: overwrite=True copies-to-self then deletes the sole copy;
+        # overwrite=False hits the dst-exists probe and raises AlreadyExists.
+        backend.move("a//b", "a/b", overwrite=overwrite)
+
+        assert cc.get_blob_client.call_count == 1  # single existence probe; no copy/delete
+        bc.start_copy_from_url.assert_not_called()
+        bc.delete_blob.assert_not_called()
+
+    @pytest.mark.spec("AZ-018")
+    @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
+    def test_copy_self_op_normalised_is_noop(self, overwrite: bool) -> None:
+        backend = _make_backend()
+        backend._hns_enabled = False
+        cc = MagicMock(spec=ContainerClient)
+        backend._cc_instance = cc
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+        bc = MagicMock(spec=BlobClient)
+        props = MagicMock(spec=BlobProperties)
+        props.metadata = {}
+        bc.get_blob_properties.return_value = props
+        cc.get_blob_client.return_value = bc
+
+        # Self-copy (BE-019 no-op) regardless of overwrite; overwrite=False would
+        # otherwise raise AlreadyExists on the dst-exists probe without the fix.
+        backend.copy("a//b", "a/b", overwrite=overwrite)
+
+        assert cc.get_blob_client.call_count == 1  # single existence probe; no copy
+        bc.start_copy_from_url.assert_not_called()
+
+
+class TestAzureGlobErrorParity:
+    """BK-301 / L2: a glob pattern-compile error (re.error) is a caller mistake
+    and must propagate as-is — not be re-wrapped as a backend error. The sync
+    twin never wrapped it; this pins that contract (the async twin was aligned
+    to match)."""
+
+    @pytest.mark.spec("AZ-019")
+    def test_glob_propagates_pattern_compile_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        import remote_store._glob as glob_mod
+
+        backend = _make_backend()
+        backend._hns_enabled = False
+        backend._cc_instance = MagicMock(spec=ContainerClient)
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+
+        def _boom(_pattern: str) -> Any:
+            raise re.error("bad pattern")
+
+        monkeypatch.setattr(glob_mod, "pattern_to_regex", _boom)
+
+        with pytest.raises(re.error):
+            list(backend.glob("data/*.csv"))
 
 
 # ---------------------------------------------------------------------------

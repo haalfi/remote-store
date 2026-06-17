@@ -14,7 +14,7 @@ Before the per-operation guarantees below, there is a more basic question: **is 
 | [S3](../guides/backends/s3.md) | Thread-safe | The boto3 client / s3fs is safe for concurrent per-instance use. |
 | [S3-PyArrow](../guides/backends/s3-pyarrow.md) | Thread-safe ¹ | Arrow's C++ `S3FileSystem` is safe per instance. |
 | [SFTP](../guides/backends/sftp.md) | Single-connection | One paramiko channel over one socket. **Remedy:** one instance per thread (or a native async SFTP client). |
-| [Azure](../guides/backends/azure.md) | Thread-safe | The Azure SDK service clients are immutable once built. |
+| [Azure](../guides/backends/azure.md) | Thread-safe | The Azure SDK service clients are immutable once built. The async twin (`AsyncAzureBackend`) is safe for concurrent coroutines on a **single** event loop, and never across loops — use one instance per loop. |
 | [Graph](../guides/backends/graph.md) | Thread-safe ² | Async-only: safe for concurrent coroutines on one event loop. |
 | [SQLBlob](../guides/backends/sql-blob.md) | Thread-safe ³ | The SQLAlchemy engine pools connections. |
 | [SQLQuery](../guides/backends/sql-query.md) | Thread-safe ³ | Same pooled engine (read-only). |

@@ -97,16 +97,6 @@ and the highest ID already in this file, then take the next integer. Run
   per-method difference in the guide's digest claim or populate `digest` from the
   post-rename properties when available.
 
-- [ ] **BK-301 — Azure doc/docstring parity + correctness edges**
-  spec: — · effort: M · audience: user.api_docs, contributor.process
-  From [audit-019](audits/audit-019-azure-backend-review.md) M6 + L1/L2/L4/L6/L7. Add
-  `retry` to the sync constructor docstring and the guide Options table
-  (+ `reject_write_under_file_ancestor`); give sync `check_health` a docstring;
-  normalise paths before the self-op `src == dst` short-circuit (flat-NS direct-backend
-  data-loss edge) or document the Store-normalised assumption; align sync/async `glob`
-  error handling; surface the ASYNC-094 cross-loop rule in the guide; fix the
-  `backend="azure"` vs `"async-azure"` drift. Small and independent; split freely.
-
 - [ ] **BK-302 — Replace implicit HNS auto-detection with an explicit `hns=` declaration + `AzureUtils`**
   spec: AZ-006 · effort: L · audience: user.api, library.maintainer
   Surfaced reviewing BUG-223 (PR #841). The backend infers HNS vs flat by probing

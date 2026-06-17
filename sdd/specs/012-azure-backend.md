@@ -133,6 +133,7 @@ AzureBackend(
 **Invariant (HNS):** `write_atomic` writes to a temporary file `.~tmp.<name>.<uuid8>` in the same directory as the target, then renames atomically to the target via `rename_file`.
 **Cleanup:** If the rename fails, the backend attempts to delete the temporary file. If cleanup also fails (e.g. connection lost), the orphan temp file remains — this is an inherent limitation of simulated atomicity over a network. Temp files are identifiable by their `.~tmp.` prefix for manual cleanup.
 **Invariant (no HNS):** `write_atomic` is implemented identically to `write` — as a direct upload. Azure PUT is atomic at the blob level (same rationale as S3-010).
+**Streaming chunk granularity (intentional twin divergence):** the HNS streaming-upload path bounds each DFS `append_data` differently across twins — the sync backend owns the `BinaryIO.read(N)` call and caps every append at `_AZURE_BLOCK_SIZE`; the async backend issues one `append_data` per chunk yielded by the producer's `AsyncIterable[bytes]`, so the per-call size is producer-controlled and unbounded. Both keep client memory bounded to the working chunk; only the per-append HTTP granularity differs.
 **Postconditions:** Satisfies AW-001: no partial content is ever visible.
 
 ### AZ-015: delete_folder Recursive
@@ -229,7 +230,7 @@ AzureBackend(
 ### AZ-026: No Native Exception Leakage
 
 **Invariant:** No `azure-storage-file-datalake`, `azure-core`, or `azure-identity` exceptions propagate to callers. All are mapped to `remote_store` error types per BE-021.
-**Postconditions:** `backend` attribute is set to `"azure"` on all mapped errors.
+**Postconditions:** The `backend` attribute on mapped errors carries the backend's own `name`: `"azure"` for the sync `AzureBackend`, `"async-azure"` for the async `AsyncAzureBackend` twin (which classifies with `backend_name=self.name` throughout). The two twins are distinguishable by this attribute, matching the sync/async naming split used elsewhere.
 
 ### AZ-027: to_key
 

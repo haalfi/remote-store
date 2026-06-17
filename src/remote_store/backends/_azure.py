@@ -196,6 +196,7 @@ class AzureBackend(Backend):
             The library sets ``max_single_put_size``, ``max_block_size``,
             and ``min_large_block_upload_threshold`` defaults for streaming
             memory discipline; user-supplied values take precedence.
+        retry: Retry policy for transient failures.
         max_concurrency: Maximum number of parallel connections for
             uploads and downloads (default ``1`` -- sequential).
         reject_write_under_file_ancestor: If ``True``, ``write`` /
@@ -309,6 +310,13 @@ class AzureBackend(Backend):
     # region: public methods
 
     def check_health(self) -> None:
+        """Verify the backend is reachable and credentials are valid.
+
+        Raises:
+            PermissionDenied: If credentials are invalid.
+            NotFound: If the container does not exist.
+            BackendUnavailable: If the backend cannot be reached.
+        """
         with self._errors():
             if self._hns:
                 self._fs.get_file_system_properties()
@@ -905,6 +913,14 @@ class AzureBackend(Backend):
                         yield self._props_to_fileinfo(item, item.name)
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
+        """Match files against a glob pattern.
+
+        Args:
+            pattern: Glob pattern (e.g., ``"data/*.csv"``, ``"**/*.txt"``).
+
+        Returns:
+            An iterator of matching ``FileInfo`` objects.
+        """
         from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
 
         prefix = extract_prefix(pattern)
@@ -997,7 +1013,11 @@ class AzureBackend(Backend):
         # BE-018: self-move is a no-op (src == dst → Ok), but only for files.
         # Directory-path inputs must still raise InvalidPath per BE-021 — same
         # contract as the non-self-op path below.
-        if src == dst:
+        # Compare normalised keys: a direct-backend caller can pass
+        # non-canonical paths ("a//b" vs "a/b") that name the same blob once
+        # azure_path collapses them; without normalising, the copy+delete
+        # branch below would delete the sole copy (AZ-017 data-loss edge).
+        if self._azure_path(src) == self._azure_path(dst):
             with self._errors(src):
                 src_bc = self._blob_client(src)
                 src_props = src_bc.get_blob_properties()  # raises NotFound if missing
@@ -1066,7 +1086,10 @@ class AzureBackend(Backend):
         # BE-019: self-copy is a no-op (src == dst → Ok), but only for files.
         # Directory-path inputs must still raise InvalidPath per BE-021 — same
         # contract as the non-self-op path below.
-        if src == dst:
+        # Compare normalised keys: a direct-backend caller can pass
+        # non-canonical paths ("a//b" vs "a/b") that name the same blob once
+        # azure_path collapses them (AZ-018 self-op edge).
+        if self._azure_path(src) == self._azure_path(dst):
             with self._errors(src):
                 src_bc = self._blob_client(src)
                 src_props = src_bc.get_blob_properties()  # raises NotFound if missing

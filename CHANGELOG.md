@@ -10,6 +10,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - BUG-222: Azure error classifier types 429 / 5xx / 401
 - BUG-223: Azure HNS detection re-probes after a transient failure instead of caching it for the instance lifetime
 - BK-299: Document Azure seekable reads (`read_seekable`), the async `ext.*` cliff, and connection-pool tuning
+- BK-301: Azure doc/docstring parity and correctness edges — document `retry` (sync docstring + guide Options table) and `reject_write_under_file_ancestor` (guide); add the sync `check_health` docstring; fix a direct-backend data-loss edge by normalising paths before the self-op short-circuit so `move`/`copy` between non-canonical paths naming the same blob (e.g. `a//b` vs `a/b`) is a no-op instead of copy-to-self + delete-source; align async `glob` so pattern-compile errors propagate as-is rather than being re-wrapped as a backend error (matching sync); surface the async cross-loop rule in the concurrency posture page
 
 ### Internal
 

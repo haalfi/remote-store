@@ -8,6 +8,34 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-301 — Azure doc/docstring parity + correctness edges**
+  spec: AZ-014, AZ-017, AZ-018, AZ-019, AZ-026 · effort: M · audience: user.api_docs, contributor.process
+  From [audit-019](audits/audit-019-azure-backend-review.md) M6 + L1/L2/L4/L6/L7.
+  - **M6 (docs):** added `retry` to the sync constructor docstring (the async twin
+    already had it) and to the guide Options table (with
+    `reject_write_under_file_ancestor`); gave the sync `check_health` and `glob`
+    methods docstrings (their async twins had them) so they render under
+    `show_if_no_docstring: false`.
+  - **L1 (data-loss fix):** the self-op `src == dst` short-circuit in `move`/`copy`
+    (both twins) now compares **normalised** keys, so a direct-backend caller
+    passing non-canonical paths that name the same blob (`a//b` vs `a/b`) is a
+    no-op instead of falling through to copy-to-self + delete-source. Regression
+    tests on both twins.
+  - **L2 (error parity):** async `glob` no longer wraps the whole body — a
+    pattern-compile `re.error` propagates as-is (caller mistake) instead of being
+    re-typed as a backend error; `list_files` already classifies its own I/O.
+    Matches the sync twin. Parity tests on both.
+  - **L4 (docs):** the concurrency-posture page's Azure row now states the async
+    twin's one-instance-per-loop / never-across-loops rule (ASYNC-094), matching
+    Graph; the guide already linked it (BK-299).
+  - **L6 (spec):** AZ-026 records that mapped errors carry the backend's own
+    `name` — `"azure"` (sync) / `"async-azure"` (async) — rather than always
+    `"azure"`; the code was already consistent.
+  - **L7 (spec):** AZ-014 notes the intentional twin divergence in
+    `write_atomic` streaming chunk granularity (sync caps each append at
+    `_AZURE_BLOCK_SIZE`; async appends one producer chunk per call).
+  Trace: `sdd/traces/bk-301-azure-doc-docstring-parity.yml`.
+
 - [x] **BUG-223 — Azure HNS misdetection is sticky for the instance lifetime**
   spec: AZ-006 · effort: S · audience: user.api
   From [audit-019](audits/audit-019-azure-backend-review.md) M5. The HNS probe

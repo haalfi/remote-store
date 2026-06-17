@@ -78,7 +78,9 @@ backend = AzureBackend(
 | `connection_string` | `str` | `None` | Azure Storage connection string |
 | `credential` | `Any` | `None` | Any credential object (e.g. `DefaultAzureCredential()`) |
 | `client_options` | `dict` | `None` | Extra kwargs passed to service clients (see [Upload tuning](#upload-tuning)) |
+| `retry` | `RetryPolicy` | `None` | Retry policy for transient failures |
 | `max_concurrency` | `int` | `1` | Parallel connections for uploads/downloads (>1 benefits large files) |
+| `reject_write_under_file_ancestor` | `bool` | `False` | If `True`, reject writes whose path nests under an existing regular file (non-HNS HEADs each ancestor; HNS rejects natively). Adds one HEAD per ancestor per nested-path write |
 
 At least one of `account_name`, `account_url`, or `connection_string` must be provided.
 

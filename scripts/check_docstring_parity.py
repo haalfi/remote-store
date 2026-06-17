@@ -183,6 +183,7 @@ TWINS: tuple[Twin, ...] = (
         identical=frozenset(
             {
                 "_errors",
+                "check_health",
                 "delete_folder",
             }
         ),
@@ -200,6 +201,7 @@ TWINS: tuple[Twin, ...] = (
                 "_maybe_check_no_file_ancestor",
                 "_raise_invalid_if_hns_file_ancestor",
                 "get_file_info",
+                "glob",
                 "resolve",
             }
         ),
