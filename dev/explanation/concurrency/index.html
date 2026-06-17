@@ -10280,7 +10280,7 @@
 <tr>
 <td><a href="../../guides/backends/azure/">Azure</a></td>
 <td>Thread-safe</td>
-<td>The Azure SDK service clients are immutable once built.</td>
+<td>The Azure SDK service clients are immutable once built. The async twin (<code>AsyncAzureBackend</code>) is safe for concurrent coroutines on a <strong>single</strong> event loop, and never across loops — use one instance per loop.</td>
 </tr>
 <tr>
 <td><a href="../../guides/backends/graph/">Graph</a></td>

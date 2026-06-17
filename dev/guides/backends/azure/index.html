@@ -2536,6 +2536,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#remote_store.backends.AzureBackend.check_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;check_health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.backends.AzureBackend.resolve" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2551,6 +2562,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;delete_folder
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.backends.AzureBackend.glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;glob
       
     </span>
   </a>
@@ -10465,6 +10487,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#remote_store.backends.AzureBackend.check_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;check_health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.backends.AzureBackend.resolve" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10480,6 +10513,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;delete_folder
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.backends.AzureBackend.glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;glob
       
     </span>
   </a>
@@ -10638,10 +10682,22 @@
 <td>Extra kwargs passed to service clients (see <a href="#upload-tuning">Upload tuning</a>)</td>
 </tr>
 <tr>
+<td><code>retry</code></td>
+<td><code>RetryPolicy</code></td>
+<td><code>None</code></td>
+<td>Retry policy for transient failures</td>
+</tr>
+<tr>
 <td><code>max_concurrency</code></td>
 <td><code>int</code></td>
 <td><code>1</code></td>
 <td>Parallel connections for uploads/downloads (&gt;1 benefits large files)</td>
+</tr>
+<tr>
+<td><code>reject_write_under_file_ancestor</code></td>
+<td><code>bool</code></td>
+<td><code>False</code></td>
+<td>If <code>True</code>, reject writes whose path nests under an existing regular file (non-HNS HEADs each ancestor; HNS rejects natively). Adds one HEAD per ancestor per nested-path write</td>
 </tr>
 </tbody>
 </table>
@@ -10959,6 +11015,21 @@ memory discipline; user-supplied values take precedence.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
+            <b><code>retry</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            RetryPolicy
+
+
+  
+      dataclass
+   (remote_store._config.RetryPolicy)" href="../../../reference/api/config/#remote_store.RetryPolicy">RetryPolicy</a> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Retry policy for transient failures.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
             <b><code>max_concurrency</code></b>
               (<code><span title="int">int</span></code>, default:
                   <code>1</code>
@@ -11013,6 +11084,52 @@ short-circuit.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.backends.AzureBackend.check_health" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">check_health</span>
+
+
+<a href="#remote_store.backends.AzureBackend.check_health" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">check_health</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Verify the backend is reachable and credentials are valid.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If credentials are invalid.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../reference/api/errors/#remote_store.NotFound">NotFound</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the container does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the backend cannot be reached.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
@@ -11156,6 +11273,61 @@ short-circuit.</p>
             –
           <div class="doc-md-description">
             <p>If non-empty and <code>recursive</code> is <code>False</code>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.backends.AzureBackend.glob" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">glob</span>
+
+
+<a href="#remote_store.backends.AzureBackend.glob" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../../../reference/api/models/#remote_store.FileInfo">FileInfo</a></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Match files against a glob pattern.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>pattern</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Glob pattern (e.g., <code>"data/*.csv"</code>, <code>"**/*.txt"</code>).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../../../reference/api/models/#remote_store.FileInfo">FileInfo</a>]</code>
+          –
+          <div class="doc-md-description">
+            <p>An iterator of matching <code>FileInfo</code> objects.</p>
           </div>
         </li>
     </ul>
