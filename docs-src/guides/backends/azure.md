@@ -104,7 +104,10 @@ The backend detects Hierarchical Namespace (HNS) status on first use and adapts 
 | `move` | Atomic `rename_file` | Copy + delete |
 | `delete_folder(recursive=True)` | Single recursive delete | Iterate + delete each blob |
 
-If the HNS detection call fails, the backend falls back to non-HNS behavior for that operation. A *transient* failure (throttling, server, or transport error) is retried on the next operation, so it does not permanently degrade an HNS account. A *definitive* permission failure (e.g. a credential denied account-level `GetAccountInfo`) is cached as non-HNS, since re-probing cannot succeed.
+If the HNS detection call fails, the backend falls back to non-HNS behavior for that operation and retries detection on the next one, so a transient failure does not permanently degrade an HNS account. A persistently failing probe (e.g. a credential denied account-level `GetAccountInfo`) re-probes once per operation and logs a warning once.
+
+!!! note "HNS auto-detection is being replaced"
+    This implicit `GetAccountInfo` probe is interim. A future release will require you to **declare** whether the account is HNS (an explicit `hns=` option) and provide an `AzureUtils.detect_hns()` helper to discover it once, rather than probing on every backend. This removes the auto-detection failure modes entirely.
 
 Note that non-HNS `move()` (copy + delete) is not atomic and `overwrite=False` has a TOCTOU race on all account types. See the [Concurrency and Atomicity Guarantees](../../explanation/concurrency.md) guide for details.
 

@@ -1897,7 +1897,7 @@
       "file": "src/remote_store/aio/backends/_azure.py",
       "id": "cls:remote_store.aio.backends._azure.AsyncAzureBackend",
       "kind": "class",
-      "line": 55,
+      "line": 54,
       "role": "backend",
       "runtime": "async",
       "summary": "Async Azure Storage backend."
@@ -1924,7 +1924,7 @@
       "file": "src/remote_store/backends/_azure.py",
       "id": "cls:remote_store.backends._azure.AzureBackend",
       "kind": "class",
-      "line": 175,
+      "line": 174,
       "role": "backend",
       "runtime": "sync",
       "summary": "Azure Storage backend."

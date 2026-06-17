@@ -311,15 +311,13 @@ class TestAsyncAzureHNSDetection:
         assert backend._hns_probe_warned is False
 
     @pytest.mark.spec("ASYNC-005")
-    async def test_hns_probe_permission_error_caches_flat(self) -> None:
-        """BUG-223 (PR #841): a definitive permission failure caches flat, no re-probe."""
-        backend = _make_backend()
+    async def test_maybe_check_no_file_ancestor_honors_hns_snapshot(self) -> None:
+        """BUG-223 (PR #841, thread 4): the precheck honors a caller's HNS snapshot."""
+        backend = _make_backend(reject_write_under_file_ancestor=True)
         mock_client = AsyncMock(spec=BlobServiceClient)
-        mock_client.get_account_information.side_effect = ClientAuthenticationError("denied")
         backend._blob_service_instance = mock_client
-        assert await backend._ensure_hns() is False
-        assert await backend._ensure_hns() is False
-        assert mock_client.get_account_information.call_count == 1  # definitive: cached, not re-probed
+        await backend._maybe_check_no_file_ancestor("a/b.txt", hns=True)
+        assert mock_client.get_account_information.call_count == 0  # snapshot used, no re-probe
 
 
 # =============================================================================

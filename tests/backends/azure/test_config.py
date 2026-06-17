@@ -380,20 +380,19 @@ class TestAzureHNSDetection:
         assert backend._hns_probe_warned is False
 
     @pytest.mark.spec("AZ-006")
-    def test_hns_probe_permission_error_caches_flat(self) -> None:
-        """BUG-223 (PR #841): a definitive permission failure caches flat, no re-probe.
+    def test_maybe_check_no_file_ancestor_honors_hns_snapshot(self) -> None:
+        """BUG-223 (PR #841, thread 4): the precheck honors a caller's HNS snapshot.
 
-        A blob-scoped credential denied account-level ``GetAccountInfo`` (403 /
-        ``ClientAuthenticationError``) can never succeed; re-probing it on every
-        ``_hns`` read would only repeat the failure under SDK retry/backoff. Cache flat.
+        ``move``/``copy`` read ``_hns`` once and pass it down so a single
+        operation cannot straddle the HNS and non-HNS code paths if an uncached
+        probe were to re-evaluate mid-op. A ``hns=True`` snapshot short-circuits
+        the non-HNS opt-in walk without consulting the probe at all.
         """
-        backend = _make_backend()
+        backend = _make_backend(reject_write_under_file_ancestor=True)
         mock_client = MagicMock(spec=BlobServiceClient)
-        mock_client.get_account_information.side_effect = _azure_exc("ClientAuthenticationError", "denied")
         backend._blob_service_instance = mock_client
-        assert backend._hns is False
-        assert backend._hns is False
-        assert mock_client.get_account_information.call_count == 1  # definitive: cached, not re-probed
+        backend._maybe_check_no_file_ancestor("a/b.txt", hns=True)
+        assert mock_client.get_account_information.call_count == 0  # snapshot used, no re-probe
 
 
 # =============================================================================

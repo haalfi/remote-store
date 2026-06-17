@@ -14,14 +14,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (`get_account_information()`) cached `_hns_enabled = False` on *any* exception, so a
   transient failure on the first probe permanently degraded an HNS account to flat-blob
   semantics (no atomic rename, no `hdi_isfolder` rejection) with no error surfaced until
-  `close()`. Now a **successful** probe is cached, and a probe that **errors** is
-  classified (PR #841 review): a **definitive** permission failure (`PermissionDenied`
-  — `ClientAuthenticationError` / 401 / 403) is cached flat (re-probing cannot succeed),
-  while a **transient** failure (throttling / 5xx / transport) is not cached so the next
-  op re-probes and self-heals. Warns once per instance. Symmetric fix on both twins
-  (`_azure.py` `_hns`; `aio/_azure.py` `_ensure_hns`); AZ-006 reworded. Mocked
-  re-probe / warn-once / close-reset / permission-caches-flat tests on both twins;
-  live-validated real ADLS Gen2 still detected as HNS (24/24).
+  `close()`. Now a **successful** probe is cached and a probe that **errors** is **not**
+  cached: the op falls back to non-HNS for that call and the next op re-probes, so a
+  transient blip self-heals. Warns once per instance. Ops that read the HNS state more
+  than once (`move`/`copy`) snapshot it once at entry and thread it into
+  `_maybe_check_no_file_ancestor`, so a single op cannot straddle the HNS and non-HNS
+  paths if an uncached re-probe would otherwise flip mid-op (PR #841 review, thread 4).
+  Symmetric fix on both twins; AZ-006 reworded. Mocked re-probe / warn-once /
+  close-reset / snapshot tests on both twins; live-validated real ADLS Gen2 still
+  detected as HNS (24/24). **Interim** — a persistently failing probe still re-probes
+  once per op; the root fix is to replace auto-detection with an explicit `hns=`
+  declaration + `AzureUtils.detect_hns()` ([BK-302](BACKLOG.md), its own session).
 
 - [x] **BUG-222 — Azure error classifier drops 429 / 5xx / 412 / 401 to a bare `RemoteStoreError`**
   spec: AZ-025 · effort: M · audience: user.api

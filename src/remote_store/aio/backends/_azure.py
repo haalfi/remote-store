@@ -20,7 +20,6 @@ from remote_store._errors import (
     DirectoryNotEmpty,
     InvalidPath,
     NotFound,
-    PermissionDenied,
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderEntry, FolderInfo
@@ -142,11 +141,16 @@ class AsyncAzureBackend(AsyncBackend):
 
     # region: private — file-ancestor pre-check (opt-in)
 
-    async def _maybe_check_no_file_ancestor(self, path: str) -> None:
-        """Async sibling of ``AzureBackend._maybe_check_no_file_ancestor``."""
+    async def _maybe_check_no_file_ancestor(self, path: str, *, hns: bool | None = None) -> None:
+        """Async sibling of ``AzureBackend._maybe_check_no_file_ancestor``.
+
+        ``hns`` lets a caller that already resolved ``_ensure_hns()`` pass that
+        snapshot in, so a single operation stays internally consistent even if
+        an uncached re-probe would otherwise re-evaluate the HNS state mid-op.
+        """
         if not self._reject_write_under_file_ancestor:
             return
-        if await self._ensure_hns():
+        if (await self._ensure_hns()) if hns is None else hns:
             return
         from azure.core.exceptions import AzureError
 
@@ -252,26 +256,23 @@ class AsyncAzureBackend(AsyncBackend):
             try:
                 info = await self._blob_service.get_account_information()
                 self._hns_enabled = bool(info.get("is_hns_enabled", False))
-            except Exception as exc:  # noqa: BLE001
-                # BUG-223: distinguish a *definitive* probe failure from a
-                # *transient* one (PR #841 review). A permission/auth error
-                # (no account-level GetAccountInfo access, e.g. a blob-scoped SAS
-                # on a flat account) can never succeed, so cache flat -- re-probing
-                # would only repeat the failure, with SDK retry/backoff, on every
-                # one of the ~22 ``_hns`` reads (a single ``move`` reads it more
-                # than once). A transient error (throttling, 5xx, transport) is
-                # not cached, so the next op re-probes and self-heals. Warn once
-                # per instance either way.
+            except Exception:  # noqa: BLE001
+                # BUG-223: a failed probe is not cached (leave ``_hns_enabled``
+                # unset so the next op re-probes); fall back to non-HNS for this
+                # op only, so a transient blip self-heals rather than degrading
+                # the account for the instance lifetime. Warn once per instance.
+                # KNOWN LIMITATION (BK-300): a *persistently* failing probe
+                # re-probes once per op, and ops that read ``_hns`` more than once
+                # snapshot it (see ``move``/``copy``) to stay internally
+                # consistent. The full fix replaces this implicit probe with an
+                # explicit ``hns=`` declaration + ``AzureUtils.detect_hns()``.
                 if not self._hns_probe_warned:
                     log.warning(
                         "Failed to detect HNS status, falling back to non-HNS behavior",
                         exc_info=True,
                     )
                     self._hns_probe_warned = True
-                if isinstance(classify_azure_error(exc, "", self.name), PermissionDenied):
-                    self._hns_enabled = False  # definitive: cache flat
-                else:
-                    return False  # transient: fail open for this op, re-probe next
+                return False
         return self._hns_enabled
 
     # endregion
@@ -1126,7 +1127,7 @@ class AsyncAzureBackend(AsyncBackend):
             # ASYNC-018 precondition order: src-NotFound (raised above by
             # get_blob_properties) takes priority over dst-file-ancestor
             # (matches LocalBackend.move; ID-211 review).
-            await self._maybe_check_no_file_ancestor(dst)
+            await self._maybe_check_no_file_ancestor(dst, hns=is_hns)
             if is_hns:  # pragma: no cover -- HNS only
                 src_fc = self._fs.get_file_client(_azure_path_fn(src))
                 new_name = f"{self._container}/{_azure_path_fn(dst)}"
@@ -1204,7 +1205,7 @@ class AsyncAzureBackend(AsyncBackend):
                     pass
 
             # ASYNC-019 precondition order: src-NotFound before dst-file-ancestor (ID-211 review).
-            await self._maybe_check_no_file_ancestor(dst)
+            await self._maybe_check_no_file_ancestor(dst, hns=is_hns)
             try:
                 await dst_bc.start_copy_from_url(src_bc.url)
             except Exception:

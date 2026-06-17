@@ -12,12 +12,16 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
-  # Adding a PermissionDenied import shifted the backend class def line
-  # numbers, so gen_graph --check failed until graph.json (and the
-  # graph_viz.html derived from it) were regenerated.
+  # Editing the backend import block / class bodies shifted the backend
+  # class def line numbers, so gen_graph --check failed until graph.json
+  # (and the graph_viz.html derived from it) were regenerated.
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
-review_rounds: 1
+discovery_followups:
+  # PR #841 review surfaced that the implicit GetAccountInfo probe is the
+  # root cause; the explicit-hns redesign is tracked separately.
+  - BK-302
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -88,12 +92,17 @@ phases:
     name: Fix (PR review)
     steps:
       - file: src/remote_store/backends/_azure.py
-        section: "_hns property except branch"
+        section: "_hns property except branch + move/copy"
         read_type: gate
-        extract: "PR #841 review: blanket 'never cache' re-probes on every _hns read (22 sites, move hits >1) under a persistent 403 -- probe storm with SDK backoff. Classify via classify_azure_error: cache flat on PermissionDenied (definitive), re-probe only on transient"
-        outcome: ok
+        extract: "PR #841 review round 1 tried classify+cache-403; round 2 (threads 4 & 5) showed cache-403 reintroduces sticky misdetection (RBAC-propagation 403) and never-cache causes intra-op torn reads. Settled interim: never-cache + warn-once + per-op snapshot of _hns in move/copy threaded into _maybe_check_no_file_ancestor. Root fix deferred to BK-302 (explicit hns=)."
+        outcome: misleading
       - file: tests/backends/azure/test_config.py
-        section: "TestAzureHNSDetection (warn-once / close-reset / permission-caches-flat)"
+        section: "TestAzureHNSDetection (warn-once / close-reset / snapshot)"
         read_type: gate
-        extract: "PR #841 review: _hns_probe_warned throttle + close-reset + definitive-cache branch were unasserted; add caplog warn-once, flag-reset-on-close, and PermissionDenied-caches-flat tests on both twins"
+        extract: "Assert the _hns_probe_warned throttle (one warning across consecutive failures), flag reset on close()/aclose(), and that _maybe_check_no_file_ancestor honors a caller's hns= snapshot without re-probing -- both twins"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Azure / BK-302 (item)"
+        read_type: reference
+        extract: "Filed BK-302: replace implicit HNS auto-detection with explicit hns= + AzureUtils.detect_hns(), mirroring SFTPUtils/GraphUtils; needs ADR + migration"
         outcome: ok
