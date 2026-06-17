@@ -63,7 +63,9 @@ AzureBackend(
 
 ### AZ-006: Adaptive Behavior Based on Hierarchical Namespace
 
-**Invariant:** On first use, the backend calls `GetAccountInfo` to determine whether the storage account has Hierarchical Namespace (HNS) enabled. The result is cached for the lifetime of the backend instance.
+**Invariant:** On first use, the backend calls `GetAccountInfo` to determine whether the storage account has Hierarchical Namespace (HNS) enabled. A *successful* probe result (HNS or flat) is cached for the lifetime of the backend instance. A probe that *errors* (BUG-223) is **not** cached: the operation falls back to non-HNS behavior for that call, and the next operation re-probes — so a transient blip does not permanently degrade an HNS account to flat semantics. A warning is logged once per instance. An operation that reads the HNS state more than once (e.g. `move`/`copy`) snapshots it once at entry, so a single logical operation stays internally consistent even if an uncached re-probe would otherwise re-evaluate mid-operation.
+
+> **Auto-detection is interim (BK-302).** This implicit `GetAccountInfo` probe is the root of BUG-223's failure modes (sticky misdetection, per-operation re-probe under a persistent failure, and the snapshot needed for internal consistency). The committed direction is to remove auto-detection in favor of an **explicit** `hns=` declaration on the backend/config plus an `AzureUtils.detect_hns()` helper (mirroring `SFTPUtils`/`GraphUtils`), defaulting to a required declaration so the account's nature is never silently inferred. See BK-302.
 
 **Behavior matrix:**
 
@@ -77,7 +79,7 @@ AzureBackend(
 
 **Rationale:** ADLS Gen2 has real directories and atomic rename — the backend should use these when available. Plain Blob Storage accounts are still supported by falling back to S3-equivalent semantics (virtual folders, copy+delete move, PUT atomicity).
 
-**Postconditions:** The HNS check is performed at most once. If the check itself fails (e.g. permissions), the backend falls back to non-HNS behavior and logs a warning.
+**Postconditions:** The HNS check is performed at most once *successfully*. If the check fails, the backend falls back to non-HNS behavior for that operation, logs a warning (once per instance), and does not cache the failure; the next operation re-probes. **Known limitation (BK-302):** a *persistently* failing probe re-probes once per operation (it is not cached), which the explicit-declaration redesign removes by replacing the probe with a declared `hns=` value.
 
 ---
 

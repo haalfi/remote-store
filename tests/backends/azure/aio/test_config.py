@@ -8,6 +8,7 @@ for async operations.
 from __future__ import annotations
 
 import contextlib
+import logging
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock
@@ -261,6 +262,62 @@ class TestAsyncAzureHNSDetection:
         second = await backend._ensure_hns()
         assert mock_client.get_account_information.call_count == 1
         assert first is second is True
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_hns_probe_error_not_cached_reprobes(self) -> None:
+        """BUG-223: a failed probe must not be cached -- the next op re-probes.
+
+        A transient failure on the first probe used to cache ``_hns_enabled =
+        False`` for the instance lifetime, permanently degrading a real HNS
+        account to flat-blob semantics. The failed probe fails open (``False``)
+        for the current op but is not persisted, so a subsequent probe recovers.
+        """
+        backend = _make_backend()
+        mock_client = AsyncMock(spec=BlobServiceClient)
+        mock_client.get_account_information.side_effect = [
+            Exception("transient network blip"),
+            {"is_hns_enabled": True},
+        ]
+        backend._blob_service_instance = mock_client
+        assert await backend._ensure_hns() is False  # fail-open, not cached
+        assert await backend._ensure_hns() is True  # re-probe recovers
+        assert mock_client.get_account_information.call_count == 2
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_hns_probe_transient_failure_warns_once(self, caplog: pytest.LogCaptureFixture) -> None:
+        """BUG-223: a persistently-failing transient probe re-probes but warns once."""
+        backend = _make_backend()
+        mock_client = AsyncMock(spec=BlobServiceClient)
+        mock_client.get_account_information.side_effect = Exception("transient blip")
+        backend._blob_service_instance = mock_client
+        with caplog.at_level(logging.WARNING, logger="remote_store.aio.backends._azure"):
+            assert await backend._ensure_hns() is False
+            assert await backend._ensure_hns() is False
+            assert await backend._ensure_hns() is False
+        assert mock_client.get_account_information.call_count == 3  # transient: re-probed each read
+        warnings = [r for r in caplog.records if "Failed to detect HNS status" in r.message]
+        assert len(warnings) == 1  # throttled to one warning per instance
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_hns_probe_warned_flag_reset_on_aclose(self) -> None:
+        """BUG-223: ``aclose()`` resets the warn-once flag so a reused backend warns again."""
+        backend = _make_backend()
+        mock_client = AsyncMock(spec=BlobServiceClient)
+        mock_client.get_account_information.side_effect = Exception("transient blip")
+        backend._blob_service_instance = mock_client
+        assert await backend._ensure_hns() is False
+        assert backend._hns_probe_warned is True
+        await backend.aclose()
+        assert backend._hns_probe_warned is False
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_maybe_check_no_file_ancestor_honors_hns_snapshot(self) -> None:
+        """BUG-223 (PR #841, thread 4): the precheck honors a caller's HNS snapshot."""
+        backend = _make_backend(reject_write_under_file_ancestor=True)
+        mock_client = AsyncMock(spec=BlobServiceClient)
+        backend._blob_service_instance = mock_client
+        await backend._maybe_check_no_file_ancestor("a/b.txt", hns=True)
+        assert mock_client.get_account_information.call_count == 0  # snapshot used, no re-probe
 
 
 # =============================================================================
@@ -1479,6 +1536,43 @@ class TestAsyncAzureHNSPaths:
         assert fc.rename_file.call_count == 1
         assert fc.rename_file.call_args[0][0] == "test/dst.txt"
 
+    @pytest.mark.spec("ASYNC-005")
+    async def test_move_snapshots_hns_once_under_probe_flip(self) -> None:
+        """BUG-223 (PR #841, thread 4/9): move resolves the HNS state once.
+
+        With the probe uncached, a mid-op recovery (transient fail then success)
+        could otherwise make an early read return ``False`` and a later read
+        ``True``, straddling the non-HNS and HNS paths. ``move`` snapshots
+        ``_ensure_hns()`` once, so it probes exactly once and stays on the single
+        path that snapshot chose.
+        """
+        backend = _make_backend()  # not pre-cached: _hns_enabled is None
+        svc = AsyncMock(spec=BlobServiceClient)
+        svc.get_account_information = AsyncMock(
+            side_effect=[
+                Exception("transient blip"),  # first (and only) probe -> fail open to flat
+                {"is_hns_enabled": True},  # would flip to HNS if re-read -- must NOT happen
+            ]
+        )
+        backend._blob_service_instance = svc
+        backend._cc_instance = AsyncMock(spec=ContainerClient)
+        backend._fs_instance = AsyncMock(spec=FileSystemClient)
+        src_bc = AsyncMock(spec=BlobClient)
+        src_bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props())
+        dst_bc = AsyncMock(spec=BlobClient)
+        dst_bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        backend._cc_instance.get_blob_client.side_effect = [src_bc, dst_bc]
+
+        await backend.move("src.txt", "dst.txt")
+
+        # Probed exactly once despite multiple HNS-dependent branches in move().
+        assert svc.get_account_information.call_count == 1
+        # ... and the op stayed on the single (non-HNS) path the snapshot chose.
+        assert dst_bc.start_copy_from_url.call_count == 1
+        assert dst_bc.start_copy_from_url.call_args[0][0] == src_bc.url
+        assert src_bc.delete_blob.call_count == 1
+        backend._fs_instance.get_file_client.assert_not_called()  # no HNS rename branch
+
     @pytest.mark.spec("ASYNC-018")
     @pytest.mark.parametrize("op", ["move", "copy"])
     async def test_source_is_directory_raises_invalid_path(self, op: str) -> None:
@@ -1707,8 +1801,6 @@ class TestAsyncAzureHNSPaths:
         tmp_fc.rename_file.return_value = final_fc
         backend._fs_instance.get_file_client.return_value = tmp_fc
         tmp_fc.upload_data = AsyncMock(return_value=None)
-
-        import logging
 
         with caplog.at_level(logging.WARNING):
             result = await backend.write_atomic("hns/file.txt", b"hello")
@@ -2267,7 +2359,6 @@ class TestBuildAzureRetry:
     @pytest.mark.spec("ASYNC-001")
     def test_unmappable_fields_logged(self, caplog: pytest.LogCaptureFixture) -> None:
         """backoff_max != 60 or timeout != None triggers a debug log."""
-        import logging
 
         from remote_store._config import RetryPolicy
 

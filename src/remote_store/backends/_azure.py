@@ -248,6 +248,7 @@ class AzureBackend(Backend):
         self._datalake_service_instance: Any = None
         self._fs_instance: Any = None
         self._hns_enabled: bool | None = None
+        self._hns_probe_warned: bool = False
         self._resolved_credential: Any = None
 
     # region: properties
@@ -264,13 +265,18 @@ class AzureBackend(Backend):
 
     # region: private — file-ancestor pre-check (opt-in)
 
-    def _maybe_check_no_file_ancestor(self, path: str) -> None:
+    def _maybe_check_no_file_ancestor(self, path: str, *, hns: bool | None = None) -> None:
         """Walk slash-aligned ancestors and reject on file hit, if the opt-in is set.
 
         Default-off. HNS accounts already reject via ``hdi_isfolder`` in
         the existing write path; this walk fires only when the user
         constructed the backend with the opt-in kwarg, and only on
         non-HNS accounts where the gate is otherwise missing.
+
+        ``hns`` lets a caller that already read ``self._hns`` pass that
+        snapshot in, so a single operation stays internally consistent even
+        if an uncached re-probe would otherwise re-evaluate the HNS state
+        mid-operation.
         """
         if not self._reject_write_under_file_ancestor:
             return
@@ -278,7 +284,7 @@ class AzureBackend(Backend):
         # / DataLake mkdir-walk; the opt-in walk is the non-HNS workaround.
         # (The HNS-side error-class translation to InvalidPath happens on
         # the operation's error path, independent of this pre-check.)
-        if self._hns:
+        if self._hns if hns is None else hns:
             return
         from azure.core.exceptions import AzureError, ResourceNotFoundError
 
@@ -1001,6 +1007,9 @@ class AzureBackend(Backend):
             return
 
         with self._errors(src):
+            # BUG-223: snapshot HNS once so every branch in this op agrees, even
+            # if an uncached probe failure would otherwise re-evaluate mid-op.
+            hns = self._hns
             src_bc = self._blob_client(src)
             src_props = src_bc.get_blob_properties()  # raises NotFound if missing
             src_meta = getattr(src_props, "metadata", None) or {}
@@ -1011,7 +1020,7 @@ class AzureBackend(Backend):
             if not overwrite:
                 try:
                     dst_props = dst_bc.get_blob_properties()
-                    if self._hns:
+                    if hns:
                         dst_meta = getattr(dst_props, "metadata", None) or {}
                         if dst_meta.get("hdi_isfolder"):
                             raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
@@ -1020,7 +1029,7 @@ class AzureBackend(Backend):
                     raise
                 except ResourceNotFoundError:
                     pass
-            elif self._hns:  # pragma: no cover -- HNS only
+            elif hns:  # pragma: no cover -- HNS only
                 # Overwrite=True on HNS still needs a dst probe to reject directory
                 # destinations per BE-021. Non-HNS skips this entirely — flat
                 # namespace has no `hdi_isfolder` concept, so the extra HEAD
@@ -1037,8 +1046,8 @@ class AzureBackend(Backend):
             # BE-018 precondition order: src-NotFound (raised above by
             # get_blob_properties) takes priority over dst-file-ancestor
             # (matches LocalBackend.move; ID-211 review).
-            self._maybe_check_no_file_ancestor(dst)
-            if self._hns:  # pragma: no cover -- HNS only
+            self._maybe_check_no_file_ancestor(dst, hns=hns)
+            if hns:  # pragma: no cover -- HNS only
                 src_fc = self._fs.get_file_client(self._azure_path(src))
                 new_name = f"{self._container}/{self._azure_path(dst)}"
                 try:
@@ -1067,6 +1076,9 @@ class AzureBackend(Backend):
             return
 
         with self._errors(src):
+            # BUG-223: snapshot HNS once so every branch in this op agrees, even
+            # if an uncached probe failure would otherwise re-evaluate mid-op.
+            hns = self._hns
             src_bc = self._blob_client(src)
             src_props = src_bc.get_blob_properties()  # raises NotFound if missing
             src_meta = getattr(src_props, "metadata", None) or {}
@@ -1077,7 +1089,7 @@ class AzureBackend(Backend):
             if not overwrite:
                 try:
                     dst_props = dst_bc.get_blob_properties()
-                    if self._hns:
+                    if hns:
                         dst_meta = getattr(dst_props, "metadata", None) or {}
                         if dst_meta.get("hdi_isfolder"):
                             raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
@@ -1086,7 +1098,7 @@ class AzureBackend(Backend):
                     raise
                 except ResourceNotFoundError:
                     pass
-            elif self._hns:  # pragma: no cover -- HNS only
+            elif hns:  # pragma: no cover -- HNS only
                 # Overwrite=True on HNS still needs a dst probe to reject directory
                 # destinations per BE-021. Non-HNS skips this entirely — flat
                 # namespace has no `hdi_isfolder` concept, so the extra HEAD
@@ -1101,7 +1113,7 @@ class AzureBackend(Backend):
                     pass
 
             # BE-019 precondition order: src-NotFound before dst-file-ancestor (ID-211 review).
-            self._maybe_check_no_file_ancestor(dst)
+            self._maybe_check_no_file_ancestor(dst, hns=hns)
             try:
                 dst_bc.start_copy_from_url(src_bc.url)
             except Exception:
@@ -1123,6 +1135,7 @@ class AzureBackend(Backend):
         self._fs_instance = None
         self._datalake_service_instance = None
         self._hns_enabled = None
+        self._hns_probe_warned = False
         # Close credential (e.g. DefaultAzureCredential holds transport sessions).
         if self._resolved_credential is not None:
             close = getattr(self._resolved_credential, "close", None)
@@ -1297,11 +1310,22 @@ class AzureBackend(Backend):
                 info = self._blob_service.get_account_information()
                 self._hns_enabled = bool(info.get("is_hns_enabled", False))
             except Exception:  # noqa: BLE001
-                log.warning(
-                    "Failed to detect HNS status, falling back to non-HNS behavior",
-                    exc_info=True,
-                )
-                self._hns_enabled = False
+                # BUG-223: a failed probe is not cached (leave ``_hns_enabled``
+                # unset so the next op re-probes); fall back to non-HNS for this
+                # op only, so a transient blip self-heals rather than degrading
+                # the account for the instance lifetime. Warn once per instance.
+                # KNOWN LIMITATION (BK-302): a *persistently* failing probe
+                # re-probes once per op, and ops that read ``_hns`` more than once
+                # snapshot it (see ``move``/``copy``) to stay internally
+                # consistent. The full fix replaces this implicit probe with an
+                # explicit ``hns=`` declaration + ``AzureUtils.detect_hns()``.
+                if not self._hns_probe_warned:
+                    log.warning(
+                        "Failed to detect HNS status, falling back to non-HNS behavior",
+                        exc_info=True,
+                    )
+                    self._hns_probe_warned = True
+                return False
         return self._hns_enabled
 
     def _azure_path(self, path: str) -> str:

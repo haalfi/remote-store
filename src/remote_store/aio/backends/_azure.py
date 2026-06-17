@@ -122,6 +122,7 @@ class AsyncAzureBackend(AsyncBackend):
         self._datalake_service_instance: Any = None
         self._fs_instance: Any = None
         self._hns_enabled: bool | None = None
+        self._hns_probe_warned: bool = False
         self._resolved_credential: Any = None
 
     # region: properties
@@ -140,11 +141,16 @@ class AsyncAzureBackend(AsyncBackend):
 
     # region: private — file-ancestor pre-check (opt-in)
 
-    async def _maybe_check_no_file_ancestor(self, path: str) -> None:
-        """Async sibling of ``AzureBackend._maybe_check_no_file_ancestor``."""
+    async def _maybe_check_no_file_ancestor(self, path: str, *, hns: bool | None = None) -> None:
+        """Async sibling of ``AzureBackend._maybe_check_no_file_ancestor``.
+
+        ``hns`` lets a caller that already resolved ``_ensure_hns()`` pass that
+        snapshot in, so a single operation stays internally consistent even if
+        an uncached re-probe would otherwise re-evaluate the HNS state mid-op.
+        """
         if not self._reject_write_under_file_ancestor:
             return
-        if await self._ensure_hns():
+        if (await self._ensure_hns()) if hns is None else hns:
             return
         from azure.core.exceptions import AzureError
 
@@ -251,11 +257,22 @@ class AsyncAzureBackend(AsyncBackend):
                 info = await self._blob_service.get_account_information()
                 self._hns_enabled = bool(info.get("is_hns_enabled", False))
             except Exception:  # noqa: BLE001
-                log.warning(
-                    "Failed to detect HNS status, falling back to non-HNS behavior",
-                    exc_info=True,
-                )
-                self._hns_enabled = False
+                # BUG-223: a failed probe is not cached (leave ``_hns_enabled``
+                # unset so the next op re-probes); fall back to non-HNS for this
+                # op only, so a transient blip self-heals rather than degrading
+                # the account for the instance lifetime. Warn once per instance.
+                # KNOWN LIMITATION (BK-302): a *persistently* failing probe
+                # re-probes once per op, and ops that read ``_hns`` more than once
+                # snapshot it (see ``move``/``copy``) to stay internally
+                # consistent. The full fix replaces this implicit probe with an
+                # explicit ``hns=`` declaration + ``AzureUtils.detect_hns()``.
+                if not self._hns_probe_warned:
+                    log.warning(
+                        "Failed to detect HNS status, falling back to non-HNS behavior",
+                        exc_info=True,
+                    )
+                    self._hns_probe_warned = True
+                return False
         return self._hns_enabled
 
     # endregion
@@ -1110,7 +1127,7 @@ class AsyncAzureBackend(AsyncBackend):
             # ASYNC-018 precondition order: src-NotFound (raised above by
             # get_blob_properties) takes priority over dst-file-ancestor
             # (matches LocalBackend.move; ID-211 review).
-            await self._maybe_check_no_file_ancestor(dst)
+            await self._maybe_check_no_file_ancestor(dst, hns=is_hns)
             if is_hns:  # pragma: no cover -- HNS only
                 src_fc = self._fs.get_file_client(_azure_path_fn(src))
                 new_name = f"{self._container}/{_azure_path_fn(dst)}"
@@ -1188,7 +1205,7 @@ class AsyncAzureBackend(AsyncBackend):
                     pass
 
             # ASYNC-019 precondition order: src-NotFound before dst-file-ancestor (ID-211 review).
-            await self._maybe_check_no_file_ancestor(dst)
+            await self._maybe_check_no_file_ancestor(dst, hns=is_hns)
             try:
                 await dst_bc.start_copy_from_url(src_bc.url)
             except Exception:
@@ -1211,6 +1228,7 @@ class AsyncAzureBackend(AsyncBackend):
         self._fs_instance = None
         self._datalake_service_instance = None
         self._hns_enabled = None
+        self._hns_probe_warned = False
         # Close auto-created async credential (holds aiohttp sessions).
         if self._resolved_credential is not None:
             close = getattr(self._resolved_credential, "close", None)

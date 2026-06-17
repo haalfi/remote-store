@@ -75,15 +75,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Azure
 
-- [ ] **BUG-223 — Azure HNS misdetection is sticky for the instance lifetime**
-  spec: AZ-006 · effort: S · audience: user.api
-  From [audit-019](audits/audit-019-azure-backend-review.md) M5. The HNS probe caches
-  `_hns_enabled = False` on any exception (`_azure.py:1293-1305`; `aio/_azure.py:243-259`),
-  so a transient failure on the first probe permanently degrades an HNS account to flat
-  semantics (no atomic rename, no `hdi_isfolder` rejection) with no error. Do not cache
-  a `False` that came from a transient probe failure (distinguish "probed flat" from
-  "probe errored"); spec the stickiness in AZ-006.
-
 - [ ] **BK-298 — Azure credential ownership + cross-backend close posture**
   spec: AZ-029 · effort: M · audience: user.api, library.maintainer
   From [audit-019](audits/audit-019-azure-backend-review.md) H1 + M1. `close()`/`aclose()`
@@ -115,6 +106,24 @@ and the highest ID already in this file, then take the next integer. Run
   data-loss edge) or document the Store-normalised assumption; align sync/async `glob`
   error handling; surface the ASYNC-094 cross-loop rule in the guide; fix the
   `backend="azure"` vs `"async-azure"` drift. Small and independent; split freely.
+
+- [ ] **BK-302 — Replace implicit HNS auto-detection with an explicit `hns=` declaration + `AzureUtils`**
+  spec: AZ-006 · effort: L · audience: user.api, library.maintainer
+  Surfaced reviewing BUG-223 (PR #841). The backend infers HNS vs flat by probing
+  `GetAccountInfo` on first use — implicit "magic" whose failure modes drove BUG-223:
+  sticky misdetection (cache a wrong result for the instance lifetime), a per-operation
+  re-probe storm under a persistent failure, an RBAC-propagation 403 that is *not*
+  permanent, and the need to snapshot `_hns` so a single op cannot straddle the HNS and
+  non-HNS code paths. The interim BUG-223 fix (never-cache + per-op snapshot) bounds the
+  damage but does not remove the root cause. Direction (agreed): make the account's
+  nature an **explicit, mandatory** input — an `hns: bool` option on the backend and
+  config (no silent default; fail loud if undeclared) — and provide a public
+  `AzureUtils.detect_hns(...)` one-shot helper (fail-loud; raises on probe error) for
+  users who need to discover it, mirroring `SFTPUtils.scan_host_keys` /
+  `GraphUtils.resolve_drive_id`. Delete the `_ensure_hns`/`_hns` probe+cache machinery;
+  `_hns` becomes a declared constant (which also removes the snapshot/torn-read concern).
+  Needs an ADR (auto-detect → declared), an AZ-006 rewrite, config-schema + docs +
+  examples updates, and a migration guide. Its own session.
 
 - [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
   spec: — · effort: S · audience: library.maintainer, user.api
