@@ -8,6 +8,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-223 — Azure HNS misdetection is sticky for the instance lifetime**
+  spec: AZ-006 · effort: S · audience: user.api
+  From [audit-019](audits/audit-019-azure-backend-review.md) M5. The HNS probe
+  (`get_account_information()`) cached `_hns_enabled = False` on *any* exception, so a
+  transient failure on the first probe permanently degraded an HNS account to flat-blob
+  semantics (no atomic rename, no `hdi_isfolder` rejection) with no error surfaced until
+  `close()`. Now only a **successful** probe is cached; a probe that **errors** is not
+  cached (the failed op falls back to non-HNS, the next op re-probes), so a transient
+  blip self-heals. Warns once per instance to avoid spamming a persistently-failing
+  probe. Symmetric fix on both twins (`_azure.py` `_hns`; `aio/_azure.py` `_ensure_hns`);
+  AZ-006 reworded ("at most once *successfully*"). Mocked transient-then-success
+  re-probe tests on both twins; live-validated real ADLS Gen2 still detected as HNS.
+
 - [x] **BUG-222 — Azure error classifier drops 429 / 5xx / 412 / 401 to a bare `RemoteStoreError`**
   spec: AZ-025 · effort: M · audience: user.api
   From [audit-019](audits/audit-019-azure-backend-review.md) H2 + M2.

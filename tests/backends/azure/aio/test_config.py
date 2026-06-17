@@ -262,6 +262,26 @@ class TestAsyncAzureHNSDetection:
         assert mock_client.get_account_information.call_count == 1
         assert first is second is True
 
+    @pytest.mark.spec("ASYNC-005")
+    async def test_hns_probe_error_not_cached_reprobes(self) -> None:
+        """BUG-223: a failed probe must not be cached -- the next op re-probes.
+
+        A transient failure on the first probe used to cache ``_hns_enabled =
+        False`` for the instance lifetime, permanently degrading a real HNS
+        account to flat-blob semantics. The failed probe fails open (``False``)
+        for the current op but is not persisted, so a subsequent probe recovers.
+        """
+        backend = _make_backend()
+        mock_client = AsyncMock(spec=BlobServiceClient)
+        mock_client.get_account_information.side_effect = [
+            Exception("transient network blip"),
+            {"is_hns_enabled": True},
+        ]
+        backend._blob_service_instance = mock_client
+        assert await backend._ensure_hns() is False  # fail-open, not cached
+        assert await backend._ensure_hns() is True  # re-probe recovers
+        assert mock_client.get_account_information.call_count == 2
+
 
 # =============================================================================
 # Error Mapping (ASYNC-024)

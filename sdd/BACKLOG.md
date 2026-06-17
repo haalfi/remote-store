@@ -75,15 +75,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Azure
 
-- [ ] **BUG-223 — Azure HNS misdetection is sticky for the instance lifetime**
-  spec: AZ-006 · effort: S · audience: user.api
-  From [audit-019](audits/audit-019-azure-backend-review.md) M5. The HNS probe caches
-  `_hns_enabled = False` on any exception (`_azure.py:1293-1305`; `aio/_azure.py:243-259`),
-  so a transient failure on the first probe permanently degrades an HNS account to flat
-  semantics (no atomic rename, no `hdi_isfolder` rejection) with no error. Do not cache
-  a `False` that came from a transient probe failure (distinguish "probed flat" from
-  "probe errored"); spec the stickiness in AZ-006.
-
 - [ ] **BK-298 — Azure credential ownership + cross-backend close posture**
   spec: AZ-029 · effort: M · audience: user.api, library.maintainer
   From [audit-019](audits/audit-019-azure-backend-review.md) H1 + M1. `close()`/`aclose()`

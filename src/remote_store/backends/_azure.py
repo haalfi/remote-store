@@ -248,6 +248,7 @@ class AzureBackend(Backend):
         self._datalake_service_instance: Any = None
         self._fs_instance: Any = None
         self._hns_enabled: bool | None = None
+        self._hns_probe_warned: bool = False
         self._resolved_credential: Any = None
 
     # region: properties
@@ -1123,6 +1124,7 @@ class AzureBackend(Backend):
         self._fs_instance = None
         self._datalake_service_instance = None
         self._hns_enabled = None
+        self._hns_probe_warned = False
         # Close credential (e.g. DefaultAzureCredential holds transport sessions).
         if self._resolved_credential is not None:
             close = getattr(self._resolved_credential, "close", None)
@@ -1297,11 +1299,17 @@ class AzureBackend(Backend):
                 info = self._blob_service.get_account_information()
                 self._hns_enabled = bool(info.get("is_hns_enabled", False))
             except Exception:  # noqa: BLE001
-                log.warning(
-                    "Failed to detect HNS status, falling back to non-HNS behavior",
-                    exc_info=True,
-                )
-                self._hns_enabled = False
+                # BUG-223: a failed probe is transient until proven otherwise.
+                # Do not cache the failure (leave ``_hns_enabled`` unset so the
+                # next op re-probes); fail open to non-HNS for this op only. Warn
+                # once per instance to avoid spamming a persistently-failing probe.
+                if not self._hns_probe_warned:
+                    log.warning(
+                        "Failed to detect HNS status, falling back to non-HNS behavior",
+                        exc_info=True,
+                    )
+                    self._hns_probe_warned = True
+                return False
         return self._hns_enabled
 
     def _azure_path(self, path: str) -> str:

@@ -104,7 +104,7 @@ The backend detects Hierarchical Namespace (HNS) status on first use and adapts 
 | `move` | Atomic `rename_file` | Copy + delete |
 | `delete_folder(recursive=True)` | Single recursive delete | Iterate + delete each blob |
 
-If the HNS detection call fails (e.g. insufficient permissions), the backend falls back to non-HNS behavior.
+If the HNS detection call fails, the backend falls back to non-HNS behavior for that operation and retries detection on the next one, so a transient failure does not permanently degrade an HNS account. A persistent failure (e.g. insufficient permissions) keeps the backend on non-HNS behavior.
 
 Note that non-HNS `move()` (copy + delete) is not atomic and `overwrite=False` has a TOCTOU race on all account types. See the [Concurrency and Atomicity Guarantees](../../explanation/concurrency.md) guide for details.
 

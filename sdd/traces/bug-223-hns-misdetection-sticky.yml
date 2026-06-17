@@ -1,0 +1,79 @@
+id: BUG-223
+title: "Azure HNS misdetection is sticky for the instance lifetime"
+trigger: >
+  The HNS probe (get_account_information) was wrapped in a bare except that
+  cached _hns_enabled = False on any exception, so a transient failure on the
+  first probe permanently degraded a real ADLS Gen2 (HNS) account to flat-blob
+  semantics for the backend's lifetime, with no error surfaced.
+source_items:
+  - BUG-223
+audience:
+  - user.api
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Azure / BUG-223 (item)"
+        read_type: gate
+        extract: "Disposition: do not cache a False from a transient probe failure; distinguish probed-flat from probe-errored; spec stickiness in AZ-006"
+        outcome: ok
+      - file: sdd/audits/audit-019-azure-backend-review.md
+        section: "M5"
+        read_type: reference
+        extract: "Origin of the finding; caching logic statically certain, transient blip not cheaply reproducible live"
+        outcome: ok
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/012-azure-backend.md
+        section: "AZ-006"
+        read_type: gate
+        extract: "Invariant said 'performed at most once' / cached 'for the lifetime'; reword to 'at most once successfully', failed probe re-probes, fail-open per-op"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "_hns property"
+        read_type: gate
+        extract: "Drop self._hns_enabled = False in except; return False fail-open without caching; warn once via _hns_probe_warned (init + reset in close())"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "_ensure_hns()"
+        read_type: gate
+        extract: "Byte-symmetric twin change; same _hns_probe_warned flag, init + reset in aclose()"
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSDetection"
+        read_type: gate
+        extract: "Add transient-then-success re-probe test (side_effect=[Exception, {is_hns_enabled: True}]); first _hns False, second True, call_count == 2"
+        outcome: ok
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureHNSDetection"
+        read_type: gate
+        extract: "Async mirror over await _ensure_hns()"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG→DONE, CHANGELOG stub, failing test before fix, spec + guide reconciled"
+        outcome: ok
+      - file: docs-src/guides/backends/azure.md
+        section: "HNS detection fallback note"
+        read_type: verify
+        extract: "Doc said the backend 'falls back to non-HNS behavior' on detection failure; reword to retry-on-error so it does not imply a permanent degrade"
+        outcome: ok
+      - file: tests/backends/azure/test_live_hns.py
+        section: "(full)"
+        read_type: verify
+        extract: "Stage-3 live: confirm real ADLS Gen2 still detected as HNS after the error-branch change"
+        outcome: ok

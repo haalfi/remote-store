@@ -63,7 +63,7 @@ AzureBackend(
 
 ### AZ-006: Adaptive Behavior Based on Hierarchical Namespace
 
-**Invariant:** On first use, the backend calls `GetAccountInfo` to determine whether the storage account has Hierarchical Namespace (HNS) enabled. The result is cached for the lifetime of the backend instance.
+**Invariant:** On first use, the backend calls `GetAccountInfo` to determine whether the storage account has Hierarchical Namespace (HNS) enabled. A *successful* probe result (HNS or flat) is cached for the lifetime of the backend instance. A probe that *errors* (BUG-223) is not cached: the failed operation falls back to non-HNS behavior, but the next operation re-probes, so a transient failure does not permanently degrade an HNS account to flat semantics.
 
 **Behavior matrix:**
 
@@ -77,7 +77,7 @@ AzureBackend(
 
 **Rationale:** ADLS Gen2 has real directories and atomic rename — the backend should use these when available. Plain Blob Storage accounts are still supported by falling back to S3-equivalent semantics (virtual folders, copy+delete move, PUT atomicity).
 
-**Postconditions:** The HNS check is performed at most once. If the check itself fails (e.g. permissions), the backend falls back to non-HNS behavior and logs a warning.
+**Postconditions:** The HNS check is performed at most once *successfully*. If the check itself fails (e.g. permissions), the backend falls back to non-HNS behavior for that operation and logs a warning (once per instance); the next operation re-probes. A persistently failing probe therefore re-probes once per operation rather than permanently caching `False`.
 
 ---
 
