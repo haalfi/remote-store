@@ -96,6 +96,7 @@ from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 from remote_store._errors import InvalidPath  # noqa: E402
 from remote_store._path import RemotePath  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
+from remote_store.backends import AzureUtils  # noqa: E402
 from tests.backends.fixtures._live_env import (  # noqa: E402
     require_azure_live_connection_string,
     require_azure_live_hns_container,
@@ -198,6 +199,19 @@ async def async_live_hns_backend(
         yield backend, dirpath
     finally:
         await backend.aclose()
+
+
+@pytest.mark.spec("AZ-006")
+class TestAsyncAzureLiveDetectHns:
+    """``AzureUtils.adetect_hns`` reports HNS=True against a real ADLS Gen2 account.
+
+    Async sibling of the sync detect_hns live check; live-verifies the async
+    ``get_account_information()`` call shape rather than trusting a mock.
+    """
+
+    async def test_adetect_hns_true_on_real_hns(self, live_hns_env: tuple[str, str]) -> None:
+        conn, _fs = live_hns_env
+        assert await AzureUtils.adetect_hns(connection_string=conn) is True
 
 
 # ---------------------------------------------------------------------------

@@ -105,3 +105,8 @@ phases:
         read_type: verify
         extract: "Replay fixtures are HNS-shape -> construct hns=True; confirmed replay tolerates the now-unused GetAccountInfo cassette interaction"
         outcome: ok
+      - file: tests/backends/azure/test_live_hns.py
+        section: "TestAzureLiveDetectHns (+ async sibling)"
+        read_type: verify
+        extract: "Stage-3 live against real ADLS Gen2: 26/26 incl. new detect_hns/adetect_hns returning True -- live-verifies the new get_account_information SDK call shape, not just a mock"
+        outcome: ok
