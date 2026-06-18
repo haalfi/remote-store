@@ -23,46 +23,14 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF24D4A447FA"'
+      - '"0x8DECD733ADD82A4"'
       Last-Modified:
-      - Sun, 31 May 2026 14:56:44 GMT
+      - Thu, 18 Jun 2026 19:53:12 GMT
       x-ms-version:
       - '2026-04-06'
     status:
       code: 201
       message: Created
-- request:
-    body: null
-    headers:
-      Accept:
-      - application/xml
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - azsdk-python-replay
-      x-ms-version:
-      - '2026-04-06'
-    method: GET
-    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
-  response:
-    body:
-      string: ''
-    headers:
-      Content-Length:
-      - '0'
-      x-ms-account-kind:
-      - StorageV2
-      x-ms-is-hns-enabled:
-      - 'true'
-      x-ms-sku-name:
-      - Standard_LRS
-      x-ms-version:
-      - '2026-04-06'
-    status:
-      code: 200
-      message: OK
 - request:
     body: null
     headers:
@@ -121,9 +89,9 @@ interactions:
       Content-MD5:
       - tWf8to2FVSJxI6uH4lWHLg==
       ETag:
-      - '"0x8DEBF24D4F4B854"'
+      - '"0x8DECD733B1444A4"'
       Last-Modified:
-      - Sun, 31 May 2026 14:56:44 GMT
+      - Thu, 18 Jun 2026 19:53:12 GMT
       x-ms-content-crc64:
       - R3Bjxr6Wz74=
       x-ms-request-server-encrypted:
@@ -163,9 +131,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEBF24D4F4B854"'
+      - '"0x8DECD733B1444A4"'
       Last-Modified:
-      - Sun, 31 May 2026 14:56:44 GMT
+      - Thu, 18 Jun 2026 19:53:12 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -177,7 +145,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sun, 31 May 2026 14:56:44 GMT
+      - Thu, 18 Jun 2026 19:53:12 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:

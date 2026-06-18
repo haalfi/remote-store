@@ -23,46 +23,14 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF25203AA0C3"'
+      - '"0x8DECD7387E51CF4"'
       Last-Modified:
-      - Sun, 31 May 2026 14:58:50 GMT
+      - Thu, 18 Jun 2026 19:55:21 GMT
       x-ms-version:
       - '2026-04-06'
     status:
       code: 201
       message: Created
-- request:
-    body: null
-    headers:
-      Accept:
-      - application/xml
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - azsdk-python-replay
-      x-ms-version:
-      - '2026-04-06'
-    method: GET
-    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
-  response:
-    body:
-      string: ''
-    headers:
-      Content-Length:
-      - '0'
-      x-ms-account-kind:
-      - StorageV2
-      x-ms-is-hns-enabled:
-      - 'true'
-      x-ms-sku-name:
-      - Standard_LRS
-      x-ms-version:
-      - '2026-04-06'
-    status:
-      code: 200
-      message: OK
 - request:
     body: null
     headers:
@@ -121,9 +89,9 @@ interactions:
       Content-MD5:
       - R7zlx09Yn0hn29V+nKn4CA==
       ETag:
-      - '"0x8DEBF2520946104"'
+      - '"0x8DECD7388216D80"'
       Last-Modified:
-      - Sun, 31 May 2026 14:58:51 GMT
+      - Thu, 18 Jun 2026 19:55:22 GMT
       x-ms-content-crc64:
       - yRr7k//2ekY=
       x-ms-request-server-encrypted:
@@ -191,9 +159,9 @@ interactions:
       Content-MD5:
       - Ia0L2Da5DQj0z2QLTCmOfA==
       ETag:
-      - '"0x8DEBF2520D2AED4"'
+      - '"0x8DECD7388558C7C"'
       Last-Modified:
-      - Sun, 31 May 2026 14:58:51 GMT
+      - Thu, 18 Jun 2026 19:55:22 GMT
       x-ms-content-crc64:
       - 4qbnBMZvDVY=
       x-ms-request-server-encrypted:
@@ -227,9 +195,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF25208F7F68"'
+      - '"0x8DECD73881FB364"'
       Last-Modified:
-      - Sun, 31 May 2026 14:58:51 GMT
+      - Thu, 18 Jun 2026 19:55:22 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -239,7 +207,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sun, 31 May 2026 14:58:51 GMT
+      - Thu, 18 Jun 2026 19:55:22 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
@@ -278,10 +246,10 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=gfr&recursive=true&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"3","creationTime":"134247131314479364","etag":"0x8DEBF2520946104","expiryTime":"0","group":"$superuser","lastModified":"Sun,
-        31 May 2026 14:58:51 GMT","name":"gfr/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134247131318224668","etag":"0x8DEBF2520CD89FC","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Sun,
-        31 May 2026 14:58:51 GMT","name":"gfr/sub","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"2","creationTime":"134247131318562516","etag":"0x8DEBF2520D2AED4","expiryTime":"0","group":"$superuser","lastModified":"Sun,
-        31 May 2026 14:58:51 GMT","name":"gfr/sub/b.txt","owner":"$superuser","permissions":"rw-r-----"}]}
+      string: '{"paths":[{"contentLength":"3","creationTime":"134262861222014336","etag":"0x8DECD7388216D80","expiryTime":"0","group":"$superuser","lastModified":"Thu,
+        18 Jun 2026 19:55:22 GMT","name":"gfr/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134262861225202864","etag":"0x8DECD738852166C","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Thu,
+        18 Jun 2026 19:55:22 GMT","name":"gfr/sub","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"2","creationTime":"134262861225430140","etag":"0x8DECD7388558C7C","expiryTime":"0","group":"$superuser","lastModified":"Thu,
+        18 Jun 2026 19:55:22 GMT","name":"gfr/sub/b.txt","owner":"$superuser","permissions":"rw-r-----"}]}
 
         '
     headers:

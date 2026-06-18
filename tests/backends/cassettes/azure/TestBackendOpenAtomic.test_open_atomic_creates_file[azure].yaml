@@ -23,46 +23,14 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF247C5AD8E1"'
+      - '"0x8DECD72DCDDF9F0"'
       Last-Modified:
-      - Sun, 31 May 2026 14:54:15 GMT
+      - Thu, 18 Jun 2026 19:50:34 GMT
       x-ms-version:
       - '2026-04-06'
     status:
       code: 201
       message: Created
-- request:
-    body: null
-    headers:
-      Accept:
-      - application/xml
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - azsdk-python-replay
-      x-ms-version:
-      - '2026-04-06'
-    method: GET
-    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
-  response:
-    body:
-      string: ''
-    headers:
-      Content-Length:
-      - '0'
-      x-ms-account-kind:
-      - StorageV2
-      x-ms-is-hns-enabled:
-      - 'true'
-      x-ms-sku-name:
-      - Standard_LRS
-      x-ms-version:
-      - '2026-04-06'
-    status:
-      code: 200
-      message: OK
 - request:
     body: null
     headers:
@@ -115,9 +83,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF247CA57FA8"'
+      - '"0x8DECD72DD12411C"'
       Last-Modified:
-      - Sun, 31 May 2026 14:54:16 GMT
+      - Thu, 18 Jun 2026 19:50:35 GMT
       x-ms-request-server-encrypted:
       - 'true'
       x-ms-version:
@@ -169,7 +137,7 @@ interactions:
       Content-Length:
       - '0'
       If-Match:
-      - '"0x8DEBF247CA57FA8"'
+      - '"0x8DECD72DD12411C"'
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
@@ -183,9 +151,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF247CDDF568"'
+      - '"0x8DECD72DD50E404"'
       Last-Modified:
-      - Sun, 31 May 2026 14:54:16 GMT
+      - Thu, 18 Jun 2026 19:50:35 GMT
       x-ms-request-server-encrypted:
       - 'false'
       x-ms-version:
@@ -221,9 +189,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF247CDDF568"'
+      - '"0x8DECD72DD50E404"'
       Last-Modified:
-      - Sun, 31 May 2026 14:54:16 GMT
+      - Thu, 18 Jun 2026 19:50:35 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -259,9 +227,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEBF247CDDF568"'
+      - '"0x8DECD72DD50E404"'
       Last-Modified:
-      - Sun, 31 May 2026 14:54:16 GMT
+      - Thu, 18 Jun 2026 19:50:35 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -271,7 +239,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sun, 31 May 2026 14:54:16 GMT
+      - Thu, 18 Jun 2026 19:50:35 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:

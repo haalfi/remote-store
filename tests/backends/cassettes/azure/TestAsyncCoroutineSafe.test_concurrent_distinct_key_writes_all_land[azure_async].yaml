@@ -1,0 +1,1156 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-04-06'
+    method: PUT
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      ETag:
+      - '"0x8DECD736ECFFAE5"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:39 GMT
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-04-06'
+    method: HEAD
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/0.bin
+  response:
+    body:
+      string: ''
+    headers:
+      Transfer-Encoding:
+      - chunked
+      x-ms-error-code:
+      - BlobNotFound
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 404
+      message: The specified blob does not exist.
+- request:
+    body: w14
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '3'
+      Content-Type:
+      - application/octet-stream
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-version:
+      - '2026-04-06'
+    method: PUT
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/14.bin
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      Content-MD5:
+      - VS8vPdrkmowJ5aWTj2xIPg==
+      ETag:
+      - '"0x8DECD736F4F8CA4"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-content-crc64:
+      - 0xir/zPNG/I=
+      x-ms-request-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/0.bin
+  response:
+    body:
+      string: w0
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '2'
+      Content-Range:
+      - bytes 0-1/2
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3EA578"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - fnX2Ep9YO2VmmdPplwfzEQ==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/1.bin
+  response:
+    body:
+      string: w1
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '2'
+      Content-Range:
+      - bytes 0-1/2
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F39A130"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - qV3LiuuyAu/u2xDVU47euQ==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/2.bin
+  response:
+    body:
+      string: w2
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '2'
+      Content-Range:
+      - bytes 0-1/2
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3EB864"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - YtfVGEt6MT3GQlW9uBh4Rw==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/3.bin
+  response:
+    body:
+      string: w3
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '2'
+      Content-Range:
+      - bytes 0-1/2
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3A8670"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - neLwrglnAtuhqojPU7F8Hw==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/4.bin
+  response:
+    body:
+      string: w4
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '2'
+      Content-Range:
+      - bytes 0-1/2
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3DDBBC"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - PnpKEu4fbNPv/amEVbZA7w==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/5.bin
+  response:
+    body:
+      string: w5
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '2'
+      Content-Range:
+      - bytes 0-1/2
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3DFAA4"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - I2oeG8S80wFda61V/uWSPA==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/6.bin
+  response:
+    body:
+      string: w6
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '2'
+      Content-Range:
+      - bytes 0-1/2
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3A7F5C"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - ilYQA8MpEoGr9dc+LqvBFQ==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/7.bin
+  response:
+    body:
+      string: w7
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '2'
+      Content-Range:
+      - bytes 0-1/2
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3C1818"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - PNSCFe9KwgzcrI2P/Xnezg==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/8.bin
+  response:
+    body:
+      string: w8
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '2'
+      Content-Range:
+      - bytes 0-1/2
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3A4288"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - KzSSvt2wID74Mo4770HfIg==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/9.bin
+  response:
+    body:
+      string: w9
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '2'
+      Content-Range:
+      - bytes 0-1/2
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3B1640"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - 7zN3j1zOfCloB40kGn2hVA==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/10.bin
+  response:
+    body:
+      string: w10
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '3'
+      Content-Range:
+      - bytes 0-2/3
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3B2398"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - hrGI2RAb4nrDrNT+4c25nw==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/11.bin
+  response:
+    body:
+      string: w11
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '3'
+      Content-Range:
+      - bytes 0-2/3
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3C2BE0"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - O8upxMmojxb8q6DuqSh6/Q==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/12.bin
+  response:
+    body:
+      string: w12
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '3'
+      Content-Range:
+      - bytes 0-2/3
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3FEFBC"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - v+JMcki/I+P5BnMswAeI9A==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/13.bin
+  response:
+    body:
+      string: w13
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '3'
+      Content-Range:
+      - bytes 0-2/3
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3E0030"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - vmvjt4iMcUAKuCq09ztkRA==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/14.bin
+  response:
+    body:
+      string: w14
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '3'
+      Content-Range:
+      - bytes 0-2/3
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F4F8CA4"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - VS8vPdrkmowJ5aWTj2xIPg==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-04-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/acc/write/15.bin
+  response:
+    body:
+      string: w15
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '3'
+      Content-Range:
+      - bytes 0-2/3
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DECD736F3E7E58"'
+      Last-Modified:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - 9SqKxQO/FldPmJA3cPF8+Q==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 18 Jun 2026 19:54:40 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 206
+      message: Partial Content
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-04-06'
+    method: DELETE
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 202
+      message: Accepted
+version: 1

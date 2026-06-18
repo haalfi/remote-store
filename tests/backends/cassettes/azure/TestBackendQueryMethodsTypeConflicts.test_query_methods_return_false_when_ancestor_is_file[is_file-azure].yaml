@@ -23,46 +23,14 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF24DB8EBF1E"'
+      - '"0x8DECD7340DA379A"'
       Last-Modified:
-      - Sun, 31 May 2026 14:56:55 GMT
+      - Thu, 18 Jun 2026 19:53:22 GMT
       x-ms-version:
       - '2026-04-06'
     status:
       code: 201
       message: Created
-- request:
-    body: null
-    headers:
-      Accept:
-      - application/xml
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - azsdk-python-replay
-      x-ms-version:
-      - '2026-04-06'
-    method: GET
-    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
-  response:
-    body:
-      string: ''
-    headers:
-      Content-Length:
-      - '0'
-      x-ms-account-kind:
-      - StorageV2
-      x-ms-is-hns-enabled:
-      - 'true'
-      x-ms-sku-name:
-      - Standard_LRS
-      x-ms-version:
-      - '2026-04-06'
-    status:
-      code: 200
-      message: OK
 - request:
     body: null
     headers:
@@ -121,9 +89,9 @@ interactions:
       Content-MD5:
       - fwtrsLfpUbf9KypKMmKX4Q==
       ETag:
-      - '"0x8DEBF24DBE0BFE4"'
+      - '"0x8DECD7341152C44"'
       Last-Modified:
-      - Sun, 31 May 2026 14:56:56 GMT
+      - Thu, 18 Jun 2026 19:53:23 GMT
       x-ms-content-crc64:
       - cEROtbkawrk=
       x-ms-request-server-encrypted:

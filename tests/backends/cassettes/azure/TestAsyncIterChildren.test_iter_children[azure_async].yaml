@@ -23,46 +23,14 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF252F0B2786"'
+      - '"0x8DECD73950A5757"'
       Last-Modified:
-      - Sun, 31 May 2026 14:59:15 GMT
+      - Thu, 18 Jun 2026 19:55:43 GMT
       x-ms-version:
       - '2026-04-06'
     status:
       code: 201
       message: Created
-- request:
-    body: null
-    headers:
-      Accept:
-      - application/xml
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - azsdk-python-replay
-      x-ms-version:
-      - '2026-04-06'
-    method: GET
-    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
-  response:
-    body:
-      string: ''
-    headers:
-      Content-Length:
-      - '0'
-      x-ms-account-kind:
-      - StorageV2
-      x-ms-is-hns-enabled:
-      - 'true'
-      x-ms-sku-name:
-      - Standard_LRS
-      x-ms-version:
-      - '2026-04-06'
-    status:
-      code: 200
-      message: OK
 - request:
     body: null
     headers:
@@ -121,9 +89,9 @@ interactions:
       Content-MD5:
       - DMF1ucDxtqgxw5niaXcmYQ==
       ETag:
-      - '"0x8DEBF252F85E480"'
+      - '"0x8DECD73954D9E58"'
       Last-Modified:
-      - Sun, 31 May 2026 14:59:16 GMT
+      - Thu, 18 Jun 2026 19:55:44 GMT
       x-ms-content-crc64:
       - PPzLtEWEL4w=
       x-ms-request-server-encrypted:
@@ -191,9 +159,9 @@ interactions:
       Content-MD5:
       - kutf/uauL+w61xx3dTFXjw==
       ETag:
-      - '"0x8DEBF253012A5BC"'
+      - '"0x8DECD73957F8D68"'
       Last-Modified:
-      - Sun, 31 May 2026 14:59:17 GMT
+      - Thu, 18 Jun 2026 19:55:44 GMT
       x-ms-content-crc64:
       - t2eV5B2VnA0=
       x-ms-request-server-encrypted:
@@ -261,9 +229,9 @@ interactions:
       Content-MD5:
       - SooI8J03tzeVZJA4QItfMw==
       ETag:
-      - '"0x8DEBF25304BE54C"'
+      - '"0x8DECD7395B62754"'
       Last-Modified:
-      - Sun, 31 May 2026 14:59:17 GMT
+      - Thu, 18 Jun 2026 19:55:44 GMT
       x-ms-content-crc64:
       - zu6g1NVl8nI=
       x-ms-request-server-encrypted:
@@ -290,10 +258,10 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=ic&recursive=false&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"1","creationTime":"134247131565188224","etag":"0x8DEBF252F85E480","expiryTime":"0","group":"$superuser","lastModified":"Sun,
-        31 May 2026 14:59:16 GMT","name":"ic/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"1","creationTime":"134247131574412732","etag":"0x8DEBF253012A5BC","expiryTime":"0","group":"$superuser","lastModified":"Sun,
-        31 May 2026 14:59:17 GMT","name":"ic/b.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134247131578040728","etag":"0x8DEBF25304A038C","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Sun,
-        31 May 2026 14:59:17 GMT","name":"ic/sub","owner":"$superuser","permissions":"rwxr-x---"}]}
+      string: '{"paths":[{"contentLength":"1","creationTime":"134262861443014232","etag":"0x8DECD73954D9E58","expiryTime":"0","group":"$superuser","lastModified":"Thu,
+        18 Jun 2026 19:55:44 GMT","name":"ic/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"1","creationTime":"134262861446286696","etag":"0x8DECD73957F8D68","expiryTime":"0","group":"$superuser","lastModified":"Thu,
+        18 Jun 2026 19:55:44 GMT","name":"ic/b.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134262861449706108","etag":"0x8DECD7395B3BC14","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Thu,
+        18 Jun 2026 19:55:44 GMT","name":"ic/sub","owner":"$superuser","permissions":"rwxr-x---"}]}
 
         '
     headers:

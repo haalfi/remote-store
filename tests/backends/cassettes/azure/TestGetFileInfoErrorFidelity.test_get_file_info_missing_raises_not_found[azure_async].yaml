@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF251D3A6B74"'
+      - '"0x8DECD73856D61DA"'
       Last-Modified:
-      - Sun, 31 May 2026 14:58:45 GMT
+      - Thu, 18 Jun 2026 19:55:17 GMT
       x-ms-version:
       - '2026-04-06'
     status:

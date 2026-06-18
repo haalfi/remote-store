@@ -23,46 +23,14 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF24D962DDE4"'
+      - '"0x8DECD733F087E2D"'
       Last-Modified:
-      - Sun, 31 May 2026 14:56:52 GMT
+      - Thu, 18 Jun 2026 19:53:19 GMT
       x-ms-version:
       - '2026-04-06'
     status:
       code: 201
       message: Created
-- request:
-    body: null
-    headers:
-      Accept:
-      - application/xml
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - azsdk-python-replay
-      x-ms-version:
-      - '2026-04-06'
-    method: GET
-    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
-  response:
-    body:
-      string: ''
-    headers:
-      Content-Length:
-      - '0'
-      x-ms-account-kind:
-      - StorageV2
-      x-ms-is-hns-enabled:
-      - 'true'
-      x-ms-sku-name:
-      - Standard_LRS
-      x-ms-version:
-      - '2026-04-06'
-    status:
-      code: 200
-      message: OK
 - request:
     body: null
     headers:
@@ -121,9 +89,9 @@ interactions:
       Content-MD5:
       - ndTkYSaMgDT1yFZOFVxnpg==
       ETag:
-      - '"0x8DEBF24D9B3C2BC"'
+      - '"0x8DECD733F402928"'
       Last-Modified:
-      - Sun, 31 May 2026 14:56:52 GMT
+      - Thu, 18 Jun 2026 19:53:19 GMT
       x-ms-content-crc64:
       - seRUZAJnvS0=
       x-ms-request-server-encrypted:
@@ -150,8 +118,8 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=ec_lfi&recursive=false&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"1","creationTime":"134247130125353660","etag":"0x8DEBF24D9B3C2BC","expiryTime":"0","group":"$superuser","lastModified":"Sun,
-        31 May 2026 14:56:52 GMT","name":"ec_lfi/x.txt","owner":"$superuser","permissions":"rw-r-----"}]}
+      string: '{"paths":[{"contentLength":"1","creationTime":"134262859999291688","etag":"0x8DECD733F402928","expiryTime":"0","group":"$superuser","lastModified":"Thu,
+        18 Jun 2026 19:53:19 GMT","name":"ec_lfi/x.txt","owner":"$superuser","permissions":"rw-r-----"}]}
 
         '
     headers:

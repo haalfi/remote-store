@@ -291,6 +291,81 @@ class TestNamedRuleAudit:
         assert calls["count"] == 0
 
 
+class TestUnraisableScopedToRecording:
+    """BK-304: recording subprocesses disable the unraisableexception plugin.
+
+    vcrpy's record-mode transport interception orphans the live SSL sockets it
+    wraps; the ``ResourceWarning`` they raise at GC, escalated by pytest's
+    ``unraisableexception`` plugin under ``filterwarnings = error``, aborts an
+    otherwise-green recording. The recording ``pytest`` invocations carry
+    ``-p no:unraisableexception``; the Step-5 replay run (no live sockets) and
+    the wider suite must not.
+    """
+
+    @staticmethod
+    def _has_disable_flag(args: tuple[str, ...]) -> bool:
+        """True iff *args* contains the ``-p no:unraisableexception`` pair, in order."""
+        for i, tok in enumerate(args):
+            if tok == "-p" and i + 1 < len(args) and args[i + 1] == "no:unraisableexception":
+                return True
+        return False
+
+    def _capture_runs(self, rc, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> list[tuple[str, ...]]:
+        """Drive a full azure record through main() with _run mocked; return captured argv."""
+        monkeypatch.setattr(sys, "argv", ["record_cassettes.py", "--backend", "azure"])
+        monkeypatch.setattr(rc, "_preflight_env", lambda cfg, *, verify_only: None)
+        monkeypatch.setattr(rc, "_audit_named_rules", lambda profile, manifest_base: None)
+        monkeypatch.chdir(tmp_path)
+        runs: list[tuple[str, ...]] = []
+        monkeypatch.setattr(rc, "_run", lambda *args: runs.append(args))
+        _redirect_profile_dir(monkeypatch, "azure", tmp_path)  # empty dir → scrub-verify clean
+        # _run is mocked so nothing is written; pin the floor to 0 so the count
+        # guard does not exit before Step 5 (the count guard is tested elsewhere).
+        azure_cfg = dict(rc._BACKENDS["azure"])
+        azure_cfg["min_cassettes"] = 0
+        monkeypatch.setitem(rc._BACKENDS, "azure", azure_cfg)
+        rc.main()
+        return runs
+
+    def test_record_steps_disable_unraisable_but_replay_keeps_it(
+        self, rc, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Every ``--record`` invocation carries the flag; the replay run does not."""
+        runs = self._capture_runs(rc, monkeypatch, tmp_path)
+
+        record_runs = [args for args in runs if "--record" in args]
+        replay_runs = [args for args in runs if "--stage=1" in args]
+        # Azure has both lanes → two record steps (sync + async); one replay smoke.
+        assert len(record_runs) == 2, f"expected sync+async record steps, got {runs}"
+        assert len(replay_runs) == 1, f"expected one replay smoke step, got {runs}"
+        assert all(self._has_disable_flag(args) for args in record_runs), (
+            f"every recording subprocess must disable unraisableexception (BK-304); got {record_runs}"
+        )
+        assert not self._has_disable_flag(replay_runs[0]), (
+            "the Step-5 replay smoke test has no live sockets and must keep the "
+            f"unraisableexception guard; got {replay_runs[0]}"
+        )
+
+    def test_single_node_record_disables_unraisable(self, rc, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """``--node`` single-cassette recording also records live → must disable the plugin."""
+        monkeypatch.setattr(
+            sys, "argv", ["record_cassettes.py", "--backend", "azure", "--node", "x::test_y[azure_live]"]
+        )
+        monkeypatch.setattr(rc, "_preflight_env", lambda cfg, *, verify_only: None)
+        monkeypatch.chdir(tmp_path)
+        runs: list[tuple[str, ...]] = []
+        monkeypatch.setattr(rc, "_run", lambda *args: runs.append(args))
+        _redirect_profile_dir(monkeypatch, "azure", tmp_path)
+
+        rc.main()
+
+        record_runs = [args for args in runs if "--record" in args]
+        assert len(record_runs) == 1, f"expected one single-node record run, got {runs}"
+        assert self._has_disable_flag(record_runs[0]), (
+            f"--node recording records live and must disable unraisableexception (BK-304); got {record_runs[0]}"
+        )
+
+
 class TestPreflightEnvGuard:
     """BUG-212: env validation must precede the destructive Step 1 delete.
 

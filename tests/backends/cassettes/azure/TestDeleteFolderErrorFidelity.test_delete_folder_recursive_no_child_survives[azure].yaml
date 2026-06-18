@@ -23,46 +23,14 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF24AFFABF83"'
+      - '"0x8DECD731AE09E1B"'
       Last-Modified:
-      - Sun, 31 May 2026 14:55:42 GMT
+      - Thu, 18 Jun 2026 19:52:18 GMT
       x-ms-version:
       - '2026-04-06'
     status:
       code: 201
       message: Created
-- request:
-    body: null
-    headers:
-      Accept:
-      - application/xml
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - azsdk-python-replay
-      x-ms-version:
-      - '2026-04-06'
-    method: GET
-    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
-  response:
-    body:
-      string: ''
-    headers:
-      Content-Length:
-      - '0'
-      x-ms-account-kind:
-      - StorageV2
-      x-ms-is-hns-enabled:
-      - 'true'
-      x-ms-sku-name:
-      - Standard_LRS
-      x-ms-version:
-      - '2026-04-06'
-    status:
-      code: 200
-      message: OK
 - request:
     body: null
     headers:
@@ -121,9 +89,9 @@ interactions:
       Content-MD5:
       - DMF1ucDxtqgxw5niaXcmYQ==
       ETag:
-      - '"0x8DEBF24B04A6984"'
+      - '"0x8DECD731B1809CC"'
       Last-Modified:
-      - Sun, 31 May 2026 14:55:43 GMT
+      - Thu, 18 Jun 2026 19:52:19 GMT
       x-ms-content-crc64:
       - PPzLtEWEL4w=
       x-ms-request-server-encrypted:
@@ -191,9 +159,9 @@ interactions:
       Content-MD5:
       - kutf/uauL+w61xx3dTFXjw==
       ETag:
-      - '"0x8DEBF24B084F570"'
+      - '"0x8DECD731B4E52E0"'
       Last-Modified:
-      - Sun, 31 May 2026 14:55:43 GMT
+      - Thu, 18 Jun 2026 19:52:19 GMT
       x-ms-content-crc64:
       - t2eV5B2VnA0=
       x-ms-request-server-encrypted:
@@ -227,9 +195,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF24B045FD48"'
+      - '"0x8DECD731B161914"'
       Last-Modified:
-      - Sun, 31 May 2026 14:55:43 GMT
+      - Thu, 18 Jun 2026 19:52:19 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -239,7 +207,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sun, 31 May 2026 14:55:43 GMT
+      - Thu, 18 Jun 2026 19:52:19 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
