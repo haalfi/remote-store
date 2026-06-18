@@ -13,6 +13,9 @@ audience:
   - user.api
   - library.maintainer
   - contributor.process
+discovery_followups:
+  - BK-303
+  - BK-304
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md

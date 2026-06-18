@@ -107,6 +107,42 @@ and the highest ID already in this file, then take the next integer. Run
   see BACKLOG-DONE.md). Findings inform the next release scope; no code changes
   are produced by this item itself.
 
+- [ ] **BK-303 — Azure live-only HNS tests have no cassette-replay tier**
+  spec: — · effort: M · audience: infra.test
+  The `tests/backends/azure/test_live_hns.py` suite (+ its async sibling) — HNS
+  directory-marker guards (BE-021), `rename_file` metadata survival, the `exists`
+  DataLake-directory fallback, `get_folder_info("")` root handling, and the
+  `AzureUtils.detect_hns` / `adetect_hns` discovery checks added in BK-302 — runs
+  **only** against a real ADLS Gen2 account (`RS_TEST_LIVE_HNS=1`,
+  `pytest.mark.live`). Unlike the conformance suite, which records `azure_live` and
+  replays it creds-free as `azure_replay` in Stage 1, these tests have no recorded
+  cassettes, so CI and local Stage-1 runs silently skip every HNS-only path — they
+  are verified only when someone runs live with credentials. Mirror the Graph
+  live→replay pattern (`graph_live` recorded → `graph_replay` Stage 1): give the
+  live HNS tests a recordable form (fold them into the recording harness, or add a
+  dedicated `azure_live_hns` / `azure_replay_hns` fixture pair) so their HTTP is
+  captured once and replayed deterministically without an account. Depends on
+  BK-304 (recording must complete cleanly first).
+
+- [ ] **BK-304 — Azure cassette recording aborts on flaky teardown ResourceWarnings**
+  spec: — · effort: S · audience: contributor.tooling, infra.test
+  `scripts/record_cassettes.py --backend azure` (full re-record) aborts mid-run: the
+  live recording leaves unclosed `azure-storage-blob` SSL sockets that surface at GC
+  as `ResourceWarning`, which the unraisable-exception plugin escalates to a
+  `PytestUnraisableExceptionWarning` teardown ERROR (observed on
+  `TestThreadSafeConcurrency.test_concurrent_distinct_key_writes_all_land[azure_live]`
+  and `TestWriteErrorFidelity.test_write_under_file_ancestor_raises_invalid_path[azure_live]`
+  under concurrency). The test bodies pass and the cassettes are written, but the
+  script's strict exit-code check `_die`s after the sync step, leaving the tree
+  half-recorded (Step 1 has already wiped it; recover with
+  `git checkout -- tests/backends/cassettes/azure`). Make recording robust: close the
+  SDK transport deterministically in the live fixture teardown so no socket is GC'd,
+  or scope `-p no:unraisableexception` to the recording subprocesses, or make the
+  record script tolerant of teardown-only warnings. Until this lands, the azure
+  conformance cassettes cannot be cleanly re-recorded — they still carry a now-dead
+  `GetAccountInfo` interaction from before BK-302 (functionally harmless; replay
+  tolerates the unused interaction).
+
 ---
 
 ## Lint / CI Completeness
