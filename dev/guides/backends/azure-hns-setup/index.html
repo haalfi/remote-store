@@ -4068,6 +4068,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../reference/api/azure-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AzureUtils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -4080,7 +4108,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -4102,14 +4130,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_4_12" id="__nav_4_4_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_13" id="__nav_4_4_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4397,7 +4425,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_14" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -4419,14 +4447,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_4_13" id="__nav_4_4_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_14" id="__nav_4_4_14_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4_13">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_14">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -6297,6 +6325,34 @@
     
   
     0029: Offload Graph Transfer Spool I/O off the Event Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../explanation/design/adrs/0030-azure-hns-explicit-declaration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0030: Azure HNS Is an Explicit Declaration, Not Auto-Detected
   
 
     
@@ -10411,6 +10467,15 @@ account and re-run as a single line.</p>
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span>-o<span class="w"> </span>table
 </code></pre></div>
 <p>The <code>hns</code> column should read <code>True</code>.</p>
+<div class="admonition important">
+<p class="admonition-title">Declare <code>hns</code> when constructing the backend</p>
+<p>The Azure backend does not auto-detect Hierarchical Namespace. Because this
+account has HNS enabled, construct the backend with <code>hns=True</code> (config
+<code>"hns": true</code>). For a flat Blob Storage account you would pass <code>hns=False</code>.
+If you ever need to discover an account's status programmatically, call
+<code>AzureUtils.detect_hns(...)</code> (or <code>await AzureUtils.adetect_hns(...)</code>) once
+and pass the result.</p>
+</div>
 <h2 id="set-cli-defaults">Set CLI defaults<a class="headerlink" href="#set-cli-defaults" title="Permanent link">&para;</a></h2>
 <p>Setting the resource group and account once removes the need to repeat them
 on every command:</p>
@@ -10441,7 +10506,8 @@ and exercises sync HNS semantics that the conformance suite against
 <code>azure_live</code> cannot express: directory-blob <code>hdi_isfolder</code> probes,
 WriteResult etag normalisation cross-check, the <code>write_atomic</code>
 streaming-payload guard, the <code>get_folder_info("")</code> HNS root carve-out,
-and the <code>_ensure_hns()</code> exists fallback. <code>live</code>-marked tests are
+and the <code>exists</code> DataLake probe-fallback on real HNS directories.
+<code>live</code>-marked tests are
 excluded by default <code>addopts</code> and have to be opted into explicitly:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span>live<span class="w"> </span>tests/backends/azure/test_live_hns.py
 </code></pre></div>

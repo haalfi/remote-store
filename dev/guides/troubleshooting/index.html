@@ -4044,6 +4044,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../reference/api/azure-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AzureUtils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -4056,7 +4084,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -4078,14 +4106,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_4_12" id="__nav_4_4_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_13" id="__nav_4_4_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4373,7 +4401,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_14" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -4395,14 +4423,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_4_13" id="__nav_4_4_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_14" id="__nav_4_4_14_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4_13">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_14">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -6273,6 +6301,34 @@
     
   
     0029: Offload Graph Transfer Spool I/O off the Event Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/adrs/0030-azure-hns-explicit-declaration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0030: Azure HNS Is an Explicit Declaration, Not Auto-Detected
   
 
     
@@ -10358,10 +10414,13 @@ identify which list the server narrowed.</p>
 <p><strong>Symptom:</strong> <code>move()</code> or <code>copy()</code> fails on Azure with unexpected errors.</p>
 <p><strong>Cause:</strong> Azure Blob Storage has two modes: flat namespace (default) and
 hierarchical namespace (HNS / ADLS Gen2). Some operations behave differently.</p>
-<p><strong>Fix:</strong> Ensure your storage account type matches your expectations. HNS
+<p><strong>Fix:</strong> Ensure the <code>hns</code> you declared matches the actual account type. The
+Azure backend does not auto-detect HNS — you pass <code>hns=True</code> for ADLS Gen2 or
+<code>hns=False</code> for flat Blob Storage. A mismatch (e.g. <code>hns=False</code> against a real
+HNS account) makes the backend use the wrong code path. If you are unsure of an
+account's type, call <code>AzureUtils.detect_hns(...)</code> once and pass the result. HNS
 accounts support true directory operations; flat namespace accounts simulate
-them. The Azure backend handles both, but HNS is recommended for data lake
-workloads.</p>
+them, and HNS is recommended for data lake workloads.</p>
 <h2 id="s3-endpoint-configuration-for-minio-local-s3">S3 endpoint configuration for MinIO / local S3<a class="headerlink" href="#s3-endpoint-configuration-for-minio-local-s3" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> Connection errors when using MinIO or another S3-compatible service.</p>
 <p><strong>Cause:</strong> The default S3 endpoint points to AWS. Local services need an

@@ -3876,6 +3876,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../../azure-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AzureUtils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -3892,7 +3920,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_12" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_13" checked>
         
           
           <div class="md-nav__link md-nav__container">
@@ -3914,14 +3942,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_4_12" id="__nav_4_4_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_13" id="__nav_4_4_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_12_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_4_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_13_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_4_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4339,7 +4367,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_14" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -4361,14 +4389,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_4_13" id="__nav_4_4_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_14" id="__nav_4_4_14_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4_13">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_14">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -6239,6 +6267,34 @@
     
   
     0029: Offload Graph Transfer Spool I/O off the Event Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../explanation/design/adrs/0030-azure-hns-explicit-declaration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0030: Azure HNS Is an Explicit Declaration, Not Auto-Detected
   
 
     
@@ -10194,7 +10250,8 @@
 
 <h1 id="azurebackend">AzureBackend<a class="headerlink" href="#azurebackend" title="Permanent link">&para;</a></h1>
 <p>API reference for <code>AzureBackend</code> — stores files in Azure Blob Storage and
-ADLS Gen2. Adapts at runtime to Hierarchical Namespace accounts.</p>
+ADLS Gen2. Behavior adapts to the declared <code>hns</code> value (Hierarchical
+Namespace); there is no runtime auto-detection.</p>
 
 
 <div class="doc doc-object doc-class">
@@ -10209,22 +10266,23 @@ ADLS Gen2. Adapts at runtime to Hierarchical Namespace accounts.</p>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AzureBackend</span><span class="p">(</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">container</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">account_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">account_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">account_key</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">sas_token</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">connection_string</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">credential</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            RetryPolicy
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">hns</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">account_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">account_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">account_key</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">sas_token</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">connection_string</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">credential</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            RetryPolicy
 
 
   
       dataclass
    (remote_store._config.RetryPolicy)" href="../../config/#remote_store.RetryPolicy">RetryPolicy</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">max_concurrency</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">reject_write_under_file_ancestor</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="p">)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">max_concurrency</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">reject_write_under_file_ancestor</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -10235,11 +10293,16 @@ ADLS Gen2. Adapts at runtime to Hierarchical Namespace accounts.</p>
 <p>Uses the Blob SDK for non-HNS accounts (plain Blob Storage, Azurite) and
 the DataLake SDK for HNS accounts (ADLS Gen2) to get atomic rename and
 real directory support.</p>
+<p>Whether the account is HNS (ADLS Gen2) is declared explicitly via the
+required <code>hns</code> argument -- the backend does not probe for it.</p>
 <p><code>move()</code> on non-HNS accounts is implemented as a server-side copy
 followed by a blob delete.  This is non-atomic: a failure between the
 two steps may leave both source and destination present.  HNS accounts
-use <code>rename_file</code> which is atomic, but since the backend cannot
-guarantee HNS at construction time, <code>ATOMIC_MOVE</code> is not declared.</p>
+use <code>rename_file</code> which <em>is</em> atomic, so an HNS instance could in
+principle advertise <code>ATOMIC_MOVE</code>.  The capability is deliberately
+not declared per-instance: <code>CAPABILITIES</code> is a single class-level set
+shared by HNS and non-HNS instances alike, so it reports the guarantee
+common to both rather than varying by the declared <code>hns</code> value.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10250,6 +10313,21 @@ guarantee HNS at construction time, <code>ATOMIC_MOVE</code> is not declared.</p
           –
           <div class="doc-md-description">
             <p>Azure Storage container name (required, non-empty).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>hns</code></b>
+              (<code><span title="bool">bool</span> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Whether the storage account has Hierarchical Namespace
+enabled (ADLS Gen2). <strong>Required</strong> -- there is no default and
+no runtime auto-detection. Pass <code>True</code> for ADLS Gen2
+accounts (atomic rename, real directories) or <code>False</code> for
+flat Blob Storage. Use <code>AzureUtils.detect_hns()</code> to discover
+the value once if you do not already know it.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -10714,6 +10792,7 @@ short-circuit.</p>
 </div><h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../../../guides/backends/azure/">Azure Backend Guide</a> — usage patterns, configuration, and examples</li>
+<li><a href="../../azure-utils/">AzureUtils</a> — discover an account's HNS status with <code>detect_hns()</code></li>
 <li><a href="../../../../tutorial/examples/azure-backend/">Azure Backend example</a> — Azure backend in action</li>
 </ul>
 

@@ -3876,6 +3876,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../api/azure-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AzureUtils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -3888,7 +3916,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3910,14 +3938,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_4_12" id="__nav_4_4_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_13" id="__nav_4_4_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4205,7 +4233,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_14" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -4227,14 +4255,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_4_13" id="__nav_4_4_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_14" id="__nav_4_4_14_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4_13">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_14">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4745,6 +4773,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#v0280-to-v0290" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.28.0 to v0.29.0
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#v0241-to-v0250" class="md-nav__link">
@@ -6284,6 +6323,34 @@
     
   
     0029: Offload Graph Transfer Spool I/O off the Event Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/adrs/0030-azure-hns-explicit-declaration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0030: Azure HNS Is an Explicit Declaration, Not Auto-Detected
   
 
     
@@ -10135,6 +10202,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v0280-to-v0290" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.28.0 to v0.29.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v0241-to-v0250" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10291,6 +10369,32 @@
 <p><code>remote-store</code> has been published on PyPI since v0.11.0 (first Beta release).
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.</p>
+<h2 id="v0280-to-v0290">v0.28.0 to v0.29.0<a class="headerlink" href="#v0280-to-v0290" title="Permanent link">&para;</a></h2>
+<p><strong>Azure HNS is now an explicit, mandatory declaration:</strong></p>
+<p><code>AzureBackend</code> and <code>AsyncAzureBackend</code> no longer auto-detect Hierarchical
+Namespace (ADLS Gen2) by probing the account on first use. You must now declare
+the account's nature with the required <code>hns</code> argument. A backend constructed
+without <code>hns</code> raises <code>ValueError</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Before (v0.28.0): HNS auto-detected on first I/O</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;acct&quot;</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># After (v0.29.0): declare hns explicitly</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">hns</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;acct&quot;</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>The same applies to config <code>options</code> (<code>"hns": true</code>) and to <code>AsyncAzureBackend</code>.</p>
+<p><strong>If you do not know an account's HNS status</strong>, discover it once with the new
+fail-loud helper and pass the result:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">AzureUtils</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">is_hns</span> <span class="o">=</span> <span class="n">AzureUtils</span><span class="o">.</span><span class="n">detect_hns</span><span class="p">(</span><span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;acct&quot;</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">hns</span><span class="o">=</span><span class="n">is_hns</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;acct&quot;</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><code>AzureUtils.adetect_hns(...)</code> is the async sibling. Both raise on a probe error
+rather than silently falling back to flat behavior.</p>
+<p><strong>Why:</strong> the old <code>GetAccountInfo</code> probe could fail, return propagation-delayed
+authorization state, or be denied by least-privilege credentials — silently
+degrading an HNS account to flat semantics. A declared value is deterministic
+from construction and removes that failure class.</p>
 <h2 id="v0241-to-v0250">v0.24.1 to v0.25.0<a class="headerlink" href="#v0241-to-v0250" title="Permanent link">&para;</a></h2>
 <p><strong><code>[sftp]</code> extra now requires <code>paramiko&gt;=3.0</code>:</strong></p>
 <p>The SFTP backend uses paramiko 3.0's <code>channel_timeout=</code> connect kwarg. Environments

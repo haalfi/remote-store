@@ -3871,6 +3871,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../../reference/api/azure-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AzureUtils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -3883,7 +3911,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3905,14 +3933,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_4_12" id="__nav_4_4_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_13" id="__nav_4_4_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4200,7 +4228,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_14" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -4222,14 +4250,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_4_13" id="__nav_4_4_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_14" id="__nav_4_4_14_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4_13">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_14">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -6107,6 +6135,34 @@
     
   
     0029: Offload Graph Transfer Spool I/O off the Event Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0030-azure-hns-explicit-declaration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0030: Azure HNS Is an Explicit Declaration, Not Auto-Detected
   
 
     
@@ -8996,15 +9052,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hns-detection" class="md-nav__link">
+  <a href="#hns-declaration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        HNS Detection
+        HNS Declaration
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="HNS Detection">
+    <nav class="md-nav" aria-label="HNS Declaration">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -10644,15 +10700,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hns-detection" class="md-nav__link">
+  <a href="#hns-declaration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        HNS Detection
+        HNS Declaration
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="HNS Detection">
+    <nav class="md-nav" aria-label="HNS Declaration">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -11145,18 +11201,19 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">AzureBackend</span><span class="p">(</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">container</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">account_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">account_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">account_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">sas_token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">connection_string</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">credential</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># e.g. DefaultAzureCredential()</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n">RetryPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># see spec 025</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">max_concurrency</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># see AZ-033</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">hns</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>  <span class="c1"># required — see AZ-006; no default, no auto-detection</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">account_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">account_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">account_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">sas_token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">connection_string</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">credential</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># e.g. DefaultAzureCredential()</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n">RetryPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># see spec 025</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">max_concurrency</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># see AZ-033</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="p">)</span>
 </code></pre></div>
-<strong>Postconditions:</strong> The backend stores configuration but does not connect to Azure during construction (see AZ-004). At least one of <code>account_name</code>, <code>account_url</code>, or <code>connection_string</code> must be provided — otherwise <code>ValueError</code> is raised at construction time.</p>
+<strong>Postconditions:</strong> The backend stores configuration but does not connect to Azure during construction (see AZ-004). <code>hns</code> must be declared explicitly (<code>True</code> or <code>False</code>) and at least one of <code>account_name</code>, <code>account_url</code>, or <code>connection_string</code> must be provided — otherwise <code>ValueError</code> is raised at construction time.</p>
 <h3 id="az-002-backend-name">AZ-002: Backend Name<a class="headerlink" href="#az-002-backend-name" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>name</code> property returns <code>"azure"</code>.</p>
 <h3 id="az-003-capability-declaration">AZ-003: Capability Declaration<a class="headerlink" href="#az-003-capability-declaration" title="Permanent link">&para;</a></h3>
@@ -11167,18 +11224,16 @@
 - <code>COPY</code>: Implemented via server-side copy (<code>start_copy_from_url</code>). See AZ-018.
 - <code>GLOB</code>: Native prefix-optimized glob since v0.12.0 (BK-002).</p>
 <h3 id="az-004-lazy-connection">AZ-004: Lazy Connection<a class="headerlink" href="#az-004-lazy-connection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. The <code>BlobServiceClient</code>, <code>DataLakeServiceClient</code> (HNS only), and HNS detection are deferred to first use.
+<p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. The <code>BlobServiceClient</code> and <code>DataLakeServiceClient</code> (HNS only) are deferred to first use. HNS status is not discovered at runtime at all — it is a declared input (see AZ-006).
 <strong>Rationale:</strong> Same as S3-004 — the backend may be created during application wiring before the network is available.</p>
 <h3 id="az-005-construction-validation">AZ-005: Construction Validation<a class="headerlink" href="#az-005-construction-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>container</code> must be a non-empty string. Passing an empty or whitespace-only container raises <code>ValueError</code> at construction time. At least one of <code>account_name</code>, <code>account_url</code>, or <code>connection_string</code> must be provided — otherwise <code>ValueError</code> at construction.
+<p><strong>Invariant:</strong> <code>container</code> must be a non-empty string. Passing an empty or whitespace-only container raises <code>ValueError</code> at construction time. <code>hns</code> must be declared explicitly as a real <code>bool</code> (<code>True</code> or <code>False</code>); omitting it or passing a non-<code>bool</code> raises <code>ValueError</code> (see AZ-006). At least one of <code>account_name</code>, <code>account_url</code>, or <code>connection_string</code> must be provided — otherwise <code>ValueError</code> at construction.
 <strong>Postconditions:</strong> No network validation of container existence at construction time. Invalid names are caught by Azure on first operation and mapped to the appropriate error.</p>
 <hr />
-<h2 id="hns-detection">HNS Detection<a class="headerlink" href="#hns-detection" title="Permanent link">&para;</a></h2>
+<h2 id="hns-declaration">HNS Declaration<a class="headerlink" href="#hns-declaration" title="Permanent link">&para;</a></h2>
 <h3 id="az-006-adaptive-behavior-based-on-hierarchical-namespace">AZ-006: Adaptive Behavior Based on Hierarchical Namespace<a class="headerlink" href="#az-006-adaptive-behavior-based-on-hierarchical-namespace" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> On first use, the backend calls <code>GetAccountInfo</code> to determine whether the storage account has Hierarchical Namespace (HNS) enabled. A <em>successful</em> probe result (HNS or flat) is cached for the lifetime of the backend instance. A probe that <em>errors</em> (BUG-223) is <strong>not</strong> cached: the operation falls back to non-HNS behavior for that call, and the next operation re-probes — so a transient blip does not permanently degrade an HNS account to flat semantics. A warning is logged once per instance. An operation that reads the HNS state more than once (e.g. <code>move</code>/<code>copy</code>) snapshots it once at entry, so a single logical operation stays internally consistent even if an uncached re-probe would otherwise re-evaluate mid-operation.</p>
-<blockquote>
-<p><strong>Auto-detection is interim (BK-302).</strong> This implicit <code>GetAccountInfo</code> probe is the root of BUG-223's failure modes (sticky misdetection, per-operation re-probe under a persistent failure, and the snapshot needed for internal consistency). The committed direction is to remove auto-detection in favor of an <strong>explicit</strong> <code>hns=</code> declaration on the backend/config plus an <code>AzureUtils.detect_hns()</code> helper (mirroring <code>SFTPUtils</code>/<code>GraphUtils</code>), defaulting to a required declaration so the account's nature is never silently inferred. See BK-302.</p>
-</blockquote>
+<p><strong>Invariant:</strong> Whether the storage account has Hierarchical Namespace (HNS) enabled is a <strong>mandatory, explicit</strong> constructor and config input: <code>AzureBackend(..., hns: bool)</code>. There is no default and no runtime auto-detection. A backend constructed without <code>hns</code>, or with a non-<code>bool</code> value (e.g. the string <code>"false"</code> produced by config env-var resolution), raises <code>ValueError</code> at construction time (fail loud — the declaration must be a real boolean, never a truthy/falsy proxy that could be silently coerced, and the account's nature is never silently inferred). The declared value is stored as an immutable attribute and governs every adaptive code path below; because it is a constant, no operation can observe a different HNS state than the one declared (no probe, no cache, no per-operation snapshot).</p>
+<p><strong>Discovery:</strong> Users who do not know an account's HNS status call the public one-shot helper <code>AzureUtils.detect_hns(...)</code> (sync) / <code>AzureUtils.adetect_hns(...)</code> (async), which issues a single <code>GetAccountInfo</code> call and returns a <code>bool</code>. The helper is <strong>fail-loud</strong>: a probe error is mapped to a <code>remote_store</code> error and raised, not swallowed. This mirrors <code>SFTPUtils.scan_host_keys</code> / <code>GraphUtils.resolve_drive_id</code>. See <a href="../../adrs/0030-azure-hns-explicit-declaration/">ADR-0030</a>.</p>
 <p><strong>Behavior matrix:</strong></p>
 <table>
 <thead>
@@ -11216,8 +11271,8 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Rationale:</strong> ADLS Gen2 has real directories and atomic rename — the backend should use these when available. Plain Blob Storage accounts are still supported by falling back to S3-equivalent semantics (virtual folders, copy+delete move, PUT atomicity).</p>
-<p><strong>Postconditions:</strong> The HNS check is performed at most once <em>successfully</em>. If the check fails, the backend falls back to non-HNS behavior for that operation, logs a warning (once per instance), and does not cache the failure; the next operation re-probes. <strong>Known limitation (BK-302):</strong> a <em>persistently</em> failing probe re-probes once per operation (it is not cached), which the explicit-declaration redesign removes by replacing the probe with a declared <code>hns=</code> value.</p>
+<p><strong>Rationale:</strong> ADLS Gen2 has real directories and atomic rename — the backend should use these when available. Plain Blob Storage accounts are still supported by declaring <code>hns=False</code> and falling back to S3-equivalent semantics (virtual folders, copy+delete move, PUT atomicity). Making the account's nature an explicit declaration rather than a runtime probe makes the backend deterministic from construction and removes the sticky-misdetection, re-probe-storm, and torn-read failure modes a network probe is subject to.</p>
+<p><strong>Postconditions:</strong> No network call determines HNS status — the declared value is authoritative for the lifetime of the instance.</p>
 <hr />
 <h2 id="azure-storage-model">Azure Storage Model<a class="headerlink" href="#azure-storage-model" title="Permanent link">&para;</a></h2>
 <h3 id="az-007-container-scope">AZ-007: Container Scope<a class="headerlink" href="#az-007-container-scope" title="Permanent link">&para;</a></h3>
@@ -11356,7 +11411,7 @@
 <hr />
 <h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>
 <h3 id="az-029-close">AZ-029: close()<a class="headerlink" href="#az-029-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>close()</code> closes the underlying <code>BlobServiceClient</code>, <code>ContainerClient</code>, and (if HNS) <code>FileSystemClient</code> and <code>DataLakeServiceClient</code>. Resets all cached instances and HNS detection state.
+<p><strong>Invariant:</strong> <code>close()</code> closes the underlying <code>BlobServiceClient</code>, <code>ContainerClient</code>, and (if HNS) <code>FileSystemClient</code> and <code>DataLakeServiceClient</code>. Resets all cached client instances. The declared <code>hns</code> value is immutable config and is not reset.
 <strong>Postconditions:</strong> Safe to call multiple times. Note: because lazy properties re-initialize on next use, the backend is technically reusable after <code>close()</code>. This is consistent with S3Backend's behavior.</p>
 <h3 id="az-030-unwrap">AZ-030: unwrap()<a class="headerlink" href="#az-030-unwrap" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>unwrap(FileSystemClient)</code> returns the underlying <code>azure.storage.filedatalake.FileSystemClient</code>.
