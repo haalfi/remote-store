@@ -23,46 +23,14 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF2528D2AF30"'
+      - '"0x8DECD738FD718FF"'
       Last-Modified:
-      - Sun, 31 May 2026 14:59:05 GMT
+      - Thu, 18 Jun 2026 19:55:35 GMT
       x-ms-version:
       - '2026-04-06'
     status:
       code: 201
       message: Created
-- request:
-    body: null
-    headers:
-      Accept:
-      - application/xml
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - azsdk-python-replay
-      x-ms-version:
-      - '2026-04-06'
-    method: GET
-    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
-  response:
-    body:
-      string: ''
-    headers:
-      Content-Length:
-      - '0'
-      x-ms-account-kind:
-      - StorageV2
-      x-ms-is-hns-enabled:
-      - 'true'
-      x-ms-sku-name:
-      - Standard_LRS
-      x-ms-version:
-      - '2026-04-06'
-    status:
-      code: 200
-      message: OK
 - request:
     body: null
     headers:
@@ -121,9 +89,9 @@ interactions:
       Content-MD5:
       - DMF1ucDxtqgxw5niaXcmYQ==
       ETag:
-      - '"0x8DEBF2529264748"'
+      - '"0x8DECD7390153F7C"'
       Last-Modified:
-      - Sun, 31 May 2026 14:59:05 GMT
+      - Thu, 18 Jun 2026 19:55:35 GMT
       x-ms-content-crc64:
       - PPzLtEWEL4w=
       x-ms-request-server-encrypted:
@@ -191,9 +159,9 @@ interactions:
       Content-MD5:
       - kutf/uauL+w61xx3dTFXjw==
       ETag:
-      - '"0x8DEBF25295F69F4"'
+      - '"0x8DECD73904CAAE0"'
       Last-Modified:
-      - Sun, 31 May 2026 14:59:06 GMT
+      - Thu, 18 Jun 2026 19:55:35 GMT
       x-ms-content-crc64:
       - t2eV5B2VnA0=
       x-ms-request-server-encrypted:
@@ -261,9 +229,9 @@ interactions:
       Content-MD5:
       - SooI8J03tzeVZJA4QItfMw==
       ETag:
-      - '"0x8DEBF2529934C04"'
+      - '"0x8DECD73907E2E78"'
       Last-Modified:
-      - Sun, 31 May 2026 14:59:06 GMT
+      - Thu, 18 Jun 2026 19:55:36 GMT
       x-ms-content-crc64:
       - zu6g1NVl8nI=
       x-ms-request-server-encrypted:
@@ -331,9 +299,9 @@ interactions:
       Content-MD5:
       - gnfgkQ11AZW0SHl2FuCRrQ==
       ETag:
-      - '"0x8DEBF2529C8DB94"'
+      - '"0x8DECD7390B46F48"'
       Last-Modified:
-      - Sun, 31 May 2026 14:59:06 GMT
+      - Thu, 18 Jun 2026 19:55:36 GMT
       x-ms-content-crc64:
       - ysO/HP6RIzo=
       x-ms-request-server-encrypted:
@@ -401,9 +369,9 @@ interactions:
       Content-MD5:
       - 4WcXl8UuFfdjOAtF6EHsMg==
       ETag:
-      - '"0x8DEBF252A03014C"'
+      - '"0x8DECD7390EBC580"'
       Last-Modified:
-      - Sun, 31 May 2026 14:59:07 GMT
+      - Thu, 18 Jun 2026 19:55:36 GMT
       x-ms-content-crc64:
       - s0qKLDZhTUU=
       x-ms-request-server-encrypted:
@@ -430,15 +398,15 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=pc&recursive=true&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"1","creationTime":"134247131458258760","etag":"0x8DEBF2529264748","expiryTime":"0","group":"$superuser","lastModified":"Sun,
-        31 May 2026 14:59:05 GMT","name":"pc/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134247131461840368","etag":"0x8DEBF25295CEFE0","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Sun,
-        31 May 2026 14:59:06 GMT","name":"pc/d1","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134247131462003188","etag":"0x8DEBF25295F69F4","expiryTime":"0","group":"$superuser","lastModified":"Sun,
-        31 May 2026 14:59:06 GMT","name":"pc/d1/b.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"1","creationTime":"134247131465403396","etag":"0x8DEBF2529934C04","expiryTime":"0","group":"$superuser","lastModified":"Sun,
-        31 May 2026 14:59:06 GMT","name":"pc/d1/c.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134247131468784260","etag":"0x8DEBF2529C6E498","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Sun,
-        31 May 2026 14:59:06 GMT","name":"pc/d1/d2","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134247131468913556","etag":"0x8DEBF2529C8DB94","expiryTime":"0","group":"$superuser","lastModified":"Sun,
-        31 May 2026 14:59:06 GMT","name":"pc/d1/d2/d.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134247131472522208","etag":"0x8DEBF2529FFEDE0","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Sun,
-        31 May 2026 14:59:07 GMT","name":"pc/d1/d2/d3","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134247131472724300","etag":"0x8DEBF252A03014C","expiryTime":"0","group":"$superuser","lastModified":"Sun,
-        31 May 2026 14:59:07 GMT","name":"pc/d1/d2/d3/e.txt","owner":"$superuser","permissions":"rw-r-----"}]}
+      string: '{"paths":[{"contentLength":"1","creationTime":"134262861355433852","etag":"0x8DECD7390153F7C","expiryTime":"0","group":"$superuser","lastModified":"Thu,
+        18 Jun 2026 19:55:35 GMT","name":"pc/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134262861358886548","etag":"0x8DECD739049F078","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Thu,
+        18 Jun 2026 19:55:35 GMT","name":"pc/d1","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134262861359065824","etag":"0x8DECD73904CAAE0","expiryTime":"0","group":"$superuser","lastModified":"Thu,
+        18 Jun 2026 19:55:35 GMT","name":"pc/d1/b.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"1","creationTime":"134262861362310776","etag":"0x8DECD73907E2E78","expiryTime":"0","group":"$superuser","lastModified":"Thu,
+        18 Jun 2026 19:55:36 GMT","name":"pc/d1/c.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134262861365615336","etag":"0x8DECD7390B09CD0","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Thu,
+        18 Jun 2026 19:55:36 GMT","name":"pc/d1/d2","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134262861365866312","etag":"0x8DECD7390B46F48","expiryTime":"0","group":"$superuser","lastModified":"Thu,
+        18 Jun 2026 19:55:36 GMT","name":"pc/d1/d2/d.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"0","creationTime":"134262861369269512","etag":"0x8DECD7390E85EEC","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Thu,
+        18 Jun 2026 19:55:36 GMT","name":"pc/d1/d2/d3","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134262861369492864","etag":"0x8DECD7390EBC580","expiryTime":"0","group":"$superuser","lastModified":"Thu,
+        18 Jun 2026 19:55:36 GMT","name":"pc/d1/d2/d3/e.txt","owner":"$superuser","permissions":"rw-r-----"}]}
 
         '
     headers:

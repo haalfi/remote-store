@@ -23,46 +23,14 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF2494A29A95"'
+      - '"0x8DECD72F769B72D"'
       Last-Modified:
-      - Sun, 31 May 2026 14:54:56 GMT
+      - Thu, 18 Jun 2026 19:51:19 GMT
       x-ms-version:
       - '2026-04-06'
     status:
       code: 201
       message: Created
-- request:
-    body: null
-    headers:
-      Accept:
-      - application/xml
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - azsdk-python-replay
-      x-ms-version:
-      - '2026-04-06'
-    method: GET
-    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
-  response:
-    body:
-      string: ''
-    headers:
-      Content-Length:
-      - '0'
-      x-ms-account-kind:
-      - StorageV2
-      x-ms-is-hns-enabled:
-      - 'true'
-      x-ms-sku-name:
-      - Standard_LRS
-      x-ms-version:
-      - '2026-04-06'
-    status:
-      code: 200
-      message: OK
 - request:
     body: null
     headers:
@@ -121,9 +89,9 @@ interactions:
       Content-MD5:
       - DMF1ucDxtqgxw5niaXcmYQ==
       ETag:
-      - '"0x8DEBF2494EA0794"'
+      - '"0x8DECD72F7A76134"'
       Last-Modified:
-      - Sun, 31 May 2026 14:54:57 GMT
+      - Thu, 18 Jun 2026 19:51:19 GMT
       x-ms-content-crc64:
       - PPzLtEWEL4w=
       x-ms-request-server-encrypted:
@@ -191,9 +159,9 @@ interactions:
       Content-MD5:
       - kutf/uauL+w61xx3dTFXjw==
       ETag:
-      - '"0x8DEBF249519D84C"'
+      - '"0x8DECD72F7DBD804"'
       Last-Modified:
-      - Sun, 31 May 2026 14:54:57 GMT
+      - Thu, 18 Jun 2026 19:51:20 GMT
       x-ms-content-crc64:
       - t2eV5B2VnA0=
       x-ms-request-server-encrypted:
@@ -231,9 +199,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEBF2494EA0794"'
+      - '"0x8DECD72F7A76134"'
       Last-Modified:
-      - Sun, 31 May 2026 14:54:57 GMT
+      - Thu, 18 Jun 2026 19:51:19 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -243,7 +211,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sun, 31 May 2026 14:54:57 GMT
+      - Thu, 18 Jun 2026 19:51:19 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
@@ -291,9 +259,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEBF249519D84C"'
+      - '"0x8DECD72F7DBD804"'
       Last-Modified:
-      - Sun, 31 May 2026 14:54:57 GMT
+      - Thu, 18 Jun 2026 19:51:20 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -303,7 +271,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sun, 31 May 2026 14:54:57 GMT
+      - Thu, 18 Jun 2026 19:51:20 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
@@ -349,11 +317,11 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF2495691944"'
+      - '"0x8DECD72F8224B48"'
       Last-Modified:
-      - Sun, 31 May 2026 14:54:57 GMT
+      - Thu, 18 Jun 2026 19:51:20 GMT
       x-ms-copy-id:
-      - 42bd1047-2f65-4907-baa4-8ea7116fab04
+      - b5a3b909-6fbe-47ee-b84f-3e77c59c74d3
       x-ms-copy-status:
       - success
       x-ms-version:
@@ -391,9 +359,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEBF2495691944"'
+      - '"0x8DECD72F8224B48"'
       Last-Modified:
-      - Sun, 31 May 2026 14:54:57 GMT
+      - Thu, 18 Jun 2026 19:51:20 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -405,9 +373,9 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-copy-completion-time:
-      - Sun, 31 May 2026 14:54:57 GMT
+      - Thu, 18 Jun 2026 19:51:20 GMT
       x-ms-copy-id:
-      - 42bd1047-2f65-4907-baa4-8ea7116fab04
+      - b5a3b909-6fbe-47ee-b84f-3e77c59c74d3
       x-ms-copy-progress:
       - 1/1
       x-ms-copy-source:
@@ -415,7 +383,7 @@ interactions:
       x-ms-copy-status:
       - success
       x-ms-creation-time:
-      - Sun, 31 May 2026 14:54:57 GMT
+      - Thu, 18 Jun 2026 19:51:20 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
@@ -465,9 +433,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEBF2494EA0794"'
+      - '"0x8DECD72F7A76134"'
       Last-Modified:
-      - Sun, 31 May 2026 14:54:57 GMT
+      - Thu, 18 Jun 2026 19:51:19 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -479,7 +447,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sun, 31 May 2026 14:54:57 GMT
+      - Thu, 18 Jun 2026 19:51:19 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:

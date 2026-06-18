@@ -1,0 +1,92 @@
+id: BK-304
+title: "Azure cassette recording aborts on flaky teardown ResourceWarnings"
+trigger: >
+  scripts/record_cassettes.py --backend azure (full re-record) aborted mid-run:
+  vcrpy's record-mode transport interception orphaned live azure-storage SSL
+  sockets that surfaced as ResourceWarning at GC, which pytest's
+  unraisableexception plugin (under filterwarnings = error) escalated to a
+  PytestUnraisableExceptionWarning teardown ERROR — failing an otherwise-green
+  recording after the cassettes were already written.
+source_items:
+  - BK-304
+audience:
+  - contributor.tooling
+  - infra.test
+discovery_followups:
+  - BK-305
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-304 (item)"
+        read_type: gate
+        extract: "candidate fixes (prefer #1 root cause); dead GetAccountInfo cleanup unblocks BK-303"
+        outcome: ok
+      - file: tests/backends/fixtures/azure_live.py
+        section: "_cleanup"
+        read_type: reference
+        extract: "fixture already calls backend.close() and closes the factory's DataLakeServiceClient"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "close"
+        read_type: reference
+        extract: "close() closes all four clients + resolved credential — the transport IS closed deterministically"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options] filterwarnings"
+        read_type: gate
+        extract: "filterwarnings = error promotes the unraisable ResourceWarning to a hard teardown ERROR"
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "main (Step 2/3 record + single --node)"
+        read_type: gate
+        extract: "recording subprocesses are spawned via _run(pytest ...); strict exit-code check _die's on the teardown ERROR"
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/backends/conformance/test_concurrency.py
+        section: "TestThreadSafeConcurrency.test_concurrent_distinct_key_writes_all_land"
+        read_type: verify
+        extract: "8-thread shared-instance writes; named in the bug as a surfacing site"
+        outcome: ok
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestWriteErrorFidelity.test_write_under_file_ancestor_raises_invalid_path"
+        read_type: verify
+        extract: "live no-record run is clean even with -W error::ResourceWarning; only --record reproduces — leak is the recorder's, not the library's"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/record_cassettes.py
+        section: "_RECORD_DISABLE_UNRAISABLE + Step 2/3 + --node _run calls"
+        read_type: reference
+        extract: "add -p no:unraisableexception to the three recording subprocesses only; replay (Step 5) and the wider suite keep the plugin"
+        outcome: ok
+      - file: tests/scripts/test_record_cassettes.py
+        section: "TestUnraisableScopedToRecording"
+        read_type: reference
+        extract: "drive main() with _run mocked; assert every --record invocation carries the flag and the replay run does not (proven fail-without-fix)"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/record_cassettes.py
+        section: "(full run) hatch run record-azure"
+        read_type: verify
+        extract: "All steps passed: 339 cassettes recorded, scrub clean, named-rule audit green, azure_replay Stage-1 318 passed; zero GetAccountInfo interactions remain"
+        outcome: ok
+      - file: tests/backends/cassettes/azure/
+        section: "(re-recorded tree) git diff --cached --numstat"
+        read_type: verify
+        extract: "6 large-streamed cassettes are 74K-148K lines (6-12 MB, ~100x the 110 KB norm); exclude them (pay-per-use account, repo bloat) → BK-305; the other 333 files are the real GetAccountInfo-removal + small-new refresh"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG→DONE move, trace shipped same PR, no CHANGELOG (tooling/infra audience)"
+        outcome: ok

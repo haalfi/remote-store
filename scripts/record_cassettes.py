@@ -17,6 +17,13 @@ Steps (all backends):
        named rule fired at least once (spec 049, REC-006).
     5. Replay smoke test (Stage 1) — confirms cassettes are replay-compatible.
 
+The recording subprocesses (steps 2-3, and the ``--node`` single-cassette run)
+disable pytest's ``unraisableexception`` plugin: vcrpy's record-mode transport
+interception orphans the live SSL sockets it wraps, and the ``ResourceWarning``
+they raise at GC would otherwise abort an otherwise-green recording under the
+suite's ``filterwarnings = error`` (BK-304). The Step-5 replay smoke test keeps
+the plugin (no live sockets there).
+
 Pass ``--verify-only`` to skip steps 1-3 and re-run only 4-5 (useful after
 a partial failure or when checking an existing cassette set).
 
@@ -50,6 +57,30 @@ from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
 
 _CONFORMANCE = "tests/backends/conformance/"
+
+# Recording drives real cloud traffic through vcrpy's record-mode transport
+# interception, which orphans the live SSL sockets it wrapped (to read and
+# serialize their bodies) instead of returning them to the SDK's connection
+# pool; those sockets surface as ``ResourceWarning: unclosed <ssl.SSLSocket>``
+# whenever GC finalizes them. pytest's ``unraisableexception`` plugin, under the
+# suite's ``filterwarnings = error``, escalates that benign recording-only GC
+# noise into a teardown ERROR that aborts the whole recording even though every
+# test body passed and every cassette was already written — leaving the tree
+# half-recorded (Step 1 has wiped it). The same fixtures + ``backend.close()``
+# path run clean against the live account without ``--record`` (the plugin's
+# real job — catching genuine backend leaks like BUG-180 — is unaffected), so the
+# leak is the recorder's, not the library's. Disable the plugin for the
+# recording subprocesses only; the Step-5 replay smoke test (no live sockets)
+# and the normal test suite keep it (BK-304).
+#
+# Disabling the whole plugin (rather than a narrow ``-W ignore::ResourceWarning``)
+# is deliberate: recording is a one-shot tooling step that must complete
+# regardless of *which* benign unraisable a future vcrpy / SDK version emits, so
+# a message- or category-keyed filter would silently re-break it on the next
+# non-``ResourceWarning`` record-only artefact. Full unraisable escalation is
+# retained off the recording path — the normal suite and the no-record live
+# preflight both keep the plugin — so a genuine backend leak is still caught.
+_RECORD_DISABLE_UNRAISABLE = ("-p", "no:unraisableexception")
 
 # Add the repo root to sys.path so test helpers are importable without install.
 _ROOT = Path(__file__).resolve().parent.parent
@@ -328,6 +359,7 @@ def main() -> None:
             sys.executable,
             "-m",
             "pytest",
+            *_RECORD_DISABLE_UNRAISABLE,
             "--stage=3",
             "--record",
             "-m",
@@ -365,6 +397,7 @@ def main() -> None:
                 sys.executable,
                 "-m",
                 "pytest",
+                *_RECORD_DISABLE_UNRAISABLE,
                 "--stage=3",
                 "--record",
                 "-m",
@@ -384,6 +417,7 @@ def main() -> None:
             sys.executable,
             "-m",
             "pytest",
+            *_RECORD_DISABLE_UNRAISABLE,
             "--stage=3",
             "--record",
             "-m",

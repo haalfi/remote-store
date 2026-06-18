@@ -124,24 +124,24 @@ and the highest ID already in this file, then take the next integer. Run
   captured once and replayed deterministically without an account. Depends on
   BK-304 (recording must complete cleanly first).
 
-- [ ] **BK-304 — Azure cassette recording aborts on flaky teardown ResourceWarnings**
-  spec: — · effort: S · audience: contributor.tooling, infra.test
-  `scripts/record_cassettes.py --backend azure` (full re-record) aborts mid-run: the
-  live recording leaves unclosed `azure-storage-blob` SSL sockets that surface at GC
-  as `ResourceWarning`, which the unraisable-exception plugin escalates to a
-  `PytestUnraisableExceptionWarning` teardown ERROR (observed on
-  `TestThreadSafeConcurrency.test_concurrent_distinct_key_writes_all_land[azure_live]`
-  and `TestWriteErrorFidelity.test_write_under_file_ancestor_raises_invalid_path[azure_live]`
-  under concurrency). The test bodies pass and the cassettes are written, but the
-  script's strict exit-code check `_die`s after the sync step, leaving the tree
-  half-recorded (Step 1 has already wiped it; recover with
-  `git checkout -- tests/backends/cassettes/azure`). Make recording robust: close the
-  SDK transport deterministically in the live fixture teardown so no socket is GC'd,
-  or scope `-p no:unraisableexception` to the recording subprocesses, or make the
-  record script tolerant of teardown-only warnings. Until this lands, the azure
-  conformance cassettes cannot be cleanly re-recorded — they still carry a now-dead
-  `GetAccountInfo` interaction from before BK-302 (functionally harmless; replay
-  tolerates the unused interaction).
+- [ ] **BK-305 — Keep large-payload conformance tests out of the live Azure recording**
+  spec: — · effort: S · audience: infra.test, contributor.tooling
+  Discovered closing BK-304. Six large-streamed conformance cassettes —
+  `test_large_streamed_write_result_matches_file_info` (write / write_atomic ×
+  sync / async) and `test_concurrent_large_streamed_uploads` (sync / async) — each
+  upload an 8 MiB payload, so a full `record-azure` records them as **6–12 MB**
+  cassettes (~35 MB total, ~100× the ~110 KB corpus norm). The live ADLS Gen2
+  account is **pay-per-use**, so recording these (32 MiB+ of data-plane transfer
+  per concurrent-upload test) is out of scope on cost grounds alone, and the
+  cassettes are too large for the committed replay tier regardless. They were left
+  uncommitted in BK-304 — `azure_replay` skips them gracefully via TEST-007's
+  missing-cassette skip — but nothing stops the next `record-azure` from running
+  them live and regenerating the giants. Add a durable exclusion: a marker (e.g.
+  `large_payload`) the recording `-k` filter / `pytest_collection_modifyitems`
+  hook drops, or gate these tests out of the live (`--stage=3 -m live`) fixture
+  params, so neither the recording nor a live conformance run hits the account
+  with large / high-churn payloads. Keep them at Stage 2 (Azurite, free) for the
+  staged/multipart-path coverage they exist to give.
 
 ---
 

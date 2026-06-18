@@ -8,6 +8,33 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-304 — Azure cassette recording aborts on flaky teardown ResourceWarnings**
+  spec: — · effort: S · audience: contributor.tooling, infra.test
+  `record_cassettes.py --backend azure` aborted mid-run: vcrpy's record-mode
+  transport interception orphans the live `azure-storage` SSL sockets it wraps
+  (to read and serialize their bodies) instead of returning them to the SDK's
+  connection pool; those sockets surface as `ResourceWarning: unclosed
+  <ssl.SSLSocket>` at GC, and pytest's `unraisableexception` plugin — under the
+  suite's `filterwarnings = error` — escalates that benign recording-only noise
+  to a `PytestUnraisableExceptionWarning` teardown ERROR, failing an
+  otherwise-green recording after every cassette was already written (Step 1 had
+  wiped the tree, leaving it half-recorded). **Diagnosis corrected the backlog's
+  preferred fix #1:** the same fixtures + `backend.close()` path replay clean
+  against the live account *without* `--record` even with `-W error::ResourceWarning`
+  (210 sync tests, 0 warnings), so the transport is already closed deterministically
+  — the leak is the recorder's, not the library's, and closing harder in the
+  fixture cannot reach a socket vcrpy has orphaned. **Fix (#2):** scope
+  `-p no:unraisableexception` to the recording subprocesses only (Step 2 sync,
+  Step 3 async, and the `--node` single-cassette run); the Step-5 replay smoke
+  test and the normal suite keep the plugin so a genuine backend leak (e.g.
+  BUG-180) is still caught. Regression guard `TestUnraisableScopedToRecording`
+  asserts every `--record` invocation carries the flag and the replay run does
+  not. Re-recorded the full azure conformance tree (303 → 339 cassettes; the
+  extra are conformance tests added since the last record), clearing the now-dead
+  `GetAccountInfo` interaction every cassette carried from before BK-302; scrub
+  clean, named-rule audit green, `azure_replay` Stage-1 318 passed. Unblocks
+  BK-303. Trace: `sdd/traces/bk-304-record-unraisable-teardown.yml`.
+
 - [x] **BK-302 — Replace implicit HNS auto-detection with an explicit `hns=` declaration + `AzureUtils`**
   spec: AZ-006 · effort: L · audience: user.api, library.maintainer, contributor.process
   Surfaced reviewing BUG-223 (PR #841). The backend inferred HNS vs flat by probing

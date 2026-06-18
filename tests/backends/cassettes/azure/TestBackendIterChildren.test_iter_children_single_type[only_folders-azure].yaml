@@ -23,46 +23,14 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEBF24E660F50C"'
+      - '"0x8DECD7349B343B0"'
       Last-Modified:
-      - Sun, 31 May 2026 14:57:13 GMT
+      - Thu, 18 Jun 2026 19:53:37 GMT
       x-ms-version:
       - '2026-04-06'
     status:
       code: 201
       message: Created
-- request:
-    body: null
-    headers:
-      Accept:
-      - application/xml
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - azsdk-python-replay
-      x-ms-version:
-      - '2026-04-06'
-    method: GET
-    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
-  response:
-    body:
-      string: ''
-    headers:
-      Content-Length:
-      - '0'
-      x-ms-account-kind:
-      - StorageV2
-      x-ms-is-hns-enabled:
-      - 'true'
-      x-ms-sku-name:
-      - Standard_LRS
-      x-ms-version:
-      - '2026-04-06'
-    status:
-      code: 200
-      message: OK
 - request:
     body: null
     headers:
@@ -121,9 +89,9 @@ interactions:
       Content-MD5:
       - ndTkYSaMgDT1yFZOFVxnpg==
       ETag:
-      - '"0x8DEBF24E6B60360"'
+      - '"0x8DECD7349F51E88"'
       Last-Modified:
-      - Sun, 31 May 2026 14:57:14 GMT
+      - Thu, 18 Jun 2026 19:53:37 GMT
       x-ms-content-crc64:
       - seRUZAJnvS0=
       x-ms-request-server-encrypted:
@@ -150,8 +118,8 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=ico&recursive=false&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"0","creationTime":"134247130343429484","etag":"0x8DEBF24E6B35814","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Sun,
-        31 May 2026 14:57:14 GMT","name":"ico/sub","owner":"$superuser","permissions":"rwxr-x---"}]}
+      string: '{"paths":[{"contentLength":"0","creationTime":"134262860178739316","etag":"0x8DECD7349F25248","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Thu,
+        18 Jun 2026 19:53:37 GMT","name":"ico/sub","owner":"$superuser","permissions":"rwxr-x---"}]}
 
         '
     headers:
