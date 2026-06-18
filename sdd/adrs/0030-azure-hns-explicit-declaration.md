@@ -40,8 +40,12 @@ The Azure backend no longer auto-detects HNS. The account's nature is a
 **mandatory, explicit** constructor and config input:
 
 - `AzureBackend(..., hns: bool)` and `AsyncAzureBackend(..., hns: bool)` —
-  there is no default. A backend constructed without `hns` raises `ValueError`
-  at construction time (fail loud, never silently infer).
+  there is no default. A backend constructed without `hns`, or with a
+  non-`bool` value, raises `ValueError` at construction time (fail loud, never
+  silently infer). The declaration must be a real boolean, not a truthy/falsy
+  proxy: config env-var resolution yields strings, so a `${VAR}` placeholder
+  resolving to `"false"` would otherwise coerce to `True` via `bool(...)` and
+  silently re-enable HNS — the very misdetection class this decision removes.
 - `_hns` becomes an immutable attribute set from the declared value. No probe,
   no cache, no warn-once state, no per-operation snapshot.
 

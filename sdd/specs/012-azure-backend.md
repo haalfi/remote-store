@@ -55,7 +55,7 @@ AzureBackend(
 
 ### AZ-005: Construction Validation
 
-**Invariant:** `container` must be a non-empty string. Passing an empty or whitespace-only container raises `ValueError` at construction time. `hns` must be declared explicitly (`True` or `False`); omitting it raises `ValueError` (see AZ-006). At least one of `account_name`, `account_url`, or `connection_string` must be provided — otherwise `ValueError` at construction.
+**Invariant:** `container` must be a non-empty string. Passing an empty or whitespace-only container raises `ValueError` at construction time. `hns` must be declared explicitly as a real `bool` (`True` or `False`); omitting it or passing a non-`bool` raises `ValueError` (see AZ-006). At least one of `account_name`, `account_url`, or `connection_string` must be provided — otherwise `ValueError` at construction.
 **Postconditions:** No network validation of container existence at construction time. Invalid names are caught by Azure on first operation and mapped to the appropriate error.
 
 ---

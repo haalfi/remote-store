@@ -16,10 +16,15 @@ audience:
 discovery_followups:
   - BK-303
   - BK-304
-review_rounds: 1
+review_rounds: 2
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
+surprising_ripples:
+  # Making hns mandatory rippled to a config example the round-1
+  # verify-beyond-the-diff sweep missed; the ripple-check table flags
+  # backend/spec/docs but not example config dicts. Caught in PR review.
+  - examples/configuration/configuration.py
 phases:
   - id: orient
     name: Orient
@@ -114,6 +119,16 @@ phases:
         read_type: verify
         extract: "Add untested branches: conn-string + is_async build_blob_service, non-bool coercion rejection, credential-close assertions (both twins)"
         outcome: ok
+      - file: sdd/adrs/0030-azure-hns-explicit-declaration.md
+        section: "Decision (hns mandatory)"
+        read_type: reference
+        extract: "Round 2: ADR + AZ-005 still said only 'omitted/None' raises; non-bool rejection landed in code+AZ-006 but not its governing ADR -- close the ADR<->spec<->code drift"
+        outcome: misleading
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureUtilsDetectHns spec marks"
+        read_type: verify
+        extract: "Round 2: async HNS tests mis-cited ASYNC-004 (=exists()); retag to AZ-006 for sync/async parity; pin credential-close on the probe-error path (both twins)"
+        outcome: misleading
   - id: verify
     name: Verify
     steps:

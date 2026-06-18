@@ -137,6 +137,7 @@ def demo() -> dict[str, Any]:
                 type="azure",
                 options={
                     "container": "my-container",
+                    "hns": False,  # required: True for ADLS Gen2 (HNS), False for flat Blob Storage
                     "account_name": "myaccount",
                     "account_key": "base64-account-key-here",
                 },

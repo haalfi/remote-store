@@ -356,15 +356,22 @@ class TestAzureUtilsDetectHns:
 
     @pytest.mark.spec("AZ-006")
     def test_detect_hns_raises_on_probe_error(self) -> None:
-        """Fail-loud: a probe error is mapped to a remote_store error and raised."""
+        """Fail-loud: a probe error is mapped to a remote_store error and raised.
+
+        The resolved credential is closed on the error path too (the common
+        failure case), not only the client -- a probe failure must not leak the
+        auto-created ``DefaultAzureCredential``.
+        """
         svc = MagicMock(spec=BlobServiceClient)
         svc.get_account_information.side_effect = ClientAuthenticationError("denied")
+        cred = MagicMock(spec=["close"])
         with (
             patch("remote_store.backends._azure.build_blob_service", return_value=svc),
             pytest.raises(PermissionDenied),
         ):
-            AzureUtils.detect_hns(connection_string="fake-conn")
+            AzureUtils.detect_hns(account_url="https://x.blob.core.windows.net", credential=cred)
         svc.close.assert_called_once()  # client is closed even on the error path
+        cred.close.assert_called_once()  # credential is closed even on the error path
 
     @pytest.mark.spec("AZ-006")
     def test_detect_hns_closes_resolved_credential(self) -> None:

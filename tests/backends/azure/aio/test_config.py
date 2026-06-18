@@ -192,13 +192,13 @@ class TestAsyncAzureConstruction:
         with pytest.raises(ValueError, match="account_name"):
             AsyncAzureBackend(container="test", hns=False)
 
-    @pytest.mark.spec("ASYNC-004")
+    @pytest.mark.spec("AZ-006")
     def test_validation_hns_required(self) -> None:
         """Omitting ``hns`` is a construction error -- no silent default (AZ-006)."""
         with pytest.raises(ValueError, match="hns must be declared explicitly"):
             AsyncAzureBackend(container="test", account_name="x", account_key="fakekey")
 
-    @pytest.mark.spec("ASYNC-004")
+    @pytest.mark.spec("AZ-006")
     @pytest.mark.parametrize(
         "bad",
         [
@@ -250,14 +250,14 @@ class TestAsyncAzureConstruction:
 
 
 # =============================================================================
-# HNS discovery -- AzureUtils.adetect_hns (ASYNC-004, AZ-006)
+# HNS discovery -- AzureUtils.adetect_hns (AZ-006)
 # =============================================================================
 
 
 class TestAsyncAzureUtilsDetectHns:
     """AZ-006: explicit, fail-loud async HNS discovery via ``AzureUtils.adetect_hns``."""
 
-    @pytest.mark.spec("ASYNC-004")
+    @pytest.mark.spec("AZ-006")
     @pytest.mark.parametrize("flag", [True, False])
     async def test_adetect_hns_returns_account_flag(self, flag: bool) -> None:
         svc = AsyncMock(spec=BlobServiceClient)
@@ -269,26 +269,34 @@ class TestAsyncAzureUtilsDetectHns:
         svc.get_account_information.assert_awaited_once()
         svc.close.assert_awaited_once()  # throwaway client is always closed
 
-    @pytest.mark.spec("ASYNC-004")
+    @pytest.mark.spec("AZ-006")
     async def test_adetect_hns_absent_key_is_false(self) -> None:
         svc = AsyncMock(spec=BlobServiceClient)
         svc.get_account_information.return_value = {}  # key absent
         with patch("remote_store.backends._azure.build_blob_service", return_value=svc):
             assert await AzureUtils.adetect_hns(connection_string="fake-conn") is False
 
-    @pytest.mark.spec("ASYNC-004")
+    @pytest.mark.spec("AZ-006")
     async def test_adetect_hns_raises_on_probe_error(self) -> None:
-        """Fail-loud: a probe error is mapped to a remote_store error and raised."""
+        """Fail-loud: a probe error is mapped to a remote_store error and raised.
+
+        The resolved async credential is awaited-closed on the error path too
+        (the common failure case) -- a probe failure must not leak the
+        auto-created ``DefaultAzureCredential``'s aiohttp session.
+        """
         svc = AsyncMock(spec=BlobServiceClient)
         svc.get_account_information.side_effect = ClientAuthenticationError("denied")
+        cred = MagicMock(spec=["close"])
+        cred.close = AsyncMock()
         with (
             patch("remote_store.backends._azure.build_blob_service", return_value=svc),
             pytest.raises(PermissionDenied),
         ):
-            await AzureUtils.adetect_hns(connection_string="fake-conn")
+            await AzureUtils.adetect_hns(account_url="https://x.blob.core.windows.net", credential=cred)
         svc.close.assert_awaited_once()  # client is closed even on the error path
+        cred.close.assert_awaited_once()  # credential is closed even on the error path
 
-    @pytest.mark.spec("ASYNC-004")
+    @pytest.mark.spec("AZ-006")
     async def test_adetect_hns_closes_resolved_credential(self) -> None:
         """The async credential is awaited-closed too -- an unclosed aiohttp session leaks connectors."""
         svc = AsyncMock(spec=BlobServiceClient)
