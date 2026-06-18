@@ -207,6 +207,7 @@ via `client_options`:
 ```python
 AzureBackend(
     container="my-container",
+    hns=False,  # or True for an ADLS Gen2 (HNS) account
     connection_string="...",
     client_options={
         "max_single_put_size": 8 * 1024 * 1024,   # 8 MiB
@@ -250,6 +251,7 @@ Then connect using the well-known Azurite connection string:
 ```python
 backend = AzureBackend(
     container="test",
+    hns=False,  # Azurite is flat-namespace only
     connection_string=(
         "DefaultEndpointsProtocol=http;"
         "AccountName=devstoreaccount1;"

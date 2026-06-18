@@ -257,6 +257,27 @@ class TestAzureConstruction:
             AzureBackend(container="test", account_name="x", account_key="fakekey")
 
     @pytest.mark.spec("AZ-006")
+    @pytest.mark.parametrize(
+        "bad",
+        [
+            pytest.param("false", id="str-false"),
+            pytest.param("true", id="str-true"),
+            pytest.param("no", id="str-no"),
+            pytest.param(0, id="int-zero"),
+            pytest.param(1, id="int-one"),
+        ],
+    )
+    def test_hns_non_bool_raises(self, bad: object) -> None:
+        """A non-bool ``hns`` is rejected, not coerced (AZ-006).
+
+        A config ``${VAR}`` placeholder resolves to a *string*, so ``hns="false"``
+        must fail loudly rather than ``bool("false") is True`` silently enabling
+        HNS -- the sticky-misdetection class this change set out to remove.
+        """
+        with pytest.raises(ValueError, match="hns must be declared explicitly"):
+            AzureBackend(container="test", hns=bad, account_name="x", account_key="fakekey")
+
+    @pytest.mark.spec("AZ-006")
     @pytest.mark.parametrize("flag", [True, False])
     def test_hns_declared_value_stored(self, flag: bool) -> None:
         """The declared ``hns`` flag is stored verbatim and drives behavior (AZ-006)."""
@@ -344,6 +365,34 @@ class TestAzureUtilsDetectHns:
         ):
             AzureUtils.detect_hns(connection_string="fake-conn")
         svc.close.assert_called_once()  # client is closed even on the error path
+
+    @pytest.mark.spec("AZ-006")
+    def test_detect_hns_closes_resolved_credential(self) -> None:
+        """The resolved credential is closed too -- closing only the client leaks its sessions.
+
+        ``resolve_credential`` auto-creates a ``DefaultAzureCredential`` (holding a
+        transport session) when no key/SAS/conn-string is supplied; ``detect_hns``
+        must close whatever credential it resolves, mirroring the backend's
+        ``close()`` contract.
+        """
+        svc = MagicMock(spec=BlobServiceClient)
+        svc.get_account_information.return_value = {"is_hns_enabled": True}
+        cred = MagicMock(spec=["close"])  # a credential object exposing .close(), like DefaultAzureCredential
+        with patch("remote_store.backends._azure.build_blob_service", return_value=svc):
+            result = AzureUtils.detect_hns(account_url="https://x.blob.core.windows.net", credential=cred)
+        assert result is True
+        svc.close.assert_called_once()
+        cred.close.assert_called_once()
+
+    @pytest.mark.spec("AZ-006")
+    def test_detect_hns_string_credential_has_no_close(self) -> None:
+        """A string credential (account_key/SAS) has no ``close`` -- the close path skips it cleanly."""
+        svc = MagicMock(spec=BlobServiceClient)
+        svc.get_account_information.return_value = {"is_hns_enabled": False}
+        with patch("remote_store.backends._azure.build_blob_service", return_value=svc):
+            # account_key resolves to a plain str credential -- must not raise on close.
+            assert AzureUtils.detect_hns(account_url="https://x.blob.core.windows.net", account_key="k") is False
+        svc.close.assert_called_once()
 
 
 # =============================================================================
@@ -2347,6 +2396,53 @@ class TestBuildBlobService:
             _azure_common.build_blob_service(
                 connection_string=None, account_url=None, account_name=None, credential=None
             )
+
+    def test_connection_string_branch(self) -> None:
+        """The conn-string route (every live/replay fixture's path) calls from_connection_string."""
+        from remote_store.backends import _azure_common
+
+        with patch("azure.storage.blob.BlobServiceClient") as mock_bsc:
+            _azure_common.build_blob_service(
+                connection_string="DefaultEndpointsProtocol=http;AccountName=a;",
+                account_url=None,
+                account_name=None,
+                credential=None,
+                client_options={"max_block_size": 7},
+            )
+        mock_bsc.from_connection_string.assert_called_once()
+        assert mock_bsc.from_connection_string.call_args.args[0] == "DefaultEndpointsProtocol=http;AccountName=a;"
+        assert mock_bsc.from_connection_string.call_args.kwargs == {"max_block_size": 7}
+
+    def test_account_url_threads_credential_and_options(self) -> None:
+        """credential= and client_options are forwarded verbatim on the URL branch."""
+        from remote_store.backends import _azure_common
+
+        with patch("azure.storage.blob.BlobServiceClient") as mock_bsc:
+            _azure_common.build_blob_service(
+                connection_string=None,
+                account_url="https://x.blob.core.windows.net",
+                account_name=None,
+                credential="cred",
+                client_options={"max_block_size": 7},
+            )
+        kwargs = mock_bsc.call_args.kwargs
+        assert kwargs["credential"] == "cred"
+        assert kwargs["max_block_size"] == 7
+
+    def test_is_async_uses_aio_client(self) -> None:
+        """is_async=True imports and builds the azure.storage.blob.aio client, not the sync one."""
+        from remote_store.backends import _azure_common
+
+        with patch("azure.storage.blob.aio.BlobServiceClient") as mock_async:
+            result = _azure_common.build_blob_service(
+                connection_string="DefaultEndpointsProtocol=http;AccountName=a;",
+                account_url=None,
+                account_name=None,
+                credential=None,
+                is_async=True,
+            )
+        mock_async.from_connection_string.assert_called_once()
+        assert result is mock_async.from_connection_string.return_value
 
 
 # region: Credential masking (AF-008, SEC-004) — migrated from tests/test_coverage_gaps.py (BK-222 / BK-191 slice 6/6)

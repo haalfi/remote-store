@@ -52,7 +52,9 @@ def validate_azure_params(
         connection_string: Azure Storage connection string (may be ``Secret``).
         max_concurrency: Maximum number of parallel connections.
         hns: Whether Hierarchical Namespace is enabled. Must be declared
-            explicitly (``True`` or ``False``); ``None`` is rejected.
+            explicitly as a real ``bool`` (``True`` or ``False``); ``None``
+            and any non-bool (e.g. the string ``"false"`` from config
+            env-var resolution) are rejected.
 
     Raises:
         ValueError: If any parameter is invalid.
@@ -63,7 +65,7 @@ def validate_azure_params(
         raise ValueError("At least one of account_name, account_url, or connection_string must be provided")
     if max_concurrency < 1:
         raise ValueError("max_concurrency must be >= 1")
-    if hns is None:
+    if not isinstance(hns, bool):
         raise ValueError(
             "hns must be declared explicitly (True for ADLS Gen2 / HNS, False for flat Blob "
             "Storage); use AzureUtils.detect_hns() to discover it"

@@ -185,9 +185,11 @@ class AzureBackend(Backend):
     ``move()`` on non-HNS accounts is implemented as a server-side copy
     followed by a blob delete.  This is non-atomic: a failure between the
     two steps may leave both source and destination present.  HNS accounts
-    use ``rename_file`` which is atomic, but because the capability set is
-    declared once at class level (shared by HNS and non-HNS instances
-    alike), ``ATOMIC_MOVE`` is not declared.
+    use ``rename_file`` which *is* atomic, so an HNS instance could in
+    principle advertise ``ATOMIC_MOVE``.  The capability is deliberately
+    not declared per-instance: ``CAPABILITIES`` is a single class-level set
+    shared by HNS and non-HNS instances alike, so it reports the guarantee
+    common to both rather than varying by the declared ``hns`` value.
 
     Args:
         container: Azure Storage container name (required, non-empty).
@@ -1491,6 +1493,11 @@ class AzureUtils:
         finally:
             with contextlib.suppress(Exception):
                 svc.close()
+            # Close an auto-created credential (DefaultAzureCredential holds transport sessions).
+            close = getattr(cred, "close", None)
+            if close is not None:
+                with contextlib.suppress(Exception):
+                    close()
 
     @staticmethod
     async def adetect_hns(
@@ -1503,7 +1510,17 @@ class AzureUtils:
         credential: Any | None = None,
         client_options: dict[str, Any] | None = None,
     ) -> bool:
-        """Async sibling of ``detect_hns`` (uses the async Blob SDK)."""
+        """Async sibling of ``detect_hns`` (uses the async Blob SDK).
+
+        Accepts the same parameters as ``detect_hns``.
+
+        Returns:
+            ``True`` if Hierarchical Namespace (ADLS Gen2) is enabled,
+            ``False`` for a flat Blob Storage account.
+
+        Raises:
+            RemoteStoreError: If the probe fails (authentication, network, etc.).
+        """
         conn = _reveal(connection_string)
         cred = _resolve_detect_credential(
             connection_string=conn,
@@ -1529,3 +1546,8 @@ class AzureUtils:
         finally:
             with contextlib.suppress(Exception):
                 await svc.close()
+            # Close an auto-created credential (async DefaultAzureCredential holds aiohttp sessions).
+            close = getattr(cred, "close", None)
+            if close is not None:
+                with contextlib.suppress(Exception):
+                    await close()

@@ -190,7 +190,8 @@ and exercises sync HNS semantics that the conformance suite against
 `azure_live` cannot express: directory-blob `hdi_isfolder` probes,
 WriteResult etag normalisation cross-check, the `write_atomic`
 streaming-payload guard, the `get_folder_info("")` HNS root carve-out,
-and the `_ensure_hns()` exists fallback. `live`-marked tests are
+and the `exists` DataLake probe-fallback on real HNS directories.
+`live`-marked tests are
 excluded by default `addopts` and have to be opted into explicitly:
 
 ```bash

@@ -198,6 +198,20 @@ class TestAsyncAzureConstruction:
         with pytest.raises(ValueError, match="hns must be declared explicitly"):
             AsyncAzureBackend(container="test", account_name="x", account_key="fakekey")
 
+    @pytest.mark.spec("ASYNC-004")
+    @pytest.mark.parametrize(
+        "bad",
+        [
+            pytest.param("false", id="str-false"),
+            pytest.param(0, id="int-zero"),
+            pytest.param(1, id="int-one"),
+        ],
+    )
+    def test_validation_hns_non_bool_raises(self, bad: object) -> None:
+        """A non-bool ``hns`` (e.g. config string "false") is rejected, not coerced (AZ-006)."""
+        with pytest.raises(ValueError, match="hns must be declared explicitly"):
+            AsyncAzureBackend(container="test", hns=bad, account_name="x", account_key="fakekey")
+
     @pytest.mark.spec("ASYNC-001")
     @pytest.mark.parametrize(
         "val",
@@ -273,6 +287,19 @@ class TestAsyncAzureUtilsDetectHns:
         ):
             await AzureUtils.adetect_hns(connection_string="fake-conn")
         svc.close.assert_awaited_once()  # client is closed even on the error path
+
+    @pytest.mark.spec("ASYNC-004")
+    async def test_adetect_hns_closes_resolved_credential(self) -> None:
+        """The async credential is awaited-closed too -- an unclosed aiohttp session leaks connectors."""
+        svc = AsyncMock(spec=BlobServiceClient)
+        svc.get_account_information.return_value = {"is_hns_enabled": True}
+        cred = MagicMock(spec=["close"])  # async DefaultAzureCredential exposes an awaitable close()
+        cred.close = AsyncMock()
+        with patch("remote_store.backends._azure.build_blob_service", return_value=svc):
+            result = await AzureUtils.adetect_hns(account_url="https://x.blob.core.windows.net", credential=cred)
+        assert result is True
+        svc.close.assert_awaited_once()
+        cred.close.assert_awaited_once()
 
 
 # =============================================================================

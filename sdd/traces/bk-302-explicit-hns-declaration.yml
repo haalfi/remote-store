@@ -16,6 +16,7 @@ audience:
 discovery_followups:
   - BK-303
   - BK-304
+review_rounds: 1
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
@@ -94,6 +95,24 @@ phases:
         section: "v0.28.0 to v0.29.0"
         read_type: reference
         extract: "New breaking-change section with before/after + detect_hns recipe"
+        outcome: ok
+  - id: fix
+    name: Fix (PR review round)
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "AzureBackend.close, detect_hns/adetect_hns finally"
+        read_type: reference
+        extract: "Review caught: throwaway detect client closed but the auto-created credential leaked; mirror close()'s getattr('close') contract in both twins"
+        outcome: ok
+      - file: src/remote_store/backends/_azure_common.py
+        section: "validate_azure_params (hns guard)"
+        read_type: reference
+        extract: "Review caught: `hns is None` let a config string \"false\" coerce to True via bool(); tighten to `not isinstance(hns, bool)`"
+        outcome: ok
+      - file: tests/backends/azure/test_config.py
+        section: "TestBuildBlobService, TestAzureUtilsDetectHns"
+        read_type: verify
+        extract: "Add untested branches: conn-string + is_async build_blob_service, non-bool coercion rejection, credential-close assertions (both twins)"
         outcome: ok
   - id: verify
     name: Verify
