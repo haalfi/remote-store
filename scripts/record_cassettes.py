@@ -72,6 +72,14 @@ _CONFORMANCE = "tests/backends/conformance/"
 # leak is the recorder's, not the library's. Disable the plugin for the
 # recording subprocesses only; the Step-5 replay smoke test (no live sockets)
 # and the normal test suite keep it (BK-304).
+#
+# Disabling the whole plugin (rather than a narrow ``-W ignore::ResourceWarning``)
+# is deliberate: recording is a one-shot tooling step that must complete
+# regardless of *which* benign unraisable a future vcrpy / SDK version emits, so
+# a message- or category-keyed filter would silently re-break it on the next
+# non-``ResourceWarning`` record-only artefact. Full unraisable escalation is
+# retained off the recording path — the normal suite and the no-record live
+# preflight both keep the plugin — so a genuine backend leak is still caught.
 _RECORD_DISABLE_UNRAISABLE = ("-p", "no:unraisableexception")
 
 # Add the repo root to sys.path so test helpers are importable without install.

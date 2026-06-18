@@ -43,6 +43,16 @@ _ALL_BACKENDS = sorted(_rc._BACKENDS)
 # pytest -k expression keywords that are not fixture-name tokens.
 _K_KEYWORDS = frozenset({"and", "or", "not"})
 
+# A syntactically valid, non-Azurite connection string injected so the Step-4
+# scrub-verify (which calls ``_resolve_azure_account``) resolves an account name
+# without a real ``.env`` / CI secret — mirroring how the graph tests inject
+# ``GRAPH_DRIVE_ID``. The empty tmp cassette dir makes the scrub trivially clean.
+# Without it a CI runner (no ``.env``, ``AZURE_STORAGE_CONNECTION_STRING`` unset)
+# dies at Step 4 even though the test only inspects the recording argv (BK-304).
+_FAKE_AZURE_CONN = (
+    "DefaultEndpointsProtocol=https;AccountName=rsfakeacct;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net"
+)
+
 
 @pytest.fixture(scope="module")
 def rc():
@@ -313,6 +323,7 @@ class TestUnraisableScopedToRecording:
     def _capture_runs(self, rc, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> list[tuple[str, ...]]:
         """Drive a full azure record through main() with _run mocked; return captured argv."""
         monkeypatch.setattr(sys, "argv", ["record_cassettes.py", "--backend", "azure"])
+        monkeypatch.setenv("AZURE_STORAGE_CONNECTION_STRING", _FAKE_AZURE_CONN)
         monkeypatch.setattr(rc, "_preflight_env", lambda cfg, *, verify_only: None)
         monkeypatch.setattr(rc, "_audit_named_rules", lambda profile, manifest_base: None)
         monkeypatch.chdir(tmp_path)
@@ -351,6 +362,7 @@ class TestUnraisableScopedToRecording:
         monkeypatch.setattr(
             sys, "argv", ["record_cassettes.py", "--backend", "azure", "--node", "x::test_y[azure_live]"]
         )
+        monkeypatch.setenv("AZURE_STORAGE_CONNECTION_STRING", _FAKE_AZURE_CONN)
         monkeypatch.setattr(rc, "_preflight_env", lambda cfg, *, verify_only: None)
         monkeypatch.chdir(tmp_path)
         runs: list[tuple[str, ...]] = []
