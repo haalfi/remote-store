@@ -41,6 +41,7 @@ def validate_azure_params(
     account_url: str | None,
     connection_string: Any,
     max_concurrency: int,
+    hns: bool | None,
 ) -> None:
     """Validate Azure backend constructor parameters.
 
@@ -50,6 +51,10 @@ def validate_azure_params(
         account_url: Full account URL.
         connection_string: Azure Storage connection string (may be ``Secret``).
         max_concurrency: Maximum number of parallel connections.
+        hns: Whether Hierarchical Namespace is enabled. Must be declared
+            explicitly as a real ``bool`` (``True`` or ``False``); ``None``
+            and any non-bool (e.g. the string ``"false"`` from config
+            env-var resolution) are rejected.
 
     Raises:
         ValueError: If any parameter is invalid.
@@ -60,6 +65,65 @@ def validate_azure_params(
         raise ValueError("At least one of account_name, account_url, or connection_string must be provided")
     if max_concurrency < 1:
         raise ValueError("max_concurrency must be >= 1")
+    if not isinstance(hns, bool):
+        raise ValueError(
+            "hns must be declared explicitly (True for ADLS Gen2 / HNS, False for flat Blob "
+            "Storage); use AzureUtils.detect_hns() to discover it"
+        )
+
+
+def build_blob_service(
+    *,
+    connection_string: Any,
+    account_url: str | None,
+    account_name: str | None,
+    credential: Any,
+    client_options: Mapping[str, Any] | None = None,
+    is_async: bool = False,
+) -> Any:
+    """Construct a ``BlobServiceClient`` (sync or async) from connection params.
+
+    Shared by the backend's lazy ``_blob_service`` property and
+    ``AzureUtils.detect_hns`` so the connection-string / account-URL
+    construction lives in one place.
+
+    Args:
+        connection_string: Azure Storage connection string (may be ``Secret``).
+            When set, takes precedence over ``account_url`` / ``account_name``.
+        account_url: Full account URL (blob endpoint).
+        account_name: Storage account name; the blob endpoint URL is derived
+            from it when ``account_url`` is not given.
+        credential: Credential for the URL form (ignored for the
+            connection-string form).
+        client_options: Extra keyword options for the service client.
+        is_async: Build an ``azure.storage.blob.aio`` client instead of the
+            synchronous one.
+
+    Returns:
+        A ``BlobServiceClient`` instance.
+
+    Raises:
+        ValueError: If neither a connection string nor a resolvable URL is given.
+    """
+    service_cls: Any
+    if is_async:
+        from azure.storage.blob.aio import BlobServiceClient as _AsyncBlobServiceClient
+
+        service_cls = _AsyncBlobServiceClient
+    else:
+        from azure.storage.blob import BlobServiceClient as _SyncBlobServiceClient
+
+        service_cls = _SyncBlobServiceClient
+
+    opts = dict(client_options or {})
+    if connection_string:
+        return service_cls.from_connection_string(connection_string, **opts)
+    url = account_url
+    if url is None and account_name is not None:
+        url = f"https://{account_name}.blob.core.windows.net"
+    if url is None:
+        raise ValueError("account_name, account_url, or connection_string must be provided")
+    return service_cls(account_url=url, credential=credential, **opts)
 
 
 def azure_path(path: str) -> str:

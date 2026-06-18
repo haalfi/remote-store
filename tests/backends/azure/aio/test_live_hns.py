@@ -32,7 +32,7 @@ in ``tests/backends/azure/test_live_hns.py``. Async-only KEEPs:
 * **``get_folder_info("")`` HNS root carve-out** on the async branch
   (``TestAsyncLiveHnsGetFolderInfoRoot``, BUG-213, AZ-024).
 
-* **``_ensure_hns()`` exists fallback** on the async branch
+* **HNS ``exists`` fallback** on the async branch
   (``TestAsyncLiveHnsExists``).
 
 User-metadata survives ADLS Gen2 ``rename_file`` is a service-side
@@ -96,6 +96,7 @@ from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 from remote_store._errors import InvalidPath  # noqa: E402
 from remote_store._path import RemotePath  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
+from remote_store.backends import AzureUtils  # noqa: E402
 from tests.backends.fixtures._live_env import (  # noqa: E402
     require_azure_live_connection_string,
     require_azure_live_hns_container,
@@ -193,11 +194,24 @@ async def async_live_hns_backend(
     Yields ``(backend, dirpath)`` matching the module-level HNS directory.
     """
     conn, fs_name, dirpath, _ = _live_hns_setup
-    backend = AsyncAzureBackend(container=fs_name, connection_string=conn)
+    backend = AsyncAzureBackend(container=fs_name, hns=True, connection_string=conn)
     try:
         yield backend, dirpath
     finally:
         await backend.aclose()
+
+
+@pytest.mark.spec("AZ-006")
+class TestAsyncAzureLiveDetectHns:
+    """``AzureUtils.adetect_hns`` reports HNS=True against a real ADLS Gen2 account.
+
+    Async sibling of the sync detect_hns live check; live-verifies the async
+    ``get_account_information()`` call shape rather than trusting a mock.
+    """
+
+    async def test_adetect_hns_true_on_real_hns(self, live_hns_env: tuple[str, str]) -> None:
+        conn, _fs = live_hns_env
+        assert await AzureUtils.adetect_hns(connection_string=conn) is True
 
 
 # ---------------------------------------------------------------------------

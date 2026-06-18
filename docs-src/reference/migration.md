@@ -6,6 +6,43 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
+## v0.28.0 to v0.29.0
+
+**Azure HNS is now an explicit, mandatory declaration:**
+
+`AzureBackend` and `AsyncAzureBackend` no longer auto-detect Hierarchical
+Namespace (ADLS Gen2) by probing the account on first use. You must now declare
+the account's nature with the required `hns` argument. A backend constructed
+without `hns` raises `ValueError`.
+
+```python
+# Before (v0.28.0): HNS auto-detected on first I/O
+backend = AzureBackend(container="data", account_name="acct", account_key="...")
+
+# After (v0.29.0): declare hns explicitly
+backend = AzureBackend(container="data", hns=True, account_name="acct", account_key="...")
+```
+
+The same applies to config `options` (`"hns": true`) and to `AsyncAzureBackend`.
+
+**If you do not know an account's HNS status**, discover it once with the new
+fail-loud helper and pass the result:
+
+```python
+from remote_store.backends import AzureUtils
+
+is_hns = AzureUtils.detect_hns(account_name="acct", account_key="...")
+backend = AzureBackend(container="data", hns=is_hns, account_name="acct", account_key="...")
+```
+
+`AzureUtils.adetect_hns(...)` is the async sibling. Both raise on a probe error
+rather than silently falling back to flat behavior.
+
+**Why:** the old `GetAccountInfo` probe could fail, return propagation-delayed
+authorization state, or be denied by least-privilege credentials — silently
+degrading an HNS account to flat semantics. A declared value is deterministic
+from construction and removes that failure class.
+
 ## v0.24.1 to v0.25.0
 
 **`[sftp]` extra now requires `paramiko>=3.0`:**

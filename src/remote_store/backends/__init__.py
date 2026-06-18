@@ -28,9 +28,9 @@ except ImportError:  # pragma: no cover
     pass
 
 try:
-    from remote_store.backends._azure import AzureBackend
+    from remote_store.backends._azure import AzureBackend, AzureUtils
 
-    __all__ = [*__all__, "AzureBackend"]
+    __all__ = [*__all__, "AzureBackend", "AzureUtils"]
 except ImportError:  # pragma: no cover
     pass
 

@@ -1,6 +1,6 @@
 # Azure Backend
 
-The Azure backend stores files in Azure Blob Storage and Azure Data Lake Storage (ADLS) Gen2 using [`azure-storage-file-datalake`](https://learn.microsoft.com/en-us/python/api/azure-storage-file-datalake/) directly. It adapts at runtime to Hierarchical Namespace (HNS) accounts, providing atomic rename and real directories on ADLS Gen2 while remaining fully functional on plain Blob Storage.
+The Azure backend stores files in Azure Blob Storage and Azure Data Lake Storage (ADLS) Gen2 using [`azure-storage-file-datalake`](https://learn.microsoft.com/en-us/python/api/azure-storage-file-datalake/) directly. You declare whether the account has Hierarchical Namespace (HNS) enabled via the required `hns` option; HNS accounts get atomic rename and real directories on ADLS Gen2, while plain Blob Storage accounts (`hns=False`) remain fully functional.
 
 ## Installation
 
@@ -21,6 +21,7 @@ config = RegistryConfig(
             type="azure",
             options={
                 "container": "my-container",
+                "hns": True,  # ADLS Gen2; use False for plain Blob Storage
                 "account_name": "mystorageaccount",
             },
         ),
@@ -39,9 +40,10 @@ with Registry(config) as registry:
 ```python
 from remote_store.backends import AzureBackend
 
-# Account key
+# Account key. `hns` is required: True for ADLS Gen2, False for plain Blob Storage.
 backend = AzureBackend(
     container="my-container",
+    hns=True,
     account_name="mystorageaccount",
     account_key="...",
 )
@@ -49,6 +51,7 @@ backend = AzureBackend(
 # SAS token
 backend = AzureBackend(
     container="my-container",
+    hns=True,
     account_name="mystorageaccount",
     sas_token="sv=2023-11-03&...",
 )
@@ -56,21 +59,27 @@ backend = AzureBackend(
 # Connection string
 backend = AzureBackend(
     container="my-container",
+    hns=False,
     connection_string="DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;",
 )
 
 # DefaultAzureCredential (auto-resolves env vars, managed identity, CLI login, etc.)
 backend = AzureBackend(
     container="my-container",
+    hns=True,
     account_name="mystorageaccount",
 )
 ```
+
+If you do not know whether an account is HNS-enabled, discover it once with
+[`AzureUtils.detect_hns()`](#discovering-hns-status) and pass the result.
 
 ## Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `container` | `str` | *(required)* | Azure Storage container name |
+| `hns` | `bool` | *(required)* | Whether the account has Hierarchical Namespace (ADLS Gen2) enabled. No default and no auto-detection — see [HNS vs Non-HNS](#hns-vs-non-hns) |
 | `account_name` | `str` | `None` | Storage account name (builds URL automatically) |
 | `account_url` | `str` | `None` | Full account URL (e.g. `https://myaccount.dfs.core.windows.net`) |
 | `account_key` | `str` | `None` | Storage account key |
@@ -82,7 +91,7 @@ backend = AzureBackend(
 | `max_concurrency` | `int` | `1` | Parallel connections for uploads/downloads (>1 benefits large files) |
 | `reject_write_under_file_ancestor` | `bool` | `False` | If `True`, reject writes whose path nests under an existing regular file (non-HNS HEADs each ancestor; HNS rejects natively). Adds one HEAD per ancestor per nested-path write |
 
-At least one of `account_name`, `account_url`, or `connection_string` must be provided.
+`hns` must be declared explicitly, and at least one of `account_name`, `account_url`, or `connection_string` must be provided.
 
 ## Authentication
 
@@ -97,19 +106,32 @@ The backend resolves credentials in this order:
 
 ## HNS vs Non-HNS
 
-The backend detects Hierarchical Namespace (HNS) status on first use and adapts its behavior:
+You declare whether the account has Hierarchical Namespace (HNS) enabled via the required `hns` option. The backend adapts its behavior to the declared value:
 
-| Feature | HNS Enabled (ADLS Gen2) | No HNS (Blob Storage) |
+| Feature | `hns=True` (ADLS Gen2) | `hns=False` (Blob Storage) |
 |---------|------------------------|-----------------------|
 | Directories | Real entities | Virtual (prefix-based) |
 | `write_atomic` | Temp file + atomic rename | Direct upload (PUT is atomic) |
 | `move` | Atomic `rename_file` | Copy + delete |
 | `delete_folder(recursive=True)` | Single recursive delete | Iterate + delete each blob |
 
-If the HNS detection call fails, the backend falls back to non-HNS behavior for that operation and retries detection on the next one, so a transient failure does not permanently degrade an HNS account. A persistently failing probe (e.g. a credential denied account-level `GetAccountInfo`) re-probes once per operation and logs a warning once.
+`hns` has no default and is never auto-detected. Declaring it makes the backend deterministic from construction: no account-level network call decides which semantics apply, so a transient failure or a propagation-delayed authorization response can never silently degrade an HNS account to flat behavior.
 
-!!! note "HNS auto-detection is being replaced"
-    This implicit `GetAccountInfo` probe is interim. A future release will require you to **declare** whether the account is HNS (an explicit `hns=` option) and provide an `AzureUtils.detect_hns()` helper to discover it once, rather than probing on every backend. This removes the auto-detection failure modes entirely.
+### Discovering HNS status
+
+If you do not know an account's HNS status, discover it once with the fail-loud helper and pass the result:
+
+```python
+from remote_store.backends import AzureUtils, AzureBackend
+
+is_hns = AzureUtils.detect_hns(
+    account_name="mystorageaccount",
+    account_key="...",
+)
+backend = AzureBackend(container="my-container", hns=is_hns, account_name="mystorageaccount", account_key="...")
+```
+
+`AzureUtils.detect_hns()` issues a single account-info call and returns a `bool`. It raises on a probe error rather than guessing. An async sibling, `AzureUtils.adetect_hns(...)`, is available for async code.
 
 Note that non-HNS `move()` (copy + delete) is not atomic and `overwrite=False` has a TOCTOU race on all account types. See the [Concurrency and Atomicity Guarantees](../../explanation/concurrency.md) guide for details.
 
@@ -185,6 +207,7 @@ via `client_options`:
 ```python
 AzureBackend(
     container="my-container",
+    hns=False,  # or True for an ADLS Gen2 (HNS) account
     connection_string="...",
     client_options={
         "max_single_put_size": 8 * 1024 * 1024,   # 8 MiB
@@ -228,6 +251,7 @@ Then connect using the well-known Azurite connection string:
 ```python
 backend = AzureBackend(
     container="test",
+    hns=False,  # Azurite is flat-namespace only
     connection_string=(
         "DefaultEndpointsProtocol=http;"
         "AccountName=devstoreaccount1;"

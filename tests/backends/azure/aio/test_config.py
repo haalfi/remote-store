@@ -12,7 +12,7 @@ import logging
 import re
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -56,6 +56,7 @@ from remote_store._errors import (  # noqa: E402
 )
 from remote_store._models import FileInfo, FolderEntry, WriteResult  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
+from remote_store.backends import AzureUtils  # noqa: E402
 from remote_store.backends._azure_common import (  # noqa: E402
     build_azure_retry,
     classify_azure_error,
@@ -80,8 +81,12 @@ _BACKENDS: list[AsyncAzureBackend] = []
 
 
 def _make_backend(**kw: Any) -> AsyncAzureBackend:
-    """Shorthand for creating an AsyncAzureBackend with sensible test defaults."""
-    defaults: dict[str, Any] = {"container": "test", "account_name": "x", "account_key": "fakekey"}
+    """Shorthand for creating an AsyncAzureBackend with sensible test defaults.
+
+    Defaults to ``hns=False``; pass ``hns=True`` (or set ``backend._hns``
+    afterwards) for HNS-path tests.
+    """
+    defaults: dict[str, Any] = {"container": "test", "hns": False, "account_name": "x", "account_key": "fakekey"}
     defaults.update(kw)
     backend = AsyncAzureBackend(**defaults)
     _BACKENDS.append(backend)
@@ -135,7 +140,7 @@ def _setup_non_hns_backend() -> tuple[AsyncAzureBackend, AsyncMock, AsyncMock]:
         Tuple of (backend, container_client_mock, blob_client_mock).
     """
     backend = _make_backend()
-    backend._hns_enabled = False
+    backend._hns = False
     cc = AsyncMock(spec=ContainerClient)
     backend._cc_instance = cc
     bc = AsyncMock(spec=BlobClient)
@@ -180,12 +185,34 @@ class TestAsyncAzureConstruction:
     )
     def test_validation_empty_container(self, container: str) -> None:
         with pytest.raises(ValueError, match="container"):
-            AsyncAzureBackend(container=container, account_name="x")
+            AsyncAzureBackend(container=container, hns=False, account_name="x")
 
     @pytest.mark.spec("ASYNC-001")
     def test_validation_no_account(self) -> None:
         with pytest.raises(ValueError, match="account_name"):
-            AsyncAzureBackend(container="test")
+            AsyncAzureBackend(container="test", hns=False)
+
+    @pytest.mark.spec("AZ-006")
+    def test_validation_hns_required(self) -> None:
+        """Omitting ``hns`` is a construction error -- no silent default (AZ-006)."""
+        with pytest.raises(ValueError, match="hns must be declared explicitly"):
+            AsyncAzureBackend(container="test", account_name="x", account_key="fakekey")
+
+    @pytest.mark.spec("AZ-006")
+    @pytest.mark.parametrize(
+        "bad",
+        [
+            pytest.param("false", id="str-false"),
+            pytest.param("true", id="str-true"),
+            pytest.param("no", id="str-no"),
+            pytest.param(0, id="int-zero"),
+            pytest.param(1, id="int-one"),
+        ],
+    )
+    def test_validation_hns_non_bool_raises(self, bad: object) -> None:
+        """A non-bool ``hns`` (e.g. config string "false") is rejected, not coerced (AZ-006)."""
+        with pytest.raises(ValueError, match="hns must be declared explicitly"):
+            AsyncAzureBackend(container="test", hns=bad, account_name="x", account_key="fakekey")
 
     @pytest.mark.spec("ASYNC-001")
     @pytest.mark.parametrize(
@@ -225,100 +252,89 @@ class TestAsyncAzureConstruction:
 
 
 # =============================================================================
-# HNS Detection (ASYNC-004, ASYNC-005)
+# HNS discovery -- AzureUtils.adetect_hns (AZ-006)
 # =============================================================================
 
 
-class TestAsyncAzureHNSDetection:
-    """HNS detection with mocked async SDK."""
+class TestAsyncAzureUtilsDetectHns:
+    """AZ-006: explicit, fail-loud async HNS discovery via ``AzureUtils.adetect_hns``."""
 
-    @pytest.mark.spec("ASYNC-004")
-    @pytest.mark.parametrize(
-        ("ret", "side_eff", "expected"),
-        [
-            pytest.param({"is_hns_enabled": True}, None, True, id="hns-enabled"),
-            pytest.param({"is_hns_enabled": False}, None, False, id="hns-disabled"),
-            pytest.param(None, Exception("network error"), False, id="detection-failure-fallback"),
-        ],
-    )
-    @pytest.mark.spec("ASYNC-070")
-    async def test_hns_detection(self, ret: Any, side_eff: Any, expected: bool) -> None:
-        backend = _make_backend()
-        mock_client = AsyncMock(spec=BlobServiceClient)
-        if side_eff is not None:
-            mock_client.get_account_information.side_effect = side_eff
-        else:
-            mock_client.get_account_information.return_value = ret
-        backend._blob_service_instance = mock_client
-        result = await backend._ensure_hns()
-        assert result is expected
+    @pytest.mark.spec("AZ-006")
+    @pytest.mark.parametrize("flag", [True, False])
+    async def test_adetect_hns_returns_account_flag(self, flag: bool) -> None:
+        svc = AsyncMock(spec=BlobServiceClient)
+        svc.get_account_information.return_value = {"is_hns_enabled": flag}
+        with patch("remote_store.backends._azure.build_blob_service", return_value=svc) as mk:
+            result = await AzureUtils.adetect_hns(connection_string="fake-conn")
+        assert result is flag
+        mk.assert_called_once()
+        svc.get_account_information.assert_awaited_once()
+        svc.close.assert_awaited_once()  # throwaway client is always closed
 
-    @pytest.mark.spec("ASYNC-005")
-    async def test_hns_result_cached(self) -> None:
-        backend = _make_backend()
-        mock_client = AsyncMock(spec=BlobServiceClient)
-        mock_client.get_account_information.return_value = {"is_hns_enabled": True}
-        backend._blob_service_instance = mock_client
-        first = await backend._ensure_hns()
-        second = await backend._ensure_hns()
-        assert mock_client.get_account_information.call_count == 1
-        assert first is second is True
+    @pytest.mark.spec("AZ-006")
+    async def test_adetect_hns_absent_key_is_false(self) -> None:
+        svc = AsyncMock(spec=BlobServiceClient)
+        svc.get_account_information.return_value = {}  # key absent
+        with patch("remote_store.backends._azure.build_blob_service", return_value=svc):
+            assert await AzureUtils.adetect_hns(connection_string="fake-conn") is False
 
-    @pytest.mark.spec("ASYNC-005")
-    async def test_hns_probe_error_not_cached_reprobes(self) -> None:
-        """BUG-223: a failed probe must not be cached -- the next op re-probes.
+    @pytest.mark.spec("AZ-006")
+    async def test_adetect_hns_raises_on_probe_error(self) -> None:
+        """Fail-loud: a probe error is mapped to a remote_store error and raised.
 
-        A transient failure on the first probe used to cache ``_hns_enabled =
-        False`` for the instance lifetime, permanently degrading a real HNS
-        account to flat-blob semantics. The failed probe fails open (``False``)
-        for the current op but is not persisted, so a subsequent probe recovers.
+        The resolved async credential is awaited-closed on the error path too
+        (the common failure case) -- a probe failure must not leak the
+        auto-created ``DefaultAzureCredential``'s aiohttp session.
         """
-        backend = _make_backend()
-        mock_client = AsyncMock(spec=BlobServiceClient)
-        mock_client.get_account_information.side_effect = [
-            Exception("transient network blip"),
-            {"is_hns_enabled": True},
-        ]
-        backend._blob_service_instance = mock_client
-        assert await backend._ensure_hns() is False  # fail-open, not cached
-        assert await backend._ensure_hns() is True  # re-probe recovers
-        assert mock_client.get_account_information.call_count == 2
+        svc = AsyncMock(spec=BlobServiceClient)
+        svc.get_account_information.side_effect = ClientAuthenticationError("denied")
+        cred = MagicMock(spec=["close"])
+        cred.close = AsyncMock()
+        with (
+            patch("remote_store.backends._azure.build_blob_service", return_value=svc),
+            pytest.raises(PermissionDenied),
+        ):
+            await AzureUtils.adetect_hns(account_url="https://x.blob.core.windows.net", credential=cred)
+        svc.close.assert_awaited_once()  # client is closed even on the error path
+        cred.close.assert_awaited_once()  # credential is closed even on the error path
 
-    @pytest.mark.spec("ASYNC-005")
-    async def test_hns_probe_transient_failure_warns_once(self, caplog: pytest.LogCaptureFixture) -> None:
-        """BUG-223: a persistently-failing transient probe re-probes but warns once."""
-        backend = _make_backend()
-        mock_client = AsyncMock(spec=BlobServiceClient)
-        mock_client.get_account_information.side_effect = Exception("transient blip")
-        backend._blob_service_instance = mock_client
-        with caplog.at_level(logging.WARNING, logger="remote_store.aio.backends._azure"):
-            assert await backend._ensure_hns() is False
-            assert await backend._ensure_hns() is False
-            assert await backend._ensure_hns() is False
-        assert mock_client.get_account_information.call_count == 3  # transient: re-probed each read
-        warnings = [r for r in caplog.records if "Failed to detect HNS status" in r.message]
-        assert len(warnings) == 1  # throttled to one warning per instance
+    @pytest.mark.spec("AZ-006")
+    async def test_adetect_hns_closes_resolved_credential(self) -> None:
+        """The async credential is awaited-closed too -- an unclosed aiohttp session leaks connectors."""
+        svc = AsyncMock(spec=BlobServiceClient)
+        svc.get_account_information.return_value = {"is_hns_enabled": True}
+        cred = MagicMock(spec=["close"])  # async DefaultAzureCredential exposes an awaitable close()
+        cred.close = AsyncMock()
+        with patch("remote_store.backends._azure.build_blob_service", return_value=svc):
+            result = await AzureUtils.adetect_hns(account_url="https://x.blob.core.windows.net", credential=cred)
+        assert result is True
+        svc.close.assert_awaited_once()
+        cred.close.assert_awaited_once()
 
-    @pytest.mark.spec("ASYNC-005")
-    async def test_hns_probe_warned_flag_reset_on_aclose(self) -> None:
-        """BUG-223: ``aclose()`` resets the warn-once flag so a reused backend warns again."""
-        backend = _make_backend()
-        mock_client = AsyncMock(spec=BlobServiceClient)
-        mock_client.get_account_information.side_effect = Exception("transient blip")
-        backend._blob_service_instance = mock_client
-        assert await backend._ensure_hns() is False
-        assert backend._hns_probe_warned is True
-        await backend.aclose()
-        assert backend._hns_probe_warned is False
+    @pytest.mark.spec("AZ-006")
+    async def test_adetect_hns_string_credential_has_no_close(self) -> None:
+        """A string credential (account_key/SAS) has no ``close`` -- the close path skips it cleanly."""
+        svc = AsyncMock(spec=BlobServiceClient)
+        svc.get_account_information.return_value = {"is_hns_enabled": False}
+        with patch("remote_store.backends._azure.build_blob_service", return_value=svc):
+            # account_key resolves to a plain str credential -- must not raise on close.
+            result = await AzureUtils.adetect_hns(account_url="https://x.blob.core.windows.net", account_key="k")
+        assert result is False
+        svc.close.assert_awaited_once()
 
-    @pytest.mark.spec("ASYNC-005")
-    async def test_maybe_check_no_file_ancestor_honors_hns_snapshot(self) -> None:
-        """BUG-223 (PR #841, thread 4): the precheck honors a caller's HNS snapshot."""
-        backend = _make_backend(reject_write_under_file_ancestor=True)
-        mock_client = AsyncMock(spec=BlobServiceClient)
-        backend._blob_service_instance = mock_client
-        await backend._maybe_check_no_file_ancestor("a/b.txt", hns=True)
-        assert mock_client.get_account_information.call_count == 0  # snapshot used, no re-probe
+    @pytest.mark.spec("AZ-006")
+    async def test_adetect_hns_closes_credential_on_build_error(self) -> None:
+        """A build-time error (no account locator) still awaited-closes the resolved credential.
+
+        ``build_blob_service`` raises before the probe runs; the async credential
+        ``_resolve_detect_credential`` produced must not leak its aiohttp session --
+        it is resolved and closed inside the same ``try``/``finally``.
+        """
+        cred = MagicMock(spec=["close"])
+        cred.close = AsyncMock()
+        with pytest.raises(ValueError, match="account_name, account_url, or connection_string"):
+            await AzureUtils.adetect_hns(credential=cred)
+        cred.close.assert_awaited_once()
 
 
 # =============================================================================
@@ -1438,7 +1454,7 @@ class TestAsyncAzureHNSPaths:
     def _make_hns_backend(self) -> AsyncAzureBackend:
         """Create a backend with HNS enabled and mocked async SDK clients."""
         backend = _make_backend()
-        backend._hns_enabled = True
+        backend._hns = True
         backend._blob_service_instance = AsyncMock(spec=BlobServiceClient)
         backend._cc_instance = AsyncMock(spec=ContainerClient)
         backend._datalake_service_instance = AsyncMock(spec=DataLakeServiceClient)
@@ -1587,24 +1603,16 @@ class TestAsyncAzureHNSPaths:
         assert fc.rename_file.call_count == 1
         assert fc.rename_file.call_args[0][0] == "test/dst.txt"
 
-    @pytest.mark.spec("ASYNC-005")
-    async def test_move_snapshots_hns_once_under_probe_flip(self) -> None:
-        """BUG-223 (PR #841, thread 4/9): move resolves the HNS state once.
+    @pytest.mark.spec("ASYNC-004")
+    @pytest.mark.spec("ASYNC-070")
+    async def test_declared_non_hns_move_uses_copy_delete(self) -> None:
+        """A backend declared ``hns=False`` takes the copy+delete move path (AZ-006/AZ-017).
 
-        With the probe uncached, a mid-op recovery (transient fail then success)
-        could otherwise make an early read return ``False`` and a later read
-        ``True``, straddling the non-HNS and HNS paths. ``move`` snapshots
-        ``_ensure_hns()`` once, so it probes exactly once and stays on the single
-        path that snapshot chose.
+        Dual-mode architecture (ASYNC-070): the declared flag, not a probe,
+        selects the Blob vs DataLake code path.
         """
-        backend = _make_backend()  # not pre-cached: _hns_enabled is None
+        backend = _make_backend(hns=False)
         svc = AsyncMock(spec=BlobServiceClient)
-        svc.get_account_information = AsyncMock(
-            side_effect=[
-                Exception("transient blip"),  # first (and only) probe -> fail open to flat
-                {"is_hns_enabled": True},  # would flip to HNS if re-read -- must NOT happen
-            ]
-        )
         backend._blob_service_instance = svc
         backend._cc_instance = AsyncMock(spec=ContainerClient)
         backend._fs_instance = AsyncMock(spec=FileSystemClient)
@@ -1616,9 +1624,8 @@ class TestAsyncAzureHNSPaths:
 
         await backend.move("src.txt", "dst.txt")
 
-        # Probed exactly once despite multiple HNS-dependent branches in move().
-        assert svc.get_account_information.call_count == 1
-        # ... and the op stayed on the single (non-HNS) path the snapshot chose.
+        # No HNS probe is ever issued; the declared flag drives the path.
+        svc.get_account_information.assert_not_called()
         assert dst_bc.start_copy_from_url.call_count == 1
         assert dst_bc.start_copy_from_url.call_args[0][0] == src_bc.url
         assert src_bc.delete_blob.call_count == 1
@@ -2170,7 +2177,7 @@ class TestAsyncAzureMaxConcurrency:
     @pytest.mark.spec("ASYNC-008")
     async def test_max_concurrency_threaded_to_upload(self) -> None:
         backend = _make_backend(max_concurrency=4)
-        backend._hns_enabled = False
+        backend._hns = False
         backend._blob_service_instance = AsyncMock(spec=BlobServiceClient)
         cc = AsyncMock(spec=ContainerClient)
         backend._cc_instance = cc
@@ -2186,7 +2193,7 @@ class TestAsyncAzureMaxConcurrency:
     @pytest.mark.spec("ASYNC-007")
     async def test_max_concurrency_threaded_to_download(self) -> None:
         backend = _make_backend(max_concurrency=8)
-        backend._hns_enabled = False
+        backend._hns = False
         backend._blob_service_instance = AsyncMock(spec=BlobServiceClient)
         cc = AsyncMock(spec=ContainerClient)
         backend._cc_instance = cc
@@ -2436,6 +2443,7 @@ class TestValidateAzureParams:
             account_url="https://x.blob.core.windows.net",
             connection_string=None,
             max_concurrency=1,
+            hns=False,
         )
         assert result is None
 
@@ -2447,6 +2455,7 @@ class TestValidateAzureParams:
             account_url=None,
             connection_string="DefaultEndpointsProtocol=http;AccountName=x",
             max_concurrency=1,
+            hns=False,
         )
         assert result is None
 
@@ -2459,6 +2468,19 @@ class TestValidateAzureParams:
                 account_url=None,
                 connection_string=None,
                 max_concurrency=1,
+                hns=False,
+            )
+
+    @pytest.mark.spec("ASYNC-004")
+    def test_hns_none_raises(self) -> None:
+        with pytest.raises(ValueError, match="hns must be declared explicitly"):
+            validate_azure_params(
+                container="c",
+                account_name=None,
+                account_url=None,
+                connection_string="DefaultEndpointsProtocol=http;AccountName=x",
+                max_concurrency=1,
+                hns=None,
             )
 
 
@@ -2647,7 +2669,7 @@ class TestAsyncAzureDelCleanup:
 def _setup_hns_write_backend_async() -> tuple[AsyncAzureBackend, AsyncMock, AsyncMock]:
     """Return (backend, container_client, blob_client) with HNS enabled."""
     backend = _make_backend()
-    backend._hns_enabled = True
+    backend._hns = True
     cc = AsyncMock(spec=ContainerClient)
     backend._cc_instance = cc
     bc = AsyncMock(spec=BlobClient)

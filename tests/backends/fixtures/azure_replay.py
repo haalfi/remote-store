@@ -46,7 +46,7 @@ def _factory() -> Backend:
     except ImportError:
         pytest.skip("azure-storage-file-datalake not installed")
 
-    return AzureBackend(container=FAKE_FILESYSTEM, connection_string=FAKE_CONN_STR)
+    return AzureBackend(container=FAKE_FILESYSTEM, hns=True, connection_string=FAKE_CONN_STR)
 
 
 def _cleanup(backend: Backend) -> None:

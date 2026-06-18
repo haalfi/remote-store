@@ -9,5 +9,6 @@
 - Async: aio/
 - Info: info.md
 - SFTPUtils: sftp-utils.md
+- AzureUtils: azure-utils.md
 - Backends: backends/
 - Extensions: extensions/

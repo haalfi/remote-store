@@ -87,6 +87,7 @@ async def _provision_async_backend(
         raise
     backend = AsyncAzureBackend(
         container=container,
+        hns=False,
         connection_string=azurite_server,
         client_options=client_options,
     )

@@ -49,7 +49,7 @@ What stays here are cases the conformance suite cannot express:
   probe for the root and relies on ``get_paths(path="/")`` instead
   (``TestAzureLiveHnsGetFolderInfoRoot``, BUG-213, AZ-024).
 
-* **``_ensure_hns()`` exists fallback on real HNS directories.** Only a
+* **HNS ``exists`` fallback on real HNS directories.** Only a
   real account exercises the blob-client miss → DataLake directory probe
   fallback chain (``TestAzureLiveHnsExists``).
 
@@ -98,6 +98,7 @@ from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 
 from remote_store._errors import InvalidPath  # noqa: E402
 from remote_store._path import RemotePath  # noqa: E402
+from remote_store.backends import AzureUtils  # noqa: E402
 from remote_store.backends._azure import AzureBackend  # noqa: E402
 from tests.backends.fixtures._live_env import (  # noqa: E402
     require_azure_live_connection_string,
@@ -175,7 +176,7 @@ def live_hns_backend() -> Iterator[tuple[AzureBackend, str]]:
         fs_client = service.get_file_system_client(fs_name)
         fs_client.get_directory_client(dirpath).create_directory()
         try:
-            backend = AzureBackend(container=fs_name, connection_string=conn)
+            backend = AzureBackend(container=fs_name, hns=True, connection_string=conn)
             try:
                 yield backend, dirpath
             finally:
@@ -187,6 +188,26 @@ def live_hns_backend() -> Iterator[tuple[AzureBackend, str]]:
                 _LOG.warning("failed to delete live HNS test prefix %s", prefix, exc_info=True)
     finally:
         service.close()
+
+
+# ---------------------------------------------------------------------------
+# AZ-006 — AzureUtils.detect_hns against a real ADLS Gen2 account
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec("AZ-006")
+class TestAzureLiveDetectHns:
+    """The discovery helper reports HNS=True against a real ADLS Gen2 account.
+
+    Mocks can only encode the assumed ``get_account_information()`` shape; this
+    confirms the real account returns the ``is_hns_enabled`` key as ``True`` so
+    a user calling ``detect_hns`` to populate ``AzureBackend(hns=...)`` gets the
+    correct value live.
+    """
+
+    def test_detect_hns_true_on_real_hns(self, live_hns_env: tuple[str, str]) -> None:
+        conn, _fs = live_hns_env
+        assert AzureUtils.detect_hns(connection_string=conn) is True
 
 
 # ---------------------------------------------------------------------------
@@ -375,9 +396,9 @@ class TestAzureLiveHnsExists:
     """``exists`` on a real HNS directory — DataLake probe-fallback chain.
 
     Conformance covers ``exists`` on regular present / missing files. The HNS
-    branch additionally falls back from the blob client to a DataLake directory
-    probe (``_ensure_hns()``); that fallback only fires on a real ADLS Gen2
-    directory blob created via ``DataLakeServiceClient``.
+    branch (selected by the declared ``hns=True``) additionally falls back from
+    the blob client to a DataLake directory probe; that fallback only fires on a
+    real ADLS Gen2 directory blob created via ``DataLakeServiceClient``.
 
     Spec: BE-015 (exists).
     """

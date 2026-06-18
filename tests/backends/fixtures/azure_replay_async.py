@@ -49,6 +49,7 @@ def _factory() -> AsyncBackend:
 
     return AsyncAzureBackend(
         container=FAKE_FILESYSTEM,
+        hns=True,
         connection_string=FAKE_CONN_STR,
         client_options={"transport": AsyncioRequestsTransport()},
     )

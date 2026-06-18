@@ -99,6 +99,7 @@ from remote_store.aio import AsyncStore, AsyncAzureBackend
 
 backend = AsyncAzureBackend(
     container="my-container",
+    hns=True,
     account_name="myaccount",
     account_key="...",
 )
@@ -107,9 +108,11 @@ async with AsyncStore(backend, root_path="data") as store:
 ```
 
 `AsyncAzureBackend` supports both plain Blob Storage and ADLS Gen2
-(HNS-enabled) accounts. HNS is detected automatically on first I/O.
-The constructor accepts the same credential parameters as the sync
-`AzureBackend`.
+(HNS-enabled) accounts. Declare which via the required `hns` argument
+(`True` for ADLS Gen2, `False` for plain Blob Storage); there is no
+auto-detection. Use `await AzureUtils.adetect_hns(...)` to discover it
+once if unknown. The constructor otherwise accepts the same credential
+parameters as the sync `AzureBackend`.
 
 Install the async Azure extras:
 

@@ -41,6 +41,8 @@ AzureBackend(
 
 ### HNS detection and adaptive behavior
 
+> **Superseded.** This RFC describes the original auto-detection design. HNS is no longer probed at runtime: it is a mandatory explicit `hns=` declaration, with `AzureUtils.detect_hns()` for one-shot discovery. See [ADR-0030](../adrs/0030-azure-hns-explicit-declaration.md) and the current AZ-006 in [012-azure-backend.md](../specs/012-azure-backend.md). The adaptive behavior matrix below still holds; only the *source* of the HNS flag changed.
+
 On first use, the backend issues a single `GetAccountInfo` call to determine whether the storage account has Hierarchical Namespace enabled. The result is cached for the lifetime of the backend instance.
 
 | Operation | HNS enabled (ADLS Gen2) | No HNS (plain Blob) |

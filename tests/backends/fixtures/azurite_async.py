@@ -63,6 +63,7 @@ def _make_factory(reject_write_under_file_ancestor: bool):
         try:
             backend = AsyncAzureBackend(
                 container=container,
+                hns=False,  # Azurite is flat-namespace (no HNS)
                 connection_string=INFRA.azurite_conn_str,
                 reject_write_under_file_ancestor=reject_write_under_file_ancestor,
             )
