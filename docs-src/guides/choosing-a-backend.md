@@ -19,8 +19,9 @@ This guide helps you pick the right `remote-store` backend for your use case.
       lighter dependency footprint, same API surface.
 
 4. **Azure Blob Storage or ADLS Gen2?** Use **Azure**.
-   Supports both flat and HNS (hierarchical namespace) accounts. Connection
-   string, SAS token, or DefaultAzureCredential auth.
+   Supports both flat and HNS (hierarchical namespace) accounts — declare which
+   via the required `hns` option. Connection string, SAS token, or
+   DefaultAzureCredential auth.
 
 5. **OneDrive, SharePoint, or Microsoft Teams files (Microsoft Graph)?** Use **Graph**.
    **Async-only** — construct via `AsyncStore(backend=GraphBackend(...))`; there is

@@ -3,6 +3,8 @@
 Native async Azure Storage backend. Uses the async Blob SDK for non-HNS
 accounts (plain Blob Storage, Azurite) and the async DataLake SDK for HNS
 accounts (ADLS Gen2) to get atomic rename and real directory support.
+Whether the account is HNS is declared via the required `hns` argument; use
+`AzureUtils.adetect_hns()` to discover it once if unknown.
 
 ::: remote_store.aio.AsyncAzureBackend
     options:

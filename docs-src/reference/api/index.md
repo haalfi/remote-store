@@ -56,6 +56,7 @@ full sync ↔ async map.
 | Class | Description |
 |-------|-------------|
 | [SFTPUtils](sftp-utils.md) | Key loading and host-key verification helpers for SFTP |
+| [AzureUtils](azure-utils.md) | One-shot HNS detection helper for Azure accounts |
 | [GraphAuth](aio/backends/graph.md#graphauth) | MSAL token provider (client-credentials / device-code) for Graph |
 | [GraphUtils](aio/backends/graph.md#graphutils) | Resolve a Graph `drive_id` from OneDrive / SharePoint / Teams targets |
 

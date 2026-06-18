@@ -265,6 +265,7 @@ class TestAsyncStreamingIntegrity:
                 azure_store = AsyncStore(
                     backend=AsyncAzureBackend(
                         container=azure_container,
+                        hns=False,
                         connection_string=AZURITE_CONN_STR,
                     )
                 )

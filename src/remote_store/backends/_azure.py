@@ -30,6 +30,7 @@ from remote_store._stream import _ErrorMappingStream
 from remote_store.backends._azure_common import (
     _build_azure_write_result,
     build_azure_retry,
+    build_blob_service,
     classify_azure_error,
     props_to_fileinfo,
     resolve_credential,
@@ -178,14 +179,24 @@ class AzureBackend(Backend):
     the DataLake SDK for HNS accounts (ADLS Gen2) to get atomic rename and
     real directory support.
 
+    Whether the account is HNS (ADLS Gen2) is declared explicitly via the
+    required ``hns`` argument -- the backend does not probe for it.
+
     ``move()`` on non-HNS accounts is implemented as a server-side copy
     followed by a blob delete.  This is non-atomic: a failure between the
     two steps may leave both source and destination present.  HNS accounts
-    use ``rename_file`` which is atomic, but since the backend cannot
-    guarantee HNS at construction time, ``ATOMIC_MOVE`` is not declared.
+    use ``rename_file`` which is atomic, but because the capability set is
+    declared once at class level (shared by HNS and non-HNS instances
+    alike), ``ATOMIC_MOVE`` is not declared.
 
     Args:
         container: Azure Storage container name (required, non-empty).
+        hns: Whether the storage account has Hierarchical Namespace
+            enabled (ADLS Gen2). **Required** -- there is no default and
+            no runtime auto-detection. Pass ``True`` for ADLS Gen2
+            accounts (atomic rename, real directories) or ``False`` for
+            flat Blob Storage. Use ``AzureUtils.detect_hns()`` to discover
+            the value once if you do not already know it.
         account_name: Storage account name.
         account_url: Full account URL (e.g. ``https://myaccount.dfs.core.windows.net``).
         account_key: Storage account key.
@@ -220,6 +231,7 @@ class AzureBackend(Backend):
         self,
         container: str,
         *,
+        hns: bool | None = None,
         account_name: str | None = None,
         account_url: str | None = None,
         account_key: str | Secret | None = None,
@@ -231,8 +243,9 @@ class AzureBackend(Backend):
         max_concurrency: int = 1,
         reject_write_under_file_ancestor: bool = False,
     ) -> None:
-        validate_azure_params(container, account_name, account_url, connection_string, max_concurrency)
+        validate_azure_params(container, account_name, account_url, connection_string, max_concurrency, hns)
         self._container = container
+        self._hns = bool(hns)
         self._account_name = account_name
         self._account_url = account_url
         self._account_key = _reveal(account_key)
@@ -248,8 +261,6 @@ class AzureBackend(Backend):
         self._cc_instance: Any = None
         self._datalake_service_instance: Any = None
         self._fs_instance: Any = None
-        self._hns_enabled: bool | None = None
-        self._hns_probe_warned: bool = False
         self._resolved_credential: Any = None
 
     # region: properties
@@ -266,18 +277,13 @@ class AzureBackend(Backend):
 
     # region: private — file-ancestor pre-check (opt-in)
 
-    def _maybe_check_no_file_ancestor(self, path: str, *, hns: bool | None = None) -> None:
+    def _maybe_check_no_file_ancestor(self, path: str) -> None:
         """Walk slash-aligned ancestors and reject on file hit, if the opt-in is set.
 
         Default-off. HNS accounts already reject via ``hdi_isfolder`` in
         the existing write path; this walk fires only when the user
         constructed the backend with the opt-in kwarg, and only on
         non-HNS accounts where the gate is otherwise missing.
-
-        ``hns`` lets a caller that already read ``self._hns`` pass that
-        snapshot in, so a single operation stays internally consistent even
-        if an uncached re-probe would otherwise re-evaluate the HNS state
-        mid-operation.
         """
         if not self._reject_write_under_file_ancestor:
             return
@@ -285,7 +291,7 @@ class AzureBackend(Backend):
         # / DataLake mkdir-walk; the opt-in walk is the non-HNS workaround.
         # (The HNS-side error-class translation to InvalidPath happens on
         # the operation's error path, independent of this pre-check.)
-        if self._hns if hns is None else hns:
+        if self._hns:
             return
         from azure.core.exceptions import AzureError, ResourceNotFoundError
 
@@ -1027,8 +1033,6 @@ class AzureBackend(Backend):
             return
 
         with self._errors(src):
-            # BUG-223: snapshot HNS once so every branch in this op agrees, even
-            # if an uncached probe failure would otherwise re-evaluate mid-op.
             hns = self._hns
             src_bc = self._blob_client(src)
             src_props = src_bc.get_blob_properties()  # raises NotFound if missing
@@ -1066,7 +1070,7 @@ class AzureBackend(Backend):
             # BE-018 precondition order: src-NotFound (raised above by
             # get_blob_properties) takes priority over dst-file-ancestor
             # (matches LocalBackend.move; ID-211 review).
-            self._maybe_check_no_file_ancestor(dst, hns=hns)
+            self._maybe_check_no_file_ancestor(dst)
             if hns:  # pragma: no cover -- HNS only
                 src_fc = self._fs.get_file_client(self._azure_path(src))
                 new_name = f"{self._container}/{self._azure_path(dst)}"
@@ -1099,8 +1103,6 @@ class AzureBackend(Backend):
             return
 
         with self._errors(src):
-            # BUG-223: snapshot HNS once so every branch in this op agrees, even
-            # if an uncached probe failure would otherwise re-evaluate mid-op.
             hns = self._hns
             src_bc = self._blob_client(src)
             src_props = src_bc.get_blob_properties()  # raises NotFound if missing
@@ -1136,7 +1138,7 @@ class AzureBackend(Backend):
                     pass
 
             # BE-019 precondition order: src-NotFound before dst-file-ancestor (ID-211 review).
-            self._maybe_check_no_file_ancestor(dst, hns=hns)
+            self._maybe_check_no_file_ancestor(dst)
             try:
                 dst_bc.start_copy_from_url(src_bc.url)
             except Exception:
@@ -1157,8 +1159,6 @@ class AzureBackend(Backend):
         self._blob_service_instance = None
         self._fs_instance = None
         self._datalake_service_instance = None
-        self._hns_enabled = None
-        self._hns_probe_warned = False
         # Close credential (e.g. DefaultAzureCredential holds transport sessions).
         if self._resolved_credential is not None:
             close = getattr(self._resolved_credential, "close", None)
@@ -1231,6 +1231,7 @@ class AzureBackend(Backend):
     def __repr__(self) -> str:
         return (
             f"AzureBackend(container={self._container!r}, "
+            f"hns={self._hns!r}, "
             f"account_name={self._account_name!r}, "
             f"account_key={'***' if self._account_key is not None else None!r}, "
             f"sas_token={'***' if self._sas_token is not None else None!r}, "
@@ -1262,8 +1263,6 @@ class AzureBackend(Backend):
     def _blob_service(self) -> Any:
         """Lazy BlobServiceClient."""
         if self._blob_service_instance is None:
-            from azure.storage.blob import BlobServiceClient
-
             opts: dict[str, Any] = dict(self._client_options)
             # BUG-161: force staged-block upload for large streams.
             _blk = _AZURE_BLOCK_SIZE
@@ -1273,15 +1272,14 @@ class AzureBackend(Backend):
             azure_retry = self._build_azure_retry()
             if azure_retry is not None and "retry_policy" not in opts:
                 opts["retry_policy"] = azure_retry
-            if self._connection_string:
-                self._blob_service_instance = BlobServiceClient.from_connection_string(self._connection_string, **opts)
-            else:  # pragma: no cover -- only reached without connection_string
-                url = self._account_url
-                if url is None and self._account_name is not None:
-                    url = f"https://{self._account_name}.blob.core.windows.net"
-                assert url is not None  # guaranteed by __init__ validation
-                cred = self._resolve_credential()
-                self._blob_service_instance = BlobServiceClient(account_url=url, credential=cred, **opts)
+            cred = None if self._connection_string else self._resolve_credential()
+            self._blob_service_instance = build_blob_service(
+                connection_string=self._connection_string,
+                account_url=self._account_url,
+                account_name=self._account_name,
+                credential=cred,
+                client_options=opts,
+            )
         return self._blob_service_instance
 
     @property
@@ -1324,32 +1322,6 @@ class AzureBackend(Backend):
         if self._fs_instance is None:
             self._fs_instance = self._datalake_service.get_file_system_client(self._container)
         return self._fs_instance
-
-    @property
-    def _hns(self) -> bool:
-        """Whether the storage account has Hierarchical Namespace enabled."""
-        if self._hns_enabled is None:
-            try:
-                info = self._blob_service.get_account_information()
-                self._hns_enabled = bool(info.get("is_hns_enabled", False))
-            except Exception:  # noqa: BLE001
-                # BUG-223: a failed probe is not cached (leave ``_hns_enabled``
-                # unset so the next op re-probes); fall back to non-HNS for this
-                # op only, so a transient blip self-heals rather than degrading
-                # the account for the instance lifetime. Warn once per instance.
-                # KNOWN LIMITATION (BK-302): a *persistently* failing probe
-                # re-probes once per op, and ops that read ``_hns`` more than once
-                # snapshot it (see ``move``/``copy``) to stay internally
-                # consistent. The full fix replaces this implicit probe with an
-                # explicit ``hns=`` declaration + ``AzureUtils.detect_hns()``.
-                if not self._hns_probe_warned:
-                    log.warning(
-                        "Failed to detect HNS status, falling back to non-HNS behavior",
-                        exc_info=True,
-                    )
-                    self._hns_probe_warned = True
-                return False
-        return self._hns_enabled
 
     def _azure_path(self, path: str) -> str:
         """Normalize path for Azure (strip leading /, collapse double separators)."""
@@ -1437,3 +1409,123 @@ class AzureBackend(Backend):
         return props_to_fileinfo(props, path)
 
     # endregion
+
+
+def _resolve_detect_credential(
+    *,
+    connection_string: Any,
+    account_key: Any,
+    sas_token: Any,
+    credential: Any,
+    is_async: bool,
+) -> Any:
+    """Credential for a throwaway detect client (``None`` for the conn-string form)."""
+    if connection_string:
+        return None
+    return resolve_credential(credential, account_key, sas_token, is_async=is_async, backend_name="azure")
+
+
+class AzureUtils:
+    """Stateless helpers for Azure Storage accounts.
+
+    A namespace of one-shot utilities that do not require constructing a full
+    ``AzureBackend`` -- mirroring ``SFTPUtils`` and ``GraphUtils``.
+    """
+
+    @staticmethod
+    def detect_hns(
+        *,
+        account_name: str | None = None,
+        account_url: str | None = None,
+        account_key: str | Secret | None = None,
+        sas_token: str | Secret | None = None,
+        connection_string: str | Secret | None = None,
+        credential: Any | None = None,
+        client_options: dict[str, Any] | None = None,
+    ) -> bool:
+        """Probe whether a storage account has Hierarchical Namespace enabled.
+
+        Issues a single ``GetAccountInfo`` call against the account, intended
+        for discovering the value to pass as ``AzureBackend(hns=...)``. This is
+        **fail-loud**: a probe error is mapped to a ``remote_store`` error and
+        raised, never swallowed.
+
+        Args:
+            account_name: Storage account name.
+            account_url: Full account URL (blob endpoint).
+            account_key: Storage account key.
+            sas_token: Shared Access Signature token.
+            connection_string: Azure Storage connection string. When set, takes
+                precedence over ``account_url`` / ``account_name``.
+            credential: Any credential object (e.g. ``DefaultAzureCredential()``).
+            client_options: Additional options passed to the service client.
+
+        Returns:
+            ``True`` if Hierarchical Namespace (ADLS Gen2) is enabled, ``False``
+            for a flat Blob Storage account.
+
+        Raises:
+            RemoteStoreError: If the probe fails (authentication, network, etc.).
+        """
+        conn = _reveal(connection_string)
+        cred = _resolve_detect_credential(
+            connection_string=conn,
+            account_key=_reveal(account_key),
+            sas_token=_reveal(sas_token),
+            credential=credential,
+            is_async=False,
+        )
+        svc = build_blob_service(
+            connection_string=conn,
+            account_url=account_url,
+            account_name=account_name,
+            credential=cred,
+            client_options=client_options,
+        )
+        try:
+            try:
+                info = svc.get_account_information()
+            except Exception as exc:  # noqa: BLE001
+                raise classify_azure_error(exc, "", "azure") from exc
+            return bool(info.get("is_hns_enabled", False))
+        finally:
+            with contextlib.suppress(Exception):
+                svc.close()
+
+    @staticmethod
+    async def adetect_hns(
+        *,
+        account_name: str | None = None,
+        account_url: str | None = None,
+        account_key: str | Secret | None = None,
+        sas_token: str | Secret | None = None,
+        connection_string: str | Secret | None = None,
+        credential: Any | None = None,
+        client_options: dict[str, Any] | None = None,
+    ) -> bool:
+        """Async sibling of ``detect_hns`` (uses the async Blob SDK)."""
+        conn = _reveal(connection_string)
+        cred = _resolve_detect_credential(
+            connection_string=conn,
+            account_key=_reveal(account_key),
+            sas_token=_reveal(sas_token),
+            credential=credential,
+            is_async=True,
+        )
+        svc = build_blob_service(
+            connection_string=conn,
+            account_url=account_url,
+            account_name=account_name,
+            credential=cred,
+            client_options=client_options,
+            is_async=True,
+        )
+        try:
+            try:
+                info = await svc.get_account_information()
+            except Exception as exc:  # noqa: BLE001
+                raise classify_azure_error(exc, "", "azure") from exc
+            return bool(info.get("is_hns_enabled", False))
+        finally:
+            with contextlib.suppress(Exception):
+                await svc.close()

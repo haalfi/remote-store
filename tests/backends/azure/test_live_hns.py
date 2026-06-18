@@ -49,7 +49,7 @@ What stays here are cases the conformance suite cannot express:
   probe for the root and relies on ``get_paths(path="/")`` instead
   (``TestAzureLiveHnsGetFolderInfoRoot``, BUG-213, AZ-024).
 
-* **``_ensure_hns()`` exists fallback on real HNS directories.** Only a
+* **HNS ``exists`` fallback on real HNS directories.** Only a
   real account exercises the blob-client miss → DataLake directory probe
   fallback chain (``TestAzureLiveHnsExists``).
 
@@ -175,7 +175,7 @@ def live_hns_backend() -> Iterator[tuple[AzureBackend, str]]:
         fs_client = service.get_file_system_client(fs_name)
         fs_client.get_directory_client(dirpath).create_directory()
         try:
-            backend = AzureBackend(container=fs_name, connection_string=conn)
+            backend = AzureBackend(container=fs_name, hns=True, connection_string=conn)
             try:
                 yield backend, dirpath
             finally:
@@ -375,9 +375,9 @@ class TestAzureLiveHnsExists:
     """``exists`` on a real HNS directory — DataLake probe-fallback chain.
 
     Conformance covers ``exists`` on regular present / missing files. The HNS
-    branch additionally falls back from the blob client to a DataLake directory
-    probe (``_ensure_hns()``); that fallback only fires on a real ADLS Gen2
-    directory blob created via ``DataLakeServiceClient``.
+    branch (selected by the declared ``hns=True``) additionally falls back from
+    the blob client to a DataLake directory probe; that fallback only fires on a
+    real ADLS Gen2 directory blob created via ``DataLakeServiceClient``.
 
     Spec: BE-015 (exists).
     """

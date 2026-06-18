@@ -60,9 +60,8 @@ def _azure_backend(side_effect: Any = None) -> Any:
         cc_mock.get_container_properties.side_effect = side_effect
     else:
         cc_mock.get_container_properties.return_value = {}
-    backend = AzureBackend(container="test", connection_string=_CONN_STR)
+    backend = AzureBackend(container="test", hns=False, connection_string=_CONN_STR)
     backend._cc_instance = cc_mock
-    backend._hns_enabled = False
     _BACKENDS.append(backend)
     return backend, cc_mock
 
@@ -78,9 +77,8 @@ def _azure_hns_backend(side_effect: Any = None) -> Any:
         fs_mock.get_file_system_properties.side_effect = side_effect
     else:
         fs_mock.get_file_system_properties.return_value = {}
-    backend = AzureBackend(container="test", connection_string=_CONN_STR)
+    backend = AzureBackend(container="test", hns=True, connection_string=_CONN_STR)
     backend._fs_instance = fs_mock
-    backend._hns_enabled = True
     _BACKENDS.append(backend)
     return backend, fs_mock
 

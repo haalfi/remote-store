@@ -21,6 +21,7 @@ Unlike the S3 backends (which use `s3fs`, an fsspec wrapper), this backend uses 
 AzureBackend(
     container: str,
     *,
+    hns: bool,  # required — see AZ-006; no default, no auto-detection
     account_name: str | None = None,
     account_url: str | None = None,
     account_key: str | None = None,
@@ -32,7 +33,7 @@ AzureBackend(
     max_concurrency: int = 1,  # see AZ-033
 )
 ```
-**Postconditions:** The backend stores configuration but does not connect to Azure during construction (see AZ-004). At least one of `account_name`, `account_url`, or `connection_string` must be provided — otherwise `ValueError` is raised at construction time.
+**Postconditions:** The backend stores configuration but does not connect to Azure during construction (see AZ-004). `hns` must be declared explicitly (`True` or `False`) and at least one of `account_name`, `account_url`, or `connection_string` must be provided — otherwise `ValueError` is raised at construction time.
 
 ### AZ-002: Backend Name
 
@@ -49,23 +50,23 @@ AzureBackend(
 
 ### AZ-004: Lazy Connection
 
-**Invariant:** No network call occurs during `__init__`. The `BlobServiceClient`, `DataLakeServiceClient` (HNS only), and HNS detection are deferred to first use.
+**Invariant:** No network call occurs during `__init__`. The `BlobServiceClient` and `DataLakeServiceClient` (HNS only) are deferred to first use. HNS status is not discovered at runtime at all — it is a declared input (see AZ-006).
 **Rationale:** Same as S3-004 — the backend may be created during application wiring before the network is available.
 
 ### AZ-005: Construction Validation
 
-**Invariant:** `container` must be a non-empty string. Passing an empty or whitespace-only container raises `ValueError` at construction time. At least one of `account_name`, `account_url`, or `connection_string` must be provided — otherwise `ValueError` at construction.
+**Invariant:** `container` must be a non-empty string. Passing an empty or whitespace-only container raises `ValueError` at construction time. `hns` must be declared explicitly (`True` or `False`); omitting it raises `ValueError` (see AZ-006). At least one of `account_name`, `account_url`, or `connection_string` must be provided — otherwise `ValueError` at construction.
 **Postconditions:** No network validation of container existence at construction time. Invalid names are caught by Azure on first operation and mapped to the appropriate error.
 
 ---
 
-## HNS Detection
+## HNS Declaration
 
 ### AZ-006: Adaptive Behavior Based on Hierarchical Namespace
 
-**Invariant:** On first use, the backend calls `GetAccountInfo` to determine whether the storage account has Hierarchical Namespace (HNS) enabled. A *successful* probe result (HNS or flat) is cached for the lifetime of the backend instance. A probe that *errors* (BUG-223) is **not** cached: the operation falls back to non-HNS behavior for that call, and the next operation re-probes — so a transient blip does not permanently degrade an HNS account to flat semantics. A warning is logged once per instance. An operation that reads the HNS state more than once (e.g. `move`/`copy`) snapshots it once at entry, so a single logical operation stays internally consistent even if an uncached re-probe would otherwise re-evaluate mid-operation.
+**Invariant:** Whether the storage account has Hierarchical Namespace (HNS) enabled is a **mandatory, explicit** constructor and config input: `AzureBackend(..., hns: bool)`. There is no default and no runtime auto-detection. A backend constructed without `hns` raises `ValueError` at construction time (fail loud — the account's nature is never silently inferred). The declared value is stored as an immutable attribute and governs every adaptive code path below; because it is a constant, no operation can observe a different HNS state than the one declared (no probe, no cache, no per-operation snapshot).
 
-> **Auto-detection is interim (BK-302).** This implicit `GetAccountInfo` probe is the root of BUG-223's failure modes (sticky misdetection, per-operation re-probe under a persistent failure, and the snapshot needed for internal consistency). The committed direction is to remove auto-detection in favor of an **explicit** `hns=` declaration on the backend/config plus an `AzureUtils.detect_hns()` helper (mirroring `SFTPUtils`/`GraphUtils`), defaulting to a required declaration so the account's nature is never silently inferred. See BK-302.
+**Discovery:** Users who do not know an account's HNS status call the public one-shot helper `AzureUtils.detect_hns(...)` (sync) / `AzureUtils.adetect_hns(...)` (async), which issues a single `GetAccountInfo` call and returns a `bool`. The helper is **fail-loud**: a probe error is mapped to a `remote_store` error and raised, not swallowed. This mirrors `SFTPUtils.scan_host_keys` / `GraphUtils.resolve_drive_id`. See [ADR-0030](../adrs/0030-azure-hns-explicit-declaration.md).
 
 **Behavior matrix:**
 
@@ -77,9 +78,9 @@ AzureBackend(
 | `list_files` / `list_folders` | Native directory listing | Prefix-based listing |
 | `delete_folder(recursive=True)` | Single recursive delete | Iterate + delete each path |
 
-**Rationale:** ADLS Gen2 has real directories and atomic rename — the backend should use these when available. Plain Blob Storage accounts are still supported by falling back to S3-equivalent semantics (virtual folders, copy+delete move, PUT atomicity).
+**Rationale:** ADLS Gen2 has real directories and atomic rename — the backend should use these when available. Plain Blob Storage accounts are still supported by declaring `hns=False` and falling back to S3-equivalent semantics (virtual folders, copy+delete move, PUT atomicity). Making the account's nature an explicit declaration rather than a runtime probe makes the backend deterministic from construction and removes the sticky-misdetection, re-probe-storm, and torn-read failure modes a network probe is subject to.
 
-**Postconditions:** The HNS check is performed at most once *successfully*. If the check fails, the backend falls back to non-HNS behavior for that operation, logs a warning (once per instance), and does not cache the failure; the next operation re-probes. **Known limitation (BK-302):** a *persistently* failing probe re-probes once per operation (it is not cached), which the explicit-declaration redesign removes by replacing the probe with a declared `hns=` value.
+**Postconditions:** No network call determines HNS status — the declared value is authoritative for the lifetime of the instance.
 
 ---
 
@@ -254,7 +255,7 @@ backend.to_key("data/file.txt")               # -> "data/file.txt" (no prefix, u
 
 ### AZ-029: close()
 
-**Invariant:** `close()` closes the underlying `BlobServiceClient`, `ContainerClient`, and (if HNS) `FileSystemClient` and `DataLakeServiceClient`. Resets all cached instances and HNS detection state.
+**Invariant:** `close()` closes the underlying `BlobServiceClient`, `ContainerClient`, and (if HNS) `FileSystemClient` and `DataLakeServiceClient`. Resets all cached client instances. The declared `hns` value is immutable config and is not reset.
 **Postconditions:** Safe to call multiple times. Note: because lazy properties re-initialize on next use, the backend is technically reusable after `close()`. This is consistent with S3Backend's behavior.
 
 ### AZ-030: unwrap()

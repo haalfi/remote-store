@@ -127,10 +127,13 @@ identify which list the server narrowed.
 **Cause:** Azure Blob Storage has two modes: flat namespace (default) and
 hierarchical namespace (HNS / ADLS Gen2). Some operations behave differently.
 
-**Fix:** Ensure your storage account type matches your expectations. HNS
+**Fix:** Ensure the `hns` you declared matches the actual account type. The
+Azure backend does not auto-detect HNS — you pass `hns=True` for ADLS Gen2 or
+`hns=False` for flat Blob Storage. A mismatch (e.g. `hns=False` against a real
+HNS account) makes the backend use the wrong code path. If you are unsure of an
+account's type, call `AzureUtils.detect_hns(...)` once and pass the result. HNS
 accounts support true directory operations; flat namespace accounts simulate
-them. The Azure backend handles both, but HNS is recommended for data lake
-workloads.
+them, and HNS is recommended for data lake workloads.
 
 ## S3 endpoint configuration for MinIO / local S3
 

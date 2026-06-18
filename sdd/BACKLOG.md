@@ -97,24 +97,6 @@ and the highest ID already in this file, then take the next integer. Run
   per-method difference in the guide's digest claim or populate `digest` from the
   post-rename properties when available.
 
-- [ ] **BK-302 — Replace implicit HNS auto-detection with an explicit `hns=` declaration + `AzureUtils`**
-  spec: AZ-006 · effort: L · audience: user.api, library.maintainer
-  Surfaced reviewing BUG-223 (PR #841). The backend infers HNS vs flat by probing
-  `GetAccountInfo` on first use — implicit "magic" whose failure modes drove BUG-223:
-  sticky misdetection (cache a wrong result for the instance lifetime), a per-operation
-  re-probe storm under a persistent failure, an RBAC-propagation 403 that is *not*
-  permanent, and the need to snapshot `_hns` so a single op cannot straddle the HNS and
-  non-HNS code paths. The interim BUG-223 fix (never-cache + per-op snapshot) bounds the
-  damage but does not remove the root cause. Direction (agreed): make the account's
-  nature an **explicit, mandatory** input — an `hns: bool` option on the backend and
-  config (no silent default; fail loud if undeclared) — and provide a public
-  `AzureUtils.detect_hns(...)` one-shot helper (fail-loud; raises on probe error) for
-  users who need to discover it, mirroring `SFTPUtils.scan_host_keys` /
-  `GraphUtils.resolve_drive_id`. Delete the `_ensure_hns`/`_hns` probe+cache machinery;
-  `_hns` becomes a declared constant (which also removes the snapshot/torn-read concern).
-  Needs an ADR (auto-detect → declared), an AZ-006 rewrite, config-schema + docs +
-  examples updates, and a migration guide. Its own session.
-
 - [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
   spec: — · effort: S · audience: library.maintainer, user.api
   The `examples/medallion_dagster/` showcase demonstrates a realistic user journey

@@ -107,7 +107,7 @@ def azure_backend(azurite_server: str | None) -> Iterator[Backend]:
         service.close()
         raise
 
-    b = AzureBackend(container=container, connection_string=azurite_server)
+    b = AzureBackend(container=container, hns=False, connection_string=azurite_server)
     try:
         yield b
     finally:

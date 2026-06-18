@@ -399,7 +399,7 @@ def live_adapted_backend(
         except Exception:  # noqa: BLE001
             service.close()
             raise
-        b = AzureBackend(container=container, connection_string=azurite_server)
+        b = AzureBackend(container=container, hns=False, connection_string=azurite_server)
         try:
             yield SyncBackendAdapter(b)
         finally:
@@ -487,7 +487,7 @@ def live_adapted_backend_concurrent(
         except Exception:  # noqa: BLE001
             service.close()
             raise
-        b = AzureBackend(container=container, connection_string=azurite_server)
+        b = AzureBackend(container=container, hns=False, connection_string=azurite_server)
         try:
             yield SyncBackendAdapter(b)
         finally:

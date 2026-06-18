@@ -1,0 +1,107 @@
+id: BK-302
+title: "Replace implicit HNS auto-detection with an explicit hns= declaration + AzureUtils"
+trigger: >-
+  Reviewing BUG-223 (PR #841) showed the Azure backend inferred HNS vs flat by
+  probing GetAccountInfo on first use. That implicit probe was the root of
+  BUG-223's failure modes (sticky misdetection, per-op re-probe storm,
+  RBAC-propagation 403, torn-read snapshot). The interim never-cache + warn-once
+  + snapshot fix bounded the damage without removing the cause.
+source_items:
+  - BK-302
+  - BUG-223
+audience:
+  - user.api
+  - library.maintainer
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-302 (item)"
+        read_type: gate
+        extract: "Agreed direction: mandatory hns=, fail-loud; public AzureUtils.detect_hns mirroring SFTPUtils/GraphUtils; delete probe+cache"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "_hns property, move/copy snapshots, _maybe_check_no_file_ancestor"
+        read_type: reference
+        extract: "Locate every probe read site and the BUG-223 snapshot plumbing to remove"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "_ensure_hns, await call sites"
+        read_type: reference
+        extract: "Async twin: ~20 await self._ensure_hns() sites to collapse to self._hns"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: src/remote_store/aio/backends/_graph/utils.py
+        section: "resolve_drive_id / aresolve_drive_id"
+        read_type: reference
+        extract: "Sync+async helper shape to mirror for detect_hns / adetect_hns"
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "SFTPUtils.scan_host_keys"
+        read_type: reference
+        extract: "Throwaway-client one-shot probe pattern + class placement/export"
+        outcome: ok
+      - file: sdd/adrs/0026-strict-gate-on-kwarg.md
+        section: "(full)"
+        read_type: reference
+        extract: "ADR shape for a never-silently-degrade kwarg decision (model for ADR-0030)"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_azure_common.py
+        section: "validate_azure_params, build_blob_service"
+        read_type: reference
+        extract: "Add fail-loud hns check; factor shared BlobServiceClient construction used by backend + AzureUtils"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "AzureUtils (new)"
+        read_type: reference
+        extract: "detect_hns/adetect_hns fail-loud via classify_azure_error; export from backends/__init__.py"
+        outcome: ok
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/012-azure-backend.md
+        section: "AZ-006, AZ-004, AZ-029, AZ-001, AZ-005"
+        read_type: gate
+        extract: "Rewrite AZ-006 to declared model; drop detection language in AZ-004/AZ-029; add hns to AZ-001/AZ-005"
+        outcome: ok
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-070"
+        read_type: gate
+        extract: "Dual-mode invariant still said _ensure_hns()-detected; rewrite to declared hns and re-mark a test"
+        outcome: misleading
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/guides/backends/azure.md
+        section: "HNS vs Non-HNS"
+        read_type: reference
+        extract: "Replace auto-detect prose + forward-looking admonition with hns= usage and detect_hns example"
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.28.0 to v0.29.0"
+        read_type: reference
+        extract: "New breaking-change section with before/after + detect_hns recipe"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Backend, Public API, Capability, Spec"
+        read_type: verify
+        extract: "Backend + config + public API + spec touched; AzureUtils needs an api index row (gen-api-check ID-173)"
+        outcome: ok
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "azure_replay (flat_namespace inherited false)"
+        read_type: verify
+        extract: "Replay fixtures are HNS-shape -> construct hns=True; confirmed replay tolerates the now-unused GetAccountInfo cassette interaction"
+        outcome: ok

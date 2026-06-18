@@ -29,6 +29,7 @@ from remote_store.backends._azure import _AZURE_BLOCK_SIZE, AzureBackend
 from remote_store.backends._azure_common import (
     _build_azure_write_result,
     build_azure_retry,
+    build_blob_service,
     classify_azure_error,
     props_to_fileinfo,
     validate_azure_params,
@@ -56,10 +57,18 @@ class AsyncAzureBackend(AsyncBackend):
 
     Uses the async Blob SDK for non-HNS accounts (plain Blob Storage, Azurite)
     and the async DataLake SDK for HNS accounts (ADLS Gen2) to get atomic
-    rename and real directory support.
+    rename and real directory support. Whether the account is HNS is declared
+    explicitly via the required ``hns`` argument -- the backend does not probe
+    for it.
 
     Args:
         container: Azure Storage container name (required, non-empty).
+        hns: Whether the storage account has Hierarchical Namespace
+            enabled (ADLS Gen2). **Required** -- there is no default and
+            no runtime auto-detection. Pass ``True`` for ADLS Gen2
+            accounts (atomic rename, real directories) or ``False`` for
+            flat Blob Storage. Use ``AzureUtils.adetect_hns()`` to discover
+            the value once if you do not already know it.
         account_name: Storage account name.
         account_url: Full account URL (e.g. ``https://myaccount.dfs.core.windows.net``).
         account_key: Storage account key.
@@ -93,6 +102,7 @@ class AsyncAzureBackend(AsyncBackend):
         self,
         container: str,
         *,
+        hns: bool | None = None,
         account_name: str | None = None,
         account_url: str | None = None,
         account_key: str | Secret | None = None,
@@ -104,8 +114,9 @@ class AsyncAzureBackend(AsyncBackend):
         max_concurrency: int = 1,
         reject_write_under_file_ancestor: bool = False,
     ) -> None:
-        validate_azure_params(container, account_name, account_url, connection_string, max_concurrency)
+        validate_azure_params(container, account_name, account_url, connection_string, max_concurrency, hns)
         self._container = container
+        self._hns = bool(hns)
         self._account_name = account_name
         self._account_url = account_url
         self._account_key = _reveal(account_key)
@@ -121,8 +132,6 @@ class AsyncAzureBackend(AsyncBackend):
         self._cc_instance: Any = None
         self._datalake_service_instance: Any = None
         self._fs_instance: Any = None
-        self._hns_enabled: bool | None = None
-        self._hns_probe_warned: bool = False
         self._resolved_credential: Any = None
 
     # region: properties
@@ -141,16 +150,11 @@ class AsyncAzureBackend(AsyncBackend):
 
     # region: private — file-ancestor pre-check (opt-in)
 
-    async def _maybe_check_no_file_ancestor(self, path: str, *, hns: bool | None = None) -> None:
-        """Async sibling of ``AzureBackend._maybe_check_no_file_ancestor``.
-
-        ``hns`` lets a caller that already resolved ``_ensure_hns()`` pass that
-        snapshot in, so a single operation stays internally consistent even if
-        an uncached re-probe would otherwise re-evaluate the HNS state mid-op.
-        """
+    async def _maybe_check_no_file_ancestor(self, path: str) -> None:
+        """Async sibling of ``AzureBackend._maybe_check_no_file_ancestor``."""
         if not self._reject_write_under_file_ancestor:
             return
-        if (await self._ensure_hns()) if hns is None else hns:
+        if self._hns:
             return
         from azure.core.exceptions import AzureError
 
@@ -178,8 +182,6 @@ class AsyncAzureBackend(AsyncBackend):
     def _blob_service(self) -> Any:
         """Lazy async BlobServiceClient."""
         if self._blob_service_instance is None:
-            from azure.storage.blob.aio import BlobServiceClient
-
             opts: dict[str, Any] = dict(self._client_options)
             # BUG-161/BUG-162: force staged-block upload, keep memory bounded.
             _blk = _AZURE_BLOCK_SIZE
@@ -189,15 +191,15 @@ class AsyncAzureBackend(AsyncBackend):
             azure_retry = build_azure_retry(self._retry)
             if azure_retry is not None and "retry_policy" not in opts:
                 opts["retry_policy"] = azure_retry
-            if self._connection_string:
-                self._blob_service_instance = BlobServiceClient.from_connection_string(self._connection_string, **opts)
-            else:  # pragma: no cover -- only reached without connection_string
-                url = self._account_url
-                if url is None and self._account_name is not None:
-                    url = f"https://{self._account_name}.blob.core.windows.net"
-                assert url is not None  # guaranteed by __init__ validation
-                cred = self._get_credential()
-                self._blob_service_instance = BlobServiceClient(account_url=url, credential=cred, **opts)
+            cred = None if self._connection_string else self._get_credential()
+            self._blob_service_instance = build_blob_service(
+                connection_string=self._connection_string,
+                account_url=self._account_url,
+                account_name=self._account_name,
+                credential=cred,
+                client_options=opts,
+                is_async=True,
+            )
         return self._blob_service_instance
 
     @property
@@ -244,39 +246,6 @@ class AsyncAzureBackend(AsyncBackend):
 
     # endregion
 
-    # region: HNS detection
-
-    async def _ensure_hns(self) -> bool:
-        """Detect whether the storage account has Hierarchical Namespace enabled.
-
-        Returns:
-            ``True`` if HNS is enabled, ``False`` otherwise.
-        """
-        if self._hns_enabled is None:
-            try:
-                info = await self._blob_service.get_account_information()
-                self._hns_enabled = bool(info.get("is_hns_enabled", False))
-            except Exception:  # noqa: BLE001
-                # BUG-223: a failed probe is not cached (leave ``_hns_enabled``
-                # unset so the next op re-probes); fall back to non-HNS for this
-                # op only, so a transient blip self-heals rather than degrading
-                # the account for the instance lifetime. Warn once per instance.
-                # KNOWN LIMITATION (BK-302): a *persistently* failing probe
-                # re-probes once per op, and ops that read ``_hns`` more than once
-                # snapshot it (see ``move``/``copy``) to stay internally
-                # consistent. The full fix replaces this implicit probe with an
-                # explicit ``hns=`` declaration + ``AzureUtils.detect_hns()``.
-                if not self._hns_probe_warned:
-                    log.warning(
-                        "Failed to detect HNS status, falling back to non-HNS behavior",
-                        exc_info=True,
-                    )
-                    self._hns_probe_warned = True
-                return False
-        return self._hns_enabled
-
-    # endregion
-
     # region: public methods
 
     async def check_health(self) -> None:
@@ -288,7 +257,7 @@ class AsyncAzureBackend(AsyncBackend):
             BackendUnavailable: If the backend cannot be reached.
         """
         async with self._errors():
-            if await self._ensure_hns():  # pragma: no cover -- HNS only
+            if self._hns:  # pragma: no cover -- HNS only
                 await self._fs.get_file_system_properties()
             else:
                 await self._cc.get_container_properties()
@@ -368,7 +337,7 @@ class AsyncAzureBackend(AsyncBackend):
             except ResourceNotFoundError:
                 pass
             # Check as folder
-            if await self._ensure_hns():  # pragma: no cover -- HNS only
+            if self._hns:  # pragma: no cover -- HNS only
                 try:
                     await self._fs.get_directory_client(ap).get_directory_properties()
                     return True
@@ -410,7 +379,7 @@ class AsyncAzureBackend(AsyncBackend):
             ap = _azure_path_fn(path)
             if not ap:
                 return True
-            if await self._ensure_hns():  # pragma: no cover -- HNS only
+            if self._hns:  # pragma: no cover -- HNS only
                 try:
                     props = await self._fs.get_directory_client(ap).get_directory_properties()
                     # On HNS, get_directory_properties() succeeds for both files and
@@ -441,7 +410,7 @@ class AsyncAzureBackend(AsyncBackend):
         try:
             bc = self._blob_client(path)
             downloader = await bc.download_blob(max_concurrency=self._max_concurrency)
-            if await self._ensure_hns():  # pragma: no cover -- HNS only
+            if self._hns:  # pragma: no cover -- HNS only
                 # BE-021: await download_blob() makes the initial HTTP request,
                 # so downloader.properties is populated before streaming starts.
                 # Check hdi_isfolder before yielding any bytes.
@@ -481,7 +450,7 @@ class AsyncAzureBackend(AsyncBackend):
             bc = self._blob_client(path)
             downloader = await bc.download_blob(max_concurrency=self._max_concurrency)
             data = bytes(await downloader.readall())
-            if await self._ensure_hns():
+            if self._hns:
                 # BE-021: file-API operations on an HNS directory path must
                 # raise InvalidPath. download_blob() succeeds (directory marker
                 # is a 0-byte blob), so inspect response metadata post-download.
@@ -517,7 +486,7 @@ class AsyncAzureBackend(AsyncBackend):
         await self._maybe_check_no_file_ancestor(path)
         async with self._errors(path):
             bc = self._blob_client(path)
-            if await self._ensure_hns():
+            if self._hns:
                 try:
                     props = await bc.get_blob_properties()
                     blob_meta = getattr(props, "metadata", None) or {}
@@ -601,7 +570,7 @@ class AsyncAzureBackend(AsyncBackend):
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If ``path`` names a directory.
         """
-        if not await self._ensure_hns():
+        if not self._hns:
             # non-HNS: direct upload is atomic (PUT semantics)
             return await self.write(path, content, overwrite=overwrite, metadata=metadata)
 
@@ -715,7 +684,7 @@ class AsyncAzureBackend(AsyncBackend):
         """
         async with self._errors(path):
             bc = self._blob_client(path)
-            if await self._ensure_hns():
+            if self._hns:
                 try:
                     props = await bc.get_blob_properties()
                     blob_meta = getattr(props, "metadata", None) or {}
@@ -745,7 +714,7 @@ class AsyncAzureBackend(AsyncBackend):
                 # A path under a file-ancestor is "not in fs" on HNS, so
                 # BE-012's !PathExists ==> NotFound applies (not the SDK's
                 # AlreadyExists/409). missing_ok treats it as a quiet no-op.
-                if await self._ensure_hns() and await self._hns_first_file_ancestor(path) is not None:
+                if self._hns and await self._hns_first_file_ancestor(path) is not None:
                     if not missing_ok:
                         raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
                     return
@@ -767,7 +736,7 @@ class AsyncAzureBackend(AsyncBackend):
         async with self._errors(path):
             ap = _azure_path_fn(path)
 
-            if await self._ensure_hns():  # pragma: no cover -- HNS only
+            if self._hns:  # pragma: no cover -- HNS only
                 dc = self._fs.get_directory_client(ap)
                 try:
                     props = await dc.get_directory_properties()
@@ -829,7 +798,7 @@ class AsyncAzureBackend(AsyncBackend):
             ap = _azure_path_fn(path)
             prefix = (ap.rstrip("/") + "/") if ap else ""
 
-            if await self._ensure_hns():  # pragma: no cover -- HNS only
+            if self._hns:  # pragma: no cover -- HNS only
                 try:
                     paths = self._fs.get_paths(path=ap or "/", recursive=recursive)
                     async for p in paths:
@@ -879,7 +848,7 @@ class AsyncAzureBackend(AsyncBackend):
             ap = _azure_path_fn(path)
             prefix = (ap.rstrip("/") + "/") if ap else ""
 
-            if await self._ensure_hns():  # pragma: no cover -- HNS only
+            if self._hns:  # pragma: no cover -- HNS only
                 try:
                     paths = self._fs.get_paths(path=ap or "/", recursive=False)
                     async for p in paths:
@@ -919,7 +888,7 @@ class AsyncAzureBackend(AsyncBackend):
             ap = _azure_path_fn(path)
             prefix = (ap.rstrip("/") + "/") if ap else ""
 
-            if await self._ensure_hns():  # pragma: no cover -- HNS only
+            if self._hns:  # pragma: no cover -- HNS only
                 try:
                     paths = self._fs.get_paths(path=ap or "/", recursive=False)
                     async for p in paths:
@@ -1014,7 +983,7 @@ class AsyncAzureBackend(AsyncBackend):
             total_size = 0
             latest_modified: datetime | None = None
 
-            if await self._ensure_hns():
+            if self._hns:
                 # DFS get_paths exposes is_directory inline; list_blobs would
                 # silently count hdi_isfolder marker blobs as files (BUG-199).
                 # BUG-213: skip the per-path probe for the filesystem root —
@@ -1101,7 +1070,7 @@ class AsyncAzureBackend(AsyncBackend):
                 raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
 
             dst_bc = self._blob_client(dst)
-            is_hns = await self._ensure_hns()
+            is_hns = self._hns
             if not overwrite:
                 try:
                     dst_props = await dst_bc.get_blob_properties()
@@ -1131,7 +1100,7 @@ class AsyncAzureBackend(AsyncBackend):
             # ASYNC-018 precondition order: src-NotFound (raised above by
             # get_blob_properties) takes priority over dst-file-ancestor
             # (matches LocalBackend.move; ID-211 review).
-            await self._maybe_check_no_file_ancestor(dst, hns=is_hns)
+            await self._maybe_check_no_file_ancestor(dst)
             if is_hns:  # pragma: no cover -- HNS only
                 src_fc = self._fs.get_file_client(_azure_path_fn(src))
                 new_name = f"{self._container}/{_azure_path_fn(dst)}"
@@ -1184,7 +1153,7 @@ class AsyncAzureBackend(AsyncBackend):
                 raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
 
             dst_bc = self._blob_client(dst)
-            is_hns = await self._ensure_hns()
+            is_hns = self._hns
             if not overwrite:
                 try:
                     dst_props = await dst_bc.get_blob_properties()
@@ -1212,7 +1181,7 @@ class AsyncAzureBackend(AsyncBackend):
                     pass
 
             # ASYNC-019 precondition order: src-NotFound before dst-file-ancestor (ID-211 review).
-            await self._maybe_check_no_file_ancestor(dst, hns=is_hns)
+            await self._maybe_check_no_file_ancestor(dst)
             try:
                 await dst_bc.start_copy_from_url(src_bc.url)
             except Exception:
@@ -1234,8 +1203,6 @@ class AsyncAzureBackend(AsyncBackend):
         self._blob_service_instance = None
         self._fs_instance = None
         self._datalake_service_instance = None
-        self._hns_enabled = None
-        self._hns_probe_warned = False
         # Close auto-created async credential (holds aiohttp sessions).
         if self._resolved_credential is not None:
             close = getattr(self._resolved_credential, "close", None)
@@ -1310,6 +1277,7 @@ class AsyncAzureBackend(AsyncBackend):
     def __repr__(self) -> str:
         return (
             f"AsyncAzureBackend(container={self._container!r}, "
+            f"hns={self._hns!r}, "
             f"account_name={self._account_name!r}, "
             f"account_key={'***' if self._account_key is not None else None!r}, "
             f"sas_token={'***' if self._sas_token is not None else None!r}, "
@@ -1374,7 +1342,7 @@ class AsyncAzureBackend(AsyncBackend):
         SDK error is keyed to ``src``; pass ``dst`` so the error targets the
         destination the contract names.
         """
-        if not await self._ensure_hns():
+        if not self._hns:
             return  # pragma: no cover -- HNS only
         ancestor = await self._hns_first_file_ancestor(path)
         if ancestor is not None:

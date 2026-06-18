@@ -355,7 +355,7 @@ def azurite_lake() -> Iterator[Store]:
     service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
     service.create_container(container)
 
-    backend = AzureBackend(container=container, connection_string=AZURITE_CONN_STR)
+    backend = AzureBackend(container=container, hns=False, connection_string=AZURITE_CONN_STR)
     store = Store(backend=backend)
     yield store
     store.close()
@@ -542,7 +542,7 @@ def _build_store_chain() -> tuple[list[tuple[str, Store]], list[_CleanupEntry]]:
         stores.append(
             (
                 "azure",
-                Store(backend=AzureBackend(container=container, connection_string=AZURITE_CONN_STR)),
+                Store(backend=AzureBackend(container=container, hns=False, connection_string=AZURITE_CONN_STR)),
             )
         )
         cleanups.append(_CleanupEntry("azure", {"service": service, "container": container}))

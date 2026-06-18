@@ -19,6 +19,7 @@ import pytest
 
 pytest.importorskip("azure.storage.filedatalake", reason="azure-storage-file-datalake not installed")
 
+from azure.core.exceptions import ClientAuthenticationError  # noqa: E402
 from azure.storage.blob import (  # noqa: E402
     BlobClient,
     BlobProperties,
@@ -48,7 +49,7 @@ from remote_store._errors import (  # noqa: E402
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, WriteResult  # noqa: E402
-from remote_store.backends._azure import AzureBackend, _AzureBinaryIO, _ByteCountingIO  # noqa: E402
+from remote_store.backends._azure import AzureBackend, AzureUtils, _AzureBinaryIO, _ByteCountingIO  # noqa: E402
 from tests.backends.azure._materialization_guard import (  # noqa: E402
     FULL_PAYLOAD,
     ReadSizeSpy,
@@ -68,8 +69,12 @@ _BACKENDS: list[AzureBackend] = []
 
 
 def _make_backend(**kw: Any) -> AzureBackend:
-    """Shorthand for creating an AzureBackend with sensible test defaults."""
-    defaults: dict[str, Any] = {"container": "test", "account_name": "x", "account_key": "fakekey"}
+    """Shorthand for creating an AzureBackend with sensible test defaults.
+
+    Defaults to ``hns=False``; pass ``hns=True`` (or set ``backend._hns``
+    afterwards) for HNS-path tests.
+    """
+    defaults: dict[str, Any] = {"container": "test", "hns": False, "account_name": "x", "account_key": "fakekey"}
     defaults.update(kw)
     backend = AzureBackend(**defaults)
     _BACKENDS.append(backend)
@@ -113,7 +118,7 @@ def azure_backend(azurite_server: str | None) -> Iterator[Backend]:
         service.close()
         raise
 
-    backend = AzureBackend(container=container, connection_string=azurite_server)
+    backend = AzureBackend(container=container, hns=False, connection_string=azurite_server)
     yield backend
 
     backend.close()
@@ -238,12 +243,24 @@ class TestAzureConstruction:
     )
     def test_invalid_container_raises(self, container: str) -> None:
         with pytest.raises(ValueError, match="container"):
-            AzureBackend(container=container, account_name="x")
+            AzureBackend(container=container, hns=False, account_name="x")
 
     @pytest.mark.spec("AZ-005")
     def test_no_connection_info_raises(self) -> None:
         with pytest.raises(ValueError, match="account_name"):
-            AzureBackend(container="test")
+            AzureBackend(container="test", hns=False)
+
+    @pytest.mark.spec("AZ-006")
+    def test_hns_required_raises(self) -> None:
+        """Omitting ``hns`` is a construction error -- no silent default (AZ-006)."""
+        with pytest.raises(ValueError, match="hns must be declared explicitly"):
+            AzureBackend(container="test", account_name="x", account_key="fakekey")
+
+    @pytest.mark.spec("AZ-006")
+    @pytest.mark.parametrize("flag", [True, False])
+    def test_hns_declared_value_stored(self, flag: bool) -> None:
+        """The declared ``hns`` flag is stored verbatim and drives behavior (AZ-006)."""
+        assert _make_backend(hns=flag)._hns is flag
 
     @pytest.mark.spec("AZ-033")
     def test_max_concurrency_default(self) -> None:
@@ -290,110 +307,43 @@ class TestAzurePathNormalization:
 
 
 # =============================================================================
-# HNS Detection (AZ-006)
+# HNS discovery -- AzureUtils.detect_hns (AZ-006)
 # =============================================================================
 
 
-class TestAzureHNSDetection:
-    """AZ-006: HNS detection with mocked SDK."""
+class TestAzureUtilsDetectHns:
+    """AZ-006: explicit, fail-loud HNS discovery via ``AzureUtils.detect_hns``."""
 
     @pytest.mark.spec("AZ-006")
-    @pytest.mark.parametrize(
-        ("ret", "side_eff", "expected"),
-        [
-            pytest.param({"is_hns_enabled": True}, None, True, id="hns-enabled"),
-            pytest.param({"is_hns_enabled": False}, None, False, id="hns-disabled"),
-            pytest.param(None, Exception("network error"), False, id="detection-failure-fallback"),
-        ],
-    )
-    def test_hns_detection(self, ret: Any, side_eff: Any, expected: bool) -> None:
-        backend = _make_backend()
-        mock_client = MagicMock(spec=BlobServiceClient)
-        if side_eff is not None:
-            mock_client.get_account_information.side_effect = side_eff
-        else:
-            mock_client.get_account_information.return_value = ret
-        backend._blob_service_instance = mock_client
-        assert backend._hns is expected
+    @pytest.mark.parametrize("flag", [True, False])
+    def test_detect_hns_returns_account_flag(self, flag: bool) -> None:
+        svc = MagicMock(spec=BlobServiceClient)
+        svc.get_account_information.return_value = {"is_hns_enabled": flag}
+        with patch("remote_store.backends._azure.build_blob_service", return_value=svc) as mk:
+            result = AzureUtils.detect_hns(connection_string="fake-conn")
+        assert result is flag
+        mk.assert_called_once()
+        svc.get_account_information.assert_called_once()
+        svc.close.assert_called_once()  # throwaway client is always closed
 
     @pytest.mark.spec("AZ-006")
-    def test_hns_result_cached(self) -> None:
-        backend = _make_backend()
-        mock_client = MagicMock(spec=BlobServiceClient)
-        mock_client.get_account_information.return_value = {"is_hns_enabled": True}
-        backend._blob_service_instance = mock_client
-        first = backend._hns
-        second = backend._hns
-        mock_client.get_account_information.assert_called_once()
-        assert first is second is True
+    def test_detect_hns_absent_key_is_false(self) -> None:
+        svc = MagicMock(spec=BlobServiceClient)
+        svc.get_account_information.return_value = {}  # key absent
+        with patch("remote_store.backends._azure.build_blob_service", return_value=svc):
+            assert AzureUtils.detect_hns(connection_string="fake-conn") is False
 
     @pytest.mark.spec("AZ-006")
-    def test_hns_probe_error_not_cached_reprobes(self) -> None:
-        """BUG-223: a failed probe must not be cached -- the next op re-probes.
-
-        A transient failure on the first probe used to cache ``_hns_enabled =
-        False`` for the instance lifetime, permanently degrading a real HNS
-        account to flat-blob semantics. The failed probe fails open (``False``)
-        for the current op but is not persisted, so a subsequent probe recovers.
-        """
-        backend = _make_backend()
-        mock_client = MagicMock(spec=BlobServiceClient)
-        mock_client.get_account_information.side_effect = [
-            Exception("transient network blip"),
-            {"is_hns_enabled": True},
-        ]
-        backend._blob_service_instance = mock_client
-        assert backend._hns is False  # fail-open for the errored op, not cached
-        assert backend._hns is True  # re-probe recovers the real HNS state
-        assert mock_client.get_account_information.call_count == 2
-
-    @pytest.mark.spec("AZ-006")
-    def test_hns_probe_transient_failure_warns_once(self, caplog: pytest.LogCaptureFixture) -> None:
-        """BUG-223: a persistently-failing transient probe re-probes but warns once.
-
-        The ``_hns_probe_warned`` throttle suppresses repeated warnings on a probe
-        that keeps failing transiently (re-probed every ``_hns`` read).
-        """
-        backend = _make_backend()
-        mock_client = MagicMock(spec=BlobServiceClient)
-        mock_client.get_account_information.side_effect = Exception("transient blip")
-        backend._blob_service_instance = mock_client
-        with caplog.at_level(logging.WARNING, logger="remote_store.backends._azure"):
-            assert backend._hns is False
-            assert backend._hns is False
-            assert backend._hns is False
-        # Transient errors are not cached -- every read re-probes ...
-        assert mock_client.get_account_information.call_count == 3
-        # ... but the warning fires exactly once per instance.
-        warnings = [r for r in caplog.records if "Failed to detect HNS status" in r.message]
-        assert len(warnings) == 1
-
-    @pytest.mark.spec("AZ-006")
-    def test_hns_probe_warned_flag_reset_on_close(self) -> None:
-        """BUG-223: ``close()`` resets the warn-once flag so a reused backend warns again."""
-        backend = _make_backend()
-        mock_client = MagicMock(spec=BlobServiceClient)
-        mock_client.get_account_information.side_effect = Exception("transient blip")
-        backend._blob_service_instance = mock_client
-        assert backend._hns is False
-        assert backend._hns_probe_warned is True
-        backend.close()
-        assert backend._hns_probe_warned is False
-
-    @pytest.mark.spec("AZ-006")
-    def test_maybe_check_no_file_ancestor_honors_hns_snapshot(self) -> None:
-        """BUG-223 (PR #841, thread 4): the precheck honors a caller's HNS snapshot.
-
-        ``move``/``copy`` read ``_hns`` once and pass it down so a single
-        operation cannot straddle the HNS and non-HNS code paths if an uncached
-        probe were to re-evaluate mid-op. A ``hns=True`` snapshot short-circuits
-        the non-HNS opt-in walk without consulting the probe at all.
-        """
-        backend = _make_backend(reject_write_under_file_ancestor=True)
-        mock_client = MagicMock(spec=BlobServiceClient)
-        backend._blob_service_instance = mock_client
-        backend._maybe_check_no_file_ancestor("a/b.txt", hns=True)
-        assert mock_client.get_account_information.call_count == 0  # snapshot used, no re-probe
+    def test_detect_hns_raises_on_probe_error(self) -> None:
+        """Fail-loud: a probe error is mapped to a remote_store error and raised."""
+        svc = MagicMock(spec=BlobServiceClient)
+        svc.get_account_information.side_effect = ClientAuthenticationError("denied")
+        with (
+            patch("remote_store.backends._azure.build_blob_service", return_value=svc),
+            pytest.raises(PermissionDenied),
+        ):
+            AzureUtils.detect_hns(connection_string="fake-conn")
+        svc.close.assert_called_once()  # client is closed even on the error path
 
 
 # =============================================================================
@@ -652,7 +602,7 @@ class TestAzureDeleteFolderPerformance:
     def test_delete_folder_non_recursive_stops_after_first_blob(self) -> None:
         """Non-recursive delete_folder should stop iterating after finding one blob."""
         backend = _make_backend()
-        backend._hns_enabled = False
+        backend._hns = False
         cc = MagicMock(spec=ContainerClient)
         backend._cc_instance = cc
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
@@ -690,7 +640,7 @@ class TestAzureReadResourceSafety:
     def test_read_closes_raw_stream_on_wrapper_failure(self) -> None:
         """If _ErrorMappingStream fails, the _AzureBinaryIO raw stream should be closed."""
         backend = _make_backend()
-        backend._hns_enabled = False
+        backend._hns = False
         cc = MagicMock(spec=ContainerClient)
         backend._cc_instance = cc
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
@@ -735,7 +685,7 @@ class TestAzureReadForwardOnly:
     @pytest.mark.spec("SEEK-007")
     def test_read_returns_non_seekable_stream(self) -> None:
         backend = _make_backend()
-        backend._hns_enabled = False
+        backend._hns = False
         cc = MagicMock(spec=ContainerClient)
         backend._cc_instance = cc
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
@@ -762,7 +712,7 @@ class TestAzureNonHnsFolderMarkers:
         from azure.core.exceptions import ResourceNotFoundError
 
         backend = _make_backend()
-        backend._hns_enabled = False
+        backend._hns = False
         cc = MagicMock(spec=ContainerClient)
         backend._cc_instance = cc
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
@@ -790,7 +740,7 @@ class TestAzureSelfOpNormalisation:
     @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
     def test_move_self_op_normalised_no_data_loss(self, overwrite: bool) -> None:
         backend = _make_backend()
-        backend._hns_enabled = False
+        backend._hns = False
         cc = MagicMock(spec=ContainerClient)
         backend._cc_instance = cc
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
@@ -814,7 +764,7 @@ class TestAzureSelfOpNormalisation:
     @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
     def test_copy_self_op_normalised_is_noop(self, overwrite: bool) -> None:
         backend = _make_backend()
-        backend._hns_enabled = False
+        backend._hns = False
         cc = MagicMock(spec=ContainerClient)
         backend._cc_instance = cc
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
@@ -843,7 +793,7 @@ class TestAzureGlobErrorParity:
         import remote_store._glob as glob_mod
 
         backend = _make_backend()
-        backend._hns_enabled = False
+        backend._hns = False
         backend._cc_instance = MagicMock(spec=ContainerClient)
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
 
@@ -887,7 +837,7 @@ class TestAzureNoMaterialization:
         from azure.core.exceptions import ResourceNotFoundError
 
         backend = _make_backend()
-        backend._hns_enabled = False
+        backend._hns = False
         cc = MagicMock(spec=ContainerClient)
         backend._cc_instance = cc
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
@@ -933,7 +883,7 @@ class TestAzureNoMaterialization:
         monkeypatch.setattr(_azure_mod, "_AZURE_BLOCK_SIZE", 10)
 
         backend = _make_backend()
-        backend._hns_enabled = True
+        backend._hns = True
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
         backend._cc_instance = MagicMock(spec=ContainerClient)
         backend._datalake_service_instance = MagicMock(spec=DataLakeServiceClient)
@@ -979,7 +929,7 @@ class TestAzureHNSPaths:
     def _make_hns_backend(self) -> AzureBackend:
         """Create a backend with HNS enabled and mocked SDK clients."""
         backend = _make_backend()
-        backend._hns_enabled = True
+        backend._hns = True
         # Mock blob service (still used for some operations)
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
         backend._cc_instance = MagicMock(spec=ContainerClient)
@@ -1080,23 +1030,15 @@ class TestAzureHNSPaths:
         assert result is None
 
     @pytest.mark.spec("AZ-006")
-    def test_move_snapshots_hns_once_under_probe_flip(self) -> None:
-        """BUG-223 (PR #841, thread 4/9): move reads the HNS state once.
+    def test_declared_non_hns_move_uses_copy_delete(self) -> None:
+        """A backend declared ``hns=False`` takes the copy+delete move path (AZ-006/AZ-017).
 
-        A single ``move`` reads ``_hns`` at several decision points. With the
-        probe uncached, a mid-op recovery (transient fail then success) could
-        otherwise make an early read return ``False`` and a later read ``True``,
-        straddling the non-HNS and HNS paths. The op snapshots ``_hns`` once, so
-        it probes exactly once and stays on the single path that snapshot chose.
+        No account-info probe occurs -- the declared flag alone selects the path.
         """
         from azure.core.exceptions import ResourceNotFoundError
 
-        backend = _make_backend()  # not pre-cached: _hns_enabled is None
+        backend = _make_backend(hns=False)
         svc = MagicMock(spec=BlobServiceClient)
-        svc.get_account_information.side_effect = [
-            Exception("transient blip"),  # first (and only) probe -> fail open to flat
-            {"is_hns_enabled": True},  # would flip to HNS if re-read -- must NOT happen
-        ]
         backend._blob_service_instance = svc
         backend._cc_instance = MagicMock(spec=ContainerClient)
         backend._fs_instance = MagicMock(spec=FileSystemClient)
@@ -1108,9 +1050,8 @@ class TestAzureHNSPaths:
 
         backend.move("src.txt", "dst.txt")
 
-        # Probed exactly once despite multiple HNS-dependent branches in move().
-        assert svc.get_account_information.call_count == 1
-        # ... and the op stayed on the single (non-HNS) path the snapshot chose.
+        # No HNS probe is ever issued; the declared flag drives the path.
+        assert svc.get_account_information.call_count == 0
         dst_bc.start_copy_from_url.assert_called_once_with(src_bc.url)
         src_bc.delete_blob.assert_called_once()
         backend._fs_instance.get_file_client.assert_not_called()  # no HNS rename branch
@@ -1148,7 +1089,7 @@ class TestAzureHNSPaths:
     def test_self_op_is_noop(self, op: str, overwrite: bool) -> None:
         """BUG-201 (sync): move(p, p) / copy(p, p) is a no-op for files."""
         backend = _make_backend()
-        backend._hns_enabled = False
+        backend._hns = False
         bc = MagicMock(spec=BlobClient)
         bc.get_blob_properties.return_value = MagicMock(spec=BlobProperties, metadata={})
         backend._cc_instance = MagicMock(spec=["get_blob_client"])
@@ -1180,7 +1121,7 @@ class TestAzureHNSPaths:
         from azure.core.exceptions import ResourceNotFoundError
 
         backend = _make_backend()
-        backend._hns_enabled = False
+        backend._hns = False
         bc = MagicMock(spec=BlobClient)
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
         backend._cc_instance = MagicMock(spec=["get_blob_client"])
@@ -1699,7 +1640,7 @@ class TestAzureMaxConcurrency:
         from azure.core.exceptions import ResourceNotFoundError
 
         backend = _make_backend(max_concurrency=4)
-        backend._hns_enabled = False
+        backend._hns = False
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
         backend._cc_instance = MagicMock(spec=ContainerClient)
         bc = MagicMock(spec=BlobClient)
@@ -1713,7 +1654,7 @@ class TestAzureMaxConcurrency:
     def test_max_concurrency_threaded_to_download(self) -> None:
         """AZ-033: max_concurrency kwarg reaches download_blob."""
         backend = _make_backend(max_concurrency=4)
-        backend._hns_enabled = False
+        backend._hns = False
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
         backend._cc_instance = MagicMock(spec=ContainerClient)
         bc = MagicMock(spec=BlobClient)
@@ -1729,7 +1670,7 @@ class TestAzureMaxConcurrency:
     def test_max_concurrency_threaded_to_read_bytes(self) -> None:
         """AZ-033: max_concurrency kwarg reaches download_blob in read_bytes."""
         backend = _make_backend(max_concurrency=8)
-        backend._hns_enabled = False
+        backend._hns = False
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
         backend._cc_instance = MagicMock(spec=ContainerClient)
         bc = MagicMock(spec=BlobClient)
@@ -1746,7 +1687,7 @@ class TestAzureMaxConcurrency:
         from azure.core.exceptions import ResourceNotFoundError
 
         backend = _make_backend(max_concurrency=4)
-        backend._hns_enabled = True
+        backend._hns = True
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
         backend._cc_instance = MagicMock(spec=ContainerClient)
         backend._datalake_service_instance = MagicMock(spec=DataLakeServiceClient)
@@ -2105,7 +2046,7 @@ class TestAzureWriteResult:
 
     def _make_non_hns(self) -> tuple[AzureBackend, MagicMock]:
         backend = _make_backend()
-        backend._hns_enabled = False
+        backend._hns = False
         backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
         backend._cc_instance = MagicMock(spec=ContainerClient)
         bc = MagicMock(spec=BlobClient)
@@ -2224,7 +2165,7 @@ def _make_hns_blob_props(metadata: dict[str, str] | None = None) -> MagicMock:
 def _setup_hns_write_backend() -> tuple[AzureBackend, MagicMock, MagicMock]:
     """Return (backend, container_client, blob_client) with HNS enabled."""
     backend = _make_backend()
-    backend._hns_enabled = True
+    backend._hns = True
     cc = MagicMock(spec=ContainerClient)
     backend._cc_instance = cc
     bc = MagicMock(spec=BlobClient)
@@ -2343,7 +2284,7 @@ def test_azure_accepts_retry() -> None:
     from remote_store._config import RetryPolicy
 
     rp = RetryPolicy(max_attempts=7)
-    assert AzureBackend(container="c", connection_string=_RETRY_CONN_STR, retry=rp)._retry is rp
+    assert AzureBackend(container="c", hns=False, connection_string=_RETRY_CONN_STR, retry=rp)._retry is rp
 
 
 @pytest.mark.spec("RET-012")
@@ -2358,7 +2299,9 @@ def test_azure_build_retry_mapping(rp_kwargs: dict[str, Any], expected_backoff: 
     from remote_store._config import RetryPolicy
 
     rp = RetryPolicy(**rp_kwargs)
-    azure_retry = AzureBackend(container="c", connection_string=_RETRY_CONN_STR, retry=rp)._build_azure_retry()
+    azure_retry = AzureBackend(
+        container="c", hns=False, connection_string=_RETRY_CONN_STR, retry=rp
+    )._build_azure_retry()
     assert azure_retry.total_retries == rp_kwargs["max_attempts"] - 1
     assert azure_retry.initial_backoff == expected_backoff
     assert azure_retry.random_jitter_range == expected_jitter
@@ -2366,7 +2309,44 @@ def test_azure_build_retry_mapping(rp_kwargs: dict[str, Any], expected_backoff: 
 
 @pytest.mark.spec("RET-012")
 def test_azure_build_retry_none() -> None:
-    assert AzureBackend(container="c", connection_string=_RETRY_CONN_STR)._build_azure_retry() is None
+    assert AzureBackend(container="c", hns=False, connection_string=_RETRY_CONN_STR)._build_azure_retry() is None
+
+
+@pytest.mark.spec("AZ-006")
+class TestBuildBlobService:
+    """build_blob_service: shared client construction for backend + AzureUtils."""
+
+    def test_account_url_branch(self) -> None:
+        from remote_store.backends import _azure_common
+
+        with patch("azure.storage.blob.BlobServiceClient") as mock_bsc:
+            _azure_common.build_blob_service(
+                connection_string=None,
+                account_url="https://x.blob.core.windows.net",
+                account_name=None,
+                credential="cred",
+            )
+        assert mock_bsc.call_args.kwargs["account_url"] == "https://x.blob.core.windows.net"
+
+    def test_account_name_derives_url(self) -> None:
+        from remote_store.backends import _azure_common
+
+        with patch("azure.storage.blob.BlobServiceClient") as mock_bsc:
+            _azure_common.build_blob_service(
+                connection_string=None,
+                account_url=None,
+                account_name="acct",
+                credential="cred",
+            )
+        assert mock_bsc.call_args.kwargs["account_url"] == "https://acct.blob.core.windows.net"
+
+    def test_no_url_or_conn_raises(self) -> None:
+        from remote_store.backends import _azure_common
+
+        with pytest.raises(ValueError, match="account_name, account_url, or connection_string"):
+            _azure_common.build_blob_service(
+                connection_string=None, account_url=None, account_name=None, credential=None
+            )
 
 
 # region: Credential masking (AF-008, SEC-004) — migrated from tests/test_coverage_gaps.py (BK-222 / BK-191 slice 6/6)
@@ -2378,6 +2358,7 @@ class TestAzureCredentialMasking:
     def test_masks_set_secrets(self) -> None:
         backend = AzureBackend(
             container="c",
+            hns=True,
             account_name="acct",
             account_key="mykey",
             sas_token="mysas",
@@ -2394,7 +2375,7 @@ class TestAzureCredentialMasking:
             assert visible in r
 
     def test_shows_none_for_unset_secrets(self) -> None:
-        backend = AzureBackend(container="c", account_url="https://x.blob.core.windows.net")
+        backend = AzureBackend(container="c", hns=False, account_url="https://x.blob.core.windows.net")
         _BACKENDS.append(backend)
         r = repr(backend)
         for expected in ("account_key=None", "sas_token=None", "connection_string=None", "credential=None"):
@@ -2406,6 +2387,7 @@ class TestAzureCredentialMasking:
 
         backend = AzureBackend(
             container="c",
+            hns=True,
             account_name="acct",
             account_key=Secret("mykey"),
             sas_token=Secret("tok"),

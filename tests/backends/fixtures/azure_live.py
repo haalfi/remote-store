@@ -93,7 +93,7 @@ def _factory() -> Backend:
     except Exception:
         service.close()
         raise
-    backend = AzureBackend(container=fs_name, connection_string=conn)
+    backend = AzureBackend(container=fs_name, hns=True, connection_string=conn)
     _FILESYSTEMS[id(backend)] = (fs_name, service)
     return backend
 

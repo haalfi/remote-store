@@ -32,7 +32,7 @@ in ``tests/backends/azure/test_live_hns.py``. Async-only KEEPs:
 * **``get_folder_info("")`` HNS root carve-out** on the async branch
   (``TestAsyncLiveHnsGetFolderInfoRoot``, BUG-213, AZ-024).
 
-* **``_ensure_hns()`` exists fallback** on the async branch
+* **HNS ``exists`` fallback** on the async branch
   (``TestAsyncLiveHnsExists``).
 
 User-metadata survives ADLS Gen2 ``rename_file`` is a service-side
@@ -193,7 +193,7 @@ async def async_live_hns_backend(
     Yields ``(backend, dirpath)`` matching the module-level HNS directory.
     """
     conn, fs_name, dirpath, _ = _live_hns_setup
-    backend = AsyncAzureBackend(container=fs_name, connection_string=conn)
+    backend = AsyncAzureBackend(container=fs_name, hns=True, connection_string=conn)
     try:
         yield backend, dirpath
     finally:

@@ -50,7 +50,9 @@ if not CONTAINER:
 
 if __name__ == "__main__":
     # --- Build options dynamically from whichever env vars are set ---
-    options: dict[str, object] = {"container": CONTAINER}
+    # Azurite (and plain Blob Storage) is flat-namespace; declare hns=False.
+    # For an ADLS Gen2 account, pass hns=True (or AzureUtils.detect_hns(...)).
+    options: dict[str, object] = {"container": CONTAINER, "hns": False}
     if val := os.environ.get("RS_AZURE_CONN"):
         options["connection_string"] = val
     if val := os.environ.get("RS_AZURE_ACCOUNT"):
@@ -133,6 +135,7 @@ if __name__ == "__main__":
 
     backend = AzureBackend(
         container=CONTAINER,
+        hns=False,  # Azurite is flat-namespace; pass True for ADLS Gen2
         connection_string=os.environ.get("RS_AZURE_CONN"),
         account_name=os.environ.get("RS_AZURE_ACCOUNT"),
         account_key=os.environ.get("RS_AZURE_KEY"),
@@ -147,10 +150,13 @@ if __name__ == "__main__":
         backend.close()
 
     # --- Authentication methods (commented out) ---
+    # All forms require the `hns` argument: True for ADLS Gen2, False for flat
+    # Blob Storage. Use AzureUtils.detect_hns(...) to discover it if unknown.
     #
     # # 1. Account key
     # backend = AzureBackend(
     #     container="my-container",
+    #     hns=True,
     #     account_name="mystorageaccount",
     #     account_key="base64-key-here",
     # )
@@ -158,6 +164,7 @@ if __name__ == "__main__":
     # # 2. SAS token
     # backend = AzureBackend(
     #     container="my-container",
+    #     hns=True,
     #     account_name="mystorageaccount",
     #     sas_token="sv=2023-11-03&...",
     # )
@@ -165,12 +172,14 @@ if __name__ == "__main__":
     # # 3. Connection string
     # backend = AzureBackend(
     #     container="my-container",
+    #     hns=False,
     #     connection_string="DefaultEndpointsProtocol=https;AccountName=...;",
     # )
     #
     # # 4. DefaultAzureCredential (auto: env vars, managed identity, CLI)
     # backend = AzureBackend(
     #     container="my-container",
+    #     hns=True,
     #     account_name="mystorageaccount",
     #     # No key/token — falls back to DefaultAzureCredential
     # )

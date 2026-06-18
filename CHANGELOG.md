@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-302: Azure HNS is now an explicit, mandatory `hns=` declaration (no runtime auto-detection); adds `AzureUtils.detect_hns()` / `adetect_hns()` for one-shot discovery (**breaking**)
 - BUG-222: Azure error classifier types 429 / 5xx / 401
 - BUG-223: Azure HNS detection re-probes after a transient failure instead of caching it for the instance lifetime
 - BK-299: Document Azure seekable reads (`read_seekable`), the async `ext.*` cliff, and connection-pool tuning

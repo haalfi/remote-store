@@ -8,6 +8,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-302 — Replace implicit HNS auto-detection with an explicit `hns=` declaration + `AzureUtils`**
+  spec: AZ-006 · effort: L · audience: user.api, library.maintainer, contributor.process
+  Surfaced reviewing BUG-223 (PR #841). The backend inferred HNS vs flat by probing
+  `GetAccountInfo` on first use — implicit magic whose failure modes drove BUG-223
+  (sticky misdetection, per-op re-probe storm, RBAC-propagation 403, torn-read snapshot).
+  Now the account's nature is an **explicit, mandatory** `hns: bool` on both backend twins
+  and config: no default, `ValueError` if undeclared. `_hns` is an immutable attribute —
+  the `_hns` property / `_ensure_hns()` probe, the `_hns_enabled` / `_hns_probe_warned`
+  state, and the move/copy snapshot plumbing are all deleted (a constant cannot tear).
+  A new public `AzureUtils.detect_hns()` / `adetect_hns()` (exported from
+  `remote_store.backends`) does a one-shot, **fail-loud** `GetAccountInfo` probe for users
+  who need to discover the value, mirroring `SFTPUtils.scan_host_keys` /
+  `GraphUtils.resolve_drive_id`; the relocated probe construction is shared via
+  `build_blob_service` in `_azure_common`. ADR-0030 records auto-detect → declared; AZ-006
+  rewritten, AZ-004/AZ-029/AZ-001/AZ-005 and ASYNC-070 updated; RFC-0001 forward-pointed.
+  Guide / async guide / API refs / migration guide / new `azure-utils.md` updated; all
+  fixtures + examples declare `hns`. Probe-behaviour test suites replaced with
+  `detect_hns` / mandatory-`hns` tests on both twins. **Breaking** (every Azure call site
+  must add `hns=`). Trace: `sdd/traces/bk-302-explicit-hns-declaration.yml`.
+
 - [x] **BK-301 — Azure doc/docstring parity + correctness edges**
   spec: AZ-014, AZ-017, AZ-018, AZ-019, AZ-026 · effort: M · audience: user.api_docs, contributor.process
   From [audit-019](audits/audit-019-azure-backend-review.md) M6 + L1/L2/L4/L6/L7.

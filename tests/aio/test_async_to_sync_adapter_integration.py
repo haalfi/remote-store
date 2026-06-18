@@ -55,7 +55,7 @@ def azurite_adapter_store() -> Iterator[Store]:
     service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
     service.create_container(container)
 
-    async_backend = AsyncAzureBackend(container=container, connection_string=AZURITE_CONN_STR)
+    async_backend = AsyncAzureBackend(container=container, hns=False, connection_string=AZURITE_CONN_STR)
     adapter = AsyncBackendSyncAdapter(async_backend)
     store = Store(backend=adapter)
 
@@ -88,7 +88,7 @@ class TestAdapterLifecycleAzurite:
         service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
         service.create_container(container)
         try:
-            async_backend = AsyncAzureBackend(container=container, connection_string=AZURITE_CONN_STR)
+            async_backend = AsyncAzureBackend(container=container, hns=False, connection_string=AZURITE_CONN_STR)
             with AsyncBackendSyncAdapter(async_backend) as adapter:
                 assert adapter is not None
                 assert adapter.name == "async-azure"
@@ -118,7 +118,7 @@ class TestAdapterLifecycleAzurite:
         service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
         service.create_container(container)
         try:
-            async_backend = AsyncAzureBackend(container=container, connection_string=AZURITE_CONN_STR)
+            async_backend = AsyncAzureBackend(container=container, hns=False, connection_string=AZURITE_CONN_STR)
             adapter = AsyncBackendSyncAdapter(async_backend)
             store = Store(backend=adapter)
             store.close()  # first close
@@ -372,7 +372,7 @@ class TestAdapterClosedReuseAzurite:
         service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
         service.create_container(container)
         try:
-            async_backend = AsyncAzureBackend(container=container, connection_string=AZURITE_CONN_STR)
+            async_backend = AsyncAzureBackend(container=container, hns=False, connection_string=AZURITE_CONN_STR)
             adapter = AsyncBackendSyncAdapter(async_backend)
             adapter.close()
             with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):

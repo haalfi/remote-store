@@ -391,8 +391,8 @@ Native async Azure backend using `azure.storage.blob.aio` and `azure.storage.fil
 
 ### ASYNC-070: Dual-Mode Architecture
 
-**Invariant:** `AsyncAzureBackend` supports both plain Blob Storage and ADLS Gen2 (HNS-enabled) accounts. HNS is detected lazily on first I/O via `_ensure_hns()` and cached. Non-HNS accounts use the Blob SDK (`BlobServiceClient`, `ContainerClient`). HNS accounts use the DataLake SDK (`DataLakeServiceClient`, `FileSystemClient`).
-**See also:** [012-azure-backend.md](012-azure-backend.md) (AZ-002).
+**Invariant:** `AsyncAzureBackend` supports both plain Blob Storage and ADLS Gen2 (HNS-enabled) accounts. HNS is declared explicitly via the required `hns` argument (no runtime auto-detection; see AZ-006). Non-HNS accounts use the Blob SDK (`BlobServiceClient`, `ContainerClient`). HNS accounts use the DataLake SDK (`DataLakeServiceClient`, `FileSystemClient`).
+**See also:** [012-azure-backend.md](012-azure-backend.md) (AZ-002, AZ-006).
 
 ### ASYNC-071: Lazy Client Initialization
 

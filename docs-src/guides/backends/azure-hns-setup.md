@@ -137,6 +137,14 @@ az storage account show \
 
 The `hns` column should read `True`.
 
+!!! important "Declare `hns` when constructing the backend"
+    The Azure backend does not auto-detect Hierarchical Namespace. Because this
+    account has HNS enabled, construct the backend with `hns=True` (config
+    `"hns": true`). For a flat Blob Storage account you would pass `hns=False`.
+    If you ever need to discover an account's status programmatically, call
+    `AzureUtils.detect_hns(...)` (or `await AzureUtils.adetect_hns(...)`) once
+    and pass the result.
+
 ## Set CLI defaults
 
 Setting the resource group and account once removes the need to repeat them

@@ -91,7 +91,9 @@ def _factory() -> AsyncBackend:
             client_options = {"transport": AsyncioRequestsTransport()}
         except ImportError:
             pass
-    backend = AsyncAzureBackend(container=fs_name, connection_string=conn, client_options=client_options or None)
+    backend = AsyncAzureBackend(
+        container=fs_name, hns=True, connection_string=conn, client_options=client_options or None
+    )
     _FILESYSTEMS[id(backend)] = (fs_name, service)
     return backend
 

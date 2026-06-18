@@ -312,7 +312,7 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
                 "azure-bridged",
                 Store(
                     backend=AsyncBackendSyncAdapter(
-                        AsyncAzureBackend(container=bridged_container, connection_string=AZURITE_CONN_STR)
+                        AsyncAzureBackend(container=bridged_container, hns=False, connection_string=AZURITE_CONN_STR)
                     )
                 ),
             )
