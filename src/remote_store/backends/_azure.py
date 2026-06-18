@@ -1470,29 +1470,35 @@ class AzureUtils:
             RemoteStoreError: If the probe fails (authentication, network, etc.).
         """
         conn = _reveal(connection_string)
-        cred = _resolve_detect_credential(
-            connection_string=conn,
-            account_key=_reveal(account_key),
-            sas_token=_reveal(sas_token),
-            credential=credential,
-            is_async=False,
-        )
-        svc = build_blob_service(
-            connection_string=conn,
-            account_url=account_url,
-            account_name=account_name,
-            credential=cred,
-            client_options=client_options,
-        )
+        cred: Any = None
+        svc: Any = None
+        # Resolve the credential and build the client inside the try so the finally
+        # always closes a created credential -- build_blob_service can raise (e.g. no
+        # account locator) after _resolve_detect_credential auto-creates one.
         try:
+            cred = _resolve_detect_credential(
+                connection_string=conn,
+                account_key=_reveal(account_key),
+                sas_token=_reveal(sas_token),
+                credential=credential,
+                is_async=False,
+            )
+            svc = build_blob_service(
+                connection_string=conn,
+                account_url=account_url,
+                account_name=account_name,
+                credential=cred,
+                client_options=client_options,
+            )
             try:
                 info = svc.get_account_information()
             except Exception as exc:  # noqa: BLE001
                 raise classify_azure_error(exc, "", "azure") from exc
             return bool(info.get("is_hns_enabled", False))
         finally:
-            with contextlib.suppress(Exception):
-                svc.close()
+            if svc is not None:
+                with contextlib.suppress(Exception):
+                    svc.close()
             # Close an auto-created credential (DefaultAzureCredential holds transport sessions).
             close = getattr(cred, "close", None)
             if close is not None:
@@ -1522,30 +1528,36 @@ class AzureUtils:
             RemoteStoreError: If the probe fails (authentication, network, etc.).
         """
         conn = _reveal(connection_string)
-        cred = _resolve_detect_credential(
-            connection_string=conn,
-            account_key=_reveal(account_key),
-            sas_token=_reveal(sas_token),
-            credential=credential,
-            is_async=True,
-        )
-        svc = build_blob_service(
-            connection_string=conn,
-            account_url=account_url,
-            account_name=account_name,
-            credential=cred,
-            client_options=client_options,
-            is_async=True,
-        )
+        cred: Any = None
+        svc: Any = None
+        # Resolve the credential and build the client inside the try so the finally
+        # always closes a created credential -- build_blob_service can raise (e.g. no
+        # account locator) after _resolve_detect_credential auto-creates one.
         try:
+            cred = _resolve_detect_credential(
+                connection_string=conn,
+                account_key=_reveal(account_key),
+                sas_token=_reveal(sas_token),
+                credential=credential,
+                is_async=True,
+            )
+            svc = build_blob_service(
+                connection_string=conn,
+                account_url=account_url,
+                account_name=account_name,
+                credential=cred,
+                client_options=client_options,
+                is_async=True,
+            )
             try:
                 info = await svc.get_account_information()
             except Exception as exc:  # noqa: BLE001
                 raise classify_azure_error(exc, "", "azure") from exc
             return bool(info.get("is_hns_enabled", False))
         finally:
-            with contextlib.suppress(Exception):
-                await svc.close()
+            if svc is not None:
+                with contextlib.suppress(Exception):
+                    await svc.close()
             # Close an auto-created credential (async DefaultAzureCredential holds aiohttp sessions).
             close = getattr(cred, "close", None)
             if close is not None:

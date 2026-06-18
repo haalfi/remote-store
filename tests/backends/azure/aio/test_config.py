@@ -203,6 +203,8 @@ class TestAsyncAzureConstruction:
         "bad",
         [
             pytest.param("false", id="str-false"),
+            pytest.param("true", id="str-true"),
+            pytest.param("no", id="str-no"),
             pytest.param(0, id="int-zero"),
             pytest.param(1, id="int-one"),
         ],
@@ -307,6 +309,31 @@ class TestAsyncAzureUtilsDetectHns:
             result = await AzureUtils.adetect_hns(account_url="https://x.blob.core.windows.net", credential=cred)
         assert result is True
         svc.close.assert_awaited_once()
+        cred.close.assert_awaited_once()
+
+    @pytest.mark.spec("AZ-006")
+    async def test_adetect_hns_string_credential_has_no_close(self) -> None:
+        """A string credential (account_key/SAS) has no ``close`` -- the close path skips it cleanly."""
+        svc = AsyncMock(spec=BlobServiceClient)
+        svc.get_account_information.return_value = {"is_hns_enabled": False}
+        with patch("remote_store.backends._azure.build_blob_service", return_value=svc):
+            # account_key resolves to a plain str credential -- must not raise on close.
+            result = await AzureUtils.adetect_hns(account_url="https://x.blob.core.windows.net", account_key="k")
+        assert result is False
+        svc.close.assert_awaited_once()
+
+    @pytest.mark.spec("AZ-006")
+    async def test_adetect_hns_closes_credential_on_build_error(self) -> None:
+        """A build-time error (no account locator) still awaited-closes the resolved credential.
+
+        ``build_blob_service`` raises before the probe runs; the async credential
+        ``_resolve_detect_credential`` produced must not leak its aiohttp session --
+        it is resolved and closed inside the same ``try``/``finally``.
+        """
+        cred = MagicMock(spec=["close"])
+        cred.close = AsyncMock()
+        with pytest.raises(ValueError, match="account_name, account_url, or connection_string"):
+            await AzureUtils.adetect_hns(credential=cred)
         cred.close.assert_awaited_once()
 
 

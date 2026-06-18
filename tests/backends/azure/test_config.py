@@ -401,6 +401,19 @@ class TestAzureUtilsDetectHns:
             assert AzureUtils.detect_hns(account_url="https://x.blob.core.windows.net", account_key="k") is False
         svc.close.assert_called_once()
 
+    @pytest.mark.spec("AZ-006")
+    def test_detect_hns_closes_credential_on_build_error(self) -> None:
+        """A build-time error (no account locator) still closes the resolved credential.
+
+        ``build_blob_service`` raises before the probe runs; the credential
+        ``_resolve_detect_credential`` produced must not leak -- it is resolved
+        and closed inside the same ``try``/``finally``.
+        """
+        cred = MagicMock(spec=["close"])
+        with pytest.raises(ValueError, match="account_name, account_url, or connection_string"):
+            AzureUtils.detect_hns(credential=cred)
+        cred.close.assert_called_once()
+
 
 # =============================================================================
 # Error mapping (AZ-025 through AZ-028)

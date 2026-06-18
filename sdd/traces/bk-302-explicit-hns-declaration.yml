@@ -16,7 +16,7 @@ audience:
 discovery_followups:
   - BK-303
   - BK-304
-review_rounds: 2
+review_rounds: 3
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
@@ -128,6 +128,11 @@ phases:
         section: "TestAsyncAzureUtilsDetectHns spec marks"
         read_type: verify
         extract: "Round 2: async HNS tests mis-cited ASYNC-004 (=exists()); retag to AZ-006 for sync/async parity; pin credential-close on the probe-error path (both twins)"
+        outcome: misleading
+      - file: src/remote_store/backends/_azure.py
+        section: "detect_hns/adetect_hns cred + svc construction"
+        read_type: reference
+        extract: "Round 3: build_blob_service ran OUTSIDE the try, so a no-locator ValueError leaked the just-created DefaultAzureCredential; move cred+client construction inside the try and guard svc in the finally (both twins) + pin with build-error close tests"
         outcome: misleading
   - id: verify
     name: Verify
