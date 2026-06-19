@@ -123,6 +123,7 @@ class FixtureDescriptor:
     self_op_supported: bool
     rejects_write_under_file_ancestor: bool
     strict_only: bool
+    conformance_excluded: bool
     large_write_distinct: bool
     transport: Transport
     concurrency: Concurrency
@@ -149,6 +150,7 @@ class FixtureDescriptor:
             "self_op_supported": self.self_op_supported,
             "rejects_write_under_file_ancestor": self.rejects_write_under_file_ancestor,
             "strict_only": self.strict_only,
+            "conformance_excluded": self.conformance_excluded,
             "large_write_distinct": self.large_write_distinct,
             "transport": self.transport,
             "concurrency": self.concurrency,
@@ -251,6 +253,12 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
     # default conformance enumeration. Per-fixture only; no backend-family
     # default (the strict variants are always opt-in additions).
     strict_only = raw.get("strict_only", False)
+    # BK-303: ``conformance_excluded`` drops a fixture from the conformance
+    # enumeration in every mode (stronger than strict_only). Per-fixture only,
+    # no backend-family default — it marks per-backend deviation fixtures that
+    # must stay registry-visible (cassette routing, recorder) but never run the
+    # conformance surface.
+    conformance_excluded = raw.get("conformance_excluded", False)
     # Per-fixture opt-in (no backend-family default, like strict_only)
     # marking fixtures whose backend takes a distinct large/streamed write path
     # against a real endpoint — gates the large WriteResult↔FileInfo test.
@@ -263,6 +271,8 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
         raise ValueError(f"fixture.{name}: rejects_write_under_file_ancestor must be bool, got {rejects!r}")
     if not isinstance(strict_only, bool):
         raise ValueError(f"fixture.{name}: strict_only must be bool, got {strict_only!r}")
+    if not isinstance(conformance_excluded, bool):
+        raise ValueError(f"fixture.{name}: conformance_excluded must be bool, got {conformance_excluded!r}")
     if not isinstance(large_write_distinct, bool):
         raise ValueError(f"fixture.{name}: large_write_distinct must be bool, got {large_write_distinct!r}")
 
@@ -282,6 +292,7 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
         self_op_supported=self_op,
         rejects_write_under_file_ancestor=rejects,
         strict_only=strict_only,
+        conformance_excluded=conformance_excluded,
         large_write_distinct=large_write_distinct,
         transport=backend.transport,
         concurrency=backend.concurrency,

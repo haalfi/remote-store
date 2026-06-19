@@ -176,16 +176,26 @@ def _resolve_graph_drive_id() -> str:
 _BACKENDS: dict[str, dict] = {
     "azure": {
         "sync_k": "azure_live and not async",
-        "async_k": "azure_live_async",
+        # "azure_live and async" matches both azure_live_async (conformance) and
+        # azure_live_hns_async (the BK-303 HNS deviation suite); the bare
+        # "azure_live_async" id no longer covers the latter.
+        "async_k": "azure_live and async",
         "replay_k": "azure_replay",
         "account_fn": _resolve_azure_account,
+        # BK-303: the live HNS deviation suite lives under tests/backends/azure/,
+        # not conformance/, and shares the cassettes/azure/ directory. Record both
+        # trees in one run (a separate backend entry can't — Step 1 wipes the
+        # shared dir). The replay smoke test (Step 5) replays both too.
+        "targets": ["tests/backends/conformance/", "tests/backends/azure/"],
         # Live opt-in flag — checked at preflight so the absence does not
         # wipe cassettes before the pytest fixture would fail (BUG-212).
         "live_opt_in_env": "RS_TEST_LIVE_HNS",
         "setup_doc": "docs-src/guides/backends/azure-hns-setup.md",
         # Lower-bound guard: recording fewer cassettes than this means pytest
         # silently selected zero tests (k-filter mismatch, stage gate, etc.).
-        "min_cassettes": 200,
+        # Conformance records ~339 (BK-304) and the HNS suite adds ~26; 210 stays
+        # a true lower bound while still catching a zero-selection.
+        "min_cassettes": 210,
     },
     "graph": {
         # Graph is async-only: no sync fixtures, so Step 2 is skipped.
@@ -338,6 +348,10 @@ def main() -> None:
     cfg = _BACKENDS[opts.backend]
     profile = _PROFILES[opts.backend]
     cassette_dir: Path = profile.cassette_dir
+    # Pytest target path(s) for the record (steps 2/3) and replay smoke (step 5).
+    # Defaults to the conformance tree; azure adds tests/backends/azure/ for the
+    # BK-303 HNS deviation suite.
+    targets: list[str] = cfg.get("targets", [_CONFORMANCE])
     single = opts.node is not None
     # Where the conformance conftest dumps per-rule scrub-fire counts when a
     # full recording runs (one file per recording step; xdist workers add
@@ -404,7 +418,7 @@ def main() -> None:
                 "live",
                 "-k",
                 cfg["sync_k"],
-                _CONFORMANCE,
+                *targets,
                 "--tb=short",
                 "-q",
             )
@@ -424,7 +438,7 @@ def main() -> None:
             "live",
             "-k",
             cfg["async_k"],
-            _CONFORMANCE,
+            *targets,
             "--tb=short",
             "-q",
         )
@@ -489,7 +503,7 @@ def main() -> None:
         sys.executable,
         "-m",
         "pytest",
-        _CONFORMANCE,
+        *targets,
         "-k",
         cfg["replay_k"],
         "--stage=1",

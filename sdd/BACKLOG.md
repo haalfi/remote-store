@@ -93,23 +93,6 @@ and the highest ID already in this file, then take the next integer. Run
   see BACKLOG-DONE.md). Findings inform the next release scope; no code changes
   are produced by this item itself.
 
-- [ ] **BK-303 — Azure live-only HNS tests have no cassette-replay tier**
-  spec: — · effort: M · audience: infra.test
-  The `tests/backends/azure/test_live_hns.py` suite (+ its async sibling) — HNS
-  directory-marker guards (BE-021), `rename_file` metadata survival, the `exists`
-  DataLake-directory fallback, `get_folder_info("")` root handling, and the
-  `AzureUtils.detect_hns` / `adetect_hns` discovery checks added in BK-302 — runs
-  **only** against a real ADLS Gen2 account (`RS_TEST_LIVE_HNS=1`,
-  `pytest.mark.live`). Unlike the conformance suite, which records `azure_live` and
-  replays it creds-free as `azure_replay` in Stage 1, these tests have no recorded
-  cassettes, so CI and local Stage-1 runs silently skip every HNS-only path — they
-  are verified only when someone runs live with credentials. Mirror the Graph
-  live→replay pattern (`graph_live` recorded → `graph_replay` Stage 1): give the
-  live HNS tests a recordable form (fold them into the recording harness, or add a
-  dedicated `azure_live_hns` / `azure_replay_hns` fixture pair) so their HTTP is
-  captured once and replayed deterministically without an account. Depends on
-  BK-304 (recording must complete cleanly first).
-
 - [ ] **BK-305 — Keep large-payload conformance tests out of the live Azure recording**
   spec: — · effort: S · audience: infra.test, contributor.tooling
   Discovered closing BK-304. Six large-streamed conformance cassettes —

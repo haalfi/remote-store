@@ -53,38 +53,34 @@ Spec: TEST-003 (per-backend deviation tier); BE-021, ASYNC-005, ASYNC-010,
 ASYNC-013, ASYNC-015, ASYNC-016, ASYNC-017, AZ-014, AZ-024, AZ-034,
 SIO-003, WR-001a, WR-004, WR-012, WR-013.
 
-Gating
-------
+Tiers (BK-303)
+--------------
 
-Two skip-gates (both required to run):
+Each test runs against two records, parametrised by the async azure-subtree
+conftest (``tests/backends/azure/aio/conftest.py``):
 
-1. ``pytest.mark.live`` at module level. Default ``addopts`` is ``-m 'not live'``,
-   so plain ``hatch run test`` skips the file entirely.
-2. ``RS_TEST_LIVE_HNS=1`` env var — same gate as
-   ``tests/backends/azure/test_live_hns.py``.
-
-Fixture-time precondition (fails loudly, does not skip):
-
-3. ``AZURE_STORAGE_CONNECTION_STRING`` and ``RS_TEST_LIVE_HNS_CONTAINER`` must
-   point at a *real* ADLS Gen2 account. ``_require_live_hns_env()`` calls
-   ``pytest.fail`` (not ``pytest.skip``) for missing or Azurite-pointing strings —
-   a silent skip here would mean "I thought I tested it" but didn't.
+* ``azure_live_hns_async`` — the real ADLS Gen2 account. Carries
+  ``pytest.mark.live`` (default ``addopts`` is ``-m 'not live'``) and its
+  factory ``pytest.skip``s unless ``RS_TEST_LIVE_HNS=1``.
+  ``AZURE_STORAGE_CONNECTION_STRING`` and ``RS_TEST_LIVE_HNS_CONTAINER`` must
+  point at a *real* account — the fixture fails loud rather than silent-skipping
+  if they are missing or point at Azurite. Pass ``--record`` (Stage 3) to
+  capture cassettes.
+* ``azure_replay_hns_async`` — replays the committed cassette creds-free at
+  Stage 1. Skipped (not errored) when its cassette is absent.
 
 Cost discipline
 ---------------
 
-All tests share one HNS directory provisioned per module via the
-``_live_hns_setup`` sync fixture. Each test writes a uuid-suffixed file under the
-shared prefix so repeated runs cannot collide. Teardown deletes the entire prefix
-on a best-effort basis.
+The conftest provisions one HNS directory per test (sync ``DataLakeServiceClient``
+at setup, so no event loop is needed). Test bodies use fixed basenames; the
+per-session ``live-hns-async/<uuid8>`` prefix gives cross-run isolation.
+Teardown deletes the prefix on a best-effort basis.
 """
 
 from __future__ import annotations
 
 import contextlib
-import logging
-import os
-import uuid
 from typing import TYPE_CHECKING
 
 import pytest
@@ -95,110 +91,22 @@ from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 
 from remote_store._errors import InvalidPath  # noqa: E402
 from remote_store._path import RemotePath  # noqa: E402
-from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 from remote_store.backends import AzureUtils  # noqa: E402
-from tests.backends.fixtures._live_env import (  # noqa: E402
-    require_azure_live_connection_string,
-    require_azure_live_hns_container,
-)
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+    from collections.abc import AsyncIterator, Awaitable, Callable
 
-_LOG = logging.getLogger(__name__)
+    from remote_store.aio.backends._azure import AsyncAzureBackend
 
-pytestmark = [
-    pytest.mark.live,
-    pytest.mark.skipif(
-        os.environ.get("RS_TEST_LIVE_HNS") != "1",
-        reason="live HNS suite is opt-in via RS_TEST_LIVE_HNS=1",
-    ),
-]
+
+# The ``async_live_hns_backend`` / ``live_hns_env`` fixtures and the
+# live/replay parametrize live in ``tests/backends/azure/aio/conftest.py``
+# (BK-303): each test body runs against both the live ``azure_live_hns_async``
+# record (recordable) and the creds-free ``azure_replay_hns_async`` cassette tier.
 
 # 1 KiB keeps live-cost footprint small; payload content is irrelevant to the
 # contracts under test (path shape and metadata semantics).
 _PAYLOAD = b"x" * 1024
-
-
-def _require_live_hns_env() -> tuple[str, str]:
-    """Return ``(connection_string, filesystem)`` or fail loud.
-
-    Both values are validated by the shared ``_live_env`` helpers:
-    ``require_azure_live_connection_string`` (presence + Azurite-signature
-    rejection) and ``require_azure_live_hns_container``
-    (``RS_TEST_LIVE_HNS_CONTAINER`` presence).
-    """
-    return require_azure_live_connection_string(), require_azure_live_hns_container()
-
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture(scope="module")
-def _live_hns_setup() -> Iterator[tuple[str, str, str, str]]:
-    """Module-scoped sync fixture: provision one HNS directory for the whole session.
-
-    Yields ``(conn, fs_name, dirpath, prefix)`` where ``dirpath`` is the path
-    of an HNS directory blob created via ``DataLakeServiceClient``. All four
-    values are strings so the async ``async_live_hns_backend`` fixture can
-    consume them without needing an event loop at setup time.
-
-    Teardown deletes the entire prefix on a best-effort basis; a teardown race
-    must not turn a green test red.
-    """
-    conn, fs_name = _require_live_hns_env()
-    prefix = f"live-hns-async/{uuid.uuid4().hex[:8]}"
-    dirpath = f"{prefix}/dirblob"
-
-    service = DataLakeServiceClient.from_connection_string(conn)
-    try:
-        fs_client = service.get_file_system_client(fs_name)
-        fs_client.get_directory_client(dirpath).create_directory()
-        try:
-            yield conn, fs_name, dirpath, prefix
-        finally:
-            try:
-                fs_client.get_directory_client(prefix).delete_directory()
-            except Exception:  # noqa: BLE001 -- teardown is best-effort
-                _LOG.warning("failed to delete live async HNS prefix %s", prefix, exc_info=True)
-    finally:
-        service.close()
-
-
-@pytest.fixture(scope="module")
-def live_hns_env(_live_hns_setup: tuple[str, str, str, str]) -> tuple[str, str]:
-    """Module-scoped accessor for the validated ``(connection_string, filesystem)``.
-
-    Sibling of the sync ``live_hns_env`` in
-    ``tests/backends/azure/test_live_hns.py``. Centralises env-var lookup
-    so individual tests do not re-read ``os.environ``
-    directly — direct access bypasses ``_require_live_hns_env``'s fail-loud
-    handling and would raise ``KeyError`` on misconfiguration.
-    """
-    conn, fs_name, _, _ = _live_hns_setup
-    return conn, fs_name
-
-
-@pytest.fixture
-async def async_live_hns_backend(
-    _live_hns_setup: tuple[str, str, str, str],
-) -> AsyncIterator[tuple[AsyncAzureBackend, str]]:
-    """Per-test ``AsyncAzureBackend`` against the real ADLS Gen2 account.
-
-    The backend object is cheap to create; making it function-scoped ensures
-    each test gets a clean connection-pool state without paying for repeated
-    directory provisioning (which is module-scoped in ``_live_hns_setup``).
-
-    Yields ``(backend, dirpath)`` matching the module-level HNS directory.
-    """
-    conn, fs_name, dirpath, _ = _live_hns_setup
-    backend = AsyncAzureBackend(container=fs_name, hns=True, connection_string=conn)
-    try:
-        yield backend, dirpath
-    finally:
-        await backend.aclose()
 
 
 @pytest.mark.spec("AZ-006")
@@ -247,7 +155,10 @@ class TestAsyncLiveHnsWriteResult:
         """
         backend, dirpath = async_live_hns_backend
         prefix = dirpath.rsplit("/", 1)[0]
-        path = f"{prefix}/wr-native-{uuid.uuid4().hex[:8]}.txt"
+        # Deterministic basename (no uuid): the per-session prefix gives
+        # cross-run isolation and each test uses a distinct basename, so the
+        # cassette path is stable for replay (BK-303).
+        path = f"{prefix}/wr-native.txt"
 
         result = await backend.write_atomic(path, _PAYLOAD)
 
@@ -414,7 +325,7 @@ class TestAsyncLiveHnsWriteAtomicAsyncIterator:
     ) -> None:
         backend, dirpath = async_live_hns_backend
         prefix = dirpath.rsplit("/", 1)[0]
-        path = f"{prefix}/aiter-{uuid.uuid4().hex[:8]}.txt"
+        path = f"{prefix}/aiter.txt"
         # Three uneven chunks ensure cumulative-offset arithmetic is exercised
         # (a buggy fix that ignored chunk_len would still pass with one chunk).
         chunks = [b"chunk-one-", b"chunk-two-and-some-extra-", b"final-chunk"]
@@ -447,7 +358,7 @@ class TestAsyncLiveHnsWriteAtomicAsyncIterator:
         """
         backend, dirpath = async_live_hns_backend
         prefix = dirpath.rsplit("/", 1)[0]
-        path = f"{prefix}/aiter-meta-{uuid.uuid4().hex[:8]}.txt"
+        path = f"{prefix}/aiter-meta.txt"
         metadata = {"branch": "async_iterator", "owner": "team-a"}
 
         async def aiter_payload() -> AsyncIterator[bytes]:
@@ -471,12 +382,19 @@ class TestAsyncLiveHnsWriteAtomicAsyncIterator:
 
 
 class TestAsyncLiveHnsExists:
-    """Async ``exists`` on a real HNS directory — DataLake probe-fallback chain.
+    """Async ``exists`` on a real HNS directory.
 
-    Conformance covers async ``exists`` on regular present / missing files.
-    The HNS branch additionally falls back from the blob client to a DataLake
-    directory probe; that fallback only fires on a real ADLS Gen2 directory
-    blob created via ``DataLakeServiceClient``.
+    Async companion to ``TestAzureLiveHnsExists``. Conformance covers async
+    ``exists`` on regular present / missing files. On HNS, a directory created
+    via ``DataLakeServiceClient`` is visible on the *blob* endpoint with
+    ``hdi_isfolder=true`` (verify against the committed cassette), so ``exists``
+    resolves ``True`` at the blob check without reaching the
+    ``ResourceNotFoundError`` → DataLake directory-probe fallback — that fallback
+    is defensive ``# pragma: no cover`` for directories with no blob marker.
+
+    The point guarded is that a real HNS directory reads as an existing
+    *directory*, not a file (a plain blob would also satisfy ``exists``): the
+    ``is_folder`` / ``is_file`` assertions are what pin the HNS-directory case.
 
     Spec: ASYNC-015 (exists).
     """
@@ -488,6 +406,10 @@ class TestAsyncLiveHnsExists:
     ) -> None:
         backend, dirpath = async_live_hns_backend
         assert await backend.exists(dirpath) is True
+        # Pin the HNS-directory resolution (a flat blob would also yield exists
+        # True): the path reads as a directory, not a file.
+        assert await backend.is_folder(dirpath) is True
+        assert await backend.is_file(dirpath) is False
 
 
 # ---------------------------------------------------------------------------
@@ -532,7 +454,7 @@ class TestAsyncLiveHnsFileApiOnDirectory:
         backend, dirpath = async_live_hns_backend
         conn, fs_name = live_hns_env
         prefix = dirpath.rsplit("/", 1)[0]
-        scratch_dir = f"{prefix}/scratch-dir-{uuid.uuid4().hex[:8]}"
+        scratch_dir = f"{prefix}/scratch-dir"
         service = DataLakeServiceClient.from_connection_string(conn)
         try:
             fs_client = service.get_file_system_client(fs_name)
@@ -569,35 +491,38 @@ class TestAsyncLiveHnsGetFolderInfoRoot:
     ``_fs.get_paths(path="/", recursive=True)`` (the deliberate ``or "/"``
     fallback) to enumerate the root.
 
-    The assertions focus on the API contract (returns a valid ``FolderInfo``
-    with non-negative aggregates), not exact counts — the container is shared
-    across tests so the count is unpredictable.
+    The test runs against a dedicated *empty* filesystem (``LIVE_HNS_ROOT_FS``,
+    via ``async_live_hns_root_backend``) rather than the shared container:
+    enumerating the shared root recursively would bake its mutable inventory
+    into the cassette — non-reproducible on re-record and an unbounded residue
+    surface. An empty root enumerates to ``{"paths":[]}``, so the aggregates are
+    an exact, asserted contract.
 
     Spec: ASYNC-017 (async get_folder_info postcondition); AZ-024 (HNS root-path carve-out).
-    Cassette: new Stage 3 cassette required — record with
-    ``RS_TEST_LIVE_HNS=1 hatch run record-azure``.
     """
 
     @pytest.mark.spec("ASYNC-017")
     async def test_get_folder_info_root_returns_valid_folder_info(
         self,
-        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+        async_live_hns_root_backend: AsyncAzureBackend,
     ) -> None:
-        """Root async get_folder_info must succeed and return a FolderInfo for path=''.
+        """Root async get_folder_info must succeed and return an empty FolderInfo for path=''.
 
         Contract under test: ``get_folder_info("")`` against an HNS account
-        completes without an SDK exception.  The root-path code path skips
-        the per-path ``get_directory_client`` probe (real ADLS Gen2 rejects
-        the empty path) and relies on the deliberate ``or "/"`` fallback in
-        ``_fs.get_paths`` to enumerate the root.  The live counts vary with
-        sibling-test residue and are not contract.
+        completes without an SDK exception, takes the root-path carve-out
+        (skips the ``get_directory_client("")`` probe, uses the ``or "/"``
+        ``get_paths`` fallback), and returns a ``FolderInfo`` rooted at
+        ``RemotePath.ROOT``. Against the dedicated empty filesystem the
+        aggregates are exact and reproducible: zero files, zero bytes.
         """
         from remote_store._models import FolderInfo  # noqa: PLC0415 -- intentional late import
 
-        backend, _dirpath = async_live_hns_backend
-        info = await backend.get_folder_info("")
+        info = await async_live_hns_root_backend.get_folder_info("")
         assert isinstance(info, FolderInfo)
         # FolderInfo.path is a RemotePath; the root normalises to RemotePath.ROOT
         # (str form "."), and RemotePath.__eq__ returns NotImplemented for str
         # operands — comparing against "" would always be False.
         assert info.path == RemotePath.ROOT
+        # Empty dedicated filesystem → exact, reproducible aggregates.
+        assert info.file_count == 0
+        assert info.total_size == 0

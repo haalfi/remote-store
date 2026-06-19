@@ -123,6 +123,18 @@ the concrete naming.
 **Configuration tests** (construction options, opt parsing, registry
 wiring) live in the same per-backend home.
 
+**Replay tier for HTTP deviation suites:** a per-backend deviation suite
+whose transport is HTTP may adopt the TEST-007 record/replay pattern so
+its HTTP is captured once and replayed creds-free at Stage 1, exactly like
+conformance. It registers a dedicated `<backend>_live_<topic>` /
+`<backend>_replay_<topic>` fixture pair carrying the backend's
+`cassette_profile` (so cassette routing, scrub, and the recorder all see it)
+and the `conformance_excluded` flag (so it never enters the conformance
+walk). The deviation suite's own conftest parametrises its tests over the
+pair. The cassettes share the backend's `cassettes/<backend>/` directory
+under a distinct alias. Example: the Azure HNS deviation suite's
+`azure_live_hns` / `azure_replay_hns` pair (BK-303).
+
 ---
 
 ## TEST-004: Fixture Registry and Metadata Interface

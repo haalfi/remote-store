@@ -1,0 +1,116 @@
+id: BK-303
+title: "Azure live-only HNS tests have no cassette-replay tier"
+trigger: >
+  tests/backends/azure/test_live_hns.py and its async sibling exercise the
+  HNS-only paths (BE-021 directory-marker guards, rename_file metadata
+  survival, the exists DataLake-directory fallback, get_folder_info("") root
+  handling, AzureUtils.detect_hns/adetect_hns) only against a real ADLS Gen2
+  account (pytest.mark.live + module-level skipif RS_TEST_LIVE_HNS!=1). They
+  carry no @pytest.mark.vcr, so CI and local Stage-1 runs silently skip every
+  HNS-only path — verified only when someone runs live with credentials.
+source_items:
+  - BK-303
+  - BK-302
+  - BK-304
+audience:
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  # The plan assumed strict_only would keep the *_hns fixtures off the
+  # conformance walk, but strict_only leaks back through the
+  # include_strict_only=True file-ancestor tests (test_errors / test_async_
+  # extended), so a stronger conformance_excluded registry field was needed.
+  # Adding it as a required FixtureDescriptor field rippled to every
+  # construction site, which neither the plan nor the ripple-check anticipated.
+  - tests/backends/fixtures/_loader.py
+  - tests/backends/fixtures/test_live_env.py
+review_rounds: 3
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-303 (item)"
+        read_type: gate
+        extract: "two suggested forms (fold into recorder OR dedicated azure_live_hns/azure_replay_hns pair); depends on BK-304 (done)"
+        outcome: ok
+      - file: tests/backends/azure/test_live_hns.py
+        section: "pytestmark + live_hns_backend/live_hns_env fixtures"
+        read_type: gate
+        extract: "module-scoped fixtures create real HNS dir via a separate DataLakeServiceClient; no vcr mark; no parametrize id"
+        outcome: ok
+      - file: tests/backends/conformance/conftest.py
+        section: "vcr_cassette_dir / default_cassette_name / vcr_config / pytest_collection_modifyitems / pytest_sessionfinish"
+        read_type: gate
+        extract: "all cassette routing/skip/manifest hooks are conformance-scoped; azure/ is a sibling and inherits none; pytest_generate_tests must stay conformance-only"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: tests/backends/fixtures/azure_live.py
+        section: "_factory / register"
+        read_type: reference
+        extract: "live-fixture shape: RS_TEST_LIVE_HNS gate, dynamic vcr mark, cassette_profile=AZURE_PROFILE"
+        outcome: ok
+      - file: tests/backends/fixtures/azure_replay.py
+        section: "_factory / marks"
+        read_type: reference
+        extract: "replay builds against FAKE_FILESYSTEM/FAKE_CONN_STR; marks=(vcr(record_mode=none),) so it stays replay under --record"
+        outcome: ok
+      - file: tests/backends/fixtures/_cassettes_azure.py
+        section: "AZURE_PROFILE scrub rules + fixture_aliases"
+        read_type: reference
+        extract: "_FILESYSTEM_PATTERN handles conformance-<uuid8> only; HNS container + live-hns/<uuid8> prefix are new leak surfaces needing new rules"
+        outcome: ok
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture.strict_only / cassette_profile"
+        read_type: reference
+        extract: "strict_only keeps fixtures off the conformance auto-walk but visible to all_fixtures (routing/recorder/PII sweep)"
+        outcome: ok
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "test_named_rules_unique_prefixed_and_typed (REC-002)"
+        read_type: gate
+        extract: "every rule name must start with f'{profile.backend}.' — forces sharing AZURE_PROFILE rather than a new azure_hns profile"
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "_BACKENDS azure entry + Step 2/3/5 target path"
+        read_type: reference
+        extract: "recorder target is hardcoded tests/backends/conformance/; HNS cassettes share cassettes/azure/ so fold into the azure entry with a targets list, not a new backend entry"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/fixtures/_cassettes_azure.py
+        section: "azure.hns-container EnvRedact + azure.uri/body.hns-prefix + fixture_aliases"
+        read_type: reference
+        extract: "add the container redact and prefix rewrite; alias the four *_hns ids to azure_hns / azure_hns_async"
+        outcome: ok
+      - file: tests/backends/fixtures/_cassette_pytest.py
+        section: "(new) extracted routing core"
+        read_type: reference
+        extract: "lift the generic vcr routing helpers/fixtures/hooks so both conformance/ and azure/ conftests reuse them"
+        outcome: ok
+      - file: tests/backends/azure/conftest.py
+        section: "(new) _hns_record / _hns_dir / live_hns_backend / live_hns_env"
+        read_type: reference
+        extract: "parametrize over the registered *_hns records; function-scoped dir provisioning; replay branch does no HTTP"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "BACKLOG→DONE move, trace shipped same PR, no CHANGELOG (infra.test audience)"
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "--node targeted record + Step-4 scrub-verify"
+        read_type: verify
+        extract: "recorded 26 HNS cassettes via --node tests/backends/azure/ (no tree-wipe, conformance untouched); scrub-verify clean across 359; both required-to-fire HNS rules (azure.hns-container, azure.uri.hns-prefix) confirmed fired across all 26 by hand (node mode skips the named-rule audit); 26 replay params pass creds-free at Stage 1"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "exists() blob-then-DataLake probe (BE-015)"
+        read_type: verify
+        extract: "review round 2: the exists cassette proved the blob HEAD 200s with hdi_isfolder for a create_directory dir, so exists() short-circuits at the blob check and the DataLake fallback (# pragma: no cover) never fires — the test did not exercise its documented path. Strengthened to assert is_folder True / is_file False (pins directory-vs-blob) and corrected the false docstrings. Root test moved to a dedicated empty LIVE_HNS_ROOT_FS (azure.uri.root-fs scrub) so its cassette is residue-free and asserts exact zero aggregates. Re-recorded the 4 affected cassettes only."
+        outcome: ok

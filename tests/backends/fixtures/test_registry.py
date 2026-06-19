@@ -249,6 +249,30 @@ class TestRegistryShape:
         assert by_name["memory"].concurrency == "thread_safe"
         assert by_name["local"].concurrency == "thread_safe"
 
+    def test_bk303_hns_fixtures_conformance_excluded_and_profiled(self) -> None:
+        """The four BK-303 ``*_hns`` fixtures are registry-visible but never
+        enumerated by the conformance walk.
+
+        ``conformance_excluded`` keeps them out of ``fixture_params`` in **every**
+        mode (including the ``include_strict_only=True`` file-ancestor tests),
+        while their ``AZURE_PROFILE`` keeps them visible to ``all_fixtures()`` so
+        cassette routing, the recorder, and the PII sweep still see them.
+        """
+        from tests.backends.fixtures._cassettes_azure import AZURE_PROFILE
+
+        by_name = {f.name: f for f in all_fixtures()}
+        hns = ["azure_live_hns", "azure_replay_hns", "azure_live_hns_async", "azure_replay_hns_async"]
+        for name in hns:
+            assert name in by_name, f"{name!r} not registered"
+            assert by_name[name].conformance_excluded is True, f"{name!r} must be conformance_excluded"
+            assert by_name[name].cassette_profile is AZURE_PROFILE, f"{name!r} must carry AZURE_PROFILE"
+        # The exclusion holds even with the strict opt-in (the lever strict_only
+        # alone would not provide): no *_hns id appears in the enumeration.
+        enumerated = {
+            f.name for is_async in (False, True) for f in fixtures(is_async=is_async, include_strict_only=True)
+        }
+        assert enumerated.isdisjoint(hns), f"HNS fixtures leaked into the conformance walk: {enumerated & set(hns)}"
+
 
 def _valid_backend_raw() -> dict[str, object]:
     """Return a minimal valid raw dict for ``_parse_backend``.

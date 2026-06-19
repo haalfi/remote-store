@@ -41,7 +41,9 @@ from tests.backends.fixtures._cassettes_azure import (
     AZURE_PROFILE,
     FAKE_ACCOUNT,
     FAKE_FILESYSTEM,
+    LIVE_HNS_ROOT_FS,
     _resolve_live_account,
+    _resolve_live_hns_container,
 )
 from tests.backends.fixtures._cassettes_graph import (
     FAKE_DRIVE_ID,
@@ -686,6 +688,63 @@ class TestAzureCassetteScrub:
         assert FAKE_FILESYSTEM.encode() in scrubbed
         assert b"RequestId:SCRUBBED" in scrubbed
         assert b"Time:SCRUBBED" in scrubbed
+
+    def test_hns_container_and_prefix_normalised_in_uri(self) -> None:
+        """BK-303: the live ``RS_TEST_LIVE_HNS_CONTAINER`` filesystem name and
+        the per-session ``live-hns/<uuid8>`` prefix both normalise so HNS
+        cassettes replay against ``container=FAKE_FILESYSTEM`` and the replay
+        fixture's fixed ``live-hns/REPLAY`` dirpath."""
+        cfg = build_profile_vcr_config(AZURE_PROFILE, {"azure.account": "liveacct", "azure.hns-container": "myhnsfs"})
+        scrub = _composed_request_filter(cfg)
+        out = scrub(_request({}, uri="https://liveacct.dfs.core.windows.net/myhnsfs/live-hns/0a1b2c3d/dirblob"))
+        assert "liveacct" not in out.uri
+        assert "myhnsfs" not in out.uri  # azure.hns-container env-redact ran
+        assert FAKE_ACCOUNT in out.uri
+        assert FAKE_FILESYSTEM in out.uri
+        assert "0a1b2c3d" not in out.uri  # azure.uri.hns-prefix ran
+        assert "live-hns/REPLAY/dirblob" in out.uri
+
+    def test_hns_async_prefix_normalised_in_uri(self) -> None:
+        """BK-303: the async suite's ``live-hns-async/<uuid8>`` prefix normalises too."""
+        cfg = build_profile_vcr_config(AZURE_PROFILE, {"azure.account": "liveacct", "azure.hns-container": "myhnsfs"})
+        scrub = _composed_request_filter(cfg)
+        out = scrub(_request({}, uri="https://liveacct.dfs.core.windows.net/myhnsfs/live-hns-async/deadbeef/dirblob"))
+        assert "deadbeef" not in out.uri
+        assert "live-hns-async/REPLAY/dirblob" in out.uri
+
+    def test_hns_prefix_normalised_in_response_body(self) -> None:
+        """BK-303 bytes twin (``azure.body.hns-prefix``): ``get_paths`` listing
+        responses echo child paths carrying the per-session prefix uuid."""
+        cfg = build_profile_vcr_config(AZURE_PROFILE, {"azure.account": "liveacct", "azure.hns-container": "myhnsfs"})
+        body = b'{"paths":[{"name":"live-hns/0a1b2c3d/dirblob"},{"name":"live-hns-async/deadbeef/x"}]}'
+        scrubbed = cfg["before_record_response"]({"body": {"string": body}})["body"]["string"]
+        assert b"0a1b2c3d" not in scrubbed
+        assert b"deadbeef" not in scrubbed
+        assert b"live-hns/REPLAY/dirblob" in scrubbed
+        assert b"live-hns-async/REPLAY/x" in scrubbed
+
+    def test_root_probe_filesystem_normalised_in_uri(self) -> None:
+        """BK-303 (``azure.uri.root-fs``): the dedicated empty root-probe
+        filesystem name rewrites to ``FAKE_FILESYSTEM`` so the root
+        ``get_folder_info("")`` cassette replays against ``container=FAKE_FILESYSTEM``."""
+        cfg = build_profile_vcr_config(AZURE_PROFILE, {"azure.account": "liveacct"})
+        scrub = _composed_request_filter(cfg)
+        out = scrub(
+            _request(
+                {},
+                uri=f"https://liveacct.dfs.core.windows.net/{LIVE_HNS_ROOT_FS}?directory=%2F&recursive=true&resource=filesystem",
+            )
+        )
+        assert LIVE_HNS_ROOT_FS not in out.uri  # azure.uri.root-fs ran
+        assert FAKE_FILESYSTEM in out.uri
+
+    def test_hns_container_resolver_returns_none_when_unset(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """``None`` (the EnvRedact disable signal) when no live HNS container is
+        configured — a blank value, like the account resolver. setenv rather than
+        delenv so ``load_dotenv(override=False)`` cannot pull a real value from a
+        developer's ``.env``."""
+        monkeypatch.setenv("RS_TEST_LIVE_HNS_CONTAINER", "   ")
+        assert _resolve_live_hns_container() is None
 
     def test_query_params_filtered(self) -> None:
         cfg = _azure_cfg()
