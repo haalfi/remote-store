@@ -10887,7 +10887,12 @@
 <p>The Azure backend declares <code>WRITE_RESULT_NATIVE</code> and <code>USER_METADATA</code>. Write operations return
 a <a href="../../../reference/api/models/"><code>WriteResult</code></a> with <code>etag</code> and <code>last_modified</code> populated from the upload
 response. <code>digest</code> is populated as <code>ContentDigest("md5", &lt;hex&gt;)</code> when Azure echoes back
-<code>Content-MD5</code> in the upload response, and <code>None</code> otherwise. When blob versioning is enabled
+<code>Content-MD5</code> in the upload response, and <code>None</code> otherwise. On HNS accounts, <code>write_atomic</code>
+always returns <code>digest=None</code>: it commits via a temp-file upload plus an atomic rename, and the
+backend reads only <code>etag</code> and <code>last_modified</code> from the post-rename properties — not a
+<code>Content-MD5</code> (the sibling <code>write</code> populates <code>digest</code> from its upload response on the same
+account). For a guaranteed digest regardless of method or backend, use the
+<code>remote_store.ext.write</code> helpers (e.g. <code>write_with_hash</code>). When blob versioning is enabled
 on a non-HNS container, <code>version_id</code> is also populated from the upload response.</p>
 <p>Pass <code>metadata=</code> to store custom string key-value pairs as Azure blob metadata.</p>
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
