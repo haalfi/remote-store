@@ -8,6 +8,38 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-224 — Flaky `test (3.14)` from a GC-time `_wait_for_close` coroutine**
+  spec: — · effort: S · audience: infra.ci, infra.test
+  `_wait_for_close` is **aiohttp's connector-close coroutine** (`aiohttp/connector.py`),
+  reached via aiobotocore's `ClientSession`: the sync S3 backend releases that
+  session through s3fs's `weakref.finalize` at GC — BK-306's *by-design* close (an
+  explicit `close_session()` was removed there because it double-closed against the
+  finalizer, the BK-304 unraisable class). So the session **is** closed; the
+  coroutine just runs at a GC point. Python 3.14's stricter coroutine-finalization
+  reporting routes that GC-time close through pytest's `unraisableexception` plugin
+  as a `PytestUnraisableExceptionWarning`, which `filterwarnings = error` escalates
+  to a hard failure; 3.10–3.13 emit it as a benign GC-time warning. Under
+  `pytest -n auto` the attribution is non-deterministic — it fails whichever async
+  test GC happens to run in (observed on `…graph/aio/test_http.py::…redacts_token`
+  and `…conformance/test_sync_adapter_conformance.py::…[live-s3]` on different runs)
+  — so it reddened the `test (3.14)` entry on ~half of merges (BK-303 and BK-300)
+  while a re-run cleared it. BK-303 (which added ~26 async tests) did not introduce
+  it; it only enlarged the async-test population enough to surface a latent flake.
+  Not reproducible on the local 3.13 interpreter. **Root cause investigated:** this
+  is a GC-timing artifact of an *intentional* finalizer close, not a forgotten
+  `await`; a deterministic product fix would have to rework BK-306's just-shipped
+  S3 session release (disarm the finalizer + close synchronously) at the double-close
+  risk that motivated BK-306's current design, and is verifiable only on 3.14 CI —
+  out of proportion to a benign GC-time warning. **Fix:** a `filterwarnings` ignore
+  (`pyproject.toml`) anchored on the stable `<coroutine object _wait_for_close`
+  repr with a `.*` lead-in — robust to the unraisable lead-in wording (`Exception
+  ignored in:` vs `Exception ignored while finalizing coroutine`) rather than a
+  fragile exact prefix — so this one coroutine no longer fails CI while genuine
+  unclosed-resource leaks (any other coroutine, on every Python version) still
+  fail. Pinned by `tests/test_py314_unraisable_filter.py`, which deterministically
+  asserts (on every version) that the ignore suppresses **both** real lead-in
+  forms and does **not** mask other unraisables.
+
 - [x] **BK-300 — Azure `WriteResult.digest` is dropped on HNS `write_atomic`**
   spec: — · effort: S · audience: user.api_docs, user.site
   From [audit-019](audits/audit-019-azure-backend-review.md) M4. Live-confirmed:

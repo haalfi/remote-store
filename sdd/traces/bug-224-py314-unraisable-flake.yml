@@ -1,0 +1,76 @@
+id: BUG-224
+title: "Flaky test (3.14) from a GC-time aiohttp _wait_for_close coroutine"
+trigger: >
+  After the BK-303 and BK-300 merges, the `test (3.14)` CI matrix entry went
+  red on roughly half of runs while 3.10-3.13 stayed green and a re-run of the
+  same commit cleared it. The failure was a PytestUnraisableExceptionWarning
+  wrapping `RuntimeWarning: coroutine '_wait_for_close' was never awaited`,
+  attributed to a different async test each run (graph aio http; then a live-s3
+  sync-adapter conformance test) — the signature of a GC-timing artifact under
+  `pytest -n auto`, not a defect in any one test. Discovered while running
+  /fix-pr on PR #849 (BK-300): the red was first mis-read as pre-existing, then
+  traced to the BK-303 merge as the first failing commit, then confirmed flaky
+  by a clean re-run. A first fix attempt mischaracterized `_wait_for_close` as
+  an asyncio stdlib internal; PR #850 review (5 threads) forced a proper
+  origin trace.
+source_items:
+  - BUG-224
+audience:
+  - infra.ci
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 2
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test job (ALL_PYTHONS matrix); gate"
+        read_type: gate
+        extract: "test (3.14) is a full matrix entry with no continue-on-error; the gate job aggregates it, so a 3.14 red blocks merge. 3.10-3.13 pass."
+        outcome: ok
+      - file: tests/backends/graph/aio/test_http.py
+        section: "TestGraphSend::test_debug_log_redacts_token"
+        read_type: reference
+        extract: "First-observed attribution target; uses httpx.AsyncClient under respx. The async azure replay tests (BK-303) pass clean locally on 3.13 in dev mode, so the coroutine source is not this test — the orphan is GC'd here non-deterministically."
+        outcome: misleading
+  - id: classify
+    name: Classify
+    steps:
+      - file: .venv/Lib/site-packages/aiohttp/connector.py
+        section: "BaseConnector.close / _wait_for_close"
+        read_type: gate
+        extract: "PR #850 review forced this: `_wait_for_close` is aiohttp's connector-close coroutine, NOT an asyncio stdlib internal as first claimed. close() schedules it as an eager Task; if the ClientSession is closed at GC (via s3fs weakref.finalize on aiobotocore), the coroutine runs at GC and py3.14 reports it. The origin trace (Explore agent) ruled out the BK-303 azure replay fixtures (they use AsyncioRequestsTransport, never aiohttp) and pinned it to the sync S3 / aiobotocore session."
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-306 (S3 close session release)"
+        read_type: reference
+        extract: "BK-306 deliberately releases the aiobotocore session via s3fs's weakref.finalize at GC — an explicit close_session() was removed because it double-closed against the finalizer (BK-304 class). So the session IS closed; only its GC timing is the issue. A deterministic product fix would have to rework that just-shipped close path at the same double-close risk, verifiable only on 3.14 CI — out of proportion."
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options] filterwarnings"
+        read_type: gate
+        extract: "filterwarnings = error turns the unraisableexception plugin's PytestUnraisableExceptionWarning into a hard failure; existing SQLAlchemy/OTel ignores set the precedent for narrowly-scoped exemptions of upstream-owned, benign GC-time warnings."
+        outcome: ok
+  - id: fix
+    name: Fix
+    steps:
+      - file: pyproject.toml
+        section: "filterwarnings (new _wait_for_close ignore)"
+        read_type: reference
+        extract: "Ignore on the PytestUnraisableExceptionWarning OUTER message, anchored on the stable `<coroutine object _wait_for_close` repr with a `.*` lead-in (round 2 hardening) so it matches regardless of lead-in wording (`Exception ignored in:` vs `Exception ignored while finalizing coroutine`) — not a fragile exact prefix. Chosen over reworking BK-306's session release (risky, 3.14-only-verifiable) and over `-p no:unraisableexception` (BK-304 precedent, coarser) because the message-scoped filter keeps genuine unclosed-resource detection on every version."
+        outcome: ok
+      - file: tests/test_py314_unraisable_filter.py
+        section: "(new) regression guard"
+        read_type: reference
+        extract: "BK-304-style guard: pulls the live filter from pytestconfig.getini, parses it with pytest's own parse_warning_filter, and asserts (every version) it suppresses BOTH real lead-in forms (parametrized) AND still raises on a different coroutine. Round-2 review flagged that keying on one hand-transcribed prefix is self-referential; the `.*`-anchored regex + two-form assertion removes that fragility. Converts the unverifiable 3.14-only flake into a deterministic check."
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates (pyproject touch -> hatch run all)"
+        read_type: verify
+        extract: "pyproject.toml + tests/ are in CODE_PAT, so the mechanical gate is `hatch run all`. The new guard passes locally on 3.13, proving the filter entry parses, the category resolves, and the regex matches the real message — the deterministic verification the flaky 3.14 CI run cannot give."
+        outcome: ok
