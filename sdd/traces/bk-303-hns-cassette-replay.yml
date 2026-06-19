@@ -25,7 +25,7 @@ surprising_ripples:
   # construction site, which neither the plan nor the ripple-check anticipated.
   - tests/backends/fixtures/_loader.py
   - tests/backends/fixtures/test_live_env.py
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient

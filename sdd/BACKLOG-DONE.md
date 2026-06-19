@@ -11,9 +11,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 - [x] **BK-303 — Azure live-only HNS tests have no cassette-replay tier**
   spec: TEST-003, REC-007 · effort: M · audience: infra.test
   The `tests/backends/azure/test_live_hns.py` suite (+ its async sibling) — HNS
-  directory-marker guards (BE-021), the `exists` DataLake fallback,
-  `get_folder_info("")` root handling, and the `AzureUtils.detect_hns` /
-  `adetect_hns` checks from BK-302 — ran **only** against a live ADLS Gen2 account
+  directory-marker guards (BE-021), the `rename_file` metadata-survival check
+  (WR-013), the `exists` DataLake fallback, `get_folder_info("")` root handling,
+  and the `AzureUtils.detect_hns` / `adetect_hns` checks from BK-302 — ran
+  **only** against a live ADLS Gen2 account
   and carried no `@pytest.mark.vcr`, so CI and Stage-1 silently skipped every
   HNS-only path. Gave them the conformance suite's record-once / replay-creds-free
   tier via a dedicated `azure_live_hns` / `azure_replay_hns` (+ async) fixture pair
