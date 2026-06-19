@@ -11067,7 +11067,7 @@ via the paired-ID map at the top of 011.</p>
 <strong>Postconditions:</strong>
 - Safe to call multiple times (idempotent).
 - <strong>After close, the backend is terminal (BK-298 M1):</strong> a subsequent operation raises a typed <code>BackendUnavailable</code> via the <code>_s3fs</code> / <code>_fs</code> guard rather than silently re-creating the client. Declared via <code>close_is_terminal</code> (BE-020); aligns with Azure (AZ-029) and Graph (GR-051). The same posture applies to <code>S3PyArrowBackend</code> and <code>S3Boto3Backend</code>.
-- <code>close()</code> drops the s3fs reference but does not itself tear down the underlying aiobotocore session (s3fs caches it on a background loop) — tracked as BK-306.</p>
+- <strong>Resources are released, not merely dereferenced (BK-306):</strong> the s3fs filesystem is built with <code>skip_instance_cache=True</code>, so it is never pinned in fsspec's process-global instance cache. Dropping the reference therefore makes the instance collectable and s3fs's own finalizer closes the aiobotocore session; a fresh backend with identical arguments never reuses a closed session. <code>S3Boto3Backend.close()</code> closes its boto3 client (urllib3 pool) directly, as boto3 registers no finalizer.</p>
 <h3 id="s3-020-unwrap">S3-020: unwrap()<a class="headerlink" href="#s3-020-unwrap" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>unwrap(S3FileSystem)</code> returns the underlying <code>s3fs.S3FileSystem</code> instance.
 <strong>Raises:</strong> <code>CapabilityNotSupported</code> for any other type hint.
