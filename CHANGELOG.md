@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-298: Azure `close()` / `aclose()` no longer close a caller-supplied `credential=` — only an auto-created `DefaultAzureCredential` is closed, so a shared credential is no longer torn down across the rest of your application (H1 fix).
+- BK-298: `close()` / `aclose()` is now **terminal** for `AzureBackend`, the S3 backends (`S3Backend`, `S3PyArrowBackend`, `S3Boto3Backend`), and `GraphBackend` — a use-after-close raises `BackendUnavailable` instead of silently re-initialising the client (**behavior change**). Backends declare this via the `close_is_terminal` posture (BE-020); `LocalBackend`, `MemoryBackend`, `SFTPBackend`, HTTP, and the SQL backends remain reusable after `close()`.
 - BK-302: Azure HNS is now an explicit, mandatory `hns=` declaration (no runtime auto-detection); adds `AzureUtils.detect_hns()` / `adetect_hns()` for one-shot discovery (**breaking**). Supersedes the BUG-223 re-probe fix from this same Unreleased cycle, which tuned the auto-detection that this change removes outright.
 - BUG-222: Azure error classifier types 429 / 5xx / 401
 - BK-299: Document Azure seekable reads (`read_seekable`), the async `ext.*` cliff, and connection-pool tuning

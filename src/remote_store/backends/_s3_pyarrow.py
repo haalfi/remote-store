@@ -389,6 +389,9 @@ class S3PyArrowBackend(_S3Base):
             self._pa_fs.copy_file(self._pa_path(src), self._pa_path(dst))
 
     def close(self) -> None:
+        # M1: terminal close (BK-298) — flip the guard flag, then drop the
+        # cached clients. Idempotent.
+        self._closed = True
         if self._s3fs_instance is not None:
             self._s3fs_instance = None
         self._pa_fs_instance = None
@@ -430,6 +433,7 @@ class S3PyArrowBackend(_S3Base):
     @property
     def _pa_fs(self) -> Any:
         """Lazy PyArrow S3FileSystem."""
+        self._raise_if_closed()
         if self._pa_fs_instance is None:
             from pyarrow.fs import S3FileSystem as PyArrowS3
 
@@ -473,6 +477,7 @@ class S3PyArrowBackend(_S3Base):
     @property
     def _s3fs(self) -> Any:
         """Lazy s3fs S3FileSystem."""
+        self._raise_if_closed()
         if self._s3fs_instance is None:
             import s3fs
 

@@ -1897,7 +1897,7 @@
       "file": "src/remote_store/aio/backends/_azure.py",
       "id": "cls:remote_store.aio.backends._azure.AsyncAzureBackend",
       "kind": "class",
-      "line": 55,
+      "line": 56,
       "role": "backend",
       "runtime": "async",
       "summary": "Async Azure Storage backend."
@@ -1924,7 +1924,7 @@
       "file": "src/remote_store/backends/_azure.py",
       "id": "cls:remote_store.backends._azure.AzureBackend",
       "kind": "class",
-      "line": 175,
+      "line": 176,
       "role": "backend",
       "runtime": "sync",
       "summary": "Azure Storage backend."
@@ -2016,7 +2016,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 375,
+      "line": 383,
       "summary": "copy"
     },
     {
@@ -2025,7 +2025,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 264,
+      "line": 272,
       "summary": "delete"
     },
     {
@@ -2034,7 +2034,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 278,
+      "line": 286,
       "summary": "delete_folder"
     },
     {
@@ -2043,7 +2043,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 327,
+      "line": 335,
       "summary": "get_file_info"
     },
     {
@@ -2052,7 +2052,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 342,
+      "line": 350,
       "summary": "get_folder_info"
     },
     {
@@ -2061,7 +2061,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 410,
+      "line": 418,
       "summary": "glob"
     },
     {
@@ -2070,7 +2070,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 393,
+      "line": 401,
       "summary": "iter_children"
     },
     {
@@ -2079,7 +2079,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 293,
+      "line": 301,
       "summary": "list_files"
     },
     {
@@ -2088,7 +2088,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 316,
+      "line": 324,
       "summary": "list_folders"
     },
     {
@@ -2097,7 +2097,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 357,
+      "line": 365,
       "summary": "move"
     },
     {
@@ -2106,7 +2106,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 246,
+      "line": 254,
       "summary": "open_atomic"
     },
     {
@@ -2115,7 +2115,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 112,
+      "line": 120,
       "summary": "read"
     },
     {
@@ -2124,7 +2124,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 127,
+      "line": 135,
       "summary": "read_bytes"
     },
     {
@@ -2133,7 +2133,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 142,
+      "line": 150,
       "summary": "read_seekable"
     },
     {
@@ -2142,7 +2142,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 186,
+      "line": 194,
       "summary": "write"
     },
     {
@@ -2151,7 +2151,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 219,
+      "line": 227,
       "summary": "write_atomic"
     },
     {
@@ -2331,7 +2331,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 303,
+      "line": 309,
       "summary": "copy"
     },
     {
@@ -2340,7 +2340,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 185,
+      "line": 191,
       "summary": "delete"
     },
     {
@@ -2349,7 +2349,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 199,
+      "line": 205,
       "summary": "delete_folder"
     },
     {
@@ -2358,7 +2358,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 253,
+      "line": 259,
       "summary": "get_file_info"
     },
     {
@@ -2367,7 +2367,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 268,
+      "line": 274,
       "summary": "get_folder_info"
     },
     {
@@ -2376,7 +2376,7 @@
       "is_abstract": false,
       "is_async": true,
       "kind": "method",
-      "line": 343,
+      "line": 349,
       "summary": "glob"
     },
     {
@@ -2385,7 +2385,7 @@
       "is_abstract": false,
       "is_async": true,
       "kind": "method",
-      "line": 365,
+      "line": 371,
       "summary": "iter_children"
     },
     {
@@ -2394,7 +2394,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 215,
+      "line": 221,
       "summary": "list_files"
     },
     {
@@ -2403,7 +2403,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 240,
+      "line": 246,
       "summary": "list_folders"
     },
     {
@@ -2412,7 +2412,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 283,
+      "line": 289,
       "summary": "move"
     },
     {
@@ -2421,7 +2421,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 96,
+      "line": 102,
       "summary": "read"
     },
     {
@@ -2430,7 +2430,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 113,
+      "line": 119,
       "summary": "read_bytes"
     },
     {
@@ -2439,7 +2439,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 128,
+      "line": 134,
       "summary": "write"
     },
     {
@@ -2448,7 +2448,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 158,
+      "line": 164,
       "summary": "write_atomic"
     },
     {

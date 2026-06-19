@@ -75,20 +75,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Azure
 
-- [ ] **BK-298 — Azure credential ownership + cross-backend close posture**
-  spec: AZ-029 · effort: M · audience: user.api, library.maintainer
-  From [audit-019](audits/audit-019-azure-backend-review.md) H1 + M1. `close()`/`aclose()`
-  close `self._resolved_credential` with no ownership flag, so a caller-supplied
-  `credential=` (e.g. a shared `DefaultAzureCredential`) is torn down across the
-  user's app (H1 defect: add a `created_credential` flag, close only
-  backend-created credentials). Coupled posture decision (M1): `AsyncAzureBackend`
-  has no `_closed` guard and AZ-029 blesses re-initialise-on-demand — the
-  postcondition that was Graph's BUG-219 (live-confirmed: `exists()` succeeded after
-  `close()`). Decide whether to align Azure + S3 with Graph's terminal close (typed
-  `BackendUnavailable`, a cross-backend conformance lane) or bless the divergence in
-  AZ-029 / the BK-287 posture family. The cross-backend item the BUG-219 trace
-  flagged for ID-219.
-
 - [ ] **BK-300 — Azure `WriteResult.digest` is dropped on HNS `write_atomic`**
   spec: — · effort: S · audience: user.api_docs, user.site
   From [audit-019](audits/audit-019-azure-backend-review.md) M4. Live-confirmed: HNS

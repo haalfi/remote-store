@@ -443,6 +443,35 @@ class TestS3SharedLifecycle:
         assert result is None
 
 
+# Terminal close (BK-298 / M1): a use-after-close raises BackendUnavailable
+# rather than silently re-creating the client. The guard short-circuits before
+# any network call, so these construct directly (no moto/minio server needed).
+S3BOTO3_CLS = "remote_store.backends._s3_boto3:S3Boto3Backend"
+_TERMINAL_CLOSE_PARAMS = [
+    pytest.param(S3_CLS, id="s3"),
+    pytest.param(S3PA_CLS, id="s3-pyarrow"),
+    pytest.param(S3BOTO3_CLS, id="s3-boto3"),
+]
+
+
+class TestS3SharedTerminalClose:
+    """BK-298 M1: close() is terminal across all three S3 backends."""
+
+    @pytest.mark.parametrize("backend_path", _TERMINAL_CLOSE_PARAMS)
+    def test_use_after_close_raises_backend_unavailable(self, backend_path: str) -> None:
+        from remote_store._errors import BackendUnavailable
+
+        cls = _load_backend_cls(backend_path)
+        backend = cls(bucket="b", key="k", secret="s", region_name=REGION, endpoint_url="http://localhost:1")
+        backend.close()
+        with pytest.raises(BackendUnavailable, match="closed"):
+            backend.exists("x.txt")
+
+    @pytest.mark.parametrize("backend_path", _TERMINAL_CLOSE_PARAMS)
+    def test_close_is_terminal_posture_declared(self, backend_path: str) -> None:
+        assert _load_backend_cls(backend_path).close_is_terminal is True
+
+
 # ---------------------------------------------------------------------------
 # Resolve details (RES-051 ↔ RES-052)
 # ---------------------------------------------------------------------------

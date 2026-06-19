@@ -638,9 +638,14 @@ class TestAzureLifecycle:
         assert result is None
 
     @pytest.mark.spec("AZ-029")
-    def test_close_closes_credential(self) -> None:
-        """BUG-156: close() should close cached credential (DefaultAzureCredential)."""
-        backend = _make_backend()
+    def test_close_closes_created_credential(self) -> None:
+        """BUG-156 / H1: close() closes a credential the backend auto-created.
+
+        ``account_key=None`` with no SAS/credential means
+        ``resolve_credential`` would build a ``DefaultAzureCredential``, which
+        the backend owns and must close.
+        """
+        backend = _make_backend(account_key=None)
         mock_cred = MagicMock(spec=["close"])
         backend._resolved_credential = mock_cred
 
@@ -649,13 +654,41 @@ class TestAzureLifecycle:
         assert backend._resolved_credential is None  # internal: no public observable
 
     @pytest.mark.spec("AZ-029")
-    def test_close_credential_without_close_method(self) -> None:
-        """BUG-156: close() handles credentials without a close() method."""
-        backend = _make_backend()
-        backend._resolved_credential = "just-a-key-string"
+    def test_close_does_not_close_caller_supplied_credential(self) -> None:
+        """H1: a caller-supplied ``credential=`` is the caller's to close.
+
+        Closing a shared ``DefaultAzureCredential`` here would tear down its
+        transport sessions out from under every other client holding it.
+        """
+        caller_cred = MagicMock(spec=["close"])
+        backend = _make_backend(account_key=None, credential=caller_cred)
+        backend._resolved_credential = caller_cred
+
+        backend.close()
+        caller_cred.close.assert_not_called()
+        assert backend._resolved_credential is None  # internal: cached ref dropped
+
+    @pytest.mark.spec("AZ-029")
+    def test_close_created_credential_without_close_method(self) -> None:
+        """BUG-156: close() handles an owned credential lacking a close() method."""
+        backend = _make_backend(account_key=None)
+        backend._resolved_credential = "just-a-string"
 
         backend.close()
         assert backend._resolved_credential is None  # internal: no public observable
+
+    @pytest.mark.spec("AZ-029")
+    def test_use_after_close_raises_backend_unavailable(self) -> None:
+        """M1: terminal close — a use-after-close fails typed, not silent re-init."""
+        backend = _make_backend()
+        backend.close()
+        with pytest.raises(BackendUnavailable, match="closed"):
+            backend.exists("x.txt")
+
+    @pytest.mark.spec("AZ-029")
+    def test_close_is_terminal_posture_declared(self) -> None:
+        """M1: the backend declares the terminal close posture for the conformance lane."""
+        assert _make_backend().close_is_terminal is True
 
 
 # =============================================================================

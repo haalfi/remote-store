@@ -54,6 +54,14 @@ class Backend(abc.ABC):
     # Subclasses must assign a CapabilitySet here; enforced by the conformance suite.
     CAPABILITIES: ClassVar[CapabilitySet]
 
+    # BE-020 close posture (BK-298). ``False`` (the default) means the backend
+    # is reusable after ``close()`` — lazy clients re-initialise on next use
+    # (LocalBackend, MemoryBackend, SFTP, HTTP, SQL). ``True`` means ``close()``
+    # is *terminal*: a subsequent operation raises ``BackendUnavailable`` rather
+    # than silently re-opening resources (Azure, S3, Graph). The use-after-close
+    # conformance lane gates on this flag.
+    close_is_terminal: ClassVar[bool] = False
+
     @property
     @abc.abstractmethod
     def name(self) -> str:
@@ -494,7 +502,12 @@ class Backend(abc.ABC):
         """
 
     def close(self) -> None:  # noqa: B027
-        """Release resources. Default is a no-op."""
+        """Release resources. Default is a no-op.
+
+        Whether the backend may be reused afterwards is the
+        ``close_is_terminal`` posture: the default backend is reusable;
+        terminal backends raise ``BackendUnavailable`` on use-after-close.
+        """
 
     def unwrap(self, type_hint: type[T]) -> T:
         """Return the native backend handle if it matches the requested type.

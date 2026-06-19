@@ -161,8 +161,11 @@ assert backend.is_folder("dir") is False  # folder vanishes
 
 ### S3-019: close()
 
-**Invariant:** `close()` releases the underlying s3fs filesystem resources.
-**Postconditions:** Safe to call multiple times. After close, further operations may fail.
+**Invariant:** `close()` drops the backend's cached s3fs filesystem reference and flips a `_closed` flag.
+**Postconditions:**
+- Safe to call multiple times (idempotent).
+- **After close, the backend is terminal (BK-298 M1):** a subsequent operation raises a typed `BackendUnavailable` via the `_s3fs` / `_fs` guard rather than silently re-creating the client. Declared via `close_is_terminal` (BE-020); aligns with Azure (AZ-029) and Graph (GR-051). The same posture applies to `S3PyArrowBackend` and `S3Boto3Backend`.
+- `close()` drops the s3fs reference but does not itself tear down the underlying aiobotocore session (s3fs caches it on a background loop) — tracked as BK-306.
 
 ### S3-020: unwrap()
 

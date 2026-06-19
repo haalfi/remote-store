@@ -177,7 +177,7 @@ See [S3-018](008-s3-backend.md#s3-018-no-native-exception-leakage). Extended to 
 
 ### S3PA-020: close()
 
-See [S3-019](008-s3-backend.md#s3-019-close). `close()` releases both the PyArrow and s3fs filesystem instances. Safe to call multiple times.
+See [S3-019](008-s3-backend.md#s3-019-close). `close()` drops both the PyArrow and s3fs filesystem references and flips the `_closed` flag. Safe to call multiple times. **Terminal (BK-298 M1):** a use-after-close raises `BackendUnavailable` via the `_s3fs` / `_pa_fs` guards; declared via `close_is_terminal` (BE-020).
 
 ### S3PA-021: Dual unwrap()
 
