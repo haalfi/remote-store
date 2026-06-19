@@ -390,10 +390,13 @@ class S3PyArrowBackend(_S3Base):
 
     def close(self) -> None:
         # M1: terminal close (BK-298) — flip the guard flag, then drop the
-        # cached clients. Idempotent.
+        # cached clients. With skip_instance_cache (BK-306) the s3fs instance is
+        # no longer pinned in fsspec's global registry, so dropping the ref lets
+        # s3fs's finalizer close the aiobotocore session. The PyArrow filesystem
+        # is a C++ handle with no Python background loop, so dropping its
+        # reference suffices. Idempotent.
         self._closed = True
-        if self._s3fs_instance is not None:
-            self._s3fs_instance = None
+        self._s3fs_instance = None
         self._pa_fs_instance = None
 
     def unwrap(self, type_hint: type[T]) -> T:

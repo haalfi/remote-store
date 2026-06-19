@@ -288,6 +288,13 @@ class _S3Base(Backend):
         # permanently blind to a cross-writer write; setdefault keeps any
         # caller-supplied client_options['use_listings_cache'] (opt-in caching).
         opts.setdefault("use_listings_cache", False)
+        # BK-306: opt out of fsspec's process-global instance cache so each
+        # backend owns its own S3FileSystem. Without this, close() cannot
+        # deterministically release the aiobotocore session — the cached
+        # instance survives in fsspec's registry and a new backend with the
+        # same args silently reuses the (closed) session. setdefault keeps a
+        # caller's explicit client_options['skip_instance_cache'] choice.
+        opts.setdefault("skip_instance_cache", True)
         return opts
 
     # endregion

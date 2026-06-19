@@ -472,6 +472,80 @@ class TestS3SharedTerminalClose:
         assert _load_backend_cls(backend_path).close_is_terminal is True
 
 
+class TestS3SharedSessionRelease:
+    """BK-306: close() releases the s3fs session and never pins it in fsspec's cache.
+
+    The leak was twofold: the s3fs ``S3FileSystem`` was retained in fsspec's
+    process-global instance cache (so a fresh backend silently reused a
+    closed session), and the aiobotocore session stayed open for the process
+    lifetime. ``skip_instance_cache=True`` fixes both — the un-pinned instance
+    is collectable, so s3fs's own finalizer closes the session.
+    """
+
+    @pytest.mark.spec("S3-019")
+    @pytest.mark.parametrize("backend_path", [S3_CLS, S3PA_CLS])
+    def test_s3fs_not_pinned_in_fsspec_cache(self, backend_path: str) -> None:
+        """The backend's s3fs instance is not stored in fsspec's global cache."""
+        import s3fs
+
+        cls = _load_backend_cls(backend_path)
+        b1 = cls(bucket="bucket", key="k", secret="s", region_name=REGION, endpoint_url="http://localhost:1")
+        try:
+            fs1 = b1._s3fs
+            assert not any(v is fs1 for v in s3fs.S3FileSystem._cache.values())
+            # A second backend with identical args must not reuse the instance.
+            b2 = cls(bucket="bucket", key="k", secret="s", region_name=REGION, endpoint_url="http://localhost:1")
+            try:
+                assert b2._s3fs is not fs1
+            finally:
+                b2.close()
+        finally:
+            b1.close()
+
+    @pytest.mark.spec("S3-019")
+    @pytest.mark.parametrize("backend_path", [S3_CLS, S3PA_CLS])
+    def test_close_releases_aiobotocore_session(self, backend_path: str, moto_server: str | None) -> None:
+        """After close() and GC, s3fs's finalizer has closed the aiobotocore session.
+
+        Covers both s3fs-backed backends: ``exists`` is the shared s3fs control
+        path (S3PA-017), so it opens the session for ``S3PyArrowBackend`` too —
+        no PyArrow data path (which would need MinIO on pyarrow >= 24) is hit.
+        """
+        import gc
+        import weakref
+
+        if moto_server is None:
+            pytest.skip("moto server not available")
+        bucket = f"bk306-{uuid.uuid4().hex[:8]}"
+        boto3.client(
+            "s3",
+            endpoint_url=moto_server,
+            aws_access_key_id="testing",
+            aws_secret_access_key="testing",
+            region_name=REGION,
+        ).create_bucket(Bucket=bucket)
+        backend = _load_backend_cls(backend_path)(
+            bucket=bucket, key="testing", secret="testing", region_name=REGION, endpoint_url=moto_server
+        )
+        backend.exists("probe.txt")  # opens the shared s3fs control session
+        fs_ref = weakref.ref(backend._s3fs)  # must NOT keep the instance alive
+        http = backend._s3fs._s3._endpoint.http_session
+        assert http._sessions  # a session pool exists
+        assert any(not s.closed for s in http._sessions.values())  # at least one live session
+
+        backend.close()
+        del backend
+        gc.collect()
+        # The instance was actually collected — nothing (not the captured ``http``)
+        # pins it — which is precisely what fires s3fs's finalizer. Asserting the
+        # collection makes the session-closed check below honest rather than a
+        # pass-for-the-wrong-reason: if a stray strong ref survived, the finalizer
+        # would not run and this assertion fails loudly.
+        assert fs_ref() is None
+        # The finalizer closed the aiobotocore session.
+        assert http._sessions is None or all(s.closed for s in http._sessions.values())
+
+
 # ---------------------------------------------------------------------------
 # Resolve details (RES-051 ↔ RES-052)
 # ---------------------------------------------------------------------------
