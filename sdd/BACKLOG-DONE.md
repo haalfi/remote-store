@@ -31,11 +31,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   S3 session release (disarm the finalizer + close synchronously) at the double-close
   risk that motivated BK-306's current design, and is verifiable only on 3.14 CI —
   out of proportion to a benign GC-time warning. **Fix:** a `filterwarnings` ignore
-  scoped to the `_wait_for_close` qualname (`pyproject.toml`), so this one coroutine
-  no longer fails CI while genuine unclosed-resource leaks — any other coroutine, on
-  every Python version — still fail. Pinned by `tests/test_py314_unraisable_filter.py`,
-  which deterministically asserts (on every version) that the configured ignore
-  suppresses the verbatim py3.14 message and does **not** mask other unraisables.
+  (`pyproject.toml`) anchored on the stable `<coroutine object _wait_for_close`
+  repr with a `.*` lead-in — robust to the unraisable lead-in wording (`Exception
+  ignored in:` vs `Exception ignored while finalizing coroutine`) rather than a
+  fragile exact prefix — so this one coroutine no longer fails CI while genuine
+  unclosed-resource leaks (any other coroutine, on every Python version) still
+  fail. Pinned by `tests/test_py314_unraisable_filter.py`, which deterministically
+  asserts (on every version) that the ignore suppresses **both** real lead-in
+  forms and does **not** mask other unraisables.
 
 - [x] **BK-300 — Azure `WriteResult.digest` is dropped on HNS `write_atomic`**
   spec: — · effort: S · audience: user.api_docs, user.site

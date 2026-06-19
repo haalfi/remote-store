@@ -436,11 +436,15 @@ filterwarnings = [
   # which `filterwarnings = error` turns into a hard failure; 3.10-3.13 emit it
   # as a benign GC-time warning. Under `pytest -n auto` the attribution is
   # non-deterministic (it fails whichever async test GC runs in), so it flakes
-  # the `test (3.14)` matrix entry only. Scoped to the `_wait_for_close` qualname
-  # so genuine unclosed-resource leaks (any other coroutine, every version) still
-  # fail; the scoping + the verbatim message are pinned by
+  # the `test (3.14)` matrix entry only. The regex anchors on the stable
+  # `<coroutine object _wait_for_close` repr with a `.*` lead-in, so it matches
+  # regardless of the unraisable lead-in wording (`Exception ignored in:` vs
+  # `Exception ignored while finalizing coroutine`) — robust to CPython/pytest
+  # message drift, not a fragile exact-prefix transcription. Still scoped to the
+  # `_wait_for_close` qualname, so genuine unclosed-resource leaks (any other
+  # coroutine, every version) still fail; the match + the scoping are pinned by
   # tests/test_py314_unraisable_filter.py. BUG-224.
-  "ignore:Exception ignored while finalizing coroutine <coroutine object _wait_for_close:pytest.PytestUnraisableExceptionWarning",
+  "ignore:.*<coroutine object _wait_for_close:pytest.PytestUnraisableExceptionWarning",
 ]
 asyncio_mode = "auto"
 markers = [

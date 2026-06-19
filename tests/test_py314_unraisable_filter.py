@@ -10,17 +10,26 @@ release) — so the session *is* closed, just at a GC point py3.14 reports
 aggressively. BUG-224 suppresses exactly that one warning via a `filterwarnings`
 ignore in ``pyproject.toml``.
 
-The suppression's whole efficacy hinges on a single ``re.match``-anchored
-message regex matching the real warning text. This guard pins that regex against
-CPython / pytest message drift and proves the entry actually suppresses the
-warning — verification the flaky py3.14-only CI run cannot provide
-deterministically. Prior art: BK-304 shipped a test asserting its
-``-p no:unraisableexception`` mitigation is applied rather than trusting CI.
+The suppression's efficacy hinges on a ``re.match``-anchored message regex
+matching the real warning text. To avoid resting on one hand-transcribed prefix
+(which would make the guard self-referential — a transcription error would pass
+the guard yet silently fail in CI), the filter anchors on the stable
+``<coroutine object _wait_for_close`` coroutine-repr with a ``.*`` lead-in, and
+this guard asserts suppression across **both** unraisable lead-in forms CPython
+can emit:
 
-The ``real_msg`` below is the **verbatim** outer ``PytestUnraisableExceptionWarning``
-text captured from an actual failing ``test (3.14)`` CI log (the wrapped-Task
-finalization form — *not* the inner ``RuntimeWarning: coroutine ... was never
-awaited`` form, and *not* the top-level ``Exception ignored in:`` form).
+* ``Exception ignored while finalizing coroutine <coroutine object _wait_for_close at 0x...>: None``
+  — the wrapped-Task finalization form, captured verbatim from a real failing
+  ``test (3.14)`` CI log (job 82411660992); and
+* ``Exception ignored in: <coroutine object _wait_for_close at 0x...>``
+  — the top-level never-awaited form CPython emits when the coroutine is not
+  wrapped in a Task.
+
+Matching both proves robustness to lead-in wording / CPython-pytest message
+drift, not just to one transcribed string. Prior art: BK-304 shipped a test
+asserting its ``-p no:unraisableexception`` mitigation is applied rather than
+trusting CI. (A green ``test (3.14)`` run is not proof for a ~50% flake; this
+deterministic, version-independent guard is.)
 """
 
 from __future__ import annotations
@@ -32,9 +41,14 @@ from _pytest.config import parse_warning_filter
 
 PytestUnraisableExceptionWarning = pytest.PytestUnraisableExceptionWarning
 
-# Verbatim outer message from a real `test (3.14)` failure (only the hex address
-# of the coroutine object varies run-to-run; the regex stops before it).
-_REAL_MSG = "Exception ignored while finalizing coroutine <coroutine object _wait_for_close at 0x7f9409f2f3d0>: None"
+# Both real outer `PytestUnraisableExceptionWarning` lead-in forms for the
+# `_wait_for_close` coroutine; only the hex address varies run-to-run. The first
+# is the verbatim text from a real `test (3.14)` failure; the second is the
+# alternative form CPython emits for an unwrapped never-awaited coroutine.
+_REAL_MSGS = (
+    "Exception ignored while finalizing coroutine <coroutine object _wait_for_close at 0x7f9409f2f3d0>: None",
+    "Exception ignored in: <coroutine object _wait_for_close at 0x55d0e1>",
+)
 # A structurally identical unraisable for a *different* coroutine: must still
 # fail, proving the ignore is scoped and genuine leak detection is preserved.
 _CONTROL_MSG = "Exception ignored while finalizing coroutine <coroutine object some_other_coro at 0x1>: None"
@@ -57,8 +71,9 @@ def _wait_for_close_filter(pytestconfig: pytest.Config) -> tuple[str, str, type[
     return parse_warning_filter(matching[0], escape=False)
 
 
-def test_wait_for_close_filter_suppresses_real_py314_message(pytestconfig: pytest.Config) -> None:
-    """The configured ignore must suppress the verbatim py3.14 warning text."""
+@pytest.mark.parametrize("real_msg", _REAL_MSGS)
+def test_wait_for_close_filter_suppresses_real_py314_message(pytestconfig: pytest.Config, real_msg: str) -> None:
+    """The configured ignore must suppress every real py3.14 lead-in form."""
     parsed = _wait_for_close_filter(pytestconfig)
     # The entry must target PytestUnraisableExceptionWarning (the outer wrapper),
     # not the inner RuntimeWarning — anchoring on the wrong layer is a silent no-op.
@@ -67,7 +82,7 @@ def test_wait_for_close_filter_suppresses_real_py314_message(pytestconfig: pytes
         warnings.simplefilter("error")
         warnings.filterwarnings(*parsed)
         # Must NOT raise: the ignore matches the real message.
-        warnings.warn(PytestUnraisableExceptionWarning(_REAL_MSG), stacklevel=1)
+        warnings.warn(PytestUnraisableExceptionWarning(real_msg), stacklevel=1)
 
 
 def test_wait_for_close_filter_does_not_mask_other_unraisables(pytestconfig: pytest.Config) -> None:

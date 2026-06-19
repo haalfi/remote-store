@@ -20,7 +20,7 @@ audience:
   - infra.test
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: reproduce
     name: Reproduce
@@ -59,12 +59,12 @@ phases:
       - file: pyproject.toml
         section: "filterwarnings (new _wait_for_close ignore)"
         read_type: reference
-        extract: "Ignore scoped to the `_wait_for_close` qualname in the PytestUnraisableExceptionWarning message (the verbatim OUTER text from a real 3.14 log, not the inner RuntimeWarning). Chosen over reworking BK-306's session release (risky, 3.14-only-verifiable) and over `-p no:unraisableexception` (BK-304 precedent, coarser) because the message-scoped filter keeps genuine unclosed-resource detection on every version."
+        extract: "Ignore on the PytestUnraisableExceptionWarning OUTER message, anchored on the stable `<coroutine object _wait_for_close` repr with a `.*` lead-in (round 2 hardening) so it matches regardless of lead-in wording (`Exception ignored in:` vs `Exception ignored while finalizing coroutine`) — not a fragile exact prefix. Chosen over reworking BK-306's session release (risky, 3.14-only-verifiable) and over `-p no:unraisableexception` (BK-304 precedent, coarser) because the message-scoped filter keeps genuine unclosed-resource detection on every version."
         outcome: ok
       - file: tests/test_py314_unraisable_filter.py
         section: "(new) regression guard"
         read_type: reference
-        extract: "BK-304-style guard: pulls the live filter from pytestconfig.getini, parses it with pytest's own parse_warning_filter, and asserts (on every Python version) that it suppresses the verbatim py3.14 message AND still raises on a different coroutine. Converts the unverifiable 3.14-only flake into a deterministic check and pins the regex against message drift — the review's central ask."
+        extract: "BK-304-style guard: pulls the live filter from pytestconfig.getini, parses it with pytest's own parse_warning_filter, and asserts (every version) it suppresses BOTH real lead-in forms (parametrized) AND still raises on a different coroutine. Round-2 review flagged that keying on one hand-transcribed prefix is self-referential; the `.*`-anchored regex + two-form assertion removes that fragility. Converts the unverifiable 3.14-only flake into a deterministic check."
         outcome: ok
   - id: verify
     name: Verify
