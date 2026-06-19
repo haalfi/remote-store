@@ -151,8 +151,9 @@ a [`WriteResult`](../../reference/api/models.md) with `etag` and `last_modified`
 response. `digest` is populated as `ContentDigest("md5", <hex>)` when Azure echoes back
 `Content-MD5` in the upload response, and `None` otherwise. On HNS accounts, `write_atomic`
 always returns `digest=None`: it commits via a temp-file upload plus an atomic rename, and the
-post-rename properties read does not re-expose `Content-MD5` (the sibling `write` populates
-`digest` on the same account). For a guaranteed digest regardless of method or backend, use the
+backend reads only `etag` and `last_modified` from the post-rename properties — not a
+`Content-MD5` (the sibling `write` populates `digest` from its upload response on the same
+account). For a guaranteed digest regardless of method or backend, use the
 `remote_store.ext.write` helpers (e.g. `write_with_hash`). When blob versioning is enabled
 on a non-HNS container, `version_id` is also populated from the upload response.
 
