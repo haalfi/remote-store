@@ -75,14 +75,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Azure
 
-- [ ] **BK-300 — Azure `WriteResult.digest` is dropped on HNS `write_atomic`**
-  spec: — · effort: S · audience: user.api_docs, user.site
-  From [audit-019](audits/audit-019-azure-backend-review.md) M4. Live-confirmed: HNS
-  `write_atomic` returns `digest=None` while the sibling `write` populates it (the
-  post-rename props dict carries only etag/last_modified). Either document the
-  per-method difference in the guide's digest claim or populate `digest` from the
-  post-rename properties when available.
-
 - [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
   spec: — · effort: S · audience: library.maintainer, user.api
   The `examples/medallion_dagster/` showcase demonstrates a realistic user journey

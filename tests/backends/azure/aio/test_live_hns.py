@@ -166,6 +166,11 @@ class TestAsyncLiveHnsWriteResult:
         assert result.source == "native"
         # WR-001a: size must equal the committed byte count.
         assert result.size == len(_PAYLOAD)
+        # BK-300: HNS write_atomic commits via temp upload + rename; the
+        # post-rename get_file_properties read does not re-expose Content-MD5,
+        # so digest is always None (the sibling write populates it). This holds
+        # on both the success and the BUG-196 post-rename-read fallback paths.
+        assert result.digest is None, "HNS write_atomic does not surface Content-MD5; digest must be None"
         # WR-001a / AZ-034: on the success path, etag from post-rename
         # get_file_properties must be non-empty, quote-stripped, and lowercased.
         # On a transient post-rename read failure the BUG-196 fallback returns

@@ -8,6 +8,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-300 — Azure `WriteResult.digest` is dropped on HNS `write_atomic`**
+  spec: — · effort: S · audience: user.api_docs, user.site
+  From [audit-019](audits/audit-019-azure-backend-review.md) M4. Live-confirmed:
+  HNS `write_atomic` returns `digest=None` while the sibling `write` populates it.
+  Root cause is by-design: `write` reads `content_md5` from the `upload_blob`
+  response, but HNS `write_atomic` commits via a temp-file upload + atomic rename
+  and rebuilds its `WriteResult` from a post-rename `get_file_properties()` read
+  that carries only `etag`/`last_modified` — the DataLake rename/properties path
+  never re-exposes `Content-MD5`. **Resolution (docs-first):** the Azure guide's
+  Write Results section now discloses that HNS `write_atomic` always returns
+  `digest=None` (the sibling `write` populates it) and points to the
+  `remote_store.ext.write` helpers for a guaranteed digest. The contract is pinned
+  by a `result.digest is None` assertion added to the live HNS WriteResult tests
+  (sync + async, replayed creds-free at Stage 1 via the BK-303 tier); no backend
+  behavior changed.
+
 - [x] **BK-303 — Azure live-only HNS tests have no cassette-replay tier**
   spec: TEST-003, REC-007 · effort: M · audience: infra.test
   The `tests/backends/azure/test_live_hns.py` suite (+ its async sibling) — HNS
