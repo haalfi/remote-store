@@ -11063,8 +11063,11 @@ via the paired-ID map at the top of 011.</p>
 <hr />
 <h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>
 <h3 id="s3-019-close">S3-019: close()<a class="headerlink" href="#s3-019-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>close()</code> releases the underlying s3fs filesystem resources.
-<strong>Postconditions:</strong> Safe to call multiple times. After close, further operations may fail.</p>
+<p><strong>Invariant:</strong> <code>close()</code> drops the backend's cached s3fs filesystem reference and flips a <code>_closed</code> flag.
+<strong>Postconditions:</strong>
+- Safe to call multiple times (idempotent).
+- <strong>After close, the backend is terminal (BK-298 M1):</strong> a subsequent operation raises a typed <code>BackendUnavailable</code> via the <code>_s3fs</code> / <code>_fs</code> guard rather than silently re-creating the client. Declared via <code>close_is_terminal</code> (BE-020); aligns with Azure (AZ-029) and Graph (GR-051). The same posture applies to <code>S3PyArrowBackend</code> and <code>S3Boto3Backend</code>.
+- <code>close()</code> drops the s3fs reference but does not itself tear down the underlying aiobotocore session (s3fs caches it on a background loop) — tracked as BK-306.</p>
 <h3 id="s3-020-unwrap">S3-020: unwrap()<a class="headerlink" href="#s3-020-unwrap" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>unwrap(S3FileSystem)</code> returns the underlying <code>s3fs.S3FileSystem</code> instance.
 <strong>Raises:</strong> <code>CapabilityNotSupported</code> for any other type hint.

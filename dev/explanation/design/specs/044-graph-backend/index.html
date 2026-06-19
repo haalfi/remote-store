@@ -13091,9 +13091,9 @@ hook remains for user-supplied providers that buffer their own cache.
   translates to <code>BackendUnavailable</code> (detected via <code>client.is_closed</code>);
   a cancelled monitor poller surfaces <code>CancelledError</code>. Concurrent
   operation during close is unsupported — the only guarantee is that it
-  fails typed. (This deliberately diverges from <code>AzureBackend.close()</code>'s
-  AZ-029 re-initialise-on-demand; the cross-backend posture is tracked
-  for review under the concurrency-contract work.)
+  fails typed. (<code>AzureBackend</code> (AZ-029) and the S3 backends (S3-019) now
+  share this terminal posture — see BK-298; the cross-backend contract is
+  declared via the <code>close_is_terminal</code> attribute, BE-020.)
 - <strong>Upload-session abort on close:</strong> For every in-flight upload
   session whose URL is reachable from the backend (i.e. a <code>write()</code>
   call is mid-chunk-loop when <code>close()</code> fires), the backend issues

@@ -12905,6 +12905,9 @@ check using the cheapest possible read-only operation.</p>
     <div class="doc doc-contents first">
 
         <p>Release resources. Default is a no-op.</p>
+<p>Whether the backend may be reused afterwards is the
+<code>close_is_terminal</code> posture: the default backend is reusable;
+terminal backends raise <code>BackendUnavailable</code> on use-after-close.</p>
 
 
     </div>

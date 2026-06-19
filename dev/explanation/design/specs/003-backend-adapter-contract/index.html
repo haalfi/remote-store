@@ -11231,7 +11231,14 @@ both <code>fs[dst].content == old(fs)[src].content</code> and
 <code>fs[dst].info.metadata == old(fs)[src].info.metadata</code>, so a refinement that
 drops metadata fails to verify. Verified in <code>MemoryBackend.dfy</code>. See BK-196.</p>
 <h3 id="be-020-close">BE-020: close()<a class="headerlink" href="#be-020-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>close()</code> is optional (default no-op). Called for resource cleanup.</p>
+<p><strong>Invariant:</strong> <code>close()</code> is optional (default no-op). Called for resource cleanup.
+<strong>Postconditions:</strong> Whether the instance is reusable after <code>close()</code> is the backend's <strong>close posture</strong>, declared by the <code>close_is_terminal</code> class attribute (BK-298):</p>
+<ul>
+<li><code>close_is_terminal = False</code> (the default — a backend need not restate it): the backend re-initialises its clients lazily and remains usable after <code>close()</code>. The posture of <code>LocalBackend</code>, <code>MemoryBackend</code>, <code>SFTPBackend</code>, <code>ReadOnlyHttpBackend</code>, and the SQL backends.</li>
+<li><code>close_is_terminal = True</code>: <code>close()</code> / <code>aclose()</code> is <strong>terminal</strong> — the flag flips at the <em>start</em> of <code>close()</code> and every lazy client accessor guards on it, so a subsequent operation raises <code>BackendUnavailable</code> rather than silently re-opening resources the caller cannot observe. The posture of <code>AzureBackend</code> (AZ-029), the three S3 backends (S3-019), and <code>GraphBackend</code> (GR-051).</li>
+</ul>
+<p>The use-after-close conformance lane (<code>tests/backends/conformance/test_close_posture.py</code> and its <code>aio/</code> sibling) gates on this attribute, asserting the terminal error for terminal backends and re-initialisation for the rest.
+<strong>Rationale:</strong> A terminal close turns a use-after-close (a likely bug) into a clear typed error instead of a silent resource reopen, while leaving stateless/cheap backends freely reusable.</p>
 <h3 id="be-021-error-mapping">BE-021: Error Mapping<a class="headerlink" href="#be-021-error-mapping" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Backend-native exceptions never leak. All exceptions are mapped to <code>remote_store</code> error types.</p>
 <p><strong>Canonical error mapping table:</strong> The following cross-cutting scenarios MUST

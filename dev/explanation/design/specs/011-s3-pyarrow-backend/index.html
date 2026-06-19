@@ -11170,7 +11170,7 @@ S3PA-007, S3PA-012, S3PA-021</strong>.</p>
 <hr />
 <h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>
 <h3 id="s3pa-020-close">S3PA-020: close()<a class="headerlink" href="#s3pa-020-close" title="Permanent link">&para;</a></h3>
-<p>See <a href="../008-s3-backend/#s3-019-close">S3-019</a>. <code>close()</code> releases both the PyArrow and s3fs filesystem instances. Safe to call multiple times.</p>
+<p>See <a href="../008-s3-backend/#s3-019-close">S3-019</a>. <code>close()</code> drops both the PyArrow and s3fs filesystem references and flips the <code>_closed</code> flag. Safe to call multiple times. <strong>Terminal (BK-298 M1):</strong> a use-after-close raises <code>BackendUnavailable</code> via the <code>_s3fs</code> / <code>_pa_fs</code> guards; declared via <code>close_is_terminal</code> (BE-020).</p>
 <h3 id="s3pa-021-dual-unwrap">S3PA-021: Dual unwrap()<a class="headerlink" href="#s3pa-021-dual-unwrap" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>unwrap()</code> supports two type hints:
 - <code>unwrap(pyarrow.fs.S3FileSystem)</code> returns the PyArrow filesystem.
