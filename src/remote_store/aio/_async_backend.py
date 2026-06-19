@@ -29,6 +29,12 @@ class AsyncBackend(abc.ABC):
     # Subclasses must assign a CapabilitySet here; enforced by the conformance suite.
     CAPABILITIES: ClassVar[CapabilitySet]
 
+    # BE-020 close posture (BK-298). ``False`` (default) means the backend is
+    # reusable after ``aclose()``; ``True`` means ``aclose()`` is terminal — a
+    # subsequent operation raises ``BackendUnavailable`` (async Azure, Graph).
+    # The use-after-close conformance lane gates on this flag.
+    close_is_terminal: ClassVar[bool] = False
+
     # region: context-manager
 
     async def __aenter__(self) -> AsyncBackend:

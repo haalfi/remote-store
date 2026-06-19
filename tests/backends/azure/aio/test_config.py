@@ -2611,8 +2611,9 @@ class TestAsyncAzureCloseCredential:
 
     @pytest.mark.spec("ASYNC-001")
     @pytest.mark.spec("ASYNC-078")
-    async def test_close_closes_credential(self) -> None:
-        backend = _make_backend()
+    async def test_close_closes_created_credential(self) -> None:
+        """H1: aclose() closes a credential the backend auto-created."""
+        backend = _make_backend(account_key=None)
         mock_cred = MagicMock(spec=["close"])
         mock_cred.close = AsyncMock()
         backend._resolved_credential = mock_cred
@@ -2622,11 +2623,37 @@ class TestAsyncAzureCloseCredential:
         assert backend._resolved_credential is None  # internal: no public observable
 
     @pytest.mark.spec("ASYNC-001")
+    @pytest.mark.spec("ASYNC-078")
+    async def test_close_does_not_close_caller_supplied_credential(self) -> None:
+        """H1: a caller-supplied ``credential=`` is the caller's to close."""
+        caller_cred = MagicMock(spec=["close"])
+        caller_cred.close = AsyncMock()
+        backend = _make_backend(account_key=None, credential=caller_cred)
+        backend._resolved_credential = caller_cred
+
+        await backend.aclose()
+        caller_cred.close.assert_not_awaited()
+        assert backend._resolved_credential is None  # internal: cached ref dropped
+
+    @pytest.mark.spec("ASYNC-001")
     async def test_close_without_credential(self) -> None:
         """aclose() when no credential was resolved does not raise."""
         backend = _make_backend()
         await backend.aclose()
         assert backend._resolved_credential is None  # internal: no public observable
+
+    @pytest.mark.spec("AZ-029")
+    async def test_use_after_close_raises_backend_unavailable(self) -> None:
+        """M1: terminal close — a use-after-close fails typed, not silent re-init."""
+        backend = _make_backend()
+        await backend.aclose()
+        with pytest.raises(BackendUnavailable, match="closed"):
+            await backend.exists("x.txt")
+
+    @pytest.mark.spec("AZ-029")
+    async def test_close_is_terminal_posture_declared(self) -> None:
+        """M1: the backend declares the terminal close posture for the conformance lane."""
+        assert _make_backend().close_is_terminal is True
 
 
 # =============================================================================

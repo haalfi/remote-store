@@ -201,6 +201,9 @@ class GraphBackend(AsyncBackend):
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _GRAPH_CAPABILITIES
+    # M1 (BK-298): aclose() is terminal (BUG-219) — a use-after-close raises
+    # BackendUnavailable. Declares the posture the conformance lane gates on.
+    close_is_terminal: ClassVar[bool] = True
 
     def __init__(
         self,

@@ -16,6 +16,7 @@ from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy, Secret, _reveal
 from remote_store._errors import (
     AlreadyExists,
+    BackendUnavailable,
     CapabilityNotSupported,
     DirectoryNotEmpty,
     InvalidPath,
@@ -97,6 +98,10 @@ class AsyncAzureBackend(AsyncBackend):
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
     __mirror__: ClassVar[type[AzureBackend]] = AzureBackend
+    # M1 (BK-298): aclose() is terminal — a use-after-close raises
+    # BackendUnavailable rather than silently re-initialising. Gates the
+    # use-after-close conformance lane.
+    close_is_terminal: ClassVar[bool] = True
 
     def __init__(
         self,
@@ -133,6 +138,15 @@ class AsyncAzureBackend(AsyncBackend):
         self._datalake_service_instance: Any = None
         self._fs_instance: Any = None
         self._resolved_credential: Any = None
+        # H1: own (and therefore close) the credential only when the backend
+        # auto-creates it — the DefaultAzureCredential branch of
+        # resolve_credential, reached when no credential=, account_key, or
+        # sas_token was supplied. A caller-supplied credential= is theirs to
+        # close; account_key/sas_token resolve to harmless strings.
+        self._created_credential: bool = (
+            self._credential is None and self._account_key is None and self._sas_token is None
+        )
+        self._closed = False
 
     # region: properties
 
@@ -178,9 +192,20 @@ class AsyncAzureBackend(AsyncBackend):
 
     # region: lazy client properties
 
+    def _raise_if_closed(self) -> None:
+        """Raise ``BackendUnavailable`` if the backend has been closed.
+
+        After ``aclose()`` every data-plane op reaches a client through a lazy
+        property; this guard turns a use-after-close into a typed error instead
+        of silently re-creating the client (and re-resolving a credential).
+        """
+        if self._closed:
+            raise BackendUnavailable("Azure backend is closed", backend=self.name)
+
     @property
     def _blob_service(self) -> Any:
         """Lazy async BlobServiceClient."""
+        self._raise_if_closed()
         if self._blob_service_instance is None:
             opts: dict[str, Any] = dict(self._client_options)
             # BUG-161/BUG-162: force staged-block upload, keep memory bounded.
@@ -205,6 +230,7 @@ class AsyncAzureBackend(AsyncBackend):
     @property
     def _cc(self) -> Any:
         """Lazy async ContainerClient (Blob SDK)."""
+        self._raise_if_closed()
         if self._cc_instance is None:
             self._cc_instance = self._blob_service.get_container_client(self._container)
         return self._cc_instance
@@ -212,6 +238,7 @@ class AsyncAzureBackend(AsyncBackend):
     @property
     def _datalake_service(self) -> Any:  # pragma: no cover -- HNS only, requires ADLS Gen2
         """Lazy async DataLakeServiceClient (only used for HNS accounts)."""
+        self._raise_if_closed()
         if self._datalake_service_instance is None:
             from azure.storage.filedatalake.aio import DataLakeServiceClient
 
@@ -240,6 +267,7 @@ class AsyncAzureBackend(AsyncBackend):
     @property
     def _fs(self) -> Any:  # pragma: no cover -- HNS only, requires ADLS Gen2
         """Lazy async FileSystemClient (DataLake SDK, HNS only)."""
+        self._raise_if_closed()
         if self._fs_instance is None:
             self._fs_instance = self._datalake_service.get_file_system_client(self._container)
         return self._fs_instance
@@ -1194,6 +1222,10 @@ class AsyncAzureBackend(AsyncBackend):
 
     async def aclose(self) -> None:
         """Release all Azure SDK client resources."""
+        # M1: flip the terminal flag first (idempotent). The teardown below
+        # uses the raw _*_instance refs, not the guarded lazy properties, so
+        # it is unaffected by the _closed guard.
+        self._closed = True
         clients = (self._cc_instance, self._blob_service_instance, self._fs_instance, self._datalake_service_instance)
         for client in clients:
             if client is not None:
@@ -1203,12 +1235,15 @@ class AsyncAzureBackend(AsyncBackend):
         self._blob_service_instance = None
         self._fs_instance = None
         self._datalake_service_instance = None
-        # Close auto-created async credential (holds aiohttp sessions).
+        # H1: close the credential only when the backend created it (an
+        # auto-created DefaultAzureCredential holds aiohttp sessions). A
+        # caller-supplied credential= is theirs to close; we only drop our ref.
         if self._resolved_credential is not None:
-            close = getattr(self._resolved_credential, "close", None)
-            if close is not None:
-                with contextlib.suppress(Exception):
-                    await close()
+            if self._created_credential:
+                close = getattr(self._resolved_credential, "close", None)
+                if close is not None:
+                    with contextlib.suppress(Exception):
+                        await close()
             self._resolved_credential = None
 
     def unwrap(self, type_hint: type[T]) -> T:

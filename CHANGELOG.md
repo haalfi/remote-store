@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-298: Azure credential ownership + cross-backend terminal close
 - BK-302: Azure HNS is now an explicit, mandatory `hns=` declaration (no runtime auto-detection); adds `AzureUtils.detect_hns()` / `adetect_hns()` for one-shot discovery (**breaking**). Supersedes the BUG-223 re-probe fix from this same Unreleased cycle, which tuned the auto-detection that this change removes outright.
 - BUG-222: Azure error classifier types 429 / 5xx / 401
 - BK-299: Document Azure seekable reads (`read_seekable`), the async `ext.*` cliff, and connection-pool tuning

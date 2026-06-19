@@ -10,10 +10,11 @@ from collections import deque
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from remote_store._backend import Backend
 from remote_store._errors import (
+    BackendUnavailable,
     NotFound,
     RemoteStoreError,
     _classify_by_message,
@@ -92,6 +93,23 @@ class _S3Base(Backend):
     _client_options: dict[str, Any]
     _retry: RetryPolicy | None
     _reject_write_under_file_ancestor: bool
+
+    # M1 (BK-298): close() is terminal — a use-after-close raises
+    # BackendUnavailable rather than silently re-creating the s3fs client.
+    close_is_terminal: ClassVar[bool] = True
+    # Default until a subclass close() flips it; set as a class attr because
+    # _S3Base has no __init__ (subclasses set their own instance state).
+    _closed: bool = False
+
+    def _raise_if_closed(self) -> None:
+        """Raise ``BackendUnavailable`` if the backend has been closed.
+
+        After ``close()`` every data-plane op reaches s3fs through a lazy
+        property; this guard turns a use-after-close into a typed error instead
+        of silently re-creating the client.
+        """
+        if self._closed:
+            raise BackendUnavailable(f"{self.name} backend is closed", backend=self.name)
 
     # region: abstract property
 

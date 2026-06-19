@@ -255,8 +255,11 @@ backend.to_key("data/file.txt")               # -> "data/file.txt" (no prefix, u
 
 ### AZ-029: close()
 
-**Invariant:** `close()` closes the underlying `BlobServiceClient`, `ContainerClient`, and (if HNS) `FileSystemClient` and `DataLakeServiceClient`. Resets all cached client instances. The declared `hns` value is immutable config and is not reset.
-**Postconditions:** Safe to call multiple times. Note: because lazy properties re-initialize on next use, the backend is technically reusable after `close()`. This is consistent with S3Backend's behavior.
+**Invariant:** `close()` (and `aclose()` on the async twin) closes the underlying `BlobServiceClient`, `ContainerClient`, and (if HNS) `FileSystemClient` and `DataLakeServiceClient`, resets all cached client instances, and flips a `_closed` flag. The declared `hns` value is immutable config and is not reset. A credential is closed **only when the backend created it** — the auto-created `DefaultAzureCredential` of the no-locator path. A caller-supplied `credential=` is the caller's to close; `account_key` / `sas_token` resolve to plain strings with no transport to release (BK-298 H1).
+**Postconditions:**
+- Safe to call multiple times (idempotent — a second `close()` is a no-op).
+- A caller-supplied `credential=` object is **not** closed: closing a shared `DefaultAzureCredential` would tear down its transport sessions across the rest of the caller's application.
+- **After close, the backend is terminal (BK-298 M1).** A subsequent operation raises a typed `BackendUnavailable`: every lazy client property guards on the `_closed` flag (flipped at the *start* of `close()`), so a use-after-close fails typed rather than silently re-initialising a fresh client and credential. This aligns Azure with Graph's terminal close (GR-051 / BUG-219) and with the S3 backends (S3-019); the posture is declared via `close_is_terminal` (BE-020).
 
 ### AZ-030: unwrap()
 

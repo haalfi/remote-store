@@ -199,6 +199,7 @@ TWINS: tuple[Twin, ...] = (
                 "_fs",
                 "_hns_first_file_ancestor",
                 "_maybe_check_no_file_ancestor",
+                "_raise_if_closed",
                 "_raise_invalid_if_hns_file_ancestor",
                 "get_file_info",
                 "glob",

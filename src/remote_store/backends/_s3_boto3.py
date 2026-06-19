@@ -220,6 +220,9 @@ class S3Boto3Backend(Backend):
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
+    # M1 (BK-298): close() is terminal — a use-after-close raises
+    # BackendUnavailable rather than silently re-creating the boto3 client.
+    close_is_terminal: ClassVar[bool] = True
 
     def __init__(
         self,
@@ -249,6 +252,7 @@ class S3Boto3Backend(Backend):
         self._reject_write_under_file_ancestor = reject_write_under_file_ancestor
         self._client_instance: Any = None
         self._transfer_config_instance: Any = None
+        self._closed = False
 
     # region: properties
 
@@ -597,6 +601,9 @@ class S3Boto3Backend(Backend):
             self._client.head_bucket(Bucket=self._bucket)
 
     def close(self) -> None:
+        # M1: terminal close (BK-298) — flip the guard flag, then drop the
+        # cached client. Idempotent.
+        self._closed = True
         self._client_instance = None
         self._transfer_config_instance = None
 
@@ -669,8 +676,18 @@ class S3Boto3Backend(Backend):
 
     # region: private helpers
 
+    def _raise_if_closed(self) -> None:
+        """Raise ``BackendUnavailable`` if the backend has been closed.
+
+        After ``close()`` the boto3 client property raises a typed error instead
+        of silently re-creating the client.
+        """
+        if self._closed:
+            raise BackendUnavailable(f"{self.name} backend is closed", backend=self.name)
+
     @property
     def _client(self) -> Any:
+        self._raise_if_closed()
         if self._client_instance is None:
             import boto3  # type: ignore[import-untyped]
 

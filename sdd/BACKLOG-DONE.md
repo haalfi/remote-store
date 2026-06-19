@@ -8,6 +8,28 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-298 — Azure credential ownership + cross-backend terminal close**
+  spec: AZ-029, BE-020, S3-019, S3PA-020, GR-051 · effort: L · audience: user.api, library.maintainer
+  From [audit-019](audits/audit-019-azure-backend-review.md) H1 + M1.
+  **H1 (bug):** `close()` / `aclose()` closed `self._resolved_credential`
+  unconditionally, tearing down a caller-supplied shared `credential=`. Fixed by
+  tracking ownership (`_created_credential`, computed from constructor inputs):
+  the backend closes only the auto-created `DefaultAzureCredential`; a
+  caller-supplied credential and the `account_key`/`sas_token` strings are left
+  alone. **M1 (posture, decided → terminal):** aligned `AzureBackend` (both
+  twins) and all three S3 backends (`S3Backend`, `S3PyArrowBackend`,
+  `S3Boto3Backend`) with Graph's terminal close (BUG-219). A `_closed` flag,
+  flipped at the start of `close()`, is checked by every lazy client accessor, so
+  a use-after-close raises typed `BackendUnavailable` instead of silently
+  re-initialising. The posture is a first-class `close_is_terminal` class
+  attribute (BE-020) — `GraphBackend` declares it too — gated by a new
+  cross-backend conformance lane (`tests/backends/conformance/test_close_posture.py`
+  + `aio/` sibling) that also asserts the reusable default for Local/Memory/SFTP/
+  HTTP/SQL. Discovered the S3 s3fs/aiobotocore session-release gap, filed as
+  **BK-306** (orthogonal: the guard refuses reuse, but `close()` does not yet
+  tear down the cached session). Closes the cross-backend item the BUG-219 trace
+  flagged for ID-219.
+
 - [x] **BK-304 — Azure cassette recording aborts on flaky teardown ResourceWarnings**
   spec: — · effort: S · audience: contributor.tooling, infra.test
   `record_cassettes.py --backend azure` aborted mid-run: vcrpy's record-mode

@@ -319,6 +319,9 @@ class S3Backend(_S3Base):
             self._fs.copy(self._s3_path(src), self._s3_path(dst))
 
     def close(self) -> None:
+        # M1: terminal close (BK-298) — flip the guard flag, then drop the
+        # cached client. Idempotent.
+        self._closed = True
         if self._fs_instance is not None:
             self._fs_instance = None
 
@@ -354,6 +357,7 @@ class S3Backend(_S3Base):
 
     @property
     def _fs(self) -> Any:
+        self._raise_if_closed()
         if self._fs_instance is None:
             import s3fs
 
