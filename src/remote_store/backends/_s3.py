@@ -320,10 +320,12 @@ class S3Backend(_S3Base):
 
     def close(self) -> None:
         # M1: terminal close (BK-298) — flip the guard flag, then drop the
-        # cached client. Idempotent.
+        # cached client. With skip_instance_cache (BK-306) the s3fs instance is
+        # no longer pinned in fsspec's global registry, so dropping the ref lets
+        # it be collected and s3fs's own finalizer closes the aiobotocore
+        # session. Idempotent.
         self._closed = True
-        if self._fs_instance is not None:
-            self._fs_instance = None
+        self._fs_instance = None
 
     def unwrap(self, type_hint: type[T]) -> T:
         import s3fs  # type: ignore[import-untyped]

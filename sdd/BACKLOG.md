@@ -131,32 +131,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ---
 
-## S3
-
-- [ ] **BK-306 — `S3Backend.close()` drops the reference but never releases the s3fs/aiobotocore session**
-  spec: — · effort: M · audience: user.api, library.maintainer
-  Surfaced during BK-298 (terminal-close posture). `S3Backend.close()`
-  (`_s3.py:321`) only nulls `_fs_instance`; it never calls
-  `S3FileSystem.close_session()`, and `_build_s3fs_kwargs` (`_s3_base.py:189`)
-  does not pass `skip_instance_cache`. So after `close()` the aiobotocore/aiohttp
-  `ClientSession` stays open on fsspec's background IO loop, and the
-  `S3FileSystem` is retained in fsspec's process-global instance cache (keyed by
-  constructor args) — a new `S3Backend(...)` with the same args silently reuses
-  the still-open session. The boto3 twin (`_s3_boto3.py:599`) is the same shape:
-  nulls `_client_instance`, so the urllib3 pool is released only when GC collects
-  the client, not deterministically at `close()`. **Orthogonal to BK-298's
-  terminal-close guard** — that guard makes the backend object refuse *reuse*;
-  this leak lives in fsspec/botocore global state the guard never touches (so a
-  "no live transport after close" conformance assertion fails on S3 even with
-  BK-298 done). Defect-shaped and statically certain, but not yet runtime-
-  reproduced: per principle 6, write the failing "session closed after close()"
-  test first. Fix sketch: call `S3FileSystem.close_session()` on its loop and/or
-  construct with `skip_instance_cache=True`; call `client.close()` on the boto3
-  path. Consider the cross-backend "no leaked transport after close" assertion in
-  the conformance lane BK-298 introduces.
-
----
-
 ## Lint / CI Completeness
 
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**

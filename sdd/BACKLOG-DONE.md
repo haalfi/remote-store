@@ -8,6 +8,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-306 — S3 `close()` releases the s3fs/aiobotocore session instead of leaking it**
+  spec: S3-019 · effort: M · audience: user.api, library.maintainer
+  Surfaced during BK-298. `close()` only nulled the cached-client reference, and
+  `_build_s3fs_kwargs` did not pass `skip_instance_cache`, so the `S3FileSystem`
+  stayed pinned in fsspec's process-global instance cache: the aiobotocore
+  session leaked for the process lifetime and a fresh backend with identical args
+  silently reused the closed session. **Runtime-reproduced against moto** (per
+  principle 6): pre-fix the instance was cached and reused, and the session
+  stayed open. **Fix:** build the s3fs filesystem with `skip_instance_cache=True`
+  so it is never pinned — dropping the reference makes it collectable and s3fs's
+  own `weakref.finalize` closes the session exactly once (an explicit
+  `close_session()` call was tried first but **double-closed** with that
+  finalizer, raising an unraisable `AssertionError` at GC — the BK-304 failure
+  class — so it was removed). `S3Boto3Backend.close()` closes its boto3 client
+  (urllib3 pool) directly, since boto3 registers no finalizer. Covers all three
+  S3 backends. Tests: `TestS3SharedSessionRelease` (no-cache-pin + no-reuse, and
+  a moto-gated session-close assertion) and `test_close_closes_boto3_client`.
+
 - [x] **BK-298 — Azure credential ownership + cross-backend terminal close**
   spec: AZ-029, BE-020, S3-019, S3PA-020, GR-051 · effort: L · audience: user.api, library.maintainer
   From [audit-019](audits/audit-019-azure-backend-review.md) H1 + M1.

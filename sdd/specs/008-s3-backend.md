@@ -165,7 +165,7 @@ assert backend.is_folder("dir") is False  # folder vanishes
 **Postconditions:**
 - Safe to call multiple times (idempotent).
 - **After close, the backend is terminal (BK-298 M1):** a subsequent operation raises a typed `BackendUnavailable` via the `_s3fs` / `_fs` guard rather than silently re-creating the client. Declared via `close_is_terminal` (BE-020); aligns with Azure (AZ-029) and Graph (GR-051). The same posture applies to `S3PyArrowBackend` and `S3Boto3Backend`.
-- `close()` drops the s3fs reference but does not itself tear down the underlying aiobotocore session (s3fs caches it on a background loop) — tracked as BK-306.
+- **Resources are released, not merely dereferenced (BK-306):** the s3fs filesystem is built with `skip_instance_cache=True`, so it is never pinned in fsspec's process-global instance cache. Dropping the reference therefore makes the instance collectable and s3fs's own finalizer closes the aiobotocore session; a fresh backend with identical arguments never reuses a closed session. `S3Boto3Backend.close()` closes its boto3 client (urllib3 pool) directly, as boto3 registers no finalizer.
 
 ### S3-020: unwrap()
 

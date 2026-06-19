@@ -1,0 +1,76 @@
+id: BK-306
+title: "S3 close() releases the s3fs/aiobotocore session instead of leaking it"
+trigger: >
+  Surfaced while scoping BK-298: S3 close() only nulled the cached-client
+  reference. _build_s3fs_kwargs did not pass skip_instance_cache, so the
+  S3FileSystem stayed pinned in fsspec's process-global instance cache — the
+  aiobotocore session leaked for the process lifetime and a fresh backend with
+  identical args silently reused the closed session. Orthogonal to BK-298's
+  terminal-close guard (object refuses reuse) vs the leak (fsspec/botocore global
+  state).
+source_items:
+  - BK-306
+  - BK-298
+audience:
+  - user.api
+  - library.maintainer
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-306 (S3 close session-release)"
+        read_type: gate
+        extract: "Fix sketch: skip_instance_cache and/or close_session; boto3 client.close(). Repro-first per principle 6."
+        outcome: ok
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_build_s3fs_kwargs"
+        read_type: gate
+        extract: "No skip_instance_cache set, so s3fs uses fsspec's global instance cache (pins the instance + session)."
+        outcome: ok
+  - id: reproduce
+    name: Reproduce (moto, no Docker)
+    steps:
+      - file: tests/conftest.py
+        section: "moto_server (ThreadedMotoServer)"
+        read_type: reference
+        extract: "moto runs in-process without Docker, so the leak is reproducible locally against a real S3 endpoint."
+        outcome: ok
+      - file: src/remote_store/backends/_s3.py
+        section: "close() / _fs"
+        read_type: gate
+        extract: "Probe confirmed: pre-fix the S3FileSystem stayed in fsspec cache (fs2 is fs == True) and the aiobotocore session stayed open after close()."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_build_s3fs_kwargs (skip_instance_cache)"
+        read_type: gate
+        extract: "setdefault('skip_instance_cache', True) un-pins the instance; dropping the ref lets s3fs's own weakref.finalize close the session. Covers S3Backend + S3PyArrowBackend."
+        outcome: ok
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "close()"
+        read_type: gate
+        extract: "boto3 registers no finalizer, so close() calls client.close() directly to release the urllib3 pool."
+        outcome: ok
+      - file: src/remote_store/backends/_s3.py
+        section: "close() — explicit close_session removed"
+        read_type: gate
+        extract: "An explicit S3FileSystem.close_session() was tried first but DOUBLE-CLOSED with s3fs's own weakref finalizer, raising an unraisable AssertionError ('Session was never entered') at GC — the BK-304 failure class. Removed; the finalizer closes the session exactly once."
+        outcome: misleading
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/s3/test_shared.py
+        section: "TestS3SharedSessionRelease"
+        read_type: verify
+        extract: "no-cache-pin + no-reuse (S3 + S3PyArrow, no moto); moto-gated session-close assertion (session closed after close()+gc, no unraisable). boto3 covered by test_close_closes_boto3_client."
+        outcome: ok
+      - file: sdd/specs/008-s3-backend.md
+        section: "S3-019"
+        read_type: verify
+        extract: "Rewrote the close postcondition: resources are released (skip_instance_cache + finalizer), dropping the BK-306 caveat. CHANGELOG stub, BACKLOG->DONE, backlogid.json."
+        outcome: ok

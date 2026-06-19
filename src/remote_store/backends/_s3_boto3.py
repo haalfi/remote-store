@@ -43,7 +43,7 @@ import io
 import logging
 import tempfile
 from collections import deque
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from typing import TYPE_CHECKING, Any, BinaryIO, ClassVar, TypeVar, cast
 
 from remote_store._backend import Backend
@@ -601,9 +601,13 @@ class S3Boto3Backend(Backend):
             self._client.head_bucket(Bucket=self._bucket)
 
     def close(self) -> None:
-        # M1: terminal close (BK-298) — flip the guard flag, then drop the
-        # cached client. Idempotent.
+        # M1: terminal close (BK-298) — flip the guard flag, then close the
+        # boto3 client's urllib3 connection pool (BK-306) and drop the cached
+        # client. Idempotent.
         self._closed = True
+        if self._client_instance is not None:
+            with suppress(Exception):
+                self._client_instance.close()
         self._client_instance = None
         self._transfer_config_instance = None
 

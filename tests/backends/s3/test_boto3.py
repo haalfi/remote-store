@@ -334,6 +334,16 @@ class TestS3Boto3Lifecycle:
             backend.delete("retry/probe.txt", missing_ok=True)
             backend.close()
 
+    def test_close_closes_boto3_client(self) -> None:
+        """BK-306: close() closes the boto3 client's urllib3 connection pool."""
+        from unittest.mock import patch
+
+        backend = _make_backend("http://localhost:1", "b")
+        client = backend._client  # force lazy creation
+        with patch.object(client, "close") as mock_close:
+            backend.close()
+        assert mock_close.call_count == 1
+
     def test_unwrap_returns_boto_client(self) -> None:
         """``unwrap(BaseClient)`` returns the native boto3 S3 client (S3-020 shape)."""
         from botocore.client import BaseClient
