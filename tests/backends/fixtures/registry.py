@@ -110,6 +110,24 @@ class BackendFixture:
     the full conformance suite. Without this guard a strict fixture
     would run the entire applicable surface twice on flat-NS backends.
     """
+    conformance_excluded: bool = False
+    """True when this fixture must never appear in the conformance enumeration.
+
+    Stronger than ``strict_only``: a ``strict_only`` fixture is still pulled in
+    by the file-ancestor tests' explicit ``fixture_params(..., include_strict_only=True)``,
+    whereas a ``conformance_excluded`` fixture is dropped by ``fixtures()`` in
+    **every** mode. It stays visible to ``all_fixtures()``, so it still opts
+    into cassette-directory routing, name aliasing, the missing-cassette skip,
+    the scrub config, and the leak audit via its ``cassette_profile`` (REC-007),
+    and the recorder's ``-k`` filter still selects it.
+
+    Set on the BK-303 ``azure_live_hns`` / ``azure_replay_hns`` deviation
+    fixtures: they belong to the per-backend HNS suite under
+    ``tests/backends/azure/`` (which parametrises over them directly via its
+    own conftest), not to the conformance surface, but they must remain
+    registry-visible so their cassettes route to ``cassettes/azure/`` and the
+    recorder folds them into the azure record run.
+    """
     large_write_distinct: bool = False
     """True when this fixture's backend takes a distinct code path for large
     or streamed writes (S3 multipart, Azure block staging, Graph
@@ -235,6 +253,10 @@ def fixtures(*caps: Capability, is_async: bool = False, include_strict_only: boo
        ``include_strict_only=True``. Strict variants exist to exercise
        narrow contracts (e.g. ID-211 file-ancestor), not the full
        conformance surface.
+    5. ``conformance_excluded`` fixtures are excluded unconditionally —
+       they belong to a per-backend deviation suite (e.g. BK-303 HNS),
+       not the conformance surface, and ``include_strict_only`` does not
+       opt them back in.
 
     Pass no ``caps`` to get every fixture in the requested mode and
     stage band.
@@ -247,6 +269,7 @@ def fixtures(*caps: Capability, is_async: bool = False, include_strict_only: boo
         if f.stage <= stage_cap
         and f.is_async is is_async
         and cap_set.issubset(f.capabilities)
+        and not f.conformance_excluded
         and (include_strict_only or not f.strict_only)
     ]
 

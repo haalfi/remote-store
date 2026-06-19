@@ -4,8 +4,8 @@ Registering a fixture with ``cassette_profile=<PROFILE>`` is the single act
 that opts it into directory routing, cassette-name aliasing, the
 missing-cassette skip, and the scrub config. These tests pin that contract
 from both sides: the registry invariants every profile-bearing fixture must
-satisfy, and the conformance conftest's fail-loud guards for fixtures that
-break it.
+satisfy, and the shared cassette-routing core's fail-loud guards
+(``tests/backends/fixtures/_cassette_pytest.py``) for fixtures that break it.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import types
 
 import pytest
 
-from tests.backends.conformance import conftest as routing
+from tests.backends.fixtures import _cassette_pytest as routing
 from tests.backends.fixtures import all_fixtures, registry
 from tests.backends.fixtures._cassettes_azure import AZURE_PROFILE
 from tests.backends.fixtures.registry import BackendFixture

@@ -57,6 +57,18 @@ Contains no real credentials; the ``FAKE_ACCOUNT`` host is matched by
 vcrpy against the scrubbed cassette URLs.
 """
 
+REPLAY_HNS_DIRPATH_SYNC = "live-hns/REPLAY/dirblob"
+"""Fixed HNS directory path the sync replay fixture targets (BK-303).
+
+The live HNS fixture provisions ``live-hns/<uuid8>/dirblob``; the
+``azure.uri.hns-prefix`` scrub rewrites the per-session uuid to ``REPLAY``
+so the replay fixture (which does no HTTP at setup) replays cassette URLs
+that match this fixed path.
+"""
+
+REPLAY_HNS_DIRPATH_ASYNC = "live-hns-async/REPLAY/dirblob"
+"""Fixed HNS directory path the async replay fixture targets (BK-303)."""
+
 # endregion
 
 # region: account-name resolution (record path)
@@ -94,6 +106,23 @@ def _resolve_live_account() -> str | None:
     return parse_account_name(conn)
 
 
+def _resolve_live_hns_container() -> str | None:
+    """``EnvRedact`` resolver: the real HNS filesystem name, or ``None`` (rule disabled).
+
+    The live HNS deviation suite targets a persistent, account-specific
+    filesystem named by ``RS_TEST_LIVE_HNS_CONTAINER`` (BK-303). Unlike the
+    conformance suite's minted ``conformance-<uuid8>`` names — covered by
+    ``_FILESYSTEM_PATTERN`` — this fixed name does not match a uuid pattern,
+    so it gets its own env-redact to ``FAKE_FILESYSTEM``. ``None`` covers the
+    no-live state (env var unset), so a normal offline run is unaffected.
+    """
+    from dotenv import load_dotenv  # noqa: PLC0415 -- lazy: only on the record path
+
+    load_dotenv(override=False)
+    container = (os.environ.get("RS_TEST_LIVE_HNS_CONTAINER") or "").strip()
+    return container or None
+
+
 # endregion
 
 # region: scrub patterns
@@ -108,6 +137,13 @@ _FILESYSTEM_PATTERN: re.Pattern[str] = re.compile(r"conformance(?:-async)?-[0-9a
 # replay runs, so it is normalised out for a deterministic cassette path.
 _TMP_UUID_PATTERN: re.Pattern[str] = re.compile(r"(\.~tmp\.[^?/]*)\.[0-9a-f]{8}(?=[?/]|$)")
 
+# Matches the per-session prefix the live HNS suite provisions:
+# ``live-hns/<uuid8>`` (sync) and ``live-hns-async/<uuid8>`` (async). The uuid
+# differs between record and replay runs, so it is normalised to ``REPLAY``
+# (the fixed segment the replay fixtures' dirpath uses) for a deterministic
+# cassette path (BK-303).
+_HNS_PREFIX_PATTERN: re.Pattern[str] = re.compile(r"(live-hns(?:-async)?)/[0-9a-f]{8}")
+
 # endregion
 
 AZURE_PROFILE = CassetteProfile(
@@ -118,6 +154,13 @@ AZURE_PROFILE = CassetteProfile(
         "azure_replay": "azure",
         "azure_live_async": "azure_async",
         "azure_replay_async": "azure_async",
+        # BK-303: the live HNS deviation suite and its replay tier share a
+        # cassette file under the same cassettes/azure/ directory; a distinct
+        # alias group keeps their filenames separate from conformance.
+        "azure_live_hns": "azure_hns",
+        "azure_replay_hns": "azure_hns",
+        "azure_live_hns_async": "azure_hns_async",
+        "azure_replay_hns_async": "azure_hns_async",
     },
     # SharedKey auth keeps its signature in the deleted headers; the
     # ``User-Agent`` tuple rewrites the recording machine's SDK/Python/OS
@@ -133,7 +176,15 @@ AZURE_PROFILE = CassetteProfile(
     # these are zero-hit on today's recordings; listed so any future
     # SAS-authenticated fixture inherits the scrub.
     filter_query_parameters=("sig", "se", "st", "sp", "sv", "sr", "skoid", "sktid", "skt", "ske", "sks", "skv"),
-    env_redacts=(EnvRedact(name="azure.account", resolve=_resolve_live_account, fake=FAKE_ACCOUNT),),
+    env_redacts=(
+        EnvRedact(name="azure.account", resolve=_resolve_live_account, fake=FAKE_ACCOUNT),
+        # BK-303: the live HNS suite targets a fixed RS_TEST_LIVE_HNS_CONTAINER
+        # filesystem whose name is not a conformance-<uuid8> form; redact it to
+        # FAKE_FILESYSTEM so HNS replay runs against container=FAKE_FILESYSTEM.
+        # required-to-fire: it fires on every HNS recording (folded into the
+        # azure record run), so a zero-fire is a wiring defect.
+        EnvRedact(name="azure.hns-container", resolve=_resolve_live_hns_container, fake=FAKE_FILESYSTEM),
+    ),
     uri_rewrites=(
         UriRewrite(
             name="azure.uri.filesystem-uuid",
@@ -142,6 +193,13 @@ AZURE_PROFILE = CassetteProfile(
             expectation="required-to-fire",
         ),
         UriRewrite(name="azure.uri.tmp-uuid", pattern=_TMP_UUID_PATTERN, replacement=r"\1"),
+        # BK-303: normalise the live HNS per-session prefix uuid to REPLAY.
+        UriRewrite(
+            name="azure.uri.hns-prefix",
+            pattern=_HNS_PREFIX_PATTERN,
+            replacement=r"\1/REPLAY",
+            expectation="required-to-fire",
+        ),
     ),
     response_body_redactions=(
         # Opportunistic: the recorded corpus shows response bodies never carry
@@ -150,6 +208,14 @@ AZURE_PROFILE = CassetteProfile(
             name="azure.body.filesystem-uuid",
             pattern=re.compile(_FILESYSTEM_PATTERN.pattern.encode()),
             replacement=FAKE_FILESYSTEM.encode(),
+        ),
+        # BK-303: bytes twin of azure.uri.hns-prefix — get_paths listing
+        # responses echo child paths carrying the per-session prefix uuid.
+        # Opportunistic: not every HNS cassette lists the directory.
+        RedactPattern(
+            name="azure.body.hns-prefix",
+            pattern=re.compile(rb"(live-hns(?:-async)?)/[0-9a-f]{8}"),
+            replacement=rb"\1/REPLAY",
         ),
         # Error-response XML fragments carrying per-run identifiers.
         RedactPattern(
@@ -174,11 +240,13 @@ AZURE_PROFILE = CassetteProfile(
 
 What it strips: the SharedKey ``Authorization`` / ``x-ms-date`` /
 correlation / ``Cookie`` request headers and SAS query parameters (native
-filters); the live account name and per-call ``conformance-<uuid>``
+filters); the live account name, the per-call ``conformance-<uuid>``
+filesystem name, and the live HNS suite's ``RS_TEST_LIVE_HNS_CONTAINER``
 filesystem name from URIs, header values (``x-ms-rename-source`` /
 ``x-ms-copy-source``), and bodies; the random ``write_atomic`` temp-file
-UUID; per-request response headers; and ``RequestId:`` / ``Time:``
-fragments in error-response XML.
+UUID and the live HNS per-session ``live-hns/<uuid>`` prefix; per-request
+response headers; and ``RequestId:`` / ``Time:`` fragments in
+error-response XML.
 """
 
 __all__ = [
@@ -187,5 +255,7 @@ __all__ = [
     "FAKE_ACCOUNT",
     "FAKE_CONN_STR",
     "FAKE_FILESYSTEM",
+    "REPLAY_HNS_DIRPATH_ASYNC",
+    "REPLAY_HNS_DIRPATH_SYNC",
     "parse_account_name",
 ]

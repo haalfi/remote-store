@@ -123,6 +123,18 @@ class TestBackendConfigTable:
         path = ROOT / rc._CONFORMANCE
         assert path.is_dir(), f"record_cassettes._CONFORMANCE = {rc._CONFORMANCE!r} is not a directory ({path})"
 
+    @pytest.mark.parametrize("backend", _ALL_BACKENDS)
+    def test_targets_are_directories(self, rc, backend: str) -> None:
+        """Every pytest target path (record + replay) must be a real directory.
+
+        BK-303 gave the azure entry a ``targets`` list (conformance + the HNS
+        deviation subtree); a typo'd path would silently select zero tests.
+        """
+        targets = rc._BACKENDS[backend].get("targets", [rc._CONFORMANCE])
+        for target in targets:
+            path = ROOT / target
+            assert path.is_dir(), f"_BACKENDS[{backend!r}]['targets'] entry {target!r} is not a directory ({path})"
+
 
 class TestAzureSyncExclusion:
     """Azure-specific: the sync/async k-filter split relies on a 'not async' clause."""

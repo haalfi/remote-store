@@ -184,6 +184,16 @@ vcr-marked test whose fixture carries no profile fails loud rather than
 falling back. Fixtures without a profile are invisible to all cassette
 machinery.
 
+**Profile routing is independent of conformance enumeration.** A fixture
+carrying a profile routes, scrubs, and records regardless of whether it
+participates in the conformance walk. A per-backend HTTP *deviation* suite
+(TEST-003) therefore shares its family's profile and cassette directory while
+staying out of conformance via the `conformance_excluded` registry flag — it
+adds its live and replay fixture ids to the profile's aliases (under a distinct
+canonical suffix) and the recorder records its tree alongside the conformance
+tree in one run. Example: the Azure HNS suite's `azure_live_hns` /
+`azure_replay_hns` pair (BK-303).
+
 ---
 
 ## REC-008: Async-Transport Capture

@@ -299,6 +299,53 @@ self_op_supported = true
 # async sibling of azure_live; large-write consistency, live lane.
 large_write_distinct = true
 
+# BK-303: live HNS deviation suite, recordable tier. Targets the persistent
+# RS_TEST_LIVE_HNS_CONTAINER filesystem (no per-call create_file_system).
+# conformance_excluded keeps the four *_hns fixtures out of the conformance
+# enumeration in every mode (including the include_strict_only=True file-ancestor
+# tests) — they are consumed only by the azure-subtree conftests in
+# tests/backends/azure/ — while staying visible to all_fixtures() for cassette
+# routing, the recorder k-filters, and the creds-free PII sweep.
+[fixture.azure_live_hns]
+backend   = "azure"
+stage     = 3
+kind      = "real-live"
+container = "none"
+is_async  = false
+live_opt_in_env = "RS_TEST_LIVE_HNS"
+live_creds_env  = ["AZURE_STORAGE_CONNECTION_STRING"]
+self_op_supported = true
+conformance_excluded = true
+
+[fixture.azure_live_hns_async]
+backend   = "azure"
+stage     = 3
+kind      = "real-live"
+container = "none"
+is_async  = true
+live_opt_in_env = "RS_TEST_LIVE_HNS"
+live_creds_env  = ["AZURE_STORAGE_CONNECTION_STRING"]
+self_op_supported = true
+conformance_excluded = true
+
+[fixture.azure_replay_hns]
+backend   = "azure"
+stage     = 1
+kind      = "replay"
+container = "none"
+is_async  = false
+self_op_supported = true
+conformance_excluded = true
+
+[fixture.azure_replay_hns_async]
+backend   = "azure"
+stage     = 1
+kind      = "replay"
+container = "none"
+is_async  = true
+self_op_supported = true
+conformance_excluded = true
+
 [fixture.s3_live]
 backend   = "s3"
 stage     = 3

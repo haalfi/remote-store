@@ -118,6 +118,7 @@ def _synthetic_descriptor(
         self_op_supported=True,
         rejects_write_under_file_ancestor=True,
         strict_only=False,
+        conformance_excluded=False,
         large_write_distinct=False,
         transport="memory",
         concurrency="thread_safe",
