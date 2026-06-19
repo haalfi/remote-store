@@ -15,9 +15,10 @@ therefore only closes the backend — there is no filesystem to delete.
 
 Gating mirrors ``azure_live``: ``--stage=3`` plus ``RS_TEST_LIVE_HNS=1``, with
 ``AZURE_STORAGE_CONNECTION_STRING`` a fail-loud precondition. ``pytest.mark.vcr``
-is added dynamically by the root conftest only under ``--record``. ``strict_only``
-keeps the fixture off the conformance auto-walk; it is consumed only by the
-azure-subtree conftest.
+is added dynamically by the root conftest only under ``--record``.
+``conformance_excluded`` keeps the fixture off the conformance auto-walk in every
+mode (a stronger guarantee than ``strict_only``, which the ``include_strict_only``
+file-ancestor tests opt back in); it is consumed only by the azure-subtree conftest.
 """
 
 from __future__ import annotations

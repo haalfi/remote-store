@@ -10,8 +10,8 @@ Under ``_RS_CASSETTE_RECORDING=1`` the async backend injects
 shim ``azure_live_async`` uses (vcrpy 8.1.1's aiohttp stub drops streaming
 bodies on record).
 
-Gating, the dynamic ``pytest.mark.vcr`` under ``--record``, and ``strict_only``
-match ``azure_live_hns``.
+Gating, the dynamic ``pytest.mark.vcr`` under ``--record``, and
+``conformance_excluded`` match ``azure_live_hns``.
 """
 
 from __future__ import annotations
