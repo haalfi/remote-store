@@ -512,6 +512,7 @@ class TestS3SharedSessionRelease:
         no PyArrow data path (which would need MinIO on pyarrow >= 24) is hit.
         """
         import gc
+        import weakref
 
         if moto_server is None:
             pytest.skip("moto server not available")
@@ -527,13 +528,21 @@ class TestS3SharedSessionRelease:
             bucket=bucket, key="testing", secret="testing", region_name=REGION, endpoint_url=moto_server
         )
         backend.exists("probe.txt")  # opens the shared s3fs control session
+        fs_ref = weakref.ref(backend._s3fs)  # must NOT keep the instance alive
         http = backend._s3fs._s3._endpoint.http_session
         assert http._sessions  # a session pool exists
         assert any(not s.closed for s in http._sessions.values())  # at least one live session
 
         backend.close()
+        del backend
         gc.collect()
-        # The un-pinned instance was collected; s3fs's finalizer closed the session.
+        # The instance was actually collected — nothing (not the captured ``http``)
+        # pins it — which is precisely what fires s3fs's finalizer. Asserting the
+        # collection makes the session-closed check below honest rather than a
+        # pass-for-the-wrong-reason: if a stray strong ref survived, the finalizer
+        # would not run and this assertion fails loudly.
+        assert fs_ref() is None
+        # The finalizer closed the aiobotocore session.
         assert http._sessions is None or all(s.closed for s in http._sessions.values())
 
 
