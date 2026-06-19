@@ -10401,6 +10401,15 @@ appear in its profile's aliases — fails loud at routing-map build, and a
 vcr-marked test whose fixture carries no profile fails loud rather than
 falling back. Fixtures without a profile are invisible to all cassette
 machinery.</p>
+<p><strong>Profile routing is independent of conformance enumeration.</strong> A fixture
+carrying a profile routes, scrubs, and records regardless of whether it
+participates in the conformance walk. A per-backend HTTP <em>deviation</em> suite
+(TEST-003) therefore shares its family's profile and cassette directory while
+staying out of conformance via the <code>conformance_excluded</code> registry flag — it
+adds its live and replay fixture ids to the profile's aliases (under a distinct
+canonical suffix) and the recorder records its tree alongside the conformance
+tree in one run. Example: the Azure HNS suite's <code>azure_live_hns</code> /
+<code>azure_replay_hns</code> pair (BK-303).</p>
 <hr />
 <h2 id="rec-008-async-transport-capture">REC-008: Async-Transport Capture<a class="headerlink" href="#rec-008-async-transport-capture" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> What vcrpy can capture per async HTTP stack is pinned, not

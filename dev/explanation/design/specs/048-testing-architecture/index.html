@@ -10521,6 +10521,17 @@ async-specific behaviour exists for the topic. Sync <code>def</code> and
 the concrete naming.</p>
 <p><strong>Configuration tests</strong> (construction options, opt parsing, registry
 wiring) live in the same per-backend home.</p>
+<p><strong>Replay tier for HTTP deviation suites:</strong> a per-backend deviation suite
+whose transport is HTTP may adopt the TEST-007 record/replay pattern so
+its HTTP is captured once and replayed creds-free at Stage 1, exactly like
+conformance. It registers a dedicated <code>&lt;backend&gt;_live_&lt;topic&gt;</code> /
+<code>&lt;backend&gt;_replay_&lt;topic&gt;</code> fixture pair carrying the backend's
+<code>cassette_profile</code> (so cassette routing, scrub, and the recorder all see it)
+and the <code>conformance_excluded</code> flag (so it never enters the conformance
+walk). The deviation suite's own conftest parametrises its tests over the
+pair. The cassettes share the backend's <code>cassettes/&lt;backend&gt;/</code> directory
+under a distinct alias. Example: the Azure HNS deviation suite's
+<code>azure_live_hns</code> / <code>azure_replay_hns</code> pair (BK-303).</p>
 <hr />
 <h2 id="test-004-fixture-registry-and-metadata-interface">TEST-004: Fixture Registry and Metadata Interface<a class="headerlink" href="#test-004-fixture-registry-and-metadata-interface" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Every backend fixture is a record with the following

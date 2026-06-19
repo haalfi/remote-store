@@ -10655,6 +10655,16 @@ deliberate so a default <code>hatch run test</code> never touches a real account
 sync and async fixtures against a live ADLS Gen2 account, verifies no credentials
 survived scrubbing, and runs a Stage 1 replay smoke test. Pass <code>--verify-only</code> to
 skip recording and re-run only the verification steps.</p>
+<p>The azure record run covers <strong>two</strong> trees: the conformance suite
+(<code>azure_live</code> → <code>azure_replay</code>) and the HNS deviation suite under
+<code>tests/backends/azure/</code> (<code>azure_live_hns</code> → <code>azure_replay_hns</code>, BK-303). The
+latter exercises HNS-only behaviour the conformance suite cannot express — real
+<code>hdi_isfolder</code> directory-marker probes, the <code>exists</code> DataLake fallback,
+<code>get_folder_info("")</code> root handling, <code>AzureUtils.detect_hns</code>. It needs
+<code>RS_TEST_LIVE_HNS_CONTAINER</code> (the persistent ADLS Gen2 filesystem) set alongside
+<code>RS_TEST_LIVE_HNS=1</code>. Both trees share <code>tests/backends/cassettes/azure/</code>; the HNS
+cassettes use the <code>[azure_hns]</code> / <code>[azure_hns_async]</code> alias. Refresh one HNS
+cassette with <code>--node "tests/backends/azure/...::test_y[azure_live_hns]"</code>.</p>
 <p>To record or refresh a <strong>single</strong> cassette without the all-or-nothing tree-wipe,
 pass <code>--node</code> with the live-variant node id (<code>hatch run</code> forwards the flag, or
 call the script directly):</p>
