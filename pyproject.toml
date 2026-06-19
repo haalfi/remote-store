@@ -425,6 +425,18 @@ filterwarnings = [
   # Upstream issue: OTel uses the deprecated dict-iteration path; will resolve
   # when OTel updates _importlib_metadata to use .select().
   "ignore:SelectableGroups dict interface is deprecated:DeprecationWarning",
+  # Python 3.14 escalates an unawaited transport-close coroutine
+  # (`_wait_for_close`, an asyncio stdlib internal) that the async SDK clients
+  # (aiobotocore / aiohttp / azure-aio) leave for GC to finalize at event-loop
+  # teardown. 3.10-3.13 emit it as a benign GC-time warning; 3.14's stricter
+  # coroutine-finalization reporting routes it through pytest's
+  # unraisableexception plugin as a PytestUnraisableExceptionWarning, which
+  # `filterwarnings = error` then turns into a hard failure. Under xdist the
+  # attribution is non-deterministic (it fails whatever async test GC happens
+  # to run in), so it surfaces as flaky reds on the `test (3.14)` matrix entry
+  # only. Scoped to the `_wait_for_close` qualname so genuine unclosed-resource
+  # leaks (any other coroutine/resource, on every version) still fail. BUG-224.
+  "ignore:Exception ignored while finalizing coroutine <coroutine object _wait_for_close:pytest.PytestUnraisableExceptionWarning",
 ]
 asyncio_mode = "auto"
 markers = [

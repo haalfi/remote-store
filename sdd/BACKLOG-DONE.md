@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-224 — Flaky `test (3.14)` from an unawaited `_wait_for_close` coroutine**
+  spec: — · effort: S · audience: infra.ci, infra.test
+  The async SDK clients (aiobotocore / aiohttp / azure-aio) leave a transport-close
+  coroutine (`_wait_for_close`, an asyncio stdlib internal) for GC to finalize at
+  event-loop teardown. On 3.10–3.13 it is a benign GC-time warning; Python 3.14's
+  stricter coroutine-finalization reporting routes it through pytest's
+  `unraisableexception` plugin as a `PytestUnraisableExceptionWarning`, which
+  `filterwarnings = error` escalates to a hard failure. Under `pytest -n auto` the
+  attribution is non-deterministic — it fails whichever async test GC happens to
+  run in (observed on `…graph/aio/test_http.py::…redacts_token` and
+  `…conformance/test_sync_adapter_conformance.py::…[live-s3]` on different runs) —
+  so it reddened the `test (3.14)` matrix entry on ~half of merges (BK-303 and
+  BK-300 merge runs) while a re-run cleared it. Not reproducible on the local 3.13
+  interpreter. **Fix:** a `filterwarnings` ignore scoped to the `_wait_for_close`
+  qualname (`pyproject.toml`), so this one stdlib transport coroutine no longer
+  fails CI while genuine unclosed-resource leaks — any other coroutine/resource, on
+  every Python version — still fail. Verified by the `test (3.14)` matrix entry;
+  the targeted message means 3.10–3.13 leak detection is unchanged.
+
 - [x] **BK-300 — Azure `WriteResult.digest` is dropped on HNS `write_atomic`**
   spec: — · effort: S · audience: user.api_docs, user.site
   From [audit-019](audits/audit-019-azure-backend-review.md) M4. Live-confirmed:
