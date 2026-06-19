@@ -16,6 +16,16 @@ audience:
   - infra.test
 expected_ripples:
   - sdd/backlogid.json
+surprising_ripples:
+  # The plan assumed strict_only would keep the *_hns fixtures off the
+  # conformance walk, but strict_only leaks back through the
+  # include_strict_only=True file-ancestor tests (test_errors / test_async_
+  # extended), so a stronger conformance_excluded registry field was needed.
+  # Adding it as a required FixtureDescriptor field rippled to every
+  # construction site, which neither the plan nor the ripple-check anticipated.
+  - tests/backends/fixtures/_loader.py
+  - tests/backends/fixtures/test_live_env.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -93,4 +103,9 @@ phases:
         section: "Ripple-check table"
         read_type: verify
         extract: "BACKLOG→DONE move, trace shipped same PR, no CHANGELOG (infra.test audience)"
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "--node targeted record + Step-4 scrub-verify"
+        read_type: verify
+        extract: "recorded 26 HNS cassettes via --node tests/backends/azure/ (no tree-wipe, conformance untouched); scrub-verify clean across 359; both required-to-fire HNS rules (azure.hns-container, azure.uri.hns-prefix) confirmed fired across all 26 by hand (node mode skips the named-rule audit); 26 replay params pass creds-free at Stage 1"
         outcome: ok

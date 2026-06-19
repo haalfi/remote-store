@@ -8,6 +8,31 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-303 — Azure live-only HNS tests have no cassette-replay tier**
+  spec: TEST-003, REC-007 · effort: M · audience: infra.test
+  The `tests/backends/azure/test_live_hns.py` suite (+ its async sibling) — HNS
+  directory-marker guards (BE-021), the `exists` DataLake fallback,
+  `get_folder_info("")` root handling, and the `AzureUtils.detect_hns` /
+  `adetect_hns` checks from BK-302 — ran **only** against a live ADLS Gen2 account
+  and carried no `@pytest.mark.vcr`, so CI and Stage-1 silently skipped every
+  HNS-only path. Gave them the conformance suite's record-once / replay-creds-free
+  tier via a dedicated `azure_live_hns` / `azure_replay_hns` (+ async) fixture pair
+  that shares `AZURE_PROFILE` and the `cassettes/azure/` directory (distinct
+  `azure_hns` / `azure_hns_async` cassette-name aliases). A new
+  `conformance_excluded` registry flag keeps the pair off the conformance walk in
+  **every** mode (stronger than `strict_only`, which leaks back through
+  `include_strict_only=True`) while staying visible to cassette routing, the
+  recorder, and the PII sweep. The generic cassette-routing core was extracted to
+  `tests/backends/fixtures/_cassette_pytest.py` and is shared by the conformance
+  conftest and the new `tests/backends/azure/` conftests. `AZURE_PROFILE` gained
+  the `azure.hns-container` (→ `conformance-azure-replay`) and `azure.uri.hns-prefix`
+  (per-session `live-hns/<uuid8>` → `REPLAY`) `required-to-fire` rules plus the
+  `azure.body.hns-prefix` bytes-twin; `record-azure` records the conformance and
+  `tests/backends/azure/` trees in one run. **Recorded** 26 HNS cassettes against a
+  live account; both new required-to-fire rules fired across all 26, scrub-verify
+  was clean, and the 26 replay params pass creds-free at Stage 1. Depended on
+  BK-304. Trace: `sdd/traces/bk-303-hns-cassette-replay.yml`.
+
 - [x] **BK-306 — S3 `close()` releases the s3fs/aiobotocore session instead of leaking it**
   spec: S3-019 · effort: M · audience: user.api, library.maintainer
   Surfaced during BK-298. `close()` only nulled the cached-client reference, and
