@@ -8,24 +8,34 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
-- [x] **BUG-224 — Flaky `test (3.14)` from an unawaited `_wait_for_close` coroutine**
+- [x] **BUG-224 — Flaky `test (3.14)` from a GC-time `_wait_for_close` coroutine**
   spec: — · effort: S · audience: infra.ci, infra.test
-  The async SDK clients (aiobotocore / aiohttp / azure-aio) leave a transport-close
-  coroutine (`_wait_for_close`, an asyncio stdlib internal) for GC to finalize at
-  event-loop teardown. On 3.10–3.13 it is a benign GC-time warning; Python 3.14's
-  stricter coroutine-finalization reporting routes it through pytest's
-  `unraisableexception` plugin as a `PytestUnraisableExceptionWarning`, which
-  `filterwarnings = error` escalates to a hard failure. Under `pytest -n auto` the
-  attribution is non-deterministic — it fails whichever async test GC happens to
-  run in (observed on `…graph/aio/test_http.py::…redacts_token` and
-  `…conformance/test_sync_adapter_conformance.py::…[live-s3]` on different runs) —
-  so it reddened the `test (3.14)` matrix entry on ~half of merges (BK-303 and
-  BK-300 merge runs) while a re-run cleared it. Not reproducible on the local 3.13
-  interpreter. **Fix:** a `filterwarnings` ignore scoped to the `_wait_for_close`
-  qualname (`pyproject.toml`), so this one stdlib transport coroutine no longer
-  fails CI while genuine unclosed-resource leaks — any other coroutine/resource, on
-  every Python version — still fail. Verified by the `test (3.14)` matrix entry;
-  the targeted message means 3.10–3.13 leak detection is unchanged.
+  `_wait_for_close` is **aiohttp's connector-close coroutine** (`aiohttp/connector.py`),
+  reached via aiobotocore's `ClientSession`: the sync S3 backend releases that
+  session through s3fs's `weakref.finalize` at GC — BK-306's *by-design* close (an
+  explicit `close_session()` was removed there because it double-closed against the
+  finalizer, the BK-304 unraisable class). So the session **is** closed; the
+  coroutine just runs at a GC point. Python 3.14's stricter coroutine-finalization
+  reporting routes that GC-time close through pytest's `unraisableexception` plugin
+  as a `PytestUnraisableExceptionWarning`, which `filterwarnings = error` escalates
+  to a hard failure; 3.10–3.13 emit it as a benign GC-time warning. Under
+  `pytest -n auto` the attribution is non-deterministic — it fails whichever async
+  test GC happens to run in (observed on `…graph/aio/test_http.py::…redacts_token`
+  and `…conformance/test_sync_adapter_conformance.py::…[live-s3]` on different runs)
+  — so it reddened the `test (3.14)` entry on ~half of merges (BK-303 and BK-300)
+  while a re-run cleared it. BK-303 (which added ~26 async tests) did not introduce
+  it; it only enlarged the async-test population enough to surface a latent flake.
+  Not reproducible on the local 3.13 interpreter. **Root cause investigated:** this
+  is a GC-timing artifact of an *intentional* finalizer close, not a forgotten
+  `await`; a deterministic product fix would have to rework BK-306's just-shipped
+  S3 session release (disarm the finalizer + close synchronously) at the double-close
+  risk that motivated BK-306's current design, and is verifiable only on 3.14 CI —
+  out of proportion to a benign GC-time warning. **Fix:** a `filterwarnings` ignore
+  scoped to the `_wait_for_close` qualname (`pyproject.toml`), so this one coroutine
+  no longer fails CI while genuine unclosed-resource leaks — any other coroutine, on
+  every Python version — still fail. Pinned by `tests/test_py314_unraisable_filter.py`,
+  which deterministically asserts (on every version) that the configured ignore
+  suppresses the verbatim py3.14 message and does **not** mask other unraisables.
 
 - [x] **BK-300 — Azure `WriteResult.digest` is dropped on HNS `write_atomic`**
   spec: — · effort: S · audience: user.api_docs, user.site

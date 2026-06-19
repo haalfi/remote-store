@@ -425,17 +425,21 @@ filterwarnings = [
   # Upstream issue: OTel uses the deprecated dict-iteration path; will resolve
   # when OTel updates _importlib_metadata to use .select().
   "ignore:SelectableGroups dict interface is deprecated:DeprecationWarning",
-  # Python 3.14 escalates an unawaited transport-close coroutine
-  # (`_wait_for_close`, an asyncio stdlib internal) that the async SDK clients
-  # (aiobotocore / aiohttp / azure-aio) leave for GC to finalize at event-loop
-  # teardown. 3.10-3.13 emit it as a benign GC-time warning; 3.14's stricter
-  # coroutine-finalization reporting routes it through pytest's
-  # unraisableexception plugin as a PytestUnraisableExceptionWarning, which
-  # `filterwarnings = error` then turns into a hard failure. Under xdist the
-  # attribution is non-deterministic (it fails whatever async test GC happens
-  # to run in), so it surfaces as flaky reds on the `test (3.14)` matrix entry
-  # only. Scoped to the `_wait_for_close` qualname so genuine unclosed-resource
-  # leaks (any other coroutine/resource, on every version) still fail. BUG-224.
+  # `_wait_for_close` is aiohttp's connector-close coroutine
+  # (`aiohttp/connector.py`), reached via aiobotocore's `ClientSession`: the sync
+  # S3 backend releases that session through s3fs's `weakref.finalize` at GC
+  # (BK-306's by-design close — an explicit close was removed there because it
+  # double-closed against the finalizer, the BK-304 unraisable class). So the
+  # session *is* closed; the coroutine just runs at a GC point. Python 3.14's
+  # stricter coroutine-finalization reporting routes that GC-time close through
+  # pytest's unraisableexception plugin as a PytestUnraisableExceptionWarning,
+  # which `filterwarnings = error` turns into a hard failure; 3.10-3.13 emit it
+  # as a benign GC-time warning. Under `pytest -n auto` the attribution is
+  # non-deterministic (it fails whichever async test GC runs in), so it flakes
+  # the `test (3.14)` matrix entry only. Scoped to the `_wait_for_close` qualname
+  # so genuine unclosed-resource leaks (any other coroutine, every version) still
+  # fail; the scoping + the verbatim message are pinned by
+  # tests/test_py314_unraisable_filter.py. BUG-224.
   "ignore:Exception ignored while finalizing coroutine <coroutine object _wait_for_close:pytest.PytestUnraisableExceptionWarning",
 ]
 asyncio_mode = "auto"
