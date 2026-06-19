@@ -510,21 +510,23 @@ class TestListingsCacheStalenessMoto:
     and the s3-pyarrow data path cannot run on moto anyway (pyarrow >= 24 needs
     MinIO; see the BUG-214 class).
 
-    ``skip_instance_cache=True`` is mandatory on every instance here:
-    ``fsspec`` caches ``S3FileSystem`` instances by their kwargs, so two
-    identically-configured backends in one process would otherwise share a
-    single filesystem object (and its ``DirCache``) — the writer's own write
-    would invalidate the cache the reader reads, hiding the staleness this test
-    exists to pin. Forcing distinct instances reproduces the real two-process
-    scenario ID-201 measured, leaving ``use_listings_cache`` as the only
-    variable between the two cases.
+    Distinct ``fsspec`` instances are required here: ``fsspec`` caches
+    ``S3FileSystem`` instances by their kwargs, so two identically-configured
+    backends in one process would otherwise share a single filesystem object
+    (and its ``DirCache``) — the writer's own write would invalidate the cache
+    the reader reads, hiding the staleness this test exists to pin. As of BK-306
+    the backend sets ``skip_instance_cache=True`` by **default**, so distinct
+    instances are the production default; this test passes the flag explicitly so
+    it remains correct independently of that default. Forcing distinct instances
+    reproduces the real two-process scenario ID-201 measured, leaving
+    ``use_listings_cache`` as the only variable between the two cases.
     """
 
     def _make_backend(self, endpoint: str, bucket: str, **client_options: Any):  # noqa: ANN202
         from remote_store.backends._s3 import S3Backend
 
-        # skip_instance_cache: see class docstring — distinct fsspec instances
-        # are required to reproduce cross-process staleness in one test process.
+        # skip_instance_cache is the production default (BK-306); set explicitly
+        # here so this test pins distinct instances regardless of that default.
         return S3Backend(
             bucket=bucket,
             endpoint_url=endpoint,
