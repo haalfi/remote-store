@@ -1,0 +1,80 @@
+id: BK-300
+title: "Azure WriteResult.digest is dropped on HNS write_atomic"
+trigger: >
+  audit-019 (M4), live-confirmed on a real ADLS Gen2 account: Azure HNS
+  write_atomic returns WriteResult.digest=None while the sibling write on the
+  same account populates it. The guide claimed digest is populated "when Azure
+  echoes back Content-MD5" without disclosing that HNS write_atomic never
+  echoes it — the committing rename's post-read does not re-expose Content-MD5.
+  Classified doc-gap (behavior is by-design); resolution is docs-first.
+source_items:
+  - BK-300
+  - ID-219
+audience:
+  - user.api_docs
+  - user.site
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/backlogid.json
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/audits/audit-019-azure-backend-review.md
+        section: "M4; Proposed items G4"
+        read_type: gate
+        extract: "M4 finding + disposition: document the per-method digest difference, or populate from post-rename properties when available; docs-first"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-300 (item)"
+        read_type: gate
+        extract: "Scope + either/or framing; audience user.api_docs/user.site signals docs-first; spec is —"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "write (upload_blob resp); write_atomic post-rename props_dict"
+        read_type: reference
+        extract: "write reads content_md5 from upload_blob resp; write_atomic post-rename props_dict captures only etag/last_modified and the code never reads props.content_settings.content_md5 — so digest is None by what the BACKEND reads, NOT a proven SDK withholding of Content-MD5 (the post-rename get_file_properties is not probed for it; live test only confirms the resulting None). The docs-first disposition rests on the former, weaker claim."
+        outcome: ok
+      - file: src/remote_store/backends/_azure_common.py
+        section: "_build_azure_write_result"
+        read_type: reference
+        extract: "digest comes from resp['content_md5']; the write_atomic props_dict never sets that key (only etag/last_modified), so digest is None. Note props_to_fileinfo DOES read content_settings.content_md5 on the read path — write_atomic simply does not mirror that, which is why 'code does not read it' (not 'SDK withholds it') is the precise cause."
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "write_atomic post-rename props_dict"
+        read_type: reference
+        extract: "async twin has the same etag/last_modified-only post-rename read; behavior identical to sync"
+        outcome: ok
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/guides/backends/azure.md
+        section: "Write Results"
+        read_type: reference
+        extract: "Disclose HNS write_atomic always returns digest=None and point to ext.write helpers for a guaranteed digest; the digest claim lives only here (FileInfo read mapping unaffected)"
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/backends/azure/test_live_hns.py
+        section: "test_write_atomic_hns_write_result_fully_native"
+        read_type: reference
+        extract: "Existing live test asserts source/size/etag; add unconditional digest is None to pin the documented contract"
+        outcome: ok
+      - file: tests/backends/azure/aio/test_live_hns.py
+        section: "test_write_atomic_hns_write_result_fully_native"
+        read_type: reference
+        extract: "Async sibling carries the equivalent test; mirror the digest assertion"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / docs + backlog touches"
+        read_type: verify
+        extract: "BACKLOG move to BACKLOG-DONE + backlogid regen, CHANGELOG stub, no other guide repeats the Azure digest claim, trace shipped same PR"
+        outcome: ok
