@@ -41,6 +41,7 @@ from tests.backends.fixtures._cassettes_azure import (
     AZURE_PROFILE,
     FAKE_ACCOUNT,
     FAKE_FILESYSTEM,
+    LIVE_HNS_ROOT_FS,
     _resolve_live_account,
     _resolve_live_hns_container,
 )
@@ -721,6 +722,21 @@ class TestAzureCassetteScrub:
         assert b"deadbeef" not in scrubbed
         assert b"live-hns/REPLAY/dirblob" in scrubbed
         assert b"live-hns-async/REPLAY/x" in scrubbed
+
+    def test_root_probe_filesystem_normalised_in_uri(self) -> None:
+        """BK-303 (``azure.uri.root-fs``): the dedicated empty root-probe
+        filesystem name rewrites to ``FAKE_FILESYSTEM`` so the root
+        ``get_folder_info("")`` cassette replays against ``container=FAKE_FILESYSTEM``."""
+        cfg = build_profile_vcr_config(AZURE_PROFILE, {"azure.account": "liveacct"})
+        scrub = _composed_request_filter(cfg)
+        out = scrub(
+            _request(
+                {},
+                uri=f"https://liveacct.dfs.core.windows.net/{LIVE_HNS_ROOT_FS}?directory=%2F&recursive=true&resource=filesystem",
+            )
+        )
+        assert LIVE_HNS_ROOT_FS not in out.uri  # azure.uri.root-fs ran
+        assert FAKE_FILESYSTEM in out.uri
 
     def test_hns_container_resolver_returns_none_when_unset(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """``None`` (the EnvRedact disable signal) when no live HNS container is

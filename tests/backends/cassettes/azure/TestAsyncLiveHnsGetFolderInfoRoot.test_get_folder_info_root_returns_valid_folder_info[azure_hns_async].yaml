@@ -3,7 +3,7 @@ interactions:
     body: null
     headers:
       Accept:
-      - application/json
+      - application/xml
       Accept-Encoding:
       - gzip, deflate
       Connection:
@@ -15,7 +15,7 @@ interactions:
       x-ms-version:
       - '2026-04-06'
     method: PUT
-    uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay/live-hns-async/REPLAY/dirblob?resource=directory
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
   response:
     body:
       string: ''
@@ -23,11 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DECE2514540274"'
+      - '"0x8DECE2AE5FA11F3"'
       Last-Modified:
-      - Fri, 19 Jun 2026 17:06:18 GMT
-      x-ms-request-server-encrypted:
-      - 'true'
+      - Fri, 19 Jun 2026 17:47:57 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -50,15 +48,7 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=%2F&recursive=true&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"0","creationTime":"134224690694845900","etag":"0x8DEAABC436AF828","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Tue,
-        05 May 2026 15:37:49 GMT","name":"bug191","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"0","creationTime":"134225173202301992","etag":"0x8DEAB2C9B1A76C8","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Wed,
-        06 May 2026 05:02:00 GMT","name":"diag","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"0","creationTime":"134224760084880136","etag":"0x8DEAACC6B62DD4C","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Tue,
-        05 May 2026 17:33:28 GMT","name":"live-hns","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"0","creationTime":"134225170589247748","etag":"0x8DEAB2BFF5A6AFC","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Wed,
-        06 May 2026 04:57:38 GMT","name":"live-hns-async","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"0","creationTime":"134263623783224760","etag":"0x8DECE251452189C","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Fri,
-        19 Jun 2026 17:06:18 GMT","name":"live-hns-async/REPLAY","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"0","creationTime":"134263623783350900","etag":"0x8DECE2514540274","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Fri,
-        19 Jun 2026 17:06:18 GMT","name":"live-hns-async/REPLAY/dirblob","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"0","creationTime":"134225501017856544","etag":"0x8DEAB78EE6EDCA8","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Wed,
-        06 May 2026 14:08:21 GMT","name":"probe-dir-ops","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"0","creationTime":"134224579861219832","etag":"0x8DEAAA275380BE8","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Tue,
-        05 May 2026 12:33:06 GMT","name":"smoke","owner":"$superuser","permissions":"rwxr-x---"}]}
+      string: '{"paths":[]}
 
         '
     headers:
@@ -66,36 +56,6 @@ interactions:
       - application/json;charset=utf-8
       Transfer-Encoding:
       - chunked
-      x-ms-version:
-      - '2026-04-06'
-    status:
-      code: 200
-      message: OK
-- request:
-    body: null
-    headers:
-      Accept:
-      - application/json
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      Content-Length:
-      - '0'
-      User-Agent:
-      - azsdk-python-replay
-      x-ms-version:
-      - '2026-04-06'
-    method: DELETE
-    uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay/live-hns-async/REPLAY?recursive=true
-  response:
-    body:
-      string: ''
-    headers:
-      Content-Length:
-      - '0'
-      x-ms-delete-type-permanent:
-      - 'true'
       x-ms-version:
       - '2026-04-06'
     status:

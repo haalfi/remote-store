@@ -312,17 +312,27 @@ class TestAzureLiveHnsIsFolderIsFile:
 
 
 # ---------------------------------------------------------------------------
-# BE-015 — exists() on a real HNS directory (DataLake probe fallback)
+# BE-015 — exists() on a real HNS directory
 # ---------------------------------------------------------------------------
 
 
 class TestAzureLiveHnsExists:
-    """``exists`` on a real HNS directory — DataLake probe-fallback chain.
+    """``exists`` on a real HNS directory.
 
-    Conformance covers ``exists`` on regular present / missing files. The HNS
-    branch (selected by the declared ``hns=True``) additionally falls back from
-    the blob client to a DataLake directory probe; that fallback only fires on a
-    real ADLS Gen2 directory blob created via ``DataLakeServiceClient``.
+    Conformance covers ``exists`` on regular present / missing files. On HNS, a
+    directory created via ``DataLakeServiceClient`` is visible on the *blob*
+    endpoint too: ``get_blob_properties`` returns ``200`` carrying
+    ``hdi_isfolder=true`` (verify against the committed cassette), so ``exists``
+    resolves ``True`` at the blob check (``_azure.py`` ``exists``) without
+    reaching the ``ResourceNotFoundError`` → DataLake directory-probe fallback —
+    that fallback is defensive ``# pragma: no cover`` for directories with no
+    blob marker, which ``create_directory`` does not produce.
+
+    The point this guards is that a real HNS directory reads as an existing
+    *directory*, not a file: ``exists`` True, ``is_folder`` True (the
+    ``hdi_isfolder`` marker), ``is_file`` False. A plain blob would also satisfy
+    ``exists``, so the ``is_folder`` / ``is_file`` assertions are what pin the
+    HNS-directory case.
 
     Spec: BE-015 (exists).
     """
@@ -334,6 +344,10 @@ class TestAzureLiveHnsExists:
     ) -> None:
         backend, dirpath = live_hns_backend
         assert backend.exists(dirpath) is True
+        # Pin the HNS-directory resolution (a flat blob would also yield exists
+        # True): the path reads as a directory, not a file.
+        assert backend.is_folder(dirpath) is True
+        assert backend.is_file(dirpath) is False
 
 
 # ---------------------------------------------------------------------------
@@ -415,39 +429,41 @@ class TestAzureLiveHnsGetFolderInfoRoot:
     ``_fs.get_paths(path="/", recursive=True)`` (the deliberate ``or "/"``
     fallback) to enumerate the root.
 
-    This test confirms the call succeeds (no SDK exception) and returns a valid
-    ``FolderInfo`` with non-negative aggregates.  Content is deposited under a
-    uuid-prefixed path so the count is unpredictable (other tests share the
-    container); the assertions focus on the API contract, not exact counts.
+    The test runs against a dedicated *empty* filesystem (``LIVE_HNS_ROOT_FS``,
+    via ``live_hns_root_backend``) rather than the shared container: enumerating
+    the shared root recursively would bake its mutable top-level inventory into
+    the cassette — non-reproducible on re-record and an unbounded residue
+    surface. An empty root enumerates to ``{"paths":[]}``, so the aggregates are
+    an exact, asserted contract instead of unverified payload.
 
     Spec: BE-017 (get_folder_info postcondition); AZ-024 (HNS root-path carve-out).
-    Cassette: new Stage 3 cassette required — record with
-    ``RS_TEST_LIVE_HNS=1 hatch run record-azure``.
     """
 
     @pytest.mark.spec("BE-017")
     def test_get_folder_info_root_returns_valid_folder_info(
         self,
-        live_hns_backend: tuple[AzureBackend, str],
+        live_hns_root_backend: AzureBackend,
     ) -> None:
-        """Root get_folder_info must succeed and return a FolderInfo for path=''.
+        """Root get_folder_info must succeed and return an empty FolderInfo for path=''.
 
         Contract under test: ``get_folder_info("")`` against an HNS account
-        completes without an SDK exception.  The root-path code path skips
-        the per-path ``get_directory_client`` probe (real ADLS Gen2 rejects
-        the empty path) and relies on the deliberate ``or "/"`` fallback in
-        ``_fs.get_paths`` to enumerate the root.  The live counts vary with
-        sibling-test residue and are not contract.
+        completes without an SDK exception, takes the root-path carve-out
+        (skips the ``get_directory_client("")`` probe, uses the ``or "/"``
+        ``get_paths`` fallback), and returns a ``FolderInfo`` rooted at
+        ``RemotePath.ROOT``. Against the dedicated empty filesystem the
+        aggregates are exact and reproducible: zero files, zero bytes.
         """
         from remote_store._models import FolderInfo  # noqa: PLC0415 -- intentional late import
 
-        backend, _dirpath = live_hns_backend
-        info = backend.get_folder_info("")
+        info = live_hns_root_backend.get_folder_info("")
         assert isinstance(info, FolderInfo)
         # FolderInfo.path is a RemotePath; the root normalises to RemotePath.ROOT
         # (str form "."), and RemotePath.__eq__ returns NotImplemented for str
         # operands — comparing against "" would always be False.
         assert info.path == RemotePath.ROOT
+        # Empty dedicated filesystem → exact, reproducible aggregates.
+        assert info.file_count == 0
+        assert info.total_size == 0
 
 
 class TestAzureLiveHnsWriteAtomicStreaming:

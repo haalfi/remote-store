@@ -69,6 +69,19 @@ that match this fixed path.
 REPLAY_HNS_DIRPATH_ASYNC = "live-hns-async/REPLAY/dirblob"
 """Fixed HNS directory path the async replay fixture targets (BK-303)."""
 
+LIVE_HNS_ROOT_FS = "rs-hns-root-probe"
+"""Dedicated, persistent, empty HNS filesystem for the root ``get_folder_info("")`` tests (BK-303).
+
+``get_folder_info("")`` enumerates the *whole* container root recursively, so
+recording it against the shared ``RS_TEST_LIVE_HNS_CONTAINER`` baked the
+container's mutable top-level inventory into the cassette — non-reproducible on
+re-record and an unbounded residue surface. The root tests instead target this
+dedicated filesystem, which the azure-subtree conftests create empty (and never
+write to), so its root listing is a deterministic ``{"paths":[]}``. The name is
+not a secret, but it is scrubbed to ``FAKE_FILESYSTEM`` (``azure.uri.root-fs``)
+so the replay fixtures — which target ``FAKE_FILESYSTEM`` — match the cassette.
+"""
+
 # endregion
 
 # region: account-name resolution (record path)
@@ -200,6 +213,18 @@ AZURE_PROFILE = CassetteProfile(
             replacement=r"\1/REPLAY",
             expectation="required-to-fire",
         ),
+        # BK-303: the root get_folder_info tests target a dedicated empty
+        # filesystem (LIVE_HNS_ROOT_FS) so the recorded root listing is
+        # residue-free; rewrite its name to FAKE_FILESYSTEM so replay (which
+        # targets FAKE_FILESYSTEM) matches. required-to-fire: the root tests
+        # always record on a full run, so a zero-fire means the rule drifted
+        # from the probe filesystem name.
+        UriRewrite(
+            name="azure.uri.root-fs",
+            pattern=re.compile(re.escape(LIVE_HNS_ROOT_FS)),
+            replacement=FAKE_FILESYSTEM,
+            expectation="required-to-fire",
+        ),
     ),
     response_body_redactions=(
         # Opportunistic: the recorded corpus shows response bodies never carry
@@ -216,6 +241,14 @@ AZURE_PROFILE = CassetteProfile(
             name="azure.body.hns-prefix",
             pattern=re.compile(rb"(live-hns(?:-async)?)/[0-9a-f]{8}"),
             replacement=rb"\1/REPLAY",
+        ),
+        # BK-303: bytes twin of azure.uri.root-fs. Opportunistic: the empty
+        # probe filesystem's root listing is {"paths":[]} (no name), but an
+        # error response could echo the filesystem name in its body.
+        RedactPattern(
+            name="azure.body.root-fs",
+            pattern=re.compile(re.escape(LIVE_HNS_ROOT_FS.encode())),
+            replacement=FAKE_FILESYSTEM.encode(),
         ),
         # Error-response XML fragments carrying per-run identifiers.
         RedactPattern(
@@ -242,11 +275,11 @@ What it strips: the SharedKey ``Authorization`` / ``x-ms-date`` /
 correlation / ``Cookie`` request headers and SAS query parameters (native
 filters); the live account name, the per-call ``conformance-<uuid>``
 filesystem name, and the live HNS suite's ``RS_TEST_LIVE_HNS_CONTAINER``
-filesystem name from URIs, header values (``x-ms-rename-source`` /
-``x-ms-copy-source``), and bodies; the random ``write_atomic`` temp-file
-UUID and the live HNS per-session ``live-hns/<uuid>`` prefix; per-request
-response headers; and ``RequestId:`` / ``Time:`` fragments in
-error-response XML.
+filesystem name (and the dedicated ``LIVE_HNS_ROOT_FS`` probe filesystem)
+from URIs, header values (``x-ms-rename-source`` / ``x-ms-copy-source``),
+and bodies; the random ``write_atomic`` temp-file UUID and the live HNS
+per-session ``live-hns/<uuid>`` prefix; per-request response headers; and
+``RequestId:`` / ``Time:`` fragments in error-response XML.
 """
 
 __all__ = [
@@ -255,6 +288,7 @@ __all__ = [
     "FAKE_ACCOUNT",
     "FAKE_CONN_STR",
     "FAKE_FILESYSTEM",
+    "LIVE_HNS_ROOT_FS",
     "REPLAY_HNS_DIRPATH_ASYNC",
     "REPLAY_HNS_DIRPATH_SYNC",
     "parse_account_name",

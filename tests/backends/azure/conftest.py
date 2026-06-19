@@ -47,6 +47,7 @@ from tests.backends.fixtures._cassette_pytest import (
 from tests.backends.fixtures._cassettes_azure import (
     FAKE_CONN_STR,
     FAKE_FILESYSTEM,
+    LIVE_HNS_ROOT_FS,
     REPLAY_HNS_DIRPATH_SYNC,
 )
 from tests.backends.fixtures._live_env import (
@@ -164,3 +165,50 @@ def live_hns_backend(_hns_record: BackendFixture, _hns_dir: tuple[str, str, str]
 def live_hns_env(_hns_dir: tuple[str, str, str]) -> tuple[str, str]:
     """Yield ``(connection_string, filesystem)`` for the HNS account under test."""
     return _hns_dir[0], _hns_dir[1]
+
+
+@pytest.fixture
+def live_hns_root_backend(_hns_record: BackendFixture) -> Iterator[Any]:
+    """Yield an ``AzureBackend`` whose container is a dedicated *empty* HNS filesystem.
+
+    ``get_folder_info("")`` enumerates the whole container root recursively, so
+    recording it against the shared ``RS_TEST_LIVE_HNS_CONTAINER`` baked that
+    container's mutable top-level inventory into the cassette (non-reproducible,
+    unbounded residue). The root test instead targets ``LIVE_HNS_ROOT_FS`` — a
+    dedicated, persistent, empty filesystem this fixture creates and never writes
+    to — so the recorded root listing is a deterministic ``{"paths":[]}``.
+
+    Replay reuses the standard ``FAKE_FILESYSTEM`` backend: the ``azure.uri.root-fs``
+    scrub maps the live probe name onto ``FAKE_FILESYSTEM``, so the replay request
+    matches the scrubbed cassette. This fixture does NOT depend on ``_hns_dir`` —
+    the root probe needs no per-session directory.
+    """
+    if _hns_record.kind == "replay":
+        backend = _hns_record.factory()
+        try:
+            yield backend
+        finally:
+            if _hns_record.cleanup is not None:
+                _hns_record.cleanup(backend)
+        return
+
+    from azure.core.exceptions import ResourceExistsError  # noqa: PLC0415
+    from azure.storage.filedatalake import DataLakeServiceClient  # noqa: PLC0415
+
+    from remote_store.backends._azure import AzureBackend  # noqa: PLC0415
+
+    conn = require_azure_live_connection_string()
+    service = DataLakeServiceClient.from_connection_string(conn)
+    try:
+        # Idempotent: the probe filesystem is persistent and only ever read, so
+        # an existing one is already empty. Never deleted (Azure filesystem
+        # deletion is eventually-consistent and would flake a re-create).
+        with contextlib.suppress(ResourceExistsError):
+            service.create_file_system(LIVE_HNS_ROOT_FS)
+        backend = AzureBackend(container=LIVE_HNS_ROOT_FS, hns=True, connection_string=conn)
+        try:
+            yield backend
+        finally:
+            backend.close()
+    finally:
+        service.close()

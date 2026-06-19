@@ -382,12 +382,19 @@ class TestAsyncLiveHnsWriteAtomicAsyncIterator:
 
 
 class TestAsyncLiveHnsExists:
-    """Async ``exists`` on a real HNS directory — DataLake probe-fallback chain.
+    """Async ``exists`` on a real HNS directory.
 
-    Conformance covers async ``exists`` on regular present / missing files.
-    The HNS branch additionally falls back from the blob client to a DataLake
-    directory probe; that fallback only fires on a real ADLS Gen2 directory
-    blob created via ``DataLakeServiceClient``.
+    Async companion to ``TestAzureLiveHnsExists``. Conformance covers async
+    ``exists`` on regular present / missing files. On HNS, a directory created
+    via ``DataLakeServiceClient`` is visible on the *blob* endpoint with
+    ``hdi_isfolder=true`` (verify against the committed cassette), so ``exists``
+    resolves ``True`` at the blob check without reaching the
+    ``ResourceNotFoundError`` → DataLake directory-probe fallback — that fallback
+    is defensive ``# pragma: no cover`` for directories with no blob marker.
+
+    The point guarded is that a real HNS directory reads as an existing
+    *directory*, not a file (a plain blob would also satisfy ``exists``): the
+    ``is_folder`` / ``is_file`` assertions are what pin the HNS-directory case.
 
     Spec: ASYNC-015 (exists).
     """
@@ -399,6 +406,10 @@ class TestAsyncLiveHnsExists:
     ) -> None:
         backend, dirpath = async_live_hns_backend
         assert await backend.exists(dirpath) is True
+        # Pin the HNS-directory resolution (a flat blob would also yield exists
+        # True): the path reads as a directory, not a file.
+        assert await backend.is_folder(dirpath) is True
+        assert await backend.is_file(dirpath) is False
 
 
 # ---------------------------------------------------------------------------
@@ -480,35 +491,38 @@ class TestAsyncLiveHnsGetFolderInfoRoot:
     ``_fs.get_paths(path="/", recursive=True)`` (the deliberate ``or "/"``
     fallback) to enumerate the root.
 
-    The assertions focus on the API contract (returns a valid ``FolderInfo``
-    with non-negative aggregates), not exact counts — the container is shared
-    across tests so the count is unpredictable.
+    The test runs against a dedicated *empty* filesystem (``LIVE_HNS_ROOT_FS``,
+    via ``async_live_hns_root_backend``) rather than the shared container:
+    enumerating the shared root recursively would bake its mutable inventory
+    into the cassette — non-reproducible on re-record and an unbounded residue
+    surface. An empty root enumerates to ``{"paths":[]}``, so the aggregates are
+    an exact, asserted contract.
 
     Spec: ASYNC-017 (async get_folder_info postcondition); AZ-024 (HNS root-path carve-out).
-    Cassette: new Stage 3 cassette required — record with
-    ``RS_TEST_LIVE_HNS=1 hatch run record-azure``.
     """
 
     @pytest.mark.spec("ASYNC-017")
     async def test_get_folder_info_root_returns_valid_folder_info(
         self,
-        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+        async_live_hns_root_backend: AsyncAzureBackend,
     ) -> None:
-        """Root async get_folder_info must succeed and return a FolderInfo for path=''.
+        """Root async get_folder_info must succeed and return an empty FolderInfo for path=''.
 
         Contract under test: ``get_folder_info("")`` against an HNS account
-        completes without an SDK exception.  The root-path code path skips
-        the per-path ``get_directory_client`` probe (real ADLS Gen2 rejects
-        the empty path) and relies on the deliberate ``or "/"`` fallback in
-        ``_fs.get_paths`` to enumerate the root.  The live counts vary with
-        sibling-test residue and are not contract.
+        completes without an SDK exception, takes the root-path carve-out
+        (skips the ``get_directory_client("")`` probe, uses the ``or "/"``
+        ``get_paths`` fallback), and returns a ``FolderInfo`` rooted at
+        ``RemotePath.ROOT``. Against the dedicated empty filesystem the
+        aggregates are exact and reproducible: zero files, zero bytes.
         """
         from remote_store._models import FolderInfo  # noqa: PLC0415 -- intentional late import
 
-        backend, _dirpath = async_live_hns_backend
-        info = await backend.get_folder_info("")
+        info = await async_live_hns_root_backend.get_folder_info("")
         assert isinstance(info, FolderInfo)
         # FolderInfo.path is a RemotePath; the root normalises to RemotePath.ROOT
         # (str form "."), and RemotePath.__eq__ returns NotImplemented for str
         # operands — comparing against "" would always be False.
         assert info.path == RemotePath.ROOT
+        # Empty dedicated filesystem → exact, reproducible aggregates.
+        assert info.file_count == 0
+        assert info.total_size == 0

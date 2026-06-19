@@ -25,7 +25,7 @@ surprising_ripples:
   # construction site, which neither the plan nor the ripple-check anticipated.
   - tests/backends/fixtures/_loader.py
   - tests/backends/fixtures/test_live_env.py
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -108,4 +108,9 @@ phases:
         section: "--node targeted record + Step-4 scrub-verify"
         read_type: verify
         extract: "recorded 26 HNS cassettes via --node tests/backends/azure/ (no tree-wipe, conformance untouched); scrub-verify clean across 359; both required-to-fire HNS rules (azure.hns-container, azure.uri.hns-prefix) confirmed fired across all 26 by hand (node mode skips the named-rule audit); 26 replay params pass creds-free at Stage 1"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "exists() blob-then-DataLake probe (BE-015)"
+        read_type: verify
+        extract: "review round 2: the exists cassette proved the blob HEAD 200s with hdi_isfolder for a create_directory dir, so exists() short-circuits at the blob check and the DataLake fallback (# pragma: no cover) never fires — the test did not exercise its documented path. Strengthened to assert is_folder True / is_file False (pins directory-vs-blob) and corrected the false docstrings. Root test moved to a dedicated empty LIVE_HNS_ROOT_FS (azure.uri.root-fs scrub) so its cassette is residue-free and asserts exact zero aggregates. Re-recorded the 4 affected cassettes only."
         outcome: ok
