@@ -129,6 +129,16 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
                     reason="Known real-ADLS-Gen2 conformance gap (see _AZURE_HNS_KNOWN_FAILURE_FN_NAMES)",
                 )
             )
+        # BK-305: large-payload tests are 8 MiB-per-call uploads. On a live cloud
+        # fixture they cost real money and, when recording, produce ~100x-norm
+        # cassettes (~6-12 MB each). Skip them on any live-marked param so neither
+        # record-azure/record-graph nor an ad-hoc ``--stage=3 -m live`` run hits the
+        # account; they keep their staged/multipart coverage for free at Stage 2
+        # (Azurite carries no ``live`` mark, so it is unaffected).
+        if item.get_closest_marker("large_payload") and item.get_closest_marker("live"):
+            item.add_marker(
+                pytest.mark.skip(reason="large_payload excluded from live cloud (BK-305); runs at Stage 2 (Azurite)")
+            )
 
     apply_missing_cassette_skips(config, items)
 

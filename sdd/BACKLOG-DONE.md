@@ -8,6 +8,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-305 — Keep large-payload conformance tests out of the live Azure recording**
+  spec: — · effort: S · audience: infra.test, contributor.tooling
+  Discovered closing BK-304. Four conformance tests
+  (`test_large_streamed_write_result_matches_file_info` write / write_atomic ×
+  sync / async; `test_concurrent_large_streamed_uploads` sync / async) each upload
+  an 8 MiB payload, so a full `record-azure` recorded them as 6–12 MB cassettes
+  (~100× the ~110 KB corpus norm) against a **pay-per-use** account, and the same
+  hazard applied to `record-graph` (`graph_live` is also `large_write_distinct`)
+  and any ad-hoc `--stage=3 -m live` run. **Fix:** a `large_payload` marker
+  (registered in `pyproject.toml`) applied to the four tests, plus a skip in the
+  conformance `pytest_collection_modifyitems` for any item carrying **both**
+  `large_payload` and `live` marks. The `live` mark rides on every live-cloud
+  fixture param (Azure, S3, Graph) and is absent on Azurite/replay, so the
+  exclusion is backend-agnostic and precise: live recording and live runs skip
+  these tests (no account hit, no giant cassettes), while Stage 2 (Azurite) keeps
+  the staged/multipart coverage they exist to give. `test_large_payload_guard.py`
+  ties the mark to the `_LARGE_WRITE_SIZE` / `_LARGE_SIZE` constants so a new
+  large test cannot silently escape the exclusion. The recorder's `-k`/`-m`
+  filters were left untouched — the collection hook is the single source of truth.
+
 - [x] **BUG-224 — Flaky `test (3.14)` from a GC-time `_wait_for_close` coroutine**
   spec: — · effort: S · audience: infra.ci, infra.test
   `_wait_for_close` is **aiohttp's connector-close coroutine** (`aiohttp/connector.py`),

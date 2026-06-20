@@ -85,25 +85,6 @@ and the highest ID already in this file, then take the next integer. Run
   see BACKLOG-DONE.md). Findings inform the next release scope; no code changes
   are produced by this item itself.
 
-- [ ] **BK-305 — Keep large-payload conformance tests out of the live Azure recording**
-  spec: — · effort: S · audience: infra.test, contributor.tooling
-  Discovered closing BK-304. Six large-streamed conformance cassettes —
-  `test_large_streamed_write_result_matches_file_info` (write / write_atomic ×
-  sync / async) and `test_concurrent_large_streamed_uploads` (sync / async) — each
-  upload an 8 MiB payload, so a full `record-azure` records them as **6–12 MB**
-  cassettes (~35 MB total, ~100× the ~110 KB corpus norm). The live ADLS Gen2
-  account is **pay-per-use**, so recording these (32 MiB+ of data-plane transfer
-  per concurrent-upload test) is out of scope on cost grounds alone, and the
-  cassettes are too large for the committed replay tier regardless. They were left
-  uncommitted in BK-304 — `azure_replay` skips them gracefully via TEST-007's
-  missing-cassette skip — but nothing stops the next `record-azure` from running
-  them live and regenerating the giants. Add a durable exclusion: a marker (e.g.
-  `large_payload`) the recording `-k` filter / `pytest_collection_modifyitems`
-  hook drops, or gate these tests out of the live (`--stage=3 -m live`) fixture
-  params, so neither the recording nor a live conformance run hits the account
-  with large / high-churn payloads. Keep them at Stage 2 (Azurite, free) for the
-  staged/multipart-path coverage they exist to give.
-
 ---
 
 ## Lint / CI Completeness

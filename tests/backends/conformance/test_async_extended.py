@@ -1082,6 +1082,7 @@ class TestAsyncWriteResultConformance:
         if info.modified_at is not None:
             assert result.last_modified == info.modified_at
 
+    @pytest.mark.large_payload
     @pytest.mark.spec("WR-001a")
     @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
     async def test_large_streamed_write_result_matches_file_info(

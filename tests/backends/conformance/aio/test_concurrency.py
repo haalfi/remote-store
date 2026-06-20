@@ -56,6 +56,8 @@ if TYPE_CHECKING:
 # One loop, modest coroutine fan-out (research §4.3).
 _N_ITEMS = 16
 # Parallel large-upload probe: few but large (4 x 8 MiB), matching the sync lane.
+# BK-305: any test using this constant must carry ``@pytest.mark.large_payload``
+# (enforced by test_large_payload_guard.py) so it is excluded from live cloud.
 _LARGE_N = 4
 _LARGE_SIZE = 8 * 1024 * 1024
 
@@ -126,6 +128,7 @@ class TestAsyncConcurrentLargeUploads:
     covered nowhere (WR-001a writes a large payload, but never concurrently).
     """
 
+    @pytest.mark.large_payload
     @pytest.mark.spec("ASYNC-055")
     async def test_concurrent_large_streamed_uploads(self, async_backend: AsyncBackend) -> None:
         _require(async_backend, Capability.ATOMIC_WRITE)

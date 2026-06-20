@@ -89,6 +89,37 @@ class TestRegistryShape:
         with pytest.raises(ValueError, match="duplicate fixture name"):
             register(clone)
 
+    def test_real_live_fixtures_carry_live_mark(self) -> None:
+        """Every ``real-live`` fixture carries ``pytest.mark.live``.
+
+        The exclusion gates key on this mark: the default ``-m 'not live'``
+        deselection (pyproject addopts) and the BK-305 ``large_payload``
+        live-cloud skip. A real-live fixture without it would silently run
+        against a pay-per-use account in both gates, so the invariant — held
+        by hand in each ``*_live.py`` factory — is pinned here and enforced at
+        ``register`` time.
+        """
+        live = [f for f in all_fixtures() if f.kind == "real-live"]
+        assert live, "no real-live fixtures registered — invariant would be vacuous"
+        for f in live:
+            assert any(m.name == "live" for m in f.marks), f"{f.name!r} is real-live but lacks pytest.mark.live"
+
+    def test_register_rejects_real_live_without_live_mark(self) -> None:
+        """``register`` rejects a ``real-live`` fixture missing ``pytest.mark.live``."""
+        template = next(f for f in all_fixtures() if f.kind == "real-live")
+        clone = BackendFixture(
+            name="synthetic_real_live_no_mark",
+            backend=template.backend,
+            factory=template.factory,
+            stage=template.stage,
+            kind="real-live",
+            capabilities=template.capabilities,
+            is_async=template.is_async,
+            marks=(),
+        )
+        with pytest.raises(ValueError, match="must carry pytest.mark.live"):
+            register(clone)
+
     def test_capabilities_is_frozenset(self) -> None:
         for f in all_fixtures():
             assert isinstance(f.capabilities, frozenset), (
