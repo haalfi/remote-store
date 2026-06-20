@@ -8,6 +8,31 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-221 — `LocalBackend.glob()` resolve race (assessed non-reproducible; closed via consistency hardening)**
+  spec: GLOB-005 · effort: S · audience: library.maintainer, infra.test
+  Filed from BUG-220's PR #820 review as a latent twin: `glob()` used the same
+  pre-BUG-220 `item.resolve().relative_to(self._root)` containment check, so it
+  *looked* exposed to the Windows 8.3 short-name flicker. **Reproduction found it
+  is not.** A validated harness (BUG-220's pre-fix `_resolve`, which resolves a
+  path with a *non-existent* write tail, fired 19 spurious `InvalidPath` over
+  24×8 concurrent writes on a volume with 8.3 generation confirmed enabled)
+  produced **0** spurious skips for `glob()` across thousands of checks, including
+  a globber run continuously *during* heavy concurrent long-named directory
+  creation. Reason: `glob()` only ever calls `.resolve()` on a **listed file**,
+  which fully exists, so the anchor resolves to its committed long name — the 8.3
+  flicker needs a non-existent tail, which a listing never has. (Apparent "misses"
+  in a naive repro were `Path.glob` *traversal* not seeing files created after it
+  walked a directory — an inherent listing-during-mutation property, unrelated to
+  containment.) **Change:** extract the BUG-220 containment logic into a shared
+  `LocalBackend._within_root`; `_resolve` raises on escape, `glob` skips. Behavior
+  for listed items is provably identical (anchor == item), so there is **no
+  user-facing behavior delta and no CHANGELOG entry** — this removes the last
+  brittle whole-path-`resolve` call site and unifies the two checks. Guards added
+  in `tests/backends/local/test_concurrency.py`: a deterministic completeness test
+  (glob returns every file after concurrent nested writes) and a reparse-point
+  escape skip (POSIX symlink dir + Windows junction; the junction case is
+  load-bearing — raw traversal surfaces the out-of-root file, the check drops it).
+
 - [x] **BK-305 — Keep large-payload conformance tests out of the live Azure recording**
   spec: — · effort: S · audience: infra.test, contributor.tooling
   Discovered closing BK-304. Four conformance tests

@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=_schema.yml
+id: BUG-221
+title: "LocalBackend.glob() resolve race — assessed non-reproducible, closed via consistency hardening"
+trigger: >-
+  BUG-220's PR #820 review filed glob()'s line-359
+  item.resolve().relative_to(self._root) containment check as a latent twin of
+  the fixed write-path 8.3 short-name race: same pre-fix pattern, so it looked
+  exposed to the Windows flicker that silently skips an in-root file from a
+  listing. The task was to fix BUG-221.
+source_items:
+  - BUG-221
+  - BUG-220
+audience:
+  - library.maintainer
+  - infra.test
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-221"
+        read_type: gate
+        extract: >-
+          The latent glob() resolve-race hypothesis and the prescribed fix shape
+          (lexists anchor walk or per-item lexical containment that still rejects
+          symlinked-out entries; a naive resolve()-drop weakens escape detection)
+      - file: src/remote_store/backends/_local.py
+        section: "glob, _resolve"
+        read_type: gate
+        extract: >-
+          glob still uses the brittle pre-BUG-220 whole-path resolve check;
+          _resolve was hardened to an anchor walk. Two call sites of
+          .resolve().relative_to remain (glob line 359, _resolve anchor)
+      - file: tests/backends/local/test_concurrency.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          BUG-220 repro shape (8 threads, 24 iters, long >8-char components) and
+          the symlink/junction escape guards to mirror for glob
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "glob"
+        read_type: verify
+        extract: >-
+          Empirical: a validated harness (BUG-220 pre-fix _resolve fired 19
+          spurious InvalidPath over 24x8 concurrent writes; 8.3 generation
+          confirmed enabled on the temp volume) produced 0 spurious skips for
+          glob across thousands of checks, incl. globbing continuously during
+          heavy concurrent long-named dir creation. A listed file fully exists,
+          so its anchor resolves to the committed long name — the 8.3 flicker
+          needs a non-existent tail. BUG-221 as written is NOT reproducible.
+        outcome: misleading
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "_within_root, _resolve, glob"
+        read_type: gate
+        extract: >-
+          Extract the BUG-220 containment logic into a shared _within_root(target)
+          -> bool; _resolve raises on escape, glob skips. Behavior is provably
+          identical for listed items (anchor == item); removes the last brittle
+          whole-path resolve call site.
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/backends/local/test_concurrency.py
+        section: "TestLocalGlobConcurrentCreation, TestLocalGlobSymlinkEscape"
+        read_type: gate
+        extract: >-
+          Deterministic completeness guard (glob returns every file after
+          concurrent nested writes) plus reparse-point escape skip (POSIX symlink
+          dir + Windows junction). The junction case is load-bearing: raw
+          Path.glob traversal surfaces the out-of-root file, the containment check
+          drops it (verified in a sandbox probe).
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: >-
+          BACKLOG->BACKLOG-DONE move, trace ships same PR, gen_backlogid --check.
+          No spec/capability/error/signature change and no behavior delta, so no
+          CHANGELOG entry and no docstring/graph regen (audience is
+          library.maintainer + infra.test only).

@@ -355,10 +355,17 @@ class LocalBackend(Backend):
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         for item in self._root.glob(pattern):
             if item.is_file():
-                try:
-                    item.resolve().relative_to(self._root)
-                except ValueError:
-                    continue  # skip paths that escape root
+                # Skip entries that escape root (e.g. reached through a symlink
+                # directory).  ``_within_root`` shares the BUG-220 containment
+                # logic with ``_resolve``; a glob item always exists, so its
+                # anchor walk stops at the item itself and the resolve is stable
+                # (see BUG-221 in the trace: the 8.3 short-name flicker needs a
+                # non-existent tail, which a listed file never has).  The shared
+                # check also adds a lexical-containment leg the old glob path
+                # lacked; for glob-produced items (never ``..``-bearing) it is a
+                # no-op that can only tighten containment, never loosen it.
+                if not self._within_root(item):
+                    continue
                 rel = self.to_key(str(item))
                 yield self._stat_to_fileinfo(rel, item)
 
@@ -524,13 +531,29 @@ class LocalBackend(Backend):
     def _resolve(self, path: str) -> Path:
         """Resolve a relative path to an absolute path within root.
 
-        Safety is enforced on two axes without canonicalising the (possibly
-        in-flight) leaf:
+        Containment is enforced by ``_within_root`` without canonicalising
+        the (possibly in-flight) leaf.
 
-        * **Lexical containment.** ``os.path.normpath`` collapses ``.``/``..``
-          without touching the filesystem, so a lexical escape
-          (``../../etc/passwd``) is rejected even when nothing on the path
-          exists yet.
+        Raises:
+            InvalidPath: If the resolved path escapes the root.
+        """
+        target = Path(os.path.normpath(self._root / path))
+        if not self._within_root(target):
+            raise InvalidPath(f"Path escapes root directory: {path}", path=path, backend=self.name)
+        return target
+
+    def _within_root(self, target: Path) -> bool:
+        """Return whether ``target`` is contained in root, safely under races.
+
+        Shared by ``_resolve`` (raises on escape) and ``glob`` (skips
+        escaping entries). Safety is enforced on two axes without canonicalising
+        the (possibly in-flight) leaf:
+
+        * **Lexical containment.** The caller passes a path already collapsed
+          with ``os.path.normpath`` (``_resolve``) or produced by
+          ``self._root.glob`` (``glob``); ``target.relative_to(self._root)``
+          then rejects a lexical escape (``../../etc/passwd``) even when nothing
+          on the path exists yet.
         * **Symlink-escape rejection.** Only the deepest component that
           *lexically* exists is resolved -- a symlink, **even a broken one**, is
           followed to its real target (``os.path.lexists`` stops the walk at the
@@ -547,16 +570,16 @@ class LocalBackend(Backend):
         ``resolve()`` over a path with a non-existent tail must canonicalise the
         existing prefix and re-append the tail, and on Windows that boundary
         handling can transiently surface an 8.3 short-name form (``LONGDI~1``)
-        that is not ``relative_to`` the init-time root -- the spurious
+        that is not ``relative_to`` the init-time root -- a spurious
         ``InvalidPath``. ``self._root`` is resolved once at init and is stable.
+        ``glob`` only ever passes a *listed* file, which fully exists, so its
+        anchor walk stops at the item itself and the resolve is stable -- the
+        8.3 flicker cannot fire on the listing path.
+
         The depth-2 regression test deliberately makes ``anchor`` a
         sibling-created long-named directory and is 24/24 green: the evidence
         that resolving the deepest *existing* anchor does not itself flicker.
-
-        Raises:
-            InvalidPath: If the resolved path escapes the root.
         """
-        target = Path(os.path.normpath(self._root / path))
         # Walk up to the deepest lexically-existing ancestor for the symlink
         # check. ``lexists`` (not ``exists``) so a broken symlink stops the walk
         # at the link itself and is resolved, instead of being stepped over.
@@ -570,8 +593,8 @@ class LocalBackend(Backend):
             anchor.resolve().relative_to(self._root)
             target.relative_to(self._root)
         except ValueError:
-            raise InvalidPath(f"Path escapes root directory: {path}", path=path, backend=self.name) from None
-        return target
+            return False
+        return True
 
     def _stat_to_fileinfo(self, path: str, full: Path) -> FileInfo:
         st = full.stat()
