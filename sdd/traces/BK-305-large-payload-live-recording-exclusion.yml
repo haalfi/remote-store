@@ -16,6 +16,7 @@ audience:
   - contributor.tooling
 expected_ripples:
   - sdd/backlogid.json
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -57,6 +58,11 @@ phases:
         section: "test_hns_xfail_names_are_live (AST guard pattern)"
         read_type: reference
         extract: "Model a new guard (test_large_payload_guard.py) that ties the mark to the size constants so it cannot silently rot"
+        outcome: ok
+      - file: tests/backends/fixtures/registry.py
+        section: "register()"
+        read_type: reference
+        extract: "PR-review hardening: the exclusion (and the default -m 'not live' deselection) rest on every real-live fixture carrying pytest.mark.live, held by hand in each *_live.py factory. Enforce it at the register chokepoint (raise) so a future live fixture cannot silently escape both gates; pin with two tests in test_registry.py"
         outcome: ok
   - id: verify
     name: Verify

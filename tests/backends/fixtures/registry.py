@@ -220,10 +220,25 @@ def register(fixture: BackendFixture) -> None:
 
     Duplicate names raise ``ValueError`` to surface accidental
     double-registration of the same fixture.
+
+    A ``real-live`` fixture that does not carry ``pytest.mark.live`` also
+    raises. The mark is load-bearing: a real-live fixture talks to a
+    pay-per-use cloud account, so it must stay opt-in. The default
+    ``-m 'not live'`` deselection (``pyproject.toml`` addopts) and the BK-305
+    ``large_payload`` live-cloud exclusion (``conformance/conftest.py``) both
+    key on this mark — a real-live fixture missing it would silently run
+    against the account in both gates. Enforcing the invariant at the single
+    registration chokepoint fails fast at import, before any test runs.
     """
     for existing in _FIXTURES:
         if existing.name == fixture.name:
             raise ValueError(f"duplicate fixture name: {fixture.name!r}")
+    if fixture.kind == "real-live" and not any(mark.name == "live" for mark in fixture.marks):
+        raise ValueError(
+            f"real-live fixture {fixture.name!r} must carry pytest.mark.live "
+            "(it talks to a pay-per-use account; the default -m 'not live' "
+            "deselection and the BK-305 large_payload exclusion both depend on it)"
+        )
     _FIXTURES.append(fixture)
 
 
