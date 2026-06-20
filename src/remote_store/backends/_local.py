@@ -360,7 +360,10 @@ class LocalBackend(Backend):
                 # logic with ``_resolve``; a glob item always exists, so its
                 # anchor walk stops at the item itself and the resolve is stable
                 # (see BUG-221 in the trace: the 8.3 short-name flicker needs a
-                # non-existent tail, which a listed file never has).
+                # non-existent tail, which a listed file never has).  The shared
+                # check also adds a lexical-containment leg the old glob path
+                # lacked; for glob-produced items (never ``..``-bearing) it is a
+                # no-op that can only tighten containment, never loosen it.
                 if not self._within_root(item):
                     continue
                 rel = self.to_key(str(item))
