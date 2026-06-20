@@ -1,4 +1,4 @@
-"""LocalBackend concurrency — BUG-220 regression + symlink-escape guard.
+"""LocalBackend concurrency — BUG-220 regression + symlink-escape guards.
 
 BUG-220: ``LocalBackend._resolve`` did ``(self._root / path).resolve()`` then
 ``relative_to(self._root)``. On Windows, ``Path.resolve()`` over a path whose
@@ -12,6 +12,14 @@ ingredient that triggers 8.3 short-name generation; short components never get
 one, so the race cannot fire. The symlink-escape test pins the safety property
 the fix must preserve: ``_resolve`` still rejects a symlink inside root that
 points outside it.
+
+BUG-221: ``glob()`` shares ``_resolve``'s containment check via ``_within_root``.
+The race described for ``glob`` was found **not reproducible** — a *listed* file
+fully exists, so its anchor walk stops at the item itself and the resolve is
+stable (the 8.3 flicker needs a non-existent tail). The
+``TestLocalGlob*`` classes guard the two properties that matter: glob never
+silently drops an in-root file under concurrent creation, and it still skips an
+entry reached through a reparse point that escapes root.
 """
 
 from __future__ import annotations
@@ -190,6 +198,87 @@ class TestLocalResolveSymlinkEscape:
             # Unlink the junction reparse point *before* removing the tree, so
             # rmtree cannot traverse into (and delete) the outside target. A
             # bare ``os.rmdir`` removes the junction itself, not its contents.
+            if junction.exists():
+                os.rmdir(junction)
+            shutil.rmtree(root, ignore_errors=True)
+            shutil.rmtree(outside, ignore_errors=True)
+
+
+class TestLocalGlobConcurrentCreation:
+    """BUG-221: glob() must not silently drop in-root files under concurrent creation.
+
+    The 8.3 flicker that hit ``_resolve`` (a non-existent write tail) cannot fire
+    on the listing path — every item glob yields fully exists, so its resolve is
+    stable. This deterministic guard pins that property against any future
+    reintroduction of a brittle whole-path ``resolve()`` containment check.
+    """
+
+    @pytest.mark.spec("GLOB-005")
+    def test_glob_returns_every_file_after_concurrent_nested_writes(self) -> None:
+        root = tempfile.mkdtemp(prefix="bug221_")
+        try:
+            backend = LocalBackend(root=root)
+            expected: set[str] = set()
+            for n in range(_N_ITERS):
+                errors = _run_one_race(backend, n)
+                assert not errors, f"unexpected write failure(s): {errors[:3]}"
+                for i in range(_N_THREADS):
+                    expected.add(f"iteration{n}/{_NESTED_PREFIX}/leaf_{i}.bin")
+            found = {fi.path.as_posix() for fi in backend.glob("**/*.bin")}
+            assert found == expected, f"glob dropped {expected - found}"
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+
+class TestLocalGlobSymlinkEscape:
+    """The shared ``_within_root`` helper must keep glob()'s symlink-escape skip."""
+
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="symlink creation requires SeCreateSymbolicLinkPrivilege on Windows",
+    )
+    @pytest.mark.spec("GLOB-005")
+    def test_glob_skips_file_reached_through_escaping_symlink_dir(self) -> None:
+        with tempfile.TemporaryDirectory() as outside, tempfile.TemporaryDirectory() as root:
+            (Path(outside) / "secret.txt").write_bytes(b"secret")
+            symdir = Path(root) / "symdir"
+            try:
+                symdir.symlink_to(outside, target_is_directory=True)
+            except OSError:
+                pytest.skip("symlink creation not permitted on this platform")
+            backend = LocalBackend(root=root)
+            # The explicit pattern descends into the symlink dir; the escaping
+            # file it surfaces must be dropped by the containment check.
+            assert list(backend.glob("symdir/*.txt")) == []
+
+    @pytest.mark.skipif(
+        sys.platform != "win32",
+        reason="directory junctions are a Windows-only reparse point",
+    )
+    @pytest.mark.spec("GLOB-005")
+    def test_glob_skips_file_reached_through_escaping_junction(self) -> None:
+        """Windows proof of the glob escape skip via a directory **junction**.
+
+        Symlink creation needs privilege on Windows, so the POSIX guard skips
+        there; a junction needs none, is a reparse point ``resolve()`` follows,
+        and ``Path.glob`` descends it. Without the containment check glob would
+        yield the out-of-root file (verified: raw traversal does surface it).
+        """
+        outside = tempfile.mkdtemp(prefix="bug221_jout_")
+        root = tempfile.mkdtemp(prefix="bug221_jroot_")
+        (Path(outside) / "secret.txt").write_bytes(b"secret")
+        junction = Path(root) / "jdir"
+        try:
+            created = subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(junction), outside],
+                capture_output=True,
+                check=False,
+            )
+            if created.returncode != 0 or not junction.exists():
+                pytest.skip("directory junction creation not permitted on this runner")
+            backend = LocalBackend(root=root)
+            assert list(backend.glob("jdir/*.txt")) == []
+        finally:
             if junction.exists():
                 os.rmdir(junction)
             shutil.rmtree(root, ignore_errors=True)
