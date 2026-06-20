@@ -195,6 +195,8 @@ _BACKENDS: dict[str, dict] = {
         # silently selected zero tests (k-filter mismatch, stage gate, etc.).
         # Conformance records ~339 (BK-304) and the HNS suite adds ~26; 210 stays
         # a true lower bound while still catching a zero-selection.
+        # BK-305: the 6 large_payload conformance items are skipped on live
+        # fixtures and never recorded — keep that in mind before raising this floor.
         "min_cassettes": 210,
     },
     "graph": {
@@ -209,6 +211,8 @@ _BACKENDS: dict[str, dict] = {
         # (BK-262). A floor of 100 leaves headroom for skipped/capability-gated
         # tests while still failing loudly if pytest silently selects zero
         # (k-filter mismatch, stage gate, missing live opt-in).
+        # BK-305: the 3 large_payload async items are skipped on live fixtures
+        # and never recorded — keep that in mind before raising this floor.
         "min_cassettes": 100,
     },
 }
