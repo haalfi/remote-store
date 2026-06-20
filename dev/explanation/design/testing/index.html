@@ -10676,6 +10676,15 @@ test, then runs the same scrub-verify + Stage 1 replay over the whole corpus.
 Use it for a focused PR diff: every other cassette's volatile headers stay put.</p>
 <p>Per <a href="../specs/048-testing-architecture/#test-009-cassette-refresh-is-explicit">TEST-009</a>:
 CI does not auto-record; a refresh is a normal PR diff.</p>
+<p><strong>Large-payload tests are excluded from live recording (BK-305).</strong> Conformance
+tests that upload an 8 MiB payload (<code>test_large_streamed_write_result_matches_file_info</code>,
+<code>test_concurrent_large_streamed_uploads</code>) carry <code>@pytest.mark.large_payload</code>. The
+conformance collection hook skips any <code>large_payload</code> test that lands on a <code>live</code>
+fixture, so neither <code>record-azure</code> / <code>record-graph</code> nor an ad-hoc <code>--stage=3 -m live</code>
+run hits a pay-per-use account with them (a full recording would otherwise produce
+~100×-norm, 6–12 MB cassettes). They keep their staged/multipart coverage for free
+at Stage 2 (Azurite). <code>test_large_payload_guard.py</code> enforces the mark on any test
+that references the large-payload size constants.</p>
 <h3 id="cassette-first-bug-investigation">Cassette-First Bug Investigation<a class="headerlink" href="#cassette-first-bug-investigation" title="Permanent link">&para;</a></h3>
 <p>When investigating a bug in an HTTP-transport backend whose live
 behaviour is recorded as a cassette, default to <strong>replay-first</strong>: work
