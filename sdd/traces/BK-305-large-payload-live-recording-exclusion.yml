@@ -1,0 +1,78 @@
+id: BK-305
+title: "Keep large-payload conformance tests out of the live Azure recording"
+trigger: |
+  Closing BK-304 surfaced six large-streamed conformance items
+  (test_large_streamed_write_result_matches_file_info ×4,
+  test_concurrent_large_streamed_uploads ×2) that each upload an 8 MiB payload.
+  A full record-azure records them as 6-12 MB cassettes (~100x the ~110 KB
+  corpus norm) against a pay-per-use ADLS Gen2 account; nothing stopped the
+  next record-azure / record-graph or an ad-hoc --stage=3 -m live run from
+  re-recording the giants or hitting the account.
+source_items:
+  - BK-305
+  - BK-304
+audience:
+  - infra.test
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-305 (item)"
+        read_type: gate
+        extract: "Scope: marker the recorder/collection hook drops, OR gate out of live fixture params; keep Stage-2 (Azurite) coverage"
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "_BACKENDS (azure, graph)"
+        read_type: reference
+        extract: "Recording is --stage=3 --record -m live + -k azure_live/graph_live; graph also records large tests (graph_live large_write_distinct=True); min_cassettes floors 210/100"
+        outcome: ok
+      - file: tests/backends/fixtures/registry.py
+        section: "fixture_params / fixture_params_concurrent (marks=list(f.marks))"
+        read_type: reference
+        extract: "pytest.mark.live rides on each live fixture param; Azurite/replay params carry no live mark — so (large_payload AND live) is a precise selector"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options] markers"
+        read_type: reference
+        extract: "Register large_payload mirroring the concurrency precedent (pyproject-only; live/concurrency are not re-registered in conftest)"
+        outcome: ok
+      - file: tests/backends/conformance/test_atomic.py
+        section: "WR-001a, _LARGE_WRITE_SIZE"
+        read_type: reference
+        extract: "Apply @pytest.mark.large_payload to the sync write-result test; add author breadcrumb at the size constant"
+        outcome: ok
+      - file: tests/backends/conformance/conftest.py
+        section: "pytest_collection_modifyitems"
+        read_type: reference
+        extract: "Add skip for items with both large_payload and live marks; runs in all modes incl. --record, before apply_missing_cassette_skips"
+        outcome: ok
+      - file: tests/backends/conformance/test_xfail_guard.py
+        section: "test_hns_xfail_names_are_live (AST guard pattern)"
+        read_type: reference
+        extract: "Model a new guard (test_large_payload_guard.py) that ties the mark to the size constants so it cannot silently rot"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/conformance/test_large_payload_guard.py
+        section: "(full)"
+        read_type: verify
+        extract: "Guard passes; deleting one mark fails it"
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "min_cassettes (azure 210 / graph 100)"
+        read_type: verify
+        extract: "Excluding 6 azure (~333 left) / 3 graph (~115 left) stays above the floors"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / New test file; Backlog item touched"
+        read_type: verify
+        extract: "No CHANGELOG (audience non-user.*); trace + backlog move; gen-backlogid for backlogid.json"
+        outcome: ok

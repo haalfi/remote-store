@@ -458,6 +458,7 @@ markers = [
   "extended_conformance: extended conformance suite derived from Dafny postconditions",
   "live: requires a real cloud account; opt-in via gating env vars (excluded by default addopts)",
   "concurrency: posture-gated concurrency conformance lane (BK-289); selectable/excludable in isolation",
+  "large_payload: large/high-churn payload conformance tests; excluded from live cloud recording (BK-305)",
 ]
 
 [tool.pytest-gremlins]

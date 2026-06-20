@@ -211,6 +211,8 @@ _RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {}
 # Graph's 4 MiB ``createUploadSession`` boundary (GR-018), S3's 5 MiB multipart
 # part floor, and Azure's 1 MiB single-put default. Imported by the async
 # conformance suite so sync and async exercise the same threshold.
+# BK-305: any test using this constant must carry ``@pytest.mark.large_payload``
+# (enforced by test_large_payload_guard.py) so it is excluded from live cloud.
 _LARGE_WRITE_SIZE = 8 * 1024 * 1024
 
 # fixture name → (reason, strict).  Like _RICH_FIELDS_XFAIL but for the
@@ -379,6 +381,7 @@ class TestWriteResultConformance:
         if info.modified_at is not None:
             assert result.last_modified == info.modified_at
 
+    @pytest.mark.large_payload
     @pytest.mark.spec("WR-001a")
     @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
     def test_large_streamed_write_result_matches_file_info(

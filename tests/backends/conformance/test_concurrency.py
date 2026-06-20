@@ -87,6 +87,8 @@ _N_ITEMS = 16
 _SC_WORKERS = 4
 # Parallel large-upload probe: few but large, so total bytes stay modest on a
 # live account (4 × 8 MiB = 32 MiB) while still tripping the staged/multipart path.
+# BK-305: any test using this constant must carry ``@pytest.mark.large_payload``
+# (enforced by test_large_payload_guard.py) so it is excluded from live cloud.
 _LARGE_N = 4
 _LARGE_SIZE = 8 * 1024 * 1024
 
@@ -202,6 +204,7 @@ class TestConcurrentLargeUploads:
     so the test is simply not parametrised onto Memory/Local.
     """
 
+    @pytest.mark.large_payload
     @pytest.mark.spec("STORE-007")
     def test_concurrent_large_streamed_uploads(self, backend: Backend) -> None:
         _require(backend, Capability.ATOMIC_WRITE)

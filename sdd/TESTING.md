@@ -211,6 +211,16 @@ Use it for a focused PR diff: every other cassette's volatile headers stay put.
 Per [TEST-009](specs/048-testing-architecture.md#test-009-cassette-refresh-is-explicit):
 CI does not auto-record; a refresh is a normal PR diff.
 
+**Large-payload tests are excluded from live recording (BK-305).** Conformance
+tests that upload an 8 MiB payload (`test_large_streamed_write_result_matches_file_info`,
+`test_concurrent_large_streamed_uploads`) carry `@pytest.mark.large_payload`. The
+conformance collection hook skips any `large_payload` test that lands on a `live`
+fixture, so neither `record-azure` / `record-graph` nor an ad-hoc `--stage=3 -m live`
+run hits a pay-per-use account with them (a full recording would otherwise produce
+~100×-norm, 6–12 MB cassettes). They keep their staged/multipart coverage for free
+at Stage 2 (Azurite). `test_large_payload_guard.py` enforces the mark on any test
+that references the large-payload size constants.
+
 ### Cassette-First Bug Investigation
 
 When investigating a bug in an HTTP-transport backend whose live
