@@ -4,21 +4,26 @@
 > Local, S3 (optionally via PyArrow), SFTP, Azure (Blob & ADLS Gen2), SQL
 > databases, and Microsoft Graph (OneDrive/SharePoint).
 
+A `Store` is a logical folder; where files live is configuration. The core idea:
+a `Store` scopes all operations to a root path, so every path is relative, and
+`store.child(prefix)` narrows that root further. How the layers fit together:
+
+- The **Store** provides a portable API.
+- **Backends** implement storage-specific behavior.
+- **Libraries** (s3fs, paramiko, the Azure SDK, ...) do the actual I/O.
+- **Extensions** (`remote_store.ext`) add optional capabilities alongside the core.
+
 Write storage code once and switch backends via configuration. Backends declare
-capabilities, so code checks support explicitly with
-`store.supports(Capability.X)` instead of relying on backend-specific behaviour.
+capabilities, so code checks support explicitly with `store.supports(Capability.X)`
+instead of relying on backend-specific behavior. A native async API mirrors the
+sync interface under `remote_store.aio`.
 
 Common patterns:
 
 - Stream reads: `with store.read(path) as f:`
 - Fast tests: `MemoryBackend` for zero-I/O unit tests
-- Scoped views: `store.child(prefix)` narrows a store to a subtree
-- Optional features via `remote_store.ext`:
-  - `ext.integrity` (content hashing)
-  - `ext.partition` (partitioned key layouts)
-  - `ext.transfer` (store-to-store copy)
-
-A native async API mirrors the sync interface under `remote_store.aio`.
+- Extensions (`remote_store.ext`): `ext.integrity` (content hashing),
+  `ext.partition` (partitioned key layouts), `ext.transfer` (store-to-store copy)
 
 ```python
 from remote_store import Store
