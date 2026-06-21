@@ -200,12 +200,20 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v8.2.0
         with:
-          # BK-230: forward-defensive cache-suffix. The matrix excludes the
-          # primary (line 63: ALL_PYTHONS - PRIMARY), so today no shard
-          # collides with the test-primary and e2e save keys. Suffix is set
-          # anyway so reintroducing 3.13 into the matrix later does not
-          # silently revive the setup-uv-*-pruned-* reservation race.
-          cache-suffix: ci-test-matrix
+          # BK-230: cache-suffix separates this matrix from the test-primary
+          # and e2e save keys. The matrix excludes the primary (line 63:
+          # ALL_PYTHONS - PRIMARY); the suffix is kept anyway so reintroducing
+          # 3.13 into the matrix later does not silently revive the
+          # setup-uv-*-pruned-* reservation race against test-primary.
+          #
+          # The ${matrix.python-version} qualifier also separates the shards
+          # from EACH OTHER: setup-uv resolves the version slot in its key to
+          # `unknown` here, so without it all shards share one byte-identical
+          # key and race to reserve it on a cache miss ("another job may be
+          # creating this cache" in the Post step). Per-version keys also cache
+          # each interpreter's pruned uv cache cleanly instead of restoring
+          # whichever shard happened to save first.
+          cache-suffix: ci-test-matrix-${{ matrix.python-version }}
       - run: uv pip install -e ".[dev]"
       # tests/scripts/ exercises scripts/, not remote_store: no multi-version
       # value, so it runs once in the tooling-tests job below, not here.
