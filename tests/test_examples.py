@@ -618,9 +618,10 @@ class TestMedallionDagsterShowcase:
     OTel isolation: the test installs its own in-memory providers *before*
     importing the showcase, so the now-idempotent ``configure_otel()`` is a
     no-op and the lake's spans flow to the in-memory exporter. These providers
-    carry no background threads (no ``PeriodicExportingMetricReader``), so the
-    test leaves no thread writing to a torn-down buffer and never pins a
-    shut-down global provider for later tests.
+    carry no background threads (no ``PeriodicExportingMetricReader``), and the
+    span processor is shut down in the ``finally`` so it stops collecting spans
+    from any later test sharing the global provider — no torn-down provider is
+    pinned, no thread leaks, no cross-test span residue.
     """
 
     # MeteoSwiss daily CSV is semicolon-delimited with these columns; Silver
@@ -672,7 +673,8 @@ class TestMedallionDagsterShowcase:
         # Install our own OTel providers *before* importing the showcase so its
         # (now idempotent) configure_otel() is a no-op and the lake's spans flow
         # to an exporter we can assert on. No background threads, so nothing is
-        # left writing to a torn-down buffer and no shut-down global is pinned.
+        # left writing to a torn-down buffer; the span processor is detached in
+        # the finally so it does not collect later tests' spans.
         from opentelemetry import metrics, trace  # noqa: PLC0415
         from opentelemetry.sdk.metrics import MeterProvider  # noqa: PLC0415
         from opentelemetry.sdk.trace import TracerProvider  # noqa: PLC0415
@@ -684,7 +686,8 @@ class TestMedallionDagsterShowcase:
             tracer_provider = TracerProvider()
             trace.set_tracer_provider(tracer_provider)
         span_exporter = InMemorySpanExporter()
-        tracer_provider.add_span_processor(SimpleSpanProcessor(span_exporter))
+        span_processor = SimpleSpanProcessor(span_exporter)
+        tracer_provider.add_span_processor(span_processor)
         if not isinstance(metrics.get_meter_provider(), MeterProvider):
             metrics.set_meter_provider(MeterProvider())
 
@@ -708,29 +711,36 @@ class TestMedallionDagsterShowcase:
             # the user-facing surface, not on an internal-resolver removal.
             result = materialize(list(definitions.defs.assets), resources=dict(definitions.defs.resources or {}))
             assert result.success
+
+            # Finding #1 guard: the full graph ran and wrote every layer to the lake.
+            lake_root = tmp_path / "lake"
+            assert (lake_root / "bronze" / "stations" / "ber" / "daily.csv").exists()
+            assert (lake_root / "silver" / "silver_measurements.parquet").exists()
+            for gold_out in ("gold_daily_summary", "gold_station_stats", "gold_alerts"):
+                assert (lake_root / "gold" / f"{gold_out}.parquet").exists()
+
+            # Finding #2 guard (behavioural): observability actually fires on lake ops,
+            # not just that the wrapper type is right. At least one span must be emitted
+            # for a backend=local lake operation.
+            lake_spans = [
+                s
+                for s in span_exporter.get_finished_spans()
+                if s.attributes and s.attributes.get("remote_store.backend") == "local"
+            ]
+            assert lake_spans, "expected at least one OTel span for a lake (backend=local) operation"
         finally:
+            # Detach our span processor so it stops collecting spans from any later
+            # test that shares the global provider (shutdown() also shuts the
+            # exporter). The provider itself is left live and empty — benign.
+            import contextlib  # noqa: PLC0415
+
+            with contextlib.suppress(Exception):
+                span_processor.shutdown()
             for name in injected:
                 sys.modules.pop(name, None)
             server.clear()
             if server.is_running():
                 server.stop()
-
-        # Finding #1 guard: the full graph ran and wrote every layer to the lake.
-        lake_root = tmp_path / "lake"
-        assert (lake_root / "bronze" / "stations" / "ber" / "daily.csv").exists()
-        assert (lake_root / "silver" / "silver_measurements.parquet").exists()
-        for gold_out in ("gold_daily_summary", "gold_station_stats", "gold_alerts"):
-            assert (lake_root / "gold" / f"{gold_out}.parquet").exists()
-
-        # Finding #2 guard (behavioural): observability actually fires on lake ops,
-        # not just that the wrapper type is right. At least one span must be emitted
-        # for a backend=local lake operation.
-        lake_spans = [
-            s
-            for s in span_exporter.get_finished_spans()
-            if s.attributes and s.attributes.get("remote_store.backend") == "local"
-        ]
-        assert lake_spans, "expected at least one OTel span for a lake (backend=local) operation"
 
 
 class TestDagsterComputeLogManager:

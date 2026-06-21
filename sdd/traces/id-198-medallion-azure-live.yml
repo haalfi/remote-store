@@ -10,7 +10,7 @@ audience:
   - library.maintainer
 surprising_ripples:
   - examples/medallion_dagster/assets/gold.py
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -122,6 +122,17 @@ phases:
         section: "Ripple-check table"
         read_type: verify
         extract: "Validation pivoted to a user-facing fix: example + test + README + CHANGELOG stub + BACKLOG-DONE + trace, audience now user.* so CHANGELOG required"
+  - id: review3
+    name: PR #854 review round 3
+    steps:
+      - file: tests/test_examples.py
+        section: "OTel provider setup + finally"
+        read_type: verify
+        extract: "Round 3: the round-2 span capture added a SimpleSpanProcessor to the global provider and never detached it (collects later tests' spans). Captured the processor and shut it down in finally; moved all assertions inside try so cleanup is unconditional. Provider left live+empty (benign)"
+      - file: CHANGELOG.md
+        section: "[Unreleased] ID-198"
+        read_type: reference
+        extract: "Round 3: dropped 'one-line' from the ID-198 line — contradicted the README's own softened wording (the Azure swap is multi-line)"
   - id: review2
     name: PR #854 review round 2
     steps:
