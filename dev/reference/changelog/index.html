@@ -13635,6 +13635,7 @@
 <li>BUG-222: Azure error classifier types 429 / 5xx / 401</li>
 <li>BK-299: Document Azure seekable reads (<code>read_seekable</code>), the async <code>ext.*</code> cliff, and connection-pool tuning</li>
 <li>BK-300: Document that Azure HNS <code>write_atomic</code> returns <code>WriteResult.digest=None</code> (the sibling <code>write</code> populates it)</li>
+<li>ID-198: Fix the Medallion + Dagster showcase — runs on current Dagster again, the lake is OTel-observed so a backend swap keeps emitting spans, and the Azure/HNS swap is documented; verified end-to-end against live ADLS Gen2 and guarded by an offline smoke test</li>
 <li>BK-301: Azure doc/docstring parity and correctness edges — document <code>retry</code> (sync docstring + guide Options table) and <code>reject_write_under_file_ancestor</code> (guide); add the sync <code>check_health</code> docstring; fix a direct-backend data-loss edge by normalising paths before the self-op short-circuit so <code>move</code>/<code>copy</code> between non-canonical paths naming the same blob (e.g. <code>a//b</code> vs <code>a/b</code>) is a no-op instead of copy-to-self + delete-source; align async <code>glob</code> so pattern-compile errors propagate as-is rather than being re-wrapped as a backend error (matching sync); surface the async cross-loop rule in the concurrency posture page</li>
 </ul>
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>

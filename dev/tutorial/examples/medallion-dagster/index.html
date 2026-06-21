@@ -2138,6 +2138,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#swapping-backends" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10384,6 +10395,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#swapping-backends" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10517,7 +10539,9 @@ live <a href="https://www.meteoswiss.admin.ch/">MeteoSwiss</a> weather station d
 </ul>
 <h3 id="terminal-output">Terminal Output<a class="headerlink" href="#terminal-output" title="Permanent link">&para;</a></h3>
 <ul>
-<li>OTel spans (JSON lines) for every <code>read_bytes()</code>, <code>exists()</code>, <code>get_file_info()</code> call</li>
+<li>OTel spans (JSON lines) for both stores: <code>read_bytes()</code> against the HTTP
+  source, and <code>write()</code> / <code>read_bytes()</code> / <code>child()</code> against the lake. The lake
+  is OTel-wrapped, so these spans follow the backend you swap to (local, S3, Azure).</li>
 <li>Cache hit/miss stats after each Bronze ingest</li>
 <li>Row counts from Silver and Gold transforms</li>
 </ul>
@@ -10525,15 +10549,57 @@ live <a href="https://www.meteoswiss.admin.ch/">MeteoSwiss</a> weather station d
 <p>Run materialization twice within one hour. The second run hits the cache for
 all Bronze <code>read_bytes()</code> calls — visible in cache stats (4 hits, 0 misses)
 and shorter OTel span durations.</p>
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<p>Two environment variables override the defaults without editing code:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RS_SHOWCASE_SOURCE_URL</code></td>
+<td>MeteoSwiss open-data base URL</td>
+<td>Point the HTTP source at a mirror, cache, or local server</td>
+</tr>
+<tr>
+<td><code>RS_SHOWCASE_LAKE_ROOT</code></td>
+<td><code>./data/showcase</code></td>
+<td>Relocate the local lake directory</td>
+</tr>
+</tbody>
+</table>
 <h2 id="swapping-backends">Swapping Backends<a class="headerlink" href="#swapping-backends" title="Permanent link">&para;</a></h2>
-<p>The core value proposition: change one line in <code>stores.py</code> to swap the lake
-backend from local filesystem to S3 or Azure:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Before (local)</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">lake</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;./data/showcase&quot;</span><span class="p">))</span>
+<p>The core value proposition: swap the lake backend in <code>stores.py</code> from local
+filesystem to S3 or Azure. The lake is wrapped with <code>otel_observe(...)</code>, so
+observability follows the swap — every Bronze write and Silver/Gold round-trip
+emits spans against the new backend, not just the HTTP source.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Local (default)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">lake</span> <span class="o">=</span> <span class="n">otel_observe</span><span class="p">(</span><span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="n">_LAKE_ROOT</span><span class="p">)))</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># After (S3)</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">lake</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;showcase&quot;</span><span class="p">))</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># S3 — S3Backend has no prefix= param; scope to a sub-prefix with .child()</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">lake</span> <span class="o">=</span> <span class="n">otel_observe</span><span class="p">(</span><span class="n">Store</span><span class="p">(</span><span class="n">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;showcase&quot;</span><span class="p">))</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Azure ADLS Gen2 (Hierarchical Namespace)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">lake</span> <span class="o">=</span> <span class="n">otel_observe</span><span class="p">(</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">Store</span><span class="p">(</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="n">AzureBackend</span><span class="p">(</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>            <span class="n">container</span><span class="o">=</span><span class="s2">&quot;my-filesystem&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>            <span class="n">hns</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># required for ADLS Gen2 — the backend does not auto-detect it</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>            <span class="n">connection_string</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;AZURE_STORAGE_CONNECTION_STRING&quot;</span><span class="p">],</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="p">)</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="p">)</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="p">)</span>
 </code></pre></div>
+<p>Install the cloud backend you swap to (<code>remote-store[s3]</code> or
+<code>remote-store[azure]</code>). <code>hns=True</code> is mandatory for an ADLS Gen2 account (see the
+<a href="../../../guides/backends/azure-hns-setup/">Azure HNS setup guide</a>);
+omitting it falls back to flat-blob semantics. Cloud backends need
+credentials — pass them explicitly (as above) or let the Azure SDK pick up
+<code>DefaultAzureCredential</code>.</p>
 <p>Everything else — caching, observability, Dagster integration —
 works unchanged.</p>
 <h2 id="data-source">Data Source<a class="headerlink" href="#data-source" title="Permanent link">&para;</a></h2>
