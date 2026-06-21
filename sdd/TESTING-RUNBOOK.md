@@ -28,7 +28,7 @@ Stage 3 still runs Stage 1 and 2 unless you narrow with `-k` / a node id.
 | **2** | Docker (Azurite, moto, MinIO, sftp) | Stage 1 **plus** emulator-backed conformance | `hatch run test` (probes for Docker), or `--stage=2` |
 | **3** | a real cloud account + opt-in env var | Stage 2 **plus** `live`-marked tests against the real service | `--stage=3 -m live` + the backend's `RS_TEST_LIVE_*` flag (recipes below) |
 
-`hatch run all` uses `test-cov-s1` deliberately — the pre-commit gate never
+`hatch run all` uses `test-cov-s1` deliberately: the pre-commit gate never
 requires Docker. The 95% coverage floor (`test-cov-strict`) lives in CI and the
 publish workflow, where Azurite is up; do not substitute it locally (see
 [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)).
@@ -38,12 +38,12 @@ Stage selection is the authority of
 tests run only at `--stage=3` with the matching opt-in env var; CI never runs
 them.
 
-## Live cloud — exact invocation
+## Live cloud: exact invocation
 
 A live run needs three things set at once, and each has a trap if you miss it
 (see the trap table below):
 
-1. The backend's opt-in flag exported **in the shell** — deliberately *not* in
+1. The backend's opt-in flag exported **in the shell**, deliberately *not* in
    `.env`, so a default `hatch run test` never touches a real account.
 2. `--stage=3` so the live fixtures are collected at all.
 3. `-m live` on the command line to override the default `addopts` `-m 'not
@@ -60,7 +60,7 @@ The opt-in flag, the required credential vars, and the conformance fixture ids
 are declared in [`tests/backends/fixtures/_live_env.py`](../tests/backends/fixtures/_live_env.py)
 (the fail-loud validators) and the per-backend `*_live.py` fixture modules.
 
-**Azure ADLS Gen2 (HNS) — conformance:**
+**Azure ADLS Gen2 (HNS), conformance:**
 
 ```bash
 RS_TEST_LIVE_HNS=1 hatch run python -m pytest \
@@ -71,11 +71,11 @@ RS_TEST_LIVE_HNS=1 hatch run python -m pytest \
 Needs `AZURE_STORAGE_CONNECTION_STRING` (a real account; an Azurite signature
 fails loud). The per-backend HNS deviation suite under `tests/backends/azure/`
 additionally needs `RS_TEST_LIVE_HNS_CONTAINER` (the persistent ADLS Gen2
-filesystem name) — it exercises HNS-only behaviour the conformance suite cannot
+filesystem name). It exercises HNS-only behaviour the conformance suite cannot
 express (`hdi_isfolder` directory markers, the `exists` DataLake fallback, root
 `get_folder_info("")`, `AzureUtils.detect_hns`).
 
-**AWS S3 — conformance:**
+**AWS S3, conformance:**
 
 ```bash
 RS_TEST_LIVE_S3=1 hatch run python -m pytest \
@@ -86,10 +86,10 @@ RS_TEST_LIVE_S3=1 hatch run python -m pytest \
 Needs `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN`. If
 `AWS_ENDPOINT_URL` / `AWS_S3_ENDPOINT_URL` is set it must not point at an
 emulator (moto/MinIO/LocalStack signatures fail loud). The live IAM user is
-scoped to a bucket prefix — see the "Required IAM permissions" comment in
+scoped to a bucket prefix; see the "Required IAM permissions" comment in
 [`tests/backends/fixtures/s3_live.py`](../tests/backends/fixtures/s3_live.py).
 
-**Microsoft Graph (OneDrive) — live e2e:**
+**Microsoft Graph (OneDrive), live e2e:**
 
 ```bash
 RS_TEST_LIVE_GRAPH=1 hatch run pytest \
@@ -135,14 +135,14 @@ Each row is a way a live or e2e run silently does the wrong thing.
 | Trap | Symptom | Fix |
 |---|---|---|
 | Missing `-m live` | live fixtures collected then **silently deselected** (default `addopts` carries `-m 'not live'`) | always pass `-m live`; the CLI `-m` wins over `addopts` |
-| Missing `--stage=3` | live fixtures never collected | live needs `--stage=3` **and** `-m live` together — neither alone is enough |
-| `-p no:xdist` for a single node | `INTERNALERROR ... unknown hook 'pytest_configure_node'` (the mutation plugin aborts) | use `-n0` — keeps xdist loaded, runs serially in-process |
+| Missing `--stage=3` | live fixtures never collected | live needs `--stage=3` **and** `-m live` together; neither alone is enough |
+| `-p no:xdist` for a single node | `INTERNALERROR ... unknown hook 'pytest_configure_node'` (the mutation plugin aborts) | use `-n0`, which keeps xdist loaded and runs serially in-process |
 | Running e2e under default `addopts` | e2e ignored (`--ignore=tests/e2e`) and live deselected | clear it with `-o addopts=` (lifts both), or use `hatch run e2e` |
 | Opt-in flag in `.env` | a default `hatch run test` would hit a real account | keep `RS_TEST_LIVE_*` out of `.env`; export it per-shell. Credentials may live in `.env` |
 | Azurite stands in for ADLS Gen2 | emulator accepts quirks real ADLS rejects (no Hierarchical Namespace) | HNS behaviour must be verified at Stage 3 against a real account, never inferred from a green Azurite run |
 
 `--runxfail` lifts an `xfail` mask so a live run reports the real pass/fail
-instead of `XFAIL`/`XPASS` — use it to check whether an `xfail` is still
+instead of `XFAIL`/`XPASS`. Use it to check whether an `xfail` is still
 warranted against the live endpoint (e.g. confirming a divergence is
 emulator-only). The xfail roster lives at the top of
 [`tests/backends/conformance/conftest.py`](../tests/backends/conformance/conftest.py).
@@ -208,7 +208,7 @@ cassettes). They keep their staged/multipart coverage for free at Stage 2.
 |---|---|---|
 | PII survives in **headers** | the scrub layer applies body regexes to the response body and a separate allowlist drop to headers; a secret can survive verbatim in an un-listed header in a different format | scrub headers **and** bodies; verify by grepping the **raw secret value** (the GUID/email/id itself, case-insensitive) across the cassette bytes, not just the `"key":"value"` JSON form. Base64-embedded secrets (`id_token`, `client_info`) need a JWT-shape marker |
 | Shared-state residue when promoting live → replay | a test that reads shared mutable account state (a container/bucket root listing) bakes whatever happened to be there at record time; a re-record then churns the file with unrelated entries and may capture un-anticipated PII | isolate the test on a dedicated **empty** namespace (fresh filesystem/container, name scrubbed to the placeholder so replay matches), then assert exact aggregates (`file_count == 0`) |
-| Cassette proves the test never hits its named path | assertion-on-outcome ≠ the documented branch being taken — a short-circuit can make a "fallback" path dead | **read the recorded request sequence**; pin the real distinguishing behaviour and correct the docstring if the cassette contradicts it |
+| Cassette proves the test never hits its named path | assertion-on-outcome ≠ the documented branch being taken; a short-circuit can make a "fallback" path dead | **read the recorded request sequence**; pin the real distinguishing behaviour and correct the docstring if the cassette contradicts it |
 | `.env` masks a CI cred-absence failure | unit tests that drive `record_cassettes.main()` run Step-4 scrub-verify, which calls the backend's `account_fn` resolver; it reads creds from `.env` locally but finds nothing in CI | inject the value via `monkeypatch.setenv` (a syntactically valid, non-emulator value); verify CI-faithfully by running with a hostile ambient value to prove the monkeypatch overrides `.env` |
 
 ## Cassette-first bug investigation
@@ -220,7 +220,7 @@ cassette cannot carry the diagnosis. Final sign-off always runs against the live
 service. The architecture under this workflow is
 [ADR-0028](adrs/0028-testing-architecture-kind-stage-replay.md).
 
-**Step 1 — Reproduce on the cassette.** Run the failing conformance test against
+**Step 1: Reproduce on the cassette.** Run the failing conformance test against
 the `<backend>_replay` (and `_replay_async`) fixture. No credentials, no
 network, no Docker.
 
@@ -235,26 +235,26 @@ function name from the roster in
 [`tests/backends/conformance/conftest.py`](../tests/backends/conformance/conftest.py)
 un-xfails it for all real-cloud fixture ids in one place.
 
-**Step 2 — Classify cassette sufficiency.** Read the backend code the failing
+**Step 2: Classify cassette sufficiency.** Read the backend code the failing
 test exercises and ask: does the fix require any HTTP call the cassette does not
 already contain?
 
 | Fix shape | Cassette sufficiency | Action |
 |---|---|---|
 | In-process filter / mapping over data the SDK already returns | Sufficient | Proceed to step 3 |
-| Adds, removes, or reorders SDK calls | Insufficient | Refresh the cassette (needs Stage 3 live access), then resume on the new one — `--node` for a single test to avoid churning the corpus |
+| Adds, removes, or reorders SDK calls | Insufficient | Refresh the cassette (needs Stage 3 live access), then resume on the new one (`--node` for a single test to avoid churning the corpus) |
 
 The decision is mechanical: list the SDK calls the fix introduces, grep the
 cassette `interactions:` list for matching `method` + `uri` patterns, and
 proceed only when every needed call is already recorded.
 
-**Step 3 — Fix.** Implement the change in the backend module(s).
+**Step 3: Fix.** Implement the change in the backend module(s).
 
-**Step 4 — Verify on replay.** Remove the test function name from the xfail
+**Step 4: Verify on replay.** Remove the test function name from the xfail
 roster (Step 1) and re-run the same nodeid without `--runxfail`. Green = the fix
 is consistent with the recorded wire behaviour.
 
-**Step 5 — Final verification on live.** Run against the `<backend>_live` /
+**Step 5: Final verification on live.** Run against the `<backend>_live` /
 `_live_async` fixture before merge (the live recipes above). Live is the source
 of truth; the cassette is only a faithful recording of a single trajectory.
 Account-config variance, eventual consistency, and timing-dependent SDK paths
