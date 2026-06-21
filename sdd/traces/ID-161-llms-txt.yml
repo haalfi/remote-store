@@ -9,7 +9,8 @@ audience:
   - library.maintainer
 surprising_ripples:
   - .readthedocs.yaml
-review_rounds: 2
+  - sdd/DOCUMENTATION.md
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -48,6 +49,10 @@ phases:
         read_type: verify
         extract: "lint already runs an RTD-config gate — a signal the mkdocs.yml mike read should not have been taken as the authoritative host"
         outcome: ok
+      - file: sdd/DOCUMENTATION.md
+        section: "4 (Cross-linking requirements)"
+        read_type: verify
+        extract: "docs links must use /stable/ (not /latest/) and omit the /en/ prefix; initial authoring used /latest/ from the wrong-host mike alias and the PR review caught it"
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / Docs, Release & meta"
         read_type: verify

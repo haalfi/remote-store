@@ -32,12 +32,12 @@ with store.read("hello.txt") as f:  # streaming read
 
 ## Docs
 
-- [Getting started](https://docs.remotestore.dev/latest/tutorial/getting-started/): install, create a `Store`, and read/write across backends by config change alone.
-- [Choosing a backend](https://docs.remotestore.dev/latest/guides/choosing-a-backend/): trade-offs across Local, S3, SFTP, Azure, SQL, and Graph.
-- [Capabilities matrix](https://docs.remotestore.dev/latest/reference/capabilities-matrix/): which backend supports which capability.
-- [API reference](https://docs.remotestore.dev/latest/reference/api/): `Store`, `Backend`, errors, and extensions.
-- [Async API](https://docs.remotestore.dev/latest/guides/async/): `AsyncStore` and the sync/async bridge adapters.
-- [Migration guide](https://docs.remotestore.dev/latest/reference/migration/): version-to-version upgrade notes.
+- [Getting started](https://docs.remotestore.dev/stable/tutorial/getting-started/): install, create a `Store`, and read/write across backends by config change alone.
+- [Choosing a backend](https://docs.remotestore.dev/stable/guides/choosing-a-backend/): trade-offs across Local, S3, SFTP, Azure, SQL, and Graph.
+- [Capabilities matrix](https://docs.remotestore.dev/stable/reference/capabilities-matrix/): which backend supports which capability.
+- [API reference](https://docs.remotestore.dev/stable/reference/api/): `Store`, `Backend`, errors, and extensions.
+- [Async API](https://docs.remotestore.dev/stable/guides/async/): `AsyncStore` and the sync/async bridge adapters.
+- [Migration guide](https://docs.remotestore.dev/stable/reference/migration/): version-to-version upgrade notes.
 
 ## Source
 
