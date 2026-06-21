@@ -1,11 +1,13 @@
 id: ID-198
-title: "Medallion Dagster + Azure HNS live showcase validation run"
-trigger: "examples/medallion_dagster/ demonstrates a Dagster + Azure HNS user journey but had never executed against a live ADLS Gen2 account; conformance and unit tests can't surface integration-level gaps."
+title: "Medallion Dagster + Azure HNS live showcase: validate, then fix"
+trigger: "examples/medallion_dagster/ demonstrates a Dagster + Azure HNS user journey but had never executed against a live ADLS Gen2 account; the validation run revealed the published showcase did not run on current Dagster and lost observability on a backend swap, so the report-only item became a fix."
 source_items:
   - ID-198
 audience:
+  - user.site
+  - user.api
+  - infra.test
   - library.maintainer
-  - contributor.process
 surprising_ripples:
   - examples/medallion_dagster/assets/gold.py
 phases:
@@ -71,13 +73,51 @@ phases:
         read_type: verify
         extract: "8 objects landed under id198-run/ with real HNS directory markers; gold parquet round-trip = 513 rows; OTel emitted only backend:http spans (lake not instrumented); delete_folder(recursive) cleaned the account to 0"
   - id: report
-    name: Report and close
+    name: Report (initial close attempt)
     steps:
       - file: CLAUDE.md
         section: "Audits"
         read_type: gate
-        extract: "Report-only: record findings as advisory, file no follow-up items, let the user decide"
-      - file: sdd/BACKLOG-DONE.md
-        section: "Unreleased — ID-198"
+        extract: "Closed report-only with three advisory findings. User pushed back: a published showcase that doesn't run / doesn't demonstrate its value is useless from a user POV, so ID-198 was NOT done — reopened to fix, not just report"
+        outcome: misleading
+  - id: fix
+    name: Fix the showcase
+    steps:
+      - file: examples/medallion_dagster/assets/gold.py
+        section: "imports"
         read_type: reference
-        extract: "Close-out narrative with the three findings; audience library.maintainer + contributor.process => no CHANGELOG (no user-facing delta shipped by this item)"
+        extract: "Finding 1 fix: drop future-annotations + import pyarrow at module level so pa.Table is a real def-time annotation; ruff TCH (the original mover) now leaves it because pa is used at runtime"
+      - file: pyproject.toml
+        section: "[tool.ruff.lint] select (TCH)"
+        read_type: gate
+        extract: "Confirmed TCH is enabled — explains why pyarrow was auto-moved into TYPE_CHECKING; the fix must keep pa a runtime reference, not just relocate the import"
+      - file: examples/medallion_dagster/stores.py
+        section: "Sink: local medallion lake"
+        read_type: reference
+        extract: "Finding 2 fix: wrap lake with otel_observe so a backend swap keeps emitting spans. Finding 3 + testability: RS_SHOWCASE_SOURCE_URL / RS_SHOWCASE_LAKE_ROOT env knobs"
+      - file: examples/medallion_dagster/README.md
+        section: "Swapping Backends / Configuration / What to Observe"
+        read_type: reference
+        extract: "Finding 3 fix: document the Azure/HNS swap with hns=True + creds, the env knobs, and that the lake is observed across the swap"
+  - id: tests
+    name: Regression guard
+    steps:
+      - file: tests/scripts/run_examples.py
+        section: "AUTO_SUBDIRS / docstring"
+        read_type: reference
+        extract: "Confirms the Dagster project is deliberately un-swept (needs the launcher) — explains the zero-CI-coverage blind spot the regression hid in"
+      - file: tests/test_examples.py
+        section: "TestMedallionDagsterShowcase"
+        read_type: reference
+        extract: "Offline full-graph materialize: pytest_httpserver source + tmp lake; guards finding 1 (builds/runs) + finding 2 (lake is ObservedStore); fixtures crafted for valid Silver parse + a frost/heat alert day"
+  - id: reverify
+    name: Re-verify live + close
+    steps:
+      - file: examples/medallion_dagster/stores.py
+        section: "(reassigned in driver)"
+        read_type: verify
+        extract: "Live re-run on real ADLS Gen2 with the fixes: materialize success=True (finding 1 fixed live) and 18 backend:azure spans across write/read_bytes (finding 2 fixed); account prefix deleted after"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "Validation pivoted to a user-facing fix: example + test + README + CHANGELOG stub + BACKLOG-DONE + trace, audience now user.* so CHANGELOG required"

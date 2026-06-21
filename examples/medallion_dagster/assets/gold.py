@@ -7,15 +7,17 @@ ParquetSerializer.deserialize() returns a PyArrow Table; each asset
 converts to Polars via ``pl.from_arrow()`` before processing.
 """
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
 import polars as pl
+import pyarrow as pa
 from dagster import AssetIn, asset
 
-if TYPE_CHECKING:
-    import pyarrow as pa
+# NOTE: this module intentionally does *not* use ``from __future__ import
+# annotations``. Dagster reads asset parameter annotations at decoration time via
+# ``get_type_hints()``; with future annotations every hint becomes a string and
+# ``pa.Table`` fails to resolve (the ``pyarrow`` import would also be pushed into
+# a ``TYPE_CHECKING`` block by ruff TCH and vanish at runtime). Keeping ``pa`` a
+# real module-level import makes the annotation a genuine runtime reference that
+# both Dagster and ruff are happy with.
 
 
 @asset(

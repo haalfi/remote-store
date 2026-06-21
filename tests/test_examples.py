@@ -592,6 +592,137 @@ class TestDagsterV2Resource:
         assert results["teardown_ok"] is True
 
 
+class TestMedallionDagsterShowcase:
+    """End-to-end smoke test for the ``examples/medallion_dagster/`` showcase (ID-198).
+
+    The showcase is a self-contained Dagster *project* (sibling-relative imports,
+    a live HTTP source), so ``run_examples.py`` cannot sweep it and it had zero
+    CI coverage — a regression that left it unable to even import on current
+    Dagster went unnoticed. This test materialises the full Bronze → Silver →
+    Gold graph offline: a local HTTP server stands in for the MeteoSwiss source
+    (``RS_SHOWCASE_SOURCE_URL``) and a tmp dir for the lake
+    (``RS_SHOWCASE_LAKE_ROOT``), so it needs no network and no cloud.
+
+    It guards two findings from ID-198: the graph builds and runs on the
+    installed Dagster (the ``pa.Table`` annotation resolves), and the lake is
+    OTel-instrumented so observability survives a backend swap.
+    """
+
+    # MeteoSwiss daily CSV is semicolon-delimited with these columns; Silver
+    # parses station_abbr + reference_timestamp + the measurement subset.
+    _HEADER = "station_abbr;reference_timestamp;tre200d0;tre200dn;tre200dx;rre150d0"
+
+    @staticmethod
+    def _station_csv(abbr: str, *, min_temp: float, max_temp: float) -> bytes:
+        """A tiny but schema-valid daily CSV: one normal day plus one alert day."""
+        rows = [
+            TestMedallionDagsterShowcase._HEADER,
+            f"{abbr};01.01.2026 00:00;5.0;2.0;9.0;0.0",
+            f"{abbr};02.01.2026 00:00;{(min_temp + max_temp) / 2};{min_temp};{max_temp};1.5",
+        ]
+        return ("\n".join(rows) + "\n").encode()
+
+    def test_materialize_offline(self, tmp_path, monkeypatch):
+        pytest.importorskip("dagster")
+        pytest.importorskip("polars")
+        pytest.importorskip("pyarrow")
+        pytest.importorskip("pytest_httpserver", reason="pytest-httpserver not installed")
+
+        from pathlib import Path
+
+        from pytest_httpserver import HTTPServer
+
+        from remote_store.ext.observe import ObservedStore
+
+        # Fixture source files keyed by the paths bronze.py requests. Lugano gets
+        # a frost day (< 0) and a heat day (> 30) so gold_alerts is non-empty.
+        sources = {
+            "/ogd-smn_meta_stations.csv": b"station_abbr;name\nBER;Bern\nKLO;Zurich\nLUG;Lugano\n",
+            "/ber/ogd-smn_ber_d_recent.csv": self._station_csv("BER", min_temp=1.0, max_temp=12.0),
+            "/klo/ogd-smn_klo_d_recent.csv": self._station_csv("KLO", min_temp=0.5, max_temp=14.0),
+            "/lug/ogd-smn_lug_d_recent.csv": self._station_csv("LUG", min_temp=-3.0, max_temp=31.0),
+        }
+
+        server = HTTPServer(host="127.0.0.1")
+        for path, body in sources.items():
+            server.expect_request(path, method="GET").respond_with_data(body, content_type="text/csv")
+            server.expect_request(path, method="HEAD").respond_with_data(b"", content_type="text/csv")
+        server.start()
+
+        example_dir = Path(__file__).parents[1] / "examples" / "medallion_dagster"
+        monkeypatch.setenv("RS_SHOWCASE_SOURCE_URL", server.url_for("/"))
+        monkeypatch.setenv("RS_SHOWCASE_LAKE_ROOT", str(tmp_path / "lake"))
+        monkeypatch.syspath_prepend(str(example_dir))
+
+        injected = ["stores", "otel_setup", "assets", "assets.bronze", "assets.silver", "assets.gold", "definitions"]
+        for name in injected:
+            sys.modules.pop(name, None)
+
+        try:
+            import stores  # noqa: PLC0415
+            from assets.bronze import (  # noqa: PLC0415
+                bronze_bern,
+                bronze_lugano,
+                bronze_zurich,
+                meteo_stations,
+            )
+            from assets.gold import (  # noqa: PLC0415
+                gold_alerts,
+                gold_daily_summary,
+                gold_station_stats,
+            )
+            from assets.silver import silver_measurements  # noqa: PLC0415
+            from dagster import materialize  # noqa: PLC0415
+
+            from remote_store.ext.dagster import ParquetSerializer, dagster_io_manager  # noqa: PLC0415
+
+            # Finding #2 guard: the lake (and its children) must be OTel-observed,
+            # not a bare Store — otherwise a backend swap emits no Azure/S3 spans.
+            assert isinstance(stores.lake, ObservedStore)
+            assert isinstance(stores.bronze, ObservedStore)
+
+            result = materialize(
+                [
+                    meteo_stations,
+                    bronze_bern,
+                    bronze_zurich,
+                    bronze_lugano,
+                    silver_measurements,
+                    gold_daily_summary,
+                    gold_station_stats,
+                    gold_alerts,
+                ],
+                resources={
+                    "silver_io_manager": dagster_io_manager(stores.silver, serializer=ParquetSerializer()),
+                    "gold_io_manager": dagster_io_manager(stores.gold, serializer=ParquetSerializer()),
+                },
+            )
+            assert result.success
+        finally:
+            # configure_otel() installs *global* providers; the metric reader is a
+            # 10s background thread that writes to the console. Shut both down so
+            # the test leaves no thread writing to a torn-down capture buffer.
+            import contextlib  # noqa: PLC0415
+
+            from opentelemetry import metrics, trace  # noqa: PLC0415
+
+            for provider in (metrics.get_meter_provider(), trace.get_tracer_provider()):
+                with contextlib.suppress(Exception):
+                    provider.shutdown()
+            for name in injected:
+                sys.modules.pop(name, None)
+            server.clear()
+            if server.is_running():
+                server.stop()
+
+        # Finding #1 guard: the full graph ran and wrote every layer to the lake.
+        lake_root = tmp_path / "lake"
+        assert (lake_root / "bronze" / "stations" / "ber" / "daily.csv").exists()
+        assert (lake_root / "silver" / "silver_measurements.parquet").exists()
+        for gold_out in ("gold_daily_summary", "gold_station_stats", "gold_alerts"):
+            assert (lake_root / "gold" / f"{gold_out}.parquet").exists()
+
+
 class TestDagsterComputeLogManager:
     pytestmark = pytest.mark.os_sensitive
 

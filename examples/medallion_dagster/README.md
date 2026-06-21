@@ -72,7 +72,9 @@ MeteoSwiss HTTP ──→ ext.cache (1h TTL) ──→ ext.otel (traces)
 - Materialization metadata (path, size) on Silver/Gold assets
 
 ### Terminal Output
-- OTel spans (JSON lines) for every `read_bytes()`, `exists()`, `get_file_info()` call
+- OTel spans (JSON lines) for both stores: `read_bytes()` against the HTTP
+  source, and `write()` / `read_bytes()` / `child()` against the lake. The lake
+  is OTel-wrapped, so these spans follow the backend you swap to (local, S3, Azure).
 - Cache hit/miss stats after each Bronze ingest
 - Row counts from Silver and Gold transforms
 
@@ -81,18 +83,48 @@ Run materialization twice within one hour. The second run hits the cache for
 all Bronze `read_bytes()` calls — visible in cache stats (4 hits, 0 misses)
 and shorter OTel span durations.
 
+## Configuration
+
+Two environment variables override the defaults without editing code:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `RS_SHOWCASE_SOURCE_URL` | MeteoSwiss open-data base URL | Point the HTTP source at a mirror, cache, or local server |
+| `RS_SHOWCASE_LAKE_ROOT` | `./data/showcase` | Relocate the local lake directory |
+
 ## Swapping Backends
 
 The core value proposition: change one line in `stores.py` to swap the lake
-backend from local filesystem to S3 or Azure:
+backend from local filesystem to S3 or Azure. The lake is wrapped with
+`otel_observe(...)`, so observability follows the swap — every Bronze write and
+Silver/Gold round-trip emits spans against the new backend, not just the HTTP
+source.
 
 ```python
-# Before (local)
-lake = Store(LocalBackend(root="./data/showcase"))
+# Local (default)
+lake = otel_observe(Store(LocalBackend(root=_LAKE_ROOT)))
 
-# After (S3)
-lake = Store(S3Backend(bucket="my-bucket", prefix="showcase"))
+# S3
+lake = otel_observe(Store(S3Backend(bucket="my-bucket", prefix="showcase")))
+
+# Azure ADLS Gen2 (Hierarchical Namespace)
+lake = otel_observe(
+    Store(
+        AzureBackend(
+            container="my-filesystem",
+            hns=True,  # required for ADLS Gen2 — the backend does not auto-detect it
+            connection_string=os.environ["AZURE_STORAGE_CONNECTION_STRING"],
+        )
+    )
+)
 ```
+
+Install the cloud backend you swap to (`remote-store[s3]` or
+`remote-store[azure]`). `hns=True` is mandatory for an ADLS Gen2 account (see the
+[Azure HNS setup guide](../../docs-src/guides/backends/azure-hns-setup.md));
+omitting it falls back to flat-blob semantics. Cloud backends need
+credentials — pass them explicitly (as above) or let the Azure SDK pick up
+`DefaultAzureCredential`.
 
 Everything else — caching, observability, Dagster integration —
 works unchanged.
