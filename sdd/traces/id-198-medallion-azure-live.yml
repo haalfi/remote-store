@@ -1,0 +1,83 @@
+id: ID-198
+title: "Medallion Dagster + Azure HNS live showcase validation run"
+trigger: "examples/medallion_dagster/ demonstrates a Dagster + Azure HNS user journey but had never executed against a live ADLS Gen2 account; conformance and unit tests can't surface integration-level gaps."
+source_items:
+  - ID-198
+audience:
+  - library.maintainer
+  - contributor.process
+surprising_ripples:
+  - examples/medallion_dagster/assets/gold.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-198 (Azure)"
+        read_type: gate
+        extract: "Validation-run item: run the showcase end-to-end live, report gaps, produce no library code changes"
+      - file: examples/medallion_dagster/stores.py
+        section: "(full)"
+        read_type: reference
+        extract: "Lake is LocalBackend(root=./data/showcase); HTTP source wrapped by cache+otel but the lake is NOT otel-wrapped"
+      - file: examples/medallion_dagster/assets/bronze.py
+        section: "(full)"
+        read_type: reference
+        extract: "Bronze uses bronze.write(overwrite=True) + read_bytes; file-level copy, no IO manager"
+      - file: examples/medallion_dagster/assets/silver.py
+        section: "(full)"
+        read_type: reference
+        extract: "Silver reads bronze CSVs, returns Polars frame through ParquetSerializer IO manager"
+      - file: examples/medallion_dagster/assets/gold.py
+        section: "(full)"
+        read_type: reference
+        extract: "Gold reads silver Parquet via IO manager, writes 3 aggregate Parquet outputs"
+      - file: tests/backends/fixtures/azure_live_hns.py
+        section: "_factory"
+        read_type: reference
+        extract: "Live HNS backend = AzureBackend(container=fs, hns=True, connection_string=conn)"
+      - file: docs-src/guides/backends/azure-hns-setup.md
+        section: "Wire credentials into the environment"
+        read_type: gate
+        extract: "Creds via .env: AZURE_STORAGE_CONNECTION_STRING + RS_TEST_LIVE_HNS=1 + RS_TEST_LIVE_HNS_CONTAINER; loaded by python-dotenv"
+  - id: wire
+    name: Wire the live swap
+    steps:
+      - file: src/remote_store/_store.py
+        section: "child"
+        read_type: reference
+        extract: "Store.child(subpath) -> Store; used to isolate the run under id198-run/ and re-derive bronze/silver/gold"
+      - file: examples/medallion_dagster/stores.py
+        section: "Sink: local medallion lake"
+        read_type: reference
+        extract: "Temp swap LocalBackend -> AzureBackend(hns=True); load_dotenv(override=False). The os import was stripped by the ruff hook on first Edit and had to be re-added (Edit+formatter import-strip)"
+  - id: run
+    name: Run end-to-end live
+    steps:
+      - file: examples/medallion_dagster/assets/gold.py
+        section: "gold_daily_summary annotation"
+        read_type: verify
+        extract: "BLOCKER: Dagster 1.13.4 get_type_hints() can't resolve 'pa.Table' (pyarrow under TYPE_CHECKING + future-annotations). Backend-independent; showcase never ran on modern Dagster. Temp-moved import to module level to proceed"
+        outcome: misleading
+      - file: examples/medallion_dagster/definitions.py
+        section: "(full)"
+        read_type: reference
+        extract: "Reproduced the assets+resources wiring in a headless dagster.materialize driver (CLI --select '*' kept being glob-expanded by bash)"
+  - id: verify
+    name: Verify on the live account
+    steps:
+      - file: src/remote_store/_store.py
+        section: "list_files / list_folders / read_bytes / delete_folder"
+        read_type: verify
+        extract: "8 objects landed under id198-run/ with real HNS directory markers; gold parquet round-trip = 513 rows; OTel emitted only backend:http spans (lake not instrumented); delete_folder(recursive) cleaned the account to 0"
+  - id: report
+    name: Report and close
+    steps:
+      - file: CLAUDE.md
+        section: "Audits"
+        read_type: gate
+        extract: "Report-only: record findings as advisory, file no follow-up items, let the user decide"
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased — ID-198"
+        read_type: reference
+        extract: "Close-out narrative with the three findings; audience library.maintainer + contributor.process => no CHANGELOG (no user-facing delta shipped by this item)"

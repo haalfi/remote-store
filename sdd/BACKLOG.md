@@ -73,20 +73,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ---
 
-## Azure
-
-- [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
-  spec: — · effort: S · audience: library.maintainer, user.api
-  The `examples/medallion_dagster/` showcase demonstrates a realistic user journey
-  combining Dagster orchestration with an Azure HNS backend, but has never executed
-  against a live ADLS Gen2 account. Run the full example end-to-end against real cloud
-  infrastructure to surface testing gaps, implementation TODOs, or edge cases that
-  conformance and unit tests miss. Async patterns are settled (ID-193 landed,
-  see BACKLOG-DONE.md). Findings inform the next release scope; no code changes
-  are produced by this item itself.
-
----
-
 ## Lint / CI Completeness
 
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**

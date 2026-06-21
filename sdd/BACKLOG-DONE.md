@@ -28,6 +28,47 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   RTD redirects are configured in the project dashboard, not `.readthedocs.yaml`.
   The versioned `docs-src/context7.json` (already built per version) is unchanged.
 
+- [x] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
+  spec: — · effort: S · audience: library.maintainer, contributor.process
+  Validation run, not a feature: ran `examples/medallion_dagster/` end-to-end
+  against a **live ADLS Gen2 (HNS) account** to surface gaps that conformance and
+  unit tests miss. Per the item and CLAUDE.md § Audits, **this PR produces no
+  library code changes** — the deliverable is the findings below; any fix is a
+  separate, user-decided follow-up. Method: temporarily applied the README
+  "Swapping Backends" one-line swap (`Store(AzureBackend(container=…, hns=True,
+  connection_string=…))`, isolated under an `id198-run/` prefix), loaded creds via
+  `python-dotenv` exactly as `docs-src/guides/backends/azure-hns-setup.md`
+  prescribes, materialized all 8 assets headless via `dagster.materialize`, then
+  deleted the prefix and reverted the swap.
+  **Outcome:** the core value proposition holds. With the one-line lake swap the
+  full medallion graph (4 Bronze CSV writes, Silver + 3 Gold Parquet IO-manager
+  round-trips, listing, `get_file_info`) ran unchanged against real HNS —
+  `child()` prefixes became real HNS directories (`id198-run/bronze/stations/ber`
+  etc.), and a `gold_daily_summary.parquet` round-trip returned 513 rows / 6 cols.
+  **Findings (advisory; no items filed — user decides):**
+  1. **Showcase does not run on current Dagster (1.13.4, satisfies the example's
+     `dagster>=1.9` pin).** `assets/gold.py` annotates asset params
+     `silver_measurements: pa.Table` while `pyarrow` is imported only under
+     `TYPE_CHECKING`; with `from __future__ import annotations` every annotation is
+     a string, and Dagster's `get_type_hints()` at `@asset` decoration time raises
+     `DagsterInvalidDefinitionError: Failed to resolve type annotation "pa"`.
+     Backend-independent — it blocks `dagster dev` and any materialization, so the
+     showcase has never run on a modern Dagster. Fix sketch: import `pyarrow` at
+     module level (or drop the string annotation).
+  2. **Observability does not survive a backend swap.** `stores.py` wraps only the
+     HTTP *source* with `otel_observe`; the *lake* is a bare `Store(LocalBackend)`.
+     The live run emitted **only 4 `backend: http` spans** — zero spans/metrics for
+     any Azure operation (Bronze writes, IO-manager round-trips, Gold reads). The
+     showcase's headline "observability on every storage operation" silently does
+     not extend to the lake a user swaps to S3/Azure. Fix sketch: also wrap `lake`
+     with `otel_observe`.
+  3. **README "Swapping Backends" is incomplete for Azure/HNS.** It shows only an
+     S3 bare-constructor swap; for ADLS Gen2 it omits the `hns=True` flag (the
+     backend does not auto-detect HNS per `azure-hns-setup.md`) and credential
+     wiring. A user copying it against an HNS account without `hns=True` would get
+     flat-blob semantics. Doc-only.
+  Trace: `sdd/traces/id-198-medallion-azure-live.yml`.
+
 - [x] **BUG-221 — `LocalBackend.glob()` resolve race (assessed non-reproducible; closed via consistency hardening)**
   spec: GLOB-005 · effort: S · audience: library.maintainer, infra.test
   Filed from BUG-220's PR #820 review as a latent twin: `glob()` used the same
