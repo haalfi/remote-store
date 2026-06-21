@@ -509,6 +509,11 @@ def test_docs_site_links_against_live_repo(check_links_mod):
 # ---------------------------------------------------------------------------
 # BK-307: docs-site links in non-Markdown discovery files (llms.txt)
 # ---------------------------------------------------------------------------
+# Spec-less by design: BK-307 is filed `spec: —`, audience contributor.tooling
+# / infra.ci, so both discovery-file rules (llms.txt here + context7 below)
+# stay tooling gates with no DOCFRAME marker — symmetric, and consistent with
+# the other CI gates (check_traces, check_ci_inventory). They reuse the
+# DOCFRAME-009 machinery but do not extend its `.md`-scoped contract.
 
 # Reuses the same page set the live llms.txt links resolve against, so the
 # unit cases mirror the real gate without the full build_source_map scan.
@@ -523,7 +528,6 @@ _LLMS_VALID = {
 }
 
 
-@pytest.mark.spec("DOCFRAME-009")
 def test_discovery_file_docs_site_links_flags_stale(check_links_mod, tmp_path):
     """A stale docs-site URL in docs-src/llms.txt fails the gate offline.
 
@@ -569,7 +573,6 @@ def test_discovery_file_docs_site_links_missing_file_is_noop(check_links_mod, tm
     assert check_links_mod.check_discovery_file_docs_site_links(tmp_path, valid_pages=_LLMS_VALID) == []
 
 
-@pytest.mark.spec("DOCFRAME-009")
 def test_discovery_files_against_live_repo(check_links_mod):
     """docs-src/llms.txt docs-site links resolve on the live tree.
 

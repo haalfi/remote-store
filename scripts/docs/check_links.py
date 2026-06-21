@@ -605,15 +605,14 @@ _DOCS_SITE_LINK_DISCOVERY_FILES = ("docs-src/llms.txt",)
 # Root context7 manifest whose path lists are validated on disk.
 _CONTEXT7_MANIFEST = "context7.json"
 
-# A context7 path-list entry containing any of these is a glob / regex pattern,
-# not a literal path. context7 allows patterns in the folder lists, and a
-# literal on-disk check cannot vouch for them, so they are left unchecked. A
-# literal directory rename — the drift this gate targets — carries none of
-# these, so it is still caught.
-_CONTEXT7_PATTERN_META = re.compile(r"[*?\[\]()|^$]")
-
-# Directories never treated as repo content in the non-git fallback below.
-_VCS_DIRS = frozenset({".git"})
+# A context7 path-list entry containing a glob wildcard is a pattern, not a
+# literal path, so it is left unchecked (context7 allows globs in the folder
+# lists, and a literal on-disk check cannot vouch for them). Only the glob
+# metacharacters (``* ? [ ]``) qualify — regex-only metachars like ``()|^$``
+# can appear in legitimate literal filenames (``report (1).pdf``), so treating
+# those as patterns would silently skip real drift. A literal directory
+# rename — the drift this gate targets — carries no glob meta, so it is caught.
+_CONTEXT7_PATTERN_META = re.compile(r"[*?\[\]]")
 
 
 def _git_repo_files(repo_root: Path) -> list[Path]:
@@ -624,6 +623,8 @@ def _git_repo_files(repo_root: Path) -> list[Path]:
     VCS internals when the tree is not a git repository (test fixtures).
     """
     import subprocess
+
+    from docs.scan import _VCS_DIRS  # type: ignore[import]  # single source for the VCS-dir set
 
     result = subprocess.run(
         ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
