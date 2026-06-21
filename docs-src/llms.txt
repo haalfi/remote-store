@@ -1,0 +1,30 @@
+# remote-store
+
+> Unified file-storage API for Python — one `Store` interface across Local,
+> S3, S3+PyArrow, SFTP, Azure (Blob & ADLS Gen2), SQL, and Microsoft Graph
+> (OneDrive/SharePoint). Write storage code once and switch backends by
+> configuration; backends declare capabilities so code queries support with
+> `store.supports(Capability.X)` instead of guessing.
+
+Common patterns worth knowing up front: stream reads with
+`with store.read(path) as f:`; use `MemoryBackend` for fast unit tests with no
+real I/O; scope a store to a subtree with `store.child(prefix)`; reach extra
+behaviour through `remote_store.ext` — content hashing (`ext.integrity`),
+partitioned key layouts (`ext.partition`), and store-to-store copy
+(`ext.transfer`). A native async API mirrors the sync one under
+`remote_store.aio`.
+
+## Docs
+
+- [Getting started](https://docs.remotestore.dev/latest/tutorial/getting-started/): install, create a `Store`, and read/write across backends by config change alone.
+- [Choosing a backend](https://docs.remotestore.dev/latest/guides/choosing-a-backend/): trade-offs across Local, S3, SFTP, Azure, SQL, and Graph.
+- [Capabilities matrix](https://docs.remotestore.dev/latest/reference/capabilities-matrix/): which backend supports which capability.
+- [API reference](https://docs.remotestore.dev/latest/reference/api/): `Store`, `Backend`, errors, and extensions.
+- [Async API](https://docs.remotestore.dev/latest/guides/async/): `AsyncStore` and the sync/async bridge adapters.
+- [Migration guide](https://docs.remotestore.dev/latest/reference/migration/): version-to-version upgrade notes.
+
+## Source
+
+- [GitHub](https://github.com/haalfi/remote-store): source, issues, and the authoritative docs.
+- [FEATURES](https://github.com/haalfi/remote-store/blob/master/FEATURES.md): authoritative backend, extension, capability, and install-extras list.
+- [PyPI](https://pypi.org/project/remote-store/): releases and `pip install remote-store[...]` extras.

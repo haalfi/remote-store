@@ -39,6 +39,8 @@ jobs:
         run: |
           mike deploy dev --update-aliases
           git push origin gh-pages
+      - name: Publish root discovery files
+        run: scripts/docs/publish_root_files.sh
 
   deploy-release:
     if: github.event_name == 'release'
@@ -62,3 +64,5 @@ jobs:
           mike deploy "$VERSION" latest --update-aliases
           mike set-default latest
           git push origin gh-pages
+      - name: Publish root discovery files
+        run: scripts/docs/publish_root_files.sh

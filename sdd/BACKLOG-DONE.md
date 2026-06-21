@@ -8,6 +8,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-161 — Publish `llms.txt` to the docs site**
+  spec: — · effort: S · audience: user.discoverability.llm, library.maintainer, infra.ci
+  Added `docs-src/llms.txt` ([llmstxt.org](https://llmstxt.org/) standard): H1 +
+  summary blockquote + curated Docs/Source link lists, with the content-checklist
+  notes folded into the summary (streaming reads, `MemoryBackend` for tests,
+  `store.child()` scoping, `ext.integrity`/`ext.partition`/`ext.transfer`).
+  **The item's "MkDocs copies it to the site root automatically, no hook needed"
+  premise was wrong:** `mike` deploys `docs-src/` content only under versioned
+  subdirectories (`/latest/…`, `/dev/…`, `/0.28.0/…`), so a `docs-src/` file lands
+  at `/latest/llms.txt`, never the domain root the standard requires. Closed the
+  gap with `scripts/docs/publish_root_files.sh`, called from both jobs in
+  `.github/workflows/docs.yml` after `mike deploy`: it copies `llms.txt` and the
+  docs-site `context7.json` onto the `gh-pages` root via a throwaway worktree
+  (idempotent). The root `context7.json` copy also closes the discoverability gap
+  the user flagged — context7 was reachable only under `/latest/` (the versioned
+  copy is untouched). Deploy-side behaviour (`GET /llms.txt`, `GET /context7.json`)
+  verifies post-merge on the next docs deploy.
+
 - [x] **BUG-221 — `LocalBackend.glob()` resolve race (assessed non-reproducible; closed via consistency hardening)**
   spec: GLOB-005 · effort: S · audience: library.maintainer, infra.test
   Filed from BUG-220's PR #820 review as a latent twin: `glob()` used the same

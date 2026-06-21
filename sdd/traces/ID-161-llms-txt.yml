@@ -1,0 +1,60 @@
+id: ID-161
+title: "Publish llms.txt to the docs site"
+trigger: "remote-store had no machine-readable discovery file at the docs domain root; LLM/agent tools that resolve /llms.txt found nothing, and context7.json was reachable only under the versioned /latest/ path, not the domain root"
+source_items:
+  - ID-161
+  - ID-176
+audience:
+  - user.discoverability.llm
+  - library.maintainer
+  - infra.ci
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  - .github/workflows/docs.yml
+  - scripts/docs/publish_root_files.sh
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) ID-161"
+        read_type: gate
+        extract: "llms.txt format, content checklist, and the stated 'MkDocs copies to site root, no hook needed' premise"
+        outcome: misleading
+      - file: sdd/traces/id-176-context7-docs-site.yml
+        section: "(full)"
+        read_type: reference
+        extract: "context7.json is docs-site config under docs-src/; docs site served under a versioned path, not the domain root"
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?"
+        read_type: gate
+        extract: "docs-site-only config (context7.json, llms.txt) lives in docs-src/; the .md framework does not govern non-md static files"
+  - id: implement
+    name: Implement
+    steps:
+      - file: mkdocs.yml
+        section: "plugins (mike), docs_dir"
+        read_type: gate
+        extract: "mike versioning means docs-src/ content deploys under /<version>/, defeating the item's domain-root assumption"
+        outcome: misleading
+      - file: .github/workflows/docs.yml
+        section: "deploy-dev, deploy-release"
+        read_type: reference
+        extract: "mike deploy + git push origin gh-pages is the only deploy path; root files must be committed onto gh-pages separately"
+      - file: docs-src/context7.json
+        section: "(full)"
+        read_type: reference
+        extract: "docs-site context7.json (websites/remotestore_dev_stable) is the right copy for the docs domain root, distinct from the repo-root one"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "no backend/error/capability/version/spec/dependency ripple; CHANGELOG + BACKLOG move + trace + backlogid regen apply"
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: verify
+        extract: "move ID-161 to BACKLOG-DONE.md, regen backlogid.json"

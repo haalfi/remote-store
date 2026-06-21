@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-161: Publish a machine-readable `llms.txt` ([llmstxt.org](https://llmstxt.org/)) at the docs domain root for LLM/agent discovery, plus a root-level copy of the docs-site `context7.json` (the versioned copy under `/latest/` is unchanged). The docs deploy workflow now copies both onto the `gh-pages` root via `scripts/docs/publish_root_files.sh`, since `mike` only deploys `docs-src/` content under versioned subdirectories.
 - BK-306: S3 `close()` releases the s3fs/aiobotocore session instead of leaking it
 - BK-298: Azure credential ownership + cross-backend terminal close
 - BK-302: Azure HNS is now an explicit, mandatory `hns=` declaration (no runtime auto-detection); adds `AzureUtils.detect_hns()` / `adetect_hns()` for one-shot discovery (**breaking**). Supersedes the BUG-223 re-probe fix from this same Unreleased cycle, which tuned the auto-detection that this change removes outright.
