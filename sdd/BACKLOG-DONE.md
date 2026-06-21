@@ -9,22 +9,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ## Unreleased
 
 - [x] **ID-161 — Publish `llms.txt` to the docs site**
-  spec: — · effort: S · audience: user.discoverability.llm, library.maintainer, infra.ci
+  spec: — · effort: S · audience: user.discoverability.llm, library.maintainer
   Added `docs-src/llms.txt` ([llmstxt.org](https://llmstxt.org/) standard): H1 +
   summary blockquote + curated Docs/Source link lists, with the content-checklist
   notes folded into the summary (streaming reads, `MemoryBackend` for tests,
   `store.child()` scoping, `ext.integrity`/`ext.partition`/`ext.transfer`).
-  **The item's "MkDocs copies it to the site root automatically, no hook needed"
-  premise was wrong:** `mike` deploys `docs-src/` content only under versioned
-  subdirectories (`/latest/…`, `/dev/…`, `/0.28.0/…`), so a `docs-src/` file lands
-  at `/latest/llms.txt`, never the domain root the standard requires. Closed the
-  gap with `scripts/docs/publish_root_files.sh`, called from both jobs in
-  `.github/workflows/docs.yml` after `mike deploy`: it copies `llms.txt` and the
-  docs-site `context7.json` onto the `gh-pages` root via a throwaway worktree
-  (idempotent). The root `context7.json` copy also closes the discoverability gap
-  the user flagged — context7 was reachable only under `/latest/` (the versioned
-  copy is untouched). Deploy-side behaviour (`GET /llms.txt`, `GET /context7.json`)
-  verifies post-merge on the next docs deploy.
+  **Hosting nuance:** `docs.remotestore.dev` is served by **Read the Docs**
+  (`.readthedocs.yaml` builds `mkdocs.yml`), not the secondary `gh-pages`/`mike`
+  host. RTD special-cases `llms.txt` and serves it at the domain root
+  (`https://docs.remotestore.dev/llms.txt`) from the **default version's** build
+  output, and MkDocs copies `docs-src/llms.txt` to the build root verbatim — so
+  the file alone is sufficient; no deploy hook is needed (an early gh-pages-root
+  copy step was reverted as wrong-host). Verifies post-merge once RTD rebuilds the
+  default version.
+  **Deferred (maintainer dashboard action, not in-repo):** serving a root-level
+  `context7.json` at `https://docs.remotestore.dev/context7.json` needs an RTD
+  **Exact Redirect** (`/context7.json` → `/en/<default-version>/context7.json`);
+  RTD redirects are configured in the project dashboard, not `.readthedocs.yaml`.
+  The versioned `docs-src/context7.json` (already built per version) is unchanged.
 
 - [x] **BUG-221 — `LocalBackend.glob()` resolve race (assessed non-reproducible; closed via consistency hardening)**
   spec: GLOB-005 · effort: S · audience: library.maintainer, infra.test
