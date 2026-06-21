@@ -1,0 +1,63 @@
+id: ID-161
+title: "Publish llms.txt to the docs site"
+trigger: "remote-store had no machine-readable discovery file at the docs domain root; LLM/agent tools that resolve /llms.txt found nothing"
+source_items:
+  - ID-161
+  - ID-176
+audience:
+  - user.discoverability.llm
+  - library.maintainer
+surprising_ripples:
+  - .readthedocs.yaml
+  - sdd/DOCUMENTATION.md
+review_rounds: 6
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) ID-161"
+        read_type: gate
+        extract: "llms.txt format, content checklist, and the stated 'MkDocs copies to site root, no hook needed' premise"
+        outcome: unclear
+      - file: sdd/traces/id-176-context7-docs-site.yml
+        section: "(full)"
+        read_type: reference
+        extract: "context7.json is docs-site config under docs-src/; docs site served under a versioned path, not the domain root"
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?"
+        read_type: gate
+        extract: "docs-site-only config (context7.json, llms.txt) lives in docs-src/; the .md framework does not govern non-md static files; 'the docs site may be served from more than one host'"
+  - id: implement
+    name: Implement
+    steps:
+      - file: mkdocs.yml
+        section: "plugins (mike), docs_dir"
+        read_type: reference
+        extract: "saw the mike plugin and wrongly concluded gh-pages/mike was the publishing host, so docs-src/ files only reach versioned subdirs"
+        outcome: misleading
+      - file: .readthedocs.yaml
+        section: "(full)"
+        read_type: gate
+        extract: "docs.remotestore.dev is served by Read the Docs (mkdocs builder), not gh-pages; RTD serves llms.txt at the domain root natively from the default version's build output, so docs-src/llms.txt alone suffices and no deploy hook is needed"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_readthedocs_python.py
+        section: "(full)"
+        read_type: verify
+        extract: "lint already runs an RTD-config gate — a signal the mkdocs.yml mike read should not have been taken as the authoritative host"
+        outcome: ok
+      - file: sdd/DOCUMENTATION.md
+        section: "4 (Cross-linking requirements)"
+        read_type: verify
+        extract: "docs links must use /stable/ (not /latest/) and omit the /en/ prefix; initial authoring used /latest/ from the wrong-host mike alias and the PR review caught it"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Docs, Release & meta"
+        read_type: verify
+        extract: "no backend/error/capability/version/spec/dependency ripple; CHANGELOG + BACKLOG move + trace + backlogid regen apply"
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: verify
+        extract: "move ID-161 to BACKLOG-DONE.md; record the context7-at-root RTD redirect as a deferred maintainer dashboard action"

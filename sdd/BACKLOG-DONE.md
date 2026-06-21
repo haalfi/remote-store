@@ -8,6 +8,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-161 — Publish `llms.txt` to the docs site**
+  spec: — · effort: S · audience: user.discoverability.llm, library.maintainer
+  Added `docs-src/llms.txt` ([llmstxt.org](https://llmstxt.org/) standard): H1 +
+  summary blockquote + curated Docs/Source link lists, with the content-checklist
+  notes folded into the summary (streaming reads, `MemoryBackend` for tests,
+  `store.child()` scoping, `ext.integrity`/`ext.partition`/`ext.transfer`).
+  **Hosting nuance:** `docs.remotestore.dev` is served by **Read the Docs**
+  (`.readthedocs.yaml` builds `mkdocs.yml`), not the secondary `gh-pages`/`mike`
+  host. RTD special-cases `llms.txt` and serves it at the domain root
+  (`https://docs.remotestore.dev/llms.txt`) from the **default version's** build
+  output, and MkDocs copies `docs-src/llms.txt` to the build root verbatim — so
+  the file alone is sufficient; no deploy hook is needed (an early gh-pages-root
+  copy step was reverted as wrong-host). Verifies post-merge once RTD rebuilds the
+  default version.
+  **Deferred (maintainer dashboard action, not in-repo):** serving a root-level
+  `context7.json` at `https://docs.remotestore.dev/context7.json` needs an RTD
+  **Exact Redirect** (`/context7.json` → `/en/<default-version>/context7.json`);
+  RTD redirects are configured in the project dashboard, not `.readthedocs.yaml`.
+  The versioned `docs-src/context7.json` (already built per version) is unchanged.
+
 - [x] **BUG-221 — `LocalBackend.glob()` resolve race (assessed non-reproducible; closed via consistency hardening)**
   spec: GLOB-005 · effort: S · audience: library.maintainer, infra.test
   Filed from BUG-220's PR #820 review as a latent twin: `glob()` used the same

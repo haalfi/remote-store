@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-161: Add a machine-readable `llms.txt` ([llmstxt.org](https://llmstxt.org/)) for LLM/agent discovery. Read the Docs serves it at the docs domain root (`https://docs.remotestore.dev/llms.txt`) natively from the default version's build output, so `docs-src/llms.txt` is all that is required.
 - BK-306: S3 `close()` releases the s3fs/aiobotocore session instead of leaking it
 - BK-298: Azure credential ownership + cross-backend terminal close
 - BK-302: Azure HNS is now an explicit, mandatory `hns=` declaration (no runtime auto-detection); adds `AzureUtils.detect_hns()` / `adetect_hns()` for one-shot discovery (**breaking**). Supersedes the BUG-223 re-probe fix from this same Unreleased cycle, which tuned the auto-detection that this change removes outright.
