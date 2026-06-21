@@ -573,16 +573,21 @@ def _find_broken_docs_site_links(text: str, source: Path, valid_pages: set[str])
     return broken
 
 
-def check_docs_site_links(repo_root: Path) -> list[BrokenLink]:
+def check_docs_site_links(repo_root: Path, valid_pages: set[str] | None = None) -> list[BrokenLink]:
     """Docs-site check: every ``docs.remotestore.dev`` stable/latest link resolves.
 
     BK-236 (DOCFRAME-009): an absolute link into the published docs site
     is validated against the page set the site actually builds, so a
     mistyped or stale path segment fails the gate offline.
+
+    *valid_pages* is computed from the live tree when omitted; ``main`` threads
+    a single ``_docs_site_pages`` scan through here and the discovery-file check
+    so the (build_source_map + sdd/examples) walk runs once per invocation.
     """
     from docs.scan import _git_repo_markdown  # type: ignore[import]
 
-    valid_pages = _docs_site_pages(repo_root)
+    if valid_pages is None:
+        valid_pages = _docs_site_pages(repo_root)
     broken: list[BrokenLink] = []
     for md in _git_repo_markdown(repo_root):
         try:
@@ -737,11 +742,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     repo_root = args.root.resolve()
+    # Compute the docs-site page set once and thread it through both consumers;
+    # _docs_site_pages runs build_source_map + the sdd/examples scan, so a
+    # second call would double that walk on every docs-gate / all run.
+    docs_site_pages = _docs_site_pages(repo_root)
     broken = (
         check_repo_links(repo_root)
-        + check_docs_site_links(repo_root)
+        + check_docs_site_links(repo_root, valid_pages=docs_site_pages)
         + check_repo_link_fragments(repo_root)
-        + check_discovery_file_docs_site_links(repo_root)
+        + check_discovery_file_docs_site_links(repo_root, valid_pages=docs_site_pages)
         + check_context7_paths(repo_root)
     )
 
