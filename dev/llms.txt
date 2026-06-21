@@ -71,6 +71,7 @@ with store.read("hello.txt") as f:  # streaming read
 
 ## Source
 
-- [GitHub](https://github.com/haalfi/remote-store): source, issues, and the authoritative docs.
-- [FEATURES](https://github.com/haalfi/remote-store/blob/master/FEATURES.md): authoritative backend, extension, capability, and install-extras list.
+- [GitHub repository](https://github.com/haalfi/remote-store): source tree, issues, and discussions.
+- [README](https://raw.githubusercontent.com/haalfi/remote-store/master/README.md): project overview and quick start (raw Markdown).
+- [FEATURES](https://raw.githubusercontent.com/haalfi/remote-store/master/FEATURES.md): authoritative backend, extension, capability, and install-extras list (raw Markdown).
 - [PyPI](https://pypi.org/project/remote-store/): releases and `pip install remote-store[...]` extras.
