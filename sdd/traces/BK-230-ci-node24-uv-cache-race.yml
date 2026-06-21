@@ -83,3 +83,16 @@ phases:
         read_type: verify
         extract: "BACKLOG-DONE entry; trace; backlogid.json regenerated; no [Unreleased] CHANGELOG entry per audience rule"
         outcome: ok
+  - id: followup_intra_matrix
+    name: "Follow-up: intra-matrix cache race the original fix missed"
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test matrix setup-uv cache-suffix (line 208)"
+        read_type: gate
+        extract: "The original fix marked ci-test-matrix 'forward-defensive', reasoning the matrix only races test-primary (and is excluded from it by line 63). But run-log inspection showed all four matrix shards (3.10/3.11/3.12/3.14) share a BYTE-IDENTICAL key: setup-uv resolves the version slot to 'unknown' for these shards (unlike test-primary, whose key carries 3.13.x), so the shared cache-suffix made the four shards race EACH OTHER on a cache miss ('another job may be creating this cache' in the Post step of the losing shards). Qualify the suffix with matrix.python-version so each shard owns a distinct key."
+        outcome: ok
+      - file: https://github.com/haalfi/remote-store/actions/runs/27907574649
+        section: "test (3.10/3.11/3.12/3.14) setup-uv restore keys"
+        read_type: verify
+        extract: "confirm the four shard keys are identical (...ubuntu-24.04-unknown-pruned-<hash>-ci-test-matrix) while test-primary's key carries the resolved 3.13.14 version slot — the asymmetry that makes the matrix self-collide but spared test-primary"
+        outcome: ok
