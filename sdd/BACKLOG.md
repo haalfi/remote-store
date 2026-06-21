@@ -136,11 +136,14 @@ and the highest ID already in this file, then take the next integer. Run
   twin. Evaluate the [`mkdocs-llmstxt`](https://github.com/pawamoy/mkdocs-llmstxt)
   plugin to generate a per-page Markdown twin plus a concatenated `llms-full.txt`,
   served from the docs site, then repoint the `## Docs` links at the twins.
-  **Why a plugin, not raw repo links:** our docs pages are *generated* — the API
-  reference comes from `gen-files`, `mkdocs_hooks.py` (BK-171) rewrites repo links
-  to site URLs, and literate-nav sets reading order. Linking `## Docs` at raw
-  GitHub Markdown would miss all three (the source-doc links in `## Source` are
-  already raw Markdown because those files have no generated docs page). This is
+  **Why a plugin, not raw repo links:** our docs pages are *generated/transformed*
+  — the API reference comes from `gen-files`, `mkdocs_hooks.py` (BK-171) rewrites
+  repo links to site URLs, and literate-nav sets reading order. Linking `## Docs`
+  at raw GitHub Markdown would miss all three. The `## Source` links can already
+  resolve to raw Markdown because those files are plain Markdown twins —
+  verbatim-mirrored `dual` (`FEATURES.md`, served at `reference/FEATURES.md`) or
+  `repo-only` (`README.md`) — whose raw bytes equal what the bridge serves, with
+  no generation step to bypass. This is
   the published-docs counterpart to ID-216's repo-source bundling — same
   `llms.txt`/`llms-full.txt` lineage, different target (docs prose, not source).
   **Scope:** plugin trial against our MkDocs config; confirm twins build under
