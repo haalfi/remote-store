@@ -504,3 +504,192 @@ def test_docs_site_links_against_live_repo(check_links_mod):
     assert {"", "reference/api/store", "guides/extensions", "explanation/design"} <= pages
     broken = check_links_mod.check_docs_site_links(ROOT)
     assert broken == [], "\n".join(f"{b.source.relative_to(ROOT)}:{b.line}: {b.raw}" for b in broken)
+
+
+# ---------------------------------------------------------------------------
+# BK-307: docs-site links in non-Markdown discovery files (llms.txt)
+# ---------------------------------------------------------------------------
+# Spec-less by design: BK-307 is filed `spec: —`, audience contributor.tooling
+# / infra.ci, so both discovery-file rules (llms.txt here + context7 below)
+# stay tooling gates with no DOCFRAME marker — symmetric, and consistent with
+# the other CI gates (check_traces, check_ci_inventory). They reuse the
+# DOCFRAME-009 machinery but do not extend its `.md`-scoped contract.
+
+# Reuses the same page set the live llms.txt links resolve against, so the
+# unit cases mirror the real gate without the full build_source_map scan.
+_LLMS_VALID = {
+    "",
+    "tutorial/getting-started",
+    "guides/choosing-a-backend",
+    "reference/capabilities-matrix",
+    "reference/api",
+    "guides/async",
+    "reference/migration",
+}
+
+
+def test_discovery_file_docs_site_links_flags_stale(check_links_mod, tmp_path):
+    """A stale docs-site URL in docs-src/llms.txt fails the gate offline.
+
+    BK-307: llms.txt is Markdown-link syntax but not a ``.md`` file, so the
+    ``.md``-only walk never saw it. The stale segment here (``/stable/api/``
+    instead of ``/stable/reference/api/``) is the exact rot class the gate must
+    catch with no HTTP request.
+    """
+    docs_src = tmp_path / "docs-src"
+    docs_src.mkdir()
+    (docs_src / "llms.txt").write_text(
+        "# remote-store\n\n## Docs\n\n- [API reference](https://docs.remotestore.dev/stable/api/):\n"
+    )
+    broken = check_links_mod.check_discovery_file_docs_site_links(tmp_path, valid_pages=_LLMS_VALID)
+    assert len(broken) == 1
+    assert broken[0].raw == "https://docs.remotestore.dev/stable/api/"
+    assert broken[0].source.name == "llms.txt"
+
+
+def test_discovery_file_docs_site_links_accepts_real_pages(check_links_mod, tmp_path):
+    docs_src = tmp_path / "docs-src"
+    docs_src.mkdir()
+    (docs_src / "llms.txt").write_text(
+        "- [Getting started](https://docs.remotestore.dev/stable/tutorial/getting-started/):\n"
+        "- [Async](https://docs.remotestore.dev/stable/guides/async/):\n"
+        "- [GitHub](https://github.com/haalfi/remote-store):\n"
+    )
+    assert check_links_mod.check_discovery_file_docs_site_links(tmp_path, valid_pages=_LLMS_VALID) == []
+
+
+def test_discovery_file_docs_site_links_skips_external(check_links_mod, tmp_path):
+    # github.com / pypi.org links are out of scope for the offline gate.
+    docs_src = tmp_path / "docs-src"
+    docs_src.mkdir()
+    (docs_src / "llms.txt").write_text(
+        "- [GitHub](https://github.com/haalfi/remote-store)\n- [PyPI](https://pypi.org/project/remote-store/)\n"
+    )
+    assert check_links_mod.check_discovery_file_docs_site_links(tmp_path, valid_pages=_LLMS_VALID) == []
+
+
+def test_discovery_file_docs_site_links_missing_file_is_noop(check_links_mod, tmp_path):
+    # No docs-src/llms.txt at all — nothing to validate, no crash.
+    assert check_links_mod.check_discovery_file_docs_site_links(tmp_path, valid_pages=_LLMS_VALID) == []
+
+
+def test_discovery_files_against_live_repo(check_links_mod):
+    """docs-src/llms.txt docs-site links resolve on the live tree.
+
+    Positive control: exercises the real ``build_source_map`` page set (no
+    injected ``valid_pages``). Skipped outside a git checkout. Also asserts the
+    file is actually seen, so a future rename of llms.txt cannot turn this into
+    a vacuous pass.
+    """
+    import subprocess
+
+    result = subprocess.run(["git", "rev-parse", "--git-dir"], cwd=ROOT, capture_output=True)
+    if result.returncode != 0:
+        pytest.skip("not a git checkout")
+    assert (ROOT / "docs-src" / "llms.txt").exists(), "llms.txt moved — update _DOCS_SITE_LINK_DISCOVERY_FILES"
+    broken = check_links_mod.check_discovery_file_docs_site_links(ROOT)
+    assert broken == [], "\n".join(f"{b.source.relative_to(ROOT)}:{b.line}: {b.raw}" for b in broken)
+
+
+# ---------------------------------------------------------------------------
+# BK-307: on-disk validation of root context7.json path lists
+# ---------------------------------------------------------------------------
+
+
+def _write_context7(tmp_path, **fields):
+    import json
+
+    (tmp_path / "context7.json").write_text(json.dumps(fields))
+
+
+def _scaffold_context7_repo(tmp_path):
+    """A tmp tree mirroring the real context7.json path lists (BK-307)."""
+    (tmp_path / "src" / "remote_store").mkdir(parents=True)
+    (tmp_path / "docs-src" / "explanation").mkdir(parents=True)
+    (tmp_path / "sdd" / "specs").mkdir(parents=True)
+    (tmp_path / "README.md").write_text("# r\n")
+    (tmp_path / "pyproject.toml").write_text("[x]\n")
+    # excludeFiles matches by basename, so graph_viz.html lives in a subdir.
+    (tmp_path / "docs-src" / "explanation" / "graph_viz.html").write_text("<html></html>")
+
+
+def test_check_context7_paths_passes_for_real_paths(check_links_mod, tmp_path):
+    _scaffold_context7_repo(tmp_path)
+    _write_context7(
+        tmp_path,
+        folders=["src/remote_store/", "sdd/specs/", "README.md"],
+        excludeFolders=["docs-src/explanation/"],
+        excludeFiles=["pyproject.toml", "graph_viz.html"],
+    )
+    assert check_links_mod.check_context7_paths(tmp_path) == []
+
+
+def test_check_context7_paths_flags_missing_folder(check_links_mod, tmp_path):
+    """A directory rename that drops a context7 `folders` entry fails offline."""
+    _scaffold_context7_repo(tmp_path)
+    _write_context7(tmp_path, folders=["src/remote_store/", "sdd/renamed/"])
+    broken = check_links_mod.check_context7_paths(tmp_path)
+    assert len(broken) == 1
+    assert "folders: sdd/renamed/" in broken[0].raw
+
+
+def test_check_context7_paths_flags_missing_exclude_folder(check_links_mod, tmp_path):
+    _scaffold_context7_repo(tmp_path)
+    _write_context7(tmp_path, excludeFolders=["scripts/"])
+    broken = check_links_mod.check_context7_paths(tmp_path)
+    assert len(broken) == 1
+    assert "excludeFolders: scripts/" in broken[0].raw
+
+
+def test_check_context7_paths_exclude_folder_must_be_dir(check_links_mod, tmp_path):
+    # A file where a directory is expected is still drift.
+    _scaffold_context7_repo(tmp_path)
+    _write_context7(tmp_path, excludeFolders=["README.md"])
+    broken = check_links_mod.check_context7_paths(tmp_path)
+    assert len(broken) == 1
+    assert "no such directory" in broken[0].resolved
+
+
+def test_check_context7_paths_flags_missing_exclude_file(check_links_mod, tmp_path):
+    _scaffold_context7_repo(tmp_path)
+    _write_context7(tmp_path, excludeFiles=["does-not-exist.toml"])
+    broken = check_links_mod.check_context7_paths(tmp_path)
+    assert len(broken) == 1
+    assert "does-not-exist.toml" in broken[0].resolved
+
+
+def test_check_context7_paths_exclude_file_matches_by_basename(check_links_mod, tmp_path):
+    # graph_viz.html lives at docs-src/explanation/ but is named bare — the
+    # context7 schema matches excludeFiles by filename, so this must pass.
+    _scaffold_context7_repo(tmp_path)
+    _write_context7(tmp_path, excludeFiles=["graph_viz.html"])
+    assert check_links_mod.check_context7_paths(tmp_path) == []
+
+
+def test_check_context7_paths_skips_pattern_entries(check_links_mod, tmp_path):
+    # context7 allows glob/regex in the folder lists; a literal on-disk check
+    # cannot vouch for them, so they are left unchecked rather than mis-flagged.
+    _scaffold_context7_repo(tmp_path)
+    _write_context7(
+        tmp_path,
+        folders=["src/**/*.py"],
+        excludeFolders=["**/__pycache__"],
+        excludeFiles=["*.pyc"],
+    )
+    assert check_links_mod.check_context7_paths(tmp_path) == []
+
+
+def test_check_context7_paths_missing_manifest_is_noop(check_links_mod, tmp_path):
+    assert check_links_mod.check_context7_paths(tmp_path) == []
+
+
+def test_context7_paths_against_live_repo(check_links_mod):
+    """The real root context7.json path lists all resolve (positive control)."""
+    import subprocess
+
+    result = subprocess.run(["git", "rev-parse", "--git-dir"], cwd=ROOT, capture_output=True)
+    if result.returncode != 0:
+        pytest.skip("not a git checkout")
+    assert (ROOT / "context7.json").exists()
+    broken = check_links_mod.check_context7_paths(ROOT)
+    assert broken == [], "\n".join(f"{b.raw} → {b.resolved}" for b in broken)

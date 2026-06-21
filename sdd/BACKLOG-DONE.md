@@ -8,6 +8,31 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-307 — Validate links/paths in non-Markdown discovery files (`llms.txt`, `context7.json`)**
+  spec: — · effort: S · audience: contributor.tooling, infra.ci
+  PR #853 (ID-161) review surfaced that `scripts/docs/check_links.py` walks
+  only git-tracked `.md` files, so the URLs/paths in the repo's non-`.md`
+  discovery files were never validated and could rot silently. Extended the
+  existing `check-links` gate (offline, no HTTP) with two rules:
+  - **Discovery-file docs-site links:** `docs-src/llms.txt` is Markdown-link
+    syntax, so its `docs.remotestore.dev/<alias>/` links now flow through the
+    same `build_source_map`-derived docs-site check that guards `.md` files. A
+    stale path segment fails the gate offline. External links (GitHub, PyPI)
+    stay out of scope.
+  - **context7 manifest paths:** every `folders` / `excludeFolders` /
+    `excludeFiles` entry in the root `context7.json` must resolve on disk, so a
+    directory rename cannot quietly drop a folder from context7 indexing. Per
+    the context7 schema, `folders` / `excludeFolders` are repo-root-relative
+    paths while `excludeFiles` matches by *filename only* (basename) — so a
+    bare `graph_viz.html` legitimately names `docs-src/explanation/`. Glob /
+    regex pattern entries are left unchecked; the context7.com `url` is
+    external and out of scope. `docs-src/context7.json` carries only a
+    context7.com `url` and prose `rules`, so it needs no on-disk check.
+  Implemented by extending `check_links.py:main()` (no new script, no
+  `pyproject.toml` change — the `check-links` entry point already runs under
+  `docs-gate` and `all`). Audience is tooling/CI only, so no CHANGELOG entry
+  per the trace-schema derived rule.
+
 - [x] **ID-161 — Publish `llms.txt` to the docs site**
   spec: — · effort: S · audience: user.discoverability.llm, library.maintainer
   Added `docs-src/llms.txt` ([llmstxt.org](https://llmstxt.org/) standard): H1 +
