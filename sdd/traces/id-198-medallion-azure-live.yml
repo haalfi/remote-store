@@ -1,0 +1,161 @@
+id: ID-198
+title: "Medallion Dagster + Azure HNS live showcase: validate, then fix"
+trigger: "examples/medallion_dagster/ demonstrates a Dagster + Azure HNS user journey but had never executed against a live ADLS Gen2 account; the validation run revealed the published showcase did not run on current Dagster and lost observability on a backend swap, so the report-only item became a fix."
+source_items:
+  - ID-198
+audience:
+  - user.site
+  - user.api
+  - infra.test
+  - library.maintainer
+surprising_ripples:
+  - examples/medallion_dagster/assets/gold.py
+review_rounds: 3
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-198 (Azure)"
+        read_type: gate
+        extract: "Validation-run item: run the showcase end-to-end live, report gaps, produce no library code changes"
+      - file: examples/medallion_dagster/stores.py
+        section: "(full)"
+        read_type: reference
+        extract: "Lake is LocalBackend(root=./data/showcase); HTTP source wrapped by cache+otel but the lake is NOT otel-wrapped"
+      - file: examples/medallion_dagster/assets/bronze.py
+        section: "(full)"
+        read_type: reference
+        extract: "Bronze uses bronze.write(overwrite=True) + read_bytes; file-level copy, no IO manager"
+      - file: examples/medallion_dagster/assets/silver.py
+        section: "(full)"
+        read_type: reference
+        extract: "Silver reads bronze CSVs, returns Polars frame through ParquetSerializer IO manager"
+      - file: examples/medallion_dagster/assets/gold.py
+        section: "(full)"
+        read_type: reference
+        extract: "Gold reads silver Parquet via IO manager, writes 3 aggregate Parquet outputs"
+      - file: tests/backends/fixtures/azure_live_hns.py
+        section: "_factory"
+        read_type: reference
+        extract: "Live HNS backend = AzureBackend(container=fs, hns=True, connection_string=conn)"
+      - file: docs-src/guides/backends/azure-hns-setup.md
+        section: "Wire credentials into the environment"
+        read_type: gate
+        extract: "Creds via .env: AZURE_STORAGE_CONNECTION_STRING + RS_TEST_LIVE_HNS=1 + RS_TEST_LIVE_HNS_CONTAINER; loaded by python-dotenv"
+  - id: wire
+    name: Wire the live swap
+    steps:
+      - file: src/remote_store/_store.py
+        section: "child"
+        read_type: reference
+        extract: "Store.child(subpath) -> Store; used to isolate the run under id198-run/ and re-derive bronze/silver/gold"
+      - file: examples/medallion_dagster/stores.py
+        section: "Sink: local medallion lake"
+        read_type: reference
+        extract: "Temp swap LocalBackend -> AzureBackend(hns=True); load_dotenv(override=False). The os import was stripped by the ruff hook on first Edit and had to be re-added (Edit+formatter import-strip)"
+  - id: run
+    name: Run end-to-end live
+    steps:
+      - file: examples/medallion_dagster/assets/gold.py
+        section: "gold_daily_summary annotation"
+        read_type: verify
+        extract: "BLOCKER: Dagster 1.13.4 get_type_hints() can't resolve 'pa.Table' (pyarrow under TYPE_CHECKING + future-annotations). Backend-independent; showcase never ran on modern Dagster. Temp-moved import to module level to proceed"
+        outcome: misleading
+      - file: examples/medallion_dagster/definitions.py
+        section: "(full)"
+        read_type: reference
+        extract: "Reproduced the assets+resources wiring in a headless dagster.materialize driver (CLI --select '*' kept being glob-expanded by bash)"
+  - id: verify
+    name: Verify on the live account
+    steps:
+      - file: src/remote_store/_store.py
+        section: "list_files / list_folders / read_bytes / delete_folder"
+        read_type: verify
+        extract: "8 objects landed under id198-run/ with real HNS directory markers; gold parquet round-trip = 513 rows; OTel emitted only backend:http spans (lake not instrumented); delete_folder(recursive) cleaned the account to 0"
+  - id: report
+    name: Report (initial close attempt)
+    steps:
+      - file: CLAUDE.md
+        section: "Audits"
+        read_type: gate
+        extract: "Closed report-only with three advisory findings. User pushed back: a published showcase that doesn't run / doesn't demonstrate its value is useless from a user POV, so ID-198 was NOT done — reopened to fix, not just report"
+        outcome: misleading
+  - id: fix
+    name: Fix the showcase
+    steps:
+      - file: examples/medallion_dagster/assets/gold.py
+        section: "imports"
+        read_type: reference
+        extract: "Finding 1 fix: drop future-annotations + import pyarrow at module level so pa.Table is a real def-time annotation; ruff TCH (the original mover) now leaves it because pa is used at runtime"
+      - file: pyproject.toml
+        section: "[tool.ruff.lint] select (TCH)"
+        read_type: gate
+        extract: "Confirmed TCH is enabled — explains why pyarrow was auto-moved into TYPE_CHECKING; the fix must keep pa a runtime reference, not just relocate the import"
+      - file: examples/medallion_dagster/stores.py
+        section: "Sink: local medallion lake"
+        read_type: reference
+        extract: "Finding 2 fix: wrap lake with otel_observe so a backend swap keeps emitting spans. Finding 3 + testability: RS_SHOWCASE_SOURCE_URL / RS_SHOWCASE_LAKE_ROOT env knobs"
+      - file: examples/medallion_dagster/README.md
+        section: "Swapping Backends / Configuration / What to Observe"
+        read_type: reference
+        extract: "Finding 3 fix: document the Azure/HNS swap with hns=True + creds, the env knobs, and that the lake is observed across the swap"
+  - id: tests
+    name: Regression guard
+    steps:
+      - file: tests/scripts/run_examples.py
+        section: "AUTO_SUBDIRS / docstring"
+        read_type: reference
+        extract: "Confirms the Dagster project is deliberately un-swept (needs the launcher) — explains the zero-CI-coverage blind spot the regression hid in"
+      - file: tests/test_examples.py
+        section: "TestMedallionDagsterShowcase"
+        read_type: reference
+        extract: "Offline full-graph materialize: pytest_httpserver source + tmp lake; guards finding 1 (builds/runs) + finding 2 (lake is ObservedStore); fixtures crafted for valid Silver parse + a frost/heat alert day"
+  - id: reverify
+    name: Re-verify live + close
+    steps:
+      - file: examples/medallion_dagster/stores.py
+        section: "(reassigned in driver)"
+        read_type: verify
+        extract: "Live re-run on real ADLS Gen2 with the fixes: materialize success=True (finding 1 fixed live) and 18 backend:azure spans across write/read_bytes (finding 2 fixed); account prefix deleted after"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "Validation pivoted to a user-facing fix: example + test + README + CHANGELOG stub + BACKLOG-DONE + trace, audience now user.* so CHANGELOG required"
+  - id: review3
+    name: PR #854 review round 3
+    steps:
+      - file: tests/test_examples.py
+        section: "OTel provider setup + finally"
+        read_type: verify
+        extract: "Round 3: the round-2 span capture added a SimpleSpanProcessor to the global provider and never detached it (collects later tests' spans). Captured the processor and shut it down in finally; moved all assertions inside try so cleanup is unconditional. Provider left live+empty (benign)"
+      - file: CHANGELOG.md
+        section: "[Unreleased] ID-198"
+        read_type: reference
+        extract: "Round 3: dropped 'one-line' from the ID-198 line — contradicted the README's own softened wording (the Azure swap is multi-line)"
+  - id: review2
+    name: PR #854 review round 2
+    steps:
+      - file: tests/test_examples.py
+        section: "TestMedallionDagsterShowcase materialize call"
+        read_type: verify
+        extract: "Round 2 pushed back on round 1's fix: resolve_implicit_global_asset_job_def is a non-public Definitions method (unstable across Dagster minors). Switched to public dagster.materialize(list(defs.assets), resources=dict(defs.resources or {})) — real defs wiring via the user-facing API, matching the live ID-198 run"
+      - file: tests/test_examples.py
+        section: "Finding #2 behavioural guard"
+        read_type: verify
+        extract: "Round 2: the guard only checked the ObservedStore *type*, never that a span fires. Added an InMemorySpanExporter and assert >=1 backend=local lake span, so the finding-2 fix is verified behaviourally offline"
+      - file: examples/medallion_dagster/otel_setup.py
+        section: "configure_otel"
+        read_type: reference
+        extract: "Round 2 (global-OTel hazard): made configure_otel idempotent/non-clobbering (skip if an SDK provider is already set). The test installs its own thread-less in-memory providers before import, so no torn-down global is pinned and no PeriodicExporting thread leaks"
+  - id: review
+    name: PR #854 review round 1
+    steps:
+      - file: src/remote_store/backends/_s3.py
+        section: "S3Backend.__init__"
+        read_type: verify
+        extract: "Review caught a real bug: README S3 swap passed prefix= which S3Backend has no parameter for (TypeError on copy-paste, in the public tutorial). Verified the signature; fixed to Store(S3Backend(bucket=...)).child('showcase')"
+      - file: tests/test_examples.py
+        section: "TestMedallionDagsterShowcase"
+        read_type: reference
+        extract: "Review: the guard hand-rolled the asset/resource wiring, leaving definitions.py (the real `dagster dev -f` entry point) uncovered. Switched to definitions.defs.resolve_implicit_global_asset_job_def().execute_in_process() (the get_* alias warns under warnings-as-errors). Also added a docstring note on the global-OTel-provider shutdown not restoring prior providers, and softened the README 'one line' wording"

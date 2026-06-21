@@ -592,6 +592,157 @@ class TestDagsterV2Resource:
         assert results["teardown_ok"] is True
 
 
+class TestMedallionDagsterShowcase:
+    """End-to-end smoke test for the ``examples/medallion_dagster/`` showcase (ID-198).
+
+    The showcase is a self-contained Dagster *project* (sibling-relative imports,
+    a live HTTP source), so ``run_examples.py`` cannot sweep it and it had zero
+    CI coverage — a regression that left it unable to even import on current
+    Dagster went unnoticed. This test materialises the full Bronze → Silver →
+    Gold graph offline: a local HTTP server stands in for the MeteoSwiss source
+    (``RS_SHOWCASE_SOURCE_URL``) and a tmp dir for the lake
+    (``RS_SHOWCASE_LAKE_ROOT``), so it needs no network and no cloud.
+
+    It guards both ID-198 findings:
+    - Finding 1 — the graph builds and *runs* on the installed Dagster (the
+      ``pa.Table`` annotation resolves), exercised through the public
+      ``dagster.materialize`` API over the real ``definitions.defs`` assets and
+      resources, so drift in the showcase's actual entry point is caught rather
+      than a parallel hand-rolled wiring (and the guard rots with the
+      user-facing path, not on an internal-API removal).
+    - Finding 2 — observability actually *fires* on lake operations: the test
+      captures spans into an in-memory exporter and asserts at least one
+      ``backend: local`` lake span, not merely that the lake is the right
+      wrapper type.
+
+    OTel isolation: the test installs its own in-memory providers *before*
+    importing the showcase, so the now-idempotent ``configure_otel()`` is a
+    no-op and the lake's spans flow to the in-memory exporter. These providers
+    carry no background threads (no ``PeriodicExportingMetricReader``), and the
+    span processor is shut down in the ``finally`` so it stops collecting spans
+    from any later test sharing the global provider — no torn-down provider is
+    pinned, no thread leaks, no cross-test span residue.
+    """
+
+    # MeteoSwiss daily CSV is semicolon-delimited with these columns; Silver
+    # parses station_abbr + reference_timestamp + the measurement subset.
+    _HEADER = "station_abbr;reference_timestamp;tre200d0;tre200dn;tre200dx;rre150d0"
+
+    @staticmethod
+    def _station_csv(abbr: str, *, min_temp: float, max_temp: float) -> bytes:
+        """A tiny but schema-valid daily CSV: one normal day plus one alert day."""
+        rows = [
+            TestMedallionDagsterShowcase._HEADER,
+            f"{abbr};01.01.2026 00:00;5.0;2.0;9.0;0.0",
+            f"{abbr};02.01.2026 00:00;{(min_temp + max_temp) / 2};{min_temp};{max_temp};1.5",
+        ]
+        return ("\n".join(rows) + "\n").encode()
+
+    def test_materialize_offline(self, tmp_path, monkeypatch):
+        pytest.importorskip("dagster")
+        pytest.importorskip("polars")
+        pytest.importorskip("pyarrow")
+        pytest.importorskip("pytest_httpserver", reason="pytest-httpserver not installed")
+
+        from pathlib import Path
+
+        from pytest_httpserver import HTTPServer
+
+        from remote_store.ext.observe import ObservedStore
+
+        # Fixture source files keyed by the paths bronze.py requests. Lugano gets
+        # a frost day (< 0) and a heat day (> 30) so gold_alerts is non-empty.
+        sources = {
+            "/ogd-smn_meta_stations.csv": b"station_abbr;name\nBER;Bern\nKLO;Zurich\nLUG;Lugano\n",
+            "/ber/ogd-smn_ber_d_recent.csv": self._station_csv("BER", min_temp=1.0, max_temp=12.0),
+            "/klo/ogd-smn_klo_d_recent.csv": self._station_csv("KLO", min_temp=0.5, max_temp=14.0),
+            "/lug/ogd-smn_lug_d_recent.csv": self._station_csv("LUG", min_temp=-3.0, max_temp=31.0),
+        }
+
+        server = HTTPServer(host="127.0.0.1")
+        for path, body in sources.items():
+            server.expect_request(path, method="GET").respond_with_data(body, content_type="text/csv")
+            server.expect_request(path, method="HEAD").respond_with_data(b"", content_type="text/csv")
+        server.start()
+
+        example_dir = Path(__file__).parents[1] / "examples" / "medallion_dagster"
+        monkeypatch.setenv("RS_SHOWCASE_SOURCE_URL", server.url_for("/"))
+        monkeypatch.setenv("RS_SHOWCASE_LAKE_ROOT", str(tmp_path / "lake"))
+        monkeypatch.syspath_prepend(str(example_dir))
+
+        # Install our own OTel providers *before* importing the showcase so its
+        # (now idempotent) configure_otel() is a no-op and the lake's spans flow
+        # to an exporter we can assert on. No background threads, so nothing is
+        # left writing to a torn-down buffer; the span processor is detached in
+        # the finally so it does not collect later tests' spans.
+        from opentelemetry import metrics, trace  # noqa: PLC0415
+        from opentelemetry.sdk.metrics import MeterProvider  # noqa: PLC0415
+        from opentelemetry.sdk.trace import TracerProvider  # noqa: PLC0415
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor  # noqa: PLC0415
+        from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter  # noqa: PLC0415
+
+        tracer_provider = trace.get_tracer_provider()
+        if not isinstance(tracer_provider, TracerProvider):
+            tracer_provider = TracerProvider()
+            trace.set_tracer_provider(tracer_provider)
+        span_exporter = InMemorySpanExporter()
+        span_processor = SimpleSpanProcessor(span_exporter)
+        tracer_provider.add_span_processor(span_processor)
+        if not isinstance(metrics.get_meter_provider(), MeterProvider):
+            metrics.set_meter_provider(MeterProvider())
+
+        injected = ["stores", "otel_setup", "assets", "assets.bronze", "assets.silver", "assets.gold", "definitions"]
+        for name in injected:
+            sys.modules.pop(name, None)
+
+        try:
+            import definitions  # noqa: PLC0415  -- the real `dagster dev -f definitions.py` entry point
+            import stores  # noqa: PLC0415
+            from dagster import materialize  # noqa: PLC0415
+
+            # Finding #2 guard (structural): the lake (and its children) must be
+            # OTel-observed, not a bare Store — else a backend swap emits no spans.
+            assert isinstance(stores.lake, ObservedStore)
+            assert isinstance(stores.bronze, ObservedStore)
+
+            # Drive the *real* definitions.defs wiring through the public
+            # dagster.materialize API (the path users and the live ID-198 run
+            # exercise), so the guard catches definitions.py drift and rots with
+            # the user-facing surface, not on an internal-resolver removal.
+            result = materialize(list(definitions.defs.assets), resources=dict(definitions.defs.resources or {}))
+            assert result.success
+
+            # Finding #1 guard: the full graph ran and wrote every layer to the lake.
+            lake_root = tmp_path / "lake"
+            assert (lake_root / "bronze" / "stations" / "ber" / "daily.csv").exists()
+            assert (lake_root / "silver" / "silver_measurements.parquet").exists()
+            for gold_out in ("gold_daily_summary", "gold_station_stats", "gold_alerts"):
+                assert (lake_root / "gold" / f"{gold_out}.parquet").exists()
+
+            # Finding #2 guard (behavioural): observability actually fires on lake ops,
+            # not just that the wrapper type is right. At least one span must be emitted
+            # for a backend=local lake operation.
+            lake_spans = [
+                s
+                for s in span_exporter.get_finished_spans()
+                if s.attributes and s.attributes.get("remote_store.backend") == "local"
+            ]
+            assert lake_spans, "expected at least one OTel span for a lake (backend=local) operation"
+        finally:
+            # Detach our span processor so it stops collecting spans from any later
+            # test that shares the global provider (shutdown() also shuts the
+            # exporter). The provider itself is left live and empty — benign.
+            import contextlib  # noqa: PLC0415
+
+            with contextlib.suppress(Exception):
+                span_processor.shutdown()
+            for name in injected:
+                sys.modules.pop(name, None)
+            server.clear()
+            if server.is_running():
+                server.stop()
+
+
 class TestDagsterComputeLogManager:
     pytestmark = pytest.mark.os_sensitive
 

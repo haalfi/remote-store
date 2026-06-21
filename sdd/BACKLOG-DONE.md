@@ -28,6 +28,53 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   RTD redirects are configured in the project dashboard, not `.readthedocs.yaml`.
   The versioned `docs-src/context7.json` (already built per version) is unchanged.
 
+- [x] **ID-198 — Medallion Dagster + Azure HNS live showcase: validate, then fix**
+  spec: — · effort: M · audience: user.site, user.api, infra.test, library.maintainer
+  Started as a report-only validation run of `examples/medallion_dagster/` against
+  a **live ADLS Gen2 (HNS) account**. The run found the showcase — a published
+  tutorial — was correct from its own narrow view but **useless from a user's
+  point of view**, so the item was completed by *fixing* it, not just filing a
+  report. Method: applied the README "Swapping Backends" one-line swap
+  (`AzureBackend(container=…, hns=True, connection_string=…)`, isolated under an
+  `id198-run/` prefix), loaded creds via `python-dotenv` per
+  `docs-src/guides/backends/azure-hns-setup.md`, materialized all 8 assets headless
+  via `dagster.materialize`, then cleaned the prefix.
+  **Three findings, all fixed:**
+  1. **Showcase did not run on current Dagster (1.13.4, satisfies its own
+     `dagster>=1.9` pin).** `assets/gold.py` annotated asset params
+     `silver_measurements: pa.Table` while `pyarrow` sat under `TYPE_CHECKING`;
+     with `from __future__ import annotations` the hint is a string and Dagster's
+     `get_type_hints()` at `@asset` decoration time raised
+     `DagsterInvalidDefinitionError`. Backend-independent — it blocked `dagster dev`
+     and any materialization, so the showcase had never run on a modern Dagster.
+     **Fix:** drop `from __future__ import annotations` in `gold.py` and import
+     `pyarrow` at module level, so `pa.Table` is a real def-time annotation that
+     both Dagster resolves and ruff TCH leaves in place (the TCH auto-move into
+     `TYPE_CHECKING` was the original root cause).
+  2. **Observability did not survive a backend swap.** `stores.py` wrapped only the
+     HTTP *source* with `otel_observe`; the lake was bare, so the live run emitted
+     only 4 `backend: http` spans — zero for any Azure op. The showcase's headline
+     "observability on every storage operation" did not reach the lake a user
+     swaps to S3/Azure. **Fix:** wrap the lake with `otel_observe`; the live re-run
+     then emitted 18 `backend: azure` spans (write + read_bytes) across Bronze/
+     Silver/Gold.
+  3. **README "Swapping Backends" was incomplete for Azure/HNS.** It showed only an
+     S3 bare-constructor swap, omitting `hns=True` (the backend does not
+     auto-detect HNS) and credential wiring. **Fix:** documented the Azure/HNS swap
+     with `hns=True` + creds, noted the lake is observed across the swap, and added
+     `RS_SHOWCASE_SOURCE_URL` / `RS_SHOWCASE_LAKE_ROOT` env knobs.
+  **Why it rotted:** the example is a self-contained Dagster project (sibling
+  imports, live HTTP source) that `run_examples.py` cannot sweep and mypy excludes,
+  so nothing in CI ever imported it. **Guard added:**
+  `tests/test_examples.py::TestMedallionDagsterShowcase` materializes the full
+  graph offline — a `pytest_httpserver` stands in for MeteoSwiss
+  (`RS_SHOWCASE_SOURCE_URL`) and a tmp dir for the lake (`RS_SHOWCASE_LAKE_ROOT`) —
+  asserting the graph builds (finding 1), the lake is an `ObservedStore`
+  (finding 2), and every layer lands.
+  **Verified:** offline smoke test green; live re-run on real ADLS Gen2 returned
+  `materialize success: True` with 18 Azure spans, then the prefix was deleted.
+  Trace: `sdd/traces/id-198-medallion-azure-live.yml`.
+
 - [x] **BUG-221 — `LocalBackend.glob()` resolve race (assessed non-reproducible; closed via consistency hardening)**
   spec: GLOB-005 · effort: S · audience: library.maintainer, infra.test
   Filed from BUG-220's PR #820 review as a latent twin: `glob()` used the same
