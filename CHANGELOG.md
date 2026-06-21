@@ -19,7 +19,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
-- New `sdd/TESTING-RUNBOOK.md` (repo-only) collects the operational test recipes — stage selection, live-cloud invocation, cassette record/refresh/replay — in one place, with a `tests/README.md` signpost; `sdd/TESTING.md` is trimmed back to quality standards so the runnable commands no longer dual-publish to the docs site.
 - Codecov badge now reuses the `test-primary` CI coverage run (full suite + `sftp_docker` conformance), uploaded on master pushes; removed the redundant post-release `coverage` job from `publish.yml`.
 
 ## [0.28.0] - 2026-06-15

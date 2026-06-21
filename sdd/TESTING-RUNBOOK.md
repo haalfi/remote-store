@@ -1,4 +1,4 @@
-# Testing Runbook — how to run stages, live, and cassettes
+# Testing Runbook
 <!-- doc: repo-only -->
 
 Operational companion to [`sdd/TESTING.md`](TESTING.md). TESTING.md owns test
@@ -89,20 +89,30 @@ emulator (moto/MinIO/LocalStack signatures fail loud). The live IAM user is
 scoped to a bucket prefix — see the "Required IAM permissions" comment in
 [`tests/backends/fixtures/s3_live.py`](../tests/backends/fixtures/s3_live.py).
 
-**Microsoft Graph (OneDrive) — async-only, e2e tier:**
+**Microsoft Graph (OneDrive) — live e2e:**
 
 ```bash
 RS_TEST_LIVE_GRAPH=1 hatch run pytest \
-  tests/e2e/test_data_lake.py -o addopts= -p no:randomly -n0 -v
+  tests/e2e/ -o addopts= -p no:randomly -n0 -k graph -v
 ```
 
-Device-code (delegated) against a personal Microsoft account: needs
+`GraphBackend` is async-only (construct it with `AsyncStore`); the medallion e2e
+bridges it to a sync `Store` via the `graph_lake` fixture, which skips unless the
+`RS_TEST_LIVE_GRAPH` gate is satisfied (Graph has no emulator). The `-k graph`
+filter targets the Graph-specific cases — `test_graph` in
+`tests/e2e/test_data_lake.py` and the `test_memory_to_graph` /
+`test_graph_to_memory` transfers in `tests/e2e/test_transfer.py` — and skips the
+Docker medallion variants (`test_azurite`, `test_s3_pyarrow_minio`) that the bare
+file path would otherwise collect. The async streaming-integrity hop lives in
+`tests/e2e/test_async_streaming_integrity.py` (gated by `_graph_live_available()`).
+
+Credentials are device-code (delegated) against a personal Microsoft account:
 `GRAPH_CLIENT_ID` / `GRAPH_TENANT_ID` (`consumers`) / `GRAPH_DRIVE_ID`. The MSAL
-refresh token comes from the cache the first interactive sign-in writes; there
-is no client secret. e2e tests are excluded from the default `addopts`
-(`--ignore=tests/e2e`), so the e2e recipe clears `addopts` entirely with
-`-o addopts=` (which lifts both the ignore and `-m 'not live'`). Run the whole
-e2e suite with `hatch run e2e`.
+refresh token comes from the cache the first interactive sign-in writes; there is
+no client secret. e2e tests are excluded from the default `addopts`
+(`--ignore=tests/e2e`), so the recipe clears `addopts` entirely with `-o addopts=`
+(which lifts both the ignore and `-m 'not live'`). Run the whole e2e suite with
+`hatch run e2e`.
 
 ### Partitioning by backend
 
