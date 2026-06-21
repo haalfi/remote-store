@@ -9,7 +9,7 @@ audience:
   - library.maintainer
 surprising_ripples:
   - .readthedocs.yaml
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

@@ -1,18 +1,34 @@
 # remote-store
 
-> Unified file-storage API for Python — one `Store` interface across Local,
-> S3, S3+PyArrow, SFTP, Azure (Blob & ADLS Gen2), SQL, and Microsoft Graph
-> (OneDrive/SharePoint). Write storage code once and switch backends by
-> configuration; backends declare capabilities so code queries support with
-> `store.supports(Capability.X)` instead of guessing.
+> Unified file-storage API for Python. Use a single `Store` interface across
+> Local, S3 (optionally via PyArrow), SFTP, Azure (Blob & ADLS Gen2), SQL
+> databases, and Microsoft Graph (OneDrive/SharePoint).
 
-Common patterns worth knowing up front: stream reads with
-`with store.read(path) as f:`; use `MemoryBackend` for fast unit tests with no
-real I/O; scope a store to a subtree with `store.child(prefix)`; reach extra
-behaviour through `remote_store.ext` — content hashing (`ext.integrity`),
-partitioned key layouts (`ext.partition`), and store-to-store copy
-(`ext.transfer`). A native async API mirrors the sync one under
-`remote_store.aio`.
+Write storage code once and switch backends via configuration. Backends declare
+capabilities, so code checks support explicitly with
+`store.supports(Capability.X)` instead of relying on backend-specific behaviour.
+
+Common patterns:
+
+- Stream reads: `with store.read(path) as f:`
+- Fast tests: `MemoryBackend` for zero-I/O unit tests
+- Scoped views: `store.child(prefix)` narrows a store to a subtree
+- Optional features via `remote_store.ext`:
+  - `ext.integrity` (content hashing)
+  - `ext.partition` (partitioned key layouts)
+  - `ext.transfer` (store-to-store copy)
+
+A native async API mirrors the sync interface under `remote_store.aio`.
+
+```python
+from remote_store import Store
+from remote_store.backends import LocalBackend
+
+store = Store(LocalBackend(root="/data"))
+store.write_text("hello.txt", "Hello, world!")
+with store.read("hello.txt") as f:  # streaming read
+    data = f.read()
+```
 
 ## Docs
 
