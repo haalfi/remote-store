@@ -33,6 +33,13 @@ requires Docker. The 95% coverage floor (`test-cov-strict`) lives in CI and the
 publish workflow, where Azurite is up; do not substitute it locally (see
 [CLAUDE.md ยง Coverage gate](../CLAUDE.md#coverage-gate)).
 
+The gate runs against the editable install, so do not mutate the working tree
+while one is in flight (a background `hatch run all`, a watch loop). Concurrent
+edits or a `git stash` feed the running gate a tree it never saw whole, producing
+failures that vanish on a clean re-run. To check whether a fix is load-bearing,
+prove the failure in isolation (revert the fix, run, observe), not by editing
+alongside a live gate.
+
 Stage selection is the authority of
 [TEST-006](specs/048-testing-architecture.md#test-006-stage-selection): live
 tests run only at `--stage=3` with the matching opt-in env var; CI never runs
@@ -178,6 +185,11 @@ The azure record run covers **two** trees: the conformance suite (`azure_live` โ
 `azure_replay_hns`). The latter needs `RS_TEST_LIVE_HNS_CONTAINER` set alongside
 `RS_TEST_LIVE_HNS=1`. Both trees share `tests/backends/cassettes/azure/`; the HNS
 cassettes use the `[azure_hns]` / `[azure_hns_async]` alias.
+
+The full run deletes the cassette tree at Step 1 *before* re-recording, so an
+aborted run (lost credentials, network drop) can leave the tree partially wiped.
+Recover the committed cassettes with `git checkout -- tests/backends/cassettes/azure/`,
+then re-run. The single-cassette path below avoids the delete entirely.
 
 ### Single-cassette refresh (no tree-wipe)
 

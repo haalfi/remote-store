@@ -149,6 +149,28 @@ Bloated suites bury meaningful tests, inflate coverage without behavioral
 signal, and double refactoring cost. Delete tests that don't provide value
 (BK-014: -8.6% code, zero coverage loss).
 
+### A green test can be vacuous
+
+A passing test proves nothing if it never ran the code under test, or only
+confirmed your own assumptions. Four ways a test lies green:
+
+- **It was skipped, not run.** A conformance suite that silently skips when its
+  emulator or live account is unavailable is vacuous, not passing. Verify the
+  path actually executed (e.g. that the parametrization collected the fixture and
+  the test was not deselected), not just that the process exited zero.
+- **A mock encodes your assumptions, not the dependency's behaviour.** `spec=`
+  (Rule 4) constrains attribute *names*, but `MagicMock(spec=Backend)` still
+  accepts any *call shape* and returns a mock — an invalid SDK call signature
+  passes silently. For anything you don't own (Rule 5), pin behaviour against a
+  real or recorded dependency and verify the call shape against the live service,
+  because a mock will never reject a call the real service would.
+- **No positive control.** Trust a zero-failure result only after the same
+  harness, on the same machine, has produced a *known* failure. A repro that
+  cannot fail is not exercising what you think it is.
+- **It asserts the wrong signal.** To prove a blocking call was offloaded to a
+  worker thread, assert it ran off the event-loop thread (thread identity), not
+  that it completed "fast enough" — timing is flaky and proves nothing.
+
 ### Property-Based Testing (Hypothesis)
 
 PBT targets combinatorial input spaces with a clear oracle (roundtrip,
