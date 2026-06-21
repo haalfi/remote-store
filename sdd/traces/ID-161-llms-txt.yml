@@ -10,7 +10,7 @@ audience:
 surprising_ripples:
   - .readthedocs.yaml
   - sdd/DOCUMENTATION.md
-review_rounds: 5
+review_rounds: 6
 phases:
   - id: orient
     name: Orient

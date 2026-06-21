@@ -25,6 +25,21 @@ if store.supports(Capability.GLOB):
         ...
 ```
 
+When a backend lacks a capability, an extension can sometimes bridge it.
+`ext.glob.glob_files` matches patterns on backends without native `GLOB` by
+listing and filtering client-side (and uses native glob where available):
+
+```python
+from remote_store.ext.glob import glob_files
+
+for info in glob_files(store, "data/**/*.parquet"):
+    ...
+```
+
+Not every gap is bridgeable, though — capabilities that need backend-native
+I/O (e.g. atomic writes, server-side metadata) cannot be synthesized by an
+extension.
+
 A native async API (`remote_store.aio`) mirrors the sync interface, with
 adapters to bridge between sync and async contexts.
 
