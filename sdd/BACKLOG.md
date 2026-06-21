@@ -126,6 +126,32 @@ and the highest ID already in this file, then take the next integer. Run
   **Exit criteria:** trial run recorded; keep/drop decision noted on this item;
   if kept, a documented invocation lands in dev docs.
 
+- [ ] **ID-220 — Serve Markdown page twins + `llms-full.txt` via `mkdocs-llmstxt`**
+  spec: — · effort: M · audience: user.discoverability.llm, library.maintainer
+  ID-161 publishes a curated `docs-src/llms.txt`, but its `## Docs` links point
+  at rendered HTML pages (`https://docs.remotestore.dev/stable/.../`). An agent
+  fetching those pays for nav chrome, CSS, and JS to recover the prose, against
+  the [llmstxt.org](https://llmstxt.org/) intent that each listed page resolve to
+  clean Markdown. The reference example (FastHTML) links every page to a Markdown
+  twin. Evaluate the [`mkdocs-llmstxt`](https://github.com/pawamoy/mkdocs-llmstxt)
+  plugin to generate a per-page Markdown twin plus a concatenated `llms-full.txt`,
+  served from the docs site, then repoint the `## Docs` links at the twins.
+  **Why a plugin, not raw repo links:** our docs pages are *generated/transformed*
+  — the API reference comes from `gen-files`, `mkdocs_hooks.py` (BK-171) rewrites
+  repo links to site URLs, and literate-nav sets reading order. Linking `## Docs`
+  at raw GitHub Markdown would miss all three. The `## Source` links can already
+  resolve to raw Markdown because those files are plain Markdown twins —
+  verbatim-mirrored `dual` (`FEATURES.md`, served at `reference/FEATURES.md`) or
+  `repo-only` (`README.md`) — whose raw bytes equal what the bridge serves, with
+  no generation step to bypass. This is
+  the published-docs counterpart to ID-216's repo-source bundling — same
+  `llms.txt`/`llms-full.txt` lineage, different target (docs prose, not source).
+  **Scope:** plugin trial against our MkDocs config; confirm twins build under
+  RTD and the root-served default version; decide keep/drop. Background:
+  [research](research/research-lx-llms-context-tooling.md) (prefers a
+  MkDocs-native plugin over a raw bundler for this).
+  **Why ID, not BK:** unevaluated tooling adoption, no committed outcome.
+
 - [ ] **ID-197 — Review context7.com docs page for framing and content gaps**
   spec: — · effort: S · audience: library.maintainer
   The context7 docs proxy surfaces how external tools and readers discover the
