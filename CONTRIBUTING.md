@@ -268,7 +268,9 @@ See [`sdd/DESIGN.md`](sdd/DESIGN.md) for the full code style conventions.
 
 ## Test Requirements
 
-See [`sdd/TESTING.md`](sdd/TESTING.md) for testing quality rules. Spec
+See [`sdd/TESTING-RUNBOOK.md`](sdd/TESTING-RUNBOOK.md) for how to run the test
+stages, invoke live-cloud tests, and record or refresh cassettes. See
+[`sdd/TESTING.md`](sdd/TESTING.md) for testing quality rules. Spec
 traceability and test-per-spec obligations are in
 [`sdd/000-process.md` § Rules](sdd/000-process.md#rules) (Rules 1–2 cover spec-test traceability).
 

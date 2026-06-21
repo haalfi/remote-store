@@ -244,6 +244,7 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | Share a process insight or lesson learned | `DEVELOPMENT_STORY.md`                               |
 | Check or update code style conventions   | `sdd/DESIGN.md`                                      |
 | Check or update testing quality rules    | `sdd/TESTING.md`                                     |
+| Run a stage / live-cloud test / record cassettes | `sdd/TESTING-RUNBOOK.md`                     |
 | Check or update doc content quality rules | `sdd/CONTENT-RULES.md`                              |
 | Understand the full SDD workflow         | `sdd/000-process.md`                                 |
 | Add or update a backend guide            | `docs-src/guides/backends/` + docs nav               |
