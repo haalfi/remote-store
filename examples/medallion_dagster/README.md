@@ -94,18 +94,17 @@ Two environment variables override the defaults without editing code:
 
 ## Swapping Backends
 
-The core value proposition: change one line in `stores.py` to swap the lake
-backend from local filesystem to S3 or Azure. The lake is wrapped with
-`otel_observe(...)`, so observability follows the swap — every Bronze write and
-Silver/Gold round-trip emits spans against the new backend, not just the HTTP
-source.
+The core value proposition: swap the lake backend in `stores.py` from local
+filesystem to S3 or Azure. The lake is wrapped with `otel_observe(...)`, so
+observability follows the swap — every Bronze write and Silver/Gold round-trip
+emits spans against the new backend, not just the HTTP source.
 
 ```python
 # Local (default)
 lake = otel_observe(Store(LocalBackend(root=_LAKE_ROOT)))
 
-# S3
-lake = otel_observe(Store(S3Backend(bucket="my-bucket", prefix="showcase")))
+# S3 — S3Backend has no prefix= param; scope to a sub-prefix with .child()
+lake = otel_observe(Store(S3Backend(bucket="my-bucket")).child("showcase"))
 
 # Azure ADLS Gen2 (Hierarchical Namespace)
 lake = otel_observe(

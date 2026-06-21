@@ -605,7 +605,17 @@ class TestMedallionDagsterShowcase:
 
     It guards two findings from ID-198: the graph builds and runs on the
     installed Dagster (the ``pa.Table`` annotation resolves), and the lake is
-    OTel-instrumented so observability survives a backend swap.
+    OTel-instrumented so observability survives a backend swap. It materialises
+    the real ``definitions.defs`` so drift in the showcase's actual entry point
+    is caught, not a parallel hand-rolled wiring.
+
+    Global-state note: importing the showcase runs ``configure_otel()``, which
+    installs *global* OTel providers. The ``finally`` shuts them down but cannot
+    restore the prior globals — OpenTelemetry pins the first ``set_*_provider()``
+    per process and warns-and-ignores later sets. Benign today (the rest of the
+    suite passes explicit ``tracer=``/``meter=`` and never reads the global
+    provider); a future test that depends on a live global provider after this
+    one runs would need to account for it.
     """
 
     # MeteoSwiss daily CSV is semicolon-delimited with these columns; Silver
@@ -659,44 +669,20 @@ class TestMedallionDagsterShowcase:
             sys.modules.pop(name, None)
 
         try:
+            import definitions  # noqa: PLC0415  -- the real `dagster dev -f definitions.py` entry point
             import stores  # noqa: PLC0415
-            from assets.bronze import (  # noqa: PLC0415
-                bronze_bern,
-                bronze_lugano,
-                bronze_zurich,
-                meteo_stations,
-            )
-            from assets.gold import (  # noqa: PLC0415
-                gold_alerts,
-                gold_daily_summary,
-                gold_station_stats,
-            )
-            from assets.silver import silver_measurements  # noqa: PLC0415
-            from dagster import materialize  # noqa: PLC0415
-
-            from remote_store.ext.dagster import ParquetSerializer, dagster_io_manager  # noqa: PLC0415
 
             # Finding #2 guard: the lake (and its children) must be OTel-observed,
             # not a bare Store — otherwise a backend swap emits no Azure/S3 spans.
             assert isinstance(stores.lake, ObservedStore)
             assert isinstance(stores.bronze, ObservedStore)
 
-            result = materialize(
-                [
-                    meteo_stations,
-                    bronze_bern,
-                    bronze_zurich,
-                    bronze_lugano,
-                    silver_measurements,
-                    gold_daily_summary,
-                    gold_station_stats,
-                    gold_alerts,
-                ],
-                resources={
-                    "silver_io_manager": dagster_io_manager(stores.silver, serializer=ParquetSerializer()),
-                    "gold_io_manager": dagster_io_manager(stores.gold, serializer=ParquetSerializer()),
-                },
-            )
+            # Materialise the *real* Definitions object rather than a hand-rolled
+            # asset/resource copy, so drift in definitions.py (a renamed io_manager
+            # key, an added/removed asset) is caught here instead of silently
+            # diverging from the entry point users actually run. The implicit global
+            # asset job binds the defs' resources, so execute_in_process needs nothing more.
+            result = definitions.defs.resolve_implicit_global_asset_job_def().execute_in_process()
             assert result.success
         finally:
             # configure_otel() installs *global* providers; the metric reader is a

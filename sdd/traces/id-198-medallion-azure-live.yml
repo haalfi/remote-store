@@ -10,6 +10,7 @@ audience:
   - library.maintainer
 surprising_ripples:
   - examples/medallion_dagster/assets/gold.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -121,3 +122,14 @@ phases:
         section: "Ripple-check table"
         read_type: verify
         extract: "Validation pivoted to a user-facing fix: example + test + README + CHANGELOG stub + BACKLOG-DONE + trace, audience now user.* so CHANGELOG required"
+  - id: review
+    name: PR #854 review round
+    steps:
+      - file: src/remote_store/backends/_s3.py
+        section: "S3Backend.__init__"
+        read_type: verify
+        extract: "Review caught a real bug: README S3 swap passed prefix= which S3Backend has no parameter for (TypeError on copy-paste, in the public tutorial). Verified the signature; fixed to Store(S3Backend(bucket=...)).child('showcase')"
+      - file: tests/test_examples.py
+        section: "TestMedallionDagsterShowcase"
+        read_type: reference
+        extract: "Review: the guard hand-rolled the asset/resource wiring, leaving definitions.py (the real `dagster dev -f` entry point) uncovered. Switched to definitions.defs.resolve_implicit_global_asset_job_def().execute_in_process() (the get_* alias warns under warnings-as-errors). Also added a docstring note on the global-OTel-provider shutdown not restoring prior providers, and softened the README 'one line' wording"
