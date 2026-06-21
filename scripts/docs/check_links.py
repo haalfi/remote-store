@@ -23,12 +23,31 @@ Three rules, all enforced by ``main`` over every git-tracked ``.md`` file:
   heading-adjacency (M3) of every ``<a id>`` in a target file are checked
   in the same pass.
 
+Two further rules extend the same offline machinery to the repo's
+non-Markdown discovery files (BK-307), which the ``.md``-only walk above
+never sees:
+
+* Discovery-file docs-site links (BK-307): ``docs-src/llms.txt`` is written
+  in Markdown link syntax, so its ``https://docs.remotestore.dev/<alias>/``
+  links are validated by the very same docs-site pass as ``.md`` files —
+  offline, against the page set ``build_source_map`` derives. External
+  links (GitHub, PyPI) are out of scope; this gate makes no HTTP request.
+
+* context7 manifest paths (BK-307): every entry in the root
+  ``context7.json`` ``folders`` / ``excludeFolders`` / ``excludeFiles``
+  lists must resolve to a real on-disk path, so a directory rename cannot
+  silently drop a folder from context7 indexing. Per the context7 schema,
+  ``folders`` / ``excludeFolders`` are repo-root-relative paths while
+  ``excludeFiles`` matches by *filename only* (basename); the context7.com
+  ``url`` is external and out of scope.
+
 Exit 0 = clean.  Exit 1 = broken links found.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 import urllib.parse
@@ -574,6 +593,129 @@ def check_docs_site_links(repo_root: Path) -> list[BrokenLink]:
     return broken
 
 
+# ---------------------------------------------------------------------------
+# BK-307: non-Markdown discovery files (llms.txt, context7.json)
+# ---------------------------------------------------------------------------
+
+# Non-Markdown files that carry docs-site links in Markdown link syntax.
+# ``check_repo_links``/``check_docs_site_links`` walk only git-tracked ``.md``,
+# so these never get validated unless named here.
+_DOCS_SITE_LINK_DISCOVERY_FILES = ("docs-src/llms.txt",)
+
+# Root context7 manifest whose path lists are validated on disk.
+_CONTEXT7_MANIFEST = "context7.json"
+
+# A context7 path-list entry containing any of these is a glob / regex pattern,
+# not a literal path. context7 allows patterns in the folder lists, and a
+# literal on-disk check cannot vouch for them, so they are left unchecked. A
+# literal directory rename — the drift this gate targets — carries none of
+# these, so it is still caught.
+_CONTEXT7_PATTERN_META = re.compile(r"[*?\[\]()|^$]")
+
+# Directories never treated as repo content in the non-git fallback below.
+_VCS_DIRS = frozenset({".git"})
+
+
+def _git_repo_files(repo_root: Path) -> list[Path]:
+    """Return every git-visible file under *repo_root* (mirrors _git_repo_markdown).
+
+    Used only for context7 ``excludeFiles`` basename matching. Delegates to
+    ``git ls-files`` so gitignore is honoured; falls back to ``rglob`` skipping
+    VCS internals when the tree is not a git repository (test fixtures).
+    """
+    import subprocess
+
+    result = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+    if result.returncode == 0:
+        return [(repo_root / p).resolve() for p in result.stdout.splitlines()]
+    return [
+        p.resolve()
+        for p in repo_root.rglob("*")
+        if p.is_file() and not any(part in _VCS_DIRS for part in p.relative_to(repo_root).parts)
+    ]
+
+
+def check_discovery_file_docs_site_links(repo_root: Path, valid_pages: set[str] | None = None) -> list[BrokenLink]:
+    """BK-307: validate docs-site links in non-Markdown discovery files.
+
+    ``docs-src/llms.txt`` is written in Markdown link syntax, so the same
+    docs-site pass that guards ``.md`` files (``_find_broken_docs_site_links``,
+    against the ``build_source_map``-derived page set) applies to it verbatim —
+    offline, no HTTP. External links (github.com, pypi.org) yield ``None`` from
+    ``_resolve_docs_site_path`` and are skipped. *valid_pages* is computed from
+    the live tree when omitted; tests inject a known set.
+    """
+    if valid_pages is None:
+        valid_pages = _docs_site_pages(repo_root)
+    broken: list[BrokenLink] = []
+    for rel in _DOCS_SITE_LINK_DISCOVERY_FILES:
+        path = (repo_root / rel).resolve()
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        broken.extend(_find_broken_docs_site_links(text, path, valid_pages))
+    return broken
+
+
+def check_context7_paths(repo_root: Path) -> list[BrokenLink]:
+    """BK-307: every path-list entry in root ``context7.json`` resolves on disk.
+
+    A directory rename otherwise silently drops a folder from context7
+    indexing with nothing to catch it. Field semantics follow the context7
+    schema:
+
+    * ``folders`` — repo-root-relative paths to include (directories, plus the
+      root-level files the manifest names explicitly, e.g. ``README.md``).
+    * ``excludeFolders`` — repo-root-relative directories to exclude.
+    * ``excludeFiles`` — matched by *filename only* (basename), never a full
+      path, so a bare ``graph_viz.html`` legitimately names
+      ``docs-src/explanation/graph_viz.html``.
+
+    Glob / regex pattern entries (``_CONTEXT7_PATTERN_META``) are left
+    unchecked. The context7.com ``url`` is external and out of scope (this gate
+    is offline).
+    """
+    manifest = (repo_root / _CONTEXT7_MANIFEST).resolve()
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+
+    broken: list[BrokenLink] = []
+
+    def _flag(field: str, entry: str, why: str) -> None:
+        broken.append(BrokenLink(source=manifest, line=0, raw=f"{field}: {entry}", resolved=why))
+
+    def _literal_entries(field: str) -> Iterator[str]:
+        for entry in data.get(field, []):
+            if isinstance(entry, str) and not _CONTEXT7_PATTERN_META.search(entry):
+                yield entry
+
+    # folders: an include path; may be a directory or a root-level file.
+    for entry in _literal_entries("folders"):
+        if not (repo_root / entry).exists():
+            _flag("folders", entry, f"no such path: {entry}")
+
+    # excludeFolders: an exclude path; must be an existing directory.
+    for entry in _literal_entries("excludeFolders"):
+        if not (repo_root / entry).is_dir():
+            _flag("excludeFolders", entry, f"no such directory: {entry}")
+
+    # excludeFiles: matched by basename anywhere in the tree.
+    basenames = {p.name for p in _git_repo_files(repo_root)}
+    for entry in _literal_entries("excludeFiles"):
+        if entry not in basenames:
+            _flag("excludeFiles", entry, f"no file named {entry!r} in repo")
+
+    return broken
+
+
 def _format_broken(broken: list[BrokenLink], repo_root: Path) -> str:
     lines: list[str] = []
     for b in sorted(broken, key=lambda b: (str(b.source), b.line)):
@@ -594,7 +736,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     repo_root = args.root.resolve()
-    broken = check_repo_links(repo_root) + check_docs_site_links(repo_root) + check_repo_link_fragments(repo_root)
+    broken = (
+        check_repo_links(repo_root)
+        + check_docs_site_links(repo_root)
+        + check_repo_link_fragments(repo_root)
+        + check_discovery_file_docs_site_links(repo_root)
+        + check_context7_paths(repo_root)
+    )
 
     if broken:
         print(_format_broken(broken, repo_root), file=sys.stderr)

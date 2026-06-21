@@ -1,0 +1,89 @@
+id: BK-307
+title: "Validate links/paths in non-Markdown discovery files (llms.txt, context7.json)"
+trigger: >
+  PR #853 (ID-161) added docs-src/llms.txt. Review surfaced that
+  scripts/docs/check_links.py walks only git-tracked .md files, so the
+  docs-site URLs in llms.txt and the on-disk path lists in the root
+  context7.json (folders / excludeFolders / excludeFiles) were never
+  validated — a directory rename could silently drop a folder from context7
+  indexing, and a stale docs-site link in llms.txt could rot, with nothing to
+  catch either.
+source_items:
+  - BK-307
+  - ID-161
+audience:
+  - contributor.tooling
+  - infra.ci
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: scripts/docs/check_links.py
+        section: "module docstring + check_docs_site_links / _find_broken_docs_site_links"
+        read_type: gate
+        extract: "Existing gate already validates docs.remotestore.dev/<alias>/ URLs offline via build_source_map; it just never sees non-.md files because of the .md-only walk. Reuse _find_broken_docs_site_links verbatim for llms.txt."
+        outcome: ok
+      - file: docs-src/llms.txt
+        section: "(full)"
+        read_type: reference
+        extract: "Written in Markdown link syntax, so _iter_link_targets catches its 6 docs-site links; external GitHub/PyPI links resolve to None in _resolve_docs_site_path and are skipped."
+        outcome: ok
+      - file: context7.json
+        section: "folders / excludeFolders / excludeFiles"
+        read_type: gate
+        extract: "Path lists are the sharp drift risk. excludeFiles lists a bare graph_viz.html though it lives at docs-src/explanation/ — a clue the field is basename-matched, not path-matched."
+        outcome: ok
+  - id: design
+    name: Design (confirm context7 field semantics)
+    steps:
+      - file: context7.json
+        section: "excludeFiles (graph_viz.html)"
+        read_type: reference
+        extract: "Confirmed against the context7 schema docs (deepwiki/upstash + context7 Library Owners guide): folders/excludeFolders are repo-root-relative paths; excludeFiles matches by filename only (basename), no path. So folders/excludeFolders → .exists()/.is_dir(); excludeFiles → basename present anywhere. Glob/regex entries (allowed in the folder lists) left unchecked."
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] check-links / docs-gate / all"
+        read_type: gate
+        extract: "check-links already runs in docs-gate and all. Extending check_links.py:main() wires the new rules with no pyproject change — single source of truth preserved."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/docs/check_links.py
+        section: "check_discovery_file_docs_site_links"
+        read_type: gate
+        extract: "Reads _DOCS_SITE_LINK_DISCOVERY_FILES (docs-src/llms.txt) and delegates to _find_broken_docs_site_links; valid_pages defaults to the live build_source_map page set but is injectable for tests."
+        outcome: ok
+      - file: scripts/docs/check_links.py
+        section: "check_context7_paths + _git_repo_files"
+        read_type: gate
+        extract: "folders → path exists; excludeFolders → is a directory; excludeFiles → basename present in git ls-files (rglob fallback for non-git test trees). Pattern entries skipped via _CONTEXT7_PATTERN_META. The context7.com url stays out of scope (offline)."
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_check_links.py
+        section: "BK-307 discovery-file + context7 cases"
+        read_type: gate
+        extract: "Passing + deliberately-broken pairs for both rules: stale /stable/api/ URL in llms.txt fires; nonexistent folders/excludeFolders/excludeFiles entries fire; excludeFiles basename match (graph_viz.html in a subdir) passes; pattern entries skipped. Plus live positive controls (non-vacuous: assert the files still exist)."
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "assertion depth / mock discipline"
+        read_type: reference
+        extract: "Assert on the specific broken entry (raw/resolved), not just count; no mocks introduced (real tmp trees + injected valid_pages)."
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / New test file + check script"
+        read_type: verify
+        extract: "New rules live in an existing script run by an existing gate (no CI inventory change); test module already carries pytestmark os_sensitive. BACKLOG-DONE + backlogid.json (gen-backlogid) updated; audience tooling/CI → no CHANGELOG."
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience derived rule"
+        read_type: verify
+        extract: "audience is only contributor.tooling / infra.ci (no user.*), so the CHANGELOG-required rule does not fire — confirmed no CHANGELOG entry needed."
+        outcome: ok
