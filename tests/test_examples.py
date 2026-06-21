@@ -603,19 +603,24 @@ class TestMedallionDagsterShowcase:
     (``RS_SHOWCASE_SOURCE_URL``) and a tmp dir for the lake
     (``RS_SHOWCASE_LAKE_ROOT``), so it needs no network and no cloud.
 
-    It guards two findings from ID-198: the graph builds and runs on the
-    installed Dagster (the ``pa.Table`` annotation resolves), and the lake is
-    OTel-instrumented so observability survives a backend swap. It materialises
-    the real ``definitions.defs`` so drift in the showcase's actual entry point
-    is caught, not a parallel hand-rolled wiring.
+    It guards both ID-198 findings:
+    - Finding 1 — the graph builds and *runs* on the installed Dagster (the
+      ``pa.Table`` annotation resolves), exercised through the public
+      ``dagster.materialize`` API over the real ``definitions.defs`` assets and
+      resources, so drift in the showcase's actual entry point is caught rather
+      than a parallel hand-rolled wiring (and the guard rots with the
+      user-facing path, not on an internal-API removal).
+    - Finding 2 — observability actually *fires* on lake operations: the test
+      captures spans into an in-memory exporter and asserts at least one
+      ``backend: local`` lake span, not merely that the lake is the right
+      wrapper type.
 
-    Global-state note: importing the showcase runs ``configure_otel()``, which
-    installs *global* OTel providers. The ``finally`` shuts them down but cannot
-    restore the prior globals — OpenTelemetry pins the first ``set_*_provider()``
-    per process and warns-and-ignores later sets. Benign today (the rest of the
-    suite passes explicit ``tracer=``/``meter=`` and never reads the global
-    provider); a future test that depends on a live global provider after this
-    one runs would need to account for it.
+    OTel isolation: the test installs its own in-memory providers *before*
+    importing the showcase, so the now-idempotent ``configure_otel()`` is a
+    no-op and the lake's spans flow to the in-memory exporter. These providers
+    carry no background threads (no ``PeriodicExportingMetricReader``), so the
+    test leaves no thread writing to a torn-down buffer and never pins a
+    shut-down global provider for later tests.
     """
 
     # MeteoSwiss daily CSV is semicolon-delimited with these columns; Silver
@@ -664,6 +669,25 @@ class TestMedallionDagsterShowcase:
         monkeypatch.setenv("RS_SHOWCASE_LAKE_ROOT", str(tmp_path / "lake"))
         monkeypatch.syspath_prepend(str(example_dir))
 
+        # Install our own OTel providers *before* importing the showcase so its
+        # (now idempotent) configure_otel() is a no-op and the lake's spans flow
+        # to an exporter we can assert on. No background threads, so nothing is
+        # left writing to a torn-down buffer and no shut-down global is pinned.
+        from opentelemetry import metrics, trace  # noqa: PLC0415
+        from opentelemetry.sdk.metrics import MeterProvider  # noqa: PLC0415
+        from opentelemetry.sdk.trace import TracerProvider  # noqa: PLC0415
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor  # noqa: PLC0415
+        from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter  # noqa: PLC0415
+
+        tracer_provider = trace.get_tracer_provider()
+        if not isinstance(tracer_provider, TracerProvider):
+            tracer_provider = TracerProvider()
+            trace.set_tracer_provider(tracer_provider)
+        span_exporter = InMemorySpanExporter()
+        tracer_provider.add_span_processor(SimpleSpanProcessor(span_exporter))
+        if not isinstance(metrics.get_meter_provider(), MeterProvider):
+            metrics.set_meter_provider(MeterProvider())
+
         injected = ["stores", "otel_setup", "assets", "assets.bronze", "assets.silver", "assets.gold", "definitions"]
         for name in injected:
             sys.modules.pop(name, None)
@@ -671,30 +695,20 @@ class TestMedallionDagsterShowcase:
         try:
             import definitions  # noqa: PLC0415  -- the real `dagster dev -f definitions.py` entry point
             import stores  # noqa: PLC0415
+            from dagster import materialize  # noqa: PLC0415
 
-            # Finding #2 guard: the lake (and its children) must be OTel-observed,
-            # not a bare Store — otherwise a backend swap emits no Azure/S3 spans.
+            # Finding #2 guard (structural): the lake (and its children) must be
+            # OTel-observed, not a bare Store — else a backend swap emits no spans.
             assert isinstance(stores.lake, ObservedStore)
             assert isinstance(stores.bronze, ObservedStore)
 
-            # Materialise the *real* Definitions object rather than a hand-rolled
-            # asset/resource copy, so drift in definitions.py (a renamed io_manager
-            # key, an added/removed asset) is caught here instead of silently
-            # diverging from the entry point users actually run. The implicit global
-            # asset job binds the defs' resources, so execute_in_process needs nothing more.
-            result = definitions.defs.resolve_implicit_global_asset_job_def().execute_in_process()
+            # Drive the *real* definitions.defs wiring through the public
+            # dagster.materialize API (the path users and the live ID-198 run
+            # exercise), so the guard catches definitions.py drift and rots with
+            # the user-facing surface, not on an internal-resolver removal.
+            result = materialize(list(definitions.defs.assets), resources=dict(definitions.defs.resources or {}))
             assert result.success
         finally:
-            # configure_otel() installs *global* providers; the metric reader is a
-            # 10s background thread that writes to the console. Shut both down so
-            # the test leaves no thread writing to a torn-down capture buffer.
-            import contextlib  # noqa: PLC0415
-
-            from opentelemetry import metrics, trace  # noqa: PLC0415
-
-            for provider in (metrics.get_meter_provider(), trace.get_tracer_provider()):
-                with contextlib.suppress(Exception):
-                    provider.shutdown()
             for name in injected:
                 sys.modules.pop(name, None)
             server.clear()
@@ -707,6 +721,16 @@ class TestMedallionDagsterShowcase:
         assert (lake_root / "silver" / "silver_measurements.parquet").exists()
         for gold_out in ("gold_daily_summary", "gold_station_stats", "gold_alerts"):
             assert (lake_root / "gold" / f"{gold_out}.parquet").exists()
+
+        # Finding #2 guard (behavioural): observability actually fires on lake ops,
+        # not just that the wrapper type is right. At least one span must be emitted
+        # for a backend=local lake operation.
+        lake_spans = [
+            s
+            for s in span_exporter.get_finished_spans()
+            if s.attributes and s.attributes.get("remote_store.backend") == "local"
+        ]
+        assert lake_spans, "expected at least one OTel span for a lake (backend=local) operation"
 
 
 class TestDagsterComputeLogManager:

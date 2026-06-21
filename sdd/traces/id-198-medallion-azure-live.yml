@@ -10,7 +10,7 @@ audience:
   - library.maintainer
 surprising_ripples:
   - examples/medallion_dagster/assets/gold.py
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -122,8 +122,23 @@ phases:
         section: "Ripple-check table"
         read_type: verify
         extract: "Validation pivoted to a user-facing fix: example + test + README + CHANGELOG stub + BACKLOG-DONE + trace, audience now user.* so CHANGELOG required"
+  - id: review2
+    name: PR #854 review round 2
+    steps:
+      - file: tests/test_examples.py
+        section: "TestMedallionDagsterShowcase materialize call"
+        read_type: verify
+        extract: "Round 2 pushed back on round 1's fix: resolve_implicit_global_asset_job_def is a non-public Definitions method (unstable across Dagster minors). Switched to public dagster.materialize(list(defs.assets), resources=dict(defs.resources or {})) — real defs wiring via the user-facing API, matching the live ID-198 run"
+      - file: tests/test_examples.py
+        section: "Finding #2 behavioural guard"
+        read_type: verify
+        extract: "Round 2: the guard only checked the ObservedStore *type*, never that a span fires. Added an InMemorySpanExporter and assert >=1 backend=local lake span, so the finding-2 fix is verified behaviourally offline"
+      - file: examples/medallion_dagster/otel_setup.py
+        section: "configure_otel"
+        read_type: reference
+        extract: "Round 2 (global-OTel hazard): made configure_otel idempotent/non-clobbering (skip if an SDK provider is already set). The test installs its own thread-less in-memory providers before import, so no torn-down global is pinned and no PeriodicExporting thread leaks"
   - id: review
-    name: PR #854 review round
+    name: PR #854 review round 1
     steps:
       - file: src/remote_store/backends/_s3.py
         section: "S3Backend.__init__"
