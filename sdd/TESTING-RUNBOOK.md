@@ -197,16 +197,26 @@ then re-run. The single-cassette path below avoids the delete entirely.
 ### Single-cassette refresh (no tree-wipe)
 
 To record or refresh **one** cassette without the all-or-nothing delete, pass
-`--node` with the live-variant node id:
+`--node` with the live-variant node id. Invoke the script through `hatch run
+python`, **not** the `record-azure` alias:
 
 ```bash
-RS_TEST_LIVE_HNS=1 hatch run record-azure \
+RS_TEST_LIVE_HNS=1 hatch run python scripts/record_cassettes.py --backend azure \
   --node "tests/backends/conformance/test_errors.py::TestX::test_y[azure_live]"
 ```
 
 This skips the Step-1 delete and the min-cassette guard, records only the named
 test, then runs the same scrub-verify + Stage 1 replay over the whole corpus.
 Use it for a focused PR diff: every other cassette's volatile headers stay put.
+The Graph equivalent swaps `--backend graph` (and `RS_TEST_LIVE_GRAPH=1`).
+
+> [!WARNING]
+> Do **not** write `hatch run record-azure --node "..."`. The `record-azure` /
+> `record-graph` script aliases do not forward trailing flags, so hatch drops
+> `--node`, the script falls back to full-tree-wipe mode, and (with the live
+> flag set) it deletes and re-records the entire cassette tree. Always go
+> through `hatch run python scripts/record_cassettes.py --backend <b> --node …`,
+> which passes argv straight to the script.
 
 ### Large-payload exclusion
 
