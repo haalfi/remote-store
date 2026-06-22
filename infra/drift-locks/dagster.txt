@@ -1,23 +1,23 @@
 # extra: dagster
 # python: 3.13
-# captured: 2026-06-14
+# captured: 2026-06-22
 # Regenerate with: hatch run drift-check refresh-baseline dagster
 
 alembic==1.18.4
 annotated-types==0.7.0
 antlr4-python3-runtime==4.13.2
-certifi==2026.5.20
+certifi==2026.6.17
 charset-normalizer==3.4.7
 click==8.4.1
 coloredlogs==14.0
-dagster==1.13.9
-dagster-pipes==1.13.9
-dagster-shared==1.13.9
+dagster==1.13.10
+dagster-pipes==1.13.10
+dagster-shared==1.13.10
 docstring-parser==0.18.0
 filelock==3.29.4
-fsspec==2026.4.0
-grpcio==1.81.1
-grpcio-health-checking==1.81.1
+fsspec==2026.6.0
+grpcio==1.82.0rc1
+grpcio-health-checking==1.82.0rc1
 humanfriendly==10.0
 idna==3.18
 jinja2==3.1.6
@@ -44,7 +44,7 @@ tabulate==0.10.0
 tomli==2.4.1
 tomlkit==0.15.0
 toposort==1.10
-tqdm==4.68.2
+tqdm==4.68.3
 typing-extensions==4.15.0
 typing-inspection==0.4.2
 tzdata==2026.2
