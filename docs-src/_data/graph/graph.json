@@ -2608,13 +2608,13 @@
       "id": "pkg:remote_store",
       "kind": "package",
       "runtime": "sync",
-      "version": "0.28.0"
+      "version": "0.29.0"
     },
     {
       "id": "pkg:remote_store.aio",
       "kind": "package",
       "runtime": "async",
-      "version": "0.28.0"
+      "version": "0.29.0"
     },
     {
       "id": "req:remote_store._backend.Backend.copy.gate",
@@ -2993,6 +2993,6 @@
     }
   ],
   "schema_version": "1.2",
-  "snapshot": "0.28.0",
-  "source_version": "0.28.0"
+  "snapshot": "0.29.0",
+  "source_version": "0.29.0"
 }

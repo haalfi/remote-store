@@ -7,19 +7,58 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- ID-161: Add a machine-readable `llms.txt` ([llmstxt.org](https://llmstxt.org/)) for LLM/agent discovery. Read the Docs serves it at the docs domain root (`https://docs.remotestore.dev/llms.txt`) natively from the default version's build output, so `docs-src/llms.txt` is all that is required.
-- BK-306: S3 `close()` releases the s3fs/aiobotocore session instead of leaking it
-- BK-298: Azure credential ownership + cross-backend terminal close
-- BK-302: Azure HNS is now an explicit, mandatory `hns=` declaration (no runtime auto-detection); adds `AzureUtils.detect_hns()` / `adetect_hns()` for one-shot discovery (**breaking**). Supersedes the BUG-223 re-probe fix from this same Unreleased cycle, which tuned the auto-detection that this change removes outright.
-- BUG-222: Azure error classifier types 429 / 5xx / 401
-- BK-299: Document Azure seekable reads (`read_seekable`), the async `ext.*` cliff, and connection-pool tuning
-- BK-300: Document that Azure HNS `write_atomic` returns `WriteResult.digest=None` (the sibling `write` populates it)
-- ID-198: Fix the Medallion + Dagster showcase — runs on current Dagster again, the lake is OTel-observed so a backend swap keeps emitting spans, and the Azure/HNS swap is documented; verified end-to-end against live ADLS Gen2 and guarded by an offline smoke test
-- BK-301: Azure doc/docstring parity and correctness edges — document `retry` (sync docstring + guide Options table) and `reject_write_under_file_ancestor` (guide); add the sync `check_health` docstring; fix a direct-backend data-loss edge by normalising paths before the self-op short-circuit so `move`/`copy` between non-canonical paths naming the same blob (e.g. `a//b` vs `a/b`) is a no-op instead of copy-to-self + delete-source; align async `glob` so pattern-compile errors propagate as-is rather than being re-wrapped as a backend error (matching sync); surface the async cross-loop rule in the concurrency posture page
+## [0.29.0] - 2026-06-22
+
+### Changed
+
+- **Azure HNS is now an explicit, mandatory `hns=` declaration** (BK-302): the
+  backend no longer auto-detects Hierarchical Namespace at runtime — you declare
+  `hns=True` / `hns=False` at construction. New `AzureUtils.detect_hns()` /
+  `adetect_hns()` perform one-shot discovery when you need it. **Breaking**: code
+  that relied on auto-detection must now pass `hns=` explicitly. Supersedes the
+  BUG-223 re-probe fix from earlier in this cycle, which tuned the
+  auto-detection this change removes outright.
+
+### Fixed
+
+- **S3 `close()` releases the s3fs/aiobotocore session** (BK-306) instead of
+  leaking it.
+- **Azure credential ownership and cross-backend terminal close** (BK-298): the
+  backend closes only credentials it owns, and terminal `close()` behaves
+  consistently across backends.
+- **Azure error classifier types 429 / 5xx / 401** (BUG-222) into the typed-error
+  model.
+- **Medallion + Dagster showcase runs again** (ID-198): updated for current
+  Dagster, the lake is OTel-observed so a backend swap keeps emitting spans, and
+  the Azure/HNS swap is documented; verified end-to-end against live ADLS Gen2
+  and guarded by an offline smoke test.
+- **Azure `move`/`copy` self-op data-loss edge and async `glob` parity** (BK-301):
+  paths are normalised before the self-op short-circuit, so `move`/`copy` between
+  non-canonical paths naming the same blob (e.g. `a//b` vs `a/b`) is a no-op
+  instead of copy-to-self + delete-source; async `glob` now propagates
+  pattern-compile errors as-is rather than re-wrapping them as a backend error
+  (matching sync).
+
+### Documentation
+
+- **`llms.txt` for LLM/agent discovery** (ID-161): a machine-readable
+  [llmstxt.org](https://llmstxt.org/) file, served by Read the Docs at the
+  docs-domain root (`https://docs.remotestore.dev/llms.txt`) from the default
+  version's build output, so `docs-src/llms.txt` is all that is required.
+- **Azure seekable reads, the async `ext.*` cliff, and connection-pool tuning**
+  (BK-299) are now documented.
+- **Azure HNS `write_atomic` returns `WriteResult.digest=None`** (BK-300) is
+  documented — the sibling `write` populates it.
+- **Azure docstring/guide parity** (BK-301): document `retry` (sync docstring +
+  guide Options table) and `reject_write_under_file_ancestor` (guide), add the
+  sync `check_health` docstring, and surface the async cross-loop rule on the
+  concurrency-posture page.
 
 ### Internal
 
-- Codecov badge now reuses the `test-primary` CI coverage run (full suite + `sftp_docker` conformance), uploaded on master pushes; removed the redundant post-release `coverage` job from `publish.yml`.
+- Codecov badge now reuses the `test-primary` CI coverage run (full suite +
+  `sftp_docker` conformance), uploaded on master pushes; removed the redundant
+  post-release `coverage` job from `publish.yml`.
 
 ## [0.28.0] - 2026-06-15
 
