@@ -498,6 +498,27 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Maintenance / Long-horizon
 
+- [ ] **BUG-225 — Graph backend breaks against httpx 1.0 (`httpx.TransportError` removed)**
+  spec: GR-033 · effort: S · audience: user.api
+  `src/remote_store/aio/backends/_graph/http.py:57` evaluates
+  `_TRANSPORT_ERRORS = (httpx.TransportError,)` at module import. httpx 1.0
+  (currently pre-release, `1.0.devN`) reorganised its exception hierarchy and no
+  longer exposes `httpx.TransportError` at the top level, so importing the async
+  graph backend raises `AttributeError: module 'httpx' has no attribute
+  'TransportError'`. The `[graph]` / `[httpx]` floors are `httpx>=0.24.0`, which
+  permits 1.0 once it ships stable — at which point `pip install
+  remote-store[graph]` then `from remote_store.aio import AsyncBackend` breaks at
+  import. Today's stable httpx (0.28.x) still exports the symbol, so CI is green;
+  the drift guard's `--pre` re-resolution surfaced it early (run 27954112470,
+  `check-httpx` leg — the httpx smoke imports the graph backend transitively via
+  the fixtures registry).
+  Fix: reference the transport-error base via a path stable across httpx
+  0.x → 1.0 (confirm the 1.0 name/location), or guard the lookup. Add a smoke /
+  unit assertion that the async graph backend imports under the resolved httpx.
+  Surfaced by the 2026-06-22 drift-guard run; that refresh held the `[httpx]`
+  baseline (its only drift, `certifi`, is unrelated) until this is fixed and the
+  smoke is genuinely green.
+
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer
   First revisit ticket for the informational `verify-tla` job landed under
