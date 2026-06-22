@@ -510,14 +510,30 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   remote-store[graph]` then `from remote_store.aio import AsyncBackend` breaks at
   import. Today's stable httpx (0.28.x) still exports the symbol, so CI is green;
   the drift guard's `--pre` re-resolution surfaced it early (run 27954112470,
-  `check-httpx` leg — the httpx smoke imports the graph backend transitively via
-  the fixtures registry).
+  `check-httpx` leg — the httpx smoke (`tests/backends/http/`) imports the graph
+  backend transitively via the fixtures registry).
+  **The `[graph]` baseline is latently broken the same way, but its drift smoke
+  hides it.** `infra/drift-locks/graph.txt` pins `httpx==1.0.dev3` (the graph
+  extra depends on httpx), so an install from that resolution is already
+  import-broken — yet `[graph]`'s drift leg reads green because
+  `scripts/drift_smoke_map.py` has no `"graph"` entry, so `smoke_for("graph")`
+  falls back to `["--import-only", "remote_store"]`. The top-level `remote_store`
+  package (`src/remote_store/__init__.py`) imports only the sync surface and
+  `ext.*`; it never imports `remote_store.aio.backends._graph.http`, so the graph
+  smoke can't reach `httpx.TransportError`. Only the `[httpx]` leg goes red. The
+  2026-06-22 refresh therefore carried `[graph]` forward in this
+  knowingly-httpx-1.0-broken state (its `httpx` pin was unchanged drift; only
+  `certifi` moved), and held `[httpx]` (whose only drift, `certifi`, is likewise
+  unrelated) so the red leg stays visible until this is fixed.
   Fix: reference the transport-error base via a path stable across httpx
-  0.x → 1.0 (confirm the 1.0 name/location), or guard the lookup. Add a smoke /
-  unit assertion that the async graph backend imports under the resolved httpx.
-  Surfaced by the 2026-06-22 drift-guard run; that refresh held the `[httpx]`
-  baseline (its only drift, `certifi`, is unrelated) until this is fixed and the
-  smoke is genuinely green.
+  0.x → 1.0 (confirm the 1.0 name/location), or guard the lookup. Then **wire the
+  regression into the graph drift leg, not just httpx**: add a `"graph"` entry to
+  `SMOKE_TARGETS` that imports the async graph backend (e.g.
+  `["--import-only", "remote_store.aio.backends._graph.http"]`), so a future
+  httpx-1.0 graph break fails `[graph]`'s own smoke instead of riding green on
+  the import-only top-level fallback. Add a smoke / unit assertion that the async
+  graph backend imports under the resolved httpx.
+  Surfaced by the 2026-06-22 drift-guard run.
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer
