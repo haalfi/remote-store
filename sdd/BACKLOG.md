@@ -230,7 +230,7 @@ and the highest ID already in this file, then take the next integer. Run
 The `gen_graph.py` → `graph.json` → `gen_features.py` pipeline exists to make the
 library **self-describing from its own code**: a single accurate graph where every
 feature and its dependencies are visible — each node carrying its meaning, each
-edge its connection (`inherits` / `contains` / `gates` / `mirrors`) — so that
+edge its connection (`inherits` / `declares` / `gates` / `mirrors`) — so that
 `FEATURES.md`, the capability tables, and the docs-site visualization all derive
 from one source that cannot drift from the code. RFC-0012 is the accepted design;
 the current implementation (ID-159 / 162 / 163, plus the ABC-classification fix)
