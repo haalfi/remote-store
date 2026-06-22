@@ -8,6 +8,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+*(none)*
+
+## v0.29.0
+
 - [x] **BK-307 — Validate links/paths in non-Markdown discovery files (`llms.txt`, `context7.json`)**
   spec: — · effort: S · audience: contributor.tooling, infra.ci
   PR #853 (ID-161) review surfaced that `scripts/docs/check_links.py` walks
