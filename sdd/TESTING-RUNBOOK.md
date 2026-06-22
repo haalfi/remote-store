@@ -194,6 +194,20 @@ aborted run (lost credentials, network drop) can leave the tree partially wiped.
 Recover the committed cassettes with `git checkout -- tests/backends/cassettes/azure/`,
 then re-run. The single-cassette path below avoids the delete entirely.
 
+Because the delete comes first, prove every test in scope passes live *before*
+the destructive run, with a plain no-`--record` live pass:
+
+```bash
+RS_TEST_LIVE_HNS=1 hatch run python -m pytest tests/backends/conformance/ \
+  --stage=3 -m live -k "azure_live and not async" -n0
+```
+
+This hits real HTTP: the conformance conftest only adds `pytest.mark.vcr` under
+`--record`, so without it there is no record/replay interception. A green sync
+run (plus a second pass with `-k azure_live_async`) means the subsequent
+`record-azure` will not abort partway and leave the tree half-wiped.
+`--verify-only` cannot substitute, it only replays existing cassettes.
+
 ### Single-cassette refresh (no tree-wipe)
 
 To record or refresh **one** cassette without the all-or-nothing delete, pass
@@ -217,6 +231,30 @@ The Graph equivalent swaps `--backend graph` (and `RS_TEST_LIVE_GRAPH=1`).
 > flag set) it deletes and re-records the entire cassette tree. Always go
 > through `hatch run python scripts/record_cassettes.py --backend <b> --node …`,
 > which passes argv straight to the script.
+
+The `--node` selector can also be a **directory**, not just a single node id:
+`--node "tests/backends/azure/"` records every live test under that path (the
+whole HNS deviation suite, sync and async) in one no-tree-wipe run. In single
+mode the script hands the selector to pytest as a positional with `-m live`, so
+a directory collects all live tests beneath it.
+
+For a **subset of N cassettes** (more than one, fewer than a whole directory),
+`--node` does not fit, it takes a single selector. Use a raw two-command form: a
+`pytest --record` run filtered with `-k`, then a `--verify-only` pass for the
+whole-dir scrub-verify and replay smoke.
+
+```bash
+RS_TEST_LIVE_HNS=1 hatch run python -m pytest tests/backends/azure \
+  --stage=3 --record -m live -k "name1 or name2" -n0 -p no:unraisableexception
+RS_TEST_LIVE_HNS=1 hatch run python scripts/record_cassettes.py \
+  --backend azure --verify-only
+```
+
+The raw `pytest --record` run needs `-p no:unraisableexception` by hand: vcrpy's
+record-mode transport orphans the live SSL sockets it wraps, and their GC
+`ResourceWarning` would otherwise abort the run under the suite's
+`filterwarnings = error`. The `record_cassettes.py` wrapper adds the flag to its
+own subprocesses automatically; a bare `pytest --record` does not.
 
 ### Large-payload exclusion
 
