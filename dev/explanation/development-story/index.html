@@ -5630,6 +5630,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-42-making-the-backend-declare-what-it-is-v0290" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 42: Making the Backend Declare What It Is (v0.29.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11210,6 +11221,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-42-making-the-backend-declare-what-it-is-v0290" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 42: Making the Backend Declare What It Is (v0.29.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11853,6 +11875,12 @@
 <p><strong>There is no Azurite for Graph.</strong> Every prior backend had a free local fake — moto for S3, Azurite for Azure, a Docker openssh image for SFTP. Graph has none: only Graph speaks Graph, and it needs a real tenant, OAuth, and network. So the test strategy came first. The answer was cassette replay (BK-262, BK-283, BK-284): record real traffic once, scrub it (header <em>and</em> body — the first cut redacted only the JSON body and leaked the same secrets sitting in <code>Authorization</code> and <code>Location</code> headers), commit it, and replay deterministically in CI. Cassettes gave cheap, offline coverage of request/response shapes. What they could not give was concurrency.</p>
 <p><strong>The concurrency bugs only existed when two writers were real.</strong> A mock cannot race. The <code>overwrite=True</code> last-writer-wins create-race was specified, mocked, and green long before it worked, because the failure is one only one of two genuinely-concurrent writers ever sees. Reusing the small-file backoff, a four-way 5 MiB same-key race converged zero times out of five — a whole-file re-upload takes seconds, so a sub-second backoff just dumps every retrier back into someone else's upload (and tripped Graph's throttling). Only a path-specific budget got it converging, and even then it ships as best-effort (BK-294, BK-296). None of that is derivable from a cassette; it came from <code>RS_TEST_LIVE_GRAPH=1</code> against a real drive. That same fraught concurrency story also forced a question every prior backend had answered only implicitly — what does each promise under concurrent use? — which became the cross-backend posture contract (BK-287 / BK-288 / BK-289, <code>GR-059</code>). A bug in the new backend paid out as a clarification covering all of them.</p>
 <p><strong>The lesson:</strong> when a backend has no emulator, you do not get to skip the fidelity question — you have to answer it deliberately, splitting coverage across the cheapest tool that still tells the truth. Cassettes are perfect for request/response shapes and worthless for races; live runs are the only oracle for convergence and real error codes and far too costly to gate every commit on. The mistake would have been to trust the green mock-and-cassette suite and ship; the discipline was knowing exactly which class of bug each tier could not see, and reserving a live tier for the ones that only exist when both sides are real.</p>
+<h3 id="phase-42-making-the-backend-declare-what-it-is-v0290">Phase 42: Making the Backend Declare What It Is (v0.29.0)<a class="headerlink" href="#phase-42-making-the-backend-declare-what-it-is-v0290" title="Permanent link">&para;</a></h3>
+<p>v0.29.0 is an Azure correctness-and-lifecycle release, and its through-line is a single design reflex applied in three places: a backend should <em>declare</em> its nature and <em>own</em> its resources, not probe for the first and leak the second.</p>
+<p><strong>HNS stopped being a runtime guess.</strong> The Azure backend had auto-detected Hierarchical Namespace at construction by probing the account — convenient, but it meant a network round-trip on every backend build, a silent failure mode when the probe was wrong or unreachable, and a behaviour that changed under the caller's feet depending on what the service answered. BK-302 removed the auto-detection outright and made <code>hns=</code> a mandatory constructor argument: the caller declares <code>hns=True</code> or <code>hns=False</code>, because the caller already knows which kind of account they provisioned. For the cases where they genuinely do not, <code>AzureUtils.detect_hns()</code> / <code>adetect_hns()</code> perform the probe as an explicit, one-shot call whose cost is visible at the call site instead of hidden in every construction. It is a breaking change, and deliberately so — it supersedes the BUG-223 re-probe fix from earlier in the same cycle, which had been tuning the very auto-detection this change deletes. The lineage is the v0.25.0 Azurite story continued: the emulator forgave guesses that real ADLS punished, and the durable fix was to stop guessing.</p>
+<p><strong>Closing only what you opened.</strong> The same release tightened resource ownership on two backends at once. <code>AzureBackend</code> now closes only the credentials it created, leaving caller-supplied credentials alone, and terminal <code>close()</code> was made consistent across the cross-backend boundary (BK-298); <code>S3Backend.close()</code> stopped leaking the underlying s3fs/aiobotocore session (BK-306). Both are the same bug class read from two directions — a backend that opened a handle must release it, and a backend handed a handle must not assume it owns it. The error classifier picked up the matching fidelity work: BUG-222 routed Azure 429 / 5xx / 401 responses into the typed-error model instead of letting them surface raw.</p>
+<p><strong>A published tutorial that worked for nobody but its author.</strong> ID-198 began as a report-only validation run of the Medallion + Dagster showcase against a live ADLS Gen2 account, and found the example was correct from its own narrow view and useless from a user's: it had bit-rotted against current Dagster, the backend swap it advertised emitted no observability signal, and the Azure/HNS path was undocumented. The fix made it run on current Dagster again, wired the lake through OpenTelemetry so a backend swap keeps emitting spans, documented the HNS swap, and guarded the whole thing with an offline smoke test so the next round of rot fails CI instead of a reader. Riding along: BK-301's Azure <code>move</code>/<code>copy</code> self-op data-loss edge (normalise paths before the self-op short-circuit, so <code>a//b</code> → <code>a/b</code> is a no-op rather than copy-to-self + delete-source) and a batch of Azure docstring/guide parity fixes, plus <code>llms.txt</code> (ID-161) — a machine-readable <a href="https://llmstxt.org/">llmstxt.org</a> discovery file served at the docs-domain root for agents and LLMs.</p>
+<p><strong>The lesson:</strong> the cheapest correctness fix is often a constructor argument. Auto-detection, implicit resource ownership, and a tutorial nobody re-runs are all the same mistake wearing different clothes — a system quietly deciding something on the caller's behalf and being wrong in a way no test on the happy path can see. Making the backend declare <code>hns=</code>, own exactly its own handles, and prove its showcase still runs are three instances of the same move: replace a silent assumption with a thing the code, or the caller, has to say out loud.</p>
 <h2 id="reproducing-this-workflow">Reproducing This Workflow<a class="headerlink" href="#reproducing-this-workflow" title="Permanent link">&para;</a></h2>
 <p>If you want to try this approach on your own project:</p>
 <ol>
