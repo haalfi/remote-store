@@ -5396,6 +5396,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#a-green-test-can-be-vacuous" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A green test can be vacuous
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#property-based-testing-hypothesis" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5418,21 +5429,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cassette-refresh-http-transport-backends" class="md-nav__link">
+  <a href="#running-stages-live-tests-and-cassettes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cassette Refresh (HTTP-transport backends)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cassette-first-bug-investigation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cassette-First Bug Investigation
+        Running stages, live tests, and cassettes
       
     </span>
   </a>
@@ -10277,6 +10277,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#a-green-test-can-be-vacuous" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A green test can be vacuous
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#property-based-testing-hypothesis" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10299,21 +10310,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cassette-refresh-http-transport-backends" class="md-nav__link">
+  <a href="#running-stages-live-tests-and-cassettes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cassette Refresh (HTTP-transport backends)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cassette-first-bug-investigation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cassette-First Bug Investigation
+        Running stages, live tests, and cassettes
       
     </span>
   </a>
@@ -10613,6 +10613,27 @@ enforces three rules at CI time, all derived from spec 048:</p>
 <p>Bloated suites bury meaningful tests, inflate coverage without behavioral
 signal, and double refactoring cost. Delete tests that don't provide value
 (BK-014: -8.6% code, zero coverage loss).</p>
+<h3 id="a-green-test-can-be-vacuous">A green test can be vacuous<a class="headerlink" href="#a-green-test-can-be-vacuous" title="Permanent link">&para;</a></h3>
+<p>A passing test proves nothing if it never ran the code under test, or only
+confirmed your own assumptions. Four ways a test lies green:</p>
+<ul>
+<li><strong>It was skipped, not run.</strong> A conformance suite that silently skips when its
+  emulator or live account is unavailable is vacuous, not passing. Verify the
+  path actually executed (e.g. that the parametrization collected the fixture and
+  the test was not deselected), not just that the process exited zero.</li>
+<li><strong>A mock encodes your assumptions, not the dependency's behaviour.</strong> <code>spec=</code>
+  (Rule 4) constrains attribute <em>names</em>, but <code>MagicMock(spec=Backend)</code> still
+  accepts any <em>call shape</em> and returns a mock — an invalid SDK call signature
+  passes silently. For anything you don't own (Rule 5), pin behaviour against a
+  real or recorded dependency and verify the call shape against the live service,
+  because a mock will never reject a call the real service would.</li>
+<li><strong>No positive control.</strong> Trust a zero-failure result only after the same
+  harness, on the same machine, has produced a <em>known</em> failure. A repro that
+  cannot fail is not exercising what you think it is.</li>
+<li><strong>It asserts the wrong signal.</strong> To prove a blocking call was offloaded to a
+  worker thread, assert it ran off the event-loop thread (thread identity), not
+  that it completed "fast enough" — timing is flaky and proves nothing.</li>
+</ul>
 <h3 id="property-based-testing-hypothesis">Property-Based Testing (Hypothesis)<a class="headerlink" href="#property-based-testing-hypothesis" title="Permanent link">&para;</a></h3>
 <p>PBT targets combinatorial input spaces with a clear oracle (roundtrip,
 invariant, model equivalence). Use <code>@pytest.mark.parametrize</code> for known
@@ -10641,123 +10662,11 @@ haven't thought of. See rules 9–11.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="cassette-refresh-http-transport-backends">Cassette Refresh (HTTP-transport backends)<a class="headerlink" href="#cassette-refresh-http-transport-backends" title="Permanent link">&para;</a></h3>
-<p>Cassettes under <code>tests/backends/cassettes/&lt;backend&gt;/</code> are committed
-snapshots of real HTTP traffic. Refresh them when the backend SDK,
-the scrubbing layer, or the real service responses change.</p>
-<p><strong>Prerequisite (Azure):</strong> see <a href="../../../guides/backends/azure-hns-setup/">Azure HNS account setup</a>
-for credential and <code>.env</code> configuration. The recording needs the live
-opt-in flag set in the invoking shell — keeping it out of <code>.env</code> is
-deliberate so a default <code>hatch run test</code> never touches a real account.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">RS_TEST_LIVE_HNS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>hatch<span class="w"> </span>run<span class="w"> </span>record-azure
-</code></pre></div>
-<p><code>scripts/record_cassettes.py --backend azure</code> deletes existing cassettes, re-records
-sync and async fixtures against a live ADLS Gen2 account, verifies no credentials
-survived scrubbing, and runs a Stage 1 replay smoke test. Pass <code>--verify-only</code> to
-skip recording and re-run only the verification steps.</p>
-<p>The azure record run covers <strong>two</strong> trees: the conformance suite
-(<code>azure_live</code> → <code>azure_replay</code>) and the HNS deviation suite under
-<code>tests/backends/azure/</code> (<code>azure_live_hns</code> → <code>azure_replay_hns</code>, BK-303). The
-latter exercises HNS-only behaviour the conformance suite cannot express — real
-<code>hdi_isfolder</code> directory-marker probes, the <code>exists</code> DataLake fallback,
-<code>get_folder_info("")</code> root handling, <code>AzureUtils.detect_hns</code>. It needs
-<code>RS_TEST_LIVE_HNS_CONTAINER</code> (the persistent ADLS Gen2 filesystem) set alongside
-<code>RS_TEST_LIVE_HNS=1</code>. Both trees share <code>tests/backends/cassettes/azure/</code>; the HNS
-cassettes use the <code>[azure_hns]</code> / <code>[azure_hns_async]</code> alias. Refresh one HNS
-cassette with <code>--node "tests/backends/azure/...::test_y[azure_live_hns]"</code>.</p>
-<p>To record or refresh a <strong>single</strong> cassette without the all-or-nothing tree-wipe,
-pass <code>--node</code> with the live-variant node id (<code>hatch run</code> forwards the flag, or
-call the script directly):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nv">RS_TEST_LIVE_HNS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>hatch<span class="w"> </span>run<span class="w"> </span>record-azure<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>--node<span class="w"> </span><span class="s2">&quot;tests/backends/conformance/test_errors.py::TestX::test_y[azure_live]&quot;</span>
-</code></pre></div>
-<p>This skips the Step-1 delete and the min-cassette guard, records only the named
-test, then runs the same scrub-verify + Stage 1 replay over the whole corpus.
-Use it for a focused PR diff: every other cassette's volatile headers stay put.</p>
-<p>Per <a href="../specs/048-testing-architecture/#test-009-cassette-refresh-is-explicit">TEST-009</a>:
-CI does not auto-record; a refresh is a normal PR diff.</p>
-<p><strong>Large-payload tests are excluded from live recording (BK-305).</strong> Conformance
-tests that upload an 8 MiB payload (<code>test_large_streamed_write_result_matches_file_info</code>,
-<code>test_concurrent_large_streamed_uploads</code>) carry <code>@pytest.mark.large_payload</code>. The
-conformance collection hook skips any <code>large_payload</code> test that lands on a <code>live</code>
-fixture, so neither <code>record-azure</code> / <code>record-graph</code> nor an ad-hoc <code>--stage=3 -m live</code>
-run hits a pay-per-use account with them (a full recording would otherwise produce
-~100×-norm, 6–12 MB cassettes). They keep their staged/multipart coverage for free
-at Stage 2 (Azurite). <code>test_large_payload_guard.py</code> enforces the mark on any test
-that references the large-payload size constants.</p>
-<h3 id="cassette-first-bug-investigation">Cassette-First Bug Investigation<a class="headerlink" href="#cassette-first-bug-investigation" title="Permanent link">&para;</a></h3>
-<p>When investigating a bug in an HTTP-transport backend whose live
-behaviour is recorded as a cassette, default to <strong>replay-first</strong>: work
-on the committed cassette until root cause is clear, escalate to a
-fresh recording only if the cassette cannot carry the diagnosis. Final
-sign-off always runs against the live service.</p>
-<p>The architecture under this workflow is
-<a href="../adrs/0028-testing-architecture-kind-stage-replay/">ADR-0028</a>; this
-section is the procedural recipe.</p>
-<p><strong>Step 1 — Reproduce on the cassette.</strong> Run the failing conformance
-test against the <code>&lt;backend&gt;_replay</code> (and <code>&lt;backend&gt;_replay_async</code>)
-fixture. No credentials, no network, no Docker. For Azure HNS bugs the
-cassette already exists for every conformance test that was active
-when <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">BK-181</a> landed.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span><span class="s2">&quot;&lt;nodeid&gt;[azure_replay]&quot;</span><span class="w"> </span>-v<span class="w"> </span>--tb<span class="o">=</span>short
-</code></pre></div>
-<p>If the test is already marked <code>xfail(strict=False)</code> against real-Azure
-fixture ids (the BK-180 follow-up parked confirmed defects this way
-to keep CI green), pytest reports <code>XFAIL</code> and you cannot see the
-assertion. Force the underlying failure with <code>--runxfail</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span><span class="s2">&quot;&lt;nodeid&gt;[azure_replay]&quot;</span><span class="w"> </span>--runxfail<span class="w"> </span>-v<span class="w"> </span>--tb<span class="o">=</span>short
-</code></pre></div>
-<p>The xfail roster lives at the top of
-<a href="https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/conftest.py"><code>tests/backends/conformance/conftest.py</code></a>;
-look for the <code>pytest_collection_modifyitems</code> hook and the constants it
-applies. Removing a test function name from the roster un-xfails it for
-all real-Azure fixture ids in one place.</p>
-<p><strong>Step 2 — Classify cassette sufficiency.</strong> Read the backend code
-that the failing test exercises and ask: does the fix require any
-HTTP call the cassette does not already contain?</p>
-<table>
-<thead>
-<tr>
-<th>Fix shape</th>
-<th>Cassette sufficiency</th>
-<th>Action</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>In-process filter / mapping over data the SDK already returns</td>
-<td>Sufficient</td>
-<td>Proceed to step 3</td>
-</tr>
-<tr>
-<td>Adds, removes, or reorders SDK calls</td>
-<td>Insufficient</td>
-<td>Refresh the cassette (needs Stage 3 live access), then resume on the new one. Use <code>hatch run record-azure --node "&lt;nodeid[azure_live]&gt;"</code> for a single test to avoid churning the whole corpus, or plain <code>hatch run record-azure</code> to re-record everything</td>
-</tr>
-</tbody>
-</table>
-<p>The decision is mechanical: list the SDK calls the fix introduces, grep
-the cassette <code>interactions:</code> list for matching <code>method</code> + <code>uri</code>
-patterns, and proceed only when every needed call is already recorded.
-For example, a fix that adds a per-entry HEAD on directory blobs is
-sufficient if <code>rg "method: HEAD" tests/backends/cassettes/azure/&lt;test&gt;.yaml</code>
-already shows the matching <code>uri:</code> lines.</p>
-<p><strong>Step 3 — Fix.</strong> Implement the change in the backend module(s).</p>
-<p><strong>Step 4 — Verify on replay.</strong> Remove the test function name from the
-xfail roster (same file referenced in Step 1) and re-run the same
-nodeid without <code>--runxfail</code>. Green = the fix is consistent with the
-recorded wire behaviour.</p>
-<p><strong>Step 5 — Final verification on live.</strong> Run the test against the
-<code>&lt;backend&gt;_live</code> / <code>&lt;backend&gt;_live_async</code> fixture before merge:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nv">RS_TEST_LIVE_HNS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>hatch<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span><span class="s2">&quot;&lt;nodeid&gt;[azure_live]&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span>--stage<span class="o">=</span><span class="m">3</span><span class="w"> </span>-m<span class="w"> </span>live<span class="w"> </span>-v<span class="w"> </span>--tb<span class="o">=</span>short
-</code></pre></div>
-<p>Live is the source of truth; the cassette is only a faithful recording
-of a single trajectory. Account-config variance, eventual consistency,
-and timing-dependent SDK paths can hide behind a green replay.</p>
-<p>Per <a href="../specs/048-testing-architecture/#test-006-stage-selection">TEST-006</a>:
-live tests run only at <code>--stage=3</code> with the matching per-backend opt-in
-env var (<code>RS_TEST_LIVE_HNS=1</code> for Azure); CI never runs them.</p>
+<h3 id="running-stages-live-tests-and-cassettes">Running stages, live tests, and cassettes<a class="headerlink" href="#running-stages-live-tests-and-cassettes" title="Permanent link">&para;</a></h3>
+<p>The operational recipes — stage selection, live-cloud invocation, and cassette
+record/refresh/replay — live in the repo-only
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/TESTING-RUNBOOK.md"><code>sdd/TESTING-RUNBOOK.md</code></a>. This page stays standards-only so
+the runnable commands are not dual-published to the docs site.</p>
 <h3 id="provenance">Provenance<a class="headerlink" href="#provenance" title="Permanent link">&para;</a></h3>
 <p>Derived from <a href="../research/research-testing-best-practices/"><code>sdd/research/research-testing-best-practices.md</code></a>.</p>
 
