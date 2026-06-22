@@ -225,6 +225,124 @@ and the highest ID already in this file, then take the next integer. Run
 
 ---
 
+## Documentation Graph & Feature Generation
+
+The `gen_graph.py` → `graph.json` → `gen_features.py` pipeline exists to make the
+library **self-describing from its own code**: a single accurate graph where every
+feature and its dependencies are visible — each node carrying its meaning, each
+edge its connection (`inherits` / `declares` / `gates` / `mirrors`) — so that
+`FEATURES.md`, the capability tables, and the docs-site visualization all derive
+from one source that cannot drift from the code. RFC-0012 is the accepted design;
+the current implementation (ID-159 / 162 / 163, plus the ABC-classification fix)
+realizes only part of it, so the graph still misrepresents the API and the
+downstream docs are mostly hand-maintained.
+
+**Execution order:** ID-221 is the foundation (it makes the graph trustworthy) and
+blocks the other two. ID-222 and ID-223 both consume the corrected graph, are
+independent of each other, and should follow in that order (feature docs before
+visualization). ID-224 (artifact hygiene) is independent of all three and can ship
+at any time — ideally before ID-221/E-F inflate the artifacts further.
+
+- [ ] **ID-221 — Doc-graph model spec + Phase-1 graph accuracy/completeness fixes**
+  spec: RFC-0012 → new `050-doc-graph-model.md` · effort: L · audience: platform.tooling
+  `graph.json` still misrepresents the API: backends behind private bases have no
+  path to `Backend`, the `Store` class node is missing, methods/packages have no
+  containment edges, and `SyncBackendAdapter` poses as a capability-declaring
+  backend. Write the implementation spec **first** (it is the traceability target
+  for the golden test and forces the scope decisions), then land the five
+  remaining `gen_graph.py` fixes (the ABC-classification fix is already shipped):
+  - **Spec `050-doc-graph-model.md`:** translate RFC-0012 into concrete
+    obligations — in-scope vs deferred node/edge kinds at schema 1.3, the
+    documented `kind_of` vs `kind` deviation on extra nodes, the
+    `tests/scripts/test_gen_graph.py` traceability table, and the `--check` CI
+    contract.
+  - **Fix B (inherits):** walk the MRO (`inspect.getmro`) to emit `inherits` to
+    the nearest in-graph ancestor, so `S3`/`S3PyArrow` (`_S3Base`) and
+    `SQLBlob`/`SQLQuery` (`_SQLAlchemyBaseBackend`) reach `Backend`. Current code
+    only checks direct `__bases__` (`gen_graph.py:371`).
+  - **Fix C (facade):** re-role `SyncBackendAdapter` `backend` → `facade` and
+    suppress its all-14 `declares` edges.
+  - **Fix D (Store node):** add the missing `cls:…Store` node (`role: "facade"`)
+    so its 17 method nodes are not orphaned.
+  - **Fix E (contains, class→method):** emit `contains` edges; the link is
+    currently implicit in the URI prefix only.
+  - **Fix F (contains, package→class):** emit `contains` edges; package nodes
+    currently have zero edges.
+  - **Link metadata (enables ID-223's deep links):** nodes already carry
+    `file`/`line`; also attach the governing spec-clause ID and the API-docs-page
+    anchor per node (and per edge where meaningful) so the visualization can
+    deep-link to source, spec, and docs without a side lookup table. Define these
+    fields in the spec as part of the 1.3 contract.
+  - Bump `schema_version` 1.2 → 1.3 (new `abc`/`facade` roles, new `contains`
+    edge kind, new link-metadata fields), regenerate `graph.json`, update the
+    golden test (write-fail-fix).
+  - **Keep the 1.3 form compact.** `contains` adds one edge per method *and* per
+    class, and the link-metadata adds fields per node — `graph.json` will inflate
+    substantially. Define 1.3 to stay legible (no null/derivable keys; apply
+    ID-224's hygiene) so the golden diff tracks real API changes, not bloat.
+  - Open decisions for the spec: Fix C suppression mechanism (skip-set vs
+    `is_passthrough` field); confirm `SQLQueryBackend`'s real MRO target; whether
+    async backends need the same MRO treatment (they may inherit `AsyncBackend`
+    directly).
+
+- [ ] **ID-222 — Generate FEATURES.md sections mechanically from the corrected graph**
+  spec: 050-doc-graph-model · effort: M · audience: platform.tooling
+  Depends on ID-221. Replace hand-written sections of `FEATURES.md` with
+  `gen_features.py` projections over the accurate graph:
+  - **Store API table:** walk `cap:X ←(of)— req:*.gate —(gates)→ mtd:*` for
+    per-capability method lists (the `get_folder_info` `gate_depth` case → footnote).
+  - **Backend capability table:** now data-complete — once Fix A/B land,
+    `role="backend"` returns only the 11 concrete backends, not the 2 ABCs or 3
+    facades.
+  - **Async API section:** render sync↔async pairing from `mirrors` edges +
+    `capability_delta` (currently prose).
+  - Optional: ungated Store methods (`child()`, `close()`, `__enter__`) emitted
+    with a `gated: bool` field — decide allowlist vs scrape-all-public.
+  - Known limitation to record: `USER_METADATA` gates the `metadata=` kwarg, not a
+    whole method; schema 1.3 has no argument-level gate model (RFC `prm:` node is
+    the future path).
+
+- [ ] **ID-223 — Role-aware, explorable graph visualization**
+  spec: 050-doc-graph-model · effort: L · audience: platform.tooling
+  Depends on ID-221 (incl. its link metadata). Make the D3 view
+  (`docs-src/_data/graph/`) a genuine "explore instead of read source" surface,
+  not just a static diagram:
+  - render `abc` / `facade` nodes distinctly from concrete backends; distinguish
+    `Store` from other facades by URI label, not role.
+  - cluster method nodes inside their class via `contains` (class→method); collapse
+    Store/Backend method groups so the default view is capability-level.
+  - cluster classes inside packages via `contains` (package→class); disambiguate
+    gate labels by method-name suffix using `contains` direction.
+  - **Details panel (left, under the filter):** selecting a node *or an edge* shows
+    its metadata (role/kind, summary, runtime, capability delta) plus **deep links**
+    — source `file:line`, the governing spec clause, and the API docs page — so a
+    reader jumps straight to the authority instead of grepping source. Relies on the
+    link metadata emitted by ID-221.
+  - **Flexible faceted filtering:** beyond text search, filter by **type** (node
+    kind / role, edge kind), by **dependency** (isolate a selected node's
+    upstream/downstream neighborhood along `inherits` / `contains` / `gates` / `of`
+    / `mirrors`), by **capability**, and by **runtime** (sync / async). Facets
+    compose.
+
+- [ ] **ID-224 — Trim the committed graph artifacts (D3 duplication, null-field bloat)**
+  spec: — · effort: S · audience: platform.tooling
+  Independent of ID-221–223; shippable now and best done *before* Fixes E/F and
+  link metadata inflate the artifacts. `gen_graph_viz.py` emits a **354 KB**
+  `graph_viz.html` that is ~79% the **inlined** 279 KB `d3.v7.min.js` — which is
+  *also* committed standalone, so D3 lives twice in the repo and the golden
+  `--check` guards a 354 KB file whose only meaningful delta is the ~60 KB data
+  slice.
+  - Stop double-storing D3: either reference the sibling `d3.v7.min.js` (or a
+    pinned CDN URL with SRI) instead of inlining, or keep inlining and drop the
+    standalone vendored copy — pick one, weighing the "open-without-server"
+    rationale stated in `gen_graph_viz.py`.
+  - Drop null/derivable keys from `graph.json` emission (e.g. `"condition": null`
+    on every edge) — semantics-preserving, stays schema 1.2.
+  - Goal: the `--check` golden artifacts reflect real API changes, not a static
+    third-party library blob.
+
+---
+
 ## API Ergonomics
 
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
