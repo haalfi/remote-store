@@ -19,8 +19,11 @@ spec disagree, the spec wins.
 
 ## Stages at a glance
 
-Three stages, gated by `--stage` (default 1). Higher stages are supersets:
-Stage 3 still runs Stage 1 and 2 unless you narrow with `-k` / a node id.
+Three stages, gated by `--stage`. With no flag the stage auto-detects: Stage 2
+when a Docker daemon is reachable, else Stage 1. Override with `--stage=N`, or
+set `RS_TEST_STAGE=N` to fix the stage and skip the up-to-5s `docker info`
+probe. Higher stages are supersets: Stage 3 still runs Stage 1 and 2 unless you
+narrow with `-k` / a node id.
 
 | Stage | Needs | What runs | Invocation |
 |---|---|---|---|
