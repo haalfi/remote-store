@@ -24,7 +24,7 @@ jobs:
       test-matrix: ${{ steps.versions.outputs.test-matrix }}
       typecheck-matrix: ${{ steps.versions.outputs.typecheck-matrix }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Detect changed files
@@ -80,7 +80,7 @@ jobs:
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
@@ -126,7 +126,7 @@ jobs:
       matrix:
         python-version: ${{ fromJSON(needs.setup.outputs.typecheck-matrix) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
@@ -152,7 +152,7 @@ jobs:
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Restore service-image cache
         id: cache
         uses: actions/cache/restore@v5
@@ -183,7 +183,7 @@ jobs:
       matrix:
         python-version: ${{ fromJSON(needs.setup.outputs.test-matrix) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Restore service-image cache
         uses: actions/cache/restore@v5
         with:
@@ -232,7 +232,7 @@ jobs:
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Restore service-image cache
         uses: actions/cache/restore@v5
         with:
@@ -275,7 +275,7 @@ jobs:
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
@@ -306,7 +306,7 @@ jobs:
     env:
       RS_REQUIRE_MINIO: "1"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/start-backends
         with:
           minio: 'true'
@@ -334,7 +334,7 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
@@ -348,7 +348,7 @@ jobs:
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
@@ -363,7 +363,7 @@ jobs:
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
@@ -386,7 +386,7 @@ jobs:
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Restore service-image cache
         uses: actions/cache/restore@v5
         with:
@@ -412,7 +412,7 @@ jobs:
     if: needs.setup.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
@@ -430,7 +430,7 @@ jobs:
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.primary }}
@@ -457,7 +457,7 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dafny-lang/setup-dafny-action@be023fc606339d46ed6b077dcb8614d0279ded31  # v1.9.1
         with:
           dafny-version: '4.11.0'
@@ -491,7 +491,7 @@ jobs:
     if: needs.setup.outputs.tla == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Check TLA+ files for em dashes
         run: python scripts/check_tla_no_emdash.py
       - uses: actions/setup-java@v5

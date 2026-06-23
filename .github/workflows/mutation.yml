@@ -60,7 +60,7 @@ jobs:
       azurite-scopes: ${{ steps.set-scopes.outputs.azurite-scopes }}
       sftp-scopes: ${{ steps.set-scopes.outputs.sftp-scopes }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version-file: .python-version
@@ -100,7 +100,7 @@ jobs:
       matrix:
         scope: ${{ fromJSON(needs.setup.outputs.scopes) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # --- Backend service containers ---
       # Conditionally started based on the JSON arrays computed by setup
@@ -256,7 +256,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version-file: .python-version
