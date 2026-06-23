@@ -37,7 +37,6 @@ and `azure-storage-file-datalake` do the real work.
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-  - [Same code, different environment](#same-code-different-environment)
 - [Who this is for](#who-this-is-for)
 - [What you get](#what-you-get)
 - [What it is not](#what-it-is-not)
@@ -48,9 +47,6 @@ and `azure-storage-file-datalake` do the real work.
 - [Quality & Testing](#quality--testing)
 - [Learn more](#learn-more)
 - [How it compares](#how-it-compares)
-- [Contributing](#contributing)
-- [Security](#security)
-- [License](#license)
 
 <!-- --8<-- [start:getting-started] -->
 ## Installation
