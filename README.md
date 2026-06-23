@@ -32,6 +32,22 @@ and `azure-storage-file-datalake` do the real work.
 
 **Requires Python 3.10+.** The core API is synchronous; an async counterpart is available via `remote_store.aio` (also home to the async-only Microsoft Graph backend for OneDrive / SharePoint / Teams). See the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for atomicity caveats and race conditions.
 
+<!-- omit in toc -->
+## Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Who this is for](#who-this-is-for)
+- [What you get](#what-you-get)
+- [What it is not](#what-it-is-not)
+- [Supported Backends](#supported-backends)
+- [Store API](#store-api)
+- [Performance](#performance)
+- [Extensions](#extensions)
+- [Quality & Testing](#quality--testing)
+- [Learn more](#learn-more)
+- [How it compares](#how-it-compares)
+
 <!-- --8<-- [start:getting-started] -->
 ## Installation
 
