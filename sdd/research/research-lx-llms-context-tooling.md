@@ -125,7 +125,48 @@ Actions taken with this doc:
 - **ID-216 created** under Docs & Discoverability for the ad-hoc bundling
   use-case.
 
-## 7. References
+## 7. Trial run (ID-216, 2026-06-24)
+
+Timeboxed local trial of `lx` v1.2.1 (`go install github.com/rasros/lx/cmd/lx`)
+against this repo, comparing it to a plain `git archive` baseline. Verdict:
+**keep**, as a documented optional DX convenience. No `.lxignore` committed; no
+CI / docs-build wiring (per the item's guardrails).
+
+| Bundle | Invocation | Files | ~Tokens |
+|---|---|---|---|
+| Full source, Claude XML | `lx --xml src/remote_store/` | 69 | ~262k |
+| Source **skeleton** (signatures + types) | `lx --xml -u -Y src/remote_store/` | 69 | **~29k** |
+| Structure only | `lx -t src/remote_store/` | 69 | — |
+| Whole repo | `lx --xml .` | 1,512 | ~3.72M |
+| `git archive` baseline | `git archive HEAD src/remote_store` | — | — (opaque tarball) |
+
+Findings:
+
+- **`.gitignore` honoured out of the box** — zero leakage of `tmp/`, `.venv/`,
+  or caches; the 69-file source count matched `git ls-files src` exactly. So an
+  `.lxignore` is **not** needed to keep junk out.
+- **AST skeleton (`-u -Y`) is the standout differentiator** — class/method
+  signatures, type fields, and docstrings at **~11%** the token cost of the full
+  source (~29k vs ~262k). `git archive` has no equivalent; reproducing it needs
+  bespoke tooling.
+- **Single LLM-ready artifact vs a tarball.** `git archive` emits an opaque
+  `.tar` that must be unpacked, concatenated, formatted, and token-counted before
+  an agent can use it — i.e. exactly the bespoke script the item asked us to
+  weigh `lx` against. `lx` replaces that whole script with one command and prints
+  a token estimate.
+- **No `.lxignore` committed.** The differentiated workflows are *subtree* and
+  *skeleton* bundles (`lx src/...`), which need no ignore file; a whole-repo
+  walk is dominated by `tests/` (~1.66M) and `sdd/` (~1.09M) and is rarely the
+  right agent context anyway. A global `.lxignore` would impose policy on an
+  optional, non-endorsed-in-CI tool for little gain — prefer explicit subtree
+  args (and `-e` where needed). This revises the item's tentative "likely an
+  `.lxignore`" hypothesis.
+
+Outcome: a short, optional subsection landed in `CONTRIBUTING.md` §
+Development Setup documenting the three invocations above; `lx` is **not** a
+project dependency, **not** installed by any script, and **not** in CI.
+
+## 8. References
 
 - [`rasros/lx`](https://github.com/rasros/lx) — the tool under evaluation.
 - [llmstxt.org](https://llmstxt.org/) — the `llms.txt` open standard.
