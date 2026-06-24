@@ -191,26 +191,28 @@ hatch run examples
 
 All dev scripts are defined in `pyproject.toml` under `[tool.hatch.envs.default.scripts]`. Run `hatch run` to see available commands.
 
-### Bundling repo context for an LLM (optional)
+### Bundling a code skeleton for an LLM (optional)
 
-When you want to hand a coding agent whole-subtree source context,
-[`lx`](https://github.com/rasros/lx) (Go, MIT) bundles a directory into one
-LLM-ready blob. It honours `.gitignore`, estimates tokens, and can emit an
-AST-level skeleton. This is a purely local convenience: `lx` is **not** a
-project dependency, is **not** installed by any `hatch` script, and is **not**
-used in CI or the docs build.
+To orient a coding agent on a subtree without spending tokens on full bodies,
+[`lx`](https://github.com/rasros/lx) (Go, MIT) emits an AST-level skeleton —
+class/method signatures, type fields, and docstrings only. For
+`src/remote_store/` that is ~29k tokens versus ~262k for the full source, and
+there is no concise `git archive` / `cat` equivalent. This is the one job `lx`
+does that is awkward to reproduce by hand; for whole-file context just let the
+agent read the files. `lx` is a purely local convenience: **not** a project
+dependency, **not** installed by any `hatch` script, **not** used in CI or the
+docs build.
 
 ```bash
-go install github.com/rasros/lx/cmd/lx@latest   # one-time
+go install github.com/rasros/lx/cmd/lx@latest          # one-time
 
-lx --xml -u -Y src/remote_store/   # skeleton: signatures + types only (~29k tokens)
-lx --xml src/remote_store/         # full source, Claude-optimised XML (~262k tokens)
+lx --xml -u -Y src/remote_store/   # skeleton: signatures + types only
 git diff --name-only | lx -c       # bundle just the changed files to the clipboard
 ```
 
-Point `lx` at a subtree (not the repo root — a whole-repo walk is ~3.7M tokens,
-mostly `tests/` and `sdd/`). No `.lxignore` is committed; use `-e <glob>` for
-ad-hoc excludes.
+It honours `.gitignore` and estimates tokens. Point it at a subtree, not the
+repo root (a whole-repo walk is ~3.7M tokens, mostly `tests/` and `sdd/`); no
+`.lxignore` is committed, so use `-e <glob>` for ad-hoc excludes.
 
 ### Migrating an existing checkout
 
