@@ -10134,7 +10134,21 @@ types and concepts that make up the codebase; edges are the typed relationships
 between them. The full node and edge taxonomy is defined in the
 <a href="../design/rfcs/rfc-0012-doc-graph-model/">doc graph model RFC</a>.</p>
 <p>Use it to trace capability chains, explore the class hierarchy, and inspect
-individual nodes and their direct neighbors.</p>
+individual nodes and their direct neighbors. It is built to be explored rather
+than just looked at:</p>
+<ul>
+<li><strong>Role-aware nodes:</strong> concrete backends, abstract base classes, and facades are
+  drawn distinctly; <code>Store</code>/<code>AsyncStore</code> stand out from other facades.</li>
+<li><strong>Collapse by default:</strong> method nodes are folded into their class so the
+  opening view is capability-level. Double-click a class (or use <em>Expand all</em>) to
+  reveal its methods, clustered around it.</li>
+<li><strong>Detail with deep links:</strong> select any node <em>or edge</em> to see its metadata plus
+  jump-to-source links — the source <code>file:line</code> and governing spec on GitHub, and
+  the API docs page on this site.</li>
+<li><strong>Faceted filtering:</strong> text search plus filters for node kind, class role, edge
+  kind, runtime (sync/async), capability, and a selected node's dependency
+  neighbourhood. Facets combine.</li>
+</ul>
 <p><a class="md-button md-button--primary" href="../graph_viz.html">Open visualization</a></p>
 <p>The visualization runs fully in the browser, with no server or build step.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>

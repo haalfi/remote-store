@@ -10478,9 +10478,10 @@ edges deferred below). <a href="https://github.com/haalfi/remote-store/blob/mast
 omit-when-null convention now formalized in DGM-010.</p>
 <p><strong>Tracks:</strong> <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">ID-221</a> (foundation: schema 1.3) and
 <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">ID-222</a> (mechanical FEATURES.md projection, which drove the
-1.4 ungated-method-node addition, DGM-014). <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">ID-223</a> (role-aware
-visualization) also consumes the corrected graph and the link metadata defined
-here.</p>
+1.4 ungated-method-node addition, DGM-014). <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">ID-223</a>
+(role-aware visualization) also consumes the corrected graph and the link
+metadata defined here — <code>gen_graph_viz.py</code> reads the roles, <code>contains</code> edges,
+and <code>spec</code>/<code>doc</code> links at 1.4 with no schema change.</p>
 <hr />
 <h2 id="dgm-001-artifact-shape-and-schema-version">DGM-001: Artifact Shape and Schema Version<a class="headerlink" href="#dgm-001-artifact-shape-and-schema-version" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> The generator emits a single JSON object with exactly these
@@ -10861,11 +10862,12 @@ individually falsifiable.</p>
   a per-argument predicate.</li>
 <li><strong>Ungated <code>Backend</code>/<code>AsyncBackend</code> methods.</strong> DGM-014 emits ungated nodes for
   the <code>Store</code>/<code>AsyncStore</code> facades only; the ABCs' ungated surface has no consumer.</li>
-<li><strong>Role-aware visualization, deep links, faceted filtering.</strong> ID-223 consumes
-  the <code>contains</code> edges and the <code>spec</code>/<code>doc</code> link metadata.</li>
 <li><strong>The deferred node/edge kinds of DGM-002/DGM-003</strong>, each added under its own
   schema bump when a consumer needs it.</li>
 </ul>
+<p>(Role-aware visualization, deep links, and faceted filtering — formerly deferred
+here — shipped in ID-223 as a pure consumer of the 1.4 graph; see
+<code>scripts/gen_graph_viz.py</code>.)</p>
 
 
 
