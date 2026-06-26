@@ -10174,6 +10174,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#dgm-014-ungated-facade-method-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DGM-014: Ungated Facade Method Nodes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#test-traceability" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10185,10 +10196,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deferred-out-of-scope-at-13" class="md-nav__link">
+  <a href="#deferred-out-of-scope-at-14" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deferred / Out of Scope at 1.3
+        Deferred / Out of Scope at 1.4
       
     </span>
   </a>
@@ -10397,6 +10408,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#dgm-014-ungated-facade-method-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DGM-014: Ungated Facade Method Nodes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#test-traceability" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10408,10 +10430,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deferred-out-of-scope-at-13" class="md-nav__link">
+  <a href="#deferred-out-of-scope-at-14" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deferred / Out of Scope at 1.3
+        Deferred / Out of Scope at 1.4
       
     </span>
   </a>
@@ -10438,14 +10460,14 @@
 <h1 id="spec-050-documentation-graph-model">Spec 050 — Documentation Graph Model<a class="headerlink" href="#spec-050-documentation-graph-model" title="Permanent link">&para;</a></h1>
 <p><strong>Scope:</strong> Build &amp; CI tooling. Specifies the concrete obligations the graph
 generator must satisfy when emitting <code>docs-src/_data/graph/graph.json</code> at
-<code>schema_version</code> 1.3. Not library source code; the contracts here govern
+<code>schema_version</code> 1.4. Not library source code; the contracts here govern
 <code>scripts/gen_graph.py</code>, <code>scripts/gen_graph_viz.py</code>, and their golden tests
 in <code>tests/scripts/</code>.</p>
 <p><strong>Prefix:</strong> <code>DGM</code></p>
 <p><strong>Author-facing surface:</strong> <a href="../../rfcs/rfc-0012-doc-graph-model/">RFC-0012</a> is the
 accepted design — the node/edge taxonomy, the promote-to-node rule, the
 determinism rules, and the projection design are normative there. This spec does
-not restate the taxonomy; it pins which slice of it the generator emits at 1.3,
+not restate the taxonomy; it pins which slice of it the generator emits at 1.4,
 the deviations the implementation takes from the RFC's idealized shape, and the
 test/CI contract that guards the artifact. Where this spec and the RFC disagree
 on what the <em>generator emits</em>, this spec wins; where they disagree on the <em>model</em>,
@@ -10454,24 +10476,27 @@ the RFC wins and this spec is wrong (principle 5).</p>
 (extension architecture, the source of the <code>composes</code>/<code>played_by</code>/<code>requires_cap</code>
 edges deferred below). <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">ID-224</a> introduced the
 omit-when-null convention now formalized in DGM-010.</p>
-<p><strong>Tracks:</strong> <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">ID-221</a>. ID-221 is the foundation of the
-Documentation Graph epic and blocks <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">ID-222</a> (mechanical
-FEATURES.md projection) and <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">ID-223</a> (role-aware visualization),
-both of which consume the corrected graph and the link metadata defined here.</p>
+<p><strong>Tracks:</strong> <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">ID-221</a> (foundation: schema 1.3) and
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">ID-222</a> (mechanical FEATURES.md projection, which drove the
+1.4 ungated-method-node addition, DGM-014). <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">ID-223</a> (role-aware
+visualization) also consumes the corrected graph and the link metadata defined
+here.</p>
 <hr />
 <h2 id="dgm-001-artifact-shape-and-schema-version">DGM-001: Artifact Shape and Schema Version<a class="headerlink" href="#dgm-001-artifact-shape-and-schema-version" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> The generator emits a single JSON object with exactly these
 top-level keys: <code>schema_version</code>, <code>source_version</code>, <code>snapshot</code>, <code>nodes</code>, <code>edges</code>.
-At this spec's revision <code>schema_version</code> is <code>"1.3"</code>. <code>source_version</code> and
+At this spec's revision <code>schema_version</code> is <code>"1.4"</code>. <code>source_version</code> and
 <code>snapshot</code> both equal <code>pyproject.toml[project][version]</code>, read dynamically.</p>
-<p><strong>Rationale:</strong> RFC-0012 "The graph: two collections" and "Snapshots". The 1.3
-bump over 1.2 covers three additive changes: the <code>abc</code> and <code>facade</code> class roles
-(DGM-004), the <code>contains</code> edge kind (DGM-008), and the <code>spec</code>/<code>doc</code> link-metadata
-fields on class nodes (DGM-009).</p>
+<p><strong>Rationale:</strong> RFC-0012 "The graph: two collections" and "Snapshots". The 1.4
+bump over 1.3 is one additive change: ungated facade method nodes carrying a
+<code>gated</code> field (DGM-014), added so ID-222 can derive the Store "always available"
+table. The 1.3 bump over 1.2 covered three additive changes: the <code>abc</code> and
+<code>facade</code> class roles (DGM-004), the <code>contains</code> edge kind (DGM-008), and the
+<code>spec</code>/<code>doc</code> link-metadata fields on class nodes (DGM-009).</p>
 <p><strong>See also:</strong> DGM-013 for the <code>schema_version</code> consumers that ripple on a bump.</p>
 <hr />
 <h2 id="dgm-002-in-scope-vs-deferred-node-kinds">DGM-002: In-Scope vs Deferred Node Kinds<a class="headerlink" href="#dgm-002-in-scope-vs-deferred-node-kinds" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> At 1.3 the generator emits exactly these node kinds:</p>
+<p><strong>Invariant:</strong> At 1.4 the generator emits exactly these node kinds:</p>
 <table>
 <thead>
 <tr>
@@ -10490,7 +10515,7 @@ fields on class nodes (DGM-009).</p>
 </tr>
 <tr>
 <td><code>method</code></td>
-<td>gated methods of <code>Store</code>/<code>AsyncStore</code>/<code>Backend</code>/<code>AsyncBackend</code> (from the <code>_GATING</code> / <code>_BACKEND_GATING</code> / <code>_ASYNC_BACKEND_GATING</code> maps)</td>
+<td>gated methods of <code>Store</code>/<code>AsyncStore</code>/<code>Backend</code>/<code>AsyncBackend</code> (from the <code>_GATING</code> / <code>_BACKEND_GATING</code> / <code>_ASYNC_BACKEND_GATING</code> maps), plus the ungated public methods of the <code>Store</code>/<code>AsyncStore</code> facades (DGM-014)</td>
 </tr>
 <tr>
 <td><code>capability</code></td>
@@ -10660,6 +10685,10 @@ same object. Specifically:</p>
   edge is conditional; an unconditional edge omits the key entirely (absent ⇒
   unconditional). This is the convention ID-224 introduced and RFC-0012's "Edge
   taxonomy" documents; this clause makes it normative for the generator.</li>
+<li><code>method</code> nodes carry <code>gated</code> (DGM-014) only when it is <code>false</code>; a gated method
+  omits the key (absent ⇒ gated). Gated methods are the common case and already
+  carry a <code>gates</code> edge, so emitting <code>gated: true</code> on every one would be derivable
+  bloat; <code>gated: false</code> on the ungated minority is the information-bearing form.</li>
 <li>No boolean or scalar that restates another field is emitted (DGM-006: no
   <code>is_facade</code> mirroring <code>role</code>).</li>
 </ul>
@@ -10711,6 +10740,34 @@ commit a partial-import build.</p>
 <p><strong>Rationale:</strong> RFC-0012 "Testing"; the golden round-trip is the single test that
 makes the artifact trustworthy.</p>
 <hr />
+<h2 id="dgm-014-ungated-facade-method-nodes">DGM-014: Ungated Facade Method Nodes<a class="headerlink" href="#dgm-014-ungated-facade-method-nodes" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> For the <code>Store</code> and <code>AsyncStore</code> facades (DGM-007) the generator
+emits a <code>method</code> node for every <strong>public, non-gated</strong> function member — the
+"always available" surface (<code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>ping</code>,
+<code>close</code>/<code>aclose</code>, <code>child</code>, <code>unwrap</code>, <code>resolve</code>, <code>native_path</code>, <code>to_key</code>,
+<code>supports</code>). A method is <em>ungated</em> when its name is not a key of the facade's
+<code>_GATING</code> map. Ungated nodes carry the same introspection fields as gated method
+nodes (<code>summary</code>, <code>is_abstract</code>, <code>is_async</code>, <code>file</code>, <code>line</code>) plus <code>gated: false</code>.</p>
+<p><strong>Invariant:</strong> Ungated method nodes carry <strong>no</strong> <code>req:</code>/<code>gates</code>/<code>of</code> edges (they
+have no capability gate). Their <code>contains</code> edge (class → method, DGM-008) is
+emitted by the generic containment pass, so they are not orphaned.</p>
+<p><strong>Scope:</strong> Ungated emission applies to the <code>Store</code>/<code>AsyncStore</code> facades only.
+The <code>Backend</code>/<code>AsyncBackend</code> ABCs continue to emit gated methods only (from
+<code>_BACKEND_GATING</code> / <code>_ASYNC_BACKEND_GATING</code>): "always available" is a facade
+guarantee to package consumers, not part of the backend-adapter contract, and no
+consumer needs the ABCs' ungated surface. Dunders (leading <code>_</code>) are excluded;
+the discriminator is "public function member not in <code>_GATING</code>", so a new ungated
+facade method becomes a node automatically (no allowlist to maintain).</p>
+<p><strong>Postcondition:</strong> ID-222's <code>gen_features.py</code> derives the Store API "Ungated
+(always available)" table by selecting <code>Store</code> method nodes with <code>gated == false</code>,
+instead of hand-maintaining the method set. The schema 1.3 boundary deferred this
+("only GATED method nodes are emitted"); 1.4 lifts it for the facades.</p>
+<p><strong>Rationale:</strong> The <code>gated</code> field is technically derivable from the absence of a
+<code>gates</code> edge, which DGM-010 would normally forbid. It is emitted anyway as a
+deliberate, documented exception: the field makes the ungated set directly
+queryable without a negative edge-existence join, and the omit-when-default rule
+(DGM-010) keeps it from inflating the gated majority.</p>
+<hr />
 <h2 id="test-traceability">Test Traceability<a class="headerlink" href="#test-traceability" title="Permanent link">&para;</a></h2>
 <p>Each numbered obligation above is anchored by at least one
 <code>@pytest.mark.spec</code>-tagged test in <code>tests/scripts/test_gen_graph.py</code>, so a
@@ -10725,7 +10782,7 @@ every clause keeps a mark):</p>
 </thead>
 <tbody>
 <tr>
-<td>DGM-001 (schema 1.3, version fields)</td>
+<td>DGM-001 (schema 1.4, version fields)</td>
 <td><code>test_graph_schema</code></td>
 </tr>
 <tr>
@@ -10784,24 +10841,30 @@ every clause keeps a mark):</p>
 <td>DGM-013 (artifact up to date)</td>
 <td><code>test_graph_json_is_up_to_date</code></td>
 </tr>
+<tr>
+<td>DGM-014 (ungated facade method nodes)</td>
+<td><code>test_ungated_facade_method_nodes</code></td>
+</tr>
 </tbody>
 </table>
 <p>RFC-0012 makes the golden test the trust anchor; this table makes each obligation
 individually falsifiable.</p>
 <hr />
-<h2 id="deferred-out-of-scope-at-13">Deferred / Out of Scope at 1.3<a class="headerlink" href="#deferred-out-of-scope-at-13" title="Permanent link">&para;</a></h2>
+<h2 id="deferred-out-of-scope-at-14">Deferred / Out of Scope at 1.4<a class="headerlink" href="#deferred-out-of-scope-at-14" title="Permanent link">&para;</a></h2>
 <p>The following are explicitly out of scope and tracked elsewhere:</p>
 <ul>
 <li><strong>Argument-level capability gates.</strong> <code>USER_METADATA</code> gates the <code>metadata=</code>
-  kwarg, not a whole method; 1.3 has no argument-level gate model. The RFC <code>prm:</code>
-  / <code>predicate</code> nodes are the future path (noted on ID-222).</li>
-<li><strong>Mechanical FEATURES.md projection.</strong> ID-222 consumes this graph.</li>
+  kwarg, not a whole method; 1.4 still has no argument-level gate model. The RFC
+  <code>prm:</code> / <code>predicate</code> nodes are the future path. ID-222 records this as a known
+  limitation: the <code>metadata=</code> gate is documented as a FEATURES footnote and in the
+  <code>Capabilities</code> table, not as a method gate, because the graph cannot yet model
+  a per-argument predicate.</li>
+<li><strong>Ungated <code>Backend</code>/<code>AsyncBackend</code> methods.</strong> DGM-014 emits ungated nodes for
+  the <code>Store</code>/<code>AsyncStore</code> facades only; the ABCs' ungated surface has no consumer.</li>
 <li><strong>Role-aware visualization, deep links, faceted filtering.</strong> ID-223 consumes
   the <code>contains</code> edges and the <code>spec</code>/<code>doc</code> link metadata.</li>
 <li><strong>The deferred node/edge kinds of DGM-002/DGM-003</strong>, each added under its own
-  schema bump when a consumer needs it.
-</content>
-</invoke></li>
+  schema bump when a consumer needs it.</li>
 </ul>
 
 

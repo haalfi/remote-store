@@ -81,6 +81,16 @@
       "src": "cls:remote_store._backend.Backend"
     },
     {
+      "dst": "mtd:remote_store._store.Store.child",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.close",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
       "dst": "mtd:remote_store._store.Store.copy",
       "kind": "contains",
       "src": "cls:remote_store._store.Store"
@@ -92,6 +102,11 @@
     },
     {
       "dst": "mtd:remote_store._store.Store.delete_folder",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.exists",
       "kind": "contains",
       "src": "cls:remote_store._store.Store"
     },
@@ -116,6 +131,16 @@
       "src": "cls:remote_store._store.Store"
     },
     {
+      "dst": "mtd:remote_store._store.Store.is_file",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.is_folder",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
       "dst": "mtd:remote_store._store.Store.iter_children",
       "kind": "contains",
       "src": "cls:remote_store._store.Store"
@@ -136,7 +161,17 @@
       "src": "cls:remote_store._store.Store"
     },
     {
+      "dst": "mtd:remote_store._store.Store.native_path",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
       "dst": "mtd:remote_store._store.Store.open_atomic",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.ping",
       "kind": "contains",
       "src": "cls:remote_store._store.Store"
     },
@@ -157,6 +192,26 @@
     },
     {
       "dst": "mtd:remote_store._store.Store.read_text",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.resolve",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.supports",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.to_key",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.unwrap",
       "kind": "contains",
       "src": "cls:remote_store._store.Store"
     },
@@ -246,6 +301,16 @@
       "src": "cls:remote_store.aio._async_backend.AsyncBackend"
     },
     {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.aclose",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.child",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
       "dst": "mtd:remote_store.aio._async_store.AsyncStore.copy",
       "kind": "contains",
       "src": "cls:remote_store.aio._async_store.AsyncStore"
@@ -257,6 +322,11 @@
     },
     {
       "dst": "mtd:remote_store.aio._async_store.AsyncStore.delete_folder",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.exists",
       "kind": "contains",
       "src": "cls:remote_store.aio._async_store.AsyncStore"
     },
@@ -281,6 +351,16 @@
       "src": "cls:remote_store.aio._async_store.AsyncStore"
     },
     {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.is_file",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.is_folder",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
       "dst": "mtd:remote_store.aio._async_store.AsyncStore.iter_children",
       "kind": "contains",
       "src": "cls:remote_store.aio._async_store.AsyncStore"
@@ -301,6 +381,16 @@
       "src": "cls:remote_store.aio._async_store.AsyncStore"
     },
     {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.native_path",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.ping",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
       "dst": "mtd:remote_store.aio._async_store.AsyncStore.read",
       "kind": "contains",
       "src": "cls:remote_store.aio._async_store.AsyncStore"
@@ -312,6 +402,26 @@
     },
     {
       "dst": "mtd:remote_store.aio._async_store.AsyncStore.read_text",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.resolve",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.supports",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.to_key",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.unwrap",
       "kind": "contains",
       "src": "cls:remote_store.aio._async_store.AsyncStore"
     },
@@ -2422,6 +2532,26 @@
     },
     {
       "file": "src/remote_store/_store.py",
+      "gated": false,
+      "id": "mtd:remote_store._store.Store.child",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 833,
+      "summary": "child"
+    },
+    {
+      "file": "src/remote_store/_store.py",
+      "gated": false,
+      "id": "mtd:remote_store._store.Store.close",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 825,
+      "summary": "close"
+    },
+    {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.copy",
       "is_abstract": false,
       "is_async": false,
@@ -2446,6 +2576,16 @@
       "kind": "method",
       "line": 376,
       "summary": "delete_folder"
+    },
+    {
+      "file": "src/remote_store/_store.py",
+      "gated": false,
+      "id": "mtd:remote_store._store.Store.exists",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 652,
+      "summary": "exists"
     },
     {
       "file": "src/remote_store/_store.py",
@@ -2485,6 +2625,26 @@
     },
     {
       "file": "src/remote_store/_store.py",
+      "gated": false,
+      "id": "mtd:remote_store._store.Store.is_file",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 665,
+      "summary": "is_file"
+    },
+    {
+      "file": "src/remote_store/_store.py",
+      "gated": false,
+      "id": "mtd:remote_store._store.Store.is_folder",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 676,
+      "summary": "is_folder"
+    },
+    {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.iter_children",
       "is_abstract": false,
       "is_async": false,
@@ -2521,12 +2681,32 @@
     },
     {
       "file": "src/remote_store/_store.py",
+      "gated": false,
+      "id": "mtd:remote_store._store.Store.native_path",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 900,
+      "summary": "native_path"
+    },
+    {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.open_atomic",
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
       "line": 305,
       "summary": "open_atomic"
+    },
+    {
+      "file": "src/remote_store/_store.py",
+      "gated": false,
+      "id": "mtd:remote_store._store.Store.ping",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 811,
+      "summary": "ping"
     },
     {
       "file": "src/remote_store/_store.py",
@@ -2563,6 +2743,46 @@
       "kind": "method",
       "line": 145,
       "summary": "read_text"
+    },
+    {
+      "file": "src/remote_store/_store.py",
+      "gated": false,
+      "id": "mtd:remote_store._store.Store.resolve",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 883,
+      "summary": "resolve"
+    },
+    {
+      "file": "src/remote_store/_store.py",
+      "gated": false,
+      "id": "mtd:remote_store._store.Store.supports",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 930,
+      "summary": "supports"
+    },
+    {
+      "file": "src/remote_store/_store.py",
+      "gated": false,
+      "id": "mtd:remote_store._store.Store.to_key",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 913,
+      "summary": "to_key"
+    },
+    {
+      "file": "src/remote_store/_store.py",
+      "gated": false,
+      "id": "mtd:remote_store._store.Store.unwrap",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 863,
+      "summary": "unwrap"
     },
     {
       "file": "src/remote_store/_store.py",
@@ -2719,6 +2939,26 @@
     },
     {
       "file": "src/remote_store/aio/_async_store.py",
+      "gated": false,
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.aclose",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 804,
+      "summary": "aclose"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "gated": false,
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.child",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 812,
+      "summary": "child"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
       "id": "mtd:remote_store.aio._async_store.AsyncStore.copy",
       "is_abstract": false,
       "is_async": true,
@@ -2743,6 +2983,16 @@
       "kind": "method",
       "line": 326,
       "summary": "delete_folder"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "gated": false,
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.exists",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 640,
+      "summary": "exists"
     },
     {
       "file": "src/remote_store/aio/_async_store.py",
@@ -2782,6 +3032,26 @@
     },
     {
       "file": "src/remote_store/aio/_async_store.py",
+      "gated": false,
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.is_file",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 649,
+      "summary": "is_file"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "gated": false,
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.is_folder",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 658,
+      "summary": "is_folder"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
       "id": "mtd:remote_store.aio._async_store.AsyncStore.iter_children",
       "is_abstract": false,
       "is_async": false,
@@ -2818,6 +3088,26 @@
     },
     {
       "file": "src/remote_store/aio/_async_store.py",
+      "gated": false,
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.native_path",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 880,
+      "summary": "native_path"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "gated": false,
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.ping",
+      "is_abstract": false,
+      "is_async": true,
+      "kind": "method",
+      "line": 790,
+      "summary": "ping"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
       "id": "mtd:remote_store.aio._async_store.AsyncStore.read",
       "is_abstract": false,
       "is_async": false,
@@ -2842,6 +3132,46 @@
       "kind": "method",
       "line": 129,
       "summary": "read_text"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "gated": false,
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.resolve",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 863,
+      "summary": "resolve"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "gated": false,
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.supports",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 910,
+      "summary": "supports"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "gated": false,
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.to_key",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 893,
+      "summary": "to_key"
+    },
+    {
+      "file": "src/remote_store/aio/_async_store.py",
+      "gated": false,
+      "id": "mtd:remote_store.aio._async_store.AsyncStore.unwrap",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 843,
+      "summary": "unwrap"
     },
     {
       "file": "src/remote_store/aio/_async_store.py",
@@ -3258,7 +3588,7 @@
       "kind_of": "backend"
     }
   ],
-  "schema_version": "1.3",
+  "schema_version": "1.4",
   "snapshot": "0.29.0",
   "source_version": "0.29.0"
 }

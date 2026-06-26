@@ -3148,6 +3148,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#methods-by-capability-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methods by capability gate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ungated-always-available" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10392,6 +10403,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#methods-by-capability-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methods by capability gate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ungated-always-available" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10694,7 +10716,66 @@ backends (see the <a href="#backends">Backends</a> section).</p>
 <p>Methods are grouped by the capability that gates them.
 All methods share one invariant: they raise typed errors from <code>remote_store.errors</code>
 and never leak backend-native exceptions to the caller.</p>
+<p>The table below is generated from the documentation graph (<code>graph.json</code>): each
+gating capability maps to the methods it gates. The descriptive per-capability
+subsections that follow add return types and behaviour. Quality-flag capabilities
+(<code>SEEKABLE_READ</code>, <code>LAZY_READ</code>, <code>ATOMIC_MOVE</code>, <code>WRITE_RESULT_NATIVE</code>,
+<code>USER_METADATA</code>) are not gates and so do not appear here — see <a href="#capabilities">Capabilities</a>.</p>
+<h3 id="methods-by-capability-gate">Methods by capability gate<a class="headerlink" href="#methods-by-capability-gate" title="Permanent link">&para;</a></h3>
+<!-- BEGIN_GENERATED:store_api_gated -->
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Gated methods</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ATOMIC_WRITE</code></td>
+<td><code>open_atomic()</code>, <code>write_atomic()</code></td>
+</tr>
+<tr>
+<td><code>COPY</code></td>
+<td><code>copy()</code></td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>delete()</code>, <code>delete_folder()</code></td>
+</tr>
+<tr>
+<td><code>GLOB</code></td>
+<td><code>glob()</code></td>
+</tr>
+<tr>
+<td><code>LIST</code></td>
+<td><code>iter_children()</code>, <code>list_files()</code>, <code>list_folders()</code></td>
+</tr>
+<tr>
+<td><code>METADATA</code></td>
+<td><code>get_file_info()</code>, <code>get_folder_info()</code>*, <code>head()</code></td>
+</tr>
+<tr>
+<td><code>MOVE</code></td>
+<td><code>move()</code></td>
+</tr>
+<tr>
+<td><code>READ</code></td>
+<td><code>read()</code>, <code>read_bytes()</code>, <code>read_seekable()</code>, <code>read_text()</code></td>
+</tr>
+<tr>
+<td><code>WRITE</code></td>
+<td><code>write()</code>, <code>write_text()</code></td>
+</tr>
+</tbody>
+</table>
+<p>* <code>get_folder_info()</code> is additionally gated on <code>LIST</code> when called with <code>max_depth</code> (depth-limited traversal).</p>
+<!-- END_GENERATED:store_api_gated -->
+
 <h3 id="ungated-always-available">Ungated (always available)<a class="headerlink" href="#ungated-always-available" title="Permanent link">&para;</a></h3>
+<p>These methods carry no capability gate — they are available on every backend.
+The set is derived from the graph (Store method nodes with <code>gated: false</code>).</p>
+<!-- BEGIN_GENERATED:store_api_ungated -->
 <table>
 <thead>
 <tr>
@@ -10761,6 +10842,8 @@ and never leak backend-native exceptions to the caller.</p>
 </tr>
 </tbody>
 </table>
+<!-- END_GENERATED:store_api_ungated -->
+
 <h3 id="read">READ<a class="headerlink" href="#read" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -11665,6 +11748,34 @@ adapters for mixing sync and async backends.</p>
 </tr>
 </tbody>
 </table>
+<p><strong>Sync ↔ async backend equivalence</strong> — generated from the graph's <code>mirrors</code>
+edges. The capability delta names capabilities one side declares that its peer
+does not. Async-only backends (<code>GraphBackend</code>) have no sync mirror and are
+listed above only.</p>
+<!-- BEGIN_GENERATED:async_backend_pairs -->
+<table>
+<thead>
+<tr>
+<th>Sync backend</th>
+<th>Async backend</th>
+<th>Capability delta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AzureBackend</code></td>
+<td><code>AsyncAzureBackend</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>MemoryBackend</code></td>
+<td><code>AsyncMemoryBackend</code></td>
+<td>async adds <code>LAZY_READ</code></td>
+</tr>
+</tbody>
+</table>
+<!-- END_GENERATED:async_backend_pairs -->
+
 <p><strong>Bridge adapters</strong> — when you need to cross the sync/async boundary:</p>
 <table>
 <thead>
