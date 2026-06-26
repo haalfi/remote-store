@@ -231,7 +231,8 @@ machine source to join against — the spec and docs structure is editorial — 
 curated table is the honest representation. A class with no dedicated spec/page
 (e.g. the `S3Boto3Backend` proof-of-concept) is listed on an explicit exempt
 allowlist; every other class node of role `abc`/`backend`/`facade` MUST carry both
-fields. DGM-014 pins the drift guard.
+fields. The Test Traceability section pins the drift-guard test
+(`test_class_nodes_carry_link_metadata`) for this clause.
 
 ---
 

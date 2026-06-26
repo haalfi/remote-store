@@ -16,7 +16,6 @@ source_items:
 audience:
   - contributor.tooling
 expected_ripples:
-  - sdd/backlogid.json
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
 surprising_ripples:
@@ -30,6 +29,7 @@ surprising_ripples:
   # (already in scope), so it surfaces as a corrected assumption rather than a new
   # file touched.
   - scripts/gen_graph.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -63,7 +63,7 @@ phases:
         extract: "Structural model for a build-tooling spec: Scope, Prefix, Author-facing surface, Related decisions, Tracks, then NNN-prefixed Invariant clauses."
         outcome: ok
       - file: sdd/specs/050-doc-graph-model.md
-        section: "DGM-001 .. DGM-015 (full)"
+        section: "DGM-001 .. DGM-013 (full)"
         read_type: gate
         extract: "Authored: schema 1.3 shape, in-scope vs deferred node/edge kinds, role taxonomy + ABC-by-runtime-value detection, inherits-via-MRO, facade declares-suppression off role, Store nodes, contains, link metadata (file/page granularity + derivation), kind_of deviation, omit-when-null, --check contract, per-clause test table."
         outcome: ok
@@ -109,7 +109,7 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check / __mirror__ + version-number + backlog-item rows"
         read_type: verify
-        extract: "gen_graph.py + tests in step; ID-221 moved to BACKLOG-DONE; gen-backlogid run; RFC top JSON example schema_version refreshed to 1.3; artifacts regenerated."
+        extract: "gen_graph.py + tests in step; ID-221 moved to BACKLOG-DONE; gen-backlogid run (confirmed no-op — ID-221 is below the high-water-mark 224, so backlogid.json was unchanged); RFC top JSON example schema_version refreshed to 1.3; artifacts regenerated."
         outcome: ok
       - file: sdd/traces/_schema.yml
         section: "audience derived rule"
