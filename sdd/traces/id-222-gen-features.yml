@@ -29,7 +29,7 @@ surprising_ripples:
   # public Store method now ripples into graph regen + _UNGATED_STORE_DETAILS;
   # extended the row.
   - sdd/CLAUDE-REFERENCE.md
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
