@@ -7,7 +7,7 @@ source_items:
 audience:
   - contributor.process
   - contributor.tooling
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -44,9 +44,43 @@ phases:
         read_type: reference
         extract: "json tracks BACKLOG-DONE max only (gen-backlogid regenerates it); active ID-216 must not bump it"
         outcome: misleading
+  - id: trial
+    name: Trial
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-216 (item)"
+        read_type: gate
+        extract: "Scope: timeboxed local trial vs git archive; settle an invocation; do NOT wire into CI/docs build; exit = trial recorded + keep/drop noted"
+      - file: sdd/research/research-lx-llms-context-tooling.md
+        section: "5 (Where lx genuinely shines)"
+        read_type: reference
+        extract: "The only lane left for lx is ad-hoc repo-source bundling; supply-chain/CI/drift objections do not apply because nothing is committed/deployed"
+  - id: docs
+    name: Docs & close-out
+    steps:
+      - file: sdd/research/research-lx-llms-context-tooling.md
+        section: "7 (Trial run)"
+        read_type: reference
+        extract: "Record evidence table + keep verdict; .gitignore honoured (zero leakage), skeleton ~29k vs ~262k, no .lxignore committed (revises the item's hypothesis)"
+      - file: CONTRIBUTING.md
+        section: "Development Setup"
+        read_type: reference
+        extract: "Land an optional subsection with go install + two lx invocations (skeleton, diff); state explicitly: not a dependency, not in CI/docs build"
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: reference
+        extract: "Move ID-216 here as [x] with the keep decision; sibling ID-161 lives under v0.29.0, this is a fresh Unreleased completion"
   - id: verify
     name: Verify
     steps:
+      - file: sdd/traces/_schema.yml
+        section: "audience (Derived rule)"
+        read_type: gate
+        extract: "CHANGELOG required iff an audience starts with user.; contributor.*/library.maintainer skip it — so revert the erroneously-added Documentation entry (BK-307 precedent)"
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: verify
+        extract: "ID max stays 219; ID-216 < 219 so gen-backlogid does not bump it"
       - file: sdd/traces/_schema.yml
         section: "(full)"
         read_type: gate

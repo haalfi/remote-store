@@ -106,26 +106,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Docs & Discoverability
 
-- [ ] **ID-216 — Evaluate `lx` as an ad-hoc repo-context bundler for coding agents**
-  spec: — · effort: S · audience: library.maintainer
-  [`rasros/lx`](https://github.com/rasros/lx) (Go, MIT) bundles a directory
-  tree into one LLM-ready blob (XML/Claude format, token estimation,
-  `.gitignore`-aware, tree/skeleton views). This is a **developer-convenience**
-  tool for handing a coding agent whole-codebase or whole-subtree **source**
-  context on demand — distinct from the docs-site `llms.txt`/`llms-full.txt`
-  lineage (ID-161), which targets *published docs prose*, not source. Nothing
-  here is committed or deployed, so the pipeline and supply-chain-in-CI concerns
-  that rule `lx` out for `llms-full.txt` do not apply.
-  **Scope:** timeboxed local trial — does `lx` beat a plain `git archive` /
-  bespoke script for our layout? Settle on an invocation (likely an `.lxignore`
-  plus a documented one-liner), and decide whether it earns a mention in
-  CONTRIBUTING / dev docs. Do **not** wire it into CI or the docs build.
-  **Why ID, not BK:** unevaluated DX convenience, no committed outcome.
-  Background and the full lx-vs-MkDocs-plugin analysis:
-  [`research/research-lx-llms-context-tooling.md`](research/research-lx-llms-context-tooling.md).
-  **Exit criteria:** trial run recorded; keep/drop decision noted on this item;
-  if kept, a documented invocation lands in dev docs.
-
 - [ ] **ID-220 — Serve Markdown page twins + `llms-full.txt` via `mkdocs-llmstxt`**
   spec: — · effort: M · audience: user.discoverability.llm, library.maintainer
   ID-161 publishes a curated `docs-src/llms.txt`, but its `## Docs` links point

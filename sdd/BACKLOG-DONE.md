@@ -8,6 +8,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-216 — Evaluate `lx` as an ad-hoc repo-context bundler for coding agents**
+  spec: — · effort: S · audience: contributor.process, contributor.tooling
+  Timeboxed local trial of [`rasros/lx`](https://github.com/rasros/lx) v1.2.1
+  against a plain `git archive` baseline. **Decision: keep**, as a documented
+  *optional* DX convenience — not a dependency, not in CI, not in the docs build.
+  Findings: `lx` honours `.gitignore` out of the box (zero junk leakage, 69-file
+  source bundle matched `git ls-files src` exactly); its AST skeleton view
+  (`-u -Y`) is the standout, yielding class/method signatures at ~11% the token
+  cost of full source (~29k vs ~262k); and it replaces the unpack+cat+format+count
+  a `git archive` tarball would need with one command plus a token estimate.
+  **No `.lxignore` committed** — the differentiated workflows are subtree/skeleton
+  bundles that need no ignore file (a whole-repo walk is ~3.7M tokens, dominated by
+  `tests/` and `sdd/`, and is rarely the right context anyway); this revises the
+  item's tentative "likely an `.lxignore`" hypothesis. Landed a short optional
+  subsection in `CONTRIBUTING.md` § Development Setup, framed around the skeleton
+  view (two `lx` commands: skeleton and changed-files bundle).
+  Trial recorded in
+  [`research/research-lx-llms-context-tooling.md`](research/research-lx-llms-context-tooling.md)
+  § 7. Contributor-only audience, so no CHANGELOG entry per the trace-schema
+  derived rule.
+
 - [x] **ID-224 — Trim the committed graph artifacts (D3 duplication, null-field bloat)**
   spec: — · effort: S · audience: contributor.tooling
   `gen_graph_viz.py` inlined the 279 KB `d3.v7.min.js` into a **354 KB**
