@@ -661,6 +661,33 @@ def test_ungated_facade_method_nodes(gen_graph_module):
     }
     assert store_ungated.isdisjoint(STORE_GATING), "an ungated node overlaps _GATING"
 
+    # AsyncStore goes through the same generalized "public Function not in
+    # _GATING" walk, so pin its ungated set exactly too — async-side drift
+    # (e.g. a new public helper, or aclose vs close) then fails this targeted
+    # unit test rather than only the regenerated golden.
+    from remote_store.aio._async_store import _GATING as ASYNC_GATING
+
+    async_prefix = "mtd:remote_store.aio._async_store.AsyncStore."
+    async_store_ungated = {
+        n["id"].removeprefix(async_prefix)
+        for n in graph["nodes"]
+        if n["kind"] == "method" and n["id"].startswith(async_prefix) and n.get("gated") is False
+    }
+    assert async_store_ungated == {
+        "exists",
+        "is_file",
+        "is_folder",
+        "ping",
+        "aclose",
+        "child",
+        "unwrap",
+        "resolve",
+        "native_path",
+        "to_key",
+        "supports",
+    }
+    assert async_store_ungated.isdisjoint(ASYNC_GATING), "an ungated async node overlaps _GATING"
+
     # Ungated methods carry no gate chain but are contained by their class.
     contains = {(e["src"], e["dst"]) for e in graph["edges"] if e["kind"] == "contains"}
     gated_dsts = {e["dst"] for e in graph["edges"] if e["kind"] == "gates"}
