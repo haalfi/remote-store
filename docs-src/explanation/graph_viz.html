@@ -402,6 +402,14 @@ function nodePassesFacets(n, capKeep){
   return true;
 }
 function computeActiveNodes(){
+  // Isolating a class reveals its methods first: they are collapsed (off-canvas)
+  // by default, so without this the cone of a collapsed class could never
+  // include the methods its comment promises. Expanding it also makes the
+  // cluster links consistent and flips its detail-panel toggle to "Collapse".
+  if(isolate&&selected&&selected.type==='node'){
+    const sel=nodeMap.get(selected.id);
+    if(sel&&sel.kind==='class') expandedClasses.add(selected.id);
+  }
   const capKeep=capabilityKeep();
   let active=nodes.filter(n=>nodePassesFacets(n,capKeep));
   if(isolate&&selected&&selected.type==='node'){
