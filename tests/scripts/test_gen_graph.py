@@ -33,6 +33,7 @@ def gen_graph_module():
     return gen_graph
 
 
+@pytest.mark.spec("DGM-012")
 def test_graph_deterministic_in_process(gen_graph_module):
     """Two successive in-process calls to build_graph() must produce byte-identical JSON.
 
@@ -47,6 +48,7 @@ def test_graph_deterministic_in_process(gen_graph_module):
     assert first == second, "build_graph() is not deterministic"
 
 
+@pytest.mark.spec("DGM-001,DGM-002,DGM-003,DGM-010")
 def test_graph_schema(gen_graph_module):
     """graph.json must satisfy the RFC-0012 schema invariants."""
     graph = gen_graph_module.build_graph()
@@ -54,7 +56,7 @@ def test_graph_schema(gen_graph_module):
     with open(ROOT / "pyproject.toml", "rb") as f:
         expected_version = tomllib.load(f)["project"]["version"]
 
-    assert graph["schema_version"] == "1.2"
+    assert graph["schema_version"] == "1.3"
     assert graph["source_version"] == expected_version
     assert graph["snapshot"] == expected_version
 
@@ -109,6 +111,7 @@ def test_graph_schema(gen_graph_module):
     assert "of" in edge_kinds
     assert "enables" in edge_kinds
     assert "mirrors" in edge_kinds
+    assert "contains" in edge_kinds
 
 
 def test_method_nodes_carry_introspection_fields(gen_graph_module):
@@ -450,6 +453,221 @@ def test_async_store_get_folder_info_dual_gate(gen_graph_module):
     ]
 
 
+_ABC_URIS = {
+    "cls:remote_store._backend.Backend",
+    "cls:remote_store.aio._async_backend.AsyncBackend",
+}
+_FACADE_URIS = {
+    "cls:remote_store._store.Store",
+    "cls:remote_store.aio._async_store.AsyncStore",
+    "cls:remote_store.aio._sync_adapter.SyncBackendAdapter",
+}
+
+
+@pytest.mark.spec("DGM-004")
+def test_abc_classes_have_abc_role(gen_graph_module):
+    """DGM-004: Backend/AsyncBackend are role 'abc', not 'backend'.
+
+    Both ABCs carry a value-less ``CAPABILITIES: ClassVar`` annotation, so a
+    Griffe member-name check misclassifies them as backends; the generator must
+    resolve the runtime value (None) to classify them as ABCs.
+    """
+    graph = gen_graph_module.build_graph()
+    by_id = {n["id"]: n for n in graph["nodes"]}
+    for uri in _ABC_URIS:
+        assert by_id[uri]["role"] == "abc", f"{uri} should be role 'abc', got {by_id[uri]['role']!r}"
+
+
+@pytest.mark.spec("DGM-004")
+def test_backend_role_is_concrete_backends_only(gen_graph_module):
+    """DGM-004: role='backend' selects only concrete backends — no ABCs, no facades.
+
+    This is the precondition ID-222 relies on for its backend capability table.
+    """
+    graph = gen_graph_module.build_graph()
+    backend_uris = {n["id"] for n in graph["nodes"] if n["kind"] == "class" and n["role"] == "backend"}
+
+    assert _ABC_URIS.isdisjoint(backend_uris), "an ABC leaked into role='backend'"
+    assert _FACADE_URIS.isdisjoint(backend_uris), "a facade leaked into role='backend'"
+    # A representative concrete backend is classified as such.
+    assert "cls:remote_store.backends._s3.S3Backend" in backend_uris
+
+
+@pytest.mark.spec("DGM-005")
+def test_inherits_reaches_backend_through_private_base(gen_graph_module):
+    """DGM-005: backends behind a private base still emit inherits → Backend.
+
+    S3Backend/S3PyArrowBackend (via _S3Base) and SQLBlobBackend/SQLQueryBackend
+    (via _SQLAlchemyBaseBackend) reach the sync Backend ABC through the MRO walk,
+    even though _S3Base / _SQLAlchemyBaseBackend are not themselves graph nodes.
+    """
+    graph = gen_graph_module.build_graph()
+    backend_abc = "cls:remote_store._backend.Backend"
+    inherits = {(e["src"], e["dst"]) for e in graph["edges"] if e["kind"] == "inherits"}
+
+    for cls in (
+        "cls:remote_store.backends._s3.S3Backend",
+        "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend",
+        "cls:remote_store.backends._sqlalchemy.SQLBlobBackend",
+        "cls:remote_store.backends._sqlalchemy.SQLQueryBackend",
+    ):
+        assert (cls, backend_abc) in inherits, f"{cls} must inherit {backend_abc} via the MRO walk"
+
+    # Each class emits at most one inherits edge (nearest ancestor only).
+    srcs = [e["src"] for e in graph["edges"] if e["kind"] == "inherits"]
+    assert len(srcs) == len(set(srcs)), "a class emitted more than one inherits edge"
+
+
+@pytest.mark.spec("DGM-006")
+def test_facade_declares_suppressed(gen_graph_module):
+    """DGM-006: no declares edge originates from a facade-role class.
+
+    SyncBackendAdapter declares the universal capability set at runtime (it
+    forwards to whatever backend it wraps); emitting that as 14 declares edges
+    made it look like a backend that natively supports everything.
+    """
+    graph = gen_graph_module.build_graph()
+    facade_uris = {n["id"] for n in graph["nodes"] if n["kind"] == "class" and n["role"] == "facade"}
+    assert facade_uris == _FACADE_URIS
+
+    declares_srcs = {e["src"] for e in graph["edges"] if e["kind"] == "declares"}
+    assert declares_srcs.isdisjoint(facade_uris), "a facade emitted declares edges"
+    # SyncBackendAdapter keeps its inherits edge to AsyncBackend — suppression is
+    # declares-only, not a wholesale removal from the hierarchy.
+    inherits = {(e["src"], e["dst"]) for e in graph["edges"] if e["kind"] == "inherits"}
+    assert (
+        "cls:remote_store.aio._sync_adapter.SyncBackendAdapter",
+        "cls:remote_store.aio._async_backend.AsyncBackend",
+    ) in inherits
+
+
+@pytest.mark.spec("DGM-007")
+def test_store_facade_nodes_present(gen_graph_module):
+    """DGM-007: Store/AsyncStore facade nodes exist so no method node is orphaned."""
+    graph = gen_graph_module.build_graph()
+    by_id = {n["id"]: n for n in graph["nodes"]}
+
+    for uri in ("cls:remote_store._store.Store", "cls:remote_store.aio._async_store.AsyncStore"):
+        assert uri in by_id, f"missing facade class node {uri}"
+        assert by_id[uri]["role"] == "facade"
+
+    # Every method node's containing class node is present (orphan guard).
+    class_uris = {n["id"] for n in graph["nodes"] if n["kind"] == "class"}
+    for n in graph["nodes"]:
+        if n["kind"] == "method":
+            cls_uri = f"cls:{n['id'].removeprefix('mtd:').rsplit('.', 1)[0]}"
+            assert cls_uri in class_uris, f"orphaned method node {n['id']!r}: no class node {cls_uri}"
+
+
+@pytest.mark.spec("DGM-008")
+def test_contains_class_to_method(gen_graph_module):
+    """DGM-008: every method node is contained by exactly its URI-derived class."""
+    graph = gen_graph_module.build_graph()
+    contains = {(e["src"], e["dst"]) for e in graph["edges"] if e["kind"] == "contains"}
+
+    for n in graph["nodes"]:
+        if n["kind"] == "method":
+            cls_uri = f"cls:{n['id'].removeprefix('mtd:').rsplit('.', 1)[0]}"
+            assert (cls_uri, n["id"]) in contains, f"method {n['id']!r} not contained by {cls_uri}"
+
+    # Requirement nodes are gate groups, not containment members.
+    req_ids = {n["id"] for n in graph["nodes"] if n["kind"] == "requirement"}
+    contained = {dst for _, dst in contains}
+    assert req_ids.isdisjoint(contained), "a requirement node was placed in the containment tree"
+
+
+@pytest.mark.spec("DGM-008")
+def test_contains_package_to_class(gen_graph_module):
+    """DGM-008: every class node is contained by its runtime package."""
+    graph = gen_graph_module.build_graph()
+    contains = {(e["src"], e["dst"]) for e in graph["edges"] if e["kind"] == "contains"}
+
+    for n in graph["nodes"]:
+        if n["kind"] == "class":
+            pkg_id = "pkg:remote_store.aio" if n["runtime"] == "async" else "pkg:remote_store"
+            assert (pkg_id, n["id"]) in contains, f"class {n['id']!r} not contained by {pkg_id}"
+
+
+@pytest.mark.spec("DGM-009")
+def test_class_nodes_carry_link_metadata(gen_graph_module):
+    """DGM-009: every abc/backend/facade class carries spec+doc (or is exempt).
+
+    The drift guard mirrors the extras orphan guard: a new backend without a
+    curated _CLASS_LINKS entry fails here instead of silently shipping a class
+    node with no path to its authority.
+    """
+    graph = gen_graph_module.build_graph()
+    exempt = gen_graph_module._LINKS_EXEMPT
+
+    for n in graph["nodes"]:
+        if n["kind"] != "class" or n["role"] not in {"abc", "backend", "facade"}:
+            continue
+        path = n["id"].removeprefix("cls:")
+        if path in exempt:
+            assert "spec" not in n, f"exempt class {path} unexpectedly carries 'spec'"
+            assert "doc" not in n, f"exempt class {path} unexpectedly carries 'doc'"
+            continue
+        assert "spec" in n, f"class node {n['id']!r} missing 'spec' link metadata"
+        assert "doc" in n, f"class node {n['id']!r} missing 'doc' link metadata"
+        assert (ROOT / n["spec"]).exists(), f"{n['id']!r} spec target {n['spec']} does not exist"
+        assert (ROOT / n["doc"]).exists(), f"{n['id']!r} doc target {n['doc']} does not exist"
+
+
+@pytest.mark.spec("DGM-002,DGM-003")
+def test_deferred_kinds_absent(gen_graph_module):
+    """DGM-002/DGM-003: node and edge kinds deferred at 1.3 must not be emitted.
+
+    Emitting a deferred kind before a consumer needs it inflates the golden diff;
+    this pins the 1.3 boundary so a kind cannot creep in unannounced.
+    """
+    graph = gen_graph_module.build_graph()
+    node_kinds = {n["kind"] for n in graph["nodes"]}
+    edge_kinds = {e["kind"] for e in graph["edges"]}
+
+    deferred_nodes = {
+        "module",
+        "data_model",
+        "field",
+        "error",
+        "parameter",
+        "type_ref",
+        "predicate",
+        "package_dep",
+        "role",
+    }
+    deferred_edges = {
+        "composes",
+        "requires_cap",
+        "played_by",
+        "returns",
+        "accepts",
+        "has_param",
+        "typed",
+        "has_field",
+        "raises",
+        "requires_dep",
+    }
+    assert node_kinds.isdisjoint(deferred_nodes), f"deferred node kind emitted: {node_kinds & deferred_nodes}"
+    assert edge_kinds.isdisjoint(deferred_edges), f"deferred edge kind emitted: {edge_kinds & deferred_edges}"
+
+
+@pytest.mark.spec("DGM-011")
+def test_extra_nodes_use_kind_of(gen_graph_module):
+    """DGM-011: extra nodes carry their classification under 'kind_of', not 'kind'.
+
+    'kind' is the reserved node-kind discriminator ('extra'); the RFC's 'kind'
+    property is renamed to 'kind_of' to avoid the collision.
+    """
+    graph = gen_graph_module.build_graph()
+    extras = [n for n in graph["nodes"] if n["kind"] == "extra"]
+    assert extras, "no extra nodes in graph"
+    for n in extras:
+        assert n["kind"] == "extra"
+        assert "kind_of" in n, f"extra node {n['id']!r} missing 'kind_of'"
+        assert n["kind_of"] == "backend"
+
+
+@pytest.mark.spec("DGM-013")
 def test_graph_json_is_up_to_date(gen_graph_module):
     """Committed graph.json must match a fresh build_graph() call.
 

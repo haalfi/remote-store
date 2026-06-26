@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import ast
 import importlib
+import inspect
 import json
 import re
 import sys
@@ -155,13 +156,6 @@ def _collect_backend_classes(pkg: griffe.Module) -> list[griffe.Class]:
     return result
 
 
-def _collect_abc_classes(pkg: griffe.Module) -> list[griffe.Class]:
-    """Walk Griffe module tree and return Backend/AsyncBackend ABC classes."""
-    result: list[griffe.Class] = []
-    _walk_module_abc(pkg, result)
-    return result
-
-
 def _walk_module(mod: griffe.Module, out: list[griffe.Class]) -> None:
     for member in mod.members.values():
         if isinstance(member, griffe.Class):
@@ -169,16 +163,6 @@ def _walk_module(mod: griffe.Module, out: list[griffe.Class]) -> None:
                 out.append(member)
         elif isinstance(member, griffe.Module):
             _walk_module(member, out)
-
-
-def _walk_module_abc(mod: griffe.Module, out: list[griffe.Class]) -> None:
-    _ABC_NAMES = frozenset({"Backend", "AsyncBackend"})
-    for member in mod.members.values():
-        if isinstance(member, griffe.Class):
-            if member.name in _ABC_NAMES and "CAPABILITIES" not in member.members:
-                out.append(member)
-        elif isinstance(member, griffe.Module):
-            _walk_module_abc(member, out)
 
 
 def _runtime(griffe_cls: griffe.Class) -> str:
@@ -195,6 +179,121 @@ def _import_class(griffe_cls: griffe.Class) -> type | None:
         return getattr(mod, cls_name, None)
     except ImportError:
         return None
+
+
+# Class-role taxonomy (DGM-004). ``Backend``/``AsyncBackend`` are ABCs; the three
+# facades present a Store/Backend-shaped surface but delegate rather than declaring
+# storage capabilities of their own.
+_ABC_NAMES = frozenset({"Backend", "AsyncBackend"})
+_FACADE_QNAMES = frozenset(
+    {
+        "remote_store._store.Store",
+        "remote_store.aio._async_store.AsyncStore",
+        "remote_store.aio._sync_adapter.SyncBackendAdapter",
+    }
+)
+
+# Curated class → (governing spec, API docs page) link metadata (DGM-009). Paths
+# are repo-relative from ROOT, consistent with the ``file`` node field. The spec
+# and docs structure is editorial, so unlike the extras→backend join there is no
+# second machine source to join against — a curated table is the honest form.
+# build_graph() asserts every target exists, so a stale entry fails generation.
+_CLASS_LINKS: dict[str, dict[str, str]] = {
+    "remote_store._store.Store": {
+        "spec": "sdd/specs/001-store-api.md",
+        "doc": "docs-src/reference/api/store.md",
+    },
+    "remote_store._backend.Backend": {
+        "spec": "sdd/specs/003-backend-adapter-contract.md",
+        "doc": "docs-src/reference/api/backend.md",
+    },
+    "remote_store.backends._local.LocalBackend": {
+        "spec": "sdd/specs/003-backend-adapter-contract.md",
+        "doc": "docs-src/reference/api/backends/local.md",
+    },
+    "remote_store.backends._memory.MemoryBackend": {
+        "spec": "sdd/specs/013-memory-backend.md",
+        "doc": "docs-src/reference/api/backends/memory.md",
+    },
+    "remote_store.backends._s3.S3Backend": {
+        "spec": "sdd/specs/008-s3-backend.md",
+        "doc": "docs-src/reference/api/backends/s3.md",
+    },
+    "remote_store.backends._s3_pyarrow.S3PyArrowBackend": {
+        "spec": "sdd/specs/011-s3-pyarrow-backend.md",
+        "doc": "docs-src/reference/api/backends/s3-pyarrow.md",
+    },
+    "remote_store.backends._azure.AzureBackend": {
+        "spec": "sdd/specs/012-azure-backend.md",
+        "doc": "docs-src/reference/api/backends/azure.md",
+    },
+    "remote_store.backends._sftp.SFTPBackend": {
+        "spec": "sdd/specs/009-sftp-backend.md",
+        "doc": "docs-src/reference/api/backends/sftp.md",
+    },
+    "remote_store.backends._http.ReadOnlyHttpBackend": {
+        "spec": "sdd/specs/032-http-backend.md",
+        "doc": "docs-src/reference/api/backends/http.md",
+    },
+    "remote_store.backends._sqlalchemy.SQLBlobBackend": {
+        "spec": "sdd/specs/040-sql-blob-backend.md",
+        "doc": "docs-src/reference/api/backends/sql-blob.md",
+    },
+    "remote_store.backends._sqlalchemy.SQLQueryBackend": {
+        "spec": "sdd/specs/041-sql-query-backend.md",
+        "doc": "docs-src/reference/api/backends/sql-query.md",
+    },
+    "remote_store.aio._async_store.AsyncStore": {
+        "spec": "sdd/specs/029-async-store-backend-api.md",
+        "doc": "docs-src/reference/api/aio/store.md",
+    },
+    "remote_store.aio._async_backend.AsyncBackend": {
+        "spec": "sdd/specs/029-async-store-backend-api.md",
+        "doc": "docs-src/reference/api/aio/backend.md",
+    },
+    "remote_store.aio._sync_adapter.SyncBackendAdapter": {
+        "spec": "sdd/specs/029-async-store-backend-api.md",
+        "doc": "docs-src/reference/api/aio/adapters.md",
+    },
+    "remote_store.aio.backends._azure.AsyncAzureBackend": {
+        "spec": "sdd/specs/012-azure-backend.md",
+        "doc": "docs-src/reference/api/aio/backends/azure.md",
+    },
+    "remote_store.aio.backends._memory.AsyncMemoryBackend": {
+        "spec": "sdd/specs/013-memory-backend.md",
+        "doc": "docs-src/reference/api/aio/backends/memory.md",
+    },
+    "remote_store.aio.backends._graph.backend.GraphBackend": {
+        "spec": "sdd/specs/044-graph-backend.md",
+        "doc": "docs-src/reference/api/aio/backends/graph.md",
+    },
+}
+
+# Class nodes that legitimately carry no link metadata: a proof-of-concept with
+# no dedicated spec or API page. Every other abc/backend/facade class must appear
+# in _CLASS_LINKS (drift-guarded by test_class_nodes_carry_link_metadata).
+_LINKS_EXEMPT = frozenset({"remote_store.backends._s3_boto3.S3Boto3Backend"})
+
+
+def _class_role(path: str, rt_cls: type | None) -> str:
+    """Resolve a class node's role (DGM-004): abc · backend · facade."""
+    if path in _FACADE_QNAMES:
+        return "facade"
+    caps = getattr(rt_cls, "CAPABILITIES", None) if rt_cls is not None else None
+    name = path.rsplit(".", 1)[-1]
+    # The ABCs carry a ``CAPABILITIES: ClassVar`` annotation with no value, so a
+    # Griffe member-name check misclassifies them; resolve the runtime value.
+    if name in _ABC_NAMES and caps is None:
+        return "abc"
+    return "backend"
+
+
+def _assert_link_targets_exist() -> None:
+    """Fail generation if any curated link-metadata path is stale (DGM-009)."""
+    for path, links in _CLASS_LINKS.items():
+        for key, rel in links.items():
+            if not (ROOT / rel).exists():
+                raise AssertionError(f"_CLASS_LINKS[{path!r}][{key!r}] -> {rel} does not exist")
 
 
 def _capability_enum() -> type:
@@ -279,8 +378,16 @@ def build_graph() -> dict[str, Any]:
     sys.path.insert(0, str(SRC))
     pkg = griffe.load("remote_store")
 
+    _assert_link_targets_exist()
+
+    # Classes with a CAPABILITIES member: concrete backends, the two ABCs (which
+    # carry a value-less annotation), and the SyncBackendAdapter facade. The
+    # Store/AsyncStore facades have no CAPABILITIES, so add them explicitly so
+    # their gated-method nodes are not orphaned (DGM-007).
     backend_classes = _collect_backend_classes(pkg)
-    abc_classes = _collect_abc_classes(pkg)
+    store_griffe = pkg["_store"]["Store"]
+    async_store_griffe = pkg["aio"]["_async_store"]["AsyncStore"]
+    all_class_griffe = [*backend_classes, store_griffe, async_store_griffe]
 
     Capability = _capability_enum()
     gating = _store_gating()
@@ -296,52 +403,38 @@ def build_graph() -> dict[str, Any]:
     for cap in Capability:
         nodes.append({"id": f"cap:{cap.name}", "kind": "capability", "value": cap.value})
 
-    # --- ABC class nodes ---
-    for griffe_cls in abc_classes:
+    # --- class nodes (abc / backend / facade) + link metadata ---
+    class_role: dict[str, str] = {}
+    for griffe_cls in all_class_griffe:
         uri = _class_uri(griffe_cls)
-        nodes.append(
-            {
-                "id": uri,
-                "kind": "class",
-                "role": "abc",
-                "runtime": _runtime(griffe_cls),
-                "file": _rel_path(griffe_cls.filepath),
-                "line": griffe_cls.lineno,
-                "summary": _first_line(griffe_cls.docstring.value if griffe_cls.docstring else None),
-            }
-        )
-
-    # --- backend class nodes + declares edges ---
-    for griffe_cls in backend_classes:
-        uri = _class_uri(griffe_cls)
-        runtime = _runtime(griffe_cls)
-
-        nodes.append(
-            {
-                "id": uri,
-                "kind": "class",
-                "role": "backend",
-                "runtime": runtime,
-                "file": _rel_path(griffe_cls.filepath),
-                "line": griffe_cls.lineno,
-                "summary": _first_line(griffe_cls.docstring.value if griffe_cls.docstring else None),
-            }
-        )
-
-        # declares, mirrors, and inherits edges emitted in second pass below
-        _rt_cls = _import_class(griffe_cls)
+        role = _class_role(griffe_cls.path, _import_class(griffe_cls))
+        class_role[uri] = role
+        node = {
+            "id": uri,
+            "kind": "class",
+            "role": role,
+            "runtime": _runtime(griffe_cls),
+            "file": _rel_path(griffe_cls.filepath),
+            "line": griffe_cls.lineno,
+            "summary": _first_line(griffe_cls.docstring.value if griffe_cls.docstring else None),
+        }
+        # Link metadata (DGM-009): governing spec + API docs page, when curated.
+        node.update(_CLASS_LINKS.get(griffe_cls.path, {}))
+        nodes.append(node)
 
     # --- second pass: declares / mirrors / inherits edges (needs full node set) ---
     node_ids: set[str] = {n["id"] for n in nodes}
 
-    for griffe_cls in backend_classes + abc_classes:
+    for griffe_cls in all_class_griffe:
         uri = _class_uri(griffe_cls)
         rt_cls = _import_class(griffe_cls)
 
         if rt_cls is not None:
-            # declares edges
+            # declares edges — suppressed for facades (DGM-006): a facade's
+            # CAPABILITIES describe whatever backend it wraps, not a static
+            # declaration of its own.
             caps_set = getattr(rt_cls, "CAPABILITIES", None)
-            if caps_set is not None:
+            if caps_set is not None and class_role[uri] != "facade":
                 for cap in caps_set:
                     # ``condition`` is omitted when unconditional (absent == null),
                     # per RFC-0012 "Edge taxonomy" (declares row). A conditional
@@ -369,12 +462,14 @@ def build_graph() -> dict[str, Any]:
                 edges.append({"kind": "mirrors", "src": uri, "dst": mirror_uri, "capability_delta": capability_delta})
                 edges.append({"kind": "mirrors", "src": mirror_uri, "dst": uri, "capability_delta": capability_delta})
 
-            # inherits edges (runtime __bases__, only when target is in the graph)
-            for base in rt_cls.__bases__:
-                if base.__module__ and base.__module__ != "builtins":
-                    base_uri = f"cls:{base.__module__}.{base.__qualname__}"
-                    if base_uri in node_ids:
-                        edges.append({"kind": "inherits", "src": uri, "dst": base_uri})
+            # inherits edge (DGM-005): walk the MRO and link to the nearest
+            # ancestor that is itself a node, so backends behind a private base
+            # (_S3Base, _SQLAlchemyBaseBackend) still reach the Backend ABC.
+            for ancestor in inspect.getmro(rt_cls)[1:]:
+                ancestor_uri = f"cls:{ancestor.__module__}.{ancestor.__qualname__}"
+                if ancestor_uri in node_ids:
+                    edges.append({"kind": "inherits", "src": uri, "dst": ancestor_uri})
+                    break
 
     # --- extra nodes + enables edges ---
     # class_extra_map keys are import-derived qnames (from the AST of the
@@ -541,6 +636,20 @@ def build_graph() -> dict[str, Any]:
         edges.append({"kind": "gates", "src": req_uri, "dst": mtd_uri})
         edges.append({"kind": "of", "src": req_uri, "dst": cap_uri, "index": 0})
 
+    # --- contains edges (DGM-008) ---
+    # Containment tree: package → class (by runtime) and class → method (resolved
+    # from the method URI). Requirement nodes are gate groups, not containment
+    # members, so they are not contained.
+    class_uris = {n["id"] for n in nodes if n["kind"] == "class"}
+    for node in nodes:
+        if node["kind"] == "class":
+            pkg_id = "pkg:remote_store.aio" if node["runtime"] == "async" else "pkg:remote_store"
+            edges.append({"kind": "contains", "src": pkg_id, "dst": node["id"]})
+        elif node["kind"] == "method":
+            cls_uri = f"cls:{node['id'].removeprefix('mtd:').rsplit('.', 1)[0]}"
+            if cls_uri in class_uris:
+                edges.append({"kind": "contains", "src": cls_uri, "dst": node["id"]})
+
     # --- Deduplicate mirrors edges ---
     # Each __mirror__ annotation produces one async→sync edge.  Dedup by
     # canonical pair so the graph contains exactly one edge per peer pair.
@@ -563,7 +672,7 @@ def build_graph() -> dict[str, Any]:
     return {
         "edges": edges,
         "nodes": nodes,
-        "schema_version": "1.2",
+        "schema_version": "1.3",
         "snapshot": version,
         "source_version": version,
     }

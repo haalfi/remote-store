@@ -16,12 +16,16 @@ Layout: D3 force-directed with per-kind positional bias (soft LR columns
 without rigidity).  "declares" edges are hidden by default -- they dominate
 numerically and collapse the centre; toggle them on to see the full picture.
 
-Schema compatibility: reads graph.json schema_version 1.0, 1.1, and 1.2.
+Schema compatibility: reads graph.json schema_version 1.0 through 1.3.
 1.1 fields (is_abstract, is_async, file, line on method nodes) are used when
 present; the rendering degrades gracefully when they are absent.  1.2 adds
 ``capability_delta`` to ``mirrors`` edges; the viz embeds it as data but does
 not render it (consumers wanting a sync/async capability diff should query
-``graph.json`` directly).
+``graph.json`` directly).  1.3 adds the ``abc``/``facade`` class roles, the
+``contains`` edge kind (rendered off by default — it is numerous, like
+``declares``), and ``spec``/``doc`` link metadata on class nodes (shown in the
+detail panel via the generic field rows).  Role-aware rendering and deep links
+are ID-223; this generator only carries the 1.3 data through unchanged.
 """
 
 from __future__ import annotations
@@ -136,8 +140,9 @@ _TEMPLATE = (
     "  extra:       {color:'#94A3B8',r:11, label:n=>n.id.split(':')[1]},\n"
     "};\n"
     "\n"
-    "// declares hidden by default: 133 edges collapse the centre.\n"
-    "// Toggle on to verify the full capability surface.\n"
+    "// declares + contains hidden by default: they dominate numerically and\n"
+    "// collapse the centre.  Toggle them on to see the full capability surface\n"
+    "// and the package/class/method containment tree.\n"
     "const EDGE_CFG = {\n"
     "  inherits:{color:'#A855F7',dash:'0',  width:2,   defaultOn:true},\n"
     "  mirrors: {color:'#F59E0B',dash:'6,3',width:2,   defaultOn:true},\n"
@@ -145,6 +150,7 @@ _TEMPLATE = (
     "  gates:   {color:'#F43F5E',dash:'0',  width:1.5, defaultOn:true},\n"
     "  of:      {color:'#64748B',dash:'2,2',width:1,   defaultOn:true},\n"
     "  declares:{color:'#3B82F6',dash:'0',  width:1,   defaultOn:false},\n"
+    "  contains:{color:'#22D3EE',dash:'1,3',width:1,   defaultOn:false},\n"
     "};\n"
     "\n"
     "// ---- State ----------------------------------------------------------------\n"

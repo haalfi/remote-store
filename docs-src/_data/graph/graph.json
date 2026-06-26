@@ -1,74 +1,424 @@
 {
   "edges": [
     {
-      "dst": "cap:ATOMIC_MOVE",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.copy",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
     },
     {
-      "dst": "cap:ATOMIC_WRITE",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.delete",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
     },
     {
-      "dst": "cap:COPY",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.delete_folder",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
     },
     {
-      "dst": "cap:DELETE",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.get_file_info",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
     },
     {
-      "dst": "cap:GLOB",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.get_folder_info",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
     },
     {
-      "dst": "cap:LAZY_READ",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.glob",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
     },
     {
-      "dst": "cap:LIST",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.iter_children",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
     },
     {
-      "dst": "cap:METADATA",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.list_files",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
     },
     {
-      "dst": "cap:MOVE",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.list_folders",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
     },
     {
-      "dst": "cap:READ",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.move",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
     },
     {
-      "dst": "cap:SEEKABLE_READ",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.open_atomic",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
     },
     {
-      "dst": "cap:USER_METADATA",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.read",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
     },
     {
-      "dst": "cap:WRITE",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.read_bytes",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
     },
     {
-      "dst": "cap:WRITE_RESULT_NATIVE",
-      "kind": "declares",
-      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+      "dst": "mtd:remote_store._backend.Backend.read_seekable",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.write",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.write_atomic",
+      "kind": "contains",
+      "src": "cls:remote_store._backend.Backend"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.copy",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.delete",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.delete_folder",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.get_file_info",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.get_folder_info",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.glob",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.head",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.iter_children",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.list_files",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.list_folders",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.move",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.open_atomic",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.read",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.read_bytes",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.read_seekable",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.read_text",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.write",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.write_atomic",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store._store.Store.write_text",
+      "kind": "contains",
+      "src": "cls:remote_store._store.Store"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.copy",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.delete",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.delete_folder",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.get_file_info",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.get_folder_info",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.glob",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.iter_children",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.list_files",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.list_folders",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.move",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.read",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.read_bytes",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.write",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_backend.AsyncBackend.write_atomic",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_backend.AsyncBackend"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.copy",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.delete",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.delete_folder",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.get_file_info",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.get_folder_info",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.glob",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.head",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.iter_children",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.list_files",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.list_folders",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.move",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.read",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.read_bytes",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.read_text",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.write",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.write_atomic",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "mtd:remote_store.aio._async_store.AsyncStore.write_text",
+      "kind": "contains",
+      "src": "cls:remote_store.aio._async_store.AsyncStore"
+    },
+    {
+      "dst": "cls:remote_store._backend.Backend",
+      "kind": "contains",
+      "src": "pkg:remote_store"
+    },
+    {
+      "dst": "cls:remote_store._store.Store",
+      "kind": "contains",
+      "src": "pkg:remote_store"
+    },
+    {
+      "dst": "cls:remote_store.backends._azure.AzureBackend",
+      "kind": "contains",
+      "src": "pkg:remote_store"
+    },
+    {
+      "dst": "cls:remote_store.backends._http.ReadOnlyHttpBackend",
+      "kind": "contains",
+      "src": "pkg:remote_store"
+    },
+    {
+      "dst": "cls:remote_store.backends._local.LocalBackend",
+      "kind": "contains",
+      "src": "pkg:remote_store"
+    },
+    {
+      "dst": "cls:remote_store.backends._memory.MemoryBackend",
+      "kind": "contains",
+      "src": "pkg:remote_store"
+    },
+    {
+      "dst": "cls:remote_store.backends._s3.S3Backend",
+      "kind": "contains",
+      "src": "pkg:remote_store"
+    },
+    {
+      "dst": "cls:remote_store.backends._s3_boto3.S3Boto3Backend",
+      "kind": "contains",
+      "src": "pkg:remote_store"
+    },
+    {
+      "dst": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend",
+      "kind": "contains",
+      "src": "pkg:remote_store"
+    },
+    {
+      "dst": "cls:remote_store.backends._sftp.SFTPBackend",
+      "kind": "contains",
+      "src": "pkg:remote_store"
+    },
+    {
+      "dst": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend",
+      "kind": "contains",
+      "src": "pkg:remote_store"
+    },
+    {
+      "dst": "cls:remote_store.backends._sqlalchemy.SQLQueryBackend",
+      "kind": "contains",
+      "src": "pkg:remote_store"
+    },
+    {
+      "dst": "cls:remote_store.aio._async_backend.AsyncBackend",
+      "kind": "contains",
+      "src": "pkg:remote_store.aio"
+    },
+    {
+      "dst": "cls:remote_store.aio._async_store.AsyncStore",
+      "kind": "contains",
+      "src": "pkg:remote_store.aio"
+    },
+    {
+      "dst": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter",
+      "kind": "contains",
+      "src": "pkg:remote_store.aio"
+    },
+    {
+      "dst": "cls:remote_store.aio.backends._azure.AsyncAzureBackend",
+      "kind": "contains",
+      "src": "pkg:remote_store.aio"
+    },
+    {
+      "dst": "cls:remote_store.aio.backends._graph.backend.GraphBackend",
+      "kind": "contains",
+      "src": "pkg:remote_store.aio"
+    },
+    {
+      "dst": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend",
+      "kind": "contains",
+      "src": "pkg:remote_store.aio"
     },
     {
       "dst": "cap:ATOMIC_WRITE",
@@ -1203,12 +1553,32 @@
     {
       "dst": "cls:remote_store._backend.Backend",
       "kind": "inherits",
+      "src": "cls:remote_store.backends._s3.S3Backend"
+    },
+    {
+      "dst": "cls:remote_store._backend.Backend",
+      "kind": "inherits",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
       "dst": "cls:remote_store._backend.Backend",
       "kind": "inherits",
+      "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
+    },
+    {
+      "dst": "cls:remote_store._backend.Backend",
+      "kind": "inherits",
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
+    },
+    {
+      "dst": "cls:remote_store._backend.Backend",
+      "kind": "inherits",
+      "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
+    },
+    {
+      "dst": "cls:remote_store._backend.Backend",
+      "kind": "inherits",
+      "src": "cls:remote_store.backends._sqlalchemy.SQLQueryBackend"
     },
     {
       "capability_delta": {
@@ -1711,102 +2081,146 @@
       "value": "write_result_native"
     },
     {
+      "doc": "docs-src/reference/api/backend.md",
       "file": "src/remote_store/_backend.py",
       "id": "cls:remote_store._backend.Backend",
       "kind": "class",
       "line": 47,
-      "role": "backend",
+      "role": "abc",
       "runtime": "sync",
+      "spec": "sdd/specs/003-backend-adapter-contract.md",
       "summary": "Abstract base class for all storage backends."
     },
     {
+      "doc": "docs-src/reference/api/store.md",
+      "file": "src/remote_store/_store.py",
+      "id": "cls:remote_store._store.Store",
+      "kind": "class",
+      "line": 55,
+      "role": "facade",
+      "runtime": "sync",
+      "spec": "sdd/specs/001-store-api.md",
+      "summary": "A logical remote folder scoped to a root path."
+    },
+    {
+      "doc": "docs-src/reference/api/aio/backend.md",
       "file": "src/remote_store/aio/_async_backend.py",
       "id": "cls:remote_store.aio._async_backend.AsyncBackend",
       "kind": "class",
       "line": 22,
-      "role": "backend",
+      "role": "abc",
       "runtime": "async",
+      "spec": "sdd/specs/029-async-store-backend-api.md",
       "summary": "Abstract base class for all async storage backends."
     },
     {
+      "doc": "docs-src/reference/api/aio/store.md",
+      "file": "src/remote_store/aio/_async_store.py",
+      "id": "cls:remote_store.aio._async_store.AsyncStore",
+      "kind": "class",
+      "line": 56,
+      "role": "facade",
+      "runtime": "async",
+      "spec": "sdd/specs/029-async-store-backend-api.md",
+      "summary": "An async logical remote folder scoped to a root path."
+    },
+    {
+      "doc": "docs-src/reference/api/aio/adapters.md",
       "file": "src/remote_store/aio/_sync_adapter.py",
       "id": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter",
       "kind": "class",
       "line": 46,
-      "role": "backend",
+      "role": "facade",
       "runtime": "async",
+      "spec": "sdd/specs/029-async-store-backend-api.md",
       "summary": "Wraps a synchronous ``Backend`` as an ``AsyncBackend``."
     },
     {
+      "doc": "docs-src/reference/api/aio/backends/azure.md",
       "file": "src/remote_store/aio/backends/_azure.py",
       "id": "cls:remote_store.aio.backends._azure.AsyncAzureBackend",
       "kind": "class",
       "line": 56,
       "role": "backend",
       "runtime": "async",
+      "spec": "sdd/specs/012-azure-backend.md",
       "summary": "Async Azure Storage backend."
     },
     {
+      "doc": "docs-src/reference/api/aio/backends/graph.md",
       "file": "src/remote_store/aio/backends/_graph/backend.py",
       "id": "cls:remote_store.aio.backends._graph.backend.GraphBackend",
       "kind": "class",
       "line": 161,
       "role": "backend",
       "runtime": "async",
+      "spec": "sdd/specs/044-graph-backend.md",
       "summary": "Async Microsoft Graph backend over OneDrive / SharePoint / Teams files."
     },
     {
+      "doc": "docs-src/reference/api/aio/backends/memory.md",
       "file": "src/remote_store/aio/backends/_memory.py",
       "id": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend",
       "kind": "class",
       "line": 32,
       "role": "backend",
       "runtime": "async",
+      "spec": "sdd/specs/013-memory-backend.md",
       "summary": "In-memory async backend using a tree-indexed data structure."
     },
     {
+      "doc": "docs-src/reference/api/backends/azure.md",
       "file": "src/remote_store/backends/_azure.py",
       "id": "cls:remote_store.backends._azure.AzureBackend",
       "kind": "class",
       "line": 176,
       "role": "backend",
       "runtime": "sync",
+      "spec": "sdd/specs/012-azure-backend.md",
       "summary": "Azure Storage backend."
     },
     {
+      "doc": "docs-src/reference/api/backends/http.md",
       "file": "src/remote_store/backends/_http.py",
       "id": "cls:remote_store.backends._http.ReadOnlyHttpBackend",
       "kind": "class",
       "line": 217,
       "role": "backend",
       "runtime": "sync",
+      "spec": "sdd/specs/032-http-backend.md",
       "summary": "Read-only backend for HTTP/HTTPS URLs."
     },
     {
+      "doc": "docs-src/reference/api/backends/local.md",
       "file": "src/remote_store/backends/_local.py",
       "id": "cls:remote_store.backends._local.LocalBackend",
       "kind": "class",
       "line": 31,
       "role": "backend",
       "runtime": "sync",
+      "spec": "sdd/specs/003-backend-adapter-contract.md",
       "summary": "Local filesystem backend using only the Python standard library."
     },
     {
+      "doc": "docs-src/reference/api/backends/memory.md",
       "file": "src/remote_store/backends/_memory.py",
       "id": "cls:remote_store.backends._memory.MemoryBackend",
       "kind": "class",
       "line": 31,
       "role": "backend",
       "runtime": "sync",
+      "spec": "sdd/specs/013-memory-backend.md",
       "summary": "In-memory backend using a tree-indexed data structure."
     },
     {
+      "doc": "docs-src/reference/api/backends/s3.md",
       "file": "src/remote_store/backends/_s3.py",
       "id": "cls:remote_store.backends._s3.S3Backend",
       "kind": "class",
       "line": 40,
       "role": "backend",
       "runtime": "sync",
+      "spec": "sdd/specs/008-s3-backend.md",
       "summary": "S3-compatible object storage backend using s3fs."
     },
     {
@@ -1819,39 +2233,47 @@
       "summary": "S3-compatible backend using boto3 directly (no s3fs / pyarrow)."
     },
     {
+      "doc": "docs-src/reference/api/backends/s3-pyarrow.md",
       "file": "src/remote_store/backends/_s3_pyarrow.py",
       "id": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend",
       "kind": "class",
       "line": 111,
       "role": "backend",
       "runtime": "sync",
+      "spec": "sdd/specs/011-s3-pyarrow-backend.md",
       "summary": "Hybrid S3 backend: PyArrow for reads/writes/copies, s3fs for listing/metadata."
     },
     {
+      "doc": "docs-src/reference/api/backends/sftp.md",
       "file": "src/remote_store/backends/_sftp.py",
       "id": "cls:remote_store.backends._sftp.SFTPBackend",
       "kind": "class",
       "line": 534,
       "role": "backend",
       "runtime": "sync",
+      "spec": "sdd/specs/009-sftp-backend.md",
       "summary": "SFTP backend using pure paramiko."
     },
     {
+      "doc": "docs-src/reference/api/backends/sql-blob.md",
       "file": "src/remote_store/backends/_sqlalchemy.py",
       "id": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend",
       "kind": "class",
       "line": 218,
       "role": "backend",
       "runtime": "sync",
+      "spec": "sdd/specs/040-sql-blob-backend.md",
       "summary": "SQL key-value blob store implementing the full Backend contract."
     },
     {
+      "doc": "docs-src/reference/api/backends/sql-query.md",
       "file": "src/remote_store/backends/_sqlalchemy.py",
       "id": "cls:remote_store.backends._sqlalchemy.SQLQueryBackend",
       "kind": "class",
       "line": 983,
       "role": "backend",
       "runtime": "sync",
+      "spec": "sdd/specs/041-sql-query-backend.md",
       "summary": "Read-only SQL query materializer implementing a subset of the Backend contract."
     },
     {
@@ -2836,7 +3258,7 @@
       "kind_of": "backend"
     }
   ],
-  "schema_version": "1.2",
+  "schema_version": "1.3",
   "snapshot": "0.29.0",
   "source_version": "0.29.0"
 }

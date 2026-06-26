@@ -79,7 +79,7 @@ iterate the arrays.
 
 ```json
 {
-  "schema_version": "1.2",
+  "schema_version": "1.3",
   "source_version": "0.24.0",
   "snapshot": "0.24.0",
   "nodes": [ ... ],

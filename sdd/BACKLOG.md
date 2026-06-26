@@ -217,53 +217,11 @@ the current implementation (ID-159 / 162 / 163, plus the ABC-classification fix)
 realizes only part of it, so the graph still misrepresents the API and the
 downstream docs are mostly hand-maintained.
 
-**Execution order:** ID-221 is the foundation (it makes the graph trustworthy) and
-blocks the other two. ID-222 and ID-223 both consume the corrected graph, are
-independent of each other, and should follow in that order (feature docs before
-visualization). ID-224 (artifact hygiene) shipped first — see `BACKLOG-DONE.md` —
-trimming the artifacts before ID-221's Fixes E/F and link metadata inflate them.
-
-- [ ] **ID-221 — Doc-graph model spec + Phase-1 graph accuracy/completeness fixes**
-  spec: RFC-0012 → new `050-doc-graph-model.md` · effort: L · audience: platform.tooling
-  `graph.json` still misrepresents the API: backends behind private bases have no
-  path to `Backend`, the `Store` class node is missing, methods/packages have no
-  containment edges, and `SyncBackendAdapter` poses as a capability-declaring
-  backend. Write the implementation spec **first** (it is the traceability target
-  for the golden test and forces the scope decisions), then land the five
-  remaining `gen_graph.py` fixes (the ABC-classification fix is already shipped):
-  - **Spec `050-doc-graph-model.md`:** translate RFC-0012 into concrete
-    obligations — in-scope vs deferred node/edge kinds at schema 1.3, the
-    documented `kind_of` vs `kind` deviation on extra nodes, the
-    `tests/scripts/test_gen_graph.py` traceability table, and the `--check` CI
-    contract.
-  - **Fix B (inherits):** walk the MRO (`inspect.getmro`) to emit `inherits` to
-    the nearest in-graph ancestor, so `S3`/`S3PyArrow` (`_S3Base`) and
-    `SQLBlob`/`SQLQuery` (`_SQLAlchemyBaseBackend`) reach `Backend`. Current code
-    only checks direct `__bases__` (`gen_graph.py:371`).
-  - **Fix C (facade):** re-role `SyncBackendAdapter` `backend` → `facade` and
-    suppress its all-14 `declares` edges.
-  - **Fix D (Store node):** add the missing `cls:…Store` node (`role: "facade"`)
-    so its 17 method nodes are not orphaned.
-  - **Fix E (contains, class→method):** emit `contains` edges; the link is
-    currently implicit in the URI prefix only.
-  - **Fix F (contains, package→class):** emit `contains` edges; package nodes
-    currently have zero edges.
-  - **Link metadata (enables ID-223's deep links):** nodes already carry
-    `file`/`line`; also attach the governing spec-clause ID and the API-docs-page
-    anchor per node (and per edge where meaningful) so the visualization can
-    deep-link to source, spec, and docs without a side lookup table. Define these
-    fields in the spec as part of the 1.3 contract.
-  - Bump `schema_version` 1.2 → 1.3 (new `abc`/`facade` roles, new `contains`
-    edge kind, new link-metadata fields), regenerate `graph.json`, update the
-    golden test (write-fail-fix).
-  - **Keep the 1.3 form compact.** `contains` adds one edge per method *and* per
-    class, and the link-metadata adds fields per node — `graph.json` will inflate
-    substantially. Define 1.3 to stay legible (no null/derivable keys; apply
-    ID-224's hygiene) so the golden diff tracks real API changes, not bloat.
-  - Open decisions for the spec: Fix C suppression mechanism (skip-set vs
-    `is_passthrough` field); confirm `SQLQueryBackend`'s real MRO target; whether
-    async backends need the same MRO treatment (they may inherit `AsyncBackend`
-    directly).
+**Execution order:** ID-224 (artifact hygiene) and ID-221 (the foundation that
+made the graph trustworthy at schema 1.3 and added the `contains`/link metadata)
+have both shipped — see `BACKLOG-DONE.md`. ID-222 and ID-223 remain: both consume
+the corrected graph, are independent of each other, and should follow in that
+order (feature docs before visualization).
 
 - [ ] **ID-222 — Generate FEATURES.md sections mechanically from the corrected graph**
   spec: 050-doc-graph-model · effort: M · audience: platform.tooling
