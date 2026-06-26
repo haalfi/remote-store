@@ -33,8 +33,36 @@ Methods are grouped by the capability that gates them.
 All methods share one invariant: they raise typed errors from `remote_store.errors`
 and never leak backend-native exceptions to the caller.
 
+The table below is generated from the documentation graph (`graph.json`): each
+gating capability maps to the methods it gates. The descriptive per-capability
+subsections that follow add return types and behaviour. Quality-flag capabilities
+(`SEEKABLE_READ`, `LAZY_READ`, `ATOMIC_MOVE`, `WRITE_RESULT_NATIVE`,
+`USER_METADATA`) are not gates and so do not appear here — see [Capabilities](#capabilities).
+
+### Methods by capability gate
+
+<!-- BEGIN_GENERATED:store_api_gated -->
+| Capability | Gated methods |
+|---|---|
+| `ATOMIC_WRITE` | `open_atomic()`, `write_atomic()` |
+| `COPY` | `copy()` |
+| `DELETE` | `delete()`, `delete_folder()` |
+| `GLOB` | `glob()` |
+| `LIST` | `iter_children()`, `list_files()`, `list_folders()` |
+| `METADATA` | `get_file_info()`, `get_folder_info()`\*, `head()` |
+| `MOVE` | `move()` |
+| `READ` | `read()`, `read_bytes()`, `read_seekable()`, `read_text()` |
+| `WRITE` | `write()`, `write_text()` |
+
+\* `get_folder_info()` is additionally gated on `LIST` when called with `max_depth` (depth-limited traversal).
+<!-- END_GENERATED:store_api_gated -->
+
 ### Ungated (always available)
 
+These methods carry no capability gate — they are available on every backend.
+The set is derived from the graph (Store method nodes with `gated: false`).
+
+<!-- BEGIN_GENERATED:store_api_ungated -->
 | Method | Returns | Description |
 |---|---|---|
 | `exists(path)` | `bool` | Whether a file exists at the path |
@@ -48,6 +76,7 @@ and never leak backend-native exceptions to the caller.
 | `native_path(key)` | `str` | Backend-native path string for a store key |
 | `to_key(path)` | `str` | Convert a native path back to a store key |
 | `supports(capability)` | `bool` | Query whether a capability is active |
+<!-- END_GENERATED:store_api_ungated -->
 
 ### READ
 
@@ -359,6 +388,18 @@ adapters for mixing sync and async backends.
 | `AsyncAzureBackend` | Native async Azure backend via Azure SDK async clients |
 | `GraphBackend` | Native async Microsoft Graph backend (OneDrive / SharePoint / Teams) via httpx + msal; companions `GraphAuth`, `GraphUtils` |
 | `AsyncWritableContent` | Type alias: `bytes \| AsyncIterator[bytes]` |
+
+**Sync ↔ async backend equivalence** — generated from the graph's `mirrors`
+edges. The capability delta names capabilities one side declares that its peer
+does not. Async-only backends (`GraphBackend`) have no sync mirror and are
+listed above only.
+
+<!-- BEGIN_GENERATED:async_backend_pairs -->
+| Sync backend | Async backend | Capability delta |
+|---|---|---|
+| `AzureBackend` | `AsyncAzureBackend` | — |
+| `MemoryBackend` | `AsyncMemoryBackend` | async adds `LAZY_READ` |
+<!-- END_GENERATED:async_backend_pairs -->
 
 **Bridge adapters** — when you need to cross the sync/async boundary:
 

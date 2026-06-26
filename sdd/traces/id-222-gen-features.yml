@@ -1,0 +1,113 @@
+id: ID-222
+title: "Generate FEATURES.md sections mechanically from the corrected graph"
+trigger: >
+  FEATURES.md's Store API, ungated-methods, and Async API sections were
+  hand-maintained while the rest of the file was already graph-driven (ID-163's
+  backend tables). ID-221 made the graph trustworthy at schema 1.3, so those
+  sections could now be projected from it — except the graph emitted only GATED
+  method nodes, so the "Ungated (always available)" table was not derivable, and
+  method nodes carry no return type or description (DGM-002 defers data_model),
+  so the per-method Returns/Description prose could not be mechanized either.
+source_items:
+  - ID-222
+  - ID-221
+  - ID-224
+audience:
+  - user.site
+  - contributor.tooling
+expected_ripples:
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+  - sdd/backlogid.json
+  - CHANGELOG.md
+surprising_ripples:
+  # Spec 050 carried a stray "</content></invoke>" tool-call fragment at EOF
+  # (an authoring artifact from when it was first written); neither the
+  # ripple-check nor any gate flagged it. Removed while editing the spec.
+  - sdd/specs/050-doc-graph-model.md
+  # The "Store method" ripple-check row did not anticipate that an *ungated*
+  # public Store method now ripples into graph regen + _UNGATED_STORE_DETAILS;
+  # extended the row.
+  - sdd/CLAUDE-REFERENCE.md
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Documentation Graph & Feature Generation / ID-222"
+        read_type: gate
+        extract: "Three projections (Store API gate map, async pairing, backend table confirm) + two open decisions (ungated table, USER_METADATA limitation); audience 'platform.tooling' is not a valid enum value."
+        outcome: misleading
+      - file: scripts/gen_features.py
+        section: "(full) project_* + _replace_regions"
+        read_type: gate
+        extract: "Existing marker-region machinery and the backends/install projections to extend; _REGION_RE needs a non-empty body between markers."
+        outcome: ok
+      - file: docs-src/_data/graph/graph.json
+        section: "gates/of edges, mirrors capability_delta, method node fields"
+        read_type: gate
+        extract: "cap←of←req.gate→mtd chain; .gate vs .gate_depth suffix distinguishes the get_folder_info dual gate; mirrors carries async_only/sync_only; method nodes have only summary/is_abstract/is_async/file/line — no returns/description."
+        outcome: ok
+  - id: design
+    name: Design / decisions
+    steps:
+      - file: sdd/specs/050-doc-graph-model.md
+        section: "DGM-002 (deferred kinds), DGM-010 (omit-when-null)"
+        read_type: gate
+        extract: "data_model/returns deferred to a future bump → Store API can mechanize membership only, prose stays hand-written. omit-when-default precedent (condition) → emit gated:false only on ungated nodes."
+        outcome: ok
+      - file: mkdocs.yml
+        section: "markdown_extensions"
+        read_type: reference
+        extract: "footnotes extension NOT enabled → real [^1] would break docs-build --strict; use an inline note line (existing FEATURES.md style) for the get_folder_info dual gate."
+        outcome: ok
+      - file: src/remote_store/_store.py
+        section: "_GATING + public method defs"
+        read_type: reference
+        extract: "Exactly 11 ungated public Store methods, no @property; 'public function not in _GATING' is a clean scrape-all-public discriminator (no allowlist)."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/gen_graph.py
+        section: "_emit_ungated_method_nodes + Store/AsyncStore loops + schema bump"
+        read_type: gate
+        extract: "Emit ungated facade method nodes (gated:false) for Store/AsyncStore only; generic contains pass picks them up; schema 1.3 → 1.4. ABCs stay gated-only."
+        outcome: ok
+      - file: scripts/gen_features.py
+        section: "_store_gate_lookup + project_store_api_gated/ungated/async_backend_pairs"
+        read_type: gate
+        extract: "Walk gates/of for the Store gate map (primary .gate vs .gate_depth footnote); curated _UNGATED_STORE_DETAILS drift-guarded against graph membership; mirrors → pairing table."
+        outcome: ok
+      - file: FEATURES.md
+        section: "## Store API, ## Async API"
+        read_type: gate
+        extract: "Added store_api_gated/store_api_ungated/async_backend_pairs regions; kept the per-capability descriptive subsections (Returns/Description prose the graph can't own)."
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_gen_graph.py
+        section: "test_graph_schema (1.4) + test_ungated_facade_method_nodes"
+        read_type: gate
+        extract: "Schema assertion 1.3→1.4; DGM-014 test pins the ungated set, gated:false flag, no gates edge, and contains edge."
+        outcome: ok
+      - file: tests/scripts/test_gen_features.py
+        section: "TestStoreApiGated / TestStoreApiUngated / TestAsyncBackendPairs"
+        read_type: gate
+        extract: "Per-projection assertions incl. dual-gate footnote, quality-flags-absent, ungated drift guard; saw gen-features --check fail on empty regions before regenerating (write-fail-fix)."
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / schema_version + Store method rows"
+        read_type: verify
+        extract: "Schema-bump consumers (DGM-013) all updated: gen_graph schema, viz compat comment, golden test, both artifacts, RFC example snapshot (1.3→1.4 per ID-221 precedent). Extended the Store-method row for the ungated ripple."
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience enum + derived CHANGELOG rule"
+        read_type: verify
+        extract: "FEATURES.md is user.site (dual dest=reference/FEATURES.md), so audience includes user.* → CHANGELOG entry required; backlog's 'platform.tooling' maps to contributor.tooling."
+        outcome: ok

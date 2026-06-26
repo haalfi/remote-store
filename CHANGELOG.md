@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-222: Generate the FEATURES.md Store API, ungated-methods, and async backend-pairing tables from the documentation graph
+
 ## [0.29.0] - 2026-06-22
 
 ### Changed

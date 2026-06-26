@@ -16,7 +16,7 @@ Layout: D3 force-directed with per-kind positional bias (soft LR columns
 without rigidity).  "declares" edges are hidden by default -- they dominate
 numerically and collapse the centre; toggle them on to see the full picture.
 
-Schema compatibility: reads graph.json schema_version 1.0 through 1.3.
+Schema compatibility: reads graph.json schema_version 1.0 through 1.4.
 1.1 fields (is_abstract, is_async, file, line on method nodes) are used when
 present; the rendering degrades gracefully when they are absent.  1.2 adds
 ``capability_delta`` to ``mirrors`` edges; the viz embeds it as data but does
@@ -24,8 +24,11 @@ not render it (consumers wanting a sync/async capability diff should query
 ``graph.json`` directly).  1.3 adds the ``abc``/``facade`` class roles, the
 ``contains`` edge kind (rendered off by default — it is numerous, like
 ``declares``), and ``spec``/``doc`` link metadata on class nodes (shown in the
-detail panel via the generic field rows).  Role-aware rendering and deep links
-are ID-223; this generator only carries the 1.3 data through unchanged.
+detail panel via the generic field rows).  1.4 adds ungated facade method nodes
+carrying ``gated: False`` (the always-available Store/AsyncStore surface); the
+viz renders them as ordinary method nodes and surfaces ``gated`` via the generic
+field rows.  Role-aware rendering and deep links are ID-223; this generator only
+carries the 1.4 data through unchanged.
 """
 
 from __future__ import annotations

@@ -277,6 +277,116 @@ class TestInstallExtras:
         assert extras == sorted(extras)
 
 
+class TestStoreApiGated:
+    def test_header_row(self, gen_features_module, graph):
+        table = gen_features_module.project_store_api_gated(graph)
+        lines = table.splitlines()
+        assert lines[0] == "| Capability | Gated methods |"
+        assert lines[1] == "|---|---|"
+
+    def test_capabilities_sorted(self, gen_features_module, graph):
+        table = gen_features_module.project_store_api_gated(graph)
+        caps = [row.split("|")[1].strip().strip("`") for row in table.splitlines()[2:] if row.startswith("| `")]
+        assert caps == sorted(caps)
+
+    def test_read_lists_all_four_read_methods(self, gen_features_module, graph):
+        table = gen_features_module.project_store_api_gated(graph)
+        read_row = next(row for row in table.splitlines() if row.startswith("| `READ` |"))
+        for method in ("read()", "read_bytes()", "read_seekable()", "read_text()"):
+            assert f"`{method}`" in read_row
+
+    def test_quality_flag_capabilities_absent(self, gen_features_module, graph):
+        """Quality flags are not gates, so they have no gate-map row."""
+        table = gen_features_module.project_store_api_gated(graph)
+        for flag in ("SEEKABLE_READ", "LAZY_READ", "ATOMIC_MOVE", "WRITE_RESULT_NATIVE", "USER_METADATA"):
+            assert f"| `{flag}` |" not in table
+
+    def test_get_folder_info_dual_gate_footnote(self, gen_features_module, graph):
+        table = gen_features_module.project_store_api_gated(graph)
+        # Primary gate is METADATA; the method carries the footnote marker there.
+        meta_row = next(row for row in table.splitlines() if row.startswith("| `METADATA` |"))
+        assert r"`get_folder_info()`\*" in meta_row
+        # The depth gate (LIST) does not add get_folder_info to the LIST row.
+        list_row = next(row for row in table.splitlines() if row.startswith("| `LIST` |"))
+        assert "get_folder_info" not in list_row
+        # A note line documents the secondary LIST gate.
+        assert r"\* `get_folder_info()` is additionally gated on `LIST`" in table
+
+
+class TestStoreApiUngated:
+    def test_header_row(self, gen_features_module, graph):
+        table = gen_features_module.project_store_api_ungated(graph)
+        lines = table.splitlines()
+        assert lines[0] == "| Method | Returns | Description |"
+        assert lines[1] == "|---|---|---|"
+
+    def test_contains_representative_methods(self, gen_features_module, graph):
+        table = gen_features_module.project_store_api_ungated(graph)
+        for method in ("exists(path)", "child(subpath)", "supports(capability)", "close()"):
+            assert f"| `{method}` |" in table
+
+    def test_gated_methods_absent(self, gen_features_module, graph):
+        table = gen_features_module.project_store_api_ungated(graph)
+        for method in ("read(", "write(", "delete("):
+            assert f"`{method}" not in table
+
+    def test_drift_guard_raises_on_mismatch(self, gen_features_module):
+        """A curated/graph mismatch must fail generation, not ship a stale table."""
+        # A graph whose only ungated Store method is a name not in the curated map.
+        fake_graph = {
+            "nodes": [
+                {"id": "mtd:remote_store._store.Store.brand_new", "kind": "method", "gated": False},
+            ],
+            "edges": [],
+        }
+        with pytest.raises(ValueError, match="drifted"):
+            gen_features_module.project_store_api_ungated(fake_graph)
+
+    def test_matches_graph_membership(self, gen_features_module, graph):
+        """The rendered rows are exactly the graph's ungated Store method set."""
+        table = gen_features_module.project_store_api_ungated(graph)
+        graph_ungated = {
+            n["id"].removeprefix("mtd:remote_store._store.Store.")
+            for n in graph["nodes"]
+            if n["kind"] == "method"
+            and n["id"].startswith("mtd:remote_store._store.Store.")
+            and n.get("gated") is False
+        }
+        rendered = {line.split("`")[1].split("(")[0] for line in table.splitlines() if line.startswith("| `")}
+        assert rendered == graph_ungated
+
+
+class TestAsyncBackendPairs:
+    def test_header_row(self, gen_features_module, graph):
+        table = gen_features_module.project_async_backend_pairs(graph)
+        lines = table.splitlines()
+        assert lines[0] == "| Sync backend | Async backend | Capability delta |"
+        assert lines[1] == "|---|---|---|"
+
+    def test_azure_pair_no_delta(self, gen_features_module, graph):
+        table = gen_features_module.project_async_backend_pairs(graph)
+        azure_row = next(row for row in table.splitlines() if row.startswith("| `AzureBackend` |"))
+        cols = [c.strip() for c in azure_row.split("|")[1:-1]]
+        assert cols[1] == "`AsyncAzureBackend`"
+        assert cols[2] == "—"
+
+    def test_memory_pair_reports_lazy_read_delta(self, gen_features_module, graph):
+        table = gen_features_module.project_async_backend_pairs(graph)
+        mem_row = next(row for row in table.splitlines() if row.startswith("| `MemoryBackend` |"))
+        assert "`AsyncMemoryBackend`" in mem_row
+        assert "async adds `LAZY_READ`" in mem_row
+
+    def test_async_only_backend_absent(self, gen_features_module, graph):
+        """GraphBackend has no sync mirror, so it must not appear in the pairing table."""
+        table = gen_features_module.project_async_backend_pairs(graph)
+        assert "GraphBackend" not in table
+
+    def test_sorted_by_sync_backend(self, gen_features_module, graph):
+        table = gen_features_module.project_async_backend_pairs(graph)
+        names = [row.split("|")[1].strip().strip("`") for row in table.splitlines()[2:] if row.startswith("| `")]
+        assert names == sorted(names)
+
+
 class TestRegionReplacement:
     def test_replaces_known_region(self, gen_features_module):
         text = "before\n<!-- BEGIN_GENERATED:foo -->\nold content\n<!-- END_GENERATED:foo -->\nafter"
@@ -316,7 +426,16 @@ class TestRegionReplacement:
 class TestFeaturesFileIntegrity:
     def test_features_md_has_all_regions(self):
         text = (ROOT / "FEATURES.md").read_text(encoding="utf-8")
-        for region in ("backends_main", "backends_flags", "backends_async", "backends_async_flags", "install_extras"):
+        for region in (
+            "store_api_gated",
+            "store_api_ungated",
+            "backends_main",
+            "backends_flags",
+            "backends_async",
+            "backends_async_flags",
+            "async_backend_pairs",
+            "install_extras",
+        ):
             assert f"<!-- BEGIN_GENERATED:{region} -->" in text
             assert f"<!-- END_GENERATED:{region} -->" in text
 

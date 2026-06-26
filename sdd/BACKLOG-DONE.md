@@ -8,6 +8,41 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-222 — Generate FEATURES.md sections mechanically from the corrected graph**
+  spec: [050-doc-graph-model.md](specs/050-doc-graph-model.md) · effort: M · audience: user.site, contributor.tooling
+  Extended `gen_features.py` to project three more `FEATURES.md` regions from the
+  corrected graph, each wrapped in `BEGIN_GENERATED` markers and guarded by the
+  golden `gen-features --check` gate:
+  - **Store API gate map** (`store_api_gated`): walks `cap:X ←(of)— req:*.gate
+    —(gates)→ mtd:*` to list, per gating capability, the Store methods it gates.
+    The `get_folder_info` dual gate (its `.gate_depth` requirement on `LIST`) is
+    rendered as a footnote, not a second `LIST` row. Quality-flag capabilities
+    have no gate chain, so they are intentionally absent (resolving the
+    gate-vs-signal open decision: the generated map is gates-only; signals stay in
+    the hand-written Capabilities table).
+  - **Ungated Store methods** (`store_api_ungated`): membership derived from the
+    graph (Store method nodes with `gated: false`); Returns/Description prose
+    curated in `_UNGATED_STORE_DETAILS` and drift-guarded against the graph set.
+  - **Sync↔async backend equivalence** (`async_backend_pairs`): rendered from
+    `mirrors` edges + `capability_delta` (was prose). Async-only backends
+    (`GraphBackend`) have no mirror and are listed separately.
+  - **Backend capability table:** confirmed `project_backends_main` is correct
+    against the post-ID-221 clean roles (`role="backend"` is concrete backends
+    only) — no retune needed.
+  - **Schema 1.3 → 1.4 (DGM-014):** chose to make the ungated table derivable
+    rather than hand-written. `gen_graph.py` now emits ungated public method nodes
+    for the `Store`/`AsyncStore` facades with a `gated: false` field (gated nodes
+    omit the key; absent ⇒ gated, per DGM-010). Rippled into spec 050 (DGM-001/002/
+    010 + new DGM-014 + traceability), `gen_graph_viz.py` schema-compat comment,
+    the graph golden test (schema assertion + DGM-014 test, write-fail-fix), and
+    regenerated `graph.json` (197 nodes / 408 edges) + `graph_viz.html`.
+  - **Known limitation (recorded, not fixed):** `USER_METADATA` gates the
+    `metadata=` kwarg, not a whole method; schema 1.4 still has no argument-level
+    gate model (the RFC `prm:`/`predicate` node is the future path). Noted in spec
+    050's Deferred section and the `WRITE`/Capabilities prose.
+  FEATURES.md is a user-facing reference page (`dual dest=reference/FEATURES.md`),
+  so this carries a CHANGELOG entry per the trace-schema derived rule.
+
 - [x] **ID-216 — Evaluate `lx` as an ad-hoc repo-context bundler for coding agents**
   spec: — · effort: S · audience: contributor.process, contributor.tooling
   Timeboxed local trial of [`rasros/lx`](https://github.com/rasros/lx) v1.2.1

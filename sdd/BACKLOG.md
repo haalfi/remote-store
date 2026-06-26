@@ -217,28 +217,11 @@ the current implementation (ID-159 / 162 / 163, plus the ABC-classification fix)
 realizes only part of it, so the graph still misrepresents the API and the
 downstream docs are mostly hand-maintained.
 
-**Execution order:** ID-224 (artifact hygiene) and ID-221 (the foundation that
-made the graph trustworthy at schema 1.3 and added the `contains`/link metadata)
-have both shipped — see `BACKLOG-DONE.md`. ID-222 and ID-223 remain: both consume
-the corrected graph, are independent of each other, and should follow in that
-order (feature docs before visualization).
-
-- [ ] **ID-222 — Generate FEATURES.md sections mechanically from the corrected graph**
-  spec: 050-doc-graph-model · effort: M · audience: platform.tooling
-  Depends on ID-221. Replace hand-written sections of `FEATURES.md` with
-  `gen_features.py` projections over the accurate graph:
-  - **Store API table:** walk `cap:X ←(of)— req:*.gate —(gates)→ mtd:*` for
-    per-capability method lists (the `get_folder_info` `gate_depth` case → footnote).
-  - **Backend capability table:** now data-complete — once Fix A/B land,
-    `role="backend"` returns only the 11 concrete backends, not the 2 ABCs or 3
-    facades.
-  - **Async API section:** render sync↔async pairing from `mirrors` edges +
-    `capability_delta` (currently prose).
-  - Optional: ungated Store methods (`child()`, `close()`, `__enter__`) emitted
-    with a `gated: bool` field — decide allowlist vs scrape-all-public.
-  - Known limitation to record: `USER_METADATA` gates the `metadata=` kwarg, not a
-    whole method; schema 1.3 has no argument-level gate model (RFC `prm:` node is
-    the future path).
+**Execution order:** ID-224 (artifact hygiene), ID-221 (the foundation that made
+the graph trustworthy at schema 1.3 and added the `contains`/link metadata), and
+ID-222 (mechanical FEATURES.md projection, which took the graph to schema 1.4 by
+emitting ungated facade method nodes) have all shipped — see `BACKLOG-DONE.md`.
+ID-223 remains; it consumes the corrected graph and the link metadata.
 
 - [ ] **ID-223 — Role-aware, explorable graph visualization**
   spec: 050-doc-graph-model · effort: L · audience: platform.tooling
