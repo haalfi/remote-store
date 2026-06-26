@@ -77,6 +77,12 @@ def test_graph_schema(gen_graph_module):
         assert "src" in edge, f"Edge missing 'src': {edge}"
         assert "dst" in edge, f"Edge missing 'dst': {edge}"
 
+    # ID-224: null/derivable keys are not emitted. ``condition`` is omitted when
+    # unconditional (absent == null); a non-null value is reserved for future
+    # conditional declares (ID-140, schema 1.3). The key must never be present-and-null.
+    for edge in edges:
+        assert "condition" not in edge or edge["condition"] is not None, f"Edge carries a null 'condition': {edge}"
+
     # Edges must be sorted ascending by (kind, src, dst)
     edge_keys = [(e["kind"], e["src"], e["dst"]) for e in edges]
     assert edge_keys == sorted(edge_keys), "edges are not sorted by (kind, src, dst)"

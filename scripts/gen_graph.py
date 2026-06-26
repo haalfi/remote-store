@@ -343,12 +343,14 @@ def build_graph() -> dict[str, Any]:
             caps_set = getattr(rt_cls, "CAPABILITIES", None)
             if caps_set is not None:
                 for cap in caps_set:
+                    # ``condition`` is omitted when unconditional (absent == null),
+                    # per RFC-0012 "Edge taxonomy" (declares row). A conditional
+                    # declares (ID-140) carries a non-null ``condition``.
                     edges.append(
                         {
                             "kind": "declares",
                             "src": uri,
                             "dst": f"cap:{cap.name}",
-                            "condition": None,
                         }
                     )
 

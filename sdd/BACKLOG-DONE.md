@@ -8,7 +8,30 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
-*(none)*
+- [x] **ID-224 — Trim the committed graph artifacts (D3 duplication, null-field bloat)**
+  spec: — · effort: S · audience: contributor.tooling
+  `gen_graph_viz.py` inlined the 279 KB `d3.v7.min.js` into a **354 KB**
+  `graph_viz.html` while the same library was *also* committed standalone — so D3
+  lived twice in the repo and the golden `--check` guarded a 354 KB file whose
+  only meaningful delta was the ~60 KB data slice. Two semantics-preserving
+  cleanups, schema unchanged at **1.2**:
+  - **D3 de-duplicated:** the template now loads D3 via a relative
+    `<script src="../_data/graph/d3.v7.min.js">` to the sibling vendored copy
+    instead of inlining it (`__D3_INLINE__` token removed; `D3_VENDOR.exists()`
+    kept as an integrity guard). `graph_viz.html` drops **354 KB → 72 KB**. The
+    relative path resolves in the repo checkout and in the `mkdocs build --strict`
+    site (`_data/graph/` is published); a headless render confirmed D3 loads and
+    the graph draws.
+  - **Null keys dropped:** `gen_graph.py` no longer emits `"condition": null` on
+    `declares` edges (156 of them, always null, read by nothing). Absent ==
+    unconditional, the standard JSON convention; RFC-0012's edge-taxonomy now
+    documents that omission on the `declares`/`raises` rows (reconciled during PR
+    review so the emitter and spec agree at this commit, per principles 3 + 5).
+    `test_gen_graph.py` now asserts no edge carries a present-and-null `condition`.
+  - Goal met: the `--check` golden artifacts now track real API changes, not a
+    static third-party library blob.
+  Audience is tooling-only, so no CHANGELOG entry per the trace-schema derived
+  rule (the docs-site visualization renders identically).
 
 ## v0.29.0
 

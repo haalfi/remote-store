@@ -150,7 +150,7 @@ Two patterns use multiple `req:` nodes vs. multiple `of` edges:
 |---|---|---|---|
 | `contains` | package/module/class → child | — | Containment tree |
 | `inherits` | class → class | — | DAG |
-| `declares` | backend → capability | `condition: prd URI \| null` | `null` for unconditional |
+| `declares` | backend → capability | `condition: prd URI` (omitted when unconditional) | Key present only when conditional; absent == unconditional |
 | `gates` | requirement → method | — | Via `req:` group |
 | `of` | requirement → capability | `index: int` | Members of the group |
 | `enables` | extra → class/extension | — | pip extra → backend |
@@ -164,7 +164,7 @@ Two patterns use multiple `req:` nodes vs. multiple `of` edges:
 | `has_param` | method → parameter | `position: int` | — |
 | `typed` | parameter/field → type_ref | — | — |
 | `has_field` | data_model → field | — | — |
-| `raises` | method → error | `condition: prd URI \| null` | — |
+| `raises` | method → error | `condition: prd URI` (omitted when unconditional) | Key present only when conditional; absent == unconditional |
 
 `gates` and `of` together replace a simple "method requires capability" attribute.
 A method with one unconditional gate has one `req:` node linked by a single
@@ -208,7 +208,7 @@ cls:...S3Backend
                      cap:MOVE, cap:COPY, cap:ATOMIC_WRITE, cap:METADATA,
                      cap:USER_METADATA, cap:SEEKABLE_READ, cap:LAZY_READ,
                      cap:WRITE_RESULT_NATIVE
-                     (all condition: null)
+                     (condition omitted — all unconditional)
   ↔ mirrors          (no async S3 backend exists yet; edge applies once one is added)
 
 mtd:remote_store.Store.write
