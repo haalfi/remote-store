@@ -5224,6 +5224,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#bundling-a-code-skeleton-for-an-llm-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bundling a code skeleton for an LLM (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#migrating-an-existing-checkout" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10691,6 +10702,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#bundling-a-code-skeleton-for-an-llm-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bundling a code skeleton for an LLM (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#migrating-an-existing-checkout" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11113,6 +11135,24 @@ hatch expects.</p>
 <a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>hatch<span class="w"> </span>run<span class="w"> </span>examples
 </code></pre></div>
 <p>All dev scripts are defined in <code>pyproject.toml</code> under <code>[tool.hatch.envs.default.scripts]</code>. Run <code>hatch run</code> to see available commands.</p>
+<h3 id="bundling-a-code-skeleton-for-an-llm-optional">Bundling a code skeleton for an LLM (optional)<a class="headerlink" href="#bundling-a-code-skeleton-for-an-llm-optional" title="Permanent link">&para;</a></h3>
+<p>To orient a coding agent on a subtree without spending tokens on full bodies,
+<a href="https://github.com/rasros/lx"><code>lx</code></a> (Go, MIT) emits an AST-level skeleton —
+class/method signatures, type fields, and docstrings only. For
+<code>src/remote_store/</code> that is ~29k tokens versus ~262k for the full source, and
+there is no concise <code>git archive</code> / <code>cat</code> equivalent. This is the one job <code>lx</code>
+does that is awkward to reproduce by hand; for whole-file context just let the
+agent read the files. <code>lx</code> is a purely local convenience: <strong>not</strong> a project
+dependency, <strong>not</strong> installed by any <code>hatch</code> script, <strong>not</strong> used in CI or the
+docs build.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>go<span class="w"> </span>install<span class="w"> </span>github.com/rasros/lx/cmd/lx@latest<span class="w">          </span><span class="c1"># one-time</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>lx<span class="w"> </span>--xml<span class="w"> </span>-u<span class="w"> </span>-Y<span class="w"> </span>src/remote_store/<span class="w">   </span><span class="c1"># skeleton: signatures + types only</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>git<span class="w"> </span>diff<span class="w"> </span>--name-only<span class="w"> </span><span class="p">|</span><span class="w"> </span>lx<span class="w"> </span>-c<span class="w">       </span><span class="c1"># bundle just the changed files to the clipboard</span>
+</code></pre></div>
+<p>It honours <code>.gitignore</code> and estimates tokens. Point it at a subtree, not the
+repo root (a whole-repo walk is ~3.7M tokens, mostly <code>tests/</code> and <code>sdd/</code>); no
+<code>.lxignore</code> is committed, so use <code>-e &lt;glob&gt;</code> for ad-hoc excludes.</p>
 <h3 id="migrating-an-existing-checkout">Migrating an existing checkout<a class="headerlink" href="#migrating-an-existing-checkout" title="Permanent link">&para;</a></h3>
 <p>If you previously created <code>.venv/</code> with <code>python -m venv</code> or via IDE
 auto-discovery, delete it before the first <code>hatch run</code>. Hatch's behaviour
@@ -11122,25 +11162,25 @@ be missing the <code>dev</code> / <code>docs</code> / <code>bench</code> feature
 <p>On Windows, close any IDE / language server / running pytest that has
 file handles inside <code>.venv\</code> before deleting — otherwise the delete fails
 with WinError 32 (file in use).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>rm<span class="w"> </span>-rf<span class="w"> </span>.venv<span class="w">                       </span><span class="c1"># Linux / macOS</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>Remove-Item<span class="w"> </span>-Recurse<span class="w"> </span>-Force<span class="w"> </span>.venv<span class="w">  </span><span class="c1"># PowerShell</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>rm<span class="w"> </span>-rf<span class="w"> </span>.venv<span class="w">                       </span><span class="c1"># Linux / macOS</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>Remove-Item<span class="w"> </span>-Recurse<span class="w"> </span>-Force<span class="w"> </span>.venv<span class="w">  </span><span class="c1"># PowerShell</span>
 </code></pre></div>
 <h2 id="commit-signing">Commit Signing<a class="headerlink" href="#commit-signing" title="Permanent link">&para;</a></h2>
 <p>All commits should be signed for supply chain transparency. GitHub Vigilant
 Mode is enabled on the repository — unsigned commits show as "Unverified".</p>
 <h3 id="setup-ssh-signing-one-time">Setup (SSH signing, one-time)<a class="headerlink" href="#setup-ssh-signing-one-time" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Tell Git to use SSH for signing</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>gpg.format<span class="w"> </span>ssh
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>user.signingkey<span class="w"> </span>~/.ssh/&lt;your-key&gt;.pub
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>commit.gpgSign<span class="w"> </span><span class="nb">true</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>tag.gpgSign<span class="w"> </span><span class="nb">true</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Tell Git to use SSH for signing</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>gpg.format<span class="w"> </span>ssh
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>user.signingkey<span class="w"> </span>~/.ssh/&lt;your-key&gt;.pub
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>commit.gpgSign<span class="w"> </span><span class="nb">true</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>tag.gpgSign<span class="w"> </span><span class="nb">true</span>
 </code></pre></div>
 <p>Then upload your public key to GitHub as a <strong>Signing Key</strong> (not Authentication):
 Settings &gt; SSH and GPG keys &gt; New SSH key &gt; Key type: <strong>Signing Key</strong>.</p>
 <h3 id="ssh-agent-avoid-passphrase-prompts">SSH agent (avoid passphrase prompts)<a class="headerlink" href="#ssh-agent-avoid-passphrase-prompts" title="Permanent link">&para;</a></h3>
 <p>If your key has a passphrase, start the SSH agent so signing happens silently:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>ssh-agent<span class="w"> </span>-s<span class="k">)</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>ssh-add<span class="w"> </span>~/.ssh/&lt;your-key&gt;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>ssh-agent<span class="w"> </span>-s<span class="k">)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>ssh-add<span class="w"> </span>~/.ssh/&lt;your-key&gt;
 </code></pre></div>
 <p>On Windows, you can also enable the OpenSSH Authentication Agent service
 (via <code>Set-Service ssh-agent -StartupType Automatic</code> in an elevated PowerShell)
@@ -11151,8 +11191,8 @@ for persistence across sessions.</p>
 allowed-signers file, <code>git log --show-signature</code> (and <code>%G?</code>) reports <code>N</code> for your
 own SSH-signed commits — they are signed, but Git has nothing to verify against.
 To make local verification resolve to <code>G</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>git<span class="w"> </span>config<span class="w"> </span>user.email<span class="k">)</span><span class="s2"> </span><span class="k">$(</span>cat<span class="w"> </span>~/.ssh/&lt;your-key&gt;.pub<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.ssh/allowed_signers
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>gpg.ssh.allowedSignersFile<span class="w"> </span>~/.ssh/allowed_signers
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>git<span class="w"> </span>config<span class="w"> </span>user.email<span class="k">)</span><span class="s2"> </span><span class="k">$(</span>cat<span class="w"> </span>~/.ssh/&lt;your-key&gt;.pub<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.ssh/allowed_signers
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>gpg.ssh.allowedSignersFile<span class="w"> </span>~/.ssh/allowed_signers
 </code></pre></div>
 <p>This is purely local; GitHub verifies independently regardless. Note: commits
 merged via GitHub's squash button are re-signed with GitHub's own key and show
@@ -11204,8 +11244,8 @@ and reconciles a single rolling GitHub issue. The workflow never edits
 not automated remediation.</p>
 <p>When you deliberately bump a floor (e.g. <code>paramiko&gt;=3.0</code> after a
 known-breaking upstream release), refresh the baseline in the same PR:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>hatch run drift-check refresh-baseline &lt;extra&gt;     # regenerate the lock
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>hatch run drift-check render-docs                  # regenerate the docs page
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>hatch run drift-check refresh-baseline &lt;extra&gt;     # regenerate the lock
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>hatch run drift-check render-docs                  # regenerate the docs page
 </code></pre></div>
 <p>Then commit <code>infra/drift-locks/&lt;extra&gt;.txt</code> and
 <code>docs-src/reference/tested-versions.md</code>. Run on Python 3.13 (matching the
@@ -11277,9 +11317,9 @@ workflow's runner) so the lock is comparable.</p>
 <h3 id="how-to-bump">How to bump<a class="headerlink" href="#how-to-bump" title="Permanent link">&para;</a></h3>
 <p>Version is managed with <a href="https://github.com/callowayproject/bump-my-version"><code>bump-my-version</code></a>. It modifies the files listed in <code>[[tool.bumpversion.files]]</code> in <code>pyproject.toml</code> in-place without committing or tagging. The release checklist below handles the commit and tag lifecycle.</p>
 <p>Quick reference for the command syntax:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w">   </span><span class="c1"># 0.4.1 → 0.4.2</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w">   </span><span class="c1"># 0.4.1 → 0.5.0</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w">   </span><span class="c1"># 0.4.1 → 1.0.0</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w">   </span><span class="c1"># 0.4.1 → 0.4.2</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w">   </span><span class="c1"># 0.4.1 → 0.5.0</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w">   </span><span class="c1"># 0.4.1 → 1.0.0</span>
 </code></pre></div>
 <h2 id="consistency-checklists">Consistency Checklists<a class="headerlink" href="#consistency-checklists" title="Permanent link">&para;</a></h2>
 <p>Documentation, examples, and metadata live in many places. Use these to keep them in sync.</p>

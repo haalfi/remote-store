@@ -8214,10 +8214,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#7-references" class="md-nav__link">
+  <a href="#7-trial-run-id-216-2026-06-24" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. References
+        7. Trial run (ID-216, 2026-06-24)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. References
       
     </span>
   </a>
@@ -10206,10 +10217,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#7-references" class="md-nav__link">
+  <a href="#7-trial-run-id-216-2026-06-24" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. References
+        7. Trial run (ID-216, 2026-06-24)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. References
       
     </span>
   </a>
@@ -10410,7 +10432,80 @@ worth a timeboxed trial, kept deliberately distinct from the docs-site
 <li><strong>ID-216 created</strong> under Docs &amp; Discoverability for the ad-hoc bundling
   use-case.</li>
 </ul>
-<h2 id="7-references">7. References<a class="headerlink" href="#7-references" title="Permanent link">&para;</a></h2>
+<h2 id="7-trial-run-id-216-2026-06-24">7. Trial run (ID-216, 2026-06-24)<a class="headerlink" href="#7-trial-run-id-216-2026-06-24" title="Permanent link">&para;</a></h2>
+<p>Timeboxed local trial of <code>lx</code> v1.2.1 (<code>go install github.com/rasros/lx/cmd/lx</code>)
+against this repo, comparing it to a plain <code>git archive</code> baseline. Verdict:
+<strong>keep</strong>, as a documented optional DX convenience. No <code>.lxignore</code> committed; no
+CI / docs-build wiring (per the item's guardrails).</p>
+<table>
+<thead>
+<tr>
+<th>Bundle</th>
+<th>Invocation</th>
+<th>Files</th>
+<th>~Tokens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Full source, Claude XML</td>
+<td><code>lx --xml src/remote_store/</code></td>
+<td>69</td>
+<td>~262k</td>
+</tr>
+<tr>
+<td>Source <strong>skeleton</strong> (signatures + types)</td>
+<td><code>lx --xml -u -Y src/remote_store/</code></td>
+<td>69</td>
+<td><strong>~29k</strong></td>
+</tr>
+<tr>
+<td>Structure only</td>
+<td><code>lx -t src/remote_store/</code></td>
+<td>69</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Whole repo</td>
+<td><code>lx --xml .</code></td>
+<td>1,512</td>
+<td>~3.72M</td>
+</tr>
+<tr>
+<td><code>git archive</code> baseline</td>
+<td><code>git archive HEAD src/remote_store</code></td>
+<td>—</td>
+<td>— (opaque tarball)</td>
+</tr>
+</tbody>
+</table>
+<p>Findings:</p>
+<ul>
+<li><strong><code>.gitignore</code> honoured out of the box</strong> — zero leakage of <code>tmp/</code>, <code>.venv/</code>,
+  or caches; the 69-file source count matched <code>git ls-files src</code> exactly. So an
+  <code>.lxignore</code> is <strong>not</strong> needed to keep junk out.</li>
+<li><strong>AST skeleton (<code>-u -Y</code>) is the standout differentiator</strong> — class/method
+  signatures, type fields, and docstrings at <strong>~11%</strong> the token cost of the full
+  source (~29k vs ~262k). <code>git archive</code> has no equivalent; reproducing it needs
+  bespoke tooling.</li>
+<li><strong>Single LLM-ready artifact vs a tarball.</strong> <code>git archive</code> emits an opaque
+  <code>.tar</code> that must be unpacked, concatenated, formatted, and token-counted before
+  an agent can use it — i.e. exactly the bespoke script the item asked us to
+  weigh <code>lx</code> against. <code>lx</code> replaces that whole script with one command and prints
+  a token estimate.</li>
+<li><strong>No <code>.lxignore</code> committed.</strong> The differentiated workflows are <em>subtree</em> and
+  <em>skeleton</em> bundles (<code>lx src/...</code>), which need no ignore file; a whole-repo
+  walk is dominated by <code>tests/</code> (~1.66M) and <code>sdd/</code> (~1.09M) and is rarely the
+  right agent context anyway. A global <code>.lxignore</code> would impose policy on an
+  optional, non-endorsed-in-CI tool for little gain — prefer explicit subtree
+  args (and <code>-e</code> where needed). This revises the item's tentative "likely an
+  <code>.lxignore</code>" hypothesis.</li>
+</ul>
+<p>Outcome: a short, optional subsection landed in <code>CONTRIBUTING.md</code> §
+Development Setup, framed around the skeleton view — two <code>lx</code> commands (the
+<code>-u -Y</code> skeleton and a <code>git diff | lx -c</code> changed-files bundle); <code>lx</code> is <strong>not</strong>
+a project dependency, <strong>not</strong> installed by any script, and <strong>not</strong> in CI.</p>
+<h2 id="8-references">8. References<a class="headerlink" href="#8-references" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="https://github.com/rasros/lx"><code>rasros/lx</code></a> — the tool under evaluation.</li>
 <li><a href="https://llmstxt.org/">llmstxt.org</a> — the <code>llms.txt</code> open standard.</li>
