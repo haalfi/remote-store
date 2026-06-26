@@ -29,7 +29,7 @@ surprising_ripples:
   # (already in scope), so it surfaces as a corrected assumption rather than a new
   # file touched.
   - scripts/gen_graph.py
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

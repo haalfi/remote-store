@@ -300,6 +300,16 @@ comment and `__SCHEMA_VERSION__` rendering, the golden test's `schema_version`
 assertion in `tests/scripts/test_gen_graph.py`, and the committed artifacts. The
 two `--check` gates are the backstop that catches a missed regeneration.
 
+**Invariant (generation environment):** The generator is run with **all extras
+installed** (the `dev`/`docs` hatch env, which is what CI and the pre-commit gate
+use). `declares`, `inherits`, and the `abc`/`backend` role split all read the
+*runtime* class via `_import_class`; a missing optional dependency makes that
+return `None`, leaving the (statically-collected) class node with its edges
+silently dropped. Running without an extra therefore produces a smaller graph
+that fails `--check` against the committed full artifact — which is the intended
+loud signal. The contract: regenerate only in the all-extras environment, never
+commit a partial-import build.
+
 **Rationale:** RFC-0012 "Testing"; the golden round-trip is the single test that
 makes the artifact trustworthy.
 
