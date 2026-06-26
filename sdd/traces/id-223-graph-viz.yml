@@ -1,0 +1,83 @@
+id: ID-223
+title: "Role-aware, explorable graph visualization"
+trigger: >
+  ID-221/222 made graph.json trustworthy at schema 1.4 (role taxonomy,
+  contains edges, spec/doc link metadata, capability_delta, gated flag), but
+  gen_graph_viz.py still rendered a flat force-directed diagram that "carried
+  the 1.4 data through unchanged" (its own docstring): every class drawn the
+  same regardless of role, every method node always visible so the centre
+  collapsed, no deep links, and only a node-only detail panel with no faceted
+  filtering or text search. The graph was a picture to look at, not a surface
+  to explore instead of reading source.
+source_items:
+  - ID-223
+  - ID-221
+  - ID-222
+audience:
+  - user.site
+  - contributor.tooling
+expected_ripples:
+  - docs-src/explanation/graph_viz.html
+  - sdd/backlogid.json
+  - CHANGELOG.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Documentation Graph & Feature Generation / ID-223"
+        read_type: gate
+        extract: "Four deliverables: role-aware node rendering (abc/facade vs backend, Store by URI label), contains-driven clustering + collapse of method groups to a capability-level default, node+edge detail panel with deep links (file:line, spec, doc page), and composable faceted filtering (type/role, edge kind, dependency neighborhood, capability, runtime) beyond text search."
+        outcome: ok
+      - file: scripts/gen_graph_viz.py
+        section: "(full) _TEMPLATE D3 JS + generate()"
+        read_type: gate
+        extract: "Existing force-directed template: NODE_CFG/EDGE_CFG, declares/contains off by default, node-only detail via generic field rows, neighbour highlight on select; docstring states role-aware rendering + deep links are ID-223. Token substitution via __TOKENS__ with a survived-token guard."
+        outcome: ok
+      - file: sdd/specs/050-doc-graph-model.md
+        section: "DGM-004/007/008/009/014 + Deferred section"
+        read_type: gate
+        extract: "Roles abc/backend/facade (DGM-004); Store/AsyncStore both role=facade, distinguished by URI (DGM-007); contains is package→class and class→method, requirements not contained (DGM-008); link metadata is file/page granularity on class nodes only, method authority derived from containing class + name (DGM-009); gated:false on ungated facade methods (DGM-014). Deferred section lists role-aware viz/deep-links/faceted filtering as ID-223's scope."
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: docs-src/_data/graph/graph.json
+        section: "class/method/capability/requirement/extra nodes + mirrors/contains/gates/of edges"
+        read_type: gate
+        extract: "Class nodes carry role/runtime/file/line/spec/doc/summary; method nodes carry file/line/is_async/summary (+gated:false on ungated facade methods); mirrors carry capability_delta{async_only,sync_only}; requirements gate methods via gates edges and reach caps via of edges; gate vs gate_depth suffix on get_folder_info. Confirms every field the detail panel and facets consume already exists at 1.4 — ID-223 is a pure consumer change, no schema bump."
+        outcome: ok
+      - file: mkdocs.yml
+        section: "repo_url, site_url, use_directory_urls"
+        read_type: reference
+        extract: "repo_url github.com/haalfi/remote-store; use_directory_urls defaults true so a doc page docs-src/reference/api/store.md serves at ../reference/api/store/ relative to explanation/graph_viz.html. Source (src/) and spec (sdd/) paths are not on the docs site, so they deep-link to GitHub blob."
+        outcome: ok
+      - file: scripts/gen_graph.py
+        section: "_load_pyproject + tomllib import"
+        read_type: reference
+        extract: "Pattern for reading pyproject; reuse to read [project.urls].Repository so the GitHub blob base for deep links is single-sourced rather than hardcoded in the viz generator."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/gen_graph_viz.py
+        section: "_TEMPLATE rewrite + generate() __BLOB_BASE__"
+        read_type: gate
+        extract: "Role-aware node colour/stroke (abc dashed, facade indigo, backend blue, Store/AsyncStore bold by URI); collapse method nodes by default, expand per class (dblclick / detail button / global buttons) with class→method + package→class contains as structural cluster links; gate labels disambiguated as Class.method via gates+contains; node and edge detail panels with deep links; runtime/capability/type/role/dependency facets + text search composed in update()."
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_gen_graph_viz.py
+        section: "golden + structure assertions"
+        read_type: gate
+        extract: "Keep golden up-to-date + d3-src tests; add assertions that the template wires role-aware rendering, the blob base, deep-link composition, edge detail, and the facet controls so a silent feature regression fails a unit test, not only the golden."
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Backlog item touched + CHANGELOG"
+        read_type: verify
+        extract: "No schema_version bump (stays 1.4) so the DGM-013 schema ripple does not apply; ripples are the regenerated graph_viz.html (golden gate), spec 050 Deferred section, graph-ir.md prose, CHANGELOG (user.site), BACKLOG→BACKLOG-DONE + backlogid.json, and this trace."
+        outcome: ok

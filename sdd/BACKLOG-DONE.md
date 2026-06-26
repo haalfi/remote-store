@@ -8,6 +8,40 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-223 — Role-aware, explorable graph visualization**
+  spec: [050-doc-graph-model.md](specs/050-doc-graph-model.md) · effort: L · audience: user.site, contributor.tooling
+  Turned the `graph_viz.html` D3 view from a flat diagram into an "explore
+  instead of read source" surface, consuming the schema 1.4 graph (roles,
+  `contains`, `spec`/`doc` link metadata, `capability_delta`, `gated`) with no
+  schema change — pure consumer work in `gen_graph_viz.py`:
+  - **Role-aware nodes** (DGM-004): class nodes coloured by `role` — `backend`
+    (blue), `abc` (dashed, light blue), `facade` (indigo); `Store`/`AsyncStore`
+    distinguished from other facades by URI label (DGM-007), rendered larger with
+    a gold ring rather than a separate role.
+  - **Containment clustering + collapse** (DGM-008): method nodes collapse into
+    their class by default so the opening view is capability-level; expand a class
+    (double-click, detail-panel button, or *Expand all*) to reveal its methods,
+    which a `contains` link force clusters around the class, and classes around
+    their package. Gate (`requirement`) labels disambiguated as `Class.method` by
+    walking `gates` → method → `contains` → class (so `Backend.copy` vs
+    `Store.copy` no longer collide).
+  - **Node *and* edge detail with deep links** (DGM-009): selecting a node or an
+    edge shows its metadata plus deep links to the authority — source `file:line`
+    and the governing spec on GitHub (single-sourced from pyproject
+    `[project.urls].Repository`), and the API docs page site-relative. Method
+    authority derives from the containing class. Edge endpoints are clickable
+    cross-references; `mirrors` edges show their `capability_delta`.
+  - **Composable faceted filtering:** text search plus facets for node kind, class
+    role, edge kind, runtime (sync/async), capability (keep only a capability's
+    gate/declare chain), and dependency (isolate a selected node's directed
+    up/down cone along `inherits`/`contains`/`gates`/`of`/`mirrors`). Facets
+    intersect.
+  - Spec 050's Deferred section no longer lists role-aware visualization;
+    `gen_graph_viz.py` docstring and `graph-ir.md` updated; new structural unit
+    tests pin each feature's wiring (behaviour verified in a headless browser),
+    regenerated `graph_viz.html`. Completes the Documentation Graph & Feature
+    Generation epic (ID-224/221/222/223).
+
 - [x] **ID-222 — Generate FEATURES.md sections mechanically from the corrected graph**
   spec: [050-doc-graph-model.md](specs/050-doc-graph-model.md) · effort: M · audience: user.site, contributor.tooling
   Extended `gen_features.py` to project three more `FEATURES.md` regions from the

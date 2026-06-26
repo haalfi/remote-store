@@ -205,48 +205,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ---
 
-## Documentation Graph & Feature Generation
-
-The `gen_graph.py` → `graph.json` → `gen_features.py` pipeline exists to make the
-library **self-describing from its own code**: a single accurate graph where every
-feature and its dependencies are visible — each node carrying its meaning, each
-edge its connection (`inherits` / `declares` / `gates` / `mirrors`) — so that
-`FEATURES.md`, the capability tables, and the docs-site visualization all derive
-from one source that cannot drift from the code. RFC-0012 is the accepted design;
-the current implementation (ID-159 / 162 / 163, plus the ABC-classification fix)
-realizes only part of it, so the graph still misrepresents the API and the
-downstream docs are mostly hand-maintained.
-
-**Execution order:** ID-224 (artifact hygiene), ID-221 (the foundation that made
-the graph trustworthy at schema 1.3 and added the `contains`/link metadata), and
-ID-222 (mechanical FEATURES.md projection, which took the graph to schema 1.4 by
-emitting ungated facade method nodes) have all shipped — see `BACKLOG-DONE.md`.
-ID-223 remains; it consumes the corrected graph and the link metadata.
-
-- [ ] **ID-223 — Role-aware, explorable graph visualization**
-  spec: 050-doc-graph-model · effort: L · audience: platform.tooling
-  Depends on ID-221 (incl. its link metadata). Make the D3 view
-  (`docs-src/_data/graph/`) a genuine "explore instead of read source" surface,
-  not just a static diagram:
-  - render `abc` / `facade` nodes distinctly from concrete backends; distinguish
-    `Store` from other facades by URI label, not role.
-  - cluster method nodes inside their class via `contains` (class→method); collapse
-    Store/Backend method groups so the default view is capability-level.
-  - cluster classes inside packages via `contains` (package→class); disambiguate
-    gate labels by method-name suffix using `contains` direction.
-  - **Details panel (left, under the filter):** selecting a node *or an edge* shows
-    its metadata (role/kind, summary, runtime, capability delta) plus **deep links**
-    — source `file:line`, the governing spec clause, and the API docs page — so a
-    reader jumps straight to the authority instead of grepping source. Relies on the
-    link metadata emitted by ID-221.
-  - **Flexible faceted filtering:** beyond text search, filter by **type** (node
-    kind / role, edge kind), by **dependency** (isolate a selected node's
-    upstream/downstream neighborhood along `inherits` / `contains` / `gates` / `of`
-    / `mirrors`), by **capability**, and by **runtime** (sync / async). Facets
-    compose.
-
----
-
 ## API Ergonomics
 
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
