@@ -240,8 +240,8 @@ downstream docs are mostly hand-maintained.
 **Execution order:** ID-221 is the foundation (it makes the graph trustworthy) and
 blocks the other two. ID-222 and ID-223 both consume the corrected graph, are
 independent of each other, and should follow in that order (feature docs before
-visualization). ID-224 (artifact hygiene) is independent of all three and can ship
-at any time — ideally before ID-221/E-F inflate the artifacts further.
+visualization). ID-224 (artifact hygiene) shipped first — see `BACKLOG-DONE.md` —
+trimming the artifacts before ID-221's Fixes E/F and link metadata inflate them.
 
 - [ ] **ID-221 — Doc-graph model spec + Phase-1 graph accuracy/completeness fixes**
   spec: RFC-0012 → new `050-doc-graph-model.md` · effort: L · audience: platform.tooling
@@ -323,23 +323,6 @@ at any time — ideally before ID-221/E-F inflate the artifacts further.
     upstream/downstream neighborhood along `inherits` / `contains` / `gates` / `of`
     / `mirrors`), by **capability**, and by **runtime** (sync / async). Facets
     compose.
-
-- [ ] **ID-224 — Trim the committed graph artifacts (D3 duplication, null-field bloat)**
-  spec: — · effort: S · audience: platform.tooling
-  Independent of ID-221–223; shippable now and best done *before* Fixes E/F and
-  link metadata inflate the artifacts. `gen_graph_viz.py` emits a **354 KB**
-  `graph_viz.html` that is ~79% the **inlined** 279 KB `d3.v7.min.js` — which is
-  *also* committed standalone, so D3 lives twice in the repo and the golden
-  `--check` guards a 354 KB file whose only meaningful delta is the ~60 KB data
-  slice.
-  - Stop double-storing D3: either reference the sibling `d3.v7.min.js` (or a
-    pinned CDN URL with SRI) instead of inlining, or keep inlining and drop the
-    standalone vendored copy — pick one, weighing the "open-without-server"
-    rationale stated in `gen_graph_viz.py`.
-  - Drop null/derivable keys from `graph.json` emission (e.g. `"condition": null`
-    on every edge) — semantics-preserving, stays schema 1.2.
-  - Goal: the `--check` golden artifacts reflect real API changes, not a static
-    third-party library blob.
 
 ---
 

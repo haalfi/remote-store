@@ -52,12 +52,12 @@ def test_generate_raises_when_d3_vendor_missing(gen_graph_viz_module, monkeypatc
 def test_generate_raises_on_token_contamination(gen_graph_viz_module):
     """generate() must raise RuntimeError when a replacement value re-introduces a token.
 
-    source_version == "__D3_INLINE__": re.sub fills the __VERSION__ slot with the
-    string "__D3_INLINE__", which survives in the output (re.sub does not rescan
+    source_version == "__GRAPH_DATA__": re.sub fills the __VERSION__ slot with the
+    string "__GRAPH_DATA__", which survives in the output (re.sub does not rescan
     replacement values). The post-substitution guard must catch this.
     """
     graph = {
-        "source_version": "__D3_INLINE__",
+        "source_version": "__GRAPH_DATA__",
         "schema_version": "1.1",
         "nodes": [],
         "edges": [],

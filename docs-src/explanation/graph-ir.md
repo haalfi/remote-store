@@ -10,7 +10,7 @@ individual nodes and their direct neighbors.
 
 [Open visualization](graph_viz.html){ .md-button .md-button--primary }
 
-The visualization is self-contained and runs fully in the browser.
+The visualization runs fully in the browser, with no server or build step.
 
 ## See also
 

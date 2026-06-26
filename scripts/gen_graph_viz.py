@@ -5,10 +5,12 @@ Run with:  hatch run gen-graph-viz
 
 --check exits 1 if graph_viz.html would change; use in CI or pre-commit.
 
-The output is a self-contained, single-file interactive HTML visualization
-of the project's API graph.  No server or build step required -- open directly
-in a browser.  The graph data is embedded as a JSON literal so the file is
-portable and versionable.
+The output is an interactive HTML visualization of the project's API graph.
+The graph data is embedded as a JSON literal, but D3 is loaded from the sibling
+vendored ``_data/graph/d3.v7.min.js`` via a relative ``<script src>`` rather than
+inlined -- so the library is committed once, not duplicated into this file
+(ID-224).  No server or build step required: the relative path resolves both in
+the repo checkout and the built MkDocs site.
 
 Layout: D3 force-directed with per-kind positional bias (soft LR columns
 without rigidity).  "declares" edges are hidden by default -- they dominate
@@ -46,7 +48,7 @@ _TEMPLATE = (
     '<meta charset="UTF-8">\n'
     '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
     "<title>remote-store API graph — v__VERSION__</title>\n"
-    "<script>__D3_INLINE__</script>\n"
+    '<script src="../_data/graph/d3.v7.min.js"></script>\n'
     "<style>\n"
     "*{box-sizing:border-box;margin:0;padding:0}\n"
     "body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;"
@@ -389,14 +391,16 @@ _TEMPLATE = (
 # ---------------------------------------------------------------------------
 
 
-_TOKENS = ("__VERSION__", "__SCHEMA_VERSION__", "__N_NODES__", "__N_EDGES__", "__GRAPH_DATA__", "__D3_INLINE__")
+_TOKENS = ("__VERSION__", "__SCHEMA_VERSION__", "__N_NODES__", "__N_EDGES__", "__GRAPH_DATA__")
 _TOKEN_RE = re.compile("|".join(re.escape(t) for t in _TOKENS))
 
 
 def generate(graph: dict) -> str:
+    # The template references D3 via a relative <script src> to the sibling
+    # vendored copy (ID-224); assert it is present so a missing vendor file fails
+    # generation rather than silently producing a broken page.
     if not D3_VENDOR.exists():
         raise FileNotFoundError(f"{D3_VENDOR.name} not found — it should be committed to the repo.")
-    d3_src = D3_VENDOR.read_text(encoding="utf-8")
     graph_data = json.dumps(graph, ensure_ascii=False, separators=(",", ":"))
     replacements = {
         "__VERSION__": graph.get("source_version", ""),
@@ -404,7 +408,6 @@ def generate(graph: dict) -> str:
         "__N_NODES__": str(len(graph.get("nodes", []))),
         "__N_EDGES__": str(len(graph.get("edges", []))),
         "__GRAPH_DATA__": graph_data,
-        "__D3_INLINE__": d3_src,
     }
     # Single-pass substitution: re.sub does not rescan replacement values, so a
     # replacement that contains another token cannot cause cross-contamination.

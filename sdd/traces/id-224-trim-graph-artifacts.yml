@@ -1,0 +1,106 @@
+id: ID-224
+title: "Trim the committed graph artifacts (D3 duplication, null-field bloat)"
+trigger: >
+  The doc-graph pipeline committed D3 twice: gen_graph_viz.py inlined the 279 KB
+  d3.v7.min.js into a 354 KB graph_viz.html while the same file was also committed
+  standalone in _data/graph/. The golden --check guarded that 354 KB file whose
+  only meaningful delta was the ~60 KB data slice. graph.json additionally carried
+  "condition": null on all 156 declares edges (always null, read by nothing). The
+  --check golden artifacts tracked a static third-party blob and null padding
+  instead of real API changes. Sequenced first in the Documentation Graph epic so
+  the trim lands before ID-221's Fixes E/F + link metadata inflate the artifacts.
+source_items:
+  - ID-224
+audience:
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Documentation Graph & Feature Generation / ID-224"
+        read_type: gate
+        extract: "Two cleanups, schema stays 1.2: stop double-storing D3 (pick one approach, weighing the open-without-server rationale) and drop null/derivable keys. Sequenced before ID-221's E/F."
+        outcome: ok
+      - file: scripts/gen_graph_viz.py
+        section: "_TEMPLATE __D3_INLINE__ slot + generate()"
+        read_type: gate
+        extract: "D3_VENDOR is read_text()'d and inlined via the __D3_INLINE__ token. The standalone copy is the generator's source and is not loaded by any docs page directly."
+        outcome: ok
+      - file: scripts/gen_graph.py
+        section: "declares-edge emission (condition: None)"
+        read_type: gate
+        extract: "condition: None is emitted on every declares edge and never set to a non-null value; dropping the key is omit-when-null."
+        outcome: ok
+      - file: sdd/rfcs/rfc-0012-doc-graph-model.md
+        section: "edge-attrs table (declares: condition: prd URI | null)"
+        read_type: reference
+        extract: "RFC documents condition as a logical attribute of declares for the future 1.3 model (ID-140 dialect-conditional caps). Absent == null is a JSON convention; formalizing null-omission belongs to ID-221's 050-doc-graph-model spec, so leave the RFC untouched here."
+        outcome: ok
+      - file: mkdocs.yml
+        section: "docs_dir / plugins (no exclude_docs, no macros)"
+        read_type: reference
+        extract: "No exclude rule and no mkdocs-macros plugin, so _data/graph/ is copied verbatim to the built site — a relative <script src> to the sibling d3 will resolve on the live site, not just the repo."
+        outcome: ok
+  - id: design
+    name: Design (D3 strategy decision)
+    steps:
+      - file: scripts/gen_graph_viz.py
+        section: "module docstring (open-without-server rationale)"
+        read_type: reference
+        extract: "User chose: reference the vendored sibling via relative <script src> (not CDN). D3 committed once, stays offline-capable from the repo/site; only cost is single-file emailability of the HTML, acceptable for a docs artifact."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/gen_graph_viz.py
+        section: "_TEMPLATE / _TOKENS / generate()"
+        read_type: gate
+        extract: "Replaced the inline <script>__D3_INLINE__</script> with a relative src to ../_data/graph/d3.v7.min.js; removed __D3_INLINE__ from _TOKENS and replacements; kept D3_VENDOR.exists() as an integrity guard; updated the docstring."
+        outcome: ok
+      - file: scripts/gen_graph.py
+        section: "declares-edge dict"
+        read_type: gate
+        extract: "Dropped the condition: None key; added a comment noting omit-when-null and the future 1.3 conditional-declares path."
+        outcome: ok
+      - file: docs-src/explanation/graph-ir.md
+        section: "self-contained claim"
+        read_type: reference
+        extract: "Softened 'self-contained' to 'runs fully in the browser, no server or build step' since D3 now loads as a sibling asset."
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_gen_graph_viz.py
+        section: "test_generate_raises_on_token_contamination"
+        read_type: gate
+        extract: "Repointed the contamination probe from the removed __D3_INLINE__ token to the surviving __GRAPH_DATA__ token so the post-substitution guard stays exercised. Golden + d3-vendor-missing tests pass unchanged after regeneration."
+        outcome: ok
+      - file: tests/scripts/test_gen_graph.py
+        section: "test_graph_schema (condition assertion)"
+        read_type: gate
+        extract: "Added: no edge may carry a present-and-null condition (allows a future non-null value, forbids null padding). schema_version == 1.2 assertion unchanged."
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: docs-src/explanation/graph_viz.html
+        section: "(regenerated) <script src> + size"
+        read_type: verify
+        extract: "hatch run gen-graph + gen-graph-viz: graph_viz.html 354 KB -> 72 KB, references the sibling; graph.json has zero condition/null keys. mkdocs build --strict publishes _data/graph/d3.v7.min.js; a headless chromium render drew 148 node groups, confirming D3 loads from the sibling (a 404 would yield zero)."
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / artifact regen + BACKLOG completion"
+        read_type: verify
+        extract: "graph.json + graph_viz.html regenerated; ID-224 moved to BACKLOG-DONE; gen-backlogid bumped backlogid.json ID 219 -> 224. preflight --check gates (gen-graph, gen-graph-viz) pass on the regenerated artifacts."
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience derived rule"
+        read_type: verify
+        extract: "audience is only contributor.tooling (no user.*), and the docs-site visualization renders identically, so the CHANGELOG-required rule does not fire — no CHANGELOG entry."
+        outcome: ok
