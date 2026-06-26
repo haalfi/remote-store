@@ -29,6 +29,43 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   § 7. Contributor-only audience, so no CHANGELOG entry per the trace-schema
   derived rule.
 
+- [x] **ID-221 — Doc-graph model spec + Phase-1 graph accuracy/completeness fixes**
+  spec: RFC-0012 → [050-doc-graph-model.md](specs/050-doc-graph-model.md) · effort: L · audience: contributor.tooling
+  `graph.json` misrepresented the API: backends behind private bases had no path
+  to `Backend`, the `Store`/`AsyncStore` class nodes were missing (orphaning their
+  method nodes), packages and classes carried no containment edges, the two ABCs
+  and `SyncBackendAdapter` all posed as capability-declaring backends, and nodes
+  carried no link to their governing authority. Wrote the implementation spec
+  first (the traceability target), then landed the generator fixes at **schema
+  1.3**:
+  - **Spec [`050-doc-graph-model.md`](specs/050-doc-graph-model.md)** (prefix
+    `DGM`): translates RFC-0012 into concrete obligations — in-scope vs deferred
+    node/edge kinds, the `abc`/`backend`/`facade` role taxonomy, inherits-via-MRO,
+    facade `declares` suppression, the `Store` nodes, `contains` edges, the
+    `spec`/`doc` link metadata, the documented `kind_of`-vs-`kind` extra-node
+    deviation, the omit-when-null rule (formalizing ID-224), the `--check` CI
+    contract, and a per-clause test traceability table.
+  - **Fix A (finish ABC classification):** the two ABCs were still `role:backend`
+    (they carry a value-less `CAPABILITIES: ClassVar` annotation, so the Griffe
+    member-name check misclassified them). Detection now resolves the runtime
+    value → `Backend`/`AsyncBackend` are `role:abc`.
+  - **Fix B (inherits):** walk the MRO to the nearest in-graph ancestor, so
+    `S3`/`S3PyArrow` (`_S3Base`) and `SQLBlob`/`SQLQuery` (`_SQLAlchemyBaseBackend`)
+    reach `Backend` (inherits 10 → 14).
+  - **Fix C (facade):** `SyncBackendAdapter` re-roled `backend → facade`; its 14
+    `declares` edges suppressed (driven off `role`, not a derivable boolean field).
+  - **Fix D (Store nodes):** added `cls:…Store` / `cls:…AsyncStore` (`role:facade`)
+    so their method nodes are no longer orphaned.
+  - **Fix E/F (contains):** `package → class` and `class → method` edges (84 new).
+  - **Link metadata:** each class node carries `spec` (governing spec) and `doc`
+    (API docs page), repo-relative and asserted-to-exist; methods/edges derive
+    theirs via the `contains` edge. Enables ID-223's deep links.
+  - Schema **1.2 → 1.3**; `graph.json` + `graph_viz.html` regenerated; golden test
+    extended with one test per `DGM` clause (write-fail-fix). ID-224's hygiene kept
+    the diff to real API changes (no null/derivable keys).
+  Audience is tooling-only (foundation for ID-222/223), so no CHANGELOG entry per
+  the trace-schema derived rule.
+
 - [x] **ID-224 — Trim the committed graph artifacts (D3 duplication, null-field bloat)**
   spec: — · effort: S · audience: contributor.tooling
   `gen_graph_viz.py` inlined the 279 KB `d3.v7.min.js` into a **354 KB**

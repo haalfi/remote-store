@@ -1,0 +1,118 @@
+id: ID-221
+title: "Doc-graph model spec + Phase-1 graph accuracy/completeness fixes"
+trigger: >
+  graph.json (schema 1.2) misrepresented the API. Backends behind a private base
+  (_S3Base, _SQLAlchemyBaseBackend) had no inherits path to Backend because the
+  generator inspected only direct __bases__. The Store/AsyncStore class nodes were
+  absent, so their gated-method nodes were orphaned. Package and class nodes
+  carried no containment edges. SyncBackendAdapter declared the universal
+  capability set as 14 declares edges, posing as a backend. And the two ABCs were
+  still role:backend — the supposedly-shipped ABC-classification fix had silently
+  regressed when Backend/AsyncBackend gained a value-less CAPABILITIES annotation.
+  Foundation of the Documentation Graph epic; blocks ID-222 and ID-223.
+source_items:
+  - ID-221
+  - ID-224
+audience:
+  - contributor.tooling
+expected_ripples:
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+surprising_ripples:
+  # The task brief asserted "the ABC-classification fix is already shipped", but
+  # the committed graph had Backend/AsyncBackend as role:backend. _collect_abc_classes
+  # returned [] because both ABCs now carry a CAPABILITIES: ClassVar *annotation*
+  # (value None), which the Griffe member-name guard treated as a backend marker.
+  # BACKLOG ID-222 ("once Fix A/B land") agreed with the artifact, not the brief
+  # (principle 5). Fix A was finished here: role detection now resolves the runtime
+  # value, not the annotation. The regression lived entirely inside gen_graph.py
+  # (already in scope), so it surfaces as a corrected assumption rather than a new
+  # file touched.
+  - scripts/gen_graph.py
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Documentation Graph & Feature Generation / ID-221"
+        read_type: gate
+        extract: "Spec first, then Fixes B-F + link metadata at schema 1.3; open decisions (Fix C mechanism, SQLQuery MRO, async MRO) to resolve in the spec. ID-222's 'once Fix A/B land' corrected the brief's 'ABC fix shipped'."
+        outcome: misleading
+      - file: sdd/rfcs/rfc-0012-doc-graph-model.md
+        section: "Node taxonomy, Edge taxonomy, Determinism"
+        read_type: gate
+        extract: "abc/backend/facade are listed class roles; contains is package/module/class → child; declares omits condition when unconditional; promote-to-node rule bounds what becomes a node."
+        outcome: ok
+      - file: scripts/gen_graph.py
+        section: "_collect_abc_classes / _walk_module / second-pass __bases__ loop"
+        read_type: gate
+        extract: "abc_classes resolved to [] (Backend has a CAPABILITIES annotation member); inherits only inspected direct __bases__; declares emitted for every class with a runtime CAPABILITIES set including SyncBackendAdapter."
+        outcome: ok
+      - file: docs-src/_data/graph/graph.json
+        section: "class node roles (committed 1.2)"
+        read_type: reference
+        extract: "All 16 class nodes were role:backend — confirming the ABC and facade roles were not in the artifact, contra the brief."
+        outcome: misleading
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/047-docs-framework-tooling.md
+        section: "Scope / Prefix / DOCFRAME-001 (structure)"
+        read_type: reference
+        extract: "Structural model for a build-tooling spec: Scope, Prefix, Author-facing surface, Related decisions, Tracks, then NNN-prefixed Invariant clauses."
+        outcome: ok
+      - file: sdd/specs/050-doc-graph-model.md
+        section: "DGM-001 .. DGM-013 (full)"
+        read_type: gate
+        extract: "Authored: schema 1.3 shape, in-scope vs deferred node/edge kinds, role taxonomy + ABC-by-runtime-value detection, inherits-via-MRO, facade declares-suppression off role, Store nodes, contains, link metadata (file/page granularity + derivation), kind_of deviation, omit-when-null, --check contract, per-clause test table."
+        outcome: ok
+      - file: docs-src/reference/api/store.md
+        section: "::: directives + aio/adapters.md"
+        read_type: reference
+        extract: "Confirmed every API docs page exists for the curated class→doc map; mkdocstrings anchors use the public import path, motivating page-granularity link metadata with consumer-side fragment derivation."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/gen_graph.py
+        section: "_class_role / _CLASS_LINKS / _assert_link_targets_exist"
+        read_type: gate
+        extract: "ABC detected as Backend/AsyncBackend with runtime CAPABILITIES is None; facades by qname; curated class→(spec,doc) table asserted-to-exist; S3Boto3Backend exempt."
+        outcome: ok
+      - file: scripts/gen_graph.py
+        section: "class-node loop + second pass (declares/mirrors/inherits)"
+        read_type: gate
+        extract: "Unified class loop adds Store/AsyncStore, stamps role + link metadata; declares skipped for role==facade; inherits via inspect.getmro to nearest in-graph ancestor (single edge); contains emitted package→class and class→method; schema bumped 1.2→1.3."
+        outcome: ok
+      - file: scripts/gen_graph_viz.py
+        section: "schema-compat docstring + EDGE_CFG"
+        read_type: reference
+        extract: "Doc note extended to 1.3; added a contains EDGE_CFG entry (default-off, like declares); spec/doc surface in the generic detail-panel rows. Role-aware rendering deferred to ID-223."
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_gen_graph.py
+        section: "test_graph_schema + DGM-004..009 tests"
+        read_type: gate
+        extract: "schema assertion 1.2→1.3; added contains to required edge kinds; one @pytest.mark.spec('DGM-NNN') test per obligation (abc role, concrete-backend-only, inherits-MRO, facade suppression, Store nodes, contains class→method/package→class, link-metadata drift guard)."
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: docs-src/_data/graph/graph.json
+        section: "(regenerated) counts"
+        read_type: verify
+        extract: "175 nodes / 386 edges: class 18 (13 backend, 3 facade, 2 abc); declares 156→142 (adapter's 14 suppressed); inherits 10→14; contains 84 new. gen-graph --check and gen-graph-viz --check pass."
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / __mirror__ + version-number + backlog-item rows"
+        read_type: verify
+        extract: "gen_graph.py + tests in step; ID-221 moved to BACKLOG-DONE; gen-backlogid run (confirmed no-op — ID-221 is below the high-water-mark 224, so backlogid.json was unchanged); RFC top JSON example schema_version refreshed to 1.3; artifacts regenerated."
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience derived rule"
+        read_type: verify
+        extract: "audience is contributor.tooling only (no user.*); spec 050 is a tooling spec, not a user-facing framework, and the user-facing viz payoff is ID-222/223 — so the CHANGELOG-required rule does not fire."
+        outcome: ok
