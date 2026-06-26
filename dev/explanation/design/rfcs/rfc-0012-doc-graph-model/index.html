@@ -10883,8 +10883,8 @@ disjunction.</p>
 <tr>
 <td><code>declares</code></td>
 <td>backend → capability</td>
-<td><code>condition: prd URI \| null</code></td>
-<td><code>null</code> for unconditional</td>
+<td><code>condition: prd URI</code> (omitted when unconditional)</td>
+<td>Key present only when conditional; absent == unconditional</td>
 </tr>
 <tr>
 <td><code>gates</code></td>
@@ -10967,8 +10967,8 @@ disjunction.</p>
 <tr>
 <td><code>raises</code></td>
 <td>method → error</td>
-<td><code>condition: prd URI \| null</code></td>
-<td>—</td>
+<td><code>condition: prd URI</code> (omitted when unconditional)</td>
+<td>Key present only when conditional; absent == unconditional</td>
 </tr>
 </tbody>
 </table>
@@ -11004,7 +11004,7 @@ no schema change.</p>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>                     cap:MOVE, cap:COPY, cap:ATOMIC_WRITE, cap:METADATA,
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>                     cap:USER_METADATA, cap:SEEKABLE_READ, cap:LAZY_READ,
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>                     cap:WRITE_RESULT_NATIVE
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>                     (all condition: null)
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>                     (condition omitted — all unconditional)
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>  ↔ mirrors          (no async S3 backend exists yet; edge applies once one is added)
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>mtd:remote_store.Store.write

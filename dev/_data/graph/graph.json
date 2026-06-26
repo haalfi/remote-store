@@ -1,937 +1,781 @@
 {
   "edges": [
     {
-      "condition": null,
       "dst": "cap:ATOMIC_MOVE",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:COPY",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:DELETE",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:GLOB",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:LAZY_READ",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:LIST",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:MOVE",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:SEEKABLE_READ",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:USER_METADATA",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE_RESULT_NATIVE",
       "kind": "declares",
       "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:COPY",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:DELETE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:GLOB",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LAZY_READ",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LIST",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:MOVE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:USER_METADATA",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE_RESULT_NATIVE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
     },
     {
-      "condition": null,
       "dst": "cap:COPY",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
     },
     {
-      "condition": null,
       "dst": "cap:DELETE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LAZY_READ",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LIST",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
     },
     {
-      "condition": null,
       "dst": "cap:MOVE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE_RESULT_NATIVE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._graph.backend.GraphBackend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_MOVE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:COPY",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:DELETE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LAZY_READ",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LIST",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:MOVE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:SEEKABLE_READ",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:USER_METADATA",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE_RESULT_NATIVE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._azure.AzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:COPY",
       "kind": "declares",
       "src": "cls:remote_store.backends._azure.AzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:DELETE",
       "kind": "declares",
       "src": "cls:remote_store.backends._azure.AzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:GLOB",
       "kind": "declares",
       "src": "cls:remote_store.backends._azure.AzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LAZY_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._azure.AzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LIST",
       "kind": "declares",
       "src": "cls:remote_store.backends._azure.AzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._azure.AzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:MOVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._azure.AzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._azure.AzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:USER_METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._azure.AzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._azure.AzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE_RESULT_NATIVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._azure.AzureBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LAZY_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._http.ReadOnlyHttpBackend"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._http.ReadOnlyHttpBackend"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._http.ReadOnlyHttpBackend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_MOVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._local.LocalBackend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._local.LocalBackend"
     },
     {
-      "condition": null,
       "dst": "cap:COPY",
       "kind": "declares",
       "src": "cls:remote_store.backends._local.LocalBackend"
     },
     {
-      "condition": null,
       "dst": "cap:DELETE",
       "kind": "declares",
       "src": "cls:remote_store.backends._local.LocalBackend"
     },
     {
-      "condition": null,
       "dst": "cap:GLOB",
       "kind": "declares",
       "src": "cls:remote_store.backends._local.LocalBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LAZY_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._local.LocalBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LIST",
       "kind": "declares",
       "src": "cls:remote_store.backends._local.LocalBackend"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._local.LocalBackend"
     },
     {
-      "condition": null,
       "dst": "cap:MOVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._local.LocalBackend"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._local.LocalBackend"
     },
     {
-      "condition": null,
       "dst": "cap:SEEKABLE_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._local.LocalBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._local.LocalBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE_RESULT_NATIVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._local.LocalBackend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_MOVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._memory.MemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._memory.MemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:COPY",
       "kind": "declares",
       "src": "cls:remote_store.backends._memory.MemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:DELETE",
       "kind": "declares",
       "src": "cls:remote_store.backends._memory.MemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LIST",
       "kind": "declares",
       "src": "cls:remote_store.backends._memory.MemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._memory.MemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:MOVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._memory.MemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._memory.MemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:SEEKABLE_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._memory.MemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:USER_METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._memory.MemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._memory.MemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE_RESULT_NATIVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._memory.MemoryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3.S3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:COPY",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3.S3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:DELETE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3.S3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:GLOB",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3.S3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:LAZY_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3.S3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:LIST",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3.S3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3.S3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:MOVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3.S3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3.S3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:SEEKABLE_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3.S3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:USER_METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3.S3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3.S3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE_RESULT_NATIVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3.S3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:COPY",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:DELETE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:GLOB",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:LAZY_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:LIST",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:MOVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:SEEKABLE_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:USER_METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE_RESULT_NATIVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_boto3.S3Boto3Backend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
     },
     {
-      "condition": null,
       "dst": "cap:COPY",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
     },
     {
-      "condition": null,
       "dst": "cap:DELETE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
     },
     {
-      "condition": null,
       "dst": "cap:GLOB",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LAZY_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LIST",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
     },
     {
-      "condition": null,
       "dst": "cap:MOVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
     },
     {
-      "condition": null,
       "dst": "cap:SEEKABLE_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE_RESULT_NATIVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
     },
     {
-      "condition": null,
       "dst": "cap:COPY",
       "kind": "declares",
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
     },
     {
-      "condition": null,
       "dst": "cap:DELETE",
       "kind": "declares",
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LAZY_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LIST",
       "kind": "declares",
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
     },
     {
-      "condition": null,
       "dst": "cap:MOVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
     },
     {
-      "condition": null,
       "dst": "cap:SEEKABLE_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE_RESULT_NATIVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_MOVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
     },
     {
-      "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
     },
     {
-      "condition": null,
       "dst": "cap:COPY",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
     },
     {
-      "condition": null,
       "dst": "cap:DELETE",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
     },
     {
-      "condition": null,
       "dst": "cap:GLOB",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LIST",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
     },
     {
-      "condition": null,
       "dst": "cap:MOVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
     },
     {
-      "condition": null,
       "dst": "cap:SEEKABLE_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
     },
     {
-      "condition": null,
       "dst": "cap:USER_METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
     },
     {
-      "condition": null,
       "dst": "cap:WRITE_RESULT_NATIVE",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLBlobBackend"
     },
     {
-      "condition": null,
       "dst": "cap:GLOB",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLQueryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:LIST",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLQueryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:METADATA",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLQueryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLQueryBackend"
     },
     {
-      "condition": null,
       "dst": "cap:SEEKABLE_READ",
       "kind": "declares",
       "src": "cls:remote_store.backends._sqlalchemy.SQLQueryBackend"
