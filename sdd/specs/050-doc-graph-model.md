@@ -24,9 +24,10 @@ omit-when-null convention now formalized in DGM-010.
 
 **Tracks:** [ID-221](../BACKLOG-DONE.md) (foundation: schema 1.3) and
 [ID-222](../BACKLOG-DONE.md) (mechanical FEATURES.md projection, which drove the
-1.4 ungated-method-node addition, DGM-014). [ID-223](../BACKLOG.md) (role-aware
-visualization) also consumes the corrected graph and the link metadata defined
-here.
+1.4 ungated-method-node addition, DGM-014). [ID-223](../BACKLOG-DONE.md)
+(role-aware visualization) also consumes the corrected graph and the link
+metadata defined here — `gen_graph_viz.py` reads the roles, `contains` edges,
+and `spec`/`doc` links at 1.4 with no schema change.
 
 ---
 
@@ -400,7 +401,9 @@ The following are explicitly out of scope and tracked elsewhere:
   a per-argument predicate.
 - **Ungated `Backend`/`AsyncBackend` methods.** DGM-014 emits ungated nodes for
   the `Store`/`AsyncStore` facades only; the ABCs' ungated surface has no consumer.
-- **Role-aware visualization, deep links, faceted filtering.** ID-223 consumes
-  the `contains` edges and the `spec`/`doc` link metadata.
 - **The deferred node/edge kinds of DGM-002/DGM-003**, each added under its own
   schema bump when a consumer needs it.
+
+(Role-aware visualization, deep links, and faceted filtering — formerly deferred
+here — shipped in ID-223 as a pure consumer of the 1.4 graph; see
+`scripts/gen_graph_viz.py`.)

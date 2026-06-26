@@ -25,6 +25,13 @@ def gen_graph_viz_module():
     return gen_graph_viz
 
 
+@pytest.fixture(scope="module")
+def viz_html(gen_graph_viz_module):
+    """The generated page from the committed graph (the real 1.4 artifact)."""
+    graph = json.loads((ROOT / "docs-src" / "_data" / "graph" / "graph.json").read_bytes())
+    return gen_graph_viz_module.generate(graph)
+
+
 @pytest.mark.os_sensitive
 def test_graph_viz_html_is_up_to_date(gen_graph_viz_module):
     """Committed graph_viz.html must match a fresh generate() call.
@@ -90,3 +97,108 @@ def test_d3_script_src_resolves_to_vendored_sibling(gen_graph_viz_module):
         f"D3 <script src> {srcs[0]!r} resolves to {resolved}, not the vendored {gen_graph_viz_module.D3_VENDOR}"
     )
     assert resolved.exists(), f"referenced D3 asset is missing: {resolved}"
+
+
+# ---------------------------------------------------------------------------
+# ID-223: role-aware, explorable viz. These pin the wiring of each feature so a
+# silent regression fails a targeted unit test, not only the byte-level golden.
+# Behaviour (clicks, force layout, facet composition) is verified out-of-band in
+# a headless browser; here we assert the generated page carries the machinery.
+# ---------------------------------------------------------------------------
+
+
+def test_repo_blob_base_single_sourced_from_pyproject(gen_graph_viz_module):
+    """Deep-link base is read from pyproject [project.urls].Repository, not hardcoded."""
+    base = gen_graph_viz_module._repo_blob_base()
+    assert base.startswith("https://github.com/"), base
+    assert base.endswith("/blob/master/"), base
+    assert "remote-store" in base, base
+
+
+def test_blob_base_injected_and_no_token_survives(gen_graph_viz_module, viz_html):
+    """The page embeds the resolved blob base and leaves no __BLOB_BASE__ token."""
+    base = gen_graph_viz_module._repo_blob_base()
+    assert f'const BLOB_BASE = "{base}"' in viz_html
+    assert "__BLOB_BASE__" not in viz_html
+
+
+def test_role_aware_node_rendering(viz_html):
+    """Class nodes are coloured by role (DGM-004); Store/AsyncStore stand out by URI."""
+    assert "const ROLE_COLOR = {backend:" in viz_html
+    for role in ("backend", "abc", "facade"):
+        assert f"{role}:" in viz_html
+    assert "function nodeColor(" in viz_html
+    assert "function isStoreFacade(" in viz_html
+    # Store/AsyncStore are distinguished by URI label, not a separate role (DGM-007).
+    assert r"/\.(Async)?Store$/.test(n.id)" in viz_html
+    assert ".node.store circle" in viz_html
+
+
+def test_method_collapse_and_contains_clustering(viz_html):
+    """Methods collapse into their class by default; contains drives clustering (DGM-008)."""
+    assert "const expandedClasses" in viz_html
+    assert "const classOfMethod" in viz_html
+    assert "const methodsOfClass" in viz_html
+    # collapse rule: a method is hidden unless its class is expanded
+    assert "expandedClasses.has(c)" in viz_html
+    # structural contains links cluster methods-in-class and classes-in-package
+    assert "function computeActiveLinks(" in viz_html
+    assert "Expand all" in viz_html
+    assert "Collapse all" in viz_html
+
+
+def test_gate_label_disambiguation(viz_html):
+    """Gate labels are disambiguated as Class.method via gates+contains (DGM-008)."""
+    assert "const reqLabel" in viz_html
+    assert "gate_depth" in viz_html
+    assert "(depth)" in viz_html
+
+
+def test_detail_panel_deep_links(viz_html):
+    """Node detail shows deep links to source, spec, and the docs page (DGM-009)."""
+    assert "function deepLinks(" in viz_html
+    assert "function docHref(" in viz_html
+    for label in ("Source", "Spec", "Docs"):
+        assert f"label:'{label}'" in viz_html
+    # source/spec go to GitHub blob; docs page stays site-relative
+    assert "BLOB_BASE+n.file" in viz_html
+    assert "docHref(cls.doc)" in viz_html
+    assert 'target="_blank"' in viz_html
+
+
+def test_edge_detail_panel(viz_html):
+    """Selecting an *edge* shows its metadata incl. mirror capability delta."""
+    assert "function showEdgeDetail(" in viz_html
+    assert "l.capability_delta" in viz_html
+    assert "async only" in viz_html
+    assert "sync only" in viz_html
+    # edge endpoints are cross-references that select the endpoint node
+    assert "function selectNodeById(" in viz_html
+    assert 'class="xref"' in viz_html
+
+
+def test_faceted_filter_controls(viz_html):
+    """Composable facets: text search, node kind/role, edge kind, runtime, capability, dependency."""
+    for control_id in (
+        "search",
+        "node-legend",
+        "role-legend",
+        "edge-legend",
+        "runtime-legend",
+        "cap-legend",
+        "iso-toggle",
+    ):
+        assert f'id="{control_id}"' in viz_html, control_id
+    for state in (
+        "visibleNodeKinds",
+        "visibleRoles",
+        "visibleEdgeKinds",
+        "visibleRuntimes",
+        "selectedCaps",
+        "searchQuery",
+    ):
+        assert state in viz_html, state
+    # capability facet keeps a capability's gate/declare chain; dependency facet
+    # isolates a directed up/down cone (not an undirected closure that leaks).
+    assert "function capabilityKeep(" in viz_html
+    assert "const walk=(forward)=>" in viz_html
