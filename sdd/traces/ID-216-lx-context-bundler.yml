@@ -7,7 +7,7 @@ source_items:
 audience:
   - contributor.process
   - contributor.tooling
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -65,7 +65,7 @@ phases:
       - file: CONTRIBUTING.md
         section: "Development Setup"
         read_type: reference
-        extract: "Land an optional subsection with go install + three lx invocations (skeleton, full source, diff); state explicitly: not a dependency, not in CI/docs build"
+        extract: "Land an optional subsection with go install + two lx invocations (skeleton, diff); state explicitly: not a dependency, not in CI/docs build"
       - file: sdd/BACKLOG-DONE.md
         section: "Unreleased"
         read_type: reference

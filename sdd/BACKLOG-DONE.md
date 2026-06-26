@@ -22,7 +22,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   bundles that need no ignore file (a whole-repo walk is ~3.7M tokens, dominated by
   `tests/` and `sdd/`, and is rarely the right context anyway); this revises the
   item's tentative "likely an `.lxignore`" hypothesis. Landed a short optional
-  subsection in `CONTRIBUTING.md` § Development Setup with three invocations.
+  subsection in `CONTRIBUTING.md` § Development Setup, framed around the skeleton
+  view (two `lx` commands: skeleton and changed-files bundle).
   Trial recorded in
   [`research/research-lx-llms-context-tooling.md`](research/research-lx-llms-context-tooling.md)
   § 7. Contributor-only audience, so no CHANGELOG entry per the trace-schema

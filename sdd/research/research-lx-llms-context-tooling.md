@@ -163,8 +163,9 @@ Findings:
   `.lxignore`" hypothesis.
 
 Outcome: a short, optional subsection landed in `CONTRIBUTING.md` §
-Development Setup documenting the three invocations above; `lx` is **not** a
-project dependency, **not** installed by any script, and **not** in CI.
+Development Setup, framed around the skeleton view — two `lx` commands (the
+`-u -Y` skeleton and a `git diff | lx -c` changed-files bundle); `lx` is **not**
+a project dependency, **not** installed by any script, and **not** in CI.
 
 ## 8. References
 
