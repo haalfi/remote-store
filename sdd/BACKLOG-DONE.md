@@ -24,8 +24,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     the graph draws.
   - **Null keys dropped:** `gen_graph.py` no longer emits `"condition": null` on
     `declares` edges (156 of them, always null, read by nothing). Absent ==
-    unconditional, the standard JSON convention; RFC-0012 left untouched (the
-    null-omission rule will be formalized by ID-221's `050-doc-graph-model`).
+    unconditional, the standard JSON convention; RFC-0012's edge-taxonomy now
+    documents that omission on the `declares`/`raises` rows (reconciled during PR
+    review so the emitter and spec agree at this commit, per principles 3 + 5).
     `test_gen_graph.py` now asserts no edge carries a present-and-null `condition`.
   - Goal met: the `--check` golden artifacts now track real API changes, not a
     static third-party library blob.

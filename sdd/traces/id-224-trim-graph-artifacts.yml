@@ -17,7 +17,14 @@ expected_ripples:
   - sdd/backlogid.json
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
-review_rounds: 0
+surprising_ripples:
+  # PR review caught that dropping condition: null put the emitter in a
+  # code-vs-spec conflict with RFC-0012's edge-taxonomy ("null for unconditional")
+  # — the ripple-check table does not flag the RFC as a dependency of graph.json
+  # serialization changes. Reconciled by documenting the omit-when-null convention
+  # in the RFC (principles 3 + 5), not deferred to ID-221.
+  - sdd/rfcs/rfc-0012-doc-graph-model.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -103,4 +110,17 @@ phases:
         section: "audience derived rule"
         read_type: verify
         extract: "audience is only contributor.tooling (no user.*), and the docs-site visualization renders identically, so the CHANGELOG-required rule does not fire — no CHANGELOG entry."
+        outcome: ok
+  - id: fix
+    name: Fix (PR #867 review)
+    steps:
+      - file: sdd/rfcs/rfc-0012-doc-graph-model.md
+        section: "Edge taxonomy (declares / raises rows) + S3 worked example"
+        read_type: gate
+        extract: "Review: omitting condition: null left the emitter contradicting the RFC, which the code comment cited as justification. Reconciled in-PR (principles 3+5): documented absent==unconditional on the declares and raises rows and changed the worked example from '(all condition: null)' to '(condition omitted — all unconditional)'; fixed the gen_graph.py comment to cite the actual section."
+        outcome: ok
+      - file: tests/scripts/test_gen_graph_viz.py
+        section: "test_d3_script_src_resolves_to_vendored_sibling"
+        read_type: gate
+        extract: "Review: the relative <script src> is a runtime dependency no test guarded. Added a test resolving the emitted src against OUT.parent and asserting it equals D3_VENDOR and exists — fails fast on a vendored-file or page-dir rename. The mkdocs build --strict docs-gate separately proves the asset is copied to site/."
         outcome: ok

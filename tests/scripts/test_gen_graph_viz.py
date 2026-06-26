@@ -6,6 +6,7 @@ Verifies that the committed graph_viz.html matches a fresh generate() call.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -64,3 +65,28 @@ def test_generate_raises_on_token_contamination(gen_graph_viz_module):
     }
     with pytest.raises(RuntimeError, match="survived substitution"):
         gen_graph_viz_module.generate(graph)
+
+
+@pytest.mark.os_sensitive
+def test_d3_script_src_resolves_to_vendored_sibling(gen_graph_viz_module):
+    """The emitted ``<script src>`` must resolve to the committed vendored D3 file.
+
+    D3 is referenced (not inlined) as a sibling asset (ID-224), so the page has a
+    hard runtime dependency on that file being served next to it. Resolve the
+    emitted relative src against the page's committed location and assert it is the
+    vendored ``D3_VENDOR`` — a rename of either the vendored file or the
+    ``explanation/`` page dir would 404 the viz, and this fails the suite first.
+    The ``mkdocs build --strict`` docs-gate separately proves the asset is copied
+    into ``site/``.
+    """
+    graph = json.loads((ROOT / "docs-src" / "_data" / "graph" / "graph.json").read_bytes())
+    html = gen_graph_viz_module.generate(graph)
+
+    srcs = re.findall(r'<script\s+src="([^"]+)"></script>', html)
+    assert len(srcs) == 1, f"expected exactly one external <script src>, found {srcs}"
+
+    resolved = (gen_graph_viz_module.OUT.parent / srcs[0]).resolve()
+    assert resolved == gen_graph_viz_module.D3_VENDOR.resolve(), (
+        f"D3 <script src> {srcs[0]!r} resolves to {resolved}, not the vendored {gen_graph_viz_module.D3_VENDOR}"
+    )
+    assert resolved.exists(), f"referenced D3 asset is missing: {resolved}"
