@@ -360,6 +360,42 @@ _ASYNC_BACKEND_GATING: dict[str, str] = {
 }
 
 
+def _emit_ungated_method_nodes(
+    griffe_cls: griffe.Class,
+    gated_names: set[str],
+    nodes: list[dict[str, Any]],
+) -> None:
+    """Emit a method node for every ungated public method of a facade (DGM-014).
+
+    The Store/AsyncStore facades expose an "always available" surface (``exists``,
+    ``child``, ``supports``, …) that no capability gates. Schema 1.3 emitted only
+    gated methods, so that surface was not derivable from the graph. At 1.4 each
+    public, non-gated function member becomes a method node carrying ``gated:
+    False``; gated method nodes keep emitting from the ``_GATING`` loops with no
+    ``gated`` key (absent ⇒ gated, the omit-when-default convention of DGM-010).
+    Ungated methods carry no ``req:``/``gates``/``of`` edges; their ``contains``
+    edge is added by the generic class→method pass.
+    """
+    for name in sorted(griffe_cls.members):
+        if name.startswith("_") or name in gated_names:
+            continue
+        member = griffe_cls.members[name]
+        if not isinstance(member, griffe.Function):
+            continue
+        nodes.append(
+            {
+                "id": f"mtd:{griffe_cls.path}.{name}",
+                "kind": "method",
+                "summary": name,
+                "is_abstract": "abstractmethod" in member.labels,
+                "is_async": "async" in member.labels,
+                "file": _rel_path(member.filepath),
+                "line": member.lineno or 0,
+                "gated": False,
+            }
+        )
+
+
 def build_graph() -> dict[str, Any]:
     """Build and return the full graph dict."""
     pyproject = _load_pyproject()
@@ -541,6 +577,9 @@ def build_graph() -> dict[str, Any]:
     edges.append({"kind": "gates", "src": _gfi_req2, "dst": _gfi_mtd})
     edges.append({"kind": "of", "src": _gfi_req2, "dst": f"cap:{Capability.LIST.name}", "index": 0})
 
+    # Ungated Store methods (DGM-014): the always-available facade surface.
+    _emit_ungated_method_nodes(store_cls, set(gating), nodes)
+
     # --- AsyncStore method nodes + gates/of edges ---
     async_store_cls = pkg["aio"]["_async_store"]["AsyncStore"]
     async_gating = _async_store_gating()
@@ -577,6 +616,9 @@ def build_graph() -> dict[str, Any]:
     nodes.append({"id": _a_gfi_req2, "kind": "requirement", "mode": "all"})
     edges.append({"kind": "gates", "src": _a_gfi_req2, "dst": _a_gfi_mtd})
     edges.append({"kind": "of", "src": _a_gfi_req2, "dst": f"cap:{Capability.LIST.name}", "index": 0})
+
+    # Ungated AsyncStore methods (DGM-014): the always-available facade surface.
+    _emit_ungated_method_nodes(async_store_cls, set(async_gating), nodes)
 
     # --- Backend method nodes + gates/of edges ---
     backend_cls = pkg["_backend"]["Backend"]
@@ -672,7 +714,7 @@ def build_graph() -> dict[str, Any]:
     return {
         "edges": edges,
         "nodes": nodes,
-        "schema_version": "1.3",
+        "schema_version": "1.4",
         "snapshot": version,
         "source_version": version,
     }

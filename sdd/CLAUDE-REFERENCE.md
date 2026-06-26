@@ -108,7 +108,12 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | **Store method**           | README Store API table + comparison method count,         |
 |                            | `__init__.py` `__all__`, README examples table (if new    |
 |                            | example added), `examples/`, spec in `sdd/specs/`,        |
-|                            | guides, CHANGELOG                                         |
+|                            | guides, CHANGELOG. If the method is **gated**, see the     |
+|                            | `_GATING` row. If **ungated** (no `_gate()` call), it      |
+|                            | becomes a graph method node with `gated: false` (DGM-014) |
+|                            | → `hatch run gen-graph`, then add Returns/Description to    |
+|                            | `_UNGATED_STORE_DETAILS` in `scripts/gen_features.py`      |
+|                            | (drift-guarded) and `hatch run gen-features`               |
 | **Public API** (`__all__`) | README Store API table, `docs-src/reference/api/*.md` directive |
 |                            | (every `__all__` symbol needs a `:::` entry),             |
 |                            | `docs-src/reference/api/index.md` summary table (every public |

@@ -56,7 +56,7 @@ def test_graph_schema(gen_graph_module):
     with open(ROOT / "pyproject.toml", "rb") as f:
         expected_version = tomllib.load(f)["project"]["version"]
 
-    assert graph["schema_version"] == "1.3"
+    assert graph["schema_version"] == "1.4"
     assert graph["source_version"] == expected_version
     assert graph["snapshot"] == expected_version
 
@@ -611,6 +611,62 @@ def test_class_nodes_carry_link_metadata(gen_graph_module):
         assert "doc" in n, f"class node {n['id']!r} missing 'doc' link metadata"
         assert (ROOT / n["spec"]).exists(), f"{n['id']!r} spec target {n['spec']} does not exist"
         assert (ROOT / n["doc"]).exists(), f"{n['id']!r} doc target {n['doc']} does not exist"
+
+
+@pytest.mark.spec("DGM-014")
+def test_ungated_facade_method_nodes(gen_graph_module):
+    """DGM-014: Store/AsyncStore facades emit their ungated public methods.
+
+    Schema 1.3 emitted only gated methods, so the always-available surface
+    (exists, child, supports, …) was not derivable. At 1.4 each public,
+    non-gated function member of a facade is a method node carrying
+    ``gated: False``; gated method nodes keep emitting with no ``gated`` key
+    (absent ⇒ gated, the omit-when-default convention of DGM-010). Ungated
+    nodes carry no req:/gates/of edges but are contained by their class.
+    """
+    graph = gen_graph_module.build_graph()
+    by_id = {n["id"]: n for n in graph["nodes"]}
+
+    # Representative ungated Store methods are present and flagged.
+    for name in ("exists", "child", "supports", "close", "ping"):
+        uri = f"mtd:remote_store._store.Store.{name}"
+        assert uri in by_id, f"missing ungated method node {uri!r}"
+        assert by_id[uri]["gated"] is False, f"{uri} should carry gated=False"
+
+    # Gated method nodes never carry the gated key (absent ⇒ gated).
+    for n in graph["nodes"]:
+        if n["kind"] == "method":
+            assert n.get("gated") is not True, f"{n['id']!r} should omit gated (absent ⇒ gated)"
+
+    # The ungated set is exactly the facades' public, non-_GATING methods.
+    from remote_store._store import _GATING as STORE_GATING
+
+    store_ungated = {
+        n["id"].removeprefix("mtd:remote_store._store.Store.")
+        for n in graph["nodes"]
+        if n["kind"] == "method" and n["id"].startswith("mtd:remote_store._store.Store.") and n.get("gated") is False
+    }
+    assert store_ungated == {
+        "exists",
+        "is_file",
+        "is_folder",
+        "ping",
+        "close",
+        "child",
+        "unwrap",
+        "resolve",
+        "native_path",
+        "to_key",
+        "supports",
+    }
+    assert store_ungated.isdisjoint(STORE_GATING), "an ungated node overlaps _GATING"
+
+    # Ungated methods carry no gate chain but are contained by their class.
+    contains = {(e["src"], e["dst"]) for e in graph["edges"] if e["kind"] == "contains"}
+    gated_dsts = {e["dst"] for e in graph["edges"] if e["kind"] == "gates"}
+    exists_uri = "mtd:remote_store._store.Store.exists"
+    assert exists_uri not in gated_dsts, "ungated method must have no gates edge"
+    assert ("cls:remote_store._store.Store", exists_uri) in contains
 
 
 @pytest.mark.spec("DGM-002,DGM-003")

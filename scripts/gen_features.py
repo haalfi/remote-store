@@ -59,6 +59,30 @@ _EXTRA_COMMENTS: dict[str, str] = {
 # Extras omitted from the install extras section (dev / build / CI tooling).
 _EXCLUDE_EXTRAS: frozenset[str] = frozenset({"bench", "dev", "docs", "mutate"})
 
+# URI prefixes for the sync Store facade (the Store API projections walk these).
+_STORE_MTD_PREFIX = "mtd:remote_store._store.Store."
+_STORE_REQ_PREFIX = "req:remote_store._store.Store."
+
+# Curated Returns/Description prose for the ungated Store methods. The graph
+# (schema 1.4) owns the *membership* of this set — every Store method node with
+# ``gated == false`` (DGM-014) — but carries no return type or description
+# (DGM-002 defers those), so the prose is curated here and the *set* is
+# drift-guarded against the graph in project_store_api_ungated(). Insertion order
+# is the logical doc order (existence checks, lifecycle, then key/backend access).
+_UNGATED_STORE_DETAILS: dict[str, tuple[str, str, str]] = {
+    "exists": ("exists(path)", "`bool`", "Whether a file exists at the path"),
+    "is_file": ("is_file(path)", "`bool`", "Whether the path resolves to a file (not a folder)"),
+    "is_folder": ("is_folder(path)", "`bool`", "Whether the path resolves to a folder"),
+    "ping": ("ping()", "`None`", "Health check — raises `BackendUnavailable` if unreachable"),
+    "close": ("close()", "`None`", "Release backend resources"),
+    "child": ("child(subpath)", "`Store`", "Scoped sub-store rooted at `subpath`"),
+    "unwrap": ("unwrap(type_hint)", "`T`", "Extract the underlying backend by type"),
+    "resolve": ("resolve(key)", "`ResolutionPlan`", "Resolution plan for a key (type, resolved path, options)"),
+    "native_path": ("native_path(key)", "`str`", "Backend-native path string for a store key"),
+    "to_key": ("to_key(path)", "`str`", "Convert a native path back to a store key"),
+    "supports": ("supports(capability)", "`bool`", "Query whether a capability is active"),
+}
+
 # Override the auto-derived Extra cell for backends whose install story cannot be
 # expressed as a single pip extra (e.g. stdlib-first with optional adapters).
 _EXTRA_CELL_OVERRIDES: dict[str, str] = {
@@ -275,6 +299,126 @@ def project_backends_async_flags(graph: dict) -> str:
     return "\n".join(lines)
 
 
+def _store_gate_lookup(graph: dict) -> tuple[dict[str, list[str]], dict[str, str]]:
+    """Walk ``cap:X ←(of)— req:*.gate —(gates)→ mtd:*`` for the Store facade.
+
+    Returns ``(primary, depth)``:
+    - ``primary`` maps each gating capability name → sorted Store method names
+      gated by it through a ``.gate`` requirement (the method's primary gate).
+    - ``depth`` maps a Store method name → the capability of its ``.gate_depth``
+      secondary requirement (only ``get_folder_info`` → ``LIST`` at 1.4). These
+      become the dual-gate footnote rather than a primary table row.
+    """
+    of_cap: dict[str, str] = {e["src"]: e["dst"].removeprefix("cap:") for e in graph["edges"] if e["kind"] == "of"}
+    primary: dict[str, set[str]] = {}
+    depth: dict[str, str] = {}
+    for edge in graph["edges"]:
+        if edge["kind"] != "gates":
+            continue
+        req, mtd = edge["src"], edge["dst"]
+        if not mtd.startswith(_STORE_MTD_PREFIX) or not req.startswith(_STORE_REQ_PREFIX):
+            continue
+        method = mtd.removeprefix(_STORE_MTD_PREFIX)
+        cap = of_cap[req]
+        if req.endswith(".gate_depth"):
+            depth[method] = cap
+        else:
+            primary.setdefault(cap, set()).add(method)
+    return {cap: sorted(methods) for cap, methods in primary.items()}, depth
+
+
+def project_store_api_gated(graph: dict) -> str:
+    """Return the generated capability→gated-method table for the Store API."""
+    primary, depth = _store_gate_lookup(graph)
+
+    lines = [
+        "| Capability | Gated methods |",
+        "|---|---|",
+    ]
+    for cap in sorted(primary):
+        cells = []
+        for method in primary[cap]:
+            marker = r"\*" if method in depth else ""
+            cells.append(f"`{method}()`{marker}")
+        lines.append(f"| `{cap}` | {', '.join(cells)} |")
+
+    # Dual-gate footnote (DGM-014 / get_folder_info): a method with a secondary
+    # ``.gate_depth`` requirement is additionally gated on that capability when
+    # called with ``max_depth``.
+    for method in sorted(depth):
+        lines.append("")
+        lines.append(
+            rf"\* `{method}()` is additionally gated on `{depth[method]}` when called with "
+            "`max_depth` (depth-limited traversal)."
+        )
+
+    return "\n".join(lines)
+
+
+def project_store_api_ungated(graph: dict) -> str:
+    """Return the generated ungated ("always available") Store method table.
+
+    Membership is graph-derived (Store method nodes with ``gated == false``,
+    DGM-014); the Returns/Description prose is curated in ``_UNGATED_STORE_DETAILS``.
+    A mismatch between the two fails generation, so adding or removing an ungated
+    Store method forces both a graph regen and a prose update.
+    """
+    graph_ungated = {
+        n["id"].removeprefix(_STORE_MTD_PREFIX)
+        for n in graph["nodes"]
+        if n["kind"] == "method" and n["id"].startswith(_STORE_MTD_PREFIX) and n.get("gated") is False
+    }
+    curated = set(_UNGATED_STORE_DETAILS)
+    if graph_ungated != curated:
+        raise ValueError(
+            "Ungated Store methods drifted from _UNGATED_STORE_DETAILS.\n"
+            f"  in graph but not curated: {sorted(graph_ungated - curated)}\n"
+            f"  curated but not in graph: {sorted(curated - graph_ungated)}\n"
+            "Update _UNGATED_STORE_DETAILS in scripts/gen_features.py and regenerate."
+        )
+
+    lines = [
+        "| Method | Returns | Description |",
+        "|---|---|---|",
+    ]
+    for signature, returns, description in _UNGATED_STORE_DETAILS.values():
+        lines.append(f"| `{signature}` | {returns} | {description} |")
+
+    return "\n".join(lines)
+
+
+def project_async_backend_pairs(graph: dict) -> str:
+    """Return the generated sync↔async backend equivalence table from ``mirrors`` edges.
+
+    Each ``mirrors`` edge pairs an async backend (canonical ``src``) with its sync
+    peer (``dst``) and carries ``capability_delta``; this renders that pairing
+    mechanically, replacing the former hand-written prose. Async-only backends
+    (e.g. ``GraphBackend``) have no mirror and are documented separately.
+    """
+    rows: list[tuple[str, str, str]] = []
+    for edge in graph["edges"]:
+        if edge["kind"] != "mirrors":
+            continue
+        async_name = edge["src"].removeprefix("cls:").rsplit(".", 1)[-1]
+        sync_name = edge["dst"].removeprefix("cls:").rsplit(".", 1)[-1]
+        delta = edge.get("capability_delta", {})
+        parts = []
+        if delta.get("async_only"):
+            parts.append("async adds " + ", ".join(f"`{c}`" for c in delta["async_only"]))
+        if delta.get("sync_only"):
+            parts.append("sync adds " + ", ".join(f"`{c}`" for c in delta["sync_only"]))
+        rows.append((sync_name, async_name, "; ".join(parts) if parts else "—"))
+
+    lines = [
+        "| Sync backend | Async backend | Capability delta |",
+        "|---|---|---|",
+    ]
+    for sync_name, async_name, delta_cell in sorted(rows):
+        lines.append(f"| `{sync_name}` | `{async_name}` | {delta_cell} |")
+
+    return "\n".join(lines)
+
+
 def project_install_extras(pyproject: dict) -> str:
     """Return the generated install extras code block (Markdown)."""
     opt_deps = pyproject.get("project", {}).get("optional-dependencies", {})
@@ -303,10 +447,13 @@ def project_install_extras(pyproject: dict) -> str:
 def project_all(graph: dict, pyproject: dict) -> dict[str, str]:
     """Return all projections keyed by region name."""
     return {
+        "store_api_gated": project_store_api_gated(graph),
+        "store_api_ungated": project_store_api_ungated(graph),
         "backends_main": project_backends_main(graph),
         "backends_flags": project_backends_flags(graph),
         "backends_async": project_backends_async(graph),
         "backends_async_flags": project_backends_async_flags(graph),
+        "async_backend_pairs": project_async_backend_pairs(graph),
         "install_extras": project_install_extras(pyproject),
     }
 

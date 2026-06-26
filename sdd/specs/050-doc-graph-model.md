@@ -2,7 +2,7 @@
 
 **Scope:** Build & CI tooling. Specifies the concrete obligations the graph
 generator must satisfy when emitting `docs-src/_data/graph/graph.json` at
-`schema_version` 1.3. Not library source code; the contracts here govern
+`schema_version` 1.4. Not library source code; the contracts here govern
 `scripts/gen_graph.py`, `scripts/gen_graph_viz.py`, and their golden tests
 in `tests/scripts/`.
 
@@ -11,7 +11,7 @@ in `tests/scripts/`.
 **Author-facing surface:** [RFC-0012](../rfcs/rfc-0012-doc-graph-model.md) is the
 accepted design — the node/edge taxonomy, the promote-to-node rule, the
 determinism rules, and the projection design are normative there. This spec does
-not restate the taxonomy; it pins which slice of it the generator emits at 1.3,
+not restate the taxonomy; it pins which slice of it the generator emits at 1.4,
 the deviations the implementation takes from the RFC's idealized shape, and the
 test/CI contract that guards the artifact. Where this spec and the RFC disagree
 on what the *generator emits*, this spec wins; where they disagree on the *model*,
@@ -22,10 +22,11 @@ the RFC wins and this spec is wrong (principle 5).
 edges deferred below). [ID-224](../BACKLOG-DONE.md) introduced the
 omit-when-null convention now formalized in DGM-010.
 
-**Tracks:** [ID-221](../BACKLOG.md). ID-221 is the foundation of the
-Documentation Graph epic and blocks [ID-222](../BACKLOG.md) (mechanical
-FEATURES.md projection) and [ID-223](../BACKLOG.md) (role-aware visualization),
-both of which consume the corrected graph and the link metadata defined here.
+**Tracks:** [ID-221](../BACKLOG-DONE.md) (foundation: schema 1.3) and
+[ID-222](../BACKLOG-DONE.md) (mechanical FEATURES.md projection, which drove the
+1.4 ungated-method-node addition, DGM-014). [ID-223](../BACKLOG.md) (role-aware
+visualization) also consumes the corrected graph and the link metadata defined
+here.
 
 ---
 
@@ -33,13 +34,15 @@ both of which consume the corrected graph and the link metadata defined here.
 
 **Invariant:** The generator emits a single JSON object with exactly these
 top-level keys: `schema_version`, `source_version`, `snapshot`, `nodes`, `edges`.
-At this spec's revision `schema_version` is `"1.3"`. `source_version` and
+At this spec's revision `schema_version` is `"1.4"`. `source_version` and
 `snapshot` both equal `pyproject.toml[project][version]`, read dynamically.
 
-**Rationale:** RFC-0012 "The graph: two collections" and "Snapshots". The 1.3
-bump over 1.2 covers three additive changes: the `abc` and `facade` class roles
-(DGM-004), the `contains` edge kind (DGM-008), and the `spec`/`doc` link-metadata
-fields on class nodes (DGM-009).
+**Rationale:** RFC-0012 "The graph: two collections" and "Snapshots". The 1.4
+bump over 1.3 is one additive change: ungated facade method nodes carrying a
+`gated` field (DGM-014), added so ID-222 can derive the Store "always available"
+table. The 1.3 bump over 1.2 covered three additive changes: the `abc` and
+`facade` class roles (DGM-004), the `contains` edge kind (DGM-008), and the
+`spec`/`doc` link-metadata fields on class nodes (DGM-009).
 
 **See also:** DGM-013 for the `schema_version` consumers that ripple on a bump.
 
@@ -47,13 +50,13 @@ fields on class nodes (DGM-009).
 
 ## DGM-002: In-Scope vs Deferred Node Kinds
 
-**Invariant:** At 1.3 the generator emits exactly these node kinds:
+**Invariant:** At 1.4 the generator emits exactly these node kinds:
 
 | Kind | Emitted for |
 |---|---|
 | `package` | `pkg:remote_store` (sync), `pkg:remote_store.aio` (async) |
 | `class` | ABCs, concrete backends, and facades (DGM-004) |
-| `method` | gated methods of `Store`/`AsyncStore`/`Backend`/`AsyncBackend` (from the `_GATING` / `_BACKEND_GATING` / `_ASYNC_BACKEND_GATING` maps) |
+| `method` | gated methods of `Store`/`AsyncStore`/`Backend`/`AsyncBackend` (from the `_GATING` / `_BACKEND_GATING` / `_ASYNC_BACKEND_GATING` maps), plus the ungated public methods of the `Store`/`AsyncStore` facades (DGM-014) |
 | `capability` | every member of the `Capability` enum |
 | `requirement` | one `req:` group per gated method, plus the `get_folder_info` depth gate |
 | `extra` | every pip extra that enables a backend node |
@@ -248,6 +251,10 @@ same object. Specifically:
   edge is conditional; an unconditional edge omits the key entirely (absent ⇒
   unconditional). This is the convention ID-224 introduced and RFC-0012's "Edge
   taxonomy" documents; this clause makes it normative for the generator.
+- `method` nodes carry `gated` (DGM-014) only when it is `false`; a gated method
+  omits the key (absent ⇒ gated). Gated methods are the common case and already
+  carry a `gates` edge, so emitting `gated: true` on every one would be derivable
+  bloat; `gated: false` on the ungated minority is the information-bearing form.
 - No boolean or scalar that restates another field is emitted (DGM-006: no
   `is_facade` mirroring `role`).
 
@@ -315,6 +322,41 @@ makes the artifact trustworthy.
 
 ---
 
+## DGM-014: Ungated Facade Method Nodes
+
+**Invariant:** For the `Store` and `AsyncStore` facades (DGM-007) the generator
+emits a `method` node for every **public, non-gated** function member — the
+"always available" surface (`exists`, `is_file`, `is_folder`, `ping`,
+`close`/`aclose`, `child`, `unwrap`, `resolve`, `native_path`, `to_key`,
+`supports`). A method is *ungated* when its name is not a key of the facade's
+`_GATING` map. Ungated nodes carry the same introspection fields as gated method
+nodes (`summary`, `is_abstract`, `is_async`, `file`, `line`) plus `gated: false`.
+
+**Invariant:** Ungated method nodes carry **no** `req:`/`gates`/`of` edges (they
+have no capability gate). Their `contains` edge (class → method, DGM-008) is
+emitted by the generic containment pass, so they are not orphaned.
+
+**Scope:** Ungated emission applies to the `Store`/`AsyncStore` facades only.
+The `Backend`/`AsyncBackend` ABCs continue to emit gated methods only (from
+`_BACKEND_GATING` / `_ASYNC_BACKEND_GATING`): "always available" is a facade
+guarantee to package consumers, not part of the backend-adapter contract, and no
+consumer needs the ABCs' ungated surface. Dunders (leading `_`) are excluded;
+the discriminator is "public function member not in `_GATING`", so a new ungated
+facade method becomes a node automatically (no allowlist to maintain).
+
+**Postcondition:** ID-222's `gen_features.py` derives the Store API "Ungated
+(always available)" table by selecting `Store` method nodes with `gated == false`,
+instead of hand-maintaining the method set. The schema 1.3 boundary deferred this
+("only GATED method nodes are emitted"); 1.4 lifts it for the facades.
+
+**Rationale:** The `gated` field is technically derivable from the absence of a
+`gates` edge, which DGM-010 would normally forbid. It is emitted anyway as a
+deliberate, documented exception: the field makes the ungated set directly
+queryable without a negative edge-existence join, and the omit-when-default rule
+(DGM-010) keeps it from inflating the gated majority.
+
+---
+
 ## Test Traceability
 
 Each numbered obligation above is anchored by at least one
@@ -324,7 +366,7 @@ every clause keeps a mark):
 
 | Clause | Test |
 |---|---|
-| DGM-001 (schema 1.3, version fields) | `test_graph_schema` |
+| DGM-001 (schema 1.4, version fields) | `test_graph_schema` |
 | DGM-002 (node kinds present / deferred absent) | `test_graph_schema`, `test_deferred_kinds_absent` |
 | DGM-003 (edge kinds present / deferred absent) | `test_graph_schema`, `test_deferred_kinds_absent` |
 | DGM-004 (`abc` role) | `test_abc_classes_have_abc_role` |
@@ -339,23 +381,26 @@ every clause keeps a mark):
 | DGM-011 (`kind_of` on extra nodes) | `test_extra_nodes_use_kind_of` |
 | DGM-012 (determinism) | `test_graph_deterministic_in_process` |
 | DGM-013 (artifact up to date) | `test_graph_json_is_up_to_date` |
+| DGM-014 (ungated facade method nodes) | `test_ungated_facade_method_nodes` |
 
 RFC-0012 makes the golden test the trust anchor; this table makes each obligation
 individually falsifiable.
 
 ---
 
-## Deferred / Out of Scope at 1.3
+## Deferred / Out of Scope at 1.4
 
 The following are explicitly out of scope and tracked elsewhere:
 
 - **Argument-level capability gates.** `USER_METADATA` gates the `metadata=`
-  kwarg, not a whole method; 1.3 has no argument-level gate model. The RFC `prm:`
-  / `predicate` nodes are the future path (noted on ID-222).
-- **Mechanical FEATURES.md projection.** ID-222 consumes this graph.
+  kwarg, not a whole method; 1.4 still has no argument-level gate model. The RFC
+  `prm:` / `predicate` nodes are the future path. ID-222 records this as a known
+  limitation: the `metadata=` gate is documented as a FEATURES footnote and in the
+  `Capabilities` table, not as a method gate, because the graph cannot yet model
+  a per-argument predicate.
+- **Ungated `Backend`/`AsyncBackend` methods.** DGM-014 emits ungated nodes for
+  the `Store`/`AsyncStore` facades only; the ABCs' ungated surface has no consumer.
 - **Role-aware visualization, deep links, faceted filtering.** ID-223 consumes
   the `contains` edges and the `spec`/`doc` link metadata.
 - **The deferred node/edge kinds of DGM-002/DGM-003**, each added under its own
   schema bump when a consumer needs it.
-</content>
-</invoke>
