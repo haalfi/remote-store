@@ -181,7 +181,7 @@ jobs:
 
       # --- Gremlins cache (content-hash based, survives across runs) ---
       - name: Restore gremlins cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .gremlins_cache
           key: gremlins-${{ matrix.scope }}-${{ hashFiles('src/**/*.py') }}
