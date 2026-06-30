@@ -167,6 +167,26 @@ Development Setup, framed around the skeleton view — two `lx` commands (the
 `-u -Y` skeleton and a `git diff | lx -c` changed-files bundle); `lx` is **not**
 a project dependency, **not** installed by any script, and **not** in CI.
 
+## 7a. Follow-up (2026-06-30): skeleton fidelity bug
+
+A later public-API handover run surfaced a **correctness bug in the `-u -Y`
+skeleton**: it silently drops the `class` header of decorated dataclasses, so
+their fields orphan under the previous class and the bundle quietly loses a
+class. On `src/remote_store/_models.py` this lost **4 of the 5** public
+data-model class headers (`FileInfo`, `WriteResult`, `FolderEntry`,
+`FolderInfo`), and dropped some fields (`FolderInfo.file_count`, `total_size`,
+its `name` property) entirely. Reproduced on `lx v1.2.1` across
+`--md`/`--xml`/`--bare`, so it is the AST extraction, not the formatter. A
+deterministic two-class repro narrows the trigger to a comment-led, multi-line
+method body in the preceding class, though it did not reduce to a minimal case.
+
+Filed upstream as
+[rasros/lx#76](https://github.com/rasros/lx/issues/76); `CONTRIBUTING.md`'s
+skeleton subsection now carries a workaround caveat (bundle `_models.py` as full
+source until the fix lands). The §6 **keep** verdict stands: only the
+type-skeleton path is affected, while full-file and changed-file bundles, the
+bulk of the value, are fine.
+
 ## 8. References
 
 - [`rasros/lx`](https://github.com/rasros/lx) — the tool under evaluation.
