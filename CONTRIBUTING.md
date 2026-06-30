@@ -214,6 +214,17 @@ It honours `.gitignore` and estimates tokens. Point it at a subtree, not the
 repo root (a whole-repo walk is ~3.7M tokens, mostly `tests/` and `sdd/`); no
 `.lxignore` is committed, so use `-e <glob>` for ad-hoc excludes.
 
+> **Known limitation (`lx` ≤ v1.2.1).** The `-u -Y` skeleton can silently drop
+> the `class` header of decorated dataclasses. On
+> `src/remote_store/_models.py` it dropped 4 of the 5 public data-model classes
+> (`FileInfo`, `WriteResult`, `FolderEntry`, `FolderInfo`), orphaning their
+> fields under `ContentDigest` and losing some fields entirely. The output
+> still looks like valid Python, so the loss is easy to miss. Until
+> [rasros/lx#76](https://github.com/rasros/lx/issues/76) is fixed, do not trust
+> the skeleton for the public data models: bundle them as full source instead
+> (`lx --xml src/remote_store/_models.py`, ~1.7k tokens). The full-source and
+> changed-file bundles are unaffected.
+
 ### Migrating an existing checkout
 
 If you previously created `.venv/` with `python -m venv` or via IDE
