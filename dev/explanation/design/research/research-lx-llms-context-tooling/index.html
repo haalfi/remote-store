@@ -8225,6 +8225,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#7a-follow-up-2026-06-30-skeleton-fidelity-bug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7a. Follow-up (2026-06-30): skeleton fidelity bug
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#8-references" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10256,6 +10267,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#7a-follow-up-2026-06-30-skeleton-fidelity-bug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7a. Follow-up (2026-06-30): skeleton fidelity bug
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#8-references" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10533,6 +10555,23 @@ CI / docs-build wiring (per the item's guardrails).</p>
 Development Setup, framed around the skeleton view — two <code>lx</code> commands (the
 <code>-u -Y</code> skeleton and a <code>git diff | lx -c</code> changed-files bundle); <code>lx</code> is <strong>not</strong>
 a project dependency, <strong>not</strong> installed by any script, and <strong>not</strong> in CI.</p>
+<h2 id="7a-follow-up-2026-06-30-skeleton-fidelity-bug">7a. Follow-up (2026-06-30): skeleton fidelity bug<a class="headerlink" href="#7a-follow-up-2026-06-30-skeleton-fidelity-bug" title="Permanent link">&para;</a></h2>
+<p>A later public-API handover run surfaced a <strong>correctness bug in the <code>-u -Y</code>
+skeleton</strong>: it silently drops the <code>class</code> header of decorated dataclasses, so
+their fields orphan under the previous class and the bundle quietly loses a
+class. On <code>src/remote_store/_models.py</code> this lost <strong>4 of the 5</strong> public
+data-model class headers (<code>FileInfo</code>, <code>WriteResult</code>, <code>FolderEntry</code>,
+<code>FolderInfo</code>), and dropped some fields (<code>FolderInfo.file_count</code>, <code>total_size</code>,
+its <code>name</code> property) entirely. Reproduced on <code>lx v1.2.1</code> across
+<code>--md</code>/<code>--xml</code>/<code>--bare</code>, so it is the AST extraction, not the formatter. A
+deterministic two-class repro narrows the trigger to a comment-led, multi-line
+method body in the preceding class, though it did not reduce to a minimal case.</p>
+<p>Filed upstream as
+<a href="https://github.com/rasros/lx/issues/76">rasros/lx#76</a>; <code>CONTRIBUTING.md</code>'s
+skeleton subsection now carries a workaround caveat (bundle <code>_models.py</code> as full
+source until the fix lands). The §6 <strong>keep</strong> verdict stands: only the
+type-skeleton path is affected, while full-file and changed-file bundles, the
+bulk of the value, are fine.</p>
 <h2 id="8-references">8. References<a class="headerlink" href="#8-references" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="https://github.com/rasros/lx"><code>rasros/lx</code></a> — the tool under evaluation.</li>

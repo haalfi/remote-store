@@ -11181,6 +11181,18 @@ docs build.</p>
 <p>It honours <code>.gitignore</code> and estimates tokens. Point it at a subtree, not the
 repo root (a whole-repo walk is ~3.7M tokens, mostly <code>tests/</code> and <code>sdd/</code>); no
 <code>.lxignore</code> is committed, so use <code>-e &lt;glob&gt;</code> for ad-hoc excludes.</p>
+<blockquote>
+<p><strong>Known limitation (<code>lx</code> ≤ v1.2.1).</strong> The <code>-u -Y</code> skeleton can silently drop
+the <code>class</code> header of decorated dataclasses. On
+<code>src/remote_store/_models.py</code> it dropped 4 of the 5 public data-model classes
+(<code>FileInfo</code>, <code>WriteResult</code>, <code>FolderEntry</code>, <code>FolderInfo</code>), orphaning their
+fields under <code>ContentDigest</code> and losing some fields entirely. The output
+still looks like valid Python, so the loss is easy to miss. Until
+<a href="https://github.com/rasros/lx/issues/76">rasros/lx#76</a> is fixed, do not trust
+the skeleton for the public data models: bundle them as full source instead
+(<code>lx --xml src/remote_store/_models.py</code>, ~1.7k tokens). The full-source and
+changed-file bundles are unaffected.</p>
+</blockquote>
 <h3 id="migrating-an-existing-checkout">Migrating an existing checkout<a class="headerlink" href="#migrating-an-existing-checkout" title="Permanent link">&para;</a></h3>
 <p>If you previously created <code>.venv/</code> with <code>python -m venv</code> or via IDE
 auto-discovery, delete it before the first <code>hatch run</code>. Hatch's behaviour
