@@ -152,9 +152,13 @@ accounts that have a hierarchical namespace."
 ms.date 2024-11-18) The consulted Microsoft pages do not document
 per-operation DFS API support on flat-namespace accounts, which makes the
 docs-safe guidance: flat account → `az://` (pure Blob API); HNS account →
-`az://` or `abfss://`. The interop statement also guarantees that on HNS
-accounts, remote-store's Blob-API-based read-only inspection sees the same
-data DuckLake writes via `abfss://`.
+`az://` or `abfss://`. For matched account shapes, remote-store and DuckLake
+already use the *same* API family — flat → both Blob; HNS → remote-store's
+DFS SDK alongside DuckLake's `abfss://` — so no interop guarantee is needed
+there. The interop statement matters in the *mixed* case: on an HNS account,
+one side using Blob APIs (e.g. DuckLake writing `az://` URLs, or any
+Blob-API tool inspecting the data path) still operates on the same data the
+other side touches through DFS APIs.
 
 Two further Microsoft facts frame the account-shape choice **[verified]**
 ([Azure Data Lake Storage introduction](https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-introduction),
@@ -163,11 +167,17 @@ capability set on Blob Storage unlocked "by enabling the hierarchical
 namespace setting" (the DFS REST APIs surface at `dfs.core.windows.net`);
 and HNS's headline benefit is that "renaming or deleting a directory become
 single atomic metadata operations". Since DuckLake's data-path contract never
-renames or moves files (§ table above), that benefit is irrelevant to
-DuckLake — a flat Blob account addressed via `az://` is fully sufficient for
-a DuckLake data path. This matches remote-store's own model: `AzureBackend`
-requires an explicit `hns` flag and serves both account shapes through the
-Blob API.
+renames or moves files (§ table above), that *specific* benefit (atomic
+rename/delete) is irrelevant to DuckLake's write pattern — a flat Blob
+account addressed via `az://` is fully sufficient for a DuckLake data path.
+HNS may still be chosen for governance reasons: the finer-grain security
+model (directory- and file-level ACLs, per the same Microsoft page) is what
+enables the prefix-based access control the DuckLake 0.2 per-schema/table
+layout is designed for. remote-store's own model mirrors the account-shape
+split: `AzureBackend` requires an explicit `hns` flag and picks the matching
+SDK per shape — Blob SDK for flat accounts, DataLake (DFS) SDK for HNS
+accounts (`src/remote_store/backends/_azure.py:1` module docstring; lazy
+`DataLakeServiceClient` at `:1329-1352`).
 
 **What DuckLake actually does on the data path [code].** From
 `duckdb/ducklake` source (`main`, 2026-07-02), the complete filesystem
@@ -182,9 +192,20 @@ contract:
 | Create directory | `src/common/ducklake_util.cpp:315-322` | Local paths only (`IsRemoteFile` guard); skipped for remote paths, failures swallowed |
 | Rename / move / append / truncate / lock | — | **Never used** (no `MoveFile` call in ducklake `src/`; the only renames are catalog-level metadata operations). Docs: "DuckLake as a concept will *never* change existing files, neither by changing existing content nor by appending to existing files." ([choosing_storage](https://ducklake.select/docs/stable/duckdb/usage/choosing_storage)) |
 
-This write-once, catalog-committed design is why the azure extension's
-restrictions (no move, no append, no read+write) are harmless: DuckLake
-needs none of them. Supported data-path filesystems per DuckLake docs: "any
+> **Key implication.** DuckLake reduces the required filesystem contract to
+> *write-once + read + delete*. That is why object stores like Azure Blob
+> are fully compatible despite lacking rename or append — the azure
+> extension's restrictions (no move, no append, no read+write) are harmless
+> because DuckLake needs none of them.
+
+A second operational consequence of this contract: files written directly
+into `DATA_PATH` without being registered in the catalog are **orphans** —
+`ducklake_delete_orphaned_files` removes unreferenced `*.parquet` files under
+the data path (subject to its `last_modified` threshold; § table above), so
+external writers must either stay outside `DATA_PATH` or register files via
+`ducklake_add_data_files` (§ above).
+
+Supported data-path filesystems per DuckLake docs: "any
 file system backend that DuckDB supports", explicitly listing Azure Blob
 Store and "Python fsspec file systems"
 ([choosing_storage](https://ducklake.select/docs/stable/duckdb/usage/choosing_storage);
@@ -217,6 +238,10 @@ source in this run).
   path." Two nuances for a PostgreSQL catalog: nested types (`STRUCT`, `MAP`,
   `LIST`) are stored as `VARCHAR` in the inlined table and cast back on read,
   and tables with `VARIANT` columns are not inlined on non-DuckDB catalogs.
+  Operational implication (direct inference from the above): until flushed,
+  heavy inlining shifts storage pressure to the catalog database — on a
+  PostgreSQL catalog that means table growth and vacuum load with cost
+  implications.
 - **Time travel / monotonic growth.** "DuckLake in normal operation never
   removes any data, even when tables are dropped or data is deleted."
   **[verified]** Physical removal is a two-step maintenance flow: data "can
@@ -329,8 +354,16 @@ Mapping DuckLake's data-path contract (§ 2.1) onto remote-store capabilities:
   write-once semantics.
 - Con: a Python fsspec filesystem runs under the GIL and will not match the
   C++ extension's parallel range reads (DuckDB's own docs carry this
-  performance caveat).
+  performance caveat). Performance also depends on the adapter's concurrency
+  model — many fsspec implementations serialize or partially serialize I/O,
+  so the bottleneck is adapter design as much as Python itself.
 - Con: Python-only (the fsspec hook exists only in the DuckDB Python client).
+
+Strategic framing: Option B is not primarily about Azure support — for Azure
+the native extension is the better default. Its value is making DuckLake
+conform to remote-store's abstraction model: one storage abstraction across
+all backends, deterministic in-memory testing, policy enforcement via
+observe/audit hooks, and the typed error model applied to lake I/O.
 
 ### 2.4 Option C: status quo — plain Parquet via `ext.arrow`, no DuckLake
 
@@ -396,6 +429,15 @@ sources alone):
 - Emphasize that DuckLake treats data files as immutable and relies on
   catalog-driven visibility and maintenance rather than in-place mutation —
   hence the ownership rule: never write, move, or delete under `DATA_PATH`.
+  Unregistered files written directly into `DATA_PATH` are treated as
+  orphans and may be deleted by DuckLake maintenance
+  (`ducklake_delete_orphaned_files`); the sanctioned ingest route is
+  `ducklake_add_data_files`.
+
+**Non-goal:** remote-store will not act as a table format, catalog, or
+transaction layer for DuckLake. Both options keep remote-store at its stated
+altitude — the I/O layer — and nothing in this report proposes moving above
+it.
 
 Preconditions / open questions before implementation:
 
