@@ -141,6 +141,41 @@ and the highest ID already in this file, then take the next integer. Run
   then assess whether our source docs already cover them or could adopt the same
   framing. Findings feed the next docs-improvement session or ID-161 content checklist.
 
+- [ ] **BK-308 — Align `SEEKABLE_READ` wording so `read()`-vs-`read_seekable()` is self-evident everywhere**
+  spec: SEEK-001 · effort: S · audience: user.api_docs, user.site, user.discoverability.llm
+  A reader landing on the capability surface cannot reliably reach the one
+  sentence they need — *"`read()` alone won't give you seeking; reach for
+  `read_seekable()`"* — nor tell that Azure's `read_seekable()` is cheap.
+  Root cause: `SEEKABLE_READ` is a property of **`read()`** (SEEK-001), but
+  `False` reads as "no seekable reads on this backend." In reality
+  `read_seekable()` is gated only on `READ` (always callable), and Azure's
+  sync override (`_AzureRangeReader`, SEEK-006) is a native HTTP-Range reader
+  — as cheap as a passthrough backend, not a spool. So `read_seekable()` has
+  three cost profiles the capability does not disambiguate: passthrough
+  (`SEEKABLE_READ` true), native override (Azure sync — flag false, still
+  cheap), and spool fallback (HTTP, bridged async — flag false, full copy).
+  BK-299 fixed exactly this in the Azure *guide*; this item generalises that
+  fix to the capability-reference surface so a user, a docs reader, and an
+  LLM each reach the conclusion without cross-referencing three pages.
+  **Places to align (mirror BK-299's Azure-guide phrasing, don't recopy it):**
+  - `FEATURES.md` — the `SEEKABLE_READ` capability row and the Azure/async
+    backend rows (`All except … SEEKABLE_READ`) give no pointer to
+    `read_seekable()`; add the redirect + native-vs-spool note.
+  - `docs-src/reference/capabilities-matrix.md`, `docs-src/reference/api/capabilities.md` — same matrix gap.
+  - `src/remote_store/_capabilities.py` `SEEKABLE_READ` docstring — already
+    notes "optimized override or spool fallback" generically; name which
+    backends are the override case (Azure) vs the spool case.
+  - `docs-src/guides/choosing-a-backend.md` — where a user picks a backend
+    by capability and would wrongly infer Azure can't do random access.
+  **Non-goal / open question (deliberately out of scope):** this does *not*
+  make native-vs-spool machine-inspectable. If a consumer needs to *query*
+  whether `read_seekable()` is cheap on a given backend, that is a new
+  signal/capability (e.g. a `NATIVE_SEEKABLE_READ` flag) and a separate item
+  — decide there, not here. Keep this one wording-only; don't touch semantics
+  (SEEK-001 is correct) or `read_seekable()` gating.
+  Surfaced reviewing the BK-299 outcome: the guide is aligned, the reference
+  surface is not.
+
 - [ ] **ID-199 — Backend setup & configuration guides expansion**
   spec: — · effort: L · audience: user.site, library.maintainer
   Expand the backend-related guide set in `docs-src/guides/` based on user
