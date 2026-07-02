@@ -91,7 +91,7 @@ option separate from the catalog connection string, e.g.
 
 | Catalog | Azure hosting | Fit |
 |---|---|---|
-| PostgreSQL | Azure Database for PostgreSQL | **Recommended.** "If you would like to operate a multi-user lakehouse with potentially remote clients, use PostgreSQL as the catalog database." **[verified]** |
+| PostgreSQL | Azure Database for PostgreSQL | **Recommended.** "If you would like to operate a multi-user lakehouse with potentially remote clients, use PostgreSQL as the catalog database." **[verified]** Requirements **[verified]**: "The `ducklake` and `postgres` extensions require PostgreSQL 12 or newer"; the DuckDB `postgres` extension must be installed alongside `ducklake`, and the catalog database must already exist on the server. Azure-side version availability to be confirmed against Microsoft's supported-versions page before docs state it. |
 | DuckDB file | any (file on disk) | Single client only: "if you are using DuckDB as your catalog database, you're limited to a single client." **[verified]** |
 | SQLite file | any (file on disk) | Multi-process on one machine; no remote clients |
 | MySQL | Azure Database for MySQL | **Not recommended** by DuckLake: "There are a number of known issues with MySQL as a catalog for DuckLake. … We therefore do not recommend to use MySQL as a catalog for DuckLake." **[verified]** |
