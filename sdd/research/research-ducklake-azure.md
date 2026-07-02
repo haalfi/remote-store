@@ -223,8 +223,14 @@ source in this run).
   only be physically removed … by expiring snapshots"
   (`ducklake_expire_snapshots`) **[verified]**, and "expiring snapshots does
   not immediately delete files that are no longer referenced" — a separate
-  `ducklake_cleanup_old_files` call deletes them. **[verified]** Without
-  maintenance, the Azure container grows monotonically.
+  cleanup call (`ducklake_cleanup_old_files`) deletes them. **[verified]**
+  Expiry is strictly opt-in and flexible **[verified]**: target specific
+  snapshots (`versions => [2]`), by age
+  (`older_than => now() - INTERVAL '1 week'`), preview with
+  `dry_run => true`, or persist a catalog-wide retention policy via
+  `CALL my_ducklake.set_option('expire_older_than', '1 month')`
+  ([expire_snapshots](https://ducklake.select/docs/stable/duckdb/maintenance/expire_snapshots)).
+  Without maintenance, the Azure container grows monotonically.
 
 ### 2.2 Option A: DuckLake native, remote-store side-by-side
 
