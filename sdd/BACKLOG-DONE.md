@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-308 — Align `SEEKABLE_READ` wording so `read()`-vs-`read_seekable()` is self-evident everywhere**
+  spec: SEEK-001 · effort: S · audience: user.api_docs, user.site, user.discoverability.llm
+  `SEEKABLE_READ` is a property of `read()` (SEEK-001), but a `False` value
+  read as "no seekable reads on this backend" — masking that `read_seekable()`
+  is gated on `READ` alone (always callable on the sync `Store`) and that sync
+  Azure's override (`_AzureRangeReader`, SEEK-006) is a native HTTP-Range
+  reader, as cheap as a passthrough, not a spool. BK-299 fixed this in the
+  Azure guide; this generalises the fix to the capability-reference surface so
+  a user, docs reader, and LLM each reach *"`read()` is forward-only — reach
+  for `read_seekable()`"* without cross-referencing pages. Aligned wording in:
+  `Capability.SEEKABLE_READ` and `Store.read_seekable()` docstrings
+  (`_capabilities.py`, `_store.py`); `FEATURES.md` — the two hand-authored
+  rows (`read_seekable()`, `SEEKABLE_READ`) plus redirect prose adjacent to the
+  generated `backends_main`/`backends_async` tables, since the `SEEKABLE_READ`
+  backend rows the item named are `BEGIN_GENERATED` and not hand-editable;
+  `capabilities-matrix.md`, `reference/api/capabilities.md`, and
+  `choosing-a-backend.md`. The universal claims were scoped to the sync
+  `Store` (the async API has no `read_seekable()`; `AsyncAzureBackend` /
+  `GraphBackend` omit the flag). Wording-only: semantics (SEEK-001) and
+  `read_seekable()` gating unchanged. Making native-vs-spool
+  machine-inspectable (e.g. a `NATIVE_SEEKABLE_READ` flag) was declared a
+  non-goal and left as a candidate for a separate item.
+
 - [x] **ID-223 — Role-aware, explorable graph visualization**
   spec: [050-doc-graph-model.md](specs/050-doc-graph-model.md) · effort: L · audience: user.site, contributor.tooling
   Turned the `graph_viz.html` D3 view from a flat diagram into an "explore

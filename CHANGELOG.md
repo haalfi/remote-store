@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-308: Align `SEEKABLE_READ` wording so `read()`-vs-`read_seekable()` is self-evident everywhere
 - ID-223: Make the API graph visualization explorable — role-aware nodes, collapsible method groups, node/edge detail with deep links to source, spec, and docs, and composable faceted filtering (kind, role, edge, runtime, capability, dependency) plus text search
 - ID-222: Generate the FEATURES.md Store API, ungated-methods, and async backend-pairing tables from the documentation graph
 

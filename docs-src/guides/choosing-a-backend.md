@@ -21,7 +21,11 @@ This guide helps you pick the right `remote-store` backend for your use case.
 4. **Azure Blob Storage or ADLS Gen2?** Use **Azure**.
    Supports both flat and HNS (hierarchical namespace) accounts — declare which
    via the required `hns` option. Connection string, SAS token, or
-   DefaultAzureCredential auth.
+   DefaultAzureCredential auth. Analytical random access (Parquet footer reads,
+   PyArrow column pruning) is efficient despite Azure not declaring
+   `SEEKABLE_READ`: `read_seekable()` uses a native HTTP-Range reader on the
+   sync backend — see the
+   [Azure guide](backends/azure.md#streaming-and-seekable-reads).
 
 5. **OneDrive, SharePoint, or Microsoft Teams files (Microsoft Graph)?** Use **Graph**.
    **Async-only** — construct via `AsyncStore(backend=GraphBackend(...))`; there is
