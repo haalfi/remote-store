@@ -11424,9 +11424,12 @@ file. Without it, the backend may buffer content before returning the stream.</p
         <p>Return a seekable binary stream for random-access reading.</p>
 <p>Always returns a seekable stream.  On backends that natively
 return seekable streams from <code>read()</code>, this is zero-overhead.
-On other backends (Azure, HTTP), the backend provides an
-optimized seekable implementation (e.g. HTTP Range requests)
-or falls back to spooling into a temporary file.</p>
+On backends whose <code>read()</code> is forward-only, the stream comes
+either from an optimized native implementation as cheap as the
+passthrough -- the sync Azure backend uses HTTP Range requests,
+one ranged download per <code>read()</code>, with no temp-file spill -- or
+from a temporary-file spool that copies the object first (HTTP,
+and an async backend bridged to sync).</p>
 <p>Use <code>read()</code> for sequential streaming.  Use <code>read_seekable()</code>
 when you need <code>seek()</code> / <code>tell()</code> -- for example, when
 passing the stream to PyArrow or other analytical readers.</p>

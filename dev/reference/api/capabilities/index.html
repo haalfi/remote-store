@@ -10338,9 +10338,20 @@ Use <code>Store.supports()</code> to query at runtime.</p>
 <li><code>SEEKABLE_READ</code> -- <code>Store.read()</code> always returns a seekable
   stream (<code>stream.seekable()</code> is <code>True</code>).  Backends that
   declare this capability return seekable streams from both
-  <code>read()</code> and <code>read_seekable()</code> with zero overhead.
-  Backends without this capability still support
-  <code>read_seekable()</code> via an optimized override or spool fallback.</li>
+  <code>read()</code> and <code>read_seekable()</code> with zero overhead.  Absence of
+  the flag means only that <code>read()</code> is forward-only -- not that
+  seekable reads are unavailable.  On the sync <code>Store</code>,
+  <code>read_seekable()</code> is gated on <code>READ</code> alone, so it is served on
+  every backend: a backend without the flag serves it either through a
+  native override as cheap as the passthrough (the sync Azure backend
+  issues one ranged download per <code>read()</code>, with no temp-file spill)
+  or through a <code>SpooledTemporaryFile</code> that copies the object first
+  (HTTP, and any async backend bridged to sync).  The async API has no
+  <code>read_seekable()</code> -- an async-native backend that omits the flag
+  (<code>AsyncAzureBackend</code>, <code>GraphBackend</code>) has no seekable read until
+  bridged to sync.  The flag does not distinguish the native and
+  spooled costs; the Azure backend guide's "Streaming and seekable
+  reads" section documents the sync Azure range reader in full.</li>
 <li><code>LAZY_READ</code> -- <code>read()</code> fetches data lazily on demand from the
   native source rather than loading the entire file into memory before
   returning.  Backends that pre-load the full file contents (e.g.
@@ -10395,8 +10406,12 @@ Use <code>Store.supports()</code> to query at runtime.</p>
 method on a backend that does not declare the capability raises
 <code>CapabilityNotSupported</code>. <strong>Quality flags</strong> (e.g. <code>SEEKABLE_READ</code>,
 <code>WRITE_RESULT_NATIVE</code>) are informational only — they describe behaviour
-the backend provides but do not guard any method call. Check the class
-docstring for the full categorisation.</p>
+the backend provides but do not guard any method call. For example, a
+backend that omits <code>SEEKABLE_READ</code> is still served by the sync
+<code>Store.read_seekable()</code> — the flag reports only whether <code>read()</code> itself is
+seekable, not whether <code>read_seekable()</code> is native or spooled (the async API
+has no <code>read_seekable()</code>). Check the class docstring for the full
+categorisation.</p>
 </div>
 
 

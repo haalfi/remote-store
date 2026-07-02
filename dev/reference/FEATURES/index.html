@@ -10900,7 +10900,7 @@ The set is derived from the graph (Store method nodes with <code>gated: false</c
 <tr>
 <td><code>read_seekable(path)</code></td>
 <td><code>BinaryIO</code></td>
-<td>Seekable binary stream; spools to a temp file if the backend is non-seekable</td>
+<td>Seekable binary stream; zero-copy where <code>read()</code> is already seekable (<code>SEEKABLE_READ</code> backends), a native HTTP-Range reader on sync Azure, else spooled to a temp file</td>
 </tr>
 </tbody>
 </table>
@@ -11282,7 +11282,7 @@ Two flavours exist:</p>
 <td><code>SEEKABLE_READ</code></td>
 <td>Quality flag</td>
 <td><code>read()</code></td>
-<td><code>read()</code> returns a natively seekable stream</td>
+<td><code>read()</code> returns a natively seekable stream. Absence means only that <code>read()</code> is forward-only — the sync <code>Store.read_seekable()</code> still serves it (native range read on sync Azure, else spooled); the async API has no <code>read_seekable()</code></td>
 </tr>
 <tr>
 <td><code>LAZY_READ</code></td>
@@ -11384,6 +11384,10 @@ additional backend-specific options via <code>BackendConfig.options</code>.</p>
 </table>
 <!-- END_GENERATED:backends_main -->
 
+<p>The <code>SEEKABLE_READ</code> exclusions above concern <code>read()</code> only — <code>read_seekable()</code>
+remains available on the sync <code>Store</code>, and on Azure it is a native HTTP-Range
+reader (no temp-file spill), not a spool. See
+<a href="https://docs.remotestore.dev/stable/guides/backends/azure/#streaming-and-seekable-reads">Streaming and seekable reads</a>.</p>
 <p><strong>Write-result quality flags by backend:</strong></p>
 <!-- BEGIN_GENERATED:backends_flags -->
 <table>
@@ -11475,6 +11479,9 @@ no RegistryConfig <code>type=</code> string (there is no async config registry).
 </table>
 <!-- END_GENERATED:backends_async -->
 
+<p>The async API has no <code>read_seekable()</code>: an async-native backend that omits
+<code>SEEKABLE_READ</code> (<code>AsyncAzureBackend</code>, <code>GraphBackend</code>) has no seekable read until
+bridged to sync via <code>AsyncBackendSyncAdapter</code>, which spools.</p>
 <p><strong>Write-result quality flags by native async backend:</strong></p>
 <!-- BEGIN_GENERATED:backends_async_flags -->
 <table>

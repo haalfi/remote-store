@@ -10249,7 +10249,11 @@
 <p><strong>Azure Blob Storage or ADLS Gen2?</strong> Use <strong>Azure</strong>.
    Supports both flat and HNS (hierarchical namespace) accounts — declare which
    via the required <code>hns</code> option. Connection string, SAS token, or
-   DefaultAzureCredential auth.</p>
+   DefaultAzureCredential auth. Analytical random access (Parquet footer reads,
+   PyArrow column pruning) is efficient despite Azure not declaring
+   <code>SEEKABLE_READ</code>: <code>read_seekable()</code> uses a native HTTP-Range reader on the
+   sync backend — see the
+   <a href="../backends/azure/#streaming-and-seekable-reads">Azure guide</a>.</p>
 </li>
 <li>
 <p><strong>OneDrive, SharePoint, or Microsoft Teams files (Microsoft Graph)?</strong> Use <strong>Graph</strong>.

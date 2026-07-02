@@ -10420,7 +10420,11 @@ data lives in process memory; use the portable fallback
 <code>ext.glob.glob_files()</code> — see the <a href="../../guides/glob-pattern-matching/">Glob Pattern Matching</a> guide).
 SFTP lacks both <code>GLOB</code> and <code>ATOMIC_MOVE</code>.
 Azure lacks <code>SEEKABLE_READ</code> and <code>ATOMIC_MOVE</code> (forward-only chunk iterator,
-copy-then-delete move).
+copy-then-delete move). Missing <code>SEEKABLE_READ</code> means only that <code>read()</code> is
+forward-only, not that random access is expensive: on the sync backend
+<code>read_seekable()</code> uses a native HTTP-Range reader (one ranged download per
+read, no temp-file spill) — see the
+<a href="../../guides/backends/azure/#streaming-and-seekable-reads">Azure guide</a>.
 Graph lacks <code>GLOB</code>, <code>SEEKABLE_READ</code>, <code>ATOMIC_MOVE</code>, and <code>USER_METADATA</code>
 (Microsoft Graph has no server-side glob, forward-only download streams,
 a native server-side move that may complete asynchronously so atomicity is
@@ -10437,38 +10441,41 @@ and <code>SEEKABLE_READ</code> — no write operations.</p>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">glob_files</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">glob_files</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;**/*.csv&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Seekable read — works on any backend</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">seekable_read</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="k">with</span> <span class="n">seekable_read</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;report.csv&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">header</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># guaranteed seekable</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1"># Atomic move — quality flag, not a method gate.</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="c1"># move() is always callable (when MOVE is declared), but only atomic</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1"># on backends that declare ATOMIC_MOVE.</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">ATOMIC_MOVE</span><span class="p">):</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="c1"># Atomic: readers see either the old or the new path, never both.</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="n">store</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="s2">&quot;staging/data.parquet&quot;</span><span class="p">,</span> <span class="s2">&quot;prod/data.parquet&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="c1"># Non-atomic backend: copy-then-delete. A failure between the two</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="c1"># steps may leave both paths present — handle errors explicitly.</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="n">store</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="s2">&quot;staging/data.parquet&quot;</span><span class="p">,</span> <span class="s2">&quot;prod/data.parquet&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;staging/data.parquet&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
-<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="c1"># Lazy read — quality flag. read() always works, but on backends without</span>
-<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="c1"># LAZY_READ the entire file is loaded into memory before the stream is</span>
-<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="c1"># returned. Use this flag to decide whether partial reads are efficient.</span>
-<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">LAZY_READ</span><span class="p">):</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>    <span class="c1"># Stream is connected to the native source; only the bytes you read</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>    <span class="c1"># are transferred. Safe to read a small prefix of a large file.</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>    <span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;large_file.bin&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>        <span class="n">header</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">256</span><span class="p">)</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>    <span class="c1"># Data is pre-loaded; reading any amount costs the full file.</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>    <span class="c1"># For large files prefer read_bytes() or avoid partial reads.</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;large_file.bin&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>    <span class="n">header</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:</span><span class="mi">256</span><span class="p">]</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Seekable read — works on any backend. Native/lazy where the backend</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># optimizes it (S3, sync Azure&#39;s HTTP-Range reader); spooled to a temp</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># file otherwise (HTTP, an async backend bridged to sync). SEEKABLE_READ</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># reports only whether read() itself is seekable, not this cost.</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">seekable_read</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="k">with</span> <span class="n">seekable_read</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;report.csv&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="n">header</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># guaranteed seekable</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="c1"># Atomic move — quality flag, not a method gate.</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="c1"># move() is always callable (when MOVE is declared), but only atomic</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="c1"># on backends that declare ATOMIC_MOVE.</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">ATOMIC_MOVE</span><span class="p">):</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="c1"># Atomic: readers see either the old or the new path, never both.</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="n">store</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="s2">&quot;staging/data.parquet&quot;</span><span class="p">,</span> <span class="s2">&quot;prod/data.parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="c1"># Non-atomic backend: copy-then-delete. A failure between the two</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>    <span class="c1"># steps may leave both paths present — handle errors explicitly.</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    <span class="n">store</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="s2">&quot;staging/data.parquet&quot;</span><span class="p">,</span> <span class="s2">&quot;prod/data.parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;staging/data.parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="c1"># Lazy read — quality flag. read() always works, but on backends without</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="c1"># LAZY_READ the entire file is loaded into memory before the stream is</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="c1"># returned. Use this flag to decide whether partial reads are efficient.</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">LAZY_READ</span><span class="p">):</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>    <span class="c1"># Stream is connected to the native source; only the bytes you read</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>    <span class="c1"># are transferred. Safe to read a small prefix of a large file.</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>    <span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;large_file.bin&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>        <span class="n">header</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">256</span><span class="p">)</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>    <span class="c1"># Data is pre-loaded; reading any amount costs the full file.</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>    <span class="c1"># For large files prefer read_bytes() or avoid partial reads.</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;large_file.bin&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>    <span class="n">header</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:</span><span class="mi">256</span><span class="p">]</span>
 </code></pre></div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
