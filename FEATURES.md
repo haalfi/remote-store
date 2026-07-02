@@ -85,7 +85,7 @@ The set is derived from the graph (Store method nodes with `gated: false`).
 | `read(path)` | `BinaryIO` | Open a binary stream for reading; lazy where the backend supports `LAZY_READ` |
 | `read_bytes(path)` | `bytes` | Read the entire file into memory |
 | `read_text(path, *, encoding)` | `str` | Read the entire file as a decoded string |
-| `read_seekable(path)` | `BinaryIO` | Seekable binary stream; served natively where the backend optimizes it (S3, sync Azure's HTTP-Range reader), else spooled to a temp file |
+| `read_seekable(path)` | `BinaryIO` | Seekable binary stream; zero-copy where `read()` is already seekable (`SEEKABLE_READ` backends), a native HTTP-Range reader on sync Azure, else spooled to a temp file |
 
 ### WRITE
 
@@ -223,7 +223,7 @@ Two flavours exist:
 | `COPY` | Gate | `copy()` | Declared by all built-in backends |
 | `ATOMIC_WRITE` | Gate | `write_atomic()`, `open_atomic()` | Declared by all built-in backends |
 | `METADATA` | Gate | `head()`, `get_file_info()`, `get_folder_info()` | Declared by all built-in backends |
-| `SEEKABLE_READ` | Quality flag | `read()` | `read()` returns a natively seekable stream. Absence means only that `read()` is forward-only — `read_seekable()` still works everywhere (native range read on sync Azure, else spooled) |
+| `SEEKABLE_READ` | Quality flag | `read()` | `read()` returns a natively seekable stream. Absence means only that `read()` is forward-only — the sync `Store.read_seekable()` still serves it (native range read on sync Azure, else spooled); the async API has no `read_seekable()` |
 | `LAZY_READ` | Quality flag | `read()` | `read()` fetches data lazily; partial reads avoid loading the full file |
 | `ATOMIC_MOVE` | Quality flag | `move()` | `move()` is crash-safe under concurrent access |
 | `WRITE_RESULT_NATIVE` | Quality flag | `write*()`, `head()` | Rich `WriteResult` fields (`etag`, `digest`, `version_id`, `last_modified`) come from the backend's own write response |
@@ -251,6 +251,11 @@ additional backend-specific options via `BackendConfig.options`.
 | `sql-query` | `SQLQueryBackend` | `remote-store[sql-query]` | `GLOB`, `LIST`, `METADATA`, `READ`, `SEEKABLE_READ` |
 <!-- END_GENERATED:backends_main -->
 
+The `SEEKABLE_READ` exclusions above concern `read()` only — `read_seekable()`
+remains available on the sync `Store`, and on Azure it is a native HTTP-Range
+reader (no temp-file spill), not a spool. See
+[Streaming and seekable reads](https://docs.remotestore.dev/stable/guides/backends/azure/#streaming-and-seekable-reads).
+
 **Write-result quality flags by backend:**
 
 <!-- BEGIN_GENERATED:backends_flags -->
@@ -277,6 +282,10 @@ no RegistryConfig `type=` string (there is no async config registry).
 | `AsyncMemoryBackend` | — | All except `GLOB` |
 | `GraphBackend` | `remote-store[graph]` | All except `ATOMIC_MOVE`, `GLOB`, `SEEKABLE_READ` |
 <!-- END_GENERATED:backends_async -->
+
+The async API has no `read_seekable()`: an async-native backend that omits
+`SEEKABLE_READ` (`AsyncAzureBackend`, `GraphBackend`) has no seekable read until
+bridged to sync via `AsyncBackendSyncAdapter`, which spools.
 
 **Write-result quality flags by native async backend:**
 

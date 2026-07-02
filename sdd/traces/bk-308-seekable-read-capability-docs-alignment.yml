@@ -17,6 +17,8 @@ audience:
   - user.site
 expected_ripples:
   - sdd/backlogid.json
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
 review_rounds: 0
 phases:
   - id: orient
