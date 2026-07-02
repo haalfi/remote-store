@@ -112,10 +112,17 @@ How writes behave at source level **[code]** (duckdb-azure `main`,
 Azure-side note: at code level, `az://` is served by the Blob API and
 `abfss://` by the Data Lake (DFS) API **[code]**
 (`src/azure_blob_filesystem.cpp:32-36`, `src/azure_dfs_filesystem.cpp:27-30`).
-The inference that the DFS endpoint presupposes an ADLS Gen2 / HNS-enabled
-account is plausible but **[unverified]** — it is established neither by the
-DuckDB docs cited here nor by a learn.microsoft.com source in this run, and
-must not be stated in user-facing docs without a Microsoft citation. For
+The initially plausible inference that the DFS endpoint presupposes an
+HNS-enabled account is **refuted by Microsoft's docs [verified]**: "The Azure
+Blob File System driver can be used with the Data Lake Storage endpoint of an
+account even if that account does not have a hierarchical namespace enabled."
+([Use the Azure Data Lake Storage URI](https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-introduction-abfs-uri),
+ms.date 2024-11-15)
+Residual nuance **[unverified]**: that page addresses the Hadoop ABFS
+driver's URI scheme; whether the specific DataLake SDK operations
+duckdb-azure issues (directory create, `Append`/`Flush`) behave identically
+on flat-namespace accounts is not established by it, so HNS-enabled accounts
+remain the safe default recommendation for `abfss://` data paths. For
 comparison, remote-store's own model: `AzureBackend` requires an explicit
 `hns` flag and serves both account shapes through the Blob API.
 
@@ -336,5 +343,6 @@ Preconditions / open questions before implementation:
    DuckLake-on-any-backend and in-memory DuckLake tests.
 3. **Verify before user-facing docs:** the **[unverified]** claims flagged
    above (relative paths / relocatability of the data tree, inlining flush
-   semantics, Hive-layout-as-default, `abfss://` HNS requirement per
-   learn.microsoft.com).
+   semantics, Hive-layout-as-default, and whether the DataLake SDK operations
+   duckdb-azure uses behave identically on flat-namespace accounts — the
+   blanket "abfss requires HNS" claim is refuted, § 2.1).
