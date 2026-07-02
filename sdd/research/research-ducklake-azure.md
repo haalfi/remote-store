@@ -193,10 +193,18 @@ source in this run).
   the catalog database. **[code]**
 - **Data inlining.** Enabled by default with a row limit of 10: small
   inserts/deletes go into catalog tables instead of Parquet files.
-  **[verified]** Inlined data is flushed to Parquet later
-  (`ducklake_flush_inlined_data` / `CHECKPOINT`) **[unverified]** — so "small
-  writes never touch Blob storage" is *not* a safe claim (a verifier refuted
-  that phrasing); small writes touch Blob storage *eventually*.
+  **[verified]** Inlined data is flushed to Parquet on demand: "Inlined data
+  — both inlined inserts and inlined deletions — can be manually flushed to
+  Parquet files by calling the ducklake_flush_inlined_data function", and
+  "CHECKPOINT calls ducklake_flush_inlined_data internally"; flushing
+  preserves time travel by writing partial deletion files that record the
+  deleting snapshot per row
+  ([data_inlining](https://ducklake.select/docs/stable/duckdb/advanced_features/data_inlining))
+  **[verified]**. So "small writes never touch Blob storage" is *not* a safe
+  claim; small writes touch Blob storage *at flush time*. Note flushing does
+  not happen automatically after writes — `auto_compact` only marks tables
+  eligible for maintenance-triggered flushes. Which catalog databases support
+  inlining (reportedly not MySQL) remains **[unverified]**.
 - **Time travel / monotonic growth.** "DuckLake in normal operation never
   removes any data, even when tables are dropped or data is deleted."
   **[verified]** Physical removal is a two-step maintenance flow: data "can
@@ -381,10 +389,12 @@ Preconditions / open questions before implementation:
 2. **Backlog candidate:** `ext.fsspec` adapter (Option B), unlocking
    DuckLake-on-any-backend and in-memory DuckLake tests.
 3. **Verify before user-facing docs:** the remaining **[unverified]** claims
-   flagged above (inlining flush semantics via
-   `ducklake_flush_inlined_data` / `CHECKPOINT`, and whether the DataLake SDK
-   operations duckdb-azure uses behave identically on flat-namespace
-   accounts). Resolved since first draft: relative paths / relocatability,
-   Hive-layout-as-default, and `ducklake-⟨uuid⟩.parquet` naming are now
-   docs-verified (§ 2.1); the blanket "abfss requires HNS" claim is refuted
-   by Microsoft docs (§ 2.1).
+   flagged above (which catalog databases support data inlining — reportedly
+   not MySQL; and whether the DataLake SDK operations duckdb-azure uses
+   behave identically on flat-namespace accounts). Resolved since first
+   draft: relative paths / relocatability, Hive-layout-as-default,
+   `ducklake-⟨uuid⟩.parquet` naming, and inlining flush semantics
+   (`ducklake_flush_inlined_data`, `CHECKPOINT` calls it internally,
+   time-travel-preserving partial deletion files) are now docs-verified
+   (§ 2.1); the blanket "abfss requires HNS" claim is refuted by Microsoft
+   docs (§ 2.1).
