@@ -145,11 +145,16 @@ Blob File System driver can be used with the Data Lake Storage endpoint of an
 account even if that account does not have a hierarchical namespace enabled."
 ([Use the Azure Data Lake Storage URI](https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-introduction-abfs-uri),
 ms.date 2024-11-15)
-Residual nuance **[unverified]**: that page addresses the Hadoop ABFS
-driver's URI scheme; whether the specific DataLake SDK operations
-duckdb-azure issues (directory create, `Append`/`Flush`) behave identically
-on flat-namespace accounts is not established by it, so HNS-enabled accounts
-remain the safe default recommendation for `abfss://` data paths.
+Microsoft documents Blob/DFS interop for HNS accounts **[verified]**: "Blob
+APIs and Data Lake Storage APIs can operate on the same data in storage
+accounts that have a hierarchical namespace."
+([Multi-protocol access](https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-multi-protocol-access),
+ms.date 2024-11-18) The consulted Microsoft pages do not document
+per-operation DFS API support on flat-namespace accounts, which makes the
+docs-safe guidance: flat account → `az://` (pure Blob API); HNS account →
+`az://` or `abfss://`. The interop statement also guarantees that on HNS
+accounts, remote-store's Blob-API-based read-only inspection sees the same
+data DuckLake writes via `abfss://`.
 
 Two further Microsoft facts frame the account-shape choice **[verified]**
 ([Azure Data Lake Storage introduction](https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-introduction),
@@ -395,13 +400,15 @@ Preconditions / open questions before implementation:
    DuckDB/extension version supports Azure writes rather than assuming.
 2. **Backlog candidate:** `ext.fsspec` adapter (Option B), unlocking
    DuckLake-on-any-backend and in-memory DuckLake tests.
-3. **Verify before user-facing docs:** one **[unverified]** item remains —
-   whether the DataLake SDK operations duckdb-azure uses (directory create,
-   `Append`/`Flush`) behave identically on flat-namespace accounts.
-   Resolved since first draft: relative paths / relocatability,
-   Hive-layout-as-default, `ducklake-⟨uuid⟩.parquet` naming, inlining flush
-   semantics (`ducklake_flush_inlined_data`, `CHECKPOINT` calls it
-   internally, time-travel-preserving partial deletion files), and inlining
-   catalog support (DuckDB / PostgreSQL / SQLite, not MySQL) are now
+3. **Verification status: complete for docs purposes.** All claims flagged
+   **[unverified]** in the first draft are now resolved: relative paths /
+   relocatability, Hive-layout-as-default, `ducklake-⟨uuid⟩.parquet` naming,
+   inlining flush semantics (`ducklake_flush_inlined_data`, `CHECKPOINT`
+   calls it internally, time-travel-preserving partial deletion files), and
+   inlining catalog support (DuckDB / PostgreSQL / SQLite, not MySQL) are
    docs-verified (§ 2.1); the blanket "abfss requires HNS" claim is refuted
-   by Microsoft docs (§ 2.1).
+   by Microsoft docs; and the flat-namespace question is closed as moot by
+   the docs-safe scheme guidance (flat → `az://`, HNS → either; § 2.1).
+   Whether the DFS API operations duckdb-azure uses work on flat-namespace
+   accounts remains undocumented by Microsoft, but no recommended
+   configuration depends on it.
