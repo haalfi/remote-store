@@ -54,6 +54,33 @@ paths) + Parquet data files at a `DATA_PATH`. "DuckLake manages files stored
 in a separate storage location. The paths to the files are stored in the
 catalog server."
 ([paths](https://ducklake.select/docs/stable/duckdb/usage/paths)) **[verified]**
+
+**Paths are relative by default and the data tree is relocatable
+[verified].** "By default, all paths written by DuckLake are relative paths",
+layered file → table path → schema path → global data path (three-layer
+relative paths since the DuckLake 0.2 standard), with a `path_is_relative`
+flag stored per path in the spec tables. "The root data_path is specified
+through the data_path parameter when creating a new DuckLake. When loading an
+existing DuckLake, the data_path is loaded from the ducklake_metadata if not
+provided." Data files are named `ducklake-⟨uuid⟩.parquet` relative to the
+table path — now also docs-backed, matching the earlier code-level finding.
+([paths](https://ducklake.select/docs/stable/duckdb/usage/paths),
+[ducklake_data_file spec](https://ducklake.select/docs/stable/specification/tables/ducklake_data_file),
+[DuckLake 0.2 announcement](https://ducklake.select/2025/07/04/ducklake-02/))
+The 0.2 announcement also states the design intent of per-schema/table
+subdirectories: "it is now possible to use prefix-based access control at the
+object store level to grant users access to only specific schemas or tables"
+— the same prefix-scoping model as remote-store's `child()`.
+
+**Externally written Parquet can be registered [verified].** Since v0.2,
+`ducklake_add_data_files` registers "existing Parquet files written through
+other means or by other writers" into a DuckLake table via name mapping;
+"All DuckLake operations are supported on added files, including schema
+evolution and data change feeds."
+([DuckLake 0.2 announcement](https://ducklake.select/2025/07/04/ducklake-02/))
+This is the one sanctioned door for files produced outside DuckLake (e.g.
+written with remote-store) to enter the lake — it does not change the rule
+that DuckLake-managed files themselves must not be touched.
 Catalog and data are independently placeable: `DATA_PATH` is an `ATTACH`
 option separate from the catalog connection string, e.g.
 `ATTACH 'ducklake:postgres:…' AS lake (DATA_PATH 'az://container/lake/')`.
@@ -212,7 +239,8 @@ remote-store features that genuinely complement DuckLake in this shape:
 | `ext.arrow` (`pyarrow_fs`) + `ext.parquet` | Read-only analytics on DuckLake's Parquet files outside DuckDB (existing documented pattern in `docs-src/guides/data-lake-patterns.md`); write-side dataset management remains for non-DuckLake datasets |
 | `glob()` (native on `AzureBackend` and `AsyncAzureBackend`) | Read-only enumeration of `**/*.parquet` under the data path, e.g. for monitoring size/growth; `ext.glob` remains the fallback for non-GLOB backends (sync-only) |
 | `AsyncAzureBackend` | Same capability set as sync (zero delta), so async services can do all of the above |
-| `ext.partition` | Mostly superseded inside the data path — DuckLake tracks partition values in the catalog and its Hive-style layout is an internal default **[unverified]**; parsing paths for observability is fine, constructing them is not |
+| `ext.partition` | Mostly superseded inside the data path — "the files are by default written to directories in the Hive partitioning style. Writing data in this manner is not required as the partition values are tracked in the catalog server itself" ([paths](https://ducklake.select/docs/stable/duckdb/usage/paths)) **[verified]**; parsing paths for observability is fine, constructing them is not |
+| `ext.parquet` + `ducklake_add_data_files` | Sanctioned ingest bridge: Parquet written via remote-store (any backend) can be registered into a DuckLake table with name mapping (v0.2+); all DuckLake operations then apply to the added files **[verified]** |
 
 **Trade-offs:**
 
@@ -352,8 +380,11 @@ Preconditions / open questions before implementation:
    DuckDB/extension version supports Azure writes rather than assuming.
 2. **Backlog candidate:** `ext.fsspec` adapter (Option B), unlocking
    DuckLake-on-any-backend and in-memory DuckLake tests.
-3. **Verify before user-facing docs:** the **[unverified]** claims flagged
-   above (relative paths / relocatability of the data tree, inlining flush
-   semantics, Hive-layout-as-default, and whether the DataLake SDK operations
-   duckdb-azure uses behave identically on flat-namespace accounts — the
-   blanket "abfss requires HNS" claim is refuted, § 2.1).
+3. **Verify before user-facing docs:** the remaining **[unverified]** claims
+   flagged above (inlining flush semantics via
+   `ducklake_flush_inlined_data` / `CHECKPOINT`, and whether the DataLake SDK
+   operations duckdb-azure uses behave identically on flat-namespace
+   accounts). Resolved since first draft: relative paths / relocatability,
+   Hive-layout-as-default, and `ducklake-⟨uuid⟩.parquet` naming are now
+   docs-verified (§ 2.1); the blanket "abfss requires HNS" claim is refuted
+   by Microsoft docs (§ 2.1).
