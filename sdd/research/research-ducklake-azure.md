@@ -35,7 +35,11 @@ verification pass did not complete. (2) Source-level reading of the current
 `main` branches of [duckdb/duckdb-azure](https://github.com/duckdb/duckdb-azure),
 [duckdb/ducklake](https://github.com/duckdb/ducklake), and
 [duckdb/duckdb-python](https://github.com/duckdb/duckdb-python), labelled
-**[code]**. Where duckdb.org / ducklake.select pages were proxy-blocked, the
+**[code]** and cited by file and line. **[code]** claims are primary-source
+readings, not official-documentation statements: they are authoritative about
+what the code does at the pinned date (2026-07-02, `main`), line numbers
+drift with upstream changes, and behaviour may change without a docs update.
+Where duckdb.org / ducklake.select pages were proxy-blocked, the
 identical page sources were read from the `duckdb/duckdb-web` and
 `duckdb/ducklake-web` repositories.
 
@@ -65,56 +69,77 @@ option separate from the catalog connection string, e.g.
 | SQLite file | any (file on disk) | Multi-process on one machine; no remote clients |
 | MySQL | Azure Database for MySQL | **Not recommended** by DuckLake: "There are a number of known issues with MySQL as a catalog for DuckLake. … We therefore do not recommend to use MySQL as a catalog for DuckLake." **[verified]** |
 
-**The load-bearing fact: Azure writes in DuckDB.** Official docs (current
+**The load-bearing fact: Azure writes in DuckDB.** The Azure extension
+supports reading and writing data directly via `COPY`. Official docs (current
 and LTS): "You can write data directly to Azure Blob or ADLSv2 Storage using
-the `COPY` statement." No read-only limitation section exists any more.
+the `COPY` statement."
 Schemes: `az://` / `azure://` (Blob), `abfss://` (ADLS). Auth via DuckDB
 secrets: `CONFIG` (connection string, default), `CREDENTIAL_CHAIN`, managed
 identity, `SERVICE_PRINCIPAL`. Read tuning: `azure_read_transfer_concurrency`,
 `azure_read_transfer_chunk_size`, `azure_read_buffer_size`.
 ([azure extension](https://duckdb.org/docs/stable/core_extensions/azure))
 
-At source level **[code]**, write support is very recent — any memory of
-"the azure extension is read-only" is stale, but only barely:
+Implementation-history note **[code]** (from the duckdb-azure repository, not
+the docs): write support is a recent addition to the extension —
+blob writes merged 2025-11-26
+([PR #131](https://github.com/duckdb/duckdb-azure/pull/131)), ADLS/DFS writes
+merged 2025-12 ([PR #140](https://github.com/duckdb/duckdb-azure/pull/140)),
+blob writes moved to the block API 2026-02-23
+([PR #151](https://github.com/duckdb/duckdb-azure/pull/151)). Installations
+pinned to older extension builds may therefore lack write support even though
+current docs describe it.
 
-- Blob writes merged 2025-11-26 (duckdb-azure PR #131), ADLS/DFS writes
-  merged 2025-12 (PR #140), blob writes moved to the block API 2026-02-23
-  (PR #151).
-- Blob path (`azure_blob_filesystem.cpp`): sequential writes staged via
-  `blob_client.StageBlock(...)`, committed atomically at close via
-  `CommitBlockList` — a reader never sees a partial file.
-- DFS path (`azure_dfs_filesystem.cpp`): sequential `file_client.Append(...)`
-  plus `Flush`.
-- Both throw `NotImplementedException` for append mode and read+write mode;
-  neither implements `MoveFile` or `Truncate` (those fall through to DuckDB's
-  base class, which throws "MoveFile is not implemented!").
-- Blob filesystem's `CreateDirectory` is an explicit no-op; DFS implements it
-  for real (directories exist under HNS).
+How writes behave at source level **[code]** (duckdb-azure `main`,
+2026-07-02):
 
-Azure-side note: `az://` uses the Blob API (works on flat and HNS accounts);
-`abfss://` uses the Data Lake (DFS) API, i.e. presupposes an ADLS Gen2 /
-HNS-enabled account **[unverified against learn.microsoft.com in this run]**.
-This matches remote-store's own model: `AzureBackend` requires an explicit
+- Blob path: sequential writes staged via `blob_client.StageBlock(...)`
+  (`src/azure_blob_filesystem.cpp:415-444`), committed atomically at
+  close/sync via `blob_client.CommitBlockList(...)`
+  (`src/azure_blob_filesystem.cpp:81-101`) — a reader never sees a partial
+  file.
+- DFS path: sequential `file_client.Append(...)` plus `Flush`
+  (`src/azure_dfs_filesystem.cpp:364-384`, sync at `:109-115`).
+- Both throw `NotImplementedException` for append mode and read+write mode
+  (`src/azure_blob_filesystem.cpp:117-122`,
+  `src/azure_dfs_filesystem.cpp:131-136`); neither implements `MoveFile` or
+  `Truncate` — those fall through to DuckDB's base class, which throws
+  ("MoveFile is not implemented!", duckdb `src/common/file_system.cpp:579`;
+  `Truncate` at `:492`).
+- Blob filesystem's `CreateDirectory` is an explicit no-op
+  (`src/include/azure_blob_filesystem.hpp:56-57`); DFS implements it for real
+  (`src/azure_dfs_filesystem.cpp:159-167`).
+
+Azure-side note: at code level, `az://` is served by the Blob API and
+`abfss://` by the Data Lake (DFS) API **[code]**
+(`src/azure_blob_filesystem.cpp:32-36`, `src/azure_dfs_filesystem.cpp:27-30`).
+The inference that the DFS endpoint presupposes an ADLS Gen2 / HNS-enabled
+account is plausible but **[unverified]** — it is established neither by the
+DuckDB docs cited here nor by a learn.microsoft.com source in this run, and
+must not be stated in user-facing docs without a Microsoft citation. For
+comparison, remote-store's own model: `AzureBackend` requires an explicit
 `hns` flag and serves both account shapes through the Blob API.
 
 **What DuckLake actually does on the data path [code].** From
-`duckdb/ducklake` source, the complete filesystem contract:
+`duckdb/ducklake` source (`main`, 2026-07-02), the complete filesystem
+contract:
 
 | Operation | Where | Notes |
 |---|---|---|
-| Write-once Parquet files | `ducklake_insert.cpp` | Unique names `ducklake-{uuidv7}`; `use_tmp_file = false` — **no write-temp-then-rename, ever** |
+| Write-once Parquet files | `src/storage/ducklake_insert.cpp:479-584` | Unique names `ducklake-{uuidv7}` (`:571,576`); `use_tmp_file = false` (`:569`) — **no write-temp-then-rename, ever** |
 | Random-access reads | Parquet reader | Footer + row-group range reads |
-| Delete files | `ducklake_transaction.cpp`, `ducklake_cleanup_files.cpp` | Rollback cleanup, `cleanup_old_files`, `delete_orphaned_files`; `TryRemoveFile` semantics |
-| Recursive glob `**` + `last_modified` | `ducklake_metadata_manager.cpp` | Only for `ducklake_delete_orphaned_files`; normal operation never lists the data path — paths come from the catalog |
-| Create directory | `ducklake_util.cpp` | Local paths only; skipped for remote paths, failures swallowed |
-| Rename / move / append / truncate / lock | — | **Never used.** "DuckLake as a concept will *never* change existing files, neither by changing existing content nor by appending to existing files." ([choosing_storage](https://ducklake.select/docs/stable/duckdb/usage/choosing_storage)) |
+| Delete files | `src/storage/ducklake_transaction.cpp:596-617`, `src/functions/ducklake_cleanup_files.cpp:136-152` | Rollback cleanup, `cleanup_old_files`, `delete_orphaned_files`; `TryRemoveFile` semantics |
+| Recursive glob `**` + `last_modified` | `src/storage/ducklake_metadata_manager.cpp:4830-4844` | Only for `ducklake_delete_orphaned_files`; normal operation never lists the data path — paths come from the catalog |
+| Create directory | `src/common/ducklake_util.cpp:315-322` | Local paths only (`IsRemoteFile` guard); skipped for remote paths, failures swallowed |
+| Rename / move / append / truncate / lock | — | **Never used** (no `MoveFile` call in ducklake `src/`; the only renames are catalog-level metadata operations). Docs: "DuckLake as a concept will *never* change existing files, neither by changing existing content nor by appending to existing files." ([choosing_storage](https://ducklake.select/docs/stable/duckdb/usage/choosing_storage)) |
 
 This write-once, catalog-committed design is why the azure extension's
 restrictions (no move, no append, no read+write) are harmless: DuckLake
 needs none of them. Supported data-path filesystems per DuckLake docs: "any
 file system backend that DuckDB supports", explicitly listing Azure Blob
-Store and "Python fsspec file systems". **[code]** (read from ducklake-web
-source)
+Store and "Python fsspec file systems"
+([choosing_storage](https://ducklake.select/docs/stable/duckdb/usage/choosing_storage);
+confirmed against the published page in review, read via the ducklake-web
+source in this run).
 
 **Storage-behaviour features relevant to any integration:**
 
@@ -181,9 +206,10 @@ remote-store features that genuinely complement DuckLake in this shape:
   is DuckLake maintenance's job, § 2.1).
 - Con: DuckLake's I/O bypasses remote-store entirely — no observe hooks, no
   cache, no typed errors for that traffic.
-- Con: requires a recent DuckDB: Azure write support landed 2025-11 to
-  2026-02 (§ 2.1). Users on older versions have a read-only Azure filesystem
-  and DuckLake cannot write through it.
+- Con: needs a current DuckDB/extension build. Write support is documented
+  in current and LTS docs, but per the extension's code history it merged
+  2025-11 to 2026-02 (§ 2.1), so installations pinned to older builds have a
+  read-only Azure filesystem and DuckLake cannot write through them.
 
 ### 2.3 Option B: remote-store as the data path via an fsspec adapter
 
@@ -193,13 +219,15 @@ the adapter's protocol scheme.
 
 **How it works:** DuckDB Python officially registers fsspec filesystems:
 `duckdb.register_filesystem(fsspec.AbstractFileSystem)` **[verified]**, with
-protocol-based URL routing; the wrapper (`duckdb-python/src/pyfilesystem.cpp`)
-implements the full write surface (`open("wb")`, `write`, `flush`, `close`,
-`rm`, `glob`, `ls`, `isfile`, `size`, `modified`, `mv`, `mkdir`) **[code]**,
-and the registered-fsspec path demonstrably supports SQL-driven `COPY TO`
-writes in current stable DuckDB **[verified empirically against duckdb
-1.5.4]**. DuckLake's docs explicitly list fsspec filesystems as supported
-storage (§ 2.1).
+protocol-based URL routing (duckdb-python `src/pyconnection.cpp:154,340-369`
+**[code]**); the wrapper implements the full write surface (`open("wb")`,
+`write`, `flush`, `close`, `rm`, `glob`, `ls`, `isfile`, `size`, `modified`,
+`mv`, `mkdir` — duckdb-python `src/pyfilesystem.cpp:39-105,146-249`
+**[code]**), and the registered-fsspec path demonstrably supports SQL-driven
+`COPY TO` writes in current stable DuckDB **[verified empirically against
+duckdb 1.5.4: COPY to a registered fsspec memory filesystem succeeded and
+read back correctly]**. DuckLake's docs explicitly list fsspec filesystems as
+supported storage (§ 2.1).
 
 Mapping DuckLake's data-path contract (§ 2.1) onto remote-store capabilities:
 
@@ -282,13 +310,28 @@ operation-mapping coverage, § 2.3) but its value is portability and test
 ergonomics, not the Azure story itself; for Azure specifically the native
 extension is the better default.
 
+Safest wording for user-facing docs (each statement backed by official
+sources alone):
+
+- Use PostgreSQL for the DuckLake catalog when you need a multi-user or
+  remotely accessed lakehouse.
+- Use the DuckDB or SQLite catalog options only when the deployment is local
+  and the client model matches their limits (DuckDB: single client; SQLite:
+  local multi-process).
+- Store DuckLake data on Azure Blob or ADLS paths using DuckDB's Azure
+  extension, which supports direct writes via `COPY` and documents both Blob
+  (`az://` / `azure://`) and ADLS (`abfss://`) URI schemes.
+- Emphasize that DuckLake treats data files as immutable and relies on
+  catalog-driven visibility and maintenance rather than in-place mutation —
+  hence the ownership rule: never write, move, or delete under `DATA_PATH`.
+
 Preconditions / open questions before implementation:
 
 1. **Docs:** add a "DuckLake on Azure" section to
-   `docs-src/guides/data-lake-patterns.md`, including the ownership rule
-   (never write/move/delete under `DATA_PATH`), the catalog-choice table, and
-   an explicit DuckDB version floor for Azure write support (verify the
-   user's installed extension version rather than assuming).
+   `docs-src/guides/data-lake-patterns.md` using the wording above, plus a
+   version note grounded in the extension's code history (write support
+   merged 2025-11 to 2026-02): advise users to verify their installed
+   DuckDB/extension version supports Azure writes rather than assuming.
 2. **Backlog candidate:** `ext.fsspec` adapter (Option B), unlocking
    DuckLake-on-any-backend and in-memory DuckLake tests.
 3. **Verify before user-facing docs:** the **[unverified]** claims flagged
