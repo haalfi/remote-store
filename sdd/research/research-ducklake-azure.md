@@ -122,9 +122,20 @@ Residual nuance **[unverified]**: that page addresses the Hadoop ABFS
 driver's URI scheme; whether the specific DataLake SDK operations
 duckdb-azure issues (directory create, `Append`/`Flush`) behave identically
 on flat-namespace accounts is not established by it, so HNS-enabled accounts
-remain the safe default recommendation for `abfss://` data paths. For
-comparison, remote-store's own model: `AzureBackend` requires an explicit
-`hns` flag and serves both account shapes through the Blob API.
+remain the safe default recommendation for `abfss://` data paths.
+
+Two further Microsoft facts frame the account-shape choice **[verified]**
+([Azure Data Lake Storage introduction](https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-introduction),
+ms.date 2026-05-15): ADLS "isn't a dedicated service or account type" but a
+capability set on Blob Storage unlocked "by enabling the hierarchical
+namespace setting" (the DFS REST APIs surface at `dfs.core.windows.net`);
+and HNS's headline benefit is that "renaming or deleting a directory become
+single atomic metadata operations". Since DuckLake's data-path contract never
+renames or moves files (§ table above), that benefit is irrelevant to
+DuckLake — a flat Blob account addressed via `az://` is fully sufficient for
+a DuckLake data path. This matches remote-store's own model: `AzureBackend`
+requires an explicit `hns` flag and serves both account shapes through the
+Blob API.
 
 **What DuckLake actually does on the data path [code].** From
 `duckdb/ducklake` source (`main`, 2026-07-02), the complete filesystem
