@@ -40,7 +40,11 @@ data lives in process memory; use the portable fallback
 `ext.glob.glob_files()` — see the [Glob Pattern Matching](../guides/glob-pattern-matching.md) guide).
 SFTP lacks both `GLOB` and `ATOMIC_MOVE`.
 Azure lacks `SEEKABLE_READ` and `ATOMIC_MOVE` (forward-only chunk iterator,
-copy-then-delete move).
+copy-then-delete move). Missing `SEEKABLE_READ` means only that `read()` is
+forward-only, not that random access is expensive: on the sync backend
+`read_seekable()` uses a native HTTP-Range reader (one ranged download per
+read, no temp-file spill) — see the
+[Azure guide](../guides/backends/azure.md#streaming-and-seekable-reads).
 Graph lacks `GLOB`, `SEEKABLE_READ`, `ATOMIC_MOVE`, and `USER_METADATA`
 (Microsoft Graph has no server-side glob, forward-only download streams,
 a native server-side move that may complete asynchronously so atomicity is
@@ -62,7 +66,10 @@ else:
     from remote_store import glob_files
     results = glob_files(store, "**/*.csv")
 
-# Seekable read — works on any backend
+# Seekable read — works on any backend. Native/lazy where the backend
+# optimizes it (S3, sync Azure's HTTP-Range reader); spooled to a temp
+# file otherwise (HTTP, an async backend bridged to sync). SEEKABLE_READ
+# reports only whether read() itself is seekable, not this cost.
 from remote_store import seekable_read
 
 with seekable_read(store, "report.csv") as f:

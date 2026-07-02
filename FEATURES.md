@@ -85,7 +85,7 @@ The set is derived from the graph (Store method nodes with `gated: false`).
 | `read(path)` | `BinaryIO` | Open a binary stream for reading; lazy where the backend supports `LAZY_READ` |
 | `read_bytes(path)` | `bytes` | Read the entire file into memory |
 | `read_text(path, *, encoding)` | `str` | Read the entire file as a decoded string |
-| `read_seekable(path)` | `BinaryIO` | Seekable binary stream; spools to a temp file if the backend is non-seekable |
+| `read_seekable(path)` | `BinaryIO` | Seekable binary stream; served natively where the backend optimizes it (S3, sync Azure's HTTP-Range reader), else spooled to a temp file |
 
 ### WRITE
 
@@ -223,7 +223,7 @@ Two flavours exist:
 | `COPY` | Gate | `copy()` | Declared by all built-in backends |
 | `ATOMIC_WRITE` | Gate | `write_atomic()`, `open_atomic()` | Declared by all built-in backends |
 | `METADATA` | Gate | `head()`, `get_file_info()`, `get_folder_info()` | Declared by all built-in backends |
-| `SEEKABLE_READ` | Quality flag | `read()` | `read()` returns a natively seekable stream |
+| `SEEKABLE_READ` | Quality flag | `read()` | `read()` returns a natively seekable stream. Absence means only that `read()` is forward-only — `read_seekable()` still works everywhere (native range read on sync Azure, else spooled) |
 | `LAZY_READ` | Quality flag | `read()` | `read()` fetches data lazily; partial reads avoid loading the full file |
 | `ATOMIC_MOVE` | Quality flag | `move()` | `move()` is crash-safe under concurrent access |
 | `WRITE_RESULT_NATIVE` | Quality flag | `write*()`, `head()` | Rich `WriteResult` fields (`etag`, `digest`, `version_id`, `last_modified`) come from the backend's own write response |

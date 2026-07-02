@@ -1,0 +1,93 @@
+id: BK-308
+title: "Align SEEKABLE_READ wording so read()-vs-read_seekable() is self-evident everywhere"
+trigger: >
+  BK-299 fixed the Azure *guide* so analytics users reach for
+  read_seekable(), but the capability-reference surface (FEATURES,
+  capabilities matrix, the Capability / read_seekable docstrings,
+  choosing-a-backend) still let a reader read Azure's SEEKABLE_READ=False
+  as "no seekable reads on this backend" — masking that read_seekable()
+  is gated on READ alone and that sync Azure's override is a native
+  HTTP-Range reader, not a spool. Surfaced reviewing the BK-299 outcome.
+source_items:
+  - BK-308
+  - BK-299
+  - ID-219
+audience:
+  - user.api_docs
+  - user.site
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient on the gap and the semantics
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-308"
+        read_type: gate
+        extract: "Wording-only alignment across five named surfaces; non-goal is making native-vs-spool machine-inspectable; don't touch SEEK-001 semantics or read_seekable() gating"
+        outcome: ok
+      - file: sdd/specs/036-seekable-read.md
+        section: "SEEK-001, SEEK-003, SEEK-006"
+        read_type: gate
+        extract: "SEEKABLE_READ is a property of read() (SEEK-001); read_seekable() default spools (SEEK-003); Azure overrides with a native range reader (SEEK-006) — the three cost profiles the docs must convey"
+        outcome: ok
+  - id: verify_reality
+    name: Ground each claim in shipped code
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "_AzureRangeReader, read_seekable"
+        read_type: gate
+        extract: "One ranged download_blob(offset,length) per readinto, seekable()=True, no BufferedReader, no temp-file spill — grounds 'native, as cheap as passthrough'"
+        outcome: ok
+      - file: src/remote_store/_store.py
+        section: "read_seekable, _GATING"
+        read_type: gate
+        extract: "read_seekable gated on Capability.READ (not SEEKABLE_READ) — so it is reachable on every backend including Azure; docstring lumped Azure+HTTP together, needed splitting"
+        outcome: ok
+      - file: docs-src/guides/backends/azure.md
+        section: "Streaming and seekable reads"
+        read_type: reference
+        extract: "Canonical BK-299 phrasing to mirror (native HTTP-Range reader, no spill; async caveat) — mirrored into the reference surface, not recopied"
+        outcome: ok
+  - id: docs
+    name: Align the reference surface
+    steps:
+      - file: src/remote_store/_capabilities.py
+        section: "Capability.SEEKABLE_READ docstring"
+        read_type: reference
+        extract: "Absence = read() forward-only, not 'no seekable reads'; read_seekable() works everywhere; name Azure as the native-override case and HTTP/bridged-async as the spool case"
+        outcome: ok
+      - file: src/remote_store/_store.py
+        section: "Store.read_seekable docstring"
+        read_type: reference
+        extract: "Split the Azure/HTTP lump into native-override (sync Azure range read) vs temp-file spool (HTTP, bridged async)"
+        outcome: ok
+      - file: FEATURES.md
+        section: "READ methods table + Capabilities table (SEEKABLE_READ row)"
+        read_type: reference
+        extract: "read_seekable row: native where optimized else spooled; SEEKABLE_READ row: absence means read() forward-only, read_seekable() still works. Backend rows are BEGIN_GENERATED — left untouched"
+        outcome: ok
+      - file: docs-src/reference/capabilities-matrix.md
+        section: "Partial support (Azure) + runtime-query code block"
+        read_type: reference
+        extract: "Enrich 'Azure lacks SEEKABLE_READ' with the native-range clarification + Azure-guide link; annotate the seekable_read code comment with the native-vs-spool cost"
+        outcome: ok
+      - file: docs-src/reference/api/capabilities.md
+        section: "Quality flags vs method gates admonition"
+        read_type: reference
+        extract: "Add the concrete example: a backend omitting SEEKABLE_READ still supports read_seekable(); the flag reports only whether read() is seekable"
+        outcome: ok
+      - file: docs-src/guides/choosing-a-backend.md
+        section: "Decision tree — Azure (step 4)"
+        read_type: reference
+        extract: "Note that analytical random access is efficient on Azure despite the missing flag, with a link to the Azure guide"
+        outcome: ok
+  - id: verify
+    name: Verify ripples and gates
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Capability, PR validation gates"
+        read_type: verify
+        extract: "Capability-doc change (not the capability itself) → capability matrix + docstrings aligned; no code behaviour change; no-code+src-docstring diff runs the mechanical gate; user.* audience ⇒ CHANGELOG line; backlog item moved to BACKLOG-DONE + gen-backlogid"
+        outcome: ok

@@ -116,9 +116,12 @@ class Store:
 
         Always returns a seekable stream.  On backends that natively
         return seekable streams from ``read()``, this is zero-overhead.
-        On other backends (Azure, HTTP), the backend provides an
-        optimized seekable implementation (e.g. HTTP Range requests)
-        or falls back to spooling into a temporary file.
+        On backends whose ``read()`` is forward-only, the stream comes
+        either from an optimized native implementation as cheap as the
+        passthrough -- the sync Azure backend uses HTTP Range requests,
+        one ranged download per ``read()``, with no temp-file spill -- or
+        from a temporary-file spool that copies the object first (HTTP,
+        and an async backend bridged to sync).
 
         Use ``read()`` for sequential streaming.  Use ``read_seekable()``
         when you need ``seek()`` / ``tell()`` -- for example, when

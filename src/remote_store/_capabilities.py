@@ -75,9 +75,16 @@ class Capability(enum.Enum):
     - ``SEEKABLE_READ`` -- ``Store.read()`` always returns a seekable
       stream (``stream.seekable()`` is ``True``).  Backends that
       declare this capability return seekable streams from both
-      ``read()`` and ``read_seekable()`` with zero overhead.
-      Backends without this capability still support
-      ``read_seekable()`` via an optimized override or spool fallback.
+      ``read()`` and ``read_seekable()`` with zero overhead.  Absence of
+      the flag means only that ``read()`` is forward-only -- not that
+      seekable reads are unavailable.  ``read_seekable()`` is gated on
+      ``READ`` alone, so it works on every backend; a backend without the
+      flag serves it either through a native override as cheap as the
+      passthrough (the sync Azure backend issues one ranged download per
+      ``read()``, with no temp-file spill) or through a
+      ``SpooledTemporaryFile`` that copies the object first (HTTP, and any
+      async backend bridged to sync).  The flag does not distinguish these
+      two costs; consult the backend guide when random-access cost matters.
     - ``LAZY_READ`` -- ``read()`` fetches data lazily on demand from the
       native source rather than loading the entire file into memory before
       returning.  Backends that pre-load the full file contents (e.g.
