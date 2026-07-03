@@ -187,6 +187,39 @@ source until the fix lands). The §6 **keep** verdict stands: only the
 type-skeleton path is affected, while full-file and changed-file bundles, the
 bulk of the value, are fine.
 
+## 7b. Resolution (2026-07-03): fixed in `lx` v1.2.2
+
+`lx` v1.2.2 (released 2026-07-02) fixes the §7a skeleton bug. Validated
+empirically by re-running the exact repro on both versions against
+`src/remote_store/`:
+
+- **v1.2.1 (before):** `lx --xml -u -Y src/remote_store/_models.py` drops 4 of 5
+  public data-model class headers (`FileInfo`, `WriteResult`, `FolderEntry`,
+  `FolderInfo`), orphaning their fields under `ContentDigest` — reproduced the
+  documented failure exactly.
+- **v1.2.2 (after):** the same command emits all five public classes with headers
+  and fields intact. A whole-subtree sweep (`lx --xml -u -Y src/remote_store/`,
+  68 files) drops **0 of 90 public classes**, with no orphaned fields.
+
+The v1.2.2 release notes corroborate ("a comment on a function's first body line
+no longer leaks into the signature"; "an f-string in a class body no longer drops
+the next definition header"; `gotreesitter` bumped to v0.20.8).
+
+Two notes for anyone re-checking:
+
+- **The skeleton is public-API-only by design.** `lx`'s `-u -Y` intentionally
+  omits leading-underscore (`_`) classes and functions. Across `src/remote_store/`
+  that hides 22 private helper classes (e.g. `_AzureBinaryIO`, `_S3RangeReader`),
+  verified deliberate with a two-class probe (a trivial `_Foo` is dropped while a
+  public `Bar` is kept). This is expected filtering, not the §7a bug, and matches
+  the skeleton's purpose of surfacing the public API a consumer codes against.
+- **Upstream [rasros/lx#76](https://github.com/rasros/lx/issues/76) is still open**
+  at the time of writing even though the fix shipped in v1.2.2 — the behaviour is
+  resolved, the tracker item just has not been closed.
+
+`CONTRIBUTING.md`'s skeleton subsection now records the fix (upgrade to ≥ v1.2.2;
+workaround only needed on ≤ v1.2.1).
+
 ## 8. References
 
 - [`rasros/lx`](https://github.com/rasros/lx) — the tool under evaluation.

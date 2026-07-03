@@ -214,16 +214,25 @@ It honours `.gitignore` and estimates tokens. Point it at a subtree, not the
 repo root (a whole-repo walk is ~3.7M tokens, mostly `tests/` and `sdd/`); no
 `.lxignore` is committed, so use `-e <glob>` for ad-hoc excludes.
 
-> **Known limitation (`lx` ≤ v1.2.1).** The `-u -Y` skeleton can silently drop
-> the `class` header of decorated dataclasses. On
-> `src/remote_store/_models.py` it dropped 4 of the 5 public data-model classes
-> (`FileInfo`, `WriteResult`, `FolderEntry`, `FolderInfo`), orphaning their
-> fields under `ContentDigest` and losing some fields entirely. The output
-> still looks like valid Python, so the loss is easy to miss. Until
-> [rasros/lx#76](https://github.com/rasros/lx/issues/76) is fixed, do not trust
-> the skeleton for the public data models: bundle them as full source instead
-> (`lx --xml src/remote_store/_models.py`, ~1.7k tokens). The full-source and
-> changed-file bundles are unaffected.
+> **Fixed in `lx` v1.2.2 (affected `lx` ≤ v1.2.1).** Earlier releases could
+> silently drop the `class` header of decorated dataclasses from the `-u -Y`
+> skeleton. On `src/remote_store/_models.py`, `lx` v1.2.1 dropped 4 of the 5
+> public data-model classes (`FileInfo`, `WriteResult`, `FolderEntry`,
+> `FolderInfo`), orphaning their fields under `ContentDigest` and losing some
+> fields entirely; the output still looked like valid Python, so the loss was
+> easy to miss. `lx` v1.2.2 fixes it: re-running `lx --xml -u -Y
+> src/remote_store/` now emits every public class with its fields (0 public
+> classes dropped across the whole subtree). **Upgrade to ≥ v1.2.2**
+> (`go install github.com/rasros/lx/cmd/lx@latest`); on `lx` ≤ v1.2.1 only, work
+> around it by bundling the data models as full source
+> (`lx --xml src/remote_store/_models.py`, ~1.7k tokens). Full-source and
+> changed-file bundles were never affected. Note the upstream tracker
+> [rasros/lx#76](https://github.com/rasros/lx/issues/76) is still open even though
+> the fix shipped in v1.2.2.
+>
+> The `-u -Y` skeleton shows the **public** API only: `lx` intentionally omits
+> leading-underscore (`_Foo`) classes and functions, so private helpers will not
+> appear — expected, not the bug above.
 
 ### Migrating an existing checkout
 
