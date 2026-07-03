@@ -15,7 +15,7 @@ _Captured 2026-05-25 on Python 3.13._
 
 ## `[azure]`
 
-_Captured 2026-06-22 on Python 3.13._
+_Captured 2026-07-03 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -24,11 +24,11 @@ _Captured 2026-06-22 on Python 3.13._
 
 ## `[dagster]`
 
-_Captured 2026-06-22 on Python 3.13._
+_Captured 2026-07-03 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `dagster` | `1.13.10` |
+| `dagster` | `1.13.11` |
 
 ## `[graph]`
 
@@ -51,15 +51,15 @@ _Captured 2026-05-25 on Python 3.13._
 
 ## `[otel]`
 
-_Captured 2026-05-25 on Python 3.13._
+_Captured 2026-07-03 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `opentelemetry-api` | `1.42.1` |
+| `opentelemetry-api` | `1.43.0` |
 
 ## `[pydantic]`
 
-_Captured 2026-06-22 on Python 3.13._
+_Captured 2026-07-03 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -102,20 +102,20 @@ _Captured 2026-06-13 on Python 3.13._
 
 ## `[sql]`
 
-_Captured 2026-05-25 on Python 3.13._
+_Captured 2026-07-03 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `sqlalchemy` | `2.1.0b2` |
+| `sqlalchemy` | `2.1.0b3` |
 
 ## `[sql-query]`
 
-_Captured 2026-05-25 on Python 3.13._
+_Captured 2026-07-03 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
 | `pyarrow` | `24.0.0` |
-| `sqlalchemy` | `2.1.0b2` |
+| `sqlalchemy` | `2.1.0b3` |
 
 ## `[yaml]`
 
