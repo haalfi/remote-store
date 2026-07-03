@@ -226,9 +226,8 @@ repo root (a whole-repo walk is ~3.7M tokens, mostly `tests/` and `sdd/`); no
 > (`go install github.com/rasros/lx/cmd/lx@latest`); on `lx` ≤ v1.2.1 only, work
 > around it by bundling the data models as full source
 > (`lx --xml src/remote_store/_models.py`, ~1.7k tokens). Full-source and
-> changed-file bundles were never affected. Note the upstream tracker
-> [rasros/lx#76](https://github.com/rasros/lx/issues/76) is still open even though
-> the fix shipped in v1.2.2.
+> changed-file bundles were never affected. Upstream report:
+> [rasros/lx#76](https://github.com/rasros/lx/issues/76).
 >
 > The `-u -Y` skeleton shows the **public** API only: `lx` intentionally omits
 > leading-underscore (`_Foo`) classes and functions, so private helpers will not
