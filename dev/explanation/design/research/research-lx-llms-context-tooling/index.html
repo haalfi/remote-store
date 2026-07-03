@@ -8264,6 +8264,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#7b-resolution-2026-07-03-fixed-in-lx-v122" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7b. Resolution (2026-07-03): fixed in lx v1.2.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#8-references" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10306,6 +10317,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#7b-resolution-2026-07-03-fixed-in-lx-v122" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7b. Resolution (2026-07-03): fixed in lx v1.2.2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#8-references" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10600,6 +10622,36 @@ skeleton subsection now carries a workaround caveat (bundle <code>_models.py</co
 source until the fix lands). The §6 <strong>keep</strong> verdict stands: only the
 type-skeleton path is affected, while full-file and changed-file bundles, the
 bulk of the value, are fine.</p>
+<h2 id="7b-resolution-2026-07-03-fixed-in-lx-v122">7b. Resolution (2026-07-03): fixed in <code>lx</code> v1.2.2<a class="headerlink" href="#7b-resolution-2026-07-03-fixed-in-lx-v122" title="Permanent link">&para;</a></h2>
+<p><code>lx</code> v1.2.2 (released 2026-07-02) fixes the §7a skeleton bug. Validated
+empirically by re-running the exact repro on both versions against
+<code>src/remote_store/</code>:</p>
+<ul>
+<li><strong>v1.2.1 (before):</strong> <code>lx --xml -u -Y src/remote_store/_models.py</code> drops 4 of 5
+  public data-model class headers (<code>FileInfo</code>, <code>WriteResult</code>, <code>FolderEntry</code>,
+  <code>FolderInfo</code>), orphaning their fields under <code>ContentDigest</code> — reproduced the
+  documented failure exactly.</li>
+<li><strong>v1.2.2 (after):</strong> the same command emits all five public classes with headers
+  and fields intact. A whole-subtree sweep (<code>lx --xml -u -Y src/remote_store/</code>,
+  68 files) drops <strong>0 of 90 public classes</strong>, with no orphaned fields.</li>
+</ul>
+<p>The v1.2.2 release notes corroborate ("a comment on a function's first body line
+no longer leaks into the signature"; "an f-string in a class body no longer drops
+the next definition header"; <code>gotreesitter</code> bumped to v0.20.8).</p>
+<p>Two notes for anyone re-checking:</p>
+<ul>
+<li><strong>The skeleton is public-API-only by design.</strong> <code>lx</code>'s <code>-u -Y</code> intentionally
+  omits leading-underscore (<code>_</code>) classes and functions. Across <code>src/remote_store/</code>
+  that hides 22 private helper classes (e.g. <code>_AzureBinaryIO</code>, <code>_S3RangeReader</code>),
+  verified deliberate with a two-class probe (a trivial <code>_Foo</code> is dropped while a
+  public <code>Bar</code> is kept). This is expected filtering, not the §7a bug, and matches
+  the skeleton's purpose of surfacing the public API a consumer codes against.</li>
+<li><strong>Upstream <a href="https://github.com/rasros/lx/issues/76">rasros/lx#76</a> is still open</strong>
+  at the time of writing even though the fix shipped in v1.2.2 — the behaviour is
+  resolved, the tracker item just has not been closed.</li>
+</ul>
+<p><code>CONTRIBUTING.md</code>'s skeleton subsection now records the fix (upgrade to ≥ v1.2.2;
+workaround only needed on ≤ v1.2.1).</p>
 <h2 id="8-references">8. References<a class="headerlink" href="#8-references" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="https://github.com/rasros/lx"><code>rasros/lx</code></a> — the tool under evaluation.</li>

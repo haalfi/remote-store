@@ -11210,16 +11210,23 @@ docs build.</p>
 repo root (a whole-repo walk is ~3.7M tokens, mostly <code>tests/</code> and <code>sdd/</code>); no
 <code>.lxignore</code> is committed, so use <code>-e &lt;glob&gt;</code> for ad-hoc excludes.</p>
 <blockquote>
-<p><strong>Known limitation (<code>lx</code> ≤ v1.2.1).</strong> The <code>-u -Y</code> skeleton can silently drop
-the <code>class</code> header of decorated dataclasses. On
-<code>src/remote_store/_models.py</code> it dropped 4 of the 5 public data-model classes
-(<code>FileInfo</code>, <code>WriteResult</code>, <code>FolderEntry</code>, <code>FolderInfo</code>), orphaning their
-fields under <code>ContentDigest</code> and losing some fields entirely. The output
-still looks like valid Python, so the loss is easy to miss. Until
-<a href="https://github.com/rasros/lx/issues/76">rasros/lx#76</a> is fixed, do not trust
-the skeleton for the public data models: bundle them as full source instead
-(<code>lx --xml src/remote_store/_models.py</code>, ~1.7k tokens). The full-source and
-changed-file bundles are unaffected.</p>
+<p><strong>Fixed in <code>lx</code> v1.2.2 (affected <code>lx</code> ≤ v1.2.1).</strong> Earlier releases could
+silently drop the <code>class</code> header of decorated dataclasses from the <code>-u -Y</code>
+skeleton. On <code>src/remote_store/_models.py</code>, <code>lx</code> v1.2.1 dropped 4 of the 5
+public data-model classes (<code>FileInfo</code>, <code>WriteResult</code>, <code>FolderEntry</code>,
+<code>FolderInfo</code>), orphaning their fields under <code>ContentDigest</code> and losing some
+fields entirely; the output still looked like valid Python, so the loss was
+easy to miss. <code>lx</code> v1.2.2 fixes it: re-running <code>lx --xml -u -Y
+src/remote_store/</code> now emits every public class with its fields (0 public
+classes dropped across the whole subtree). <strong>Upgrade to ≥ v1.2.2</strong>
+(<code>go install github.com/rasros/lx/cmd/lx@latest</code>); on <code>lx</code> ≤ v1.2.1 only, work
+around it by bundling the data models as full source
+(<code>lx --xml src/remote_store/_models.py</code>, ~1.7k tokens). Full-source and
+changed-file bundles were never affected. Upstream report:
+<a href="https://github.com/rasros/lx/issues/76">rasros/lx#76</a>.</p>
+<p>The <code>-u -Y</code> skeleton shows the <strong>public</strong> API only: <code>lx</code> intentionally omits
+leading-underscore (<code>_Foo</code>) classes and functions, so private helpers will not
+appear — expected, not the bug above.</p>
 </blockquote>
 <h3 id="migrating-an-existing-checkout">Migrating an existing checkout<a class="headerlink" href="#migrating-an-existing-checkout" title="Permanent link">&para;</a></h3>
 <p>If you previously created <code>.venv/</code> with <code>python -m venv</code> or via IDE
