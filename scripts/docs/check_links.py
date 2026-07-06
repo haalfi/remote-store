@@ -574,9 +574,9 @@ def check_docs_site_links(repo_root: Path, valid_pages: set[str] | None = None) 
     is validated against the page set the site actually builds, so a
     mistyped or stale path segment fails the gate offline.
 
-    *valid_pages* is computed from the live tree when omitted; ``main`` threads
-    a single ``_docs_site_pages`` scan through here and the discovery-file check
-    so the (build_source_map + sdd/examples) walk runs once per invocation.
+    *valid_pages* is computed from the live tree when omitted; ``main`` computes
+    a single ``_docs_site_pages`` scan once and passes it in, so the
+    (build_source_map + sdd/examples) walk runs once per invocation.
     """
     from docs.scan import _git_repo_markdown  # type: ignore[import]
 

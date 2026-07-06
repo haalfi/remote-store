@@ -112,10 +112,7 @@ docs = [
   "mkdocs-gen-files>=0.5",
   "mkdocs-literate-nav>=0.6",
   "mkdocs-section-index>=0.3",
-  # ID-220: llms.txt / llms-full.txt + per-page Markdown twins. Pinned to a
-  # known-good line because upstream is in maintenance mode (author moved to
-  # Zensical); revisit at the Material->Zensical migration (ID-225).
-  "mkdocs-llmstxt>=0.5,<0.6",
+  "mkdocs-llmstxt>=0.5,<0.6",  # ID-220: llms.txt + Markdown twins; pinned, upstream maintenance-mode (ID-225)
   "mike>=2.0",
   "Pygments>=2.18",
   "ruff>=0.4",  # mkdocstrings signature formatting
