@@ -136,6 +136,30 @@ and the highest ID already in this file, then take the next integer. Run
   **Why ID, not BK:** unevaluated framework migration against a pre-1.0 upstream,
   no committed outcome.
 
+- [ ] **ID-227 — Consumer "guarantees & cost" digest, derived from the specs**
+  spec: — · effort: M (phase 1) / L (all) · audience: user.api, user.discoverability.llm
+  Feedback on `llms-full.txt` (and the ID-226 skeleton): both answer *how to
+  call it*, not the deeper contract — per-backend guarantees & failure modes,
+  the concurrency/consistency contract, retryable-vs-terminal errors and their
+  cross-backend mapping, and a per-operation cost model. That knowledge exists
+  in the SDD specs/ADRs/RFCs and `sdd/formal/` (Dafny `BackendContract` /
+  `ResourceSafety`, TLA+ `Observer`) but is deliberately kept out of the LLM
+  bundle (ID-220) and is too shallow in `explanation/{concurrency,performance}.md`.
+  Derive a consumer digest from that material — do **not** expose the raw SDD
+  subtree.
+  **Phase 1 (min, committed):** a generated per-backend × per-operation matrix
+  (atomicity · read-after-write consistency · retryable?) as an extension of the
+  ID-221/222 doc-graph (single-source-of-truth, drift-proof), surfaced in the
+  bundle. Closes the loudest gap (per-backend guarantees).
+  **Phase 2 (optional):** per-operation cost model (list vs head vs stream, per
+  backend) authored from the three-tier design ADRs (glob-0009, seekable-0016,
+  depth-limited listing / spec-038).
+  **Phase 3 (optional):** the formal concurrency/consistency contract in consumer
+  prose, sourced from `tla/Observer.tla` + the Dafny contracts.
+  Composes with ID-226: the skeleton gives the call surface + per-backend
+  docstring contracts; this gives the cross-backend guarantee/cost grid that no
+  docstring holds. Origin: user feedback on `llms-full.txt` depth gaps.
+
 - [ ] **ID-197 — Review context7.com docs page for framing and content gaps**
   spec: — · effort: S · audience: library.maintainer
   The context7 docs proxy surfaces how external tools and readers discover the

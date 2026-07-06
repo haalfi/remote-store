@@ -1,0 +1,82 @@
+id: ID-226
+title: "Publish llms-api.txt: public-API skeleton for coding agents"
+trigger: "llms-full.txt / the ID-220 twins give rendered prose, not a compact code-shaped public API surface; agents that *consume* remote-store want signatures + docstrings. lx already emits exactly that (public-only skeleton), so publish it and link it from the LLM bundle."
+source_items:
+  - ID-226
+  - ID-216
+  - ID-220
+audience:
+  - user.discoverability.llm
+  - library.maintainer
+discovery_followups:
+  - ID-227
+surprising_ripples:
+  - .readthedocs.yaml
+  - scripts/docs/check_links.py
+  - CONTRIBUTING.md
+expected_ripples:
+  - mkdocs.yml
+  - README.md
+  - docs-src/reference/api/index.md
+  - CHANGELOG.md
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Bundling a code skeleton for an LLM (optional)"
+        read_type: gate
+        extract: "lx -u -Y = PUBLIC-only skeleton (omits leading-underscore symbols, keeps public classes in _private modules); signatures + types + full docstrings; -e for excludes; pinned v1.2.2 (dataclass-header fix)"
+      - file: sdd/research/research-llms-full-txt-tooling.md
+        section: "1, 2"
+        read_type: reference
+        extract: "lx is a raw-source bundler (right tool for repo->agent context, ID-216); separate use case from the rendered-docs llms-full.txt (ID-220). This item is the *consumer* public cut, distinct from both."
+  - id: prove
+    name: Prove the artifact
+    steps:
+      - file: tmp/api-skeleton.xml
+        section: "(full run: lx --xml -u -Y src/remote_store/ via golang:latest docker)"
+        read_type: verify
+        extract: "90 public classes across core+aio+backends+ext, full typed signatures + docstrings; AzureBackend docstring carries per-backend guarantees (non-atomic move window, HNS divergence). ~320 KB. WARTS: __pycache__/*.pyc noise (needs -e __pycache__); ~20 internal-but-public-named classes surface vs __all__ (70) — accepted RAW."
+        outcome: ok
+      - file: src/remote_store/__init__.py
+        section: "__all__"
+        read_type: verify
+        extract: "70 re-exported names; the 90-vs-70 gap = backend/submodule public API (kept, needed by consumers) + ~20 internal-but-public-named types (transports, serializers, memory-tree nodes)"
+  - id: implement
+    name: Implement
+    steps:
+      - file: .readthedocs.yaml
+        section: "build.jobs.post_build"
+        read_type: reference
+        extract: "RTD is pip-only (no Go/Docker in build); fetch lx v1.2.2 prebuilt via install.sh (VERSION + LX_INSTALL_DIR), run it, write ${READTHEDOCS_OUTPUT}/html/llms-api.txt; non-fatal so a hiccup never reds the canonical build"
+      - file: mkdocs.yml
+        section: "plugins/llmstxt markdown_description"
+        read_type: reference
+        extract: "artifact is a build file, not a page, so it cannot be a `sections` entry — advertise it via markdown_description (new `## API context` heading), which the plugin embeds at the top of the generated llms.txt"
+      - file: README.md
+        section: "Learn more"
+        read_type: reference
+        extract: "add the LLM+human pointer trio (llms.txt / llms-full.txt / llms-api.txt)"
+      - file: docs-src/reference/api/index.md
+        section: "(intro)"
+        read_type: reference
+        extract: "tip admonition pointing coding agents at llms-api.txt"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Docs"
+        read_type: verify
+        extract: "docs-infra change (no backend/error/capability/version/dep/spec touch): CHANGELOG + BACKLOG move + trace + backlogid regen apply; no FEATURES/tested-versions ripple"
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) ID-226"
+        read_type: verify
+        extract: "shipped whole in this PR -> [x] + migrate (per backlog-status-brake hook); post-deploy check: confirm live RTD serves /latest/llms-api.txt (binary fetch unverifiable locally). ID-227 opened for the deeper guarantees/cost gaps."
+      - file: CONTRIBUTING.md
+        section: "Bundling a code skeleton for an LLM"
+        read_type: verify
+        extract: "empirical revalidation via lx v1.2.2 --stats: skeleton = ~80k tokens (not the stale ~29k, measured on buggy v1.2.1 that dropped classes), full source = ~265k (~262k claim confirmed). Corrected the figure; also fixed the now-false 'not used in the docs build' clause (RTD generates llms-api.txt with lx)."
+        outcome: ok

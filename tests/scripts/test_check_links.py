@@ -199,6 +199,15 @@ def test_resolve_docs_site_path_drops_fragment(check_links_mod):
     assert check_links_mod._resolve_docs_site_path(url) == "reference/api/store"
 
 
+@pytest.mark.parametrize("artifact", ["llms.txt", "llms-full.txt", "llms-api.txt"])
+def test_resolve_docs_site_path_skips_generated_root_files(check_links_mod, artifact):
+    # llms.txt / llms-full.txt (ID-220) and llms-api.txt (ID-226) are generated
+    # discovery artifacts served at the version root, not built mkdocs pages, so
+    # links to them must be skipped rather than validated against the page set.
+    url = f"https://docs.remotestore.dev/stable/{artifact}"
+    assert check_links_mod._resolve_docs_site_path(url) is None
+
+
 # ---------------------------------------------------------------------------
 # _normalize_docs_dest — source path → directory-URL page path (DOCFRAME-009)
 # ---------------------------------------------------------------------------

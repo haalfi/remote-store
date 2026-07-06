@@ -270,6 +270,7 @@ To explore `remote-store` beyond the Quick Start:
 - **Examples:** self-contained scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, SFTP, and Azure.
 - **Notebooks:** interactive [Jupyter notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks) that walk through common workflows step by step.
 - **Guides:** topic-focused walkthroughs in the [documentation](https://docs.remotestore.dev/stable/) covering backends, extensions, configuration, and patterns like data lake layouts or health checks.
+- **For AI coding agents:** point your agent at [`llms.txt`](https://docs.remotestore.dev/stable/llms.txt) (index) or [`llms-full.txt`](https://docs.remotestore.dev/stable/llms-full.txt) (the full docs). For the public API surface alone — every signature and docstring, backends included — use [`llms-api.txt`](https://docs.remotestore.dev/stable/llms-api.txt).
 
 ## How it compares
 
