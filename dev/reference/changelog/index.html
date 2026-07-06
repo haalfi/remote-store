@@ -9948,6 +9948,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../explanation/design/research/research-llms-full-txt-tooling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    `llms-full.txt` / Markdown-twin tooling for ID-220 (2026 refresh)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../explanation/design/research/research-logging-monitoring-tracing/" class="md-nav__link">
         
   
@@ -13772,6 +13800,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>ID-220: Serve per-page Markdown twins and a concatenated <code>llms-full.txt</code> via the <code>mkdocs-llmstxt</code> plugin, and repoint <code>llms.txt</code>'s links at the twins. Twins are built from the <em>rendered</em> site, so they capture the <code>mkdocstrings</code> API reference and the BK-171 link rewrites a raw-source bundler would miss. The plugin now generates <code>llms.txt</code> (the ID-161 hand-curated <code>docs-src/llms.txt</code> is removed; its prose moves into the plugin config), and <code>mkdocs build --strict</code> validates every listed page exists — superseding BK-307's static <code>llms.txt</code> link gate. <code>mkdocs-llmstxt</code> is adopted as interim tooling (it is in upstream maintenance mode); see ID-225 for the Material for MkDocs → Zensical migration this rides on.</li>
 <li>BK-308: Align <code>SEEKABLE_READ</code> wording so <code>read()</code>-vs-<code>read_seekable()</code> is self-evident everywhere</li>
 <li>ID-223: Make the API graph visualization explorable — role-aware nodes, collapsible method groups, node/edge detail with deep links to source, spec, and docs, and composable faceted filtering (kind, role, edge, runtime, capability, dependency) plus text search</li>
 <li>ID-222: Generate the FEATURES.md Store API, ungated-methods, and async backend-pairing tables from the documentation graph</li>
