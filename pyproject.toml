@@ -112,6 +112,7 @@ docs = [
   "mkdocs-gen-files>=0.5",
   "mkdocs-literate-nav>=0.6",
   "mkdocs-section-index>=0.3",
+  "mkdocs-llmstxt>=0.5,<0.6",  # ID-220: llms.txt + Markdown twins; pinned, upstream maintenance-mode (ID-225)
   "mike>=2.0",
   "Pygments>=2.18",
   "ruff>=0.4",  # mkdocstrings signature formatting

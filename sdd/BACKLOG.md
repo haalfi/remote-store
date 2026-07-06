@@ -106,31 +106,35 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Docs & Discoverability
 
-- [ ] **ID-220 — Serve Markdown page twins + `llms-full.txt` via `mkdocs-llmstxt`**
-  spec: — · effort: M · audience: user.discoverability.llm, library.maintainer
-  ID-161 publishes a curated `docs-src/llms.txt`, but its `## Docs` links point
-  at rendered HTML pages (`https://docs.remotestore.dev/stable/.../`). An agent
-  fetching those pays for nav chrome, CSS, and JS to recover the prose, against
-  the [llmstxt.org](https://llmstxt.org/) intent that each listed page resolve to
-  clean Markdown. The reference example (FastHTML) links every page to a Markdown
-  twin. Evaluate the [`mkdocs-llmstxt`](https://github.com/pawamoy/mkdocs-llmstxt)
-  plugin to generate a per-page Markdown twin plus a concatenated `llms-full.txt`,
-  served from the docs site, then repoint the `## Docs` links at the twins.
-  **Why a plugin, not raw repo links:** our docs pages are *generated/transformed*
-  — the API reference comes from `gen-files`, `mkdocs_hooks.py` (BK-171) rewrites
-  repo links to site URLs, and literate-nav sets reading order. Linking `## Docs`
-  at raw GitHub Markdown would miss all three. The `## Source` links can already
-  resolve to raw Markdown because those files are plain Markdown twins —
-  verbatim-mirrored `dual` (`FEATURES.md`, served at `reference/FEATURES.md`) or
-  `repo-only` (`README.md`) — whose raw bytes equal what the bridge serves, with
-  no generation step to bypass. This is
-  the published-docs counterpart to ID-216's repo-source bundling — same
-  `llms.txt`/`llms-full.txt` lineage, different target (docs prose, not source).
-  **Scope:** plugin trial against our MkDocs config; confirm twins build under
-  RTD and the root-served default version; decide keep/drop. Background:
-  [research](research/research-lx-llms-context-tooling.md) (prefers a
-  MkDocs-native plugin over a raw bundler for this).
-  **Why ID, not BK:** unevaluated tooling adoption, no committed outcome.
+- [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
+  spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling
+  Our docs foundation is entering maintenance mode as its authors converge on a
+  successor. [Material for MkDocs is feature-frozen](https://squidfunk.github.io/mkdocs-material/blog/2025/11/05/zensical/)
+  (critical bug/security fixes for ~12 months, no new features), MkDocs 1.x is
+  itself being forked (a `properdocs` MkDocs-1.x continuation now surfaces as a
+  transitive docs dep, and a build-time banner warns MkDocs 2.0 will break all
+  plugins/themes), and `mkdocs-llmstxt` (adopted in ID-220) is in maintenance
+  mode for the same reason. The whole ecosystem is pointing at
+  [**Zensical**](https://github.com/zensical/zensical) — a new MIT static site
+  generator (Rust core, reads `mkdocs.yml` natively, with a migration path) built
+  by the Material team. Crucially, `mkdocstrings`' author is rebuilding
+  API-reference-from-docstrings *inside* Zensical — the exact capability our docs
+  depend on `mkdocstrings` for.
+  **Not prioritized:** Zensical is pre-1.0 and does **not** yet ship the
+  API-reference feature we require, so "not yet — revisit when Zensical reaches
+  API-reference parity" is a legitimate outcome. Kept visible here as the
+  strategic anchor, not queued work.
+  **Scope when picked up:** trial `zensical build` against our `mkdocs.yml`;
+  confirm parity for the pieces we rely on (gen-files pages, mkdocstrings API
+  reference, literate-nav order, BK-171 link rewrites, mike/RTD versioning); and
+  fold in native `llms.txt` / `llms-full.txt` generation if Zensical ships it
+  (its roadmap already speaks of LLM/agent consumption). This item is the
+  **sunset trigger for the interim `mkdocs-llmstxt` adoption (ID-220)**: when the
+  migration lands, the HTML→Markdown plugin is a prime candidate for replacement
+  by a native feature.
+  Background: [research](research/research-llms-full-txt-tooling.md).
+  **Why ID, not BK:** unevaluated framework migration against a pre-1.0 upstream,
+  no committed outcome.
 
 - [ ] **ID-197 — Review context7.com docs page for framing and content gaps**
   spec: — · effort: S · audience: library.maintainer

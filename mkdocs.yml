@@ -46,6 +46,68 @@ hooks:
 
 plugins:
   - search
+  # ID-220: generate per-page Markdown twins + a concatenated llms-full.txt from
+  # the *rendered* site, so twins capture the gen-files/mkdocstrings API reference
+  # and the BK-171 link rewrites a raw-source bundler would miss. This plugin owns
+  # the generated /llms.txt and supersedes the ID-161 hand-curated docs-src/llms.txt
+  # (a short intro lives in markdown_description below; the full prose stays in the
+  # docs pages it links). base_url pins the twin/link prefix to the /stable alias
+  # the docs site serves.
+  # mkdocs-llmstxt is in upstream maintenance mode (author moved to Zensical) —
+  # interim tooling with a known sunset at the Material->Zensical migration (ID-225).
+  # See sdd/research/research-llms-full-txt-tooling.md.
+  - llmstxt:
+      base_url: https://docs.remotestore.dev/stable/
+      full_output: llms-full.txt
+      # Kept deliberately short: a stable, high-level positioning blurb, not a
+      # copy of the docs. The full prose, code examples, and usage patterns live
+      # in the pages this indexes (and in llms-full.txt), so there is no
+      # duplicated doc content here to drift out of sync.
+      markdown_description: |-
+        Unified file-storage API for Python. Write storage code once and switch
+        between Local, S3 (optionally via PyArrow), Azure (Blob & ADLS Gen2), SFTP,
+        SQL databases, or Microsoft Graph (OneDrive/SharePoint) via configuration.
+
+        A `Store` scopes every operation to a root path, so paths are relative and
+        `store.child(prefix)` narrows the root. Backends implement storage-specific
+        behavior; extensions (`remote_store.ext`) add optional capabilities; a native
+        async API (`remote_store.aio`) mirrors the sync interface. Backends declare
+        capabilities, so code checks support explicitly with `store.supports(...)`.
+        The pages below carry the full detail and examples.
+
+        ## Source
+
+        - [GitHub repository](https://github.com/haalfi/remote-store): source tree, issues, and discussions.
+        - [README](https://raw.githubusercontent.com/haalfi/remote-store/master/README.md): project overview and quick start (raw Markdown).
+        - [FEATURES](https://raw.githubusercontent.com/haalfi/remote-store/master/FEATURES.md): authoritative backend, extension, capability, and install-extras list (raw Markdown).
+        - [PyPI](https://pypi.org/project/remote-store/): releases and `pip install remote-store[...]` extras.
+      # NB: the plugin expands these with fnmatch, where `*` spans `/`, so each
+      # `<dir>/*.md` is recursive — `guides/*.md` also pulls guides/backends/*,
+      # `reference/api/*.md` also pulls reference/api/{aio,backends,extensions}/*.
+      # (A `**` glob would be *narrower* under fnmatch: it requires an
+      # intermediate directory and would drop the top-level pages. Don't "fix" it.)
+      sections:
+        Tutorial:
+          - tutorial/*.md
+        Guides:
+          - guides/*.md
+        Reference:
+          - reference/api/*.md
+          - reference/capabilities-matrix.md
+          - reference/migration.md
+          - reference/tested-versions.md
+          - reference/FEATURES.md
+        # Explanation is listed page-by-page (not globbed) on purpose: an
+        # `explanation/*.md` fnmatch glob would also pull in the internal
+        # explanation/design/ subtree (specs, ADRs, RFCs, audits, research),
+        # which is contributor-facing, not part of the user docs bundle. Like
+        # the Reference list above, the section-landing index stub is omitted.
+        Explanation:
+          - explanation/architecture.md
+          - explanation/concurrency.md
+          - explanation/graph-ir.md
+          - explanation/performance.md
+          - explanation/security-model.md
   - mike:
       version_selector: true
   - gen-files:

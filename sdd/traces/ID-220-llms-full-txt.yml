@@ -1,0 +1,81 @@
+id: ID-220
+title: "Serve Markdown page twins + llms-full.txt via mkdocs-llmstxt"
+trigger: "ID-161's llms.txt linked at rendered HTML pages, not clean Markdown; a plugin was wanted to emit per-page twins + llms-full.txt, but the recommended plugin had since entered maintenance mode"
+source_items:
+  - ID-220
+  - ID-161
+audience:
+  - user.discoverability.llm
+  - library.maintainer
+  - contributor.tooling
+discovery_followups:
+  - ID-225
+surprising_ripples:
+  - scripts/docs/check_links.py
+  - tests/scripts/test_check_links.py
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) ID-220"
+        read_type: gate
+        extract: "twins + llms-full.txt goal; prefers a MkDocs-native plugin; scope is trial + keep/drop"
+      - file: sdd/research/research-lx-llms-context-tooling.md
+        section: "3, 4"
+        read_type: reference
+        extract: "why a rendered-output plugin beats a raw-source bundler for our generated/transformed pipeline"
+  - id: research
+    name: Research
+    steps:
+      - file: sdd/research/research-llms-full-txt-tooling.md
+        section: "(full)"
+        read_type: gate
+        extract: "fresh 2026 landscape: mkdocs-llmstxt maintenance-mode is the Zensical pivot; whole docs stack is following; lx's v1.2.2 fix is orthogonal"
+  - id: implement
+    name: Implement
+    steps:
+      - file: mkdocs.yml
+        section: "plugins, docs_dir"
+        read_type: reference
+        extract: "insert the llmstxt plugin after search; markdown_description carries ID-161 prose; comprehensive grouped sections; base_url=/stable"
+      - file: scripts/gen_pages.py
+        section: "(full)"
+        read_type: reference
+        extract: "confirm gen-files does static scanning (no runtime package import), so a docs-only venv can build the pipeline"
+      - file: tmp/docs-venv/lib/python3.11/site-packages/mkdocs_llmstxt/_internal/plugin.py
+        section: "on_post_build, on_page_content"
+        read_type: gate
+        extract: "plugin ALWAYS writes llms.txt (no opt-out); one sections list drives index+twins+full; twins at <page>/index.md; base_url overrides site_url"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[project.optional-dependencies] docs"
+        read_type: reference
+        extract: "pin mkdocs-llmstxt>=0.5,<0.6 (maintenance-mode upstream)"
+  - id: verify
+    name: Verify
+    steps:
+      - file: mkdocs.yml
+        section: "plugins/llmstxt"
+        read_type: verify
+        extract: "mkdocs build --strict passes; empirically confirmed the Store API twin captures rendered mkdocstrings output and llms.txt links resolve to /stable twins; a bogus section entry aborts strict"
+      - file: scripts/docs/check_links.py
+        section: "BK-307 discovery-file gate"
+        read_type: verify
+        extract: "static llms.txt link gate retired (llms.txt now generated + strict-validated); context7 gate kept; check_links runs clean with docs-src/llms.txt deleted"
+        outcome: ok
+      - file: tests/scripts/test_check_links.py
+        section: "discovery-file tests"
+        read_type: verify
+        extract: "removed the 5 llms.txt discovery tests + _LLMS_VALID; 65 remaining tests pass"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Dependency + Docs"
+        read_type: verify
+        extract: "docs-build dep (not a user extra), so no README/FEATURES ripple; CHANGELOG + BACKLOG move + trace + backlogid regen apply"
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) ID-220"
+        read_type: verify
+        extract: "move ID-220 to done; open ID-225 (Zensical migration) as the interim-adoption sunset trigger"
