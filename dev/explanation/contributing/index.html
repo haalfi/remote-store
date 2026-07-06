@@ -11223,12 +11223,14 @@ hatch expects.</p>
 <p>To orient a coding agent on a subtree without spending tokens on full bodies,
 <a href="https://github.com/rasros/lx"><code>lx</code></a> (Go, MIT) emits an AST-level skeleton —
 class/method signatures, type fields, and docstrings only. For
-<code>src/remote_store/</code> that is ~29k tokens versus ~262k for the full source, and
+<code>src/remote_store/</code> that is ~80k tokens versus ~265k for the full source, and
 there is no concise <code>git archive</code> / <code>cat</code> equivalent. This is the one job <code>lx</code>
 does that is awkward to reproduce by hand; for whole-file context just let the
-agent read the files. <code>lx</code> is a purely local convenience: <strong>not</strong> a project
-dependency, <strong>not</strong> installed by any <code>hatch</code> script, <strong>not</strong> used in CI or the
-docs build.</p>
+agent read the files. As a contributor's skeleton tool <code>lx</code> is a purely local
+convenience: <strong>not</strong> a project dependency and <strong>not</strong> installed by any <code>hatch</code>
+script. (Separately, the Read the Docs build fetches a pinned <code>lx</code> binary to
+generate the published <code>llms-api.txt</code> API skeleton — see <code>.readthedocs.yaml</code>;
+that is an automated publish step, not part of local development.)</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>go<span class="w"> </span>install<span class="w"> </span>github.com/rasros/lx/cmd/lx@latest<span class="w">          </span><span class="c1"># one-time</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>lx<span class="w"> </span>--xml<span class="w"> </span>-u<span class="w"> </span>-Y<span class="w"> </span>src/remote_store/<span class="w">   </span><span class="c1"># skeleton: signatures + types only</span>

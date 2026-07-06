@@ -20,6 +20,14 @@ The pages below carry the full detail and examples.
 - [FEATURES](https://raw.githubusercontent.com/haalfi/remote-store/master/FEATURES.md): authoritative backend, extension, capability, and install-extras list (raw Markdown).
 - [PyPI](https://pypi.org/project/remote-store/): releases and `pip install remote-store[...]` extras.
 
+## API context (for coding agents)
+
+- [llms-api.txt](https://docs.remotestore.dev/stable/llms-api.txt): the
+  full public API surface as a code-shaped skeleton — every class and
+  function (backends, async, and extensions included) with its exact
+  signature, type annotations, and complete docstring, bodies elided.
+  The whole public surface in a single file for a coding agent's context.
+
 # Tutorial
 
 # Tutorial
@@ -245,6 +253,7 @@ To explore `remote-store` beyond the Quick Start:
 - **Examples:** self-contained scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, SFTP, and Azure.
 - **Notebooks:** interactive [Jupyter notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks) that walk through common workflows step by step.
 - **Guides:** topic-focused walkthroughs in the [documentation](https://docs.remotestore.dev/stable/) covering backends, extensions, configuration, and patterns like data lake layouts or health checks.
+- **For AI coding agents:** point your agent at [`llms.txt`](https://docs.remotestore.dev/stable/llms.txt) (index) or [`llms-full.txt`](https://docs.remotestore.dev/stable/llms-full.txt) (the full docs). For the public API surface alone — every signature and docstring, backends included — use [`llms-api.txt`](https://docs.remotestore.dev/stable/llms-api.txt).
 
 ## How it compares
 
@@ -7100,6 +7109,10 @@ Returns:
 Complete reference for all public exports of `remote-store`.
 
 Symbols below are grouped by role. The import path is `remote_store` unless a group says otherwise: storage backends live in `remote_store.backends`, extensions in `remote_store.ext`, and the entire async surface in `remote_store.aio` (see the [Async section](#async), whose layout mirrors this page).
+
+Feeding this to a coding agent?
+
+[`llms-api.txt`](https://docs.remotestore.dev/stable/llms-api.txt) carries this entire surface as one code-shaped skeleton — every signature, type annotation, and docstring (backends, async, and extensions included), with bodies elided — in a single file for an agent's context.
 
 ## Core
 

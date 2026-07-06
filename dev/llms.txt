@@ -20,6 +20,14 @@ The pages below carry the full detail and examples.
 - [FEATURES](https://raw.githubusercontent.com/haalfi/remote-store/master/FEATURES.md): authoritative backend, extension, capability, and install-extras list (raw Markdown).
 - [PyPI](https://pypi.org/project/remote-store/): releases and `pip install remote-store[...]` extras.
 
+## API context (for coding agents)
+
+- [llms-api.txt](https://docs.remotestore.dev/stable/llms-api.txt): the
+  full public API surface as a code-shaped skeleton — every class and
+  function (backends, async, and extensions included) with its exact
+  signature, type annotations, and complete docstring, bodies elided.
+  The whole public surface in a single file for a coding agent's context.
+
 ## Tutorial
 
 - [Tutorial](https://docs.remotestore.dev/stable/tutorial/index.md)

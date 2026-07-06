@@ -4,6 +4,10 @@ Complete reference for all public exports of `remote-store`.
 
 Symbols below are grouped by role. The import path is `remote_store` unless a group says otherwise: storage backends live in `remote_store.backends`, extensions in `remote_store.ext`, and the entire async surface in `remote_store.aio` (see the [Async section](#async), whose layout mirrors this page).
 
+Feeding this to a coding agent?
+
+[`llms-api.txt`](https://docs.remotestore.dev/stable/llms-api.txt) carries this entire surface as one code-shaped skeleton — every signature, type annotation, and docstring (backends, async, and extensions included), with bodies elided — in a single file for an agent's context.
+
 ## Core
 
 | Class                                                                           | Description                                      |

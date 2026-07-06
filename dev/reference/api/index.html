@@ -10244,6 +10244,13 @@
 group says otherwise: storage backends live in <code>remote_store.backends</code>,
 extensions in <code>remote_store.ext</code>, and the entire async surface in
 <code>remote_store.aio</code> (see the <a href="#async">Async section</a>, whose layout mirrors this page).</p>
+<div class="admonition tip">
+<p class="admonition-title">Feeding this to a coding agent?</p>
+<p><a href="https://docs.remotestore.dev/stable/llms-api.txt"><code>llms-api.txt</code></a> carries
+this entire surface as one code-shaped skeleton — every signature, type
+annotation, and docstring (backends, async, and extensions included), with
+bodies elided — in a single file for an agent's context.</p>
+</div>
 <h2 id="core">Core<a class="headerlink" href="#core" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
