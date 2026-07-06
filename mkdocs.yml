@@ -97,6 +97,11 @@ plugins:
           - reference/migration.md
           - reference/tested-versions.md
           - reference/FEATURES.md
+        # Explanation is listed page-by-page (not globbed) on purpose: an
+        # `explanation/*.md` fnmatch glob would also pull in the internal
+        # explanation/design/ subtree (specs, ADRs, RFCs, audits, research),
+        # which is contributor-facing, not part of the user docs bundle. Like
+        # the Reference list above, the section-landing index stub is omitted.
         Explanation:
           - explanation/architecture.md
           - explanation/concurrency.md
