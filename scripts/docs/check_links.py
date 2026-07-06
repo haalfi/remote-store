@@ -81,6 +81,12 @@ _DOCS_SITE_HOST = "docs.remotestore.dev"
 # frozen snapshot the current docs-src/ tree cannot vouch for, so it is
 # left unchecked.
 _DOCS_VERSION_ALIASES = ("stable", "latest")
+# Machine-readable discovery artifacts served at each version root but NOT built
+# as mkdocs pages: the mkdocs-llmstxt plugin emits ``llms.txt`` / ``llms-full.txt``
+# (ID-220), and Read the Docs emits ``llms-api.txt`` at build time (ID-226). They
+# have no entry in the docs-site page set, so links to them are checked for the
+# well-known filename rather than against ``build_source_map``.
+_DOCS_GENERATED_ROOT_FILES = frozenset({"llms.txt", "llms-full.txt", "llms-api.txt"})
 
 
 @dataclass(frozen=True)
@@ -546,7 +552,10 @@ def _resolve_docs_site_path(url: str) -> str | None:
     segments = path.split("/")
     if segments[0] not in _DOCS_VERSION_ALIASES:
         return None  # numbered-version snapshot, or no version prefix
-    return "/".join(segments[1:])
+    page = "/".join(segments[1:])
+    if page in _DOCS_GENERATED_ROOT_FILES:
+        return None  # generated discovery artifact (llms*.txt), not a built page
+    return page
 
 
 def _find_broken_docs_site_links(text: str, source: Path, valid_pages: set[str]) -> list[BrokenLink]:

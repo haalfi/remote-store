@@ -81,6 +81,14 @@ plugins:
         - [README](https://raw.githubusercontent.com/haalfi/remote-store/master/README.md): project overview and quick start (raw Markdown).
         - [FEATURES](https://raw.githubusercontent.com/haalfi/remote-store/master/FEATURES.md): authoritative backend, extension, capability, and install-extras list (raw Markdown).
         - [PyPI](https://pypi.org/project/remote-store/): releases and `pip install remote-store[...]` extras.
+
+        ## API context (for coding agents)
+
+        - [llms-api.txt](https://docs.remotestore.dev/stable/llms-api.txt): the
+          full public API surface as a code-shaped skeleton — every class and
+          function (backends, async, and extensions included) with its exact
+          signature, type annotations, and complete docstring, bodies elided.
+          The whole public surface in a single file for a coding agent's context.
       # NB: the plugin expands these with fnmatch, where `*` spans `/`, so each
       # `<dir>/*.md` is recursive — `guides/*.md` also pulls guides/backends/*,
       # `reference/api/*.md` also pulls reference/api/{aio,backends,extensions}/*.
