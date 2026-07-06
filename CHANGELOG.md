@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-220: Serve per-page Markdown twins and a concatenated `llms-full.txt` via the `mkdocs-llmstxt` plugin, and repoint `llms.txt`'s links at the twins. Twins are built from the *rendered* site, so they capture the `mkdocstrings` API reference and the BK-171 link rewrites a raw-source bundler would miss. The plugin now generates `llms.txt` (the ID-161 hand-curated `docs-src/llms.txt` is removed; its prose moves into the plugin config), and `mkdocs build --strict` validates every listed page exists — superseding BK-307's static `llms.txt` link gate. `mkdocs-llmstxt` is adopted as interim tooling (it is in upstream maintenance mode); see ID-225 for the Material for MkDocs → Zensical migration this rides on.
 - BK-308: Align `SEEKABLE_READ` wording so `read()`-vs-`read_seekable()` is self-evident everywhere
 - ID-223: Make the API graph visualization explorable — role-aware nodes, collapsible method groups, node/edge detail with deep links to source, spec, and docs, and composable faceted filtering (kind, role, edge, runtime, capability, dependency) plus text search
 - ID-222: Generate the FEATURES.md Store API, ungated-methods, and async backend-pairing tables from the documentation graph

@@ -8,6 +8,34 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-220 — Serve Markdown page twins + `llms-full.txt` via `mkdocs-llmstxt`**
+  spec: — · effort: M · audience: user.discoverability.llm, library.maintainer, contributor.tooling
+  Adopted the [`mkdocs-llmstxt`](https://github.com/pawamoy/mkdocs-llmstxt)
+  plugin (pinned `>=0.5,<0.6` in the `docs` extra). It builds a per-page
+  Markdown twin (`<page>/index.md`) and a concatenated `llms-full.txt` from the
+  **rendered** site, so the twins carry the `mkdocstrings` API reference and the
+  BK-171 URL rewrites a raw-source bundler (`lx`, `-md`/`-source` plugins) would
+  miss — verified empirically: the `Store` API twin contains the full rendered
+  class surface, and `llms-full.txt` is ~745 KB across Tutorial/Guides/Reference/
+  Explanation. **Design fork resolved:** the plugin *always* generates `llms.txt`
+  from one `sections` list that also drives the twins and `llms-full.txt`, so the
+  three outputs are coupled and the ID-161 hand-curated `docs-src/llms.txt` could
+  not be kept as a static file. Chose the **comprehensive** shape — a grouped
+  index of all user-facing docs — over mirroring ID-161's minimal 6-link index,
+  because a `llms-full.txt` omitting most guides and the whole API reference is
+  not meaningfully "full". ID-161's curated prose + `## Source` links are
+  preserved via the plugin's `markdown_description`; `base_url` pins twin links to
+  the `/stable` alias. **BK-307's static `llms.txt` link gate was retired** (its
+  function, constant, and 5 tests removed from `check_links.py` /
+  `test_check_links.py`): `llms.txt` is now generated from real page URIs and
+  `mkdocs build --strict` aborts on any missing section page — a stronger,
+  build-time check. Adopted as **interim tooling**: `mkdocs-llmstxt` is in
+  upstream maintenance mode (author moved to Zensical), with a known sunset at the
+  Material → Zensical migration (**ID-225**, opened alongside this). Fresh
+  evaluation in [research](research/research-llms-full-txt-tooling.md); the
+  original ID-161-era reasoning is in
+  [research-lx-llms-context-tooling.md](research/research-lx-llms-context-tooling.md).
+
 - [x] **BK-308 — Align `SEEKABLE_READ` wording so `read()`-vs-`read_seekable()` is self-evident everywhere**
   spec: SEEK-001 · effort: S · audience: user.api_docs, user.site, user.discoverability.llm
   `SEEKABLE_READ` is a property of `read()` (SEEK-001), but a `False` value

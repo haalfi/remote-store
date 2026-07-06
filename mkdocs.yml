@@ -46,6 +46,92 @@ hooks:
 
 plugins:
   - search
+  # ID-220: generate per-page Markdown twins + a concatenated llms-full.txt from
+  # the *rendered* site, so twins capture the gen-files/mkdocstrings API reference
+  # and the BK-171 link rewrites a raw-source bundler would miss. This plugin owns
+  # the generated /llms.txt and supersedes the ID-161 hand-curated docs-src/llms.txt
+  # (its curated prose now lives in markdown_description below). base_url pins the
+  # twin/link prefix to the /stable alias the docs site serves.
+  # mkdocs-llmstxt is in upstream maintenance mode (author moved to Zensical) —
+  # interim tooling with a known sunset at the Material->Zensical migration (ID-225).
+  # See sdd/research/research-llms-full-txt-tooling.md.
+  - llmstxt:
+      base_url: https://docs.remotestore.dev/stable/
+      full_output: llms-full.txt
+      markdown_description: |-
+        Unified file-storage API for Python. Write storage code once and switch
+        between Local, S3 (optionally via PyArrow), Azure (Blob & ADLS Gen2), SFTP,
+        SQL databases, or Microsoft Graph (OneDrive/SharePoint) via configuration.
+
+        A `Store` is a logical folder; where files live is configuration. The core idea:
+        a `Store` scopes all operations to a root path, so every path is relative, and
+        `store.child(prefix)` narrows that root further. How the layers fit together:
+
+        - The **Store** provides a portable API.
+        - **Backends** implement storage-specific behavior.
+        - **Libraries** (s3fs, paramiko, the Azure SDK, ...) do the actual I/O.
+        - **Extensions** (`remote_store.ext`) add optional capabilities alongside the core.
+
+        Backends declare capabilities, so code checks support explicitly instead of
+        relying on backend-specific behavior — for example, gate a glob on
+        `Capability.GLOB`:
+
+        ```python
+        from remote_store import Capability
+
+        if store.supports(Capability.GLOB):
+            for info in store.glob("data/**/*.parquet"):
+                ...
+        ```
+
+        When a backend lacks a capability, an extension can sometimes bridge it.
+        `ext.glob.glob_files` matches patterns on backends without native `GLOB` by
+        listing and filtering client-side (and uses native glob where available):
+
+        ```python
+        from remote_store.ext.glob import glob_files
+
+        for info in glob_files(store, "data/**/*.parquet"):
+            ...
+        ```
+
+        Not every gap is bridgeable, though — capabilities that need backend-native
+        I/O (e.g. atomic writes, server-side metadata) cannot be synthesized by an
+        extension.
+
+        A native async API (`remote_store.aio`) mirrors the sync interface, with
+        adapters to bridge between sync and async contexts.
+
+        Common usage patterns:
+
+        - Stream reads: `with store.read(path) as f:`
+        - Fast tests: `MemoryBackend` for zero-I/O unit tests
+        - Cross-store transfer: `transfer(src_store, src_path, dst_store, dst_path)` from `remote_store.ext.transfer`
+        - Other extensions (`remote_store.ext`): `ext.integrity` (content hashing), `ext.partition` (partitioned key layouts)
+
+        ## Source
+
+        - [GitHub repository](https://github.com/haalfi/remote-store): source tree, issues, and discussions.
+        - [README](https://raw.githubusercontent.com/haalfi/remote-store/master/README.md): project overview and quick start (raw Markdown).
+        - [FEATURES](https://raw.githubusercontent.com/haalfi/remote-store/master/FEATURES.md): authoritative backend, extension, capability, and install-extras list (raw Markdown).
+        - [PyPI](https://pypi.org/project/remote-store/): releases and `pip install remote-store[...]` extras.
+      sections:
+        Tutorial:
+          - tutorial/*.md
+        Guides:
+          - guides/*.md
+        Reference:
+          - reference/api/*.md
+          - reference/capabilities-matrix.md
+          - reference/migration.md
+          - reference/tested-versions.md
+          - reference/FEATURES.md
+        Explanation:
+          - explanation/architecture.md
+          - explanation/concurrency.md
+          - explanation/graph-ir.md
+          - explanation/performance.md
+          - explanation/security-model.md
   - mike:
       version_selector: true
   - gen-files:
