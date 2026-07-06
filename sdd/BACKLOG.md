@@ -159,6 +159,14 @@ and the highest ID already in this file, then take the next integer. Run
   Composes with ID-226: the skeleton gives the call surface + per-backend
   docstring contracts; this gives the cross-backend guarantee/cost grid that no
   docstring holds. Origin: user feedback on `llms-full.txt` depth gaps.
+  **Scope refinement (ID-226 self-eval):** a 12-question black-box DX probe
+  (an agent answering from `llms-full.txt` vs `llms-api.txt`, judged against
+  source) found the per-backend guarantee facts are *already present but
+  scattered* in the Graph-era docstrings both artifacts carry — so Phase 1 is
+  **consolidation** into one cross-backend matrix, not authoring from scratch.
+  The genuinely uncovered gaps are the **cost model** (Phase 2) and a unified
+  **retryable-vs-terminal** classification. Don't over-scope Phase 1 as "the
+  docs say nothing".
 
 - [ ] **ID-197 — Review context7.com docs page for framing and content gaps**
   spec: — · effort: S · audience: library.maintainer
