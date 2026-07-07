@@ -296,6 +296,42 @@ on failure. `read`, `list`, and `metadata` are non-mutating (atomicity N/A);
 § `azure` `write` commits atomically on flat (non-HNS) accounts; on hierarchical-namespace accounts use `write_atomic` for a guaranteed atomic replace.
 <!-- END_GENERATED:atomicity -->
 
+**Read-after-write consistency by backend** — whether a read or listing issued
+after a write, overwrite, or delete reflects that change. remote-store normalises
+to **strong** read-after-write on every read/write backend: the object you just
+wrote or deleted is immediately visible to a subsequent `read`, `head`, or
+`list_files` on the same store, with no eventual-consistency window to code
+around. This is a per-caller *visibility* guarantee, not mutual exclusion between
+*simultaneous* writers — `overwrite=False` remains a TOCTOU convenience guard, and
+concurrent writers to one key resolve last-writer-wins. See
+[Concurrency and atomicity](https://docs.remotestore.dev/stable/explanation/concurrency/)
+for the ordering and race semantics.
+
+<!-- BEGIN_GENERATED:consistency -->
+| Backend | Read-after-write | Listing consistency |
+|---|---|---|
+| `azure` | Strong | Strong |
+| `http` | — (read-only) | — (read-only) |
+| `local` | Strong | Strong |
+| `memory` | Strong | Strong |
+| `s3` | Strong | Strong\* |
+| `s3-pyarrow` | Strong | Strong\* |
+| `sftp` | Strong | Strong |
+| `sql-blob` | Strong | Strong |
+| `sql-query` | — (read-only) | — (read-only) |
+
+The async-native backends inherit their sync peer's consistency; the async-only `GraphBackend` is the one distinct case.
+
+| Async backend | Read-after-write | Listing consistency |
+|---|---|---|
+| `AsyncAzureBackend` | Strong | Strong |
+| `AsyncMemoryBackend` | Strong | Strong |
+| `GraphBackend` | Strong† | Strong† |
+
+\* `s3` / `s3-pyarrow` listings are strongly consistent by default: the backend leaves the s3fs directory cache **off** (`use_listings_cache=False`), so a listing taken after a write reflects it. Opting into `client_options['use_listings_cache']` trades this for a cache that never expires — a listing can then stay blind to a cross-writer change until the backend is rebuilt.
+† `GraphBackend` read-your-writes holds on one instance (a write is committed to two datacentre regions before it is acknowledged). `copy` (always) and a large or cross-folder `move` (sometimes) run server-side and are polled to completion before the call returns, so a read or listing afterwards reflects the result.
+<!-- END_GENERATED:consistency -->
+
 **Native async backends** — constructed directly via `AsyncStore(backend=…)`;
 no RegistryConfig `type=` string (there is no async config registry).
 

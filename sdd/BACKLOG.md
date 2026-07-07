@@ -138,9 +138,14 @@ and the highest ID already in this file, then take the next integer. Run
 
 - [~] **ID-227 — Consumer "guarantees & cost" digest, derived from the specs**
   spec: — · effort: M (phase 1) / L (all) · audience: user.api, user.discoverability.llm
-  **Status:** Phase 1 (atomicity + retryable-vs-terminal matrices in `FEATURES.md`,
-  surfaced in the bundle) is implemented. Phases 2 (read-after-write consistency)
-  and 3 (cost model) remain open — stays `[~]` until they land.
+  **Status:** Phases 1 (atomicity + retryable-vs-terminal matrices) and 2
+  (read-after-write consistency matrix) are implemented in `FEATURES.md` and
+  surfaced in the bundle. Phase 3 (cost model) remains open — stays `[~]` until
+  it lands. Phase-2 finding: every read/write backend normalises to **strong**
+  read-after-write (verified against AWS/Azure/MS vendor docs + backend source),
+  so the matrix is near-uniform with two footnoted caveats (S3 opt-in listing
+  cache, Graph async monitor ops) rather than the per-backend variation the
+  original framing anticipated.
   Feedback on `llms-full.txt` (and the ID-226 skeleton): both answer *how to
   call it*, not the deeper contract — per-backend guarantees & failure modes,
   read-after-write consistency, retryable-vs-terminal errors and their
@@ -222,6 +227,34 @@ and the highest ID already in this file, then take the next integer. Run
   downstream LLM answer.
   Composes with ID-226 (skeleton call surface) and ID-227 (cross-backend grid).
   Origin: ID-227 docstring census + LLM feedback on `llms-full.txt` depth gaps.
+
+- [ ] **BUG-227 — FEATURES.md §LIST/§GLOB advertise wrong return types (`Iterator[str]` vs `FileInfo`/`FolderEntry`)**
+  spec: — · effort: S · audience: user.api_docs, user.discoverability.llm
+  The hand-authored Store-API method tables in `FEATURES.md` annotate the
+  iterating reads with types that no longer match the code: `list_files` (§LIST),
+  `list_folders` (§LIST), and `glob` (§GLOB) are shown as `Iterator[str]`, and
+  `iter_children` as `Iterator[FileInfo | FolderInfo]`. The real signatures are
+  `list_files -> Iterator[FileInfo]`, `list_folders -> Iterator[FolderEntry]`,
+  `glob -> Iterator[FileInfo]`, and `iter_children -> Iterator[FileInfo |
+  FolderEntry]` (`FolderInfo` is a different model — `path` / `file_count` /
+  `total_size`, returned by `get_folder_info`). A reader coding to the table
+  expects bare path strings and iterates wrong.
+  **Reproduce:** `next(iter(Store(MemoryBackend()).list_files(".")))` returns a
+  `FileInfo`, not a `str` (`.path` / `.name` carry the path). Signatures:
+  `src/remote_store/_store.py:417` (`list_files`), `:481` (`list_folders`),
+  `:537` (`iter_children`), `:559` (`glob`).
+  **Confirmed stale:** the CHANGELOG already records the change under **ID-072**
+  (`list_folders()` and `iter_children()` moved off `Iterator[str]` to
+  `FolderEntry`), so `FEATURES.md` simply missed the update; `list_files`/`glob`
+  were never `str` in this table's lifetime. These cells are **not** in a
+  `BEGIN_GENERATED` region, so the mkdocstrings API reference (generated from the
+  real signatures) already contradicts them.
+  Fix: correct the four cells; consider promoting the §LIST/§GLOB return-type
+  tables into a graph-generated region (like the gated/ungated tables) so return
+  types cannot silently drift again.
+  Origin: discovered while empirically validating the ID-227 Phase-2 consistency
+  matrix — the probe's `list_files` membership check failed because the API yields
+  `FileInfo`, not `str`.
 
 - [ ] **ID-197 — Review context7.com docs page for framing and content gaps**
   spec: — · effort: S · audience: library.maintainer
