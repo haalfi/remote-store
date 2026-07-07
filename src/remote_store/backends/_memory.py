@@ -37,6 +37,10 @@ class MemoryBackend(Backend):
 
     All capabilities except ``GLOB`` are supported.  The full conformance
     suite passes with zero skips.
+
+    Every mutating operation runs under a single process-wide lock, so
+    ``write``, ``write_atomic``, ``move``, and ``copy`` are atomic with respect
+    to concurrent callers in the same process (``ATOMIC_MOVE`` is advertised).
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES

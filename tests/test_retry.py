@@ -17,6 +17,7 @@ from hypothesis import strategies as st
 
 from remote_store._retry import (
     RETRYABLE_STATUSES,
+    TERMINAL_STATUSES,
     apply_retry_after,
     backoff_envelope,
     budget_exhausted,
@@ -26,7 +27,7 @@ from remote_store._retry import (
 )
 
 # ---------------------------------------------------------------------------
-# RETRYABLE_STATUSES
+# RETRYABLE_STATUSES / TERMINAL_STATUSES
 # ---------------------------------------------------------------------------
 
 
@@ -37,6 +38,19 @@ def test_retryable_statuses_are_5xx_plus_throttle() -> None:
     assert 408 not in RETRYABLE_STATUSES
     for terminal in (403, 404, 409, 423, 507):
         assert terminal not in RETRYABLE_STATUSES
+
+
+def test_terminal_statuses_are_the_documented_set() -> None:
+    # RET-015: 403 accessDenied / 404 itemNotFound / 423 resourceLocked, 409
+    # create-race (GR-018), 507 insufficientStorage. These are the statuses the
+    # retry loops surface on the first response rather than re-attempt.
+    assert {403, 404, 409, 423, 507} == TERMINAL_STATUSES
+
+
+def test_retryable_and_terminal_are_disjoint() -> None:
+    # The split is the retry loops' branch condition — an overlap would make a
+    # status both retried and surfaced-immediately, which is incoherent.
+    assert RETRYABLE_STATUSES.isdisjoint(TERMINAL_STATUSES)
 
 
 # ---------------------------------------------------------------------------

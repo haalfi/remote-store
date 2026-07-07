@@ -224,6 +224,10 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
     Supports all capabilities except ``LAZY_READ``.
 
+    Every mutating operation runs inside a single database transaction, so
+    ``write``, ``write_atomic``, ``move``, and ``copy`` are atomic — a failure
+    rolls back with no partial row left behind (``ATOMIC_MOVE`` is advertised).
+
     Note:
         **Non-lazy reads and writes.** Both ``read()`` and ``write()``
         materialize the full content in memory. ``read()`` loads the

@@ -89,6 +89,74 @@ _EXTRA_CELL_OVERRIDES: dict[str, str] = {
     "http": "— (stdlib; `requests`/`httpx` optional)",
 }
 
+# --- ID-227 Phase 1: retryability + atomicity matrices ---------------------
+
+# Status → (disposition, surfaced-as typed error) for the retry-classification
+# table. The retried/terminal *split* is imported live from remote_store._retry
+# (RETRYABLE_STATUSES / TERMINAL_STATUSES); this dict only supplies the
+# human-readable disposition + the typed error each status surfaces as, and is
+# drift-guarded so its keys equal RETRYABLE_STATUSES | TERMINAL_STATUSES.
+_STATUS_DETAIL: dict[int, tuple[str, str]] = {
+    429: ("Retried — honours `Retry-After`", "`BackendUnavailable`"),
+    500: ("Retried", "`BackendUnavailable`"),
+    502: ("Retried", "`BackendUnavailable`"),
+    503: ("Retried", "`BackendUnavailable`"),
+    504: ("Retried", "`BackendUnavailable`"),
+    403: ("Not retried", "`PermissionDenied`"),
+    404: ("Not retried", "`NotFound`"),
+    409: ("Not retried", "`AlreadyExists`"),
+    423: ("Not retried", "`ResourceLocked`"),
+    507: ("Not retried", "`BackendUnavailable`"),
+}
+
+# Per-backend transport retry mechanism, keyed by registry ``type`` string. The
+# mechanism is not a graph node, so the prose is curated here; the key-set is
+# drift-guarded against the registry order in project_retryability().
+# Prose only — spec-clause IDs (RET-014, SFTP-009, …) stay out of the rendered
+# cells because FEATURES.md is a published surface (check_no_tracker_refs).
+_RETRY_MECHANISM: dict[str, str] = {
+    "local": "— (no `retry` parameter)",
+    "memory": "— (no `retry` parameter)",
+    "http": "Hand-rolled loop over the shared backoff helpers",
+    "azure": "Azure SDK `ExponentialRetry` (all five `RetryPolicy` fields)",
+    "s3": "botocore `standard` mode — honours `max_attempts` only",
+    "s3-pyarrow": "`AwsStandardS3RetryStrategy` — honours `max_attempts` only",
+    "sftp": "`tenacity` — connection-scope only (reconnect, not per-request)",
+    "sql-blob": "— (errors mapped, not retried)",
+    "sql-query": "— (errors mapped, not retried)",
+}
+
+# Per-backend × per-op atomicity, keyed by registry ``type`` string then op.
+# Cells name the mechanism: "Atomic" for an atomic op, the non-atomic mechanism
+# otherwise, and "— (read-only)" for backends that reject the op. read/list/
+# metadata are non-mutating (atomicity N/A) and delete / folder ops are a
+# documented gap (no backend specifies their atomicity) — both are intentionally
+# omitted rather than guessed. The ``move`` cell is cross-checked against the
+# graph's ATOMIC_MOVE capability in project_atomicity(); the two
+# mechanism-atomic-but-undeclared cases (Azure HNS, SFTP posix_rename) read
+# "Copy+delete†" and carry the † footnote.
+_ATOMICITY: dict[str, dict[str, str]] = {
+    "local": {"write": "Direct", "write_atomic": "Atomic", "move": r"Atomic\*", "copy": "Copy+delete"},
+    "memory": {"write": "Atomic", "write_atomic": "Atomic", "move": "Atomic", "copy": "Atomic"},
+    "http": {
+        "write": "— (read-only)",
+        "write_atomic": "— (read-only)",
+        "move": "— (read-only)",
+        "copy": "— (read-only)",
+    },
+    "azure": {"write": "Atomic§", "write_atomic": "Atomic", "move": "Copy+delete†", "copy": "Copy+delete"},
+    "s3": {"write": "Atomic", "write_atomic": "Atomic", "move": "Copy+delete", "copy": "Copy+delete"},
+    "s3-pyarrow": {"write": "Atomic", "write_atomic": "Buffered‡", "move": "Copy+delete", "copy": "Copy+delete"},
+    "sftp": {"write": "Streamed", "write_atomic": "Atomic", "move": "Copy+delete†", "copy": "Copy+delete"},
+    "sql-blob": {"write": "Atomic", "write_atomic": "Atomic", "move": "Atomic", "copy": "Atomic"},
+    "sql-query": {
+        "write": "— (read-only)",
+        "write_atomic": "— (read-only)",
+        "move": "— (read-only)",
+        "copy": "— (read-only)",
+    },
+}
+
 
 # ---------------------------------------------------------------------------
 # Loaders
@@ -444,6 +512,123 @@ def project_install_extras(pyproject: dict) -> str:
     return "\n".join(lines)
 
 
+def project_retryability(graph: dict) -> str:
+    """Return the retry-classification + per-backend transport-mechanism tables.
+
+    The retried/terminal *split* is imported live from ``remote_store._retry``
+    (``RETRYABLE_STATUSES`` / ``TERMINAL_STATUSES``) so it can never drift from the
+    code; ``_STATUS_DETAIL`` only supplies the disposition + typed error and is
+    guarded to cover exactly that union. The per-backend mechanism rows are curated
+    (no graph node models transport retry) and their key-set is drift-guarded
+    against the registry order.
+    """
+    from remote_store._retry import RETRYABLE_STATUSES, TERMINAL_STATUSES
+
+    universe = RETRYABLE_STATUSES | TERMINAL_STATUSES
+    if set(_STATUS_DETAIL) != universe:
+        raise ValueError(
+            "Retry status detail drifted from remote_store._retry.\n"
+            f"  in code but not detailed: {sorted(universe - set(_STATUS_DETAIL))}\n"
+            f"  detailed but not in code: {sorted(set(_STATUS_DETAIL) - universe)}\n"
+            "Update _STATUS_DETAIL in scripts/gen_features.py."
+        )
+
+    status_lines = [
+        "| Status | Disposition | Surfaced as |",
+        "|---|---|---|",
+    ]
+    for status in sorted(RETRYABLE_STATUSES) + sorted(TERMINAL_STATUSES):
+        disposition, error = _STATUS_DETAIL[status]
+        status_lines.append(f"| `{status}` | {disposition} | {error} |")
+
+    registry = _parse_registry_order()
+    types = {t for t, _ in registry}
+    if types != set(_RETRY_MECHANISM):
+        raise ValueError(
+            "Backend retry mechanisms drifted from the registry.\n"
+            f"  registered but no mechanism: {sorted(types - set(_RETRY_MECHANISM))}\n"
+            f"  mechanism but not registered: {sorted(set(_RETRY_MECHANISM) - types)}\n"
+            "Update _RETRY_MECHANISM in scripts/gen_features.py."
+        )
+
+    mech_lines = [
+        "| Backend | Transport retry mechanism |",
+        "|---|---|",
+    ]
+    for type_str, _ in sorted(registry):
+        mech_lines.append(f"| `{type_str}` | {_RETRY_MECHANISM[type_str]} |")
+
+    return "\n".join(status_lines) + "\n\n" + "\n".join(mech_lines)
+
+
+def project_atomicity(graph: dict) -> str:
+    """Return the per-backend × per-op atomicity matrix.
+
+    Atomicity mostly lives in prose, not a graph node, so the cells are curated in
+    ``_ATOMICITY``; the backend key-set is drift-guarded against the registry, and
+    each ``move`` cell is cross-checked against the graph's ``ATOMIC_MOVE``
+    capability so a curated "Atomic" move cannot contradict the advertised
+    capability (the two mechanism-atomic-but-undeclared cases — Azure HNS, SFTP
+    ``posix_rename`` — read "Copy+delete†" and are covered by the † footnote).
+    """
+    qname_map = _cls_qname_map(graph)
+    declares, _ = _build_lookups(graph)
+    registry = _parse_registry_order()
+
+    types = {t for t, _ in registry}
+    if types != set(_ATOMICITY):
+        raise ValueError(
+            "Atomicity rows drifted from the registry.\n"
+            f"  registered but no row: {sorted(types - set(_ATOMICITY))}\n"
+            f"  row but not registered: {sorted(set(_ATOMICITY) - types)}\n"
+            "Update _ATOMICITY in scripts/gen_features.py."
+        )
+
+    ops = ("write", "write_atomic", "move", "copy")
+    lines = [
+        "| Backend | `write` | `write_atomic` | `move` | `copy` |",
+        "|---|---|---|---|---|",
+    ]
+    for type_str, cls_name in sorted(registry):
+        cells = _ATOMICITY[type_str]
+        qname = qname_map.get(cls_name)
+        declared = declares.get(f"cls:{qname}", frozenset()) if qname else frozenset()
+        move_atomic = cells["move"].startswith("Atomic")
+        if move_atomic != ("ATOMIC_MOVE" in declared):
+            raise ValueError(
+                f"Atomicity 'move' cell for {type_str!r} disagrees with the graph's "
+                f"ATOMIC_MOVE capability: cell={cells['move']!r}, ATOMIC_MOVE="
+                f"{'declared' if 'ATOMIC_MOVE' in declared else 'absent'}. "
+                "Reconcile _ATOMICITY in scripts/gen_features.py with the backend's caps."
+            )
+        row = " | ".join(cells[op] for op in ops)
+        lines.append(f"| `{type_str}` | {row} |")
+
+    lines.append("")
+    lines.append(
+        r"\* `local` `move` is atomic within one filesystem (`os.rename`); a "
+        "cross-filesystem move falls back to copy-then-delete."
+    )
+    lines.append(
+        "† Azure and SFTP `move` use a native rename that is atomic (Azure HNS "
+        "`rename_file`, SFTP `posix_rename`), but `ATOMIC_MOVE` is not advertised "
+        "because it cannot be guaranteed across all configurations (non-HNS Azure "
+        "accounts, non-POSIX SFTP servers)."
+    )
+    lines.append(
+        "‡ `s3-pyarrow` `write_atomic` buffers then writes; it is not a true atomic "
+        "promotion and may leave a partial object behind if the process fails "
+        "mid-write."
+    )
+    lines.append(
+        "§ `azure` `write` commits atomically on flat (non-HNS) accounts; on "
+        "hierarchical-namespace accounts use `write_atomic` for a guaranteed "
+        "atomic replace."
+    )
+
+    return "\n".join(lines)
+
+
 def project_all(graph: dict, pyproject: dict) -> dict[str, str]:
     """Return all projections keyed by region name."""
     return {
@@ -454,6 +639,8 @@ def project_all(graph: dict, pyproject: dict) -> dict[str, str]:
         "backends_async": project_backends_async(graph),
         "backends_async_flags": project_backends_async_flags(graph),
         "async_backend_pairs": project_async_backend_pairs(graph),
+        "retryability": project_retryability(graph),
+        "atomicity": project_atomicity(graph),
         "install_extras": project_install_extras(pyproject),
     }
 

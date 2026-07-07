@@ -136,8 +136,11 @@ and the highest ID already in this file, then take the next integer. Run
   **Why ID, not BK:** unevaluated framework migration against a pre-1.0 upstream,
   no committed outcome.
 
-- [ ] **ID-227 — Consumer "guarantees & cost" digest, derived from the specs**
+- [~] **ID-227 — Consumer "guarantees & cost" digest, derived from the specs**
   spec: — · effort: M (phase 1) / L (all) · audience: user.api, user.discoverability.llm
+  **Status:** Phase 1 (atomicity + retryable-vs-terminal matrices in `FEATURES.md`,
+  surfaced in the bundle) is implemented. Phases 2 (read-after-write consistency)
+  and 3 (cost model) remain open — stays `[~]` until they land.
   Feedback on `llms-full.txt` (and the ID-226 skeleton): both answer *how to
   call it*, not the deeper contract — per-backend guarantees & failure modes,
   read-after-write consistency, retryable-vs-terminal errors and their
