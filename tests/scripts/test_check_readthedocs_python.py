@@ -14,6 +14,7 @@ import yaml
 
 _ROOT = Path(__file__).resolve().parents[2]
 _SCRIPT = _ROOT / "scripts" / "check_readthedocs_python.py"
+_GEN_SCRIPT = _ROOT / "scripts" / "docs" / "gen_llms_api.sh"
 
 
 def _load():
@@ -72,32 +73,63 @@ def test_post_build_scripts_exist_and_parse():
             assert result.returncode == 0, f"{parts[1]} failed `bash -n`:\n{result.stderr}"
 
 
-def test_gen_llms_api_is_non_fatal_when_env_unset():
-    """gen_llms_api.sh must exit 0 even when it cannot do its job.
-
-    BUG-226's essence was not the YAML fold per se — it was that a failure path
-    became *fatal* and reddened the whole docs build. The single-line and
-    `bash -n` guards above catch the specific fold regression but not this
-    contract: a future edit that drops a `|| skip` or lets the final line return
-    non-zero would keep valid, single-line syntax while silently making the
-    script fatal again. Exercise the locally-runnable skip path (no
-    `READTHEDOCS_OUTPUT`, so no network fetch) and assert it exits 0 — a direct
-    regression test of the "always exit 0" contract.
-    """
-    script = _ROOT / "scripts" / "docs" / "gen_llms_api.sh"
-    if not script.is_file():
-        pytest.skip("gen_llms_api.sh absent")
-    bash = shutil.which("bash")
-    if bash is None:
-        pytest.skip("bash unavailable; cannot run the script")
-    env = {k: v for k, v in os.environ.items() if k != "READTHEDOCS_OUTPUT"}
-    result = subprocess.run(  # noqa: S603
-        [bash, str(script)],
+def _run_gen_script(bash: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(  # noqa: S603
+        [bash, str(_GEN_SCRIPT)],
         capture_output=True,
         text=True,
         env=env,
         cwd=_ROOT,
     )
+
+
+def _gen_script_bash_or_skip() -> str:
+    if not _GEN_SCRIPT.is_file():
+        pytest.skip("gen_llms_api.sh absent")
+    bash = shutil.which("bash")
+    if bash is None:
+        pytest.skip("bash unavailable; cannot run the script")
+    return bash
+
+
+def test_gen_llms_api_is_non_fatal_when_env_unset():
+    """gen_llms_api.sh exits 0 on the ``READTHEDOCS_OUTPUT``-unset short-circuit.
+
+    BUG-226's essence was not the YAML fold per se — it was that a failure path
+    became *fatal* and reddened the whole docs build. This covers the *first*
+    guard specifically: with ``READTHEDOCS_OUTPUT`` unset the script returns via
+    ``skip`` before any network step. The sibling test below reaches a *later*
+    skip branch; together they assert the non-fatal ``exit 0`` funnel on two
+    distinct paths. The network paths (curl/lx) and the happy path need the RTD
+    fetch env, so they stay a post-deploy check rather than a unit test.
+    """
+    bash = _gen_script_bash_or_skip()
+    env = {k: v for k, v in os.environ.items() if k != "READTHEDOCS_OUTPUT"}
+    result = _run_gen_script(bash, env)
     assert result.returncode == 0, (
-        f"gen_llms_api.sh must be non-fatal (exit 0) on the skip path, got {result.returncode}:\n{result.stderr}"
+        f"gen_llms_api.sh must be non-fatal (exit 0) on the env-unset path, got {result.returncode}:\n{result.stderr}"
     )
+
+
+def test_gen_llms_api_is_non_fatal_when_a_post_guard_step_fails(tmp_path):
+    """A failure *after* the env guard must still exit 0, not just the first path.
+
+    Reachable offline without stubbing the network: set ``READTHEDOCS_OUTPUT``
+    (so the first guard passes) but point ``PATH`` at an empty directory, so the
+    first external command the script runs — ``mkdir`` at the install-dir step —
+    is not found and its ``|| skip`` fires. This directly regression-tests the
+    concern behind BUG-226: a dropped ``|| skip`` on a post-guard step would let
+    a failure escape as a non-zero exit and red the build. The reviewer's
+    ``mv``-fails variant is not hermetic (``mv`` runs only after curl+lx, which
+    need the network); the ``mkdir`` branch is the offline-reachable analog.
+    """
+    bash = _gen_script_bash_or_skip()
+    empty_dir = tmp_path / "no-tools-on-path"
+    empty_dir.mkdir()
+    env = {**os.environ, "READTHEDOCS_OUTPUT": str(tmp_path), "PATH": str(empty_dir)}
+    result = _run_gen_script(bash, env)
+    assert result.returncode == 0, (
+        f"gen_llms_api.sh must be non-fatal (exit 0) when a post-guard step fails, "
+        f"got {result.returncode}:\n{result.stderr}"
+    )
+    assert "skipped" in result.stderr, f"expected a skip() on a post-guard branch, got:\n{result.stderr or '(empty)'}"
