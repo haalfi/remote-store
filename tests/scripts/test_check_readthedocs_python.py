@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import shutil
 import subprocess
 import sys
@@ -69,3 +70,34 @@ def test_post_build_scripts_exist_and_parse():
                 text=True,
             )
             assert result.returncode == 0, f"{parts[1]} failed `bash -n`:\n{result.stderr}"
+
+
+def test_gen_llms_api_is_non_fatal_when_env_unset():
+    """gen_llms_api.sh must exit 0 even when it cannot do its job.
+
+    BUG-226's essence was not the YAML fold per se — it was that a failure path
+    became *fatal* and reddened the whole docs build. The single-line and
+    `bash -n` guards above catch the specific fold regression but not this
+    contract: a future edit that drops a `|| skip` or lets the final line return
+    non-zero would keep valid, single-line syntax while silently making the
+    script fatal again. Exercise the locally-runnable skip path (no
+    `READTHEDOCS_OUTPUT`, so no network fetch) and assert it exits 0 — a direct
+    regression test of the "always exit 0" contract.
+    """
+    script = _ROOT / "scripts" / "docs" / "gen_llms_api.sh"
+    if not script.is_file():
+        pytest.skip("gen_llms_api.sh absent")
+    bash = shutil.which("bash")
+    if bash is None:
+        pytest.skip("bash unavailable; cannot run the script")
+    env = {k: v for k, v in os.environ.items() if k != "READTHEDOCS_OUTPUT"}
+    result = subprocess.run(  # noqa: S603
+        [bash, str(script)],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=_ROOT,
+    )
+    assert result.returncode == 0, (
+        f"gen_llms_api.sh must be non-fatal (exit 0) on the skip path, got {result.returncode}:\n{result.stderr}"
+    )
