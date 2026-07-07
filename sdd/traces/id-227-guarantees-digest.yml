@@ -1,0 +1,128 @@
+id: ID-227
+title: "Consumer guarantees & cost digest — phase 1 (atomicity + retryable-vs-terminal)"
+trigger: >
+  Feedback on the ID-220 `llms-full.txt` bundle and the ID-226 API skeleton was
+  that both answer *how to call* a backend but not the deeper cross-backend
+  contract: per-op atomicity and the retryable-vs-terminal error split. A
+  docstring census found those facts present-but-scattered (rich only on Graph),
+  and the two phase-1 dimensions are in-repo harvestable — so they can be
+  projected drift-proof onto FEATURES.md (the ID-221/222 doc-graph surface that
+  already flows into the bundle) rather than authored fresh.
+source_items:
+  - ID-227
+  - ID-226
+  - ID-222
+  - ID-221
+  - ID-220
+audience:
+  - user.discoverability.llm
+  - user.site
+  - user.api_docs
+  - contributor.tooling
+discovery_followups:
+  - ID-228
+expected_ripples:
+  - CHANGELOG.md
+  # The Memory/SQLBlob docstring additions shifted a class def line, so the graph
+  # regenerated (one `line` field on SQLQueryBackend) and the viz followed — the
+  # "public docstring change" ripple-check row anticipates this.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+# Round 1: caught the s3-pyarrow write/write_atomic atomicity cells inverted
+# (plain write is the non-atomic streaming path; write_atomic buffers first),
+# which the move-only ATOMIC_MOVE cross-check could not detect — a curated cell
+# can silently contradict source when no capability encodes it. Also scoped the
+# "uniform across backends" retry framing to the HTTP transports.
+# Round 2: the retryability status table (generated from _retry's union only)
+# omitted 408, which _http.py's _TRANSIENT_STATUSES adds — so `http` reads as
+# treating 408 terminal when it actually retries it. Fixed with a † footnote on
+# the http mechanism row AND a live drift-guard importing _http._TRANSIENT_STATUSES
+# (http_extra must == {408}), closing the same class of gap the round-1 finding
+# exposed: a backend-local extension of a shared constant escaping the guards.
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Docs & Discoverability / ID-227"
+        read_type: gate
+        extract: "Phase-1 scope is atomicity + retryable-vs-terminal, both in-repo harvestable; extend the ID-221/222 doc-graph, drift-proof, surface in the bundle; do not expose the raw SDD subtree. Phases 2/3 (consistency, cost) are author+external-verify and stay out."
+        outcome: ok
+      - file: scripts/gen_features.py
+        section: "project_store_api_ungated + _replace_regions + project_all"
+        read_type: gate
+        extract: "Curated-prose + graph-derived-membership + --check drift-guard is the established pattern (_UNGATED_STORE_DETAILS); _REGION_RE needs a non-empty body between markers; project_all registers each region."
+        outcome: ok
+      - file: src/remote_store/_retry.py
+        section: "RETRYABLE_STATUSES + terminal comment"
+        read_type: gate
+        extract: "Retryable set is a named frozenset (429 + 5xx); the terminal set {403,404,409,423,507} lived only in a prose comment — promote it to a TERMINAL_STATUSES constant so both halves of the split are single-sourced from code."
+        outcome: ok
+  - id: design
+    name: Design / decisions
+    steps:
+      - file: sdd/specs/050-doc-graph-model.md
+        section: "DGM-002/003 (deferred error/raises kinds), DGM-013"
+        read_type: gate
+        extract: "error nodes + raises edges are deferred; adding them is a schema bump (1.4→1.5) with a heavy ripple. Phase 1 needs no graph-queryability — keep schema 1.4 and project curated cells with real guards instead."
+        outcome: ok
+      - file: sdd/specs/025-retry-policy.md
+        section: "RET-014, RET-015"
+        read_type: reference
+        extract: "Per-backend mechanism differences (Local/Memory no retry; S3 max_attempts only; Azure SDK ExponentialRetry; SFTP tenacity connection-scope; Graph hand-rolled) and the terminal/retryable enumeration that grounds TERMINAL_STATUSES and the status→error rows."
+        outcome: ok
+      - file: src/remote_store/_capabilities.py
+        section: "ATOMIC_MOVE"
+        read_type: reference
+        extract: "ATOMIC_MOVE is the only machine-harvestable atomicity signal (already a graph node/edge). Use it to cross-check the curated move cell; the Azure-HNS / SFTP-posix_rename mechanism-atomic-but-undeclared cases must be an allow-listed footnote, not a guard failure."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/_retry.py
+        section: "TERMINAL_STATUSES"
+        read_type: gate
+        extract: "Added the frozenset citing RET-015/GR-018; comment notes disjointness with RETRYABLE_STATUSES."
+        outcome: ok
+      - file: scripts/gen_features.py
+        section: "project_retryability + project_atomicity + _STATUS_DETAIL/_RETRY_MECHANISM/_ATOMICITY"
+        read_type: gate
+        extract: "Status split imported live from _retry; _STATUS_DETAIL guarded to == RETRYABLE|TERMINAL; mechanism/atomicity key-sets guarded against the registry; move cell cross-checked against ATOMIC_MOVE. Cells name the mechanism (Atomic / Copy+delete / Buffered) so non-atomic ops stay visible instead of hiding behind a dash."
+        outcome: ok
+      - file: FEATURES.md
+        section: "## Backends (atomicity), ## Error Model (retryability)"
+        read_type: gate
+        extract: "Added atomicity + retryability regions with static intro/footnote prose; regenerated with hatch run gen-features. Reaches llms-full.txt with no nav change (reference/FEATURES.md already in the llmstxt sections)."
+        outcome: ok
+      - file: src/remote_store/backends/_memory.py
+        section: "MemoryBackend docstring"
+        read_type: reference
+        extract: "Authored the under-lock atomicity sentence (body only, summary unchanged → no graph.json change) so the human docstring agrees with the matrix; same for SQLBlobBackend (DB-transaction atomicity)."
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/test_retry.py
+        section: "TERMINAL_STATUSES coverage + disjointness"
+        read_type: gate
+        extract: "Pin the terminal set and assert it is disjoint from RETRYABLE_STATUSES (the loops' branch condition)."
+        outcome: ok
+      - file: tests/scripts/test_gen_features.py
+        section: "TestRetryability / TestAtomicity + region integrity"
+        read_type: gate
+        extract: "Shape + drift-guard tests (status-detail, mechanism, ATOMIC_MOVE cross-check via monkeypatch); extended test_features_md_has_all_regions with the two new regions."
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / capabilities + versions"
+        read_type: verify
+        extract: "No doc-graph schema change (gen-graph --check stays green, graph.json byte-identical); docstring bodies changed but summaries did not, so no graph regen; FEATURES.md is user-facing → CHANGELOG entry required."
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience enum + derived CHANGELOG rule"
+        read_type: verify
+        extract: "FEATURES.md dual-page + llms bundle → audience includes user.* → CHANGELOG required; ID-228 recorded as a discovery_followup from the census."
+        outcome: ok

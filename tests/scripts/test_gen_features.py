@@ -387,6 +387,121 @@ class TestAsyncBackendPairs:
         assert names == sorted(names)
 
 
+class TestRetryability:
+    def test_status_table_header(self, gen_features_module, graph):
+        table = gen_features_module.project_retryability(graph)
+        lines = table.splitlines()
+        assert lines[0] == "| Status | Disposition | Surfaced as |"
+        assert lines[1] == "|---|---|---|"
+
+    def test_all_classified_statuses_rendered(self, gen_features_module, graph):
+        """Every retryable and terminal status appears exactly once, sourced from code."""
+        from remote_store._retry import RETRYABLE_STATUSES, TERMINAL_STATUSES
+
+        table = gen_features_module.project_retryability(graph)
+        for status in RETRYABLE_STATUSES | TERMINAL_STATUSES:
+            assert f"| `{status}` |" in table
+
+    def test_retryable_rows_surface_backend_unavailable(self, gen_features_module, graph):
+        table = gen_features_module.project_retryability(graph)
+        for line in table.splitlines():
+            if line.startswith("| `429` |") or line.startswith("| `503` |"):
+                assert "Retried" in line
+                assert "`BackendUnavailable`" in line
+
+    def test_terminal_rows_map_to_typed_errors(self, gen_features_module, graph):
+        table = gen_features_module.project_retryability(graph)
+        expected = {"404": "`NotFound`", "403": "`PermissionDenied`", "423": "`ResourceLocked`"}
+        for status, error in expected.items():
+            row = next(line for line in table.splitlines() if line.startswith(f"| `{status}` |"))
+            assert "Not retried" in row
+            assert error in row
+
+    def test_mechanism_table_lists_all_backends(self, gen_features_module, graph):
+        table = gen_features_module.project_retryability(graph)
+        types = [t for t, _ in gen_features_module._parse_registry_order()]
+        for type_str in types:
+            assert f"| `{type_str}` |" in table
+
+    def test_status_drift_guard_raises(self, gen_features_module, graph, monkeypatch):
+        """Dropping a code-classified status from the curated detail must fail generation."""
+        pruned = {s: d for s, d in gen_features_module._STATUS_DETAIL.items() if s != 404}
+        monkeypatch.setattr(gen_features_module, "_STATUS_DETAIL", pruned)
+        with pytest.raises(ValueError, match="drifted"):
+            gen_features_module.project_retryability(graph)
+
+    def test_mechanism_drift_guard_raises(self, gen_features_module, graph, monkeypatch):
+        pruned = {t: m for t, m in gen_features_module._RETRY_MECHANISM.items() if t != "local"}
+        monkeypatch.setattr(gen_features_module, "_RETRY_MECHANISM", pruned)
+        with pytest.raises(ValueError, match="drifted"):
+            gen_features_module.project_retryability(graph)
+
+    def test_http_row_carries_408_footnote(self, gen_features_module, graph):
+        """The http mechanism row is marked and a footnote documents its 408 extension.
+
+        The shared status table is generated from ``_retry`` only, so 408 (which
+        the sync http backend retries as a transport-local extension) would
+        otherwise read as unclassified/terminal for http.
+        """
+        table = gen_features_module.project_retryability(graph)
+        http_row = next(line for line in table.splitlines() if line.startswith("| `http`"))
+        assert "†" in http_row
+        assert "408" in table
+        assert "transport-local extension" in table
+
+    def test_http_408_extension_drift_guard_raises(self, gen_features_module, graph, monkeypatch):
+        """A change to _http's transient-status extension must fail generation.
+
+        Closes the backend-local-drift gap: the footnote's 408 claim is checked
+        live against ``_http._TRANSIENT_STATUSES``, so a new http-local status
+        cannot land without updating the footnote.
+        """
+        import remote_store.backends._http as http_mod
+        from remote_store._retry import RETRYABLE_STATUSES
+
+        monkeypatch.setattr(http_mod, "_TRANSIENT_STATUSES", RETRYABLE_STATUSES | {408, 425})
+        with pytest.raises(ValueError, match="extension drifted"):
+            gen_features_module.project_retryability(graph)
+
+
+class TestAtomicity:
+    def test_header_row(self, gen_features_module, graph):
+        table = gen_features_module.project_atomicity(graph)
+        lines = table.splitlines()
+        assert lines[0] == "| Backend | `write` | `write_atomic` | `move` | `copy` |"
+        assert lines[1] == "|---|---|---|---|---|"
+
+    def test_all_registered_backends_present(self, gen_features_module, graph):
+        table = gen_features_module.project_atomicity(graph)
+        for type_str, _ in gen_features_module._parse_registry_order():
+            assert f"| `{type_str}` |" in table
+
+    def test_representative_cells(self, gen_features_module, graph):
+        table = gen_features_module.project_atomicity(graph)
+        rows = {line.split("`")[1]: line for line in table.splitlines() if line.startswith("| `")}
+        assert "Copy+delete" in rows["s3"]  # non-atomic move surfaced, not hidden
+        # s3-pyarrow: plain write is non-atomic (truncated multipart per AW-007),
+        # while write_atomic buffers the body first and IS atomic — the reverse of s3fs.
+        pa_write, pa_write_atomic = (c.strip() for c in rows["s3-pyarrow"].split("|")[2:4])
+        assert not pa_write.startswith("Atomic")
+        assert pa_write_atomic == "Atomic"
+        assert rows["sql-blob"].count("Atomic") == 4  # all four ops atomic
+        assert "read-only" in rows["http"]
+
+    def test_footnotes_present(self, gen_features_module, graph):
+        table = gen_features_module.project_atomicity(graph)
+        assert "truncated" in table  # ‡ s3-pyarrow plain-write footnote
+        assert "posix_rename" in table  # † azure/sftp footnote
+
+    def test_move_cell_cross_checked_against_atomic_move(self, gen_features_module, graph, monkeypatch):
+        """A curated 'Atomic' move for a backend lacking ATOMIC_MOVE must fail generation."""
+        tampered = {t: dict(cells) for t, cells in gen_features_module._ATOMICITY.items()}
+        tampered["s3"]["move"] = "Atomic"  # s3 does not declare ATOMIC_MOVE
+        monkeypatch.setattr(gen_features_module, "_ATOMICITY", tampered)
+        with pytest.raises(ValueError, match="ATOMIC_MOVE"):
+            gen_features_module.project_atomicity(graph)
+
+
 class TestRegionReplacement:
     def test_replaces_known_region(self, gen_features_module):
         text = "before\n<!-- BEGIN_GENERATED:foo -->\nold content\n<!-- END_GENERATED:foo -->\nafter"
@@ -434,6 +549,8 @@ class TestFeaturesFileIntegrity:
             "backends_async",
             "backends_async_flags",
             "async_backend_pairs",
+            "retryability",
+            "atomicity",
             "install_extras",
         ):
             assert f"<!-- BEGIN_GENERATED:{region} -->" in text

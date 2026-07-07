@@ -272,6 +272,30 @@ reader (no temp-file spill), not a spool. See
 | `sql-query` | — | — |
 <!-- END_GENERATED:backends_flags -->
 
+**Write and move atomicity by backend** — whether each mutating operation
+completes atomically or via a non-atomic mechanism that can leave partial state
+on failure. `read`, `list`, and `metadata` are non-mutating (atomicity N/A);
+`delete` and folder operations carry no atomicity guarantee and are omitted.
+
+<!-- BEGIN_GENERATED:atomicity -->
+| Backend | `write` | `write_atomic` | `move` | `copy` |
+|---|---|---|---|---|
+| `azure` | Atomic§ | Atomic | Copy+delete† | Copy+delete |
+| `http` | — (read-only) | — (read-only) | — (read-only) | — (read-only) |
+| `local` | Direct | Atomic | Atomic\* | Copy+delete |
+| `memory` | Atomic | Atomic | Atomic | Atomic |
+| `s3` | Atomic | Atomic | Copy+delete | Copy+delete |
+| `s3-pyarrow` | Streamed‡ | Atomic | Copy+delete | Copy+delete |
+| `sftp` | Streamed | Atomic | Copy+delete† | Copy+delete |
+| `sql-blob` | Atomic | Atomic | Atomic | Atomic |
+| `sql-query` | — (read-only) | — (read-only) | — (read-only) | — (read-only) |
+
+\* `local` `move` is atomic within one filesystem (`os.rename`); a cross-filesystem move falls back to copy-then-delete.
+† Azure and SFTP `move` use a native rename that is atomic (Azure HNS `rename_file`, SFTP `posix_rename`), but `ATOMIC_MOVE` is not advertised because it cannot be guaranteed across all configurations (non-HNS Azure accounts, non-POSIX SFTP servers).
+‡ `s3-pyarrow` plain `write` streams straight to a multipart upload; PyArrow's stream exposes no abort, so a mid-stream failure finalises a *truncated* object. `write_atomic` buffers the body first, so a failure leaves no object.
+§ `azure` `write` commits atomically on flat (non-HNS) accounts; on hierarchical-namespace accounts use `write_atomic` for a guaranteed atomic replace.
+<!-- END_GENERATED:atomicity -->
+
 **Native async backends** — constructed directly via `AsyncStore(backend=…)`;
 no RegistryConfig `type=` string (there is no async config registry).
 
@@ -379,6 +403,52 @@ always receive a typed error, never an `S3ServiceError` or `azure.core.…`.
 | `DirectoryNotEmpty` | Directory is not empty and the operation requires it to be |
 | `ResourceLocked` | Target resource is held by another session (e.g. an open co-authoring session); maps from Graph `423 Locked` |
 | `RemoteStoreError` | Base class for all errors above |
+
+**Retryable vs. terminal** — the HTTP statuses the HTTP-transport backends
+(`graph`, `http`) classify, and the typed error each surfaces as. Retried
+statuses are re-attempted under the backend's `RetryPolicy` (default 3 attempts,
+1–60 s exponential backoff) and honour `Retry-After`; the typed error is raised
+only once the attempt budget is exhausted. The other backends reach the *same
+typed-error vocabulary* by mapping native SDK/OS exceptions rather than HTTP
+status codes, so the outcome is shared — but the status classification and
+`Retry-After` handling shown here are specific to the HTTP transports (`s3` and
+`azure` honour only `max_attempts`; `local`, `memory`, and `sql-*` make no remote
+calls and do not retry).
+
+<!-- BEGIN_GENERATED:retryability -->
+| Status | Disposition | Surfaced as |
+|---|---|---|
+| `429` | Retried — honours `Retry-After` | `BackendUnavailable` |
+| `500` | Retried | `BackendUnavailable` |
+| `502` | Retried | `BackendUnavailable` |
+| `503` | Retried | `BackendUnavailable` |
+| `504` | Retried | `BackendUnavailable` |
+| `403` | Not retried | `PermissionDenied` |
+| `404` | Not retried | `NotFound` |
+| `409` | Not retried | `AlreadyExists` |
+| `423` | Not retried | `ResourceLocked` |
+| `507` | Not retried | `BackendUnavailable` |
+
+| Backend | Transport retry mechanism |
+|---|---|
+| `azure` | Azure SDK `ExponentialRetry` (all five `RetryPolicy` fields) |
+| `http` | Hand-rolled loop over the shared backoff helpers† |
+| `local` | — (no `retry` parameter) |
+| `memory` | — (no `retry` parameter) |
+| `s3` | botocore `standard` mode — honours `max_attempts` only |
+| `s3-pyarrow` | `AwsStandardS3RetryStrategy` — honours `max_attempts` only |
+| `sftp` | `tenacity` — connection-scope only (reconnect, not per-request) |
+| `sql-blob` | — (errors mapped, not retried) |
+| `sql-query` | — (errors mapped, not retried) |
+
+† `http` additionally retries `408 Request Timeout` (classified as `BackendUnavailable`) — a transport-local extension of the shared retryable set above.
+<!-- END_GENERATED:retryability -->
+
+Native async backends inherit their sync peer's mechanism; the async-only
+`GraphBackend` runs hand-rolled retry loops over the shared backoff helpers,
+honouring all five `RetryPolicy` fields. `local`, `memory`, `sftp`, and the SQL
+backends leave a closed backend reusable; `azure`, `s3`, and `graph` treat use
+after `close()` as terminal (`close_is_terminal`).
 
 ---
 

@@ -136,37 +136,92 @@ and the highest ID already in this file, then take the next integer. Run
   **Why ID, not BK:** unevaluated framework migration against a pre-1.0 upstream,
   no committed outcome.
 
-- [ ] **ID-227 — Consumer "guarantees & cost" digest, derived from the specs**
+- [~] **ID-227 — Consumer "guarantees & cost" digest, derived from the specs**
   spec: — · effort: M (phase 1) / L (all) · audience: user.api, user.discoverability.llm
+  **Status:** Phase 1 (atomicity + retryable-vs-terminal matrices in `FEATURES.md`,
+  surfaced in the bundle) is implemented. Phases 2 (read-after-write consistency)
+  and 3 (cost model) remain open — stays `[~]` until they land.
   Feedback on `llms-full.txt` (and the ID-226 skeleton): both answer *how to
   call it*, not the deeper contract — per-backend guarantees & failure modes,
-  the concurrency/consistency contract, retryable-vs-terminal errors and their
-  cross-backend mapping, and a per-operation cost model. That knowledge exists
-  in the SDD specs/ADRs/RFCs and `sdd/formal/` (Dafny `BackendContract` /
-  `ResourceSafety`, TLA+ `Observer`) but is deliberately kept out of the LLM
-  bundle (ID-220) and is too shallow in `explanation/{concurrency,performance}.md`.
-  Derive a consumer digest from that material — do **not** expose the raw SDD
-  subtree.
-  **Phase 1 (min, committed):** a generated per-backend × per-operation matrix
-  (atomicity · read-after-write consistency · retryable?) as an extension of the
+  read-after-write consistency, retryable-vs-terminal errors and their
+  cross-backend mapping, and a per-operation cost model. The consumer digest
+  is a generated per-backend × per-operation matrix, an extension of the
   ID-221/222 doc-graph (single-source-of-truth, drift-proof), surfaced in the
-  bundle. Closes the loudest gap (per-backend guarantees).
-  **Phase 2 (optional):** per-operation cost model (list vs head vs stream, per
-  backend) authored from the three-tier design ADRs (glob-0009, seekable-0016,
-  depth-limited listing / spec-038).
-  **Phase 3 (optional):** the formal concurrency/consistency contract in consumer
-  prose, sourced from `tla/Observer.tla` + the Dafny contracts.
+  bundle. Do **not** expose the raw SDD subtree.
+  **Where the facts actually live (census, ID-226 skeleton).** The premise that
+  this knowledge is spec-locked and "deliberately kept out of the LLM bundle"
+  is only half-true. `GraphBackend` already carries the full contract at the
+  *method* level (per-op `Raises:`, a concurrency narrative, a cost model) — so
+  for Graph it is already *in* the bundle. The other six backends do **not**:
+  Local, Memory, S3, SFTP, SQLBlob state contract only in a *class* docstring
+  blurb (Memory: none), and Azure documents peripheral ops but leaves the core
+  `read`/`write`/`move` contract to its class blurb. So the work is ~15%
+  harvest (Graph), ~85% **backfill** — and the fact's in-repo availability
+  differs sharply by dimension, which drives the phase split below.
+  **Phase 1 (min, committed): atomicity + retryable-vs-terminal.** Both rows are
+  in-repo harvestable. Move-atomicity is already stated (and well-scoped) in the
+  class docstrings of 5/7 backends (Graph, Local, S3, SFTP, Azure; author for
+  Memory, SQLBlob). Retryability has a single canonical classification —
+  `_retry.py` `RETRYABLE_STATUSES = {429,500,502,503,504}`, terminal
+  `{403,404,409,423,507}` (RET-015, GR-033/034), the `_errors.py` typed
+  hierarchy, `RetryPolicy` defaults, and `close_is_terminal` (Graph, Azure) —
+  with per-backend mechanism differences worth a footnote (S3 honors only
+  `max_attempts`; Local/Memory/SQLBlob have no transport retry). Closes the
+  loudest gap, drift-proof.
+  **Phase 2 (optional): read-after-write consistency.** Not a consolidation
+  task — an author-and-verify-against-external-sources task. The repo has no
+  authoritative per-backend consistency statement: `explanation/concurrency.md`
+  is silent, `BackendContract.dfy`'s `WriteReadConsistency` proves the round-trip
+  on an *idealized, uniformly strongly-consistent* filesystem (it models no
+  backend deviation), and the S3/Graph specs state atomicity and error-mapping
+  but no consistency model. Local/Memory/SFTP/SQLBlob are strong RAW (derivable,
+  low verify); S3/Azure/Graph need vendor-doc research + verification, and the
+  matrix must distinguish **object read-after-write vs listing consistency** and
+  **sync vs async-monitor ops** (S3 object-RAW is strong but s3fs `dircache` can
+  serve stale listings; Graph replication is eventual; `move`/`copy` may go
+  async).
+  **Phase 3 (optional): per-operation cost model** (list vs head vs stream, per
+  backend), authored from the three-tier design ADRs (glob-0009, seekable-0016,
+  depth-limited listing / spec-038). Same author + external-verify cost class as
+  Phase 2 — fragments exist (SQLBlob materialize-in-memory, Azure streaming
+  thresholds, S3 ancestor-HEAD), but Local/Memory/SFTP are silent.
   Composes with ID-226: the skeleton gives the call surface + per-backend
   docstring contracts; this gives the cross-backend guarantee/cost grid that no
-  docstring holds. Origin: user feedback on `llms-full.txt` depth gaps.
-  **Scope refinement (ID-226 self-eval):** a 12-question black-box DX probe
-  (an agent answering from `llms-full.txt` vs `llms-api.txt`, judged against
-  source) found the per-backend guarantee facts are *already present but
-  scattered* in the Graph-era docstrings both artifacts carry — so Phase 1 is
-  **consolidation** into one cross-backend matrix, not authoring from scratch.
-  The genuinely uncovered gaps are the **cost model** (Phase 2) and a unified
-  **retryable-vs-terminal** classification. Don't over-scope Phase 1 as "the
-  docs say nothing".
+  single docstring holds. Origin: user feedback on `llms-full.txt` depth gaps.
+  **Scope refinement (ID-226 self-eval + docstring census).** A 12-question
+  black-box DX probe found the per-backend guarantee facts *present but
+  scattered* in Graph-era docstrings both artifacts carry — so the atomicity
+  strand of Phase 1 is **consolidation**, not authoring. The census extends that
+  finding: consolidation only works where docstrings are rich (Graph). The
+  genuinely uncovered gaps are **consistency** (Phase 2) and the **cost model**
+  (Phase 3), both author + external-verify, not harvest. Backfilling the six thin
+  backends' *method* docstrings to Graph's bar is a separate, upstream concern
+  tracked as **ID-228** — not part of this matrix, but it enriches the cells the
+  matrix harvests. Don't over-scope Phase 1 as "the docs say nothing".
+
+- [ ] **ID-228 — Backfill method-level contract docstrings for the six thin backends**
+  spec: — · effort: L · audience: user.api, user.discoverability.llm
+  Discovered during ID-227's docstring census. `GraphBackend` is the only
+  backend whose *methods* carry the full contract (per-op `Raises:`, a
+  concurrency narrative, cost notes); Local, Memory, S3, SFTP, SQLBlob state
+  contract only in a class-docstring blurb (Memory: none), and Azure documents
+  peripheral ops but leaves the core `read`/`write`/`move` bare. Raise the six to
+  Graph's bar: per-method `Raises:` tied to precise triggers, a read-after-write /
+  atomicity note where behaviour deviates from POSIX intuition, and a
+  cost/laziness note. These docstrings are the source the ID-220 bundle and the
+  ID-227 matrix both consume, so this is upstream of both — the matrix harvests
+  richer cells once it lands.
+  **Authoring rules (from the `llms-full.txt` phrasing feedback):** state the
+  user-visible consequence before the mechanism; mark conditional behaviour with
+  explicit triggers and scope; one authoritative phrasing per capability; keep
+  every warning tied to a failure mode. Graph, and the `LocalBackend` /
+  `S3Backend` class move-atomicity blurbs, are the model.
+  **Verify, don't invent:** each `Raises:` clause and consistency claim must be
+  checked against the conformance suite and backend source, not written from
+  memory — a wrong contract in a docstring propagates into the bundle and every
+  downstream LLM answer.
+  Composes with ID-226 (skeleton call surface) and ID-227 (cross-backend grid).
+  Origin: ID-227 docstring census + LLM feedback on `llms-full.txt` depth gaps.
 
 - [ ] **ID-197 — Review context7.com docs page for framing and content gaps**
   spec: — · effort: S · audience: library.maintainer

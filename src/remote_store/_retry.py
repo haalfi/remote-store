@@ -34,11 +34,18 @@ if TYPE_CHECKING:
     from random import Random
 
 # Statuses worth retrying: 5xx server errors (RET-015 / GR-033) plus 429
-# throttling (GR-034). 403 / 404 / 409 / 423 / 507 are terminal — they do not
-# clear on short-term retry. A caller that treats additional statuses as transient
+# throttling (GR-034). A caller that treats additional statuses as transient
 # composes them locally (``RETRYABLE_STATUSES | {...}``) rather than widening this
 # shared set.
 RETRYABLE_STATUSES = frozenset({429, 500, 502, 503, 504})
+
+# Statuses that are terminal — they do not clear on short-term retry, so the loops
+# surface them on the first response. 403 accessDenied / 404 itemNotFound / 423
+# resourceLocked (RET-015), 409 create-race (GR-018 maps it to ``AlreadyExists``),
+# and 507 insufficientStorage (a quota wall, not a transient stall). Kept as a
+# named constant so the retryable/terminal split is single-sourced from code rather
+# than restated in prose; the two sets are disjoint by construction.
+TERMINAL_STATUSES = frozenset({403, 404, 409, 423, 507})
 
 
 def parse_retry_after(value: str | None, *, now: datetime | None = None) -> float | None:
