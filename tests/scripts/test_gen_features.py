@@ -453,13 +453,17 @@ class TestAtomicity:
         table = gen_features_module.project_atomicity(graph)
         rows = {line.split("`")[1]: line for line in table.splitlines() if line.startswith("| `")}
         assert "Copy+delete" in rows["s3"]  # non-atomic move surfaced, not hidden
-        assert "Buffered" in rows["s3-pyarrow"]  # AW-007 non-atomic write_atomic
+        # s3-pyarrow: plain write is non-atomic (truncated multipart per AW-007),
+        # while write_atomic buffers the body first and IS atomic — the reverse of s3fs.
+        pa_write, pa_write_atomic = (c.strip() for c in rows["s3-pyarrow"].split("|")[2:4])
+        assert not pa_write.startswith("Atomic")
+        assert pa_write_atomic == "Atomic"
         assert rows["sql-blob"].count("Atomic") == 4  # all four ops atomic
         assert "read-only" in rows["http"]
 
     def test_footnotes_present(self, gen_features_module, graph):
         table = gen_features_module.project_atomicity(graph)
-        assert "not a true atomic promotion" in table  # ‡ s3-pyarrow footnote
+        assert "truncated" in table  # ‡ s3-pyarrow plain-write footnote
         assert "posix_rename" in table  # † azure/sftp footnote
 
     def test_move_cell_cross_checked_against_atomic_move(self, gen_features_module, graph, monkeypatch):

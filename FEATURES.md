@@ -285,14 +285,14 @@ on failure. `read`, `list`, and `metadata` are non-mutating (atomicity N/A);
 | `local` | Direct | Atomic | Atomic\* | Copy+delete |
 | `memory` | Atomic | Atomic | Atomic | Atomic |
 | `s3` | Atomic | Atomic | Copy+delete | Copy+delete |
-| `s3-pyarrow` | Atomic | Buffered‡ | Copy+delete | Copy+delete |
+| `s3-pyarrow` | Streamed‡ | Atomic | Copy+delete | Copy+delete |
 | `sftp` | Streamed | Atomic | Copy+delete† | Copy+delete |
 | `sql-blob` | Atomic | Atomic | Atomic | Atomic |
 | `sql-query` | — (read-only) | — (read-only) | — (read-only) | — (read-only) |
 
 \* `local` `move` is atomic within one filesystem (`os.rename`); a cross-filesystem move falls back to copy-then-delete.
 † Azure and SFTP `move` use a native rename that is atomic (Azure HNS `rename_file`, SFTP `posix_rename`), but `ATOMIC_MOVE` is not advertised because it cannot be guaranteed across all configurations (non-HNS Azure accounts, non-POSIX SFTP servers).
-‡ `s3-pyarrow` `write_atomic` buffers then writes; it is not a true atomic promotion and may leave a partial object behind if the process fails mid-write.
+‡ `s3-pyarrow` plain `write` streams straight to a multipart upload; PyArrow's stream exposes no abort, so a mid-stream failure finalises a *truncated* object. `write_atomic` buffers the body first, so a failure leaves no object.
 § `azure` `write` commits atomically on flat (non-HNS) accounts; on hierarchical-namespace accounts use `write_atomic` for a guaranteed atomic replace.
 <!-- END_GENERATED:atomicity -->
 
@@ -404,11 +404,16 @@ always receive a typed error, never an `S3ServiceError` or `azure.core.…`.
 | `ResourceLocked` | Target resource is held by another session (e.g. an open co-authoring session); maps from Graph `423 Locked` |
 | `RemoteStoreError` | Base class for all errors above |
 
-**Retryable vs. terminal** — how each HTTP status is classified and the typed
-error it surfaces as. Retried statuses are re-attempted under the backend's
-`RetryPolicy` (default 3 attempts, 1–60 s exponential backoff); the typed error
-is raised only once the attempt budget is exhausted. The status→error mapping is
-uniform across backends — what varies is the transport retry *mechanism*.
+**Retryable vs. terminal** — the HTTP statuses the HTTP-transport backends
+(`graph`, `http`) classify, and the typed error each surfaces as. Retried
+statuses are re-attempted under the backend's `RetryPolicy` (default 3 attempts,
+1–60 s exponential backoff) and honour `Retry-After`; the typed error is raised
+only once the attempt budget is exhausted. The other backends reach the *same
+typed-error vocabulary* by mapping native SDK/OS exceptions rather than HTTP
+status codes, so the outcome is shared — but the status classification and
+`Retry-After` handling shown here are specific to the HTTP transports (`s3` and
+`azure` honour only `max_attempts`; `local`, `memory`, and `sql-*` make no remote
+calls and do not retry).
 
 <!-- BEGIN_GENERATED:retryability -->
 | Status | Disposition | Surfaced as |

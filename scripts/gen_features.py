@@ -146,7 +146,7 @@ _ATOMICITY: dict[str, dict[str, str]] = {
     },
     "azure": {"write": "Atomic§", "write_atomic": "Atomic", "move": "Copy+delete†", "copy": "Copy+delete"},
     "s3": {"write": "Atomic", "write_atomic": "Atomic", "move": "Copy+delete", "copy": "Copy+delete"},
-    "s3-pyarrow": {"write": "Atomic", "write_atomic": "Buffered‡", "move": "Copy+delete", "copy": "Copy+delete"},
+    "s3-pyarrow": {"write": "Streamed‡", "write_atomic": "Atomic", "move": "Copy+delete", "copy": "Copy+delete"},
     "sftp": {"write": "Streamed", "write_atomic": "Atomic", "move": "Copy+delete†", "copy": "Copy+delete"},
     "sql-blob": {"write": "Atomic", "write_atomic": "Atomic", "move": "Atomic", "copy": "Atomic"},
     "sql-query": {
@@ -616,9 +616,10 @@ def project_atomicity(graph: dict) -> str:
         "accounts, non-POSIX SFTP servers)."
     )
     lines.append(
-        "‡ `s3-pyarrow` `write_atomic` buffers then writes; it is not a true atomic "
-        "promotion and may leave a partial object behind if the process fails "
-        "mid-write."
+        "‡ `s3-pyarrow` plain `write` streams straight to a multipart upload; "
+        "PyArrow's stream exposes no abort, so a mid-stream failure finalises a "
+        "*truncated* object. `write_atomic` buffers the body first, so a failure "
+        "leaves no object."
     )
     lines.append(
         "§ `azure` `write` commits atomically on flat (non-HNS) accounts; on "
