@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 import importlib.util
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
-_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "check_readthedocs_python.py"
+import pytest
+import yaml
+
+_ROOT = Path(__file__).resolve().parents[2]
+_SCRIPT = _ROOT / "scripts" / "check_readthedocs_python.py"
 
 
 def _load():
@@ -21,3 +27,45 @@ def _load():
 
 def test_repo_config_is_consistent():
     assert _load().check() is None
+
+
+def _post_build_commands() -> list[str]:
+    cfg = yaml.safe_load((_ROOT / ".readthedocs.yaml").read_text(encoding="utf-8"))
+    return cfg["build"]["jobs"].get("post_build", [])
+
+
+def test_post_build_commands_are_single_line():
+    """No post_build command may contain an embedded newline.
+
+    BUG-226: an inline ``>-`` folded YAML scalar with an over-indented
+    continuation line folded to a *multi-line* string whose second line began
+    with ``|``. RTD runs post_build under ``/bin/sh`` (dash), which aborted with
+    a parse error *before* the intended ``|| echo`` non-fatal guard could run,
+    reddening the whole docs build. A newline surviving into the parsed command
+    is the fingerprint of that mis-fold. Keep post_build commands as single-line
+    scalars; put any multi-step logic in a committed script and call it.
+    """
+    for cmd in _post_build_commands():
+        assert "\n" not in cmd, f"post_build command spans multiple lines (BUG-226 mis-fold): {cmd!r}"
+
+
+def test_post_build_scripts_exist_and_parse():
+    """Every ``bash <script>`` invoked from post_build must exist and parse.
+
+    RTD has no way to surface a syntax error in a build script except by failing
+    the build, so validate it here where a break is a cheap red test instead.
+    """
+    bash = shutil.which("bash")
+    for cmd in _post_build_commands():
+        parts = cmd.split()
+        if len(parts) >= 2 and parts[0] == "bash":
+            script = _ROOT / parts[1]
+            assert script.is_file(), f"post_build calls missing script: {parts[1]}"
+            if bash is None:
+                pytest.skip("bash unavailable; cannot syntax-check the script")
+            result = subprocess.run(  # noqa: S603
+                [bash, "-n", str(script)],
+                capture_output=True,
+                text=True,
+            )
+            assert result.returncode == 0, f"{parts[1]} failed `bash -n`:\n{result.stderr}"

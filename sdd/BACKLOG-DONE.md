@@ -8,6 +8,23 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-226 — RTD `post_build` folded-YAML mis-fold reddened the docs build**
+  spec: — · effort: S · audience: infra.ci, library.maintainer
+  The ID-226 `post_build` step was an inline `>-` folded YAML scalar. One
+  continuation line (`| VERSION=… bash`) was indented three spaces deeper than
+  its siblings, so YAML folding **preserved** the newlines around it instead of
+  collapsing them, emitting a shell line that began with `|`. RTD runs
+  `post_build` under `/bin/sh` (dash), which aborted with
+  `Syntax error: "|" unexpected` — a **parse** error that fires before `||`, so
+  the intended non-fatal `|| echo …` guard never ran and the whole `/latest`
+  build went red. Nothing published: `/latest/llms-api.txt` 404'd and the
+  `## API context` pointer never reached `llms.txt`. Fix: move the logic into a
+  committed `scripts/docs/gen_llms_api.sh` (bash shebang, `set -uo pipefail`,
+  always `exit 0`, temp-file + mv-on-success, pinned lx v1.2.2); `.readthedocs.yaml`
+  now calls `bash scripts/docs/gen_llms_api.sh` — a single token, no YAML folding,
+  runs under bash not dash, and `bash -n`-checkable in lint. **Post-deploy check:**
+  confirm the next `/latest` build serves `/llms-api.txt` and embeds the pointer.
+
 - [x] **ID-226 — Publish `llms-api.txt`: public-API skeleton for coding agents**
   spec: — · effort: S · audience: user.discoverability.llm, library.maintainer
   A machine-readable public API surface — every class and function (backends,

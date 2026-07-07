@@ -10,6 +10,7 @@ audience:
   - library.maintainer
 discovery_followups:
   - ID-227
+  - BUG-226
 surprising_ripples:
   - .readthedocs.yaml
   - scripts/docs/check_links.py
