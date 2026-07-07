@@ -436,6 +436,33 @@ class TestRetryability:
         with pytest.raises(ValueError, match="drifted"):
             gen_features_module.project_retryability(graph)
 
+    def test_http_row_carries_408_footnote(self, gen_features_module, graph):
+        """The http mechanism row is marked and a footnote documents its 408 extension.
+
+        The shared status table is generated from ``_retry`` only, so 408 (which
+        the sync http backend retries as a transport-local extension) would
+        otherwise read as unclassified/terminal for http.
+        """
+        table = gen_features_module.project_retryability(graph)
+        http_row = next(line for line in table.splitlines() if line.startswith("| `http`"))
+        assert "†" in http_row
+        assert "408" in table
+        assert "transport-local extension" in table
+
+    def test_http_408_extension_drift_guard_raises(self, gen_features_module, graph, monkeypatch):
+        """A change to _http's transient-status extension must fail generation.
+
+        Closes the backend-local-drift gap: the footnote's 408 claim is checked
+        live against ``_http._TRANSIENT_STATUSES``, so a new http-local status
+        cannot land without updating the footnote.
+        """
+        import remote_store.backends._http as http_mod
+        from remote_store._retry import RETRYABLE_STATUSES
+
+        monkeypatch.setattr(http_mod, "_TRANSIENT_STATUSES", RETRYABLE_STATUSES | {408, 425})
+        with pytest.raises(ValueError, match="extension drifted"):
+            gen_features_module.project_retryability(graph)
+
 
 class TestAtomicity:
     def test_header_row(self, gen_features_module, graph):

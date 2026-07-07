@@ -432,7 +432,7 @@ calls and do not retry).
 | Backend | Transport retry mechanism |
 |---|---|
 | `azure` | Azure SDK `ExponentialRetry` (all five `RetryPolicy` fields) |
-| `http` | Hand-rolled loop over the shared backoff helpers |
+| `http` | Hand-rolled loop over the shared backoff helpers† |
 | `local` | — (no `retry` parameter) |
 | `memory` | — (no `retry` parameter) |
 | `s3` | botocore `standard` mode — honours `max_attempts` only |
@@ -440,6 +440,8 @@ calls and do not retry).
 | `sftp` | `tenacity` — connection-scope only (reconnect, not per-request) |
 | `sql-blob` | — (errors mapped, not retried) |
 | `sql-query` | — (errors mapped, not retried) |
+
+† `http` additionally retries `408 Request Timeout` (classified as `BackendUnavailable`) — a transport-local extension of the shared retryable set above.
 <!-- END_GENERATED:retryability -->
 
 Native async backends inherit their sync peer's mechanism; the async-only

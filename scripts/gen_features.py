@@ -524,6 +524,20 @@ def project_retryability(graph: dict) -> str:
     """
     from remote_store._retry import RETRYABLE_STATUSES, TERMINAL_STATUSES
 
+    # The http backend extends the shared retryable set with 408 (a transport-
+    # local addition, not part of _retry.RETRYABLE_STATUSES). Guard the extension
+    # live so the http-row † footnote below can never silently drift from the
+    # code: a new http-local status forces the footnote to be updated.
+    from remote_store.backends._http import _TRANSIENT_STATUSES
+
+    http_extra = _TRANSIENT_STATUSES - RETRYABLE_STATUSES
+    if http_extra != {408}:
+        raise ValueError(
+            "http backend transient-status extension drifted from the footnote.\n"
+            f"  _http._TRANSIENT_STATUSES - RETRYABLE_STATUSES = {sorted(http_extra)}, expected [408].\n"
+            "Update the http `†` footnote in scripts/gen_features.py project_retryability()."
+        )
+
     universe = RETRYABLE_STATUSES | TERMINAL_STATUSES
     if set(_STATUS_DETAIL) != universe:
         raise ValueError(
@@ -556,9 +570,16 @@ def project_retryability(graph: dict) -> str:
         "|---|---|",
     ]
     for type_str, _ in sorted(registry):
-        mech_lines.append(f"| `{type_str}` | {_RETRY_MECHANISM[type_str]} |")
+        marker = "†" if type_str == "http" else ""
+        mech_lines.append(f"| `{type_str}` | {_RETRY_MECHANISM[type_str]}{marker} |")
 
-    return "\n".join(status_lines) + "\n\n" + "\n".join(mech_lines)
+    footnote = (
+        "† `http` additionally retries `408 Request Timeout` (classified as "
+        "`BackendUnavailable`) — a transport-local extension of the shared "
+        "retryable set above."
+    )
+
+    return "\n".join(status_lines) + "\n\n" + "\n".join(mech_lines) + "\n\n" + footnote
 
 
 def project_atomicity(graph: dict) -> str:

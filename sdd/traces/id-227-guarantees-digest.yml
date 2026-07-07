@@ -28,12 +28,18 @@ expected_ripples:
   # "public docstring change" ripple-check row anticipates this.
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
-# One review round: caught the s3-pyarrow write/write_atomic atomicity cells
-# inverted (plain write is the non-atomic streaming path; write_atomic buffers
-# first), which the move-only ATOMIC_MOVE cross-check could not detect — a
-# curated cell can silently contradict source when no capability encodes it.
-# Also scoped the "uniform across backends" retry framing to the HTTP transports.
-review_rounds: 1
+# Round 1: caught the s3-pyarrow write/write_atomic atomicity cells inverted
+# (plain write is the non-atomic streaming path; write_atomic buffers first),
+# which the move-only ATOMIC_MOVE cross-check could not detect — a curated cell
+# can silently contradict source when no capability encodes it. Also scoped the
+# "uniform across backends" retry framing to the HTTP transports.
+# Round 2: the retryability status table (generated from _retry's union only)
+# omitted 408, which _http.py's _TRANSIENT_STATUSES adds — so `http` reads as
+# treating 408 terminal when it actually retries it. Fixed with a † footnote on
+# the http mechanism row AND a live drift-guard importing _http._TRANSIENT_STATUSES
+# (http_extra must == {408}), closing the same class of gap the round-1 finding
+# exposed: a backend-local extension of a shared constant escaping the guards.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
