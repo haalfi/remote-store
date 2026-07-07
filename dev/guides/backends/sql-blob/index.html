@@ -10860,6 +10860,9 @@ See the <a href="../../../reference/capabilities-matrix/">capabilities matrix</a
 with its key, data, and metadata. SQLite receives WAL mode and
 PRAGMA tuning automatically.</p>
 <p>Supports all capabilities except <code>LAZY_READ</code>.</p>
+<p>Every mutating operation runs inside a single database transaction, so
+<code>write</code>, <code>write_atomic</code>, <code>move</code>, and <code>copy</code> are atomic — a failure
+rolls back with no partial row left behind (<code>ATOMIC_MOVE</code> is advertised).</p>
 
 
 <details class="note" open>

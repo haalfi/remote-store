@@ -22,6 +22,8 @@ Uses a SQL table as key-value storage. Each row holds one "file" with its key, d
 
 Supports all capabilities except `LAZY_READ`.
 
+Every mutating operation runs inside a single database transaction, so `write`, `write_atomic`, `move`, and `copy` are atomic — a failure rolls back with no partial row left behind (`ATOMIC_MOVE` is advertised).
+
 Note
 
 **Non-lazy reads and writes.** Both `read()` and `write()` materialize the full content in memory. `read()` loads the entire BLOB before returning a stream (no `LAZY_READ`). `write()` reads the full stream before issuing the SQL INSERT/UPDATE because BLOB columns require complete data in a single statement. For files larger than process memory, use a blob-storage backend (S3, Local, Azure) instead.

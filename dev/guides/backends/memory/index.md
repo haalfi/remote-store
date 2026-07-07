@@ -99,3 +99,5 @@ In-memory backend using a tree-indexed data structure.
 Zero dependencies, no filesystem access, no network. Designed as a drop-in backend for unit testing, interactive exploration, and documentation examples.
 
 All capabilities except `GLOB` are supported. The full conformance suite passes with zero skips.
+
+Every mutating operation runs under a single process-wide lock, so `write`, `write_atomic`, `move`, and `copy` are atomic with respect to concurrent callers in the same process (`ATOMIC_MOVE` is advertised).

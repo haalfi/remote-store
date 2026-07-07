@@ -10237,6 +10237,9 @@ drop-in backend for unit testing, interactive exploration, and
 documentation examples.</p>
 <p>All capabilities except <code>GLOB</code> are supported.  The full conformance
 suite passes with zero skips.</p>
+<p>Every mutating operation runs under a single process-wide lock, so
+<code>write</code>, <code>write_atomic</code>, <code>move</code>, and <code>copy</code> are atomic with respect
+to concurrent callers in the same process (<code>ATOMIC_MOVE</code> is advertised).</p>
 
 
 

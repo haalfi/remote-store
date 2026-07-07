@@ -14,6 +14,8 @@ Zero dependencies, no filesystem access, no network. Designed as a drop-in backe
 
 All capabilities except `GLOB` are supported. The full conformance suite passes with zero skips.
 
+Every mutating operation runs under a single process-wide lock, so `write`, `write_atomic`, `move`, and `copy` are atomic with respect to concurrent callers in the same process (`ATOMIC_MOVE` is advertised).
+
 ## See also
 
 - [Memory Backend Guide](https://docs.remotestore.dev/stable/guides/backends/memory/index.md) — usage patterns, configuration, and examples

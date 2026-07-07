@@ -11476,6 +11476,93 @@ reader (no temp-file spill), not a spool. See
 </table>
 <!-- END_GENERATED:backends_flags -->
 
+<p><strong>Write and move atomicity by backend</strong> — whether each mutating operation
+completes atomically or via a non-atomic mechanism that can leave partial state
+on failure. <code>read</code>, <code>list</code>, and <code>metadata</code> are non-mutating (atomicity N/A);
+<code>delete</code> and folder operations carry no atomicity guarantee and are omitted.</p>
+<!-- BEGIN_GENERATED:atomicity -->
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th><code>write</code></th>
+<th><code>write_atomic</code></th>
+<th><code>move</code></th>
+<th><code>copy</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>azure</code></td>
+<td>Atomic§</td>
+<td>Atomic</td>
+<td>Copy+delete†</td>
+<td>Copy+delete</td>
+</tr>
+<tr>
+<td><code>http</code></td>
+<td>— (read-only)</td>
+<td>— (read-only)</td>
+<td>— (read-only)</td>
+<td>— (read-only)</td>
+</tr>
+<tr>
+<td><code>local</code></td>
+<td>Direct</td>
+<td>Atomic</td>
+<td>Atomic*</td>
+<td>Copy+delete</td>
+</tr>
+<tr>
+<td><code>memory</code></td>
+<td>Atomic</td>
+<td>Atomic</td>
+<td>Atomic</td>
+<td>Atomic</td>
+</tr>
+<tr>
+<td><code>s3</code></td>
+<td>Atomic</td>
+<td>Atomic</td>
+<td>Copy+delete</td>
+<td>Copy+delete</td>
+</tr>
+<tr>
+<td><code>s3-pyarrow</code></td>
+<td>Streamed‡</td>
+<td>Atomic</td>
+<td>Copy+delete</td>
+<td>Copy+delete</td>
+</tr>
+<tr>
+<td><code>sftp</code></td>
+<td>Streamed</td>
+<td>Atomic</td>
+<td>Copy+delete†</td>
+<td>Copy+delete</td>
+</tr>
+<tr>
+<td><code>sql-blob</code></td>
+<td>Atomic</td>
+<td>Atomic</td>
+<td>Atomic</td>
+<td>Atomic</td>
+</tr>
+<tr>
+<td><code>sql-query</code></td>
+<td>— (read-only)</td>
+<td>— (read-only)</td>
+<td>— (read-only)</td>
+<td>— (read-only)</td>
+</tr>
+</tbody>
+</table>
+<p>* <code>local</code> <code>move</code> is atomic within one filesystem (<code>os.rename</code>); a cross-filesystem move falls back to copy-then-delete.
+† Azure and SFTP <code>move</code> use a native rename that is atomic (Azure HNS <code>rename_file</code>, SFTP <code>posix_rename</code>), but <code>ATOMIC_MOVE</code> is not advertised because it cannot be guaranteed across all configurations (non-HNS Azure accounts, non-POSIX SFTP servers).
+‡ <code>s3-pyarrow</code> plain <code>write</code> streams straight to a multipart upload; PyArrow's stream exposes no abort, so a mid-stream failure finalises a <em>truncated</em> object. <code>write_atomic</code> buffers the body first, so a failure leaves no object.
+§ <code>azure</code> <code>write</code> commits atomically on flat (non-HNS) accounts; on hierarchical-namespace accounts use <code>write_atomic</code> for a guaranteed atomic replace.</p>
+<!-- END_GENERATED:atomicity -->
+
 <p><strong>Native async backends</strong> — constructed directly via <code>AsyncStore(backend=…)</code>;
 no RegistryConfig <code>type=</code> string (there is no async config registry).</p>
 <!-- BEGIN_GENERATED:backends_async -->
@@ -11772,6 +11859,132 @@ always receive a typed error, never an <code>S3ServiceError</code> or <code>azur
 </tr>
 </tbody>
 </table>
+<p><strong>Retryable vs. terminal</strong> — the HTTP statuses the HTTP-transport backends
+(<code>graph</code>, <code>http</code>) classify, and the typed error each surfaces as. Retried
+statuses are re-attempted under the backend's <code>RetryPolicy</code> (default 3 attempts,
+1–60 s exponential backoff) and honour <code>Retry-After</code>; the typed error is raised
+only once the attempt budget is exhausted. The other backends reach the <em>same
+typed-error vocabulary</em> by mapping native SDK/OS exceptions rather than HTTP
+status codes, so the outcome is shared — but the status classification and
+<code>Retry-After</code> handling shown here are specific to the HTTP transports (<code>s3</code> and
+<code>azure</code> honour only <code>max_attempts</code>; <code>local</code>, <code>memory</code>, and <code>sql-*</code> make no remote
+calls and do not retry).</p>
+<!-- BEGIN_GENERATED:retryability -->
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Disposition</th>
+<th>Surfaced as</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>429</code></td>
+<td>Retried — honours <code>Retry-After</code></td>
+<td><code>BackendUnavailable</code></td>
+</tr>
+<tr>
+<td><code>500</code></td>
+<td>Retried</td>
+<td><code>BackendUnavailable</code></td>
+</tr>
+<tr>
+<td><code>502</code></td>
+<td>Retried</td>
+<td><code>BackendUnavailable</code></td>
+</tr>
+<tr>
+<td><code>503</code></td>
+<td>Retried</td>
+<td><code>BackendUnavailable</code></td>
+</tr>
+<tr>
+<td><code>504</code></td>
+<td>Retried</td>
+<td><code>BackendUnavailable</code></td>
+</tr>
+<tr>
+<td><code>403</code></td>
+<td>Not retried</td>
+<td><code>PermissionDenied</code></td>
+</tr>
+<tr>
+<td><code>404</code></td>
+<td>Not retried</td>
+<td><code>NotFound</code></td>
+</tr>
+<tr>
+<td><code>409</code></td>
+<td>Not retried</td>
+<td><code>AlreadyExists</code></td>
+</tr>
+<tr>
+<td><code>423</code></td>
+<td>Not retried</td>
+<td><code>ResourceLocked</code></td>
+</tr>
+<tr>
+<td><code>507</code></td>
+<td>Not retried</td>
+<td><code>BackendUnavailable</code></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Transport retry mechanism</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>azure</code></td>
+<td>Azure SDK <code>ExponentialRetry</code> (all five <code>RetryPolicy</code> fields)</td>
+</tr>
+<tr>
+<td><code>http</code></td>
+<td>Hand-rolled loop over the shared backoff helpers†</td>
+</tr>
+<tr>
+<td><code>local</code></td>
+<td>— (no <code>retry</code> parameter)</td>
+</tr>
+<tr>
+<td><code>memory</code></td>
+<td>— (no <code>retry</code> parameter)</td>
+</tr>
+<tr>
+<td><code>s3</code></td>
+<td>botocore <code>standard</code> mode — honours <code>max_attempts</code> only</td>
+</tr>
+<tr>
+<td><code>s3-pyarrow</code></td>
+<td><code>AwsStandardS3RetryStrategy</code> — honours <code>max_attempts</code> only</td>
+</tr>
+<tr>
+<td><code>sftp</code></td>
+<td><code>tenacity</code> — connection-scope only (reconnect, not per-request)</td>
+</tr>
+<tr>
+<td><code>sql-blob</code></td>
+<td>— (errors mapped, not retried)</td>
+</tr>
+<tr>
+<td><code>sql-query</code></td>
+<td>— (errors mapped, not retried)</td>
+</tr>
+</tbody>
+</table>
+<p>† <code>http</code> additionally retries <code>408 Request Timeout</code> (classified as <code>BackendUnavailable</code>) — a transport-local extension of the shared retryable set above.</p>
+<!-- END_GENERATED:retryability -->
+
+<p>Native async backends inherit their sync peer's mechanism; the async-only
+<code>GraphBackend</code> runs hand-rolled retry loops over the shared backoff helpers,
+honouring all five <code>RetryPolicy</code> fields. <code>local</code>, <code>memory</code>, <code>sftp</code>, and the SQL
+backends leave a closed backend reusable; <code>azure</code>, <code>s3</code>, and <code>graph</code> treat use
+after <code>close()</code> as terminal (<code>close_is_terminal</code>).</p>
 <hr />
 <h2 id="async-api">Async API<a class="headerlink" href="#async-api" title="Permanent link">&para;</a></h2>
 <p><code>remote_store.aio</code> provides native <code>async</code>/<code>await</code> support and two bridge
