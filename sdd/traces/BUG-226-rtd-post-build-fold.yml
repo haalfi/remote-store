@@ -1,0 +1,68 @@
+id: BUG-226
+title: "RTD post_build folded-YAML mis-fold reddened the docs build (ID-226 llms-api.txt never published)"
+trigger: |
+  The first `/latest` Read the Docs build after ID-226 (PR #881) merged
+  FAILED. Build 33467164's `post_build` step died at
+  ``/bin/sh: 2: Syntax error: "|" unexpected``. Root cause: the ID-226
+  `post_build` command was an inline `>-` folded YAML scalar; one
+  continuation line (``| VERSION=v1.2.2 LX_INSTALL_DIR=/tmp/lxbin bash``)
+  was indented three spaces deeper than its siblings, so YAML folding
+  PRESERVED the newlines around the more-indented block instead of
+  collapsing them, emitting a standalone shell line beginning with `|`.
+  RTD runs post_build under `/bin/sh` (dash); a leading `|` is a parse
+  error. The parse error fires BEFORE `||`, so ID-226's intended
+  non-fatal `|| echo …` guard never ran — the whole docs build reddened
+  and nothing published. Observable fallout: `/latest/llms-api.txt` 404,
+  and the `## API context` pointer never reached the generated `llms.txt`.
+
+source_items:
+  - BUG-226
+
+audience:
+  - infra.ci
+  - library.maintainer
+
+review_rounds: 1
+
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: .readthedocs.yaml
+        section: "build.jobs.post_build"
+        read_type: gate
+        extract: "The `>-` folded scalar's `| VERSION=… bash` line sits at 11-space indent vs siblings' 8; YAML preserves newlines around a more-indented run inside a folded scalar, so the fold emits `…install.sh\\n   | VERSION=… bash\\n && …` — a shell line starting with `|`. dash aborts with a parse error, which precedes `||`, defeating the non-fatal guard."
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/docs/gen_llms_api.sh
+        section: "(new file)"
+        read_type: reference
+        extract: |
+          Move the lx fetch/run/publish logic into a committed bash script
+          (shebang `#!/usr/bin/env bash`, `set -uo pipefail`). Every failure
+          path routes through a `skip()` that logs to stderr and `exit 0`, so
+          the script is non-fatal by contract regardless of dash-vs-bash
+          folding quirks. lx v1.2.2 pinned; output written to a temp file and
+          moved into `${READTHEDOCS_OUTPUT}/html/` only when non-empty, so a
+          failed run serves nothing (loud 404) rather than a partial file.
+          A missing `READTHEDOCS_OUTPUT` short-circuits to skip so local
+          `bash scripts/docs/gen_llms_api.sh` is safe.
+      - file: .readthedocs.yaml
+        section: "build.jobs.post_build"
+        read_type: reference
+        extract: "Replace the fragile folded scalar with a single token: `- bash scripts/docs/gen_llms_api.sh`. No YAML folding surface, runs under bash (the shebang) not dash, and the logic is `bash -n`-checkable in lint."
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/docs/gen_llms_api.sh
+        section: "(local run)"
+        read_type: verify
+        extract: "`bash -n` clean; running with READTHEDOCS_OUTPUT unset prints the skip message and exits 0 (non-fatal path proven). Happy path could not be fully exercised locally (needs the RTD build env to fetch lx); post-deploy check confirms the next `/latest` build serves `/llms-api.txt` and embeds the pointer."
+      - file: .readthedocs.yaml
+        section: "build.jobs.post_build"
+        read_type: verify
+        extract: "`yaml.safe_load` yields `post_build == ['bash scripts/docs/gen_llms_api.sh']` — a single scalar, no fold, no over-indent trap."
