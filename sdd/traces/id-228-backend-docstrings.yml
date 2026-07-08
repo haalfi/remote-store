@@ -32,7 +32,14 @@ expected_ripples:
   # sweep moved; the "public docstring change" ripple-check row anticipates it.
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
-review_rounds: 0
+# Round 1: review flagged that the new I/O-backed `glob` docstrings omitted the
+# `Raises:` their sibling listing methods carry. Added surfaced-during-iteration
+# Raises to _S3Base.glob and to SQLBlobBackend's glob AND list_files/list_folders/
+# iter_children (the same _map_errors SELECT path, kept uniform so glob isn't the
+# lone documented one). Skipped the s3-boto3 glob the review also named: its
+# listing path does NOT wrap _boto_errors, so it surfaces RAW botocore errors,
+# not typed ones — a typed Raises there would invent a contract the code lacks.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

@@ -692,6 +692,10 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         One ``SELECT`` fetches every key under the prefix; folder structure is
         derived from ``/`` in the key suffix, and ``recursive`` / ``max_depth``
         filter client-side. A missing prefix yields nothing.
+
+        Raises:
+            BackendUnavailable: If the database operation fails, surfaced during
+                iteration.
         """
         self._validate_path(path, allow_empty=True)
         prefix = (path + "/") if path else ""
@@ -724,6 +728,10 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
         One ``SELECT`` over keys under the prefix; folder names are the distinct
         first segments of the key suffixes. A missing prefix yields nothing.
+
+        Raises:
+            BackendUnavailable: If the database operation fails, surfaced during
+                iteration.
         """
         self._validate_path(path, allow_empty=True)
         prefix = (path + "/") if path else ""
@@ -751,6 +759,10 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         Overrides the base two-pass default: a single query over the prefix
         yields ``FileInfo`` for direct-child keys and ``FolderEntry`` for the
         distinct first suffix segments. A missing prefix yields nothing.
+
+        Raises:
+            BackendUnavailable: If the database operation fails, surfaced during
+                iteration.
         """
         self._validate_path(path, allow_empty=True)
         prefix = (path + "/") if path else ""
@@ -983,6 +995,10 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         Narrows SQL-side with a ``LIKE`` prefix (or a SQLite ``GLOB`` prefix)
         where the pattern allows, then applies the full glob regex to each row.
         Costs one ``SELECT``.
+
+        Raises:
+            BackendUnavailable: If the database operation fails, surfaced during
+                iteration.
         """
         cols = self._select_info_columns()
         rx = pattern_to_regex(pattern)

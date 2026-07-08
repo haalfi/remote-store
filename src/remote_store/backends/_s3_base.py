@@ -432,6 +432,12 @@ class _S3Base(Backend):
         Narrows to the pattern's literal prefix, lists that subtree (recursively
         when the pattern needs it), and applies the full glob regex to each key.
         Cost tracks the size of the narrowed listing.
+
+        Raises:
+            PermissionDenied: If the credentials lack access, surfaced during
+                iteration.
+            BackendUnavailable: On a transport or service failure, surfaced during
+                iteration.
         """
         from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
 
