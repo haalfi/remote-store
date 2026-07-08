@@ -199,6 +199,44 @@ _CONSISTENCY_ASYNC: dict[str, dict[str, str]] = {
 }
 
 
+# --- ID-227 Phase 3: per-operation cost model ------------------------------
+
+# Structural cost of the three read-path operations, keyed by registry ``type``
+# string. ``read`` is the streaming-vs-materialised class and is cross-checked
+# live against the graph's LAZY_READ capability in project_cost() (a cell starts
+# with "Streaming" iff LAZY_READ is declared) — the one machine-harvestable cost
+# signal, mirroring phase 1's ATOMIC_MOVE cross-check on the ``move`` cell.
+# ``metadata`` / ``list`` are structural facts no capability encodes, curated
+# here with a registry key-set membership guard. Cells name the mechanism so the
+# cost class is visible at a glance. This is the *structural* cost (what the API
+# shape forces per call), distinct from the measured benchmark overhead in
+# explanation/performance.md.
+_COST: dict[str, dict[str, str]] = {
+    "local": {"read": "Streaming", "metadata": "`stat` syscall", "list": "`scandir` walk"},
+    "memory": {"read": r"Buffered in memory\*", "metadata": "Dict lookup", "list": "Dict scan"},
+    "http": {"read": "Streaming", "metadata": "1 HEAD", "list": "— (no `LIST`)"},
+    "azure": {"read": "Streaming", "metadata": "1 HEAD", "list": "Paginated `LIST`"},
+    "s3": {"read": "Streaming", "metadata": "1 HEAD", "list": "Paginated `LIST`"},
+    "s3-pyarrow": {"read": "Streaming", "metadata": "1 HEAD", "list": "Paginated `LIST`"},
+    "sftp": {"read": "Streaming", "metadata": "1 `stat` round-trip", "list": "Directory walk"},
+    "sql-blob": {"read": r"Full BLOB into memory\*", "metadata": "1 `SELECT`", "list": "1 `SELECT`"},
+    "sql-query": {"read": r"Query run, buffered\*", "metadata": "Registry lookup", "list": "Registry scan"},
+}
+
+# Native async backends, keyed by class name (mirrors _CONSISTENCY_ASYNC). The
+# async-only GraphBackend streams reads (LAZY_READ) but blocks copy/move on a
+# server-side monitor — a latency captured in the table's lead-in prose, not a
+# read/metadata/list column. Key-set drift-guarded against the graph's async
+# backend nodes. Note AsyncMemoryBackend DOES stream (it declares LAZY_READ)
+# where its sync mirror buffers — the read/LAZY_READ cross-check keeps the two
+# rows from silently converging.
+_COST_ASYNC: dict[str, dict[str, str]] = {
+    "AsyncAzureBackend": {"read": "Streaming", "metadata": "1 HEAD", "list": "Paginated `LIST`"},
+    "AsyncMemoryBackend": {"read": "Streaming", "metadata": "Dict lookup", "list": "Dict scan"},
+    "GraphBackend": {"read": "Streaming", "metadata": "1 GET", "list": "Paginated GETs"},
+}
+
+
 def _load_graph() -> dict:
     with open(GRAPH, encoding="utf-8") as f:
         return json.load(f)
@@ -764,6 +802,89 @@ def project_consistency(graph: dict) -> str:
     return "\n".join(sync_lines) + "\n\n" + "\n".join(async_lines) + "\n\n" + "\n".join(footnotes)
 
 
+def project_cost(graph: dict) -> str:
+    """Return the per-backend per-operation cost matrix (sync + async).
+
+    Three read-path operations: ``read`` (streaming vs full materialisation),
+    ``metadata`` (a head / exists probe), and ``list`` (enumeration). The ``read``
+    cell is cross-checked live against the graph's ``LAZY_READ`` capability — it
+    must start with "Streaming" exactly when the backend declares ``LAZY_READ`` —
+    the one machine-harvestable cost signal (mirrors ``project_atomicity``'s
+    ``ATOMIC_MOVE`` cross-check). ``metadata`` / ``list`` are curated structural
+    facts with a registry / async-node key-set membership guard.
+    """
+    qname_map = _cls_qname_map(graph)
+    declares, _ = _build_lookups(graph)
+    registry = _parse_registry_order()
+
+    types = {t for t, _ in registry}
+    if types != set(_COST):
+        raise ValueError(
+            "Cost rows drifted from the registry.\n"
+            f"  registered but no row: {sorted(types - set(_COST))}\n"
+            f"  row but not registered: {sorted(set(_COST) - types)}\n"
+            "Update _COST in scripts/gen_features.py."
+        )
+
+    async_names = {name for name, _ in _async_backend_nodes(graph)}
+    if async_names != set(_COST_ASYNC):
+        raise ValueError(
+            "Async cost rows drifted from the graph's async backends.\n"
+            f"  in graph but no row: {sorted(async_names - set(_COST_ASYNC))}\n"
+            f"  row but not in graph: {sorted(set(_COST_ASYNC) - async_names)}\n"
+            "Update _COST_ASYNC in scripts/gen_features.py."
+        )
+
+    def _check_read_vs_lazy(name: str, cell: str, cls_uri: str | None) -> None:
+        declared = declares.get(cls_uri, frozenset()) if cls_uri else frozenset()
+        if cell.startswith("Streaming") != ("LAZY_READ" in declared):
+            raise ValueError(
+                f"Cost 'read' cell for {name!r} disagrees with the graph's LAZY_READ "
+                f"capability: cell={cell!r}, LAZY_READ="
+                f"{'declared' if 'LAZY_READ' in declared else 'absent'}. "
+                "Reconcile _COST / _COST_ASYNC in scripts/gen_features.py with the backend's caps."
+            )
+
+    ops = ("read", "metadata", "list")
+    sync_lines = [
+        "| Backend | `read` | `metadata` | `list` |",
+        "|---|---|---|---|",
+    ]
+    for type_str, cls_name in sorted(registry):
+        cells = _COST[type_str]
+        qname = qname_map.get(cls_name)
+        _check_read_vs_lazy(type_str, cells["read"], f"cls:{qname}" if qname else None)
+        row = " | ".join(cells[op] for op in ops)
+        sync_lines.append(f"| `{type_str}` | {row} |")
+
+    async_lines = [
+        "The async-native backends inherit their sync peer's per-op cost; the "
+        "async-only `GraphBackend` streams reads but blocks `copy` (always) and a "
+        "large or cross-folder `move` on a server-side monitor polled to completion "
+        "— a per-call latency the columns below do not show.",
+        "",
+        "| Async backend | `read` | `metadata` | `list` |",
+        "|---|---|---|---|",
+    ]
+    for cls_name, cls_uri in _async_backend_nodes(graph):
+        cells = _COST_ASYNC[cls_name]
+        _check_read_vs_lazy(cls_name, cells["read"], cls_uri)
+        row = " | ".join(cells[op] for op in ops)
+        async_lines.append(f"| `{cls_name}` | {row} |")
+
+    footnote = (
+        r"\* `memory` (sync), `sql-blob`, and `sql-query` do not stream a read "
+        "(`LAZY_READ` absent): each holds the whole object in memory before `read()` "
+        "returns — `sql-blob` loads the full BLOB, `sql-query` buffers the serialised "
+        "query result, and sync `memory` keeps the value resident (its async peer "
+        "`AsyncMemoryBackend` yields chunks and *does* stream). `sql-blob` likewise "
+        "buffers the entire body before the write `INSERT`/`UPDATE`. For objects "
+        "larger than process memory use a streaming backend (Local, S3, Azure, SFTP)."
+    )
+
+    return "\n".join(sync_lines) + "\n\n" + "\n".join(async_lines) + "\n\n" + footnote
+
+
 def project_all(graph: dict, pyproject: dict) -> dict[str, str]:
     """Return all projections keyed by region name."""
     return {
@@ -777,6 +898,7 @@ def project_all(graph: dict, pyproject: dict) -> dict[str, str]:
         "retryability": project_retryability(graph),
         "atomicity": project_atomicity(graph),
         "consistency": project_consistency(graph),
+        "cost": project_cost(graph),
         "install_extras": project_install_extras(pyproject),
     }
 

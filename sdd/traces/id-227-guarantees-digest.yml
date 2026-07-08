@@ -1,5 +1,5 @@
 id: ID-227
-title: "Consumer guarantees & cost digest — phases 1-2 (atomicity, retryable-vs-terminal, read-after-write consistency)"
+title: "Consumer guarantees & cost digest — phases 1-3 (atomicity, retryable-vs-terminal, read-after-write consistency, per-operation cost)"
 trigger: >
   Feedback on the ID-220 `llms-full.txt` bundle and the ID-226 API skeleton was
   that both answer *how to call* a backend but not the deeper cross-backend
@@ -195,4 +195,65 @@ phases:
         section: "use_listings_cache DirCache behaviour"
         read_type: verify
         extract: "Empirically ran the matrix cells (not just type-checked): local/memory/S3-via-moto all show read-after-write, list-after-write, and read/list-after-delete are strong; and the S3 `*` footnote reproduces both halves — with the cache OFF (default) a cross-writer instance's write appears in the reader's fresh listing, with use_listings_cache=True the reader's listing stays blind to it (stale). Confirms the guarded footnote describes real behaviour."
+        outcome: ok
+  # --- Phase 3: per-operation cost model (author + external-verify) -----------
+  # Backlog framed cost as author+external-verify like phase 2, but the read
+  # dimension turned out to have a machine-harvestable signal after all: the
+  # LAZY_READ capability already encodes streaming-vs-materialised. So the
+  # read cell is cross-checked live against the graph (a phase-1-strength guard,
+  # not phase-2's key-set-only guard); metadata/list stay curated with a registry
+  # key-set membership guard. No doc-graph schema bump (LAZY_READ is already a
+  # node — re-evaluated per DGM-002/003, still not earned). The cross-check
+  # immediately earned its keep: AsyncMemoryBackend declares LAZY_READ (it yields
+  # chunks) while its sync mirror MemoryBackend does not (buffers fully) — the
+  # guard forces the two rows to state opposite read-cost classes instead of
+  # silently converging on a copy-pasted "Streaming".
+  - id: research
+    name: Research / cost-fact census
+    steps:
+      - file: docs-src/explanation/performance.md
+        section: "(full)"
+        read_type: gate
+        extract: "performance.md is MEASURED benchmark overhead (Docker/Toxiproxy latency, throughput-by-size), not the structural cost class. Phase 3 is the complementary structural view (does read stream or materialise; what a metadata/list costs per call), so the intro cross-links here rather than duplicating."
+        outcome: ok
+      - file: src/remote_store/_capabilities.py
+        section: "LAZY_READ"
+        read_type: gate
+        extract: "LAZY_READ = read() fetches lazily on demand (constant memory); its absence means read() materialises. Already a graph capability node → the one machine-harvestable cost signal, usable as an ATOMIC_MOVE-style cross-check on the read cell."
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend docstring + SQLQueryBackend.read"
+        read_type: reference
+        extract: "sql-blob read() loads the full BLOB before returning a stream and write() buffers the whole body before the INSERT/UPDATE (no LAZY_READ); sql-query read() executes the SQL and serialises the entire result set into a BytesIO, while its metadata/list run over the in-memory path→query registry (cheap dict ops, not SQL). Grounds the `*` materialisation footnote and the sql-query metadata/list cells."
+        outcome: ok
+      - file: src/remote_store/aio/backends/_memory.py
+        section: "AsyncMemoryBackend LAZY_READ note"
+        read_type: reference
+        extract: "Explicit docstring: async memory yields chunks incrementally (LAZY_READ) where the sync mirror buffers fully; the mirrors edge does NOT imply capability parity. Confirms the divergent read cells the cross-check enforces are real, not a mistake to reconcile away."
+        outcome: ok
+  - id: implement
+    name: Implement (phase 3)
+    steps:
+      - file: scripts/gen_features.py
+        section: "project_cost + _COST / _COST_ASYNC"
+        read_type: gate
+        extract: "Curated read/metadata/list cells (sync registry-keyed + async graph-node-keyed); read cell cross-checked live against LAZY_READ (cell startswith 'Streaming' iff declared) for both tables; metadata/list guarded by registry + async key-set membership. Registered 'cost' in project_all. http list cell reads '— (no LIST)' (http lacks the LIST capability) rather than guessing a cost."
+        outcome: ok
+      - file: FEATURES.md
+        section: "## Backends (per-operation cost)"
+        read_type: gate
+        extract: "Added the cost region + static intro (structural-vs-measured framing, cross-links performance.md; weaves in the write-buffer + hierarchical-write ancestor-probe cost fragments as prose) and the `*` materialisation footnote. Reaches llms-full.txt with no nav change (reference/FEATURES.md already in the llmstxt sections)."
+        outcome: ok
+  - id: verify
+    name: Verify (phase 3)
+    steps:
+      - file: tests/scripts/test_gen_features.py
+        section: "TestCost + region integrity"
+        read_type: gate
+        extract: "Shape + drift-guard tests: header/rows, representative cells, LAZY_READ cross-check via monkeypatch (flip local's read cell off Streaming → raises), sync + async key-set guards; extended test_features_md_has_all_regions with the cost region. Full suite green (7031 passed / 593 skipped, Stage-1 no-Docker)."
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / capabilities + versions"
+        read_type: verify
+        extract: "No source-constant promotion needed (LAZY_READ already a node, unlike phase 2's _s3_base constant); graph.json byte-identical (no schema change); FEATURES.md user-facing → CHANGELOG phase-3 line added. Phase 3 closes ID-227 → moved to BACKLOG-DONE.md."
         outcome: ok

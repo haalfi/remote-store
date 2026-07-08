@@ -8,6 +8,34 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-227 — Consumer "guarantees & cost" digest, derived from the specs**
+  spec: — · effort: L · audience: user.api, user.discoverability.llm
+  A generated, drift-proof per-backend × per-operation matrix in `FEATURES.md`
+  (and thus the ID-220 `llms-full.txt` bundle) answering the deeper cross-backend
+  contract that "how to call it" docs miss. Shipped in three phases, each an
+  extension of the ID-221/222 doc-graph projection in `scripts/gen_features.py`:
+  **Phase 1** — atomicity (per-op `write`/`write_atomic`/`move`/`copy` mechanism,
+  `move` cross-checked against the graph's `ATOMIC_MOVE`) and the
+  retryable-vs-terminal status split (imported live from `_retry.RETRYABLE_STATUSES`
+  / `TERMINAL_STATUSES`, plus the http-local 408 extension guarded against
+  `_http._TRANSIENT_STATUSES`). **Phase 2** — read-after-write consistency
+  (verified against AWS/Azure/MS vendor docs + backend source: every read/write
+  backend normalises to strong, with footnotes for the S3 opt-in listing cache —
+  guarded against `_s3_base._DEFAULT_USE_LISTINGS_CACHE` — and Graph's async
+  monitor ops). **Phase 3** — a per-operation cost matrix (`read` / `metadata` /
+  `list`): the streaming-vs-materialised `read` cell is cross-checked live against
+  each backend's `LAZY_READ` capability (the one machine-harvestable cost signal,
+  which immediately caught that `AsyncMemoryBackend` streams where its sync mirror
+  buffers), `metadata`/`list` curated with a registry/async-node key-set guard,
+  and the write-buffer + hierarchical-write ancestor-probe cost fragments woven
+  into the intro prose. No doc-graph schema bump was earned at any phase (DGM-002/003
+  re-evaluated each time). Two review rounds on Phase 1 (inverted s3-pyarrow
+  write/write_atomic cells; the omitted-408 retryability gap). Spawned **ID-228**
+  (backfill the six thin backends' method docstrings — upstream of the cells this
+  matrix harvests) and **BUG-227** (stale `Iterator[str]` return types, found while
+  empirically validating the Phase-2 matrix). Origin: LLM feedback on
+  `llms-full.txt` depth gaps + the ID-226 skeleton self-eval.
+
 - [x] **BUG-227 — FEATURES.md §LIST/§GLOB advertised wrong return types (`Iterator[str]` vs `FileInfo`/`FolderEntry`)**
   spec: — · effort: S · audience: user.api_docs, user.discoverability.llm
   The hand-authored Store-API method tables in `FEATURES.md` annotated the
