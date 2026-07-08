@@ -564,6 +564,80 @@ class TestConsistency:
             gen_features_module.project_consistency(graph)
 
 
+class TestCost:
+    def test_header_rows(self, gen_features_module, graph):
+        table = gen_features_module.project_cost(graph)
+        assert "| Backend | `read` | `metadata` | `list` |" in table
+        assert "| Async backend | `read` | `metadata` | `list` |" in table
+
+    def test_all_registered_backends_present(self, gen_features_module, graph):
+        table = gen_features_module.project_cost(graph)
+        for type_str, _ in gen_features_module._parse_registry_order():
+            assert f"| `{type_str}` |" in table
+
+    def test_async_backends_present(self, gen_features_module, graph):
+        table = gen_features_module.project_cost(graph)
+        for cls_name in ("AsyncAzureBackend", "AsyncMemoryBackend", "GraphBackend"):
+            assert f"| `{cls_name}` |" in table
+
+    def test_representative_cells(self, gen_features_module, graph):
+        table = gen_features_module.project_cost(graph)
+        rows = {line.split("`")[1]: line for line in table.splitlines() if line.startswith("| `")}
+        # A LAZY_READ backend streams; a non-LAZY_READ one materialises with the * marker.
+        assert rows["local"].split("|")[2].strip() == "Streaming"
+        assert r"\*" in rows["sql-blob"]  # full BLOB into memory
+        # http has no LIST capability; the list cell says so rather than guessing a cost.
+        assert "no `LIST`" in rows["http"]
+        # sync memory buffers where its async peer streams — the two must not converge.
+        assert "Buffered" in rows["memory"]
+        assert rows["AsyncMemoryBackend"].split("|")[2].strip() == "Streaming"
+
+    def test_footnote_present(self, gen_features_module, graph):
+        table = gen_features_module.project_cost(graph)
+        assert "LAZY_READ" in table  # * materialisation footnote cites the missing capability
+        assert "larger than process memory" in table
+
+    def test_read_cell_cross_checked_against_lazy_read(self, gen_features_module, graph, monkeypatch):
+        """A `read` cell that disagrees with the graph's LAZY_READ must fail generation.
+
+        `local` declares LAZY_READ, so flipping its cell off "Streaming" contradicts
+        the capability — the guard that keeps the streaming-vs-materialised class
+        honest (mirrors the ATOMIC_MOVE cross-check on the atomicity `move` cell).
+        """
+        tampered = {t: dict(c) for t, c in gen_features_module._COST.items()}
+        tampered["local"]["read"] = r"Buffered in memory\*"
+        monkeypatch.setattr(gen_features_module, "_COST", tampered)
+        with pytest.raises(ValueError, match="disagrees with the graph's LAZY_READ"):
+            gen_features_module.project_cost(graph)
+
+    def test_async_read_cell_cross_checked_against_lazy_read(self, gen_features_module, graph, monkeypatch):
+        """The async table's read cell is cross-checked too — its own wiring, its own test.
+
+        The async branch passes each node's ``cls_uri`` straight into the LAZY_READ
+        cross-check, distinct from the sync branch's ``qname`` -> ``cls:`` lookup, so
+        it needs its own failure-mode coverage. ``AsyncMemoryBackend`` declares
+        LAZY_READ (it streams) where its sync mirror buffers; flipping its cell off
+        "Streaming" contradicts the graph and must raise.
+        """
+        tampered = {c: dict(v) for c, v in gen_features_module._COST_ASYNC.items()}
+        tampered["AsyncMemoryBackend"]["read"] = r"Buffered in memory\*"
+        monkeypatch.setattr(gen_features_module, "_COST_ASYNC", tampered)
+        with pytest.raises(ValueError, match="disagrees with the graph's LAZY_READ"):
+            gen_features_module.project_cost(graph)
+
+    def test_sync_key_set_drift_guard_raises(self, gen_features_module, graph, monkeypatch):
+        pruned = {t: c for t, c in gen_features_module._COST.items() if t != "local"}
+        monkeypatch.setattr(gen_features_module, "_COST", pruned)
+        with pytest.raises(ValueError, match="drifted from the registry"):
+            gen_features_module.project_cost(graph)
+
+    def test_async_key_set_drift_guard_raises(self, gen_features_module, graph, monkeypatch):
+        pruned = {c: v for c, v in gen_features_module._COST_ASYNC.items() if c != "GraphBackend"}
+        monkeypatch.setattr(gen_features_module, "_COST_ASYNC", pruned)
+        with pytest.raises(ValueError, match="drifted from the graph"):
+            gen_features_module.project_cost(graph)
+
+
 class TestFeaturesReturnTypeAccuracy:
     """BUG-227: FEATURES.md §LIST / §GLOB return-type cells must match the Store signatures.
 
@@ -646,6 +720,7 @@ class TestFeaturesFileIntegrity:
             "retryability",
             "atomicity",
             "consistency",
+            "cost",
             "install_extras",
         ):
             assert f"<!-- BEGIN_GENERATED:{region} -->" in text
