@@ -213,12 +213,29 @@ class S3PyArrowBackend(_S3Base):
                 return False
 
     def read(self, path: str) -> BinaryIO:
+        """Open *path* for reading and return a streaming handle.
+
+        Uses PyArrow's ``open_input_file`` (higher throughput for large objects)
+        rather than the s3fs reader; still lazy, so memory stays constant.
+
+        Raises:
+            NotFound: If the object does not exist.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         with self._pyarrow_errors(path):
             pa_file = self._pa_fs.open_input_file(self._pa_path(path))
             stream = _safe_wrap(pa_file, _PyArrowBinaryIO, lambda s: _ErrorMappingStream(s, self._classify_error, path))
             return cast(BinaryIO, stream)  # noqa: TC006
 
     def read_bytes(self, path: str) -> bytes:
+        """Read and return the full object content as bytes (via PyArrow).
+
+        Raises:
+            NotFound: If the object does not exist.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         with self._pyarrow_errors(path):
             stream = self._pa_fs.open_input_stream(self._pa_path(path))
             return bytes(stream.read())
@@ -231,6 +248,21 @@ class S3PyArrowBackend(_S3Base):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
+        """Write *content* to *path*, streaming straight to a multipart upload.
+
+        Unlike ``S3Backend.write``, a plain streamed write here is **not** atomic:
+        PyArrow's output stream exposes no abort, so a failure mid-body finalises
+        a *truncated* object at *path*. Use ``write_atomic`` when readers must
+        never observe a partial object. A ``bytes`` payload (no streaming) commits
+        in one shot.
+
+        Raises:
+            AlreadyExists: If the object exists and ``overwrite`` is ``False``.
+            InvalidPath: With the ``reject_write_under_file_ancestor`` opt-in, if
+                an ancestor of *path* exists as an object.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         self._maybe_check_no_file_ancestor(path)
         with self._s3fs_errors(path):
             if not overwrite and self._s3fs.exists(self._s3_path(path)):
@@ -276,6 +308,19 @@ class S3PyArrowBackend(_S3Base):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
+        """Write *content* to *path* atomically by buffering before upload.
+
+        The whole body is buffered first (a ``bytes`` payload is already
+        materialised and delegates straight through), so a source failure happens
+        off the wire and leaves no object at *path* — closing the atomicity gap in
+        the plain streaming ``write``.
+
+        Raises:
+            AlreadyExists: If the object exists and ``overwrite`` is ``False``.
+            InvalidPath: With the opt-in, if an ancestor of *path* exists as an object.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         # BUG-214 / S3PA-013: PyArrow's output stream exposes no abort()/
         # discard(), so a direct streaming write that fails mid-content would
         # finalise a truncated multipart upload and commit a broken object --
@@ -307,6 +352,18 @@ class S3PyArrowBackend(_S3Base):
 
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
+        """Yield a writable buffer committed to *path* atomically on clean exit.
+
+        Writes spool to a temporary file (up to 8 MB in memory, then on disk) and
+        upload only on clean exit, so *path* never holds a partial object. An
+        exception before exit leaves *path* untouched.
+
+        Raises:
+            AlreadyExists: If the object exists and ``overwrite`` is ``False``.
+            InvalidPath: With the opt-in, if an ancestor of *path* exists as an object.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         # S3 PUT is inherently atomic -- buffer then upload (SAW-010)
         self._maybe_check_no_file_ancestor(path)
         with self._s3fs_errors(path):
@@ -360,6 +417,20 @@ class S3PyArrowBackend(_S3Base):
             return self._head_to_fileinfo(raw, path)
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        """Move or rename the object *src* to *dst*.
+
+        Existence checks and the delete go through s3fs; the copy is a PyArrow
+        ``copy_file``. Copy-then-delete is not atomic — a failure between the two
+        steps can leave both *src* and *dst* present — so ``ATOMIC_MOVE`` is not
+        declared. ``src == dst`` is a no-op.
+
+        Raises:
+            NotFound: If *src* does not exist.
+            AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is ``False``.
+            InvalidPath: With the opt-in, if an ancestor of *dst* exists as an object.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         # Existence checks via s3fs, copy via pyarrow, delete via s3fs
         with self._s3fs_errors(src):
             if not self._s3fs.exists(self._s3_path(src)):
@@ -376,6 +447,18 @@ class S3PyArrowBackend(_S3Base):
             self._s3fs.rm(self._s3_path(src))
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        """Copy the object *src* to *dst* via a PyArrow ``copy_file``.
+
+        Like ``move``, the operation carries no cross-operation atomicity
+        guarantee. ``src == dst`` is a no-op.
+
+        Raises:
+            NotFound: If *src* does not exist.
+            AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is ``False``.
+            InvalidPath: With the opt-in, if an ancestor of *dst* exists as an object.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         with self._s3fs_errors(src):
             if not self._s3fs.exists(self._s3_path(src)):
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)

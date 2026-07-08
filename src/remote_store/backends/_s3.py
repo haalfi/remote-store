@@ -114,6 +114,14 @@ class S3Backend(_S3Base):
     # region: public methods
 
     def check_health(self) -> None:
+        """Confirm the bucket is reachable and credentials valid via one ``HeadBucket``.
+
+        Raises:
+            NotFound: If the bucket does not exist.
+            PermissionDenied: If the credentials are rejected or lack access.
+            BackendUnavailable: On a transport or service failure, or after
+                ``close()``.
+        """
         with self._s3fs_errors():
             # Not self._fs.s3.head_bucket(...): raw aiobotocore returns a coroutine. See PING-004.
             self._fs.call_s3("head_bucket", Bucket=self._bucket)
@@ -124,10 +132,22 @@ class S3Backend(_S3Base):
         return self._bucket
 
     def exists(self, path: str) -> bool:
+        """Return ``True`` if an object or prefix exists at *path*; never ``NotFound``.
+
+        Raises:
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         with self._s3fs_errors(path):
             return bool(self._fs.exists(self._s3_path(path)))
 
     def is_file(self, path: str) -> bool:
+        """Return ``True`` if *path* is an existing object (``False`` if absent or a prefix).
+
+        Raises:
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         with self._s3fs_errors(path):
             try:
                 info = self._fs.info(self._s3_path(path))
@@ -136,6 +156,12 @@ class S3Backend(_S3Base):
                 return False
 
     def is_folder(self, path: str) -> bool:
+        """Return ``True`` if *path* is an existing virtual folder (a common prefix).
+
+        Raises:
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         with self._s3fs_errors(path):
             try:
                 info = self._fs.info(self._s3_path(path))
@@ -144,12 +170,31 @@ class S3Backend(_S3Base):
                 return False
 
     def read(self, path: str) -> BinaryIO:
+        """Open *path* for reading and return a streaming handle.
+
+        s3fs reads the object lazily in range-backed chunks, so memory stays
+        constant regardless of size.
+
+        Raises:
+            NotFound: If the object does not exist.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         with self._s3fs_errors(path):
             f: BinaryIO = self._fs.open(self._s3_path(path), "rb")
             stream = _safe_wrap(f, lambda s: _ErrorMappingStream(s, self._classify_error, path))
             return cast(BinaryIO, stream)  # noqa: TC006
 
     def read_bytes(self, path: str) -> bytes:
+        """Read and return the full object content as bytes.
+
+        Downloads the whole object into memory (unlike the lazy ``read`` stream).
+
+        Raises:
+            NotFound: If the object does not exist.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         with self._s3fs_errors(path):
             return bytes(self._fs.cat_file(self._s3_path(path)))
 
@@ -161,6 +206,20 @@ class S3Backend(_S3Base):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
+        """Write *content* to *path* as an S3 object.
+
+        The upload commits atomically — a reader sees either the old object or the
+        new one, never a partial. A streamed write that fails mid-body aborts the
+        multipart upload rather than finalising a truncated object, so no partial
+        object is ever left at *path*.
+
+        Raises:
+            AlreadyExists: If the object exists and ``overwrite`` is ``False``.
+            InvalidPath: With the ``reject_write_under_file_ancestor`` opt-in, if
+                an ancestor of *path* exists as an object.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         self._maybe_check_no_file_ancestor(path)
         sdk_metadata = dict(metadata) if metadata else None
         meta_kw = {"Metadata": sdk_metadata} if sdk_metadata is not None else {}
@@ -234,11 +293,33 @@ class S3Backend(_S3Base):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
+        """Write *content* to *path* atomically (delegates to ``write``).
+
+        An S3 ``PUT`` is already atomic, so this is exactly ``write``.
+
+        Raises:
+            AlreadyExists: If the object exists and ``overwrite`` is ``False``.
+            InvalidPath: With the opt-in, if an ancestor of *path* exists as an object.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         # S3 PUT is inherently atomic (S3-010)
         return self.write(path, content, overwrite=overwrite, metadata=metadata)
 
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
+        """Yield a writable buffer committed to *path* atomically on clean exit.
+
+        Writes spool to a temporary file (up to 8 MB in memory, then on disk); on
+        clean exit the buffer is uploaded in a single atomic ``PUT``. An exception
+        before exit leaves *path* untouched.
+
+        Raises:
+            AlreadyExists: If the object exists and ``overwrite`` is ``False``.
+            InvalidPath: With the opt-in, if an ancestor of *path* exists as an object.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         # S3 PUT is inherently atomic -- buffer then upload (SAW-010)
         self._maybe_check_no_file_ancestor(path)
         with self._s3fs_errors(path):
@@ -255,6 +336,13 @@ class S3Backend(_S3Base):
             buf.close()
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
+        """Delete the object at *path*.
+
+        Raises:
+            NotFound: If the object does not exist and ``missing_ok`` is ``False``.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         with self._s3fs_errors(path):
             if not self._fs.exists(self._s3_path(path)):
                 if not missing_ok:
@@ -263,6 +351,19 @@ class S3Backend(_S3Base):
             self._fs.rm(self._s3_path(path))
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
+        """Delete the virtual folder at *path*.
+
+        ``recursive=True`` removes every object under the prefix; this is a
+        best-effort multi-object delete, not atomic, so an interruption can leave
+        the prefix partially deleted. ``recursive=False`` removes the prefix only
+        when it has no contents.
+
+        Raises:
+            NotFound: If no object exists under *path* and ``missing_ok`` is ``False``.
+            DirectoryNotEmpty: If the prefix is non-empty and ``recursive`` is ``False``.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         with self._s3fs_errors(path):
             s3_path = self._s3_path(path)
             if not self._fs.exists(s3_path):
@@ -282,6 +383,16 @@ class S3Backend(_S3Base):
                     )
 
     def get_file_info(self, path: str) -> FileInfo:
+        """Return metadata for the object at *path* from one ``HeadObject``.
+
+        The HEAD is issued with ``ChecksumMode=ENABLED`` so a stored checksum
+        surfaces as the ``FileInfo`` digest.
+
+        Raises:
+            NotFound: If the object does not exist.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         with self._s3fs_errors(path):
             raw = self._fs.call_s3(
                 "head_object",
@@ -292,6 +403,20 @@ class S3Backend(_S3Base):
             return self._head_to_fileinfo(raw, path)
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        """Move or rename the object *src* to *dst*.
+
+        Implemented as a server-side copy followed by a delete of *src*. This is
+        not atomic — a crash or network error between the two steps can leave both
+        *src* and *dst* present — so ``ATOMIC_MOVE`` is not declared. ``src == dst``
+        is a no-op.
+
+        Raises:
+            NotFound: If *src* does not exist.
+            AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is ``False``.
+            InvalidPath: With the opt-in, if an ancestor of *dst* exists as an object.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         with self._s3fs_errors(src):
             if not self._fs.exists(self._s3_path(src)):
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
@@ -307,6 +432,19 @@ class S3Backend(_S3Base):
             self._fs.rm(self._s3_path(src))
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        """Copy the object *src* to *dst* via a server-side ``CopyObject``.
+
+        The bytes are copied entirely server-side (never through the client).
+        Like ``move``, the operation carries no cross-operation atomicity
+        guarantee. ``src == dst`` is a no-op.
+
+        Raises:
+            NotFound: If *src* does not exist.
+            AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is ``False``.
+            InvalidPath: With the opt-in, if an ancestor of *dst* exists as an object.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure, or after ``close()``.
+        """
         with self._s3fs_errors(src):
             if not self._fs.exists(self._s3_path(src)):
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)

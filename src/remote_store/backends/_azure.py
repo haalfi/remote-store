@@ -384,6 +384,16 @@ class AzureBackend(Backend):
         )
 
     def exists(self, path: str) -> bool:
+        """Return ``True`` if a blob or folder exists at *path*; never ``NotFound``.
+
+        Probes the blob first (one HEAD); if absent, probes for a folder (an HNS
+        directory, or any blob under the ``path/`` prefix on flat accounts). The
+        root always exists.
+
+        Raises:
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+        """
         with self._errors(path):
             azure_path = self._azure_path(path)
             if not azure_path:
@@ -408,6 +418,15 @@ class AzureBackend(Backend):
                 return any(True for _ in blobs)
 
     def is_file(self, path: str) -> bool:
+        """Return ``True`` if *path* is an existing blob (not an HNS directory marker).
+
+        One HEAD round-trip; a missing blob or an ``hdi_isfolder`` directory
+        returns ``False``.
+
+        Raises:
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+        """
         with self._errors(path):
             bc = self._blob_client(path)
             try:
@@ -419,6 +438,15 @@ class AzureBackend(Backend):
                 return False
 
     def is_folder(self, path: str) -> bool:
+        """Return ``True`` if *path* is an existing folder (HNS directory or non-HNS prefix).
+
+        The root is always a folder. Costs one directory HEAD (HNS) or a
+        one-item prefix listing (flat).
+
+        Raises:
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+        """
         with self._errors(path):
             azure_path = self._azure_path(path)
             if not azure_path:
@@ -439,6 +467,18 @@ class AzureBackend(Backend):
                 return any(True for _ in blobs)
 
     def read(self, path: str) -> BinaryIO:
+        """Open *path* for reading and return a streaming handle.
+
+        Streams the blob body in chunks, so memory stays constant regardless of
+        size. On HNS accounts one extra HEAD confirms *path* is a file (not an
+        ``hdi_isfolder`` directory) before streaming.
+
+        Raises:
+            NotFound: If the blob does not exist.
+            InvalidPath: If *path* names a directory.
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+        """
         with self._errors(path):
             bc = self._blob_client(path)
             if self._hns:  # pragma: no cover -- HNS only
@@ -469,6 +509,19 @@ class AzureBackend(Backend):
                 raise
 
     def read_seekable(self, path: str) -> BinaryIO:
+        """Open *path* for random-access reading and return a seekable handle.
+
+        Overrides the base spool: instead of buffering the whole blob, each
+        ``read()`` issues one HTTP Range request (``download_blob(offset=,
+        length=)``), so only the byte ranges actually read are fetched — ideal
+        for Parquet column pruning.
+
+        Raises:
+            NotFound: If the blob does not exist.
+            InvalidPath: If *path* names a directory.
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+        """
         with self._errors(path):
             bc = self._blob_client(path)
             props = bc.get_blob_properties()
@@ -484,6 +537,16 @@ class AzureBackend(Backend):
             return cast(BinaryIO, _ErrorMappingStream(raw, self._classify, path))  # noqa: TC006
 
     def read_bytes(self, path: str) -> bytes:
+        """Read and return the full blob content as bytes.
+
+        Downloads the whole blob into memory (unlike the lazy ``read`` stream).
+
+        Raises:
+            NotFound: If the blob does not exist.
+            InvalidPath: If *path* names a directory (HNS).
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+        """
         with self._errors(path):
             bc = self._blob_client(path)
             downloader = bc.download_blob(max_concurrency=self._max_concurrency)
@@ -506,6 +569,23 @@ class AzureBackend(Backend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
+        """Write *content* to *path* as a blob.
+
+        On flat (non-HNS) accounts the upload is a single ``PUT`` and commits
+        atomically — a reader sees either the old blob or the new one, never a
+        partial. On hierarchical-namespace (HNS) accounts a large streamed write
+        uses the staged-append protocol, which is not an atomic replace; use
+        ``write_atomic`` there when readers must never observe an intermediate
+        state.
+
+        Raises:
+            AlreadyExists: If the blob exists and ``overwrite`` is ``False``.
+            InvalidPath: If *path* names a directory, or (with the
+                ``reject_write_under_file_ancestor`` opt-in, or natively on HNS)
+                an ancestor exists as a file.
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+        """
         self._maybe_check_no_file_ancestor(path)
         with self._errors(path):
             bc = self._blob_client(path)
@@ -561,6 +641,20 @@ class AzureBackend(Backend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
+        """Write *content* to *path* atomically.
+
+        Readers never observe a partial file. On flat accounts this is the plain
+        ``PUT`` (already atomic). On HNS it streams to a hidden temp file and
+        promotes it with an atomic ``rename_file`` (the temp file is cleaned up
+        on failure).
+
+        Raises:
+            AlreadyExists: If the blob exists and ``overwrite`` is ``False``.
+            InvalidPath: If *path* names a directory, or an ancestor exists as a
+                file.
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+        """
         if not self._hns:
             # non-HNS: direct upload is atomic (PUT semantics)
             return self.write(path, content, overwrite=overwrite, metadata=metadata)
@@ -663,6 +757,20 @@ class AzureBackend(Backend):
 
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
+        """Yield a writable buffer promoted to *path* atomically on clean exit.
+
+        Writes spool to a temporary file (up to 8 MB in memory, then on disk). On
+        flat accounts the buffer is committed with one ``PUT``; on HNS it is
+        uploaded to a temp blob and promoted with an atomic ``rename_file``. An
+        exception before exit leaves *path* untouched.
+
+        Raises:
+            AlreadyExists: If the blob exists and ``overwrite`` is ``False``.
+            InvalidPath: If *path* names a directory, or an ancestor exists as a
+                file.
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+        """
         if not self._hns:
             # non-HNS: buffer then PUT (atomic by nature) -- SAW-011
             # ID-211 opt-in: pre-check up front so the caller does not write
@@ -736,6 +844,15 @@ class AzureBackend(Backend):
                 buf_hns.close()
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
+        """Delete the blob at *path*.
+
+        Raises:
+            NotFound: If the blob does not exist (or, on HNS, a path component is
+                itself a file) and ``missing_ok`` is ``False``.
+            InvalidPath: If *path* names a directory (HNS; use ``delete_folder``).
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+        """
         with self._errors(path):
             bc = self._blob_client(path)
             if self._hns:
@@ -836,6 +953,19 @@ class AzureBackend(Backend):
         recursive: bool = False,
         max_depth: int | None = None,
     ) -> Iterator[FileInfo]:
+        """Yield files under *path*, one ``FileInfo`` at a time.
+
+        Lazily pages the service listing (``walk_blobs``/``list_blobs`` on flat
+        accounts, ``get_paths`` on HNS); a missing path or a path under a file
+        ancestor yields nothing. ``recursive`` lists the whole prefix
+        (``max_depth`` prunes client-side).
+
+        Raises:
+            PermissionDenied: If credentials are rejected or lack access (401/403),
+                surfaced during iteration.
+            BackendUnavailable: On throttling (429), 5xx, or transport failure,
+                surfaced during iteration.
+        """
         with self._errors(path):
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
@@ -876,6 +1006,18 @@ class AzureBackend(Backend):
                         yield self._props_to_fileinfo(item, item.name)
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
+        """Yield immediate subfolders of *path* as ``FolderEntry`` records.
+
+        One paged prefix listing (``walk_blobs`` common-prefixes on flat
+        accounts, non-recursive ``get_paths`` on HNS); a missing path yields
+        nothing.
+
+        Raises:
+            PermissionDenied: If credentials are rejected or lack access (401/403),
+                surfaced during iteration.
+            BackendUnavailable: On throttling (429), 5xx, or transport failure,
+                surfaced during iteration.
+        """
         with self._errors(path):
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
@@ -905,6 +1047,18 @@ class AzureBackend(Backend):
                         yield FolderEntry(path=RemotePath(rel), name=folder_name)
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
+        """Yield the immediate files and folders under *path* in one paged listing.
+
+        Overrides the base two-pass default with a single ``walk_blobs`` (flat)
+        or ``get_paths`` (HNS) pass, yielding ``FileInfo`` for files and
+        ``FolderEntry`` for folders. A missing path yields nothing.
+
+        Raises:
+            PermissionDenied: If credentials are rejected or lack access (401/403),
+                surfaced during iteration.
+            BackendUnavailable: On throttling (429), 5xx, or transport failure,
+                surfaced during iteration.
+        """
         with self._errors(path):
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
@@ -975,6 +1129,18 @@ class AzureBackend(Backend):
             return self._props_to_fileinfo(props, path)
 
     def get_folder_info(self, path: str) -> FolderInfo:
+        """Return aggregate metadata for the folder at *path*.
+
+        File count, total size, and latest modification time are gathered by
+        paging the whole subtree listing, so cost scales with the number of
+        descendants.
+
+        Raises:
+            NotFound: If the folder does not exist.
+            InvalidPath: If *path* names a file, not a folder.
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+        """
         with self._errors(path):
             azure_path = self._azure_path(path)
             file_count = 0
@@ -1032,6 +1198,22 @@ class AzureBackend(Backend):
             )
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        """Move or rename the file *src* to *dst*.
+
+        On HNS accounts this is a single native ``rename_file`` (atomic). On flat
+        accounts it is a server-side copy followed by a delete — not atomic, so a
+        failure between the two steps can leave both *src* and *dst* present;
+        ``ATOMIC_MOVE`` is therefore not declared. ``src == dst`` is a no-op.
+
+        Raises:
+            NotFound: If *src* does not exist.
+            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
+                *dst* exists as a file.
+            AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
+                ``False``.
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+        """
         # BE-018: self-move is a no-op (src == dst → Ok), but only for files.
         # Directory-path inputs must still raise InvalidPath per BE-021 — same
         # contract as the non-self-op path below.
@@ -1103,6 +1285,21 @@ class AzureBackend(Backend):
                 src_bc.delete_blob()
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        """Copy the file *src* to *dst* via a server-side copy.
+
+        Issues ``start_copy_from_url`` so the bytes never pass through the
+        client. The copy is not atomic — a failure can leave a partial
+        destination. ``src == dst`` is a no-op.
+
+        Raises:
+            NotFound: If *src* does not exist.
+            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
+                *dst* exists as a file.
+            AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
+                ``False``.
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+        """
         # BE-019: self-copy is a no-op (src == dst → Ok), but only for files.
         # Directory-path inputs must still raise InvalidPath per BE-021 — same
         # contract as the non-self-op path below.

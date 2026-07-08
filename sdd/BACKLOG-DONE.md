@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-228 — Backfill method-level contract docstrings for the six thin backends**
+  spec: — · effort: L · audience: user.api, user.discoverability.llm
+  Discovered during ID-227's docstring census. `GraphBackend` was the only
+  backend whose *methods* carried the full contract (per-op `Raises:`, a
+  concurrency/consistency narrative, cost notes); Local, Memory, S3, SFTP, SQLBlob
+  stated contract only in a class-docstring blurb (Memory: none), and Azure
+  documented peripheral ops but left the core `read`/`write`/`move` bare. Raised
+  the six concrete backends to Graph's method bar: per-method `Raises:` tied to
+  precise triggers, a read-after-write / atomicity note where behaviour deviates
+  from POSIX intuition, and a cost/laziness note — verified against the backend
+  source and conformance suite, and kept in agreement with the ID-227 FEATURES.md
+  matrices. Shared S3 listing/metadata contract lives on `_S3Base`; per-lane
+  data-path atomicity (esp. s3-pyarrow's truncate-on-failure `write`) on each
+  concrete class. Newly-shared sync-Azure method docstrings were classified
+  `divergent` in `check_docstring_parity.py` (the sync bridge and async-native
+  class describe different plumbing). Upstream of the ID-220 bundle and the
+  ID-227 matrix, which both consume these docstrings.
+  Origin: ID-227 docstring census + LLM feedback on `llms-full.txt` depth gaps.
+
 - [x] **ID-227 — Consumer "guarantees & cost" digest, derived from the specs**
   spec: — · effort: L · audience: user.api, user.discoverability.llm
   A generated, drift-proof per-backend × per-operation matrix in `FEATURES.md`

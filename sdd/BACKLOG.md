@@ -136,30 +136,6 @@ and the highest ID already in this file, then take the next integer. Run
   **Why ID, not BK:** unevaluated framework migration against a pre-1.0 upstream,
   no committed outcome.
 
-- [ ] **ID-228 — Backfill method-level contract docstrings for the six thin backends**
-  spec: — · effort: L · audience: user.api, user.discoverability.llm
-  Discovered during ID-227's docstring census. `GraphBackend` is the only
-  backend whose *methods* carry the full contract (per-op `Raises:`, a
-  concurrency narrative, cost notes); Local, Memory, S3, SFTP, SQLBlob state
-  contract only in a class-docstring blurb (Memory: none), and Azure documents
-  peripheral ops but leaves the core `read`/`write`/`move` bare. Raise the six to
-  Graph's bar: per-method `Raises:` tied to precise triggers, a read-after-write /
-  atomicity note where behaviour deviates from POSIX intuition, and a
-  cost/laziness note. These docstrings are the source the ID-220 bundle and the
-  ID-227 matrix both consume, so this is upstream of both — the matrix harvests
-  richer cells once it lands.
-  **Authoring rules (from the `llms-full.txt` phrasing feedback):** state the
-  user-visible consequence before the mechanism; mark conditional behaviour with
-  explicit triggers and scope; one authoritative phrasing per capability; keep
-  every warning tied to a failure mode. Graph, and the `LocalBackend` /
-  `S3Backend` class move-atomicity blurbs, are the model.
-  **Verify, don't invent:** each `Raises:` clause and consistency claim must be
-  checked against the conformance suite and backend source, not written from
-  memory — a wrong contract in a docstring propagates into the bundle and every
-  downstream LLM answer.
-  Composes with ID-226 (skeleton call surface) and ID-227 (cross-backend grid).
-  Origin: ID-227 docstring census + LLM feedback on `llms-full.txt` depth gaps.
-
 - [ ] **ID-197 — Review context7.com docs page for framing and content gaps**
   spec: — · effort: S · audience: library.maintainer
   The context7 docs proxy surfaces how external tools and readers discover the

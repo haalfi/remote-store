@@ -1,0 +1,130 @@
+id: ID-228
+title: "Backfill method-level contract docstrings for the six thin backends (Raises, atomicity/consistency, cost)"
+trigger: >
+  ID-227's docstring census found GraphBackend is the only backend whose
+  *methods* carry the full contract (per-op Raises, a concurrency/consistency
+  narrative, cost/laziness notes); Local, Memory, S3, SFTP, SQLBlob state
+  contract only in a class-docstring blurb (Memory: none until ID-227 added an
+  atomicity sentence), and Azure documents peripheral ops but leaves core
+  read/write/move bare. Those method docstrings are the source the ID-220
+  llms-full.txt bundle and the ID-227 FEATURES.md matrices both consume, so the
+  gap is upstream of both.
+source_items:
+  - ID-228
+  - ID-227
+  - ID-220
+audience:
+  - user.api
+  - user.discoverability.llm
+discovery_followups: []
+expected_ripples:
+  - CHANGELOG.md
+  # AzureBackend/AsyncAzureBackend are a docstring-parity twin: newly documenting
+  # a sync-Azure method that the async twin already documents makes it a
+  # shared-docstring method, so check_docstring_parity.py's registry must
+  # classify each as `divergent` (the sync bridge and the async-native class
+  # describe genuinely different plumbing).
+  - scripts/check_docstring_parity.py
+  # Method docstring bodies do not enter graph.json (method summary = method
+  # name; class summary = first line only), but inserting docstrings into
+  # SQLBlobBackend shifted SQLQueryBackend's class def line (987 -> 1159), so its
+  # one `line` field regenerated and the viz followed — the same node ID-227's
+  # sweep moved; the "public docstring change" ripple-check row anticipates it.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Docs & Discoverability / ID-228"
+        read_type: gate
+        extract: "Raise the six concrete backends to Graph's method bar: per-method Raises tied to precise triggers, a read-after-write/atomicity note where behaviour deviates from POSIX intuition, a cost/laziness note. Verify every clause against source + conformance suite, not memory; agree cell-for-cell with the ID-227 matrices."
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "read / write / delete / move / copy / list_files docstrings"
+        read_type: gate
+        extract: "The bar: summary (consequence verb first, mechanism as trailing clause) -> mechanism paragraph carrying atomicity/consistency/cost -> Raises last, triggers as terse 'If ...' clauses with wire-code hints and ', surfaced during iteration.' on lazy generators. No Args/Returns on data-plane methods."
+        outcome: ok
+      - file: src/remote_store/_backend.py
+        section: "Backend abstract method docstrings"
+        read_type: gate
+        extract: "The base already carries generic Args/Returns/Raises per method; overrides fall back to it at runtime but are bare at source. Specialise (backend-specific triggers, atomicity deviation, cost class) rather than copy the base verbatim — single source of truth."
+        outcome: ok
+      - file: FEATURES.md
+        section: "Backends (atomicity / consistency / cost), Error Model (retryability)"
+        read_type: gate
+        extract: "Authoritative cross-backend cells the docstrings must agree with: Local move Atomic within one fs (copy+delete cross-fs); Memory all-atomic under one lock; S3/Azure move copy+delete; s3-pyarrow plain write Streamed+truncates-on-failure; SFTP write Streamed / posix_rename move; SQLBlob all-atomic in one txn, non-lazy read/write; all read/write backends Strong read-after-write; cost read/metadata/list per backend."
+        outcome: ok
+      - file: scripts/check_docstring_parity.py
+        section: "TWINS (AzureBackend/AsyncAzureBackend)"
+        read_type: gate
+        extract: "Any sync-Azure method newly given a docstring that the async twin also documents becomes a shared-docstring method and must be classified `identical` or `divergent`, else the gate fails. Author them independently (sync bridge vs async-native) -> `divergent`."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "LocalBackend data-plane + listing/metadata methods"
+        read_type: gate
+        extract: "Verified each clause against source: exists/is_file/is_folder raise InvalidPath only on root-escape (via _resolve); read/write map OS errors (ENOTDIR->NotFound, EACCES->PermissionDenied); plain write is Direct (partial on crash), write_atomic/open_atomic temp+os.replace, move atomic same-fs / copy+delete cross-fs, get_folder_info walks the whole subtree."
+        outcome: ok
+      - file: src/remote_store/backends/_memory.py
+        section: "MemoryBackend overridden methods"
+        read_type: gate
+        extract: "Documented only overrides (glob/resolve/read_seekable/close/unwrap/check_health stay inherited). All mutators under one process-wide lock (atomic); read materialises the value (no LAZY_READ); no wire codes — only NotFound/InvalidPath/AlreadyExists/DirectoryNotEmpty."
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "SFTPBackend + _map_exception"
+        read_type: gate
+        extract: "_map_exception: EACCES->PermissionDenied, ENOENT/ENOTDIR->NotFound, SSHException/IncompatiblePeer->BackendUnavailable; connection established lazily with connection-scope retry. write Streamed (partial on drop), write_atomic temp+posix_rename, move posix_rename->rename->copy+delete (ATOMIC_MOVE undeclared), copy streams through the client. Listing errors surface as RemoteStoreError during iteration."
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend (SQLQueryBackend shares method names)"
+        read_type: gate
+        extract: "_map_errors: IntegrityError->AlreadyExists, OperationalError->BackendUnavailable; no PermissionDenied. All mutators in one transaction (atomic); read loads the full BLOB (no LAZY_READ); virtual folders are key prefixes, so non-recursive delete_folder on an existing folder always raises DirectoryNotEmpty. Anchored edits on SQLBlob-specific bodies to avoid matching SQLQueryBackend's same-named methods."
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "AzureBackend (skip already-documented check_health/delete_folder/glob/get_file_info)"
+        read_type: gate
+        extract: "classify_azure_error: 401/403->PermissionDenied, 404->NotFound, 409->AlreadyExists, 429/5xx->BackendUnavailable. Dual SDK (Blob flat / DataLake HNS): flat write is atomic PUT, HNS large write uses staged-append (use write_atomic); write_atomic flat=PUT, HNS=temp+rename_file; move HNS rename_file (atomic, undeclared) / flat copy+delete; read_seekable issues one Range GET per read()."
+        outcome: ok
+      - file: scripts/check_docstring_parity.py
+        section: "TWINS Azure divergent set"
+        read_type: gate
+        extract: "Added the 14 newly-shared sync-Azure methods (read/read_bytes/write/write_atomic/delete/move/copy/exists/is_file/is_folder/list_files/list_folders/iter_children/get_folder_info) to `divergent`; open_atomic/read_seekable stay unshared (async twin has no docstring). Gate re-run: 27 identical docstrings in lockstep, green."
+        outcome: ok
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_S3Base shared listing/metadata"
+        read_type: gate
+        extract: "Documented list_files/list_folders/iter_children/glob/get_folder_info on the shared base (single source for both s3fs lanes). Listing consistency footnote grounded in _DEFAULT_USE_LISTINGS_CACHE=False (strong by default; opt-in cache serves stale). get_folder_info walks the whole subtree."
+        outcome: ok
+      - file: src/remote_store/backends/_s3.py
+        section: "S3Backend + _s3_pyarrow.py + _s3_boto3.py data-plane"
+        read_type: gate
+        extract: "s3fs write is atomic (streamed write aborts multipart on failure — no truncation, BUG-214); s3-pyarrow plain write is Streamed and finalises a TRUNCATED object on failure (PyArrow stream has no abort), write_atomic buffers first — documented only the pyarrow data-path divergences per plan. boto3 lane (s3-boto3, full surface) is atomic-safe (upload_fileobj aborts). All three declare close_is_terminal -> BackendUnavailable after close()."
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: FEATURES.md
+        section: "Backends (atomicity/consistency/cost), Error Model (retryability)"
+        read_type: verify
+        extract: "hatch run gen-features left all four ID-227 generated regions byte-identical ('FEATURES.md is already up to date') — the docstring prose agrees with the matrices, nothing hand-drifted."
+        outcome: ok
+      - file: docs-src/_data/graph/graph.json
+        section: "gen-graph line-shift check"
+        read_type: verify
+        extract: "hatch run gen-graph regenerated exactly one field: SQLQueryBackend's class `line` 987->1159 (summary unchanged), from inserting SQLBlobBackend docstrings above it. Regenerated graph_viz.html to follow. No method/class summary changed."
+        outcome: ok
+      - file: scripts/check_docstring_parity.py
+        section: "parity gate re-run"
+        read_type: verify
+        extract: "check_docstring_parity green after classifying the Azure methods; the sync/async Azure contracts stay independently authored (divergent, content not compared)."
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / public docstring change + backlog item"
+        read_type: verify
+        extract: "Docstring bodies are user.api_docs -> CHANGELOG entry required (added). graph.json/graph_viz.html regenerated (line shift) and committed. No tracker IDs in src/ docstrings (check_no_tracker_refs). ID-228 moved to BACKLOG-DONE; gen-backlogid re-run."
+        outcome: ok
