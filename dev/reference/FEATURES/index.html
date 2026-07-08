@@ -11665,6 +11665,117 @@ for the ordering and race semantics.</p>
 † <code>GraphBackend</code> read-your-writes holds on one instance (a write is committed to two datacentre regions before it is acknowledged). <code>copy</code> (always) and a large or cross-folder <code>move</code> (sometimes) run server-side and are polled to completion before the call returns, so a read or listing afterwards reflects the result.</p>
 <!-- END_GENERATED:consistency -->
 
+<p><strong>Per-operation cost by backend</strong> — the <em>structural</em> cost each backend forces
+per call: whether <code>read</code> streams (constant memory) or materializes the whole
+object, and what a <code>metadata</code> probe and a <code>list</code> cost per invocation. This is the
+cost the API shape dictates, distinct from measured latency — see
+<a href="https://docs.remotestore.dev/stable/explanation/performance/">Performance</a> for
+benchmarked overhead. Write-path cost (streaming vs full-buffer, atomic vs
+copy+delete) is in the atomicity table above; <code>list</code> cost scales with the number
+of entries returned, and enabling hierarchical-write safety
+(<code>reject_write_under_file_ancestor</code>, or the native HNS / SFTP / Graph parent
+checks) adds one metadata probe per path ancestor on the guarded write path.</p>
+<!-- BEGIN_GENERATED:cost -->
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th><code>read</code></th>
+<th><code>metadata</code></th>
+<th><code>list</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>azure</code></td>
+<td>Streaming</td>
+<td>1 HEAD</td>
+<td>Paginated <code>LIST</code></td>
+</tr>
+<tr>
+<td><code>http</code></td>
+<td>Streaming</td>
+<td>1 HEAD</td>
+<td>— (no <code>LIST</code>)</td>
+</tr>
+<tr>
+<td><code>local</code></td>
+<td>Streaming</td>
+<td><code>stat</code> syscall</td>
+<td><code>scandir</code> walk</td>
+</tr>
+<tr>
+<td><code>memory</code></td>
+<td>Buffered in memory*</td>
+<td>Dict lookup</td>
+<td>Dict scan</td>
+</tr>
+<tr>
+<td><code>s3</code></td>
+<td>Streaming</td>
+<td>1 HEAD</td>
+<td>Paginated <code>LIST</code></td>
+</tr>
+<tr>
+<td><code>s3-pyarrow</code></td>
+<td>Streaming</td>
+<td>1 HEAD</td>
+<td>Paginated <code>LIST</code></td>
+</tr>
+<tr>
+<td><code>sftp</code></td>
+<td>Streaming</td>
+<td>1 <code>stat</code> round-trip</td>
+<td>Directory walk</td>
+</tr>
+<tr>
+<td><code>sql-blob</code></td>
+<td>Full BLOB into memory*</td>
+<td>1 <code>SELECT</code></td>
+<td>1 <code>SELECT</code></td>
+</tr>
+<tr>
+<td><code>sql-query</code></td>
+<td>Query run, buffered*</td>
+<td>Registry lookup</td>
+<td>Registry scan</td>
+</tr>
+</tbody>
+</table>
+<p>The async-native backends inherit their sync peer's per-op cost; the async-only <code>GraphBackend</code> streams reads but blocks <code>copy</code> (always) and a large or cross-folder <code>move</code> on a server-side monitor polled to completion — a per-call latency the columns below do not show.</p>
+<table>
+<thead>
+<tr>
+<th>Async backend</th>
+<th><code>read</code></th>
+<th><code>metadata</code></th>
+<th><code>list</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AsyncAzureBackend</code></td>
+<td>Streaming</td>
+<td>1 HEAD</td>
+<td>Paginated <code>LIST</code></td>
+</tr>
+<tr>
+<td><code>AsyncMemoryBackend</code></td>
+<td>Streaming</td>
+<td>Dict lookup</td>
+<td>Dict scan</td>
+</tr>
+<tr>
+<td><code>GraphBackend</code></td>
+<td>Streaming</td>
+<td>1 GET</td>
+<td>Paginated GETs</td>
+</tr>
+</tbody>
+</table>
+<p>* <code>memory</code> (sync), <code>sql-blob</code>, and <code>sql-query</code> do not stream a read (<code>LAZY_READ</code> absent): each holds the whole object in memory before <code>read()</code> returns — <code>sql-blob</code> loads the full BLOB, <code>sql-query</code> buffers the serialised query result, and sync <code>memory</code> keeps the value resident (its async peer <code>AsyncMemoryBackend</code> yields chunks and <em>does</em> stream). <code>sql-blob</code> likewise buffers the entire body before the write <code>INSERT</code>/<code>UPDATE</code>. For objects larger than process memory use a streaming backend (Local, S3, Azure, SFTP).</p>
+<!-- END_GENERATED:cost -->
+
 <p><strong>Native async backends</strong> — constructed directly via <code>AsyncStore(backend=…)</code>;
 no RegistryConfig <code>type=</code> string (there is no async config registry).</p>
 <!-- BEGIN_GENERATED:backends_async -->

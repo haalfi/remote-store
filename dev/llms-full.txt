@@ -16745,6 +16745,30 @@ The async-native backends inherit their sync peer's consistency; the async-only 
 
 \* `s3` / `s3-pyarrow` listings are strongly consistent by default: the backend leaves the s3fs directory cache **off** (`use_listings_cache=False`), so a listing taken after a write reflects it. Opting into `client_options['use_listings_cache']` trades this for a cache that never expires — a listing can then stay blind to a cross-writer change until the backend is rebuilt. † `GraphBackend` read-your-writes holds on one instance (a write is committed to two datacentre regions before it is acknowledged). `copy` (always) and a large or cross-folder `move` (sometimes) run server-side and are polled to completion before the call returns, so a read or listing afterwards reflects the result.
 
+**Per-operation cost by backend** — the *structural* cost each backend forces per call: whether `read` streams (constant memory) or materializes the whole object, and what a `metadata` probe and a `list` cost per invocation. This is the cost the API shape dictates, distinct from measured latency — see [Performance](https://docs.remotestore.dev/stable/explanation/performance/) for benchmarked overhead. Write-path cost (streaming vs full-buffer, atomic vs copy+delete) is in the atomicity table above; `list` cost scales with the number of entries returned, and enabling hierarchical-write safety (`reject_write_under_file_ancestor`, or the native HNS / SFTP / Graph parent checks) adds one metadata probe per path ancestor on the guarded write path.
+
+| Backend      | `read`                  | `metadata`          | `list`           |
+| ------------ | ----------------------- | ------------------- | ---------------- |
+| `azure`      | Streaming               | 1 HEAD              | Paginated `LIST` |
+| `http`       | Streaming               | 1 HEAD              | — (no `LIST`)    |
+| `local`      | Streaming               | `stat` syscall      | `scandir` walk   |
+| `memory`     | Buffered in memory\*    | Dict lookup         | Dict scan        |
+| `s3`         | Streaming               | 1 HEAD              | Paginated `LIST` |
+| `s3-pyarrow` | Streaming               | 1 HEAD              | Paginated `LIST` |
+| `sftp`       | Streaming               | 1 `stat` round-trip | Directory walk   |
+| `sql-blob`   | Full BLOB into memory\* | 1 `SELECT`          | 1 `SELECT`       |
+| `sql-query`  | Query run, buffered\*   | Registry lookup     | Registry scan    |
+
+The async-native backends inherit their sync peer's per-op cost; the async-only `GraphBackend` streams reads but blocks `copy` (always) and a large or cross-folder `move` on a server-side monitor polled to completion — a per-call latency the columns below do not show.
+
+| Async backend        | `read`    | `metadata`  | `list`           |
+| -------------------- | --------- | ----------- | ---------------- |
+| `AsyncAzureBackend`  | Streaming | 1 HEAD      | Paginated `LIST` |
+| `AsyncMemoryBackend` | Streaming | Dict lookup | Dict scan        |
+| `GraphBackend`       | Streaming | 1 GET       | Paginated GETs   |
+
+\* `memory` (sync), `sql-blob`, and `sql-query` do not stream a read (`LAZY_READ` absent): each holds the whole object in memory before `read()` returns — `sql-blob` loads the full BLOB, `sql-query` buffers the serialised query result, and sync `memory` keeps the value resident (its async peer `AsyncMemoryBackend` yields chunks and *does* stream). `sql-blob` likewise buffers the entire body before the write `INSERT`/`UPDATE`. For objects larger than process memory use a streaming backend (Local, S3, Azure, SFTP).
+
 **Native async backends** — constructed directly via `AsyncStore(backend=…)`; no RegistryConfig `type=` string (there is no async config registry).
 
 | Class                | Extra                 | Capabilities                                      |
