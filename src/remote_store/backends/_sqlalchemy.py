@@ -992,8 +992,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         """Yield files whose key matches the glob *pattern*.
 
-        Narrows SQL-side with a ``LIKE`` prefix (or a SQLite ``GLOB`` prefix)
-        where the pattern allows, then applies the full glob regex to each row.
+        Narrows SQL-side with a prefix ``LIKE`` where the pattern allows (on
+        every dialect — SQLite's native ``GLOB`` is deliberately avoided because
+        it mishandles ``**``), then applies the full glob regex to each row.
         Costs one ``SELECT``.
 
         Raises:

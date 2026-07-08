@@ -2380,7 +2380,7 @@
       "file": "src/remote_store/backends/_sqlalchemy.py",
       "id": "cls:remote_store.backends._sqlalchemy.SQLQueryBackend",
       "kind": "class",
-      "line": 1175,
+      "line": 1176,
       "role": "backend",
       "runtime": "sync",
       "spec": "sdd/specs/041-sql-query-backend.md",

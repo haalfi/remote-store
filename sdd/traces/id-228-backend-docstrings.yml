@@ -39,7 +39,15 @@ expected_ripples:
 # lone documented one). Skipped the s3-boto3 glob the review also named: its
 # listing path does NOT wrap _boto_errors, so it surfaces RAW botocore errors,
 # not typed ones — a typed Raises there would invent a contract the code lacks.
-review_rounds: 1
+# Round 2: docstring-correctness review caught two prose-vs-source mismatches.
+# (a) AzureBackend.write wrongly attributed a "staged-append protocol" to plain
+# write on HNS — write() calls upload_blob for BOTH flat and HNS (staged-append
+# lives only in write_atomic's HNS branch), and the flat/HNS atomicity verdicts
+# overshot the FEATURES.md `§` footnote's hedge; reworded to upload_blob's
+# commit-on-completion, atomic on flat, "not guaranteed" on HNS. (b) SQLBlob.glob
+# claimed a "SQLite GLOB prefix" — both dialect branches narrow with LIKE (the
+# code deliberately avoids GLOB for `**`); dropped the GLOB claim.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

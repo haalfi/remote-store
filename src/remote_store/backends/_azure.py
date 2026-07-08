@@ -571,12 +571,12 @@ class AzureBackend(Backend):
     ) -> WriteResult:
         """Write *content* to *path* as a blob.
 
-        On flat (non-HNS) accounts the upload is a single ``PUT`` and commits
-        atomically — a reader sees either the old blob or the new one, never a
-        partial. On hierarchical-namespace (HNS) accounts a large streamed write
-        uses the staged-append protocol, which is not an atomic replace; use
-        ``write_atomic`` there when readers must never observe an intermediate
-        state.
+        The content is uploaded with ``upload_blob`` on both flat and HNS
+        accounts — a block-blob upload that becomes visible only when its final
+        commit succeeds, never as a partially written blob. On flat (non-HNS)
+        accounts this is an atomic replace. On hierarchical-namespace (HNS)
+        accounts a guaranteed atomic replace is not assured; use ``write_atomic``
+        there when readers must never observe an intermediate state.
 
         Raises:
             AlreadyExists: If the blob exists and ``overwrite`` is ``False``.
