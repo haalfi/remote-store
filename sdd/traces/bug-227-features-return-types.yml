@@ -1,0 +1,59 @@
+id: BUG-227
+title: "FEATURES.md §LIST/§GLOB advertised wrong return types (Iterator[str] vs FileInfo/FolderEntry)"
+trigger: >
+  While empirically validating the ID-227 Phase-2 consistency matrix, a probe
+  that asserted ``str`` membership in ``Store.list_files(...)`` output failed
+  because the Store API yields ``FileInfo`` records, not ``str``. FEATURES.md's
+  hand-authored §LIST/§GLOB tables still advertised ``Iterator[str]`` — a
+  stale-doc regression since ID-072 moved the iterating reads to record objects.
+source_items:
+  - BUG-227
+  - ID-227
+  - ID-072
+audience:
+  - user.api_docs
+  - user.discoverability.llm
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: src/remote_store/_store.py
+        section: "list_files / list_folders / iter_children / glob signatures"
+        read_type: gate
+        extract: "Return annotations are Iterator[FileInfo], Iterator[FolderEntry], Iterator[FileInfo | FolderEntry], Iterator[FileInfo] — none is Iterator[str]. FolderInfo (returned by get_folder_info) is a distinct model, so the iter_children 'FolderInfo' cell is wrong too."
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "ID-072 (list_folders / iter_children return types)"
+        read_type: reference
+        extract: "ID-072 already recorded moving list_folders / iter_children off Iterator[str] to FolderEntry — confirms FEATURES.md simply missed the update; the defect is stale doc, not a code regression."
+        outcome: ok
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/scripts/test_gen_features.py
+        section: "TestFeaturesReturnTypeAccuracy"
+        read_type: gate
+        extract: "Added a parametrized guard cross-checking each documented FEATURES.md return-type cell against inspect.signature(Store.<m>).return_annotation; ran it and watched all four fail (str vs FileInfo/FolderEntry, FolderInfo vs FolderEntry) before touching the doc."
+        outcome: ok
+  - id: fix
+    name: Fix
+    steps:
+      - file: FEATURES.md
+        section: "### LIST, ### GLOB, ### Other models"
+        read_type: gate
+        extract: "Corrected the four return-type cells to FileInfo / FolderEntry and documented the public FolderEntry model (path, name) in Data Models. The cells are hand-authored (outside BEGIN_GENERATED), so gen_features --check is unaffected."
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/test_gen_features.py
+        section: "TestFeaturesReturnTypeAccuracy"
+        read_type: verify
+        extract: "Re-ran the guard: all four pass. gen_features.py --check still green (no generated region touched)."
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / docs"
+        read_type: verify
+        extract: "FEATURES.md is dual-published (reference/FEATURES.md + llms bundle); user.api_docs audience → CHANGELOG required (added). BACKLOG item moved to BACKLOG-DONE in the same commit; backlogid.json regenerated."
+        outcome: ok

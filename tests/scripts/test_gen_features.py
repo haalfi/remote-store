@@ -564,6 +564,38 @@ class TestConsistency:
             gen_features_module.project_consistency(graph)
 
 
+class TestFeaturesReturnTypeAccuracy:
+    """BUG-227: FEATURES.md §LIST / §GLOB return-type cells must match the Store signatures.
+
+    The iterating reads moved off ``Iterator[str]`` long ago (ID-072 changed
+    ``list_folders`` / ``iter_children`` to yield ``FolderEntry``), but the
+    hand-authored method tables were never updated. Cross-check each documented
+    cell against the live signature so the two cannot silently drift again.
+    """
+
+    @pytest.mark.parametrize("method", ["list_files", "list_folders", "iter_children", "glob"])
+    def test_documented_return_type_matches_signature(self, method):
+        import inspect
+        import re
+
+        from remote_store import Store
+
+        # Under ``from __future__ import annotations`` the return annotation is a
+        # string (e.g. "Iterator[FileInfo]"), which is exactly what we compare against.
+        actual = str(inspect.signature(getattr(Store, method)).return_annotation)
+        text = (ROOT / "FEATURES.md").read_text(encoding="utf-8")
+        row = re.search(rf"\|\s*`{method}\([^`]*\)`\s*\|\s*`([^`]+)`\s*\|", text)
+        assert row, f"no FEATURES.md Store-API row found for {method}()"
+        documented = row.group(1).replace(r"\|", "|")  # unescape the Markdown pipe
+
+        def _norm(s: str) -> str:
+            return re.sub(r"\s+", "", s)
+
+        assert _norm(documented) == _norm(actual), (
+            f"{method}(): FEATURES.md documents {documented!r} but the signature is {actual!r}"
+        )
+
+
 class TestRegionReplacement:
     def test_replaces_known_region(self, gen_features_module):
         text = "before\n<!-- BEGIN_GENERATED:foo -->\nold content\n<!-- END_GENERATED:foo -->\nafter"

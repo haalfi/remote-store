@@ -120,15 +120,15 @@ file, and a crash mid-write leaves the previous version intact.
 
 | Method | Returns | Description |
 |---|---|---|
-| `list_files(path, *, max_depth, pattern)` | `Iterator[str]` | Enumerate file paths under a prefix; optional `pattern=` filters basenames via `fnmatch` |
-| `list_folders(path, *, max_depth, pattern)` | `Iterator[str]` | Enumerate immediate subfolder paths; optional `pattern=` filters folder basenames via `fnmatch` |
-| `iter_children(path)` | `Iterator[FileInfo \| FolderInfo]` | Iterate files and folders together, with metadata |
+| `list_files(path, *, max_depth, pattern)` | `Iterator[FileInfo]` | Enumerate files under a prefix as `FileInfo` records (use `.path` for the path); optional `pattern=` filters basenames via `fnmatch` |
+| `list_folders(path, *, max_depth, pattern)` | `Iterator[FolderEntry]` | Enumerate immediate subfolders as `FolderEntry` records (`.name`, `.path`); optional `pattern=` filters folder basenames via `fnmatch` |
+| `iter_children(path)` | `Iterator[FileInfo \| FolderEntry]` | Iterate files and folders together (`FileInfo` for files, `FolderEntry` for folders) |
 
 ### GLOB
 
 | Method | Returns | Description |
 |---|---|---|
-| `glob(pattern)` | `Iterator[str]` | Native glob pattern matching (`*`, `**`, `?`) on file paths |
+| `glob(pattern)` | `Iterator[FileInfo]` | Native glob pattern matching (`*`, `**`, `?`), yielding matched files as `FileInfo` records |
 
 Backends without native `GLOB` capability can use the `ext.glob` extension as a
 portable fallback.
@@ -193,6 +193,7 @@ Returned by `get_file_info()` and yielded by `iter_children()`.
 | Model | Description |
 |---|---|
 | `FolderInfo` | `path`, `file_count`, `total_size` — returned by `get_folder_info()` |
+| `FolderEntry` | `path`, `name` — folder identity yielded by `list_folders()` / `iter_children()` |
 | `ContentDigest` | `algorithm` (e.g. `"crc32"`, `"sha256"`) + `value` (hex) |
 | `ResolutionPlan` | Backend type, resolved path, and options — returned by `resolve()` |
 | `BackendConfig` | `type` string + `options` dict — one entry in a `RegistryConfig` |

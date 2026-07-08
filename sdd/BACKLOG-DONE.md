@@ -8,6 +8,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-227 — FEATURES.md §LIST/§GLOB advertised wrong return types (`Iterator[str]` vs `FileInfo`/`FolderEntry`)**
+  spec: — · effort: S · audience: user.api_docs, user.discoverability.llm
+  The hand-authored Store-API method tables in `FEATURES.md` annotated the
+  iterating reads with types the code had left behind: `list_files` and `glob` as
+  `Iterator[str]`, and — since **ID-072** moved them — `list_folders` as
+  `Iterator[str]` and `iter_children` as `Iterator[FileInfo | FolderInfo]`. The
+  real `Store` signatures yield record objects: `list_files -> Iterator[FileInfo]`,
+  `list_folders -> Iterator[FolderEntry]`, `glob -> Iterator[FileInfo]`,
+  `iter_children -> Iterator[FileInfo | FolderEntry]` (`FolderInfo` is a different
+  model, returned by `get_folder_info`). Fixed the four cells, documented the
+  public `FolderEntry` model in Data Models, and added a guard test that
+  cross-checks each documented return type against the live signature via
+  `inspect.signature`, so the cells cannot silently drift again. These cells are
+  not in a `BEGIN_GENERATED` region; promoting them to a graph-generated region
+  stays open as a follow-up. Discovered while empirically validating the ID-227
+  Phase-2 consistency matrix (the probe's `list_files` membership check failed
+  because the API yields `FileInfo`, not `str`).
+
 - [x] **BUG-226 — RTD `post_build` folded-YAML mis-fold reddened the docs build**
   spec: — · effort: S · audience: infra.ci, library.maintainer
   The ID-226 `post_build` step was an inline `>-` folded YAML scalar. One
