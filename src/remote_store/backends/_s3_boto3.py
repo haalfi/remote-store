@@ -308,6 +308,15 @@ class S3Boto3Backend(Backend):
     # region: existence / type checks
 
     def exists(self, path: str) -> bool:
+        """Return ``True`` if an object or prefix exists at *path*; never ``NotFound``.
+
+        One HEAD, falling back to a one-key prefix listing. The root always exists.
+
+        Raises:
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after
+                ``close()``.
+        """
         with self._boto_errors(path):
             if path == "":
                 return True
@@ -316,10 +325,25 @@ class S3Boto3Backend(Backend):
             return self._prefix_has_children(path)
 
     def is_file(self, path: str) -> bool:
+        """Return ``True`` if *path* is an existing object (one HEAD).
+
+        Raises:
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         with self._boto_errors(path):
             return self._head_or_none(path) is not None
 
     def is_folder(self, path: str) -> bool:
+        """Return ``True`` if *path* is an existing virtual folder (a common prefix).
+
+        A same-named object shadows the prefix (flat namespace), so a file returns
+        ``False``. The root is always a folder.
+
+        Raises:
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         with self._boto_errors(path):
             if path == "":
                 return True
@@ -345,6 +369,16 @@ class S3Boto3Backend(Backend):
         return _safe_wrap(reader, lambda s: _ErrorMappingStream(s, self._classify_error, path))
 
     def read(self, path: str) -> BinaryIO:
+        """Open *path* for reading and return a streaming handle.
+
+        Reads lazily via ranged ``GetObject`` requests wrapped in a
+        ``BufferedReader``, so memory stays constant regardless of size.
+
+        Raises:
+            NotFound: If the object does not exist.
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         # BufferedReader batches a sequential consume into ~1 GET per
         # _READ_BUFFER_SIZE rather than one per RawIOBase.readall() chunk.
         with self._boto_errors(path):
@@ -363,6 +397,13 @@ class S3Boto3Backend(Backend):
             return cast(BinaryIO, self._open_range_stream(path))  # noqa: TC006
 
     def read_bytes(self, path: str) -> bytes:
+        """Read and return the full object content as bytes (one ``GetObject``).
+
+        Raises:
+            NotFound: If the object does not exist.
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         with self._boto_errors(path):
             resp = self._client.get_object(Bucket=self._bucket, Key=path)
             return bytes(resp["Body"].read())
@@ -379,6 +420,20 @@ class S3Boto3Backend(Backend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
+        """Write *content* to *path* as an S3 object.
+
+        The upload commits atomically: a ``bytes`` payload is a single ``PUT``,
+        and a streamed payload uploads multipart and only becomes visible on
+        completion — a mid-stream failure aborts the upload, so no truncated
+        object is ever left at *path*.
+
+        Raises:
+            AlreadyExists: If the object exists and ``overwrite`` is ``False``.
+            InvalidPath: With the ``reject_write_under_file_ancestor`` opt-in, if
+                an ancestor of *path* exists as an object.
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         self._maybe_check_no_file_ancestor(path)
         sdk_metadata = dict(metadata) if metadata else None
         extra: dict[str, Any] = {"Metadata": sdk_metadata} if sdk_metadata is not None else {}
@@ -421,6 +476,18 @@ class S3Boto3Backend(Backend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
+        """Write *content* to *path* atomically (delegates to ``write``).
+
+        A ``PUT`` and a completed multipart upload are both atomic and
+        ``upload_fileobj`` aborts on failure, so ``write`` is already atomic-safe
+        and no pre-buffering is needed.
+
+        Raises:
+            AlreadyExists: If the object exists and ``overwrite`` is ``False``.
+            InvalidPath: With the opt-in, if an ancestor of *path* exists as an object.
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         # A single PUT is atomic, and a multipart upload only becomes visible on
         # CompleteMultipartUpload -- partial parts are never readable as the
         # object. upload_fileobj aborts on failure, so write is already
@@ -429,6 +496,18 @@ class S3Boto3Backend(Backend):
 
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
+        """Yield a writable buffer committed to *path* atomically on clean exit.
+
+        Writes spool to a temporary file (up to 8 MB in memory, then on disk) and
+        upload on clean exit, so *path* never holds a partial object. An exception
+        before exit leaves *path* untouched.
+
+        Raises:
+            AlreadyExists: If the object exists and ``overwrite`` is ``False``.
+            InvalidPath: With the opt-in, if an ancestor of *path* exists as an object.
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         self._maybe_check_no_file_ancestor(path)
         with self._boto_errors(path):
             if not overwrite and self._head_or_none(path) is not None:
@@ -448,6 +527,13 @@ class S3Boto3Backend(Backend):
     # region: delete
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
+        """Delete the object at *path*.
+
+        Raises:
+            NotFound: If the object does not exist and ``missing_ok`` is ``False``.
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         with self._boto_errors(path):
             if self._head_or_none(path) is None:
                 if not missing_ok:
@@ -456,6 +542,19 @@ class S3Boto3Backend(Backend):
             self._client.delete_object(Bucket=self._bucket, Key=path)
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
+        """Delete the virtual folder at *path*.
+
+        ``recursive=True`` deletes every object under the prefix; this is a
+        best-effort multi-object delete, not atomic, so an interruption can leave
+        the prefix partially deleted. ``recursive=False`` refuses a non-empty
+        prefix.
+
+        Raises:
+            NotFound: If no object exists under *path* and ``missing_ok`` is ``False``.
+            DirectoryNotEmpty: If the prefix is non-empty and ``recursive`` is ``False``.
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         with self._boto_errors(path):
             prefix = self._prefix_of(path)
             if not self._prefix_has_children(path):
@@ -471,11 +570,31 @@ class S3Boto3Backend(Backend):
     # region: metadata
 
     def get_file_info(self, path: str) -> FileInfo:
+        """Return metadata for the object at *path* from one ``HeadObject``.
+
+        Issued with ``ChecksumMode=ENABLED`` so a stored checksum surfaces as the
+        ``FileInfo`` digest.
+
+        Raises:
+            NotFound: If the object does not exist.
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         with self._boto_errors(path):
             raw = self._client.head_object(Bucket=self._bucket, Key=path, ChecksumMode="ENABLED")
             return self._head_to_fileinfo(raw, path)
 
     def get_folder_info(self, path: str) -> FolderInfo:
+        """Return aggregate metadata for the virtual folder *path*.
+
+        File count, total size, and latest modification time come from paging the
+        whole prefix listing, so cost scales with the number of descendants.
+
+        Raises:
+            NotFound: If no object exists under *path*.
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         with self._boto_errors(path):
             prefix = self._prefix_of(path)
             if path and not self._prefix_has_children(path):
@@ -510,6 +629,13 @@ class S3Boto3Backend(Backend):
         recursive: bool = False,
         max_depth: int | None = None,
     ) -> Iterator[FileInfo]:
+        """Yield files under *path*, one ``FileInfo`` at a time.
+
+        Lazily pages a delimiter-scoped ``ListObjectsV2`` breadth-first
+        (non-recursive is depth 0; ``recursive`` with ``max_depth`` bounds the
+        descent). A missing prefix yields nothing. Listings are strongly
+        consistent — a just-written object appears in a later listing.
+        """
         prefix = self._prefix_of(path)
         # Unified delimiter BFS: non-recursive == depth limit 0; recursive with
         # max_depth=None == unlimited. Mirrors _S3Base.list_files structure.
@@ -528,6 +654,11 @@ class S3Boto3Backend(Backend):
                         queue.append((cp["Prefix"], depth + 1))
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
+        """Yield immediate subfolders of *path* as ``FolderEntry`` records.
+
+        One delimiter-scoped ``ListObjectsV2`` returning common prefixes; a
+        missing prefix yields nothing.
+        """
         prefix = self._prefix_of(path)
         for page in self._paginate(prefix, delimiter="/"):
             for cp in page.get("CommonPrefixes", []):
@@ -535,6 +666,12 @@ class S3Boto3Backend(Backend):
                 yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
+        """Yield the immediate files and folders under *path* in one paged listing.
+
+        Overrides the base two-pass default with a single delimiter-scoped
+        ``ListObjectsV2``, yielding ``FileInfo`` for objects and ``FolderEntry``
+        for common prefixes. A missing prefix yields nothing.
+        """
         prefix = self._prefix_of(path)
         for page in self._paginate(prefix, delimiter="/"):
             for obj in page.get("Contents", []):
@@ -547,6 +684,11 @@ class S3Boto3Backend(Backend):
                 yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
+        """Yield files whose key matches the glob *pattern*.
+
+        Narrows to the pattern's literal prefix, lists that subtree, and applies
+        the full glob regex to each key.
+        """
         from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
 
         prefix = extract_prefix(pattern)
@@ -561,6 +703,19 @@ class S3Boto3Backend(Backend):
     # region: move / copy
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        """Move or rename the object *src* to *dst*.
+
+        A server-side ``CopyObject`` followed by a ``DeleteObject`` on *src*. This
+        is not atomic — a failure between the two steps can leave both present —
+        so ``ATOMIC_MOVE`` is not declared. ``src == dst`` is a no-op.
+
+        Raises:
+            NotFound: If *src* does not exist.
+            AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is ``False``.
+            InvalidPath: With the opt-in, if an ancestor of *dst* exists as an object.
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         with self._boto_errors(src):
             if self._head_or_none(src) is None:
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
@@ -578,6 +733,18 @@ class S3Boto3Backend(Backend):
             self._client.delete_object(Bucket=self._bucket, Key=src)
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        """Copy the object *src* to *dst* via a server-side ``CopyObject``.
+
+        The bytes are copied entirely server-side. Like ``move``, the operation
+        carries no cross-operation atomicity guarantee. ``src == dst`` is a no-op.
+
+        Raises:
+            NotFound: If *src* does not exist.
+            AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is ``False``.
+            InvalidPath: With the opt-in, if an ancestor of *dst* exists as an object.
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         with self._boto_errors(src):
             if self._head_or_none(src) is None:
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
@@ -597,6 +764,13 @@ class S3Boto3Backend(Backend):
     # region: lifecycle / introspection
 
     def check_health(self) -> None:
+        """Confirm the bucket is reachable and credentials valid via one ``HeadBucket``.
+
+        Raises:
+            NotFound: If the bucket does not exist.
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+        """
         with self._boto_errors():
             self._client.head_bucket(Bucket=self._bucket)
 

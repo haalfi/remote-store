@@ -315,6 +315,22 @@ class _S3Base(Backend):
         recursive: bool = False,
         max_depth: int | None = None,
     ) -> Iterator[FileInfo]:
+        """Yield files under *path*, one ``FileInfo`` at a time.
+
+        Lazily pages the bucket listing (``ListObjectsV2`` via s3fs); a missing
+        prefix yields nothing. ``recursive`` walks the virtual tree one prefix
+        listing at a time (``max_depth`` bounds the descent). Listings are
+        strongly consistent by default — the s3fs directory cache is left off
+        (``use_listings_cache=False``), so a listing reflects a just-completed
+        write; opting into the cache via ``client_options`` trades this for a
+        never-expiring cache that can stay blind to a cross-writer change.
+
+        Raises:
+            PermissionDenied: If the credentials lack access, surfaced during
+                iteration.
+            BackendUnavailable: On a transport or service failure, surfaced during
+                iteration.
+        """
         try:
             s3_path = self._s3_path(path)
             if recursive:
@@ -348,6 +364,18 @@ class _S3Base(Backend):
             raise self._classify_error(exc, path) from None
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
+        """Yield immediate subfolders of *path* as ``FolderEntry`` records.
+
+        One delimiter-scoped ``ListObjectsV2`` (via s3fs); a missing prefix
+        yields nothing. Listing consistency matches ``list_files`` — strong by
+        default, opt-in cache can serve stale.
+
+        Raises:
+            PermissionDenied: If the credentials lack access, surfaced during
+                iteration.
+            BackendUnavailable: On a transport or service failure, surfaced during
+                iteration.
+        """
         try:
             s3_path = self._s3_path(path)
             entries: list[dict[str, Any]] = self._s3fs.ls(s3_path, detail=True)
@@ -366,6 +394,18 @@ class _S3Base(Backend):
             raise self._classify_error(exc, path) from None
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
+        """Yield the immediate files and folders under *path* in one listing.
+
+        Overrides the base two-pass default with a single delimiter-scoped
+        ``ListObjectsV2``, yielding ``FileInfo`` for files and ``FolderEntry``
+        for common prefixes. A missing prefix yields nothing.
+
+        Raises:
+            PermissionDenied: If the credentials lack access, surfaced during
+                iteration.
+            BackendUnavailable: On a transport or service failure, surfaced during
+                iteration.
+        """
         try:
             s3_path = self._s3_path(path)
             entries: list[dict[str, Any]] = self._s3fs.ls(s3_path, detail=True)
@@ -387,6 +427,18 @@ class _S3Base(Backend):
             raise self._classify_error(exc, path) from None
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
+        """Yield files whose key matches the glob *pattern*.
+
+        Narrows to the pattern's literal prefix, lists that subtree (recursively
+        when the pattern needs it), and applies the full glob regex to each key.
+        Cost tracks the size of the narrowed listing.
+
+        Raises:
+            PermissionDenied: If the credentials lack access, surfaced during
+                iteration.
+            BackendUnavailable: On a transport or service failure, surfaced during
+                iteration.
+        """
         from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
 
         prefix = extract_prefix(pattern)
@@ -401,6 +453,17 @@ class _S3Base(Backend):
     # region: shared metadata methods
 
     def get_folder_info(self, path: str) -> FolderInfo:
+        """Return aggregate metadata for the virtual folder *path*.
+
+        S3 folders are prefixes, not stored objects, so file count, total size,
+        and latest modification time are gathered by walking the whole subtree
+        listing — cost scales with the number of descendants.
+
+        Raises:
+            NotFound: If no object exists under *path*.
+            PermissionDenied: If the credentials lack access.
+            BackendUnavailable: On a transport or service failure.
+        """
         # S3 folders are virtual (prefix-based).  An empty folder is simply a
         # prefix with no objects, so exists() already returns False for truly
         # non-existent prefixes.

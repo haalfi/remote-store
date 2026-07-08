@@ -405,6 +405,16 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     # region: public methods — existence
 
     def exists(self, path: str) -> bool:
+        """Return ``True`` if a key or key-prefix exists at *path*; never ``NotFound``.
+
+        Folders are virtual — *path* counts as a folder when any key begins with
+        ``path + "/"``. The root (``""``) always exists. Costs one or two
+        ``SELECT``s.
+
+        Raises:
+            InvalidPath: If *path* is absolute or contains a ``..`` segment.
+            BackendUnavailable: If the database is unreachable.
+        """
         segs = self._validate_path(path, allow_empty=True)
         if not segs:
             return True  # root always exists
@@ -420,6 +430,12 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             return row is not None
 
     def is_file(self, path: str) -> bool:
+        """Return ``True`` if an exact key exists at *path* (one ``SELECT``).
+
+        Raises:
+            InvalidPath: If *path* is absolute or contains a ``..`` segment.
+            BackendUnavailable: If the database is unreachable.
+        """
         segs = self._validate_path(path, allow_empty=True)
         if not segs:
             return False
@@ -429,6 +445,14 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             return row is not None
 
     def is_folder(self, path: str) -> bool:
+        """Return ``True`` if any key begins with ``path + "/"`` (a virtual folder).
+
+        The root is always a folder. Costs one ``SELECT``.
+
+        Raises:
+            InvalidPath: If *path* is absolute or contains a ``..`` segment.
+            BackendUnavailable: If the database is unreachable.
+        """
         segs = self._validate_path(path, allow_empty=True)
         if not segs:
             return True  # root is a folder
@@ -443,6 +467,18 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     # region: public methods — reading
 
     def read(self, path: str) -> BinaryIO:
+        """Return a binary stream over the stored BLOB for *path*.
+
+        Loads the entire BLOB into memory before returning the stream — the read
+        does not stream (``LAZY_READ`` is not advertised), so peak memory scales
+        with the object size. For objects larger than process memory use a
+        blob-storage backend (S3, Local, Azure).
+
+        Raises:
+            NotFound: If no key exists at *path*.
+            InvalidPath: If *path* is empty, absolute, or malformed.
+            BackendUnavailable: If the database is unreachable.
+        """
         self._validate_path(path)
         with self._map_errors(path), self._engine.connect() as conn:
             t = self._table
@@ -453,6 +489,15 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         return io.BytesIO(data)
 
     def read_bytes(self, path: str) -> bytes:
+        """Return the full stored BLOB for *path* as bytes.
+
+        Like ``read``, materialises the whole object in memory.
+
+        Raises:
+            NotFound: If no key exists at *path*.
+            InvalidPath: If *path* is empty, absolute, or malformed.
+            BackendUnavailable: If the database is unreachable.
+        """
         self._validate_path(path)
         with self._map_errors(path), self._engine.connect() as conn:
             t = self._table
@@ -473,6 +518,20 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
+        """Store *content* at *path* in a single, atomic transaction.
+
+        The whole body is buffered in memory before the ``INSERT``/``UPDATE``
+        (BLOB columns need the complete value in one statement — no streaming
+        write), and the row is written inside one transaction, so a failure rolls
+        back with no partial row left behind.
+
+        Raises:
+            AlreadyExists: If a key exists at *path* and ``overwrite`` is ``False``.
+            InvalidPath: If *path* is empty/malformed, or (with the
+                ``reject_write_under_file_ancestor`` opt-in) an ancestor key
+                exists as a file.
+            BackendUnavailable: If the database operation fails.
+        """
         self._validate_path(path)
         self._maybe_check_no_file_ancestor(path)
         # SQL BLOB columns require full materialization; streaming writes
@@ -525,10 +584,33 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
+        """Store *content* at *path* atomically (delegates to ``write``).
+
+        SQL writes are already transactional, so this is exactly ``write``; the
+        whole body is buffered first.
+
+        Raises:
+            AlreadyExists: If a key exists at *path* and ``overwrite`` is ``False``.
+            InvalidPath: If *path* is empty/malformed, or (opt-in) an ancestor key
+                exists as a file.
+            BackendUnavailable: If the database operation fails.
+        """
         return self.write(path, content, overwrite=overwrite, metadata=metadata)
 
     @contextlib.contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
+        """Yield an in-memory buffer committed to *path* atomically on clean exit.
+
+        Writes accumulate in a ``BytesIO``; on exit the buffer is stored via
+        ``write`` in one transaction. An exception before exit leaves *path*
+        untouched.
+
+        Raises:
+            AlreadyExists: If a key exists at *path* and ``overwrite`` is ``False``.
+            InvalidPath: If *path* is empty/malformed, or (opt-in) an ancestor key
+                exists as a file.
+            BackendUnavailable: If the database operation fails.
+        """
         self._validate_path(path)
         # ID-211 opt-in: pre-check up front so the caller does not write into
         # the buffer before InvalidPath fires.
@@ -548,6 +630,13 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     # region: public methods — deletion
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
+        """Delete the row at *path* in one transaction.
+
+        Raises:
+            NotFound: If no key exists at *path* and ``missing_ok`` is ``False``.
+            InvalidPath: If *path* is empty, absolute, or malformed.
+            BackendUnavailable: If the database operation fails.
+        """
         self._validate_path(path)
         with self._map_errors(path), self._engine.begin() as conn:
             t = self._table
@@ -556,6 +645,20 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name)
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
+        """Delete every key under the virtual folder *path*.
+
+        Folders are key prefixes, not stored rows, so a folder "exists" only when
+        it has children: a non-recursive call on an existing folder therefore
+        always raises ``DirectoryNotEmpty``. ``recursive=True`` deletes all keys
+        under ``path + "/"`` in one atomic transaction.
+
+        Raises:
+            NotFound: If no key exists under *path* and ``missing_ok`` is ``False``.
+            DirectoryNotEmpty: If ``recursive`` is ``False`` (an existing virtual
+                folder is never empty).
+            InvalidPath: If *path* is empty, absolute, or malformed.
+            BackendUnavailable: If the database operation fails.
+        """
         self._validate_path(path)
         prefix = path + "/"
         with self._map_errors(path), self._engine.begin() as conn:
@@ -584,6 +687,16 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         recursive: bool = False,
         max_depth: int | None = None,
     ) -> Iterator[FileInfo]:
+        """Yield files under *path*.
+
+        One ``SELECT`` fetches every key under the prefix; folder structure is
+        derived from ``/`` in the key suffix, and ``recursive`` / ``max_depth``
+        filter client-side. A missing prefix yields nothing.
+
+        Raises:
+            BackendUnavailable: If the database operation fails, surfaced during
+                iteration.
+        """
         self._validate_path(path, allow_empty=True)
         prefix = (path + "/") if path else ""
 
@@ -611,6 +724,15 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         yield from results
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
+        """Yield immediate virtual subfolders of *path* as ``FolderEntry`` records.
+
+        One ``SELECT`` over keys under the prefix; folder names are the distinct
+        first segments of the key suffixes. A missing prefix yields nothing.
+
+        Raises:
+            BackendUnavailable: If the database operation fails, surfaced during
+                iteration.
+        """
         self._validate_path(path, allow_empty=True)
         prefix = (path + "/") if path else ""
 
@@ -632,6 +754,16 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         yield from results
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
+        """Yield the immediate files and virtual folders under *path* in one ``SELECT``.
+
+        Overrides the base two-pass default: a single query over the prefix
+        yields ``FileInfo`` for direct-child keys and ``FolderEntry`` for the
+        distinct first suffix segments. A missing prefix yields nothing.
+
+        Raises:
+            BackendUnavailable: If the database operation fails, surfaced during
+                iteration.
+        """
         self._validate_path(path, allow_empty=True)
         prefix = (path + "/") if path else ""
 
@@ -661,6 +793,13 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     # region: public methods — metadata
 
     def get_file_info(self, path: str) -> FileInfo:
+        """Return metadata for the file at *path* from one ``SELECT``.
+
+        Raises:
+            NotFound: If no key exists at *path*.
+            InvalidPath: If *path* is empty, absolute, or malformed.
+            BackendUnavailable: If the database is unreachable.
+        """
         self._validate_path(path)
         cols = self._select_info_columns()
         with self._map_errors(path), self._engine.connect() as conn:
@@ -671,6 +810,17 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             return self._row_to_file_info(row)
 
     def get_folder_info(self, path: str) -> FolderInfo:
+        """Return aggregate metadata for the virtual folder *path*.
+
+        File count, total size, and latest modification time come from one
+        aggregate ``SELECT`` (``COUNT``/``SUM``/``MAX``) over keys under the
+        prefix — no per-file round-trips.
+
+        Raises:
+            NotFound: If no key exists under *path*.
+            InvalidPath: If *path* is absolute or malformed.
+            BackendUnavailable: If the database is unreachable.
+        """
         self._validate_path(path, allow_empty=True)
         prefix = (path + "/") if path else ""
 
@@ -719,6 +869,21 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     # region: public methods — move/copy
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        """Move (rename) the key *src* to *dst* in one atomic transaction.
+
+        Implemented as an ``UPDATE`` of the row's key — the BLOB is never
+        transferred through Python. The whole operation (source check, optional
+        destination replace, rename) runs in one transaction, so a failure rolls
+        back cleanly. ``src == dst`` verifies the source exists and is otherwise
+        a no-op.
+
+        Raises:
+            NotFound: If *src* does not exist.
+            AlreadyExists: If *dst* exists and ``overwrite`` is ``False``.
+            InvalidPath: If *src* or *dst* is malformed, or (opt-in) an ancestor
+                of *dst* exists as a file.
+            BackendUnavailable: If the database operation fails.
+        """
         self._validate_path(src)
         self._validate_path(dst)
 
@@ -749,6 +914,19 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             conn.execute(t.update().where(t.c.key == src).values(key=dst))
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        """Copy the key *src* to *dst* in one atomic transaction.
+
+        Implemented as a single ``INSERT ... SELECT``, so the BLOB is duplicated
+        entirely inside the database — no bytes pass through Python. ``src == dst``
+        verifies the source exists and is otherwise a no-op.
+
+        Raises:
+            NotFound: If *src* does not exist.
+            AlreadyExists: If *dst* exists and ``overwrite`` is ``False``.
+            InvalidPath: If *src* or *dst* is malformed, or (opt-in) an ancestor
+                of *dst* exists as a file.
+            BackendUnavailable: If the database operation fails.
+        """
         self._validate_path(src)
         self._validate_path(dst)
 
@@ -812,6 +990,17 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     # region: public methods — glob
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
+        """Yield files whose key matches the glob *pattern*.
+
+        Narrows SQL-side with a prefix ``LIKE`` where the pattern allows (on
+        every dialect — SQLite's native ``GLOB`` is deliberately avoided because
+        it mishandles ``**``), then applies the full glob regex to each row.
+        Costs one ``SELECT``.
+
+        Raises:
+            BackendUnavailable: If the database operation fails, surfaced during
+                iteration.
+        """
         cols = self._select_info_columns()
         rx = pattern_to_regex(pattern)
         with self._map_errors(), self._engine.connect() as conn:
