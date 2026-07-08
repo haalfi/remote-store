@@ -43,7 +43,13 @@ expected_ripples:
 # the http mechanism row AND a live drift-guard importing _http._TRANSIENT_STATUSES
 # (http_extra must == {408}), closing the same class of gap the round-1 finding
 # exposed: a backend-local extension of a shared constant escaping the guards.
-review_rounds: 2
+# Round 3 (phase 3): the read<->LAZY_READ cross-check had a negative test only for
+# the sync table; the async branch (which passes each node's cls_uri straight into
+# the guard, distinct from the sync qname->cls: lookup) had no failure-mode test,
+# so a mistyped _COST_ASYNC read cell would slip past. Added a parallel monkeypatch
+# test flipping AsyncMemoryBackend's read cell off "Streaming" — the very row the
+# guard exists to keep honest against its buffering sync mirror.
+review_rounds: 3
 phases:
   - id: orient
     name: Orient

@@ -610,6 +610,21 @@ class TestCost:
         with pytest.raises(ValueError, match="disagrees with the graph's LAZY_READ"):
             gen_features_module.project_cost(graph)
 
+    def test_async_read_cell_cross_checked_against_lazy_read(self, gen_features_module, graph, monkeypatch):
+        """The async table's read cell is cross-checked too — its own wiring, its own test.
+
+        The async branch passes each node's ``cls_uri`` straight into the LAZY_READ
+        cross-check, distinct from the sync branch's ``qname`` -> ``cls:`` lookup, so
+        it needs its own failure-mode coverage. ``AsyncMemoryBackend`` declares
+        LAZY_READ (it streams) where its sync mirror buffers; flipping its cell off
+        "Streaming" contradicts the graph and must raise.
+        """
+        tampered = {c: dict(v) for c, v in gen_features_module._COST_ASYNC.items()}
+        tampered["AsyncMemoryBackend"]["read"] = r"Buffered in memory\*"
+        monkeypatch.setattr(gen_features_module, "_COST_ASYNC", tampered)
+        with pytest.raises(ValueError, match="disagrees with the graph's LAZY_READ"):
+            gen_features_module.project_cost(graph)
+
     def test_sync_key_set_drift_guard_raises(self, gen_features_module, graph, monkeypatch):
         pruned = {t: c for t, c in gen_features_module._COST.items() if t != "local"}
         monkeypatch.setattr(gen_features_module, "_COST", pruned)
