@@ -138,9 +138,14 @@ and the highest ID already in this file, then take the next integer. Run
 
 - [~] **ID-227 — Consumer "guarantees & cost" digest, derived from the specs**
   spec: — · effort: M (phase 1) / L (all) · audience: user.api, user.discoverability.llm
-  **Status:** Phase 1 (atomicity + retryable-vs-terminal matrices in `FEATURES.md`,
-  surfaced in the bundle) is implemented. Phases 2 (read-after-write consistency)
-  and 3 (cost model) remain open — stays `[~]` until they land.
+  **Status:** Phases 1 (atomicity + retryable-vs-terminal matrices) and 2
+  (read-after-write consistency matrix) are implemented in `FEATURES.md` and
+  surfaced in the bundle. Phase 3 (cost model) remains open — stays `[~]` until
+  it lands. Phase-2 finding: every read/write backend normalises to **strong**
+  read-after-write (verified against AWS/Azure/MS vendor docs + backend source),
+  so the matrix is near-uniform with two footnoted caveats (S3 opt-in listing
+  cache, Graph async monitor ops) rather than the per-backend variation the
+  original framing anticipated.
   Feedback on `llms-full.txt` (and the ID-226 skeleton): both answer *how to
   call it*, not the deeper contract — per-backend guarantees & failure modes,
   read-after-write consistency, retryable-vs-terminal errors and their

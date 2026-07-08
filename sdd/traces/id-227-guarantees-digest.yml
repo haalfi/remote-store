@@ -1,5 +1,5 @@
 id: ID-227
-title: "Consumer guarantees & cost digest — phase 1 (atomicity + retryable-vs-terminal)"
+title: "Consumer guarantees & cost digest — phases 1-2 (atomicity, retryable-vs-terminal, read-after-write consistency)"
 trigger: >
   Feedback on the ID-220 `llms-full.txt` bundle and the ID-226 API skeleton was
   that both answer *how to call* a backend but not the deeper cross-backend
@@ -21,6 +21,10 @@ audience:
   - contributor.tooling
 discovery_followups:
   - ID-228
+  # Born in Phase 2: empirically validating the consistency matrix surfaced that
+  # FEATURES.md §LIST/§GLOB advertise Iterator[str] where the Store API yields
+  # FileInfo/FolderEntry (a stale-doc regression relative to ID-072).
+  - BUG-227
 expected_ripples:
   - CHANGELOG.md
   # The Memory/SQLBlob docstring additions shifted a class def line, so the graph
@@ -125,4 +129,70 @@ phases:
         section: "audience enum + derived CHANGELOG rule"
         read_type: verify
         extract: "FEATURES.md dual-page + llms bundle → audience includes user.* → CHANGELOG required; ID-228 recorded as a discovery_followup from the census."
+        outcome: ok
+  # --- Phase 2: read-after-write consistency (author + external-verify) -------
+  # Phase-2 facts are NOT in-repo harvestable (BACKLOG framed them as
+  # author+external-verify), so the projection is curated cells with a
+  # registry/async key-set membership guard — a lighter guard than phase 1's
+  # constant cross-check — PLUS the one genuine in-repo cross-check available:
+  # S3's listings-cache-off default. No doc-graph schema bump (re-evaluated per
+  # DGM-002/003, still not earned). Shape confirmed with the user before writing.
+  - id: research
+    name: Research / external verification
+    steps:
+      - file: docs-src/explanation/concurrency.md
+        section: "(full)"
+        read_type: gate
+        extract: "Confirms the Phase-2 gap: the concurrency guide covers concurrent-use posture, TOCTOU, and move-atomicity but is SILENT on read-after-write consistency. External verification (vendor docs, recorded here rather than as URL steps): AWS states strong read-after-write for PUT (new+overwrite) and DELETE in all regions and a LIST after a successful PUT shows/omits the object; Azure Storage is strongly consistent incl. list; MS SharePoint/OneDrive writes each file synchronously into a primary AND secondary region before acking — so committed content is read-your-writes, not eventual, from one caller's view."
+        outcome: ok
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_normalise_client_options (use_listings_cache)"
+        read_type: gate
+        extract: "S3-027 defaults use_listings_cache=False → S3 listings are strong by default; only opt-in caching serves stale. The one in-repo constant the consistency footnote can drift-guard against."
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/monitor.py
+        section: "poll_monitor / GR-026"
+        read_type: reference
+        extract: "copy is always 202+monitor, move sometimes; poll_monitor awaits the terminal 'completed' state BEFORE returning — so read-after-copy/move holds at return. 'async' is blocking-latency, not an eventual-consistency hole."
+        outcome: ok
+      - file: docs-src/guides/backends/graph.md
+        section: "Concurrency & consistency"
+        read_type: reference
+        extract: "Repo's own guide states 'Read-your-writes holds' for Graph on the same instance — so the BACKLOG shorthand 'Graph replication is eventual' overstates it (corroborated by the MS dual-region-synchronous-write doc noted above). The eventual aspect is cross-replica/async only."
+        outcome: misleading
+  - id: implement
+    name: Implement (phase 2)
+    steps:
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_DEFAULT_USE_LISTINGS_CACHE"
+        read_type: gate
+        extract: "Promoted the inline `use_listings_cache=False` default to a named module constant (mirrors phase 1's TERMINAL_STATUSES promotion) so the FEATURES.md `*` footnote can be guarded live against it."
+        outcome: ok
+      - file: scripts/gen_features.py
+        section: "project_consistency + _CONSISTENCY / _CONSISTENCY_ASYNC"
+        read_type: gate
+        extract: "Curated sync (registry-keyed) + async (graph-node-keyed) cells; key-sets drift-guarded against the registry and _async_backend_nodes; S3 listings-cache default cross-checked live. Registered 'consistency' in project_all."
+        outcome: ok
+      - file: FEATURES.md
+        section: "## Backends (read-after-write consistency)"
+        read_type: gate
+        extract: "Added the consistency region + static intro (normalised-strong guarantee, not mutual exclusion; cross-links concurrency.md). Reaches llms-full.txt with no nav change (reference/FEATURES.md already in the llmstxt sections)."
+        outcome: ok
+  - id: verify
+    name: Verify (phase 2)
+    steps:
+      - file: tests/scripts/test_gen_features.py
+        section: "TestConsistency + region integrity"
+        read_type: gate
+        extract: "Shape + drift-guard tests (registry key-set, async key-set, S3 listings-cache default via monkeypatch); extended test_features_md_has_all_regions with the consistency region."
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / backends"
+        read_type: verify
+        extract: "_s3_base constant extraction is a comment/constant change, not a docstring-summary change → graph.json byte-identical, no viz regen (verified via gen-graph --check). FEATURES.md user-facing → CHANGELOG phase-2 line added."
+        outcome: ok
+      - file: src/remote_store/backends/_s3_base.py
+        section: "use_listings_cache DirCache behaviour"
+        read_type: verify
+        extract: "Empirically ran the matrix cells (not just type-checked): local/memory/S3-via-moto all show read-after-write, list-after-write, and read/list-after-delete are strong; and the S3 `*` footnote reproduces both halves — with the cache OFF (default) a cross-writer instance's write appears in the reader's fresh listing, with use_listings_cache=True the reader's listing stays blind to it (stale). Confirms the guarded footnote describes real behaviour."
         outcome: ok

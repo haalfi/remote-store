@@ -33,6 +33,14 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+# S3-027: the s3fs directory-listing cache is left off by default. Its DirCache
+# never expires (``listings_expiry_time=None``), so a cached listing is
+# permanently blind to a cross-writer write; callers opt in explicitly via
+# ``client_options['use_listings_cache']``. Named (not inlined) so the FEATURES.md
+# read-after-write consistency matrix can drift-guard its "strong listing by
+# default" footnote against this value (ID-227).
+_DEFAULT_USE_LISTINGS_CACHE = False
+
 
 def _normalize_endpoint_url(url: str | None) -> str | None:
     """Normalize endpoint URL: bare ``host:port`` becomes ``https://host:port``.
@@ -283,11 +291,10 @@ class _S3Base(Backend):
             client_kwargs = opts.setdefault("client_kwargs", {})
             client_kwargs.setdefault("verify", self._tls_ca_bundle)
         opts.setdefault("anon", False)
-        # S3-027: default the s3fs directory-listing cache off. The DirCache
-        # never expires (listings_expiry_time=None), so a cached listing is
-        # permanently blind to a cross-writer write; setdefault keeps any
-        # caller-supplied client_options['use_listings_cache'] (opt-in caching).
-        opts.setdefault("use_listings_cache", False)
+        # S3-027: default the s3fs directory-listing cache off (see
+        # _DEFAULT_USE_LISTINGS_CACHE); setdefault keeps any caller-supplied
+        # client_options['use_listings_cache'] (opt-in caching).
+        opts.setdefault("use_listings_cache", _DEFAULT_USE_LISTINGS_CACHE)
         # BK-306: opt out of fsspec's process-global instance cache so each
         # backend owns its own S3FileSystem. Without this, close() cannot
         # deterministically release the aiobotocore session — the cached

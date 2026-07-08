@@ -163,6 +163,42 @@ _ATOMICITY: dict[str, dict[str, str]] = {
 # ---------------------------------------------------------------------------
 
 
+# --- ID-227 Phase 2: read-after-write consistency matrix -------------------
+
+# Per-backend read-after-write consistency, keyed by registry ``type`` string.
+# ``raw`` = a read/head after a write, overwrite, or delete reflects the change;
+# ``listing`` = a listing/enumeration taken after the call returns reflects it.
+# Every read/write backend normalises to strong read-after-write; read-only
+# backends have no write surface. The consistency *class* is a vendor/OS fact,
+# not a code constant, so cells are curated here and the key-set is drift-guarded
+# against the registry. The one in-repo cross-check — S3's listings-cache-off
+# default, which backs the ``*`` footnote — is guarded live in
+# project_consistency() against remote_store.backends._s3_base.
+_CONSISTENCY: dict[str, dict[str, str]] = {
+    "local": {"raw": "Strong", "listing": "Strong"},
+    "memory": {"raw": "Strong", "listing": "Strong"},
+    "http": {"raw": "— (read-only)", "listing": "— (read-only)"},
+    "azure": {"raw": "Strong", "listing": "Strong"},
+    "s3": {"raw": "Strong", "listing": r"Strong\*"},
+    "s3-pyarrow": {"raw": "Strong", "listing": r"Strong\*"},
+    "sftp": {"raw": "Strong", "listing": "Strong"},
+    "sql-blob": {"raw": "Strong", "listing": "Strong"},
+    "sql-query": {"raw": "— (read-only)", "listing": "— (read-only)"},
+}
+
+# Native async backends, keyed by class name (no registry ``type`` string).
+# AsyncAzure / AsyncMemory mirror their sync peer; the async-only GraphBackend's
+# read-your-writes holds, but ``copy`` (always) and a large / cross-folder
+# ``move`` (sometimes) run server-side and are monitor-polled to completion
+# before the call returns — the ``†`` footnote. Key-set drift-guarded against the
+# graph's async backend nodes.
+_CONSISTENCY_ASYNC: dict[str, dict[str, str]] = {
+    "AsyncAzureBackend": {"raw": "Strong", "listing": "Strong"},
+    "AsyncMemoryBackend": {"raw": "Strong", "listing": "Strong"},
+    "GraphBackend": {"raw": "Strong†", "listing": "Strong†"},
+}
+
+
 def _load_graph() -> dict:
     with open(GRAPH, encoding="utf-8") as f:
         return json.load(f)
@@ -651,6 +687,83 @@ def project_atomicity(graph: dict) -> str:
     return "\n".join(lines)
 
 
+def project_consistency(graph: dict) -> str:
+    """Return the per-backend read-after-write consistency matrix (sync + async).
+
+    Two dimensions per backend: ``raw`` (a read/head after a write, overwrite, or
+    delete reflects the change) and ``listing`` (a listing after the call returns
+    reflects it). The class is a vendor/OS fact, so the cells are curated in
+    ``_CONSISTENCY`` / ``_CONSISTENCY_ASYNC`` and their key-sets are drift-guarded
+    against the registry and the graph's async backend nodes. The single in-repo
+    cross-check — S3's listings-cache-off default backing the ``*`` footnote — is
+    guarded live against ``_s3_base._DEFAULT_USE_LISTINGS_CACHE`` so flipping the
+    default forces the footnote to be rewritten.
+    """
+    from remote_store.backends._s3_base import _DEFAULT_USE_LISTINGS_CACHE
+
+    if _DEFAULT_USE_LISTINGS_CACHE is not False:
+        raise ValueError(
+            "S3 default use_listings_cache flipped on; the consistency `*` footnote "
+            "(s3 / s3-pyarrow listings strong by default) is now wrong: "
+            f"_DEFAULT_USE_LISTINGS_CACHE={_DEFAULT_USE_LISTINGS_CACHE!r}. "
+            "Update project_consistency() in scripts/gen_features.py."
+        )
+
+    registry = _parse_registry_order()
+    types = {t for t, _ in registry}
+    if types != set(_CONSISTENCY):
+        raise ValueError(
+            "Consistency rows drifted from the registry.\n"
+            f"  registered but no row: {sorted(types - set(_CONSISTENCY))}\n"
+            f"  row but not registered: {sorted(set(_CONSISTENCY) - types)}\n"
+            "Update _CONSISTENCY in scripts/gen_features.py."
+        )
+
+    async_names = {name for name, _ in _async_backend_nodes(graph)}
+    if async_names != set(_CONSISTENCY_ASYNC):
+        raise ValueError(
+            "Async consistency rows drifted from the graph's async backends.\n"
+            f"  in graph but no row: {sorted(async_names - set(_CONSISTENCY_ASYNC))}\n"
+            f"  row but not in graph: {sorted(set(_CONSISTENCY_ASYNC) - async_names)}\n"
+            "Update _CONSISTENCY_ASYNC in scripts/gen_features.py."
+        )
+
+    sync_lines = [
+        "| Backend | Read-after-write | Listing consistency |",
+        "|---|---|---|",
+    ]
+    for type_str, _ in sorted(registry):
+        cells = _CONSISTENCY[type_str]
+        sync_lines.append(f"| `{type_str}` | {cells['raw']} | {cells['listing']} |")
+
+    async_lines = [
+        "The async-native backends inherit their sync peer's consistency; the "
+        "async-only `GraphBackend` is the one distinct case.",
+        "",
+        "| Async backend | Read-after-write | Listing consistency |",
+        "|---|---|---|",
+    ]
+    for cls_name in sorted(_CONSISTENCY_ASYNC):
+        cells = _CONSISTENCY_ASYNC[cls_name]
+        async_lines.append(f"| `{cls_name}` | {cells['raw']} | {cells['listing']} |")
+
+    footnotes = [
+        r"\* `s3` / `s3-pyarrow` listings are strongly consistent by default: the "
+        "backend leaves the s3fs directory cache **off** (`use_listings_cache=False`), "
+        "so a listing taken after a write reflects it. Opting into "
+        "`client_options['use_listings_cache']` trades this for a cache that never "
+        "expires — a listing can then stay blind to a cross-writer change until the "
+        "backend is rebuilt.",
+        "† `GraphBackend` read-your-writes holds on one instance (a write is committed "
+        "to two datacentre regions before it is acknowledged). `copy` (always) and a "
+        "large or cross-folder `move` (sometimes) run server-side and are polled to "
+        "completion before the call returns, so a read or listing afterwards reflects "
+        "the result.",
+    ]
+
+    return "\n".join(sync_lines) + "\n\n" + "\n".join(async_lines) + "\n\n" + "\n".join(footnotes)
+
+
 def project_all(graph: dict, pyproject: dict) -> dict[str, str]:
     """Return all projections keyed by region name."""
     return {
@@ -663,6 +776,7 @@ def project_all(graph: dict, pyproject: dict) -> dict[str, str]:
         "async_backend_pairs": project_async_backend_pairs(graph),
         "retryability": project_retryability(graph),
         "atomicity": project_atomicity(graph),
+        "consistency": project_consistency(graph),
         "install_extras": project_install_extras(pyproject),
     }
 
