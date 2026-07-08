@@ -4582,6 +4582,182 @@ Returns:
 - `ResolutionPlan` – Plan with kind="azure" and details containing
 - `ResolutionPlan` – container and account_url.
 
+### exists
+
+```
+exists(path: str) -> bool
+```
+
+Return `True` if a blob or folder exists at *path*; never `NotFound`.
+
+Probes the blob first (one HEAD); if absent, probes for a folder (an HNS directory, or any blob under the `path/` prefix on flat accounts). The root always exists.
+
+Raises:
+
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### is_file
+
+```
+is_file(path: str) -> bool
+```
+
+Return `True` if *path* is an existing blob (not an HNS directory marker).
+
+One HEAD round-trip; a missing blob or an `hdi_isfolder` directory returns `False`.
+
+Raises:
+
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### is_folder
+
+```
+is_folder(path: str) -> bool
+```
+
+Return `True` if *path* is an existing folder (HNS directory or non-HNS prefix).
+
+The root is always a folder. Costs one directory HEAD (HNS) or a one-item prefix listing (flat).
+
+Raises:
+
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Open *path* for reading and return a streaming handle.
+
+Streams the blob body in chunks, so memory stays constant regardless of size. On HNS accounts one extra HEAD confirms *path* is a file (not an `hdi_isfolder` directory) before streaming.
+
+Raises:
+
+- `NotFound` – If the blob does not exist.
+- `InvalidPath` – If path names a directory.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### read_seekable
+
+```
+read_seekable(path: str) -> BinaryIO
+```
+
+Open *path* for random-access reading and return a seekable handle.
+
+Overrides the base spool: instead of buffering the whole blob, each `read()` issues one HTTP Range request (`download_blob(offset=, length=)`), so only the byte ranges actually read are fetched — ideal for Parquet column pruning.
+
+Raises:
+
+- `NotFound` – If the blob does not exist.
+- `InvalidPath` – If path names a directory.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Read and return the full blob content as bytes.
+
+Downloads the whole blob into memory (unlike the lazy `read` stream).
+
+Raises:
+
+- `NotFound` – If the blob does not exist.
+- `InvalidPath` – If path names a directory (HNS).
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* as a blob.
+
+The content is uploaded with `upload_blob` on both flat and HNS accounts — a block-blob upload that becomes visible only when its final commit succeeds, never as a partially written blob. On flat (non-HNS) accounts this is an atomic replace. On hierarchical-namespace (HNS) accounts a guaranteed atomic replace is not assured; use `write_atomic` there when readers must never observe an intermediate state.
+
+Raises:
+
+- `AlreadyExists` – If the blob exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or (with the reject_write_under_file_ancestor opt-in, or natively on HNS) an ancestor exists as a file.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* atomically.
+
+Readers never observe a partial file. On flat accounts this is the plain `PUT` (already atomic). On HNS it streams to a hidden temp file and promotes it with an atomic `rename_file` (the temp file is cleaned up on failure).
+
+Raises:
+
+- `AlreadyExists` – If the blob exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor exists as a file.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield a writable buffer promoted to *path* atomically on clean exit.
+
+Writes spool to a temporary file (up to 8 MB in memory, then on disk). On flat accounts the buffer is committed with one `PUT`; on HNS it is uploaded to a temp blob and promoted with an atomic `rename_file`. An exception before exit leaves *path* untouched.
+
+Raises:
+
+- `AlreadyExists` – If the blob exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor exists as a file.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### delete
+
+```
+delete(path: str, *, missing_ok: bool = False) -> None
+```
+
+Delete the blob at *path*.
+
+Raises:
+
+- `NotFound` – If the blob does not exist (or, on HNS, a path component is itself a file) and missing_ok is False.
+- `InvalidPath` – If path names a directory (HNS; use delete_folder).
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
 ### delete_folder
 
 ```
@@ -4606,6 +4782,58 @@ Raises:
 - `NotFound` – If the folder is missing and missing_ok is False.
 - `InvalidPath` – If path names a file (use delete instead).
 - `DirectoryNotEmpty` – If non-empty and recursive is False.
+
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*, one `FileInfo` at a time.
+
+Lazily pages the service listing (`walk_blobs`/`list_blobs` on flat accounts, `get_paths` on HNS); a missing path or a path under a file ancestor yields nothing. `recursive` lists the whole prefix (`max_depth` prunes client-side).
+
+Raises:
+
+- `PermissionDenied` – If credentials are rejected or lack access (401/403), surfaced during iteration.
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure, surfaced during iteration.
+
+### list_folders
+
+```
+list_folders(path: str) -> Iterator[FolderEntry]
+```
+
+Yield immediate subfolders of *path* as `FolderEntry` records.
+
+One paged prefix listing (`walk_blobs` common-prefixes on flat accounts, non-recursive `get_paths` on HNS); a missing path yields nothing.
+
+Raises:
+
+- `PermissionDenied` – If credentials are rejected or lack access (401/403), surfaced during iteration.
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure, surfaced during iteration.
+
+### iter_children
+
+```
+iter_children(
+    path: str,
+) -> Iterator[FileInfo | FolderEntry]
+```
+
+Yield the immediate files and folders under *path* in one paged listing.
+
+Overrides the base two-pass default with a single `walk_blobs` (flat) or `get_paths` (HNS) pass, yielding `FileInfo` for files and `FolderEntry` for folders. A missing path yields nothing.
+
+Raises:
+
+- `PermissionDenied` – If credentials are rejected or lack access (401/403), surfaced during iteration.
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure, surfaced during iteration.
 
 ### glob
 
@@ -4639,6 +4867,63 @@ Raises:
 
 - `NotFound` – If the file does not exist.
 - `InvalidPath` – If path names a directory (HNS: hdi_isfolder=true).
+
+### get_folder_info
+
+```
+get_folder_info(path: str) -> FolderInfo
+```
+
+Return aggregate metadata for the folder at *path*.
+
+File count, total size, and latest modification time are gathered by paging the whole subtree listing, so cost scales with the number of descendants.
+
+Raises:
+
+- `NotFound` – If the folder does not exist.
+- `InvalidPath` – If path names a file, not a folder.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move or rename the file *src* to *dst*.
+
+On HNS accounts this is a single native `rename_file` (atomic). On flat accounts it is a server-side copy followed by a delete — not atomic, so a failure between the two steps can leave both *src* and *dst* present; `ATOMIC_MOVE` is therefore not declared. `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the file *src* to *dst* via a server-side copy.
+
+Issues `start_copy_from_url` so the bytes never pass through the client. The copy is not atomic — a failure can leave a partial destination. `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
 
 # Microsoft Graph Access Setup
 
@@ -5813,6 +6098,21 @@ Parameters:
 
 - **`root`** (`str`) – Absolute path to the root directory on the local filesystem.
 
+### check_health
+
+```
+check_health() -> None
+```
+
+Confirm the root directory exists and is readable.
+
+A lightweight two-syscall probe (`exists` then `os.access`) that touches no file content and is safe to call repeatedly.
+
+Raises:
+
+- `NotFound` – If the root directory does not exist.
+- `PermissionDenied` – If the root directory exists but is not readable.
+
 ### resolve
 
 ```
@@ -5829,6 +6129,291 @@ Returns:
 
 - `ResolutionPlan` – Plan with kind="local" and details containing
 - `ResolutionPlan` – root and absolute_path.
+
+### exists
+
+```
+exists(path: str) -> bool
+```
+
+Return `True` if a file or folder exists at *path*; never `NotFound`.
+
+Returns `False` when a path component is itself a file, since the directory descent cannot proceed.
+
+Raises:
+
+- `InvalidPath` – If path escapes the backend root.
+
+### is_file
+
+```
+is_file(path: str) -> bool
+```
+
+Return `True` if *path* is an existing regular file.
+
+`False` if *path* is absent, names a directory, or has a file as an ancestor component.
+
+Raises:
+
+- `InvalidPath` – If path escapes the backend root.
+
+### is_folder
+
+```
+is_folder(path: str) -> bool
+```
+
+Return `True` if *path* is an existing directory.
+
+`False` if *path* is absent, names a file, or has a file as an ancestor component.
+
+Raises:
+
+- `InvalidPath` – If path escapes the backend root.
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Open *path* for reading and return a lazy binary stream.
+
+The stream reads on demand from the open file handle, so memory stays constant regardless of file size.
+
+Raises:
+
+- `NotFound` – If the file does not exist, or a path component is itself a file (the directory descent fails with ENOTDIR).
+- `InvalidPath` – If path names a directory.
+- `PermissionDenied` – If the OS denies read access to the file.
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Read and return the full file content as bytes.
+
+Materialises the whole file in memory (unlike the lazy `read` stream), so size is bounded by available memory.
+
+Raises:
+
+- `NotFound` – If the file does not exist, or a path component is itself a file (ENOTDIR on descent).
+- `InvalidPath` – If path names a directory.
+- `PermissionDenied` – If the OS denies read access to the file.
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path*, creating parent directories as needed.
+
+The bytes land directly at the final path (no temp-and-rename), so a crash or error mid-write can leave a partial or truncated file there — use `write_atomic` when readers must never observe a half-written file.
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the OS denies write access.
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* atomically via a temp file plus `os.replace`.
+
+Readers never observe a partial file: the body is written to a temporary file in the destination directory and atomically renamed over *path* on success (the temp file is removed on error). The rename is atomic because the temp file shares *path*'s directory, hence its filesystem.
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the OS denies write access.
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield a writable stream promoted to *path* atomically on clean exit.
+
+Writes go to a temp file in *path*'s directory; on normal exit it is atomically renamed over *path* (`os.replace`), and on any exception the temp file is removed and *path* is left untouched. Readers therefore never see a partially written file.
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the OS denies write access.
+
+### delete
+
+```
+delete(path: str, *, missing_ok: bool = False) -> None
+```
+
+Delete the file at *path*.
+
+Raises:
+
+- `NotFound` – If the file does not exist (or a path component is itself a file) and missing_ok is False.
+- `InvalidPath` – If path names a directory — a type mismatch that missing_ok does not silence (use delete_folder).
+- `PermissionDenied` – If the OS denies the unlink.
+
+### delete_folder
+
+```
+delete_folder(
+    path: str,
+    *,
+    recursive: bool = False,
+    missing_ok: bool = False,
+) -> None
+```
+
+Delete the folder at *path*.
+
+`recursive=True` removes the folder and its whole subtree (`shutil.rmtree`); this is not atomic — an error partway through can leave the tree partially deleted. `recursive=False` removes only an empty folder (`rmdir`).
+
+Raises:
+
+- `NotFound` – If the folder does not exist and missing_ok is False.
+- `InvalidPath` – If path names a file, not a folder.
+- `DirectoryNotEmpty` – If the folder is non-empty and recursive is False.
+- `PermissionDenied` – If the OS denies removal.
+
+### glob
+
+```
+glob(pattern: str) -> Iterator[FileInfo]
+```
+
+Yield files matching *pattern* under the root, one at a time.
+
+Lazily walks `Path.glob`; entries that escape the root through a symlink are skipped rather than returned, and directories are omitted — only files are yielded.
+
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*, one `FileInfo` at a time.
+
+Lazy: entries are produced as the directory is scanned, so listing a large tree holds only the current entry in memory. A missing or non-folder *path* yields nothing (no error). With `recursive` and `max_depth` set, traversal is pruned at the depth bound during the `os.walk` rather than filtered afterwards.
+
+### list_folders
+
+```
+list_folders(path: str) -> Iterator[FolderEntry]
+```
+
+Yield immediate subfolders of *path* as `FolderEntry` records.
+
+Lazy single-level scan; a missing or non-folder *path* yields nothing.
+
+### iter_children
+
+```
+iter_children(
+    path: str,
+) -> Iterator[FileInfo | FolderEntry]
+```
+
+Yield the immediate files and folders under *path* in one scan.
+
+Overrides the base (which chains `list_files` and `list_folders`, two passes) to walk the directory once, yielding `FileInfo` for files and `FolderEntry` for folders. A missing or non-folder *path* yields nothing.
+
+### get_file_info
+
+```
+get_file_info(path: str) -> FileInfo
+```
+
+Return metadata for the file at *path* from a single `stat`.
+
+Raises:
+
+- `NotFound` – If the file does not exist.
+- `InvalidPath` – If path names a directory, not a file.
+
+### get_folder_info
+
+```
+get_folder_info(path: str) -> FolderInfo
+```
+
+Return aggregate metadata for the folder at *path*.
+
+File count, total size, and latest modification time are computed by walking the entire subtree and `stat`-ing every file, so cost is O(files-in-subtree) — not a constant-time lookup.
+
+Raises:
+
+- `NotFound` – If the folder does not exist.
+- `InvalidPath` – If path names a file, not a folder.
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move or rename the file *src* to *dst*.
+
+Atomic when *src* and *dst* are on the same filesystem (`os.rename` via `shutil.move`) — which within a single root they always are, so `ATOMIC_MOVE` is declared. A cross-filesystem move (e.g. a bind-mounted subtree) falls back to copy-then-delete, which is not atomic. `src == dst` is a no-op; parent directories of *dst* are created as needed.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a regular file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If the OS denies the operation.
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the file *src* to *dst*, preserving mode and mtime (`copy2`).
+
+Not atomic: content is streamed to *dst*, so a crash mid-copy can leave a partial file at the destination. `src == dst` is a no-op; parent directories of *dst* are created as needed.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a regular file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If the OS denies the operation.
 
 # Memory Backend
 
@@ -5933,6 +6518,268 @@ Zero dependencies, no filesystem access, no network. Designed as a drop-in backe
 All capabilities except `GLOB` are supported. The full conformance suite passes with zero skips.
 
 Every mutating operation runs under a single process-wide lock, so `write`, `write_atomic`, `move`, and `copy` are atomic with respect to concurrent callers in the same process (`ATOMIC_MOVE` is advertised).
+
+### exists
+
+```
+exists(path: str) -> bool
+```
+
+Return `True` if a file or folder exists at *path*; never `NotFound`.
+
+The root (`""`) always exists.
+
+Raises:
+
+- `InvalidPath` – If path is absolute or contains a .. segment.
+
+### is_file
+
+```
+is_file(path: str) -> bool
+```
+
+Return `True` if *path* is an existing file (`False` for the root or a folder).
+
+Raises:
+
+- `InvalidPath` – If path is absolute or contains a .. segment.
+
+### is_folder
+
+```
+is_folder(path: str) -> bool
+```
+
+Return `True` if *path* is an existing folder; the root is always a folder.
+
+Raises:
+
+- `InvalidPath` – If path is absolute or contains a .. segment.
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Return a binary stream over the stored bytes for *path*.
+
+The value materialises in memory rather than streaming (`LAZY_READ` is not advertised): the returned stream wraps a copy of the resident bytes, so peak memory scales with the object size. Access is guarded by a single process-wide lock.
+
+Raises:
+
+- `NotFound` – If no file exists at path.
+- `InvalidPath` – If path names a folder.
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Return the full stored content of *path* as bytes.
+
+Copies the resident value out under the lock; like `read` it holds the whole object in memory.
+
+Raises:
+
+- `NotFound` – If no file exists at path.
+- `InvalidPath` – If path names a folder.
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Store *content* at *path*, creating parent folders implicitly.
+
+The whole body is buffered into memory before the store (streams are drained fully first — no lazy write), and the swap-in happens under a single process-wide lock, so the write is atomic with respect to concurrent callers in the same process.
+
+Raises:
+
+- `AlreadyExists` – If a file exists at path and overwrite is False.
+- `InvalidPath` – If path is empty or names a folder, or an ancestor of path exists as a file.
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Store *content* at *path* atomically (delegates to `write`).
+
+Memory writes are already atomic under the process-wide lock, so this is exactly `write`; the whole body is buffered first.
+
+Raises:
+
+- `AlreadyExists` – If a file exists at path and overwrite is False.
+- `InvalidPath` – If path is empty or names a folder, or an ancestor of path exists as a file.
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield an in-memory buffer committed to *path* atomically on clean exit.
+
+Writes accumulate in a `BytesIO`; on exit the buffer is stored via `write` under the process-wide lock, so *path* updates in one atomic step. An exception before exit leaves *path* untouched.
+
+Raises:
+
+- `AlreadyExists` – If a file exists at path and overwrite is False.
+- `InvalidPath` – If path is empty, or (on commit) names a folder or has a file ancestor.
+
+### delete
+
+```
+delete(path: str, *, missing_ok: bool = False) -> None
+```
+
+Delete the file at *path*.
+
+Raises:
+
+- `NotFound` – If no file exists at path and missing_ok is False.
+- `InvalidPath` – If path is empty or names a folder (a type mismatch missing_ok does not silence).
+
+### delete_folder
+
+```
+delete_folder(
+    path: str,
+    *,
+    recursive: bool = False,
+    missing_ok: bool = False,
+) -> None
+```
+
+Delete the folder at *path*.
+
+`recursive=True` detaches the whole subtree in one locked step; `recursive=False` removes only an empty folder.
+
+Raises:
+
+- `NotFound` – If no folder exists at path and missing_ok is False.
+- `InvalidPath` – If path is empty or names a file.
+- `DirectoryNotEmpty` – If the folder is non-empty and recursive is False.
+
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*.
+
+A missing or non-folder *path* yields nothing. The tree is snapshotted under the lock and iterated outside it, so a long listing does not hold the lock; `recursive` walks the whole subtree (`max_depth` prunes it).
+
+### list_folders
+
+```
+list_folders(path: str) -> Iterator[FolderEntry]
+```
+
+Yield immediate subfolders of *path* as `FolderEntry` records.
+
+A missing or non-folder *path* yields nothing; children are snapshotted under the lock and yielded outside it.
+
+### iter_children
+
+```
+iter_children(
+    path: str,
+) -> Iterator[FileInfo | FolderEntry]
+```
+
+Yield the immediate files and folders under *path* in one snapshot.
+
+Overrides the base two-pass default: takes one locked snapshot of the directory and yields `FileInfo` for files and `FolderEntry` for folders. A missing or non-folder *path* yields nothing.
+
+### get_file_info
+
+```
+get_file_info(path: str) -> FileInfo
+```
+
+Return metadata for the file at *path* from the in-memory node.
+
+Raises:
+
+- `NotFound` – If no file exists at path (including the empty path).
+- `InvalidPath` – If path names a folder.
+
+### get_folder_info
+
+```
+get_folder_info(path: str) -> FolderInfo
+```
+
+Return aggregate metadata for the folder at *path*.
+
+File count, total size, and latest modification time are computed by walking the whole subtree, so cost scales with the number of descendants.
+
+Raises:
+
+- `NotFound` – If no folder exists at path.
+- `InvalidPath` – If path names a file.
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move or rename the file *src* to *dst* by re-linking the tree node.
+
+Detach-from-source and attach-to-destination happen in one locked step, so the move is atomic with respect to concurrent callers (`ATOMIC_MOVE` is advertised) and the payload is never copied. `src == dst` verifies the source is a file and is otherwise a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst is empty, src names a folder, or dst names an existing folder.
+- `AlreadyExists` – If dst is an existing file and overwrite is False.
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the file *src* to *dst* with an independent byte buffer.
+
+The destination receives a fresh `bytearray` copy of the source bytes, all in one locked step (atomic). `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst is empty, src names a folder, or dst names an existing folder.
+- `AlreadyExists` – If dst is an existing file and overwrite is False.
 
 # S3-PyArrow Backend
 
@@ -6078,6 +6925,141 @@ Parameters:
 - **`tls_ca_bundle`** (`str | None`, default: `None` ) – Path to a PEM CA bundle file. Falls back to AWS_CA_BUNDLE / REQUESTS_CA_BUNDLE / SSL_CERT_FILE.
 - **`client_options`** (`dict[str, Any] | None`, default: `None` ) – Additional options passed to s3fs.
 - **`reject_write_under_file_ancestor`** (`bool`, default: `False` ) – If True, write / write_atomic / open_atomic / move / copy HEAD each slash-aligned ancestor of the target path and raise InvalidPath on the first regular-file hit, matching the cross-backend contract that hierarchical filesystems enforce natively. Default False: each nested-path write otherwise pays one HEAD per ancestor; paths without slashes short-circuit.
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Open *path* for reading and return a streaming handle.
+
+Uses PyArrow's `open_input_file` (higher throughput for large objects) rather than the s3fs reader; still lazy, so memory stays constant.
+
+Raises:
+
+- `NotFound` – If the object does not exist.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Read and return the full object content as bytes (via PyArrow).
+
+Raises:
+
+- `NotFound` – If the object does not exist.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path*, streaming straight to a multipart upload.
+
+Unlike `S3Backend.write`, a plain streamed write here is **not** atomic: PyArrow's output stream exposes no abort, so a failure mid-body finalises a *truncated* object at *path*. Use `write_atomic` when readers must never observe a partial object. A `bytes` payload (no streaming) commits in one shot.
+
+Raises:
+
+- `AlreadyExists` – If the object exists and overwrite is False.
+- `InvalidPath` – With the reject_write_under_file_ancestor opt-in, if an ancestor of path exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* atomically by buffering before upload.
+
+The whole body is buffered first (a `bytes` payload is already materialised and delegates straight through), so a source failure happens off the wire and leaves no object at *path* — closing the atomicity gap in the plain streaming `write`.
+
+Raises:
+
+- `AlreadyExists` – If the object exists and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of path exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield a writable buffer committed to *path* atomically on clean exit.
+
+Writes spool to a temporary file (up to 8 MB in memory, then on disk) and upload only on clean exit, so *path* never holds a partial object. An exception before exit leaves *path* untouched.
+
+Raises:
+
+- `AlreadyExists` – If the object exists and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of path exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move or rename the object *src* to *dst*.
+
+Existence checks and the delete go through s3fs; the copy is a PyArrow `copy_file`. Copy-then-delete is not atomic — a failure between the two steps can leave both *src* and *dst* present — so `ATOMIC_MOVE` is not declared. `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of dst exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the object *src* to *dst* via a PyArrow `copy_file`.
+
+Like `move`, the operation carries no cross-operation atomicity guarantee. `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of dst exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
 
 # S3 Backend
 
@@ -6509,6 +7491,248 @@ Parameters:
 - **`client_options`** (`dict[str, Any] | None`, default: `None` ) – Additional options passed to s3fs.
 - **`reject_write_under_file_ancestor`** (`bool`, default: `False` ) – If True, write / write_atomic / open_atomic / move / copy HEAD each slash-aligned ancestor of the target path and raise InvalidPath on the first regular-file hit, matching the cross-backend contract that hierarchical filesystems enforce natively. Default False: each nested-path write otherwise pays one HEAD per ancestor; paths without slashes short-circuit.
 
+### check_health
+
+```
+check_health() -> None
+```
+
+Confirm the bucket is reachable and credentials valid via one `HeadBucket`.
+
+Raises:
+
+- `NotFound` – If the bucket does not exist.
+- `PermissionDenied` – If the credentials are rejected or lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### exists
+
+```
+exists(path: str) -> bool
+```
+
+Return `True` if an object or prefix exists at *path*; never `NotFound`.
+
+Raises:
+
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### is_file
+
+```
+is_file(path: str) -> bool
+```
+
+Return `True` if *path* is an existing object (`False` if absent or a prefix).
+
+Raises:
+
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### is_folder
+
+```
+is_folder(path: str) -> bool
+```
+
+Return `True` if *path* is an existing virtual folder (a common prefix).
+
+Raises:
+
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Open *path* for reading and return a streaming handle.
+
+s3fs reads the object lazily in range-backed chunks, so memory stays constant regardless of size.
+
+Raises:
+
+- `NotFound` – If the object does not exist.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Read and return the full object content as bytes.
+
+Downloads the whole object into memory (unlike the lazy `read` stream).
+
+Raises:
+
+- `NotFound` – If the object does not exist.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* as an S3 object.
+
+The upload commits atomically — a reader sees either the old object or the new one, never a partial. A streamed write that fails mid-body aborts the multipart upload rather than finalising a truncated object, so no partial object is ever left at *path*.
+
+Raises:
+
+- `AlreadyExists` – If the object exists and overwrite is False.
+- `InvalidPath` – With the reject_write_under_file_ancestor opt-in, if an ancestor of path exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* atomically (delegates to `write`).
+
+An S3 `PUT` is already atomic, so this is exactly `write`.
+
+Raises:
+
+- `AlreadyExists` – If the object exists and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of path exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield a writable buffer committed to *path* atomically on clean exit.
+
+Writes spool to a temporary file (up to 8 MB in memory, then on disk); on clean exit the buffer is uploaded in a single atomic `PUT`. An exception before exit leaves *path* untouched.
+
+Raises:
+
+- `AlreadyExists` – If the object exists and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of path exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### delete
+
+```
+delete(path: str, *, missing_ok: bool = False) -> None
+```
+
+Delete the object at *path*.
+
+Raises:
+
+- `NotFound` – If the object does not exist and missing_ok is False.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### delete_folder
+
+```
+delete_folder(
+    path: str,
+    *,
+    recursive: bool = False,
+    missing_ok: bool = False,
+) -> None
+```
+
+Delete the virtual folder at *path*.
+
+`recursive=True` removes every object under the prefix; this is a best-effort multi-object delete, not atomic, so an interruption can leave the prefix partially deleted. `recursive=False` removes the prefix only when it has no contents.
+
+Raises:
+
+- `NotFound` – If no object exists under path and missing_ok is False.
+- `DirectoryNotEmpty` – If the prefix is non-empty and recursive is False.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### get_file_info
+
+```
+get_file_info(path: str) -> FileInfo
+```
+
+Return metadata for the object at *path* from one `HeadObject`.
+
+The HEAD is issued with `ChecksumMode=ENABLED` so a stored checksum surfaces as the `FileInfo` digest.
+
+Raises:
+
+- `NotFound` – If the object does not exist.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move or rename the object *src* to *dst*.
+
+Implemented as a server-side copy followed by a delete of *src*. This is not atomic — a crash or network error between the two steps can leave both *src* and *dst* present — so `ATOMIC_MOVE` is not declared. `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of dst exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the object *src* to *dst* via a server-side `CopyObject`.
+
+The bytes are copied entirely server-side (never through the client). Like `move`, the operation carries no cross-operation atomicity guarantee. `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of dst exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
 # SFTP Backend
 
 The SFTP backend stores files on any SSH/SFTP server using [paramiko](https://www.paramiko.org/). Unlike fsspec's `SFTPFileSystem`, it gives you explicit control over host key verification and handles Azure Key Vault PEM quirks out of the box.
@@ -6774,6 +7998,22 @@ Parameters:
 - **`timeout`** (`int`, default: `10` ) – SSH connection timeout in seconds.
 - **`connect_kwargs`** (`dict[str, Any] | None`, default: `None` ) – Extra kwargs passed to SSHClient.connect().
 
+### check_health
+
+```
+check_health() -> None
+```
+
+Confirm the SFTP connection works by `stat`-ing the base path.
+
+Establishes the SSH/SFTP connection lazily if needed (retried at connection scope) and issues one `stat` round-trip.
+
+Raises:
+
+- `NotFound` – If the configured base path does not exist.
+- `PermissionDenied` – If the server denies access to the base path.
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established.
+
 ### resolve
 
 ```
@@ -6790,6 +8030,293 @@ Returns:
 
 - `ResolutionPlan` – Plan with kind="sftp" and details containing
 - `ResolutionPlan` – host, port, and base_path.
+
+### exists
+
+```
+exists(path: str) -> bool
+```
+
+Return `True` if a file or folder exists at *path*; never `NotFound`.
+
+Issues one `stat` round-trip; a missing path returns `False`.
+
+Raises:
+
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### is_file
+
+```
+is_file(path: str) -> bool
+```
+
+Return `True` if *path* is an existing regular file (`False` if absent or a folder).
+
+Raises:
+
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### is_folder
+
+```
+is_folder(path: str) -> bool
+```
+
+Return `True` if *path* is an existing directory (`False` if absent or a file).
+
+Raises:
+
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Open *path* for reading and return a buffered, streaming handle.
+
+Reads lazily over the SFTP channel (wrapped in a `BufferedReader`), so memory stays constant regardless of file size; one extra `stat` round-trip guards against *path* being a directory before the open.
+
+Raises:
+
+- `NotFound` – If the file does not exist, or a path component is itself a file.
+- `InvalidPath` – If path names a directory.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-read.
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Read and return the full file content as bytes.
+
+Prefetches and materialises the whole file in memory (unlike the lazy `read` stream).
+
+Raises:
+
+- `NotFound` – If the file does not exist, or a path component is itself a file.
+- `InvalidPath` – If path names a directory.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-read.
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path*, streaming it over the SFTP channel.
+
+The bytes are streamed straight to the destination file (no temp-and-rename), so a dropped connection mid-write can leave a partial or truncated file there — use `write_atomic` when readers must never see a half-written file. Missing parent directories are created first (one `stat` per ancestor).
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-write.
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* atomically via a temp file plus server rename.
+
+Readers never observe a partial file: the body is streamed to a hidden temp file in the destination directory, then promoted with `posix_rename` (atomic on POSIX-compliant servers). Servers without `posix_rename` fall back to a plain `rename` (non-atomic overwrite: the target is removed first), and the temp file is cleaned up on failure.
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield a writable handle promoted to *path* atomically on clean exit.
+
+Writes stream to a hidden temp file in the destination directory; on clean exit it is promoted with `posix_rename` (atomic on POSIX servers, falling back to `rename`), and on any exception the temp file is removed and *path* is left untouched.
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### delete
+
+```
+delete(path: str, *, missing_ok: bool = False) -> None
+```
+
+Delete the file at *path*.
+
+Raises:
+
+- `NotFound` – If the file does not exist (or a path component is itself a file) and missing_ok is False.
+- `InvalidPath` – If path names a directory (use delete_folder).
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### delete_folder
+
+```
+delete_folder(
+    path: str,
+    *,
+    recursive: bool = False,
+    missing_ok: bool = False,
+) -> None
+```
+
+Delete the folder at *path*.
+
+`recursive=True` walks and removes the subtree bottom-up (one round-trip per entry — not atomic; an interruption can leave the tree partially removed). `recursive=False` removes only an empty folder after checking it has no entries.
+
+Raises:
+
+- `NotFound` – If the folder does not exist and missing_ok is False.
+- `InvalidPath` – If path names a file, not a folder.
+- `DirectoryNotEmpty` – If the folder is non-empty and recursive is False.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*, one `FileInfo` at a time.
+
+Lazily walks the remote directory (`listdir_attr`); a missing *path* yields nothing. `recursive` descends via one directory-listing round-trip per folder (`max_depth` bounds the descent). Failures other than a missing path surface as `RemoteStoreError` during iteration.
+
+### list_folders
+
+```
+list_folders(path: str) -> Iterator[FolderEntry]
+```
+
+Yield immediate subfolders of *path* as `FolderEntry` records.
+
+One directory-listing round-trip; a missing *path* yields nothing, and other failures surface as `RemoteStoreError` during iteration.
+
+### iter_children
+
+```
+iter_children(
+    path: str,
+) -> Iterator[FileInfo | FolderEntry]
+```
+
+Yield the immediate files and folders under *path* in one listing.
+
+Overrides the base two-pass default with a single `listdir_attr` round-trip, yielding `FileInfo` for files and `FolderEntry` for folders. A missing *path* yields nothing; other failures surface as `RemoteStoreError` during iteration.
+
+### get_file_info
+
+```
+get_file_info(path: str) -> FileInfo
+```
+
+Return metadata for the file at *path* from a single `stat` round-trip.
+
+Raises:
+
+- `NotFound` – If the file does not exist.
+- `InvalidPath` – If path names a directory, not a file.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### get_folder_info
+
+```
+get_folder_info(path: str) -> FolderInfo
+```
+
+Return aggregate metadata for the folder at *path*.
+
+File count, total size, and latest modification time are gathered by recursively walking the whole subtree (one listing round-trip per folder), so cost scales with the number of descendants.
+
+Raises:
+
+- `NotFound` – If the folder does not exist.
+- `InvalidPath` – If path names a file, not a folder.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move or rename the file *src* to *dst*.
+
+Tries `posix_rename` first (atomic on POSIX-compliant servers), then a plain `rename`, and finally a stream copy-then-delete. Because the outcome depends on server support, atomicity is not guaranteed across all servers and `ATOMIC_MOVE` is not declared. `src == dst` is a no-op; missing parent directories of *dst* are created first.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a regular file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the file *src* to *dst* by streaming through the client.
+
+SFTP has no server-side copy, so the bytes round-trip through the client (download then upload); this is not atomic — an interruption can leave a partial file at *dst*. `src == dst` is a no-op; missing parent directories of *dst* are created first.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a regular file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 # SQL Blob Backend
 
@@ -6997,6 +8524,310 @@ Returns:
 
 - `ResolutionPlan` – Plan with kind="sql-blob" and details containing
 - `ResolutionPlan` – table_name.
+
+### exists
+
+```
+exists(path: str) -> bool
+```
+
+Return `True` if a key or key-prefix exists at *path*; never `NotFound`.
+
+Folders are virtual — *path* counts as a folder when any key begins with `path + "/"`. The root (`""`) always exists. Costs one or two `SELECT`s.
+
+Raises:
+
+- `InvalidPath` – If path is absolute or contains a .. segment.
+- `BackendUnavailable` – If the database is unreachable.
+
+### is_file
+
+```
+is_file(path: str) -> bool
+```
+
+Return `True` if an exact key exists at *path* (one `SELECT`).
+
+Raises:
+
+- `InvalidPath` – If path is absolute or contains a .. segment.
+- `BackendUnavailable` – If the database is unreachable.
+
+### is_folder
+
+```
+is_folder(path: str) -> bool
+```
+
+Return `True` if any key begins with `path + "/"` (a virtual folder).
+
+The root is always a folder. Costs one `SELECT`.
+
+Raises:
+
+- `InvalidPath` – If path is absolute or contains a .. segment.
+- `BackendUnavailable` – If the database is unreachable.
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Return a binary stream over the stored BLOB for *path*.
+
+Loads the entire BLOB into memory before returning the stream — the read does not stream (`LAZY_READ` is not advertised), so peak memory scales with the object size. For objects larger than process memory use a blob-storage backend (S3, Local, Azure).
+
+Raises:
+
+- `NotFound` – If no key exists at path.
+- `InvalidPath` – If path is empty, absolute, or malformed.
+- `BackendUnavailable` – If the database is unreachable.
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Return the full stored BLOB for *path* as bytes.
+
+Like `read`, materialises the whole object in memory.
+
+Raises:
+
+- `NotFound` – If no key exists at path.
+- `InvalidPath` – If path is empty, absolute, or malformed.
+- `BackendUnavailable` – If the database is unreachable.
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Store *content* at *path* in a single, atomic transaction.
+
+The whole body is buffered in memory before the `INSERT`/`UPDATE` (BLOB columns need the complete value in one statement — no streaming write), and the row is written inside one transaction, so a failure rolls back with no partial row left behind.
+
+Raises:
+
+- `AlreadyExists` – If a key exists at path and overwrite is False.
+- `InvalidPath` – If path is empty/malformed, or (with the reject_write_under_file_ancestor opt-in) an ancestor key exists as a file.
+- `BackendUnavailable` – If the database operation fails.
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Store *content* at *path* atomically (delegates to `write`).
+
+SQL writes are already transactional, so this is exactly `write`; the whole body is buffered first.
+
+Raises:
+
+- `AlreadyExists` – If a key exists at path and overwrite is False.
+- `InvalidPath` – If path is empty/malformed, or (opt-in) an ancestor key exists as a file.
+- `BackendUnavailable` – If the database operation fails.
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield an in-memory buffer committed to *path* atomically on clean exit.
+
+Writes accumulate in a `BytesIO`; on exit the buffer is stored via `write` in one transaction. An exception before exit leaves *path* untouched.
+
+Raises:
+
+- `AlreadyExists` – If a key exists at path and overwrite is False.
+- `InvalidPath` – If path is empty/malformed, or (opt-in) an ancestor key exists as a file.
+- `BackendUnavailable` – If the database operation fails.
+
+### delete
+
+```
+delete(path: str, *, missing_ok: bool = False) -> None
+```
+
+Delete the row at *path* in one transaction.
+
+Raises:
+
+- `NotFound` – If no key exists at path and missing_ok is False.
+- `InvalidPath` – If path is empty, absolute, or malformed.
+- `BackendUnavailable` – If the database operation fails.
+
+### delete_folder
+
+```
+delete_folder(
+    path: str,
+    *,
+    recursive: bool = False,
+    missing_ok: bool = False,
+) -> None
+```
+
+Delete every key under the virtual folder *path*.
+
+Folders are key prefixes, not stored rows, so a folder "exists" only when it has children: a non-recursive call on an existing folder therefore always raises `DirectoryNotEmpty`. `recursive=True` deletes all keys under `path + "/"` in one atomic transaction.
+
+Raises:
+
+- `NotFound` – If no key exists under path and missing_ok is False.
+- `DirectoryNotEmpty` – If recursive is False (an existing virtual folder is never empty).
+- `InvalidPath` – If path is empty, absolute, or malformed.
+- `BackendUnavailable` – If the database operation fails.
+
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*.
+
+One `SELECT` fetches every key under the prefix; folder structure is derived from `/` in the key suffix, and `recursive` / `max_depth` filter client-side. A missing prefix yields nothing.
+
+Raises:
+
+- `BackendUnavailable` – If the database operation fails, surfaced during iteration.
+
+### list_folders
+
+```
+list_folders(path: str) -> Iterator[FolderEntry]
+```
+
+Yield immediate virtual subfolders of *path* as `FolderEntry` records.
+
+One `SELECT` over keys under the prefix; folder names are the distinct first segments of the key suffixes. A missing prefix yields nothing.
+
+Raises:
+
+- `BackendUnavailable` – If the database operation fails, surfaced during iteration.
+
+### iter_children
+
+```
+iter_children(
+    path: str,
+) -> Iterator[FileInfo | FolderEntry]
+```
+
+Yield the immediate files and virtual folders under *path* in one `SELECT`.
+
+Overrides the base two-pass default: a single query over the prefix yields `FileInfo` for direct-child keys and `FolderEntry` for the distinct first suffix segments. A missing prefix yields nothing.
+
+Raises:
+
+- `BackendUnavailable` – If the database operation fails, surfaced during iteration.
+
+### get_file_info
+
+```
+get_file_info(path: str) -> FileInfo
+```
+
+Return metadata for the file at *path* from one `SELECT`.
+
+Raises:
+
+- `NotFound` – If no key exists at path.
+- `InvalidPath` – If path is empty, absolute, or malformed.
+- `BackendUnavailable` – If the database is unreachable.
+
+### get_folder_info
+
+```
+get_folder_info(path: str) -> FolderInfo
+```
+
+Return aggregate metadata for the virtual folder *path*.
+
+File count, total size, and latest modification time come from one aggregate `SELECT` (`COUNT`/`SUM`/`MAX`) over keys under the prefix — no per-file round-trips.
+
+Raises:
+
+- `NotFound` – If no key exists under path.
+- `InvalidPath` – If path is absolute or malformed.
+- `BackendUnavailable` – If the database is unreachable.
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move (rename) the key *src* to *dst* in one atomic transaction.
+
+Implemented as an `UPDATE` of the row's key — the BLOB is never transferred through Python. The whole operation (source check, optional destination replace, rename) runs in one transaction, so a failure rolls back cleanly. `src == dst` verifies the source exists and is otherwise a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `AlreadyExists` – If dst exists and overwrite is False.
+- `InvalidPath` – If src or dst is malformed, or (opt-in) an ancestor of dst exists as a file.
+- `BackendUnavailable` – If the database operation fails.
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the key *src* to *dst* in one atomic transaction.
+
+Implemented as a single `INSERT ... SELECT`, so the BLOB is duplicated entirely inside the database — no bytes pass through Python. `src == dst` verifies the source exists and is otherwise a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `AlreadyExists` – If dst exists and overwrite is False.
+- `InvalidPath` – If src or dst is malformed, or (opt-in) an ancestor of dst exists as a file.
+- `BackendUnavailable` – If the database operation fails.
+
+### glob
+
+```
+glob(pattern: str) -> Iterator[FileInfo]
+```
+
+Yield files whose key matches the glob *pattern*.
+
+Narrows SQL-side with a prefix `LIKE` where the pattern allows (on every dialect — SQLite's native `GLOB` is deliberately avoided because it mishandles `**`), then applies the full glob regex to each row. Costs one `SELECT`.
+
+Raises:
+
+- `BackendUnavailable` – If the database operation fails, surfaced during iteration.
 
 # SQL Query Backend
 
@@ -13241,6 +15072,182 @@ Returns:
 - `ResolutionPlan` – Plan with kind="azure" and details containing
 - `ResolutionPlan` – container and account_url.
 
+### exists
+
+```
+exists(path: str) -> bool
+```
+
+Return `True` if a blob or folder exists at *path*; never `NotFound`.
+
+Probes the blob first (one HEAD); if absent, probes for a folder (an HNS directory, or any blob under the `path/` prefix on flat accounts). The root always exists.
+
+Raises:
+
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### is_file
+
+```
+is_file(path: str) -> bool
+```
+
+Return `True` if *path* is an existing blob (not an HNS directory marker).
+
+One HEAD round-trip; a missing blob or an `hdi_isfolder` directory returns `False`.
+
+Raises:
+
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### is_folder
+
+```
+is_folder(path: str) -> bool
+```
+
+Return `True` if *path* is an existing folder (HNS directory or non-HNS prefix).
+
+The root is always a folder. Costs one directory HEAD (HNS) or a one-item prefix listing (flat).
+
+Raises:
+
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Open *path* for reading and return a streaming handle.
+
+Streams the blob body in chunks, so memory stays constant regardless of size. On HNS accounts one extra HEAD confirms *path* is a file (not an `hdi_isfolder` directory) before streaming.
+
+Raises:
+
+- `NotFound` – If the blob does not exist.
+- `InvalidPath` – If path names a directory.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### read_seekable
+
+```
+read_seekable(path: str) -> BinaryIO
+```
+
+Open *path* for random-access reading and return a seekable handle.
+
+Overrides the base spool: instead of buffering the whole blob, each `read()` issues one HTTP Range request (`download_blob(offset=, length=)`), so only the byte ranges actually read are fetched — ideal for Parquet column pruning.
+
+Raises:
+
+- `NotFound` – If the blob does not exist.
+- `InvalidPath` – If path names a directory.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Read and return the full blob content as bytes.
+
+Downloads the whole blob into memory (unlike the lazy `read` stream).
+
+Raises:
+
+- `NotFound` – If the blob does not exist.
+- `InvalidPath` – If path names a directory (HNS).
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* as a blob.
+
+The content is uploaded with `upload_blob` on both flat and HNS accounts — a block-blob upload that becomes visible only when its final commit succeeds, never as a partially written blob. On flat (non-HNS) accounts this is an atomic replace. On hierarchical-namespace (HNS) accounts a guaranteed atomic replace is not assured; use `write_atomic` there when readers must never observe an intermediate state.
+
+Raises:
+
+- `AlreadyExists` – If the blob exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or (with the reject_write_under_file_ancestor opt-in, or natively on HNS) an ancestor exists as a file.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* atomically.
+
+Readers never observe a partial file. On flat accounts this is the plain `PUT` (already atomic). On HNS it streams to a hidden temp file and promotes it with an atomic `rename_file` (the temp file is cleaned up on failure).
+
+Raises:
+
+- `AlreadyExists` – If the blob exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor exists as a file.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield a writable buffer promoted to *path* atomically on clean exit.
+
+Writes spool to a temporary file (up to 8 MB in memory, then on disk). On flat accounts the buffer is committed with one `PUT`; on HNS it is uploaded to a temp blob and promoted with an atomic `rename_file`. An exception before exit leaves *path* untouched.
+
+Raises:
+
+- `AlreadyExists` – If the blob exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor exists as a file.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### delete
+
+```
+delete(path: str, *, missing_ok: bool = False) -> None
+```
+
+Delete the blob at *path*.
+
+Raises:
+
+- `NotFound` – If the blob does not exist (or, on HNS, a path component is itself a file) and missing_ok is False.
+- `InvalidPath` – If path names a directory (HNS; use delete_folder).
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
 ### delete_folder
 
 ```
@@ -13265,6 +15272,58 @@ Raises:
 - `NotFound` – If the folder is missing and missing_ok is False.
 - `InvalidPath` – If path names a file (use delete instead).
 - `DirectoryNotEmpty` – If non-empty and recursive is False.
+
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*, one `FileInfo` at a time.
+
+Lazily pages the service listing (`walk_blobs`/`list_blobs` on flat accounts, `get_paths` on HNS); a missing path or a path under a file ancestor yields nothing. `recursive` lists the whole prefix (`max_depth` prunes client-side).
+
+Raises:
+
+- `PermissionDenied` – If credentials are rejected or lack access (401/403), surfaced during iteration.
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure, surfaced during iteration.
+
+### list_folders
+
+```
+list_folders(path: str) -> Iterator[FolderEntry]
+```
+
+Yield immediate subfolders of *path* as `FolderEntry` records.
+
+One paged prefix listing (`walk_blobs` common-prefixes on flat accounts, non-recursive `get_paths` on HNS); a missing path yields nothing.
+
+Raises:
+
+- `PermissionDenied` – If credentials are rejected or lack access (401/403), surfaced during iteration.
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure, surfaced during iteration.
+
+### iter_children
+
+```
+iter_children(
+    path: str,
+) -> Iterator[FileInfo | FolderEntry]
+```
+
+Yield the immediate files and folders under *path* in one paged listing.
+
+Overrides the base two-pass default with a single `walk_blobs` (flat) or `get_paths` (HNS) pass, yielding `FileInfo` for files and `FolderEntry` for folders. A missing path yields nothing.
+
+Raises:
+
+- `PermissionDenied` – If credentials are rejected or lack access (401/403), surfaced during iteration.
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure, surfaced during iteration.
 
 ### glob
 
@@ -13298,6 +15357,63 @@ Raises:
 
 - `NotFound` – If the file does not exist.
 - `InvalidPath` – If path names a directory (HNS: hdi_isfolder=true).
+
+### get_folder_info
+
+```
+get_folder_info(path: str) -> FolderInfo
+```
+
+Return aggregate metadata for the folder at *path*.
+
+File count, total size, and latest modification time are gathered by paging the whole subtree listing, so cost scales with the number of descendants.
+
+Raises:
+
+- `NotFound` – If the folder does not exist.
+- `InvalidPath` – If path names a file, not a folder.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move or rename the file *src* to *dst*.
+
+On HNS accounts this is a single native `rename_file` (atomic). On flat accounts it is a server-side copy followed by a delete — not atomic, so a failure between the two steps can leave both *src* and *dst* present; `ATOMIC_MOVE` is therefore not declared. `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the file *src* to *dst* via a server-side copy.
+
+Issues `start_copy_from_url` so the bytes never pass through the client. The copy is not atomic — a failure can leave a partial destination. `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
 
 ## See also
 
@@ -13484,6 +15600,21 @@ Parameters:
 
 - **`root`** (`str`) – Absolute path to the root directory on the local filesystem.
 
+### check_health
+
+```
+check_health() -> None
+```
+
+Confirm the root directory exists and is readable.
+
+A lightweight two-syscall probe (`exists` then `os.access`) that touches no file content and is safe to call repeatedly.
+
+Raises:
+
+- `NotFound` – If the root directory does not exist.
+- `PermissionDenied` – If the root directory exists but is not readable.
+
 ### resolve
 
 ```
@@ -13500,6 +15631,291 @@ Returns:
 
 - `ResolutionPlan` – Plan with kind="local" and details containing
 - `ResolutionPlan` – root and absolute_path.
+
+### exists
+
+```
+exists(path: str) -> bool
+```
+
+Return `True` if a file or folder exists at *path*; never `NotFound`.
+
+Returns `False` when a path component is itself a file, since the directory descent cannot proceed.
+
+Raises:
+
+- `InvalidPath` – If path escapes the backend root.
+
+### is_file
+
+```
+is_file(path: str) -> bool
+```
+
+Return `True` if *path* is an existing regular file.
+
+`False` if *path* is absent, names a directory, or has a file as an ancestor component.
+
+Raises:
+
+- `InvalidPath` – If path escapes the backend root.
+
+### is_folder
+
+```
+is_folder(path: str) -> bool
+```
+
+Return `True` if *path* is an existing directory.
+
+`False` if *path* is absent, names a file, or has a file as an ancestor component.
+
+Raises:
+
+- `InvalidPath` – If path escapes the backend root.
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Open *path* for reading and return a lazy binary stream.
+
+The stream reads on demand from the open file handle, so memory stays constant regardless of file size.
+
+Raises:
+
+- `NotFound` – If the file does not exist, or a path component is itself a file (the directory descent fails with ENOTDIR).
+- `InvalidPath` – If path names a directory.
+- `PermissionDenied` – If the OS denies read access to the file.
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Read and return the full file content as bytes.
+
+Materialises the whole file in memory (unlike the lazy `read` stream), so size is bounded by available memory.
+
+Raises:
+
+- `NotFound` – If the file does not exist, or a path component is itself a file (ENOTDIR on descent).
+- `InvalidPath` – If path names a directory.
+- `PermissionDenied` – If the OS denies read access to the file.
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path*, creating parent directories as needed.
+
+The bytes land directly at the final path (no temp-and-rename), so a crash or error mid-write can leave a partial or truncated file there — use `write_atomic` when readers must never observe a half-written file.
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the OS denies write access.
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* atomically via a temp file plus `os.replace`.
+
+Readers never observe a partial file: the body is written to a temporary file in the destination directory and atomically renamed over *path* on success (the temp file is removed on error). The rename is atomic because the temp file shares *path*'s directory, hence its filesystem.
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the OS denies write access.
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield a writable stream promoted to *path* atomically on clean exit.
+
+Writes go to a temp file in *path*'s directory; on normal exit it is atomically renamed over *path* (`os.replace`), and on any exception the temp file is removed and *path* is left untouched. Readers therefore never see a partially written file.
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the OS denies write access.
+
+### delete
+
+```
+delete(path: str, *, missing_ok: bool = False) -> None
+```
+
+Delete the file at *path*.
+
+Raises:
+
+- `NotFound` – If the file does not exist (or a path component is itself a file) and missing_ok is False.
+- `InvalidPath` – If path names a directory — a type mismatch that missing_ok does not silence (use delete_folder).
+- `PermissionDenied` – If the OS denies the unlink.
+
+### delete_folder
+
+```
+delete_folder(
+    path: str,
+    *,
+    recursive: bool = False,
+    missing_ok: bool = False,
+) -> None
+```
+
+Delete the folder at *path*.
+
+`recursive=True` removes the folder and its whole subtree (`shutil.rmtree`); this is not atomic — an error partway through can leave the tree partially deleted. `recursive=False` removes only an empty folder (`rmdir`).
+
+Raises:
+
+- `NotFound` – If the folder does not exist and missing_ok is False.
+- `InvalidPath` – If path names a file, not a folder.
+- `DirectoryNotEmpty` – If the folder is non-empty and recursive is False.
+- `PermissionDenied` – If the OS denies removal.
+
+### glob
+
+```
+glob(pattern: str) -> Iterator[FileInfo]
+```
+
+Yield files matching *pattern* under the root, one at a time.
+
+Lazily walks `Path.glob`; entries that escape the root through a symlink are skipped rather than returned, and directories are omitted — only files are yielded.
+
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*, one `FileInfo` at a time.
+
+Lazy: entries are produced as the directory is scanned, so listing a large tree holds only the current entry in memory. A missing or non-folder *path* yields nothing (no error). With `recursive` and `max_depth` set, traversal is pruned at the depth bound during the `os.walk` rather than filtered afterwards.
+
+### list_folders
+
+```
+list_folders(path: str) -> Iterator[FolderEntry]
+```
+
+Yield immediate subfolders of *path* as `FolderEntry` records.
+
+Lazy single-level scan; a missing or non-folder *path* yields nothing.
+
+### iter_children
+
+```
+iter_children(
+    path: str,
+) -> Iterator[FileInfo | FolderEntry]
+```
+
+Yield the immediate files and folders under *path* in one scan.
+
+Overrides the base (which chains `list_files` and `list_folders`, two passes) to walk the directory once, yielding `FileInfo` for files and `FolderEntry` for folders. A missing or non-folder *path* yields nothing.
+
+### get_file_info
+
+```
+get_file_info(path: str) -> FileInfo
+```
+
+Return metadata for the file at *path* from a single `stat`.
+
+Raises:
+
+- `NotFound` – If the file does not exist.
+- `InvalidPath` – If path names a directory, not a file.
+
+### get_folder_info
+
+```
+get_folder_info(path: str) -> FolderInfo
+```
+
+Return aggregate metadata for the folder at *path*.
+
+File count, total size, and latest modification time are computed by walking the entire subtree and `stat`-ing every file, so cost is O(files-in-subtree) — not a constant-time lookup.
+
+Raises:
+
+- `NotFound` – If the folder does not exist.
+- `InvalidPath` – If path names a file, not a folder.
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move or rename the file *src* to *dst*.
+
+Atomic when *src* and *dst* are on the same filesystem (`os.rename` via `shutil.move`) — which within a single root they always are, so `ATOMIC_MOVE` is declared. A cross-filesystem move (e.g. a bind-mounted subtree) falls back to copy-then-delete, which is not atomic. `src == dst` is a no-op; parent directories of *dst* are created as needed.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a regular file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If the OS denies the operation.
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the file *src* to *dst*, preserving mode and mtime (`copy2`).
+
+Not atomic: content is streamed to *dst*, so a crash mid-copy can leave a partial file at the destination. `src == dst` is a no-op; parent directories of *dst* are created as needed.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a regular file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If the OS denies the operation.
 
 ## See also
 
@@ -13523,6 +15939,268 @@ Zero dependencies, no filesystem access, no network. Designed as a drop-in backe
 All capabilities except `GLOB` are supported. The full conformance suite passes with zero skips.
 
 Every mutating operation runs under a single process-wide lock, so `write`, `write_atomic`, `move`, and `copy` are atomic with respect to concurrent callers in the same process (`ATOMIC_MOVE` is advertised).
+
+### exists
+
+```
+exists(path: str) -> bool
+```
+
+Return `True` if a file or folder exists at *path*; never `NotFound`.
+
+The root (`""`) always exists.
+
+Raises:
+
+- `InvalidPath` – If path is absolute or contains a .. segment.
+
+### is_file
+
+```
+is_file(path: str) -> bool
+```
+
+Return `True` if *path* is an existing file (`False` for the root or a folder).
+
+Raises:
+
+- `InvalidPath` – If path is absolute or contains a .. segment.
+
+### is_folder
+
+```
+is_folder(path: str) -> bool
+```
+
+Return `True` if *path* is an existing folder; the root is always a folder.
+
+Raises:
+
+- `InvalidPath` – If path is absolute or contains a .. segment.
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Return a binary stream over the stored bytes for *path*.
+
+The value materialises in memory rather than streaming (`LAZY_READ` is not advertised): the returned stream wraps a copy of the resident bytes, so peak memory scales with the object size. Access is guarded by a single process-wide lock.
+
+Raises:
+
+- `NotFound` – If no file exists at path.
+- `InvalidPath` – If path names a folder.
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Return the full stored content of *path* as bytes.
+
+Copies the resident value out under the lock; like `read` it holds the whole object in memory.
+
+Raises:
+
+- `NotFound` – If no file exists at path.
+- `InvalidPath` – If path names a folder.
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Store *content* at *path*, creating parent folders implicitly.
+
+The whole body is buffered into memory before the store (streams are drained fully first — no lazy write), and the swap-in happens under a single process-wide lock, so the write is atomic with respect to concurrent callers in the same process.
+
+Raises:
+
+- `AlreadyExists` – If a file exists at path and overwrite is False.
+- `InvalidPath` – If path is empty or names a folder, or an ancestor of path exists as a file.
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Store *content* at *path* atomically (delegates to `write`).
+
+Memory writes are already atomic under the process-wide lock, so this is exactly `write`; the whole body is buffered first.
+
+Raises:
+
+- `AlreadyExists` – If a file exists at path and overwrite is False.
+- `InvalidPath` – If path is empty or names a folder, or an ancestor of path exists as a file.
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield an in-memory buffer committed to *path* atomically on clean exit.
+
+Writes accumulate in a `BytesIO`; on exit the buffer is stored via `write` under the process-wide lock, so *path* updates in one atomic step. An exception before exit leaves *path* untouched.
+
+Raises:
+
+- `AlreadyExists` – If a file exists at path and overwrite is False.
+- `InvalidPath` – If path is empty, or (on commit) names a folder or has a file ancestor.
+
+### delete
+
+```
+delete(path: str, *, missing_ok: bool = False) -> None
+```
+
+Delete the file at *path*.
+
+Raises:
+
+- `NotFound` – If no file exists at path and missing_ok is False.
+- `InvalidPath` – If path is empty or names a folder (a type mismatch missing_ok does not silence).
+
+### delete_folder
+
+```
+delete_folder(
+    path: str,
+    *,
+    recursive: bool = False,
+    missing_ok: bool = False,
+) -> None
+```
+
+Delete the folder at *path*.
+
+`recursive=True` detaches the whole subtree in one locked step; `recursive=False` removes only an empty folder.
+
+Raises:
+
+- `NotFound` – If no folder exists at path and missing_ok is False.
+- `InvalidPath` – If path is empty or names a file.
+- `DirectoryNotEmpty` – If the folder is non-empty and recursive is False.
+
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*.
+
+A missing or non-folder *path* yields nothing. The tree is snapshotted under the lock and iterated outside it, so a long listing does not hold the lock; `recursive` walks the whole subtree (`max_depth` prunes it).
+
+### list_folders
+
+```
+list_folders(path: str) -> Iterator[FolderEntry]
+```
+
+Yield immediate subfolders of *path* as `FolderEntry` records.
+
+A missing or non-folder *path* yields nothing; children are snapshotted under the lock and yielded outside it.
+
+### iter_children
+
+```
+iter_children(
+    path: str,
+) -> Iterator[FileInfo | FolderEntry]
+```
+
+Yield the immediate files and folders under *path* in one snapshot.
+
+Overrides the base two-pass default: takes one locked snapshot of the directory and yields `FileInfo` for files and `FolderEntry` for folders. A missing or non-folder *path* yields nothing.
+
+### get_file_info
+
+```
+get_file_info(path: str) -> FileInfo
+```
+
+Return metadata for the file at *path* from the in-memory node.
+
+Raises:
+
+- `NotFound` – If no file exists at path (including the empty path).
+- `InvalidPath` – If path names a folder.
+
+### get_folder_info
+
+```
+get_folder_info(path: str) -> FolderInfo
+```
+
+Return aggregate metadata for the folder at *path*.
+
+File count, total size, and latest modification time are computed by walking the whole subtree, so cost scales with the number of descendants.
+
+Raises:
+
+- `NotFound` – If no folder exists at path.
+- `InvalidPath` – If path names a file.
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move or rename the file *src* to *dst* by re-linking the tree node.
+
+Detach-from-source and attach-to-destination happen in one locked step, so the move is atomic with respect to concurrent callers (`ATOMIC_MOVE` is advertised) and the payload is never copied. `src == dst` verifies the source is a file and is otherwise a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst is empty, src names a folder, or dst names an existing folder.
+- `AlreadyExists` – If dst is an existing file and overwrite is False.
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the file *src* to *dst* with an independent byte buffer.
+
+The destination receives a fresh `bytearray` copy of the source bytes, all in one locked step (atomic). `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst is empty, src names a folder, or dst names an existing folder.
+- `AlreadyExists` – If dst is an existing file and overwrite is False.
 
 ## See also
 
@@ -13567,6 +16245,141 @@ Parameters:
 - **`client_options`** (`dict[str, Any] | None`, default: `None` ) – Additional options passed to s3fs.
 - **`reject_write_under_file_ancestor`** (`bool`, default: `False` ) – If True, write / write_atomic / open_atomic / move / copy HEAD each slash-aligned ancestor of the target path and raise InvalidPath on the first regular-file hit, matching the cross-backend contract that hierarchical filesystems enforce natively. Default False: each nested-path write otherwise pays one HEAD per ancestor; paths without slashes short-circuit.
 
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Open *path* for reading and return a streaming handle.
+
+Uses PyArrow's `open_input_file` (higher throughput for large objects) rather than the s3fs reader; still lazy, so memory stays constant.
+
+Raises:
+
+- `NotFound` – If the object does not exist.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Read and return the full object content as bytes (via PyArrow).
+
+Raises:
+
+- `NotFound` – If the object does not exist.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path*, streaming straight to a multipart upload.
+
+Unlike `S3Backend.write`, a plain streamed write here is **not** atomic: PyArrow's output stream exposes no abort, so a failure mid-body finalises a *truncated* object at *path*. Use `write_atomic` when readers must never observe a partial object. A `bytes` payload (no streaming) commits in one shot.
+
+Raises:
+
+- `AlreadyExists` – If the object exists and overwrite is False.
+- `InvalidPath` – With the reject_write_under_file_ancestor opt-in, if an ancestor of path exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* atomically by buffering before upload.
+
+The whole body is buffered first (a `bytes` payload is already materialised and delegates straight through), so a source failure happens off the wire and leaves no object at *path* — closing the atomicity gap in the plain streaming `write`.
+
+Raises:
+
+- `AlreadyExists` – If the object exists and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of path exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield a writable buffer committed to *path* atomically on clean exit.
+
+Writes spool to a temporary file (up to 8 MB in memory, then on disk) and upload only on clean exit, so *path* never holds a partial object. An exception before exit leaves *path* untouched.
+
+Raises:
+
+- `AlreadyExists` – If the object exists and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of path exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move or rename the object *src* to *dst*.
+
+Existence checks and the delete go through s3fs; the copy is a PyArrow `copy_file`. Copy-then-delete is not atomic — a failure between the two steps can leave both *src* and *dst* present — so `ATOMIC_MOVE` is not declared. `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of dst exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the object *src* to *dst* via a PyArrow `copy_file`.
+
+Like `move`, the operation carries no cross-operation atomicity guarantee. `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of dst exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
 ## See also
 
 - [S3-PyArrow Backend Guide](https://docs.remotestore.dev/stable/guides/backends/s3-pyarrow/index.md) — usage patterns, configuration, and examples
@@ -13607,6 +16420,248 @@ Parameters:
 - **`tls_ca_bundle`** (`str | None`, default: `None` ) – Path to a PEM CA bundle file. Falls back to AWS_CA_BUNDLE / REQUESTS_CA_BUNDLE / SSL_CERT_FILE.
 - **`client_options`** (`dict[str, Any] | None`, default: `None` ) – Additional options passed to s3fs.
 - **`reject_write_under_file_ancestor`** (`bool`, default: `False` ) – If True, write / write_atomic / open_atomic / move / copy HEAD each slash-aligned ancestor of the target path and raise InvalidPath on the first regular-file hit, matching the cross-backend contract that hierarchical filesystems enforce natively. Default False: each nested-path write otherwise pays one HEAD per ancestor; paths without slashes short-circuit.
+
+### check_health
+
+```
+check_health() -> None
+```
+
+Confirm the bucket is reachable and credentials valid via one `HeadBucket`.
+
+Raises:
+
+- `NotFound` – If the bucket does not exist.
+- `PermissionDenied` – If the credentials are rejected or lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### exists
+
+```
+exists(path: str) -> bool
+```
+
+Return `True` if an object or prefix exists at *path*; never `NotFound`.
+
+Raises:
+
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### is_file
+
+```
+is_file(path: str) -> bool
+```
+
+Return `True` if *path* is an existing object (`False` if absent or a prefix).
+
+Raises:
+
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### is_folder
+
+```
+is_folder(path: str) -> bool
+```
+
+Return `True` if *path* is an existing virtual folder (a common prefix).
+
+Raises:
+
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Open *path* for reading and return a streaming handle.
+
+s3fs reads the object lazily in range-backed chunks, so memory stays constant regardless of size.
+
+Raises:
+
+- `NotFound` – If the object does not exist.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Read and return the full object content as bytes.
+
+Downloads the whole object into memory (unlike the lazy `read` stream).
+
+Raises:
+
+- `NotFound` – If the object does not exist.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* as an S3 object.
+
+The upload commits atomically — a reader sees either the old object or the new one, never a partial. A streamed write that fails mid-body aborts the multipart upload rather than finalising a truncated object, so no partial object is ever left at *path*.
+
+Raises:
+
+- `AlreadyExists` – If the object exists and overwrite is False.
+- `InvalidPath` – With the reject_write_under_file_ancestor opt-in, if an ancestor of path exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* atomically (delegates to `write`).
+
+An S3 `PUT` is already atomic, so this is exactly `write`.
+
+Raises:
+
+- `AlreadyExists` – If the object exists and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of path exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield a writable buffer committed to *path* atomically on clean exit.
+
+Writes spool to a temporary file (up to 8 MB in memory, then on disk); on clean exit the buffer is uploaded in a single atomic `PUT`. An exception before exit leaves *path* untouched.
+
+Raises:
+
+- `AlreadyExists` – If the object exists and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of path exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### delete
+
+```
+delete(path: str, *, missing_ok: bool = False) -> None
+```
+
+Delete the object at *path*.
+
+Raises:
+
+- `NotFound` – If the object does not exist and missing_ok is False.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### delete_folder
+
+```
+delete_folder(
+    path: str,
+    *,
+    recursive: bool = False,
+    missing_ok: bool = False,
+) -> None
+```
+
+Delete the virtual folder at *path*.
+
+`recursive=True` removes every object under the prefix; this is a best-effort multi-object delete, not atomic, so an interruption can leave the prefix partially deleted. `recursive=False` removes the prefix only when it has no contents.
+
+Raises:
+
+- `NotFound` – If no object exists under path and missing_ok is False.
+- `DirectoryNotEmpty` – If the prefix is non-empty and recursive is False.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### get_file_info
+
+```
+get_file_info(path: str) -> FileInfo
+```
+
+Return metadata for the object at *path* from one `HeadObject`.
+
+The HEAD is issued with `ChecksumMode=ENABLED` so a stored checksum surfaces as the `FileInfo` digest.
+
+Raises:
+
+- `NotFound` – If the object does not exist.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move or rename the object *src* to *dst*.
+
+Implemented as a server-side copy followed by a delete of *src*. This is not atomic — a crash or network error between the two steps can leave both *src* and *dst* present — so `ATOMIC_MOVE` is not declared. `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of dst exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the object *src* to *dst* via a server-side `CopyObject`.
+
+The bytes are copied entirely server-side (never through the client). Like `move`, the operation carries no cross-operation atomicity guarantee. `src == dst` is a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `InvalidPath` – With the opt-in, if an ancestor of dst exists as an object.
+- `PermissionDenied` – If the credentials lack access.
+- `BackendUnavailable` – On a transport or service failure, or after close().
 
 ## See also
 
@@ -13661,6 +16716,22 @@ Parameters:
 - **`timeout`** (`int`, default: `10` ) – SSH connection timeout in seconds.
 - **`connect_kwargs`** (`dict[str, Any] | None`, default: `None` ) – Extra kwargs passed to SSHClient.connect().
 
+### check_health
+
+```
+check_health() -> None
+```
+
+Confirm the SFTP connection works by `stat`-ing the base path.
+
+Establishes the SSH/SFTP connection lazily if needed (retried at connection scope) and issues one `stat` round-trip.
+
+Raises:
+
+- `NotFound` – If the configured base path does not exist.
+- `PermissionDenied` – If the server denies access to the base path.
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established.
+
 ### resolve
 
 ```
@@ -13677,6 +16748,293 @@ Returns:
 
 - `ResolutionPlan` – Plan with kind="sftp" and details containing
 - `ResolutionPlan` – host, port, and base_path.
+
+### exists
+
+```
+exists(path: str) -> bool
+```
+
+Return `True` if a file or folder exists at *path*; never `NotFound`.
+
+Issues one `stat` round-trip; a missing path returns `False`.
+
+Raises:
+
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### is_file
+
+```
+is_file(path: str) -> bool
+```
+
+Return `True` if *path* is an existing regular file (`False` if absent or a folder).
+
+Raises:
+
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### is_folder
+
+```
+is_folder(path: str) -> bool
+```
+
+Return `True` if *path* is an existing directory (`False` if absent or a file).
+
+Raises:
+
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Open *path* for reading and return a buffered, streaming handle.
+
+Reads lazily over the SFTP channel (wrapped in a `BufferedReader`), so memory stays constant regardless of file size; one extra `stat` round-trip guards against *path* being a directory before the open.
+
+Raises:
+
+- `NotFound` – If the file does not exist, or a path component is itself a file.
+- `InvalidPath` – If path names a directory.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-read.
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Read and return the full file content as bytes.
+
+Prefetches and materialises the whole file in memory (unlike the lazy `read` stream).
+
+Raises:
+
+- `NotFound` – If the file does not exist, or a path component is itself a file.
+- `InvalidPath` – If path names a directory.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-read.
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path*, streaming it over the SFTP channel.
+
+The bytes are streamed straight to the destination file (no temp-and-rename), so a dropped connection mid-write can leave a partial or truncated file there — use `write_atomic` when readers must never see a half-written file. Missing parent directories are created first (one `stat` per ancestor).
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-write.
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* atomically via a temp file plus server rename.
+
+Readers never observe a partial file: the body is streamed to a hidden temp file in the destination directory, then promoted with `posix_rename` (atomic on POSIX-compliant servers). Servers without `posix_rename` fall back to a plain `rename` (non-atomic overwrite: the target is removed first), and the temp file is cleaned up on failure.
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield a writable handle promoted to *path* atomically on clean exit.
+
+Writes stream to a hidden temp file in the destination directory; on clean exit it is promoted with `posix_rename` (atomic on POSIX servers, falling back to `rename`), and on any exception the temp file is removed and *path* is left untouched.
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### delete
+
+```
+delete(path: str, *, missing_ok: bool = False) -> None
+```
+
+Delete the file at *path*.
+
+Raises:
+
+- `NotFound` – If the file does not exist (or a path component is itself a file) and missing_ok is False.
+- `InvalidPath` – If path names a directory (use delete_folder).
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### delete_folder
+
+```
+delete_folder(
+    path: str,
+    *,
+    recursive: bool = False,
+    missing_ok: bool = False,
+) -> None
+```
+
+Delete the folder at *path*.
+
+`recursive=True` walks and removes the subtree bottom-up (one round-trip per entry — not atomic; an interruption can leave the tree partially removed). `recursive=False` removes only an empty folder after checking it has no entries.
+
+Raises:
+
+- `NotFound` – If the folder does not exist and missing_ok is False.
+- `InvalidPath` – If path names a file, not a folder.
+- `DirectoryNotEmpty` – If the folder is non-empty and recursive is False.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*, one `FileInfo` at a time.
+
+Lazily walks the remote directory (`listdir_attr`); a missing *path* yields nothing. `recursive` descends via one directory-listing round-trip per folder (`max_depth` bounds the descent). Failures other than a missing path surface as `RemoteStoreError` during iteration.
+
+### list_folders
+
+```
+list_folders(path: str) -> Iterator[FolderEntry]
+```
+
+Yield immediate subfolders of *path* as `FolderEntry` records.
+
+One directory-listing round-trip; a missing *path* yields nothing, and other failures surface as `RemoteStoreError` during iteration.
+
+### iter_children
+
+```
+iter_children(
+    path: str,
+) -> Iterator[FileInfo | FolderEntry]
+```
+
+Yield the immediate files and folders under *path* in one listing.
+
+Overrides the base two-pass default with a single `listdir_attr` round-trip, yielding `FileInfo` for files and `FolderEntry` for folders. A missing *path* yields nothing; other failures surface as `RemoteStoreError` during iteration.
+
+### get_file_info
+
+```
+get_file_info(path: str) -> FileInfo
+```
+
+Return metadata for the file at *path* from a single `stat` round-trip.
+
+Raises:
+
+- `NotFound` – If the file does not exist.
+- `InvalidPath` – If path names a directory, not a file.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### get_folder_info
+
+```
+get_folder_info(path: str) -> FolderInfo
+```
+
+Return aggregate metadata for the folder at *path*.
+
+File count, total size, and latest modification time are gathered by recursively walking the whole subtree (one listing round-trip per folder), so cost scales with the number of descendants.
+
+Raises:
+
+- `NotFound` – If the folder does not exist.
+- `InvalidPath` – If path names a file, not a folder.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move or rename the file *src* to *dst*.
+
+Tries `posix_rename` first (atomic on POSIX-compliant servers), then a plain `rename`, and finally a stream copy-then-delete. Because the outcome depends on server support, atomicity is not guaranteed across all servers and `ATOMIC_MOVE` is not declared. `src == dst` is a no-op; missing parent directories of *dst* are created first.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a regular file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the file *src* to *dst* by streaming through the client.
+
+SFTP has no server-side copy, so the bytes round-trip through the client (download then upload); this is not atomic — an interruption can leave a partial file at *dst*. `src == dst` is a no-op; missing parent directories of *dst* are created first.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a regular file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If the server denies access (EACCES).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ## See also
 
@@ -13733,6 +17091,310 @@ Returns:
 
 - `ResolutionPlan` – Plan with kind="sql-blob" and details containing
 - `ResolutionPlan` – table_name.
+
+### exists
+
+```
+exists(path: str) -> bool
+```
+
+Return `True` if a key or key-prefix exists at *path*; never `NotFound`.
+
+Folders are virtual — *path* counts as a folder when any key begins with `path + "/"`. The root (`""`) always exists. Costs one or two `SELECT`s.
+
+Raises:
+
+- `InvalidPath` – If path is absolute or contains a .. segment.
+- `BackendUnavailable` – If the database is unreachable.
+
+### is_file
+
+```
+is_file(path: str) -> bool
+```
+
+Return `True` if an exact key exists at *path* (one `SELECT`).
+
+Raises:
+
+- `InvalidPath` – If path is absolute or contains a .. segment.
+- `BackendUnavailable` – If the database is unreachable.
+
+### is_folder
+
+```
+is_folder(path: str) -> bool
+```
+
+Return `True` if any key begins with `path + "/"` (a virtual folder).
+
+The root is always a folder. Costs one `SELECT`.
+
+Raises:
+
+- `InvalidPath` – If path is absolute or contains a .. segment.
+- `BackendUnavailable` – If the database is unreachable.
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Return a binary stream over the stored BLOB for *path*.
+
+Loads the entire BLOB into memory before returning the stream — the read does not stream (`LAZY_READ` is not advertised), so peak memory scales with the object size. For objects larger than process memory use a blob-storage backend (S3, Local, Azure).
+
+Raises:
+
+- `NotFound` – If no key exists at path.
+- `InvalidPath` – If path is empty, absolute, or malformed.
+- `BackendUnavailable` – If the database is unreachable.
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Return the full stored BLOB for *path* as bytes.
+
+Like `read`, materialises the whole object in memory.
+
+Raises:
+
+- `NotFound` – If no key exists at path.
+- `InvalidPath` – If path is empty, absolute, or malformed.
+- `BackendUnavailable` – If the database is unreachable.
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Store *content* at *path* in a single, atomic transaction.
+
+The whole body is buffered in memory before the `INSERT`/`UPDATE` (BLOB columns need the complete value in one statement — no streaming write), and the row is written inside one transaction, so a failure rolls back with no partial row left behind.
+
+Raises:
+
+- `AlreadyExists` – If a key exists at path and overwrite is False.
+- `InvalidPath` – If path is empty/malformed, or (with the reject_write_under_file_ancestor opt-in) an ancestor key exists as a file.
+- `BackendUnavailable` – If the database operation fails.
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Store *content* at *path* atomically (delegates to `write`).
+
+SQL writes are already transactional, so this is exactly `write`; the whole body is buffered first.
+
+Raises:
+
+- `AlreadyExists` – If a key exists at path and overwrite is False.
+- `InvalidPath` – If path is empty/malformed, or (opt-in) an ancestor key exists as a file.
+- `BackendUnavailable` – If the database operation fails.
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield an in-memory buffer committed to *path* atomically on clean exit.
+
+Writes accumulate in a `BytesIO`; on exit the buffer is stored via `write` in one transaction. An exception before exit leaves *path* untouched.
+
+Raises:
+
+- `AlreadyExists` – If a key exists at path and overwrite is False.
+- `InvalidPath` – If path is empty/malformed, or (opt-in) an ancestor key exists as a file.
+- `BackendUnavailable` – If the database operation fails.
+
+### delete
+
+```
+delete(path: str, *, missing_ok: bool = False) -> None
+```
+
+Delete the row at *path* in one transaction.
+
+Raises:
+
+- `NotFound` – If no key exists at path and missing_ok is False.
+- `InvalidPath` – If path is empty, absolute, or malformed.
+- `BackendUnavailable` – If the database operation fails.
+
+### delete_folder
+
+```
+delete_folder(
+    path: str,
+    *,
+    recursive: bool = False,
+    missing_ok: bool = False,
+) -> None
+```
+
+Delete every key under the virtual folder *path*.
+
+Folders are key prefixes, not stored rows, so a folder "exists" only when it has children: a non-recursive call on an existing folder therefore always raises `DirectoryNotEmpty`. `recursive=True` deletes all keys under `path + "/"` in one atomic transaction.
+
+Raises:
+
+- `NotFound` – If no key exists under path and missing_ok is False.
+- `DirectoryNotEmpty` – If recursive is False (an existing virtual folder is never empty).
+- `InvalidPath` – If path is empty, absolute, or malformed.
+- `BackendUnavailable` – If the database operation fails.
+
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*.
+
+One `SELECT` fetches every key under the prefix; folder structure is derived from `/` in the key suffix, and `recursive` / `max_depth` filter client-side. A missing prefix yields nothing.
+
+Raises:
+
+- `BackendUnavailable` – If the database operation fails, surfaced during iteration.
+
+### list_folders
+
+```
+list_folders(path: str) -> Iterator[FolderEntry]
+```
+
+Yield immediate virtual subfolders of *path* as `FolderEntry` records.
+
+One `SELECT` over keys under the prefix; folder names are the distinct first segments of the key suffixes. A missing prefix yields nothing.
+
+Raises:
+
+- `BackendUnavailable` – If the database operation fails, surfaced during iteration.
+
+### iter_children
+
+```
+iter_children(
+    path: str,
+) -> Iterator[FileInfo | FolderEntry]
+```
+
+Yield the immediate files and virtual folders under *path* in one `SELECT`.
+
+Overrides the base two-pass default: a single query over the prefix yields `FileInfo` for direct-child keys and `FolderEntry` for the distinct first suffix segments. A missing prefix yields nothing.
+
+Raises:
+
+- `BackendUnavailable` – If the database operation fails, surfaced during iteration.
+
+### get_file_info
+
+```
+get_file_info(path: str) -> FileInfo
+```
+
+Return metadata for the file at *path* from one `SELECT`.
+
+Raises:
+
+- `NotFound` – If no key exists at path.
+- `InvalidPath` – If path is empty, absolute, or malformed.
+- `BackendUnavailable` – If the database is unreachable.
+
+### get_folder_info
+
+```
+get_folder_info(path: str) -> FolderInfo
+```
+
+Return aggregate metadata for the virtual folder *path*.
+
+File count, total size, and latest modification time come from one aggregate `SELECT` (`COUNT`/`SUM`/`MAX`) over keys under the prefix — no per-file round-trips.
+
+Raises:
+
+- `NotFound` – If no key exists under path.
+- `InvalidPath` – If path is absolute or malformed.
+- `BackendUnavailable` – If the database is unreachable.
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move (rename) the key *src* to *dst* in one atomic transaction.
+
+Implemented as an `UPDATE` of the row's key — the BLOB is never transferred through Python. The whole operation (source check, optional destination replace, rename) runs in one transaction, so a failure rolls back cleanly. `src == dst` verifies the source exists and is otherwise a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `AlreadyExists` – If dst exists and overwrite is False.
+- `InvalidPath` – If src or dst is malformed, or (opt-in) an ancestor of dst exists as a file.
+- `BackendUnavailable` – If the database operation fails.
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the key *src* to *dst* in one atomic transaction.
+
+Implemented as a single `INSERT ... SELECT`, so the BLOB is duplicated entirely inside the database — no bytes pass through Python. `src == dst` verifies the source exists and is otherwise a no-op.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `AlreadyExists` – If dst exists and overwrite is False.
+- `InvalidPath` – If src or dst is malformed, or (opt-in) an ancestor of dst exists as a file.
+- `BackendUnavailable` – If the database operation fails.
+
+### glob
+
+```
+glob(pattern: str) -> Iterator[FileInfo]
+```
+
+Yield files whose key matches the glob *pattern*.
+
+Narrows SQL-side with a prefix `LIKE` where the pattern allows (on every dialect — SQLite's native `GLOB` is deliberately avoided because it mishandles `**`), then applies the full glob regex to each row. Costs one `SELECT`.
+
+Raises:
+
+- `BackendUnavailable` – If the database operation fails, surfaced during iteration.
 
 ## See also
 

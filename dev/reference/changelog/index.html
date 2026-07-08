@@ -13800,6 +13800,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>ID-228: Backfill method-level contract docstrings (per-op <code>Raises:</code>, read-after-write/atomicity notes, cost/laziness notes) on the six thin backends — Local, Memory, SFTP, SQLBlob, Azure, and the S3 family — raising them to <code>GraphBackend</code>'s bar and keeping them in agreement with the ID-227 FEATURES.md matrices</li>
 <li>ID-227 (phase 1): Generate per-backend atomicity and retryable-vs-terminal matrices in FEATURES.md and the llms bundle</li>
 <li>ID-227 (phase 2): Generate a per-backend read-after-write consistency matrix in FEATURES.md and the llms bundle — every read/write backend normalises to strong read-after-write, with footnotes for the S3 opt-in listing cache and Graph's async monitor ops</li>
 <li>ID-227 (phase 3): Generate a per-backend, per-operation cost matrix (<code>read</code> / <code>metadata</code> / <code>list</code>) in FEATURES.md and the llms bundle — the streaming-vs-materialised <code>read</code> cell is cross-checked live against each backend's <code>LAZY_READ</code> capability, closing out the guarantees-and-cost digest</li>
