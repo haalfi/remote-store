@@ -11016,18 +11016,18 @@ file, and a crash mid-write leaves the previous version intact.</p>
 <tbody>
 <tr>
 <td><code>list_files(path, *, max_depth, pattern)</code></td>
-<td><code>Iterator[str]</code></td>
-<td>Enumerate file paths under a prefix; optional <code>pattern=</code> filters basenames via <code>fnmatch</code></td>
+<td><code>Iterator[FileInfo]</code></td>
+<td>Enumerate files under a prefix as <code>FileInfo</code> records (use <code>.path</code> for the path); optional <code>pattern=</code> filters basenames via <code>fnmatch</code></td>
 </tr>
 <tr>
 <td><code>list_folders(path, *, max_depth, pattern)</code></td>
-<td><code>Iterator[str]</code></td>
-<td>Enumerate immediate subfolder paths; optional <code>pattern=</code> filters folder basenames via <code>fnmatch</code></td>
+<td><code>Iterator[FolderEntry]</code></td>
+<td>Enumerate immediate subfolders as <code>FolderEntry</code> records (<code>.name</code>, <code>.path</code>); optional <code>pattern=</code> filters folder basenames via <code>fnmatch</code></td>
 </tr>
 <tr>
 <td><code>iter_children(path)</code></td>
-<td><code>Iterator[FileInfo \| FolderInfo]</code></td>
-<td>Iterate files and folders together, with metadata</td>
+<td><code>Iterator[FileInfo \| FolderEntry]</code></td>
+<td>Iterate files and folders together (<code>FileInfo</code> for files, <code>FolderEntry</code> for folders)</td>
 </tr>
 </tbody>
 </table>
@@ -11043,8 +11043,8 @@ file, and a crash mid-write leaves the previous version intact.</p>
 <tbody>
 <tr>
 <td><code>glob(pattern)</code></td>
-<td><code>Iterator[str]</code></td>
-<td>Native glob pattern matching (<code>*</code>, <code>**</code>, <code>?</code>) on file paths</td>
+<td><code>Iterator[FileInfo]</code></td>
+<td>Native glob pattern matching (<code>*</code>, <code>**</code>, <code>?</code>), yielding matched files as <code>FileInfo</code> records</td>
 </tr>
 </tbody>
 </table>
@@ -11211,6 +11211,10 @@ portable fallback.</p>
 <tr>
 <td><code>FolderInfo</code></td>
 <td><code>path</code>, <code>file_count</code>, <code>total_size</code> — returned by <code>get_folder_info()</code></td>
+</tr>
+<tr>
+<td><code>FolderEntry</code></td>
+<td><code>path</code>, <code>name</code> — folder identity yielded by <code>list_folders()</code> / <code>iter_children()</code></td>
 </tr>
 <tr>
 <td><code>ContentDigest</code></td>
@@ -11562,6 +11566,104 @@ on failure. <code>read</code>, <code>list</code>, and <code>metadata</code> are 
 ‡ <code>s3-pyarrow</code> plain <code>write</code> streams straight to a multipart upload; PyArrow's stream exposes no abort, so a mid-stream failure finalises a <em>truncated</em> object. <code>write_atomic</code> buffers the body first, so a failure leaves no object.
 § <code>azure</code> <code>write</code> commits atomically on flat (non-HNS) accounts; on hierarchical-namespace accounts use <code>write_atomic</code> for a guaranteed atomic replace.</p>
 <!-- END_GENERATED:atomicity -->
+
+<p><strong>Read-after-write consistency by backend</strong> — whether a read or listing issued
+after a write, overwrite, or delete reflects that change. remote-store normalises
+to <strong>strong</strong> read-after-write on every read/write backend: the object you just
+wrote or deleted is immediately visible to a subsequent <code>read</code>, <code>head</code>, or
+<code>list_files</code> on the same store, with no eventual-consistency window to code
+around. This is a per-caller <em>visibility</em> guarantee, not mutual exclusion between
+<em>simultaneous</em> writers — <code>overwrite=False</code> remains a TOCTOU convenience guard, and
+concurrent writers to one key resolve last-writer-wins. See
+<a href="https://docs.remotestore.dev/stable/explanation/concurrency/">Concurrency and atomicity</a>
+for the ordering and race semantics.</p>
+<!-- BEGIN_GENERATED:consistency -->
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Read-after-write</th>
+<th>Listing consistency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>azure</code></td>
+<td>Strong</td>
+<td>Strong</td>
+</tr>
+<tr>
+<td><code>http</code></td>
+<td>— (read-only)</td>
+<td>— (read-only)</td>
+</tr>
+<tr>
+<td><code>local</code></td>
+<td>Strong</td>
+<td>Strong</td>
+</tr>
+<tr>
+<td><code>memory</code></td>
+<td>Strong</td>
+<td>Strong</td>
+</tr>
+<tr>
+<td><code>s3</code></td>
+<td>Strong</td>
+<td>Strong*</td>
+</tr>
+<tr>
+<td><code>s3-pyarrow</code></td>
+<td>Strong</td>
+<td>Strong*</td>
+</tr>
+<tr>
+<td><code>sftp</code></td>
+<td>Strong</td>
+<td>Strong</td>
+</tr>
+<tr>
+<td><code>sql-blob</code></td>
+<td>Strong</td>
+<td>Strong</td>
+</tr>
+<tr>
+<td><code>sql-query</code></td>
+<td>— (read-only)</td>
+<td>— (read-only)</td>
+</tr>
+</tbody>
+</table>
+<p>The async-native backends inherit their sync peer's consistency; the async-only <code>GraphBackend</code> is the one distinct case.</p>
+<table>
+<thead>
+<tr>
+<th>Async backend</th>
+<th>Read-after-write</th>
+<th>Listing consistency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AsyncAzureBackend</code></td>
+<td>Strong</td>
+<td>Strong</td>
+</tr>
+<tr>
+<td><code>AsyncMemoryBackend</code></td>
+<td>Strong</td>
+<td>Strong</td>
+</tr>
+<tr>
+<td><code>GraphBackend</code></td>
+<td>Strong†</td>
+<td>Strong†</td>
+</tr>
+</tbody>
+</table>
+<p>* <code>s3</code> / <code>s3-pyarrow</code> listings are strongly consistent by default: the backend leaves the s3fs directory cache <strong>off</strong> (<code>use_listings_cache=False</code>), so a listing taken after a write reflects it. Opting into <code>client_options['use_listings_cache']</code> trades this for a cache that never expires — a listing can then stay blind to a cross-writer change until the backend is rebuilt.
+† <code>GraphBackend</code> read-your-writes holds on one instance (a write is committed to two datacentre regions before it is acknowledged). <code>copy</code> (always) and a large or cross-folder <code>move</code> (sometimes) run server-side and are polled to completion before the call returns, so a read or listing afterwards reflects the result.</p>
+<!-- END_GENERATED:consistency -->
 
 <p><strong>Native async backends</strong> — constructed directly via <code>AsyncStore(backend=…)</code>;
 no RegistryConfig <code>type=</code> string (there is no async config registry).</p>

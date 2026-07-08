@@ -16568,17 +16568,17 @@ Atomic writes use a temp-and-rename strategy: no reader ever sees a partial file
 
 ### LIST
 
-| Method                                      | Returns                            | Description                                                                                     |
-| ------------------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `list_files(path, *, max_depth, pattern)`   | `Iterator[str]`                    | Enumerate file paths under a prefix; optional `pattern=` filters basenames via `fnmatch`        |
-| `list_folders(path, *, max_depth, pattern)` | `Iterator[str]`                    | Enumerate immediate subfolder paths; optional `pattern=` filters folder basenames via `fnmatch` |
-| `iter_children(path)`                       | `Iterator[FileInfo \| FolderInfo]` | Iterate files and folders together, with metadata                                               |
+| Method                                      | Returns                             | Description                                                                                                                            |
+| ------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_files(path, *, max_depth, pattern)`   | `Iterator[FileInfo]`                | Enumerate files under a prefix as `FileInfo` records (use `.path` for the path); optional `pattern=` filters basenames via `fnmatch`   |
+| `list_folders(path, *, max_depth, pattern)` | `Iterator[FolderEntry]`             | Enumerate immediate subfolders as `FolderEntry` records (`.name`, `.path`); optional `pattern=` filters folder basenames via `fnmatch` |
+| `iter_children(path)`                       | `Iterator[FileInfo \| FolderEntry]` | Iterate files and folders together (`FileInfo` for files, `FolderEntry` for folders)                                                   |
 
 ### GLOB
 
-| Method          | Returns         | Description                                                 |
-| --------------- | --------------- | ----------------------------------------------------------- |
-| `glob(pattern)` | `Iterator[str]` | Native glob pattern matching (`*`, `**`, `?`) on file paths |
+| Method          | Returns              | Description                                                                                 |
+| --------------- | -------------------- | ------------------------------------------------------------------------------------------- |
+| `glob(pattern)` | `Iterator[FileInfo]` | Native glob pattern matching (`*`, `**`, `?`), yielding matched files as `FileInfo` records |
 
 Backends without native `GLOB` capability can use the `ext.glob` extension as a portable fallback.
 
@@ -16636,13 +16636,14 @@ Returned by `get_file_info()` and yielded by `iter_children()`.
 
 ### Other models
 
-| Model            | Description                                                          |
-| ---------------- | -------------------------------------------------------------------- |
-| `FolderInfo`     | `path`, `file_count`, `total_size` — returned by `get_folder_info()` |
-| `ContentDigest`  | `algorithm` (e.g. `"crc32"`, `"sha256"`) + `value` (hex)             |
-| `ResolutionPlan` | Backend type, resolved path, and options — returned by `resolve()`   |
-| `BackendConfig`  | `type` string + `options` dict — one entry in a `RegistryConfig`     |
-| `RegistryConfig` | Named backends and stores; the entry point for config-driven setup   |
+| Model            | Description                                                                      |
+| ---------------- | -------------------------------------------------------------------------------- |
+| `FolderInfo`     | `path`, `file_count`, `total_size` — returned by `get_folder_info()`             |
+| `FolderEntry`    | `path`, `name` — folder identity yielded by `list_folders()` / `iter_children()` |
+| `ContentDigest`  | `algorithm` (e.g. `"crc32"`, `"sha256"`) + `value` (hex)                         |
+| `ResolutionPlan` | Backend type, resolved path, and options — returned by `resolve()`               |
+| `BackendConfig`  | `type` string + `options` dict — one entry in a `RegistryConfig`                 |
+| `RegistryConfig` | Named backends and stores; the entry point for config-driven setup               |
 
 ______________________________________________________________________
 
@@ -16719,6 +16720,30 @@ The `SEEKABLE_READ` exclusions above concern `read()` only — `read_seekable()`
 | `sql-query`  | — (read-only) | — (read-only)  | — (read-only) | — (read-only) |
 
 \* `local` `move` is atomic within one filesystem (`os.rename`); a cross-filesystem move falls back to copy-then-delete. † Azure and SFTP `move` use a native rename that is atomic (Azure HNS `rename_file`, SFTP `posix_rename`), but `ATOMIC_MOVE` is not advertised because it cannot be guaranteed across all configurations (non-HNS Azure accounts, non-POSIX SFTP servers). ‡ `s3-pyarrow` plain `write` streams straight to a multipart upload; PyArrow's stream exposes no abort, so a mid-stream failure finalises a *truncated* object. `write_atomic` buffers the body first, so a failure leaves no object. § `azure` `write` commits atomically on flat (non-HNS) accounts; on hierarchical-namespace accounts use `write_atomic` for a guaranteed atomic replace.
+
+**Read-after-write consistency by backend** — whether a read or listing issued after a write, overwrite, or delete reflects that change. remote-store normalises to **strong** read-after-write on every read/write backend: the object you just wrote or deleted is immediately visible to a subsequent `read`, `head`, or `list_files` on the same store, with no eventual-consistency window to code around. This is a per-caller *visibility* guarantee, not mutual exclusion between *simultaneous* writers — `overwrite=False` remains a TOCTOU convenience guard, and concurrent writers to one key resolve last-writer-wins. See [Concurrency and atomicity](https://docs.remotestore.dev/stable/explanation/concurrency/) for the ordering and race semantics.
+
+| Backend      | Read-after-write | Listing consistency |
+| ------------ | ---------------- | ------------------- |
+| `azure`      | Strong           | Strong              |
+| `http`       | — (read-only)    | — (read-only)       |
+| `local`      | Strong           | Strong              |
+| `memory`     | Strong           | Strong              |
+| `s3`         | Strong           | Strong\*            |
+| `s3-pyarrow` | Strong           | Strong\*            |
+| `sftp`       | Strong           | Strong              |
+| `sql-blob`   | Strong           | Strong              |
+| `sql-query`  | — (read-only)    | — (read-only)       |
+
+The async-native backends inherit their sync peer's consistency; the async-only `GraphBackend` is the one distinct case.
+
+| Async backend        | Read-after-write | Listing consistency |
+| -------------------- | ---------------- | ------------------- |
+| `AsyncAzureBackend`  | Strong           | Strong              |
+| `AsyncMemoryBackend` | Strong           | Strong              |
+| `GraphBackend`       | Strong†          | Strong†             |
+
+\* `s3` / `s3-pyarrow` listings are strongly consistent by default: the backend leaves the s3fs directory cache **off** (`use_listings_cache=False`), so a listing taken after a write reflects it. Opting into `client_options['use_listings_cache']` trades this for a cache that never expires — a listing can then stay blind to a cross-writer change until the backend is rebuilt. † `GraphBackend` read-your-writes holds on one instance (a write is committed to two datacentre regions before it is acknowledged). `copy` (always) and a large or cross-folder `move` (sometimes) run server-side and are polled to completion before the call returns, so a read or listing afterwards reflects the result.
 
 **Native async backends** — constructed directly via `AsyncStore(backend=…)`; no RegistryConfig `type=` string (there is no async config registry).
 
