@@ -5641,6 +5641,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-43-documentation-the-machine-generates-then-checks-v0291" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 43: Documentation the Machine Generates, Then Checks (v0.29.1)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11316,6 +11327,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-43-documentation-the-machine-generates-then-checks-v0291" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 43: Documentation the Machine Generates, Then Checks (v0.29.1)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11965,6 +11987,13 @@
 <p><strong>Closing only what you opened.</strong> The same release tightened resource ownership on two backends at once. <code>AzureBackend</code> now closes only the credentials it created, leaving caller-supplied credentials alone, and terminal <code>close()</code> was made consistent across the cross-backend boundary (BK-298); <code>S3Backend.close()</code> stopped leaking the underlying s3fs/aiobotocore session (BK-306). Both are the same bug class read from two directions — a backend that opened a handle must release it, and a backend handed a handle must not assume it owns it. The error classifier picked up the matching fidelity work: BUG-222 routed Azure 429 / 5xx / 401 responses into the typed-error model instead of letting them surface raw.</p>
 <p><strong>A published tutorial that worked for nobody but its author.</strong> ID-198 began as a report-only validation run of the Medallion + Dagster showcase against a live ADLS Gen2 account, and found the example was correct from its own narrow view and useless from a user's: it had bit-rotted against current Dagster, the backend swap it advertised emitted no observability signal, and the Azure/HNS path was undocumented. The fix made it run on current Dagster again, wired the lake through OpenTelemetry so a backend swap keeps emitting spans, documented the HNS swap, and guarded the whole thing with an offline smoke test so the next round of rot fails CI instead of a reader. Riding along: BK-301's Azure <code>move</code>/<code>copy</code> self-op data-loss edge (normalise paths before the self-op short-circuit, so <code>a//b</code> → <code>a/b</code> is a no-op rather than copy-to-self + delete-source) and a batch of Azure docstring/guide parity fixes, plus <code>llms.txt</code> (ID-161) — a machine-readable <a href="https://llmstxt.org/">llmstxt.org</a> discovery file served at the docs-domain root for agents and LLMs.</p>
 <p><strong>The lesson:</strong> the cheapest correctness fix is often a constructor argument. Auto-detection, implicit resource ownership, and a tutorial nobody re-runs are all the same mistake wearing different clothes — a system quietly deciding something on the caller's behalf and being wrong in a way no test on the happy path can see. Making the backend declare <code>hns=</code>, own exactly its own handles, and prove its showcase still runs are three instances of the same move: replace a silent assumption with a thing the code, or the caller, has to say out loud.</p>
+<h3 id="phase-43-documentation-the-machine-generates-then-checks-v0291">Phase 43: Documentation the Machine Generates, Then Checks (v0.29.1)<a class="headerlink" href="#phase-43-documentation-the-machine-generates-then-checks-v0291" title="Permanent link">&para;</a></h3>
+<p>v0.29.1 shipped almost no source code and is one of the more interesting releases anyway, because its subject <em>is</em> the documentation, and the through-line is the one this project keeps returning to: a rule a human has to remember is a rule that eventually slips, so move the remembering into a machine. This cycle applied that reflex to the feature reference itself.</p>
+<p><strong>The API surface became a model, and the model generates the docs.</strong> A doc-graph pipeline (ID-221 through ID-224) built a machine-readable model of the public surface — every class, method, capability, backend, and the edges between them — and made <code>FEATURES.md</code>'s Store-API, ungated-methods, and backend-pairing tables a <em>projection</em> of that graph rather than hand-kept prose (ID-222). <code>gen-features --check</code> fails the build when the committed FEATURES.md drifts from what the graph would regenerate, so the tables cannot rot without reddening CI. The same graph drives an explorable visualization (ID-223): role-aware nodes, collapsible method groups, faceted filtering, and deep links from any node to its source, spec, and docs — a reference you navigate instead of scroll.</p>
+<p><strong>A generated matrix immediately caught a doc that had been lying for releases.</strong> ID-227 extended the projection into the deeper cross-backend contract that "how to call it" docs skip: per-operation atomicity, the retryable-vs-terminal status split (imported live from the retry module's status sets), read-after-write consistency, and per-operation cost. What makes those cells trustworthy is that each is cross-checked against a machine-harvestable signal — the streaming-vs-materialised <code>read</code> cost is verified against each backend's actual <code>LAZY_READ</code> capability flag, which caught that <code>AsyncMemoryBackend</code> streams where its sync mirror buffers. Validating the same matrices against the real return types surfaced BUG-227: <code>list_files</code>, <code>list_folders</code>, <code>glob</code>, and <code>iter_children</code> had been documented as yielding <code>Iterator[str]</code> since ID-072, when they have always yielded <code>FileInfo</code> / <code>FolderEntry</code> records. A hand-maintained table had advertised the wrong type through a dozen releases; the generated, cross-checked one could not.</p>
+<p><strong>The docstrings and the agent-facing bundles were pulled up to the same bar.</strong> ID-228 backfilled method-level contract docstrings — per-operation <code>Raises:</code>, read-after-write/atomicity notes, cost/laziness notes — onto the six thin backends (Local, Memory, SFTP, SQLBlob, Azure, and the S3 family), which had stated their contract only in a class-docstring blurb while <code>GraphBackend</code>'s methods already carried the full story; the backfill is kept in agreement with the ID-227 matrices that harvest the same cells. Two artifacts joined the docs for coding agents and LLMs: Markdown page twins plus a concatenated <code>llms-full.txt</code> built from the <em>rendered</em> site (ID-220, so they capture the mkdocstrings API reference and the link rewrites a raw-source bundler would miss), and <code>llms-api.txt</code> (ID-226) — the entire public API as one code-shaped skeleton, exact signatures and full docstrings with the bodies elided.</p>
+<p><strong>The one behavioural change was a dependency cap, and it earned its place by refusing to lie.</strong> The weekly drift guard's <code>--pre</code> re-resolution pulled <code>httpx==1.0.dev3</code> into the <code>graph</code> and <code>httpx</code> extras and the async graph backend stopped importing. The first diagnosis read it as an exception-hierarchy reorg; the reality was a wholesale client-API rewrite that drops <code>AsyncClient</code> and most of the surface the backend is built on. Coding around the one missing symbol would have turned an honest import failure into a falsely-green import that explodes later at runtime, so the fix was to cap both extras at <code>httpx&gt;=0.24.0,&lt;1.0</code> and file the real 1.0 port as ID-229 (BUG-225). The guard also exposed a blind spot in itself: the <code>graph</code> smoke leg had fallen back to a top-level import that never touches the async module, so it read green while the pin was broken — now wired to import the graph transport directly.</p>
+<p><strong>The lesson:</strong> this project's oldest recurring lesson is that a documentation rule a human enforces is one that eventually slips, and it has spent releases converting those rules into CI gates — CONTENT-RULES, the API-docs drift checks, the tracker-ref lint. v0.29.1 took the next step and made the <em>content itself</em> generated-and-verified rather than merely rule-checked: the feature tables are projected from a model and fail the build on drift, and the guarantee cells are cross-checked against the capability flags they describe. BUG-227 is the proof of why that matters — a table maintained by hand had been wrong for a dozen releases and no reader ever filed it, because a wrong-but-plausible type is invisible until something checks it against the code. The cheapest way to keep a document true is to stop maintaining it by hand.</p>
 <h2 id="reproducing-this-workflow">Reproducing This Workflow<a class="headerlink" href="#reproducing-this-workflow" title="Permanent link">&para;</a></h2>
 <p>If you want to try this approach on your own project:</p>
 <ol>
