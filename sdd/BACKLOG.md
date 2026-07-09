@@ -378,6 +378,15 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   symbol would only convert an honest import failure into a falsely-green
   import that then explodes at runtime on `httpx.AsyncClient(...)`, so the
   cap is the honest interim posture.
+  **Upstream context:** the cap matches the maintainers' own guidance.
+  httpx 0.28.x is still a pre-1.0 line; the "1.0.dev" / "httpx2" threads
+  are about the project's next major API *direction*, not a released
+  stable 1.x series. In the late-2024 V1 discussion the maintainers said
+  httpx was not yet at a 1.0 SemVer release and recommended **pinning to
+  0.28 while reviewing deprecations** — which is exactly what `<1.0` does.
+  So `<1.0` is not a defensive over-cap; it tracks the current usable
+  branch until a real stable 1.x ships.
+  Ref: [encode/httpx#3344](https://github.com/encode/httpx/discussions/3344).
   **When picked up:** real httpx 1.0 stable is out and pins install
   cleanly against it. Diff the actual 1.0 public API against 0.28
   (`AsyncClient`, `Response`, `Timeout`/`Limits`, the transport-error and
