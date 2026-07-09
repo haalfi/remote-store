@@ -507,7 +507,7 @@ known-first-party = ["remote_store"]
 
 # --- Version management ---
 # Run: bump-my-version bump patch|minor|major
-# Bumps version in all three locations atomically.
+# Bumps version in all four files listed below atomically.
 
 [tool.bumpversion]
 current_version = "0.29.1"
