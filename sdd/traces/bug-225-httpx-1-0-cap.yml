@@ -18,7 +18,13 @@ expected_ripples:
   - docs-src/reference/tested-versions.md
   - infra/drift-locks/graph.txt
   - infra/drift-locks/httpx.txt
-review_rounds: 0
+surprising_ripples:
+  # PR review caught that a new ceiling has to be reflected in two prose
+  # inventories the ripple-check "Dependency" row does not enumerate: the
+  # `[project.optional-dependencies]` header comment and drift_check.py's
+  # render_docs() template (which regenerates tested-versions.md).
+  - scripts/drift_check.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -91,4 +97,22 @@ phases:
         section: "Ripple-check table / Dependencies, Bug fix"
         read_type: verify
         extract: "Dependency-cap ripples: BACKLOG+DONE, CHANGELOG stub, drift locks, render-docs (tested-versions.md), failing-test-first"
+        outcome: ok
+  - id: review
+    name: Review
+    steps:
+      - file: infra/drift-locks/httpx.txt
+        section: "anyio==4.14.1 (missing sniffio)"
+        read_type: reference
+        extract: >-
+          Review claimed the baseline was missing sniffio (an assumed hard
+          anyio dep). Verified against anyio 4.14.1 Requires-Dist in a clean
+          3.13 venv: sniffio is NOT a dependency, so the lock is correct and
+          adding it would itself create false drift — rejected the suggestion,
+          replied with evidence
+        outcome: misleading
+      - file: pyproject.toml
+        section: "[project.optional-dependencies] header comment"
+        read_type: reference
+        extract: "Review's valid consistency nit — the no-ceiling exception inventory (arrow/sql-query) went stale when graph/httpx gained a <1.0 ceiling; updated the header comment and the render_docs() template that mirrors it"
         outcome: ok

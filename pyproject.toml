@@ -51,8 +51,10 @@ Changelog = "https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md"
 Issues = "https://github.com/haalfi/remote-store/issues"
 
 [project.optional-dependencies]
-# Each extra below declares a floor and deliberately no ceiling (with rare
-# exceptions, see `arrow` / `sql-query`). A scheduled drift guard
+# Each extra below declares a floor; a ceiling is the exception, applied only
+# where a known-incompatible major looms: `arrow` / `sql-query` pin
+# `pyarrow<25`, and `graph` / `httpx` pin `httpx<1.0` (BUG-225 / ID-229) — see
+# the per-extra comment for each rationale. A scheduled drift guard
 # (`.github/workflows/drift-guard.yml`, ID-182) re-resolves each extra
 # weekly against the latest available transitive versions and diffs the
 # result against `infra/drift-locks/<extra>.txt`. Refresh a baseline after
