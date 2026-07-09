@@ -8,6 +8,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+*(none)*
+
+## v0.29.1
+
 - [x] **BUG-225 — Graph backend breaks against httpx 1.0 pre-releases (cap `httpx<1.0`)**
   spec: GR-033 · effort: S · audience: user.api
   The drift guard's `--pre` re-resolution pulled `httpx==1.0.dev3` into the

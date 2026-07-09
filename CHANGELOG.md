@@ -7,17 +7,55 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BUG-225: Cap `httpx>=0.24.0,<1.0` on the `graph` and `httpx` extras so `pip install remote-store[graph]` no longer resolves to httpx's experimental `1.0.dev*` rewrite (which drops `AsyncClient`, `TransportError`, and the rest of the client API the async graph backend is built on) and breaks at import; porting to real httpx 1.0 once it ships stable is tracked as ID-229
-- ID-228: Backfill method-level contract docstrings (per-op `Raises:`, read-after-write/atomicity notes, cost/laziness notes) on the six thin backends — Local, Memory, SFTP, SQLBlob, Azure, and the S3 family — raising them to `GraphBackend`'s bar and keeping them in agreement with the ID-227 FEATURES.md matrices
-- ID-227 (phase 1): Generate per-backend atomicity and retryable-vs-terminal matrices in FEATURES.md and the llms bundle
-- ID-227 (phase 2): Generate a per-backend read-after-write consistency matrix in FEATURES.md and the llms bundle — every read/write backend normalises to strong read-after-write, with footnotes for the S3 opt-in listing cache and Graph's async monitor ops
-- ID-227 (phase 3): Generate a per-backend, per-operation cost matrix (`read` / `metadata` / `list`) in FEATURES.md and the llms bundle — the streaming-vs-materialised `read` cell is cross-checked live against each backend's `LAZY_READ` capability, closing out the guarantees-and-cost digest
-- BUG-227: Correct the FEATURES.md Store-API return types — `list_files`, `list_folders`, `glob`, and `iter_children` yield `FileInfo` / `FolderEntry` records, not `Iterator[str]` (a stale-doc regression since ID-072); document the `FolderEntry` model
-- ID-220: Serve per-page Markdown twins and a concatenated `llms-full.txt` via the `mkdocs-llmstxt` plugin, and repoint `llms.txt`'s links at the twins. Twins are built from the *rendered* site, so they capture the `mkdocstrings` API reference and the BK-171 link rewrites a raw-source bundler would miss. The plugin now generates `llms.txt` (the ID-161 hand-curated `docs-src/llms.txt` is removed; its prose moves into the plugin config), and `mkdocs build --strict` validates every listed page exists — superseding BK-307's static `llms.txt` link gate. `mkdocs-llmstxt` is adopted as interim tooling (it is in upstream maintenance mode); see ID-225 for the Material for MkDocs → Zensical migration this rides on.
-- ID-226: Publish `llms-api.txt` — the full public API surface (every class and function across backends, async, and extensions, with exact signatures, type annotations, and complete docstrings, bodies elided) as one code-shaped skeleton for coding agents. Generated at Read the Docs build time by `lx` (a pinned prebuilt binary; RTD is pip-only) and linked from `llms.txt`, the README, and the API-reference landing page.
-- BK-308: Align `SEEKABLE_READ` wording so `read()`-vs-`read_seekable()` is self-evident everywhere
-- ID-223: Make the API graph visualization explorable — role-aware nodes, collapsible method groups, node/edge detail with deep links to source, spec, and docs, and composable faceted filtering (kind, role, edge, runtime, capability, dependency) plus text search
-- ID-222: Generate the FEATURES.md Store API, ungated-methods, and async backend-pairing tables from the documentation graph
+## [0.29.1] - 2026-07-09
+
+### Fixed
+
+- **`httpx<1.0` cap on the `graph` and `httpx` extras** (BUG-225): the drift
+  guard's `--pre` re-resolution pulled httpx's experimental `1.0.dev*` rewrite,
+  which drops `AsyncClient`, `TransportError`, and the rest of the client API the
+  async graph backend is built on, so `pip install remote-store[graph]` broke at
+  import. Both extras are now pinned `httpx>=0.24.0,<1.0`; porting to a stable
+  httpx 1.0 once it ships is tracked as ID-229.
+
+### Documentation
+
+- **Per-backend guarantees & cost matrices in FEATURES.md** (ID-227): generated,
+  drift-proof matrices covering per-operation atomicity, the
+  retryable-vs-terminal status split, read-after-write consistency (every
+  read/write backend normalises to strong, with footnotes for the S3 opt-in
+  listing cache and Graph's async monitor ops), and per-operation cost
+  (`read` / `metadata` / `list`). The streaming-vs-materialised `read` cell is
+  cross-checked live against each backend's `LAZY_READ` capability.
+- **Corrected FEATURES.md Store-API return types** (BUG-227): `list_files`,
+  `list_folders`, `glob`, and `iter_children` yield `FileInfo` / `FolderEntry`
+  records, not `Iterator[str]` (a stale-doc regression since ID-072); the
+  `FolderEntry` model is now documented.
+- **Method-level contract docstrings on the six thin backends** (ID-228):
+  per-operation `Raises:`, read-after-write/atomicity notes, and cost/laziness
+  notes on Local, Memory, SFTP, SQLBlob, Azure, and the S3 family, raising them
+  to `GraphBackend`'s bar and keeping them in agreement with the ID-227 matrices.
+- **FEATURES.md tables generated from the documentation graph** (ID-222): the
+  Store API, ungated-methods, and async backend-pairing tables are now projected
+  from the graph rather than hand-maintained.
+- **Explorable API graph visualization** (ID-223): role-aware nodes, collapsible
+  method groups, node/edge detail with deep links to source, spec, and docs, and
+  composable faceted filtering (kind, role, edge, runtime, capability,
+  dependency) plus text search.
+- **Markdown page twins and a concatenated `llms-full.txt`** (ID-220): served via
+  the `mkdocs-llmstxt` plugin and built from the *rendered* site, so they capture
+  the `mkdocstrings` API reference and the BK-171 link rewrites a raw-source
+  bundler would miss. The plugin now generates `llms.txt` (the hand-curated
+  `docs-src/llms.txt` is removed), and `mkdocs build --strict` validates every
+  listed page exists.
+- **`llms-api.txt` public-API skeleton** (ID-226): the full public API surface
+  (every class and function across backends, async, and extensions, with exact
+  signatures, type annotations, and complete docstrings, bodies elided) as one
+  code-shaped skeleton for coding agents. Generated at Read the Docs build time
+  by `lx` and linked from `llms.txt`, the README, and the API-reference landing
+  page.
+- **Aligned `SEEKABLE_READ` wording** (BK-308) so `read()`-vs-`read_seekable()`
+  is self-evident everywhere.
 
 ## [0.29.0] - 2026-06-22
 
