@@ -17,6 +17,13 @@ Execute [`CONTRIBUTING.md` § Release](../../../CONTRIBUTING.md#release) (Phases
 (`# Features — remote-store vX.Y.Z` where `X.Y.Z` is the *current* version) —
 `bump-my-version` updates it in Phase 2.
 
+**Phase 1 (CHANGELOG completeness cross-check)** — Run the `generate-notes` call from
+the checklist purely as a completeness gate: it emits GitHub's merged-PR list since
+`vPREV`, which you diff against CHANGELOG `[Unreleased]` to catch any user-facing PR
+missing an entry. **Discard the output** — the release body is authored from CHANGELOG
+in Phase 4, never from these auto-notes (they are a flat PR-title list, not the curated
+by-section prose this project ships). `vPREV` = the latest release tag (`gh release view --json tagName --jq .tagName`).
+
 **Phase 2** — `bump-my-version` reads its target files from `[[tool.bumpversion.files]]`
 in `pyproject.toml`.
 

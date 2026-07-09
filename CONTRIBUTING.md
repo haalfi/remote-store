@@ -429,6 +429,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 ### Phase 1: Content freeze
 
 - [ ] CHANGELOG.md `[Unreleased]` is complete — every completed item has a stub line (see ripple-check row **CHANGELOG entry**)
+- [ ] CHANGELOG completeness cross-check: `gh api repos/haalfi/remote-store/releases/generate-notes -f tag_name=vX.Y.Z -f previous_tag_name=vPREV -f target_commitish=master --jq .body` lists every merged PR since `vPREV` — confirm each **user-facing** PR maps to a CHANGELOG `[Unreleased]` entry (internal/tooling/dependabot PRs need none). Safety net over the per-PR CHANGELOG discipline; the generated text is **discarded**, not used for the release body (which stays CHANGELOG-derived — Phase 4)
 - [ ] CHANGELOG.md `[Unreleased]` condensed — stubs expanded to prose at release time (release skill Phase 1)
 - [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here under the `## Unreleased` heading, each marked `[x]` (Phase 2 versions the heading)
 - [ ] `FEATURES.md` updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; `bump-my-version` handles it in Phase 2)
