@@ -11448,6 +11448,7 @@ workflow's runner) so the lock is comparable.</p>
 <h3 id="phase-1-content-freeze">Phase 1: Content freeze<a class="headerlink" href="#phase-1-content-freeze" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] CHANGELOG.md <code>[Unreleased]</code> is complete — every completed item has a stub line (see ripple-check row <strong>CHANGELOG entry</strong>)</li>
+<li>[ ] CHANGELOG completeness cross-check: <code>gh api repos/haalfi/remote-store/releases/generate-notes -f tag_name=vX.Y.Z -f previous_tag_name=vPREV -f target_commitish=master --jq .body</code> lists every merged PR since <code>vPREV</code> — confirm each <strong>user-facing</strong> PR maps to a CHANGELOG <code>[Unreleased]</code> entry (internal/tooling/dependabot PRs need none). Safety net over the per-PR CHANGELOG discipline; the generated text is <strong>discarded</strong>, not used for the release body (which stays CHANGELOG-derived — Phase 4)</li>
 <li>[ ] CHANGELOG.md <code>[Unreleased]</code> condensed — stubs expanded to prose at release time (release skill Phase 1)</li>
 <li>[ ] <code>sdd/BACKLOG-DONE.md</code>: all shipping items moved here under the <code>## Unreleased</code> heading, each marked <code>[x]</code> (Phase 2 versions the heading)</li>
 <li>[ ] <code>FEATURES.md</code> updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; <code>bump-my-version</code> handles it in Phase 2)</li>
