@@ -20012,7 +20012,7 @@ Pure-Python extensions (`ext.batch`, `ext.transfer`, `ext.glob`, `ext.observe`, 
 
 # Tested upper-bound versions
 
-Each `[<extra>]` declares a floor in `pyproject.toml` and in most cases deliberately no ceiling (the `arrow` and `sql-query` extras carry a `pyarrow<25` ceiling — see the comment on `[project.optional-dependencies]` in `pyproject.toml`). The drift guard (`.github/workflows/drift-guard.yml`) records the last known-good resolution per extra in `infra/drift-locks/` and re-resolves weekly against the latest available versions (including pre-releases) to surface silent transitive upgrades before they reach users.
+Each `[<extra>]` declares a floor in `pyproject.toml` and in most cases deliberately no ceiling (the exceptions: `arrow` / `sql-query` pin `pyarrow<25`, and `graph` / `httpx` pin `httpx<1.0` — see the comment on `[project.optional-dependencies]` in `pyproject.toml`). The drift guard (`.github/workflows/drift-guard.yml`) records the last known-good resolution per extra in `infra/drift-locks/` and re-resolves weekly against the latest available versions (including pre-releases) to surface silent transitive upgrades before they reach users.
 
 The table below is the projection of those lock files onto the top-level packages each extra declares. "Tested up to" is the exact version pinned in the lock at capture time — that is what CI was last green against.
 
@@ -20043,22 +20043,22 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[graph]`
 
-*Captured 2026-06-22 on Python 3.13.*
+*Captured 2026-07-09 on Python 3.13.*
 
 | Package           | Tested up to |
 | ----------------- | ------------ |
-| `httpx`           | `1.0.dev3`   |
+| `httpx`           | `0.28.1`     |
 | `msal`            | `1.38.0rc1`  |
 | `msal-extensions` | `1.3.1`      |
 | `platformdirs`    | `4.10.0`     |
 
 ## `[httpx]`
 
-*Captured 2026-05-25 on Python 3.13.*
+*Captured 2026-07-09 on Python 3.13.*
 
 | Package | Tested up to |
 | ------- | ------------ |
-| `httpx` | `1.0.dev3`   |
+| `httpx` | `0.28.1`     |
 
 ## `[otel]`
 

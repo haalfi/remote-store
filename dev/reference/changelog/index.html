@@ -13800,6 +13800,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BUG-225: Cap <code>httpx&gt;=0.24.0,&lt;1.0</code> on the <code>graph</code> and <code>httpx</code> extras so <code>pip install remote-store[graph]</code> no longer resolves to httpx's experimental <code>1.0.dev*</code> rewrite (which drops <code>AsyncClient</code>, <code>TransportError</code>, and the rest of the client API the async graph backend is built on) and breaks at import; porting to real httpx 1.0 once it ships stable is tracked as ID-229</li>
 <li>ID-228: Backfill method-level contract docstrings (per-op <code>Raises:</code>, read-after-write/atomicity notes, cost/laziness notes) on the six thin backends — Local, Memory, SFTP, SQLBlob, Azure, and the S3 family — raising them to <code>GraphBackend</code>'s bar and keeping them in agreement with the ID-227 FEATURES.md matrices</li>
 <li>ID-227 (phase 1): Generate per-backend atomicity and retryable-vs-terminal matrices in FEATURES.md and the llms bundle</li>
 <li>ID-227 (phase 2): Generate a per-backend read-after-write consistency matrix in FEATURES.md and the llms bundle — every read/write backend normalises to strong read-after-write, with footnotes for the S3 opt-in listing cache and Graph's async monitor ops</li>
