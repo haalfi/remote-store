@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>remote-store API graph — v0.29.1</title>
+<script src="../_data/graph/d3.v7.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;
+display:flex;height:100vh;height:100dvh;overflow:hidden;-webkit-tap-highlight-color:transparent}
+#sidebar{width:288px;min-width:288px;background:#1e293b;padding:14px;overflow-y:auto;
+border-right:1px solid #334155;display:flex;flex-direction:column;gap:12px}
+#sidebar h1{font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:.05em;text-transform:uppercase}
+#sidebar h2{font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;
+letter-spacing:.08em;margin-bottom:5px}
+.legend-row{display:flex;align-items:center;gap:8px;font-size:11.5px;cursor:pointer;padding:2px 0}
+.legend-row input{accent-color:#7c3aed}
+.dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.dot.ring{box-shadow:0 0 0 2px #fbbf24}
+.dot.dashed{border:1.5px dashed #cbd5e1;background:transparent!important}
+.swatch-sq{width:11px;height:11px;flex-shrink:0;border-radius:2px}
+.line-sample{width:24px;height:3px;flex-shrink:0;border-radius:2px}
+.dim{opacity:.45;font-size:10px}
+#search{width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;
+border-radius:6px;padding:6px 8px;font-size:12px}
+#search::placeholder{color:#475569}
+.cap-list{max-height:148px;overflow-y:auto;padding-right:4px}
+.expand-btns{display:flex;gap:6px;margin-top:6px}
+#detail{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:10px;
+font-size:11px;line-height:1.55;min-height:72px}
+#detail .detail-id{font-weight:700;color:#c4b5fd;word-break:break-all;margin-bottom:3px}
+#detail .detail-row{color:#94a3b8}
+#detail .detail-row span{color:#e2e8f0}
+#detail .placeholder{color:#475569;font-style:italic}
+#detail .links{margin-top:7px;border-top:1px solid #334155;padding-top:6px;display:flex;flex-direction:column;gap:3px}
+#detail .links a{color:#7dd3fc;text-decoration:none;word-break:break-all}
+#detail .links a:hover{text-decoration:underline}
+#detail .xref{color:#c4b5fd;cursor:pointer;text-decoration:underline dotted}
+#detail .detail-btn{margin-top:7px}
+#sidebar [data-ea-publisher]{position:sticky;bottom:0;font-size:10.5px;min-height:0}
+#canvas-wrap{flex:1;position:relative;overflow:hidden}
+svg{width:100%;height:100%;display:block;touch-action:none;-webkit-user-select:none;user-select:none}
+.node circle{stroke-width:1.5px;cursor:pointer;transition:r .12s}
+.node circle:hover{stroke-width:3px}
+.node.abstract circle{stroke-dasharray:4,2}
+.node.store circle{stroke:#fbbf24;stroke-width:2.5px}
+.node.store text.label{font-weight:700;fill:#fde68a}
+.node text{font-size:10px;fill:#cbd5e1;pointer-events:none;text-shadow:0 1px 3px #0f172a}
+.node.selected circle{stroke-width:3px;filter:drop-shadow(0 0 7px currentColor)}
+.link{stroke-opacity:.5;cursor:pointer}
+.link.faded{stroke-opacity:.06}
+.link.selected-edge{stroke-opacity:1}
+.node.faded circle{opacity:.13}
+.node.faded text{opacity:0}
+.sub-badge{font-size:7.5px;fill:#7dd3fc;pointer-events:none}
+.count-badge{font-size:8px;fill:#fcd34d;pointer-events:none;font-weight:700}
+#controls{position:absolute;top:10px;right:10px;display:flex;gap:6px}
+.btn{background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:4px 10px;
+border-radius:5px;cursor:pointer;font-size:11px}
+.btn:hover{background:#334155;color:#e2e8f0}
+#zoom-hint{position:absolute;bottom:8px;right:10px;font-size:10px;color:#475569}
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <div>
+    <h1>remote-store</h1>
+    <div style="font-size:10px;color:#475569;margin-top:2px;">API graph — v0.29.1
+      &nbsp;|&nbsp; 197 nodes &nbsp;|&nbsp; 408 edges
+      &nbsp;|&nbsp; schema 1.4</div>
+  </div>
+  <div><input id="search" type="search" placeholder="Search nodes…" autocomplete="off"></div>
+  <div><h2>Node types</h2><div id="node-legend"></div></div>
+  <div><h2>Class roles</h2><div id="role-legend"></div></div>
+  <div><h2>Edge types</h2><div id="edge-legend"></div></div>
+  <div><h2>Runtime</h2><div id="runtime-legend"></div></div>
+  <div><h2>Capabilities <span class="dim">(none = all)</span></h2><div id="cap-legend" class="cap-list"></div></div>
+  <div><h2>Explore</h2>
+    <label class="legend-row"><input type="checkbox" id="iso-toggle">
+      <span>Isolate selection's neighbourhood</span></label>
+    <div class="expand-btns">
+      <button class="btn" id="btn-expand-all">Expand all</button>
+      <button class="btn" id="btn-collapse-all">Collapse all</button>
+    </div>
+  </div>
+  <div><h2>Selected</h2><div id="detail">
+    <span class="placeholder">Click a node or an edge to inspect it</span></div></div>
+  <div id="ethical-ad-placement"></div>
+</div>
+<div id="canvas-wrap">
+  <svg id="graph" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet"></svg>
+  <div id="controls">
+    <button class="btn" id="btn-reset">Reset zoom</button>
+    <button class="btn" id="btn-reheat">Reheat</button>
+  </div>
+  <div id="zoom-hint">Scroll to zoom &bull; Drag to pan &bull; Double-click a class to expand</div>
+</div>
+<script>
+const GRAPH = {"edges":[{"dst":"mtd:remote_store._backend.Backend.copy","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.delete","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.delete_folder","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.get_file_info","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.get_folder_info","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.glob","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.iter_children","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.list_files","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.list_folders","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.move","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.open_atomic","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.read","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.read_bytes","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.read_seekable","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.write","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._backend.Backend.write_atomic","kind":"contains","src":"cls:remote_store._backend.Backend"},{"dst":"mtd:remote_store._store.Store.child","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.close","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.copy","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.delete","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.delete_folder","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.exists","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.get_file_info","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.get_folder_info","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.glob","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.head","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.is_file","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.is_folder","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.iter_children","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.list_files","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.list_folders","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.move","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.native_path","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.open_atomic","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.ping","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.read","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.read_bytes","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.read_seekable","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.read_text","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.resolve","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.supports","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.to_key","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.unwrap","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.write","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.write_atomic","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store._store.Store.write_text","kind":"contains","src":"cls:remote_store._store.Store"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.copy","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.delete","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.delete_folder","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.get_file_info","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.get_folder_info","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.glob","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.iter_children","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.list_files","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.list_folders","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.move","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.read","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.read_bytes","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.write","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.write_atomic","kind":"contains","src":"cls:remote_store.aio._async_backend.AsyncBackend"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.aclose","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.child","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.copy","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.delete","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.delete_folder","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.exists","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.get_file_info","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.get_folder_info","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.glob","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.head","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.is_file","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.is_folder","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.iter_children","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.list_files","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.list_folders","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.move","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.native_path","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.ping","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.read","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.read_bytes","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.read_text","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.resolve","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.supports","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.to_key","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.unwrap","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.write","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.write_atomic","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.write_text","kind":"contains","src":"cls:remote_store.aio._async_store.AsyncStore"},{"dst":"cls:remote_store._backend.Backend","kind":"contains","src":"pkg:remote_store"},{"dst":"cls:remote_store._store.Store","kind":"contains","src":"pkg:remote_store"},{"dst":"cls:remote_store.backends._azure.AzureBackend","kind":"contains","src":"pkg:remote_store"},{"dst":"cls:remote_store.backends._http.ReadOnlyHttpBackend","kind":"contains","src":"pkg:remote_store"},{"dst":"cls:remote_store.backends._local.LocalBackend","kind":"contains","src":"pkg:remote_store"},{"dst":"cls:remote_store.backends._memory.MemoryBackend","kind":"contains","src":"pkg:remote_store"},{"dst":"cls:remote_store.backends._s3.S3Backend","kind":"contains","src":"pkg:remote_store"},{"dst":"cls:remote_store.backends._s3_boto3.S3Boto3Backend","kind":"contains","src":"pkg:remote_store"},{"dst":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend","kind":"contains","src":"pkg:remote_store"},{"dst":"cls:remote_store.backends._sftp.SFTPBackend","kind":"contains","src":"pkg:remote_store"},{"dst":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend","kind":"contains","src":"pkg:remote_store"},{"dst":"cls:remote_store.backends._sqlalchemy.SQLQueryBackend","kind":"contains","src":"pkg:remote_store"},{"dst":"cls:remote_store.aio._async_backend.AsyncBackend","kind":"contains","src":"pkg:remote_store.aio"},{"dst":"cls:remote_store.aio._async_store.AsyncStore","kind":"contains","src":"pkg:remote_store.aio"},{"dst":"cls:remote_store.aio._sync_adapter.SyncBackendAdapter","kind":"contains","src":"pkg:remote_store.aio"},{"dst":"cls:remote_store.aio.backends._azure.AsyncAzureBackend","kind":"contains","src":"pkg:remote_store.aio"},{"dst":"cls:remote_store.aio.backends._graph.backend.GraphBackend","kind":"contains","src":"pkg:remote_store.aio"},{"dst":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend","kind":"contains","src":"pkg:remote_store.aio"},{"dst":"cap:ATOMIC_WRITE","kind":"declares","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"dst":"cap:COPY","kind":"declares","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"dst":"cap:DELETE","kind":"declares","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"dst":"cap:GLOB","kind":"declares","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"dst":"cap:LAZY_READ","kind":"declares","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"dst":"cap:LIST","kind":"declares","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"dst":"cap:METADATA","kind":"declares","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"dst":"cap:MOVE","kind":"declares","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"dst":"cap:READ","kind":"declares","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"dst":"cap:USER_METADATA","kind":"declares","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"dst":"cap:WRITE","kind":"declares","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"dst":"cap:WRITE_RESULT_NATIVE","kind":"declares","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"dst":"cap:ATOMIC_WRITE","kind":"declares","src":"cls:remote_store.aio.backends._graph.backend.GraphBackend"},{"dst":"cap:COPY","kind":"declares","src":"cls:remote_store.aio.backends._graph.backend.GraphBackend"},{"dst":"cap:DELETE","kind":"declares","src":"cls:remote_store.aio.backends._graph.backend.GraphBackend"},{"dst":"cap:LAZY_READ","kind":"declares","src":"cls:remote_store.aio.backends._graph.backend.GraphBackend"},{"dst":"cap:LIST","kind":"declares","src":"cls:remote_store.aio.backends._graph.backend.GraphBackend"},{"dst":"cap:METADATA","kind":"declares","src":"cls:remote_store.aio.backends._graph.backend.GraphBackend"},{"dst":"cap:MOVE","kind":"declares","src":"cls:remote_store.aio.backends._graph.backend.GraphBackend"},{"dst":"cap:READ","kind":"declares","src":"cls:remote_store.aio.backends._graph.backend.GraphBackend"},{"dst":"cap:WRITE","kind":"declares","src":"cls:remote_store.aio.backends._graph.backend.GraphBackend"},{"dst":"cap:WRITE_RESULT_NATIVE","kind":"declares","src":"cls:remote_store.aio.backends._graph.backend.GraphBackend"},{"dst":"cap:ATOMIC_MOVE","kind":"declares","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:ATOMIC_WRITE","kind":"declares","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:COPY","kind":"declares","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:DELETE","kind":"declares","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:LAZY_READ","kind":"declares","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:LIST","kind":"declares","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:METADATA","kind":"declares","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:MOVE","kind":"declares","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:READ","kind":"declares","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:SEEKABLE_READ","kind":"declares","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:USER_METADATA","kind":"declares","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:WRITE","kind":"declares","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:WRITE_RESULT_NATIVE","kind":"declares","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:ATOMIC_WRITE","kind":"declares","src":"cls:remote_store.backends._azure.AzureBackend"},{"dst":"cap:COPY","kind":"declares","src":"cls:remote_store.backends._azure.AzureBackend"},{"dst":"cap:DELETE","kind":"declares","src":"cls:remote_store.backends._azure.AzureBackend"},{"dst":"cap:GLOB","kind":"declares","src":"cls:remote_store.backends._azure.AzureBackend"},{"dst":"cap:LAZY_READ","kind":"declares","src":"cls:remote_store.backends._azure.AzureBackend"},{"dst":"cap:LIST","kind":"declares","src":"cls:remote_store.backends._azure.AzureBackend"},{"dst":"cap:METADATA","kind":"declares","src":"cls:remote_store.backends._azure.AzureBackend"},{"dst":"cap:MOVE","kind":"declares","src":"cls:remote_store.backends._azure.AzureBackend"},{"dst":"cap:READ","kind":"declares","src":"cls:remote_store.backends._azure.AzureBackend"},{"dst":"cap:USER_METADATA","kind":"declares","src":"cls:remote_store.backends._azure.AzureBackend"},{"dst":"cap:WRITE","kind":"declares","src":"cls:remote_store.backends._azure.AzureBackend"},{"dst":"cap:WRITE_RESULT_NATIVE","kind":"declares","src":"cls:remote_store.backends._azure.AzureBackend"},{"dst":"cap:LAZY_READ","kind":"declares","src":"cls:remote_store.backends._http.ReadOnlyHttpBackend"},{"dst":"cap:METADATA","kind":"declares","src":"cls:remote_store.backends._http.ReadOnlyHttpBackend"},{"dst":"cap:READ","kind":"declares","src":"cls:remote_store.backends._http.ReadOnlyHttpBackend"},{"dst":"cap:ATOMIC_MOVE","kind":"declares","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cap:ATOMIC_WRITE","kind":"declares","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cap:COPY","kind":"declares","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cap:DELETE","kind":"declares","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cap:GLOB","kind":"declares","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cap:LAZY_READ","kind":"declares","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cap:LIST","kind":"declares","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cap:METADATA","kind":"declares","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cap:MOVE","kind":"declares","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cap:READ","kind":"declares","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cap:SEEKABLE_READ","kind":"declares","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cap:WRITE","kind":"declares","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cap:WRITE_RESULT_NATIVE","kind":"declares","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cap:ATOMIC_MOVE","kind":"declares","src":"cls:remote_store.backends._memory.MemoryBackend"},{"dst":"cap:ATOMIC_WRITE","kind":"declares","src":"cls:remote_store.backends._memory.MemoryBackend"},{"dst":"cap:COPY","kind":"declares","src":"cls:remote_store.backends._memory.MemoryBackend"},{"dst":"cap:DELETE","kind":"declares","src":"cls:remote_store.backends._memory.MemoryBackend"},{"dst":"cap:LIST","kind":"declares","src":"cls:remote_store.backends._memory.MemoryBackend"},{"dst":"cap:METADATA","kind":"declares","src":"cls:remote_store.backends._memory.MemoryBackend"},{"dst":"cap:MOVE","kind":"declares","src":"cls:remote_store.backends._memory.MemoryBackend"},{"dst":"cap:READ","kind":"declares","src":"cls:remote_store.backends._memory.MemoryBackend"},{"dst":"cap:SEEKABLE_READ","kind":"declares","src":"cls:remote_store.backends._memory.MemoryBackend"},{"dst":"cap:USER_METADATA","kind":"declares","src":"cls:remote_store.backends._memory.MemoryBackend"},{"dst":"cap:WRITE","kind":"declares","src":"cls:remote_store.backends._memory.MemoryBackend"},{"dst":"cap:WRITE_RESULT_NATIVE","kind":"declares","src":"cls:remote_store.backends._memory.MemoryBackend"},{"dst":"cap:ATOMIC_WRITE","kind":"declares","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cap:COPY","kind":"declares","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cap:DELETE","kind":"declares","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cap:GLOB","kind":"declares","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cap:LAZY_READ","kind":"declares","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cap:LIST","kind":"declares","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cap:METADATA","kind":"declares","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cap:MOVE","kind":"declares","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cap:READ","kind":"declares","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cap:SEEKABLE_READ","kind":"declares","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cap:USER_METADATA","kind":"declares","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cap:WRITE","kind":"declares","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cap:WRITE_RESULT_NATIVE","kind":"declares","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cap:ATOMIC_WRITE","kind":"declares","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cap:COPY","kind":"declares","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cap:DELETE","kind":"declares","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cap:GLOB","kind":"declares","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cap:LAZY_READ","kind":"declares","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cap:LIST","kind":"declares","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cap:METADATA","kind":"declares","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cap:MOVE","kind":"declares","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cap:READ","kind":"declares","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cap:SEEKABLE_READ","kind":"declares","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cap:USER_METADATA","kind":"declares","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cap:WRITE","kind":"declares","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cap:WRITE_RESULT_NATIVE","kind":"declares","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cap:ATOMIC_WRITE","kind":"declares","src":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"},{"dst":"cap:COPY","kind":"declares","src":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"},{"dst":"cap:DELETE","kind":"declares","src":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"},{"dst":"cap:GLOB","kind":"declares","src":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"},{"dst":"cap:LAZY_READ","kind":"declares","src":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"},{"dst":"cap:LIST","kind":"declares","src":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"},{"dst":"cap:METADATA","kind":"declares","src":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"},{"dst":"cap:MOVE","kind":"declares","src":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"},{"dst":"cap:READ","kind":"declares","src":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"},{"dst":"cap:SEEKABLE_READ","kind":"declares","src":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"},{"dst":"cap:WRITE","kind":"declares","src":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"},{"dst":"cap:WRITE_RESULT_NATIVE","kind":"declares","src":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"},{"dst":"cap:ATOMIC_WRITE","kind":"declares","src":"cls:remote_store.backends._sftp.SFTPBackend"},{"dst":"cap:COPY","kind":"declares","src":"cls:remote_store.backends._sftp.SFTPBackend"},{"dst":"cap:DELETE","kind":"declares","src":"cls:remote_store.backends._sftp.SFTPBackend"},{"dst":"cap:LAZY_READ","kind":"declares","src":"cls:remote_store.backends._sftp.SFTPBackend"},{"dst":"cap:LIST","kind":"declares","src":"cls:remote_store.backends._sftp.SFTPBackend"},{"dst":"cap:METADATA","kind":"declares","src":"cls:remote_store.backends._sftp.SFTPBackend"},{"dst":"cap:MOVE","kind":"declares","src":"cls:remote_store.backends._sftp.SFTPBackend"},{"dst":"cap:READ","kind":"declares","src":"cls:remote_store.backends._sftp.SFTPBackend"},{"dst":"cap:SEEKABLE_READ","kind":"declares","src":"cls:remote_store.backends._sftp.SFTPBackend"},{"dst":"cap:WRITE","kind":"declares","src":"cls:remote_store.backends._sftp.SFTPBackend"},{"dst":"cap:WRITE_RESULT_NATIVE","kind":"declares","src":"cls:remote_store.backends._sftp.SFTPBackend"},{"dst":"cap:ATOMIC_MOVE","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cap:ATOMIC_WRITE","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cap:COPY","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cap:DELETE","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cap:GLOB","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cap:LIST","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cap:METADATA","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cap:MOVE","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cap:READ","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cap:SEEKABLE_READ","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cap:USER_METADATA","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cap:WRITE","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cap:WRITE_RESULT_NATIVE","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cap:GLOB","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLQueryBackend"},{"dst":"cap:LIST","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLQueryBackend"},{"dst":"cap:METADATA","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLQueryBackend"},{"dst":"cap:READ","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLQueryBackend"},{"dst":"cap:SEEKABLE_READ","kind":"declares","src":"cls:remote_store.backends._sqlalchemy.SQLQueryBackend"},{"dst":"cls:remote_store.aio.backends._azure.AsyncAzureBackend","kind":"enables","src":"xtr:azure"},{"dst":"cls:remote_store.backends._azure.AzureBackend","kind":"enables","src":"xtr:azure"},{"dst":"cls:remote_store.aio.backends._graph.backend.GraphBackend","kind":"enables","src":"xtr:graph"},{"dst":"cls:remote_store.backends._s3.S3Backend","kind":"enables","src":"xtr:s3"},{"dst":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend","kind":"enables","src":"xtr:s3-pyarrow"},{"dst":"cls:remote_store.backends._sftp.SFTPBackend","kind":"enables","src":"xtr:sftp"},{"dst":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend","kind":"enables","src":"xtr:sql"},{"dst":"cls:remote_store.backends._sqlalchemy.SQLQueryBackend","kind":"enables","src":"xtr:sql-query"},{"dst":"mtd:remote_store._backend.Backend.copy","kind":"gates","src":"req:remote_store._backend.Backend.copy.gate"},{"dst":"mtd:remote_store._backend.Backend.delete","kind":"gates","src":"req:remote_store._backend.Backend.delete.gate"},{"dst":"mtd:remote_store._backend.Backend.delete_folder","kind":"gates","src":"req:remote_store._backend.Backend.delete_folder.gate"},{"dst":"mtd:remote_store._backend.Backend.get_file_info","kind":"gates","src":"req:remote_store._backend.Backend.get_file_info.gate"},{"dst":"mtd:remote_store._backend.Backend.get_folder_info","kind":"gates","src":"req:remote_store._backend.Backend.get_folder_info.gate"},{"dst":"mtd:remote_store._backend.Backend.glob","kind":"gates","src":"req:remote_store._backend.Backend.glob.gate"},{"dst":"mtd:remote_store._backend.Backend.iter_children","kind":"gates","src":"req:remote_store._backend.Backend.iter_children.gate"},{"dst":"mtd:remote_store._backend.Backend.list_files","kind":"gates","src":"req:remote_store._backend.Backend.list_files.gate"},{"dst":"mtd:remote_store._backend.Backend.list_folders","kind":"gates","src":"req:remote_store._backend.Backend.list_folders.gate"},{"dst":"mtd:remote_store._backend.Backend.move","kind":"gates","src":"req:remote_store._backend.Backend.move.gate"},{"dst":"mtd:remote_store._backend.Backend.open_atomic","kind":"gates","src":"req:remote_store._backend.Backend.open_atomic.gate"},{"dst":"mtd:remote_store._backend.Backend.read","kind":"gates","src":"req:remote_store._backend.Backend.read.gate"},{"dst":"mtd:remote_store._backend.Backend.read_bytes","kind":"gates","src":"req:remote_store._backend.Backend.read_bytes.gate"},{"dst":"mtd:remote_store._backend.Backend.read_seekable","kind":"gates","src":"req:remote_store._backend.Backend.read_seekable.gate"},{"dst":"mtd:remote_store._backend.Backend.write","kind":"gates","src":"req:remote_store._backend.Backend.write.gate"},{"dst":"mtd:remote_store._backend.Backend.write_atomic","kind":"gates","src":"req:remote_store._backend.Backend.write_atomic.gate"},{"dst":"mtd:remote_store._store.Store.copy","kind":"gates","src":"req:remote_store._store.Store.copy.gate"},{"dst":"mtd:remote_store._store.Store.delete","kind":"gates","src":"req:remote_store._store.Store.delete.gate"},{"dst":"mtd:remote_store._store.Store.delete_folder","kind":"gates","src":"req:remote_store._store.Store.delete_folder.gate"},{"dst":"mtd:remote_store._store.Store.get_file_info","kind":"gates","src":"req:remote_store._store.Store.get_file_info.gate"},{"dst":"mtd:remote_store._store.Store.get_folder_info","kind":"gates","src":"req:remote_store._store.Store.get_folder_info.gate"},{"dst":"mtd:remote_store._store.Store.get_folder_info","kind":"gates","src":"req:remote_store._store.Store.get_folder_info.gate_depth"},{"dst":"mtd:remote_store._store.Store.glob","kind":"gates","src":"req:remote_store._store.Store.glob.gate"},{"dst":"mtd:remote_store._store.Store.head","kind":"gates","src":"req:remote_store._store.Store.head.gate"},{"dst":"mtd:remote_store._store.Store.iter_children","kind":"gates","src":"req:remote_store._store.Store.iter_children.gate"},{"dst":"mtd:remote_store._store.Store.list_files","kind":"gates","src":"req:remote_store._store.Store.list_files.gate"},{"dst":"mtd:remote_store._store.Store.list_folders","kind":"gates","src":"req:remote_store._store.Store.list_folders.gate"},{"dst":"mtd:remote_store._store.Store.move","kind":"gates","src":"req:remote_store._store.Store.move.gate"},{"dst":"mtd:remote_store._store.Store.open_atomic","kind":"gates","src":"req:remote_store._store.Store.open_atomic.gate"},{"dst":"mtd:remote_store._store.Store.read","kind":"gates","src":"req:remote_store._store.Store.read.gate"},{"dst":"mtd:remote_store._store.Store.read_bytes","kind":"gates","src":"req:remote_store._store.Store.read_bytes.gate"},{"dst":"mtd:remote_store._store.Store.read_seekable","kind":"gates","src":"req:remote_store._store.Store.read_seekable.gate"},{"dst":"mtd:remote_store._store.Store.read_text","kind":"gates","src":"req:remote_store._store.Store.read_text.gate"},{"dst":"mtd:remote_store._store.Store.write","kind":"gates","src":"req:remote_store._store.Store.write.gate"},{"dst":"mtd:remote_store._store.Store.write_atomic","kind":"gates","src":"req:remote_store._store.Store.write_atomic.gate"},{"dst":"mtd:remote_store._store.Store.write_text","kind":"gates","src":"req:remote_store._store.Store.write_text.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.copy","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.copy.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.delete","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.delete.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.delete_folder","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.delete_folder.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.get_file_info","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.get_file_info.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.get_folder_info","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.get_folder_info.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.glob","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.glob.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.iter_children","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.iter_children.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.list_files","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.list_files.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.list_folders","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.list_folders.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.move","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.move.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.read","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.read.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.read_bytes","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.read_bytes.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.write","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.write.gate"},{"dst":"mtd:remote_store.aio._async_backend.AsyncBackend.write_atomic","kind":"gates","src":"req:remote_store.aio._async_backend.AsyncBackend.write_atomic.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.copy","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.copy.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.delete","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.delete.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.delete_folder","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.delete_folder.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.get_file_info","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.get_file_info.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.get_folder_info","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.get_folder_info","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate_depth"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.glob","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.glob.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.head","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.head.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.iter_children","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.iter_children.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.list_files","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.list_files.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.list_folders","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.list_folders.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.move","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.move.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.read","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.read.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.read_bytes","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.read_bytes.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.read_text","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.read_text.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.write","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.write.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.write_atomic","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.write_atomic.gate"},{"dst":"mtd:remote_store.aio._async_store.AsyncStore.write_text","kind":"gates","src":"req:remote_store.aio._async_store.AsyncStore.write_text.gate"},{"dst":"cls:remote_store.aio._async_backend.AsyncBackend","kind":"inherits","src":"cls:remote_store.aio._sync_adapter.SyncBackendAdapter"},{"dst":"cls:remote_store.aio._async_backend.AsyncBackend","kind":"inherits","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"dst":"cls:remote_store.aio._async_backend.AsyncBackend","kind":"inherits","src":"cls:remote_store.aio.backends._graph.backend.GraphBackend"},{"dst":"cls:remote_store.aio._async_backend.AsyncBackend","kind":"inherits","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cls:remote_store._backend.Backend","kind":"inherits","src":"cls:remote_store.backends._azure.AzureBackend"},{"dst":"cls:remote_store._backend.Backend","kind":"inherits","src":"cls:remote_store.backends._http.ReadOnlyHttpBackend"},{"dst":"cls:remote_store._backend.Backend","kind":"inherits","src":"cls:remote_store.backends._local.LocalBackend"},{"dst":"cls:remote_store._backend.Backend","kind":"inherits","src":"cls:remote_store.backends._memory.MemoryBackend"},{"dst":"cls:remote_store._backend.Backend","kind":"inherits","src":"cls:remote_store.backends._s3.S3Backend"},{"dst":"cls:remote_store._backend.Backend","kind":"inherits","src":"cls:remote_store.backends._s3_boto3.S3Boto3Backend"},{"dst":"cls:remote_store._backend.Backend","kind":"inherits","src":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend"},{"dst":"cls:remote_store._backend.Backend","kind":"inherits","src":"cls:remote_store.backends._sftp.SFTPBackend"},{"dst":"cls:remote_store._backend.Backend","kind":"inherits","src":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend"},{"dst":"cls:remote_store._backend.Backend","kind":"inherits","src":"cls:remote_store.backends._sqlalchemy.SQLQueryBackend"},{"capability_delta":{"async_only":[],"sync_only":[]},"dst":"cls:remote_store.backends._azure.AzureBackend","kind":"mirrors","src":"cls:remote_store.aio.backends._azure.AsyncAzureBackend"},{"capability_delta":{"async_only":["LAZY_READ"],"sync_only":[]},"dst":"cls:remote_store.backends._memory.MemoryBackend","kind":"mirrors","src":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend"},{"dst":"cap:COPY","index":0,"kind":"of","src":"req:remote_store._backend.Backend.copy.gate"},{"dst":"cap:DELETE","index":0,"kind":"of","src":"req:remote_store._backend.Backend.delete.gate"},{"dst":"cap:DELETE","index":0,"kind":"of","src":"req:remote_store._backend.Backend.delete_folder.gate"},{"dst":"cap:METADATA","index":0,"kind":"of","src":"req:remote_store._backend.Backend.get_file_info.gate"},{"dst":"cap:METADATA","index":0,"kind":"of","src":"req:remote_store._backend.Backend.get_folder_info.gate"},{"dst":"cap:GLOB","index":0,"kind":"of","src":"req:remote_store._backend.Backend.glob.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store._backend.Backend.iter_children.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store._backend.Backend.list_files.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store._backend.Backend.list_folders.gate"},{"dst":"cap:MOVE","index":0,"kind":"of","src":"req:remote_store._backend.Backend.move.gate"},{"dst":"cap:ATOMIC_WRITE","index":0,"kind":"of","src":"req:remote_store._backend.Backend.open_atomic.gate"},{"dst":"cap:READ","index":0,"kind":"of","src":"req:remote_store._backend.Backend.read.gate"},{"dst":"cap:READ","index":0,"kind":"of","src":"req:remote_store._backend.Backend.read_bytes.gate"},{"dst":"cap:READ","index":0,"kind":"of","src":"req:remote_store._backend.Backend.read_seekable.gate"},{"dst":"cap:WRITE","index":0,"kind":"of","src":"req:remote_store._backend.Backend.write.gate"},{"dst":"cap:ATOMIC_WRITE","index":0,"kind":"of","src":"req:remote_store._backend.Backend.write_atomic.gate"},{"dst":"cap:COPY","index":0,"kind":"of","src":"req:remote_store._store.Store.copy.gate"},{"dst":"cap:DELETE","index":0,"kind":"of","src":"req:remote_store._store.Store.delete.gate"},{"dst":"cap:DELETE","index":0,"kind":"of","src":"req:remote_store._store.Store.delete_folder.gate"},{"dst":"cap:METADATA","index":0,"kind":"of","src":"req:remote_store._store.Store.get_file_info.gate"},{"dst":"cap:METADATA","index":0,"kind":"of","src":"req:remote_store._store.Store.get_folder_info.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store._store.Store.get_folder_info.gate_depth"},{"dst":"cap:GLOB","index":0,"kind":"of","src":"req:remote_store._store.Store.glob.gate"},{"dst":"cap:METADATA","index":0,"kind":"of","src":"req:remote_store._store.Store.head.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store._store.Store.iter_children.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store._store.Store.list_files.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store._store.Store.list_folders.gate"},{"dst":"cap:MOVE","index":0,"kind":"of","src":"req:remote_store._store.Store.move.gate"},{"dst":"cap:ATOMIC_WRITE","index":0,"kind":"of","src":"req:remote_store._store.Store.open_atomic.gate"},{"dst":"cap:READ","index":0,"kind":"of","src":"req:remote_store._store.Store.read.gate"},{"dst":"cap:READ","index":0,"kind":"of","src":"req:remote_store._store.Store.read_bytes.gate"},{"dst":"cap:READ","index":0,"kind":"of","src":"req:remote_store._store.Store.read_seekable.gate"},{"dst":"cap:READ","index":0,"kind":"of","src":"req:remote_store._store.Store.read_text.gate"},{"dst":"cap:WRITE","index":0,"kind":"of","src":"req:remote_store._store.Store.write.gate"},{"dst":"cap:ATOMIC_WRITE","index":0,"kind":"of","src":"req:remote_store._store.Store.write_atomic.gate"},{"dst":"cap:WRITE","index":0,"kind":"of","src":"req:remote_store._store.Store.write_text.gate"},{"dst":"cap:COPY","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.copy.gate"},{"dst":"cap:DELETE","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.delete.gate"},{"dst":"cap:DELETE","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.delete_folder.gate"},{"dst":"cap:METADATA","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.get_file_info.gate"},{"dst":"cap:METADATA","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.get_folder_info.gate"},{"dst":"cap:GLOB","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.glob.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.iter_children.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.list_files.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.list_folders.gate"},{"dst":"cap:MOVE","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.move.gate"},{"dst":"cap:READ","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.read.gate"},{"dst":"cap:READ","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.read_bytes.gate"},{"dst":"cap:WRITE","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.write.gate"},{"dst":"cap:ATOMIC_WRITE","index":0,"kind":"of","src":"req:remote_store.aio._async_backend.AsyncBackend.write_atomic.gate"},{"dst":"cap:COPY","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.copy.gate"},{"dst":"cap:DELETE","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.delete.gate"},{"dst":"cap:DELETE","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.delete_folder.gate"},{"dst":"cap:METADATA","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.get_file_info.gate"},{"dst":"cap:METADATA","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate_depth"},{"dst":"cap:GLOB","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.glob.gate"},{"dst":"cap:METADATA","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.head.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.iter_children.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.list_files.gate"},{"dst":"cap:LIST","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.list_folders.gate"},{"dst":"cap:MOVE","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.move.gate"},{"dst":"cap:READ","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.read.gate"},{"dst":"cap:READ","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.read_bytes.gate"},{"dst":"cap:READ","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.read_text.gate"},{"dst":"cap:WRITE","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.write.gate"},{"dst":"cap:ATOMIC_WRITE","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.write_atomic.gate"},{"dst":"cap:WRITE","index":0,"kind":"of","src":"req:remote_store.aio._async_store.AsyncStore.write_text.gate"}],"nodes":[{"id":"cap:ATOMIC_MOVE","kind":"capability","value":"atomic_move"},{"id":"cap:ATOMIC_WRITE","kind":"capability","value":"atomic_write"},{"id":"cap:COPY","kind":"capability","value":"copy"},{"id":"cap:DELETE","kind":"capability","value":"delete"},{"id":"cap:GLOB","kind":"capability","value":"glob"},{"id":"cap:LAZY_READ","kind":"capability","value":"lazy_read"},{"id":"cap:LIST","kind":"capability","value":"list"},{"id":"cap:METADATA","kind":"capability","value":"metadata"},{"id":"cap:MOVE","kind":"capability","value":"move"},{"id":"cap:READ","kind":"capability","value":"read"},{"id":"cap:SEEKABLE_READ","kind":"capability","value":"seekable_read"},{"id":"cap:USER_METADATA","kind":"capability","value":"user_metadata"},{"id":"cap:WRITE","kind":"capability","value":"write"},{"id":"cap:WRITE_RESULT_NATIVE","kind":"capability","value":"write_result_native"},{"doc":"docs-src/reference/api/backend.md","file":"src/remote_store/_backend.py","id":"cls:remote_store._backend.Backend","kind":"class","line":47,"role":"abc","runtime":"sync","spec":"sdd/specs/003-backend-adapter-contract.md","summary":"Abstract base class for all storage backends."},{"doc":"docs-src/reference/api/store.md","file":"src/remote_store/_store.py","id":"cls:remote_store._store.Store","kind":"class","line":55,"role":"facade","runtime":"sync","spec":"sdd/specs/001-store-api.md","summary":"A logical remote folder scoped to a root path."},{"doc":"docs-src/reference/api/aio/backend.md","file":"src/remote_store/aio/_async_backend.py","id":"cls:remote_store.aio._async_backend.AsyncBackend","kind":"class","line":22,"role":"abc","runtime":"async","spec":"sdd/specs/029-async-store-backend-api.md","summary":"Abstract base class for all async storage backends."},{"doc":"docs-src/reference/api/aio/store.md","file":"src/remote_store/aio/_async_store.py","id":"cls:remote_store.aio._async_store.AsyncStore","kind":"class","line":56,"role":"facade","runtime":"async","spec":"sdd/specs/029-async-store-backend-api.md","summary":"An async logical remote folder scoped to a root path."},{"doc":"docs-src/reference/api/aio/adapters.md","file":"src/remote_store/aio/_sync_adapter.py","id":"cls:remote_store.aio._sync_adapter.SyncBackendAdapter","kind":"class","line":46,"role":"facade","runtime":"async","spec":"sdd/specs/029-async-store-backend-api.md","summary":"Wraps a synchronous ``Backend`` as an ``AsyncBackend``."},{"doc":"docs-src/reference/api/aio/backends/azure.md","file":"src/remote_store/aio/backends/_azure.py","id":"cls:remote_store.aio.backends._azure.AsyncAzureBackend","kind":"class","line":56,"role":"backend","runtime":"async","spec":"sdd/specs/012-azure-backend.md","summary":"Async Azure Storage backend."},{"doc":"docs-src/reference/api/aio/backends/graph.md","file":"src/remote_store/aio/backends/_graph/backend.py","id":"cls:remote_store.aio.backends._graph.backend.GraphBackend","kind":"class","line":161,"role":"backend","runtime":"async","spec":"sdd/specs/044-graph-backend.md","summary":"Async Microsoft Graph backend over OneDrive / SharePoint / Teams files."},{"doc":"docs-src/reference/api/aio/backends/memory.md","file":"src/remote_store/aio/backends/_memory.py","id":"cls:remote_store.aio.backends._memory.AsyncMemoryBackend","kind":"class","line":32,"role":"backend","runtime":"async","spec":"sdd/specs/013-memory-backend.md","summary":"In-memory async backend using a tree-indexed data structure."},{"doc":"docs-src/reference/api/backends/azure.md","file":"src/remote_store/backends/_azure.py","id":"cls:remote_store.backends._azure.AzureBackend","kind":"class","line":176,"role":"backend","runtime":"sync","spec":"sdd/specs/012-azure-backend.md","summary":"Azure Storage backend."},{"doc":"docs-src/reference/api/backends/http.md","file":"src/remote_store/backends/_http.py","id":"cls:remote_store.backends._http.ReadOnlyHttpBackend","kind":"class","line":217,"role":"backend","runtime":"sync","spec":"sdd/specs/032-http-backend.md","summary":"Read-only backend for HTTP/HTTPS URLs."},{"doc":"docs-src/reference/api/backends/local.md","file":"src/remote_store/backends/_local.py","id":"cls:remote_store.backends._local.LocalBackend","kind":"class","line":31,"role":"backend","runtime":"sync","spec":"sdd/specs/003-backend-adapter-contract.md","summary":"Local filesystem backend using only the Python standard library."},{"doc":"docs-src/reference/api/backends/memory.md","file":"src/remote_store/backends/_memory.py","id":"cls:remote_store.backends._memory.MemoryBackend","kind":"class","line":31,"role":"backend","runtime":"sync","spec":"sdd/specs/013-memory-backend.md","summary":"In-memory backend using a tree-indexed data structure."},{"doc":"docs-src/reference/api/backends/s3.md","file":"src/remote_store/backends/_s3.py","id":"cls:remote_store.backends._s3.S3Backend","kind":"class","line":40,"role":"backend","runtime":"sync","spec":"sdd/specs/008-s3-backend.md","summary":"S3-compatible object storage backend using s3fs."},{"file":"src/remote_store/backends/_s3_boto3.py","id":"cls:remote_store.backends._s3_boto3.S3Boto3Backend","kind":"class","line":197,"role":"backend","runtime":"sync","summary":"S3-compatible backend using boto3 directly (no s3fs / pyarrow)."},{"doc":"docs-src/reference/api/backends/s3-pyarrow.md","file":"src/remote_store/backends/_s3_pyarrow.py","id":"cls:remote_store.backends._s3_pyarrow.S3PyArrowBackend","kind":"class","line":111,"role":"backend","runtime":"sync","spec":"sdd/specs/011-s3-pyarrow-backend.md","summary":"Hybrid S3 backend: PyArrow for reads/writes/copies, s3fs for listing/metadata."},{"doc":"docs-src/reference/api/backends/sftp.md","file":"src/remote_store/backends/_sftp.py","id":"cls:remote_store.backends._sftp.SFTPBackend","kind":"class","line":534,"role":"backend","runtime":"sync","spec":"sdd/specs/009-sftp-backend.md","summary":"SFTP backend using pure paramiko."},{"doc":"docs-src/reference/api/backends/sql-blob.md","file":"src/remote_store/backends/_sqlalchemy.py","id":"cls:remote_store.backends._sqlalchemy.SQLBlobBackend","kind":"class","line":218,"role":"backend","runtime":"sync","spec":"sdd/specs/040-sql-blob-backend.md","summary":"SQL key-value blob store implementing the full Backend contract."},{"doc":"docs-src/reference/api/backends/sql-query.md","file":"src/remote_store/backends/_sqlalchemy.py","id":"cls:remote_store.backends._sqlalchemy.SQLQueryBackend","kind":"class","line":1176,"role":"backend","runtime":"sync","spec":"sdd/specs/041-sql-query-backend.md","summary":"Read-only SQL query materializer implementing a subset of the Backend contract."},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.copy","is_abstract":true,"is_async":false,"kind":"method","line":383,"summary":"copy"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.delete","is_abstract":true,"is_async":false,"kind":"method","line":272,"summary":"delete"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.delete_folder","is_abstract":true,"is_async":false,"kind":"method","line":286,"summary":"delete_folder"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.get_file_info","is_abstract":true,"is_async":false,"kind":"method","line":335,"summary":"get_file_info"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.get_folder_info","is_abstract":true,"is_async":false,"kind":"method","line":350,"summary":"get_folder_info"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.glob","is_abstract":false,"is_async":false,"kind":"method","line":418,"summary":"glob"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.iter_children","is_abstract":false,"is_async":false,"kind":"method","line":401,"summary":"iter_children"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.list_files","is_abstract":true,"is_async":false,"kind":"method","line":301,"summary":"list_files"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.list_folders","is_abstract":true,"is_async":false,"kind":"method","line":324,"summary":"list_folders"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.move","is_abstract":true,"is_async":false,"kind":"method","line":365,"summary":"move"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.open_atomic","is_abstract":true,"is_async":false,"kind":"method","line":254,"summary":"open_atomic"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.read","is_abstract":true,"is_async":false,"kind":"method","line":120,"summary":"read"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.read_bytes","is_abstract":true,"is_async":false,"kind":"method","line":135,"summary":"read_bytes"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.read_seekable","is_abstract":false,"is_async":false,"kind":"method","line":150,"summary":"read_seekable"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.write","is_abstract":true,"is_async":false,"kind":"method","line":194,"summary":"write"},{"file":"src/remote_store/_backend.py","id":"mtd:remote_store._backend.Backend.write_atomic","is_abstract":true,"is_async":false,"kind":"method","line":227,"summary":"write_atomic"},{"file":"src/remote_store/_store.py","gated":false,"id":"mtd:remote_store._store.Store.child","is_abstract":false,"is_async":false,"kind":"method","line":836,"summary":"child"},{"file":"src/remote_store/_store.py","gated":false,"id":"mtd:remote_store._store.Store.close","is_abstract":false,"is_async":false,"kind":"method","line":828,"summary":"close"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.copy","is_abstract":false,"is_async":false,"kind":"method","line":617,"summary":"copy"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.delete","is_abstract":false,"is_async":false,"kind":"method","line":357,"summary":"delete"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.delete_folder","is_abstract":false,"is_async":false,"kind":"method","line":379,"summary":"delete_folder"},{"file":"src/remote_store/_store.py","gated":false,"id":"mtd:remote_store._store.Store.exists","is_abstract":false,"is_async":false,"kind":"method","line":655,"summary":"exists"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.get_file_info","is_abstract":false,"is_async":false,"kind":"method","line":690,"summary":"get_file_info"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.get_folder_info","is_abstract":false,"is_async":false,"kind":"method","line":709,"summary":"get_folder_info"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.glob","is_abstract":false,"is_async":false,"kind":"method","line":559,"summary":"glob"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.head","is_abstract":false,"is_async":false,"kind":"method","line":776,"summary":"head"},{"file":"src/remote_store/_store.py","gated":false,"id":"mtd:remote_store._store.Store.is_file","is_abstract":false,"is_async":false,"kind":"method","line":668,"summary":"is_file"},{"file":"src/remote_store/_store.py","gated":false,"id":"mtd:remote_store._store.Store.is_folder","is_abstract":false,"is_async":false,"kind":"method","line":679,"summary":"is_folder"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.iter_children","is_abstract":false,"is_async":false,"kind":"method","line":537,"summary":"iter_children"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.list_files","is_abstract":false,"is_async":false,"kind":"method","line":417,"summary":"list_files"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.list_folders","is_abstract":false,"is_async":false,"kind":"method","line":481,"summary":"list_folders"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.move","is_abstract":false,"is_async":false,"kind":"method","line":583,"summary":"move"},{"file":"src/remote_store/_store.py","gated":false,"id":"mtd:remote_store._store.Store.native_path","is_abstract":false,"is_async":false,"kind":"method","line":903,"summary":"native_path"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.open_atomic","is_abstract":false,"is_async":false,"kind":"method","line":308,"summary":"open_atomic"},{"file":"src/remote_store/_store.py","gated":false,"id":"mtd:remote_store._store.Store.ping","is_abstract":false,"is_async":false,"kind":"method","line":814,"summary":"ping"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.read","is_abstract":false,"is_async":false,"kind":"method","line":75,"summary":"read"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.read_bytes","is_abstract":false,"is_async":false,"kind":"method","line":95,"summary":"read_bytes"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.read_seekable","is_abstract":false,"is_async":false,"kind":"method","line":114,"summary":"read_seekable"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.read_text","is_abstract":false,"is_async":false,"kind":"method","line":148,"summary":"read_text"},{"file":"src/remote_store/_store.py","gated":false,"id":"mtd:remote_store._store.Store.resolve","is_abstract":false,"is_async":false,"kind":"method","line":886,"summary":"resolve"},{"file":"src/remote_store/_store.py","gated":false,"id":"mtd:remote_store._store.Store.supports","is_abstract":false,"is_async":false,"kind":"method","line":933,"summary":"supports"},{"file":"src/remote_store/_store.py","gated":false,"id":"mtd:remote_store._store.Store.to_key","is_abstract":false,"is_async":false,"kind":"method","line":916,"summary":"to_key"},{"file":"src/remote_store/_store.py","gated":false,"id":"mtd:remote_store._store.Store.unwrap","is_abstract":false,"is_async":false,"kind":"method","line":866,"summary":"unwrap"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.write","is_abstract":false,"is_async":false,"kind":"method","line":181,"summary":"write"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.write_atomic","is_abstract":false,"is_async":false,"kind":"method","line":262,"summary":"write_atomic"},{"file":"src/remote_store/_store.py","id":"mtd:remote_store._store.Store.write_text","is_abstract":false,"is_async":false,"kind":"method","line":223,"summary":"write_text"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.copy","is_abstract":true,"is_async":true,"kind":"method","line":309,"summary":"copy"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.delete","is_abstract":true,"is_async":true,"kind":"method","line":191,"summary":"delete"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.delete_folder","is_abstract":true,"is_async":true,"kind":"method","line":205,"summary":"delete_folder"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.get_file_info","is_abstract":true,"is_async":true,"kind":"method","line":259,"summary":"get_file_info"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.get_folder_info","is_abstract":true,"is_async":true,"kind":"method","line":274,"summary":"get_folder_info"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.glob","is_abstract":false,"is_async":true,"kind":"method","line":349,"summary":"glob"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.iter_children","is_abstract":false,"is_async":true,"kind":"method","line":371,"summary":"iter_children"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.list_files","is_abstract":true,"is_async":true,"kind":"method","line":221,"summary":"list_files"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.list_folders","is_abstract":true,"is_async":true,"kind":"method","line":246,"summary":"list_folders"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.move","is_abstract":true,"is_async":true,"kind":"method","line":289,"summary":"move"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.read","is_abstract":true,"is_async":true,"kind":"method","line":102,"summary":"read"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.read_bytes","is_abstract":true,"is_async":true,"kind":"method","line":119,"summary":"read_bytes"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.write","is_abstract":true,"is_async":true,"kind":"method","line":134,"summary":"write"},{"file":"src/remote_store/aio/_async_backend.py","id":"mtd:remote_store.aio._async_backend.AsyncBackend.write_atomic","is_abstract":true,"is_async":true,"kind":"method","line":164,"summary":"write_atomic"},{"file":"src/remote_store/aio/_async_store.py","gated":false,"id":"mtd:remote_store.aio._async_store.AsyncStore.aclose","is_abstract":false,"is_async":true,"kind":"method","line":804,"summary":"aclose"},{"file":"src/remote_store/aio/_async_store.py","gated":false,"id":"mtd:remote_store.aio._async_store.AsyncStore.child","is_abstract":false,"is_async":false,"kind":"method","line":812,"summary":"child"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.copy","is_abstract":false,"is_async":true,"kind":"method","line":602,"summary":"copy"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.delete","is_abstract":false,"is_async":true,"kind":"method","line":304,"summary":"delete"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.delete_folder","is_abstract":false,"is_async":true,"kind":"method","line":326,"summary":"delete_folder"},{"file":"src/remote_store/aio/_async_store.py","gated":false,"id":"mtd:remote_store.aio._async_store.AsyncStore.exists","is_abstract":false,"is_async":true,"kind":"method","line":640,"summary":"exists"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.get_file_info","is_abstract":false,"is_async":true,"kind":"method","line":667,"summary":"get_file_info"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.get_folder_info","is_abstract":false,"is_async":true,"kind":"method","line":686,"summary":"get_folder_info"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.glob","is_abstract":false,"is_async":false,"kind":"method","line":539,"summary":"glob"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.head","is_abstract":false,"is_async":true,"kind":"method","line":754,"summary":"head"},{"file":"src/remote_store/aio/_async_store.py","gated":false,"id":"mtd:remote_store.aio._async_store.AsyncStore.is_file","is_abstract":false,"is_async":true,"kind":"method","line":649,"summary":"is_file"},{"file":"src/remote_store/aio/_async_store.py","gated":false,"id":"mtd:remote_store.aio._async_store.AsyncStore.is_folder","is_abstract":false,"is_async":true,"kind":"method","line":658,"summary":"is_folder"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.iter_children","is_abstract":false,"is_async":false,"kind":"method","line":510,"summary":"iter_children"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.list_files","is_abstract":false,"is_async":false,"kind":"method","line":364,"summary":"list_files"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.list_folders","is_abstract":false,"is_async":false,"kind":"method","line":449,"summary":"list_folders"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.move","is_abstract":false,"is_async":true,"kind":"method","line":568,"summary":"move"},{"file":"src/remote_store/aio/_async_store.py","gated":false,"id":"mtd:remote_store.aio._async_store.AsyncStore.native_path","is_abstract":false,"is_async":false,"kind":"method","line":880,"summary":"native_path"},{"file":"src/remote_store/aio/_async_store.py","gated":false,"id":"mtd:remote_store.aio._async_store.AsyncStore.ping","is_abstract":false,"is_async":true,"kind":"method","line":790,"summary":"ping"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.read","is_abstract":false,"is_async":false,"kind":"method","line":84,"summary":"read"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.read_bytes","is_abstract":false,"is_async":true,"kind":"method","line":110,"summary":"read_bytes"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.read_text","is_abstract":false,"is_async":true,"kind":"method","line":129,"summary":"read_text"},{"file":"src/remote_store/aio/_async_store.py","gated":false,"id":"mtd:remote_store.aio._async_store.AsyncStore.resolve","is_abstract":false,"is_async":false,"kind":"method","line":863,"summary":"resolve"},{"file":"src/remote_store/aio/_async_store.py","gated":false,"id":"mtd:remote_store.aio._async_store.AsyncStore.supports","is_abstract":false,"is_async":false,"kind":"method","line":910,"summary":"supports"},{"file":"src/remote_store/aio/_async_store.py","gated":false,"id":"mtd:remote_store.aio._async_store.AsyncStore.to_key","is_abstract":false,"is_async":false,"kind":"method","line":893,"summary":"to_key"},{"file":"src/remote_store/aio/_async_store.py","gated":false,"id":"mtd:remote_store.aio._async_store.AsyncStore.unwrap","is_abstract":false,"is_async":false,"kind":"method","line":843,"summary":"unwrap"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.write","is_abstract":false,"is_async":true,"kind":"method","line":162,"summary":"write"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.write_atomic","is_abstract":false,"is_async":true,"kind":"method","line":248,"summary":"write_atomic"},{"file":"src/remote_store/aio/_async_store.py","id":"mtd:remote_store.aio._async_store.AsyncStore.write_text","is_abstract":false,"is_async":true,"kind":"method","line":205,"summary":"write_text"},{"id":"pkg:remote_store","kind":"package","runtime":"sync","version":"0.29.1"},{"id":"pkg:remote_store.aio","kind":"package","runtime":"async","version":"0.29.1"},{"id":"req:remote_store._backend.Backend.copy.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.delete.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.delete_folder.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.get_file_info.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.get_folder_info.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.glob.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.iter_children.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.list_files.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.list_folders.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.move.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.open_atomic.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.read.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.read_bytes.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.read_seekable.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.write.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._backend.Backend.write_atomic.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.copy.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.delete.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.delete_folder.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.get_file_info.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.get_folder_info.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.get_folder_info.gate_depth","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.glob.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.head.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.iter_children.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.list_files.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.list_folders.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.move.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.open_atomic.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.read.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.read_bytes.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.read_seekable.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.read_text.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.write.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.write_atomic.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store._store.Store.write_text.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.copy.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.delete.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.delete_folder.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.get_file_info.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.get_folder_info.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.glob.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.iter_children.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.list_files.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.list_folders.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.move.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.read.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.read_bytes.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.write.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_backend.AsyncBackend.write_atomic.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.copy.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.delete.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.delete_folder.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.get_file_info.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.get_folder_info.gate_depth","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.glob.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.head.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.iter_children.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.list_files.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.list_folders.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.move.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.read.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.read_bytes.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.read_text.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.write.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.write_atomic.gate","kind":"requirement","mode":"all"},{"id":"req:remote_store.aio._async_store.AsyncStore.write_text.gate","kind":"requirement","mode":"all"},{"id":"xtr:azure","kind":"extra","kind_of":"backend"},{"id":"xtr:graph","kind":"extra","kind_of":"backend"},{"id":"xtr:s3","kind":"extra","kind_of":"backend"},{"id":"xtr:s3-pyarrow","kind":"extra","kind_of":"backend"},{"id":"xtr:sftp","kind":"extra","kind_of":"backend"},{"id":"xtr:sql","kind":"extra","kind_of":"backend"},{"id":"xtr:sql-query","kind":"extra","kind_of":"backend"}],"schema_version":"1.4","snapshot":"0.29.1","source_version":"0.29.1"};
+const BLOB_BASE = "https://github.com/haalfi/remote-store/blob/master/";  // GitHub blob root for source/spec deep links
+
+// ---- Config ---------------------------------------------------------------
+// Class nodes are coloured by ROLE (DGM-004); other kinds by kind.
+const KIND_COLOR = {
+  capability:'#F59E0B', method:'#10B981', package:'#A855F7',
+  requirement:'#F43F5E', extra:'#94A3B8',
+};
+const ROLE_COLOR = {backend:'#3B82F6', abc:'#60A5FA', facade:'#6366F1'};
+const KIND_R = {capability:14, class:13, method:10, package:15, requirement:8, extra:11};
+
+// declares + contains are off by default: they dominate numerically and
+// collapse the centre.  contains is still used structurally to cluster
+// methods inside an *expanded* class and classes inside their package, even
+// when its legend toggle is off (see computeActiveLinks).
+const EDGE_CFG = {
+  inherits:{color:'#A855F7',dash:'0',  width:2,   defaultOn:true},
+  mirrors: {color:'#F59E0B',dash:'6,3',width:2,   defaultOn:true},
+  enables: {color:'#10B981',dash:'4,3',width:1.5, defaultOn:true},
+  gates:   {color:'#F43F5E',dash:'0',  width:1.5, defaultOn:true},
+  of:      {color:'#64748B',dash:'2,2',width:1,   defaultOn:true},
+  declares:{color:'#3B82F6',dash:'0',  width:1,   defaultOn:false},
+  contains:{color:'#22D3EE',dash:'1,3',width:1,   defaultOn:false},
+};
+const ISO_EDGES = new Set(['inherits','contains','gates','of','mirrors']);
+
+function isStoreFacade(n){return n.kind==='class'&&/\.(Async)?Store$/.test(n.id);}
+function nodeColor(n){
+  if(n.kind==='class') return ROLE_COLOR[n.role]||ROLE_COLOR.backend;
+  return KIND_COLOR[n.kind]||'#888';
+}
+function nodeRadius(n){
+  let r=KIND_R[n.kind]||10;
+  if(isStoreFacade(n)) r+=3;
+  return r;
+}
+function isAbstractNode(n){
+  return n.is_abstract===true||(n.kind==='class'&&n.role==='abc');
+}
+
+// ---- Graph data -----------------------------------------------------------
+const nodeMap = new Map(GRAPH.nodes.map(n=>[n.id,{...n}]));
+const nodes   = [...nodeMap.values()];
+const links   = GRAPH.edges
+  .map(e=>({...e, source:nodeMap.get(e.src), target:nodeMap.get(e.dst)}))
+  .filter(l=>l.source&&l.target);
+
+// Containment maps (DGM-008: class --contains--> method).
+const classOfMethod = new Map();
+const methodsOfClass = new Map();
+links.filter(l=>l.kind==='contains'&&l.source.kind==='class'&&l.target.kind==='method')
+  .forEach(l=>{
+    classOfMethod.set(l.target.id, l.source.id);
+    if(!methodsOfClass.has(l.source.id)) methodsOfClass.set(l.source.id, []);
+    methodsOfClass.get(l.source.id).push(l.target.id);
+  });
+
+// Gate-label disambiguation (DGM-008 contains direction): a requirement gates a
+// method; the method's class disambiguates same-named gates across classes
+// (Backend.copy vs Store.copy), and the .gate_depth suffix is marked "(depth)".
+const reqLabel = new Map();
+links.filter(l=>l.kind==='gates').forEach(l=>{
+  const clsId=classOfMethod.get(l.target.id);
+  const cls=clsId?clsId.split('.').pop():'';
+  const mtd=l.target.id.split('.').pop();
+  const suffix=l.source.id.endsWith('.gate_depth')?' (depth)':'';
+  reqLabel.set(l.source.id, (cls?cls+'.':'')+mtd+suffix);
+});
+
+function nodeLabel(n){
+  switch(n.kind){
+    case 'capability': return n.value||n.id.split(':')[1];
+    case 'class':
+    case 'method':     return n.id.split('.').pop();
+    case 'package':
+    case 'extra':      return n.id.split(':')[1];
+    case 'requirement':return reqLabel.get(n.id)||n.id.split('.').slice(-2).join('.');
+    default:           return n.id;
+  }
+}
+function nodeRuntime(n){
+  if(n.runtime) return n.runtime;                  // class, package
+  if(n.kind==='method') return n.is_async?'async':'sync';
+  return null;                                      // capability/requirement/extra: agnostic
+}
+
+// ---- State ----------------------------------------------------------------
+const visibleNodeKinds = new Set(['capability','class','method','package','requirement','extra']);
+const visibleRoles     = new Set(['backend','abc','facade']);
+const visibleEdgeKinds = new Set(Object.entries(EDGE_CFG).filter(([,v])=>v.defaultOn).map(([k])=>k));
+const visibleRuntimes  = new Set(['sync','async']);
+const selectedCaps     = new Set();   // capability facet; empty == no capability filter
+const expandedClasses  = new Set();   // classes whose methods are revealed
+let searchQuery = '';
+let isolate = false;
+let selected = null;                  // {type:'node', id} | {type:'edge', id:'src|kind|dst'}
+
+// ---- Soft positional bias (keeps force organic but guided) ----------------
+const X_BIAS = {package:0.08, extra:0.18, class:0.30, capability:0.52, requirement:0.68, method:0.84};
+const Y_BIAS = {package:0.12};
+
+// ---- SVG / simulation -----------------------------------------------------
+const svg = d3.select('#graph');
+const W0 = 1200, H0 = 800;
+const simulation = d3.forceSimulation(nodes)
+  .force('link', d3.forceLink(links).id(d=>d.id)
+    .distance(d=>d.kind==='contains'?45:d.kind==='declares'?170:d.kind==='inherits'?65:100)
+    .strength(d=>d.kind==='contains'?0.7:d.kind==='declares'?0.04:d.kind==='of'?0.5:0.4))
+  .force('charge', d3.forceManyBody().strength(-620))
+  .force('collide', d3.forceCollide().radius(d=>nodeRadius(d)+14))
+  .force('xbias', d3.forceX(d=>(X_BIAS[d.kind]??0.5)*W0).strength(0.07))
+  .force('ybias', d3.forceY(d=>(Y_BIAS[d.kind]??0.5)*H0).strength(0.04));
+
+const defs = svg.append('defs');
+Object.entries(EDGE_CFG).forEach(([kind,cfg])=>{
+  defs.append('marker').attr('id','arrow-'+kind)
+    .attr('viewBox','0 -5 10 10').attr('refX',22).attr('refY',0)
+    .attr('markerWidth',5).attr('markerHeight',5).attr('orient','auto')
+    .append('path').attr('d','M0,-5L10,0L0,5').attr('fill',cfg.color);
+});
+const g = svg.append('g');
+const zoom = d3.zoom().scaleExtent([0.1,4]).on('zoom', e=>g.attr('transform',e.transform));
+svg.call(zoom);
+svg.on('dblclick.zoom', null);  // free dblclick for expand/collapse on class nodes
+document.getElementById('btn-reset').onclick =
+  ()=>svg.transition().duration(500).call(zoom.transform,d3.zoomIdentity);
+document.getElementById('btn-reheat').onclick =
+  ()=>simulation.alpha(0.7).restart();
+
+// ---- Sidebar controls -----------------------------------------------------
+function countNodeKind(k){return GRAPH.nodes.filter(n=>n.kind===k).length;}
+
+function buildControls(){
+  const nl=d3.select('#node-legend');
+  ['capability','class','method','package','requirement','extra'].forEach(kind=>{
+    const row=nl.append('div').attr('class','legend-row');
+    row.append('input').attr('type','checkbox').property('checked',true)
+      .on('change',function(){this.checked?visibleNodeKinds.add(kind):visibleNodeKinds.delete(kind);update();});
+    row.append('div').attr('class','dot').style('background',KIND_COLOR[kind]||ROLE_COLOR.backend);
+    row.append('span').text(kind+' ('+countNodeKind(kind)+')');
+  });
+
+  const rl=d3.select('#role-legend');
+  [['backend','backend'],['abc','abstract base (abc)'],['facade','facade']].forEach(([role,label])=>{
+    const n=GRAPH.nodes.filter(x=>x.kind==='class'&&x.role===role).length;
+    const row=rl.append('div').attr('class','legend-row');
+    row.append('input').attr('type','checkbox').property('checked',true)
+      .on('change',function(){this.checked?visibleRoles.add(role):visibleRoles.delete(role);update();});
+    row.append('div').attr('class','dot'+(role==='abc'?' dashed':'')).style('background',ROLE_COLOR[role]);
+    row.append('span').text(label+' ('+n+')');
+  });
+
+  const el=d3.select('#edge-legend');
+  Object.entries(EDGE_CFG).forEach(([kind,cfg])=>{
+    const on=cfg.defaultOn;
+    const row=el.append('div').attr('class','legend-row'+(on?'':' dim'));
+    row.append('input').attr('type','checkbox').property('checked',on)
+      .on('change',function(){this.checked?visibleEdgeKinds.add(kind):visibleEdgeKinds.delete(kind);update();});
+    row.append('div').attr('class','line-sample')
+      .style('background', cfg.dash==='0'?cfg.color
+        :`repeating-linear-gradient(90deg,${cfg.color} 0,${cfg.color} 4px,transparent 4px,transparent 7px)`)
+      .style('height',cfg.width+'px');
+    row.append('span').text(kind+(on?'':' — off')+' ('+GRAPH.edges.filter(e=>e.kind===kind).length+')');
+  });
+
+  const rt=d3.select('#runtime-legend');
+  ['sync','async'].forEach(r=>{
+    const row=rt.append('div').attr('class','legend-row');
+    row.append('input').attr('type','checkbox').property('checked',true)
+      .on('change',function(){this.checked?visibleRuntimes.add(r):visibleRuntimes.delete(r);update();});
+    row.append('span').text(r);
+  });
+
+  const cl=d3.select('#cap-legend');
+  GRAPH.nodes.filter(n=>n.kind==='capability').forEach(n=>{
+    const row=cl.append('div').attr('class','legend-row');
+    row.append('input').attr('type','checkbox').property('checked',false)
+      .on('change',function(){this.checked?selectedCaps.add(n.id):selectedCaps.delete(n.id);update();});
+    row.append('div').attr('class','dot').style('background',KIND_COLOR.capability);
+    row.append('span').text(n.value||n.id.split(':')[1]);
+  });
+
+  document.getElementById('search').addEventListener('input',function(){
+    searchQuery=this.value.trim().toLowerCase();update();
+  });
+  document.getElementById('iso-toggle').addEventListener('change',function(){
+    isolate=this.checked;update();
+  });
+  document.getElementById('btn-expand-all').onclick=()=>{
+    nodes.filter(n=>n.kind==='class').forEach(n=>expandedClasses.add(n.id));update();
+  };
+  document.getElementById('btn-collapse-all').onclick=()=>{
+    expandedClasses.clear();update();
+  };
+}
+
+// ---- Detail panel ---------------------------------------------------------
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function docHref(doc){
+  // docs-src/reference/api/store.md -> ../reference/api/store/ (use_directory_urls)
+  return '../'+doc.replace(/^docs-src\//,'').replace(/\/index\.md$/,'/').replace(/\.md$/,'/');
+}
+function deepLinks(n){
+  const out=[];
+  if(n.file) out.push({label:'Source', href:BLOB_BASE+n.file+(n.line?('#L'+n.line):''),
+                       text:n.file+(n.line?(':'+n.line):'')});
+  const cls = n.kind==='class' ? n
+            : (n.kind==='method' ? nodeMap.get(classOfMethod.get(n.id)) : null);
+  if(cls&&cls.spec) out.push({label:'Spec', href:BLOB_BASE+cls.spec, text:cls.spec});
+  if(cls&&cls.doc)  out.push({label:'Docs', href:docHref(cls.doc), text:cls.doc});
+  return out;
+}
+function fieldRows(node){
+  const skip=new Set(['id','kind','file','line','spec','doc','x','y','vx','vy','fx','fy','index']);
+  return Object.entries(node).filter(([k,v])=>!skip.has(k)&&typeof v!=='object')
+    .map(([k,v])=>`<div class="detail-row">${esc(k)}: <span>${esc(v)}</span></div>`).join('');
+}
+function showNodeDetail(node){
+  const el=document.getElementById('detail');
+  const links=deepLinks(node).map(l=>
+    `<a href="${esc(l.href)}" target="_blank" rel="noopener">${esc(l.label)}: ${esc(l.text)}</a>`).join('');
+  let btn='';
+  if(node.kind==='class'){
+    const ms=(methodsOfClass.get(node.id)||[]).length;
+    if(ms) btn=`<button class="btn detail-btn" id="detail-toggle">`
+      +`${expandedClasses.has(node.id)?'Collapse':'Expand'} ${ms} method${ms===1?'':'s'}</button>`;
+  }
+  el.innerHTML=`<div class="detail-id">${esc(node.id)}</div>`
+    +`<div class="detail-row">kind: <span>${esc(node.kind)}</span></div>`
+    +fieldRows(node)
+    +(links?`<div class="links">${links}</div>`:'')
+    +btn;
+  const t=document.getElementById('detail-toggle');
+  if(t) t.onclick=()=>{
+    expandedClasses.has(node.id)?expandedClasses.delete(node.id):expandedClasses.add(node.id);
+    update();showNodeDetail(node);
+  };
+}
+function showEdgeDetail(l){
+  const el=document.getElementById('detail');
+  const xref=(id)=>`<span class="xref" data-id="${esc(id)}">${esc(nodeLabel(nodeMap.get(id)||{id}))}</span>`;
+  let rows=`<div class="detail-row">${xref(l.src)} &rarr; ${xref(l.dst)}</div>`;
+  if(l.condition) rows+=`<div class="detail-row">condition: <span>${esc(l.condition)}</span></div>`;
+  if(l.capability_delta){
+    const cd=l.capability_delta;
+    rows+=`<div class="detail-row">async only: <span>${esc((cd.async_only||[]).join(', ')||'—')}</span></div>`;
+    rows+=`<div class="detail-row">sync only: <span>${esc((cd.sync_only||[]).join(', ')||'—')}</span></div>`;
+  }
+  el.innerHTML=`<div class="detail-id">${esc(l.kind)} edge</div>`+rows;
+}
+function clearDetail(){
+  document.getElementById('detail').innerHTML=
+    '<span class="placeholder">Click a node or an edge to inspect it</span>';
+}
+// Cross-reference clicks in the edge panel select the endpoint node.
+document.getElementById('detail').addEventListener('click',ev=>{
+  const x=ev.target.closest('.xref');
+  if(x&&x.dataset.id) selectNodeById(x.dataset.id);
+});
+function selectNodeById(id){
+  const n=nodeMap.get(id);
+  if(!n) return;
+  if(n.kind==='method'){const c=classOfMethod.get(id); if(c) expandedClasses.add(c);}
+  selected={type:'node', id};
+  update();
+  showNodeDetail(n);
+}
+
+// ---- Faceted filtering ----------------------------------------------------
+// Capability facet: when capabilities are selected, keep only those caps and
+// their gate/declare chains (req -> method -> class -> package, declaring
+// backends, enabling extras).
+function capabilityKeep(){
+  if(selectedCaps.size===0) return null;
+  const keep=new Set(selectedCaps);
+  links.forEach(l=>{
+    if(l.kind==='of'&&selectedCaps.has(l.target.id)) keep.add(l.source.id);       // requirement
+    if(l.kind==='declares'&&selectedCaps.has(l.target.id)) keep.add(l.source.id); // backend
+    if(l.kind==='enables'&&selectedCaps.has(l.target.id)) keep.add(l.source.id);  // extra
+  });
+  links.forEach(l=>{if(l.kind==='gates'&&keep.has(l.source.id)) keep.add(l.target.id);}); // gated methods
+  links.forEach(l=>{if(l.kind==='contains'&&keep.has(l.target.id)) keep.add(l.source.id);}); // class, package
+  return keep;
+}
+function nodePassesFacets(n, capKeep){
+  if(!visibleNodeKinds.has(n.kind)) return false;
+  if(n.kind==='class'&&!visibleRoles.has(n.role)) return false;
+  const rt=nodeRuntime(n);
+  if(rt&&!visibleRuntimes.has(rt)) return false;
+  if(capKeep&&!capKeep.has(n.id)) return false;
+  if(n.kind==='method'){
+    const c=classOfMethod.get(n.id);
+    if(!c||!expandedClasses.has(c)) return false;   // collapsed into class by default
+  }
+  if(searchQuery){
+    const hay=(n.id+' '+(n.summary||'')+' '+nodeLabel(n)).toLowerCase();
+    if(!hay.includes(searchQuery)) return false;
+  }
+  return true;
+}
+function computeActiveNodes(){
+  // Isolating a class reveals its methods first: they are collapsed (off-canvas)
+  // by default, so without this the cone of a collapsed class could never
+  // include the methods its comment promises. Expanding it also makes the
+  // cluster links consistent and flips its detail-panel toggle to "Collapse".
+  if(isolate&&selected&&selected.type==='node'){
+    const sel=nodeMap.get(selected.id);
+    if(sel&&sel.kind==='class') expandedClasses.add(selected.id);
+  }
+  const capKeep=capabilityKeep();
+  let active=nodes.filter(n=>nodePassesFacets(n,capKeep));
+  if(isolate&&selected&&selected.type==='node'){
+    const activeIds=new Set(active.map(n=>n.id));
+    if(activeIds.has(selected.id)){
+      // Directed dependency cone: descendants (follow edges out) plus ancestors
+      // (follow edges in). An *undirected* transitive walk leaks through shared
+      // capability nodes and selects almost everything; the directed up/down
+      // cone stays bounded and meaningful (a class -> its methods + subclasses).
+      const walk=(forward)=>{
+        const seen=new Set([selected.id]);
+        let frontier=[selected.id], guard=0;
+        while(frontier.length&&guard++<60){
+          const fset=new Set(frontier), next=[];
+          links.forEach(l=>{
+            if(!ISO_EDGES.has(l.kind)) return;
+            const from=forward?l.source.id:l.target.id, to=forward?l.target.id:l.source.id;
+            if(fset.has(from)&&activeIds.has(to)&&!seen.has(to)){seen.add(to);next.push(to);}
+          });
+          frontier=next;
+        }
+        return seen;
+      };
+      const nb=new Set([...walk(true),...walk(false)]);
+      active=active.filter(n=>nb.has(n.id));
+    }
+  }
+  return active;
+}
+function computeActiveLinks(activeIds){
+  return links.filter(l=>{
+    if(!activeIds.has(l.source.id)||!activeIds.has(l.target.id)) return false;
+    if(visibleEdgeKinds.has(l.kind)) return true;
+    if(l.kind==='contains'){                                   // structural clustering
+      if(l.source.kind==='package') return true;               // classes inside package
+      if(l.source.kind==='class'&&expandedClasses.has(l.source.id)) return true; // methods inside class
+    }
+    return false;
+  });
+}
+
+// ---- Rendering ------------------------------------------------------------
+let linkSel, nodeSel;
+
+function update(){
+  const activeNodes=computeActiveNodes();
+  const activeIds=new Set(activeNodes.map(n=>n.id));
+  const activeLinks=computeActiveLinks(activeIds);
+
+  linkSel=g.selectAll('.link')
+    .data(activeLinks,d=>d.src+'|'+d.kind+'|'+d.dst)
+    .join(enter=>enter.append('line').attr('class','link')
+        .on('click',(ev,d)=>{
+          ev.stopPropagation();
+          const key=d.src+'|'+d.kind+'|'+d.dst;
+          selected = selected&&selected.type==='edge'&&selected.id===key ? null : {type:'edge',id:key};
+          selected?showEdgeDetail(d):clearDetail();
+          applySelection();
+        }),
+      u=>u, exit=>exit.remove())
+    .attr('stroke',d=>EDGE_CFG[d.kind]?.color||'#666')
+    .attr('stroke-width',d=>EDGE_CFG[d.kind]?.width||1.2)
+    .attr('stroke-dasharray',d=>EDGE_CFG[d.kind]?.dash||'0')
+    .attr('marker-end',d=>`url(#arrow-${d.kind})`);
+
+  nodeSel=g.selectAll('.node').data(activeNodes,d=>d.id)
+    .join(
+      enter=>{
+        const ng=enter.append('g').attr('class','node')
+          .call(d3.drag()
+            .on('start',(ev,d)=>{if(!ev.active)simulation.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y;})
+            .on('drag',(ev,d)=>{d.fx=ev.x;d.fy=ev.y;})
+            .on('end',(ev,d)=>{if(!ev.active)simulation.alphaTarget(0);d.fx=null;d.fy=null;}))
+          .on('click',(ev,d)=>{
+            ev.stopPropagation();
+            selected = selected&&selected.type==='node'&&selected.id===d.id ? null : {type:'node',id:d.id};
+            selected?showNodeDetail(d):clearDetail();
+            applySelection();
+          })
+          .on('dblclick',(ev,d)=>{
+            ev.stopPropagation();
+            if(d.kind!=='class'||!(methodsOfClass.get(d.id)||[]).length) return;
+            expandedClasses.has(d.id)?expandedClasses.delete(d.id):expandedClasses.add(d.id);
+            update();
+          });
+        ng.append('circle');
+        ng.append('text').attr('class','label').attr('dy','0.35em').attr('text-anchor','middle');
+        ng.append('text').attr('class','sub-badge').attr('text-anchor','middle');
+        ng.append('text').attr('class','count-badge').attr('text-anchor','middle');
+        return ng;
+      },
+      u=>u, exit=>exit.remove());
+
+  nodeSel.select('circle')
+    .attr('r',d=>nodeRadius(d))
+    .attr('fill',d=>nodeColor(d))
+    .attr('stroke',d=>d3.color(nodeColor(d)).brighter(0.8));
+  nodeSel.classed('abstract',d=>isAbstractNode(d))
+         .classed('store',d=>isStoreFacade(d));
+  nodeSel.select('text.label')
+    .text(d=>nodeLabel(d))
+    .attr('dy',d=>nodeRadius(d)+12);
+  nodeSel.select('text.sub-badge')
+    .text(d=>d.kind==='method'&&d.is_async===true?'async':'')
+    .attr('dy',d=>nodeRadius(d)+21);
+  nodeSel.select('text.count-badge')
+    .text(d=>{
+      if(d.kind!=='class') return '';
+      const ms=(methodsOfClass.get(d.id)||[]).length;
+      return ms&&!expandedClasses.has(d.id)?('+'+ms):'';
+    })
+    .attr('dy','-0.7em').attr('dx',d=>nodeRadius(d)-2);
+
+  simulation.nodes(activeNodes);
+  simulation.force('link').links(activeLinks);
+  simulation.alpha(0.4).restart();
+  applySelection();
+}
+
+simulation.on('tick',()=>{
+  linkSel?.each(function(d){
+    const sx=d.source.x,sy=d.source.y,tx=d.target.x,ty=d.target.y;
+    const dx=tx-sx,dy=ty-sy,dist=Math.sqrt(dx*dx+dy*dy);
+    const r=nodeRadius(d.target)+3;
+    const f=dist>r?(dist-r)/dist:0;
+    d3.select(this).attr('x1',sx).attr('y1',sy).attr('x2',sx+dx*f).attr('y2',sy+dy*f);
+  });
+  nodeSel?.attr('transform',d=>`translate(${d.x},${d.y})`);
+});
+
+function applySelection(){
+  nodeSel?.classed('selected',d=>selected?.type==='node'&&d.id===selected.id);
+  if(!selected){nodeSel?.classed('faded',false);linkSel?.classed('faded',false);linkSel?.classed('selected-edge',false);return;}
+  if(selected.type==='node'){
+    const nb=new Set([selected.id]);
+    linkSel?.each(d=>{if(d.source.id===selected.id||d.target.id===selected.id){nb.add(d.source.id);nb.add(d.target.id);}});
+    nodeSel?.classed('faded',d=>!nb.has(d.id));
+    linkSel?.classed('faded',d=>d.source.id!==selected.id&&d.target.id!==selected.id);
+    linkSel?.classed('selected-edge',false);
+  } else {
+    const [s,k,t]=selected.id.split('|');
+    const nb=new Set([s,t]);
+    nodeSel?.classed('faded',d=>!nb.has(d.id));
+    linkSel?.classed('faded',d=>!(d.src===s&&d.kind===k&&d.dst===t));
+    linkSel?.classed('selected-edge',d=>d.src===s&&d.kind===k&&d.dst===t);
+  }
+}
+svg.on('click',()=>{selected=null;clearDetail();applySelection();});
+
+buildControls();
+update();
+
+// Reparent RTD's EthicalAds injection into the sidebar so it does not float
+// over the canvas.  RTD appends a div[data-ea-publisher] to <body>; we move it
+// into #sidebar and strip the 'raised' float class.
+(function(){
+  var sb=document.getElementById('sidebar');
+  var obs;
+  function adopt(n){
+    if(n.nodeType!==1||!n.dataset||!n.dataset.eaPublisher)return;
+    n.classList.remove('raised');
+    n.style.marginTop='';
+    sb.appendChild(n);
+    if(obs)obs.disconnect();
+  }
+  obs=new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(adopt);});});
+  obs.observe(document.body,{childList:true});
+  document.querySelectorAll('body>[data-ea-publisher]').forEach(adopt);
+})();
+</script>
+</body>
+</html>
