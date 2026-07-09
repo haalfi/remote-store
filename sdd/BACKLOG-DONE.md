@@ -8,6 +8,28 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-225 — Graph backend breaks against httpx 1.0 pre-releases (cap `httpx<1.0`)**
+  spec: GR-033 · effort: S · audience: user.api
+  The drift guard's `--pre` re-resolution pulled `httpx==1.0.dev3` into the
+  `graph` / `httpx` extras (floors were an unbounded `httpx>=0.24.0`), and the
+  async graph backend failed to import at `_graph/http.py:57`
+  (`_TRANSPORT_ERRORS = (httpx.TransportError,)` → `AttributeError`). The
+  original diagnosis read this as an exception-hierarchy reorg; empirically
+  `1.0.dev3` is a **wholesale rewrite** that also drops `httpx.AsyncClient`,
+  `DecodingError`, `HTTPStatusError`, `Timeout`, and `Limits` — the whole client
+  surface the graph backend and the `[httpx]` adapter depend on. Guarding the one
+  missing symbol (the backlog's first-cut prescription) would have produced a
+  *falsely-green* import smoke that then failed at runtime on
+  `httpx.AsyncClient(...)`, so this **diverged to capping** the two httpx-using
+  extras at `httpx>=0.24.0,<1.0` (PEP 440's exclusive-comparison rule excludes
+  `1.0.dev*` / `1.0rc*` / `1.0` while keeping all 0.2x) until real httpx 1.0 can
+  be evaluated — filed as **ID-229**. Also closed the diagnosis's second half: the
+  `graph` drift leg fell back to `["--import-only", "remote_store"]` (which never
+  imports the async graph module), so it read green while the pin was broken;
+  `scripts/drift_smoke_map.py` now carries a `graph` entry that imports
+  `remote_store.aio.backends._graph.http` directly. Refreshed the `graph` and
+  `httpx` drift baselines off `1.0.dev3`. Surfaced by the 2026-06-22 drift-guard run.
+
 - [x] **ID-228 — Backfill method-level contract docstrings for the six thin backends**
   spec: — · effort: L · audience: user.api, user.discoverability.llm
   Discovered during ID-227's docstring census. `GraphBackend` was the only

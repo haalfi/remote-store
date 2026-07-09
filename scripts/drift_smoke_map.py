@@ -60,6 +60,14 @@ SMOKE_TARGETS: dict[str, list[str]] = {
     # backend chooses its transport at construction time.
     "requests": ["tests/backends/http/"],
     "httpx": ["tests/backends/http/"],
+    # graph (BUG-225): the [graph] extra depends on httpx, but the top-level
+    # `remote_store` import fallback never reaches the async graph backend, so a
+    # broken httpx pin (the 1.0.dev* rewrite) rode green here. Import the async
+    # graph module directly — its module-level httpx symbol references
+    # (`_TRANSPORT_ERRORS = (httpx.TransportError,)`) fail loudly on a
+    # graph-hostile httpx resolution. Import-only (no msal/network needed) —
+    # backend.py pulls in http.py transitively via the package __init__.
+    "graph": ["--import-only", "remote_store.aio.backends._graph.http"],
     # Extension extras — the matching tests/ext/ module is the smoke.
     "arrow": ["tests/ext/test_arrow.py", "tests/ext/test_parquet.py"],
     # otel: tests/ext/test_otel.py imports opentelemetry.sdk.* at module

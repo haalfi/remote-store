@@ -28,6 +28,26 @@ if str(SCRIPTS) not in sys.path:
 import drift_smoke_map  # noqa: E402
 
 
+def test_graph_smoke_is_registered_not_fallback():
+    """`graph` must have a dedicated smoke, not the top-level import fallback.
+
+    BUG-225: the `graph` extra depends on httpx, but `smoke_for("graph")`
+    fell back to `["--import-only", "remote_store"]` — and the top-level
+    package imports only the sync surface, never
+    `remote_store.aio.backends._graph.http`. A broken httpx pin (the
+    `1.0.dev*` rewrite) therefore rode green on the graph drift leg while
+    the async graph backend was import-broken. The dedicated smoke must
+    import the async graph module itself so a future httpx break fails the
+    graph leg loudly.
+    """
+    argv = drift_smoke_map.smoke_for("graph")
+    assert argv != ["--import-only", "remote_store"], "graph must not use the top-level import fallback"
+    assert argv[:1] == ["--import-only"], "graph smoke should be an import-only smoke"
+    assert "remote_store.aio.backends._graph.http" in argv, (
+        "graph smoke must import the async graph module that references httpx symbols"
+    )
+
+
 @pytest.mark.parametrize("extra", sorted(drift_smoke_map.SMOKE_TARGETS.keys()))
 def test_smoke_target_collects_at_least_one_test(extra):
     """Every SMOKE_TARGETS entry must collect ≥1 test against the repo.

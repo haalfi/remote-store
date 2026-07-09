@@ -32,22 +32,22 @@ _Captured 2026-07-03 on Python 3.13._
 
 ## `[graph]`
 
-_Captured 2026-06-22 on Python 3.13._
+_Captured 2026-07-09 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `httpx` | `1.0.dev3` |
+| `httpx` | `0.28.1` |
 | `msal` | `1.38.0rc1` |
 | `msal-extensions` | `1.3.1` |
 | `platformdirs` | `4.10.0` |
 
 ## `[httpx]`
 
-_Captured 2026-05-25 on Python 3.13._
+_Captured 2026-07-09 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `httpx` | `1.0.dev3` |
+| `httpx` | `0.28.1` |
 
 ## `[otel]`
 
