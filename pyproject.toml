@@ -51,8 +51,10 @@ Changelog = "https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md"
 Issues = "https://github.com/haalfi/remote-store/issues"
 
 [project.optional-dependencies]
-# Each extra below declares a floor and deliberately no ceiling (with rare
-# exceptions, see `arrow` / `sql-query`). A scheduled drift guard
+# Each extra below declares a floor; a ceiling is the exception, applied only
+# where a known-incompatible major looms: `arrow` / `sql-query` pin
+# `pyarrow<25`, and `graph` / `httpx` pin `httpx<1.0` (BUG-225 / ID-229) — see
+# the per-extra comment for each rationale. A scheduled drift guard
 # (`.github/workflows/drift-guard.yml`, ID-182) re-resolves each extra
 # weekly against the latest available transitive versions and diffs the
 # result against `infra/drift-locks/<extra>.txt`. Refresh a baseline after
@@ -72,11 +74,18 @@ azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
 # by GraphAuth only). msal-extensions (BK-291) makes the token-cache write
 # atomic and multi-process-safe via PersistedTokenCache + a cross-platform
 # file lock; >=1.3 keeps portalocker an optional extra, not a hard dependency.
-graph = ["httpx>=0.24.0", "msal>=1.20.0", "msal-extensions>=1.3", "platformdirs>=3.0.0"]
+# httpx <1.0 (BUG-225): the experimental httpx 1.0.dev* line is a wholesale
+# client-API rewrite (drops AsyncClient / TransportError / DecodingError — the
+# surface this backend is built on), so an unbounded `>=` breaks the graph
+# import at load. The PEP 440 exclusive bound excludes 1.0.dev*/rc*/GA while
+# keeping all 0.2x; lifting it to a real 1.0 port is ID-229.
+graph = ["httpx>=0.24.0,<1.0", "msal>=1.20.0", "msal-extensions>=1.3", "platformdirs>=3.0.0"]
 sql = ["sqlalchemy>=2.0"]
 sql-query = ["sqlalchemy>=2.0", "pyarrow>=12.0.0,<25"]
 requests = ["requests>=2.25.0", "urllib3>=1.26.0"]
-httpx = ["httpx>=0.24.0"]
+# httpx <1.0 (BUG-225): same cap as the graph extra — the [httpx] HTTP adapter
+# uses httpx.AsyncClient, which the 1.0.dev* rewrite removes. Lift via ID-229.
+httpx = ["httpx>=0.24.0,<1.0"]
 # -- Extension extras --
 arrow = ["pyarrow>=12.0.0,<25"]
 otel = ["opentelemetry-api>=1.28.0"]

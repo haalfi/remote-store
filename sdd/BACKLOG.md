@@ -364,42 +364,41 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Maintenance / Long-horizon
 
-- [ ] **BUG-225 — Graph backend breaks against httpx 1.0 (`httpx.TransportError` removed)**
-  spec: GR-033 · effort: S · audience: user.api
-  `src/remote_store/aio/backends/_graph/http.py:57` evaluates
-  `_TRANSPORT_ERRORS = (httpx.TransportError,)` at module import. httpx 1.0
-  (currently pre-release, `1.0.devN`) reorganised its exception hierarchy and no
-  longer exposes `httpx.TransportError` at the top level, so importing the async
-  graph backend raises `AttributeError: module 'httpx' has no attribute
-  'TransportError'`. The `[graph]` / `[httpx]` floors are `httpx>=0.24.0`, which
-  permits 1.0 once it ships stable — at which point `pip install
-  remote-store[graph]` then `from remote_store.aio import AsyncBackend` breaks at
-  import. Today's stable httpx (0.28.x) still exports the symbol, so CI is green;
-  the drift guard's `--pre` re-resolution surfaced it early (run 27954112470,
-  `check-httpx` leg — the httpx smoke (`tests/backends/http/`) imports the graph
-  backend transitively via the fixtures registry).
-  **The `[graph]` baseline is latently broken the same way, but its drift smoke
-  hides it.** `infra/drift-locks/graph.txt` pins `httpx==1.0.dev3` (the graph
-  extra depends on httpx), so an install from that resolution is already
-  import-broken — yet `[graph]`'s drift leg reads green because
-  `scripts/drift_smoke_map.py` has no `"graph"` entry, so `smoke_for("graph")`
-  falls back to `["--import-only", "remote_store"]`. The top-level `remote_store`
-  package (`src/remote_store/__init__.py`) imports only the sync surface and
-  `ext.*`; it never imports `remote_store.aio.backends._graph.http`, so the graph
-  smoke can't reach `httpx.TransportError`. Only the `[httpx]` leg goes red. The
-  2026-06-22 refresh therefore carried `[graph]` forward in this
-  knowingly-httpx-1.0-broken state (its `httpx` pin was unchanged drift; only
-  `certifi` moved), and held `[httpx]` (whose only drift, `certifi`, is likewise
-  unrelated) so the red leg stays visible until this is fixed.
-  Fix: reference the transport-error base via a path stable across httpx
-  0.x → 1.0 (confirm the 1.0 name/location), or guard the lookup. Then **wire the
-  regression into the graph drift leg, not just httpx**: add a `"graph"` entry to
-  `SMOKE_TARGETS` that imports the async graph backend (e.g.
-  `["--import-only", "remote_store.aio.backends._graph.http"]`), so a future
-  httpx-1.0 graph break fails `[graph]`'s own smoke instead of riding green on
-  the import-only top-level fallback. Add a smoke / unit assertion that the async
-  graph backend imports under the resolved httpx.
-  Surfaced by the 2026-06-22 drift-guard run.
+- [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
+  spec: GR-033 · effort: M · audience: user.api
+  BUG-225 capped the `graph` and `httpx` extras at `httpx>=0.24.0,<1.0`
+  after the drift guard's `--pre` re-resolution pulled `httpx==1.0.dev3`
+  and the async graph backend failed to import. That pre-release turned
+  out to be a **wholesale API rewrite**, not the exception-hierarchy
+  reorg the BUG-225 diagnosis first assumed: `1.0.dev3` drops
+  `httpx.AsyncClient`, `httpx.TransportError`, `httpx.DecodingError`,
+  `httpx.HTTPStatusError`, `Timeout`, `Limits` — essentially the entire
+  client surface the graph backend (`AsyncClient` in ~30 sites) and the
+  `[httpx]` HTTP adapter are built on. Coding around a single missing
+  symbol would only convert an honest import failure into a falsely-green
+  import that then explodes at runtime on `httpx.AsyncClient(...)`, so the
+  cap is the honest interim posture.
+  **Upstream context:** the cap matches the maintainers' own guidance.
+  httpx 0.28.x is still a pre-1.0 line; the "1.0.dev" / "httpx2" threads
+  are about the project's next major API *direction*, not a released
+  stable 1.x series. In the late-2024 V1 discussion the maintainers said
+  httpx was not yet at a 1.0 SemVer release and recommended **pinning to
+  0.28 while reviewing deprecations** — which is exactly what `<1.0` does.
+  So `<1.0` is not a defensive over-cap; it tracks the current usable
+  branch until a real stable 1.x ships.
+  Ref: [encode/httpx#3344](https://github.com/encode/httpx/discussions/3344).
+  **When picked up:** real httpx 1.0 stable is out and pins install
+  cleanly against it. Diff the actual 1.0 public API against 0.28
+  (`AsyncClient`, `Response`, `Timeout`/`Limits`, the transport-error and
+  decoding-error bases, `respx` compatibility); decide port-vs-hold; if
+  porting, update `_graph/*.py` + the `[httpx]` backend, raise the cap,
+  and refresh the `graph` / `httpx` drift baselines. The `graph` drift
+  smoke wired in BUG-225 (`scripts/drift_smoke_map.py`) now imports the
+  async graph module directly, so a future 1.0 break fails the graph leg
+  loudly instead of riding green on the top-level fallback.
+  **Why ID, not BK:** unevaluated migration against an upstream whose 1.0
+  shape is not yet stable — the same posture as ID-225. Mirrors the
+  revisit discipline of ID-150.
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer

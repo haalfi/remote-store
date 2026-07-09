@@ -306,9 +306,10 @@ def render_docs() -> str:
     buf.write("# Tested upper-bound versions\n\n")
     buf.write(
         "Each `[<extra>]` declares a floor in `pyproject.toml` and in "
-        "most cases deliberately no ceiling (the `arrow` and "
-        "`sql-query` extras carry a `pyarrow<25` ceiling — see the "
-        "comment on `[project.optional-dependencies]` in `pyproject.toml`). "
+        "most cases deliberately no ceiling (the exceptions: `arrow` / "
+        "`sql-query` pin `pyarrow<25`, and `graph` / `httpx` pin "
+        "`httpx<1.0` — see the comment on "
+        "`[project.optional-dependencies]` in `pyproject.toml`). "
         "The drift guard (`.github/workflows/drift-guard.yml`) "
         "records the last known-good resolution per extra in "
         "`infra/drift-locks/` and re-resolves weekly against the latest "

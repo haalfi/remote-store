@@ -1,0 +1,118 @@
+id: BUG-225
+title: "Graph backend breaks against httpx 1.0 pre-releases (cap httpx<1.0)"
+trigger: >-
+  The drift guard's `--pre` re-resolution pulled `httpx==1.0.dev3` into the
+  `graph` / `httpx` extras (unbounded `httpx>=0.24.0` floors), and importing the
+  async graph backend raised `AttributeError: module 'httpx' has no attribute
+  'TransportError'` at `_graph/http.py:57`.
+source_items:
+  - BUG-225
+audience:
+  - user.api
+  - contributor.tooling
+  - infra.ci
+discovery_followups:
+  - ID-229
+expected_ripples:
+  - sdd/backlogid.json
+  - docs-src/reference/tested-versions.md
+  - infra/drift-locks/graph.txt
+  - infra/drift-locks/httpx.txt
+surprising_ripples:
+  # PR review caught that a new ceiling has to be reflected in two prose
+  # inventories the ripple-check "Dependency" row does not enumerate: the
+  # `[project.optional-dependencies]` header comment and drift_check.py's
+  # render_docs() template (which regenerates tested-versions.md).
+  - scripts/drift_check.py
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-225 (item)"
+        read_type: gate
+        extract: "Prescribed fix: guard the TransportError lookup + wire a graph drift smoke"
+        outcome: misleading
+      - file: CLAUDE.md
+        section: "Audits (rule 3) / Be critical, not agreeable"
+        read_type: gate
+        extract: "Prescription is advisory — diverge from the audit's fix if a different path fits the diagnosed pain"
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: infra/drift-locks/graph.txt
+        section: "httpx==1.0.dev3"
+        read_type: reference
+        extract: "The exact pre-release the drift lock pins — install it in a throwaway venv to reproduce"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "_TRANSPORT_ERRORS (line 57)"
+        read_type: reference
+        extract: >-
+          Confirmed the import break, and that httpx 1.0.dev3 is a wholesale
+          rewrite (drops AsyncClient / DecodingError / HTTPStatusError too, used
+          in ~30 sites), not the exception reorg the backlog assumed — so a
+          symbol guard would make the import falsely-green then fail at runtime
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_drift_smoke_map.py
+        section: "test_smoke_target_collects_at_least_one_test"
+        read_type: reference
+        extract: "Existing smoke-map test skips import-only entries — add a dedicated test asserting graph is not the top-level fallback"
+        outcome: ok
+      - file: scripts/gen_graph.py
+        section: "tomllib / tomli import shim (lines 18-21)"
+        read_type: reference
+        extract: "Repo pattern for reading pyproject on py3.10-3.14 — mirror it in the cap-guard test"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: pyproject.toml
+        section: "[project.optional-dependencies] graph, httpx"
+        read_type: reference
+        extract: "Cap both httpx-using extras at httpx>=0.24.0,<1.0 (PEP 440 exclusive bound excludes 1.0.dev*/rc*/GA)"
+        outcome: ok
+      - file: scripts/drift_smoke_map.py
+        section: "SMOKE_TARGETS"
+        read_type: reference
+        extract: "Add a graph entry importing remote_store.aio.backends._graph.http so a future httpx break fails the graph leg, not just httpx"
+        outcome: ok
+      - file: scripts/drift_check.py
+        section: "refresh-baseline / # python: header (line 174, 185)"
+        read_type: reference
+        extract: >-
+          Refresh baselines off 1.0.dev3 — must run on Python 3.13 (not the
+          env's 3.11): a 3.11 resolution pulls typing-extensions under anyio,
+          which the 3.13 CI run would report as false drift
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Dependencies, Bug fix"
+        read_type: verify
+        extract: "Dependency-cap ripples: BACKLOG+DONE, CHANGELOG stub, drift locks, render-docs (tested-versions.md), failing-test-first"
+        outcome: ok
+  - id: review
+    name: Review
+    steps:
+      - file: infra/drift-locks/httpx.txt
+        section: "anyio==4.14.1 (missing sniffio)"
+        read_type: reference
+        extract: >-
+          Review claimed the baseline was missing sniffio (an assumed hard
+          anyio dep). Verified against anyio 4.14.1 Requires-Dist in a clean
+          3.13 venv: sniffio is NOT a dependency, so the lock is correct and
+          adding it would itself create false drift — rejected the suggestion,
+          replied with evidence
+        outcome: misleading
+      - file: pyproject.toml
+        section: "[project.optional-dependencies] header comment"
+        read_type: reference
+        extract: "Review's valid consistency nit — the no-ceiling exception inventory (arrow/sql-query) went stale when graph/httpx gained a <1.0 ceiling; updated the header comment and the render_docs() template that mirrors it"
+        outcome: ok
