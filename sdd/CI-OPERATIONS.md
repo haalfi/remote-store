@@ -171,6 +171,11 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   drifted from the current runner class — refresh the baseline from a known-good
   run per `benchmarks/README.md` § Continuous Benchmarking. A correctness failure
   (a benchmark erroring/leaking) is always real and fixed like any test failure.
+  **One false-red to rule out first:** the job restores the shared BK-279 image
+  cache but has no `prepare-images` job of its own, so on a cache miss it pulls
+  Azurite/SFTP from their block-prone registries. A failure in the
+  `start-backends` step (image pull/health-check) is infra noise — re-run the
+  job — not a benchmark regression.
 
 ### Adding a guard
 

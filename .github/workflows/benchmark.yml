@@ -35,8 +35,20 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # start-backends pulls each image on demand (docker image inspect ||
-      # ci_docker_pull.sh), so no prepare-images cache job is needed here.
+      # BK-279: Azurite (mcr.microsoft.com) and SFTP (Docker Hub) pull from
+      # block-prone registries; the shared image cache (populated by ci.yml's
+      # prepare-images on weekday runs) lets us docker-load them instead of
+      # pulling. Restore is best-effort — ci_load_images.sh is a no-op on a miss,
+      # and start-backends then falls back to a retrying on-demand pull. A
+      # pull-time block on azurite/sftp is infra noise, not a suite regression
+      # (see sdd/CI-OPERATIONS.md).
+      - name: Restore service-image cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ci-images
+          key: ci-images-v1-${{ hashFiles('scripts/ci_service_images.sh') }}
+      - run: bash scripts/ci_load_images.sh ci-images
+
       - uses: ./.github/actions/start-backends
         with:
           minio: 'true'

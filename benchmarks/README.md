@@ -266,13 +266,18 @@ shared runners is noisy, and gating merges on it would flake. Two things are che
    benchmarks).
 2. **Regression flag.** A fresh run is compared against the committed baseline
    ([`baseline/local-baseline.json`](baseline/local-baseline.json)) with
-   `report.py --regression`. An operation is flagged when its mean exceeds
-   `baseline × threshold` (default `2.0`) **and** the baseline is at least
-   `--min-abs` seconds (default `500us` in CI). The floor keeps sub-millisecond
-   ops — where machine-to-machine variance dwarfs any real signal — out of the
-   pass/fail decision. Only the **local** backend has a committed baseline, so
-   only local ops are gated; Docker-backend cells run for correctness and land in
-   the uploaded artifacts but are not timing-gated.
+   `report.py --regression`. The comparison covers **every** `remote_store`
+   operation present in both the run and the baseline — not just the
+   `SUMMARY_ROWS` display set — so large-payload, streaming, and copy/move paths
+   are gated, not only the summary write/list ops. An operation is flagged when
+   its mean exceeds `baseline × threshold` (default `2.0`) **and** the baseline
+   is at least `--min-abs` seconds (default `500us` in CI). The floor keeps
+   sub-millisecond ops — where machine-to-machine variance dwarfs any real signal
+   — reported but out of the pass/fail decision, so in practice the gate bites on
+   the larger ops (writes, large payloads, listings) where an algorithmic
+   regression actually shows. Only the **local** backend has a committed
+   baseline, so only local ops are gated; Docker-backend cells run for
+   correctness and land in the uploaded artifacts but are not timing-gated.
 
 Regenerate the baseline from a green run: `pytest benchmarks/ --backend local
 -m "not standard and not full" --benchmark-json=run.json`, then keep only

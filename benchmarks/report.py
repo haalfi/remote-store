@@ -134,6 +134,40 @@ def _build_table(
     return table
 
 
+def _op_key(bm: dict[str, Any]) -> str:
+    """Stable identifier for a benchmark: test name + non-selector params.
+
+    The ``bench_target`` / ``bench_backend`` params select *which* backend runs,
+    not *which operation* — they are stripped so the same operation across
+    backends shares one key. Remaining params (payload size, etc.) disambiguate.
+    """
+    name = _test_name(bm)
+    params = {k: v for k, v in bm.get("params", {}).items() if k not in ("bench_target", "bench_backend")}
+    if params:
+        sig = ",".join(f"{k}={params[k]}" for k in sorted(params))
+        return f"{name}[{sig}]"
+    return name
+
+
+def _build_full_table(
+    benchmarks: list[dict[str, Any]],
+) -> dict[str, dict[str, float]]:
+    """Build ``{op_key: {backend: mean_seconds}}`` for **every** remote_store cell.
+
+    Unlike :func:`_build_table`, which is scoped to the ``SUMMARY_ROWS`` display
+    set, this keeps every remote_store operation in the run — large-payload,
+    streaming, copy/move, seekable, cache — so the regression gate compares the
+    full baseline, not just the summary ops.
+    """
+    table: dict[str, dict[str, float]] = {}
+    for bm in benchmarks:
+        backend = _parse_backend(bm)
+        if backend is None:
+            continue
+        table.setdefault(_op_key(bm), {})[backend] = bm["stats"]["mean"]
+    return table
+
+
 def _format_time(seconds: float) -> str:
     """Format seconds as human-readable latency."""
     us = seconds * 1_000_000
@@ -610,8 +644,11 @@ def main() -> None:
             print(f"Baseline file not found: {args.baseline}", file=sys.stderr)
             sys.exit(2)
         baseline = json.loads(args.baseline.read_text())
-        current_table = _build_table(latest["benchmarks"])
-        baseline_table = _build_table(baseline["benchmarks"])
+        # Full table (every remote_store cell), not the SUMMARY_ROWS subset, so
+        # the whole committed baseline is compared — read/stream/copy-move paths
+        # included, not just the summary write/list ops.
+        current_table = _build_full_table(latest["benchmarks"])
+        baseline_table = _build_full_table(baseline["benchmarks"])
         rows = _regression_rows(current_table, baseline_table, args.threshold, args.min_abs)
         regressed = _print_regression(rows, args.threshold, args.min_abs)
         if regressed:
