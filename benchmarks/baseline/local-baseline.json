@@ -1,0 +1,734 @@
+{
+  "benchmarks": [
+    {
+      "name": "test_cache_cold_read[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 7.533658397688078e-05
+      }
+    },
+    {
+      "name": "test_cache_warm_read[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 1.2747134126510969e-06
+      }
+    },
+    {
+      "name": "test_uncached_read_baseline[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 6.65861810351448e-05
+      }
+    },
+    {
+      "name": "test_delete[local-remote_store]",
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 5.398024499982057e-05
+      }
+    },
+    {
+      "name": "test_delete[local-pathlib_raw]",
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 1.320098000235248e-05
+      }
+    },
+    {
+      "name": "test_delete[local-fsspec_local]",
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 1.424710999629042e-05
+      }
+    },
+    {
+      "name": "test_copy[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0002289792514821456
+      }
+    },
+    {
+      "name": "test_move[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00015147646000059466
+      }
+    },
+    {
+      "name": "test_copy_across_subtrees[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00038799000614558264
+      }
+    },
+    {
+      "name": "test_move_across_subtrees[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00016379373999143355
+      }
+    },
+    {
+      "name": "test_delete_folder_recursive[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0004228419393980816
+      }
+    },
+    {
+      "name": "test_write_large[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.004631870399975924
+      }
+    },
+    {
+      "name": "test_read_large[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.002258144600000378
+      }
+    },
+    {
+      "name": "test_stream_read_large[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0016238626000131262
+      }
+    },
+    {
+      "name": "test_stream_write_large[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.005365328599987151
+      }
+    },
+    {
+      "name": "test_roundtrip_large[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.006763554199960708
+      }
+    },
+    {
+      "name": "test_list_files[local-remote_store]",
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0006508497687295873
+      }
+    },
+    {
+      "name": "test_list_files[local-pathlib_raw]",
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.00042436262810629025
+      }
+    },
+    {
+      "name": "test_list_files[local-fsspec_local]",
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 0.00010455329598554699
+      }
+    },
+    {
+      "name": "test_iter_children[local-remote_store]",
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.000440515294172135
+      }
+    },
+    {
+      "name": "test_per_folder_stats[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.004436524499997655
+      }
+    },
+    {
+      "name": "test_list_200_files_recursive[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.004179149648889506
+      }
+    },
+    {
+      "name": "test_list_200_files_non_recursive[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00033412087578262533
+      }
+    },
+    {
+      "name": "test_list_folders_at_root[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00019464466728241276
+      }
+    },
+    {
+      "name": "test_iter_children_at_root[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00036146282272239596
+      }
+    },
+    {
+      "name": "test_exists_deep_path[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 5.772746501157585e-05
+      }
+    },
+    {
+      "name": "test_get_folder_info_large_dir[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0026324992349556855
+      }
+    },
+    {
+      "name": "test_exists_hit[local-remote_store]",
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 4.530801112989769e-05
+      }
+    },
+    {
+      "name": "test_exists_hit[local-pathlib_raw]",
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 6.294181206056676e-06
+      }
+    },
+    {
+      "name": "test_exists_hit[local-fsspec_local]",
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 5.997394099553379e-06
+      }
+    },
+    {
+      "name": "test_exists_miss[local-remote_store]",
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 4.921592106650822e-05
+      }
+    },
+    {
+      "name": "test_exists_miss[local-pathlib_raw]",
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 6.485725726818778e-06
+      }
+    },
+    {
+      "name": "test_exists_miss[local-fsspec_local]",
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 4.143236860443745e-06
+      }
+    },
+    {
+      "name": "test_get_file_info[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 5.736713700105989e-05
+      }
+    },
+    {
+      "name": "test_seekable_open_read[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0001484923909430442
+      }
+    },
+    {
+      "name": "test_seekable_sequential_chunks[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00015708878794562509
+      }
+    },
+    {
+      "name": "test_seekable_random_seeks[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 7.479099400863612e-05
+      }
+    },
+    {
+      "name": "test_write_bytes[1KB-local-remote_store]",
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ],
+        "payload": 1024
+      },
+      "stats": {
+        "mean": 0.0005273473697053107
+      }
+    },
+    {
+      "name": "test_write_bytes[1KB-local-pathlib_raw]",
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ],
+        "payload": 1024
+      },
+      "stats": {
+        "mean": 0.00045338281834624743
+      }
+    },
+    {
+      "name": "test_write_bytes[1KB-local-fsspec_local]",
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ],
+        "payload": 1024
+      },
+      "stats": {
+        "mean": 0.00046438232242263975
+      }
+    },
+    {
+      "name": "test_read_bytes[1KB-local-remote_store]",
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ],
+        "payload": 1024
+      },
+      "stats": {
+        "mean": 5.582740252512442e-05
+      }
+    },
+    {
+      "name": "test_read_bytes[1KB-local-pathlib_raw]",
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ],
+        "payload": 1024
+      },
+      "stats": {
+        "mean": 1.3959835565405516e-05
+      }
+    },
+    {
+      "name": "test_read_bytes[1KB-local-fsspec_local]",
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ],
+        "payload": 1024
+      },
+      "stats": {
+        "mean": 1.8841018638327045e-05
+      }
+    },
+    {
+      "name": "test_write_stream[1KB-local]",
+      "params": {
+        "bench_backend": "local",
+        "payload": 1024
+      },
+      "stats": {
+        "mean": 0.0005961067162627426
+      }
+    },
+    {
+      "name": "test_read_stream[1KB-local]",
+      "params": {
+        "bench_backend": "local",
+        "payload": 1024
+      },
+      "stats": {
+        "mean": 5.418818396060976e-05
+      }
+    },
+    {
+      "name": "test_roundtrip[1KB-local]",
+      "params": {
+        "bench_backend": "local",
+        "payload": 1024
+      },
+      "stats": {
+        "mean": 0.0006748133455875451
+      }
+    },
+    {
+      "name": "test_write_bytes[64KB-local-remote_store]",
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ],
+        "payload": 65536
+      },
+      "stats": {
+        "mean": 0.0006296265743682343
+      }
+    },
+    {
+      "name": "test_write_bytes[64KB-local-pathlib_raw]",
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ],
+        "payload": 65536
+      },
+      "stats": {
+        "mean": 0.000583973492035268
+      }
+    },
+    {
+      "name": "test_write_bytes[64KB-local-fsspec_local]",
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ],
+        "payload": 65536
+      },
+      "stats": {
+        "mean": 0.0005905692252124309
+      }
+    },
+    {
+      "name": "test_read_bytes[64KB-local-remote_store]",
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ],
+        "payload": 65536
+      },
+      "stats": {
+        "mean": 5.873522642162744e-05
+      }
+    },
+    {
+      "name": "test_read_bytes[64KB-local-pathlib_raw]",
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ],
+        "payload": 65536
+      },
+      "stats": {
+        "mean": 1.8343252673815946e-05
+      }
+    },
+    {
+      "name": "test_read_bytes[64KB-local-fsspec_local]",
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ],
+        "payload": 65536
+      },
+      "stats": {
+        "mean": 2.527853281343679e-05
+      }
+    },
+    {
+      "name": "test_write_stream[64KB-local]",
+      "params": {
+        "bench_backend": "local",
+        "payload": 65536
+      },
+      "stats": {
+        "mean": 0.0008177343692267414
+      }
+    },
+    {
+      "name": "test_read_stream[64KB-local]",
+      "params": {
+        "bench_backend": "local",
+        "payload": 65536
+      },
+      "stats": {
+        "mean": 6.138275769453518e-05
+      }
+    },
+    {
+      "name": "test_roundtrip[64KB-local]",
+      "params": {
+        "bench_backend": "local",
+        "payload": 65536
+      },
+      "stats": {
+        "mean": 0.000722967488496756
+      }
+    },
+    {
+      "name": "test_write_bytes[1MB-local-remote_store]",
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ],
+        "payload": 1048576
+      },
+      "stats": {
+        "mean": 0.0009582701179917028
+      }
+    },
+    {
+      "name": "test_write_bytes[1MB-local-pathlib_raw]",
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ],
+        "payload": 1048576
+      },
+      "stats": {
+        "mean": 0.0008493144378727647
+      }
+    },
+    {
+      "name": "test_write_bytes[1MB-local-fsspec_local]",
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ],
+        "payload": 1048576
+      },
+      "stats": {
+        "mean": 0.000835480878048942
+      }
+    },
+    {
+      "name": "test_read_bytes[1MB-local-remote_store]",
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ],
+        "payload": 1048576
+      },
+      "stats": {
+        "mean": 0.00014626690066261912
+      }
+    },
+    {
+      "name": "test_read_bytes[1MB-local-pathlib_raw]",
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ],
+        "payload": 1048576
+      },
+      "stats": {
+        "mean": 9.559358004157527e-05
+      }
+    },
+    {
+      "name": "test_read_bytes[1MB-local-fsspec_local]",
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ],
+        "payload": 1048576
+      },
+      "stats": {
+        "mean": 0.0001024556145648576
+      }
+    },
+    {
+      "name": "test_write_stream[1MB-local]",
+      "params": {
+        "bench_backend": "local",
+        "payload": 1048576
+      },
+      "stats": {
+        "mean": 0.001001049680258039
+      }
+    },
+    {
+      "name": "test_read_stream[1MB-local]",
+      "params": {
+        "bench_backend": "local",
+        "payload": 1048576
+      },
+      "stats": {
+        "mean": 0.00015673626148734256
+      }
+    },
+    {
+      "name": "test_roundtrip[1MB-local]",
+      "params": {
+        "bench_backend": "local",
+        "payload": 1048576
+      },
+      "stats": {
+        "mean": 0.001189538574627461
+      }
+    },
+    {
+      "name": "test_write_latency[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0006498485999998138
+      }
+    },
+    {
+      "name": "test_ttfb_read[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 7.199185000104081e-05
+      }
+    },
+    {
+      "name": "test_ttfb_exists[local]",
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 4.715835001434243e-05
+      }
+    }
+  ],
+  "machine_info": {
+    "cpu": {
+      "brand_raw": "Intel(R) Xeon(R) Processor @ 2.80GHz"
+    },
+    "python_version": "3.11.15"
+  },
+  "note": "Slim CI baseline for benchmarks/report.py --regression. Local backend only; only stats.mean is retained. Regenerate via benchmark.yml. See BK-309."
+}

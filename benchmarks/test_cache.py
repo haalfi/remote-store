@@ -37,10 +37,12 @@ class TestCachePerformance:
         store.write(path, data)
 
         def _cold_read() -> None:
-            # Fresh cache each call — always a miss.
-            # Don't close — CachedStore.close() closes the underlying backend.
+            # Fresh cache each call — always a miss. read_bytes() is the
+            # cached operation (CachedStore caches read_bytes, not the
+            # streaming read()); it also fully consumes and closes the
+            # backend handle, so no reader is left for GC to reclaim.
             cached = cache(store, ttl=300.0)
-            cached.read(path)
+            cached.read_bytes(path)
 
         benchmark(_cold_read)
         benchmark.extra_info["payload_bytes"] = len(data)
@@ -55,11 +57,11 @@ class TestCachePerformance:
         path = _unique("cache_warm")
         data = b"X" * 65_536  # 64KB
         cached.write(path, data)
-        # Prime the cache.
-        cached.read(path)
+        # Prime the cache (read_bytes is the cached op).
+        cached.read_bytes(path)
 
         def _warm_read() -> None:
-            cached.read(path)
+            cached.read_bytes(path)
 
         benchmark(_warm_read)
         benchmark.extra_info["payload_bytes"] = len(data)
@@ -74,7 +76,7 @@ class TestCachePerformance:
         store.write(path, data)
 
         def _uncached_read() -> None:
-            store.read(path)
+            store.read_bytes(path)
 
         benchmark(_uncached_read)
         benchmark.extra_info["payload_bytes"] = len(data)

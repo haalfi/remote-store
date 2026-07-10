@@ -8,7 +8,44 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
-*(none)*
+- [x] **BK-309 — Run the benchmark suite on a schedule (baseline + regression flag)**
+  spec: — · effort: M · audience: infra.ci, contributor.tooling
+  The suite was never executed by any automation — `ci.yml` passes
+  `-p no:benchmark` in every test lane — so it silently rotted: BUG-228 sat
+  broken and undetected, and the only checked-in numbers
+  (`benchmarks/results/comparative.md`) were a single 3-month-old Windows run.
+  Added `.github/workflows/benchmark.yml` (weekly `schedule` +
+  `workflow_dispatch`) that runs the suite as a **correctness gate** (would
+  have caught BUG-228), saves the run JSON, and runs a **regression check**
+  against a committed CI baseline, uploading the report + JSON as artifacts.
+  The regression check is `benchmarks/report.py --regression`: it flags any
+  operation whose mean exceeds `baseline × threshold` (default 2.0 — generous
+  by design, to catch gross regressions like an accidental O(n²) without
+  flaking on shared-runner timing noise). The committed baseline
+  (`benchmarks/baseline/local-baseline.json`) and the hard timing gate are
+  scoped to the **local** backend, which is deterministic and Docker-free so
+  it reproduces on any runner; the Docker backends (S3/SFTP/Azure) run in the
+  same job as a correctness gate and land in the artifacts, but are not
+  timing-gated (no runner-captured baseline). Purpose-2 (refreshing the
+  published overhead numbers + charts from a run of record) is tracked
+  separately as ID-230. Surfaced during the benchmark-suite analysis.
+
+- [x] **BUG-228 — Cache benchmark leaks file handles and never exercises the cache**
+  spec: — · effort: S · audience: infra.test
+  `benchmarks/test_cache.py` called the **streaming** `Store.read()` /
+  `CachedStore.read()` (inherited; the caller owns and must close the returned
+  `BinaryIO`, per `_store.py:75-79`) and discarded the stream, leaking a
+  `BufferedReader` on every one of ~500 rounds. Under
+  `[tool.pytest.ini_options] filterwarnings = error` the GC-time
+  `ResourceWarning` escalates to a `PytestUnraisableExceptionWarning` and
+  fails the test, so all three local-backend cache benchmarks failed. It went
+  unnoticed because CI never ran benchmarks (`-p no:benchmark`); BK-309 wires
+  them in. Second, latent defect: `CachedStore` caches `read_bytes()`, not the
+  streaming `read()`, so the "warm read" benchmark measured an *uncached*
+  streaming read, never a cache hit. Fix: use `read_bytes()` in all three
+  tests — it fully consumes and closes the handle (no leak) **and** exercises
+  the cached path the benchmark exists to measure. Verified: local tier goes
+  from `3 failed` to `3 passed`. Surfaced during the benchmark-suite analysis.
 
 ## v0.29.1
 

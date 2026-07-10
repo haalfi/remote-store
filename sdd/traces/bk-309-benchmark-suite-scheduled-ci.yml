@@ -1,0 +1,120 @@
+id: BK-309
+title: "Run the benchmark suite on a schedule (baseline + regression flag)"
+trigger: >
+  The benchmark suite was never executed by any automation (ci.yml runs
+  -p no:benchmark in every lane), so nobody could tell whether it still worked
+  or whether remote-store's overhead had regressed. A request to make the suite
+  actually useful surfaced that it had silently rotted.
+source_items:
+  - BK-309
+  - BUG-228
+audience:
+  - infra.ci
+  - contributor.tooling
+  - infra.test
+co_shipped_items:
+  - BUG-228
+discovery_followups:
+  - ID-230
+surprising_ripples:
+  - benchmarks/baseline/local-baseline.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Audits"
+        read_type: gate
+        extract: "Report-only first; user decides scope before implementing"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "ID prefixes / Assigning a new ID"
+        read_type: gate
+        extract: "BUG for a reproduced defect, BK for committed work; next IDs from backlogid.json + file max"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience (Derived rule)"
+        read_type: gate
+        extract: "CHANGELOG required iff any audience starts with user.* — infra/tooling change skips it"
+        outcome: ok
+  - id: audit
+    name: Analyse current state
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test / test-primary"
+        read_type: reference
+        extract: "-p no:benchmark in every lane — the suite runs in no automation"
+        outcome: ok
+      - file: benchmarks/results/comparative.md
+        section: "(header)"
+        read_type: reference
+        extract: "Only checked-in numbers are a single 2026-04-12 Windows run — 3 months stale"
+        outcome: ok
+      - file: benchmarks/test_cache.py
+        section: "TestCachePerformance"
+        read_type: reference
+        extract: "Local tier: 3 failed / 64 passed — cache benchmark is broken"
+        outcome: ok
+  - id: reproduce
+    name: Reproduce the leak
+    steps:
+      - file: src/remote_store/_store.py
+        section: "read (75-79)"
+        read_type: gate
+        extract: "read() returns a streaming BinaryIO the caller must close; read_bytes() is the bytes API"
+        outcome: ok
+      - file: src/remote_store/ext/cache.py
+        section: "read_bytes / (no read override)"
+        read_type: reference
+        extract: "CachedStore caches read_bytes, not the inherited streaming read — benchmark measured the uncached path"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options] filterwarnings"
+        read_type: reference
+        extract: "filterwarnings=error escalates the GC-time ResourceWarning into a test failure"
+        outcome: ok
+  - id: fix
+    name: Fix the benchmark (BUG-228)
+    steps:
+      - file: benchmarks/test_cache.py
+        section: "cold/warm/uncached read"
+        read_type: reference
+        extract: "Use read_bytes() in all three — closes the handle and exercises the cached path"
+        outcome: ok
+  - id: implement
+    name: Wire the suite into CI (BK-309)
+    steps:
+      - file: benchmarks/report.py
+        section: "_regression_rows / --regression"
+        read_type: reference
+        extract: "Threshold + absolute floor compare vs committed baseline; exit 1 on regression"
+        outcome: ok
+      - file: benchmarks/baseline/local-baseline.json
+        section: "(slim baseline)"
+        read_type: reference
+        extract: "Local run slimmed to name/params/stats.mean so it stays ~15KB"
+        outcome: ok
+      - file: .github/actions/start-backends/action.yml
+        section: "inputs"
+        read_type: reference
+        extract: "minio/azurite/sftp booleans; images pulled on demand, no prepare-images needed"
+        outcome: ok
+      - file: .github/workflows/benchmark.yml
+        section: "(full)"
+        read_type: reference
+        extract: "schedule + workflow_dispatch; correctness gate + regression flag + artifacts; off PR CI"
+        outcome: ok
+  - id: verify
+    name: Verify + ripple-check
+    steps:
+      - file: tests/scripts/test_bench_report.py
+        section: "(full)"
+        read_type: verify
+        extract: "Threshold + floor + baseline self-consistency — 7 passed"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Bug fix + Backlog item touched"
+        read_type: verify
+        extract: "BACKLOG-DONE entries, trace, no CHANGELOG (no user.* audience), backlogid.json bumped"
+        outcome: ok

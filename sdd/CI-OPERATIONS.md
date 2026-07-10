@@ -46,6 +46,7 @@ workflow is not named here.
 | `mutation.yml` | Sat 05:00 UTC | rolling `[mutation]` Issue (harness failures) | `/mutation` skill |
 | dependabot + `dependabot-auto-merge.yml` | Mon (weekly) | update PR + its CI status | per-ecosystem runbook below |
 | `codeql.yml` | push / PR + Mon 06:00 UTC | Security tab alerts | runbook below (exception) |
+| `benchmark.yml` | Mon 04:17 UTC + dispatch | red run + `benchmark-results` artifact + job summary | runbook below (exception) |
 
 `ci.yml` (push / PR) is the gating test matrix, not a maintenance guard: a
 contributor is present to read its result, so it sits outside this family and is
@@ -139,6 +140,37 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   to Rule 1.
 - **How to act:** review Security-tab alerts when one appears and during any
   security pass; fix or dismiss per alert with a recorded reason.
+
+### `benchmark.yml` — benchmark suite (exception to Rule 1)
+
+- **What it does:** runs the `benchmarks/` suite (local + Docker-backed S3/SFTP/
+  Azure) as a **correctness gate** — a benchmark that errors or leaks a resource
+  fails the run — and compares a fresh local-backend run against the committed
+  baseline (`benchmarks/baseline/local-baseline.json`) via
+  `report.py --regression`, flagging any op that regresses past `2x` above a
+  `500us` floor. It exists because every `ci.yml` lane runs `-p no:benchmark`, so
+  the suite otherwise executes nowhere and rots undetected (its first job was to
+  close BUG-228, a benchmark leak that had gone unnoticed for exactly that
+  reason). It is intentionally kept off push/PR CI: shared-runner timing is noisy
+  and would flake a merge gate.
+- **When:** Monday 04:17 UTC, plus manual `workflow_dispatch` (with a
+  `quick`/`standard`/`full` tier input).
+- **Where the finding shows up:** the **red run**, the **regression table in the
+  job summary**, and the uploaded **`benchmark-results` artifact** (run JSON +
+  text reports, 90-day retention). This is the exception: it opens no rolling
+  issue and has no triage skill.
+- **Why an exception:** the finding surfaces on GitHub-owned channels (the
+  scheduled-run status and its artifacts), the same rationale as `codeql.yml`.
+  A rolling-issue + triage-skill integration is **deferred** until the guard
+  earns it — if weekly regression flags prove frequent or the correctness gate
+  starts catching real rot, promote it to the drift-guard pattern. The
+  data-freshness follow-up (a reproducible run of record feeding the published
+  overhead numbers) is tracked as ID-230.
+- **How to act:** on a red run, open the run and read the regression table.
+  A flagged op is either a real regression (fix it) or a baseline that has
+  drifted from the current runner class — refresh the baseline from a known-good
+  run per `benchmarks/README.md` § Continuous Benchmarking. A correctness failure
+  (a benchmark erroring/leaking) is always real and fixed like any test failure.
 
 ### Adding a guard
 

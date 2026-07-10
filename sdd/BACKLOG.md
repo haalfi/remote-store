@@ -106,6 +106,27 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Docs & Discoverability
 
+- [ ] **ID-230 — Benchmark overhead story: reproducible run of record + user-facing framing**
+  spec: — · effort: M · audience: user.site, library.maintainer
+  Purpose-2 half of the benchmark-suite rework (purpose-1 governance shipped
+  as BK-309). The suite can now answer "what is remote-store's overhead and is
+  it acceptable?", but the published answer rests on a single stale run:
+  `benchmarks/results/comparative.md` was generated 2026-04-12 on a Windows
+  laptop, and the four SVG charts in `docs-src/explanation/performance.md`
+  derive from `.benchmarks/` JSON that is **not committed** (so they cannot be
+  reproduced or trusted). Scope when picked up:
+  1. Regenerate `comparative.md` + charts from one documented Linux/Docker run
+     (BK-309's scheduled workflow now produces exactly this artifact — wire the
+     run of record to it rather than a laptop).
+  2. Commit the source JSON alongside the rendered outputs so the charts are
+     reproducible and diffable.
+  3. Add a dated, one-glance "overhead verdict" the README's Performance
+     section can cite with confidence (lead with the answer, per
+     `research/research-benchmark-suite-v2.md` Phase 3).
+  Keep the machinery (`bench-report-user` verdicts, chart generator) — this is
+  a data-freshness + framing item, not new tooling. Surfaced during the
+  benchmark-suite analysis that produced BUG-228 / BK-309.
+
 - [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
   spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling
   Our docs foundation is entering maintenance mode as its authors converge on a
