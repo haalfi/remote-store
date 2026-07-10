@@ -5267,6 +5267,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#benchmarkyml-benchmark-suite-exception-to-rule-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        benchmark.yml — benchmark suite (exception to Rule 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#adding-a-guard" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10339,6 +10350,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#benchmarkyml-benchmark-suite-exception-to-rule-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        benchmark.yml — benchmark suite (exception to Rule 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#adding-a-guard" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10446,6 +10468,12 @@ workflow is not named here.</p>
 <td>Security tab alerts</td>
 <td>runbook below (exception)</td>
 </tr>
+<tr>
+<td><code>benchmark.yml</code></td>
+<td>Mon 04:17 UTC + dispatch</td>
+<td>red run + <code>benchmark-results</code> artifact + job summary</td>
+<td>runbook below (exception)</td>
+</tr>
 </tbody>
 </table>
 <p><code>ci.yml</code> (push / PR) is the gating test matrix, not a maintenance guard: a
@@ -10539,6 +10567,42 @@ documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p
   to Rule 1.</li>
 <li><strong>How to act:</strong> review Security-tab alerts when one appears and during any
   security pass; fix or dismiss per alert with a recorded reason.</li>
+</ul>
+<h3 id="benchmarkyml-benchmark-suite-exception-to-rule-1"><code>benchmark.yml</code> — benchmark suite (exception to Rule 1)<a class="headerlink" href="#benchmarkyml-benchmark-suite-exception-to-rule-1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>What it does:</strong> runs the <code>benchmarks/</code> suite (local + Docker-backed S3/SFTP/
+  Azure) as a <strong>correctness gate</strong> — a benchmark that errors or leaks a resource
+  fails the run — and compares a fresh local-backend run against the committed
+  baseline (<code>benchmarks/baseline/local-baseline.json</code>) via
+  <code>report.py --regression</code>, flagging any op that regresses past <code>2x</code> above a
+  <code>500us</code> floor. It exists because every <code>ci.yml</code> lane runs <code>-p no:benchmark</code>, so
+  the suite otherwise executes nowhere and rots undetected (its first job was to
+  close BUG-228, a benchmark leak that had gone unnoticed for exactly that
+  reason). It is intentionally kept off push/PR CI: shared-runner timing is noisy
+  and would flake a merge gate.</li>
+<li><strong>When:</strong> Monday 04:17 UTC, plus manual <code>workflow_dispatch</code> (with a
+  <code>quick</code>/<code>standard</code>/<code>full</code> tier input).</li>
+<li><strong>Where the finding shows up:</strong> the <strong>red run</strong>, the <strong>regression table in the
+  job summary</strong>, and the uploaded <strong><code>benchmark-results</code> artifact</strong> (run JSON +
+  text reports, 90-day retention). This is the exception: it opens no rolling
+  issue and has no triage skill.</li>
+<li><strong>Why an exception:</strong> the finding surfaces on GitHub-owned channels (the
+  scheduled-run status and its artifacts), the same rationale as <code>codeql.yml</code>.
+  A rolling-issue + triage-skill integration is <strong>deferred</strong> until the guard
+  earns it — if weekly regression flags prove frequent or the correctness gate
+  starts catching real rot, promote it to the drift-guard pattern. The
+  data-freshness follow-up (a reproducible run of record feeding the published
+  overhead numbers) is tracked as ID-230.</li>
+<li><strong>How to act:</strong> on a red run, open the run and read the regression table.
+  A flagged op is either a real regression (fix it) or a baseline that has
+  drifted from the current runner class — refresh the baseline from a known-good
+  run per <code>benchmarks/README.md</code> § Continuous Benchmarking. A correctness failure
+  (a benchmark erroring/leaking) is always real and fixed like any test failure.
+  <strong>One false-red to rule out first:</strong> the job restores the shared BK-279 image
+  cache but has no <code>prepare-images</code> job of its own, so on a cache miss it pulls
+  Azurite/SFTP from their block-prone registries. A failure in the
+  <code>start-backends</code> step (image pull/health-check) is infra noise — re-run the
+  job — not a benchmark regression.</li>
 </ul>
 <h3 id="adding-a-guard">Adding a guard<a class="headerlink" href="#adding-a-guard" title="Permanent link">&para;</a></h3>
 <p>A new scheduled or review-triggered workflow must, in the same change:</p>
