@@ -14,12 +14,18 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Azure lane with **47 errors**: every `azure-azurite` fixture built
   `AzureBackend(...)` without `hns=`, and the backend now requires it declared
   explicitly (`validate_azure_params` rejects `None` — "hns must be declared
-  explicitly … use AzureUtils.detect_hns()"). The benchmark conftest predated
+  explicitly … use AzureUtils.detect_hns()"). The benchmark harness predated
   that requirement, so the whole Azure path had been dead since it landed —
-  invisible because the suite ran in no automation. Fix: pass `hns=False` at the
-  five Azurite construction sites (Azurite is flat Blob Storage, no Hierarchical
-  Namespace) and `AzureUtils.detect_hns(connection_string=…)` on the opt-in cloud
-  path. Surfaced by benchmark run #1 (workflow_dispatch, `quick`).
+  invisible because the suite ran in no automation. Fix: declare `hns` at all ten
+  benchmark `AzureBackend(...)` sites. `hns=False` for the Azurite paths (Azurite
+  is flat Blob Storage, no Hierarchical Namespace): four in `conftest.py` (three
+  unconditional plus the `else` branch of the target fixture's
+  cloud-conditional) and all five in the standalone `bench_azure_pyarrow.py`
+  script — the latter never collected by `pytest benchmarks/`, so it escaped run
+  #1 but carried the identical rot (PR #892 review). `AzureUtils.detect_hns(
+  connection_string=…)` on the opt-in cloud path (the pure-cloud fixture and the
+  cloud branch of the target fixture). Surfaced by benchmark run #1
+  (workflow_dispatch, `quick`); the sibling script by the PR review.
 
 - [x] **BUG-230 — `sshfs` benchmark target fails under Python 3.13 (`utcfromtimestamp`)**
   spec: — · effort: S · audience: infra.test

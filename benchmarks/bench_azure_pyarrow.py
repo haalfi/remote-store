@@ -175,7 +175,7 @@ def run_benchmark() -> None:
 
 
 def _run_all(container: str) -> None:
-    setup = AzureBackend(container=container, connection_string=AZURITE_CONN_STR)
+    setup = AzureBackend(container=container, connection_string=AZURITE_CONN_STR, hns=False)
     setup_store = Store(backend=setup)
     results: list[Result] = []
 
@@ -206,6 +206,7 @@ def _run_all(container: str) -> None:
                 backend=AzureBackend(
                     container=container,
                     connection_string=AZURITE_CONN_STR,
+                    hns=False,
                 )
             )
             reqs = count_range_requests(direct, path, cols)
@@ -216,6 +217,7 @@ def _run_all(container: str) -> None:
                 backend = AzureBackend(
                     container=container,
                     connection_string=TOXIPROXY_CONN_STR,
+                    hns=False,
                 )
                 store = Store(backend=backend)
 
@@ -276,6 +278,7 @@ def _run_all(container: str) -> None:
             backend = AzureBackend(
                 container=container,
                 connection_string=TOXIPROXY_CONN_STR,
+                hns=False,
             )
             store = Store(backend=backend)
 
@@ -336,6 +339,7 @@ def _run_all(container: str) -> None:
             backend = AzureBackend(
                 container=container,
                 connection_string=TOXIPROXY_CONN_STR,
+                hns=False,
             )
             store = Store(backend=backend)
             fs = pyarrow_fs(store, materialization_threshold=0)

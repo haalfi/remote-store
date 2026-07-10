@@ -9,7 +9,9 @@ source_items:
   - BK-309
 audience:
   - infra.test
-review_rounds: 0
+surprising_ripples:
+  - benchmarks/bench_azure_pyarrow.py
+review_rounds: 1
 phases:
   - id: audit
     name: Read the failing run
@@ -39,6 +41,11 @@ phases:
         section: "azure fixtures"
         read_type: reference
         extract: "hns=False at the four Azurite sites; AzureUtils.detect_hns() on the opt-in cloud path"
+        outcome: ok
+      - file: benchmarks/bench_azure_pyarrow.py
+        section: "_run_all (five AzureBackend sites)"
+        read_type: reference
+        extract: "PR review caught the same hns= omission in the standalone script (not pytest-collected); hns=False at all five Azurite sites"
         outcome: ok
   - id: verify
     name: Verify
