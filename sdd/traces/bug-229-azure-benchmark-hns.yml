@@ -1,0 +1,50 @@
+id: BUG-229
+title: "Azure benchmark fixtures omit the now-required hns argument"
+trigger: >
+  The first BK-309 benchmark run (workflow_dispatch, quick) failed with 47 errors
+  on the azure-azurite lane: every Azure fixture built AzureBackend(...) without
+  hns=, which the backend now rejects ("hns must be declared explicitly").
+source_items:
+  - BUG-229
+  - BK-309
+audience:
+  - infra.test
+review_rounds: 0
+phases:
+  - id: audit
+    name: Read the failing run
+    steps:
+      - file: .github/workflows/benchmark.yml
+        section: Run benchmark suite
+        read_type: reference
+        extract: "Correctness gate red — 47 azure-azurite ERRORs, all the same ValueError"
+        outcome: ok
+  - id: diagnose
+    name: Locate the requirement
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "__init__ / validate_azure_params (hns)"
+        read_type: gate
+        extract: "hns: bool | None = None is required-explicit; hns=False = flat Blob (Azurite), detect_hns() probes cloud"
+        outcome: ok
+      - file: benchmarks/conftest.py
+        section: "azure / azure-latency fixtures + target builders"
+        read_type: reference
+        extract: "Five AzureBackend(...) sites construct without hns="
+        outcome: ok
+  - id: fix
+    name: Declare hns
+    steps:
+      - file: benchmarks/conftest.py
+        section: "azure fixtures"
+        read_type: reference
+        extract: "hns=False at the four Azurite sites; AzureUtils.detect_hns() on the opt-in cloud path"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Bug fix + Backlog item touched"
+        read_type: verify
+        extract: "BACKLOG-DONE entry, trace, no CHANGELOG (infra.test only); re-run benchmark.yml to confirm green"
+        outcome: ok

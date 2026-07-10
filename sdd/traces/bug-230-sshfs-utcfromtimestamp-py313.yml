@@ -1,0 +1,51 @@
+id: BUG-230
+title: "sshfs benchmark target fails under Python 3.13 (utcfromtimestamp)"
+trigger: >
+  The first BK-309 benchmark run failed three sftp-sshfs comparative benchmarks
+  on the 3.13 runner with DeprecationWarning: datetime.utcfromtimestamp() is
+  deprecated, escalated by filterwarnings=error. The pre-merge local run was 3.11
+  and did not surface it.
+source_items:
+  - BUG-230
+  - BK-309
+audience:
+  - infra.test
+review_rounds: 0
+phases:
+  - id: audit
+    name: Read the failing run
+    steps:
+      - file: .github/workflows/benchmark.yml
+        section: Run benchmark suite
+        read_type: reference
+        extract: "3 failed: test_delete/test_list_files/test_exists_hit[sftp-sshfs], all the utcfromtimestamp DeprecationWarning"
+        outcome: ok
+  - id: diagnose
+    name: Attribute the warning
+    steps:
+      - file: benchmarks/targets/_fsspec.py
+        section: SshfsTarget
+        read_type: reference
+        extract: "sshfs (fsspec SFTP) decodes stat mtimes; utcfromtimestamp deprecated in 3.12+; not first-party"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options] filterwarnings"
+        read_type: gate
+        extract: "filterwarnings=error escalates it; existing entries scope third-party deprecations by message/module"
+        outcome: unclear
+  - id: fix
+    name: Ignore the third-party deprecation
+    steps:
+      - file: pyproject.toml
+        section: filterwarnings
+        read_type: reference
+        extract: "Message-scoped ignore (raising module varies by resolved sshfs version); no first-party utcfromtimestamp use"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Bug fix"
+        read_type: verify
+        extract: "BACKLOG-DONE entry, trace, no CHANGELOG; real confirmation is the benchmark.yml re-run on 3.13"
+        outcome: ok

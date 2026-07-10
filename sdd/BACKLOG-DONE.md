@@ -8,6 +8,31 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-229 — Azure benchmark fixtures omit the now-required `hns` argument**
+  spec: — · effort: S · audience: infra.test
+  The first BK-309 benchmark run (the mechanism working as designed) failed the
+  Azure lane with **47 errors**: every `azure-azurite` fixture built
+  `AzureBackend(...)` without `hns=`, and the backend now requires it declared
+  explicitly (`validate_azure_params` rejects `None` — "hns must be declared
+  explicitly … use AzureUtils.detect_hns()"). The benchmark conftest predated
+  that requirement, so the whole Azure path had been dead since it landed —
+  invisible because the suite ran in no automation. Fix: pass `hns=False` at the
+  five Azurite construction sites (Azurite is flat Blob Storage, no Hierarchical
+  Namespace) and `AzureUtils.detect_hns(connection_string=…)` on the opt-in cloud
+  path. Surfaced by benchmark run #1 (workflow_dispatch, `quick`).
+
+- [x] **BUG-230 — `sshfs` benchmark target fails under Python 3.13 (`utcfromtimestamp`)**
+  spec: — · effort: S · audience: infra.test
+  Same first BK-309 run failed three `sftp-sshfs` comparative benchmarks
+  (`test_delete` / `test_list_files` / `test_exists_hit`) with
+  `DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated`, which
+  `filterwarnings = error` escalates. sshfs (the fsspec SFTP filesystem) decodes
+  stat mtimes with the utcfromtimestamp the stdlib deprecated in 3.12+; it fires
+  on the 3.13 CI runner (the local pre-merge run was 3.11, so it didn't surface).
+  No `remote_store` code uses utcfromtimestamp — this is a third-party
+  deprecation. Fix: a message-scoped `filterwarnings` ignore (the raising module
+  varies by resolved sshfs version). Surfaced by benchmark run #1.
+
 - [x] **BK-309 — Run the benchmark suite on a schedule (baseline + regression flag)**
   spec: — · effort: M · audience: infra.ci, contributor.tooling
   The suite was never executed by any automation — `ci.yml` passes

@@ -669,8 +669,13 @@ def bench_backend(request: pytest.FixtureRequest, moto_url: str | None) -> Itera
             if not CLOUD_AZURE_CONN_STR or not CLOUD_AZURE_CONTAINER:
                 pytest.skip("AZURE_STORAGE_CONNECTION_STRING / BENCH_AZURE_CONTAINER not set")
             container = CLOUD_AZURE_CONTAINER
+            from remote_store.backends._azure import AzureUtils
+
             b = AzureBackend(
-                container=container, connection_string=CLOUD_AZURE_CONN_STR, max_concurrency=AZURE_MAX_CONCURRENCY
+                container=container,
+                connection_string=CLOUD_AZURE_CONN_STR,
+                max_concurrency=AZURE_MAX_CONCURRENCY,
+                hns=AzureUtils.detect_hns(connection_string=CLOUD_AZURE_CONN_STR),
             )
             yield b
             b.close()
@@ -684,8 +689,13 @@ def bench_backend(request: pytest.FixtureRequest, moto_url: str | None) -> Itera
             container = f"bench-az-{tag}"
             service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
             service.create_container(container)
+            # Azurite is flat Blob Storage (no Hierarchical Namespace), so hns is
+            # always False; the backend now requires it declared explicitly (BUG-229).
             b = AzureBackend(
-                container=container, connection_string=AZURITE_CONN_STR, max_concurrency=AZURE_MAX_CONCURRENCY
+                container=container,
+                connection_string=AZURITE_CONN_STR,
+                max_concurrency=AZURE_MAX_CONCURRENCY,
+                hns=False,
             )
             yield b
             b.close()
@@ -704,11 +714,12 @@ def bench_backend(request: pytest.FixtureRequest, moto_url: str | None) -> Itera
         service.create_container(container)
         _toxiproxy_set_latency(latency_ms, proxy_name="azurite", jitter_ms=jitter_ms)
         try:
-            # Backend connects through toxiproxy.
+            # Backend connects through toxiproxy. Azurite is flat Blob (hns=False).
             b = AzureBackend(
                 container=container,
                 connection_string=TOXIPROXY_AZURITE_CONN_STR,
                 max_concurrency=AZURE_MAX_CONCURRENCY,
+                hns=False,
             )
             yield b
             b.close()
@@ -1046,10 +1057,14 @@ def bench_target(request: pytest.FixtureRequest, moto_url: str | None) -> Iterat
             service.create_container(container)
         try:
             if target_kind == "remote_store":
-                from remote_store.backends._azure import AzureBackend
+                from remote_store.backends._azure import AzureBackend, AzureUtils
 
+                # Azurite is flat Blob (hns=False); a real cloud account is probed.
                 bk = AzureBackend(
-                    container=container, connection_string=conn_str, max_concurrency=AZURE_MAX_CONCURRENCY
+                    container=container,
+                    connection_string=conn_str,
+                    max_concurrency=AZURE_MAX_CONCURRENCY,
+                    hns=AzureUtils.detect_hns(connection_string=conn_str) if cloud else False,
                 )
                 t = RemoteStoreTarget(bk)
                 yield t
@@ -1093,6 +1108,7 @@ def bench_target(request: pytest.FixtureRequest, moto_url: str | None) -> Iterat
                     container=container,
                     connection_string=TOXIPROXY_AZURITE_CONN_STR,
                     max_concurrency=AZURE_MAX_CONCURRENCY,
+                    hns=False,
                 )
                 t = RemoteStoreTarget(bk)
                 yield t
