@@ -458,6 +458,14 @@ filterwarnings = [
   # coroutine, every version) still fail; the match + the scoping are pinned by
   # tests/test_py314_unraisable_filter.py. BUG-224.
   "ignore:.*<coroutine object _wait_for_close:pytest.PytestUnraisableExceptionWarning",
+  # sshfs (the fsspec SFTP filesystem) decodes stat mtimes with the
+  # datetime.utcfromtimestamp() the stdlib deprecated in Python 3.12+. It surfaces
+  # only through the benchmark suite's `sshfs` comparative target (test_delete /
+  # test_list_files / test_exists_hit) under `filterwarnings = error` on the 3.13
+  # runner. No remote_store code uses utcfromtimestamp, so this masks a
+  # third-party deprecation, not a first-party one; message-scoped because the
+  # raising module varies by the sshfs version pip resolves. BUG-230.
+  "ignore:datetime.datetime.utcfromtimestamp:DeprecationWarning",
 ]
 asyncio_mode = "auto"
 markers = [
