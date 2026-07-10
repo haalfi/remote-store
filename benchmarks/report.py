@@ -134,6 +134,40 @@ def _build_table(
     return table
 
 
+def _op_key(bm: dict[str, Any]) -> str:
+    """Stable identifier for a benchmark: test name + non-selector params.
+
+    The ``bench_target`` / ``bench_backend`` params select *which* backend runs,
+    not *which operation* — they are stripped so the same operation across
+    backends shares one key. Remaining params (payload size, etc.) disambiguate.
+    """
+    name = _test_name(bm)
+    params = {k: v for k, v in bm.get("params", {}).items() if k not in ("bench_target", "bench_backend")}
+    if params:
+        sig = ",".join(f"{k}={params[k]}" for k in sorted(params))
+        return f"{name}[{sig}]"
+    return name
+
+
+def _build_full_table(
+    benchmarks: list[dict[str, Any]],
+) -> dict[str, dict[str, float]]:
+    """Build ``{op_key: {backend: mean_seconds}}`` for **every** remote_store cell.
+
+    Unlike :func:`_build_table`, which is scoped to the ``SUMMARY_ROWS`` display
+    set, this keeps every remote_store operation in the run — large-payload,
+    streaming, copy/move, seekable, cache — so the regression gate compares the
+    full baseline, not just the summary ops.
+    """
+    table: dict[str, dict[str, float]] = {}
+    for bm in benchmarks:
+        backend = _parse_backend(bm)
+        if backend is None:
+            continue
+        table.setdefault(_op_key(bm), {})[backend] = bm["stats"]["mean"]
+    return table
+
+
 def _format_time(seconds: float) -> str:
     """Format seconds as human-readable latency."""
     us = seconds * 1_000_000
@@ -267,6 +301,74 @@ def _build_comparative_table(
         if per_backend:
             table[label] = per_backend
     return table
+
+
+# ---- Regression detection (CI gate) ---------------------------------------
+
+# Default multiplier: flag an operation only when its mean is at least this many
+# times the committed baseline. Deliberately generous — shared CI runners vary
+# run-to-run, so a tight gate would flake. The point is to catch *gross*
+# regressions (an accidental O(n^2), a 10x blow-up), not micro-drift.
+DEFAULT_REGRESSION_THRESHOLD = 2.0
+
+
+def _regression_rows(
+    current: dict[str, dict[str, float]],
+    baseline: dict[str, dict[str, float]],
+    threshold: float,
+    min_abs: float = 0.0,
+) -> list[tuple[str, str, float, float, float, bool]]:
+    """Compare current vs baseline means per (operation, backend).
+
+    Returns ``(label, backend, current_s, baseline_s, ratio, regressed)`` for
+    every cell present in both tables. ``ratio`` is ``current / baseline``.
+
+    ``regressed`` is ``ratio > threshold`` **and** ``baseline >= min_abs``. The
+    ``min_abs`` floor keeps sub-millisecond operations — where machine-to-machine
+    variance dwarfs any real signal — out of the pass/fail gate while still
+    showing them in the report.
+    """
+    rows: list[tuple[str, str, float, float, float, bool]] = []
+    for label, cur_backends in current.items():
+        base_backends = baseline.get(label)
+        if not base_backends:
+            continue
+        for backend, cur in cur_backends.items():
+            base = base_backends.get(backend)
+            if base is None or base <= 0:
+                continue
+            ratio = cur / base
+            regressed = ratio > threshold and base >= min_abs
+            rows.append((label, backend, cur, base, ratio, regressed))
+    return rows
+
+
+def _print_regression(
+    rows: list[tuple[str, str, float, float, float, bool]],
+    threshold: float,
+    min_abs: float = 0.0,
+) -> bool:
+    """Print a regression table. Return True if any row regressed."""
+    if not rows:
+        print("No overlapping (operation, backend) cells between run and baseline.")
+        return False
+
+    label_w = max(len(r[0]) for r in rows)
+    backend_w = max(len(r[1]) for r in rows)
+    print(f"Regression check (threshold {threshold:.2f}x, floor {_format_time(min_abs)})\n")
+    header = f"{'Operation':<{label_w}}  {'Backend':<{backend_w}}  {'current':>9}  {'baseline':>9}  {'ratio':>6}"
+    print(header)
+    print("-" * len(header))
+    regressed = False
+    for label, backend, cur, base, ratio, is_reg in sorted(rows, key=lambda r: r[4], reverse=True):
+        flag = "  <-- REGRESSION" if is_reg else ""
+        if is_reg:
+            regressed = True
+        print(
+            f"{label:<{label_w}}  {backend:<{backend_w}}  "
+            f"{_format_time(cur):>9}  {_format_time(base):>9}  {ratio:>5.2f}x{flag}"
+        )
+    return regressed
 
 
 def _format_relative(value: float, baseline: float) -> str:
@@ -480,6 +582,30 @@ def main() -> None:
         help="Condensed user-facing report with verdicts (Negligible/Moderate/Visible/Favorable)",
     )
     parser.add_argument(
+        "--regression",
+        action="store_true",
+        help="Compare the run against a committed baseline and exit non-zero on regressions",
+    )
+    parser.add_argument(
+        "--baseline",
+        type=Path,
+        default=None,
+        help="Baseline JSON to compare against (required with --regression)",
+    )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=DEFAULT_REGRESSION_THRESHOLD,
+        help=f"Regression multiplier: flag ops slower than baseline x this (default {DEFAULT_REGRESSION_THRESHOLD})",
+    )
+    parser.add_argument(
+        "--min-abs",
+        type=float,
+        default=0.0,
+        dest="min_abs",
+        help="Absolute floor in seconds: baselines below this are shown but never gate (default 0)",
+    )
+    parser.add_argument(
         "--dir",
         type=Path,
         default=Path(".benchmarks"),
@@ -508,6 +634,28 @@ def main() -> None:
 
     # Load target file
     latest = json.loads(target_file.read_text())
+
+    # --- Regression mode ---
+    if args.regression:
+        if args.baseline is None:
+            print("--regression requires --baseline <file>", file=sys.stderr)
+            sys.exit(2)
+        if not args.baseline.exists():
+            print(f"Baseline file not found: {args.baseline}", file=sys.stderr)
+            sys.exit(2)
+        baseline = json.loads(args.baseline.read_text())
+        # Full table (every remote_store cell), not the SUMMARY_ROWS subset, so
+        # the whole committed baseline is compared — read/stream/copy-move paths
+        # included, not just the summary write/list ops.
+        current_table = _build_full_table(latest["benchmarks"])
+        baseline_table = _build_full_table(baseline["benchmarks"])
+        rows = _regression_rows(current_table, baseline_table, args.threshold, args.min_abs)
+        regressed = _print_regression(rows, args.threshold, args.min_abs)
+        if regressed:
+            print("\nRegression detected: one or more operations exceeded the threshold.", file=sys.stderr)
+            sys.exit(1)
+        print("\nNo regressions above threshold.")
+        return
 
     # --- Comparative mode ---
     if args.comparative:

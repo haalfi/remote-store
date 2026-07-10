@@ -274,6 +274,9 @@ bench-report-json = "python benchmarks/report.py --json"
 bench-report-comparative = "python benchmarks/report.py --comparative"
 bench-report-comparative-md = "python benchmarks/report.py --comparative --markdown --output benchmarks/results/comparative.md"
 bench-report-user = "python benchmarks/report.py --user"
+# BK-309: gate a fresh run against the committed CI baseline. --min-abs floors
+# out sub-500us ops (machine-noise dominated); --threshold flags a >2x blow-up.
+bench-regression = "python benchmarks/report.py --regression --baseline benchmarks/baseline/local-baseline.json --threshold 2.0 --min-abs 0.0005 {args}"
 bench-latency-matrix = "python benchmarks/run_latency_matrix.py"
 bench-charts = "python -m benchmarks.charts"
 gen-graph = "python scripts/gen_graph.py {args}"
