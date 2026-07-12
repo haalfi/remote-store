@@ -101,10 +101,13 @@ append it. In the README's Supported Backends table, footnote markers run in
 first-appearance order, so re-sequence them when a new row lands above an
 existing marker.
 
-Two enumerations are deliberately out of scope. `FEATURES.md` is generated
-between `BEGIN_GENERATED` markers and sorts alphabetically — never hand-edit it.
-The tagline (mirrored in `pyproject.toml`, `mkdocs.yml`, `CITATION.cff`, and
-`docs-src/context7.json`) is a slogan rather than an enumeration, and is exempt.
+Two things are deliberately out of scope. `FEATURES.md` is generated between
+`BEGIN_GENERATED` markers and sorts alphabetically — never hand-edit it. The
+tagline is a slogan rather than an enumeration, so the group order does not apply
+to it; it is mirrored across packaging, citation, and docs-metadata files, and
+`git grep "Write file storage code once"` is the way to find every copy. Do not
+work from a memorised list — the mirrors outnumber the ones anyone remembers, and
+the forgotten copies are the ones that go stale.
 
 <a id="adding-an-extension"></a>
 ## Adding an Extension

@@ -11,7 +11,7 @@ audience:
   - contributor.process
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -53,6 +53,24 @@ phases:
         section: "(full)"
         read_type: gate
         extract: "keep the addendum pointer-style; state the constraint, do not restage the PR-893 narrative"
+        outcome: ok
+  - id: fix
+    name: Address review
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Adding a New Backend / Backend order"
+        read_type: gate
+        extract: >-
+          the tagline-exemption parenthetical listed four mirror files from memory; review caught that the
+          real set is larger (repo-root context7.json, packaging/conda-forge/recipe.yaml x2,
+          docs-src/guides/custom-backend-guide.md) and that the unlisted copies are precisely the stale ones.
+          Replaced the enumeration with the discovery command — a hand-maintained list of mirror paths is the
+          same rot this item exists to prevent
+        outcome: misleading
+      - file: packaging/conda-forge/recipe.yaml
+        section: "summary, description"
+        read_type: verify
+        extract: "tagline copies here (and in repo-root context7.json) still omit OneDrive — a membership defect distinct from this item's ordering scope; raised for a separate item, not fixed here"
         outcome: ok
   - id: verify
     name: Ripple-check
