@@ -11,6 +11,7 @@ snippets execute correctly.
 
 from __future__ import annotations
 
+import os
 import shutil
 import tempfile
 
@@ -24,9 +25,9 @@ def demo(root: str | None = None) -> None:
     Parameters
     ----------
     root:
-        Filesystem root for the LocalBackend snippet.  When *None* a unique
-        temporary directory is created automatically, avoiding collisions
-        when tests run in parallel (pytest-xdist / CI matrix).
+        Disposable directory the LocalBackend snippet runs inside.  When *None*
+        a unique temporary directory is created automatically, avoiding
+        collisions when tests run in parallel (pytest-xdist / CI matrix).
     """
     if root is None:
         root = tempfile.mkdtemp(prefix="homepage-snippet-")
@@ -36,28 +37,37 @@ def demo(root: str | None = None) -> None:
 
 
 def _core_idea(root: str) -> None:
+    # The snippet region shows a cwd-relative root, because that is what a reader
+    # should copy.  Executing it therefore has to happen somewhere disposable:
+    # *root* becomes the cwd for the duration, so the ``./data`` the snippet
+    # creates lands inside it and never touches the caller's directory.  This is
+    # also what keeps parallel workers (pytest-xdist / CI matrix) from sharing a
+    # single ``./data``.
+    #
+    # ``tests/test_snippets.py`` calls ``demo()`` in-process, so this cwd is
+    # process-global while the region runs.  Keep the ``chdir`` inside the
+    # ``try``: anything placed between it and the ``finally`` could return or
+    # raise past the restore and leak the cwd into sibling in-process tests.
+    previous_cwd = os.getcwd()
     try:
+        os.chdir(root)
+
         # --8<-- [start:core-idea]
         from remote_store import Store
         from remote_store.backends import LocalBackend
 
-        store = Store(LocalBackend(root="/tmp/data"))
+        store = Store(LocalBackend(root="./data"))
         store.write_text("hello.txt", "Hello, world!")
         print(store.read_text("hello.txt"))  # 'Hello, world!'
         # --8<-- [end:core-idea]
-
-        # Re-run with the isolated root so parallel workers don't collide
-        store = Store(LocalBackend(root=root))
-        store.write_text("hello.txt", "Hello, world!")
 
         # --8<-- [start:child-scoping]
         sub = store.child("reports/2024")
         sub.write_text("summary.txt", "...")
         # --8<-- [end:child-scoping]
     finally:
+        os.chdir(previous_cwd)
         shutil.rmtree(root, ignore_errors=True)
-        # Also clean up the hardcoded path used in the snippet region
-        shutil.rmtree("/tmp/data", ignore_errors=True)
 
 
 def _capabilities() -> None:
