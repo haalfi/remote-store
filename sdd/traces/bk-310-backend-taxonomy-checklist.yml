@@ -1,0 +1,69 @@
+id: BK-310
+title: "Pin the backend enumeration order in the add-a-backend checklist"
+trigger: >-
+  PR #893 imposed a single backend taxonomy (local -> cloud -> SFTP ->
+  special-purpose) across six enumerations, but CONTRIBUTING's add-a-backend
+  checklist named only two of them and said nothing about ordering — leaving the
+  convention unwritten and free to drift again on the next backend.
+source_items:
+  - BK-310
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Adding a New Backend"
+        read_type: gate
+        extract: "steps 6-7 name only the two Supported Backends tables; no ordering rule, no mention of the other four enumerations"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "ID prefixes"
+        read_type: gate
+        extract: "BK = committed work (this is being implemented now), vs ID = unevaluated idea"
+        outcome: ok
+      - file: README.md
+        section: "Installation, What you get, Supported Backends, How it compares, Learn more"
+        read_type: reference
+        extract: "enumerate the five README sites the taxonomy has to hold across"
+        outcome: ok
+      - file: docs-src/guides/backends/index.md
+        section: "Supported Backends"
+        read_type: reference
+        extract: "the sixth site — the twin table CONTRIBUTING already pairs with the README's"
+        outcome: ok
+  - id: docs
+    name: Document the convention
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Adding a New Backend"
+        read_type: gate
+        extract: "name all six enumeration sites; state group order; insert-into-group not append; footnote markers run in first-appearance order"
+        outcome: ok
+      - file: FEATURES.md
+        section: "BEGIN_GENERATED:backends_main"
+        read_type: reference
+        extract: "generated and alphabetical — record as an explicit exemption so a future contributor does not hand-sort it into taxonomy order"
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "(full)"
+        read_type: gate
+        extract: "keep the addendum pointer-style; state the constraint, do not restage the PR-893 narrative"
+        outcome: ok
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "docs-only, contributor-facing: no CHANGELOG (audience is contributor.process, not user.*), no spec, no test"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: verify
+        extract: "item completed in the same commit — lands directly in DONE, newest-first, never appears in active BACKLOG"
+        outcome: ok

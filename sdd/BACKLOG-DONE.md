@@ -8,6 +8,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-310 — Pin the backend enumeration order in the add-a-backend checklist**
+  spec: — · effort: S · audience: contributor.process
+  PR #893 found the README naming its backends in five places, in five different
+  orders, with two of the lists stale (the *How it compares* row and the *Learn
+  more* examples bullet had both drifted behind what ships, omitting HTTP, SQL,
+  and OneDrive — the one backend no comparable library offers). That PR imposed a
+  single taxonomy (local → cloud → SFTP → special-purpose) across all of them plus
+  the twin table in `docs-src/guides/backends/index.md`, but left the convention
+  unwritten: `CONTRIBUTING.md` § Adding a New Backend named only two of the six
+  enumeration sites and said nothing about ordering. A convention held in one
+  contributor's head is exactly the condition that produced the drift, so the next
+  backend would land alphabetically or at the bottom and dissolve it again. Fix:
+  the checklist now names all six sites, states the group order, requires
+  inserting into a group rather than appending, notes that the README table's
+  footnote markers run in first-appearance order, and records the two deliberate
+  exemptions (generated `FEATURES.md`; the tagline, which is a slogan mirrored
+  across four files).
+
 - [x] **BUG-229 — Azure benchmark fixtures omit the now-required `hns` argument**
   spec: — · effort: S · audience: infra.test
   The first BK-309 benchmark run (the mechanism working as designed) failed the

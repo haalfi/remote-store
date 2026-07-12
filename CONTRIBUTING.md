@@ -90,9 +90,21 @@ walkthrough of the `Backend` contract, error mapping, and capabilities.
 4. The cross-backend conformance suite under `tests/backends/conformance/` (spec-traced per-topic files: `test_io.py`, `test_listing.py`, `test_atomic.py`, …) runs automatically against the new fixture; Dafny-derived cases carry `@pytest.mark.extended_conformance` and are validated by a Dafny-compiled oracle — see [`sdd/formal/README.md` § Compiled Oracle](sdd/formal/README.md#compiled-oracle)
 5. Add user-facing guide in `docs-src/guides/backends/<name>.md` and add to `docs-src/guides/_nav.yml`
 6. Update `docs-src/guides/backends/index.md` (Supported Backends table)
-7. Update `README.md` (Supported Backends table + Installation extras)
+7. Update `README.md` — five separate enumerations: Installation extras, the "One interface, many backends" bullet under *What you get*, the Supported Backends table, the `Backends` row of the *How it compares* table, and the examples bullet under *Learn more*
 8. Add backend config example to `examples/configuration/configuration.py`
 9. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`
+
+**Backend order (steps 6–7).** Every enumeration lists backends in one order:
+local (Local, Memory) → cloud (S3, Azure, OneDrive) → SFTP / SSH →
+special-purpose (HTTP, SQL). Insert the new backend into its group; do not
+append it. In the README's Supported Backends table, footnote markers run in
+first-appearance order, so re-sequence them when a new row lands above an
+existing marker.
+
+Two enumerations are deliberately out of scope. `FEATURES.md` is generated
+between `BEGIN_GENERATED` markers and sorts alphabetically — never hand-edit it.
+The tagline (mirrored in `pyproject.toml`, `mkdocs.yml`, `CITATION.cff`, and
+`docs-src/context7.json`) is a slogan rather than an enumeration, and is exempt.
 
 <a id="adding-an-extension"></a>
 ## Adding an Extension
