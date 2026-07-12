@@ -8,6 +8,8 @@ See: ID-057 (single-source snippets).
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 pytestmark = pytest.mark.os_sensitive
@@ -22,6 +24,27 @@ class TestHomepageSnippets:
 
         result = demo()
         assert result is None
+
+    @pytest.mark.spec("ID-057")
+    def test_homepage_demo_leaves_caller_cwd_untouched(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The core-idea region shows a cwd-relative root, so ``demo()`` runs it
+        inside a disposable directory.  A real ``data/`` where the caller happens
+        to be standing must survive, and the cwd must be handed back.
+        """
+        from examples.snippets.homepage import demo
+
+        sentinel = tmp_path / "data" / "keep.txt"
+        sentinel.parent.mkdir()
+        sentinel.write_text("do not delete me", encoding="utf-8")
+
+        monkeypatch.chdir(tmp_path)
+        demo()
+
+        assert sentinel.read_text(encoding="utf-8") == "do not delete me"
+        # The snippet writes hello.txt into its own ./data; if the isolation
+        # regressed it would land in — and its cleanup would erase — this one.
+        assert not (tmp_path / "data" / "hello.txt").exists()
+        assert Path.cwd().resolve() == tmp_path.resolve()
 
 
 class TestCoreOperationsSnippets:
