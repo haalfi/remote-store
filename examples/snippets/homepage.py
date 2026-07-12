@@ -41,7 +41,7 @@ def _core_idea(root: str) -> None:
         from remote_store import Store
         from remote_store.backends import LocalBackend
 
-        store = Store(LocalBackend(root="/tmp/data"))
+        store = Store(LocalBackend(root="./data"))
         store.write_text("hello.txt", "Hello, world!")
         print(store.read_text("hello.txt"))  # 'Hello, world!'
         # --8<-- [end:core-idea]
@@ -57,7 +57,7 @@ def _core_idea(root: str) -> None:
     finally:
         shutil.rmtree(root, ignore_errors=True)
         # Also clean up the hardcoded path used in the snippet region
-        shutil.rmtree("/tmp/data", ignore_errors=True)
+        shutil.rmtree("./data", ignore_errors=True)
 
 
 def _capabilities() -> None:

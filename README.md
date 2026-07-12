@@ -184,16 +184,16 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 | Amazon S3 / MinIO | `remote-store[s3]` | [`s3fs`](https://pypi.org/project/s3fs/) | Yes | Yes | — (copy+delete) |
 | S3 (PyArrow) | `remote-store[s3-pyarrow]` | [`pyarrow`](https://pypi.org/project/pyarrow/) + [`s3fs`](https://pypi.org/project/s3fs/) | Yes | Yes | — (copy+delete) |
 | Azure Blob / ADLS | `remote-store[azure]` | [`azure-storage-file-datalake`](https://pypi.org/project/azure-storage-file-datalake/) | Yes | Yes | HNS: Yes / non-HNS: — |
-| Microsoft Graph (OneDrive / SharePoint / Teams)*** | `remote-store[graph]` | [`httpx`](https://pypi.org/project/httpx/) + [`msal`](https://pypi.org/project/msal/) | Yes | — | —**** |
-| SFTP / SSH | `remote-store[sftp]` | [`paramiko`](https://pypi.org/project/paramiko/) | Yes | — | —** |
+| Microsoft Graph (OneDrive / SharePoint / Teams)** | `remote-store[graph]` | [`httpx`](https://pypi.org/project/httpx/) + [`msal`](https://pypi.org/project/msal/) | Yes | — | —*** |
+| SFTP / SSH | `remote-store[sftp]` | [`paramiko`](https://pypi.org/project/paramiko/) | Yes | — | —**** |
 | HTTP/HTTPS (read-only) | *(built-in)* | stdlib | — | — | — |
 | SQL Blob (SQLite, PostgreSQL, ...) | `remote-store[sql]` | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/) | Yes | Yes | Yes |
 | SQL Query (read-only) | `remote-store[sql-query]` | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/) + [`pyarrow`](https://pypi.org/project/pyarrow/) | — | — | — |
 
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
-\** Attempts `posix_rename` (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so `ATOMIC_MOVE` is not declared.
-\*** Async-only: construct via `AsyncStore(backend=GraphBackend(...))`; there is no sync `Store` wrapper or config `type=` string.
-\**** Native server-side move (`PATCH driveItem`, identity-preserving); may complete asynchronously, so `ATOMIC_MOVE` is not declared.
+\** Async-only: construct via `AsyncStore(backend=GraphBackend(...))`; there is no sync `Store` wrapper or config `type=` string.
+\*** Native server-side move (`PATCH driveItem`, identity-preserving); may complete asynchronously, so `ATOMIC_MOVE` is not declared.
+\**** Attempts `posix_rename` (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so `ATOMIC_MOVE` is not declared.
 
 All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only: it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback `ext.glob.glob_files()` works with any `LIST`-capable backend. Seekable reads are available via `Store.read_seekable()` on backends that declare `SEEKABLE_READ`. See [features](https://github.com/haalfi/remote-store/blob/master/FEATURES.md), the [capabilities matrix](https://docs.remotestore.dev/stable/reference/capabilities-matrix/), and the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for full details.
 
@@ -267,7 +267,7 @@ Storage behavior must be predictable and correct. We verify this across multiple
 
 To explore `remote-store` beyond the Quick Start:
 
-- **Examples:** self-contained scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, SFTP, and Azure.
+- **Examples:** self-contained scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, Azure, OneDrive, SFTP, HTTP, and SQL.
 - **Notebooks:** interactive [Jupyter notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks) that walk through common workflows step by step.
 - **Guides:** topic-focused walkthroughs in the [documentation](https://docs.remotestore.dev/stable/) covering backends, extensions, configuration, and patterns like data lake layouts or health checks.
 - **For AI coding agents:** point your agent at [`llms.txt`](https://docs.remotestore.dev/stable/llms.txt) (index) or [`llms-full.txt`](https://docs.remotestore.dev/stable/llms-full.txt) (the full docs). For the public API surface alone — every signature and docstring, backends included — use [`llms-api.txt`](https://docs.remotestore.dev/stable/llms-api.txt).
