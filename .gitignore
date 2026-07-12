@@ -1,9 +1,6 @@
 # Temporary scratch files (Claude + manual)
 tmp/
 
-# Scratch root written by the homepage "core idea" snippet when examples run
-/data/
-
 # IDEs & tools
 .venv/
 .vscode/

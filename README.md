@@ -152,13 +152,13 @@ Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Crede
 ## Who this is for
 
 - **Platform and internal tooling teams:** provide one stable storage interface across environments
-- **Data engineering teams:** pipelines that run against local storage, S3 / Azure / OneDrive, or SFTP depending on the environment
+- **Data engineering teams:** pipelines that run against local storage, S3, Azure, or SFTP depending on the environment
 - **Teams that include citizen developers:** analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files
 - **Anyone tired of writing storage wrappers in every project**
 
 ## What you get
 
-- **One interface, many backends:** local filesystem and in-memory for local work; S3, Azure, and OneDrive / SharePoint (Microsoft Graph, async) for cloud; SFTP / SSH; and more
+- **One interface, many backends:** local filesystem, in-memory, S3, Azure, OneDrive / SharePoint (Microsoft Graph, async), SFTP / SSH, and more
 - **Folder-scoped stores:** each Store is rooted at a folder; compose layouts with multiple stores or narrow scope with `child()`
 - **Swap backends via config:** move between environments without changing code
 - **Streaming by default:** large files just work without blowing up memory
