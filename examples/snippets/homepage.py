@@ -43,9 +43,15 @@ def _core_idea(root: str) -> None:
     # creates lands inside it and never touches the caller's directory.  This is
     # also what keeps parallel workers (pytest-xdist / CI matrix) from sharing a
     # single ``./data``.
+    #
+    # ``tests/test_snippets.py`` calls ``demo()`` in-process, so this cwd is
+    # process-global while the region runs.  Keep the ``chdir`` inside the
+    # ``try``: anything placed between it and the ``finally`` could return or
+    # raise past the restore and leak the cwd into sibling in-process tests.
     previous_cwd = os.getcwd()
-    os.chdir(root)
     try:
+        os.chdir(root)
+
         # --8<-- [start:core-idea]
         from remote_store import Store
         from remote_store.backends import LocalBackend
