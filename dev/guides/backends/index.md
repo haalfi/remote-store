@@ -8,12 +8,12 @@
 | --------------------------------------------------------------------------------------------------------------------- | --------------------- | ---------------------------------------- |
 | [Local filesystem](https://docs.remotestore.dev/stable/guides/backends/local/index.md)                                | Built-in              | `pip install remote-store`               |
 | [Memory](https://docs.remotestore.dev/stable/guides/backends/memory/index.md)                                         | Built-in              | `pip install remote-store`               |
-| [HTTP/HTTPS (read-only)](https://docs.remotestore.dev/stable/guides/backends/http/index.md)                           | Built-in              | `pip install remote-store`               |
 | [Amazon S3 / MinIO](https://docs.remotestore.dev/stable/guides/backends/s3/index.md)                                  | Built-in              | `pip install "remote-store[s3]"`         |
 | [S3 (PyArrow)](https://docs.remotestore.dev/stable/guides/backends/s3-pyarrow/index.md)                               | Built-in              | `pip install "remote-store[s3-pyarrow]"` |
-| [SFTP / SSH](https://docs.remotestore.dev/stable/guides/backends/sftp/index.md)                                       | Built-in              | `pip install "remote-store[sftp]"`       |
 | [Azure Blob / ADLS](https://docs.remotestore.dev/stable/guides/backends/azure/index.md)                               | Built-in              | `pip install "remote-store[azure]"`      |
 | [Microsoft Graph (OneDrive / SharePoint / Teams)](https://docs.remotestore.dev/stable/guides/backends/graph/index.md) | Built-in (async-only) | `pip install "remote-store[graph]"`      |
+| [SFTP / SSH](https://docs.remotestore.dev/stable/guides/backends/sftp/index.md)                                       | Built-in              | `pip install "remote-store[sftp]"`       |
+| [HTTP/HTTPS (read-only)](https://docs.remotestore.dev/stable/guides/backends/http/index.md)                           | Built-in              | `pip install remote-store`               |
 | [SQL Blob (SQLite, PostgreSQL, ...)](https://docs.remotestore.dev/stable/guides/backends/sql-blob/index.md)           | Built-in              | `pip install "remote-store[sql]"`        |
 | [SQL Query (read-only)](https://docs.remotestore.dev/stable/guides/backends/sql-query/index.md)                       | Built-in              | `pip install "remote-store[sql-query]"`  |
 

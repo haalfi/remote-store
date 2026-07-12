@@ -10468,9 +10468,9 @@
 <p>Backends that need extra dependencies use extras:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[s3]&quot;</span><span class="w">           </span><span class="c1"># Amazon S3 / MinIO</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[s3-pyarrow]&quot;</span><span class="w">   </span><span class="c1"># S3 via PyArrow (analytical workloads)</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[sftp]&quot;</span><span class="w">         </span><span class="c1"># SFTP / SSH</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[azure]&quot;</span><span class="w">        </span><span class="c1"># Azure Blob / ADLS Gen2</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[graph]&quot;</span><span class="w">        </span><span class="c1"># Microsoft Graph (OneDrive / SharePoint / Teams), async-only</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[azure]&quot;</span><span class="w">        </span><span class="c1"># Azure Blob / ADLS Gen2</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[graph]&quot;</span><span class="w">        </span><span class="c1"># Microsoft Graph (OneDrive / SharePoint / Teams), async-only</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[sftp]&quot;</span><span class="w">         </span><span class="c1"># SFTP / SSH</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[sql]&quot;</span><span class="w">          </span><span class="c1"># SQL Blob (SQLite, PostgreSQL, ...)</span>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[sql-query]&quot;</span><span class="w">    </span><span class="c1"># SQL Query (read-only, SQLAlchemy + PyArrow)</span>
 </code></pre></div>
@@ -10488,7 +10488,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalBackend</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;/tmp/data&quot;</span><span class="p">))</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;./data&quot;</span><span class="p">))</span>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">store</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;Hello, world!&quot;</span><span class="p">)</span>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">))</span>  <span class="c1"># &#39;Hello, world!&#39;</span>
 </code></pre></div>
@@ -10497,7 +10497,7 @@ use a Registry with declarative config:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Registry</span><span class="p">,</span> <span class="n">RegistryConfig</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="s2">&quot;backends&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;root&quot;</span><span class="p">:</span> <span class="s2">&quot;/tmp/data&quot;</span><span class="p">}}},</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="s2">&quot;backends&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;root&quot;</span><span class="p">:</span> <span class="s2">&quot;./data&quot;</span><span class="p">}}},</span>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="s2">&quot;stores&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="s2">&quot;main&quot;</span><span class="p">,</span> <span class="s2">&quot;root_path&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">}},</span>
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">})</span>
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
@@ -10511,7 +10511,7 @@ use a Registry with declarative config:</p>
 <p><strong>Dev (local filesystem):</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">[backends.main]</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;local&quot;</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">root</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;/tmp/data&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">root</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;./data&quot;</span><span class="w"> </span><span class="p">}</span>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">[stores.reports]</span>
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;main&quot;</span>
@@ -10536,13 +10536,13 @@ use a Registry with declarative config:</p>
 <h2 id="who-this-is-for">Who this is for<a class="headerlink" href="#who-this-is-for" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Platform and internal tooling teams:</strong> provide one stable storage interface across environments</li>
-<li><strong>Data engineering teams:</strong> pipelines that run against local storage, S3, or SFTP depending on the environment</li>
+<li><strong>Data engineering teams:</strong> pipelines that run against local storage, S3, Azure, or SFTP depending on the environment</li>
 <li><strong>Teams that include citizen developers:</strong> analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files</li>
 <li><strong>Anyone tired of writing storage wrappers in every project</strong></li>
 </ul>
 <h2 id="what-you-get">What you get<a class="headerlink" href="#what-you-get" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>One interface, many backends:</strong> local filesystem, S3, SFTP, Azure, OneDrive / SharePoint (Microsoft Graph, async), in-memory, and more</li>
+<li><strong>One interface, many backends:</strong> local filesystem, in-memory, S3, Azure, OneDrive / SharePoint (Microsoft Graph, async), SFTP / SSH, and more</li>
 <li><strong>Folder-scoped stores:</strong> each Store is rooted at a folder; compose layouts with multiple stores or narrow scope with <code>child()</code></li>
 <li><strong>Swap backends via config:</strong> move between environments without changing code</li>
 <li><strong>Streaming by default:</strong> large files just work without blowing up memory</li>
@@ -10588,14 +10588,6 @@ use a Registry with declarative config:</p>
 <td style="text-align: center;">Yes</td>
 </tr>
 <tr>
-<td>HTTP/HTTPS (read-only)</td>
-<td><em>(built-in)</em></td>
-<td>stdlib</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">—</td>
-</tr>
-<tr>
 <td>Amazon S3 / MinIO</td>
 <td><code>remote-store[s3]</code></td>
 <td><a href="https://pypi.org/project/s3fs/"><code>s3fs</code></a></td>
@@ -10612,14 +10604,6 @@ use a Registry with declarative config:</p>
 <td style="text-align: center;">— (copy+delete)</td>
 </tr>
 <tr>
-<td>SFTP / SSH</td>
-<td><code>remote-store[sftp]</code></td>
-<td><a href="https://pypi.org/project/paramiko/"><code>paramiko</code></a></td>
-<td style="text-align: center;">Yes</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">—**</td>
-</tr>
-<tr>
 <td>Azure Blob / ADLS</td>
 <td><code>remote-store[azure]</code></td>
 <td><a href="https://pypi.org/project/azure-storage-file-datalake/"><code>azure-storage-file-datalake</code></a></td>
@@ -10628,12 +10612,28 @@ use a Registry with declarative config:</p>
 <td style="text-align: center;">HNS: Yes / non-HNS: —</td>
 </tr>
 <tr>
-<td>Microsoft Graph (OneDrive / SharePoint / Teams)***</td>
+<td>Microsoft Graph (OneDrive / SharePoint / Teams)**</td>
 <td><code>remote-store[graph]</code></td>
 <td><a href="https://pypi.org/project/httpx/"><code>httpx</code></a> + <a href="https://pypi.org/project/msal/"><code>msal</code></a></td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
+<td style="text-align: center;">—***</td>
+</tr>
+<tr>
+<td>SFTP / SSH</td>
+<td><code>remote-store[sftp]</code></td>
+<td><a href="https://pypi.org/project/paramiko/"><code>paramiko</code></a></td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">—****</td>
+</tr>
+<tr>
+<td>HTTP/HTTPS (read-only)</td>
+<td><em>(built-in)</em></td>
+<td>stdlib</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
 </tr>
 <tr>
 <td>SQL Blob (SQLite, PostgreSQL, ...)</td>
@@ -10654,9 +10654,9 @@ use a Registry with declarative config:</p>
 </tbody>
 </table>
 <p>* Same-filesystem only; cross-filesystem falls back to copy+delete.
-*<em> Attempts <code>posix_rename</code> (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so <code>ATOMIC_MOVE</code> is not declared.
-*</em><em> Async-only: construct via <code>AsyncStore(backend=GraphBackend(...))</code>; there is no sync <code>Store</code> wrapper or config <code>type=</code> string.
-*</em>** Native server-side move (<code>PATCH driveItem</code>, identity-preserving); may complete asynchronously, so <code>ATOMIC_MOVE</code> is not declared.</p>
+*<em> Async-only: construct via <code>AsyncStore(backend=GraphBackend(...))</code>; there is no sync <code>Store</code> wrapper or config <code>type=</code> string.
+*</em><em> Native server-side move (<code>PATCH driveItem</code>, identity-preserving); may complete asynchronously, so <code>ATOMIC_MOVE</code> is not declared.
+*</em>** Attempts <code>posix_rename</code> (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so <code>ATOMIC_MOVE</code> is not declared.</p>
 <p>All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only: it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback <code>ext.glob.glob_files()</code> works with any <code>LIST</code>-capable backend. Seekable reads are available via <code>Store.read_seekable()</code> on backends that declare <code>SEEKABLE_READ</code>. See <a href="https://github.com/haalfi/remote-store/blob/master/FEATURES.md">features</a>, the <a href="https://docs.remotestore.dev/stable/reference/capabilities-matrix/">capabilities matrix</a>, and the <a href="https://docs.remotestore.dev/stable/explanation/concurrency/">concurrency guide</a> for full details.</p>
 <h2 id="store-api">Store API<a class="headerlink" href="#store-api" title="Permanent link">&para;</a></h2>
 <p>The Store provides methods across read/write, browsing, management, and utility. Key highlights:</p>
@@ -10768,7 +10768,7 @@ use a Registry with declarative config:</p>
 <h2 id="learn-more">Learn more<a class="headerlink" href="#learn-more" title="Permanent link">&para;</a></h2>
 <p>To explore <code>remote-store</code> beyond the Quick Start:</p>
 <ul>
-<li><strong>Examples:</strong> self-contained scripts in <a href="https://github.com/haalfi/remote-store/tree/master/examples"><code>examples/</code></a> covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, SFTP, and Azure.</li>
+<li><strong>Examples:</strong> self-contained scripts in <a href="https://github.com/haalfi/remote-store/tree/master/examples"><code>examples/</code></a> covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, Azure, OneDrive, SFTP, HTTP, and SQL.</li>
 <li><strong>Notebooks:</strong> interactive <a href="https://github.com/haalfi/remote-store/tree/master/examples/notebooks">Jupyter notebooks</a> that walk through common workflows step by step.</li>
 <li><strong>Guides:</strong> topic-focused walkthroughs in the <a href="https://docs.remotestore.dev/stable/">documentation</a> covering backends, extensions, configuration, and patterns like data lake layouts or health checks.</li>
 <li><strong>For AI coding agents:</strong> point your agent at <a href="https://docs.remotestore.dev/stable/llms.txt"><code>llms.txt</code></a> (index) or <a href="https://docs.remotestore.dev/stable/llms-full.txt"><code>llms-full.txt</code></a> (the full docs). For the public API surface alone — every signature and docstring, backends included — use <a href="https://docs.remotestore.dev/stable/llms-api.txt"><code>llms-api.txt</code></a>.</li>
@@ -10801,7 +10801,7 @@ use a Registry with declarative config:</p>
 <td>S3, GCS, Az, SFTP</td>
 <td>S3, GCS, Azure</td>
 <td>S3, GCS, Azure</td>
-<td>Local, S3, SFTP, Az, Memory</td>
+<td>Local, Memory, S3, Azure, OneDrive, SFTP, HTTP, SQL</td>
 </tr>
 <tr>
 <td>SFTP</td>

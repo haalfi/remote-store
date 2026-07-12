@@ -13,9 +13,9 @@ Backends that need extra dependencies use extras:
 ```
 pip install "remote-store[s3]"           # Amazon S3 / MinIO
 pip install "remote-store[s3-pyarrow]"   # S3 via PyArrow (analytical workloads)
-pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
 pip install "remote-store[graph]"        # Microsoft Graph (OneDrive / SharePoint / Teams), async-only
+pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[sql]"          # SQL Blob (SQLite, PostgreSQL, ...)
 pip install "remote-store[sql-query]"    # SQL Query (read-only, SQLAlchemy + PyArrow)
 ```
@@ -40,7 +40,7 @@ The simplest way to use `remote-store` ([`examples/getting_started/quickstart.py
 from remote_store import Store
 from remote_store.backends import LocalBackend
 
-store = Store(LocalBackend(root="/tmp/data"))
+store = Store(LocalBackend(root="./data"))
 store.write_text("hello.txt", "Hello, world!")
 print(store.read_text("hello.txt"))  # 'Hello, world!'
 ```
@@ -51,7 +51,7 @@ For applications that manage multiple backends or switch between environments, u
 from remote_store import Registry, RegistryConfig
 
 config = RegistryConfig.from_dict({
-    "backends": {"main": {"type": "local", "options": {"root": "/tmp/data"}}},
+    "backends": {"main": {"type": "local", "options": {"root": "./data"}}},
     "stores": {"data": {"backend": "main", "root_path": ""}},
 })
 
@@ -70,7 +70,7 @@ Switch from local to S3 by changing the config file. The application code stays 
 ```
 [backends.main]
 type = "local"
-options = { root = "/tmp/data" }
+options = { root = "./data" }
 
 [stores.reports]
 backend = "main"
@@ -102,13 +102,13 @@ Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Crede
 ## Who this is for
 
 - **Platform and internal tooling teams:** provide one stable storage interface across environments
-- **Data engineering teams:** pipelines that run against local storage, S3, or SFTP depending on the environment
+- **Data engineering teams:** pipelines that run against local storage, S3, Azure, or SFTP depending on the environment
 - **Teams that include citizen developers:** analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files
 - **Anyone tired of writing storage wrappers in every project**
 
 ## What you get
 
-- **One interface, many backends:** local filesystem, S3, SFTP, Azure, OneDrive / SharePoint (Microsoft Graph, async), in-memory, and more
+- **One interface, many backends:** local filesystem, in-memory, S3, Azure, OneDrive / SharePoint (Microsoft Graph, async), SFTP / SSH, and more
 - **Folder-scoped stores:** each Store is rooted at a folder; compose layouts with multiple stores or narrow scope with `child()`
 - **Swap backends via config:** move between environments without changing code
 - **Streaming by default:** large files just work without blowing up memory
@@ -127,20 +127,20 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 
 ## Supported Backends
 
-| Backend                                               | Extra                      | Library                                                                                               | Atomic write | Native glob | `move()` atomic       |
-| ----------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------- | ------------ | ----------- | --------------------- |
-| Local filesystem                                      | *(built-in)*               | stdlib                                                                                                | Yes          | Yes         | Yes\*                 |
-| Memory (in-process)                                   | *(built-in)*               | —                                                                                                     | Yes          | —           | Yes                   |
-| HTTP/HTTPS (read-only)                                | *(built-in)*               | stdlib                                                                                                | —            | —           | —                     |
-| Amazon S3 / MinIO                                     | `remote-store[s3]`         | [`s3fs`](https://pypi.org/project/s3fs/)                                                              | Yes          | Yes         | — (copy+delete)       |
-| S3 (PyArrow)                                          | `remote-store[s3-pyarrow]` | [`pyarrow`](https://pypi.org/project/pyarrow/) + [`s3fs`](https://pypi.org/project/s3fs/)             | Yes          | Yes         | — (copy+delete)       |
-| SFTP / SSH                                            | `remote-store[sftp]`       | [`paramiko`](https://pypi.org/project/paramiko/)                                                      | Yes          | —           | —\*\*                 |
-| Azure Blob / ADLS                                     | `remote-store[azure]`      | [`azure-storage-file-datalake`](https://pypi.org/project/azure-storage-file-datalake/)                | Yes          | Yes         | HNS: Yes / non-HNS: — |
-| Microsoft Graph (OneDrive / SharePoint / Teams)\*\*\* | `remote-store[graph]`      | [`httpx`](https://pypi.org/project/httpx/) + [`msal`](https://pypi.org/project/msal/)                 | Yes          | —           | —\*\*\*\*             |
-| SQL Blob (SQLite, PostgreSQL, ...)                    | `remote-store[sql]`        | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/)                                                  | Yes          | Yes         | Yes                   |
-| SQL Query (read-only)                                 | `remote-store[sql-query]`  | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/) + [`pyarrow`](https://pypi.org/project/pyarrow/) | —            | —           | —                     |
+| Backend                                             | Extra                      | Library                                                                                               | Atomic write | Native glob | `move()` atomic       |
+| --------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------- | ------------ | ----------- | --------------------- |
+| Local filesystem                                    | *(built-in)*               | stdlib                                                                                                | Yes          | Yes         | Yes\*                 |
+| Memory (in-process)                                 | *(built-in)*               | —                                                                                                     | Yes          | —           | Yes                   |
+| Amazon S3 / MinIO                                   | `remote-store[s3]`         | [`s3fs`](https://pypi.org/project/s3fs/)                                                              | Yes          | Yes         | — (copy+delete)       |
+| S3 (PyArrow)                                        | `remote-store[s3-pyarrow]` | [`pyarrow`](https://pypi.org/project/pyarrow/) + [`s3fs`](https://pypi.org/project/s3fs/)             | Yes          | Yes         | — (copy+delete)       |
+| Azure Blob / ADLS                                   | `remote-store[azure]`      | [`azure-storage-file-datalake`](https://pypi.org/project/azure-storage-file-datalake/)                | Yes          | Yes         | HNS: Yes / non-HNS: — |
+| Microsoft Graph (OneDrive / SharePoint / Teams)\*\* | `remote-store[graph]`      | [`httpx`](https://pypi.org/project/httpx/) + [`msal`](https://pypi.org/project/msal/)                 | Yes          | —           | —\*\*\*               |
+| SFTP / SSH                                          | `remote-store[sftp]`       | [`paramiko`](https://pypi.org/project/paramiko/)                                                      | Yes          | —           | —\*\*\*\*             |
+| HTTP/HTTPS (read-only)                              | *(built-in)*               | stdlib                                                                                                | —            | —           | —                     |
+| SQL Blob (SQLite, PostgreSQL, ...)                  | `remote-store[sql]`        | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/)                                                  | Yes          | Yes         | Yes                   |
+| SQL Query (read-only)                               | `remote-store[sql-query]`  | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/) + [`pyarrow`](https://pypi.org/project/pyarrow/) | —            | —           | —                     |
 
-\* Same-filesystem only; cross-filesystem falls back to copy+delete. * *Attempts `posix_rename` (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so `ATOMIC_MOVE` is not declared. \** *Async-only: construct via `AsyncStore(backend=GraphBackend(...))`; there is no sync `Store` wrapper or config `type=` string. \**\*\* Native server-side move (`PATCH driveItem`, identity-preserving); may complete asynchronously, so `ATOMIC_MOVE` is not declared.
+\* Same-filesystem only; cross-filesystem falls back to copy+delete. * *Async-only: construct via `AsyncStore(backend=GraphBackend(...))`; there is no sync `Store` wrapper or config `type=` string. \** *Native server-side move (`PATCH driveItem`, identity-preserving); may complete asynchronously, so `ATOMIC_MOVE` is not declared. \**\*\* Attempts `posix_rename` (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so `ATOMIC_MOVE` is not declared.
 
 All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only: it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback `ext.glob.glob_files()` works with any `LIST`-capable backend. Seekable reads are available via `Store.read_seekable()` on backends that declare `SEEKABLE_READ`. See [features](https://github.com/haalfi/remote-store/blob/master/FEATURES.md), the [capabilities matrix](https://docs.remotestore.dev/stable/reference/capabilities-matrix/), and the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for full details.
 
@@ -214,7 +214,7 @@ Storage behavior must be predictable and correct. We verify this across multiple
 
 To explore `remote-store` beyond the Quick Start:
 
-- **Examples:** self-contained scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, SFTP, and Azure.
+- **Examples:** self-contained scripts in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) covering core operations (file I/O, streaming, atomic writes, error handling, etc.) and backend-specific setups for S3, Azure, OneDrive, SFTP, HTTP, and SQL.
 - **Notebooks:** interactive [Jupyter notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks) that walk through common workflows step by step.
 - **Guides:** topic-focused walkthroughs in the [documentation](https://docs.remotestore.dev/stable/) covering backends, extensions, configuration, and patterns like data lake layouts or health checks.
 - **For AI coding agents:** point your agent at [`llms.txt`](https://docs.remotestore.dev/stable/llms.txt) (index) or [`llms-full.txt`](https://docs.remotestore.dev/stable/llms-full.txt) (the full docs). For the public API surface alone — every signature and docstring, backends included — use [`llms-api.txt`](https://docs.remotestore.dev/stable/llms-api.txt).
@@ -223,17 +223,17 @@ To explore `remote-store` beyond the Quick Start:
 
 There are several excellent Python libraries for file I/O across backends. Here is where `remote-store` sits:
 
-|               | [fsspec](https://pypi.org/project/fsspec/) | [smart_open](https://pypi.org/project/smart-open/) | [cloudpathlib](https://pypi.org/project/cloudpathlib/) | [obstore](https://pypi.org/project/obstore/) | **remote-store**            |
-| ------------- | ------------------------------------------ | -------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------- | --------------------------- |
-| API surface   | many methods                               | `open()` only                                      | pathlib-style                                          | ~10 methods                                  | full Store API              |
-| Backends      | many filesystems                           | S3, GCS, Az, SFTP                                  | S3, GCS, Azure                                         | S3, GCS, Azure                               | Local, S3, SFTP, Az, Memory |
-| SFTP          | via sshfs                                  | Yes                                                | —                                                      | —                                            | Built-in                    |
-| Streaming I/O | Yes                                        | Yes                                                | — (downloads)                                          | Bytes-oriented                               | Yes (BinaryIO)              |
-| Atomic writes | —                                          | —                                                  | —                                                      | —                                            | Yes (capability-gated)      |
-| Async         | Yes                                        | —                                                  | —                                                      | Yes (first-class)                            | Yes (`remote_store.aio`)    |
-| Observability | —                                          | —                                                  | —                                                      | —                                            | `ext.observe` + OTel        |
-| Config model  | Per-filesystem                             | URI-based                                          | Per-client                                             | Per-store kwargs                             | Immutable Registry          |
-| Runtime deps  | Yes                                        | Minimal                                            | SDK-based                                              | Rust binary                                  | Zero (core)                 |
+|               | [fsspec](https://pypi.org/project/fsspec/) | [smart_open](https://pypi.org/project/smart-open/) | [cloudpathlib](https://pypi.org/project/cloudpathlib/) | [obstore](https://pypi.org/project/obstore/) | **remote-store**                                    |
+| ------------- | ------------------------------------------ | -------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------- | --------------------------------------------------- |
+| API surface   | many methods                               | `open()` only                                      | pathlib-style                                          | ~10 methods                                  | full Store API                                      |
+| Backends      | many filesystems                           | S3, GCS, Az, SFTP                                  | S3, GCS, Azure                                         | S3, GCS, Azure                               | Local, Memory, S3, Azure, OneDrive, SFTP, HTTP, SQL |
+| SFTP          | via sshfs                                  | Yes                                                | —                                                      | —                                            | Built-in                                            |
+| Streaming I/O | Yes                                        | Yes                                                | — (downloads)                                          | Bytes-oriented                               | Yes (BinaryIO)                                      |
+| Atomic writes | —                                          | —                                                  | —                                                      | —                                            | Yes (capability-gated)                              |
+| Async         | Yes                                        | —                                                  | —                                                      | Yes (first-class)                            | Yes (`remote_store.aio`)                            |
+| Observability | —                                          | —                                                  | —                                                      | —                                            | `ext.observe` + OTel                                |
+| Config model  | Per-filesystem                             | URI-based                                          | Per-client                                             | Per-store kwargs                             | Immutable Registry                                  |
+| Runtime deps  | Yes                                        | Minimal                                            | SDK-based                                              | Rust binary                                  | Zero (core)                                         |
 
 *Feature sets may change as these libraries evolve. Check each project's documentation for the current state.*
 

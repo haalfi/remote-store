@@ -10176,11 +10176,6 @@ stays the same — the <code>Store</code> API is identical across all backends.<
 <td><code>pip install remote-store</code></td>
 </tr>
 <tr>
-<td><a href="http/">HTTP/HTTPS (read-only)</a></td>
-<td>Built-in</td>
-<td><code>pip install remote-store</code></td>
-</tr>
-<tr>
 <td><a href="s3/">Amazon S3 / MinIO</a></td>
 <td>Built-in</td>
 <td><code>pip install "remote-store[s3]"</code></td>
@@ -10191,11 +10186,6 @@ stays the same — the <code>Store</code> API is identical across all backends.<
 <td><code>pip install "remote-store[s3-pyarrow]"</code></td>
 </tr>
 <tr>
-<td><a href="sftp/">SFTP / SSH</a></td>
-<td>Built-in</td>
-<td><code>pip install "remote-store[sftp]"</code></td>
-</tr>
-<tr>
 <td><a href="azure/">Azure Blob / ADLS</a></td>
 <td>Built-in</td>
 <td><code>pip install "remote-store[azure]"</code></td>
@@ -10204,6 +10194,16 @@ stays the same — the <code>Store</code> API is identical across all backends.<
 <td><a href="graph/">Microsoft Graph (OneDrive / SharePoint / Teams)</a></td>
 <td>Built-in (async-only)</td>
 <td><code>pip install "remote-store[graph]"</code></td>
+</tr>
+<tr>
+<td><a href="sftp/">SFTP / SSH</a></td>
+<td>Built-in</td>
+<td><code>pip install "remote-store[sftp]"</code></td>
+</tr>
+<tr>
+<td><a href="http/">HTTP/HTTPS (read-only)</a></td>
+<td>Built-in</td>
+<td><code>pip install remote-store</code></td>
 </tr>
 <tr>
 <td><a href="sql-blob/">SQL Blob (SQLite, PostgreSQL, ...)</a></td>
