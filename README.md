@@ -62,9 +62,9 @@ Backends that need extra dependencies use extras:
 ```bash
 pip install "remote-store[s3]"           # Amazon S3 / MinIO
 pip install "remote-store[s3-pyarrow]"   # S3 via PyArrow (analytical workloads)
-pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[azure]"        # Azure Blob / ADLS Gen2
 pip install "remote-store[graph]"        # Microsoft Graph (OneDrive / SharePoint / Teams), async-only
+pip install "remote-store[sftp]"         # SFTP / SSH
 pip install "remote-store[sql]"          # SQL Blob (SQLite, PostgreSQL, ...)
 pip install "remote-store[sql-query]"    # SQL Query (read-only, SQLAlchemy + PyArrow)
 ```
@@ -89,7 +89,7 @@ The simplest way to use `remote-store` ([`examples/getting_started/quickstart.py
 from remote_store import Store
 from remote_store.backends import LocalBackend
 
-store = Store(LocalBackend(root="/tmp/data"))
+store = Store(LocalBackend(root="./data"))
 store.write_text("hello.txt", "Hello, world!")
 print(store.read_text("hello.txt"))  # 'Hello, world!'
 ```
@@ -101,7 +101,7 @@ use a Registry with declarative config:
 from remote_store import Registry, RegistryConfig
 
 config = RegistryConfig.from_dict({
-    "backends": {"main": {"type": "local", "options": {"root": "/tmp/data"}}},
+    "backends": {"main": {"type": "local", "options": {"root": "./data"}}},
     "stores": {"data": {"backend": "main", "root_path": ""}},
 })
 
@@ -120,7 +120,7 @@ Switch from local to S3 by changing the config file. The application code stays 
 ```toml
 [backends.main]
 type = "local"
-options = { root = "/tmp/data" }
+options = { root = "./data" }
 
 [stores.reports]
 backend = "main"
@@ -152,13 +152,13 @@ Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Crede
 ## Who this is for
 
 - **Platform and internal tooling teams:** provide one stable storage interface across environments
-- **Data engineering teams:** pipelines that run against local storage, S3, or SFTP depending on the environment
+- **Data engineering teams:** pipelines that run against local storage, S3 / Azure / OneDrive, or SFTP depending on the environment
 - **Teams that include citizen developers:** analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files
 - **Anyone tired of writing storage wrappers in every project**
 
 ## What you get
 
-- **One interface, many backends:** local filesystem, S3, SFTP, Azure, OneDrive / SharePoint (Microsoft Graph, async), in-memory, and more
+- **One interface, many backends:** local filesystem and in-memory for local work; S3, Azure, and OneDrive / SharePoint (Microsoft Graph, async) for cloud; SFTP / SSH; and more
 - **Folder-scoped stores:** each Store is rooted at a folder; compose layouts with multiple stores or narrow scope with `child()`
 - **Swap backends via config:** move between environments without changing code
 - **Streaming by default:** large files just work without blowing up memory
@@ -181,12 +181,12 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 |---------|-------|---------|:------------:|:-----------:|:---------------:|
 | Local filesystem | *(built-in)* | stdlib | Yes | Yes | Yes* |
 | Memory (in-process) | *(built-in)* | — | Yes | — | Yes |
-| HTTP/HTTPS (read-only) | *(built-in)* | stdlib | — | — | — |
 | Amazon S3 / MinIO | `remote-store[s3]` | [`s3fs`](https://pypi.org/project/s3fs/) | Yes | Yes | — (copy+delete) |
 | S3 (PyArrow) | `remote-store[s3-pyarrow]` | [`pyarrow`](https://pypi.org/project/pyarrow/) + [`s3fs`](https://pypi.org/project/s3fs/) | Yes | Yes | — (copy+delete) |
-| SFTP / SSH | `remote-store[sftp]` | [`paramiko`](https://pypi.org/project/paramiko/) | Yes | — | —** |
 | Azure Blob / ADLS | `remote-store[azure]` | [`azure-storage-file-datalake`](https://pypi.org/project/azure-storage-file-datalake/) | Yes | Yes | HNS: Yes / non-HNS: — |
 | Microsoft Graph (OneDrive / SharePoint / Teams)*** | `remote-store[graph]` | [`httpx`](https://pypi.org/project/httpx/) + [`msal`](https://pypi.org/project/msal/) | Yes | — | —**** |
+| SFTP / SSH | `remote-store[sftp]` | [`paramiko`](https://pypi.org/project/paramiko/) | Yes | — | —** |
+| HTTP/HTTPS (read-only) | *(built-in)* | stdlib | — | — | — |
 | SQL Blob (SQLite, PostgreSQL, ...) | `remote-store[sql]` | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/) | Yes | Yes | Yes |
 | SQL Query (read-only) | `remote-store[sql-query]` | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/) + [`pyarrow`](https://pypi.org/project/pyarrow/) | — | — | — |
 
@@ -279,7 +279,7 @@ There are several excellent Python libraries for file I/O across backends. Here 
 | | [fsspec](https://pypi.org/project/fsspec/) | [smart_open](https://pypi.org/project/smart-open/) | [cloudpathlib](https://pypi.org/project/cloudpathlib/) | [obstore](https://pypi.org/project/obstore/) | **remote-store** |
 |---|---|---|---|---|---|
 | API surface | many methods | `open()` only | pathlib-style | ~10 methods | full Store API |
-| Backends | many filesystems | S3, GCS, Az, SFTP | S3, GCS, Azure | S3, GCS, Azure | Local, S3, SFTP, Az, Memory |
+| Backends | many filesystems | S3, GCS, Az, SFTP | S3, GCS, Azure | S3, GCS, Azure | Local, Memory, S3, Azure, OneDrive, SFTP, HTTP, SQL |
 | SFTP | via sshfs | Yes | — | — | Built-in |
 | Streaming I/O | Yes | Yes | — (downloads) | Bytes-oriented | Yes (BinaryIO) |
 | Atomic writes | — | — | — | — | Yes (capability-gated) |
