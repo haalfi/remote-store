@@ -90,14 +90,16 @@ SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename(
 | Backend | `move()` atomic? | `write_atomic()` truly atomic? | `overwrite=False` race-free? |
 |---------|-----------------|-------------------------------|------------------------------|
 | [Local](../guides/backends/local.md) | Yes* | Yes (temp file + `os.replace()`) | No (TOCTOU) |
+| [Memory](../guides/backends/memory.md) | Yes | Yes (direct) | No (TOCTOU) |
 | [S3](../guides/backends/s3.md) | No (copy + delete) | Yes (PUT is inherently atomic) | No (TOCTOU) |
 | [S3-PyArrow](../guides/backends/s3-pyarrow.md) | No (copy + delete) | Yes (PUT is inherently atomic) | No (TOCTOU) |
 | [Azure](../guides/backends/azure.md) (HNS) | Yes (`rename_file`) | Yes (temp file + rename) | No (TOCTOU) |
 | [Azure](../guides/backends/azure.md) (non-HNS) | No (copy + delete) | Yes (direct PUT is atomic) | No (TOCTOU) |
 | [Graph](../guides/backends/graph.md) | No (server move/copy) | Yes (server `PUT`) | Yes (server create-if-absent) |
 | [SFTP](../guides/backends/sftp.md) | Yes** | Yes** (temp file + rename) | No (TOCTOU) |
-| [Memory](../guides/backends/memory.md) | Yes | Yes (direct) | No (TOCTOU) |
+| [HTTP](../guides/backends/http.md) | — (read-only) | — (read-only) | — |
 | [SQLBlob](../guides/backends/sql-blob.md) | Yes (SQL transaction) | Yes (direct) | No (TOCTOU) |
+| [SQLQuery](../guides/backends/sql-query.md) | — (read-only) | — (read-only) | — |
 
 \* Local `move()` uses `shutil.move()`, which delegates to `os.rename()` on the same filesystem (atomic) but falls back to copy+delete across filesystems. Only `write_atomic()` uses `os.replace()`.
 

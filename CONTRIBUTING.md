@@ -102,19 +102,23 @@ Insert the new backend into its group; do not append it. Where a table carries
 footnote markers, they run in first-appearance order, so re-sequence them when a
 new row lands above an existing marker.
 
-**Find the enumerations; do not recall them.** They are scattered across the
-README, the guides, and the API reference, and there are more of them than anyone
-remembers — a hand-maintained roster of sites is the same artifact that rots. Grep
-for the backend that appears in every full-membership list and in almost nothing
-else:
+**Do not go looking for the enumerations — the gate knows where they are.**
+`hatch run check-backend-order` reads every enumeration across the README, the
+guides, the API reference, `context7.json`, and the conda recipe, and fails on any
+that is out of order. It runs inside `hatch run lint` and `hatch run docs-gate`, so
+CI enforces it on every PR. Add the backend, run the gate, fix what it names.
 
-```bash
-git grep -lni "sqlquery\|sql-query" -- README.md docs-src/
-```
+This replaced a `git grep`, and the reason is worth knowing before anyone proposes
+another one: a grep for a backend *name* cannot see an enumeration that abbreviates
+(one wrote plain `SQL`), and a grep scoped to a *path* cannot see the enumerations
+outside it (two live in packaging and repo-root metadata). Both holes were real, and
+both hid live defects. If you find yourself about to hand-maintain a list of places
+to check, extend `scripts/check_backend_order.py` instead.
 
-Then judge each hit: a *full-membership* enumeration (one that names every
-backend) is in scope and must follow the group order; a single-backend page, a
-`_nav.yml`, or a passing mention is not.
+The gate proves **order**, not membership. Whether a list *should* name every
+backend is a judgement it deliberately does not make: the API reference splits its
+sync and async tables on purpose, and the README's comparison row abridges on
+purpose. That one is on you and your reviewer.
 
 Two things are deliberately out of scope. `FEATURES.md` is generated between
 `BEGIN_GENERATED` markers and sorts alphabetically — never hand-edit it. The
@@ -139,7 +143,8 @@ Extensions live in `src/remote_store/ext/` and follow the contract in the [exten
 8. Add the page to `docs-src/guides/_nav.yml` (under the Extensions section)
 9. Add a runnable example in `examples/`
 10. The example docs page is auto-generated at `tutorial/examples/<slug>.md` from the module docstring via `gen_pages.py` — no manual wrapper file needed
-11. Update `CHANGELOG.md` and `sdd/BACKLOG.md` (or `sdd/BACKLOG-DONE.md`) in the same commit
+11. If the extension needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`, and add the same floor to `run_constraints` in `packaging/conda-forge/recipe.yaml` — that block covers *every* extra, backend and extension alike, and a dependency missing from it is silently unconstrained for conda users
+12. Update `CHANGELOG.md` and `sdd/BACKLOG.md` (or `sdd/BACKLOG-DONE.md`) in the same commit
 
 ### Export patterns
 

@@ -30,16 +30,27 @@ requirements:
   run:
     - python >=${{ python_min }}
   run_constraints:
-    # Optional backend dependencies -- not installed automatically, but
-    # version-constrained if the user installs them alongside remote-store.
+    # Every dependency of every optional extra in pyproject.toml's
+    # [project.optional-dependencies] -- backends and extensions alike.  None is
+    # installed automatically; each is version-constrained if the user installs
+    # it alongside remote-store.  Keep this exhaustive: an extra whose floor is
+    # absent here is silently unconstrained in conda, and the ones nobody
+    # enumerates are the ones that drift.
+    #
+    # -- Backend extras --
     - s3fs >=2024.2.0
     - paramiko >=3.0
     - tenacity >=4.0
-    # The floor is the `arrow` extra's (>=12.0.0); `s3-pyarrow` needs >=14.0.0,
-    # but conda allows only one pin per package -- not one per extra.  Use the
-    # lower floor so arrow-only users aren't blocked; s3-pyarrow users must
-    # install pyarrow >=14 themselves.  The <25 ceiling is common to both.
-    - pyarrow >=12.0.0,<25
+    # Three extras want three different pyarrow ranges -- `arrow` and
+    # `sql-query` are >=12.0.0,<25; `s3-pyarrow` is >=14.0.0 with no ceiling --
+    # and conda allows one pin per package, not one per extra.  So this pin is
+    # deliberately the loosest of the three: a stricter one would block an
+    # install that `pip` permits (a <25 ceiling locks out s3-pyarrow users on
+    # pyarrow 25), and over-constraining is the only way a run_constraints entry
+    # can actually break somebody.  Users of `arrow` / `sql-query` must observe
+    # their own <25 cap; pyproject.toml is the source of truth for per-extra
+    # ranges.
+    - pyarrow >=12.0.0
     - azure-storage-file-datalake >=12.16.0
     - azure-identity >=1.0.0
     - httpx >=0.24.0,<1.0
@@ -51,6 +62,18 @@ requirements:
     # `httpx` are optional pooled transports, so both get a floor.
     - requests >=2.25.0
     - urllib3 >=1.26.0
+    #
+    # -- Extension extras --
+    # `pyarrow` (the `arrow` extra) is pinned above, alongside the backend that
+    # shares it.
+    - opentelemetry-api >=1.28.0
+    - pyyaml >=5.1
+    - pydantic-settings >=2.0.0
+    - dagster >=1.9
+    # `toml` is conditional in pyproject (`python_version < '3.11'`); conda has
+    # no per-Python marker here, and an unconditional floor is harmless because
+    # it binds only if tomli is actually installed.
+    - tomli >=1.1.0
 
 tests:
   - python:

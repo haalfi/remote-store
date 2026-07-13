@@ -19,16 +19,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   the pip-extras rule omitted `[graph]`, and the built-in-backends rule omitted
   `GraphBackend` entirely, so an agent answering "can remote-store reach OneDrive?"
   from this metadata would say no. The recipe had drifted the same way in its
-  `run_constraints`: no `graph` or `sql` dependencies at all, a `paramiko >=2.2`
-  floor that BUG-204 raised to `>=3.0`, and a `pyarrow` pin missing the `<25`
-  ceiling both `arrow` and `sql-query` carry. Fix: all three mirrors name OneDrive;
-  the `context7.json` rules list `[graph]` and the three native-async backends
-  (`GraphBackend` is `AsyncStore`-only, so it is named as such rather than folded
-  into the sync list); and `run_constraints` gains `httpx`, `msal`,
-  `msal-extensions`, `platformdirs`, and `sqlalchemy` with the corrected floors.
+  `run_constraints`, which turned out to be missing far more than the tagline
+  hunt would have found: no `graph`, `sql`, `requests`, or extension-extra
+  dependencies at all, and a `paramiko >=2.2` floor that BUG-204 had already
+  raised to `>=3.0`. Fix: all three mirrors name OneDrive; the `context7.json`
+  rules list `[graph]` and the three native-async backends (`GraphBackend` is
+  `AsyncStore`-only, so it is named as such rather than folded into the sync
+  list); and `run_constraints` becomes exhaustive over
+  `[project.optional-dependencies]` — backend *and* extension extras — with a
+  header saying so, since a dependency absent from that block is silently
+  unconstrained for conda users.
+
+  A first pass at this also added a `pyarrow <25` ceiling, which review caught as
+  a regression: `arrow` and `sql-query` cap at `<25` but `s3-pyarrow` carries no
+  upper bound, and conda allows one pin per package. The ceiling would have
+  blocked an install `pip` permits. Where the three extras disagree, the pin now
+  takes the loosest range deliberately — over-constraining is the only direction
+  in which a `run_constraints` entry can break somebody.
 
 - [x] **BK-310 — Pin the backend enumeration order in the add-a-backend checklist**
-  spec: — · effort: S · audience: contributor.process
+  spec: — · effort: M · audience: contributor.process, user.site, contributor.tooling
   PR #893 found the README naming its backends in five places, in five different
   orders, with two of the lists stale (the *How it compares* row and the *Learn
   more* examples bullet had both drifted behind what ships, omitting HTTP, SQL,
@@ -50,16 +60,31 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   merely ordering ones: `docs-src/guides/health-check.md` and
   `docs-src/reference/api/store.md` omitted Graph entirely.
 
-  Fix: every enumeration is swept into the group order (the two column-wise
-  tables — `capabilities-matrix.md` and `store.md` — were verified cell-by-cell
-  against each backend's declared `CAPABILITIES`, not hand-checked), and the
-  checklist drops its list of sites in favour of the discovery command that finds
-  them. Recorded exemptions: generated `FEATURES.md`; and the tagline, a slogan
-  rather than an enumeration, mirrored across more packaging and metadata files
-  than anyone reliably remembers — hence a `git grep` command rather than a list.
-  Documenting Graph's health check surfaced that it never overrides
-  `check_health`, so `ping()` succeeds without contacting Graph; stated plainly in
-  the guide rather than papered over.
+  The discovery command written to replace that list then failed the same way, in
+  two directions: its *sentinel* (`sqlquery`) could not see an enumeration that
+  abbreviated to `SQL`, and its *pathspec* (`README.md docs-src/`) could not see
+  the two enumerations in packaging and repo-root metadata. Both blind spots were
+  hiding live defects. A grep for a name cannot find a list that renames itself,
+  and no amount of sharpening changes that.
+
+  Fix: `scripts/check_backend_order.py` replaces the grep. It reads every
+  enumeration — inline lists, table rows, table columns — across the README, the
+  guides, the API reference, both `context7.json` files, and the conda recipe, and
+  fails on any that is out of order. Wired into `hatch run lint` and
+  `hatch run docs-gate`, so CI enforces it. Run against the tree as it stood before
+  this work it reports **13** violations: every one the two review rounds found,
+  plus `docs-src/index.md`, which no human had. It deliberately proves order and
+  not membership — the API reference splits its sync and async tables on purpose
+  and the README comparison row abridges on purpose, so a membership rule would
+  fire on correct documents.
+
+  All thirteen are swept into the group order (the two column-wise tables,
+  `capabilities-matrix.md` and `store.md`, were verified cell-by-cell against each
+  backend's declared `CAPABILITIES` rather than hand-checked). Recorded exemptions:
+  generated `FEATURES.md`; and the tagline, a slogan rather than an enumeration.
+  Documenting Graph's health check surfaced that it never overrides `check_health`,
+  so `ping()` succeeds without contacting Graph; stated plainly in the guide rather
+  than papered over.
 
 - [x] **BUG-229 — Azure benchmark fixtures omit the now-required `hns` argument**
   spec: — · effort: S · audience: infra.test

@@ -7,24 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-### Documentation
-
-- **One backend order across every enumeration** (BK-310): ten full-membership
-  backend lists — README, the guides, the capabilities matrix, the API reference —
-  each listed backends in a different order. All now follow one taxonomy: local →
-  cloud → SFTP → special-purpose. Two of them omitted Graph entirely; the
-  health-check guide now also records that `GraphBackend` does not override
-  `check_health`, so `ping()` succeeds without contacting Graph.
-
-### Fixed
-
-- **Stale backend lists in the outside-package metadata** (BK-311): `context7.json`,
-  the conda-forge recipe, and the custom-backend guide all still described a
-  four-backend library. The `context7.json` rules omitted the `[graph]` extra and
-  `GraphBackend`, so an agent asking whether remote-store reaches OneDrive got the
-  wrong answer from the metadata LLMs actually retrieve. The recipe's
-  `run_constraints` gains the `graph` and `sql` dependencies and corrects the
-  `paramiko` floor (BUG-204 raised it to `>=3.0`) and the `pyarrow` ceiling.
+- BK-310: Pin the backend enumeration order in the add-a-backend checklist
+- BK-311: Sync the stale tagline and backend-membership mirrors
 
 ## [0.29.1] - 2026-07-09
 

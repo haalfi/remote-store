@@ -10,6 +10,7 @@ source_items:
 audience:
   - contributor.process
   - user.site
+  - contributor.tooling
 discovery_followups:
   - BK-311
 co_shipped_items:
@@ -25,7 +26,11 @@ surprising_ripples:
   - docs-src/reference/api/index.md
   - docs-src/reference/api/backends/index.md
   - docs-src/reference/api/store.md
-review_rounds: 2
+  - docs-src/index.md
+  - scripts/check_backend_order.py
+  - tests/scripts/test_check_backend_order.py
+  - pyproject.toml
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -123,6 +128,41 @@ phases:
         section: "copy, move, write_atomic, list_files"
         read_type: reference
         extract: "store.md's behavior matrix says 'verify against actual code'; Graph's row was derived from the implementation rather than inferred from its neighbours"
+        outcome: ok
+  - id: wire
+    name: Replace the grep with a gate
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Adding a New Backend / Backend order"
+        read_type: gate
+        extract: >-
+          round 3 killed the discovery command too. It leaked twice: the sentinel (`sqlquery`) could not
+          see an enumeration abbreviated to `SQL`, and the pathspec (README + docs-src) could not see the
+          two enumerations in packaging and repo-root metadata — both hiding live defects. The grep had
+          already failed in practice: written in round 2, it still missed concurrency.md's third table.
+          The lesson is not "sharpen the grep" — a name-grep cannot find a list that renames itself
+        outcome: misleading
+      - file: scripts/check_no_tracker_refs.py
+        section: "(full)"
+        read_type: reference
+        extract: "structural template for a published-surface gate: scope constants, Violation dataclass, remediation string, exit 0/1"
+        outcome: ok
+      - file: scripts/check_backend_order.py
+        section: "(new)"
+        read_type: gate
+        extract: >-
+          two bugs the tests caught and review would not have: (1) the alias alternation was
+          `a|b|c(?!...)`, binding the boundary to the LAST alternative only, so `SQL` matched inside
+          `SQLAlchemy`; (2) splitting table rows into cells to kill the false positives silently destroyed
+          column-wise detection — every header cell holds one backend, so no segment ever reached the
+          threshold. A gate whose own tests do not run is worse than no gate
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint, docs-gate"
+        read_type: verify
+        extract: >-
+          CI delegates to `uvx hatch run lint` / `docs-gate`, so the pyproject script arrays ARE the
+          single source — no separate workflow enumeration to dual-wire, and none to drift
         outcome: ok
   - id: verify
     name: Ripple-check
