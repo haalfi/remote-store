@@ -73,6 +73,47 @@ and the highest ID already in this file, then take the next integer. Run
 
 ---
 
+## Graph
+
+- [ ] **BUG-231 — `GraphBackend.check_health()` never contacts Graph, so `ping()` cannot fail**
+  spec: PING-002 · effort: M · audience: user.api
+  `GraphBackend` does not override `check_health()`, so it inherits
+  `AsyncBackend`'s default — whose body is a bare docstring. `await
+  store.ping()` against OneDrive therefore returns cleanly regardless of
+  network reachability, token validity, or whether the drive exists,
+  contradicting `AsyncStore.ping()`'s documented contract ("Verify that the
+  backend is reachable"; raises `PermissionDenied` on invalid credentials,
+  `NotFound` on a missing root). Graph is the only *remote* backend with no
+  probe: `026-health-check.md` § Per-Backend Health Checks assigns one to
+  Local, S3, S3-PyArrow, SFTP and Azure (PING-003 … PING-007), and exempts
+  only Memory (PING-008, always healthy). The spec predates the backend, so
+  Graph was never given a clause and the omission is invisible.
+
+  Reproduction:
+  ```python
+  >>> "check_health" in GraphBackend.__dict__
+  False
+  >>> next(k for k in GraphBackend.__mro__ if "check_health" in k.__dict__)
+  <class 'remote_store.aio._async_backend.AsyncBackend'>   # the no-op default
+  ```
+
+  The conformance suite cannot catch this by construction:
+  `tests/backends/conformance/test_check_health.py` asserts the outcome is
+  `None` **or** a mapped `RemoteStoreError`, which a no-op satisfies
+  trivially. A missing override is indistinguishable from a healthy probe
+  under that assertion, so no per-backend fixture would have flagged it.
+
+  Fix spans three layers: a `PING-0NN` clause in `026-health-check.md`
+  naming Graph's probe (cheapest candidate: `GET /me/drive`, or
+  `GET /drives/{id}` when the drive is pinned); the override on
+  `GraphBackend`, mapping errors through the existing Graph error mapper;
+  and a negative conformance test that pins *unreachable ⇒ raises*, since
+  the existing positive-only assertion is what let this through.
+
+  Surfaced while documenting Graph's row in `health-check.md` during BK-310.
+
+---
+
 ## Lint / CI Completeness
 
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**

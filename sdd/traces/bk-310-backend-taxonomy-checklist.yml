@@ -13,6 +13,7 @@ audience:
   - contributor.tooling
 discovery_followups:
   - BK-311
+  - BUG-231
 co_shipped_items:
   - BK-311
 expected_ripples:
@@ -122,7 +123,10 @@ phases:
         extract: >-
           not an ordering defect but a membership one: Graph was absent. Documenting it exposed that
           GraphBackend never overrides check_health, so ping() returns success without contacting Graph —
-          a genuine gap the ordering sweep would never have surfaced
+          a genuine gap the ordering sweep would never have surfaced. Filed as BUG-231 rather than fixed
+          here: a behaviour change does not belong in a docs PR. The conformance suite cannot catch it
+          (test_check_health asserts None-or-RemoteStoreError, which a no-op satisfies), so the fix needs
+          a negative test, not just an override
         outcome: ok
       - file: src/remote_store/aio/backends/_graph/backend.py
         section: "copy, move, write_atomic, list_files"
