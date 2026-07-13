@@ -16,7 +16,7 @@ expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
   - sdd/BACKLOG.md
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Locate the rule's home
@@ -64,6 +64,23 @@ phases:
           audits". Rule 13 reuses it rather than inventing a second idiom — and it is the answer to the
           obvious objection that an exemption list is itself the hand-maintained rot this repo keeps
           fighting
+        outcome: ok
+  - id: fix
+    name: Address review
+    steps:
+      - file: sdd/TESTING.md
+        section: "Declaring an exemption"
+        read_type: verify
+        extract: >-
+          the illustrative predicate was `type(backend).check_health is not Backend.check_health` — and
+          it fails open for the exact bug the rule exists to catch. The library has TWO backend ABCs;
+          GraphBackend inherits AsyncBackend's no-op, and `AsyncBackend.check_health is not
+          Backend.check_health` is trivially true, so the snippet reports "overrides" for a backend with
+          no probe at all. Verified: naive predicate says True for GraphBackend while
+          `"check_health" in GraphBackend.__dict__` is False. Fixed by resolving the DEFINING class via
+          __mro__ and rejecting both ABCs. I wrote a rule about assertions that admit the default and
+          then wrote an example that admitted the default — an unrun snippet is an unverified claim,
+          and prose does not exempt it from principle 6
         outcome: ok
   - id: verify
     name: Ripple-check

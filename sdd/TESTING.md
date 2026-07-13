@@ -204,8 +204,20 @@ _NO_PROBE = {
     "memory": "PING-008 — in-memory, always healthy",
 }
 
+# Resolve the class that actually supplies the method. Do NOT compare against a
+# single hardcoded ABC (`type(backend).check_health is not Backend.check_health`):
+# the library has two backend ABCs, and an async backend inheriting
+# `AsyncBackend`'s no-op is `is not Backend.check_health` — trivially true. That
+# form reports "overrides" for a backend with no probe at all, so it fails open
+# for precisely the case it is meant to catch.
+_ABC_DEFAULTS = (Backend, AsyncBackend)
+
+def _has_own_probe(cls: type) -> bool:
+    owner = next(k for k in cls.__mro__ if "check_health" in k.__dict__)
+    return owner not in _ABC_DEFAULTS
+
 def test_health_probe_is_declared(backend: Backend, backend_name: str) -> None:
-    overrides = type(backend).check_health is not Backend.check_health
+    overrides = _has_own_probe(type(backend))
     if backend_name in _NO_PROBE:
         # Direction 2: an exemption that grew a real probe is stale.
         assert not overrides, f"{backend_name} now probes; drop it from _NO_PROBE"
@@ -216,6 +228,9 @@ def test_health_probe_is_declared(backend: Backend, backend_name: str) -> None:
 
 Direction 1 is the one that catches the bug: a new backend cannot reach green
 by omission, because the default is no longer reachable without saying so.
+It only works if the predicate asks *which class supplied the method*, not
+*is it unequal to one particular ABC* — see the comment above, and note that
+the sync/async ABC split is itself the trap the rule exists to close.
 Direction 2 is what stops `_NO_PROBE` rotting into a junk drawer — the list
 is pinned to reality, so it shrinks when a backend earns a probe instead of
 silently carrying a lie. `scripts/check_test_placement.py` already uses this
