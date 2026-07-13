@@ -108,6 +108,13 @@ enforces three rules at CI time, all derived from spec 048:
     — investigate `RuntimeWarning`/`ResourceWarning` before suppressing.
     `filterwarnings("ignore:…")` only with a `# acceptable because …` comment.
 
+13. **An inherited ABC default must be opt-in, not opt-out** [review-enforced]
+    — where an ABC method is concrete with a default, conformance asserts
+    *override-or-declared-exemption*, both directions. Not overriding is a
+    decision that must cost a list entry and a spec citation; otherwise
+    forgetting is indistinguishable from deciding. See
+    [§ Declaring an exemption](#declaring-an-exemption).
+
 ## Guides
 
 ### Examples (bad → good)
@@ -142,6 +149,7 @@ backend = MagicMock(spec=Backend)           # good
 | 10 | No inline `max_examples` | grep `max_examples` |
 | 11 | Strategies at module scope | review |
 | 12 | No unjustified `filterwarnings("ignore:…")` | grep `filterwarnings.*"ignore:` |
+| 13 | Concrete ABC default → conformance asserts override-or-exemption | review |
 
 ### Test code economy
 
@@ -152,7 +160,7 @@ signal, and double refactoring cost. Delete tests that don't provide value
 ### A green test can be vacuous
 
 A passing test proves nothing if it never ran the code under test, or only
-confirmed your own assumptions. Four ways a test lies green:
+confirmed your own assumptions. Five ways a test lies green:
 
 - **It was skipped, not run.** A conformance suite that silently skips when its
   emulator or live account is unavailable is vacuous, not passing. Verify the
@@ -170,6 +178,81 @@ confirmed your own assumptions. Four ways a test lies green:
 - **It asserts the wrong signal.** To prove a blocking call was offloaded to a
   worker thread, assert it ran off the event-loop thread (thread identity), not
   that it completed "fast enough" — timing is flaky and proves nothing.
+- **An inherited default satisfies the assertion.** When an ABC method is
+  *concrete with a default* (`check_health()`, and any other `# noqa: B027`
+  no-op), a conformance assertion loose enough to admit the default — "returns
+  `None` **or** raises a mapped error" — is satisfied by a backend that never
+  implemented the method at all. Participation in the fixture proves nothing
+  here: the backend is collected, exercised, and green, and the suite still
+  cannot see that the probe does not exist. See Rule 13.
+
+### Declaring an exemption (Rule 13) { #declaring-an-exemption }
+
+An ABC method that is concrete with a default has two silent readings, and
+the code cannot tell them apart. `MemoryBackend` does not override
+`check_health()` because an in-memory store is always healthy; a network
+backend that does not override it has *no health check at all*. Both are the
+same absence. Asking "does it override?" therefore flags both or neither, and
+neither answer is useful.
+
+So do not ask the code for intent — make the intent declared, and check the
+declaration in both directions:
+
+```python
+# The exemption is the artifact. An entry costs a spec ID and a reason.
+_NO_PROBE = {
+    "memory": "PING-008 — in-memory, always healthy",
+}
+
+# Resolve the class that actually supplies the method. Do NOT compare against a
+# single hardcoded ABC (`type(backend).check_health is not Backend.check_health`):
+# the library has two backend ABCs, and an async backend inheriting
+# `AsyncBackend`'s no-op is `is not Backend.check_health` — trivially true. That
+# form reports "overrides" for a backend with no probe at all, so it fails open
+# for precisely the case it is meant to catch.
+_ABC_DEFAULTS = (Backend, AsyncBackend)
+
+def _has_own_probe(cls: type) -> bool:
+    owner = next(k for k in cls.__mro__ if "check_health" in k.__dict__)
+    return owner not in _ABC_DEFAULTS
+
+def test_health_probe_is_declared(backend: Backend, backend_name: str) -> None:
+    overrides = _has_own_probe(type(backend))
+    if backend_name in _NO_PROBE:
+        # Direction 2: an exemption that grew a real probe is stale.
+        assert not overrides, f"{backend_name} now probes; drop it from _NO_PROBE"
+    else:
+        # Direction 1: silence is not consent.
+        assert overrides, f"{backend_name} inherits the no-op default; probe it or declare it"
+```
+
+Direction 1 is the one that catches the bug: a new backend cannot reach green
+by omission, because the default is no longer reachable without saying so.
+It only works if the predicate asks *which class supplied the method*, not
+*is it unequal to one particular ABC* — see the comment above, and note that
+the sync/async ABC split is itself the trap the rule exists to close.
+Direction 2 is what stops `_NO_PROBE` rotting into a junk drawer — the list
+is pinned to reality, so it shrinks when a backend earns a probe instead of
+silently carrying a lie. `scripts/check_test_placement.py` already uses this
+shape: its grandfathered allow-list is self-pruning, reporting an entry whose
+file no longer violates, so the list "shrinks monotonically without manual
+audits."
+
+The general form, beyond health checks: **when the base class supplies a
+usable default, the conformance suite must assert on the presence of a
+decision, not on the outcome of the call.** An outcome assertion loose enough
+to accept the default cannot distinguish a backend that implemented the
+contract from one that ignored it. This applies to any `# noqa: B027` method
+the ABC grows.
+
+**Rule 13 does not replace a behavioural test.** It is a presence-of-decision
+check: it passes the moment an override *exists*, and cannot see whether that
+override does anything — a stub, or one that swallows the error it should
+raise, satisfies it. Pairing is the point: Rule 13 proves the implementation
+is *there* (and keeps the next backend from omitting it), while a per-backend
+outcome test proves it *works*. Substituting one for the other reintroduces
+the original defect at a different altitude, because presence is not
+behaviour.
 
 ### Property-Based Testing (Hypothesis)
 

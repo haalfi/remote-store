@@ -103,12 +103,32 @@ and the highest ID already in this file, then take the next integer. Run
   trivially. A missing override is indistinguishable from a healthy probe
   under that assertion, so no per-backend fixture would have flagged it.
 
-  Fix spans three layers: a `PING-0NN` clause in `026-health-check.md`
-  naming Graph's probe (cheapest candidate: `GET /me/drive`, or
-  `GET /drives/{id}` when the drive is pinned); the override on
-  `GraphBackend`, mapping errors through the existing Graph error mapper;
-  and a negative conformance test that pins *unreachable ⇒ raises*, since
-  the existing positive-only assertion is what let this through.
+  Fix spans four layers, and the two test layers are **complementary, not
+  interchangeable** — one proves the probe exists, the other proves it works:
+
+  1. **Spec.** A `PING-0NN` clause in `026-health-check.md` naming Graph's
+     probe (cheapest candidate: `GET /me/drive`, or `GET /drives/{id}` when
+     the drive is pinned).
+  2. **Implementation.** The `check_health()` override on `GraphBackend`,
+     mapping errors through the existing Graph error mapper.
+  3. **Behavioural test** — *unreachable ⇒ raises*. Belongs in
+     `tests/backends/graph/test_ping.py`, the established per-backend home for
+     probe identity (which call the probe makes, PING-003 … PING-007) and the
+     error-mapping branches (PING-009); `azure`, `local`, `s3` and `sftp` each
+     have one, and `tests/backends/graph/` conspicuously does not. This is the
+     layer that pins behaviour: an override wired to a stub, or one that
+     swallows a connectivity error, is a probe in name only.
+  4. **Structural test** — the override-or-declared-exemption assertion of
+     [`TESTING.md` Rule 13](TESTING.md#declaring-an-exemption) (BK-312).
+     `MemoryBackend` declares its no-op (PING-008) and every other backend
+     must probe, so no *future* backend can reach green by inheriting the
+     default. This generalises the escape; it does not close it for Graph.
+
+  Layer 4 is a *presence-of-decision* check by construction — it passes the
+  moment an override exists, and cannot see whether that override contacts
+  Graph. Layer 3 is the outcome check. Shipping only layer 4 would guarantee
+  the probe is *present* and prove nothing about whether it *works*, which is
+  the same substitution of presence for behaviour that produced this bug.
 
   Surfaced while documenting Graph's row in `health-check.md` during BK-310.
 

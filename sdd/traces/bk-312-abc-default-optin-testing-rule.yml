@@ -1,0 +1,116 @@
+id: BK-312
+title: "Testing Rule 13: an inherited ABC default must be opt-in, not opt-out"
+trigger: >-
+  BUG-231 (Graph never overrides check_health) escaped a conformance suite that
+  did exercise the backend. The assertion — "returns None OR raises a mapped
+  error" — is satisfied by the ABC's no-op default, so a backend that never
+  implemented the method is indistinguishable from a healthy one. Filing the bug
+  fixed one backend; the assertion that let it through would have admitted the
+  next one too.
+source_items:
+  - BK-312
+  - BUG-231
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  - sdd/BACKLOG.md
+review_rounds: 2
+phases:
+  - id: orient
+    name: Locate the rule's home
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules, A green test can be vacuous"
+        read_type: gate
+        extract: >-
+          the doc already has the right frame — § A green test can be vacuous enumerates ways a passing
+          test lies. The inherited-default case is a fifth member of that set, not a new concept, so it
+          lands as a bullet there plus a numbered rule, rather than a new section competing with it
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "front matter"
+        read_type: gate
+        extract: "dual dest=explanation/design/testing.md — this is a PUBLISHED surface, so the rule states the shape and does not narrate the originating bug"
+        outcome: ok
+      - file: tests/backends/conformance/test_check_health.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          confirmed the escape is structural, not an oversight in one test: the assertion is
+          None-or-RemoteStoreError, which a no-op satisfies. Tightening it is not available — a probe
+          that legitimately succeeds also returns None
+        outcome: ok
+  - id: design
+    name: Distinguish deliberate from missed
+    steps:
+      - file: sdd/specs/026-health-check.md
+        section: "Per-Backend Health Checks"
+        read_type: gate
+        extract: >-
+          the load-bearing question, and the reason a naive "assert it overrides" rule fails review:
+          MemoryBackend deliberately does NOT override (PING-008, always healthy) while GraphBackend
+          fails to. Both absences are byte-identical. Intent is not recoverable from the code, so the
+          rule cannot ask the code for it — it must require the intent be DECLARED, and check the
+          declaration in both directions
+        outcome: ok
+      - file: scripts/check_test_placement.py
+        section: "_BACKEND_AT_ROOT_GRANDFATHERED"
+        read_type: reference
+        extract: >-
+          the repo already owns the bidirectional-allowlist shape: a grandfathered entry whose file no
+          longer violates is reported as stale, so the list "shrinks monotonically without manual
+          audits". Rule 13 reuses it rather than inventing a second idiom — and it is the answer to the
+          obvious objection that an exemption list is itself the hand-maintained rot this repo keeps
+          fighting
+        outcome: ok
+  - id: fix
+    name: Address review
+    steps:
+      - file: sdd/TESTING.md
+        section: "Declaring an exemption"
+        read_type: verify
+        extract: >-
+          the illustrative predicate was `type(backend).check_health is not Backend.check_health` — and
+          it fails open for the exact bug the rule exists to catch. The library has TWO backend ABCs;
+          GraphBackend inherits AsyncBackend's no-op, and `AsyncBackend.check_health is not
+          Backend.check_health` is trivially true, so the snippet reports "overrides" for a backend with
+          no probe at all. Verified: naive predicate says True for GraphBackend while
+          `"check_health" in GraphBackend.__dict__` is False. Fixed by resolving the DEFINING class via
+          __mro__ and rejecting both ABCs. I wrote a rule about assertions that admit the default and
+          then wrote an example that admitted the default — an unrun snippet is an unverified claim,
+          and prose does not exempt it from principle 6
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Graph / BUG-231"
+        read_type: verify
+        extract: >-
+          round 2: re-pointing BUG-231 at Rule 13 had SUBSTITUTED a structural check for the behavioural
+          one it originally prescribed (unreachable => raises), deleting the only layer that proves the
+          probe works. Rule 13 is presence-of-decision by construction — it passes the moment an override
+          exists and cannot see whether that override contacts Graph, so a stub satisfies it. Shipping
+          only Rule 13 would guarantee the probe is present and prove nothing about behaviour: the same
+          substitution of presence for behaviour that produced the bug, one altitude up. Restored as four
+          layers with the two test layers named complementary, and added the caveat to TESTING.md so the
+          rule cannot be read as sufficient on its own. Corroborating detail found while fixing:
+          tests/backends/{azure,local,s3,sftp}/test_ping.py all exist and tests/backends/graph/ has none
+        outcome: ok
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: >-
+          audience is contributor.process only — the derived rule gives no CHANGELOG entry. Nothing in
+          the library's behaviour changed; the enforcing assertion ships with BUG-231, not here
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Graph / BUG-231"
+        read_type: verify
+        extract: >-
+          not anticipated: BUG-231's prescribed fix named a bespoke "negative conformance test", which
+          Rule 13 supersedes with the general form. Left stale, the bug would have been fixed against
+          the weaker shape it was written before the rule existed
+        outcome: ok
