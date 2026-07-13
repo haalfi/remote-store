@@ -33,15 +33,20 @@ requirements:
     # Optional backend dependencies -- not installed automatically, but
     # version-constrained if the user installs them alongside remote-store.
     - s3fs >=2024.2.0
-    - paramiko >=2.2
+    - paramiko >=3.0
     - tenacity >=4.0
     # >=12.0.0 matches the `arrow` extra; `s3-pyarrow` needs >=14.0.0 but
     # conda run_constraints can only express one bound.  Use the lower pin
     # so arrow-only users aren't blocked; s3-pyarrow users must install
     # pyarrow >=14 themselves (conda can't express per-extra pins).
-    - pyarrow >=12.0.0
+    - pyarrow >=12.0.0,<25
     - azure-storage-file-datalake >=12.16.0
     - azure-identity >=1.0.0
+    - httpx >=0.24.0,<1.0
+    - msal >=1.20.0
+    - msal-extensions >=1.3
+    - platformdirs >=3.0.0
+    - sqlalchemy >=2.0
 
 tests:
   - python:
@@ -56,12 +61,12 @@ tests:
 
 about:
   homepage: https://remotestore.dev
-  summary: "Write file storage code once. Run it against local files, S3, SFTP, or Azure."
+  summary: "Write file storage code once. Run it against local files, S3, SFTP, Azure, or OneDrive."
   description: |
     remote-store provides a consistent Python API for file storage across
-    backends (Local, S3, SFTP, Azure). Write file storage code once, run it
-    against any backend. Core has no dependencies; optional extras add
-    cloud backend support.
+    backends (Local, Memory, S3, Azure, OneDrive, SFTP, HTTP, SQL). Write file
+    storage code once, run it against any backend. Core has no dependencies;
+    optional extras add cloud backend support.
   license: MIT
   license_file: LICENSE
   documentation: https://docs.remotestore.dev/

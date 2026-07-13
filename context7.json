@@ -4,7 +4,7 @@
   "public_key": "pk_RLXTOPnD0ztmnjMEWuqDN",
   "projectTitle": "remote-store",
   "branch": "master",
-  "description": "Write file storage code once. Run it against local files, S3, SFTP, or Azure. Python library with a unified Store API, swappable backends, and capability-gated methods.",
+  "description": "Write file storage code once. Run it against local files, S3, SFTP, Azure, or OneDrive. Python library with a unified Store API, swappable backends, and capability-gated methods.",
   "folders": [
     "src/remote_store/",
     "docs-src/",
@@ -35,9 +35,9 @@
   "rules": [
     "Use Store.read(path) for streaming reads, Store.write(path, content) for streaming writes (returns WriteResult), and Store.list_files(path) for directory listings.",
     "Backends declare capabilities (LAZY_READ, ATOMIC_WRITE, ATOMIC_MOVE, METADATA, GLOB, ...). Query with store.supports(Capability.X); see FEATURES.md for the full matrix.",
-    "Install optional backends and extensions via pip extras. Backends: remote-store[s3], [s3-pyarrow], [sftp], [azure], [sql], [sql-query]. Extensions: [arrow] (PyArrow + Parquet), [otel] (tracing), [pydantic], [yaml], [dagster].",
+    "Install optional backends and extensions via pip extras. Backends: remote-store[s3], [s3-pyarrow], [azure], [graph] (OneDrive / SharePoint), [sftp], [sql], [sql-query]; HTTP needs no extra. Extensions: [arrow], [otel], [pydantic], [yaml], [dagster].",
     "For async workloads, import AsyncStore from remote_store.aio. To cross the sync/async boundary, use SyncBackendAdapter (sync Backend in async code, via asyncio.to_thread) or AsyncBackendSyncAdapter (async Backend in sync code, daemon-thread event loop).",
-    "Built-in backends: LocalBackend, MemoryBackend, ReadOnlyHttpBackend, S3Backend, S3PyArrowBackend, SFTPBackend, AzureBackend, SQLBlobBackend, SQLQueryBackend.",
+    "Built-in backends: LocalBackend, MemoryBackend, S3Backend, S3PyArrowBackend, AzureBackend, SFTPBackend, ReadOnlyHttpBackend, SQLBlobBackend, SQLQueryBackend. Native async (AsyncStore only): AsyncAzureBackend, AsyncMemoryBackend, GraphBackend (OneDrive).",
     "Streaming reads: with store.read(path) as f: data = f.read(). Atomic writes: with store.open_atomic(path) as f: f.write(...). The destination appears only after the block exits cleanly.",
     "Errors typed in remote_store.errors (re-exported from remote_store). Base RemoteStoreError; subclasses: NotFound, AlreadyExists, PermissionDenied, InvalidPath, CapabilityNotSupported, DirectoryNotEmpty, BackendUnavailable. SDK exceptions never leak.",
     "Configuration loads from TOML, YAML, dict, or Pydantic models via Registry; ${ENV_VAR} placeholders are resolved and credentials are wrapped in Secret automatically.",

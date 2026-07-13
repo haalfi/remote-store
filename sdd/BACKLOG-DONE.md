@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-311 — Sync the stale tagline and backend-membership mirrors**
+  spec: — · effort: S · audience: user.discoverability.llm, user.site, contributor.tooling
+  Writing BK-310's tagline exemption from memory produced a four-file list; a
+  `git grep` found more, and every copy the memory had dropped was a stale one.
+  Three mirrors still described a library with four backends: the repo-root
+  `context7.json` description, `packaging/conda-forge/recipe.yaml` (both `summary`
+  and `description`), and `docs-src/guides/custom-backend-guide.md`. The
+  `context7.json` rot ran past the tagline into the payload LLMs actually retrieve:
+  the pip-extras rule omitted `[graph]`, and the built-in-backends rule omitted
+  `GraphBackend` entirely, so an agent answering "can remote-store reach OneDrive?"
+  from this metadata would say no. The recipe had drifted the same way in its
+  `run_constraints`: no `graph` or `sql` dependencies at all, a `paramiko >=2.2`
+  floor that BUG-204 raised to `>=3.0`, and a `pyarrow` pin missing the `<25`
+  ceiling both `arrow` and `sql-query` carry. Fix: all three mirrors name OneDrive;
+  the `context7.json` rules list `[graph]` and the three native-async backends
+  (`GraphBackend` is `AsyncStore`-only, so it is named as such rather than folded
+  into the sync list); and `run_constraints` gains `httpx`, `msal`,
+  `msal-extensions`, `platformdirs`, and `sqlalchemy` with the corrected floors.
+
 - [x] **BK-310 — Pin the backend enumeration order in the add-a-backend checklist**
   spec: — · effort: S · audience: contributor.process
   PR #893 found the README naming its backends in five places, in five different
@@ -23,8 +42,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   the checklist now names all six sites, states the group order, requires
   inserting into a group rather than appending, notes that the README table's
   footnote markers run in first-appearance order, and records the two deliberate
-  exemptions (generated `FEATURES.md`; the tagline, which is a slogan mirrored
-  across four files).
+  exemptions (generated `FEATURES.md`; the tagline, which is a slogan rather than
+  an enumeration, mirrored across more packaging and metadata files than anyone
+  reliably remembers — hence a `git grep` command rather than a list).
 
 - [x] **BUG-229 — Azure benchmark fixtures omit the now-required `hns` argument**
   spec: — · effort: S · audience: infra.test

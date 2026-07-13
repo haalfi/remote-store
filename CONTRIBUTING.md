@@ -461,7 +461,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] CHANGELOG.md: rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, add fresh empty `[Unreleased]` above
 - [ ] `sdd/BACKLOG-DONE.md`: rename `## Unreleased` to `## vX.Y.Z`, add a fresh empty `## Unreleased` (`*(none)*`) above
 - [ ] Update `date-released` in `CITATION.cff` to today (bump-my-version only updates `version:`, not this field)
-- [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
+- [ ] Tagline consistent across every mirror: `git grep "Write file storage code once"` — check them all, do not work from a remembered list; the copies nobody lists are the copies that go stale. Historical quotes in `sdd/research/` are the one exemption
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
 - [ ] Conda recipe: update `context.version` in `packaging/conda-forge/recipe.yaml` to X.Y.Z
 - [ ] `bump-my-version bump patch|minor|major --allow-dirty` (modifies the files listed in `[[tool.bumpversion.files]]` in `pyproject.toml` — does NOT commit or tag; `--allow-dirty` is required because the Phase 1/2 edits above are still uncommitted)

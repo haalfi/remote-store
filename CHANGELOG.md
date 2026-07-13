@@ -7,6 +7,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Fixed
+
+- **Stale backend lists in the outside-package metadata** (BK-311): `context7.json`,
+  the conda-forge recipe, and the custom-backend guide all still described a
+  four-backend library. The `context7.json` rules omitted the `[graph]` extra and
+  `GraphBackend`, so an agent asking whether remote-store reaches OneDrive got the
+  wrong answer from the metadata LLMs actually retrieve. The recipe's
+  `run_constraints` gains the `graph` and `sql` dependencies and corrects the
+  `paramiko` floor (BUG-204 raised it to `>=3.0`) and the `pyarrow` ceiling.
+
 ## [0.29.1] - 2026-07-09
 
 ### Fixed

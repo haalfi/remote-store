@@ -9,6 +9,10 @@ source_items:
   - BK-310
 audience:
   - contributor.process
+discovery_followups:
+  - BK-311
+co_shipped_items:
+  - BK-311
 expected_ripples:
   - sdd/backlogid.json
 review_rounds: 1
@@ -70,7 +74,11 @@ phases:
       - file: packaging/conda-forge/recipe.yaml
         section: "summary, description"
         read_type: verify
-        extract: "tagline copies here (and in repo-root context7.json) still omit OneDrive — a membership defect distinct from this item's ordering scope; raised for a separate item, not fixed here"
+        extract: >-
+          tagline copies here (and in repo-root context7.json) still omit OneDrive — a membership defect
+          distinct from this item's ordering scope. Raised as BK-311 and co-shipped in this PR rather
+          than deferred: the same review round produced both, and leaving the mirrors stale while
+          documenting how to find them would have been the worse half of the fix
         outcome: ok
   - id: verify
     name: Ripple-check
