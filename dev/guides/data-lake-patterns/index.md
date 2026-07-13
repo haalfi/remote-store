@@ -8,13 +8,13 @@ remote-store provides a **unified, backend-agnostic I/O layer** that makes data 
 
 The value proposition is not competing with Databricks, Spark, or any query/compute engine. It is making **the storage layer underneath them swappable and testable**. remote-store owns the I/O path; table formats (Delta Lake, Iceberg) and query engines (Spark, DuckDB, Polars) sit on top via the PyArrow adapter.
 
-| Layer                       | Components                                                          |
-| --------------------------- | ------------------------------------------------------------------- |
-| **Query / Compute**         | Polars, DuckDB, Pandas, Spark, Databricks                           |
-| **Table Format** (optional) | Delta Lake, PyIceberg, plain Parquet                                |
-| **PyArrow FileSystem**      | `pyarrow_fs(store)`                                                 |
-| **remote-store**            | `Store`, `child()`, `ext.batch`, `ext.transfer`                     |
-| **Backend**                 | Local, Memory, S3, S3-PyArrow, SFTP, Azure, HTTP, SQLBlob, SQLQuery |
+| Layer                       | Components                                                                 |
+| --------------------------- | -------------------------------------------------------------------------- |
+| **Query / Compute**         | Polars, DuckDB, Pandas, Spark, Databricks                                  |
+| **Table Format** (optional) | Delta Lake, PyIceberg, plain Parquet                                       |
+| **PyArrow FileSystem**      | `pyarrow_fs(store)`                                                        |
+| **remote-store**            | `Store`, `child()`, `ext.batch`, `ext.transfer`                            |
+| **Backend**                 | Local, Memory, S3, S3-PyArrow, Azure, Graph, SFTP, HTTP, SQLBlob, SQLQuery |
 
 ## What this gets you
 

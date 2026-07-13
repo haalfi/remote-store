@@ -33,12 +33,12 @@ This guide helps you pick the right `remote-store` backend for your use case.
 | [Memory](https://docs.remotestore.dev/stable/guides/backends/memory/index.md)         | None                     | Fallback | In-process | Tests, caches                              |
 | [S3](https://docs.remotestore.dev/stable/guides/backends/s3/index.md)                 | `s3fs`                   | Native   | Network    | General S3 workloads                       |
 | [S3-PyArrow](https://docs.remotestore.dev/stable/guides/backends/s3-pyarrow/index.md) | `pyarrow`                | Native   | Network    | Parquet, PyArrow datasets                  |
-| [SFTP](https://docs.remotestore.dev/stable/guides/backends/sftp/index.md)             | `paramiko`               | Fallback | Network    | Legacy, on-prem                            |
 | [Azure](https://docs.remotestore.dev/stable/guides/backends/azure/index.md)           | `azure-storage-blob`     | Native   | Network    | Azure workloads                            |
 | [Graph](https://docs.remotestore.dev/stable/guides/backends/graph/index.md)           | `httpx` + `msal`         | Fallback | Network    | OneDrive / SharePoint / Teams (async-only) |
+| [SFTP](https://docs.remotestore.dev/stable/guides/backends/sftp/index.md)             | `paramiko`               | Fallback | Network    | Legacy, on-prem                            |
+| [HTTP](https://docs.remotestore.dev/stable/guides/backends/http/index.md)             | None                     | —        | Network    | Read-only public data                      |
 | [SQLBlob](https://docs.remotestore.dev/stable/guides/backends/sql-blob/index.md)      | `sqlalchemy`             | Native   | DB-bound   | Embedded, metadata-heavy                   |
 | [SQLQuery](https://docs.remotestore.dev/stable/guides/backends/sql-query/index.md)    | `sqlalchemy` + `pyarrow` | Native   | DB-bound   | Read-only ETL exports                      |
-| [HTTP](https://docs.remotestore.dev/stable/guides/backends/http/index.md)             | None                     | —        | Network    | Read-only public data                      |
 
 ## Switching backends at runtime
 

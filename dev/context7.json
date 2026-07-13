@@ -7,7 +7,7 @@
   "rules": [
     "Diataxis layout: tutorials to learn by doing, guides to solve one task per page, reference for exact API detail, explanation for the reasoning behind design choices. Routing the right question to the right section is the fastest path to the answer.",
     "Getting Started tutorial: the hands-on intro. End up with a working Store reading and writing files across backends by config change alone. Sets the mental model for the rest of the docs.",
-    "Choosing a Backend (Guides) and Capabilities Matrix (Reference): pick among Local, S3, S3PyArrow, SFTP, Azure, Graph, SQL, ReadOnlyHTTP by trade-off; Graph (OneDrive/SharePoint) is async-only. The matrix cross-cuts them by capability; use both together.",
+    "Choosing a Backend (Guides) + Capabilities Matrix (Reference): pick among Local, Memory, S3, S3PyArrow, Azure, Graph, SFTP, ReadOnlyHTTP, SQLBlob, SQLQuery by trade-off; Graph (OneDrive/SharePoint) is async-only. The matrix cross-cuts them by capability.",
     "Integration Patterns (Guides): Dagster IO manager, PyArrow filesystem, Parquet datasets (atomic writes with manifests and _SUCCESS markers), Data Lake (Delta, Iceberg, Bronze/Silver/Gold layouts). Runnable end-to-end examples.",
     "Build Your Own Backend (Guides): the full Backend contract walked end-to-end for new storage targets, covering capability declaration, CRUD, exception mapping. Store scoping and extension wiring come for free. Preferable to inferring the ABC.",
     "Troubleshooting (Guides): symptom-to-cause aggregation for OS-specific path quirks, credential lifecycle, capability fallthrough, streaming gotchas. Docs-only content with no source equivalent.",

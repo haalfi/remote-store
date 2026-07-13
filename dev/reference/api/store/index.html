@@ -13680,11 +13680,12 @@ relying on these in production.</p>
 <tr>
 <th>Behavior</th>
 <th><a href="../../../guides/backends/local/">Local</a></th>
+<th><a href="../../../guides/backends/memory/">Memory</a></th>
 <th><a href="../../../guides/backends/s3/">S3</a></th>
 <th><a href="../../../guides/backends/s3-pyarrow/">S3-PyArrow</a></th>
-<th><a href="../../../guides/backends/sftp/">SFTP</a></th>
 <th><a href="../../../guides/backends/azure/">Azure</a></th>
-<th><a href="../../../guides/backends/memory/">Memory</a></th>
+<th><a href="../../../guides/backends/graph/">Graph</a>¹</th>
+<th><a href="../../../guides/backends/sftp/">SFTP</a></th>
 <th><a href="../../../guides/backends/http/">HTTP</a></th>
 <th><a href="../../../guides/backends/sql-blob/">SQLBlob</a></th>
 <th><a href="../../../guides/backends/sql-query/">SQLQuery</a></th>
@@ -13694,11 +13695,12 @@ relying on these in production.</p>
 <tr>
 <td><code>move()</code> atomicity</td>
 <td>Atomic (same FS)</td>
-<td>Copy+delete</td>
-<td>Copy+delete</td>
-<td>Server-dependent</td>
-<td>Copy+delete</td>
 <td>Atomic</td>
+<td>Copy+delete</td>
+<td>Copy+delete</td>
+<td>Copy+delete</td>
+<td>Server-side, not atomic</td>
+<td>Server-dependent</td>
 <td>—</td>
 <td>Atomic (SQL transaction)</td>
 <td>—</td>
@@ -13706,10 +13708,11 @@ relying on these in production.</p>
 <tr>
 <td><code>copy()</code> preserves metadata</td>
 <td>Yes (<code>copy2</code>)</td>
+<td>—</td>
+<td>Yes</td>
 <td>Yes</td>
 <td>Yes</td>
 <td>—</td>
-<td>Yes</td>
 <td>—</td>
 <td>—</td>
 <td>Yes</td>
@@ -13718,11 +13721,12 @@ relying on these in production.</p>
 <tr>
 <td><code>write_atomic()</code> mechanism</td>
 <td>temp+rename</td>
-<td>Direct PUT (atomic)</td>
-<td>Direct PUT (atomic)</td>
-<td>temp+rename</td>
-<td>Direct PUT or temp+rename</td>
 <td>Direct (atomic)</td>
+<td>Direct PUT (atomic)</td>
+<td>Direct PUT (atomic)</td>
+<td>Direct PUT or temp+rename</td>
+<td>Direct PUT / upload session (service-atomic)</td>
+<td>temp+rename</td>
 <td>—</td>
 <td>Direct (atomic)</td>
 <td>—</td>
@@ -13730,10 +13734,11 @@ relying on these in production.</p>
 <tr>
 <td>Native <code>glob()</code></td>
 <td>Yes</td>
+<td>—</td>
+<td>Yes</td>
 <td>Yes</td>
 <td>Yes</td>
 <td>—</td>
-<td>Yes</td>
 <td>—</td>
 <td>—</td>
 <td>Yes (SQL GLOB/LIKE)</td>
@@ -13742,17 +13747,21 @@ relying on these in production.</p>
 <tr>
 <td><code>list_files()</code> ordering</td>
 <td>OS-dependent</td>
-<td>Lexicographic</td>
-<td>Lexicographic</td>
-<td>OS-dependent</td>
-<td>Lexicographic</td>
 <td>Insertion order</td>
+<td>Lexicographic</td>
+<td>Lexicographic</td>
+<td>Lexicographic</td>
+<td>Service-dependent</td>
+<td>OS-dependent</td>
 <td>—</td>
 <td>DB-dependent</td>
 <td>Lexicographic</td>
 </tr>
 </tbody>
 </table>
+<p>¹ Graph is <strong>async-only</strong> — it has no sync <code>Store</code> wrapper. Its column describes
+the behavior seen through <a href="../aio/store/"><code>AsyncStore</code></a>, or through
+<a href="../aio/adapters/"><code>AsyncBackendSyncAdapter</code></a> when driven from sync code.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../../tutorial/getting-started/">Getting Started</a> — step-by-step guide to reading and writing files</li>

@@ -10385,6 +10385,11 @@ processing requests.</p>
 <td>Directory exists and is readable</td>
 </tr>
 <tr>
+<td><a href="../backends/memory/">Memory</a></td>
+<td>No-op</td>
+<td>Always healthy</td>
+</tr>
+<tr>
 <td><a href="../backends/s3/">S3</a></td>
 <td><code>head_bucket</code></td>
 <td>Bucket exists, credentials valid</td>
@@ -10395,19 +10400,19 @@ processing requests.</p>
 <td>Bucket accessible via PyArrow</td>
 </tr>
 <tr>
-<td><a href="../backends/sftp/">SFTP</a></td>
-<td><code>stat(base_path)</code></td>
-<td>SSH connection, path exists</td>
-</tr>
-<tr>
 <td><a href="../backends/azure/">Azure</a></td>
 <td><code>get_container_properties()</code></td>
 <td>Container exists, credentials valid</td>
 </tr>
 <tr>
-<td><a href="../backends/memory/">Memory</a></td>
-<td>No-op</td>
-<td>Always healthy</td>
+<td><a href="../backends/graph/">Graph</a></td>
+<td>No-op ¹</td>
+<td>Nothing — see below</td>
+</tr>
+<tr>
+<td><a href="../backends/sftp/">SFTP</a></td>
+<td><code>stat(base_path)</code></td>
+<td>SSH connection, path exists</td>
 </tr>
 <tr>
 <td><a href="../backends/http/">HTTP</a></td>
@@ -10426,6 +10431,10 @@ processing requests.</p>
 </tr>
 </tbody>
 </table>
+<p>¹ Graph does not override the default health check, so <code>ping()</code> succeeds
+without contacting Microsoft Graph. Unlike Memory — where "always healthy" is
+the truth — a successful <code>ping()</code> on Graph carries no information about
+reachability or credential validity. Issue a real read if you need to know.</p>
 <h2 id="observability">Observability<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h2>
 <p><code>ping()</code> integrates with <code>ext.observe</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.observe</span><span class="w"> </span><span class="kn">import</span> <span class="n">observe</span>

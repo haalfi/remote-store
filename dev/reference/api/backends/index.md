@@ -6,11 +6,11 @@ API reference for all storage backend classes. Each backend implements the [`Bac
 | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | [LocalBackend](https://docs.remotestore.dev/stable/reference/api/backends/local/index.md)          | Local filesystem storage                                     |
 | [MemoryBackend](https://docs.remotestore.dev/stable/reference/api/backends/memory/index.md)        | In-process storage for testing                               |
-| [ReadOnlyHttpBackend](https://docs.remotestore.dev/stable/reference/api/backends/http/index.md)    | Read-only access to HTTP/HTTPS URLs                          |
 | [S3Backend](https://docs.remotestore.dev/stable/reference/api/backends/s3/index.md)                | Amazon S3 and S3-compatible services                         |
 | [S3PyArrowBackend](https://docs.remotestore.dev/stable/reference/api/backends/s3-pyarrow/index.md) | S3 via PyArrow C++ for higher throughput                     |
-| [SFTPBackend](https://docs.remotestore.dev/stable/reference/api/backends/sftp/index.md)            | SSH/SFTP server storage via paramiko                         |
 | [AzureBackend](https://docs.remotestore.dev/stable/reference/api/backends/azure/index.md)          | Azure Blob Storage and ADLS Gen2                             |
+| [SFTPBackend](https://docs.remotestore.dev/stable/reference/api/backends/sftp/index.md)            | SSH/SFTP server storage via paramiko                         |
+| [ReadOnlyHttpBackend](https://docs.remotestore.dev/stable/reference/api/backends/http/index.md)    | Read-only access to HTTP/HTTPS URLs                          |
 | [SQLBlobBackend](https://docs.remotestore.dev/stable/reference/api/backends/sql-blob/index.md)     | SQL database blob storage via SQLAlchemy                     |
 | [SQLQueryBackend](https://docs.remotestore.dev/stable/reference/api/backends/sql-query/index.md)   | Read-only SQL query materialization via SQLAlchemy + PyArrow |
 

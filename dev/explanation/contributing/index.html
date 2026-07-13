@@ -11133,11 +11133,40 @@ walkthrough of the <code>Backend</code> contract, error mapping, and capabilitie
 <li>Register a fixture in <code>tests/backends/fixtures/</code> (declare it in <code>backends.toml</code> / <code>fixtures.toml</code> and add a per-fixture factory module)</li>
 <li>The cross-backend conformance suite under <code>tests/backends/conformance/</code> (spec-traced per-topic files: <code>test_io.py</code>, <code>test_listing.py</code>, <code>test_atomic.py</code>, …) runs automatically against the new fixture; Dafny-derived cases carry <code>@pytest.mark.extended_conformance</code> and are validated by a Dafny-compiled oracle — see <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md#compiled-oracle"><code>sdd/formal/README.md</code> § Compiled Oracle</a></li>
 <li>Add user-facing guide in <code>docs-src/guides/backends/&lt;name&gt;.md</code> and add to <code>docs-src/guides/_nav.yml</code></li>
-<li>Update <code>docs-src/guides/backends/index.md</code> (Supported Backends table)</li>
-<li>Update <code>README.md</code> (Supported Backends table + Installation extras)</li>
+<li>Update every backend enumeration — see <strong>Backend order</strong> below for how to find them all and what order they go in</li>
 <li>Add backend config example to <code>examples/configuration/configuration.py</code></li>
-<li>If the backend needs an extra, add it to <code>pyproject.toml</code> <code>[project.optional-dependencies]</code></li>
+<li>If the backend needs an extra, add it to <code>pyproject.toml</code> <code>[project.optional-dependencies]</code>, and add the same floor to <code>run_constraints</code> in <code>packaging/conda-forge/recipe.yaml</code></li>
 </ol>
+<p><strong>Backend order (step 6).</strong> Every enumeration lists backends in one order:</p>
+<blockquote>
+<p>local (Local, Memory) → cloud (S3, S3-PyArrow, Azure, Graph) → SFTP / SSH →
+special-purpose (HTTP, SQLBlob, SQLQuery)</p>
+</blockquote>
+<p>Insert the new backend into its group; do not append it. Where a table carries
+footnote markers, they run in first-appearance order, so re-sequence them when a
+new row lands above an existing marker.</p>
+<p><strong>Do not go looking for the enumerations — the gate knows where they are.</strong>
+<code>hatch run check-backend-order</code> reads every enumeration across the README, the
+guides, the API reference, <code>context7.json</code>, and the conda recipe, and fails on any
+that is out of order. It runs inside <code>hatch run lint</code> and <code>hatch run docs-gate</code>, so
+CI enforces it on every PR. Add the backend, run the gate, fix what it names.</p>
+<p>This replaced a <code>git grep</code>, and the reason is worth knowing before anyone proposes
+another one: a grep for a backend <em>name</em> cannot see an enumeration that abbreviates
+(one wrote plain <code>SQL</code>), and a grep scoped to a <em>path</em> cannot see the enumerations
+outside it (two live in packaging and repo-root metadata). Both holes were real, and
+both hid live defects. If you find yourself about to hand-maintain a list of places
+to check, extend <code>scripts/check_backend_order.py</code> instead.</p>
+<p>The gate proves <strong>order</strong>, not membership. Whether a list <em>should</em> name every
+backend is a judgement it deliberately does not make: the API reference splits its
+sync and async tables on purpose, and the README's comparison row abridges on
+purpose. That one is on you and your reviewer.</p>
+<p>Two things are deliberately out of scope. <code>FEATURES.md</code> is generated between
+<code>BEGIN_GENERATED</code> markers and sorts alphabetically — never hand-edit it. The
+tagline is a slogan rather than an enumeration, so the group order does not apply
+to it; it is mirrored across packaging, citation, and docs-metadata files, and
+<code>git grep "Write file storage code once"</code> is the way to find every copy. Do not
+work from a memorised list — the mirrors outnumber the ones anyone remembers, and
+the forgotten copies are the ones that go stale.</p>
 <p><a id="adding-an-extension"></a></p>
 <h2 id="adding-an-extension">Adding an Extension<a class="headerlink" href="#adding-an-extension" title="Permanent link">&para;</a></h2>
 <p>Extensions live in <code>src/remote_store/ext/</code> and follow the contract in the <a href="../design/adrs/0008-extension-architecture/">extension architecture ADR</a>. Full checklist:</p>
@@ -11152,6 +11181,7 @@ walkthrough of the <code>Backend</code> contract, error mapping, and capabilitie
 <li>Add the page to <code>docs-src/guides/_nav.yml</code> (under the Extensions section)</li>
 <li>Add a runnable example in <code>examples/</code></li>
 <li>The example docs page is auto-generated at <code>tutorial/examples/&lt;slug&gt;.md</code> from the module docstring via <code>gen_pages.py</code> — no manual wrapper file needed</li>
+<li>If the extension needs an extra, add it to <code>pyproject.toml</code> <code>[project.optional-dependencies]</code>, and add the same floor to <code>run_constraints</code> in <code>packaging/conda-forge/recipe.yaml</code> — that block covers <em>every</em> extra, backend and extension alike, and a dependency missing from it is silently unconstrained for conda users</li>
 <li>Update <code>CHANGELOG.md</code> and <code>sdd/BACKLOG.md</code> (or <code>sdd/BACKLOG-DONE.md</code>) in the same commit</li>
 </ol>
 <h3 id="export-patterns">Export patterns<a class="headerlink" href="#export-patterns" title="Permanent link">&para;</a></h3>
@@ -11465,7 +11495,7 @@ workflow's runner) so the lock is comparable.</p>
 <li>[ ] CHANGELOG.md: rename <code>[Unreleased]</code> to <code>[X.Y.Z] - YYYY-MM-DD</code>, add fresh empty <code>[Unreleased]</code> above</li>
 <li>[ ] <code>sdd/BACKLOG-DONE.md</code>: rename <code>## Unreleased</code> to <code>## vX.Y.Z</code>, add a fresh empty <code>## Unreleased</code> (<code>*(none)*</code>) above</li>
 <li>[ ] Update <code>date-released</code> in <code>CITATION.cff</code> to today (bump-my-version only updates <code>version:</code>, not this field)</li>
-<li>[ ] Tagline consistent: <code>pyproject.toml</code> = README.md = <code>docs-src/index.md</code> = <code>mkdocs.yml</code> = <code>CITATION.cff</code></li>
+<li>[ ] Tagline consistent across every mirror: <code>git grep "Write file storage code once"</code> — check them all, do not work from a remembered list; the copies nobody lists are the copies that go stale. Historical quotes in <code>sdd/research/</code> are the one exemption</li>
 <li>[ ] Keywords consistent: <code>pyproject.toml</code> = <code>CITATION.cff</code></li>
 <li>[ ] Conda recipe: update <code>context.version</code> in <code>packaging/conda-forge/recipe.yaml</code> to X.Y.Z</li>
 <li>[ ] <code>bump-my-version bump patch|minor|major --allow-dirty</code> (modifies the files listed in <code>[[tool.bumpversion.files]]</code> in <code>pyproject.toml</code> — does NOT commit or tag; <code>--allow-dirty</code> is required because the Phase 1/2 edits above are still uncommitted)</li>

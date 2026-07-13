@@ -10354,13 +10354,6 @@
 <td>Parquet, PyArrow datasets</td>
 </tr>
 <tr>
-<td><a href="../backends/sftp/">SFTP</a></td>
-<td><code>paramiko</code></td>
-<td style="text-align: center;">Fallback</td>
-<td>Network</td>
-<td>Legacy, on-prem</td>
-</tr>
-<tr>
 <td><a href="../backends/azure/">Azure</a></td>
 <td><code>azure-storage-blob</code></td>
 <td style="text-align: center;">Native</td>
@@ -10375,6 +10368,20 @@
 <td>OneDrive / SharePoint / Teams (async-only)</td>
 </tr>
 <tr>
+<td><a href="../backends/sftp/">SFTP</a></td>
+<td><code>paramiko</code></td>
+<td style="text-align: center;">Fallback</td>
+<td>Network</td>
+<td>Legacy, on-prem</td>
+</tr>
+<tr>
+<td><a href="../backends/http/">HTTP</a></td>
+<td>None</td>
+<td style="text-align: center;">—</td>
+<td>Network</td>
+<td>Read-only public data</td>
+</tr>
+<tr>
 <td><a href="../backends/sql-blob/">SQLBlob</a></td>
 <td><code>sqlalchemy</code></td>
 <td style="text-align: center;">Native</td>
@@ -10387,13 +10394,6 @@
 <td style="text-align: center;">Native</td>
 <td>DB-bound</td>
 <td>Read-only ETL exports</td>
-</tr>
-<tr>
-<td><a href="../backends/http/">HTTP</a></td>
-<td>None</td>
-<td style="text-align: center;">—</td>
-<td>Network</td>
-<td>Read-only public data</td>
 </tr>
 </tbody>
 </table>

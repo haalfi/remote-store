@@ -10398,11 +10398,6 @@
 <td>Guarded by a single internal lock.</td>
 </tr>
 <tr>
-<td><a href="../../guides/backends/http/">HTTP</a></td>
-<td>Single-connection on <code>urllib</code></td>
-<td>Only the auto-detect <em>fallback</em> <code>urllib</code> opener (shared redirect counter) is unsafe; the <code>httpx</code> / <code>requests</code> transports — auto-selected ahead of it when installed — are thread-safe. <strong>Remedy:</strong> install and select <code>http_client='requests'</code> or <code>'httpx'</code>, or use one instance per thread.</td>
-</tr>
-<tr>
 <td><a href="../../guides/backends/s3/">S3</a></td>
 <td>Thread-safe</td>
 <td>The boto3 client / s3fs is safe for concurrent per-instance use.</td>
@@ -10413,11 +10408,6 @@
 <td>Arrow's C++ <code>S3FileSystem</code> is safe per instance.</td>
 </tr>
 <tr>
-<td><a href="../../guides/backends/sftp/">SFTP</a></td>
-<td>Single-connection</td>
-<td>One paramiko channel over one socket. <strong>Remedy:</strong> one instance per thread (or a native async SFTP client).</td>
-</tr>
-<tr>
 <td><a href="../../guides/backends/azure/">Azure</a></td>
 <td>Thread-safe</td>
 <td>The Azure SDK service clients are immutable once built. The async twin (<code>AsyncAzureBackend</code>) is safe for concurrent coroutines on a <strong>single</strong> event loop, and never across loops — use one instance per loop.</td>
@@ -10426,6 +10416,16 @@
 <td><a href="../../guides/backends/graph/">Graph</a></td>
 <td>Thread-safe ²</td>
 <td>Async-only: safe for concurrent coroutines on one event loop.</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/sftp/">SFTP</a></td>
+<td>Single-connection</td>
+<td>One paramiko channel over one socket. <strong>Remedy:</strong> one instance per thread (or a native async SFTP client).</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/http/">HTTP</a></td>
+<td>Single-connection on <code>urllib</code></td>
+<td>Only the auto-detect <em>fallback</em> <code>urllib</code> opener (shared redirect counter) is unsafe; the <code>httpx</code> / <code>requests</code> transports — auto-selected ahead of it when installed — are thread-safe. <strong>Remedy:</strong> install and select <code>http_client='requests'</code> or <code>'httpx'</code>, or use one instance per thread.</td>
 </tr>
 <tr>
 <td><a href="../../guides/backends/sql-blob/">SQLBlob</a></td>
@@ -10482,6 +10482,11 @@
 <td>Yes*</td>
 </tr>
 <tr>
+<td><a href="../../guides/backends/memory/">Memory</a></td>
+<td>Dict key reassignment</td>
+<td>Yes</td>
+</tr>
+<tr>
 <td><a href="../../guides/backends/s3/">S3</a></td>
 <td>Copy object + delete object</td>
 <td>—</td>
@@ -10520,11 +10525,6 @@
 <td><a href="../../guides/backends/sftp/">SFTP</a> (final fallback)</td>
 <td>Read + write + delete</td>
 <td>—</td>
-</tr>
-<tr>
-<td><a href="../../guides/backends/memory/">Memory</a></td>
-<td>Dict key reassignment</td>
-<td>Yes</td>
 </tr>
 <tr>
 <td><a href="../../guides/backends/http/">HTTP</a></td>
@@ -10568,6 +10568,12 @@
 <td>No (TOCTOU)</td>
 </tr>
 <tr>
+<td><a href="../../guides/backends/memory/">Memory</a></td>
+<td>Yes</td>
+<td>Yes (direct)</td>
+<td>No (TOCTOU)</td>
+</tr>
+<tr>
 <td><a href="../../guides/backends/s3/">S3</a></td>
 <td>No (copy + delete)</td>
 <td>Yes (PUT is inherently atomic)</td>
@@ -10604,16 +10610,22 @@
 <td>No (TOCTOU)</td>
 </tr>
 <tr>
-<td><a href="../../guides/backends/memory/">Memory</a></td>
-<td>Yes</td>
-<td>Yes (direct)</td>
-<td>No (TOCTOU)</td>
+<td><a href="../../guides/backends/http/">HTTP</a></td>
+<td>— (read-only)</td>
+<td>— (read-only)</td>
+<td>—</td>
 </tr>
 <tr>
 <td><a href="../../guides/backends/sql-blob/">SQLBlob</a></td>
 <td>Yes (SQL transaction)</td>
 <td>Yes (direct)</td>
 <td>No (TOCTOU)</td>
+</tr>
+<tr>
+<td><a href="../../guides/backends/sql-query/">SQLQuery</a></td>
+<td>— (read-only)</td>
+<td>— (read-only)</td>
+<td>—</td>
 </tr>
 </tbody>
 </table>
