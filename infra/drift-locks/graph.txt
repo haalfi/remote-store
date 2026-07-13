@@ -1,9 +1,9 @@
 # extra: graph
 # python: 3.13
-# captured: 2026-07-09
+# captured: 2026-07-13
 # Regenerate with: hatch run drift-check refresh-baseline graph
 
-anyio==4.14.1
+anyio==4.14.2
 certifi==2026.6.17
 cffi==2.1.0
 charset-normalizer==3.4.9

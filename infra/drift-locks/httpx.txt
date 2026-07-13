@@ -1,9 +1,9 @@
 # extra: httpx
 # python: 3.13
-# captured: 2026-07-09
+# captured: 2026-07-13
 # Regenerate with: hatch run drift-check refresh-baseline httpx
 
-anyio==4.14.1
+anyio==4.14.2
 certifi==2026.6.17
 h11==0.16.0
 httpcore==1.0.9

@@ -1,7 +1,7 @@
 # extra: sql
 # python: 3.13
-# captured: 2026-07-03
+# captured: 2026-07-13
 # Regenerate with: hatch run drift-check refresh-baseline sql
 
 sqlalchemy==2.1.0b3
-typing-extensions==4.16.0rc2
+typing-extensions==4.16.0
