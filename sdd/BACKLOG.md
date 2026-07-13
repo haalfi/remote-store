@@ -107,8 +107,12 @@ and the highest ID already in this file, then take the next integer. Run
   naming Graph's probe (cheapest candidate: `GET /me/drive`, or
   `GET /drives/{id}` when the drive is pinned); the override on
   `GraphBackend`, mapping errors through the existing Graph error mapper;
-  and a negative conformance test that pins *unreachable ⇒ raises*, since
-  the existing positive-only assertion is what let this through.
+  and the override-or-declared-exemption assertion of
+  [`TESTING.md` Rule 13](TESTING.md#declaring-an-exemption) (BK-312), which
+  generalises the escape: `MemoryBackend` declares its no-op (PING-008) and
+  every other backend must probe, so a backend can no longer reach green by
+  inheriting the default. Without that direction, the fix closes this one
+  backend and leaves the hole open for the next.
 
   Surfaced while documenting Graph's row in `health-check.md` during BK-310.
 

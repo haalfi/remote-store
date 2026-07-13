@@ -8,6 +8,34 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-312 — Testing Rule 13: an inherited ABC default must be opt-in, not opt-out**
+  spec: — · effort: S · audience: contributor.process
+  BUG-231 (Graph's missing health probe) escaped a conformance suite that
+  *did* exercise the backend. `test_check_health.py` asserts the outcome is
+  `None` **or** a mapped `RemoteStoreError` — and a backend that never
+  implemented `check_health()` inherits the ABC's no-op default, returns
+  `None`, and passes. The bug is not that Graph slipped the fixture; it is
+  that the assertion was loose enough to admit the default, so a *missing*
+  implementation and a *healthy* one are the same green.
+
+  The trap generalises past health checks: it applies to every ABC method
+  that is concrete-with-a-default (`# noqa: B027`), and it cannot be closed
+  by tightening the outcome assertion, because the code carries no record of
+  intent. `MemoryBackend` legitimately has no probe (PING-008, always
+  healthy); `GraphBackend` has none by omission. The two absences are
+  byte-identical — "does it override?" flags both or neither.
+
+  So Rule 13 asserts on the presence of a **decision** rather than the
+  outcome of a call: conformance requires override-or-declared-exemption,
+  checked in both directions. Not overriding now costs a list entry and a
+  spec citation, which makes forgetting distinguishable from deciding; and
+  pinning the exemption list against reality (an exempt backend must *not*
+  override) keeps it from rotting into a junk drawer. Reuses the self-pruning
+  allow-list shape already in `scripts/check_test_placement.py`. Documented as
+  Rule 13 + § Declaring an exemption in `TESTING.md`, with a fifth entry in
+  § A green test can be vacuous; the enforcing assertion ships with BUG-231,
+  which is where the first exemption list is born.
+
 - [x] **BK-311 — Sync the stale tagline and backend-membership mirrors**
   spec: — · effort: S · audience: user.discoverability.llm, user.site, contributor.tooling
   Writing BK-310's tagline exemption from memory produced a four-file list; a
