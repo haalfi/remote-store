@@ -1,0 +1,200 @@
+id: BK-310
+title: "Pin the backend enumeration order in the add-a-backend checklist"
+trigger: >-
+  PR #893 imposed a single backend taxonomy (local -> cloud -> SFTP ->
+  special-purpose) across six enumerations, but CONTRIBUTING's add-a-backend
+  checklist named only two of them and said nothing about ordering — leaving the
+  convention unwritten and free to drift again on the next backend.
+source_items:
+  - BK-310
+audience:
+  - contributor.process
+  - user.site
+  - contributor.tooling
+discovery_followups:
+  - BK-311
+  - BUG-231
+co_shipped_items:
+  - BK-311
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  - docs-src/guides/choosing-a-backend.md
+  - docs-src/guides/data-lake-patterns.md
+  - docs-src/guides/health-check.md
+  - docs-src/explanation/concurrency.md
+  - docs-src/reference/capabilities-matrix.md
+  - docs-src/reference/api/index.md
+  - docs-src/reference/api/backends/index.md
+  - docs-src/reference/api/store.md
+  - docs-src/index.md
+  - scripts/check_backend_order.py
+  - tests/scripts/test_check_backend_order.py
+  - pyproject.toml
+review_rounds: 4
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Adding a New Backend"
+        read_type: gate
+        extract: "steps 6-7 name only the two Supported Backends tables; no ordering rule, no mention of the other four enumerations"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "ID prefixes"
+        read_type: gate
+        extract: "BK = committed work (this is being implemented now), vs ID = unevaluated idea"
+        outcome: ok
+      - file: README.md
+        section: "Installation, What you get, Supported Backends, How it compares, Learn more"
+        read_type: reference
+        extract: "enumerate the five README sites the taxonomy has to hold across"
+        outcome: ok
+      - file: docs-src/guides/backends/index.md
+        section: "Supported Backends"
+        read_type: reference
+        extract: "the sixth site — the twin table CONTRIBUTING already pairs with the README's"
+        outcome: ok
+  - id: docs
+    name: Document the convention
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Adding a New Backend"
+        read_type: gate
+        extract: "name all six enumeration sites; state group order; insert-into-group not append; footnote markers run in first-appearance order"
+        outcome: ok
+      - file: FEATURES.md
+        section: "BEGIN_GENERATED:backends_main"
+        read_type: reference
+        extract: "generated and alphabetical — record as an explicit exemption so a future contributor does not hand-sort it into taxonomy order"
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "(full)"
+        read_type: gate
+        extract: "keep the addendum pointer-style; state the constraint, do not restage the PR-893 narrative"
+        outcome: ok
+  - id: fix
+    name: Address review
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Adding a New Backend / Backend order"
+        read_type: gate
+        extract: >-
+          the tagline-exemption parenthetical listed four mirror files from memory; review caught that the
+          real set is larger (repo-root context7.json, packaging/conda-forge/recipe.yaml x2,
+          docs-src/guides/custom-backend-guide.md) and that the unlisted copies are precisely the stale ones.
+          Replaced the enumeration with the discovery command — a hand-maintained list of mirror paths is the
+          same rot this item exists to prevent
+        outcome: misleading
+      - file: packaging/conda-forge/recipe.yaml
+        section: "summary, description"
+        read_type: verify
+        extract: >-
+          tagline copies here (and in repo-root context7.json) still omit OneDrive — a membership defect
+          distinct from this item's ordering scope. Raised as BK-311 and co-shipped in this PR rather
+          than deferred: the same review round produced both, and leaving the mirrors stale while
+          documenting how to find them would have been the worse half of the fix
+        outcome: ok
+  - id: sweep
+    name: Make the invariant true
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Adding a New Backend / Backend order"
+        read_type: gate
+        extract: >-
+          round 2 found the checklist asserting "every enumeration lists backends in one order" while the
+          repo held ten full-membership enumerations in ten different orders. The site list was itself the
+          hand-maintained artifact the tagline exemption two paragraphs down explicitly refuses to keep —
+          the item reproduced its own anti-pattern. Replaced with the discovery command; the enumeration
+          count is no longer a number the next backend can silently invalidate
+        outcome: misleading
+      - file: docs-src/reference/capabilities-matrix.md
+        section: "Backend x Capability"
+        read_type: gate
+        extract: >-
+          reordering a 14x10 grid means permuting columns across every row — the one edit in this PR where
+          a silent transcription error survives review. Verified all 140 cells against each backend's
+          declared CAPABILITIES by executing the check, not by re-reading the diff
+        outcome: ok
+      - file: docs-src/guides/health-check.md
+        section: "Per-backend health checks"
+        read_type: verify
+        extract: >-
+          not an ordering defect but a membership one: Graph was absent. Documenting it exposed that
+          GraphBackend never overrides check_health, so ping() returns success without contacting Graph —
+          a genuine gap the ordering sweep would never have surfaced. Filed as BUG-231 rather than fixed
+          here: a behaviour change does not belong in a docs PR. The conformance suite cannot catch it
+          (test_check_health asserts None-or-RemoteStoreError, which a no-op satisfies), so the fix needs
+          a negative test, not just an override
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "copy, move, write_atomic, list_files"
+        read_type: reference
+        extract: "store.md's behavior matrix says 'verify against actual code'; Graph's row was derived from the implementation rather than inferred from its neighbours"
+        outcome: ok
+  - id: wire
+    name: Replace the grep with a gate
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Adding a New Backend / Backend order"
+        read_type: gate
+        extract: >-
+          round 3 killed the discovery command too. It leaked twice: the sentinel (`sqlquery`) could not
+          see an enumeration abbreviated to `SQL`, and the pathspec (README + docs-src) could not see the
+          two enumerations in packaging and repo-root metadata — both hiding live defects. The grep had
+          already failed in practice: written in round 2, it still missed concurrency.md's third table.
+          The lesson is not "sharpen the grep" — a name-grep cannot find a list that renames itself
+        outcome: misleading
+      - file: scripts/check_no_tracker_refs.py
+        section: "(full)"
+        read_type: reference
+        extract: "structural template for a published-surface gate: scope constants, Violation dataclass, remediation string, exit 0/1"
+        outcome: ok
+      - file: scripts/check_backend_order.py
+        section: "(new)"
+        read_type: gate
+        extract: >-
+          two bugs the tests caught and review would not have: (1) the alias alternation was
+          `a|b|c(?!...)`, binding the boundary to the LAST alternative only, so `SQL` matched inside
+          `SQLAlchemy`; (2) splitting table rows into cells to kill the false positives silently destroyed
+          column-wise detection — every header cell holds one backend, so no segment ever reached the
+          threshold. A gate whose own tests do not run is worse than no gate
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint, docs-gate"
+        read_type: verify
+        extract: >-
+          CI delegates to `uvx hatch run lint` / `docs-gate`, so the pyproject script arrays ARE the
+          single source — no separate workflow enumeration to dual-wire, and none to drift
+        outcome: ok
+      - file: scripts/check_backend_order.py
+        section: "_ALIAS_RE"
+        read_type: verify
+        extract: >-
+          round 4: the token boundary was asymmetric. The trailing guard stops an alias matching as a
+          PREFIX ("SQLAlchemy"), and I reasoned about it as though that settled the question — but a bare
+          "SQL" is also a SUFFIX, so PostgreSQL, MySQL and NoSQL each named the SQLBlob backend. It was
+          live in the scanned tree (concurrency.md's "(PostgreSQL, MySQL)" read as three SQLBlobs) and
+          passed only because the repeats collapsed and the segment stayed under the threshold. An RDBMS
+          name beside a six-backend list would have invented a violation. The gate being green was not
+          evidence the gate was right
+        outcome: ok
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: >-
+          the round-2 sweep moved this item's own CHANGELOG verdict. It opened as contributor.process
+          (checklist prose only, no entry required); reordering ten published docs pages and correcting two
+          membership gaps added user.site, and the derived rule then requires an entry. The first
+          ripple-check was right for the change as it then stood — re-run it when scope moves, do not trust
+          the earlier verdict
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: verify
+        extract: "item completed in the same commit — lands directly in DONE, newest-first, never appears in active BACKLOG"
+        outcome: ok

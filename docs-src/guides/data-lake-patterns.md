@@ -22,7 +22,7 @@ via the PyArrow adapter.
 | **Table Format** (optional) | Delta Lake, PyIceberg, plain Parquet |
 | **PyArrow FileSystem** | `pyarrow_fs(store)` |
 | **remote-store** | `Store`, `child()`, `ext.batch`, `ext.transfer` |
-| **Backend** | Local, Memory, S3, S3-PyArrow, SFTP, Azure, HTTP, SQLBlob, SQLQuery |
+| **Backend** | Local, Memory, S3, S3-PyArrow, Azure, Graph, SFTP, HTTP, SQLBlob, SQLQuery |
 
 ## What this gets you
 

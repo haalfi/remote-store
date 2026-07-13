@@ -1,0 +1,102 @@
+id: BK-311
+title: "Sync the stale tagline and backend-membership mirrors"
+trigger: >-
+  BK-310's review caught its tagline-exemption note listing four mirror files
+  from memory. `git grep` found more — and every copy the memory had dropped was
+  a stale one, still describing a four-backend library. The forgotten mirrors and
+  the stale mirrors were the same set.
+source_items:
+  - BK-311
+  - BK-310
+audience:
+  - user.discoverability.llm
+  - user.site
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+review_rounds: 1
+phases:
+  - id: orient
+    name: Find every mirror
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Adding a New Backend / Backend order"
+        read_type: reference
+        extract: "the discovery command BK-310 landed one commit earlier — use it rather than repeating the mistake that produced this item"
+        outcome: ok
+      - file: FEATURES.md
+        section: "Backends, Native async backends"
+        read_type: gate
+        extract: >-
+          the authoritative membership: nine sync backends plus three native-async ones. GraphBackend is
+          AsyncStore-only with no config `type=` string, so it cannot be folded into a flat "built-in
+          backends" list without misleading — the correction had guessed async Local/S3 peers exist; they
+          do not
+        outcome: ok
+      - file: pyproject.toml
+        section: "[project.optional-dependencies]"
+        read_type: gate
+        extract: "the real extras and their floors — needed to check the recipe's run_constraints, not just its prose"
+        outcome: ok
+  - id: fix
+    name: Sync the mirrors
+    steps:
+      - file: context7.json
+        section: "description, rules[2], rules[4]"
+        read_type: gate
+        extract: >-
+          the rot ran past the tagline into the retrieval payload: no `[graph]` extra, no GraphBackend.
+          Rules are capped at 255 chars, so the extension parentheticals in rules[2] were dropped —
+          rules[8] already carries them
+        outcome: ok
+      - file: packaging/conda-forge/recipe.yaml
+        section: "about.summary, about.description, requirements.run_constraints"
+        read_type: gate
+        extract: >-
+          the prose fix exposed a deeper drift the tagline hunt would not have found: run_constraints
+          had no graph or sql dependencies at all, a paramiko floor BUG-204 had already raised, and a
+          pyarrow pin missing the <25 ceiling
+        outcome: ok
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "(intro)"
+        read_type: gate
+        extract: "third tagline mirror; prose only"
+        outcome: ok
+  - id: fix
+    name: Address review
+    steps:
+      - file: packaging/conda-forge/recipe.yaml
+        section: "requirements.run_constraints"
+        read_type: gate
+        extract: >-
+          the sweep stopped one short: `requests` / `urllib3` (the HTTP backend's optional pooled
+          transport) stayed unconstrained while its sibling `httpx` gained a floor. Exactly the leftover
+          this item's premise predicts — the dep nobody enumerated is the dep that goes unpinned. Also
+          reworded the pyarrow comment, which this PR's own `<25` ceiling had turned into a
+          self-contradiction ("can only express one bound" above a two-bound pin); the real constraint is
+          one pin per package, not one bound
+        outcome: ok
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Release / Phase 2"
+        read_type: verify
+        extract: >-
+          root cause: the release checklist's tagline-consistency line named five files and omitted
+          exactly the three that went stale. Replaced with the same `git grep` discovery command — a
+          gate that enumerates its own targets rots into a gate that passes while the targets drift
+        outcome: misleading
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / CHANGELOG entry"
+        read_type: verify
+        extract: "audience leads with user.discoverability.llm, so a CHANGELOG entry is required (precedent: ID-176, ID-160 both carry one for context7.json)"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: verify
+        extract: >-
+          BK-310's own entry repeated the corrected-out claim ("mirrored across four files") — the
+          stale phrasing had already rippled into the backlog prose in the same PR
+        outcome: ok

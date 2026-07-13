@@ -10,12 +10,12 @@ Before the per-operation guarantees below, there is a more basic question: **is 
 |---------|---------|----------------------------------------|
 | [Local](../guides/backends/local.md) | Thread-safe | Stateless; delegates to the OS filesystem. |
 | [Memory](../guides/backends/memory.md) | Thread-safe | Guarded by a single internal lock. |
-| [HTTP](../guides/backends/http.md) | Single-connection on `urllib` | Only the auto-detect *fallback* `urllib` opener (shared redirect counter) is unsafe; the `httpx` / `requests` transports — auto-selected ahead of it when installed — are thread-safe. **Remedy:** install and select `http_client='requests'` or `'httpx'`, or use one instance per thread. |
 | [S3](../guides/backends/s3.md) | Thread-safe | The boto3 client / s3fs is safe for concurrent per-instance use. |
 | [S3-PyArrow](../guides/backends/s3-pyarrow.md) | Thread-safe ¹ | Arrow's C++ `S3FileSystem` is safe per instance. |
-| [SFTP](../guides/backends/sftp.md) | Single-connection | One paramiko channel over one socket. **Remedy:** one instance per thread (or a native async SFTP client). |
 | [Azure](../guides/backends/azure.md) | Thread-safe | The Azure SDK service clients are immutable once built. The async twin (`AsyncAzureBackend`) is safe for concurrent coroutines on a **single** event loop, and never across loops — use one instance per loop. |
 | [Graph](../guides/backends/graph.md) | Thread-safe ² | Async-only: safe for concurrent coroutines on one event loop. |
+| [SFTP](../guides/backends/sftp.md) | Single-connection | One paramiko channel over one socket. **Remedy:** one instance per thread (or a native async SFTP client). |
+| [HTTP](../guides/backends/http.md) | Single-connection on `urllib` | Only the auto-detect *fallback* `urllib` opener (shared redirect counter) is unsafe; the `httpx` / `requests` transports — auto-selected ahead of it when installed — are thread-safe. **Remedy:** install and select `http_client='requests'` or `'httpx'`, or use one instance per thread. |
 | [SQLBlob](../guides/backends/sql-blob.md) | Thread-safe ³ | The SQLAlchemy engine pools connections. |
 | [SQLQuery](../guides/backends/sql-query.md) | Thread-safe ³ | Same pooled engine (read-only). |
 
@@ -64,6 +64,7 @@ Several backends implement `move(src, dst)` as a **copy followed by a delete**. 
 | Backend | `move()` implementation | Atomic? |
 |---------|------------------------|---------|
 | [Local](../guides/backends/local.md) | `shutil.move()` (`os.rename()` on same filesystem, copy+delete across) | Yes* |
+| [Memory](../guides/backends/memory.md) | Dict key reassignment | Yes |
 | [S3](../guides/backends/s3.md) | Copy object + delete object | — |
 | [S3-PyArrow](../guides/backends/s3-pyarrow.md) | Copy object + delete object | — |
 | [Azure](../guides/backends/azure.md) (HNS) | `rename_file()` | Yes |
@@ -72,7 +73,6 @@ Several backends implement `move(src, dst)` as a **copy followed by a delete**. 
 | [SFTP](../guides/backends/sftp.md) (`posix_rename`) | `posix_rename` | Yes |
 | [SFTP](../guides/backends/sftp.md) (`rename`) | `rename()` | Yes (but not guaranteed atomic on all servers) |
 | [SFTP](../guides/backends/sftp.md) (final fallback) | Read + write + delete | — |
-| [Memory](../guides/backends/memory.md) | Dict key reassignment | Yes |
 | [HTTP](../guides/backends/http.md) | — (read-only) | — |
 | [SQLBlob](../guides/backends/sql-blob.md) | SQL `UPDATE` in transaction | Yes |
 | [SQLQuery](../guides/backends/sql-query.md) | — (read-only) | — |
@@ -90,14 +90,16 @@ SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename(
 | Backend | `move()` atomic? | `write_atomic()` truly atomic? | `overwrite=False` race-free? |
 |---------|-----------------|-------------------------------|------------------------------|
 | [Local](../guides/backends/local.md) | Yes* | Yes (temp file + `os.replace()`) | No (TOCTOU) |
+| [Memory](../guides/backends/memory.md) | Yes | Yes (direct) | No (TOCTOU) |
 | [S3](../guides/backends/s3.md) | No (copy + delete) | Yes (PUT is inherently atomic) | No (TOCTOU) |
 | [S3-PyArrow](../guides/backends/s3-pyarrow.md) | No (copy + delete) | Yes (PUT is inherently atomic) | No (TOCTOU) |
 | [Azure](../guides/backends/azure.md) (HNS) | Yes (`rename_file`) | Yes (temp file + rename) | No (TOCTOU) |
 | [Azure](../guides/backends/azure.md) (non-HNS) | No (copy + delete) | Yes (direct PUT is atomic) | No (TOCTOU) |
 | [Graph](../guides/backends/graph.md) | No (server move/copy) | Yes (server `PUT`) | Yes (server create-if-absent) |
 | [SFTP](../guides/backends/sftp.md) | Yes** | Yes** (temp file + rename) | No (TOCTOU) |
-| [Memory](../guides/backends/memory.md) | Yes | Yes (direct) | No (TOCTOU) |
+| [HTTP](../guides/backends/http.md) | — (read-only) | — (read-only) | — |
 | [SQLBlob](../guides/backends/sql-blob.md) | Yes (SQL transaction) | Yes (direct) | No (TOCTOU) |
+| [SQLQuery](../guides/backends/sql-query.md) | — (read-only) | — (read-only) | — |
 
 \* Local `move()` uses `shutil.move()`, which delegates to `os.rename()` on the same filesystem (atomic) but falls back to copy+delete across filesystems. Only `write_atomic()` uses `os.replace()`.
 

@@ -33,11 +33,11 @@ backends — including the async-only Microsoft Graph backend — live under
 |-------|-------------|
 | [LocalBackend](backends/local.md) | Local filesystem storage |
 | [MemoryBackend](backends/memory.md) | In-process storage for testing |
-| [ReadOnlyHttpBackend](backends/http.md) | Read-only access to HTTP/HTTPS URLs |
 | [S3Backend](backends/s3.md) | Amazon S3 and S3-compatible services |
 | [S3PyArrowBackend](backends/s3-pyarrow.md) | S3 via PyArrow C++ for higher throughput |
-| [SFTPBackend](backends/sftp.md) | SSH/SFTP server storage via paramiko |
 | [AzureBackend](backends/azure.md) | Azure Blob Storage and ADLS Gen2 |
+| [SFTPBackend](backends/sftp.md) | SSH/SFTP server storage via paramiko |
+| [ReadOnlyHttpBackend](backends/http.md) | Read-only access to HTTP/HTTPS URLs |
 | [SQLBlobBackend](backends/sql-blob.md) | SQL database blob storage via SQLAlchemy |
 | [SQLQueryBackend](backends/sql-query.md) | Read-only SQL query materialization via SQLAlchemy + PyArrow |
 

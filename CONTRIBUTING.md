@@ -89,10 +89,44 @@ walkthrough of the `Backend` contract, error mapping, and capabilities.
 3. Register a fixture in `tests/backends/fixtures/` (declare it in `backends.toml` / `fixtures.toml` and add a per-fixture factory module)
 4. The cross-backend conformance suite under `tests/backends/conformance/` (spec-traced per-topic files: `test_io.py`, `test_listing.py`, `test_atomic.py`, …) runs automatically against the new fixture; Dafny-derived cases carry `@pytest.mark.extended_conformance` and are validated by a Dafny-compiled oracle — see [`sdd/formal/README.md` § Compiled Oracle](sdd/formal/README.md#compiled-oracle)
 5. Add user-facing guide in `docs-src/guides/backends/<name>.md` and add to `docs-src/guides/_nav.yml`
-6. Update `docs-src/guides/backends/index.md` (Supported Backends table)
-7. Update `README.md` (Supported Backends table + Installation extras)
-8. Add backend config example to `examples/configuration/configuration.py`
-9. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`
+6. Update every backend enumeration — see **Backend order** below for how to find them all and what order they go in
+7. Add backend config example to `examples/configuration/configuration.py`
+8. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`, and add the same floor to `run_constraints` in `packaging/conda-forge/recipe.yaml`
+
+**Backend order (step 6).** Every enumeration lists backends in one order:
+
+> local (Local, Memory) → cloud (S3, S3-PyArrow, Azure, Graph) → SFTP / SSH →
+> special-purpose (HTTP, SQLBlob, SQLQuery)
+
+Insert the new backend into its group; do not append it. Where a table carries
+footnote markers, they run in first-appearance order, so re-sequence them when a
+new row lands above an existing marker.
+
+**Do not go looking for the enumerations — the gate knows where they are.**
+`hatch run check-backend-order` reads every enumeration across the README, the
+guides, the API reference, `context7.json`, and the conda recipe, and fails on any
+that is out of order. It runs inside `hatch run lint` and `hatch run docs-gate`, so
+CI enforces it on every PR. Add the backend, run the gate, fix what it names.
+
+This replaced a `git grep`, and the reason is worth knowing before anyone proposes
+another one: a grep for a backend *name* cannot see an enumeration that abbreviates
+(one wrote plain `SQL`), and a grep scoped to a *path* cannot see the enumerations
+outside it (two live in packaging and repo-root metadata). Both holes were real, and
+both hid live defects. If you find yourself about to hand-maintain a list of places
+to check, extend `scripts/check_backend_order.py` instead.
+
+The gate proves **order**, not membership. Whether a list *should* name every
+backend is a judgement it deliberately does not make: the API reference splits its
+sync and async tables on purpose, and the README's comparison row abridges on
+purpose. That one is on you and your reviewer.
+
+Two things are deliberately out of scope. `FEATURES.md` is generated between
+`BEGIN_GENERATED` markers and sorts alphabetically — never hand-edit it. The
+tagline is a slogan rather than an enumeration, so the group order does not apply
+to it; it is mirrored across packaging, citation, and docs-metadata files, and
+`git grep "Write file storage code once"` is the way to find every copy. Do not
+work from a memorised list — the mirrors outnumber the ones anyone remembers, and
+the forgotten copies are the ones that go stale.
 
 <a id="adding-an-extension"></a>
 ## Adding an Extension
@@ -109,7 +143,8 @@ Extensions live in `src/remote_store/ext/` and follow the contract in the [exten
 8. Add the page to `docs-src/guides/_nav.yml` (under the Extensions section)
 9. Add a runnable example in `examples/`
 10. The example docs page is auto-generated at `tutorial/examples/<slug>.md` from the module docstring via `gen_pages.py` — no manual wrapper file needed
-11. Update `CHANGELOG.md` and `sdd/BACKLOG.md` (or `sdd/BACKLOG-DONE.md`) in the same commit
+11. If the extension needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`, and add the same floor to `run_constraints` in `packaging/conda-forge/recipe.yaml` — that block covers *every* extra, backend and extension alike, and a dependency missing from it is silently unconstrained for conda users
+12. Update `CHANGELOG.md` and `sdd/BACKLOG.md` (or `sdd/BACKLOG-DONE.md`) in the same commit
 
 ### Export patterns
 
@@ -446,7 +481,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] CHANGELOG.md: rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, add fresh empty `[Unreleased]` above
 - [ ] `sdd/BACKLOG-DONE.md`: rename `## Unreleased` to `## vX.Y.Z`, add a fresh empty `## Unreleased` (`*(none)*`) above
 - [ ] Update `date-released` in `CITATION.cff` to today (bump-my-version only updates `version:`, not this field)
-- [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
+- [ ] Tagline consistent across every mirror: `git grep "Write file storage code once"` — check them all, do not work from a remembered list; the copies nobody lists are the copies that go stale. Historical quotes in `sdd/research/` are the one exemption
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
 - [ ] Conda recipe: update `context.version` in `packaging/conda-forge/recipe.yaml` to X.Y.Z
 - [ ] `bump-my-version bump patch|minor|major --allow-dirty` (modifies the files listed in `[[tool.bumpversion.files]]` in `pyproject.toml` — does NOT commit or tag; `--allow-dirty` is required because the Phase 1/2 edits above are still uncommitted)
