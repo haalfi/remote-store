@@ -7,22 +7,22 @@ at runtime before calling an operation.
 
 ## Backend x Capability
 
-| Capability | [Local](../guides/backends/local.md) | [Memory](../guides/backends/memory.md) | [HTTP](../guides/backends/http.md) | [S3](../guides/backends/s3.md) | [S3-PyArrow](../guides/backends/s3-pyarrow.md) | [SFTP](../guides/backends/sftp.md) | [Azure](../guides/backends/azure.md) | [Graph](../guides/backends/graph.md)¹ | [SQLBlob](../guides/backends/sql-blob.md) | [SQLQuery](../guides/backends/sql-query.md) |
-|------------|:-----:|:------:|:----:|:--:|:----------:|:----:|:-----:|:-----:|:-------:|:---------:|
+| Capability | [Local](../guides/backends/local.md) | [Memory](../guides/backends/memory.md) | [S3](../guides/backends/s3.md) | [S3-PyArrow](../guides/backends/s3-pyarrow.md) | [Azure](../guides/backends/azure.md) | [Graph](../guides/backends/graph.md)¹ | [SFTP](../guides/backends/sftp.md) | [HTTP](../guides/backends/http.md) | [SQLBlob](../guides/backends/sql-blob.md) | [SQLQuery](../guides/backends/sql-query.md) |
+|------------|:-----:|:------:|:--:|:----------:|:-----:|:-----:|:----:|:----:|:-------:|:---------:|
 | READ           | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| WRITE          | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | —   |
-| DELETE         | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | —   |
-| LIST           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| GLOB           | Yes | —   | —   | Yes | Yes | —   | Yes | —   | Yes | Yes |
-| MOVE           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | —   |
-| COPY           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | —   |
-| ATOMIC_WRITE   | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | —   |
+| WRITE          | Yes | Yes | Yes | Yes | Yes | Yes | Yes | —   | Yes | —   |
+| DELETE         | Yes | Yes | Yes | Yes | Yes | Yes | Yes | —   | Yes | —   |
+| LIST           | Yes | Yes | Yes | Yes | Yes | Yes | Yes | —   | Yes | Yes |
+| GLOB           | Yes | —   | Yes | Yes | Yes | —   | —   | —   | Yes | Yes |
+| MOVE           | Yes | Yes | Yes | Yes | Yes | Yes | Yes | —   | Yes | —   |
+| COPY           | Yes | Yes | Yes | Yes | Yes | Yes | Yes | —   | Yes | —   |
+| ATOMIC_WRITE   | Yes | Yes | Yes | Yes | Yes | Yes | Yes | —   | Yes | —   |
 | ATOMIC_MOVE    | Yes | Yes | —   | —   | —   | —   | —   | —   | Yes | —   |
 | METADATA       | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| SEEKABLE_READ  | Yes | Yes | —   | Yes | Yes | Yes | —   | —   | Yes | Yes |
+| SEEKABLE_READ  | Yes | Yes | Yes | Yes | —   | —   | Yes | —   | Yes | Yes |
 | LAZY_READ      | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes | —   | —   |
-| WRITE_RESULT_NATIVE | Yes | Yes | — | Yes | Yes | Yes | Yes | Yes | Yes² | — |
-| USER_METADATA  | —   | Yes | —   | Yes | —   | —   | Yes | —   | Yes² | —   |
+| WRITE_RESULT_NATIVE | Yes | Yes | Yes | Yes | Yes | Yes | Yes | — | Yes² | — |
+| USER_METADATA  | —   | Yes | Yes | —   | Yes | —   | —   | —   | Yes² | —   |
 
 ¹ Graph is an **async-only** backend — construct it via
 `AsyncStore(backend=GraphBackend(...))`; there is no sync `Store` wrapper or

@@ -7,6 +7,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Documentation
+
+- **One backend order across every enumeration** (BK-310): ten full-membership
+  backend lists — README, the guides, the capabilities matrix, the API reference —
+  each listed backends in a different order. All now follow one taxonomy: local →
+  cloud → SFTP → special-purpose. Two of them omitted Graph entirely; the
+  health-check guide now also records that `GraphBackend` does not override
+  `check_health`, so `ping()` succeeds without contacting Graph.
+
 ### Fixed
 
 - **Stale backend lists in the outside-package metadata** (BK-311): `context7.json`,

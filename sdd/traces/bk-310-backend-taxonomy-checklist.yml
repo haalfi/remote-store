@@ -9,13 +9,23 @@ source_items:
   - BK-310
 audience:
   - contributor.process
+  - user.site
 discovery_followups:
   - BK-311
 co_shipped_items:
   - BK-311
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 1
+surprising_ripples:
+  - docs-src/guides/choosing-a-backend.md
+  - docs-src/guides/data-lake-patterns.md
+  - docs-src/guides/health-check.md
+  - docs-src/explanation/concurrency.md
+  - docs-src/reference/capabilities-matrix.md
+  - docs-src/reference/api/index.md
+  - docs-src/reference/api/backends/index.md
+  - docs-src/reference/api/store.md
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -80,13 +90,52 @@ phases:
           than deferred: the same review round produced both, and leaving the mirrors stale while
           documenting how to find them would have been the worse half of the fix
         outcome: ok
+  - id: sweep
+    name: Make the invariant true
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Adding a New Backend / Backend order"
+        read_type: gate
+        extract: >-
+          round 2 found the checklist asserting "every enumeration lists backends in one order" while the
+          repo held ten full-membership enumerations in ten different orders. The site list was itself the
+          hand-maintained artifact the tagline exemption two paragraphs down explicitly refuses to keep —
+          the item reproduced its own anti-pattern. Replaced with the discovery command; the enumeration
+          count is no longer a number the next backend can silently invalidate
+        outcome: misleading
+      - file: docs-src/reference/capabilities-matrix.md
+        section: "Backend x Capability"
+        read_type: gate
+        extract: >-
+          reordering a 14x10 grid means permuting columns across every row — the one edit in this PR where
+          a silent transcription error survives review. Verified all 140 cells against each backend's
+          declared CAPABILITIES by executing the check, not by re-reading the diff
+        outcome: ok
+      - file: docs-src/guides/health-check.md
+        section: "Per-backend health checks"
+        read_type: verify
+        extract: >-
+          not an ordering defect but a membership one: Graph was absent. Documenting it exposed that
+          GraphBackend never overrides check_health, so ping() returns success without contacting Graph —
+          a genuine gap the ordering sweep would never have surfaced
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "copy, move, write_atomic, list_files"
+        read_type: reference
+        extract: "store.md's behavior matrix says 'verify against actual code'; Graph's row was derived from the implementation rather than inferred from its neighbours"
+        outcome: ok
   - id: verify
     name: Ripple-check
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table"
         read_type: verify
-        extract: "docs-only, contributor-facing: no CHANGELOG (audience is contributor.process, not user.*), no spec, no test"
+        extract: >-
+          the round-2 sweep moved this item's own CHANGELOG verdict. It opened as contributor.process
+          (checklist prose only, no entry required); reordering ten published docs pages and correcting two
+          membership gaps added user.site, and the derived rule then requires an entry. The first
+          ripple-check was right for the change as it then stood — re-run it when scope moves, do not trust
+          the earlier verdict
         outcome: ok
       - file: sdd/BACKLOG-DONE.md
         section: "Unreleased"

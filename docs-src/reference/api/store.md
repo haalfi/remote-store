@@ -349,13 +349,17 @@
 How key operations behave across backends. Verify against actual code before
 relying on these in production.
 
-| Behavior | [Local](../../guides/backends/local.md) | [S3](../../guides/backends/s3.md) | [S3-PyArrow](../../guides/backends/s3-pyarrow.md) | [SFTP](../../guides/backends/sftp.md) | [Azure](../../guides/backends/azure.md) | [Memory](../../guides/backends/memory.md) | [HTTP](../../guides/backends/http.md) | [SQLBlob](../../guides/backends/sql-blob.md) | [SQLQuery](../../guides/backends/sql-query.md) |
-|----------|-------|----|------------|------|-------|--------|------|---------|-----------|
-| `move()` atomicity | Atomic (same FS) | Copy+delete | Copy+delete | Server-dependent | Copy+delete | Atomic | — | Atomic (SQL transaction) | — |
-| `copy()` preserves metadata | Yes (`copy2`) | Yes | Yes | — | Yes | — | — | Yes | — |
-| `write_atomic()` mechanism | temp+rename | Direct PUT (atomic) | Direct PUT (atomic) | temp+rename | Direct PUT or temp+rename | Direct (atomic) | — | Direct (atomic) | — |
-| Native `glob()` | Yes | Yes | Yes | — | Yes | — | — | Yes (SQL GLOB/LIKE) | Yes (in-memory) |
-| `list_files()` ordering | OS-dependent | Lexicographic | Lexicographic | OS-dependent | Lexicographic | Insertion order | — | DB-dependent | Lexicographic |
+| Behavior | [Local](../../guides/backends/local.md) | [Memory](../../guides/backends/memory.md) | [S3](../../guides/backends/s3.md) | [S3-PyArrow](../../guides/backends/s3-pyarrow.md) | [Azure](../../guides/backends/azure.md) | [Graph](../../guides/backends/graph.md)¹ | [SFTP](../../guides/backends/sftp.md) | [HTTP](../../guides/backends/http.md) | [SQLBlob](../../guides/backends/sql-blob.md) | [SQLQuery](../../guides/backends/sql-query.md) |
+|----------|-------|--------|----|------------|-------|-------|------|------|---------|-----------|
+| `move()` atomicity | Atomic (same FS) | Atomic | Copy+delete | Copy+delete | Copy+delete | Server-side, not atomic | Server-dependent | — | Atomic (SQL transaction) | — |
+| `copy()` preserves metadata | Yes (`copy2`) | — | Yes | Yes | Yes | — | — | — | Yes | — |
+| `write_atomic()` mechanism | temp+rename | Direct (atomic) | Direct PUT (atomic) | Direct PUT (atomic) | Direct PUT or temp+rename | Direct PUT / upload session (service-atomic) | temp+rename | — | Direct (atomic) | — |
+| Native `glob()` | Yes | — | Yes | Yes | Yes | — | — | — | Yes (SQL GLOB/LIKE) | Yes (in-memory) |
+| `list_files()` ordering | OS-dependent | Insertion order | Lexicographic | Lexicographic | Lexicographic | Service-dependent | OS-dependent | — | DB-dependent | Lexicographic |
+
+¹ Graph is **async-only** — it has no sync `Store` wrapper. Its column describes
+the behavior seen through [`AsyncStore`](aio/store.md), or through
+[`AsyncBackendSyncAdapter`](aio/adapters.md) when driven from sync code.
 
 ## See also
 

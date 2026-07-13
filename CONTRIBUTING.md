@@ -89,17 +89,32 @@ walkthrough of the `Backend` contract, error mapping, and capabilities.
 3. Register a fixture in `tests/backends/fixtures/` (declare it in `backends.toml` / `fixtures.toml` and add a per-fixture factory module)
 4. The cross-backend conformance suite under `tests/backends/conformance/` (spec-traced per-topic files: `test_io.py`, `test_listing.py`, `test_atomic.py`, …) runs automatically against the new fixture; Dafny-derived cases carry `@pytest.mark.extended_conformance` and are validated by a Dafny-compiled oracle — see [`sdd/formal/README.md` § Compiled Oracle](sdd/formal/README.md#compiled-oracle)
 5. Add user-facing guide in `docs-src/guides/backends/<name>.md` and add to `docs-src/guides/_nav.yml`
-6. Update `docs-src/guides/backends/index.md` (Supported Backends table)
-7. Update `README.md` — five separate enumerations: Installation extras, the "One interface, many backends" bullet under *What you get*, the Supported Backends table, the `Backends` row of the *How it compares* table, and the examples bullet under *Learn more*
-8. Add backend config example to `examples/configuration/configuration.py`
-9. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`
+6. Update every backend enumeration — see **Backend order** below for how to find them all and what order they go in
+7. Add backend config example to `examples/configuration/configuration.py`
+8. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`, and add the same floor to `run_constraints` in `packaging/conda-forge/recipe.yaml`
 
-**Backend order (steps 6–7).** Every enumeration lists backends in one order:
-local (Local, Memory) → cloud (S3, Azure, OneDrive) → SFTP / SSH →
-special-purpose (HTTP, SQL). Insert the new backend into its group; do not
-append it. In the README's Supported Backends table, footnote markers run in
-first-appearance order, so re-sequence them when a new row lands above an
-existing marker.
+**Backend order (step 6).** Every enumeration lists backends in one order:
+
+> local (Local, Memory) → cloud (S3, S3-PyArrow, Azure, Graph) → SFTP / SSH →
+> special-purpose (HTTP, SQLBlob, SQLQuery)
+
+Insert the new backend into its group; do not append it. Where a table carries
+footnote markers, they run in first-appearance order, so re-sequence them when a
+new row lands above an existing marker.
+
+**Find the enumerations; do not recall them.** They are scattered across the
+README, the guides, and the API reference, and there are more of them than anyone
+remembers — a hand-maintained roster of sites is the same artifact that rots. Grep
+for the backend that appears in every full-membership list and in almost nothing
+else:
+
+```bash
+git grep -lni "sqlquery\|sql-query" -- README.md docs-src/
+```
+
+Then judge each hit: a *full-membership* enumeration (one that names every
+backend) is in scope and must follow the group order; a single-backend page, a
+`_nav.yml`, or a passing mention is not.
 
 Two things are deliberately out of scope. `FEATURES.md` is generated between
 `BEGIN_GENERATED` markers and sorts alphabetically — never hand-edit it. The

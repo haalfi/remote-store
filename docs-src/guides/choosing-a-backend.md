@@ -59,12 +59,12 @@ This guide helps you pick the right `remote-store` backend for your use case.
 | [Memory](backends/memory.md) | None | Fallback | In-process | Tests, caches |
 | [S3](backends/s3.md) | `s3fs` | Native | Network | General S3 workloads |
 | [S3-PyArrow](backends/s3-pyarrow.md) | `pyarrow` | Native | Network | Parquet, PyArrow datasets |
-| [SFTP](backends/sftp.md) | `paramiko` | Fallback | Network | Legacy, on-prem |
 | [Azure](backends/azure.md) | `azure-storage-blob` | Native | Network | Azure workloads |
 | [Graph](backends/graph.md) | `httpx` + `msal` | Fallback | Network | OneDrive / SharePoint / Teams (async-only) |
+| [SFTP](backends/sftp.md) | `paramiko` | Fallback | Network | Legacy, on-prem |
+| [HTTP](backends/http.md) | None | — | Network | Read-only public data |
 | [SQLBlob](backends/sql-blob.md) | `sqlalchemy` | Native | DB-bound | Embedded, metadata-heavy |
 | [SQLQuery](backends/sql-query.md) | `sqlalchemy` + `pyarrow` | Native | DB-bound | Read-only ETL exports |
-| [HTTP](backends/http.md) | None | — | Network | Read-only public data |
 
 ## Switching backends at runtime
 

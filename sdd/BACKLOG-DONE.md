@@ -35,16 +35,31 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   and OneDrive — the one backend no comparable library offers). That PR imposed a
   single taxonomy (local → cloud → SFTP → special-purpose) across all of them plus
   the twin table in `docs-src/guides/backends/index.md`, but left the convention
-  unwritten: `CONTRIBUTING.md` § Adding a New Backend named only two of the six
+  unwritten: `CONTRIBUTING.md` § Adding a New Backend named only two of the
   enumeration sites and said nothing about ordering. A convention held in one
   contributor's head is exactly the condition that produced the drift, so the next
-  backend would land alphabetically or at the bottom and dissolve it again. Fix:
-  the checklist now names all six sites, states the group order, requires
-  inserting into a group rather than appending, notes that the README table's
-  footnote markers run in first-appearance order, and records the two deliberate
-  exemptions (generated `FEATURES.md`; the tagline, which is a slogan rather than
-  an enumeration, mirrored across more packaging and metadata files than anyone
-  reliably remembers — hence a `git grep` command rather than a list).
+  backend would land alphabetically or at the bottom and dissolve it again.
+
+  Review then broke the item's own premise twice over. The checklist asserted
+  "every enumeration lists backends in one order" while naming six sites; review
+  found three more, and a `git grep` found six beyond *those* — ten full-membership
+  enumerations across the README, guides, and API reference, each in a different
+  order, none generated. The checklist was asserting an invariant the repo
+  violated, and its site list was the very artifact the item's own tagline
+  exemption refuses to keep. Two of the stragglers were membership gaps, not
+  merely ordering ones: `docs-src/guides/health-check.md` and
+  `docs-src/reference/api/store.md` omitted Graph entirely.
+
+  Fix: every enumeration is swept into the group order (the two column-wise
+  tables — `capabilities-matrix.md` and `store.md` — were verified cell-by-cell
+  against each backend's declared `CAPABILITIES`, not hand-checked), and the
+  checklist drops its list of sites in favour of the discovery command that finds
+  them. Recorded exemptions: generated `FEATURES.md`; and the tagline, a slogan
+  rather than an enumeration, mirrored across more packaging and metadata files
+  than anyone reliably remembers — hence a `git grep` command rather than a list.
+  Documenting Graph's health check surfaced that it never overrides
+  `check_health`, so `ping()` succeeds without contacting Graph; stated plainly in
+  the guide rather than papered over.
 
 - [x] **BUG-229 — Azure benchmark fixtures omit the now-required `hns` argument**
   spec: — · effort: S · audience: infra.test

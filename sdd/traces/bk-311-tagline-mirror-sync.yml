@@ -15,7 +15,7 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Find every mirror
@@ -62,6 +62,20 @@ phases:
         section: "(intro)"
         read_type: gate
         extract: "third tagline mirror; prose only"
+        outcome: ok
+  - id: fix
+    name: Address review
+    steps:
+      - file: packaging/conda-forge/recipe.yaml
+        section: "requirements.run_constraints"
+        read_type: gate
+        extract: >-
+          the sweep stopped one short: `requests` / `urllib3` (the HTTP backend's optional pooled
+          transport) stayed unconstrained while its sibling `httpx` gained a floor. Exactly the leftover
+          this item's premise predicts — the dep nobody enumerated is the dep that goes unpinned. Also
+          reworded the pyarrow comment, which this PR's own `<25` ceiling had turned into a
+          self-contradiction ("can only express one bound" above a two-bound pin); the real constraint is
+          one pin per package, not one bound
         outcome: ok
   - id: verify
     name: Ripple-check
