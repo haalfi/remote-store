@@ -16,7 +16,7 @@ expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
   - sdd/BACKLOG.md
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Locate the rule's home
@@ -81,6 +81,20 @@ phases:
           __mro__ and rejecting both ABCs. I wrote a rule about assertions that admit the default and
           then wrote an example that admitted the default — an unrun snippet is an unverified claim,
           and prose does not exempt it from principle 6
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Graph / BUG-231"
+        read_type: verify
+        extract: >-
+          round 2: re-pointing BUG-231 at Rule 13 had SUBSTITUTED a structural check for the behavioural
+          one it originally prescribed (unreachable => raises), deleting the only layer that proves the
+          probe works. Rule 13 is presence-of-decision by construction — it passes the moment an override
+          exists and cannot see whether that override contacts Graph, so a stub satisfies it. Shipping
+          only Rule 13 would guarantee the probe is present and prove nothing about behaviour: the same
+          substitution of presence for behaviour that produced the bug, one altitude up. Restored as four
+          layers with the two test layers named complementary, and added the caveat to TESTING.md so the
+          rule cannot be read as sufficient on its own. Corroborating detail found while fixing:
+          tests/backends/{azure,local,s3,sftp}/test_ping.py all exist and tests/backends/graph/ has none
         outcome: ok
   - id: verify
     name: Ripple-check

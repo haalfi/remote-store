@@ -245,6 +245,15 @@ to accept the default cannot distinguish a backend that implemented the
 contract from one that ignored it. This applies to any `# noqa: B027` method
 the ABC grows.
 
+**Rule 13 does not replace a behavioural test.** It is a presence-of-decision
+check: it passes the moment an override *exists*, and cannot see whether that
+override does anything — a stub, or one that swallows the error it should
+raise, satisfies it. Pairing is the point: Rule 13 proves the implementation
+is *there* (and keeps the next backend from omitting it), while a per-backend
+outcome test proves it *works*. Substituting one for the other reintroduces
+the original defect at a different altitude, because presence is not
+behaviour.
+
 ### Property-Based Testing (Hypothesis)
 
 PBT targets combinatorial input spaces with a clear oracle (roundtrip,
