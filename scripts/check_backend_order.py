@@ -105,7 +105,8 @@ _BACKENDS: tuple[tuple[str, tuple[str, ...]], ...] = (
     # order, so for an *order* check either rank answers identically, and a
     # list that abbreviates can no longer slip past. The longer "SQL Blob" /
     # "SQL Query" aliases win where a document spells them out, and the
-    # trailing-boundary rule keeps "SQLAlchemy" from matching at all.
+    # symmetric token boundary keeps both "SQLAlchemy" and "PostgreSQL" from
+    # matching at all.
     ("SQLBlob", ("SQLBlobBackend", "SQLBlob", "SQL Blob", "SQL")),
     ("SQLQuery", ("SQLQueryBackend", "SQLQuery", "SQL Query")),
 )
@@ -120,12 +121,22 @@ _ALIAS_TO_NAME: dict[str, str] = {alias: name for name, aliases in _BACKENDS for
 #
 # The alternation MUST be wrapped in a group: `a|b|c(?!...)` binds the
 # lookahead to `c` alone, which let "SQL" match inside "SQLAlchemy" and
-# "S3" inside "S3FS". The trailing boundary is what makes an alias a whole
-# token rather than a prefix.
+# "S3" inside "S3FS".
+#
+# The boundary is symmetric on purpose. A trailing guard alone stops an
+# alias from matching as a *prefix* ("SQLAlchemy") but not as a *suffix*:
+# "PostgreSQL", "MySQL" and "NoSQL" all end in a bare "SQL", and every one
+# of them named the SQLBlob backend until the leading guard went in. That
+# was live in the scanned tree -- concurrency.md's "(PostgreSQL, MySQL)
+# SQLBlob and SQLQuery are thread-safe" read as three SQLBlobs -- and it
+# passed only because the repeats collapsed and the segment stayed under
+# _MIN_BACKENDS. An RDBMS name next to a six-backend list would have
+# invented a violation, or hidden one.
+_TOKEN_CHARS = r"[A-Za-z0-9_-]"
 _ALIAS_RE = re.compile(
-    "(?:"
+    f"(?<!{_TOKEN_CHARS})(?:"
     + "|".join(re.escape(alias) for alias in sorted(_ALIAS_TO_NAME, key=len, reverse=True))
-    + r")(?![A-Za-z0-9_-])"
+    + f")(?!{_TOKEN_CHARS})"
 )
 
 # A segment naming fewer than this many distinct backends is prose (or a
@@ -158,6 +169,18 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 # Every surface that can carry a backend enumeration. The pathspec leak
 # this gate exists to close is precisely a scope list that stops at
 # docs-src/, so packaging/ and the repo-root metadata are in.
+#
+# Two surfaces are deliberately absent rather than excluded, and the
+# distinction matters if you ever widen this list:
+#
+# * ``FEATURES.md`` is generated between BEGIN_GENERATED markers and sorts
+#   alphabetically by contract. Scanning it would fail the gate against a
+#   file no human may hand-edit.
+# * ``sdd/research/`` holds point-in-time snapshots that must not be
+#   retro-edited to match today's taxonomy.
+#
+# Neither is reachable from the roots below, so neither needs an exclusion
+# today. Adding ``sdd`` to _SCANNED_TREES would change that.
 _SCANNED_FILES: tuple[str, ...] = (
     "README.md",
     "CONTRIBUTING.md",
@@ -169,10 +192,8 @@ _SCANNED_TREES: tuple[tuple[str, str], ...] = (
     ("docs-src", "*.json"),
 )
 
-# Generated or point-in-time surfaces. FEATURES.md is generated between
-# BEGIN_GENERATED markers and sorts alphabetically by contract; _data/
-# holds generated graph artefacts; sdd/research/ holds point-in-time
-# snapshots that must not be retro-edited.
+# Pruned from inside the scanned trees: docs-src/_data/ holds generated
+# graph artefacts, not authored prose.
 _EXCLUDED_PARTS: frozenset[str] = frozenset({"_data"})
 
 

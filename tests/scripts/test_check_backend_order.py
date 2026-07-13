@@ -49,6 +49,13 @@ class TestTokenising:
             # A word that merely starts with a backend name is not a backend.
             ("SQLAlchemy pools connections", []),
             ("s3fs and paramiko", []),
+            # ...nor is one that merely *ends* with one. RDBMS names are the
+            # live case: concurrency.md says "(PostgreSQL, MySQL)" a few words
+            # from a real SQLBlob/SQLQuery mention.
+            ("PostgreSQL", []),
+            ("MySQL", []),
+            ("NoSQL", []),
+            ("On a pooled RDBMS engine (PostgreSQL, MySQL) SQLBlob", ["SQLBlob"]),
             # Lower-case prose is prose, not an enumeration entry.
             ("run it against local files and http endpoints", []),
         ],
@@ -181,6 +188,21 @@ class TestFalsePositives:
             tmp_path,
             "guide.md",
             "Develop against Memory, deploy to S3 or Azure.\n",
+        )
+        assert found == []
+
+    def test_rdbms_name_beside_an_ordered_list(self, tmp_path: Path) -> None:
+        """An RDBMS name is not a backend, even one word from a real list.
+
+        Without a *leading* token boundary "PostgreSQL" and "MySQL" both
+        tokenised as SQLBlob, landing a rank-8 backend in front of a correctly
+        ordered list: seven distinct backends, out of order, a violation
+        invented from a sentence with nothing wrong with it.
+        """
+        found = self._violations(
+            tmp_path,
+            "guide.md",
+            "On PostgreSQL and MySQL, use Local, Memory, S3, Azure, SFTP, HTTP.\n",
         )
         assert found == []
 
