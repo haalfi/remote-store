@@ -15,7 +15,7 @@ _Captured 2026-05-25 on Python 3.13._
 
 ## `[azure]`
 
-_Captured 2026-07-03 on Python 3.13._
+_Captured 2026-07-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -24,15 +24,15 @@ _Captured 2026-07-03 on Python 3.13._
 
 ## `[dagster]`
 
-_Captured 2026-07-03 on Python 3.13._
+_Captured 2026-07-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `dagster` | `1.13.11` |
+| `dagster` | `1.13.13` |
 
 ## `[graph]`
 
-_Captured 2026-07-09 on Python 3.13._
+_Captured 2026-07-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -43,7 +43,7 @@ _Captured 2026-07-09 on Python 3.13._
 
 ## `[httpx]`
 
-_Captured 2026-07-09 on Python 3.13._
+_Captured 2026-07-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -51,7 +51,7 @@ _Captured 2026-07-09 on Python 3.13._
 
 ## `[otel]`
 
-_Captured 2026-07-03 on Python 3.13._
+_Captured 2026-07-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -59,7 +59,7 @@ _Captured 2026-07-03 on Python 3.13._
 
 ## `[pydantic]`
 
-_Captured 2026-07-03 on Python 3.13._
+_Captured 2026-07-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -67,7 +67,7 @@ _Captured 2026-07-03 on Python 3.13._
 
 ## `[requests]`
 
-_Captured 2026-06-22 on Python 3.13._
+_Captured 2026-07-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -76,7 +76,7 @@ _Captured 2026-06-22 on Python 3.13._
 
 ## `[s3]`
 
-_Captured 2026-06-22 on Python 3.13._
+_Captured 2026-07-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -93,7 +93,7 @@ _Captured 2026-06-22 on Python 3.13._
 
 ## `[sftp]`
 
-_Captured 2026-06-13 on Python 3.13._
+_Captured 2026-07-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -102,7 +102,7 @@ _Captured 2026-06-13 on Python 3.13._
 
 ## `[sql]`
 
-_Captured 2026-07-03 on Python 3.13._
+_Captured 2026-07-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -110,7 +110,7 @@ _Captured 2026-07-03 on Python 3.13._
 
 ## `[sql-query]`
 
-_Captured 2026-07-03 on Python 3.13._
+_Captured 2026-07-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|

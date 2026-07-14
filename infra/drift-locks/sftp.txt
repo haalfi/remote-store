@@ -1,10 +1,10 @@
 # extra: sftp
 # python: 3.13
-# captured: 2026-06-13
+# captured: 2026-07-13
 # Regenerate with: hatch run drift-check refresh-baseline sftp
 
 bcrypt==5.0.0
-cffi==2.0.0
+cffi==2.1.0
 cryptography==49.0.0
 invoke==3.0.3
 paramiko==5.0.0

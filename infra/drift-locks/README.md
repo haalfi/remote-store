@@ -34,15 +34,42 @@ issue rather than a flood of false drift entries.
 
 ## Refreshing
 
-Run on the primary Python (3.13, matching the workflow's runner):
+A lock is **Python- and OS-specific**. The workflow resolves on Linux with
+Python 3.13, and a resolve on another platform picks up platform-conditional
+dependencies that resolution never sees (`colorama` via click/tqdm, `pywin32`,
+etc.). Commit those and the next weekly run diffs its Linux resolution against
+your lock, reports the extra packages as drift, and the rolling issue never
+clears. The header records `# python:` but not the platform, so a
+Windows-resolved lock is indistinguishable from a Linux one on inspection —
+match the host deliberately.
+
+**On Linux with Python 3.13** — resolve locally:
 
 ```
 hatch run drift-check refresh-baseline <extra>
 hatch run drift-check render-docs
 ```
 
-…then commit the changed `infra/drift-locks/<extra>.txt` and
+`refresh-baseline all` regenerates every extra at once.
+
+**On any other host** — take the resolution from the drift-guard run instead of
+resolving locally. Each run uploads a Linux-resolved freeze per extra for
+exactly this purpose:
+
+```
+gh run download <run-id> --repo haalfi/remote-store \
+  --pattern 'candidate-baseline-*' --dir <tmp>
+```
+
+Write `infra/drift-locks/<extra>.txt` as the header above followed by the
+artifact's freeze sorted by package name, matching `write_lock` in
+`scripts/drift_check.py`, then run `hatch run drift-check render-docs`.
+
+Either way, commit the changed `infra/drift-locks/<extra>.txt` and
 `docs-src/reference/tested-versions.md` in the same PR as whatever
 deliberate change motivated the refresh (e.g. a floor bump).
 
-`refresh-baseline all` regenerates every extra at once.
+> **A green smoke is not proof the committed pins were tested.** The workflow
+> resolves three times per extra (report, smoke, candidate baseline) and the
+> smoke shares its environment with the test plugins, so it can run against a
+> mixed version set. See ID-231.

@@ -136,6 +136,33 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **ID-231 — Drift-guard smoke validates a mixed version set, not the candidate baseline**
+  spec: — · effort: M · audience: platform.tooling
+  `.github/workflows/drift-guard.yml` performs three independent `--pre`
+  resolutions per extra against a live index: `drift_check.py diff` (what the
+  report is computed from), the smoke install (what the tests actually run
+  against), and `drift_check.py resolve` (what is uploaded as the candidate
+  baseline and later committed). The smoke step then installs the test
+  plugins — `moto`, `boto3`, pytest et al. — into the *same* environment with
+  `--upgrade-strategy only-if-needed`, so a shared transitive dep can be moved
+  to satisfy the plugins. The step's own comment concedes this ("the smoke for
+  that one extra exercises a slightly mixed version set rather than the pure
+  fresh resolution") and muses that "a future refactor could isolate the two
+  via separate venvs".
+  This matters because the refresh procedure treats a green smoke as the
+  licence to accept a baseline, so the guarantee is weaker than it reads.
+  Repro (2026-07-13 run, `check-s3`): the extra resolved `botocore==1.43.0`,
+  then the plugin install pulled `botocore==1.43.46` for `boto3`, and pip
+  printed `aiobotocore 3.7.0 requires botocore<1.43.1,>=1.42.90, but you have
+  botocore 1.43.46 which is incompatible`. The smoke passed anyway, so it went
+  green against a combination pip itself calls broken — while the committed
+  lock records `1.43.0`, a version that smoke never loaded.
+  Fix direction: run the smoke in a venv holding exactly the candidate
+  resolution, installing test plugins into an isolated env (or with
+  `--no-deps`) so they cannot perturb the set under test. Then the green-smoke
+  signal means what `.claude/skills/drift/SKILL.md` already assumes it means.
+  Surfaced in the PR #900 review.
+
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
   spec: — · effort: L · audience: platform.tooling
   ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review
@@ -456,6 +483,32 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 ---
 
 ## Maintenance / Long-horizon
+
+- [ ] **BUG-232 — `[s3-pyarrow]` and `[bench]` float past the `pyarrow<25` ceiling**
+  spec: — · effort: S · audience: user.api, library.maintainer
+  `pyproject.toml` caps `arrow` and `sql-query` at `pyarrow>=12.0.0,<25`,
+  documented there as a ceiling applied "only where a known-incompatible
+  major looms". `s3-pyarrow` declares only `pyarrow>=14.0.0` and carries no
+  ceiling, so `pip install remote-store[s3-pyarrow]` resolves pyarrow 25
+  while the sibling extras are held at 24. `[bench]` inherits the gap
+  (`remote-store[s3-pyarrow,sftp,azure]` pulls neither `arrow` nor
+  `sql-query`, so nothing intersects the cap down); `[dev]` is safe only
+  incidentally, because it lists `sql-query` alongside.
+  Repro: the 2026-07-13 drift run resolved `pyarrow==25.0.0` for
+  `[s3-pyarrow]` and `==24.0.0` for `[sql-query]` in the same pass.
+  The exposure is the standalone-extra install — the user-facing path, and
+  the one no CI job covers, since CI installs `[dev]`.
+  **The inconsistency cuts both ways, and the fix depends which side is
+  right.** `remote_store.backends._s3_pyarrow` shares a mypy override block
+  with `ext.arrow` / `ext.parquet`, i.e. the same pyarrow surface — which
+  argues the ceiling should extend. But the drift run's `check-s3-pyarrow`
+  smoke passed against pyarrow 25, which is evidence the incompatibility
+  that motivated `<25` may be narrower than the cap, or already stale.
+  Decide by testing the arrow/parquet surface against pyarrow 25: either
+  extend the ceiling to `s3-pyarrow`, or lift it from `arrow`/`sql-query`.
+  Do not simply re-baseline `s3-pyarrow` — that buries the question.
+  Surfaced in the PR #900 review; `s3-pyarrow`'s drift lock is deliberately
+  left stale so the rolling drift issue keeps the pyarrow bump visible.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api

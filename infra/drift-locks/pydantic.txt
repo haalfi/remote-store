@@ -1,6 +1,6 @@
 # extra: pydantic
 # python: 3.13
-# captured: 2026-07-03
+# captured: 2026-07-13
 # Regenerate with: hatch run drift-check refresh-baseline pydantic
 
 annotated-types==0.7.0
@@ -8,5 +8,5 @@ pydantic==2.14.0a1
 pydantic-core==2.47.0
 pydantic-settings==2.14.2
 python-dotenv==1.2.2
-typing-extensions==4.16.0rc2
+typing-extensions==4.16.0
 typing-inspection==0.4.2

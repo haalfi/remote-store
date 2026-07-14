@@ -1,10 +1,10 @@
 # extra: requests
 # python: 3.13
-# captured: 2026-06-22
+# captured: 2026-07-13
 # Regenerate with: hatch run drift-check refresh-baseline requests
 
 certifi==2026.6.17
-charset-normalizer==3.4.7
+charset-normalizer==3.4.9
 idna==3.18
 requests==2.34.2
 urllib3==2.7.0
