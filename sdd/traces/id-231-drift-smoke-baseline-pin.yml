@@ -14,6 +14,9 @@ audience:
   - contributor.tooling
 expected_ripples:
   - sdd/backlogid.json
+review_rounds: 1  # owner review: drop the backlog-ID citations from the living
+                  # skill/docs and reframe "the correct ID-231 signal" as the
+                  # correct signal in practice
 phases:
   - id: orient
     name: Orient

@@ -74,4 +74,4 @@ deliberate change motivated the refresh (e.g. a floor bump).
 > constraints file (`-c`), so the report, the smoke, and this candidate baseline
 > all describe the same resolution. A test plugin that cannot coexist with the
 > candidate set fails the install loudly (red smoke) rather than silently moving
-> a shared dependency off its pin (ID-231).
+> a shared dependency off its pin.

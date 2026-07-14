@@ -188,8 +188,8 @@ jobs:
           # a shared transitive dep (botocore, urllib3, cryptography, ...)
           # cannot be moved off the candidate pin. If a plugin genuinely cannot
           # coexist with the candidate set, pip fails here and the smoke goes
-          # red — the correct ID-231 signal — instead of silently going green
-          # against a mixed version set the committed lock never recorded.
+          # red — the correct signal in practice — instead of silently going
+          # green against a mixed version set the committed lock never recorded.
           # The list must cover every pytest plugin the smoke targets import:
           # pytest-recording is hard-required by
           # tests/backends/conformance/conftest.py (TEST-007), and
