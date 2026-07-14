@@ -331,3 +331,68 @@ class TestDiffOutMode:
         monkeypatch.setattr(drift_check, "resolve_extra", boom)
         with pytest.raises(RuntimeError, match="loud failure"):
             drift_check.main(["diff", "httpx"])
+
+
+class TestEmitFreeze:
+    """``diff --emit-freeze PATH`` writes the single resolved freeze so the
+    smoke and the uploaded candidate baseline pin against exactly what the
+    report was computed from (ID-231). Body must be a sorted ``name==version``
+    block — a valid pip constraints file — and the extra must be resolved
+    only once per invocation, not a second time for the freeze.
+    """
+
+    def test_emits_sorted_freeze_matching_resolution(self, drift_check, tmp_path, monkeypatch):
+        monkeypatch.setattr(drift_check, "LOCK_DIR", tmp_path / "locks")
+        (tmp_path / "locks").mkdir()
+        # Populated baseline so the diff runs its normal (non-error) path.
+        pyver = f"{sys.version_info.major}.{sys.version_info.minor}"
+        (tmp_path / "locks" / "httpx.txt").write_text(
+            f"# extra: httpx\n# python: {pyver}\n# captured: 2020-01-01\n"
+            "# Regenerate with: hatch run drift-check refresh-baseline httpx\n"
+            "\n"
+            "certifi==2026.5.20\nhttpx==0.27.0\n",
+            encoding="utf-8",
+        )
+        # Unsorted on purpose: the emitted freeze must be sorted regardless.
+        resolved = {"httpx": "0.28.0", "certifi": "2026.5.20"}
+        calls = {"n": 0}
+
+        def fake_resolve(_extra: str) -> dict[str, str]:
+            calls["n"] += 1
+            return dict(resolved)
+
+        monkeypatch.setattr(drift_check, "resolve_extra", fake_resolve)
+        freeze = tmp_path / "candidates" / "httpx.txt"
+        report = tmp_path / "reports" / "httpx.json"
+        rc = drift_check.main(["diff", "httpx", "--out", str(report), "--emit-freeze", str(freeze)])
+        assert rc == 0
+        # Resolved exactly once — the freeze reuses the report's resolution.
+        assert calls["n"] == 1
+        assert freeze.read_text(encoding="utf-8") == "certifi==2026.5.20\nhttpx==0.28.0\n"
+
+    def test_freeze_skipped_on_resolve_failure(self, drift_check, tmp_path, monkeypatch):
+        # A failed resolve emits the synthetic error report but no freeze:
+        # the smoke never runs (status != drift) and must not pin against a
+        # stale or partial file.
+        def boom(_extra: str) -> dict[str, str]:
+            raise RuntimeError("simulated PyPI 500")
+
+        monkeypatch.setattr(drift_check, "resolve_extra", boom)
+        freeze = tmp_path / "candidates" / "httpx.txt"
+        report = tmp_path / "reports" / "httpx.json"
+        rc = drift_check.main(["diff", "httpx", "--out", str(report), "--emit-freeze", str(freeze)])
+        assert rc == 0
+        assert not freeze.exists()
+        import json
+
+        assert json.loads(report.read_text(encoding="utf-8"))["status"] == "error"
+
+    def test_freeze_written_atomically_no_temp_left(self, drift_check, tmp_path, monkeypatch):
+        monkeypatch.setattr(drift_check, "LOCK_DIR", tmp_path / "locks")
+        (tmp_path / "locks").mkdir()
+        (tmp_path / "locks" / "httpx.txt").write_text("# extra: httpx\n# python:\n# captured:\n", encoding="utf-8")
+        monkeypatch.setattr(drift_check, "resolve_extra", lambda _e: {"httpx": "0.27.0"})
+        freeze = tmp_path / "candidates" / "httpx.txt"
+        drift_check.main(["diff", "httpx", "--out", str(tmp_path / "r.json"), "--emit-freeze", str(freeze)])
+        siblings = sorted(p.name for p in freeze.parent.iterdir())
+        assert siblings == ["httpx.txt"]

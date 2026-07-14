@@ -75,33 +75,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
-- [ ] **ID-231 — Drift-guard smoke validates a mixed version set, not the candidate baseline**
-  spec: — · effort: M · audience: platform.tooling
-  `.github/workflows/drift-guard.yml` performs three independent `--pre`
-  resolutions per extra against a live index: `drift_check.py diff` (what the
-  report is computed from), the smoke install (what the tests actually run
-  against), and `drift_check.py resolve` (what is uploaded as the candidate
-  baseline and later committed). The smoke step then installs the test
-  plugins — `moto`, `boto3`, pytest et al. — into the *same* environment with
-  `--upgrade-strategy only-if-needed`, so a shared transitive dep can be moved
-  to satisfy the plugins. The step's own comment concedes this ("the smoke for
-  that one extra exercises a slightly mixed version set rather than the pure
-  fresh resolution") and muses that "a future refactor could isolate the two
-  via separate venvs".
-  This matters because the refresh procedure treats a green smoke as the
-  licence to accept a baseline, so the guarantee is weaker than it reads.
-  Repro (2026-07-13 run, `check-s3`): the extra resolved `botocore==1.43.0`,
-  then the plugin install pulled `botocore==1.43.46` for `boto3`, and pip
-  printed `aiobotocore 3.7.0 requires botocore<1.43.1,>=1.42.90, but you have
-  botocore 1.43.46 which is incompatible`. The smoke passed anyway, so it went
-  green against a combination pip itself calls broken — while the committed
-  lock records `1.43.0`, a version that smoke never loaded.
-  Fix direction: run the smoke in a venv holding exactly the candidate
-  resolution, installing test plugins into an isolated env (or with
-  `--no-deps`) so they cannot perturb the set under test. Then the green-smoke
-  signal means what `.claude/skills/drift/SKILL.md` already assumes it means.
-  Surfaced in the PR #900 review.
-
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
   spec: — · effort: L · audience: platform.tooling
   ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review

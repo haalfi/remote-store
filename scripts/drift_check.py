@@ -19,7 +19,9 @@ Subcommands:
                            pinned set on stdout.
 * ``diff <extra>``      — call ``resolve`` and diff against the baseline
                            in ``infra/drift-locks/<extra>.txt``. Emits a
-                           JSON report on stdout.
+                           JSON report on stdout. ``--emit-freeze PATH``
+                           also writes the (single) resolved freeze so the
+                           smoke and candidate baseline reuse it.
 * ``refresh-baseline    — overwrite ``infra/drift-locks/<extra>.txt`` with
    <extra>``              a fresh resolution. Maintainer command.
 * ``render-docs``       — regenerate ``docs-src/reference/tested-versions.md``
@@ -242,14 +244,20 @@ def _direct_deps_for(extra: str) -> set[str]:
     return seen
 
 
-def diff_extra(extra: str) -> dict:
+def diff_extra(extra: str, resolved: dict[str, str] | None = None) -> dict:
     """Resolve the extra and diff against the committed baseline.
 
     Returns a structured report with separate buckets for stable-version
     drift (loud) and pre-release-only resolutions (informational).
+
+    ``resolved`` lets the caller pass a freeze it already computed so the
+    extra is resolved only once per invocation (ID-231): the same set then
+    feeds the report, the smoke's constraints file, and the candidate
+    baseline. When ``None`` the diff resolves the extra itself.
     """
     baseline = read_lock(extra)
-    resolved = resolve_extra(extra)
+    if resolved is None:
+        resolved = resolve_extra(extra)
 
     pyver_run = f"{sys.version_info.major}.{sys.version_info.minor}"
     if baseline.is_empty:
@@ -366,19 +374,50 @@ def _cmd_extras(_args: argparse.Namespace) -> int:
 
 
 def _cmd_resolve(args: argparse.Namespace) -> int:
-    packages = resolve_extra(args.extra)
-    for name in sorted(packages):
-        print(f"{name}=={packages[name]}")
+    # Same rendering as ``diff --emit-freeze`` so a manual ``resolve`` and the
+    # workflow's emitted freeze are byte-identical (single format definition).
+    sys.stdout.write(_freeze_text(resolve_extra(args.extra)))
     return 0
 
 
+def _atomic_write(path: Path, text: str) -> None:
+    """Write ``text`` to ``path`` atomically (tempfile in the same dir + rename).
+
+    A mid-execution failure never leaves a truncated file behind for a
+    downstream reader — drift_report.py's ``_load_reports`` (JSON reports) or
+    the workflow's constraints install (the resolved freeze).
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, delete=False, suffix=".tmp") as f:
+        f.write(text)
+        tmp_path = Path(f.name)
+    tmp_path.replace(path)
+
+
+def _freeze_text(packages: dict[str, str]) -> str:
+    """Render a resolved set as a sorted ``name==version`` block.
+
+    Byte-identical to a lock file's payload (see ``write_lock``) and to what
+    the ``resolve`` subcommand prints, so the freeze doubles as both the
+    uploaded candidate baseline and a pip constraints file for the smoke.
+    """
+    return "".join(f"{name}=={packages[name]}\n" for name in sorted(packages))
+
+
 def _cmd_diff(args: argparse.Namespace) -> int:
+    # Resolve the extra ONCE and reuse the freeze for the report, the smoke's
+    # constraints file (``--emit-freeze``), and the uploaded candidate
+    # baseline (ID-231) — so all three describe the same resolution rather
+    # than three independent ones that can disagree.
+    #
     # When ``--out`` is set, catch resolve / subprocess errors and emit a
     # synthetic ``status: error`` report instead of crashing. drift_report.py
     # surfaces error rows in the rolling issue so a single per-extra failure
     # does not mask drift on the other extras.
+    resolved: dict[str, str] | None = None
     try:
-        report = diff_extra(args.extra)
+        resolved = resolve_extra(args.extra)
+        report = diff_extra(args.extra, resolved=resolved)
     except Exception as exc:
         if args.out is None:
             raise
@@ -388,6 +427,13 @@ def _cmd_diff(args: argparse.Namespace) -> int:
             "reason": f"{type(exc).__name__}: {exc}",
             "python_run": f"{sys.version_info.major}.{sys.version_info.minor}",
         }
+    # Emit the resolved freeze for the smoke to pin against and the workflow
+    # to upload as the candidate baseline. Skipped when the resolve failed
+    # (``resolved is None``): the synthetic error report already signals it,
+    # and ``status != "drift"`` keeps the smoke from running.
+    if args.emit_freeze is not None and resolved is not None:
+        _atomic_write(Path(args.emit_freeze), _freeze_text(resolved))
+
     payload = json.dumps(report, indent=2, sort_keys=True)
     if args.out is None:
         print(payload)
@@ -396,12 +442,7 @@ def _cmd_diff(args: argparse.Namespace) -> int:
     # zero-length file under the shell's ``> path`` redirect. Writing to a
     # tempfile and ``os.replace``-ing keeps the report dir free of truncated
     # JSON that would crash drift_report.py's _load_reports for every extra.
-    out = Path(args.out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=out.parent, delete=False, suffix=".tmp") as f:
-        f.write(payload)
-        tmp_path = Path(f.name)
-    tmp_path.replace(out)
+    _atomic_write(Path(args.out), payload)
     return 0
 
 
@@ -452,6 +493,16 @@ def main(argv: list[str] | None = None) -> int:
         "--out",
         default=None,
         help="Write the JSON report atomically to PATH instead of stdout.",
+    )
+    p_diff.add_argument(
+        "--emit-freeze",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Also write the resolved freeze (sorted name==version) atomically "
+            "to PATH. Doubles as the smoke's pip constraints file and the "
+            "uploaded candidate baseline, so all three come from one resolve."
+        ),
     )
     p_diff.set_defaults(func=_cmd_diff)
 

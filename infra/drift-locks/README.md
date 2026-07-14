@@ -69,7 +69,9 @@ Either way, commit the changed `infra/drift-locks/<extra>.txt` and
 `docs-src/reference/tested-versions.md` in the same PR as whatever
 deliberate change motivated the refresh (e.g. a floor bump).
 
-> **A green smoke is not proof the committed pins were tested.** The workflow
-> resolves three times per extra (report, smoke, candidate baseline) and the
-> smoke shares its environment with the test plugins, so it can run against a
-> mixed version set. See ID-231.
+> **A green smoke means the committed pins were the ones tested.** The workflow
+> resolves each extra once and pins the smoke to that exact set with a pip
+> constraints file (`-c`), so the report, the smoke, and this candidate baseline
+> all describe the same resolution. A test plugin that cannot coexist with the
+> candidate set fails the install loudly (red smoke) rather than silently moving
+> a shared dependency off its pin (ID-231).
