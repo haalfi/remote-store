@@ -14,11 +14,20 @@ name: Drift Guard
 # This is one of the scheduled/automated CI guards; the cross-guard inventory
 # and the durable-TODO principle live in sdd/CI-OPERATIONS.md.
 #
-# Refreshing baselines: maintainer runs `hatch run drift-check refresh-baseline <extra>`
-# locally (on the repo's pinned Python in `.python-version`, matching this
-# workflow's runner) and commits the
-# updated lock + regenerated docs page in the same PR as whatever motivated
-# the refresh.
+# Refreshing baselines: a lock is Python- AND OS-specific. Resolving on a
+# non-Linux host pulls platform-conditional deps this workflow never sees
+# (colorama, pywin32, ...), which the next run then reports as drift — so the
+# rolling issue never clears. On Linux + the pinned Python in `.python-version`,
+# the maintainer runs `hatch run drift-check refresh-baseline <extra>` locally.
+# On any other host, download this run's `candidate-baseline-<extra>` artifact
+# (uploaded below for exactly that purpose) and write the lock from it. Either
+# way, commit the updated lock + regenerated docs page in the same PR as
+# whatever motivated the refresh. See infra/drift-locks/README.md § Refreshing.
+#
+# Caveat on the smoke as a refresh gate: the three resolutions below (report,
+# smoke, candidate baseline) are independent, and the smoke shares an env with
+# the test plugins — a green smoke does not prove the committed pins were the
+# ones tested. See ID-231.
 
 on:
   schedule:

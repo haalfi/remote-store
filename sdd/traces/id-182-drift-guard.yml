@@ -210,6 +210,37 @@ review_rounds: 6
 #      sees, which would leave the rolling issue showing phantom "removed"
 #      drift and never clear. The workflow's candidate-baseline upload step
 #      exists for exactly this; the /drift skill now encodes the OS caveat.
+#
+# Operational firing (2026-07-13, run 29243050597 -> rolling issue #898, PR #900).
+# Twelve extras drifted, all twelve smokes green. Eleven refreshed; s3-pyarrow
+# held. Two findings, both from the PR review, both about claims the refresh
+# leaned on rather than the locks themselves:
+#  28. Firing #27 said "the /drift skill now encodes the OS caveat" — and it
+#      did, but ONLY the skill. infra/drift-locks/README.md § Refreshing and
+#      drift-guard.yml's header still documented a bare local
+#      `refresh-baseline`, constraining the Python version but never the OS.
+#      So the trap survived its own fix for six weeks, reachable by any
+#      maintainer following the repo's own docs rather than the agent skill.
+#      Encoding a caveat in the tool that happened to hit it is not the same
+#      as encoding it where the procedure is documented. Both doc sites now
+#      carry the OS constraint and the candidate-artifact route.
+#  29. "Green smoke validates the committed pins" is false, and the refresh
+#      procedure leaned on it. The workflow resolves three times per extra
+#      (report / smoke / candidate baseline) and the smoke shares an env with
+#      the test plugins. Proven in this very run: check-s3 resolved
+#      botocore==1.43.0, the plugin install moved it to 1.43.46 for boto3, and
+#      pip printed "aiobotocore 3.7.0 requires botocore<1.43.1 ... incompatible"
+#      — the smoke went green against a set pip calls broken, while the lock
+#      records 1.43.0. Round-5 finding #15 already softened the workflow
+#      comment about this; it is now a tracked defect (ID-231) rather than a
+#      known-and-tolerated caveat.
+#      Note the review's own hypothesis here (wrapt downgraded to 2.2.2) was
+#      checked against the smoke log and falsified — wrapt ran at the committed
+#      2.3.0rc2. The mechanism was real, the instance was not; botocore was.
+
+discovery_followups:
+  - BUG-232  # [s3-pyarrow] / [bench] float past the pyarrow<25 ceiling
+  - ID-231   # drift smoke validates a mixed version set, not the candidate baseline
 
 surprising_ripples:
   - scripts/check_infra_settings.py
