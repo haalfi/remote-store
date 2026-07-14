@@ -54,16 +54,16 @@ Each backend uses the cheapest possible read-only operation:
 | [S3](backends/s3.md) | `head_bucket` | Bucket exists, credentials valid |
 | [S3-PyArrow](backends/s3-pyarrow.md) | `get_file_info(bucket)` | Bucket accessible via PyArrow |
 | [Azure](backends/azure.md) | `get_container_properties()` | Container exists, credentials valid |
-| [Graph](backends/graph.md) | No-op ¹ | Nothing — see below |
+| [Graph](backends/graph.md) | `GET /drives/{id}/root` | Drive reachable, credentials valid |
 | [SFTP](backends/sftp.md) | `stat(base_path)` | SSH connection, path exists |
 | [HTTP](backends/http.md) | `HEAD` to `base_url` (falls back to `GET`) | Server reachable |
 | [SQLBlob](backends/sql-blob.md) | `SELECT 1` | Database connection valid |
 | [SQLQuery](backends/sql-query.md) | `SELECT 1` | Database connection valid |
 
-¹ Graph does not override the default health check, so `ping()` succeeds
-without contacting Microsoft Graph. Unlike Memory — where "always healthy" is
-the truth — a successful `ping()` on Graph carries no information about
-reachability or credential validity. Issue a real read if you need to know.
+Graph probes the effective root: `GET /drives/{id}/root` when no `base_path` is
+configured, or the `base_path` folder item when one is pinned (mirroring SFTP's
+`stat(base_path)`). A missing/unreachable drive raises `BackendUnavailable`; a
+missing `base_path` root raises `NotFound`.
 
 ## Observability
 

@@ -1,0 +1,99 @@
+id: BUG-231
+title: "GraphBackend.check_health() never contacts Graph, so ping() cannot fail"
+trigger: >-
+  GraphBackend did not override check_health(), so it inherited AsyncBackend's
+  no-op default and store.ping() against OneDrive returned cleanly regardless of
+  reachability, token validity, or whether the drive existed.
+source_items:
+  - BUG-231
+  - BK-312
+audience:
+  - user.api
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-231 (item)"
+        read_type: gate
+        extract: "Four-layer fix: spec, impl, behavioural test, structural test; layers 3+4 complementary"
+        outcome: ok
+      - file: sdd/specs/026-health-check.md
+        section: "Per-Backend Health Checks, PING-009"
+        read_type: gate
+        extract: "Per-backend probe pattern; error mapper owns PING outcomes"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_get_item, get_file_info, native_path/_item_url"
+        read_type: reference
+        extract: "_get_item('') already resolves the root/base_path item and maps errors"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "classify_graph_error (scope item/drive/probe)"
+        read_type: gate
+        extract: "scope=item escalates resourceNotFound to BackendUnavailable; scope=probe would flatten to NotFound"
+        outcome: ok
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/026-health-check.md
+        section: "PING-008"
+        read_type: reference
+        extract: "Add PING-011 GraphBackend clause after Memory's exemption"
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/backends/graph/aio/test_read.py
+        section: "TestTypeProbes, _meta_url"
+        read_type: reference
+        extract: "respx + _item_url pattern for the behavioural test"
+        outcome: ok
+      - file: tests/backends/azure/test_ping.py
+        section: "(full)"
+        read_type: reference
+        extract: "Per-backend probe-identity + error-mapping test shape"
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Declaring an exemption (Rule 13)"
+        read_type: gate
+        extract: "_NO_PROBE + _has_own_probe against (Backend, AsyncBackend); key by class for the memory/async-memory name collision"
+        outcome: ok
+      - file: scripts/check_test_placement.py
+        section: "async backend tests under tests/backends/<backend>/aio/ (TEST-003)"
+        read_type: gate
+        extract: "Graph behavioural test belongs in graph/aio/, not the bug's literal graph/test_ping.py"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "check_health override"
+        read_type: reference
+        extract: "await self._get_item('') at item scope; error mapping inherited"
+        outcome: ok
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/guides/health-check.md
+        section: "Per-backend strategies table + Graph footnote"
+        read_type: reference
+        extract: "Replace the No-op row/footnote with the GET /drives/{id}/root probe"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "CHANGELOG entry"
+        read_type: reference
+        extract: "One-line - <ID>: <Title> at top of [Unreleased]; release skill groups it"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG moved, CHANGELOG stub, failing test before fix, spec clause added"
+        outcome: ok
