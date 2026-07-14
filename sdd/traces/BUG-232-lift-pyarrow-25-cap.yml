@@ -1,0 +1,106 @@
+id: BUG-232
+title: "[s3-pyarrow] and [bench] float past the pyarrow<25 ceiling"
+trigger: "pyproject.toml capped arrow/sql-query at pyarrow<25 but left s3-pyarrow uncapped, so a standalone [s3-pyarrow] install resolved pyarrow 25 while siblings held at 24 — an unmanaged split no CI job covered"
+source_items:
+  - BUG-232
+  - BK-168
+  - BK-172
+audience:
+  - user.api
+  - library.maintainer
+  - infra.ci
+expected_ripples:
+  - sdd/backlogid.json
+  - docs-src/reference/tested-versions.md
+  - infra/drift-locks/arrow.txt
+  - infra/drift-locks/sql-query.txt
+  - infra/drift-locks/s3-pyarrow.txt
+surprising_ripples:
+  # pyarrow 25 dropped the py.typed marker / stubs that 24 shipped, so mypy
+  # raised import-untyped at every unguarded pyarrow import — surfacing in the
+  # example scripts (the src modules were already guarded). Fixed centrally by
+  # adding ignore_missing_imports to the pyarrow mypy override, not per file.
+  - examples/integrations/pyarrow_adapter.py
+  - examples/integrations/parquet_dataset.py
+  - examples/backends/s3_pyarrow_backend.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-232 (Maintenance / Long-horizon)"
+        read_type: gate
+        extract: "The cut-both-ways framing: decide by testing the arrow/parquet surface against pyarrow 25; do not simply re-baseline s3-pyarrow"
+      - file: pyproject.toml
+        section: "[project.optional-dependencies]"
+        read_type: gate
+        extract: "The three pyarrow extras and the ceiling-convention header comment"
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-168, BK-172"
+        read_type: reference
+        extract: "Origin of the <25 cap — defensive next-major ceiling matching dependabot, never a confirmed incompatibility"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Dependency"
+        read_type: gate
+        extract: "pyproject extras + pins, README install, docs prerequisites are the dependency-change ripple set"
+
+  - id: reproduce
+    name: Reproduce and decide
+    steps:
+      - file: src/remote_store/ext/arrow.py
+        section: "pyarrow imports / pq.write_table / pa.py_buffer / pyarrow.fs"
+        read_type: reference
+        extract: "Enumerate the concrete pyarrow surface to exercise against 25"
+      - file: src/remote_store/ext/parquet.py
+        section: "pq.write_table / pq.read_table / pa.concat_tables"
+        read_type: reference
+        extract: "Same shared surface as ext.arrow and _s3_pyarrow (one mypy override block)"
+      - file: tests/backends/s3/test_shared.py
+        section: "shared backend fixture (pyarrow_ge_24 -> MinIO route)"
+        read_type: reference
+        extract: "Why the S3-PyArrow conformance leg needs MinIO on pyarrow >=24, not moto (BK-172)"
+
+  - id: implement
+    name: Implement (lift the cap)
+    steps:
+      - file: pyproject.toml
+        section: "arrow, sql-query pins + header comment"
+        read_type: reference
+        extract: "Drop ,<25 from arrow/sql-query; rewrite header so only graph/httpx keep a ceiling"
+      - file: packaging/conda-forge/recipe.yaml
+        section: "run_constraints pyarrow pin"
+        read_type: reference
+        extract: "Pin value (>=12.0.0) unchanged but the loosest-of-three rationale is now stale — all extras agree"
+      - file: FEATURES.md
+        section: "Install extras / ceiling note"
+        read_type: reference
+        extract: "Ceiling note now names only the httpx<1.0 cap"
+      - file: .github/workflows/ci.yml
+        section: "pyarrow24-check -> pyarrow-major-check"
+        read_type: reference
+        extract: "Matrix over pyarrow 24 and 25 to close the standalone-extra gap; update the gate needs list and result check"
+      - file: infra/drift-locks/README.md
+        section: "Refreshing"
+        read_type: gate
+        extract: "Refresh must run on Linux + Python 3.13 or the header mismatch causes perpetual false drift"
+
+  - id: fix
+    name: Fix (mypy import-untyped from pyarrow 25 dropping py.typed)
+    steps:
+      - file: pyproject.toml
+        section: "[[tool.mypy.overrides]] module = pyarrow"
+        read_type: reference
+        extract: "follow_imports=skip alone did not suppress import-untyped once 25 dropped py.typed; add ignore_missing_imports=true to cover every import site including the example scripts"
+        outcome: unclear
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Dependency"
+        read_type: verify
+        extract: "pyproject, conda recipe, FEATURES, tested-versions, drift locks, CI all consistent with the lift"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add the BUG-232 cap-lift bullet"

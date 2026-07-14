@@ -1,6 +1,6 @@
 # extra: arrow
 # python: 3.13
-# captured: 2026-05-25
+# captured: 2026-07-14
 # Regenerate with: hatch run drift-check refresh-baseline arrow
 
-pyarrow==24.0.0
+pyarrow==25.0.0

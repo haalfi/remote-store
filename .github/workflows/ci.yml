@@ -291,11 +291,15 @@ jobs:
       - run: uv pip install -e ".[dev,mutate]"
       - run: pytest tests/scripts/ -q
 
-  # BK-172: verify that S3-PyArrow tests run (not skip) against MinIO when
-  # pyarrow ≥ 24 is installed, and that other pyarrow-24 code paths still pass.
-  # The main `test` matrix resolves pyarrow to whatever pip picks; this job
-  # pins pyarrow 24 explicitly to confirm the MinIO routing works end-to-end.
-  pyarrow24-check:
+  # BK-172 / BUG-232: verify that S3-PyArrow tests run (not skip) against MinIO
+  # when pyarrow ≥ 24 is installed, and that the shared arrow/parquet/sqlalchemy
+  # paths pass, on every pyarrow major the extras now allow an unbounded `>=` to
+  # resolve. The main `test` matrix installs `[dev]` and lets pip pick pyarrow;
+  # each leg here pins one major explicitly so a regression on a specific release
+  # fails loudly. BUG-232 added the pyarrow-25 leg: before the `<25` cap was
+  # lifted, `[dev]` (which lists `sql-query`) held CI at 24, so no job exercised
+  # 25 — the standalone-extra install path users actually hit.
+  pyarrow-major-check:
     # No prepare-images dep: this job starts only MinIO, which is excluded from
     # RS_CACHED_IMAGES (digest-pinned, doesn't round-trip docker save/load). The
     # cache holds only Azurite+SFTP, which this job never starts — so restoring it
@@ -303,6 +307,10 @@ jobs:
     needs: [setup]
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pyarrow: ['>=24,<25', '>=25,<26']
     env:
       RS_REQUIRE_MINIO: "1"
     steps:
@@ -317,13 +325,13 @@ jobs:
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
-      - name: Force pyarrow 24
-        run: uv pip install "pyarrow>=24,<25"
-      - name: Assert pyarrow_ge_24() detects pyarrow 24
+      - name: Force pyarrow ${{ matrix.pyarrow }}
+        run: uv pip install "pyarrow${{ matrix.pyarrow }}"
+      - name: Assert pyarrow_ge_24() detects pyarrow ≥ 24
         run: python -c "from tests._helpers import pyarrow_ge_24; assert pyarrow_ge_24(), 'pyarrow_ge_24() returned False -- helper regressed'"
-      - name: Verify S3-PyArrow routes to MinIO on pyarrow 24
+      - name: Verify S3-PyArrow routes to MinIO
         run: pytest tests/backends/s3/test_pyarrow.py -v
-      - name: Verify pyarrow-24 paths in ext.arrow, ext.parquet, sqlalchemy
+      - name: Verify pyarrow paths in ext.arrow, ext.parquet, sqlalchemy
         run: pytest tests/ext/test_arrow.py tests/ext/test_parquet.py tests/backends/sqlquery/test_config.py tests/backends/sqlblob/test_config.py -q
 
   test-cross-platform:
@@ -518,7 +526,7 @@ jobs:
           done
 
   gate:
-    needs: [setup, prepare-images, lint, typecheck, test, test-primary, tooling-tests, pyarrow24-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
+    needs: [setup, prepare-images, lint, typecheck, test, test-primary, tooling-tests, pyarrow-major-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -537,7 +545,7 @@ jobs:
             "${{ needs.test.result }}" \
             "${{ needs.test-primary.result }}" \
             "${{ needs.tooling-tests.result }}" \
-            "${{ needs.pyarrow24-check.result }}" \
+            "${{ needs.pyarrow-major-check.result }}" \
             "${{ needs.test-cross-platform.result }}" \
             "${{ needs.notebooks.result }}" \
             "${{ needs.examples.result }}" \

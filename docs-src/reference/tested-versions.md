@@ -7,11 +7,11 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[arrow]`
 
-_Captured 2026-05-25 on Python 3.13._
+_Captured 2026-07-14 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `pyarrow` | `24.0.0` |
+| `pyarrow` | `25.0.0` |
 
 ## `[azure]`
 
@@ -84,11 +84,11 @@ _Captured 2026-07-13 on Python 3.13._
 
 ## `[s3-pyarrow]`
 
-_Captured 2026-06-22 on Python 3.13._
+_Captured 2026-07-14 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `pyarrow` | `24.0.0` |
+| `pyarrow` | `25.0.0` |
 | `s3fs` | `2026.6.0` |
 
 ## `[sftp]`
@@ -110,11 +110,11 @@ _Captured 2026-07-13 on Python 3.13._
 
 ## `[sql-query]`
 
-_Captured 2026-07-13 on Python 3.13._
+_Captured 2026-07-14 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `pyarrow` | `24.0.0` |
+| `pyarrow` | `25.0.0` |
 | `sqlalchemy` | `2.1.0b3` |
 
 ## `[yaml]`

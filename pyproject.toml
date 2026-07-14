@@ -52,9 +52,10 @@ Issues = "https://github.com/haalfi/remote-store/issues"
 
 [project.optional-dependencies]
 # Each extra below declares a floor; a ceiling is the exception, applied only
-# where a known-incompatible major looms: `arrow` / `sql-query` pin
-# `pyarrow<25`, and `graph` / `httpx` pin `httpx<1.0` (BUG-225 / ID-229) — see
-# the per-extra comment for each rationale. A scheduled drift guard
+# where a known-incompatible major looms: `graph` / `httpx` pin `httpx<1.0`
+# (BUG-225 / ID-229) — see the per-extra comment for the rationale. The pyarrow
+# extras carry no ceiling: BUG-232 verified the shared arrow/parquet/S3-PyArrow
+# surface against pyarrow 25 and lifted the earlier `<25` cap. A scheduled drift guard
 # (`.github/workflows/drift-guard.yml`, ID-182) re-resolves each extra
 # weekly against the latest available transitive versions and diffs the
 # result against `infra/drift-locks/<extra>.txt`. Refresh a baseline after
@@ -81,13 +82,13 @@ azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
 # keeping all 0.2x; lifting it to a real 1.0 port is ID-229.
 graph = ["httpx>=0.24.0,<1.0", "msal>=1.20.0", "msal-extensions>=1.3", "platformdirs>=3.0.0"]
 sql = ["sqlalchemy>=2.0"]
-sql-query = ["sqlalchemy>=2.0", "pyarrow>=12.0.0,<25"]
+sql-query = ["sqlalchemy>=2.0", "pyarrow>=12.0.0"]
 requests = ["requests>=2.25.0", "urllib3>=1.26.0"]
 # httpx <1.0 (BUG-225): same cap as the graph extra — the [httpx] HTTP adapter
 # uses httpx.AsyncClient, which the 1.0.dev* rewrite removes. Lift via ID-229.
 httpx = ["httpx>=0.24.0,<1.0"]
 # -- Extension extras --
-arrow = ["pyarrow>=12.0.0,<25"]
+arrow = ["pyarrow>=12.0.0"]
 otel = ["opentelemetry-api>=1.28.0"]
 toml = ["tomli>=1.1.0; python_version < '3.11'"]
 yaml = ["pyyaml>=5.1"]
@@ -378,21 +379,28 @@ module = "remote_store.ext.dagster"
 warn_unused_ignores = false
 disallow_untyped_calls = false
 
-# pyarrow 24.x ships partial type stubs that are still incomplete (re-evaluated
-# under BK-168: 33 attr-defined / name-defined errors when stubs are honoured).
-# Skip pyarrow stubs entirely; this restores the pre-24 behaviour where pa.* is
-# Any. Re-evaluate when pyarrow ships complete stubs.
+# pyarrow's typing posture drifts by major: 24.x shipped partial, still-incomplete
+# stubs (re-evaluated under BK-168: 33 attr-defined / name-defined errors when
+# honoured); 25.x dropped the `py.typed` marker and stubs again (BUG-232). We treat
+# pa.* as Any across all of them: `follow_imports = "skip"` skips any partial stubs a
+# future major re-adds, and `ignore_missing_imports = true` suppresses `import-untyped`
+# at every pyarrow import site when the marker is absent (as in 25.x) — including the
+# unguarded example scripts, which is why this is set on the module, not per import line.
 [[tool.mypy.overrides]]
 module = ["pyarrow", "pyarrow.*"]
 follow_imports = "skip"
+ignore_missing_imports = true
 
 # The four modules below each carry `# type: ignore[import-untyped]` on their
-# pyarrow import lines.  pyarrow ≤23 has no stubs (the ignore is active);
-# pyarrow ≥24 ships stubs (the ignore becomes unused).  mypy's per-module
-# override is the finest scope available — there is no line-level knob.
-# Accepted tech debt: any *new* unused ignore in these modules would also be
-# silenced.  Mitigated by the small surface area of ext.arrow/parquet and
-# _s3_pyarrow, and by code-review discipline for _sqlalchemy.
+# pyarrow import lines.  With `ignore_missing_imports` now set on the pyarrow
+# override above, that error is suppressed centrally, so these per-line ignores
+# are redundant on every pyarrow major — `warn_unused_ignores = false` keeps the
+# now-unused ignores from erroring.  (Historically the ignore was active on
+# pyarrow ≤23 / 25.x and unused on 24.x; the central suppression makes that moot.)
+# mypy's per-module override is the finest scope available — there is no
+# line-level knob.  Accepted tech debt: any *new* unused ignore in these modules
+# would also be silenced.  Mitigated by the small surface area of
+# ext.arrow/parquet and _s3_pyarrow, and by code-review discipline for _sqlalchemy.
 [[tool.mypy.overrides]]
 module = ["remote_store.ext.arrow", "remote_store.ext.parquet", "remote_store.backends._s3_pyarrow"]
 warn_unused_ignores = false
