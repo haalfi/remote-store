@@ -61,9 +61,9 @@ Each backend uses the cheapest possible read-only operation:
 | [SQLQuery](backends/sql-query.md) | `SELECT 1` | Database connection valid |
 
 Graph probes the effective root: `GET /drives/{id}/root` when no `base_path` is
-configured, or the `base_path` folder item when one is pinned (mirroring SFTP's
-`stat(base_path)`). A missing/unreachable drive raises `BackendUnavailable`; a
-missing `base_path` root raises `NotFound`.
+configured, or the `base_path` folder item when one is pinned. A
+missing/unreachable drive raises `BackendUnavailable`; a missing `base_path`
+root raises `NotFound`.
 
 ## Observability
 

@@ -13,6 +13,7 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
