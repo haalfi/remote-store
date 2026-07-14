@@ -2762,6 +2762,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.aio.GraphBackend.check_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;check_health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.aio.GraphBackend.iter_children" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11022,6 +11033,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.aio.GraphBackend.check_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;check_health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.aio.GraphBackend.iter_children" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -12263,6 +12285,63 @@ item (401/403).</p>
             –
           <div class="doc-md-description">
             <p>On throttling, 5xx, or transport failure.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.aio.GraphBackend.check_health" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">check_health</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#remote_store.aio.GraphBackend.check_health" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">check_health</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Verify the drive is reachable and credentials are valid.</p>
+<p>One item-metadata <code>GET</code> on the effective root, reusing <code>_get_item("")</code>:
+<code>GET /drives/{id}/root</code> when no <code>base_path</code> is configured, or the
+<code>base_path</code> folder item when one is pinned (mirroring SFTP's
+<code>stat(base_path)</code>). The probe runs at the default item scope, not the
+type-probe scope, so a drive-identity <code>resourceNotFound</code> escalates to
+<code>BackendUnavailable</code> instead of being flattened to <code>NotFound</code>.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the token is rejected or lacks access (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../reference/api/errors/#remote_store.NotFound">NotFound</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the configured <code>base_path</code> root does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the drive is unreachable / missing, or on
+throttling, 5xx, or transport failure. Also if the backend is closed.</p>
           </div>
         </li>
     </ul>

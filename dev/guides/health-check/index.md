@@ -52,13 +52,13 @@ Each backend uses the cheapest possible read-only operation:
 | [S3](https://docs.remotestore.dev/stable/guides/backends/s3/index.md)                 | `head_bucket`                              | Bucket exists, credentials valid    |
 | [S3-PyArrow](https://docs.remotestore.dev/stable/guides/backends/s3-pyarrow/index.md) | `get_file_info(bucket)`                    | Bucket accessible via PyArrow       |
 | [Azure](https://docs.remotestore.dev/stable/guides/backends/azure/index.md)           | `get_container_properties()`               | Container exists, credentials valid |
-| [Graph](https://docs.remotestore.dev/stable/guides/backends/graph/index.md)           | No-op ¹                                    | Nothing — see below                 |
+| [Graph](https://docs.remotestore.dev/stable/guides/backends/graph/index.md)           | `GET /drives/{id}/root`                    | Drive reachable, credentials valid  |
 | [SFTP](https://docs.remotestore.dev/stable/guides/backends/sftp/index.md)             | `stat(base_path)`                          | SSH connection, path exists         |
 | [HTTP](https://docs.remotestore.dev/stable/guides/backends/http/index.md)             | `HEAD` to `base_url` (falls back to `GET`) | Server reachable                    |
 | [SQLBlob](https://docs.remotestore.dev/stable/guides/backends/sql-blob/index.md)      | `SELECT 1`                                 | Database connection valid           |
 | [SQLQuery](https://docs.remotestore.dev/stable/guides/backends/sql-query/index.md)    | `SELECT 1`                                 | Database connection valid           |
 
-¹ Graph does not override the default health check, so `ping()` succeeds without contacting Microsoft Graph. Unlike Memory — where "always healthy" is the truth — a successful `ping()` on Graph carries no information about reachability or credential validity. Issue a real read if you need to know.
+Graph probes the effective root: `GET /drives/{id}/root` when no `base_path` is configured, or the `base_path` folder item when one is pinned. A missing/unreachable drive raises `BackendUnavailable`; a missing `base_path` root raises `NotFound`.
 
 ## Observability
 

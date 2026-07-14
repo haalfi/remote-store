@@ -9561,6 +9561,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#ping-011-graphbackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PING-011: GraphBackend
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10497,6 +10508,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#ping-011-graphbackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PING-011: GraphBackend
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10651,6 +10673,18 @@ the call on the s3fs event loop.</p>
 <h3 id="ping-008-memorybackend">PING-008: MemoryBackend<a class="headerlink" href="#ping-008-memorybackend" title="Permanent link">&para;</a></h3>
 <p><strong>Strategy:</strong> No-op. In-memory backend is always healthy. Uses the default
 <code>Backend.check_health()</code> implementation (no override needed).</p>
+<h3 id="ping-011-graphbackend">PING-011: GraphBackend<a class="headerlink" href="#ping-011-graphbackend" title="Permanent link">&para;</a></h3>
+<p><strong>Strategy:</strong> One item-metadata <code>GET</code> on the effective root — <code>GET
+/drives/{id}/root</code> when no <code>base_path</code> is configured, or the <code>base_path</code> folder
+item when one is pinned — reusing the backend's existing <code>_get_item("")</code> primitive.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_item</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>  <span class="c1"># scope=&quot;item&quot;</span>
+</code></pre></div>
+The probe <strong>must</strong> use the default item scope, not the type-probe scope: an
+item-scoped <code>resourceNotFound</code> (a missing/misconfigured drive) maps to
+<code>BackendUnavailable</code>, while a missing <code>base_path</code> folder maps to <code>NotFound</code>
+(mirroring SFTP's <code>stat(base_path)</code>, PING-006). The <code>"probe"</code> scope would flatten
+every <code>404</code> to <code>NotFound</code> (see GR-031) and swallow the drive-unreachable signal.</p>
 <hr />
 <h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
 <h3 id="ping-009-error-classification">PING-009: Error Classification<a class="headerlink" href="#ping-009-error-classification" title="Permanent link">&para;</a></h3>
