@@ -14,7 +14,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[azure]`
 
-*Captured 2026-07-03 on Python 3.13.*
+*Captured 2026-07-13 on Python 3.13.*
 
 | Package                       | Tested up to |
 | ----------------------------- | ------------ |
@@ -23,15 +23,15 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[dagster]`
 
-*Captured 2026-07-03 on Python 3.13.*
+*Captured 2026-07-13 on Python 3.13.*
 
 | Package   | Tested up to |
 | --------- | ------------ |
-| `dagster` | `1.13.11`    |
+| `dagster` | `1.13.13`    |
 
 ## `[graph]`
 
-*Captured 2026-07-09 on Python 3.13.*
+*Captured 2026-07-13 on Python 3.13.*
 
 | Package           | Tested up to |
 | ----------------- | ------------ |
@@ -42,7 +42,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[httpx]`
 
-*Captured 2026-07-09 on Python 3.13.*
+*Captured 2026-07-13 on Python 3.13.*
 
 | Package | Tested up to |
 | ------- | ------------ |
@@ -50,7 +50,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[otel]`
 
-*Captured 2026-07-03 on Python 3.13.*
+*Captured 2026-07-13 on Python 3.13.*
 
 | Package             | Tested up to |
 | ------------------- | ------------ |
@@ -58,7 +58,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[pydantic]`
 
-*Captured 2026-07-03 on Python 3.13.*
+*Captured 2026-07-13 on Python 3.13.*
 
 | Package             | Tested up to |
 | ------------------- | ------------ |
@@ -66,7 +66,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[requests]`
 
-*Captured 2026-06-22 on Python 3.13.*
+*Captured 2026-07-13 on Python 3.13.*
 
 | Package    | Tested up to |
 | ---------- | ------------ |
@@ -75,7 +75,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[s3]`
 
-*Captured 2026-06-22 on Python 3.13.*
+*Captured 2026-07-13 on Python 3.13.*
 
 | Package | Tested up to |
 | ------- | ------------ |
@@ -92,7 +92,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[sftp]`
 
-*Captured 2026-06-13 on Python 3.13.*
+*Captured 2026-07-13 on Python 3.13.*
 
 | Package    | Tested up to |
 | ---------- | ------------ |
@@ -101,7 +101,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[sql]`
 
-*Captured 2026-07-03 on Python 3.13.*
+*Captured 2026-07-13 on Python 3.13.*
 
 | Package      | Tested up to |
 | ------------ | ------------ |
@@ -109,7 +109,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[sql-query]`
 
-*Captured 2026-07-03 on Python 3.13.*
+*Captured 2026-07-13 on Python 3.13.*
 
 | Package      | Tested up to |
 | ------------ | ------------ |
