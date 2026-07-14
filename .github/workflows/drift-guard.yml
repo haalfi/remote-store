@@ -24,10 +24,14 @@ name: Drift Guard
 # way, commit the updated lock + regenerated docs page in the same PR as
 # whatever motivated the refresh. See infra/drift-locks/README.md § Refreshing.
 #
-# Caveat on the smoke as a refresh gate: the three resolutions below (report,
-# smoke, candidate baseline) are independent, and the smoke shares an env with
-# the test plugins — a green smoke does not prove the committed pins were the
-# ones tested. See ID-231.
+# The smoke as a refresh gate (ID-231): the extra is resolved ONCE per leg
+# (`drift_check.py diff --emit-freeze`), and that single freeze is what the
+# report is computed from, what the smoke pins against, and what is uploaded as
+# the candidate baseline. The smoke installs both the extra and the test plugins
+# under `-c <freeze>`, so a shared transitive dep cannot be moved off the
+# candidate pin: a green smoke proves the committed pins were the ones tested. A
+# plugin that genuinely cannot coexist with the candidate set fails the install
+# loudly (red smoke) rather than going green against a mixed set.
 
 on:
   schedule:
@@ -141,18 +145,24 @@ jobs:
       # not mask drift on the other twelve.
       - name: Resolve and diff
         run: |
-          mkdir -p drift-reports
-          python scripts/drift_check.py diff "${{ matrix.extra }}" --out "drift-reports/${{ matrix.extra }}.json"
+          mkdir -p drift-reports drift-candidates
+          # One resolve per leg: `--emit-freeze` writes the resolved set the
+          # smoke pins against and the candidate-baseline upload reuses, so all
+          # three (report, smoke, baseline) describe the same resolution (ID-231).
+          python scripts/drift_check.py diff "${{ matrix.extra }}" \
+            --out "drift-reports/${{ matrix.extra }}.json" \
+            --emit-freeze "drift-candidates/${{ matrix.extra }}.txt"
           echo "=== diff report for ${{ matrix.extra }} ==="
           cat "drift-reports/${{ matrix.extra }}.json"
 
       # If the diff reports drift (stable or pre-release), install the
-      # fresh resolution into the runner Python and run the smoke targets.
+      # candidate resolution into the runner Python — pinned to the emitted
+      # freeze via `-c` — and run the smoke targets against it.
       # Status "needs_refresh" (empty baseline) is reported but does not
       # gate a smoke run — there is nothing to compare against yet.
       # Gated on success() so a resolve-step failure surfaces as the
       # original error rather than a confusing FileNotFoundError here.
-      - name: Install fresh resolution and run smokes (on drift)
+      - name: Install candidate resolution and run smokes (on drift)
         if: success()
         run: |
           STATUS=$(python -c "import json; print(json.load(open('drift-reports/${{ matrix.extra }}.json'))['status'])")
@@ -160,26 +170,33 @@ jobs:
             echo "No drift / nothing to smoke — status=$STATUS"
             exit 0
           fi
-          python -m pip install --upgrade --pre ".[${{ matrix.extra }}]"
-          # Test infrastructure. pytest-recording is hard-required by
-          # tests/backends/conformance/conftest.py (TEST-007); the rest match
-          # what `[dev]` brings in. `--upgrade-strategy only-if-needed` is
-          # pip's default but explicit here: shared transitive deps already
-          # installed at the drifted version (urllib3, cryptography, etc.)
-          # are left alone unless moto / boto3 / etc. cannot otherwise be
-          # satisfied. Honest caveat: when constraints DO conflict, pip
-          # will downgrade the shared dep to satisfy the test plugins,
-          # which means the smoke for that one extra exercises a slightly
-          # mixed version set rather than the pure fresh resolution. For
-          # early-warning that is acceptable; a future refactor could
-          # isolate the two via separate venvs.
-          # Smoke install list must cover every pytest plugin the smoke
-          # targets transitively import. pytest-recording is hard-required
-          # by tests/backends/conformance/conftest.py (TEST-007).
-          # pytest-httpserver is `importorskip`-ed by tests/backends/http/
-          # — without it the http smoke would skip-everything (rc=0) and
-          # the rolling issue would silently report drift as "clear".
-          python -m pip install --upgrade-strategy only-if-needed \
+          CONSTRAINTS="drift-candidates/${{ matrix.extra }}.txt"
+          if [ ! -s "$CONSTRAINTS" ]; then
+            # status==drift implies the resolve succeeded and emitted a freeze;
+            # a missing/empty file would mean the smoke runs unpinned, so fail
+            # loudly rather than silently regressing to a mixed-set smoke.
+            echo "::error::candidate freeze $CONSTRAINTS is missing/empty; cannot pin the smoke to the baseline"
+            exit 1
+          fi
+          # Install the project + extra pinned to EXACTLY the candidate
+          # resolution (the set uploaded as the baseline). `-c` forbids pip
+          # from moving any package off its candidate pin, so this reproduces
+          # the freeze the report was computed from rather than re-resolving.
+          python -m pip install --pre -c "$CONSTRAINTS" ".[${{ matrix.extra }}]"
+          # Test plugins under the SAME constraints file (ID-231). A plugin's
+          # own (unshared) deps — werkzeug for moto, etc. — install freely, but
+          # a shared transitive dep (botocore, urllib3, cryptography, ...)
+          # cannot be moved off the candidate pin. If a plugin genuinely cannot
+          # coexist with the candidate set, pip fails here and the smoke goes
+          # red — the correct signal in practice — instead of silently going
+          # green against a mixed version set the committed lock never recorded.
+          # The list must cover every pytest plugin the smoke targets import:
+          # pytest-recording is hard-required by
+          # tests/backends/conformance/conftest.py (TEST-007), and
+          # pytest-httpserver is `importorskip`-ed by tests/backends/http/ —
+          # without it the http smoke would skip-everything (rc=0) and the
+          # rolling issue would silently report drift as "clear".
+          python -m pip install -c "$CONSTRAINTS" \
             pytest pytest-asyncio pytest-xdist pytest-recording pytest-httpserver hypothesis 'moto[server,s3]'
           TARGETS=$(python -c "
           import shlex, sys
@@ -210,14 +227,11 @@ jobs:
           path: drift-reports/${{ matrix.extra }}.json
           if-no-files-found: warn
 
-      # Also upload a freeze of the resolved package set so a maintainer
-      # can download it and commit as the new baseline if desired (no PR
-      # is opened automatically — see the non-goals comment at the top).
-      - name: Upload fresh resolution as candidate baseline
-        if: always()
-        run: |
-          mkdir -p drift-candidates
-          python scripts/drift_check.py resolve "${{ matrix.extra }}" > "drift-candidates/${{ matrix.extra }}.txt" || true
+      # Upload the freeze the "Resolve and diff" step already emitted (the same
+      # set the smoke pinned against) so a maintainer can download it and commit
+      # it as the new baseline. No separate re-resolve — that third independent
+      # resolution was the ID-231 gap. No PR is opened automatically (see the
+      # non-goals comment at the top).
       - uses: actions/upload-artifact@v7
         if: always()
         with:

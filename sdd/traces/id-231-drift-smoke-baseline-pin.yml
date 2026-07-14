@@ -1,0 +1,83 @@
+id: ID-231
+title: "Drift-guard smoke validates a mixed version set, not the candidate baseline"
+trigger: >
+  The drift-guard check job resolved each extra three independent times and
+  installed the test plugins into the smoke env with
+  --upgrade-strategy only-if-needed, so a shared transitive dep could move off
+  the resolved pin. A green smoke did not prove the committed baseline pins were
+  the ones exercised — the /drift refresh procedure leaned on that guarantee.
+source_items:
+  - ID-231
+  - ID-182
+audience:
+  - infra.ci
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 1  # owner review: drop the backlog-ID citations from the living
+                  # skill/docs and reframe "the correct ID-231 signal" as the
+                  # correct signal in practice
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-231 (item)"
+        read_type: gate
+        extract: "The three-resolution gap, the botocore repro, and the fix direction (pin the smoke to the candidate)"
+      - file: .github/workflows/drift-guard.yml
+        section: "check job: Resolve and diff / Install fresh resolution / Upload candidate baseline"
+        read_type: gate
+        extract: "Where the three independent resolves live and how the smoke installs plugins with only-if-needed"
+      - file: scripts/drift_check.py
+        section: "diff_extra, _cmd_diff, resolve_extra"
+        read_type: gate
+        extract: "diff resolves internally; the candidate is a separate resolve subcommand — collapse both to one freeze"
+      - file: .claude/skills/drift/SKILL.md
+        section: "Know what a green smoke does not prove"
+        read_type: reference
+        extract: "The skill's stated assumption the fix must make true"
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/drift_check.py
+        section: "diff_extra(resolved=), _cmd_diff --emit-freeze, _atomic_write, _freeze_text"
+        read_type: gate
+        extract: "Resolve once, reuse the freeze for report + smoke constraints + candidate; emit it atomically in lock-body format"
+      - file: .github/workflows/drift-guard.yml
+        section: "check job steps"
+        read_type: gate
+        extract: "diff emits the freeze; smoke installs extra + plugins under -c <freeze>; drop the third resolve, keep the upload"
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_drift_check.py
+        section: "TestEmitFreeze, TestDiffOutMode"
+        read_type: gate
+        extract: "Freeze is sorted name==version, resolved once, atomic, and skipped on resolve failure; existing --out error path still holds"
+  - id: docs
+    name: Docs
+    steps:
+      - file: infra/drift-locks/README.md
+        section: "Refreshing (green-smoke caveat)"
+        read_type: reference
+        extract: "Replace the not-proof caveat with the now-true single-resolve + constraints guarantee"
+      - file: .claude/skills/drift/SKILL.md
+        section: "Know what a green smoke does not prove"
+        read_type: reference
+        extract: "State the guarantee; note a red smoke can be a harness gap (step 3)"
+  - id: verify
+    name: Verify
+    steps:
+      - file: CLAUDE.md
+        section: "Principle 2 (Verify beyond the diff) + Feature reference"
+        read_type: verify
+        extract: "Ripple-check for a CI/dependency-tooling change: no CHANGELOG (audience is infra.ci/tooling only), no FEATURES/spec impact"
+      - file: sdd/CI-OPERATIONS.md
+        section: "drift-guard.yml — transitive dependency drift"
+        read_type: verify
+        extract: "Handbook description still accurate — it never asserted the mixed-set behaviour, so no edit needed"
+      - file: CONTRIBUTING.md
+        section: "Dependency drift guard"
+        read_type: verify
+        extract: "Refresh commands unchanged; page stays accurate"

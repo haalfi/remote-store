@@ -8,6 +8,30 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-231 — Drift-guard smoke validates a mixed version set, not the candidate baseline**
+  spec: — · effort: M · audience: infra.ci, contributor.tooling
+  `.github/workflows/drift-guard.yml` performed three independent `--pre`
+  resolutions per extra (the `diff` report, the smoke install, and a separate
+  `drift_check.py resolve` for the candidate baseline), and the smoke then
+  installed the test plugins into the *same* environment with
+  `--upgrade-strategy only-if-needed` — so a shared transitive dep could be
+  moved off the resolved pin to satisfy `moto`/`boto3`/etc. A green smoke did
+  not prove the committed pins were the ones tested (repro on `check-s3`: the
+  extra resolved `botocore==1.43.0`, the plugin install pulled `1.43.46`, pip
+  called it incompatible with `aiobotocore`, and the smoke passed anyway while
+  the lock recorded a version smoke never loaded). Fixed by collapsing to a
+  single resolve: `drift_check.py diff --emit-freeze` writes the one resolved
+  freeze that the report is computed from, the smoke pins against, and the
+  candidate-baseline upload reuses. The smoke installs both the extra and the
+  test plugins under `-c <freeze>`, so a shared dep cannot leave its candidate
+  pin; a plugin that genuinely cannot coexist fails the install loudly (red
+  smoke) instead of going green against a mixed set. `diff_extra` gained a
+  `resolved=` parameter and `_cmd_diff` a `--emit-freeze` flag (both covered by
+  `tests/scripts/test_drift_check.py::TestEmitFreeze`); the workflow's third
+  resolve step is gone; and the caveats in `infra/drift-locks/README.md`,
+  `.claude/skills/drift/SKILL.md`, and the workflow header now state the
+  guarantee instead of the gap. Surfaced in the PR #900 review.
+
 - [x] **BUG-231 — `GraphBackend.check_health()` never contacts Graph, so `ping()` cannot fail**
   spec: PING-011 · effort: M · audience: user.api, infra.test
   `GraphBackend` inherited `AsyncBackend`'s no-op `check_health()`, so

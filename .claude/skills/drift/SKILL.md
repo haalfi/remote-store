@@ -24,12 +24,11 @@ extra's **smoke job conclusion in the linked run** — not by the body. A red
 smoke means either a real regression or a smoke-harness gap; never refresh an
 extra whose smoke is red until you have explained why.
 
-Know what a green smoke does *not* prove: the workflow resolves three times per
-extra (report, smoke, candidate baseline), and the smoke shares an environment
-with the test plugins, so it can go green against a version set that differs
-from the pins you commit. It is a licence to refresh, not a guarantee the
-committed pins were exercised. Until ID-231 lands, treat a surprising pin as
-worth checking against the smoke log rather than assuming the smoke covered it.
+A green smoke means the committed pins were the ones exercised: the smoke is
+pinned to the candidate resolution with a pip constraints file, so it cannot
+quietly run against a mixed set. A plugin that cannot coexist with that set
+fails the smoke instead — which is why a red smoke is a real regression or a
+harness gap, never a silent mixed-set pass.
 
 GitHub reads via `gh` CLI; writes (PR) via the configured GitHub MCP server,
 falling back to `gh` for GraphQL-only flows. Repo: `haalfi/remote-store`.
