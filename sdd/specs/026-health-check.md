@@ -107,6 +107,21 @@ with self._errors():
 **Strategy:** No-op. In-memory backend is always healthy. Uses the default
 `Backend.check_health()` implementation (no override needed).
 
+### PING-011: GraphBackend
+
+**Strategy:** One item-metadata `GET` on the effective root — `GET
+/drives/{id}/root` when no `base_path` is configured, or the `base_path` folder
+item when one is pinned — reusing the backend's existing `_get_item("")` primitive.
+```python
+async def check_health(self) -> None:
+    await self._get_item("")  # scope="item"
+```
+The probe **must** use the default item scope, not the type-probe scope: an
+item-scoped `resourceNotFound` (a missing/misconfigured drive) maps to
+`BackendUnavailable`, while a missing `base_path` folder maps to `NotFound`
+(mirroring SFTP's `stat(base_path)`, PING-006). The `"probe"` scope would flatten
+every `404` to `NotFound` (see GR-031) and swallow the drive-unreachable signal.
+
 ---
 
 ## Error Mapping

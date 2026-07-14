@@ -712,6 +712,26 @@ class GraphBackend(AsyncBackend):
             info.extra[RANGE_FALLBACK_FLAG] = True
         return info
 
+    async def check_health(self) -> None:
+        """Verify the drive is reachable and credentials are valid.
+
+        One item-metadata ``GET`` on the effective root, reusing ``_get_item("")``:
+        ``GET /drives/{id}/root`` when no ``base_path`` is configured, or the
+        ``base_path`` folder item when one is pinned (mirroring SFTP's
+        ``stat(base_path)``). The probe runs at the default item scope, not the
+        type-probe scope, so a drive-identity ``resourceNotFound`` escalates to
+        ``BackendUnavailable`` instead of being flattened to ``NotFound``.
+
+        Raises:
+            PermissionDenied: If the token is rejected or lacks access (401/403).
+            NotFound: If the configured ``base_path`` root does not exist.
+            BackendUnavailable: If the drive is unreachable / missing, or on
+                throttling, 5xx, or transport failure. Also if the backend is closed.
+        """
+        # PING-011: cheapest read-only reachability probe; error mapping is
+        # inherited from _get_item -> graph_send -> classify_graph_error (scope=item).
+        await self._get_item("")
+
     # endregion
 
     # region: data-plane listing (GR-014, GR-016)

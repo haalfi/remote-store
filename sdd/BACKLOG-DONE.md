@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-231 — `GraphBackend.check_health()` never contacts Graph, so `ping()` cannot fail**
+  spec: PING-011 · effort: M · audience: user.api, infra.test
+  `GraphBackend` inherited `AsyncBackend`'s no-op `check_health()`, so
+  `store.ping()` against OneDrive returned cleanly regardless of reachability,
+  token validity, or whether the drive existed — contradicting `ping()`'s
+  contract. Fixed across four layers: (1) spec clause **PING-011** in
+  `026-health-check.md`; (2) a `check_health()` override on `GraphBackend`
+  reusing `_get_item("")` (one item-metadata `GET` on the effective root —
+  `/drives/{id}/root`, or the `base_path` folder when pinned — at item scope, so
+  a drive-identity `resourceNotFound` escalates to `BackendUnavailable` while a
+  missing `base_path` root is `NotFound`); (3) a behavioural test
+  (`tests/backends/graph/aio/test_ping.py`, under `graph/aio/` per TEST-003)
+  pinning probe identity and the error-mapping branches; (4) the first
+  instantiation of Rule 13 (BK-312) as
+  `tests/backends/conformance/test_health_probe_declared.py`, asserting
+  override-or-declared-exemption for every backend so no future backend can
+  inherit the no-op silently. The sync `Store.ping()` path is covered
+  automatically via the async-to-sync adapter.
+
 - [x] **BK-312 — Testing Rule 13: an inherited ABC default must be opt-in, not opt-out**
   spec: — · effort: S · audience: contributor.process
   BUG-231 (Graph's missing health probe) escaped a conformance suite that
