@@ -29,7 +29,7 @@ surprising_ripples:
   # rendered output are stale together, so `render-docs --check` passed green.
   - scripts/drift_check.py            # render_docs() intro template
   - CONTRIBUTING.md                   # "Dependency drift guard" section prose
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

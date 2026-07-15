@@ -386,6 +386,10 @@ disallow_untyped_calls = false
 # future major re-adds, and `ignore_missing_imports = true` suppresses `import-untyped`
 # at every pyarrow import site when the marker is absent (as in 25.x) — including the
 # unguarded example scripts, which is why this is set on the module, not per import line.
+# Caveat: `ignore_missing_imports` also masks `import-not-found` across the `pyarrow.*`
+# namespace, so a mistyped submodule (e.g. `import pyarrow.parqet`) resolves to Any
+# instead of erroring. Low risk — we import only the stable `pyarrow` / `pyarrow.parquet`
+# / `pyarrow.fs` paths, and this override is scoped to pyarrow alone.
 [[tool.mypy.overrides]]
 module = ["pyarrow", "pyarrow.*"]
 follow_imports = "skip"
