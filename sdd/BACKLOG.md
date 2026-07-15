@@ -396,8 +396,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Maintenance / Long-horizon
 
-*(none)*
-
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
   BUG-225 capped the `graph` and `httpx` extras at `httpx>=0.24.0,<1.0`

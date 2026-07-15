@@ -23,6 +23,13 @@ surprising_ripples:
   - examples/integrations/pyarrow_adapter.py
   - examples/integrations/parquet_dataset.py
   - examples/backends/s3_pyarrow_backend.py
+  # PR-review round: two more prose copies of the "arrow/sql-query pin pyarrow<25"
+  # cap description that the Dependency ripple-check row did not enumerate. The
+  # drift_check.py case is a doc-gate blind spot: the generator template and its
+  # rendered output are stale together, so `render-docs --check` passed green.
+  - scripts/drift_check.py            # render_docs() intro template
+  - CONTRIBUTING.md                   # "Dependency drift guard" section prose
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
