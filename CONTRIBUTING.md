@@ -380,10 +380,10 @@ The drift guard is one of the scheduled/automated CI guards; for the full
 inventory of those guards, where each one's finding lands, and the durable-TODO
 principle they follow, see [`sdd/CI-OPERATIONS.md`](sdd/CI-OPERATIONS.md).
 
-Every `[<extra>]` in `pyproject.toml` declares a floor and
-deliberately no ceiling, except the `graph` and `httpx` extras, which carry an
-`httpx<1.0` ceiling — see the comment on `[project.optional-dependencies]`
-in `pyproject.toml`. `.github/workflows/drift-guard.yml` runs weekly (Monday 07:00 UTC):
+Every `[<extra>]` in `pyproject.toml` declares a floor, and a ceiling only
+where a known-incompatible major looms — see the comment on
+`[project.optional-dependencies]` in `pyproject.toml` for the authoritative
+per-extra ranges. `.github/workflows/drift-guard.yml` runs weekly (Monday 07:00 UTC):
 it re-resolves each `remote-store[<extra>]` with `pip install --upgrade --pre`,
 diffs against the committed baselines in `infra/drift-locks/`, runs the
 smoke targets in `scripts/drift_smoke_map.py` for any extra that drifted,

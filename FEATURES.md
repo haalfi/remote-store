@@ -592,7 +592,7 @@ pip install remote-store[yaml]        # YAML config loading
 ```
 <!-- END_GENERATED:install_extras -->
 
-Each extra declares a floor in `pyproject.toml` and deliberately no
-ceiling, except the `graph` and `httpx` extras, which carry an
-`httpx<1.0` ceiling. For the exact upper-bound versions CI was last
-green against, see [Tested upper-bound versions](https://docs.remotestore.dev/stable/reference/tested-versions/).
+Each extra's version range — a floor always, plus a ceiling only where a
+known-incompatible major looms — is declared in `pyproject.toml`, the
+source of truth for per-extra pins. For the exact upper-bound versions CI
+was last green against, see [Tested upper-bound versions](https://docs.remotestore.dev/stable/reference/tested-versions/).
