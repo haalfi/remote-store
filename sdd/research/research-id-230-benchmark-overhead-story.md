@@ -108,14 +108,36 @@ The generators read a narrow slice of pytest-benchmark JSON:
 `benchmarks/results/run-of-record/` — `clean.json` (feeds `comparative.md`,
 `overhead.svg`, `throughput.svg`, `s3-comparison.svg`) plus `rtt20.json`,
 `rtt50.json`, `rtt100.json` (feed `overhead-vs-rtt.svg`). Slim each to
-`name` / `params` / `stats.mean` + top-level `machine_info` (the same slimming
-recipe already used for `baseline/local-baseline.json`,
-`benchmarks/README.md:282-286`), keeping files small and reviewable. Add a
-regeneration path — `hatch run bench-charts --dir benchmarks/results/run-of-record`
-and `report.py --comparative --markdown --file benchmarks/results/run-of-record/clean.json`
-— and document it in `benchmarks/README.md` so anyone can rebuild the published
-outputs from committed data. **Verify during build** how `_load_profile_data()`
-keys a profile (filename vs. a param) and match the committed filenames to it.
+`name` / `params` / `stats.mean` **plus the top-level `network_profile` key**,
+and retain top-level `machine_info` for provenance, keeping files small and
+reviewable.
+
+**The run-of-record recipe deliberately diverges from the
+`baseline/local-baseline.json` recipe** (`benchmarks/README.md:282-286`): the
+baseline is a single clean-profile file that never touches the RTT chart, so it
+can drop `network_profile`; the run-of-record set **must not**. `charts.py`
+groups profiles by an *in-file* key, not the filename:
+
+- `_load_profile_data()` reads the **top-level `network_profile`** field, and
+  defaults to `"clean"` when the key is absent (`benchmarks/charts.py:482`). That
+  field is injected at run time by `conftest.py:168-169`. If the slimming step
+  strips it, all four files collapse to `"clean"`, `overhead_by_profile` ends up
+  with `< 2` profiles, and `chart_overhead_vs_rtt()` renders the "need clean + at
+  least one latency profile" **placeholder** instead of the real chart
+  (`benchmarks/charts.py:248-273`). The filenames are cosmetic.
+- For any non-clean profile the chart looks up the **`-latency` backend variant**
+  (`bk = _LATENCY_VARIANT[base]`, `benchmarks/charts.py:231`), so the rtt* files
+  must contain benchmarks named for `s3-latency` / `sftp-latency` /
+  `azure-latency`, **not** the base `s3` / `sftp` / `azure`. A run that merely
+  wraps the base backends in a toxiproxy RTT will produce base-named benchmarks,
+  the `_LATENCY_VARIANT` lookup will miss, and those series drop silently.
+
+Add a regeneration path — `hatch run bench-charts --dir
+benchmarks/results/run-of-record` and `report.py --comparative --markdown --file
+benchmarks/results/run-of-record/clean.json` — and document both the commands
+**and the two invariants above** in `benchmarks/README.md`, so the next person
+does not copy the baseline slimming recipe verbatim and ship a placeholder. See
+§3.5 for the build-time assertions that enforce them.
 
 ### 3.3 Recast the verdict vocabulary: magnitude, not judgement (scope point 3)
 
@@ -138,11 +160,23 @@ S3 Write 1MB: 20.1ms vs 31.6ms raw → 36% faster       (was: Favorable)
 S3 Exists:    1.4ms  vs 1.3ms  raw → +8% (sub-ms)      (was: Negligible)
 ```
 
+**This is a deliberate behavior change, not a relabel — own it.** The current
+bands are *not* pure percentage bands: they interleave a percentage test with a
+5 ms absolute floor (`Moderate` = `≤50% OR <5ms`; `Visible` = `>50% AND ≥5ms`,
+`report.py:407-408,418-420`). The proposed `sub-ms / <10% / 10–50% / >50%` scale
+drops the 5 ms component entirely, so boundary cases genuinely change class — a
+60%-but-3 ms delta is `Moderate` today and `>50%` under the recast. That is a
+good simplification (a magnitude descriptor should describe the delta's size, not
+gate it behind a second absolute threshold), but the plan must state it as a
+band redesign, and the tests must **assert the moved boundaries**, not just
+substitute the new strings.
+
 Locations to change together: `_verdict()` body + docstring table
 (`report.py:400-420`), the `--user` print (`report.py:449-454`), the `--user`
-help string (`report.py:580-582`), and any test asserting the old labels
-(`tests/scripts/test_bench_report.py`). Keep the scaffolding — same call sites,
-new vocabulary.
+help string (`report.py:580-582`), and `tests/scripts/test_bench_report.py` —
+whose updates must cover the specific 5 ms-floor cases that change class (e.g. a
+`>50% & <5ms` delta: `Moderate`→`>50%`), not only the renamed labels. Keep the
+scaffolding — same call sites, new vocabulary.
 
 ### 3.4 Reframe the docs to present, not judge (scope point 3)
 
@@ -159,6 +193,27 @@ new vocabulary.
 - Keep every table and chart; only the framing prose and the embedded
   `comparative.md` numbers change.
 
+### 3.5 Build-time assertions (guard the two silent-failure modes)
+
+`chart_overhead_vs_rtt()` degrades to a placeholder **silently** — no error, just
+a wrong SVG — whenever its input is shaped wrong (§3.2). Before committing the
+regenerated chart, assert both invariants so a bad run of record fails loudly
+instead of shipping a placeholder:
+
+1. **Profile key present.** Each committed rtt file's top-level `network_profile`
+   equals its intended profile (`rtt20.json` ⇒ `"rtt20"`, …) and `clean.json` ⇒
+   `"clean"` (or omits the key). Equivalent check: `_load_profile_data()` over the
+   committed set returns ≥ 2 distinct profiles including `"clean"`.
+2. **Latency files use `-latency` variants.** Each rtt file contains benchmark
+   `name`s for `s3-latency` / `sftp-latency` / `azure-latency` (i.e. the run used
+   `--backend s3-latency,sftp-latency,azure-latency`, as `bench-latency-matrix`
+   does, `benchmarks/run_latency_matrix.py:20`), so the `_LATENCY_VARIANT` lookup
+   at `charts.py:231` hits.
+
+Cheapest home for these is the regeneration doc plus a guard in the slimming
+script (fail if either invariant is violated); optionally a `test_charts.py`
+case asserting the committed set yields a real chart, not the placeholder branch.
+
 ---
 
 ## 4. Implementation Plan
@@ -171,13 +226,17 @@ and can land in parallel.
 
 1. Extend the scheduled workflow (or add a `workflow_dispatch` run-of-record job)
    to start **toxiproxy** with the Docker backends and run `standard` tier at
-   `clean` + `rtt20/rtt50/rtt100` (§3.1). Confirm `infra/docker-compose.yml`
-   already defines the toxiproxy proxies (it does — v2/ID-103); the gap is the CI
-   `start-backends` action, not compose.
+   `clean` (base backends) **plus `rtt20/rtt50/rtt100` on the `-latency` backend
+   variants** — `--backend s3-latency,sftp-latency,azure-latency`, the set
+   `bench-latency-matrix` already uses (§3.1, §3.5 assertion 2). Confirm
+   `infra/docker-compose.yml` already defines the toxiproxy proxies (it does —
+   v2/ID-103); the gap is the CI `start-backends` action, not compose.
 2. In the same job, regenerate `comparative.md` (`report.py --comparative
-   --markdown`) and the four SVGs (`benchmarks.charts`) from the run.
-3. Upload `comparative.md`, the four SVGs, and the slimmed JSON set as one
-   `run-of-record` artifact.
+   --markdown`) and the four SVGs (`benchmarks.charts`) from the run, and confirm
+   the RTT chart is not the placeholder before uploading (§3.5).
+3. Upload `comparative.md`, the four SVGs, and the slimmed JSON set — each rtt
+   file retaining its top-level `network_profile` (§3.2, §3.5 assertion 1) — as
+   one `run-of-record` artifact.
 
 ### W2 — Commit the run of record and make it reproducible (scope 2)
 
@@ -187,7 +246,10 @@ and can land in parallel.
    fresh stamp) and the four SVGs in `docs-src/img/benchmarks/` from that data.
 6. Document the regeneration commands in `benchmarks/README.md` (§ Continuous
    Benchmarking / a new "Run of record" subsection) so the outputs are
-   rebuildable from committed inputs.
+   rebuildable from committed inputs — **including the two §3.5 invariants and
+   the note that this slimming recipe diverges from the baseline recipe by
+   keeping `network_profile`**, so the next person does not copy the baseline
+   verbatim.
 
 ### W3 — Reframe reporting and docs to present, not judge (scope 3)
 
@@ -209,8 +271,11 @@ ripple).
   `docs-src/img/benchmarks/{overhead,overhead-vs-rtt,throughput,s3-comparison}.svg`,
   new `benchmarks/results/run-of-record/*.json`.
 - **Code/tests:** `benchmarks/report.py` (`_verdict`→`_magnitude`, `--user`
-  output + help), `tests/scripts/test_bench_report.py` (label assertions).
-  Confirm `benchmarks/charts.py` needs no change (it reads means, not labels).
+  output + help), `tests/scripts/test_bench_report.py` (label assertions **plus
+  the moved 5 ms-floor boundary cases**, §3.3). `benchmarks/charts.py` needs no
+  code change (it reads means, not labels), but consider a `test_charts.py` guard
+  that the committed run-of-record set yields a real RTT chart, not the
+  placeholder branch (§3.5). Add the slimming/guard script if one is introduced.
 - **Docs prose:** `docs-src/explanation/performance.md`, `README.md`. Grep the
   repo for `Negligible|Favorable|worth it|negligible` before committing — the
   vocabulary leaks into prose (`README.md:230`, `performance.md:25`).
@@ -259,11 +324,16 @@ Overall **M**, matching the backlog estimate.
    regression gate, and loading it with a full latency matrix every Monday is cost
    for no gate value. Decide before W1.
 2. **Slim vs. full JSON commit.** Slimmed (§3.2) keeps diffs readable but drops
-   stddev/rounds; full JSON is heavier but complete. Recommendation: slimmed,
-   matching the existing baseline recipe — the docs need means, not distributions.
-3. **Exact magnitude bands.** §3.3 proposes `sub-ms / <10% / 10–50% / >50%` with a
-   `faster/slower` tag. Confirm the band edges against the current `_verdict`
-   thresholds so the recast is a relabel, not a silent behavior change.
+   stddev/rounds; full JSON is heavier but complete. Recommendation: slimmed —
+   but note the run-of-record slimming **diverges** from the baseline recipe by
+   keeping the top-level `network_profile` key per file (§3.2), without which the
+   RTT chart silently falls back to a placeholder.
+3. **Magnitude bands are a deliberate redesign, not a relabel.** §3.3 proposes
+   `sub-ms / <10% / 10–50% / >50%`, which drops the current bands' 5 ms absolute
+   floor (`report.py:407-408,418-420`). That *moves* boundary cases (a `>50% &
+   <5ms` delta reclassifies), so it is a behavior change to own and test, not a
+   string swap. Decide whether the simplification is wanted; if yes, assert the
+   moved boundaries in `test_bench_report.py` (§3.3).
 
 ---
 
