@@ -166,10 +166,15 @@ jobs:
       # Clean profile at the `standard` tier on the comparative backends — feeds
       # comparative.md + overhead.svg + throughput.svg (needs the 10MB point) +
       # s3-comparison.svg.
+      # --bench-timeout=300: the standard tier's 10MB writes on the emulated
+      # Docker SFTP backend run ~9s/round (~50s over pytest-benchmark's rounds),
+      # which flirts with the default 60s per-test watchdog and can trip a
+      # late-firing KeyboardInterrupt that aborts the session after the
+      # benchmarks have already passed. 300s clears them with wide margin.
       - name: Benchmark — clean profile (standard tier)
         run: |
           pytest benchmarks/ --benchmark-sort=mean --benchmark-json=clean-raw.json \
-            --backend local,s3,s3-pyarrow,sftp,azure -m "not full"
+            --backend local,s3,s3-pyarrow,sftp,azure -m "not full" --bench-timeout=300
 
       # RTT matrix on the -latency backend variants (quick tier is enough: the
       # overhead-vs-rtt chart only reads the OVERHEAD_OPS, all quick-tier). The
