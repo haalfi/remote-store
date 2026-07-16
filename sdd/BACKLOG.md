@@ -396,32 +396,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Maintenance / Long-horizon
 
-- [ ] **BUG-232 — `[s3-pyarrow]` and `[bench]` float past the `pyarrow<25` ceiling**
-  spec: — · effort: S · audience: user.api, library.maintainer
-  `pyproject.toml` caps `arrow` and `sql-query` at `pyarrow>=12.0.0,<25`,
-  documented there as a ceiling applied "only where a known-incompatible
-  major looms". `s3-pyarrow` declares only `pyarrow>=14.0.0` and carries no
-  ceiling, so `pip install remote-store[s3-pyarrow]` resolves pyarrow 25
-  while the sibling extras are held at 24. `[bench]` inherits the gap
-  (`remote-store[s3-pyarrow,sftp,azure]` pulls neither `arrow` nor
-  `sql-query`, so nothing intersects the cap down); `[dev]` is safe only
-  incidentally, because it lists `sql-query` alongside.
-  Repro: the 2026-07-13 drift run resolved `pyarrow==25.0.0` for
-  `[s3-pyarrow]` and `==24.0.0` for `[sql-query]` in the same pass.
-  The exposure is the standalone-extra install — the user-facing path, and
-  the one no CI job covers, since CI installs `[dev]`.
-  **The inconsistency cuts both ways, and the fix depends which side is
-  right.** `remote_store.backends._s3_pyarrow` shares a mypy override block
-  with `ext.arrow` / `ext.parquet`, i.e. the same pyarrow surface — which
-  argues the ceiling should extend. But the drift run's `check-s3-pyarrow`
-  smoke passed against pyarrow 25, which is evidence the incompatibility
-  that motivated `<25` may be narrower than the cap, or already stale.
-  Decide by testing the arrow/parquet surface against pyarrow 25: either
-  extend the ceiling to `s3-pyarrow`, or lift it from `arrow`/`sql-query`.
-  Do not simply re-baseline `s3-pyarrow` — that buries the question.
-  Surfaced in the PR #900 review; `s3-pyarrow`'s drift lock is deliberately
-  left stale so the rolling drift issue keeps the pyarrow bump visible.
-
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
   BUG-225 capped the `graph` and `httpx` extras at `httpx>=0.24.0,<1.0`

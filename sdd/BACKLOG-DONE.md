@@ -8,6 +8,36 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-232 — `[s3-pyarrow]` and `[bench]` float past the `pyarrow<25` ceiling**
+  spec: — · effort: S · audience: user.api, library.maintainer, infra.ci
+  `pyproject.toml` capped `arrow` / `sql-query` at `pyarrow>=12.0.0,<25` while
+  `s3-pyarrow` (and `[bench]` through it) carried no ceiling, so a standalone
+  `pip install remote-store[s3-pyarrow]` resolved pyarrow 25 while the siblings
+  were held at 24 — an unmanaged split no CI job covered, since CI installs
+  `[dev]` (held at 24 by its `sql-query` member). The inconsistency could be
+  resolved either way, so the disposition was decided empirically per the item:
+  the shared arrow/parquet/S3-PyArrow surface (five stable calls —
+  `pq.write_table` / `pq.read_table`, `pa.concat_tables`, `pa.py_buffer`,
+  `pyarrow.fs.S3FileSystem`) was exercised against pyarrow 25 (`ext.arrow` +
+  `ext.parquet`: 165 passed; `ext.dagster`: 71 passed; all three
+  mypy-override-block modules import clean), and the drift guard's
+  `check-s3-pyarrow` smoke was already green on 25. Evidence pointed one way, so
+  the `<25` cap was **lifted** (not extended): `arrow` / `sql-query` drop to
+  `pyarrow>=12.0.0`, aligning every pyarrow extra on an unbounded `>=`. Ripple:
+  the `[project.optional-dependencies]` header comment; the conda recipe
+  `run_constraints` pyarrow pin rationale (the three extras no longer disagree);
+  the `arrow` / `sql-query` / `s3-pyarrow` drift baselines refreshed to
+  `pyarrow==25.0.0` (the s3-pyarrow lock's deliberate staleness is retired now
+  that 25 is the intended state) plus the rendered `tested-versions.md`; and the
+  `pyarrow24-check` CI job became `pyarrow-major-check`, a matrix over pyarrow 24
+  and 25, closing the standalone-extra gap. The review further flagged that the
+  cap description was hand-copied into four docs (a principle-4 violation the lift
+  itself exposed); the enumerated per-extra ceilings were removed from
+  `FEATURES.md`, `CONTRIBUTING.md`, and the `drift_check.py` render-docs template
+  so those now defer to `pyproject.toml` as the single source of truth, leaving
+  the enumeration only in pyproject and immutable history. Surfaced in the PR #900
+  and #903 reviews.
+
 - [x] **ID-231 — Drift-guard smoke validates a mixed version set, not the candidate baseline**
   spec: — · effort: M · audience: infra.ci, contributor.tooling
   `.github/workflows/drift-guard.yml` performed three independent `--pre`

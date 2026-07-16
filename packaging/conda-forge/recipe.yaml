@@ -41,15 +41,13 @@ requirements:
     - s3fs >=2024.2.0
     - paramiko >=3.0
     - tenacity >=4.0
-    # Three extras want three different pyarrow ranges -- `arrow` and
-    # `sql-query` are >=12.0.0,<25; `s3-pyarrow` is >=14.0.0 with no ceiling --
-    # and conda allows one pin per package, not one per extra.  So this pin is
-    # deliberately the loosest of the three: a stricter one would block an
-    # install that `pip` permits (a <25 ceiling locks out s3-pyarrow users on
-    # pyarrow 25), and over-constraining is the only way a run_constraints entry
-    # can actually break somebody.  Users of `arrow` / `sql-query` must observe
-    # their own <25 cap; pyproject.toml is the source of truth for per-extra
-    # ranges.
+    # Three extras use pyarrow -- `arrow` / `sql-query` are >=12.0.0 and
+    # `s3-pyarrow` is >=14.0.0 -- and conda allows one pin per package, not one
+    # per extra.  None carries a ceiling: BUG-232 verified the shared
+    # arrow/parquet/S3-PyArrow surface against pyarrow 25 and lifted the earlier
+    # `<25` cap on `arrow` / `sql-query`, so all three now agree on an unbounded
+    # `>=` and the loosest floor (>=12.0.0) is the correct single pin.
+    # pyproject.toml is the source of truth for per-extra ranges.
     - pyarrow >=12.0.0
     - azure-storage-file-datalake >=12.16.0
     - azure-identity >=1.0.0
