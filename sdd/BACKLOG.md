@@ -137,6 +137,7 @@ and the highest ID already in this file, then take the next integer. Run
   Keep the machinery (chart generator, verdict scaffolding) — this is a
   data-freshness + framing item, not new tooling. Surfaced during the
   benchmark-suite analysis that produced BUG-228 / BK-309.
+  Plan: [research-id-230-benchmark-overhead-story.md](research/research-id-230-benchmark-overhead-story.md).
 
 - [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
   spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling
