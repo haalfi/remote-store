@@ -17,10 +17,14 @@ on:
   workflow_dispatch:
     inputs:
       tier:
-        description: 'Speed tier to run'
+        description: 'Speed tier to run (correctness gate job)'
         type: choice
         options: [quick, standard, full]
         default: quick
+      run_of_record:
+        description: 'Also produce the published run of record (clean + RTT matrix, charts, comparative.md)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -118,4 +122,99 @@ jobs:
             bench-summary.txt
             bench-verdicts.txt
             bench-comparative.txt
+          retention-days: 90
+
+  # ID-230: the reproducible "run of record" that feeds the published overhead
+  # story (benchmarks/results/comparative.md + the four docs charts). This is
+  # NOT the weekly correctness/regression gate above — it is opt-in via the
+  # `run_of_record` dispatch input, because loading the full latency matrix onto
+  # every Monday run is CI cost for no gate value (the gate is `benchmark`).
+  #
+  # It brings up the FULL compose stack (Toxiproxy wired in front of the network
+  # backends via infra/docker-compose.yml + infra/toxiproxy.json) rather than the
+  # start-backends action, which has no Toxiproxy. It emits a `run-of-record`
+  # artifact (slimmed source JSON + regenerated comparative.md + 4 SVGs) that a
+  # maintainer downloads and COMMITS — CI is never given push rights to docs.
+  run-of-record:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_of_record }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Best-effort restore of the BK-279 image cache (Azurite/SFTP): docker
+      # compose then finds them present and only pulls MinIO (cgr.dev, reliable)
+      # and Toxiproxy (ghcr.io). A pull-time block on those is infra noise —
+      # re-run the dispatch — not a benchmark result.
+      - name: Restore service-image cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ci-images
+          key: ci-images-v1-${{ hashFiles('scripts/ci_service_images.sh') }}
+      - run: bash scripts/ci_load_images.sh ci-images
+
+      - name: Start backends + Toxiproxy (compose)
+        run: docker compose -f infra/docker-compose.yml up -d --wait minio azurite sftp toxiproxy
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+      - uses: astral-sh/setup-uv@v8.3.2
+        with:
+          enable-cache: false
+      - run: uv pip install -e ".[dev,bench]"
+
+      # Clean profile at the `standard` tier on the comparative backends — feeds
+      # comparative.md + overhead.svg + throughput.svg (needs the 10MB point) +
+      # s3-comparison.svg.
+      - name: Benchmark — clean profile (standard tier)
+        run: |
+          pytest benchmarks/ --benchmark-sort=mean --benchmark-json=clean-raw.json \
+            --backend local,s3,s3-pyarrow,sftp,azure -m "not full"
+
+      # RTT matrix on the -latency backend variants (quick tier is enough: the
+      # overhead-vs-rtt chart only reads the OVERHEAD_OPS, all quick-tier). The
+      # -latency names are load-bearing — charts.py looks up _LATENCY_VARIANT for
+      # non-clean profiles (guard 2 in slim_run_of_record.py).
+      - name: Benchmark — RTT matrix (rtt20/rtt50/rtt100)
+        run: |
+          for p in rtt20 rtt50 rtt100; do
+            pytest benchmarks/ --benchmark-sort=mean --benchmark-json="$p-raw.json" \
+              --backend s3-latency,sftp-latency,azure-latency --network-profile "$p" \
+              --pool-size=20 --bench-timeout=120 -m "not standard and not full"
+          done
+
+      # Slim to the committed shape (keeps the top-level network_profile) and
+      # assert the three chart invariants — a bad run fails HERE, loudly, instead
+      # of shipping a blank/placeholder SVG.
+      - name: Slim + guard the run of record
+        run: python -m benchmarks.slim_run_of_record clean-raw.json rtt20-raw.json rtt50-raw.json rtt100-raw.json
+
+      # Regenerate the published artifacts from the slimmed set. --file …/clean.json
+      # is required: without it bench-charts builds the single-file charts from
+      # files[-1] (an rtt file) and blanks them (guard 3 / the documented trap).
+      - name: Regenerate comparative.md + charts
+        run: |
+          python -m benchmarks.report --comparative --markdown \
+            --file benchmarks/results/run-of-record/clean.json \
+            --output benchmarks/results/comparative.md
+          python -m benchmarks.charts \
+            --dir benchmarks/results/run-of-record \
+            --file benchmarks/results/run-of-record/clean.json \
+            --output-dir docs-src/img/benchmarks
+          python -m benchmarks.slim_run_of_record --check-only
+
+      - name: Upload run-of-record artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: run-of-record
+          path: |
+            benchmarks/results/run-of-record/clean.json
+            benchmarks/results/run-of-record/rtt20.json
+            benchmarks/results/run-of-record/rtt50.json
+            benchmarks/results/run-of-record/rtt100.json
+            benchmarks/results/comparative.md
+            docs-src/img/benchmarks/overhead.svg
+            docs-src/img/benchmarks/overhead-vs-rtt.svg
+            docs-src/img/benchmarks/throughput.svg
+            docs-src/img/benchmarks/s3-comparison.svg
           retention-days: 90

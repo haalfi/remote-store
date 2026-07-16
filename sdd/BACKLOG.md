@@ -106,8 +106,20 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Docs & Discoverability
 
-- [ ] **ID-230 — Benchmark overhead story: reproducible run of record + user-decides framing**
+- [~] **ID-230 — Benchmark overhead story: reproducible run of record + user-decides framing**
   spec: — · effort: M · audience: user.site, library.maintainer
+  **Status ([~]):** the framing + machinery half is shipped — `report.py`'s
+  verdict vocabulary is recast to neutral magnitude bands, the docs present
+  overhead instead of judging it, and a reproducible run-of-record path exists
+  (the `run_of_record` `workflow_dispatch` job + `hatch run bench-run-of-record`
+  slim/guard, documented in `benchmarks/README.md`). **Outstanding:** commit the
+  actual fresh Linux/Docker data — dispatch `benchmark.yml` with `run_of_record`,
+  download the `run-of-record` artifact, and commit
+  `benchmarks/results/run-of-record/*.json` + the regenerated
+  `benchmarks/results/comparative.md` + four SVGs (replacing the stale 2026-04-12
+  Windows-laptop `comparative.md` and its uncommitted-source charts). The
+  regeneration was validated end-to-end on synthetic data; the real run needs
+  the container backends, which the plan PR's sandbox could not pull.
   Purpose-2 half of the benchmark-suite rework (purpose-1 governance shipped
   as BK-309). **Framing principle:** the suite answers "*what* is the
   overhead?"; it must not answer "*is it acceptable?*" — that depends on the

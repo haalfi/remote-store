@@ -1,8 +1,19 @@
 # Performance
 
 remote-store wraps established Python storage libraries. This page presents
-measured overhead so you can judge whether the abstraction cost matters for
-your workloads.
+the **measured** overhead of that wrapper and the levers to test it against
+your own workload. It does not tell you whether the overhead is acceptable —
+that depends on your call volume, latency budget, and alternatives, so it is
+your call, not the library's.
+
+The overhead is a **fixed per-operation cost**. Its size in isolation is what
+the numbers below report; whether it is worth paying is a function of how much
+of your total time is spent in storage calls versus network round-trips. As
+network round-trip time grows, a fixed per-op cost shrinks as a *share* of
+total time (see [What Happens Under Real Latency](#what-happens-under-real-latency)).
+To measure it for your own hardware and latency, use the levers in
+[Running Benchmarks](#running-benchmarks) — the `hatch run bench-*` commands and
+the four `--network-profile` profiles.
 
 ## Overhead at a Glance
 
@@ -19,10 +30,12 @@ Patterns from Docker benchmarks (MinIO, Azurite, OpenSSH):
 - **S3-PyArrow**: reads carry more overhead than the S3 backend (PyArrow C++
   data path); writes are comparable. The trade-off is native PyArrow integration
   — Tier 1 C++ range requests — not raw throughput.
-- **Azure** and **SFTP**: per-operation overhead is small relative to network
-  round-trip time for most operations.
+- **Azure** and **SFTP**: per-operation overhead is a fixed cost added on top
+  of each call; as a share of total time it shrinks as network round-trip time
+  grows (quantified in the next section).
 - **Local**: all operations are sub-millisecond; overhead versus raw pathlib is
-  measurable but negligible for storage workloads.
+  a fixed sub-millisecond cost per call. Whether that registers depends on your
+  call volume and how much of your latency budget is local I/O.
 
 Regenerate numbers for your own hardware with `hatch run bench-report`
 (see [Running Benchmarks](#running-benchmarks)).
@@ -80,7 +93,7 @@ interfaces:
 
 Results vary by hardware, network, and service version. Generate numbers for
 your environment with `hatch run bench-report` (summary) or
-`hatch run bench-report-user` (condensed with verdicts).
+`hatch run bench-report-user` (condensed, with magnitude bands).
 
 For a full per-backend comparison of remote-store against the raw SDK and
 fsspec, see the Detailed Comparative Tables section on the
@@ -144,7 +157,7 @@ hatch run bench-save
 
 # Reports
 hatch run bench-report                    # summary table
-hatch run bench-report-user               # condensed with verdicts
+hatch run bench-report-user               # condensed, with magnitude bands
 hatch run bench-report-comparative        # remote-store vs raw SDK vs fsspec
 hatch run bench-charts                    # generate SVG charts
 

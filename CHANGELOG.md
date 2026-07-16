@@ -11,6 +11,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - BK-310: Pin the backend enumeration order in the add-a-backend checklist
 - BK-311: Sync the stale tagline and backend-membership mirrors
 - BUG-232: Lift the `pyarrow<25` cap from the `arrow` and `sql-query` extras so all pyarrow extras allow pyarrow 25
+- ID-230: Present benchmark overhead, don't judge it. `bench-report --user` now reports a neutral magnitude band (`sub-ms`/`<10%`/`10-50%`/`>50%`) plus a factual faster/slower direction instead of an acceptability verdict (`Negligible`/`Favorable`/…); the performance guide and README lead with the measured delta and the "overhead shrinks as a share of total time as round-trip grows" mechanism, leaving the acceptability call to the reader. Adds a reproducible run-of-record path (`workflow_dispatch` `run_of_record` job + `hatch run bench-run-of-record` slim/guard) so the published charts and `comparative.md` rebuild from committed inputs
 
 ## [0.29.1] - 2026-07-09
 

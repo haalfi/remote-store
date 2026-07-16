@@ -249,9 +249,10 @@ hatch run bench -- --backend s3-latency --network-profile rtt50 \
 | `hatch run bench-report-json` | Machine-readable JSON | CI / scripting |
 | `hatch run bench-report-comparative` | remote-store vs SDK vs fsspec | Overhead analysis |
 | `hatch run bench-report-comparative-md` | Same, as Markdown to file | Docs generation |
-| `hatch run bench-report-user` | Condensed report with verdicts | User-facing overview |
+| `hatch run bench-report-user` | Condensed report: delta + magnitude band | User-facing overview |
 | `hatch run bench-charts` | Generate SVG charts from saved JSON | Docs charts |
 | `hatch run bench-regression -- --file <run.json>` | Compare a run against the committed baseline | Regression gate |
+| `hatch run bench-run-of-record -- <raw.json>...` | Slim raw runs into the run of record + guard the chart invariants | Publish overhead story |
 
 ## Continuous Benchmarking (CI)
 
@@ -284,6 +285,74 @@ Regenerate the baseline from a green run: `pytest benchmarks/ --backend local
 `name` / `params` / `stats.mean` per entry (the committed file is slimmed to
 those fields to stay small). The scheduled run uploads the full run JSON and
 text reports as `benchmark-results` artifacts (90-day retention).
+
+### Run of record (published overhead story)
+
+The numbers and charts on the [performance guide](../docs-src/explanation/performance.md)
+are regenerated from a committed, diffable **run of record** —
+`benchmarks/results/run-of-record/{clean,rtt20,rtt50,rtt100}.json` — so the
+charts and `comparative.md` can be rebuilt from inputs in the repo (ID-230).
+
+**Producing a fresh run of record (the reproducible path).** Dispatch
+`benchmark.yml` with the **`run_of_record`** input checked. That job brings up
+the full compose stack (Toxiproxy in front of the network backends), runs the
+`clean` profile at the `standard` tier plus the `rtt20/rtt50/rtt100` matrix on
+the `-latency` backends, regenerates `comparative.md` + the four SVGs, and
+uploads them with the slimmed JSON as the **`run-of-record`** artifact. Download
+that artifact and commit its files — CI never pushes to docs.
+
+**Regenerating locally (or re-slimming a raw run).** With the compose stack up:
+
+```bash
+# 1. Run the clean + RTT matrix, capturing raw JSON per profile.
+pytest benchmarks/ --benchmark-json=clean-raw.json \
+  --backend local,s3,s3-pyarrow,sftp,azure -m "not full"
+for p in rtt20 rtt50 rtt100; do
+  pytest benchmarks/ --benchmark-json="$p-raw.json" \
+    --backend s3-latency,sftp-latency,azure-latency --network-profile "$p" \
+    --pool-size=20 --bench-timeout=120 -m "not standard and not full"
+done
+
+# 2. Slim to the committed shape AND assert the three chart invariants below.
+hatch run bench-run-of-record -- clean-raw.json rtt20-raw.json rtt50-raw.json rtt100-raw.json
+
+# 3. Regenerate comparative.md + the four charts from the slimmed set.
+python -m benchmarks.report --comparative --markdown \
+  --file benchmarks/results/run-of-record/clean.json \
+  --output benchmarks/results/comparative.md
+python -m benchmarks.charts \
+  --dir benchmarks/results/run-of-record \
+  --file benchmarks/results/run-of-record/clean.json \
+  --output-dir docs-src/img/benchmarks
+
+# Re-guard the committed set at any time (no slimming):
+hatch run bench-run-of-record -- --check-only
+```
+
+**Three invariants the slim/guard step enforces** — each guards a *silent*
+failure mode where a wrong-shaped run ships a blank or placeholder chart with no
+error:
+
+1. **Profiles present.** The set carries `clean` plus at least one latency
+   profile, so `overhead-vs-rtt.svg` has `>= 2` profiles and does not render its
+   placeholder.
+2. **Latency files use the `-latency` variants.** Each rtt file carries
+   `s3-latency` / `sftp-latency` / `azure-latency` benchmarks, so `charts.py`'s
+   `_LATENCY_VARIANT` lookup for non-clean profiles hits (a run that proxied the
+   *base* backends drops those series silently).
+3. **Clean file carries the base comparative backends.** `s3` / `s3-pyarrow` /
+   `sftp` / `azure` remote_store data must be present for the overhead ops so the
+   three single-file charts find data. `bench-charts` must be run
+   `--file …/clean.json`; without it it builds them from `files[-1]` (an rtt
+   file) and blanks them.
+
+**This slimming deliberately diverges from the baseline recipe above.** The
+baseline is a single clean-profile file that never feeds the RTT chart, so it
+drops the top-level `network_profile` key. The run of record **keeps it** per
+file: `charts.py` groups profiles by that *in-file* field, not the filename.
+Strip it and every file collapses to `clean`, and the RTT chart silently falls
+back to its placeholder. `slim_run_of_record.py` retains `network_profile` +
+`machine_info` for exactly this reason — do not copy the baseline recipe.
 
 ## Environment Variables
 
