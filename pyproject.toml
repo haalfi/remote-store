@@ -51,11 +51,14 @@ Changelog = "https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md"
 Issues = "https://github.com/haalfi/remote-store/issues"
 
 [project.optional-dependencies]
-# Each extra below declares a floor; a ceiling is the exception, applied only
-# where a known-incompatible major looms: `graph` / `httpx` pin `httpx<1.0`
-# (BUG-225 / ID-229) — see the per-extra comment for the rationale. The pyarrow
-# extras carry no ceiling: BUG-232 verified the shared arrow/parquet/S3-PyArrow
-# surface against pyarrow 25 and lifted the earlier `<25` cap. A scheduled drift guard
+# Each extra below declares a floor; a ceiling is the exception. Among the
+# runtime extras the drift guard covers, the only ceiling is `graph` / `httpx`
+# pinning `httpx<1.0` (BUG-225 / ID-229) — see the per-extra comment for the
+# rationale; the pyarrow extras carry none, since BUG-232 verified the shared
+# arrow/parquet/S3-PyArrow surface against pyarrow 25 and lifted the earlier
+# `<25` cap. The developer/build aggregates the guard excludes (`dev`, `docs`,
+# `bench`, `toml`, `mutate`) sit outside this convention and may pin build
+# tooling directly — e.g. `docs` caps `mkdocs<2`. A scheduled drift guard
 # (`.github/workflows/drift-guard.yml`, ID-182) re-resolves each extra
 # weekly against the latest available transitive versions and diffs the
 # result against `infra/drift-locks/<extra>.txt`. Refresh a baseline after

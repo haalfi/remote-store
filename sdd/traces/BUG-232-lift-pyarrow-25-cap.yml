@@ -32,7 +32,7 @@ surprising_ripples:
   # defer to pyproject.toml (SoT) instead of restating per-extra ceilings.
   - scripts/drift_check.py            # render_docs() intro template
   - CONTRIBUTING.md                   # "Dependency drift guard" section prose
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
