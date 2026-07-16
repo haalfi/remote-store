@@ -87,9 +87,9 @@ phases:
     name: Verify
     steps:
       - file: benchmarks/slim_run_of_record.py
-        section: "CLI + guard on synthetic data"
+        section: "CLI + guard on synthetic then real data"
         read_type: verify
-        extract: "Ran slim -> bench-charts --file clean.json -> report --comparative on synthetic raw JSON: real charts, guard passes; reproduced the no-file trap (blank single-file charts). Real Docker run deferred — sandbox egress blocks the S3/SFTP/toxiproxy images"
+        extract: "First proved the recipe on synthetic JSON (real charts, guard passes, reproduced the no-file blank-chart trap); the sandbox could not pull the S3/SFTP/toxiproxy images, so the real run of record came from the run_of_record CI dispatch (4 iterations: 60s watchdog race -> --bench-timeout=300; adlfs 10MB failure -> fsspec-10MB deselect + BUG-233; RTT watchdog -> narrow the matrix to the overhead ops). Committed the resulting Linux/Docker JSON + regenerated comparative.md + charts; guard --check-only green"
   - id: ripple
     name: Ripple check
     steps:
@@ -108,4 +108,4 @@ phases:
       - file: sdd/BACKLOG.md
         section: "ID-230 (item)"
         read_type: verify
-        extract: "Mark [~] — framing + machinery shipped; the fresh-data commit needs a CI dispatch the sandbox cannot run"
+        extract: "Move ID-230 to BACKLOG-DONE.md [x] once the run of record is committed; run gen-backlogid"

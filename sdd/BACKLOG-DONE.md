@@ -8,6 +8,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-230 — Benchmark overhead story: reproducible run of record + user-decides framing**
+  spec: — · effort: M · audience: user.site, library.maintainer
+  Purpose-2 half of the benchmark-suite rework (purpose-1 governance shipped as
+  BK-309). **Framing principle:** the suite answers "*what* is the overhead?", not
+  "*is it acceptable?*" — that is the reader's call. Two fixes shipped. **Framing:**
+  `report.py`'s `_verdict()` (Favorable/Negligible/Moderate/Visible) became
+  `_magnitude()`, a neutral size band on `|delta|` (`sub-ms`/`<10%`/`10-50%`/`>50%`)
+  plus a factual faster/slower direction — deliberately dropping the old bands' 5ms
+  absolute floor (a >50%-but-<5ms delta reclassifies Moderate→>50%; tests assert the
+  moved boundaries). `docs-src/explanation/performance.md` + `README.md` now lead with
+  the measured delta and the fixed-per-op-cost mechanism and point at the
+  `hatch run bench-*` / `--network-profile` levers, leaving acceptability to the
+  reader. **Data-freshness:** the stale 2026-04-12 Windows-laptop `comparative.md`
+  (charts from uncommitted `.benchmarks/` JSON) was replaced by a reproducible
+  Linux/Docker **run of record** — committed source JSON under
+  `benchmarks/results/run-of-record/{clean,rtt20,rtt50,rtt100}.json` plus the
+  regenerated `comparative.md` and the four `docs-src/img/benchmarks/*.svg`. A new
+  `workflow_dispatch`-only `run-of-record` job in `benchmark.yml` produces the
+  artifact (full compose stack with Toxiproxy, clean + RTT matrix), and
+  `benchmarks/slim_run_of_record.py` (`hatch run bench-run-of-record`) slims + guards
+  the three silent chart-failure modes (RTT placeholder, missing `-latency` variants,
+  blank single-file charts). Discovery: the `adlfs` bench target errors on 10MB
+  raw-bytes writes (filed BUG-233; deselected from the run of record). Kept the
+  machinery — a data-freshness + framing item, not new tooling.
+  Plan: [research-id-230-benchmark-overhead-story.md](research/research-id-230-benchmark-overhead-story.md).
+
 - [x] **BUG-232 — `[s3-pyarrow]` and `[bench]` float past the `pyarrow<25` ceiling**
   spec: — · effort: S · audience: user.api, library.maintainer, infra.ci
   `pyproject.toml` capped `arrow` / `sql-query` at `pyarrow>=12.0.0,<25` while

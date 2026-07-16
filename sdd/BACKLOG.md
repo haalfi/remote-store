@@ -106,51 +106,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Docs & Discoverability
 
-- [~] **ID-230 — Benchmark overhead story: reproducible run of record + user-decides framing**
-  spec: — · effort: M · audience: user.site, library.maintainer
-  **Status ([~]):** the framing + machinery half is shipped — `report.py`'s
-  verdict vocabulary is recast to neutral magnitude bands, the docs present
-  overhead instead of judging it, and a reproducible run-of-record path exists
-  (the `run_of_record` `workflow_dispatch` job + `hatch run bench-run-of-record`
-  slim/guard, documented in `benchmarks/README.md`). **Outstanding:** commit the
-  actual fresh Linux/Docker data — dispatch `benchmark.yml` with `run_of_record`,
-  download the `run-of-record` artifact, and commit
-  `benchmarks/results/run-of-record/*.json` + the regenerated
-  `benchmarks/results/comparative.md` + four SVGs (replacing the stale 2026-04-12
-  Windows-laptop `comparative.md` and its uncommitted-source charts). The
-  regeneration was validated end-to-end on synthetic data; the real run needs
-  the container backends, which the plan PR's sandbox could not pull.
-  Purpose-2 half of the benchmark-suite rework (purpose-1 governance shipped
-  as BK-309). **Framing principle:** the suite answers "*what* is the
-  overhead?"; it must not answer "*is it acceptable?*" — that depends on the
-  reader's workload, latency budget, and alternatives, so only the user can
-  answer it. The suite's job is to hand them the data and the tooling to decide,
-  not to hand down a verdict. The published answer today fails on both counts:
-  it rests on a single stale run (`benchmarks/results/comparative.md`,
-  2026-04-12, a Windows laptop; the four SVG charts in
-  `docs-src/explanation/performance.md` derive from `.benchmarks/` JSON that is
-  **not committed**, so they cannot be reproduced or trusted), *and* the
-  reporting editorialises acceptability on the reader's behalf. Scope when
-  picked up:
-  1. Regenerate `comparative.md` + charts from one documented Linux/Docker run
-     (BK-309's scheduled workflow now produces exactly this artifact — wire the
-     run of record to it rather than a laptop).
-  2. Commit the source JSON alongside the rendered outputs so the charts are
-     reproducible and diffable.
-  3. Reframe the docs + reports to **present overhead, not judge it**: lead with
-     the numbers and the "overhead shrinks as network latency grows" mechanism
-     (per `research/research-benchmark-suite-v2.md` Phase 3), and give the
-     reader the levers to test it against *their* workload (`hatch run
-     bench-*`, latency profiles). Revisit the `report.py --user` "worth it?"
-     verdict vocabulary (`Negligible/Moderate/Visible/Favorable`): recast as a
-     neutral **magnitude** descriptor of the measured delta, not a
-     value-judgement of whether it is worth paying — the acceptability call is
-     the user's.
-  Keep the machinery (chart generator, verdict scaffolding) — this is a
-  data-freshness + framing item, not new tooling. Surfaced during the
-  benchmark-suite analysis that produced BUG-228 / BK-309.
-  Plan: [research-id-230-benchmark-overhead-story.md](research/research-id-230-benchmark-overhead-story.md).
-
 - [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
   spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling
   Our docs foundation is entering maintenance mode as its authors converge on a

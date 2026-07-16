@@ -520,6 +520,11 @@ def _render_comparative_markdown(
         cpu = machine_info.get("cpu", {}).get("brand_raw", "unknown")
         py = machine_info.get("python_version", "?")
         lines.append(f"<!-- Hardware: {cpu}, Python {py}, {platform.system()} -->")
+    # Placement marker so the generated file satisfies the docs-framework G-01
+    # gate: this file is embedded into the published guide via --8<-- but is not
+    # itself a rendered page. Without this, every regeneration drops the marker
+    # and fails `check_docs_framework.py`.
+    lines.append("<!-- doc: repo-only -->")
     lines.append("")
 
     for backend in BACKEND_ORDER:
