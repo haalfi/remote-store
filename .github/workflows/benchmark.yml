@@ -185,16 +185,23 @@ jobs:
             --backend local,s3,s3-pyarrow,sftp,azure -m "not full" --bench-timeout=300 \
             -k "not (10MB and (adlfs or s3fs or sshfs))"
 
-      # RTT matrix on the -latency backend variants (quick tier is enough: the
-      # overhead-vs-rtt chart only reads the OVERHEAD_OPS, all quick-tier). The
-      # -latency names are load-bearing — charts.py looks up _LATENCY_VARIANT for
-      # non-clean profiles (guard 2 in slim_run_of_record.py).
+      # RTT matrix on the -latency backend variants. The overhead-vs-rtt chart
+      # reads ONLY the OVERHEAD_OPS, so restrict the matrix to those five ops via
+      # -k (write/read 1MB, exists, list, delete — `not folder` drops the pedantic
+      # test_delete_folder_recursive). Running the full quick tier three times
+      # under simulated latency is slow, and the pedantic copy/move/streaming
+      # RS-only tests can exceed the watchdog and trip a late KeyboardInterrupt
+      # (which pytest-benchmark promotes to a fatal "fixture not used" error).
+      # --bench-timeout=300 matches the clean run's headroom. The -latency names
+      # are load-bearing — charts.py looks up _LATENCY_VARIANT for non-clean
+      # profiles (guard 2 in slim_run_of_record.py).
       - name: Benchmark — RTT matrix (rtt20/rtt50/rtt100)
         run: |
           for p in rtt20 rtt50 rtt100; do
             pytest benchmarks/ --benchmark-sort=mean --benchmark-json="$p-raw.json" \
               --backend s3-latency,sftp-latency,azure-latency --network-profile "$p" \
-              --pool-size=20 --bench-timeout=120 -m "not standard and not full"
+              --pool-size=20 --bench-timeout=300 -m "not standard and not full" \
+              -k "test_write_bytes or test_read_bytes or test_exists_hit or test_list_files or (test_delete and not folder)"
           done
 
       # Slim to the committed shape (keeps the top-level network_profile) and
