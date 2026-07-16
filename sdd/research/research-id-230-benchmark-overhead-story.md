@@ -98,7 +98,11 @@ Charts and comparative tables must be reproducible and diffable from the repo.
 The generators read a narrow slice of pytest-benchmark JSON:
 
 - `charts.py` reads `benchmarks[].params.payload` + `benchmarks[].stats.mean`,
-  grouping backend/target from the benchmark `name` (`benchmarks/charts.py:113-138`).
+  and derives `(backend, target)` from `params.bench_target` via
+  `_parse_backend_and_target` (`benchmarks/report.py:266-274`); only the operation
+  prefix comes from the benchmark `name` (`_test_name`, used in
+  `_extract_throughput`, `benchmarks/charts.py:113-133`). So `params` — not just
+  `params.payload` — is load-bearing: the slim must retain `bench_target` too.
 - `report.py --comparative` reads means + `machine_info` for the provenance
   header (`benchmarks/report.py:503-506,664`).
 - `overhead-vs-rtt` needs **one JSON per network profile**
@@ -133,11 +137,23 @@ groups profiles by an *in-file* key, not the filename:
   the `_LATENCY_VARIANT` lookup will miss, and those series drop silently.
 
 Add a regeneration path — `hatch run bench-charts --dir
-benchmarks/results/run-of-record` and `report.py --comparative --markdown --file
+benchmarks/results/run-of-record --file benchmarks/results/run-of-record/clean.json`
+and `report.py --comparative --markdown --file
 benchmarks/results/run-of-record/clean.json` — and document both the commands
-**and the two invariants above** in `benchmarks/README.md`, so the next person
-does not copy the baseline slimming recipe verbatim and ship a placeholder. See
-§3.5 for the build-time assertions that enforce them.
+**and the three invariants below** in `benchmarks/README.md`, so the next person
+does not copy the baseline slimming recipe verbatim and ship a placeholder.
+
+The `--file` on `bench-charts` is **required, not cosmetic**: the three
+single-file charts (`overhead`/`throughput`/`s3-comparison`) are built from
+`main()`'s `baseline_file`, which without `--file` is `files[-1]` — the
+alphabetically **last** of the run-of-record set, i.e. `rtt50.json`, not
+`clean.json` (`benchmarks/charts.py:519-523`). Those charts key on the base-name
+`COMPARATIVE_BACKENDS = ["s3", "s3-pyarrow", "sftp", "azure"]`
+(`benchmarks/charts.py:39`), but an rtt file contains only `-latency` entries, so
+`_build_comparative_table` finds nothing and each chart hits its
+"No comparative data found" early return (`benchmarks/charts.py:147-149,330-332,
+420-422`) — a third silent-failure mode, blank chart, no error. See §3.5 for the
+build-time assertions that enforce all three invariants.
 
 ### 3.3 Recast the verdict vocabulary: magnitude, not judgement (scope point 3)
 
@@ -193,26 +209,37 @@ scaffolding — same call sites, new vocabulary.
 - Keep every table and chart; only the framing prose and the embedded
   `comparative.md` numbers change.
 
-### 3.5 Build-time assertions (guard the two silent-failure modes)
+### 3.5 Build-time assertions (guard the silent-failure modes)
 
-`chart_overhead_vs_rtt()` degrades to a placeholder **silently** — no error, just
-a wrong SVG — whenever its input is shaped wrong (§3.2). Before committing the
-regenerated chart, assert both invariants so a bad run of record fails loudly
-instead of shipping a placeholder:
+The chart generators degrade **silently** — no error, just a wrong or blank SVG —
+whenever their input is shaped wrong (§3.2). Before committing the regenerated
+charts, assert all three invariants so a bad run of record fails loudly instead
+of shipping a placeholder:
 
-1. **Profile key present.** Each committed rtt file's top-level `network_profile`
-   equals its intended profile (`rtt20.json` ⇒ `"rtt20"`, …) and `clean.json` ⇒
-   `"clean"` (or omits the key). Equivalent check: `_load_profile_data()` over the
-   committed set returns ≥ 2 distinct profiles including `"clean"`.
-2. **Latency files use `-latency` variants.** Each rtt file contains benchmark
-   `name`s for `s3-latency` / `sftp-latency` / `azure-latency` (i.e. the run used
-   `--backend s3-latency,sftp-latency,azure-latency`, as `bench-latency-matrix`
-   does, `benchmarks/run_latency_matrix.py:20`), so the `_LATENCY_VARIANT` lookup
-   at `charts.py:231` hits.
+1. **Profile key present** (guards `overhead-vs-rtt`). Each committed rtt file's
+   top-level `network_profile` equals its intended profile (`rtt20.json` ⇒
+   `"rtt20"`, …) and `clean.json` ⇒ `"clean"` (or omits the key). Equivalent
+   check: `_load_profile_data()` over the committed set returns ≥ 2 distinct
+   profiles including `"clean"`; otherwise `chart_overhead_vs_rtt()` renders its
+   `< 2`-profile placeholder (`charts.py:248-273`).
+2. **Latency files use `-latency` variants** (guards `overhead-vs-rtt`). Each rtt
+   file contains benchmark `name`s for `s3-latency` / `sftp-latency` /
+   `azure-latency` (i.e. the run used `--backend
+   s3-latency,sftp-latency,azure-latency`, as `bench-latency-matrix` does,
+   `benchmarks/run_latency_matrix.py:20`), so the `_LATENCY_VARIANT` lookup at
+   `charts.py:231` hits.
+3. **Single-file charts built from `clean`** (guards `overhead` / `throughput` /
+   `s3-comparison`). `bench-charts` must run with `--file …/clean.json`; without
+   it `main()` picks `files[-1]` = `rtt50.json`, whose `-latency`-only entries
+   miss the base-name `COMPARATIVE_BACKENDS`, and the three charts hit their
+   "No comparative data found" early return (`charts.py:147-149,330-332,420-422`).
+   Assert the three base charts are non-empty (or that the baseline file the run
+   used carried `network_profile == "clean"`/absent).
 
 Cheapest home for these is the regeneration doc plus a guard in the slimming
-script (fail if either invariant is violated); optionally a `test_charts.py`
-case asserting the committed set yields a real chart, not the placeholder branch.
+script (fail if any invariant is violated); optionally a `test_charts.py` case
+asserting the committed set yields real charts, not the placeholder/early-return
+branches.
 
 ---
 
@@ -232,8 +259,10 @@ and can land in parallel.
    `infra/docker-compose.yml` already defines the toxiproxy proxies (it does —
    v2/ID-103); the gap is the CI `start-backends` action, not compose.
 2. In the same job, regenerate `comparative.md` (`report.py --comparative
-   --markdown`) and the four SVGs (`benchmarks.charts`) from the run, and confirm
-   the RTT chart is not the placeholder before uploading (§3.5).
+   --markdown --file …/clean.json`) and the four SVGs (`bench-charts … --file
+   …/clean.json`) from the run, and confirm the regenerated charts are real —
+   RTT chart not the placeholder, base charts not empty — before uploading
+   (all three §3.5 assertions).
 3. Upload `comparative.md`, the four SVGs, and the slimmed JSON set — each rtt
    file retaining its top-level `network_profile` (§3.2, §3.5 assertion 1) — as
    one `run-of-record` artifact.
