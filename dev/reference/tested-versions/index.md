@@ -23,7 +23,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[dagster]`
 
-*Captured 2026-07-13 on Python 3.13.*
+*Captured 2026-07-16 on Python 3.13.*
 
 | Package   | Tested up to |
 | --------- | ------------ |
