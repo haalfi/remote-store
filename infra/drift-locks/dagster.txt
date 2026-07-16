@@ -1,6 +1,6 @@
 # extra: dagster
 # python: 3.13
-# captured: 2026-07-13
+# captured: 2026-07-16
 # Regenerate with: hatch run drift-check refresh-baseline dagster
 
 alembic==1.18.5
@@ -14,7 +14,7 @@ dagster==1.13.13
 dagster-pipes==1.13.13
 dagster-shared==1.13.13
 docstring-parser==0.18.0
-filelock==3.29.7
+filelock==3.30.0
 fsspec==2026.6.0
 grpcio==1.83.0rc1
 grpcio-health-checking==1.81.1
