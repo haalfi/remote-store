@@ -11,6 +11,8 @@ source_items:
 audience:
   - user.site
   - library.maintainer
+discovery_followups:
+  - BUG-233
 review_rounds: 0
 phases:
   - id: orient
