@@ -11367,10 +11367,10 @@ errors.</p>
 <p>The drift guard is one of the scheduled/automated CI guards; for the full
 inventory of those guards, where each one's finding lands, and the durable-TODO
 principle they follow, see <a href="../design/ci-operations/"><code>sdd/CI-OPERATIONS.md</code></a>.</p>
-<p>Every <code>[&lt;extra&gt;]</code> in <code>pyproject.toml</code> declares a floor and in most cases
-deliberately no ceiling (the <code>arrow</code> and <code>sql-query</code> extras carry a
-<code>pyarrow&lt;25</code> ceiling — see the comment on <code>[project.optional-dependencies]</code>
-in <code>pyproject.toml</code>). <code>.github/workflows/drift-guard.yml</code> runs weekly (Monday 07:00 UTC):
+<p>Every <code>[&lt;extra&gt;]</code> in <code>pyproject.toml</code> declares a floor, and a ceiling only
+where a known-incompatible major looms — see the comment on
+<code>[project.optional-dependencies]</code> in <code>pyproject.toml</code> for the authoritative
+per-extra ranges. <code>.github/workflows/drift-guard.yml</code> runs weekly (Monday 07:00 UTC):
 it re-resolves each <code>remote-store[&lt;extra&gt;]</code> with <code>pip install --upgrade --pre</code>,
 diffs against the committed baselines in <code>infra/drift-locks/</code>, runs the
 smoke targets in <code>scripts/drift_smoke_map.py</code> for any extra that drifted,

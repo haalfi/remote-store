@@ -1,16 +1,16 @@
 # Tested upper-bound versions
 
-Each `[<extra>]` declares a floor in `pyproject.toml` and in most cases deliberately no ceiling (the exceptions: `arrow` / `sql-query` pin `pyarrow<25`, and `graph` / `httpx` pin `httpx<1.0` — see the comment on `[project.optional-dependencies]` in `pyproject.toml`). The drift guard (`.github/workflows/drift-guard.yml`) records the last known-good resolution per extra in `infra/drift-locks/` and re-resolves weekly against the latest available versions (including pre-releases) to surface silent transitive upgrades before they reach users.
+Each `[<extra>]` declares its version range in `pyproject.toml` (a floor always, plus a ceiling only where a known-incompatible major looms — see the comment on `[project.optional-dependencies]` there for the authoritative per-extra ranges). The drift guard (`.github/workflows/drift-guard.yml`) records the last known-good resolution per extra in `infra/drift-locks/` and re-resolves weekly against the latest available versions (including pre-releases) to surface silent transitive upgrades before they reach users.
 
 The table below is the projection of those lock files onto the top-level packages each extra declares. "Tested up to" is the exact version pinned in the lock at capture time — that is what CI was last green against.
 
 ## `[arrow]`
 
-*Captured 2026-05-25 on Python 3.13.*
+*Captured 2026-07-14 on Python 3.13.*
 
 | Package   | Tested up to |
 | --------- | ------------ |
-| `pyarrow` | `24.0.0`     |
+| `pyarrow` | `25.0.0`     |
 
 ## `[azure]`
 
@@ -83,11 +83,11 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[s3-pyarrow]`
 
-*Captured 2026-06-22 on Python 3.13.*
+*Captured 2026-07-14 on Python 3.13.*
 
 | Package   | Tested up to |
 | --------- | ------------ |
-| `pyarrow` | `24.0.0`     |
+| `pyarrow` | `25.0.0`     |
 | `s3fs`    | `2026.6.0`   |
 
 ## `[sftp]`
@@ -109,11 +109,11 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[sql-query]`
 
-*Captured 2026-07-13 on Python 3.13.*
+*Captured 2026-07-14 on Python 3.13.*
 
 | Package      | Tested up to |
 | ------------ | ------------ |
-| `pyarrow`    | `24.0.0`     |
+| `pyarrow`    | `25.0.0`     |
 | `sqlalchemy` | `2.1.0b3`    |
 
 ## `[yaml]`

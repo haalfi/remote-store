@@ -12325,10 +12325,10 @@ conformance suite as native backends.</p>
 </code></pre></div>
 <!-- END_GENERATED:install_extras -->
 
-<p>Each extra declares a floor in <code>pyproject.toml</code> and in most cases
-deliberately no ceiling (the <code>arrow</code> and <code>sql-query</code> extras carry a
-<code>pyarrow&lt;25</code> ceiling). For the exact upper-bound versions CI was last
-green against, see <a href="https://docs.remotestore.dev/stable/reference/tested-versions/">Tested upper-bound versions</a>.</p>
+<p>Each extra's version range — a floor always, plus a ceiling only where a
+known-incompatible major looms — is declared in <code>pyproject.toml</code>, the
+source of truth for per-extra pins. For the exact upper-bound versions CI
+was last green against, see <a href="https://docs.remotestore.dev/stable/reference/tested-versions/">Tested upper-bound versions</a>.</p>
 
 
 
