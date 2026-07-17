@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 """Compile sdd/adrs/*.md into sdd/adrs/DIGEST.md — deterministically, no LLM.
 
-Each ADR carries its own machine-readable summary as invisible HTML comments,
-so extraction is a parse rather than an inference:
+Each ADR carries its own machine-readable summary in two places the tool reads:
+a visible key/value table in the ``## Status`` section, and an invisible
+``<!-- adr:decision -->`` fence around the decision statement. Extraction is a
+parse, never an inference, so the digest is a pure function of the ADRs and
+cannot drift from them:
 
     # ADR-0002: Configuration Resolution - No Merging
 
-    <!-- adr:meta
-    status: Accepted          # Proposed | Accepted | Superseded
-    supersedes: []            # full supersession: ADR-NNNN this one retires
-    superseded-by: []         # full supersession: ADR-NNNN that retires this one
-    amends: []                # clause-level: ADR-NNNN whose section this revises
-    -->
+    ## Status
+
+    | Field         | Value    |
+    | ------------- | -------- |
+    | Status        | Accepted |
+    | Supersedes    | —        |
+    | Superseded by | —        |
+    | Amends        | —        |
 
     ## Decision
 
@@ -19,12 +24,14 @@ so extraction is a parse rather than an inference:
     **Config-as-code has absolute priority. No merging, no env var overrides.**
     <!-- /adr:decision -->
 
-The comments render invisibly on the docs site (the H1 stays line 1, so the
-docs bridge still reads the title), yet give this tool an unambiguous grip on
-the status, the decision prose, and the supersession graph.
+``Status`` is one of Proposed | Accepted | Superseded. Link cells hold bare ADR
+ids (e.g. ``ADR-0007``), comma-separated, or ``—`` when none: ``Supersedes`` /
+``Superseded by`` are whole-ADR edges; ``Amends`` is a clause-level change that
+leaves the target ADR otherwise in force. Extra prose (which clause, revision
+notes) goes below the table.
 
 Normal mode (no flag):
-    Regenerate sdd/adrs/DIGEST.md. Refuses on hard errors (missing markers,
+    Regenerate sdd/adrs/DIGEST.md. Refuses on hard errors (missing table/fence,
     bad status, dangling supersession target); prints drift warnings but still
     writes. Run: hatch run gen-adr-digest.
 
@@ -38,25 +45,20 @@ from __future__ import annotations
 
 import dataclasses
 import re
-import subprocess
 import sys
 from pathlib import Path
-
-import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 ADR_DIR = ROOT / "sdd" / "adrs"
 DIGEST = ADR_DIR / "DIGEST.md"
 
 STATUSES = ("Proposed", "Accepted", "Superseded")
-STATUS_ORDER = {s: i for i, s in enumerate(STATUSES)}
 LINK_KEYS = ("supersedes", "superseded-by", "amends")
 
 # Real ADR files are named NNNN-slug.md; DIGEST.md and any future non-numbered
 # companion must not be parsed as an ADR.
 ADR_GLOB = "[0-9][0-9][0-9][0-9]-*.md"
 
-META_RE = re.compile(r"<!--\s*adr:meta\s*\n(.*?)-->", re.DOTALL)
 DECISION_RE = re.compile(
     r"<!--\s*adr:decision\s*-->\s*(.*?)\s*<!--\s*/adr:decision\s*-->",
     re.DOTALL,
@@ -64,12 +66,10 @@ DECISION_RE = re.compile(
 H1_RE = re.compile(r"^#\s+(.*?)\s*$", re.MULTILINE)
 STATUS_SECTION_RE = re.compile(r"^##\s+Status\s*$(.*?)(?=^##\s|\Z)", re.MULTILINE | re.DOTALL)
 
-# Two interchangeable ways to carry the structured metadata. A file uses one:
-#   1. an invisible `<!-- adr:meta ... -->` YAML block (zero visible footprint), or
-#   2. a visible key/value table in the `## Status` section (reads + renders +
-#      parses cleanly, and replaces the old semi-structured prose).
-# The table is scoped to `## Status` so an unrelated table elsewhere in the ADR
-# is never mistaken for metadata.
+# Metadata is a visible key/value table in the `## Status` section — the same
+# text a human reads and edits, so there is no hidden source of truth to drift
+# from. The table is scoped to `## Status` so an unrelated table elsewhere in
+# the ADR is never mistaken for metadata.
 _TABLE_FIELDS = {
     "status": "status",
     "supersedes": "supersedes",
@@ -87,7 +87,7 @@ def _split_links(cell: str) -> list[str]:
 
 
 def _table_meta(text: str) -> dict | None:
-    """Parse a key/value metadata table from the ``## Status`` section, or None."""
+    """Parse the key/value metadata table from the ``## Status`` section, or None."""
     section = STATUS_SECTION_RE.search(text)
     if not section:
         return None
@@ -112,20 +112,6 @@ def _table_meta(text: str) -> dict | None:
     }
 
 
-def _extract_meta(text: str) -> tuple[dict | None, str | None]:
-    """Return (meta, error). Prefers the ``adr:meta`` comment, else a table."""
-    comment = META_RE.search(text)
-    if comment:
-        try:
-            return yaml.safe_load(comment.group(1)) or {}, None
-        except yaml.YAMLError as exc:
-            return None, f"unparseable adr:meta YAML: {exc}"
-    table = _table_meta(text)
-    if table is not None:
-        return table, None
-    return None, "no metadata (need an <!-- adr:meta --> block or a Status table)"
-
-
 @dataclasses.dataclass
 class Adr:
     path: Path
@@ -137,28 +123,13 @@ class Adr:
     superseded_by: list[str]
     amends: list[str]
     decision: str
-    date: str  # git last-commit date (YYYY-MM-DD) or "" when unavailable
-
-
-def _git_date(path: Path) -> str:
-    """Most recent commit date (YYYY-MM-DD) touching *path*, or "" on failure."""
-    try:
-        out = subprocess.run(
-            ["git", "-C", str(ROOT), "log", "-1", "--format=%as", "--", str(path)],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-    except (OSError, subprocess.CalledProcessError):
-        return ""
-    return out.stdout.strip()
 
 
 def _norm_id(number: str) -> str:
     return f"ADR-{number}"
 
 
-def parse(path: Path, *, with_date: bool = True) -> tuple[Adr | None, list[str]]:
+def parse(path: Path) -> tuple[Adr | None, list[str]]:
     """Parse one ADR. Returns (adr, hard_errors).
 
     *adr* is None only when the file is too malformed to place in the digest.
@@ -172,13 +143,13 @@ def parse(path: Path, *, with_date: bool = True) -> tuple[Adr | None, list[str]]
     title = h1.group(1) if h1 else ""
     title = re.sub(rf"^ADR-{number}:\s*", "", title).strip()
 
-    meta, meta_err = _extract_meta(text)
+    meta = _table_meta(text)
     if meta is None:
-        return None, [f"{path.name}: {meta_err}"]
+        return None, [f"{path.name}: no metadata table in the ## Status section"]
 
     status = meta.get("status")
     if not status:
-        errors.append(f"{path.name}: adr:meta missing 'status'")
+        errors.append(f"{path.name}: Status table missing a 'Status' row")
     elif status not in STATUSES:
         errors.append(f"{path.name}: status '{status}' not in {list(STATUSES)}")
 
@@ -199,16 +170,15 @@ def parse(path: Path, *, with_date: bool = True) -> tuple[Adr | None, list[str]]
         superseded_by=links["superseded-by"],
         amends=links["amends"],
         decision=decision,
-        date=_git_date(path) if with_date else "",
     )
     return adr, errors
 
 
-def load_all(adr_dir: Path, *, with_date: bool = True) -> tuple[list[Adr], list[str]]:
+def load_all(adr_dir: Path) -> tuple[list[Adr], list[str]]:
     adrs: list[Adr] = []
     errors: list[str] = []
     for path in sorted(adr_dir.glob(ADR_GLOB)):
-        adr, errs = parse(path, with_date=with_date)
+        adr, errs = parse(path)
         errors.extend(errs)
         if adr is not None:
             adrs.append(adr)
@@ -274,10 +244,6 @@ def render(adrs: list[Adr]) -> str:
         for a in group:
             lines.append(f"### [{a.id}]({a.path.name}) — {a.title}")
             lines.append("")
-            meta_bits = [b for b in (a.date,) if b]
-            if meta_bits:
-                lines.append(f"*{' · '.join(meta_bits)}*")
-                lines.append("")
             lines.append(a.decision or "_(no decision recorded)_")
             edges = []
             if a.supersedes:
