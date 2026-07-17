@@ -1,0 +1,85 @@
+id: BK-314
+title: "Benchmark overhead: present in ms, not %, and fix the 'shrinks as a share' narrative"
+trigger: >-
+  The two overhead charts plotted overhead as a percentage of raw-SDK time, and
+  the performance guide built a false premise on the % framing ("a 1 ms overhead
+  on a 100 ms round trip is 1%"). The ID-230 run of record shows remote-store's
+  overhead is itself round-trip driven (BK-313), so the absolute ms cost grows
+  with RTT (SFTP write ~6xRTT, ~+560 ms at 100 ms) rather than staying a fixed
+  1 ms — the % axis let the misreading stand.
+source_items:
+  - BK-314
+  - ID-230
+  - BK-313
+audience:
+  - user.site
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-314 (item)"
+        read_type: gate
+        extract: "Two %-framed charts + false-premise prose; scope = recast both to ms + decomposition chart + prose fix, present-not-judge"
+      - file: benchmarks/charts.py
+        section: "chart_overhead, chart_overhead_vs_rtt"
+        read_type: reference
+        extract: "Both compute ((rs-raw)/raw)*100; recast the arithmetic to (rs-raw)*1000 ms and relabel the y-axis; keep the grouped-bar / line structure"
+      - file: benchmarks/report.py
+        section: "OVERHEAD_OPS, RAW_SDK_TARGET, _LATENCY_VARIANT, _build_comparative_table"
+        read_type: reference
+        extract: "Shared matplotlib-free helpers the charts + guard read; decomposition reuses the same overhead-op basis and latency-variant lookup"
+      - file: benchmarks/results/run-of-record/rtt100.json
+        section: "(data)"
+        read_type: reference
+        extract: "Verified the mechanism on the run of record: SFTP write overhead +561 ms at 100 ms RTT (~6xRTT), S3 write ~+109 ms, Azure ~0 — overhead is a round-trip count"
+  - id: implement
+    name: Implement
+    steps:
+      - file: benchmarks/charts.py
+        section: "chart_overhead -> ms; chart_overhead_vs_rtt -> ms; new chart_overhead_decomposition; main()"
+        read_type: reference
+        extract: "ms recast on both charts; add a per-backend stacked raw+overhead decomposition (overhead labelled ms + share-of-total) and wire it into main() as overhead-decomposition.svg"
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/explanation/performance.md
+        section: "lede, Overhead at a Glance, What Happens Under Real Latency, Practical Takeaways, embeds/alt-text"
+        read_type: reference
+        extract: "Replace 'fixed per-op cost / shrinks as a share / 1 ms on 100 ms is 1%' with the round-trip-count mechanism (ms scales with RTT; share can rise or fall, absolute cost grows); add the decomposition embed; keep present-not-judge"
+      - file: README.md
+        section: "Performance"
+        read_type: reference
+        extract: "Replace 'fixed per-operation cost; as a share of total time it shrinks as round-trip grows' with the round-trip-count mechanism"
+      - file: benchmarks/README.md
+        section: "Run of record (regeneration recipe)"
+        read_type: reference
+        extract: "four SVGs/charts -> five; add overhead-decomposition to the regen recipe"
+  - id: verify
+    name: Verify
+    steps:
+      - file: benchmarks/charts.py
+        section: "regenerate + eyeball the SVGs"
+        read_type: verify
+        extract: "Ran bench-charts against run-of-record/clean.json; confirmed 5 non-placeholder SVGs render (real <rect>/<path> marks, ms axis text, decomposition share labels), not blank placeholders"
+  - id: ripple
+    name: Ripple check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table (docs prose, backlog item touched, CHANGELOG)"
+        read_type: verify
+        extract: "No spec/FEATURES/capability ripple; touch docs prose + reporting runbooks; live trace; user.site audience -> CHANGELOG"
+      - file: sdd/CI-OPERATIONS.md
+        section: "benchmark.yml run-of-record runbook"
+        read_type: verify
+        extract: "'four docs charts' -> five (run-of-record job now regenerates the decomposition SVG too)"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add BK-314 entry; correct the unreleased ID-230 entry's now-false 'shrinks as a share' mechanism phrase so the changelog is internally consistent at release"
+      - file: sdd/BACKLOG.md
+        section: "BK-314 (item)"
+        read_type: verify
+        extract: "Move BK-314 to BACKLOG-DONE.md [x]; run gen-backlogid"

@@ -6,35 +6,44 @@ your own workload. It does not tell you whether the overhead is acceptable —
 that depends on your call volume, latency budget, and alternatives, so it is
 your call, not the library's.
 
-The overhead is a **fixed per-operation cost**. Its size in isolation is what
-the numbers below report; whether it is worth paying is a function of how much
-of your total time is spent in storage calls versus network round-trips. As
-network round-trip time grows, a fixed per-op cost shrinks as a *share* of
-total time (see [What Happens Under Real Latency](#what-happens-under-real-latency)).
-To measure it for your own hardware and latency, use the levers in
+remote-store's overhead comes from the work the wrapper does around each call:
+chiefly a small, fixed number of **extra protocol round trips per operation**
+(for example an extra `stat` to resolve a path before a write), plus a
+sub-millisecond CPU cost. That has a consequence the numbers below make concrete.
+Where the wrapper adds round trips, its cost **scales with network round-trip
+time**, because the cost of a round trip *is* the round-trip time. So the
+absolute overhead **grows** with latency rather than staying a fixed millisecond
+or two; its *share* of the total call can rise or fall depending on how
+round-trip-bound the raw operation already is (see
+[What Happens Under Real Latency](#what-happens-under-real-latency)). Backends
+that add no extra round trips stay near zero at every latency. The numbers below
+report that cost in milliseconds; whether it is worth paying is your call. To
+measure it for your own hardware and latency, use the levers in
 [Running Benchmarks](#running-benchmarks) — the `hatch run bench-*` commands and
 the four `--network-profile` profiles.
 
 ## Overhead at a Glance
 
-The chart below shows remote-store's overhead (%) versus raw SDK calls for
-each backend. Negative values mean remote-store is *faster* than calling
-the SDK directly (often due to connection pooling and caching).
+The chart below shows remote-store's overhead in **milliseconds** versus raw
+SDK calls for each backend, measured on the clean profile (no added latency).
+Negative values mean remote-store is *faster* than calling the SDK directly
+(often due to connection pooling and caching).
 
-![Abstraction overhead by backend](../img/benchmarks/overhead.svg)
+![Abstraction overhead in milliseconds by backend, clean profile](../img/benchmarks/overhead.svg)
 
 Patterns from Docker benchmarks (MinIO, Azurite, OpenSSH):
 
-- **S3**: reads and writes add modest overhead over raw boto3; listing is
-  significantly faster via s3fs connection caching.
+- **S3**: reads and writes add a few milliseconds over raw boto3; listing is
+  faster in absolute terms via s3fs connection caching.
 - **S3-PyArrow**: reads carry more overhead than the S3 backend (PyArrow C++
   data path); writes are comparable. The trade-off is native PyArrow integration
   — Tier 1 C++ range requests — not raw throughput.
-- **Azure** and **SFTP**: per-operation overhead is a fixed cost added on top
-  of each call; as a share of total time it shrinks as network round-trip time
-  grows (quantified in the next section).
+- **Azure** and **SFTP**: on a clean link the per-operation overhead is a handful
+  of milliseconds. It is not a fixed cost, though: where remote-store adds
+  protocol round trips, that overhead grows with network round-trip time
+  (quantified in the next section).
 - **Local**: all operations are sub-millisecond; overhead versus raw pathlib is
-  a fixed sub-millisecond cost per call. Whether that registers depends on your
+  a sub-millisecond cost per call. Whether that registers depends on your
   call volume and how much of your latency budget is local I/O.
 
 Regenerate numbers for your own hardware with `hatch run bench-report`
@@ -42,10 +51,26 @@ Regenerate numbers for your own hardware with `hatch run bench-report`
 
 ## What Happens Under Real Latency
 
-Under realistic network round-trip times (20–100 ms), overhead as a percentage
-shrinks. For example, a 1 ms overhead on a 100 ms round trip is 1%.
+Under realistic network round-trip times (20–100 ms), the absolute overhead
+**grows**, because remote-store's extra work is itself a count of round trips.
+The chart below tracks the average overhead in milliseconds as simulated RTT
+rises: for SFTP it climbs from about 1 ms on a clean link to roughly +280 ms at
+100 ms RTT, and for S3 to about +60 ms; Azure, which adds no extra round trips,
+stays near zero throughout.
 
-![Overhead vs RTT](../img/benchmarks/overhead-vs-rtt.svg)
+![Average overhead in milliseconds versus network round-trip time, one rising line per backend](../img/benchmarks/overhead-vs-rtt.svg)
+
+The single largest case is an SFTP write, which spends about six round trips of
+overhead — roughly +560 ms at 100 ms RTT. The decomposition below splits each
+operation's mean time into the raw SDK cost and the remote-store overhead stacked
+on top, labelled in milliseconds and as a share of the total, so the raw op time
+and the latency-scaled overhead are both visible:
+
+![Stacked bars decomposing mean time per operation into raw SDK time and remote-store overhead per RTT profile, for S3, SFTP, and Azure](../img/benchmarks/overhead-decomposition.svg)
+
+The overhead's *share* of the total moves independently of its absolute size: for
+S3 and SFTP the share climbs with RTT as the extra round trips pile up, while for
+Azure it stays near zero. The share is not the cost — the milliseconds are.
 
 The benchmark suite simulates latency using [Toxiproxy](https://github.com/Shopify/toxiproxy)
 with four named profiles:
@@ -63,7 +88,7 @@ How throughput scales with file size, comparing remote-store to raw SDK:
 
 ![Throughput by file size](../img/benchmarks/throughput.svg)
 
-At larger file sizes, throughput converges as the fixed per-operation overhead
+At larger file sizes, throughput converges as the per-operation overhead
 is amortized across more bytes.
 
 ## S3 vs S3-PyArrow
@@ -89,14 +114,17 @@ These follow from the numbers above. Whether the overhead is acceptable for
 - **Overhead is per operation, not per byte.** It shows up across many small
   calls (exists, metadata, small reads/writes, listings) and fades on larger
   transfers, where it is spread across more bytes.
-- **As round-trip time grows, the fixed cost is a smaller share of each call.**
-  At 20–100 ms RTT a per-operation cost of a few milliseconds or less is a low
-  fraction of total call time (1 ms on a 100 ms round trip is 1%).
-- **Workload shape drives the impact.** The same fixed cost is a large share of
-  a sub-millisecond local `exists` and a small share of a 100 MB transfer, so
-  call-heavy patterns feel it more than bulk I/O.
+- **As round-trip time grows, so does the absolute overhead.** remote-store's
+  extra work is a count of protocol round trips, so its millisecond cost scales
+  with RTT rather than shrinking to a vanishing fraction — an SFTP write carries
+  about six round trips of overhead (~+560 ms at 100 ms RTT). Its *share* of the
+  total call can rise or fall, but the absolute cost grows; measure it for your
+  own latency.
+- **Workload shape drives the impact.** The same per-operation cost is a large
+  share of a sub-millisecond local `exists` and a small share of a 100 MB
+  transfer, so call-heavy patterns feel it more than bulk I/O.
 - **Throughput converges with file size.** Larger files approach raw-SDK
-  throughput as the fixed per-operation cost is amortized across more bytes.
+  throughput as the per-operation cost is amortized across more bytes.
 - **Measure, then reduce call count where it matters.** Benchmark your own
   workload with `hatch run bench-*` and the `--network-profile` profiles; batch
   or cache calls if the per-operation cost dominates your access pattern.

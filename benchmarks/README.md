@@ -297,7 +297,7 @@ charts and `comparative.md` can be rebuilt from inputs in the repo (ID-230).
 `benchmark.yml` with the **`run_of_record`** input checked. That job brings up
 the full compose stack (Toxiproxy in front of the network backends), runs the
 `clean` profile at the `standard` tier plus the `rtt20/rtt50/rtt100` matrix on
-the `-latency` backends, regenerates `comparative.md` + the four SVGs, and
+the `-latency` backends, regenerates `comparative.md` + the five SVGs, and
 uploads them with the slimmed JSON as the **`run-of-record`** artifact. Download
 that artifact and commit its files — CI never pushes to docs.
 
@@ -328,7 +328,7 @@ done
 # 2. Slim to the committed shape AND assert the three chart invariants below.
 hatch run bench-run-of-record -- clean-raw.json rtt20-raw.json rtt50-raw.json rtt100-raw.json
 
-# 3. Regenerate comparative.md + the four charts from the slimmed set.
+# 3. Regenerate comparative.md + the five charts from the slimmed set.
 python -m benchmarks.report --comparative --markdown \
   --file benchmarks/results/run-of-record/clean.json \
   --output benchmarks/results/comparative.md
@@ -346,14 +346,15 @@ failure mode where a wrong-shaped run ships a blank or placeholder chart with no
 error:
 
 1. **Profiles present.** The set carries `clean` plus at least one latency
-   profile, so `overhead-vs-rtt.svg` has `>= 2` profiles and does not render its
+   profile, so the two RTT charts (`overhead-vs-rtt.svg` and
+   `overhead-decomposition.svg`) have `>= 2` profiles and do not render their
    placeholder.
 2. **Latency files carry both sides of the ratio.** Each rtt file carries
    `s3-latency` / `sftp-latency` / `azure-latency` benchmarks for *both* the
    `remote_store` target and its paired raw SDK target, so `charts.py`'s
-   `_LATENCY_VARIANT` lookup hits and the overhead-vs-rtt chart (which divides
-   remote_store by raw) has both operands. A run that proxied the *base*
-   backends, or captured only one side of the ratio, drops the series silently.
+   `_LATENCY_VARIANT` lookup hits and the RTT charts (which subtract raw from
+   remote_store) have both operands. A run that proxied the *base* backends, or
+   captured only one side of the ratio, drops the series silently.
 3. **Clean file carries the base comparative backends, both sides.** `s3` /
    `s3-pyarrow` / `sftp` / `azure` must have `remote_store` **and** paired
    raw-SDK data for the overhead ops, so the three single-file charts read a real
