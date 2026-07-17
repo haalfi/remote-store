@@ -66,14 +66,12 @@ multiple bridge libraries.
 
 ## Decision
 
-<!-- adr:decision -->
 Introduce a new class `AsyncBackendSyncAdapter` under
 `remote_store.aio` that implements the sync `Backend` ABC by
 delegating to an `AsyncBackend` running on a private event loop in a
 dedicated background thread. Do **not** invert `SyncBackendAdapter`;
 the execution direction is different enough that two distinct adapters
 are clearer than one parameterised bridge.
-<!-- /adr:decision -->
 
 The `AsyncBackendSyncAdapter` is the mirror of `SyncBackendAdapter`
 (ADR-0012). Together they provide the full bidirectional bridge the

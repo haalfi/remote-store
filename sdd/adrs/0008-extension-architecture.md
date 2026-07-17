@@ -38,7 +38,6 @@ be designed when needed (see "Future patterns" below).
 
 ## Decision
 
-<!-- adr:decision -->
 The `ext.*` namespace contract for stateless utility extensions:
 
 - **Location** — extensions live in `src/remote_store/ext/<name>.py` (single module) or `src/remote_store/ext/<name>/` (sub-package); `ext/__init__.py` re-exports nothing, each extension is imported directly.
@@ -46,7 +45,6 @@ The `ext.*` namespace contract for stateless utility extensions:
 - **Module exports** — every extension module defines `__all__`.
 - **Lifecycle** — extensions never own the `Store`; they must not close it or use it as a context manager.
 - **Error propagation** — `CapabilityNotSupported` must propagate to the caller, never be suppressed.
-<!-- /adr:decision -->
 
 ### Extension location
 

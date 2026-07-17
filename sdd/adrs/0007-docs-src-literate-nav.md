@@ -44,7 +44,6 @@ makes sense in the context of the published documentation site but is still
 
 ### Principle: three-tier content architecture
 
-<!-- adr:decision -->
 Supersedes ADR-0006's two-tier model.  Content lives in one of three places,
 determined by its nature:
 
@@ -57,7 +56,6 @@ determined by its nature:
 3. **Build hook (`scripts/gen_pages.py`)** — pure mechanics: filesystem
    scanning, template filling, link rewriting, navigation assembly.
    No authored prose.
-<!-- /adr:decision -->
 
 ### Content homes by type
 

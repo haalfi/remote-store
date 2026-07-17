@@ -50,10 +50,8 @@ supported auth library, lightweight, stable, and used by
 
 ## Decision
 
-<!-- adr:decision -->
 Build the backend on `httpx` (async client) plus `msal` for token
 acquisition and cache serialization.
-<!-- /adr:decision -->
 
 The `graph` optional extra pins:
 

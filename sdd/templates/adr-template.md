@@ -29,16 +29,15 @@ Name the forces in play, not the solution.
 
 ## Decision
 
-State the decision in one clear sentence or short paragraph, wrapped in an
-`<!-- adr:decision -->` … `<!-- /adr:decision -->` fence so the digest can lift
-it verbatim:
+Lead with the decision in one clear sentence or short paragraph, then explain
+the chosen design — resolution rules, tiers, diagrams, code sketches. Avoid
+restating the context.
 
-<!-- adr:decision -->
-The one-sentence decision goes here.
-<!-- /adr:decision -->
-
-Then explain the chosen design below the fence. Use diagrams, code sketches, or
-bullet lists where they aid precision. Avoid restating the context.
+The **entire `## Decision` section** (up to the next `##`) is lifted verbatim
+into `sdd/adrs/DIGEST.md`, so keep it to the decision and its essential detail;
+anything you would not want in the digest belongs under `## Consequences` or a
+later `##` section. Internal `###` sub-headings are demoted automatically to
+nest under the digest entry.
 
 ## Consequences
 

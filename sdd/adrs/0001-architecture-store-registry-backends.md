@@ -20,7 +20,6 @@ We need a layered architecture for backend-agnostic remote storage. Key tensions
 
 ## Decision
 
-<!-- adr:decision -->
 Three-layer architecture:
 
 1. **Store** — user-facing, immutable, folder-scoped. All operations use relative paths. Delegates all I/O to a backend. Thin wrapper with path scoping and capability gating.
@@ -28,7 +27,6 @@ Three-layer architecture:
 2. **Registry** — owns backend lifecycle. Lazily instantiates backends from config. Shares backend instances across stores. Acts as context manager for cleanup.
 
 3. **Backend (ABC)** — encapsulates all storage-specific behavior. Declares capabilities. Maps native errors to normalized types. Never exposed directly to end users.
-<!-- /adr:decision -->
 
 ```text
 User → Store → Backend (ABC) → Local/S3/Azure/SFTP

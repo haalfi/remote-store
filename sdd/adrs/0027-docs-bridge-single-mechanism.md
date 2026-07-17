@@ -31,14 +31,12 @@ disagreed.
 
 ## Decision
 
-<!-- adr:decision -->
 One documentation bridge, kept single by an enforcement gate. Three coupled
 sub-decisions:
 
 1. **One bridge, by construction** — `scripts/docs/scan.py:scan_dual_files` is the sole source-discovery function and `render.py:render_dual_pages` the sole render function; other helpers are removed, not deprecated. New content shapes extend this one mechanism rather than adding a parallel one.
 2. **Classification next to the file** — each `.md` declares its class via an HTML-comment marker, with a directory-default fallback; a file with no marker and no default is unclassified and fails the gate (G-01). No central manifest that can drift from the files.
 3. **Enforcement at PR time** — a check script fails the build if any framework rule is violated, so "use one bridge" cannot silently degrade to a preference.
-<!-- /adr:decision -->
 
 The recurring failure across the prior ADRs was not that the chosen mechanism
 was wrong; each was reasonable for the case that introduced it. The failure was

@@ -18,9 +18,7 @@
 
 ## Decision
 
-<!-- adr:decision -->
 **fsspec is an implementation detail, never exposed in the public API.**
-<!-- /adr:decision -->
 
 - Backend adapters *may* use fsspec internally (e.g., S3 via `s3fs`, Azure via `adlfs`)
 - The `Backend` ABC is our own contract — it does not extend or depend on fsspec

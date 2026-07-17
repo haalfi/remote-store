@@ -44,11 +44,9 @@ concerns.
 
 ### Principle: `docs/` is a representation, never the source
 
-<!-- adr:decision -->
 All publishable content lives in source directories. The `docs/` directory
 is **fully generated** — every file is either a wrapper directive or produced
 by the build script. `docs/` is gitignored.
-<!-- /adr:decision -->
 
 ### Content homes by type
 

@@ -48,7 +48,6 @@ tools without a custom transport adapter.
 
 ## Decision
 
-<!-- adr:decision -->
 The testing architecture rests on five coupled commitments:
 
 1. **Two orthogonal axes** — separate *kind* (pure, mocked, real-local, real-live) from *stage* (1/2/3 by cost); a fixture declares one of each.
@@ -56,7 +55,6 @@ The testing architecture rests on five coupled commitments:
 3. **HTTP cassette + replay as a Stage 1 fixture** — a `<backend>_replay` fixture runs the real SDK path against a recorded cassette (Stage 3 records, Stage 1 replays); scoped to HTTP-transport backends only.
 4. **Capability gating via native pytest** — parametrize id-filtering plus `pytest.mark.skipif`, no custom `@requires` marker layer.
 5. **Explicit cassette refresh** — cassettes regenerate only when a developer runs `pytest --stage=3 --record` and commits the diff; CI never silently re-records.
-<!-- /adr:decision -->
 
 They share rationale: the demotion mechanism only works because the axes are
 separated, the gate works only because gating is native, and the scope works

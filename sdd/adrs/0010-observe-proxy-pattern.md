@@ -33,11 +33,9 @@ implementation — calls bypass hooks with no warning.
 
 ## Decision
 
-<!-- adr:decision -->
 Use **Option A (proxy subclass)** with a mandatory **drift-protection
 test** that asserts `ObservedStore` overrides every public method of
 `Store`. This catches missing overrides at CI time.
-<!-- /adr:decision -->
 
 The drift-protection test inspects `Store.__dict__` for public callable
 members and verifies that `ObservedStore.__dict__` contains an override

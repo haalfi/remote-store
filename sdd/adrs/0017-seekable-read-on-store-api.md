@@ -43,10 +43,8 @@ path and won't call an extension function.
 
 ## Decision
 
-<!-- adr:decision -->
 Add `read_seekable()` to `Backend` and `Store` as a concrete (non-abstract)
 method alongside the existing `read()`.
-<!-- /adr:decision -->
 
 ### `Backend.read_seekable(path) -> BinaryIO`
 

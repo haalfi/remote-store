@@ -48,12 +48,10 @@ condition, so the error type does not exist yet. With Graph, it does.
 
 ## Decision
 
-<!-- adr:decision -->
 Add `ResourceLocked` as a new concrete error type in
 `src/remote_store/_errors.py`, alongside the other canonical errors.
 It inherits directly from `RemoteStoreError` per the flat hierarchy
 rule (ERR-008): one level deep, no intermediate categories.
-<!-- /adr:decision -->
 
 ### Semantics
 

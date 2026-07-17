@@ -50,11 +50,9 @@ cost and are part of the core value proposition.
 
 ## Decision
 
-<!-- adr:decision -->
 Remove the conditional `try/except ImportError` re-export blocks for all
 optional-dependency extensions (`arrow`, `otel`, `pydantic`, `yaml`) from
 `remote_store/__init__.py` and `__all__`.
-<!-- /adr:decision -->
 
 Users import optional extensions from their canonical module path:
 

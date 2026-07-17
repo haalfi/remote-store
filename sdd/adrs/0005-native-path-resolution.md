@@ -42,14 +42,12 @@ layer, which currently doesn't do it at all.
 
 ## Decision
 
-<!-- adr:decision -->
 Introduce `to_key` at two levels:
 
 1. **`Backend.to_key(native_path) -> str`** — concrete ABC method (identity default) that strips the backend's own root/prefix, replacing the scattered `_rel_path` / `relative_to` patterns.
 2. **`Store.to_key(path) -> str`** — public method composing backend conversion with store-root stripping.
 
 Store listing methods also strip `root_path` from returned paths so `FileInfo.path` round-trips back into other Store methods.
-<!-- /adr:decision -->
 
 ### 1. `Backend.to_key(native_path: str) -> str`
 

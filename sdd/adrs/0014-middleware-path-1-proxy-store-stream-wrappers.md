@@ -30,9 +30,7 @@ concerns need to compose?
 
 ## Decision
 
-<!-- adr:decision -->
 **We choose Path 1 (ProxyStore base + stream wrappers).**
-<!-- /adr:decision -->
 
 ProxyStore is a delegation base class, not a middleware framework. It
 centralizes the private-attribute coupling (`_backend`, `_root`,

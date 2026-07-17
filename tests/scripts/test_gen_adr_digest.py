@@ -24,9 +24,13 @@ def _adr_text(
     amends: list[str] | None = None,
     decision: str = "We will do the sensible thing.",
     with_table: bool = True,
-    with_fence: bool = True,
+    with_decision: bool = True,
 ) -> str:
-    """Build an ADR body: visible Status table + invisible decision fence."""
+    """Build an ADR body: visible Status table + a full ## Decision section.
+
+    The decision is the whole ## Decision section (up to the next ##), so the
+    trailing ## Consequences content must never leak into it.
+    """
 
     def _cell(items: list[str] | None) -> str:
         return ", ".join(items) if items else "—"
@@ -41,14 +45,14 @@ def _adr_text(
         if with_table
         else ""
     )
-    decision_block = f"<!-- adr:decision -->\n{decision}\n<!-- /adr:decision -->\n" if with_fence else decision + "\n"
+    decision_section = f"## Decision\n\n{decision}\n\n" if with_decision else ""
     return (
         f"# ADR-{number}: {title}\n\n"
         "## Status\n\n"
         f"{table}\n"
-        "## Decision\n\n"
-        f"{decision_block}\n"
-        "Some trailing explanation that must not be captured.\n"
+        f"{decision_section}"
+        "## Consequences\n\n"
+        "Trailing content that must not be captured in the decision.\n"
     )
 
 
@@ -91,26 +95,48 @@ class TestParse:
         assert adr is None
         assert any("no metadata table" in e for e in errors)
 
-    def test_missing_decision_fence_is_hard_error(self, tmp_path):
-        path = _write(tmp_path, "0004", with_fence=False)
+    def test_missing_decision_section_is_hard_error(self, tmp_path):
+        path = _write(tmp_path, "0004", with_decision=False)
         adr, errors = _mod.parse(path)
         assert adr is not None  # still placeable, but flagged
-        assert any("missing <!-- adr:decision --> fence" in e for e in errors)
+        assert any("missing or empty ## Decision section" in e for e in errors)
 
     def test_bad_status_flagged(self, tmp_path):
         path = _write(tmp_path, "0005", status="Approved")
         _, errors = _mod.parse(path)
         assert any("not in ['Proposed', 'Accepted', 'Superseded']" in e for e in errors)
 
-    def test_decision_preserves_list_structure(self, tmp_path):
-        # A decision is often a lead-in + list; the layers must survive extraction
-        # rather than being collapsed onto one line (PR #909 review).
-        decision = "Three tiers:\n\n1. **A** — first tier.\n2. **B** — second tier."
+    def test_full_decision_section_extracted(self, tmp_path):
+        # The whole ## Decision section is the decision — headline AND the
+        # resolution rules that flesh it out (the PR #909 chat point).
+        decision = "Headline decision.\n\nResolution rules:\n\n1. first rule\n2. second rule"
+        path = _write(tmp_path, "0002", decision=decision)
+        adr, _ = _mod.parse(path)
+        assert "Headline decision." in adr.decision
+        assert "Resolution rules:" in adr.decision
+        assert "1. first rule" in adr.decision
+        assert "2. second rule" in adr.decision
+
+    def test_decision_stops_at_next_section(self, tmp_path):
+        path = _write(tmp_path, "0002")
+        adr, _ = _mod.parse(path)
+        assert "must not be captured" not in adr.decision  # ## Consequences excluded
+
+    def test_internal_headings_demoted(self, tmp_path):
+        # A ### sub-heading inside Decision would collide with the digest's own
+        # per-ADR ### heading, so it is pushed down (by 2 -> #####).
+        decision = "Lead.\n\n### Tier 1\n\nbody\n\n#### Deep\n\nmore"
         path = _write(tmp_path, "0009", decision=decision)
         adr, _ = _mod.parse(path)
-        assert adr.decision == decision
-        assert "1. **A**" in adr.decision
-        assert "2. **B**" in adr.decision
+        assert "##### Tier 1" in adr.decision
+        assert "###### Deep" in adr.decision  # #### + 2, capped at 6
+        assert "### Tier 1" not in adr.decision.replace("##### Tier 1", "")
+
+    def test_headings_in_code_blocks_not_demoted(self, tmp_path):
+        decision = "Lead.\n\n```python\n# a comment, not a heading\n```"
+        path = _write(tmp_path, "0009", decision=decision)
+        adr, _ = _mod.parse(path)
+        assert "# a comment, not a heading" in adr.decision
 
     def test_multiple_links_in_one_cell(self, tmp_path):
         path = _write(tmp_path, "0020", supersedes=["ADR-0018", "ADR-0019"])
@@ -121,10 +147,7 @@ class TestParse:
         # A lookalike table under a different heading must not be read as metadata.
         path = tmp_path / "0005-stray.md"
         path.write_text(
-            "# ADR-0005: Stray\n\n"
-            "## Context\n\n"
-            "| Status | Accepted |\n| --- | --- |\n\n"
-            "## Decision\n\n<!-- adr:decision -->\nDo it.\n<!-- /adr:decision -->\n",
+            "# ADR-0005: Stray\n\n## Context\n\n| Status | Accepted |\n| --- | --- |\n\n## Decision\n\nDo it.\n",
             encoding="utf-8",
         )
         adr, errors = _mod.parse(path)

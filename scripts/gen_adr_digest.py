@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Compile sdd/adrs/*.md into sdd/adrs/DIGEST.md — deterministically, no LLM.
 
-Each ADR carries its own machine-readable summary in two places the tool reads:
-a visible key/value table in the ``## Status`` section, and an invisible
-``<!-- adr:decision -->`` fence around the decision statement. Extraction is a
-parse, never an inference, so the digest is a pure function of the ADRs and
-cannot drift from them:
+Each ADR is read through its own document structure — no hand-placed markers:
+the metadata is a visible key/value table in the ``## Status`` section, and the
+decision is the entire ``## Decision`` section (up to the next ``##``).
+Extraction is a parse, never an inference, so the digest is a pure function of
+the ADRs and cannot drift from them:
 
     # ADR-0002: Configuration Resolution - No Merging
 
@@ -20,20 +20,21 @@ cannot drift from them:
 
     ## Decision
 
-    <!-- adr:decision -->
     **Config-as-code has absolute priority. No merging, no env var overrides.**
-    <!-- /adr:decision -->
+
+    Resolution rules: ...
 
 ``Status`` is one of Proposed | Accepted | Superseded. Link cells hold bare ADR
 ids (e.g. ``ADR-0007``), comma-separated, or ``—`` when none: ``Supersedes`` /
 ``Superseded by`` are whole-ADR edges; ``Amends`` is a clause-level change that
 leaves the target ADR otherwise in force. Extra prose (which clause, revision
-notes) goes below the table.
+notes) goes below the table. The whole ``## Decision`` section is lifted into
+the digest verbatim, with its internal headings demoted to nest cleanly.
 
 Normal mode (no flag):
-    Regenerate sdd/adrs/DIGEST.md. Refuses on hard errors (missing table/fence,
-    bad status, dangling supersession target); prints drift warnings but still
-    writes. Run: hatch run gen-adr-digest.
+    Regenerate sdd/adrs/DIGEST.md. Refuses on hard errors (missing Status table
+    or Decision section, bad status, dangling supersession target); prints drift
+    warnings but still writes. Run: hatch run gen-adr-digest.
 
 Check mode (--check):
     Read-only. Exit 0 when every ADR is well-formed, the supersession graph is
@@ -59,12 +60,30 @@ LINK_KEYS = ("supersedes", "superseded-by", "amends")
 # companion must not be parsed as an ADR.
 ADR_GLOB = "[0-9][0-9][0-9][0-9]-*.md"
 
-DECISION_RE = re.compile(
-    r"<!--\s*adr:decision\s*-->\s*(.*?)\s*<!--\s*/adr:decision\s*-->",
-    re.DOTALL,
-)
 H1_RE = re.compile(r"^#\s+(.*?)\s*$", re.MULTILINE)
 STATUS_SECTION_RE = re.compile(r"^##\s+Status\s*$(.*?)(?=^##\s|\Z)", re.MULTILINE | re.DOTALL)
+DECISION_SECTION_RE = re.compile(r"^##\s+Decision\s*$(.*?)(?=^##\s|\Z)", re.MULTILINE | re.DOTALL)
+_HEADING_RE = re.compile(r"^(#{1,6})(\s)")
+
+
+def _demote_headings(md: str, by: int = 2) -> str:
+    """Push ATX headings down *by* levels (capped at 6) so a lifted Decision
+    section nests under the digest's per-ADR heading instead of colliding with
+    it. Headings inside fenced code blocks are left alone."""
+    out: list[str] = []
+    in_code = False
+    for line in md.splitlines():
+        if line.lstrip().startswith("```"):
+            in_code = not in_code
+            out.append(line)
+            continue
+        m = _HEADING_RE.match(line)
+        if m and not in_code:
+            level = min(len(m.group(1)) + by, 6)
+            line = "#" * level + line[len(m.group(1)) :]
+        out.append(line)
+    return "\n".join(out)
+
 
 # Metadata is a visible key/value table in the `## Status` section — the same
 # text a human reads and edits, so there is no hidden source of truth to drift
@@ -155,12 +174,15 @@ def parse(path: Path) -> tuple[Adr | None, list[str]]:
 
     links = {key: list(meta.get(key) or []) for key in LINK_KEYS}
 
-    dec_match = DECISION_RE.search(text)
-    if not dec_match:
-        errors.append(f"{path.name}: missing <!-- adr:decision --> fence")
-    # Preserve internal structure (a decision is often a lead-in + list); only
-    # trim the outer whitespace. Collapsing to one line would drop the layers.
-    decision = dec_match.group(1).strip() if dec_match else ""
+    # The decision is the whole ## Decision section (up to the next ## heading),
+    # not a hand-placed span — the section boundary can't be misplaced, and every
+    # detail (resolution rules, tiers, tables) comes along. Internal headings are
+    # demoted so they nest under the digest's per-ADR heading.
+    dec_match = DECISION_SECTION_RE.search(text)
+    body = dec_match.group(1).strip() if dec_match else ""
+    if not body:
+        errors.append(f"{path.name}: missing or empty ## Decision section")
+    decision = _demote_headings(body)
 
     adr = Adr(
         path=path,

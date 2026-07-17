@@ -39,7 +39,6 @@ shape (`UploadId` + `complete-multipart-upload`, not a monitor URL).
 
 ## Decision
 
-<!-- adr:decision -->
 Ship the polling logic **backend-local** in
 `src/remote_store/aio/backends/_graph/monitor.py` (a module inside
 the Graph sub-package, alongside `backend.py` / `http.py` /
@@ -49,7 +48,6 @@ because it is async-native (matching `aio/backends/_azure.py`); the
 poller follows. It is part of the Graph sub-package, not a shared
 facility. No public API surface and no Store-level capability is
 introduced.
-<!-- /adr:decision -->
 
 If and when a second backend genuinely needs the same shape — measured
 in a follow-up implementation, not predicted here — a hoisting ADR

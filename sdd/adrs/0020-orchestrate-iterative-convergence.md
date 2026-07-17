@@ -33,11 +33,9 @@ other's output.
 
 ## Decision
 
-<!-- adr:decision -->
 Replace the single-pass model with an **iterative convergence model** that
 adds plan refinement, consolidation, and review loops — with complexity-based
 mode selection to avoid unnecessary overhead.
-<!-- /adr:decision -->
 
 ### Three modes
 
