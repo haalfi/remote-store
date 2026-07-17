@@ -80,7 +80,7 @@ The orchestrator:
 
 ### Domain boundaries
 
-> **Superseded by [ADR-0031](0031-expert-personas-as-subagent-files.md).** The
+> **Amended by [ADR-0031](0031-expert-personas-as-subagent-files.md).** The
 > per-expert persona definitions (identity, domain, foundation, constraints) now
 > live as standalone Claude Code subagents in `.claude/agents/`, referenced by
 > the `/orchestrate` skill via `subagent_type`, rather than inline in the skill.

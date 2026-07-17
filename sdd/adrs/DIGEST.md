@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 30 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 31 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -1620,6 +1620,26 @@ This is a breaking change: every existing Azure call site must add `hns=`.
 Pre-v1 semver permits the change in a minor bump. The migration guide documents
 the before/after and the `detect_hns()` discovery recipe.
 
+### [ADR-0031](0031-expert-personas-as-subagent-files.md): Expert Personas as Standalone Subagent Files
+
+Each expert persona is a **standalone Claude Code subagent** in
+`.claude/agents/<name>.md` — the single source of truth for that persona.
+The `/orchestrate` skill no longer embeds personas; it references each expert by
+`subagent_type` (in its Step 4 execute sections) and supplies the per-call task
+and mode in the invocation prompt.
+
+- **Repo-root-relative paths.** Personas cite `sdd/TESTING.md` etc. as plain
+  paths (agents run with cwd at the repo root).
+- **Per-call context via the prompt.** The static persona holds identity, domain,
+  constraints, and done-when; the invocation prompt carries the task, the specs
+  to trace, and the mode (implement vs review).
+
+Domain boundaries, the three orchestration modes, the convergence flow, and
+cross-domain file ownership (README/CHANGELOG owned by the orchestrator) are
+unchanged.
+
+> amends ADR-0019 (clause).
+
 ## Superseded
 
 ### [ADR-0006](0006-documentation-architecture.md): Documentation Architecture - Source of Truth and Audiences
@@ -1786,6 +1806,12 @@ The orchestrator:
 4. Validates via `hatch run all`
 
 ##### Domain boundaries
+
+> **Amended by [ADR-0031](0031-expert-personas-as-subagent-files.md).** The
+> per-expert persona definitions (identity, domain, foundation, constraints) now
+> live as standalone Claude Code subagents in `.claude/agents/`, referenced by
+> the `/orchestrate` skill via `subagent_type`, rather than inline in the skill.
+> The domain boundaries themselves are unchanged.
 
 | Expert | Domain | Foundation |
 |--------|--------|-----------|
