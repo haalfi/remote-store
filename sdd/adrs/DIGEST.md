@@ -58,10 +58,13 @@ determined by its nature:
 
 ### [ADR-0008](0008-extension-architecture.md): Extension Namespace Contract (`ext.*`)
 
-Extensions live in `src/remote_store/ext/<name>.py` (single module) or
-`src/remote_store/ext/<name>/` (sub-package for complex extensions).
-The `ext/__init__.py` re-exports nothing; each extension is imported
-directly by the user or by `remote_store.__init__`.
+The `ext.*` namespace contract for stateless utility extensions:
+
+- **Location** — extensions live in `src/remote_store/ext/<name>.py` (single module) or `src/remote_store/ext/<name>/` (sub-package); `ext/__init__.py` re-exports nothing, each extension is imported directly.
+- **Public API only** — extensions use only the public `Store` / `Backend` API (no private-attribute access); `Store.unwrap(type_hint)` is the sanctioned escape hatch.
+- **Module exports** — every extension module defines `__all__`.
+- **Lifecycle** — extensions never own the `Store`; they must not close it or use it as a context manager.
+- **Error propagation** — `CapabilityNotSupported` must propagate to the caller, never be suppressed.
 
 ### [ADR-0009](0009-glob-three-tier-design.md): Glob - Three-Tier Design
 
@@ -176,24 +179,22 @@ and the backend does not declare that capability, raise
 
 ### [ADR-0027](0027-docs-bridge-single-mechanism.md): Single Bridge with Enforcement, Not Layered Mechanisms
 
-Two coupled commitments: an architectural choice and the gate that
-keeps it true. The recurring failure across the prior ADRs was not
-that the chosen mechanism was wrong; each was reasonable for the case
-that introduced it. The failure was that nothing prevented the next
-mechanism from being added alongside. A decision to "use one bridge"
-without a check that detects the second bridge degrades to a
-preference. The architecture below is the choice; the gate (third
-sub-decision) is what stops the preference from being negotiated away
-on the next deadline.
+One documentation bridge, kept single by an enforcement gate. Three coupled
+sub-decisions:
+
+1. **One bridge, by construction** — `scripts/docs/scan.py:scan_dual_files` is the sole source-discovery function and `render.py:render_dual_pages` the sole render function; other helpers are removed, not deprecated. New content shapes extend this one mechanism rather than adding a parallel one.
+2. **Classification next to the file** — each `.md` declares its class via an HTML-comment marker, with a directory-default fallback; a file with no marker and no default is unclassified and fails the gate (G-01). No central manifest that can drift from the files.
+3. **Enforcement at PR time** — a check script fails the build if any framework rule is violated, so "use one bridge" cannot silently degrade to a preference.
 
 ### [ADR-0028](0028-testing-architecture-kind-stage-replay.md): Testing Architecture with Kind and Stage Axes and HTTP Replay Demotion
 
-The architecture rests on five coupled commitments. They share
-rationale: the demotion mechanism only works because the axes are
-separated, the gate works only because gating is native, and the scope
-works only because the spec calls out where it does not apply. One ADR
-captures the bundle. Any commitment that later evolves can be
-superseded individually.
+The testing architecture rests on five coupled commitments:
+
+1. **Two orthogonal axes** — separate *kind* (pure, mocked, real-local, real-live) from *stage* (1/2/3 by cost); a fixture declares one of each.
+2. **Conformance as the cross-backend spine** — one parametrised suite over the public `Store` / `Backend` API that every backend runs; backend-specific behaviour is isolated per backend.
+3. **HTTP cassette + replay as a Stage 1 fixture** — a `<backend>_replay` fixture runs the real SDK path against a recorded cassette (Stage 3 records, Stage 1 replays); scoped to HTTP-transport backends only.
+4. **Capability gating via native pytest** — parametrize id-filtering plus `pytest.mark.skipif`, no custom `@requires` marker layer.
+5. **Explicit cassette refresh** — cassettes regenerate only when a developer runs `pytest --stage=3 --record` and commits the diff; CI never silently re-records.
 
 ### [ADR-0029](0029-graph-transfer-blocking-io-offload.md): Offload Graph Transfer Spool I/O off the Event Loop
 
