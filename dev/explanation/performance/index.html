@@ -4995,6 +4995,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#practical-takeaways" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Practical Takeaways
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#comparative-results" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10403,6 +10414,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#practical-takeaways" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Practical Takeaways
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#comparative-results" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10568,8 +10590,18 @@
 
 <h1 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h1>
 <p>remote-store wraps established Python storage libraries. This page presents
-measured overhead so you can judge whether the abstraction cost matters for
-your workloads.</p>
+the <strong>measured</strong> overhead of that wrapper and the levers to test it against
+your own workload. It does not tell you whether the overhead is acceptable —
+that depends on your call volume, latency budget, and alternatives, so it is
+your call, not the library's.</p>
+<p>The overhead is a <strong>fixed per-operation cost</strong>. Its size in isolation is what
+the numbers below report; whether it is worth paying is a function of how much
+of your total time is spent in storage calls versus network round-trips. As
+network round-trip time grows, a fixed per-op cost shrinks as a <em>share</em> of
+total time (see <a href="#what-happens-under-real-latency">What Happens Under Real Latency</a>).
+To measure it for your own hardware and latency, use the levers in
+<a href="#running-benchmarks">Running Benchmarks</a> — the <code>hatch run bench-*</code> commands and
+the four <code>--network-profile</code> profiles.</p>
 <h2 id="overhead-at-a-glance">Overhead at a Glance<a class="headerlink" href="#overhead-at-a-glance" title="Permanent link">&para;</a></h2>
 <p>The chart below shows remote-store's overhead (%) versus raw SDK calls for
 each backend. Negative values mean remote-store is <em>faster</em> than calling
@@ -10582,10 +10614,12 @@ the SDK directly (often due to connection pooling and caching).</p>
 <li><strong>S3-PyArrow</strong>: reads carry more overhead than the S3 backend (PyArrow C++
   data path); writes are comparable. The trade-off is native PyArrow integration
   — Tier 1 C++ range requests — not raw throughput.</li>
-<li><strong>Azure</strong> and <strong>SFTP</strong>: per-operation overhead is small relative to network
-  round-trip time for most operations.</li>
+<li><strong>Azure</strong> and <strong>SFTP</strong>: per-operation overhead is a fixed cost added on top
+  of each call; as a share of total time it shrinks as network round-trip time
+  grows (quantified in the next section).</li>
 <li><strong>Local</strong>: all operations are sub-millisecond; overhead versus raw pathlib is
-  measurable but negligible for storage workloads.</li>
+  a fixed sub-millisecond cost per call. Whether that registers depends on your
+  call volume and how much of your latency budget is local I/O.</li>
 </ul>
 <p>Regenerate numbers for your own hardware with <code>hatch run bench-report</code>
 (see <a href="#running-benchmarks">Running Benchmarks</a>).</p>
@@ -10646,6 +10680,26 @@ adds connection management and metadata overhead per call. The S3-PyArrow
 backend's advantage is native <a href="../../guides/pyarrow-adapter/">PyArrow integration</a> — Tier 1
 Parquet column pruning, I/O coalescing, and GIL-free reads. For sequential
 byte streaming, the regular S3 backend is faster.</p>
+<h2 id="practical-takeaways">Practical Takeaways<a class="headerlink" href="#practical-takeaways" title="Permanent link">&para;</a></h2>
+<p>These follow from the numbers above. Whether the overhead is acceptable for
+<em>your</em> workload is still your call — measure it (see
+<a href="#running-benchmarks">Running Benchmarks</a>).</p>
+<ul>
+<li><strong>Overhead is per operation, not per byte.</strong> It shows up across many small
+  calls (exists, metadata, small reads/writes, listings) and fades on larger
+  transfers, where it is spread across more bytes.</li>
+<li><strong>As round-trip time grows, the fixed cost is a smaller share of each call.</strong>
+  At 20–100 ms RTT a per-operation cost of a few milliseconds or less is a low
+  fraction of total call time (1 ms on a 100 ms round trip is 1%).</li>
+<li><strong>Workload shape drives the impact.</strong> The same fixed cost is a large share of
+  a sub-millisecond local <code>exists</code> and a small share of a 100 MB transfer, so
+  call-heavy patterns feel it more than bulk I/O.</li>
+<li><strong>Throughput converges with file size.</strong> Larger files approach raw-SDK
+  throughput as the fixed per-operation cost is amortized across more bytes.</li>
+<li><strong>Measure, then reduce call count where it matters.</strong> Benchmark your own
+  workload with <code>hatch run bench-*</code> and the <code>--network-profile</code> profiles; batch
+  or cache calls if the per-operation cost dominates your access pattern.</li>
+</ul>
 <h2 id="comparative-results">Comparative Results<a class="headerlink" href="#comparative-results" title="Permanent link">&para;</a></h2>
 <p>For every operation, the benchmark suite runs the same workload through three
 interfaces:</p>
@@ -10657,7 +10711,7 @@ interfaces:</p>
 <h3 id="sample-results">Sample Results<a class="headerlink" href="#sample-results" title="Permanent link">&para;</a></h3>
 <p>Results vary by hardware, network, and service version. Generate numbers for
 your environment with <code>hatch run bench-report</code> (summary) or
-<code>hatch run bench-report-user</code> (condensed with verdicts).</p>
+<code>hatch run bench-report-user</code> (condensed, with magnitude bands).</p>
 <p>For a full per-backend comparison of remote-store against the raw SDK and
 fsspec, see the Detailed Comparative Tables section on the
 <a href="https://docs.remotestore.dev/stable/explanation/performance/">Performance page</a>.</p>
@@ -10676,6 +10730,14 @@ fsspec, see the Detailed Comparative Tables section on the
   path issues a fresh listing like raw boto3.</li>
 <li><strong>Delete overhead.</strong> 2-3x vs raw SDK across all backends is expected
   from the error-mapping layer and not an optimization target.</li>
+<li><strong>SFTP write throughput is an emulator artifact.</strong> On the Docker OpenSSH
+  container, a 1MB SFTP write takes hundreds of milliseconds — far slower than
+  the same write via <code>sshfs</code> or against a real server — because the paramiko
+  transport issues many small, unpipelined SFTP write packets over the local
+  container. remote-store and raw paramiko land within a few percent of each
+  other on that row, so the <em>overhead</em> the chart reports is right; the absolute
+  SFTP write throughput is not representative of a tuned or cloud SFTP endpoint.
+  Measure your own server with <code>hatch run bench-cloud</code>.</li>
 <li><strong>Streaming reads keep memory constant</strong> regardless of file size.</li>
 </ul>
 <h2 id="methodology">Methodology<a class="headerlink" href="#methodology" title="Permanent link">&para;</a></h2>
@@ -10743,7 +10805,7 @@ and directories are created per test fixture and cleaned up after.</p>
 <a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
 <a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="c1"># Reports</span>
 <a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report<span class="w">                    </span><span class="c1"># summary table</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-user<span class="w">               </span><span class="c1"># condensed with verdicts</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-user<span class="w">               </span><span class="c1"># condensed, with magnitude bands</span>
 <a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-report-comparative<span class="w">        </span><span class="c1"># remote-store vs raw SDK vs fsspec</span>
 <a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>hatch<span class="w"> </span>run<span class="w"> </span>bench-charts<span class="w">                    </span><span class="c1"># generate SVG charts</span>
 <a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
@@ -10755,8 +10817,8 @@ and directories are created per test fixture and cleaned up after.</p>
 <h2 id="detailed-comparative-tables">Detailed Comparative Tables<a class="headerlink" href="#detailed-comparative-tables" title="Permanent link">&para;</a></h2>
 <p>Per-backend tables comparing remote-store, raw SDK, and fsspec for each
 operation. Generated with <code>hatch run bench-report-comparative-md</code>.</p>
-<!-- Generated 2026-04-12 14:54 UTC -->
-<!-- Hardware: Intel(R) Core(TM) Ultra 7 265K, Python 3.13.11, Windows -->
+<!-- Generated 2026-07-16 18:11 UTC -->
+<!-- Hardware: AMD EPYC 7763 64-Core Processor, Python 3.13.14, Linux -->
 <!-- doc: repo-only -->
 
 <h3 id="local">Local<a class="headerlink" href="#local" title="Permanent link">&para;</a></h3>
@@ -10772,33 +10834,33 @@ operation. Generated with <code>hatch run bench-report-comparative-md</code>.</p
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">646us</td>
-<td style="text-align: right;">588us (1.1x faster)</td>
-<td style="text-align: right;">574us (1.1x faster)</td>
+<td style="text-align: right;">455us</td>
+<td style="text-align: right;">732us (1.6x slower)</td>
+<td style="text-align: right;">347us (1.3x faster)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td style="text-align: right;">321us</td>
-<td style="text-align: right;">249us (1.3x faster)</td>
-<td style="text-align: right;">259us (1.2x faster)</td>
+<td style="text-align: right;">140us</td>
+<td style="text-align: right;">64us (2.2x faster)</td>
+<td style="text-align: right;">67us (2.1x faster)</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
-<td style="text-align: right;">55us</td>
-<td style="text-align: right;">5us (10.2x faster)</td>
-<td style="text-align: right;">4us (14.2x faster)</td>
+<td style="text-align: right;">75us</td>
+<td style="text-align: right;">10us (7.5x faster)</td>
+<td style="text-align: right;">7us (10.7x faster)</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">661us</td>
-<td style="text-align: right;">678us</td>
-<td style="text-align: right;">143us (4.6x faster)</td>
+<td style="text-align: right;">1.0ms</td>
+<td style="text-align: right;">1.3ms (1.3x slower)</td>
+<td style="text-align: right;">106us (9.7x faster)</td>
 </tr>
 <tr>
 <td>Delete</td>
-<td style="text-align: right;">112us</td>
-<td style="text-align: right;">38us (2.9x faster)</td>
-<td style="text-align: right;">55us (2.0x faster)</td>
+<td style="text-align: right;">104us</td>
+<td style="text-align: right;">28us (3.7x faster)</td>
+<td style="text-align: right;">24us (4.3x faster)</td>
 </tr>
 </tbody>
 </table>
@@ -10815,33 +10877,33 @@ operation. Generated with <code>hatch run bench-report-comparative-md</code>.</p
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">19.9ms</td>
-<td style="text-align: right;">24.5ms (1.2x slower)</td>
-<td style="text-align: right;">23.8ms (1.2x slower)</td>
+<td style="text-align: right;">10.8ms</td>
+<td style="text-align: right;">8.3ms (1.3x faster)</td>
+<td style="text-align: right;">9.0ms (1.2x faster)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td style="text-align: right;">9.0ms</td>
-<td style="text-align: right;">4.9ms (1.9x faster)</td>
-<td style="text-align: right;">6.6ms (1.4x faster)</td>
+<td style="text-align: right;">5.4ms</td>
+<td style="text-align: right;">3.3ms (1.7x faster)</td>
+<td style="text-align: right;">5.5ms</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
-<td style="text-align: right;">1.5ms</td>
-<td style="text-align: right;">1.3ms (1.1x faster)</td>
-<td style="text-align: right;">1.3ms (1.1x faster)</td>
+<td style="text-align: right;">2.0ms</td>
+<td style="text-align: right;">1.9ms (1.1x faster)</td>
+<td style="text-align: right;">2.1ms</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">168us</td>
-<td style="text-align: right;">4.0ms (24.1x slower)</td>
-<td style="text-align: right;">89us (1.9x faster)</td>
+<td style="text-align: right;">372us</td>
+<td style="text-align: right;">8.5ms (22.9x slower)</td>
+<td style="text-align: right;">176us (2.1x faster)</td>
 </tr>
 <tr>
 <td>Delete</td>
-<td style="text-align: right;">3.1ms</td>
-<td style="text-align: right;">1.5ms (2.1x faster)</td>
-<td style="text-align: right;">1.7ms (1.9x faster)</td>
+<td style="text-align: right;">4.7ms</td>
+<td style="text-align: right;">2.5ms (1.9x faster)</td>
+<td style="text-align: right;">2.3ms (2.1x faster)</td>
 </tr>
 </tbody>
 </table>
@@ -10857,28 +10919,28 @@ operation. Generated with <code>hatch run bench-report-comparative-md</code>.</p
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">31.9ms</td>
-<td style="text-align: right;">43.3ms (1.4x slower)</td>
+<td style="text-align: right;">12.9ms</td>
+<td style="text-align: right;">8.5ms (1.5x faster)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td style="text-align: right;">11.5ms</td>
-<td style="text-align: right;">4.8ms (2.4x faster)</td>
+<td style="text-align: right;">7.0ms</td>
+<td style="text-align: right;">3.0ms (2.3x faster)</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
-<td style="text-align: right;">1.9ms</td>
-<td style="text-align: right;">1.3ms (1.5x faster)</td>
+<td style="text-align: right;">2.0ms</td>
+<td style="text-align: right;">2.0ms</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">144us</td>
-<td style="text-align: right;">4.0ms (27.6x slower)</td>
+<td style="text-align: right;">8.9ms</td>
+<td style="text-align: right;">8.8ms</td>
 </tr>
 <tr>
 <td>Delete</td>
-<td style="text-align: right;">4.5ms</td>
-<td style="text-align: right;">1.5ms (3.0x faster)</td>
+<td style="text-align: right;">4.8ms</td>
+<td style="text-align: right;">2.3ms (2.0x faster)</td>
 </tr>
 </tbody>
 </table>
@@ -10895,33 +10957,33 @@ operation. Generated with <code>hatch run bench-report-comparative-md</code>.</p
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">29.6ms</td>
-<td style="text-align: right;">29.5ms</td>
-<td style="text-align: right;">14.3ms (2.1x faster)</td>
+<td style="text-align: right;">887ms</td>
+<td style="text-align: right;">885ms</td>
+<td style="text-align: right;">17.8ms (50.0x faster)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td style="text-align: right;">11.8ms</td>
-<td style="text-align: right;">10.0ms (1.2x faster)</td>
-<td style="text-align: right;">7.2ms (1.6x faster)</td>
+<td style="text-align: right;">51.4ms</td>
+<td style="text-align: right;">50.0ms</td>
+<td style="text-align: right;">14.6ms (3.5x faster)</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
-<td style="text-align: right;">779us</td>
-<td style="text-align: right;">397us (2.0x faster)</td>
-<td style="text-align: right;">652us (1.2x faster)</td>
+<td style="text-align: right;">705us</td>
+<td style="text-align: right;">352us (2.0x faster)</td>
+<td style="text-align: right;">787us (1.1x slower)</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">2.5ms</td>
-<td style="text-align: right;">2.1ms (1.2x faster)</td>
-<td style="text-align: right;">3.0ms (1.2x slower)</td>
+<td style="text-align: right;">3.9ms</td>
+<td style="text-align: right;">3.4ms (1.2x faster)</td>
+<td style="text-align: right;">4.0ms</td>
 </tr>
 <tr>
 <td>Delete</td>
-<td style="text-align: right;">1.6ms</td>
-<td style="text-align: right;">398us (4.1x faster)</td>
-<td style="text-align: right;">1.2ms (1.4x faster)</td>
+<td style="text-align: right;">1.4ms</td>
+<td style="text-align: right;">366us (3.8x faster)</td>
+<td style="text-align: right;">1.4ms</td>
 </tr>
 </tbody>
 </table>
@@ -10938,33 +11000,33 @@ operation. Generated with <code>hatch run bench-report-comparative-md</code>.</p
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">15.6ms</td>
-<td style="text-align: right;">14.1ms (1.1x faster)</td>
-<td style="text-align: right;">17.2ms (1.1x slower)</td>
+<td style="text-align: right;">10.8ms</td>
+<td style="text-align: right;">11.1ms</td>
+<td style="text-align: right;">16.3ms (1.5x slower)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td style="text-align: right;">5.7ms</td>
-<td style="text-align: right;">5.7ms</td>
-<td style="text-align: right;">10.2ms (1.8x slower)</td>
+<td style="text-align: right;">5.8ms</td>
+<td style="text-align: right;">6.0ms</td>
+<td style="text-align: right;">12.3ms (2.1x slower)</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
-<td style="text-align: right;">1.7ms</td>
-<td style="text-align: right;">1.6ms</td>
-<td style="text-align: right;">1.9ms (1.1x slower)</td>
+<td style="text-align: right;">2.3ms</td>
+<td style="text-align: right;">2.3ms</td>
+<td style="text-align: right;">2.4ms</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">9.6ms</td>
-<td style="text-align: right;">9.1ms (1.1x faster)</td>
-<td style="text-align: right;">66us (145.3x faster)</td>
+<td style="text-align: right;">19.1ms</td>
+<td style="text-align: right;">29.6ms (1.6x slower)</td>
+<td style="text-align: right;">167us (114.5x faster)</td>
 </tr>
 <tr>
 <td>Delete</td>
-<td style="text-align: right;">1.8ms</td>
-<td style="text-align: right;">1.8ms</td>
-<td style="text-align: right;">4.0ms (2.2x slower)</td>
+<td style="text-align: right;">2.6ms</td>
+<td style="text-align: right;">2.4ms (1.1x faster)</td>
+<td style="text-align: right;">7.4ms (2.8x slower)</td>
 </tr>
 </tbody>
 </table>

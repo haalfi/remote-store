@@ -1,6 +1,8 @@
 # Performance
 
-remote-store wraps established Python storage libraries. This page presents measured overhead so you can judge whether the abstraction cost matters for your workloads.
+remote-store wraps established Python storage libraries. This page presents the **measured** overhead of that wrapper and the levers to test it against your own workload. It does not tell you whether the overhead is acceptable — that depends on your call volume, latency budget, and alternatives, so it is your call, not the library's.
+
+The overhead is a **fixed per-operation cost**. Its size in isolation is what the numbers below report; whether it is worth paying is a function of how much of your total time is spent in storage calls versus network round-trips. As network round-trip time grows, a fixed per-op cost shrinks as a *share* of total time (see [What Happens Under Real Latency](#what-happens-under-real-latency)). To measure it for your own hardware and latency, use the levers in [Running Benchmarks](#running-benchmarks) — the `hatch run bench-*` commands and the four `--network-profile` profiles.
 
 ## Overhead at a Glance
 
@@ -10,8 +12,8 @@ Patterns from Docker benchmarks (MinIO, Azurite, OpenSSH):
 
 - **S3**: reads and writes add modest overhead over raw boto3; listing is significantly faster via s3fs connection caching.
 - **S3-PyArrow**: reads carry more overhead than the S3 backend (PyArrow C++ data path); writes are comparable. The trade-off is native PyArrow integration — Tier 1 C++ range requests — not raw throughput.
-- **Azure** and **SFTP**: per-operation overhead is small relative to network round-trip time for most operations.
-- **Local**: all operations are sub-millisecond; overhead versus raw pathlib is measurable but negligible for storage workloads.
+- **Azure** and **SFTP**: per-operation overhead is a fixed cost added on top of each call; as a share of total time it shrinks as network round-trip time grows (quantified in the next section).
+- **Local**: all operations are sub-millisecond; overhead versus raw pathlib is a fixed sub-millisecond cost per call. Whether that registers depends on your call volume and how much of your latency budget is local I/O.
 
 Regenerate numbers for your own hardware with `hatch run bench-report` (see [Running Benchmarks](#running-benchmarks)).
 
@@ -40,6 +42,16 @@ Both S3 backends connect to the same service. S3 uses s3fs (Python), S3-PyArrow 
 
 S3-PyArrow reads are slower for sequential workloads because the C++ data path adds connection management and metadata overhead per call. The S3-PyArrow backend's advantage is native [PyArrow integration](https://docs.remotestore.dev/stable/guides/pyarrow-adapter/index.md) — Tier 1 Parquet column pruning, I/O coalescing, and GIL-free reads. For sequential byte streaming, the regular S3 backend is faster.
 
+## Practical Takeaways
+
+These follow from the numbers above. Whether the overhead is acceptable for *your* workload is still your call — measure it (see [Running Benchmarks](#running-benchmarks)).
+
+- **Overhead is per operation, not per byte.** It shows up across many small calls (exists, metadata, small reads/writes, listings) and fades on larger transfers, where it is spread across more bytes.
+- **As round-trip time grows, the fixed cost is a smaller share of each call.** At 20–100 ms RTT a per-operation cost of a few milliseconds or less is a low fraction of total call time (1 ms on a 100 ms round trip is 1%).
+- **Workload shape drives the impact.** The same fixed cost is a large share of a sub-millisecond local `exists` and a small share of a 100 MB transfer, so call-heavy patterns feel it more than bulk I/O.
+- **Throughput converges with file size.** Larger files approach raw-SDK throughput as the fixed per-operation cost is amortized across more bytes.
+- **Measure, then reduce call count where it matters.** Benchmark your own workload with `hatch run bench-*` and the `--network-profile` profiles; batch or cache calls if the per-operation cost dominates your access pattern.
+
 ## Comparative Results
 
 For every operation, the benchmark suite runs the same workload through three interfaces:
@@ -50,7 +62,7 @@ For every operation, the benchmark suite runs the same workload through three in
 
 ### Sample Results
 
-Results vary by hardware, network, and service version. Generate numbers for your environment with `hatch run bench-report` (summary) or `hatch run bench-report-user` (condensed with verdicts).
+Results vary by hardware, network, and service version. Generate numbers for your environment with `hatch run bench-report` (summary) or `hatch run bench-report-user` (condensed, with magnitude bands).
 
 For a full per-backend comparison of remote-store against the raw SDK and fsspec, see the Detailed Comparative Tables section on the [Performance page](https://docs.remotestore.dev/stable/explanation/performance/).
 
@@ -59,6 +71,7 @@ For a full per-backend comparison of remote-store against the raw SDK and fsspec
 - **Docker emulators are not cloud.** Azurite, MinIO, and the local SFTP container approximate real services but have different performance characteristics. Treat these numbers as relative comparisons, not absolute predictions of cloud performance.
 - **Listing anomalies.** Some fsspec implementations (s3fs, adlfs) show sub-100us listing times that reflect client-side caching, not real storage-layer performance. `S3Backend` defaults this directory-listing cache off (fresh listings every call), so those sub-100us numbers appear only when the cache is explicitly re-enabled via `client_options={"use_listings_cache": True}`; with the default, the s3fs path issues a fresh listing like raw boto3.
 - **Delete overhead.** 2-3x vs raw SDK across all backends is expected from the error-mapping layer and not an optimization target.
+- **SFTP write throughput is an emulator artifact.** On the Docker OpenSSH container, a 1MB SFTP write takes hundreds of milliseconds — far slower than the same write via `sshfs` or against a real server — because the paramiko transport issues many small, unpipelined SFTP write packets over the local container. remote-store and raw paramiko land within a few percent of each other on that row, so the *overhead* the chart reports is right; the absolute SFTP write throughput is not representative of a tuned or cloud SFTP endpoint. Measure your own server with `hatch run bench-cloud`.
 - **Streaming reads keep memory constant** regardless of file size.
 
 ## Methodology
@@ -99,7 +112,7 @@ hatch run bench-save
 
 # Reports
 hatch run bench-report                    # summary table
-hatch run bench-report-user               # condensed with verdicts
+hatch run bench-report-user               # condensed, with magnitude bands
 hatch run bench-report-comparative        # remote-store vs raw SDK vs fsspec
 hatch run bench-charts                    # generate SVG charts
 
@@ -117,51 +130,51 @@ Per-backend tables comparing remote-store, raw SDK, and fsspec for each operatio
 
 | Operation     | remote-store | pathlib             | fsspec              |
 | ------------- | ------------ | ------------------- | ------------------- |
-| Write 1MB     | 646us        | 588us (1.1x faster) | 574us (1.1x faster) |
-| Read 1MB      | 321us        | 249us (1.3x faster) | 259us (1.2x faster) |
-| Exists (hit)  | 55us         | 5us (10.2x faster)  | 4us (14.2x faster)  |
-| List 50 files | 661us        | 678us               | 143us (4.6x faster) |
-| Delete        | 112us        | 38us (2.9x faster)  | 55us (2.0x faster)  |
+| Write 1MB     | 455us        | 732us (1.6x slower) | 347us (1.3x faster) |
+| Read 1MB      | 140us        | 64us (2.2x faster)  | 67us (2.1x faster)  |
+| Exists (hit)  | 75us         | 10us (7.5x faster)  | 7us (10.7x faster)  |
+| List 50 files | 1.0ms        | 1.3ms (1.3x slower) | 106us (9.7x faster) |
+| Delete        | 104us        | 28us (3.7x faster)  | 24us (4.3x faster)  |
 
 ### S3 (MinIO)
 
-| Operation     | remote-store | boto3                | s3fs                 |
-| ------------- | ------------ | -------------------- | -------------------- |
-| Write 1MB     | 19.9ms       | 24.5ms (1.2x slower) | 23.8ms (1.2x slower) |
-| Read 1MB      | 9.0ms        | 4.9ms (1.9x faster)  | 6.6ms (1.4x faster)  |
-| Exists (hit)  | 1.5ms        | 1.3ms (1.1x faster)  | 1.3ms (1.1x faster)  |
-| List 50 files | 168us        | 4.0ms (24.1x slower) | 89us (1.9x faster)   |
-| Delete        | 3.1ms        | 1.5ms (2.1x faster)  | 1.7ms (1.9x faster)  |
+| Operation     | remote-store | boto3                | s3fs                |
+| ------------- | ------------ | -------------------- | ------------------- |
+| Write 1MB     | 10.8ms       | 8.3ms (1.3x faster)  | 9.0ms (1.2x faster) |
+| Read 1MB      | 5.4ms        | 3.3ms (1.7x faster)  | 5.5ms               |
+| Exists (hit)  | 2.0ms        | 1.9ms (1.1x faster)  | 2.1ms               |
+| List 50 files | 372us        | 8.5ms (22.9x slower) | 176us (2.1x faster) |
+| Delete        | 4.7ms        | 2.5ms (1.9x faster)  | 2.3ms (2.1x faster) |
 
 ### S3-PyArrow
 
-| Operation     | remote-store | boto3                |
-| ------------- | ------------ | -------------------- |
-| Write 1MB     | 31.9ms       | 43.3ms (1.4x slower) |
-| Read 1MB      | 11.5ms       | 4.8ms (2.4x faster)  |
-| Exists (hit)  | 1.9ms        | 1.3ms (1.5x faster)  |
-| List 50 files | 144us        | 4.0ms (27.6x slower) |
-| Delete        | 4.5ms        | 1.5ms (3.0x faster)  |
+| Operation     | remote-store | boto3               |
+| ------------- | ------------ | ------------------- |
+| Write 1MB     | 12.9ms       | 8.5ms (1.5x faster) |
+| Read 1MB      | 7.0ms        | 3.0ms (2.3x faster) |
+| Exists (hit)  | 2.0ms        | 2.0ms               |
+| List 50 files | 8.9ms        | 8.8ms               |
+| Delete        | 4.8ms        | 2.3ms (2.0x faster) |
 
 ### SFTP
 
-| Operation     | remote-store | paramiko             | sshfs                |
-| ------------- | ------------ | -------------------- | -------------------- |
-| Write 1MB     | 29.6ms       | 29.5ms               | 14.3ms (2.1x faster) |
-| Read 1MB      | 11.8ms       | 10.0ms (1.2x faster) | 7.2ms (1.6x faster)  |
-| Exists (hit)  | 779us        | 397us (2.0x faster)  | 652us (1.2x faster)  |
-| List 50 files | 2.5ms        | 2.1ms (1.2x faster)  | 3.0ms (1.2x slower)  |
-| Delete        | 1.6ms        | 398us (4.1x faster)  | 1.2ms (1.4x faster)  |
+| Operation     | remote-store | paramiko            | sshfs                 |
+| ------------- | ------------ | ------------------- | --------------------- |
+| Write 1MB     | 887ms        | 885ms               | 17.8ms (50.0x faster) |
+| Read 1MB      | 51.4ms       | 50.0ms              | 14.6ms (3.5x faster)  |
+| Exists (hit)  | 705us        | 352us (2.0x faster) | 787us (1.1x slower)   |
+| List 50 files | 3.9ms        | 3.4ms (1.2x faster) | 4.0ms                 |
+| Delete        | 1.4ms        | 366us (3.8x faster) | 1.4ms                 |
 
 ### Azure
 
-| Operation     | remote-store | azure-blob           | adlfs                |
-| ------------- | ------------ | -------------------- | -------------------- |
-| Write 1MB     | 15.6ms       | 14.1ms (1.1x faster) | 17.2ms (1.1x slower) |
-| Read 1MB      | 5.7ms        | 5.7ms                | 10.2ms (1.8x slower) |
-| Exists (hit)  | 1.7ms        | 1.6ms                | 1.9ms (1.1x slower)  |
-| List 50 files | 9.6ms        | 9.1ms (1.1x faster)  | 66us (145.3x faster) |
-| Delete        | 1.8ms        | 1.8ms                | 4.0ms (2.2x slower)  |
+| Operation     | remote-store | azure-blob           | adlfs                 |
+| ------------- | ------------ | -------------------- | --------------------- |
+| Write 1MB     | 10.8ms       | 11.1ms               | 16.3ms (1.5x slower)  |
+| Read 1MB      | 5.8ms        | 6.0ms                | 12.3ms (2.1x slower)  |
+| Exists (hit)  | 2.3ms        | 2.3ms                | 2.4ms                 |
+| List 50 files | 19.1ms       | 29.6ms (1.6x slower) | 167us (114.5x faster) |
+| Delete        | 2.6ms        | 2.4ms (1.1x faster)  | 7.4ms (2.8x slower)   |
 
 ## See also
 

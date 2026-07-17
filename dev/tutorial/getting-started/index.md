@@ -174,7 +174,7 @@ For the full method list, see the [API reference](https://docs.remotestore.dev/s
 
 ## Performance
 
-Per-operation overhead is small relative to network round-trip time for most workloads. S3 listing is significantly faster via s3fs connection caching. See the [performance guide](https://docs.remotestore.dev/stable/explanation/performance/) for full comparative benchmarks, methodology, and per-operation breakdowns.
+remote-store adds a fixed per-operation cost over the raw SDK; as a share of total time it shrinks as network round-trip time grows, and S3 listing is faster than raw boto3 via s3fs connection caching. The [performance guide](https://docs.remotestore.dev/stable/explanation/performance/) has the measured numbers, the methodology, and the `hatch run bench-*` levers to test the overhead against your own workload — whether it is acceptable is your call, not a number this table can give you.
 
 ## Extensions
 
