@@ -349,15 +349,18 @@ error:
 1. **Profiles present.** The set carries `clean` plus at least one latency
    profile, so `overhead-vs-rtt.svg` has `>= 2` profiles and does not render its
    placeholder.
-2. **Latency files use the `-latency` variants.** Each rtt file carries
-   `s3-latency` / `sftp-latency` / `azure-latency` benchmarks, so `charts.py`'s
-   `_LATENCY_VARIANT` lookup for non-clean profiles hits (a run that proxied the
-   *base* backends drops those series silently).
-3. **Clean file carries the base comparative backends.** `s3` / `s3-pyarrow` /
-   `sftp` / `azure` remote_store data must be present for the overhead ops so the
-   three single-file charts find data. `bench-charts` must be run
-   `--file …/clean.json`; without it it builds them from `files[-1]` (an rtt
-   file) and blanks them.
+2. **Latency files carry both sides of the ratio.** Each rtt file carries
+   `s3-latency` / `sftp-latency` / `azure-latency` benchmarks for *both* the
+   `remote_store` target and its paired raw SDK target, so `charts.py`'s
+   `_LATENCY_VARIANT` lookup hits and the overhead-vs-rtt chart (which divides
+   remote_store by raw) has both operands. A run that proxied the *base*
+   backends, or captured only one side of the ratio, drops the series silently.
+3. **Clean file carries the base comparative backends, both sides.** `s3` /
+   `s3-pyarrow` / `sftp` / `azure` must have `remote_store` **and** paired
+   raw-SDK data for the overhead ops, so the three single-file charts read a real
+   remote_store cell (and its raw divisor) instead of blanking or omitting a
+   backend. `bench-charts` must be run `--file …/clean.json`; without it it
+   builds them from `files[-1]` (an rtt file) and blanks them.
 
 **This slimming deliberately diverges from the baseline recipe above.** The
 baseline is a single clean-profile file that never feeds the RTT chart, so it

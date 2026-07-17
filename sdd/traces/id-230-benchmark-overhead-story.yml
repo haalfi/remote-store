@@ -13,7 +13,7 @@ audience:
   - library.maintainer
 discovery_followups:
   - BUG-233
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

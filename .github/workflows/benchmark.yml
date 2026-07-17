@@ -109,7 +109,7 @@ jobs:
         if: always()
         run: |
           python benchmarks/report.py --file bench.json > bench-summary.txt || true
-          python benchmarks/report.py --file bench.json --user > bench-verdicts.txt || true
+          python benchmarks/report.py --file bench.json --user > bench-magnitude.txt || true
           python benchmarks/report.py --file bench.json --comparative > bench-comparative.txt || true
 
       - name: Upload benchmark artifacts
@@ -120,7 +120,7 @@ jobs:
           path: |
             bench.json
             bench-summary.txt
-            bench-verdicts.txt
+            bench-magnitude.txt
             bench-comparative.txt
           retention-days: 90
 

@@ -80,6 +80,27 @@ backend's advantage is native [PyArrow integration](../guides/pyarrow-adapter.md
 Parquet column pruning, I/O coalescing, and GIL-free reads. For sequential
 byte streaming, the regular S3 backend is faster.
 
+## Practical Takeaways
+
+These follow from the numbers above. Whether the overhead is acceptable for
+*your* workload is still your call — measure it (see
+[Running Benchmarks](#running-benchmarks)).
+
+- **Overhead is per operation, not per byte.** It shows up across many small
+  calls (exists, metadata, small reads/writes, listings) and fades on larger
+  transfers, where it is spread across more bytes.
+- **As round-trip time grows, the fixed cost is a smaller share of each call.**
+  At 20–100 ms RTT a per-operation cost of a few milliseconds or less is a low
+  fraction of total call time (1 ms on a 100 ms round trip is 1%).
+- **Workload shape drives the impact.** The same fixed cost is a large share of
+  a sub-millisecond local `exists` and a small share of a 100 MB transfer, so
+  call-heavy patterns feel it more than bulk I/O.
+- **Throughput converges with file size.** Larger files approach raw-SDK
+  throughput as the fixed per-operation cost is amortized across more bytes.
+- **Measure, then reduce call count where it matters.** Benchmark your own
+  workload with `hatch run bench-*` and the `--network-profile` profiles; batch
+  or cache calls if the per-operation cost dominates your access pattern.
+
 ## Comparative Results
 
 For every operation, the benchmark suite runs the same workload through three

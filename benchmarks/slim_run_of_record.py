@@ -21,17 +21,21 @@ The three guarded invariants (see the ID-230 plan, § 3.5):
 1. **Profiles present** — the committed set carries ``"clean"`` plus at least one
    latency profile, so the overhead-vs-RTT chart has ``>= 2`` profiles to plot
    and does not fall back to its placeholder.
-2. **Latency files use ``-latency`` variants** — each rtt file carries
-   ``s3-latency`` / ``sftp-latency`` / ``azure-latency`` remote_store benchmarks,
-   so ``charts.py``'s ``_LATENCY_VARIANT`` lookup for non-clean profiles hits.
-   A run that proxied the *base* backends produces base-named benchmarks and the
-   series drop silently.
-3. **Clean file carries the base comparative backends** — the clean file has
-   ``s3`` / ``s3-pyarrow`` / ``sftp`` / ``azure`` remote_store data for the
-   overhead ops, so the three single-file charts (overhead / throughput /
-   s3-comparison) find data instead of hitting their "No comparative data found"
-   early return. ``bench-charts`` must then be invoked ``--file .../clean.json``
-   so those charts build from the clean run, not ``files[-1]``.
+2. **Latency files use ``-latency`` variants, both sides of the ratio** — each
+   rtt file carries ``s3-latency`` / ``sftp-latency`` / ``azure-latency``
+   benchmarks for *both* the ``remote_store`` target and its paired raw SDK
+   target, so ``charts.py``'s ``_LATENCY_VARIANT`` lookup hits and the
+   overhead-vs-rtt chart (which divides remote_store by raw) has both operands.
+   A run that proxied the *base* backends, or captured only one side of the
+   ratio, drops the series silently.
+3. **Clean file carries the base comparative backends, both sides of the ratio**
+   — the clean file has ``s3`` / ``s3-pyarrow`` / ``sftp`` / ``azure``
+   ``remote_store`` **and** paired raw-SDK data for the overhead ops, so the
+   three single-file charts (overhead / throughput / s3-comparison) read a real
+   remote_store cell (and its raw divisor) instead of hitting their "No
+   comparative data found" early return or blanking a backend. ``bench-charts``
+   must then be invoked ``--file .../clean.json`` so those charts build from the
+   clean run, not ``files[-1]``.
 
 Usage::
 
@@ -57,6 +61,7 @@ from benchmarks.report import (
     _LATENCY_VARIANT,
     COMPARATIVE_BACKENDS,
     OVERHEAD_OPS,
+    RAW_SDK_TARGET,
     _build_comparative_table,
     _parse_backend_and_target,
 )
@@ -97,14 +102,32 @@ def slim_file(src: Path, out_dir: Path) -> Path:
     return dest
 
 
-def _remote_store_backends(benchmarks: list[dict[str, Any]]) -> set[str]:
-    """Backend types that have a remote_store target in this benchmark list."""
-    found: set[str] = set()
+def _backend_targets(benchmarks: list[dict[str, Any]]) -> dict[str, set[str]]:
+    """Map each backend type to the set of target kinds it carries."""
+    out: dict[str, set[str]] = {}
     for bm in benchmarks:
         bt = _parse_backend_and_target(bm)
-        if bt is not None and bt[1] == "remote_store":
-            found.add(bt[0])
-    return found
+        if bt is not None:
+            out.setdefault(bt[0], set()).add(bt[1])
+    return out
+
+
+def _missing_ratio_sides(targets_by_backend: dict[str, set[str]], required: list[str]) -> list[str]:
+    """Required backends missing either side of the overhead ratio the chart computes.
+
+    Each overhead chart divides a backend's ``remote_store`` mean by its raw-SDK
+    mean, so *both* target kinds must be present or the series blanks/omits
+    silently. Checking only one side (as an earlier revision did) lets a file
+    with just a raw-SDK entry pass while the chart reads an absent
+    ``remote_store`` cell.
+    """
+    missing: list[str] = []
+    for backend in required:
+        have = targets_by_backend.get(backend, set())
+        raw = RAW_SDK_TARGET.get(backend, "")
+        if "remote_store" not in have or raw not in have:
+            missing.append(backend)
+    return sorted(missing)
 
 
 def guard(out_dir: Path) -> list[str]:
@@ -130,23 +153,33 @@ def guard(out_dir: Path) -> list[str]:
         profile = d.get("network_profile", "clean")
         benches = d.get("benchmarks", [])
         if profile == "clean":
-            # Guard 3: clean file feeds the single-file comparative charts.
+            # Guard 3: the clean file feeds the single-file comparative charts,
+            # which read the remote_store cell (and divide by the raw SDK). Scope
+            # to the OVERHEAD_OPS the charts actually plot, and require BOTH sides
+            # of the ratio per backend — presence alone (a raw-only entry) would
+            # still blank the chart.
             comp = _build_comparative_table(benches, ops=OVERHEAD_OPS)
-            present = {backend for per_backend in comp.values() for backend in per_backend}
-            missing = [b for b in _REQUIRED_CLEAN if b not in present]
+            targets_in_ops: dict[str, set[str]] = {}
+            for per_backend in comp.values():
+                for backend, kinds in per_backend.items():
+                    targets_in_ops.setdefault(backend, set()).update(kinds)
+            missing = _missing_ratio_sides(targets_in_ops, _REQUIRED_CLEAN)
             if missing:
                 errors.append(
-                    f"guard 3: clean file {f.name} has no comparative overhead data for {missing} "
-                    "(overhead/throughput/s3-comparison charts would be blank)"
+                    f"guard 3: clean file {f.name} is missing the remote_store or paired raw-SDK "
+                    f"overhead data for {missing} (overhead/throughput/s3-comparison charts would "
+                    "blank or omit that backend)"
                 )
         else:
-            # Guard 2: latency file uses the -latency variants.
-            rs = _remote_store_backends(benches)
-            missing = sorted(_REQUIRED_LATENCY - rs)
+            # Guard 2: each rtt file must carry both the -latency remote_store
+            # variant AND its paired raw-SDK target — the overhead-vs-rtt chart
+            # divides one by the other, so a missing raw side drops the series
+            # just as silently as a missing remote_store side.
+            missing = _missing_ratio_sides(_backend_targets(benches), sorted(_REQUIRED_LATENCY))
             if missing:
                 errors.append(
-                    f"guard 2: latency file {f.name} ({profile}) is missing -latency remote_store "
-                    f"backends {missing} (overhead-vs-rtt series would drop silently)"
+                    f"guard 2: latency file {f.name} ({profile}) is missing the remote_store or "
+                    f"paired raw-SDK target for {missing} (overhead-vs-rtt series would drop silently)"
                 )
     return errors
 

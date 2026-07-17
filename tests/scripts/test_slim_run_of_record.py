@@ -146,6 +146,32 @@ def test_guard_flags_clean_missing_comparative_backend(tmp_path: Path) -> None:
     assert any("guard 3" in e and "azure" in e for e in errors)
 
 
+def test_guard_flags_clean_backend_with_only_raw_target(tmp_path: Path) -> None:
+    # Guard 3 (ratio-aware): a clean backend present ONLY via its raw-SDK target
+    # (no remote_store) would pass a presence-only check but blank the chart,
+    # which reads the remote_store cell. It must be flagged.
+    out = tmp_path / "out"
+    clean = _clean_raw(["s3", "s3-pyarrow", "sftp"])
+    clean["benchmarks"] += _overhead_entries("azure", _RAW_SDK["azure"])  # raw only, no remote_store
+    slim.slim_file(_write(tmp_path / "c.json", clean), out)
+    slim.slim_file(_write(tmp_path / "r.json", _rtt_raw("rtt20", ["s3-latency", "sftp-latency", "azure-latency"])), out)
+    errors = slim.guard(out)
+    assert any("guard 3" in e and "azure" in e for e in errors)
+
+
+def test_guard_flags_latency_backend_missing_raw_side(tmp_path: Path) -> None:
+    # Guard 2 (ratio-aware): a latency backend with remote_store but no paired
+    # raw-SDK target drops the overhead-vs-rtt series (which divides one by the
+    # other) just as silently as a missing remote_store side.
+    out = tmp_path / "out"
+    slim.slim_file(_write(tmp_path / "c.json", _clean_raw(["s3", "s3-pyarrow", "sftp", "azure"])), out)
+    rtt = _rtt_raw("rtt20", ["s3-latency", "azure-latency"])
+    rtt["benchmarks"] += _overhead_entries("sftp-latency", "remote_store")  # remote_store only, no paramiko_raw
+    slim.slim_file(_write(tmp_path / "r.json", rtt), out)
+    errors = slim.guard(out)
+    assert any("guard 2" in e and "sftp-latency" in e for e in errors)
+
+
 def test_guard_empty_dir(tmp_path: Path) -> None:
     out = tmp_path / "out"
     out.mkdir()
