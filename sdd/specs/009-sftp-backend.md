@@ -129,17 +129,25 @@ See also: spec `025-retry-policy.md` (RET-010).
 
 ### SFTP-010: Staleness Detection and Reconnect
 
-**Invariant:** The lazy `_sftp` property checks connection liveness via the SSH
-transport's active state — a local flag read with no network round-trip
-(BK-313). A transport that has gone inactive (the server dropped the connection,
-closing the channel) is reconnected transparently on next use.
-**Rationale:** The property is accessed several times per operation; a
-round-trip liveness probe (the former `stat('.')`) multiplied each operation's
-RTT count. `is_active()` costs nothing on the wire and still catches the common
-server-dropped-the-connection case.
-**Postconditions:** A healthy connection is reused without a per-operation probe
-round-trip. A drop the transport has not yet observed surfaces on the operation
-as `BackendUnavailable`; the following call re-establishes the connection.
+**Invariant:** Staleness is detected in two tiers, neither of which spends a
+per-operation round-trip. **(1)** The lazy `_sftp` property reads the SSH
+transport's `is_active()` flag — a local check, no bytes on the wire; a
+transport that has gone inactive is reconnected before the operation runs.
+**(2)** A drop that leaves the transport flag `True` but the SFTP channel dead
+(idle-channel timeout, subsystem restart, half-open partition) is invisible to
+tier 1; it is caught on the operation itself, whose `EOFError` /
+`OSError('Socket is closed')` / `ECONNRESET` / `EPIPE` maps to
+`BackendUnavailable` and invalidates the cached client, so the *next* `_sftp`
+access reconnects.
+**Rationale:** The property is accessed several times per operation, so the
+former `stat('.')` liveness probe multiplied each operation's RTT count. The
+transport flag costs nothing on the wire; tier 2 restores the reconnect
+guarantee the flag alone cannot give for a channel-only death, without adding a
+probe to the happy path.
+**Postconditions:** A healthy connection is reused with no per-operation probe
+round-trip. A dropped connection surfaces as `BackendUnavailable` and the
+following call re-establishes it — recovery may take one failed call when the
+drop is channel-only (tier 2).
 
 ---
 

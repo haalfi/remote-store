@@ -58,9 +58,12 @@ It lives in `remote_store.aio`.
     `write_atomic()` additionally requires `Capability.ATOMIC_WRITE`.
 
 !!! info "Quality flag: `Capability.WRITE_RESULT_NATIVE`"
-    When declared, the returned `WriteResult` fields (`etag`, `version_id`,
-    `last_modified`, `digest`) are populated from the backend's write response.
-    Without it, only locally computable fields are set.
+    When declared, the returned `WriteResult` rich fields (`etag`, `version_id`,
+    `last_modified`, `digest`) are populated from the backend's write response —
+    each only when that response carries it. SFTP, for instance, declares the
+    flag but returns `last_modified=None` (its write response has no timestamp;
+    call `get_file_info()` for the mtime). Without the flag, only locally
+    computable fields are set.
 
 ::: remote_store.aio.AsyncStore.write
     options:

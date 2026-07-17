@@ -1542,12 +1542,13 @@ class SFTPBackend(Backend):
         The transport's ``is_active()`` is a local flag read: no bytes cross the
         wire. The ``_sftp`` property is touched several times per Store operation
         (existence guard, parent walk, open/remove), so a round-trip liveness
-        probe here would multiply each operation's RTT count. A server that drops
-        the connection closes the channel, flipping the transport inactive, so
-        the next ``_sftp`` access still reconnects transparently. A drop the
-        transport has not yet observed surfaces on the operation itself as
-        ``BackendUnavailable``, and the following call re-establishes the
-        connection.
+        probe here would multiply each operation's RTT count.
+
+        This flag tracks the SSH *transport*, not the SFTP *channel*: a channel
+        that dies under a still-live transport reads as active here and is not
+        caught. ``_map_exception`` closes that gap — it maps the dead-channel
+        exception to ``BackendUnavailable`` and clears ``_sftp_client``, so the
+        next access to this property reconnects.
         """
         if self._sftp_client is None or self._ssh_client is None:
             return False
@@ -1653,6 +1654,15 @@ class SFTPBackend(Backend):
         classification happens here rather than in an eager stat before the
         upload. It runs *before* the fallback so a directory is never fed to the
         fallback's ``remove`` + ``rename``.
+
+        Cost note: a server that lacks ``posix_rename`` raises ``OSError`` on
+        *every* rename, so on that server class this stat is paid once per
+        atomic write even for a non-directory target — a round-trip this PR
+        otherwise removes. It is kept ahead of the fallback deliberately: the
+        alternative (fallback first, classify on its failure) would feed a
+        directory target to ``remove`` + ``rename``. The extra stat is bounded
+        to servers without the (near-universal) ``posix-rename@openssh.com``
+        extension, hence the fallback's ``# pragma: no cover``.
         """
         try:
             self._sftp.posix_rename(tmp_path, sftp_path)
@@ -1798,6 +1808,30 @@ class SFTPBackend(Backend):
         except Exception as exc:  # noqa: BLE001
             raise self._map_exception(exc, path) from None
 
+    @staticmethod
+    def _is_connection_dead(exc: Exception) -> bool:
+        """Return True if *exc* signals a dropped SSH/SFTP connection.
+
+        paramiko surfaces a dead channel as ``EOFError`` or as
+        ``OSError('Socket is closed')`` with no ``errno``, and a dropped socket
+        as ``ECONNRESET`` / ``EPIPE`` / ``ECONNABORTED``. None of these carries
+        an errno the ENOENT/EACCES/EEXIST/ENOTDIR dispatch in ``_map_exception``
+        recognises, so they would otherwise fall through to a generic
+        ``RemoteStoreError``; they are matched here to map to
+        ``BackendUnavailable`` and trigger a reconnect. The ``'Socket is
+        closed'`` text is paramiko's own literal, not an OS-locale message, so
+        matching it is safe on non-English hosts.
+        """
+        if isinstance(exc, EOFError):
+            return True
+        if isinstance(exc, OSError):
+            code = getattr(exc, "errno", None)
+            if code in (errno.ECONNRESET, errno.EPIPE, errno.ECONNABORTED):
+                return True
+            if code is None and "socket is closed" in str(exc).lower():
+                return True
+        return False
+
     def _map_exception(self, exc: Exception, path: str) -> RemoteStoreError:
         """Classify an exception into a remote_store error.
 
@@ -1810,6 +1844,18 @@ class SFTPBackend(Backend):
             return exc
         if isinstance(exc, FileNotFoundError):
             return NotFound(f"Not found: {path}", path=path, backend=self.name)
+        if self._is_connection_dead(exc):
+            # BK-313: the ``_is_connected`` liveness check reads the SSH
+            # transport's ``is_active()`` flag — a local, no-round-trip probe.
+            # That flag tracks the transport, not the SFTP channel, so a channel
+            # that dies under a still-live transport (idle-channel timeout, sftp
+            # subsystem restart, half-open partition) leaves ``is_active()``
+            # ``True`` and the probe cannot see it. Invalidate the client here,
+            # on the operation that actually surfaced the drop, so the *next*
+            # ``_sftp`` access reconnects (SFTP-010) rather than reusing a dead
+            # client forever. The op itself is reported as ``BackendUnavailable``.
+            self._sftp_client = None
+            return BackendUnavailable(str(exc), path=path, backend=self.name)
         if isinstance(exc, OSError):
             code = getattr(exc, "errno", None)
             if code == errno.ENOENT:

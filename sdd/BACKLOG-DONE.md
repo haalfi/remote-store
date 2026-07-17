@@ -67,9 +67,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   handle before any I/O, and a real OpenSSH server opens a directory for reading
   without error (caught by the `sftp_docker` lane, which the in-process paramiko
   server could not reproduce). **(4) Connection-liveness probe made local** (SFTP-010):
-  `_is_connected()` read the transport's `is_active()` flag instead of issuing a
+  `_is_connected()` reads the transport's `is_active()` flag instead of issuing a
   `stat('.')` round-trip on every `_sftp` property access — the dominant cost,
-  since one operation touches the property several times. Error-type contract
+  since one operation touches the property several times. The flag tracks the SSH
+  transport, not the SFTP channel, so PR review added a second detection tier:
+  `_map_exception` maps a dead-channel exception (`EOFError` /
+  `OSError('Socket is closed')` / `ECONNRESET` / `EPIPE`) to `BackendUnavailable`
+  and clears `_sftp_client`, so a channel-only drop under a live transport
+  surfaces honestly and the next call reconnects instead of wedging on the dead
+  client. Error-type contract
   (`NotFound` / `InvalidPath` / `AlreadyExists`) and the `WriteResult` contract
   preserved; the `test_errors.py` SFTP suite (in-process + `sftp_docker`) is the
   safety net. Measured round-trips (in-process paramiko, warm channel, parent

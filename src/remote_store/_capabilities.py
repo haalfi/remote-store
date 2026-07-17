@@ -97,8 +97,11 @@ class Capability(enum.Enum):
       whether partial reads avoid loading the entire file.
     - ``WRITE_RESULT_NATIVE`` -- Quality flag: the backend populates the
       rich fields of the returned ``WriteResult`` (``etag``,
-      ``last_modified``, ``version_id``, and where applicable
-      ``digest``) directly from its write response.  Does **not** gate
+      ``version_id``, and where applicable ``last_modified`` and
+      ``digest``) directly from its write response.  Which rich fields are
+      filled depends on what that response carries — SFTP, for one, returns
+      ``last_modified=None`` because its write response has no timestamp
+      (call ``get_file_info()`` for the mtime).  Does **not** gate
       any method — ``Store.write*()`` works on every backend.
       Backends without this flag return a ``WriteResult`` with only
       ``path`` and ``size`` populated (``source == "basic"``);

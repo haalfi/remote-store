@@ -211,8 +211,10 @@ class Backend(abc.ABC):
 
         Returns:
             A ``WriteResult`` with at least ``path`` and ``size`` populated.
-            Backends declaring ``WRITE_RESULT_NATIVE`` also populate ``etag``,
-            ``last_modified``, and where available ``digest`` and ``version_id``.
+            Backends declaring ``WRITE_RESULT_NATIVE`` also populate ``etag`` and,
+            where the write response carries them, ``last_modified``, ``digest``,
+            and ``version_id`` (SFTP returns ``last_modified=None`` — its write
+            response has no timestamp; call ``get_file_info()`` for the mtime).
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.

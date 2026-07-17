@@ -72,6 +72,7 @@ def test_write_result_last_modified_is_none(sftp_backend: SFTPBackend, op: str) 
 
 
 @pytest.mark.spec("WR-003")
+@pytest.mark.spec("SFTP-003")
 @pytest.mark.parametrize("op", ["write", "write_atomic"])
 def test_write_result_size_survives_without_the_stat(sftp_backend: SFTPBackend, op: str) -> None:
     """BK-313: size comes from counting bytes during upload, not from stat().

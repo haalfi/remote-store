@@ -473,6 +473,33 @@ class TestSFTPConnection:
         # Next operation should reconnect automatically
         assert sftp_backend.exists("test.txt") is False
 
+    @pytest.mark.spec("SFTP-010")
+    def test_channel_death_maps_to_unavailable_then_reconnects(self, sftp_backend: Backend) -> None:
+        """SFTP-010 tier 2: a dead channel under a live transport is honest and self-heals.
+
+        BK-313 review: the ``is_active()`` liveness probe tracks the SSH
+        transport, not the SFTP channel. Closing only the channel leaves the
+        transport ``is_active()`` — so ``_is_connected`` cannot see the drop.
+        The contract is upheld on the operation instead: it must surface as
+        ``BackendUnavailable`` (not a generic ``RemoteStoreError``) and clear
+        the cached client so the *next* call reconnects rather than wedging on
+        the dead channel forever. Reproduces in-process (a client-side channel
+        close is server-agnostic).
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("test.txt")  # establish the connection
+        transport = sftp_backend._ssh_client.get_transport()
+        # Kill the SFTP channel but leave the transport up.
+        sftp_backend._sftp_client.close()
+        assert transport.is_active() is True, "precondition: transport survives a channel close"
+
+        with pytest.raises(BackendUnavailable):
+            sftp_backend.exists("test.txt")
+        # The failed op must have invalidated the cached client for tier-2 recovery.
+        assert sftp_backend._sftp_client is None
+        # Next call reconnects transparently.
+        assert sftp_backend.exists("test.txt") is False
+
 
 # endregion
 
