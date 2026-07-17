@@ -16,7 +16,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (`store-backend-expert`, `extension-expert`, `testing-expert`,
   `documentation-expert`, `sdd-expert`) — the single source of truth, also
   independently invocable and model-routable via its `description`. The skill's
-  Step 4 / Step 6 sections now reference each by `subagent_type` and pass the
+  Step 4 execute sections now reference each by `subagent_type` and pass the
   per-call task/mode in the invocation prompt; personas use plain repo-root paths
   (agents run cwd=repo root), avoiding the skill-relative link depth a literal
   move would have broken, and the old "always includes …" addenda are folded into

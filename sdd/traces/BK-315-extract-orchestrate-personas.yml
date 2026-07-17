@@ -15,6 +15,7 @@ expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
   - .gitignore
+review_rounds: 1
 
 phases:
   - id: orient
