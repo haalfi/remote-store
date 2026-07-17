@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-315 — Extract `/orchestrate` expert personas into reusable subagent files**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  The five domain-expert personas were fenced prompt blocks inline in
+  `.claude/skills/orchestrate/SKILL.md` (~170 lines), reachable only through the
+  skill. Each is now a standalone Claude Code subagent under `.claude/agents/`
+  (`store-backend-expert`, `extension-expert`, `testing-expert`,
+  `documentation-expert`, `sdd-expert`) — the single source of truth, also
+  independently invocable and model-routable via its `description`. The skill's
+  Step 4 execute sections now reference each by `subagent_type` and pass the
+  per-call task/mode in the invocation prompt; personas use plain repo-root paths
+  (agents run cwd=repo root), avoiding the skill-relative link depth a literal
+  move would have broken, and the old "always includes …" addenda are folded into
+  each persona as standing responsibilities. **Validated** by a two-path trial:
+  the same `testing-expert` persona invoked directly vs through `/orchestrate`
+  produced structurally identical, constraint-faithful assessments of
+  `_glob.py`, differing only within normal run-to-run variance. Architecture
+  recorded in [ADR-0031](adrs/0031-expert-personas-as-subagent-files.md), which
+  supersedes the "Domain boundaries" persona-definition clause of ADR-0019
+  (a pointer was added there) and is orthogonal to ADR-0020's convergence flow.
+  Surprising ripple: `.claude/agents/` sat under the `.claude/*` ignore, so a
+  `!.claude/agents/` negation in `.gitignore` was needed or the personas would
+  never commit. No CHANGELOG — dev tooling/process, not user-facing.
+
 - [x] **ID-230 — Benchmark overhead story: reproducible run of record + user-decides framing**
   spec: — · effort: M · audience: user.site, library.maintainer
   Purpose-2 half of the benchmark-suite rework (purpose-1 governance shipped as

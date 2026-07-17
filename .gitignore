@@ -7,6 +7,7 @@ tmp/
 uv.lock
 # Claude Code — ignore user-specific files, keep shared assets
 .claude/*
+!.claude/agents/
 !.claude/skills/
 !.claude/hooks/
 !.claude/settings.json
