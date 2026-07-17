@@ -1,0 +1,72 @@
+id: BK-315
+title: "Extract /orchestrate expert personas into reusable subagent files"
+trigger: >
+  The five /orchestrate domain-expert personas lived as fenced prompt blocks
+  inline in .claude/skills/orchestrate/SKILL.md, reachable only through the
+  skill and not independently invocable. Goal: move each to a standalone Claude
+  Code subagent under .claude/agents/, referenced by the skill, without changing
+  the orchestration flow.
+source_items:
+  - BK-315
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  - .gitignore
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Step 4 (Execute) — expert persona blocks"
+        read_type: reference
+        extract: "The five inline personas; each carries a TASK slot and skill-relative (../../../sdd) links"
+      - file: sdd/adrs/0019-multi-agent-orchestration.md
+        section: "Decision / Domain boundaries"
+        read_type: reference
+        extract: "Option C native-agents decision the inline blocks partially realized; supersession target"
+      - file: sdd/adrs/0020-orchestrate-iterative-convergence.md
+        section: "What stays from ADR-0019"
+        read_type: reference
+        extract: "0020 owns the convergence flow — orthogonal to a persona-location change, leave untouched"
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/000-process.md
+        section: "Rules (ADRs immutable once Accepted)"
+        read_type: gate
+        extract: "Supersede, never edit — but a Superseded-by pointer at the affected clause is sanctioned"
+      - file: sdd/templates/adr-template.md
+        section: "Status"
+        read_type: reference
+        extract: "Partial supersession: place the pointer at the affected clause (ADR-0015/0029 precedent)"
+      - file: sdd/adrs/0020-orchestrate-iterative-convergence.md
+        section: "Status line"
+        read_type: reference
+        extract: "Confirmed ADR-0022 already taken (graph-auth); next free ADR number is 0031"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: .claude/agents/testing-expert.md
+        section: "(full)"
+        read_type: reference
+        extract: "Prototype agent file shape (frontmatter description + persona body) to replicate for the other four"
+      - file: sdd/traces/_schema.yml
+        section: "audience / phases"
+        read_type: gate
+        extract: "audience enum + CHANGELOG-required rule (no user.* here → skip CHANGELOG)"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID prefixes / Assigning a new ID"
+        read_type: gate
+        extract: "BK prefix for committed work; run gen-backlogid after moving item to BACKLOG-DONE.md"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "ADR + backlog ripples; confirm no ADR index and no other doc enumerates the personas"
