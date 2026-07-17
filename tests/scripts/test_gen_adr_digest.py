@@ -138,6 +138,16 @@ class TestParse:
         adr, _ = _mod.parse(path)
         assert "# a comment, not a heading" in adr.decision
 
+    def test_section_split_is_code_fence_aware(self, tmp_path):
+        # A `## ...` inside a fenced code block must not end the section early
+        # (PR #909 review: the splitter must match _demote_headings' fence awareness).
+        decision = "Lead decision.\n\n```markdown\n## Not a real section\n```\n\nStill the decision."
+        path = _write(tmp_path, "0009", decision=decision)
+        adr, _ = _mod.parse(path)
+        assert "## Not a real section" in adr.decision  # code-fenced, not a boundary
+        assert "Still the decision." in adr.decision  # content after the fenced ## survives
+        assert "must not be captured" not in adr.decision  # real ## Consequences still ends it
+
     def test_multiple_links_in_one_cell(self, tmp_path):
         path = _write(tmp_path, "0020", supersedes=["ADR-0018", "ADR-0019"])
         adr, _ = _mod.parse(path)

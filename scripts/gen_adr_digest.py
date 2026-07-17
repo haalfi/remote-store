@@ -61,9 +61,37 @@ LINK_KEYS = ("supersedes", "superseded-by", "amends")
 ADR_GLOB = "[0-9][0-9][0-9][0-9]-*.md"
 
 H1_RE = re.compile(r"^#\s+(.*?)\s*$", re.MULTILINE)
-STATUS_SECTION_RE = re.compile(r"^##\s+Status\s*$(.*?)(?=^##\s|\Z)", re.MULTILINE | re.DOTALL)
-DECISION_SECTION_RE = re.compile(r"^##\s+Decision\s*$(.*?)(?=^##\s|\Z)", re.MULTILINE | re.DOTALL)
 _HEADING_RE = re.compile(r"^(#{1,6})(\s)")
+_H2_RE = re.compile(r"^##\s")
+
+
+def _fence_toggle(line: str) -> bool:
+    return line.lstrip().startswith("```")
+
+
+def _section(text: str, name: str) -> str | None:
+    """Return the body of the ``## <name>`` section, up to the next ``##`` heading
+    that is not inside a fenced code block, or None if the heading is absent.
+
+    Code-fence aware so a ``## ...`` line inside a code block (e.g. a markdown
+    example in a Decision section) does not truncate the section — matching
+    ``_demote_headings`` and closing the silent-truncation gap the whole-section
+    refactor set out to eliminate.
+    """
+    heading = re.compile(rf"^##\s+{re.escape(name)}\s*$")
+    lines = text.splitlines()
+    start = next((i + 1 for i, line in enumerate(lines) if heading.match(line)), None)
+    if start is None:
+        return None
+    body: list[str] = []
+    in_code = False
+    for line in lines[start:]:
+        if _fence_toggle(line):
+            in_code = not in_code
+        elif not in_code and _H2_RE.match(line):
+            break
+        body.append(line)
+    return "\n".join(body)
 
 
 def _demote_headings(md: str, by: int = 2) -> str:
@@ -73,7 +101,7 @@ def _demote_headings(md: str, by: int = 2) -> str:
     out: list[str] = []
     in_code = False
     for line in md.splitlines():
-        if line.lstrip().startswith("```"):
+        if _fence_toggle(line):
             in_code = not in_code
             out.append(line)
             continue
@@ -107,11 +135,11 @@ def _split_links(cell: str) -> list[str]:
 
 def _table_meta(text: str) -> dict | None:
     """Parse the key/value metadata table from the ``## Status`` section, or None."""
-    section = STATUS_SECTION_RE.search(text)
-    if not section:
+    section = _section(text, "Status")
+    if section is None:
         return None
     fields: dict[str, str] = {}
-    for line in section.group(1).splitlines():
+    for line in section.splitlines():
         row = line.strip()
         if not (row.startswith("|") and row.endswith("|")):
             continue
@@ -178,8 +206,8 @@ def parse(path: Path) -> tuple[Adr | None, list[str]]:
     # not a hand-placed span — the section boundary can't be misplaced, and every
     # detail (resolution rules, tiers, tables) comes along. Internal headings are
     # demoted so they nest under the digest's per-ADR heading.
-    dec_match = DECISION_SECTION_RE.search(text)
-    body = dec_match.group(1).strip() if dec_match else ""
+    section = _section(text, "Decision")
+    body = section.strip() if section else ""
     if not body:
         errors.append(f"{path.name}: missing or empty ## Decision section")
     decision = _demote_headings(body)
