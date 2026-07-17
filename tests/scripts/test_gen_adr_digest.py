@@ -171,6 +171,23 @@ class TestDriftWarnings:
         adrs, _ = _mod.load_all(tmp_path)
         assert _mod.drift_warnings(adrs) == []
 
+    def test_one_sided_superseded_by_warns(self, tmp_path):
+        # 0006 declares superseded-by 0007, but 0007 omits the matching supersedes
+        # (the ADR-0006/0007 asymmetry from PR #909 review).
+        _write(tmp_path, "0006", slug="old", status="Superseded", superseded_by=["ADR-0007"])
+        _write(tmp_path, "0007", slug="new")  # supersedes: —
+        adrs, _ = _mod.load_all(tmp_path)
+        warnings = _mod.drift_warnings(adrs)
+        assert any("one-sided edge" in w and "ADR-0006" in w for w in warnings)
+
+    def test_one_sided_supersedes_warns(self, tmp_path):
+        # Mirror direction: superseding side declares the edge, target omits it.
+        _write(tmp_path, "0019", slug="old", status="Superseded")  # superseded-by: —
+        _write(tmp_path, "0020", slug="new", supersedes=["ADR-0019"])
+        adrs, _ = _mod.load_all(tmp_path)
+        warnings = _mod.drift_warnings(adrs)
+        assert any("one-sided edge" in w and "ADR-0020" in w for w in warnings)
+
     def test_superseded_without_record_warns(self, tmp_path):
         _write(tmp_path, "0006", status="Superseded", superseded_by=[])
         adrs, _ = _mod.load_all(tmp_path)

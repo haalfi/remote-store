@@ -206,19 +206,39 @@ def hard_errors(adrs: list[Adr]) -> list[str]:
 def drift_warnings(adrs: list[Adr]) -> list[str]:
     """Consistency problems worth surfacing that do not block generation.
 
-    The headline case: ADR X declares it fully supersedes Y, but Y is still
-    marked Accepted instead of Superseded — the retirement was recorded on one
-    side only.
+    Three checks:
+    1. Status drift — ADR X fully supersedes Y, but Y is not marked Superseded.
+    2. Reciprocity — a supersession edge declared on one side but not the other.
+       (A supersedes-B must appear as B superseded-by-A, and vice versa; an edge
+       recorded on only one side renders an asymmetric graph in the digest.)
+    3. Orphan — a Superseded ADR with nothing recording what superseded it.
     """
     warnings: list[str] = []
     by_id = {a.id: a for a in adrs}
     for a in adrs:
         for target in a.supersedes:
             other = by_id.get(target)
-            if other is not None and other.status != "Superseded":
+            if other is None:
+                continue  # dangling target is a hard error, reported elsewhere
+            # (1) status drift
+            if other.status != "Superseded":
                 warnings.append(
                     f"{a.id} supersedes {target}, but {target} is still '{other.status}' (expected 'Superseded')"
                 )
+            # (2) reciprocity: the target must record the back-edge
+            if a.id not in other.superseded_by:
+                warnings.append(
+                    f"{a.id} declares 'supersedes {target}', but {target} does not "
+                    f"list {a.id} under 'superseded-by' (one-sided edge)"
+                )
+        for target in a.superseded_by:
+            other = by_id.get(target)
+            if other is not None and a.id not in other.supersedes:
+                warnings.append(
+                    f"{a.id} declares 'superseded-by {target}', but {target} does not "
+                    f"list {a.id} under 'supersedes' (one-sided edge)"
+                )
+        # (3) orphaned Superseded status
         if a.status == "Superseded" and not a.superseded_by and not any(a.id in other.supersedes for other in adrs):
             warnings.append(f"{a.id} is 'Superseded' but nothing records what superseded it")
     return warnings

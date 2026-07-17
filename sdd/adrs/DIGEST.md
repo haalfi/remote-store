@@ -56,6 +56,8 @@ determined by its nature:
    scanning, template filling, link rewriting, navigation assembly.
    No authored prose.
 
+> supersedes ADR-0006.
+
 ### [ADR-0008](0008-extension-architecture.md): Extension Namespace Contract (`ext.*`)
 
 The `ext.*` namespace contract for stateless utility extensions:

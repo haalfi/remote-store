@@ -5,7 +5,7 @@
 | Field         | Value    |
 | ------------- | -------- |
 | Status        | Accepted |
-| Supersedes    | —        |
+| Supersedes    | ADR-0006 |
 | Superseded by | —        |
 | Amends        | —        |
 
