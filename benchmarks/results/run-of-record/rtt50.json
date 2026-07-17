@@ -1,0 +1,732 @@
+{
+  "network_profile": "rtt50",
+  "machine_info": {
+    "node": "runnervm3jd5f",
+    "processor": "x86_64",
+    "machine": "x86_64",
+    "python_compiler": "GCC 13.3.0",
+    "python_implementation": "CPython",
+    "python_implementation_version": "3.13.14",
+    "python_version": "3.13.14",
+    "python_build": [
+      "main",
+      "Jun 11 2026 03:02:07"
+    ],
+    "release": "6.17.0-1020-azure",
+    "system": "Linux",
+    "cpu": {
+      "python_version": "3.13.14.final.0 (64 bit)",
+      "cpuinfo_version": [
+        9,
+        0,
+        0
+      ],
+      "cpuinfo_version_string": "9.0.0",
+      "arch": "X86_64",
+      "bits": 64,
+      "count": 4,
+      "arch_string_raw": "x86_64",
+      "vendor_id_raw": "AuthenticAMD",
+      "brand_raw": "AMD EPYC 7763 64-Core Processor",
+      "hz_advertised_friendly": "2.4454 GHz",
+      "hz_actual_friendly": "2.4454 GHz",
+      "hz_advertised": [
+        2445429000,
+        0
+      ],
+      "hz_actual": [
+        2445429000,
+        0
+      ],
+      "stepping": 1,
+      "model": 1,
+      "family": 25
+    }
+  },
+  "benchmarks": [
+    {
+      "name": "test_delete[azure-latency-remote_store]",
+      "params": {
+        "bench_target": [
+          "azure-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.05365892529999883
+      }
+    },
+    {
+      "name": "test_delete[azure-latency-azure_blob_raw]",
+      "params": {
+        "bench_target": [
+          "azure-latency",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.05367132714998206
+      }
+    },
+    {
+      "name": "test_delete[s3-latency-remote_store]",
+      "params": {
+        "bench_target": [
+          "s3-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.1036982232500236
+      }
+    },
+    {
+      "name": "test_delete[s3-latency-boto3_raw]",
+      "params": {
+        "bench_target": [
+          "s3-latency",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.05344952740000508
+      }
+    },
+    {
+      "name": "test_delete[sftp-latency-remote_store]",
+      "params": {
+        "bench_target": [
+          "sftp-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.19958238259999916
+      }
+    },
+    {
+      "name": "test_delete[sftp-latency-paramiko_raw]",
+      "params": {
+        "bench_target": [
+          "sftp-latency",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.05076922810001179
+      }
+    },
+    {
+      "name": "test_list_files[azure-latency-remote_store]",
+      "params": {
+        "bench_target": [
+          "azure-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.06664332199999687
+      }
+    },
+    {
+      "name": "test_list_files[azure-latency-azure_blob_raw]",
+      "params": {
+        "bench_target": [
+          "azure-latency",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.06569812682348986
+      }
+    },
+    {
+      "name": "test_list_files[s3-latency-remote_store]",
+      "params": {
+        "bench_target": [
+          "s3-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0640255421176602
+      }
+    },
+    {
+      "name": "test_list_files[s3-latency-boto3_raw]",
+      "params": {
+        "bench_target": [
+          "s3-latency",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.05795312286361629
+      }
+    },
+    {
+      "name": "test_list_files[sftp-latency-remote_store]",
+      "params": {
+        "bench_target": [
+          "sftp-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.2585927306000485
+      }
+    },
+    {
+      "name": "test_list_files[sftp-latency-paramiko_raw]",
+      "params": {
+        "bench_target": [
+          "sftp-latency",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.20148623483335845
+      }
+    },
+    {
+      "name": "test_exists_hit[azure-latency-remote_store]",
+      "params": {
+        "bench_target": [
+          "azure-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.05324094681250813
+      }
+    },
+    {
+      "name": "test_exists_hit[azure-latency-azure_blob_raw]",
+      "params": {
+        "bench_target": [
+          "azure-latency",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.052800262300058874
+      }
+    },
+    {
+      "name": "test_exists_hit[s3-latency-remote_store]",
+      "params": {
+        "bench_target": [
+          "s3-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0494902908421026
+      }
+    },
+    {
+      "name": "test_exists_hit[s3-latency-boto3_raw]",
+      "params": {
+        "bench_target": [
+          "s3-latency",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.05767198036840838
+      }
+    },
+    {
+      "name": "test_exists_hit[sftp-latency-remote_store]",
+      "params": {
+        "bench_target": [
+          "sftp-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.10169351824995942
+      }
+    },
+    {
+      "name": "test_exists_hit[sftp-latency-paramiko_raw]",
+      "params": {
+        "bench_target": [
+          "sftp-latency",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.051671811649987374
+      }
+    },
+    {
+      "name": "test_write_bytes[1KB-azure-latency-remote_store]",
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "azure-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.05589984305880963
+      }
+    },
+    {
+      "name": "test_write_bytes[1KB-azure-latency-azure_blob_raw]",
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "azure-latency",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.05320509199999416
+      }
+    },
+    {
+      "name": "test_write_bytes[1KB-s3-latency-remote_store]",
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.16729476479999902
+      }
+    },
+    {
+      "name": "test_write_bytes[1KB-s3-latency-boto3_raw]",
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3-latency",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.1052744407777987
+      }
+    },
+    {
+      "name": "test_write_bytes[1KB-sftp-latency-remote_store]",
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "sftp-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.5902831275999688
+      }
+    },
+    {
+      "name": "test_write_bytes[1KB-sftp-latency-paramiko_raw]",
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "sftp-latency",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.31610885900004176
+      }
+    },
+    {
+      "name": "test_read_bytes[1KB-azure-latency-remote_store]",
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "azure-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.05872457633334863
+      }
+    },
+    {
+      "name": "test_read_bytes[1KB-azure-latency-azure_blob_raw]",
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "azure-latency",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.05531766479166814
+      }
+    },
+    {
+      "name": "test_read_bytes[1KB-s3-latency-remote_store]",
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.09992951790000007
+      }
+    },
+    {
+      "name": "test_read_bytes[1KB-s3-latency-boto3_raw]",
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3-latency",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.046653667529439835
+      }
+    },
+    {
+      "name": "test_read_bytes[1KB-sftp-latency-remote_store]",
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "sftp-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.41686843040001803
+      }
+    },
+    {
+      "name": "test_read_bytes[1KB-sftp-latency-paramiko_raw]",
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "sftp-latency",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.2581140874000084
+      }
+    },
+    {
+      "name": "test_write_bytes[64KB-azure-latency-remote_store]",
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "azure-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.062429896214228266
+      }
+    },
+    {
+      "name": "test_write_bytes[64KB-azure-latency-azure_blob_raw]",
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "azure-latency",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.06269243373333969
+      }
+    },
+    {
+      "name": "test_write_bytes[64KB-s3-latency-remote_store]",
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.15636980060003225
+      }
+    },
+    {
+      "name": "test_write_bytes[64KB-s3-latency-boto3_raw]",
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3-latency",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.11184930100000656
+      }
+    },
+    {
+      "name": "test_write_bytes[64KB-sftp-latency-remote_store]",
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "sftp-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.680527976599933
+      }
+    },
+    {
+      "name": "test_write_bytes[64KB-sftp-latency-paramiko_raw]",
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "sftp-latency",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.3836197592000644
+      }
+    },
+    {
+      "name": "test_read_bytes[64KB-azure-latency-remote_store]",
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "azure-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.05965112561906002
+      }
+    },
+    {
+      "name": "test_read_bytes[64KB-azure-latency-azure_blob_raw]",
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "azure-latency",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.05622353153335098
+      }
+    },
+    {
+      "name": "test_read_bytes[64KB-s3-latency-remote_store]",
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.10949945639995348
+      }
+    },
+    {
+      "name": "test_read_bytes[64KB-s3-latency-boto3_raw]",
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3-latency",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.05389321650003467
+      }
+    },
+    {
+      "name": "test_read_bytes[64KB-sftp-latency-remote_store]",
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "sftp-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.42452621319998796
+      }
+    },
+    {
+      "name": "test_read_bytes[64KB-sftp-latency-paramiko_raw]",
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "sftp-latency",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.260487632000013
+      }
+    },
+    {
+      "name": "test_write_bytes[1MB-azure-latency-remote_store]",
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "azure-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.07615508069233538
+      }
+    },
+    {
+      "name": "test_write_bytes[1MB-azure-latency-azure_blob_raw]",
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "azure-latency",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.07572216330768591
+      }
+    },
+    {
+      "name": "test_write_bytes[1MB-s3-latency-remote_store]",
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.17810008020001078
+      }
+    },
+    {
+      "name": "test_write_bytes[1MB-s3-latency-boto3_raw]",
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3-latency",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.12833635911109317
+      }
+    },
+    {
+      "name": "test_write_bytes[1MB-sftp-latency-remote_store]",
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "sftp-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 2.48274636860001
+      }
+    },
+    {
+      "name": "test_write_bytes[1MB-sftp-latency-paramiko_raw]",
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "sftp-latency",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 2.1292123049999647
+      }
+    },
+    {
+      "name": "test_read_bytes[1MB-azure-latency-remote_store]",
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "azure-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.057205088944480544
+      }
+    },
+    {
+      "name": "test_read_bytes[1MB-azure-latency-azure_blob_raw]",
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "azure-latency",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.06335562280003917
+      }
+    },
+    {
+      "name": "test_read_bytes[1MB-s3-latency-remote_store]",
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.10659148433334546
+      }
+    },
+    {
+      "name": "test_read_bytes[1MB-s3-latency-boto3_raw]",
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3-latency",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.05459999505878573
+      }
+    },
+    {
+      "name": "test_read_bytes[1MB-sftp-latency-remote_store]",
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "sftp-latency",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.4664999955999519
+      }
+    },
+    {
+      "name": "test_read_bytes[1MB-sftp-latency-paramiko_raw]",
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "sftp-latency",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.30724721940000566
+      }
+    }
+  ]
+}

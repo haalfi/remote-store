@@ -154,7 +154,8 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   reason). It is intentionally kept off push/PR CI: shared-runner timing is noisy
   and would flake a merge gate.
 - **When:** Monday 04:17 UTC, plus manual `workflow_dispatch` (with a
-  `quick`/`standard`/`full` tier input).
+  `quick`/`standard`/`full` tier input, and a `run_of_record` toggle — see the
+  run-of-record job below).
 - **Where the finding shows up:** the **red run**, the **regression table in the
   job summary**, and the uploaded **`benchmark-results` artifact** (run JSON +
   text reports, 90-day retention). This is the exception: it opens no rolling
@@ -163,9 +164,21 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   scheduled-run status and its artifacts), the same rationale as `codeql.yml`.
   A rolling-issue + triage-skill integration is **deferred** until the guard
   earns it — if weekly regression flags prove frequent or the correctness gate
-  starts catching real rot, promote it to the drift-guard pattern. The
-  data-freshness follow-up (a reproducible run of record feeding the published
-  overhead numbers) is tracked as ID-230.
+  starts catching real rot, promote it to the drift-guard pattern.
+- **The `run-of-record` job (ID-230).** A second, opt-in job in the same
+  workflow produces the **published overhead story** — the fresh source behind
+  `benchmarks/results/comparative.md` and the four docs charts. It runs **only**
+  on `workflow_dispatch` with the `run_of_record` input checked (never on the
+  weekly schedule — a full latency matrix every Monday is CI cost for no gate
+  value). Unlike the correctness gate, it brings up the **full compose stack**
+  (`infra/docker-compose.yml`, so Toxiproxy is wired in front of the network
+  backends — the `start-backends` action has no Toxiproxy), runs the `clean`
+  profile plus the `rtt20/rtt50/rtt100` matrix on the `-latency` backends,
+  regenerates `comparative.md` + the SVGs (guarded by
+  `benchmarks/slim_run_of_record.py` against the three silent-chart-failure
+  modes), and uploads them as the **`run-of-record`** artifact. **CI never
+  commits docs:** a maintainer downloads that artifact and commits the files.
+  See `benchmarks/README.md` § Run of record for the regeneration recipe.
 - **How to act:** on a red run, open the run and read the regression table.
   A flagged op is either a real regression (fix it) or a baseline that has
   drifted from the current runner class — refresh the baseline from a known-good

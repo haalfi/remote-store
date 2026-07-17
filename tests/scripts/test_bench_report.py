@@ -102,6 +102,74 @@ def test_build_full_table_covers_non_summary_ops() -> None:
     assert report._build_table(benchmarks) == {}
 
 
+# --- Magnitude band recast (ID-230) ----------------------------------------
+#
+# report.py used to answer "is the overhead worth paying?" via _verdict()
+# (Favorable/Negligible/Moderate/Visible). ID-230 recast that into a neutral
+# _magnitude() that answers only "how big is the delta?" — the acceptability
+# call is the reader's. The recast deliberately DROPS the old bands' 5ms
+# absolute floor, so boundary cases genuinely move class; these tests pin the
+# new bands AND the moved boundaries, not just the renamed strings.
+
+
+def test_magnitude_sub_ms_floor_dominates_percentage() -> None:
+    # A delta under 1ms absolute is "sub-ms" whatever the percentage — a
+    # percentage on a sub-millisecond op is noise, so it gets its own band.
+    assert report._magnitude(1.4e-3, 1.3e-3) == "sub-ms"  # +8%, 0.1ms
+    assert report._magnitude(0.6e-3, 0.3e-3) == "sub-ms"  # +100%, but 0.3ms
+
+
+def test_magnitude_percentage_bands_above_the_floor() -> None:
+    # >= 1ms absolute: the band is the percentage of raw.
+    assert report._magnitude(105e-3, 100e-3) == "<10%"  # +5%, 5ms
+    assert report._magnitude(130e-3, 100e-3) == "10-50%"  # +30%, 30ms
+    assert report._magnitude(160e-3, 100e-3) == ">50%"  # +60%, 60ms
+
+
+def test_magnitude_band_edges() -> None:
+    # The 10% boundary is exclusive-below (< 10 -> "<10%") and the 50%
+    # boundary is inclusive (<= 50 -> "10-50%"); just past 50% flips to >50%.
+    assert report._magnitude(109e-3, 100e-3) == "<10%"  # +9%
+    assert report._magnitude(111e-3, 100e-3) == "10-50%"  # +11%
+    assert report._magnitude(149e-3, 100e-3) == "10-50%"  # +49%
+    assert report._magnitude(151e-3, 100e-3) == ">50%"  # +51%
+
+
+def test_magnitude_drops_the_5ms_floor_boundary_moves() -> None:
+    # THE behaviour change to own: under the old _verdict a >50% delta that
+    # was still under 5ms absolute classified as "Moderate" (the 5ms floor
+    # held it back). _magnitude has no 5ms floor, so the same delta is now
+    # ">50%". 75% over a 4ms raw = 3ms absolute: Moderate -> >50%.
+    assert report._magnitude(7e-3, 4e-3) == ">50%"  # +75%, 3ms (was Moderate)
+    # And a 60% delta at 2ms absolute, likewise old-Moderate, is now >50%.
+    assert report._magnitude(4e-3, 2.5e-3) == ">50%"  # +60%, 1.5ms
+
+
+def test_magnitude_is_direction_agnostic() -> None:
+    # A faster delta (remote-store below raw) still yields a magnitude band,
+    # never a "Favorable" praise verdict — direction is the caller's job.
+    assert report._magnitude(3e-3, 6e-3) == "10-50%"  # 50% faster
+    assert report._magnitude(0.7e-3, 1.3e-3) == "sub-ms"  # faster but sub-ms
+
+
+def test_magnitude_zero_raw_is_empty() -> None:
+    assert report._magnitude(1e-3, 0.0) == ""
+
+
+def test_user_report_presents_delta_not_verdict(capsys: pytest.CaptureFixture[str]) -> None:
+    # The --user output leads with the measured delta + a factual direction +
+    # a neutral magnitude band, and carries none of the old acceptability
+    # verdict words.
+    table = {"Write 1MB": {"s3": {"remote_store": 20.1e-3, "boto3_raw": 31.6e-3}}}
+    report._print_user_report(table)
+    out = capsys.readouterr().out
+    assert "36% faster" in out
+    assert "(10-50%)" in out
+    assert "### S3 (MinIO)" in out
+    for banned in ("Favorable", "Negligible", "Moderate", "Visible"):
+        assert banned not in out
+
+
 def _write_run(path: Path, entries: list[tuple[str, float]]) -> None:
     """Write a minimal run JSON: entries are (test_name, mean) local cells."""
     payload: dict[str, Any] = {

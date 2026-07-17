@@ -1,8 +1,19 @@
 # Performance
 
 remote-store wraps established Python storage libraries. This page presents
-measured overhead so you can judge whether the abstraction cost matters for
-your workloads.
+the **measured** overhead of that wrapper and the levers to test it against
+your own workload. It does not tell you whether the overhead is acceptable —
+that depends on your call volume, latency budget, and alternatives, so it is
+your call, not the library's.
+
+The overhead is a **fixed per-operation cost**. Its size in isolation is what
+the numbers below report; whether it is worth paying is a function of how much
+of your total time is spent in storage calls versus network round-trips. As
+network round-trip time grows, a fixed per-op cost shrinks as a *share* of
+total time (see [What Happens Under Real Latency](#what-happens-under-real-latency)).
+To measure it for your own hardware and latency, use the levers in
+[Running Benchmarks](#running-benchmarks) — the `hatch run bench-*` commands and
+the four `--network-profile` profiles.
 
 ## Overhead at a Glance
 
@@ -19,10 +30,12 @@ Patterns from Docker benchmarks (MinIO, Azurite, OpenSSH):
 - **S3-PyArrow**: reads carry more overhead than the S3 backend (PyArrow C++
   data path); writes are comparable. The trade-off is native PyArrow integration
   — Tier 1 C++ range requests — not raw throughput.
-- **Azure** and **SFTP**: per-operation overhead is small relative to network
-  round-trip time for most operations.
+- **Azure** and **SFTP**: per-operation overhead is a fixed cost added on top
+  of each call; as a share of total time it shrinks as network round-trip time
+  grows (quantified in the next section).
 - **Local**: all operations are sub-millisecond; overhead versus raw pathlib is
-  measurable but negligible for storage workloads.
+  a fixed sub-millisecond cost per call. Whether that registers depends on your
+  call volume and how much of your latency budget is local I/O.
 
 Regenerate numbers for your own hardware with `hatch run bench-report`
 (see [Running Benchmarks](#running-benchmarks)).
@@ -67,6 +80,27 @@ backend's advantage is native [PyArrow integration](../guides/pyarrow-adapter.md
 Parquet column pruning, I/O coalescing, and GIL-free reads. For sequential
 byte streaming, the regular S3 backend is faster.
 
+## Practical Takeaways
+
+These follow from the numbers above. Whether the overhead is acceptable for
+*your* workload is still your call — measure it (see
+[Running Benchmarks](#running-benchmarks)).
+
+- **Overhead is per operation, not per byte.** It shows up across many small
+  calls (exists, metadata, small reads/writes, listings) and fades on larger
+  transfers, where it is spread across more bytes.
+- **As round-trip time grows, the fixed cost is a smaller share of each call.**
+  At 20–100 ms RTT a per-operation cost of a few milliseconds or less is a low
+  fraction of total call time (1 ms on a 100 ms round trip is 1%).
+- **Workload shape drives the impact.** The same fixed cost is a large share of
+  a sub-millisecond local `exists` and a small share of a 100 MB transfer, so
+  call-heavy patterns feel it more than bulk I/O.
+- **Throughput converges with file size.** Larger files approach raw-SDK
+  throughput as the fixed per-operation cost is amortized across more bytes.
+- **Measure, then reduce call count where it matters.** Benchmark your own
+  workload with `hatch run bench-*` and the `--network-profile` profiles; batch
+  or cache calls if the per-operation cost dominates your access pattern.
+
 ## Comparative Results
 
 For every operation, the benchmark suite runs the same workload through three
@@ -80,7 +114,7 @@ interfaces:
 
 Results vary by hardware, network, and service version. Generate numbers for
 your environment with `hatch run bench-report` (summary) or
-`hatch run bench-report-user` (condensed with verdicts).
+`hatch run bench-report-user` (condensed, with magnitude bands).
 
 For a full per-backend comparison of remote-store against the raw SDK and
 fsspec, see the Detailed Comparative Tables section on the
@@ -101,6 +135,14 @@ fsspec, see the Detailed Comparative Tables section on the
   path issues a fresh listing like raw boto3.
 - **Delete overhead.** 2-3x vs raw SDK across all backends is expected
   from the error-mapping layer and not an optimization target.
+- **SFTP write throughput is an emulator artifact.** On the Docker OpenSSH
+  container, a 1MB SFTP write takes hundreds of milliseconds — far slower than
+  the same write via `sshfs` or against a real server — because the paramiko
+  transport issues many small, unpipelined SFTP write packets over the local
+  container. remote-store and raw paramiko land within a few percent of each
+  other on that row, so the *overhead* the chart reports is right; the absolute
+  SFTP write throughput is not representative of a tuned or cloud SFTP endpoint.
+  Measure your own server with `hatch run bench-cloud`.
 - **Streaming reads keep memory constant** regardless of file size.
 
 ## Methodology
@@ -144,7 +186,7 @@ hatch run bench-save
 
 # Reports
 hatch run bench-report                    # summary table
-hatch run bench-report-user               # condensed with verdicts
+hatch run bench-report-user               # condensed, with magnitude bands
 hatch run bench-report-comparative        # remote-store vs raw SDK vs fsspec
 hatch run bench-charts                    # generate SVG charts
 

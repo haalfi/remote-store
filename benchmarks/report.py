@@ -72,6 +72,26 @@ TARGET_LABELS: dict[str, dict[str, str]] = {
     "azure": {"remote_store": "remote-store", "azure_blob_raw": "azure-blob", "adlfs": "adlfs"},
 }
 
+# ---- Chart / run-of-record configuration ----------------------------------
+# These live here rather than in benchmarks/charts.py so the matplotlib-free
+# tooling (slim_run_of_record's guard) can import them without pulling in
+# matplotlib; charts.py re-imports them.
+
+# Backends shown in comparative charts (must have a raw SDK baseline).
+COMPARATIVE_BACKENDS = ["s3", "s3-pyarrow", "sftp", "azure"]
+
+# Map a base backend to its Toxiproxy latency variant (overhead-vs-rtt chart).
+_LATENCY_VARIANT = {"s3": "s3-latency", "sftp": "sftp-latency", "azure": "azure-latency"}
+
+# Operations for the overhead chart and the run-of-record clean-file guard.
+OVERHEAD_OPS: list[tuple[str, dict[str, Any], str]] = [
+    ("test_write_bytes", {"payload": 1048576}, "Write 1MB"),
+    ("test_read_bytes", {"payload": 1048576}, "Read 1MB"),
+    ("test_exists_hit", {}, "Exists"),
+    ("test_list_files", {}, "List 50"),
+    ("test_delete", {}, "Delete"),
+]
+
 # ---------------------------------------------------------------------------
 
 
@@ -383,7 +403,7 @@ def _format_relative(value: float, baseline: float) -> str:
     return ""
 
 
-# ---- Raw SDK targets per backend (for verdict computation) ----------------
+# ---- Raw SDK targets per backend (for magnitude computation) --------------
 
 RAW_SDK_TARGET: dict[str, str] = {
     "local": "pathlib_raw",
@@ -397,33 +417,49 @@ RAW_SDK_TARGET: dict[str, str] = {
 }
 
 
-def _verdict(rs_seconds: float, raw_seconds: float) -> str:
-    """Classify overhead vs raw SDK into a user-friendly verdict.
+def _magnitude(rs_seconds: float, raw_seconds: float) -> str:
+    """Classify the size of the delta vs the raw SDK into a neutral band.
 
-    | Verdict       | Criteria                                |
-    |---------------|-----------------------------------------|
-    | Favorable     | >10% faster and >1ms absolute           |
-    | Negligible    | delta <10% or <1ms absolute             |
-    | Moderate      | either <=50% or <5ms absolute           |
-    | Visible       | >50% and >=5ms absolute                 |
+    This reports *how big* the measured delta is, never whether it is
+    acceptable — acceptability depends on the reader's workload, latency
+    budget, and alternatives, so it is the reader's call, not the suite's.
+    Direction (faster / slower) is reported factually by the caller.
+
+    | Band    | Criteria (on ``|delta|``)          |
+    |---------|------------------------------------|
+    | sub-ms  | < 1ms absolute                     |
+    | <10%    | >= 1ms absolute and < 10% of raw   |
+    | 10-50%  | >= 1ms absolute and 10-50% of raw  |
+    | >50%    | >= 1ms absolute and > 50% of raw   |
+
+    The 1ms floor keeps sub-millisecond deltas — where a percentage is
+    noise — in their own band. Unlike the previous verdict scale, there is
+    no secondary 5ms floor: a >50% delta reads as ">50%" whatever its
+    absolute size, so a magnitude band describes the delta rather than
+    gating it behind a second absolute threshold.
     """
     if raw_seconds <= 0:
         return ""
-    delta_abs = (rs_seconds - raw_seconds) * 1000  # ms
-    delta_pct = ((rs_seconds - raw_seconds) / raw_seconds) * 100
-    if delta_pct < -10 and delta_abs < -1:
-        return "Favorable"
-    if abs(delta_pct) < 10 or abs(delta_abs) < 1:
-        return "Negligible"
-    if delta_pct <= 50 or delta_abs < 5:
-        return "Moderate"
-    return "Visible"
+    delta_abs = abs(rs_seconds - raw_seconds) * 1000  # ms
+    delta_pct = abs((rs_seconds - raw_seconds) / raw_seconds) * 100
+    if delta_abs < 1:
+        return "sub-ms"
+    if delta_pct < 10:
+        return "<10%"
+    if delta_pct <= 50:
+        return "10-50%"
+    return ">50%"
 
 
 def _print_user_report(
     table: dict[str, dict[str, dict[str, float]]],
 ) -> None:
-    """Print a condensed user-facing report with verdicts."""
+    """Print a condensed user-facing report: measured delta + magnitude band.
+
+    Presents the remote-store time, the raw-SDK time, the factual direction
+    (faster / slower), and a neutral magnitude band. It does not judge
+    whether the overhead is acceptable — that is the reader's call.
+    """
     for backend in BACKEND_ORDER:
         labels = TARGET_LABELS.get(backend, {})
         raw_key = RAW_SDK_TARGET.get(backend)
@@ -446,12 +482,11 @@ def _print_user_report(
 
             rs_str = _format_time(rs)
             raw_str = _format_time(raw)
-            v = _verdict(rs, raw)
+            band = _magnitude(rs, raw)
             delta_pct = ((rs - raw) / raw) * 100 if raw > 0 else 0
+            direction = "faster" if delta_pct < 0 else "slower"
 
-            detail = f"remote-store {1 / (rs / raw):.1f}x faster" if delta_pct < 0 else f"+{delta_pct:.0f}%"
-
-            print(f"  {label + ':':<16} {rs_str:>8} vs {raw_str:>8} raw -> {v} ({detail})")
+            print(f"  {label + ':':<16} {rs_str:>8} vs {raw_str:>8} raw -> {abs(delta_pct):.0f}% {direction} ({band})")
 
 
 def _print_comparative_text(
@@ -505,6 +540,11 @@ def _render_comparative_markdown(
         cpu = machine_info.get("cpu", {}).get("brand_raw", "unknown")
         py = machine_info.get("python_version", "?")
         lines.append(f"<!-- Hardware: {cpu}, Python {py}, {platform.system()} -->")
+    # Placement marker so the generated file satisfies the docs-framework G-01
+    # gate: this file is embedded into the published guide via --8<-- but is not
+    # itself a rendered page. Without this, every regeneration drops the marker
+    # and fails `check_docs_framework.py`.
+    lines.append("<!-- doc: repo-only -->")
     lines.append("")
 
     for backend in BACKEND_ORDER:
@@ -579,7 +619,7 @@ def main() -> None:
     parser.add_argument(
         "--user",
         action="store_true",
-        help="Condensed user-facing report with verdicts (Negligible/Moderate/Visible/Favorable)",
+        help="Condensed user-facing report: measured delta + magnitude band (sub-ms/<10%/10-50%/>50%)",
     )
     parser.add_argument(
         "--regression",
@@ -677,7 +717,7 @@ def main() -> None:
             _print_comparative_text(comp_table)
         return
 
-    # --- User-facing verdict mode ---
+    # --- User-facing magnitude mode ---
     if args.user:
         comp_table = _build_comparative_table(latest["benchmarks"])
         machine = latest.get("machine_info", {})

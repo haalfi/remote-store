@@ -106,39 +106,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Docs & Discoverability
 
-- [ ] **ID-230 — Benchmark overhead story: reproducible run of record + user-decides framing**
-  spec: — · effort: M · audience: user.site, library.maintainer
-  Purpose-2 half of the benchmark-suite rework (purpose-1 governance shipped
-  as BK-309). **Framing principle:** the suite answers "*what* is the
-  overhead?"; it must not answer "*is it acceptable?*" — that depends on the
-  reader's workload, latency budget, and alternatives, so only the user can
-  answer it. The suite's job is to hand them the data and the tooling to decide,
-  not to hand down a verdict. The published answer today fails on both counts:
-  it rests on a single stale run (`benchmarks/results/comparative.md`,
-  2026-04-12, a Windows laptop; the four SVG charts in
-  `docs-src/explanation/performance.md` derive from `.benchmarks/` JSON that is
-  **not committed**, so they cannot be reproduced or trusted), *and* the
-  reporting editorialises acceptability on the reader's behalf. Scope when
-  picked up:
-  1. Regenerate `comparative.md` + charts from one documented Linux/Docker run
-     (BK-309's scheduled workflow now produces exactly this artifact — wire the
-     run of record to it rather than a laptop).
-  2. Commit the source JSON alongside the rendered outputs so the charts are
-     reproducible and diffable.
-  3. Reframe the docs + reports to **present overhead, not judge it**: lead with
-     the numbers and the "overhead shrinks as network latency grows" mechanism
-     (per `research/research-benchmark-suite-v2.md` Phase 3), and give the
-     reader the levers to test it against *their* workload (`hatch run
-     bench-*`, latency profiles). Revisit the `report.py --user` "worth it?"
-     verdict vocabulary (`Negligible/Moderate/Visible/Favorable`): recast as a
-     neutral **magnitude** descriptor of the measured delta, not a
-     value-judgement of whether it is worth paying — the acceptability call is
-     the user's.
-  Keep the machinery (chart generator, verdict scaffolding) — this is a
-  data-freshness + framing item, not new tooling. Surfaced during the
-  benchmark-suite analysis that produced BUG-228 / BK-309.
-  Plan: [research-id-230-benchmark-overhead-story.md](research/research-id-230-benchmark-overhead-story.md).
-
 - [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
   spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling
   Our docs foundation is entering maintenance mode as its authors converge on a
@@ -448,6 +415,27 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   the successor ticket is linked here; if promoted, `verify-tla` joins the
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
+
+- [ ] **BUG-233 — `adlfs` benchmark target errors on 10MB raw-bytes writes**
+  spec: — · effort: S · audience: infra.test
+  The `adlfs` fsspec comparison target (`benchmarks/targets/_fsspec.py`) fails on
+  a 10MB write against Azurite with `RuntimeError: Failed to upload block:
+  Sending a large body directly with raw bytes might lock the event loop. You
+  should probably pass an io.BytesIO object instead!`. It only surfaces at the
+  `standard` tier (quick caps at 1MB), so it went unseen until the ID-230
+  run-of-record job first ran the standard tier against Docker Azure.
+  **Repro:** with the compose stack up,
+  `pytest benchmarks/test_throughput.py -k "10MB and adlfs" --backend azure`.
+  **Fix sketch:** wrap large payloads in `io.BytesIO` in the `Adlfs` target's
+  write/read path — adlfs's async uploader rejects a raw-`bytes` body above a
+  size threshold and asks for a file-like object.
+  **Impact:** benchmark comparison only, and only the Azure *fsspec* cell at
+  10MB. remote-store's own `AzureBackend` 10MB writes pass, so the published
+  overhead numbers are unaffected — no run-of-record chart plots fsspec targets
+  at 10MB. Currently deselected in the run-of-record clean run via
+  `-k "not (10MB and (adlfs or s3fs or sshfs))"` (`.github/workflows/benchmark.yml`);
+  lifting that exclusion once fixed restores the adlfs 10MB throughput cell.
+  Surfaced during ID-230.
 
 - [ ] **BK-242 — Flat-NS file-ancestor pre-check perf (SQLBlob IN-list, memoisation)**
   spec: — · effort: S · audience: infra.test, library.maintainer

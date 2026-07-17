@@ -1,0 +1,111 @@
+id: ID-230
+title: "Benchmark overhead story: reproducible run of record + user-decides framing"
+trigger: >-
+  The published overhead story failed on two counts: the checked-in numbers
+  rested on a single stale 2026-04-12 Windows-laptop run with uncommitted chart
+  source, and report.py + the docs editorialised acceptability
+  (Negligible/Favorable) instead of presenting the measured overhead.
+source_items:
+  - ID-230
+  - BK-309
+audience:
+  - user.site
+  - library.maintainer
+discovery_followups:
+  - BUG-233
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-id-230-benchmark-overhead-story.md
+        section: "3.2, 3.3, 3.5 (design decisions + silent-failure traps)"
+        read_type: gate
+        extract: "Slim keeps top-level network_profile; rtt files need -latency names; bench-charts needs --file clean.json; magnitude recast drops the 5ms floor"
+      - file: benchmarks/charts.py
+        section: "_load_profile_data, chart_overhead_vs_rtt, main"
+        read_type: reference
+        extract: "Profiles keyed by in-file network_profile (charts.py:482); _LATENCY_VARIANT lookup (231); files[-1] baseline without --file"
+      - file: benchmarks/report.py
+        section: "_verdict, _print_user_report, _build_comparative_table"
+        read_type: reference
+        extract: "Verdict bands interleave a 5ms floor; --user print + help string are the recast sites"
+      - file: .github/workflows/benchmark.yml
+        section: "(full)"
+        read_type: reference
+        extract: "BK-309 correctness gate runs clean only, no toxiproxy, emits no comparative.md/charts — W1's extension point"
+      - file: benchmarks/conftest.py
+        section: "pytest_benchmark_update_json"
+        read_type: reference
+        extract: "network_profile injected at run time (conftest.py:168-169) — the key the slim must retain"
+  - id: implement
+    name: Implement
+    steps:
+      - file: benchmarks/report.py
+        section: "_verdict -> _magnitude"
+        read_type: reference
+        extract: "Recast to neutral size bands on |delta| (sub-ms/<10%/10-50%/>50%), drop the 5ms floor, report faster/slower factually"
+      - file: benchmarks/slim_run_of_record.py
+        section: "(new file)"
+        read_type: reference
+        extract: "Slim raw JSON to name/params/stats.mean + top-level network_profile + machine_info; guard the three chart invariants"
+      - file: .github/workflows/benchmark.yml
+        section: "run-of-record job"
+        read_type: reference
+        extract: "workflow_dispatch-only job: compose stack (toxiproxy) + clean/rtt matrix + regen + guard + upload artifact for maintainer commit"
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: reference
+        extract: "Register bench-run-of-record (module form, so benchmarks is importable)"
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_bench_report.py
+        section: "magnitude band recast"
+        read_type: reference
+        extract: "Assert the bands AND the moved 5ms-floor boundary (a >50%&<5ms delta: Moderate -> >50%), not just renamed strings"
+      - file: tests/scripts/test_slim_run_of_record.py
+        section: "(new file)"
+        read_type: reference
+        extract: "Exercise slim_file + guard: profile retention, and each of the three invariant violations flagged"
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/explanation/performance.md
+        section: "lede + Overhead at a Glance + running benchmarks"
+        read_type: reference
+        extract: "Lead with the fixed-per-op-cost mechanism + levers; drop 'measurable but negligible' / 'small for most operations'"
+      - file: README.md
+        section: "Performance"
+        read_type: reference
+        extract: "Replace 'small for most workloads' with the mechanism + the levers, acceptability is the reader's call"
+      - file: benchmarks/README.md
+        section: "Run of record"
+        read_type: reference
+        extract: "Regeneration recipe, the three invariants, and the divergence-from-baseline note (keep network_profile)"
+  - id: verify
+    name: Verify
+    steps:
+      - file: benchmarks/slim_run_of_record.py
+        section: "CLI + guard on synthetic then real data"
+        read_type: verify
+        extract: "First proved the recipe on synthetic JSON (real charts, guard passes, reproduced the no-file blank-chart trap); the sandbox could not pull the S3/SFTP/toxiproxy images, so the real run of record came from the run_of_record CI dispatch (4 iterations: 60s watchdog race -> --bench-timeout=300; adlfs 10MB failure -> fsspec-10MB deselect + BUG-233; RTT watchdog -> narrow the matrix to the overhead ops). Committed the resulting Linux/Docker JSON + regenerated comparative.md + charts; guard --check-only green"
+  - id: ripple
+    name: Ripple check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table (docs/benchmarks/reporting)"
+        read_type: verify
+        extract: "No spec/FEATURES ripple (not backends/errors/capabilities/versions); touch docs prose, reporting vocab, CI runbook"
+      - file: sdd/CI-OPERATIONS.md
+        section: "benchmark.yml runbook + ID-230 line"
+        read_type: verify
+        extract: "Document the run-of-record job; replace 'tracked as ID-230' with its description"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "user.site audience -> CHANGELOG entry required (magnitude recast + reframe + reproducible run-of-record path)"
+      - file: sdd/BACKLOG.md
+        section: "ID-230 (item)"
+        read_type: verify
+        extract: "Move ID-230 to BACKLOG-DONE.md [x] once the run of record is committed; run gen-backlogid"
