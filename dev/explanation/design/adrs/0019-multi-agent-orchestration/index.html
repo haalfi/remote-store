@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../../assets/logo.png">
-      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -6319,6 +6319,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0031-expert-personas-as-subagent-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0031: Expert Personas as Standalone Subagent Files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10434,6 +10462,13 @@ extension files aren't directly modified. For SDD-only changes, all 4 review.</p
 3. Fixes cross-domain gaps (README, pyproject.toml, nav files)
 4. Validates via <code>hatch run all</code></p>
 <h3 id="domain-boundaries">Domain boundaries<a class="headerlink" href="#domain-boundaries" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Superseded by <a href="../0031-expert-personas-as-subagent-files/">ADR-0031</a>.</strong> The
+per-expert persona definitions (identity, domain, foundation, constraints) now
+live as standalone Claude Code subagents in <code>.claude/agents/</code>, referenced by
+the <code>/orchestrate</code> skill via <code>subagent_type</code>, rather than inline in the skill.
+The domain boundaries themselves are unchanged.</p>
+</blockquote>
 <table>
 <thead>
 <tr>
@@ -10574,7 +10609,7 @@ The Documentation Expert assesses their impact but does not write to them.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow", "navigation.footer"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
