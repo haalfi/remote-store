@@ -2,12 +2,12 @@
 
 ## Status
 
-| Field         | Value    |
-| ------------- | -------- |
-| Status        | Accepted |
-| Supersedes    | —        |
-| Superseded by | —        |
-| Amends        | —        |
+| Field         | Value      |
+| ------------- | ---------- |
+| Status        | Superseded |
+| Supersedes    | —          |
+| Superseded by | ADR-0020   |
+| Amends        | —          |
 
 ## Context
 
