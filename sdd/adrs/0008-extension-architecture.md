@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -35,10 +40,12 @@ be designed when needed (see "Future patterns" below).
 
 ### Extension location
 
+<!-- adr:decision -->
 Extensions live in `src/remote_store/ext/<name>.py` (single module) or
 `src/remote_store/ext/<name>/` (sub-package for complex extensions).
 The `ext/__init__.py` re-exports nothing; each extension is imported
 directly by the user or by `remote_store.__init__`.
+<!-- /adr:decision -->
 
 ### Public API only
 

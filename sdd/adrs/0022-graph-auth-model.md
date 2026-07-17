@@ -2,7 +2,14 @@
 
 ## Status
 
-Accepted. Revised 2026-06-03 in place rather than superseded — by
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
+
+Revised 2026-06-03 in place rather than superseded — by
 the time the rewrite landed the ADR was unimplemented against, so
 there was no caller state to preserve and a superseding ADR would
 have added a level of indirection without aiding any reader. Per
@@ -32,8 +39,10 @@ later through user-supplied providers.
 
 ## Decision
 
+<!-- adr:decision -->
 The backend depends on a **token-provider callable**, not a concrete
 auth class. Two variants cover sync and async call sites:
+<!-- /adr:decision -->
 
 - `Callable[[], str]` — synchronous provider.
 - `Callable[[], Awaitable[str]]` — async provider.

@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -15,7 +20,9 @@ We need a layered architecture for backend-agnostic remote storage. Key tensions
 
 ## Decision
 
+<!-- adr:decision -->
 Three-layer architecture:
+<!-- /adr:decision -->
 
 1. **Store** — user-facing, immutable, folder-scoped. All operations use relative paths. Delegates all I/O to a backend. Thin wrapper with path scoping and capability gating.
 

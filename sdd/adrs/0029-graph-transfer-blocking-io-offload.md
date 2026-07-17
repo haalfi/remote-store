@@ -2,9 +2,16 @@
 
 ## Status
 
-Accepted — supersedes the "Worker-thread starvation under high concurrency"
-risk of [ADR-0025](0025-async-to-sync-backend-adapter.md) § Risks (that bullet
-only; the rest of ADR-0025 stays in effect).
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | ADR-0025 |
+
+Amends the "Worker-thread starvation under high concurrency" risk of
+[ADR-0025](0025-async-to-sync-backend-adapter.md) § Risks (that bullet only;
+the rest of ADR-0025 stays in effect).
 
 ## Context
 
@@ -38,11 +45,13 @@ every sibling coroutine for the duration of the disk op — the exact
 
 ## Decision
 
+<!-- adr:decision -->
 Dispatch the blocking spool I/O in `transfer.py` through `asyncio.to_thread`:
 the range-fallback `_spooled_window` write/seek/read, the `spool_content`
 write/tell/seek, and the `_upload_chunks` per-chunk seek+read (bundled into one
 `_seek_read` hop). The spool objects are accessed sequentially under `await`, so
 single-threaded offload is safe; nothing else holds the reader concurrently.
+<!-- /adr:decision -->
 
 This realises ADR-0025's own prescription ("`asyncio.to_thread` for hot paths")
 in-backend rather than leaving it deferred, and corrects the mischaracterised

@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted (supersedes [ADR-0016](0016-seekable-read-three-tier-design.md))
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | ADR-0016 |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -38,8 +43,10 @@ path and won't call an extension function.
 
 ## Decision
 
+<!-- adr:decision -->
 Add `read_seekable()` to `Backend` and `Store` as a concrete (non-abstract)
 method alongside the existing `read()`.
+<!-- /adr:decision -->
 
 ### `Backend.read_seekable(path) -> BinaryIO`
 

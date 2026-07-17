@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -15,7 +20,9 @@ Configuration systems often layer multiple sources (config files, env vars, CLI 
 
 ## Decision
 
+<!-- adr:decision -->
 **Config-as-code has absolute priority. No merging, no env var overrides.**
+<!-- /adr:decision -->
 
 Resolution rules:
 

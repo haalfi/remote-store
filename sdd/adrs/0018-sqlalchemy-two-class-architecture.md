@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -36,7 +41,9 @@ setup.
 
 ## Decision
 
+<!-- adr:decision -->
 **Option B — Two concrete backends, shared base.**
+<!-- /adr:decision -->
 
 ```
 _SQLAlchemyBaseBackend(Backend)   # private, not exported

@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -43,8 +48,10 @@ with no user-facing benefit.
 
 ## Decision
 
+<!-- adr:decision -->
 Use **Option C (Hybrid)**: `AsyncBackend` ABC + `SyncBackendAdapter` +
 `AsyncStore`.
+<!-- /adr:decision -->
 
 1. **Separate async types.** `AsyncBackend` (ABC) and `AsyncStore` are
    distinct types from `Backend` and `Store`. No shared base class — they

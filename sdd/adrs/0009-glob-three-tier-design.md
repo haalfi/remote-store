@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -23,7 +28,9 @@ extension, and two entry points create confusion about which to use.
 
 ## Decision
 
+<!-- adr:decision -->
 Three tiers of pattern matching, with clear escalation:
+<!-- /adr:decision -->
 
 ### Tier 1: `list_files(pattern=…)` — simple name filtering
 

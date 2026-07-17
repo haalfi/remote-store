@@ -2,7 +2,15 @@
 
 ## Status
 
-Accepted — supersedes the "Export rules" section of ADR-0008.
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | ADR-0008 |
+
+Amends only the "Export rules" section of
+[ADR-0008](0008-extension-architecture.md); the rest of ADR-0008 stands.
 
 ## Context
 
@@ -42,9 +50,11 @@ cost and are part of the core value proposition.
 
 ## Decision
 
+<!-- adr:decision -->
 Remove the conditional `try/except ImportError` re-export blocks for all
 optional-dependency extensions (`arrow`, `otel`, `pydantic`, `yaml`) from
 `remote_store/__init__.py` and `__all__`.
+<!-- /adr:decision -->
 
 Users import optional extensions from their canonical module path:
 

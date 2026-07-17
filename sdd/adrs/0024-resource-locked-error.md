@@ -2,7 +2,14 @@
 
 ## Status
 
-Accepted. Revised 2026-06-03 in place rather than superseded — by
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
+
+Revised 2026-06-03 in place rather than superseded — by
 the time the rewrite landed the ADR was unimplemented against, so
 there was no caller state to preserve and a superseding ADR would
 have added a level of indirection without aiding any reader. The
@@ -41,10 +48,12 @@ condition, so the error type does not exist yet. With Graph, it does.
 
 ## Decision
 
+<!-- adr:decision -->
 Add `ResourceLocked` as a new concrete error type in
 `src/remote_store/_errors.py`, alongside the other canonical errors.
 It inherits directly from `RemoteStoreError` per the flat hierarchy
 rule (ERR-008): one level deep, no intermediate categories.
+<!-- /adr:decision -->
 
 ### Semantics
 

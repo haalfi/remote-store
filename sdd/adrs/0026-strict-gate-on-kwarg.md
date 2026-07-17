@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -65,9 +70,11 @@ existing method rather than the method as a whole.
 
 ## Decision
 
+<!-- adr:decision -->
 When a caller passes an optional kwarg that requires a specific capability,
 and the backend does not declare that capability, raise
 `CapabilityNotSupported` **before any I/O**. Never silently drop the kwarg.
+<!-- /adr:decision -->
 
 ### Naming the pattern: strict gate on kwarg
 

@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -30,7 +35,9 @@ of SDK retry and is harder to reason about.
 
 ## Decision
 
+<!-- adr:decision -->
 Use **Option B (per-backend native configuration)**.
+<!-- /adr:decision -->
 
 1. Backends own their transport — retry is a transport concern.
 2. The policy replaces SDK defaults, avoiding retry multiplication.

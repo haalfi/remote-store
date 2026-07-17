@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -36,8 +41,10 @@ fact as a runtime discovery is the design error.
 
 ## Decision
 
+<!-- adr:decision -->
 The Azure backend no longer auto-detects HNS. The account's nature is a
 **mandatory, explicit** constructor and config input:
+<!-- /adr:decision -->
 
 - `AzureBackend(..., hns: bool)` and `AsyncAzureBackend(..., hns: bool)` —
   there is no default. A backend constructed without `hns`, or with a

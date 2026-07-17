@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -26,6 +31,7 @@ disagreed.
 
 ## Decision
 
+<!-- adr:decision -->
 Two coupled commitments: an architectural choice and the gate that
 keeps it true. The recurring failure across the prior ADRs was not
 that the chosen mechanism was wrong; each was reasonable for the case
@@ -35,6 +41,7 @@ without a check that detects the second bridge degrades to a
 preference. The architecture below is the choice; the gate (third
 sub-decision) is what stops the preference from being negotiated away
 on the next deadline.
+<!-- /adr:decision -->
 
 Three sub-decisions follow: the bridge itself, the classification
 mechanism (an aspect of the architecture, chosen so the bridge does

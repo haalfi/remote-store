@@ -2,7 +2,15 @@
 
 ## Status
 
-Accepted — supersedes the "ProxyStore contract" visibility clause of ADR-0014.
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | ADR-0014 |
+
+Amends only the "ProxyStore contract" visibility clause of
+[ADR-0014](0014-middleware-path-1-proxy-store-stream-wrappers.md).
 
 ## Context
 
@@ -29,11 +37,13 @@ In practice, `ProxyStore` is already visible to users:
 
 ## Decision
 
+<!-- adr:decision -->
 Export `ProxyStore` from `remote_store` and document it in the API
 reference. The class remains an internal delegation base by design:
 it centralises private-attribute coupling (`_backend`, `_root`,
 `_owns_backend`) and default delegation. It is not a middleware
 framework and gains no new hooks or dispatch machinery.
+<!-- /adr:decision -->
 
 The rest of ADR-0014 (delegation model, `_wrap_child()` hook, stream
 wrappers, integrity functions, migration trigger for Path 2) remains

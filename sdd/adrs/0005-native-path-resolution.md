@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -37,7 +42,9 @@ layer, which currently doesn't do it at all.
 
 ## Decision
 
+<!-- adr:decision -->
 Introduce `to_key` at two levels:
+<!-- /adr:decision -->
 
 ### 1. `Backend.to_key(native_path: str) -> str`
 

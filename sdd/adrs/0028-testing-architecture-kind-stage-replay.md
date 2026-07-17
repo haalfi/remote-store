@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -43,12 +48,14 @@ tools without a custom transport adapter.
 
 ## Decision
 
+<!-- adr:decision -->
 The architecture rests on five coupled commitments. They share
 rationale: the demotion mechanism only works because the axes are
 separated, the gate works only because gating is native, and the scope
 works only because the spec calls out where it does not apply. One ADR
 captures the bundle. Any commitment that later evolves can be
 superseded individually.
+<!-- /adr:decision -->
 
 ### Two orthogonal axes: kind and stage
 

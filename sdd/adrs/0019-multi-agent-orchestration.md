@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -29,7 +34,9 @@ access. Orchestrator aggregates results and handles cross-domain concerns.
 
 ## Decision
 
+<!-- adr:decision -->
 **Option C — Claude Code native agents** with the following architecture:
+<!-- /adr:decision -->
 
 ```
 Task (user invokes /orchestrate)

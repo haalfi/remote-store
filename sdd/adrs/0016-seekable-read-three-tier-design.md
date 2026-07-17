@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -27,7 +32,9 @@ portable extension fallback.
 
 ## Decision
 
+<!-- adr:decision -->
 Apply the ADR-0009 three-tier pattern to seekable reads:
+<!-- /adr:decision -->
 
 ### Tier 1: `Capability.SEEKABLE_READ`
 
