@@ -51,8 +51,15 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from benchmarks.charts import _LATENCY_VARIANT, COMPARATIVE_BACKENDS, OVERHEAD_OPS
-from benchmarks.report import _build_comparative_table, _parse_backend_and_target
+# Import from report.py (matplotlib-free) rather than charts.py so this guard —
+# and its tests — run in the lean tooling-tests lane that has no matplotlib.
+from benchmarks.report import (
+    _LATENCY_VARIANT,
+    COMPARATIVE_BACKENDS,
+    OVERHEAD_OPS,
+    _build_comparative_table,
+    _parse_backend_and_target,
+)
 
 DEFAULT_OUT = Path("benchmarks/results/run-of-record")
 

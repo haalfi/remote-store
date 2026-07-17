@@ -23,20 +23,23 @@ matplotlib.use("Agg")  # non-interactive backend — must precede pyplot import
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-from benchmarks.report import BACKEND_LABELS as _REPORT_LABELS  # noqa: E402
 from benchmarks.report import (  # noqa: E402
+    _LATENCY_VARIANT,
+    COMPARATIVE_BACKENDS,
+    OVERHEAD_OPS,
     RAW_SDK_TARGET,
     _build_comparative_table,
     _parse_backend_and_target,
     _test_name,
 )
+from benchmarks.report import BACKEND_LABELS as _REPORT_LABELS  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Shared configuration
 # ---------------------------------------------------------------------------
 
-# Backends shown in comparative charts (must have raw SDK baseline).
-COMPARATIVE_BACKENDS = ["s3", "s3-pyarrow", "sftp", "azure"]
+# COMPARATIVE_BACKENDS, OVERHEAD_OPS, and _LATENCY_VARIANT are imported from
+# report.py (matplotlib-free) so the slim_run_of_record guard can share them.
 
 # Extend report labels with emulator suffixes for chart clarity.
 BACKEND_LABELS = {
@@ -44,15 +47,6 @@ BACKEND_LABELS = {
     "azure": "Azure (Azurite)",
     "s3-pyarrow": "S3-PyArrow",
 }
-
-# Operations for overhead chart.
-OVERHEAD_OPS: list[tuple[str, dict[str, Any], str]] = [
-    ("test_write_bytes", {"payload": 1048576}, "Write 1MB"),
-    ("test_read_bytes", {"payload": 1048576}, "Read 1MB"),
-    ("test_exists_hit", {}, "Exists"),
-    ("test_list_files", {}, "List 50"),
-    ("test_delete", {}, "Delete"),
-]
 
 # Throughput file sizes.
 THROUGHPUT_SIZES: list[tuple[int, str]] = [
@@ -73,9 +67,6 @@ COLORS = {
 
 # RTT profile metadata: (profile_name, nominal_rtt_ms).
 RTT_PROFILES = [("clean", 0), ("rtt20", 20), ("rtt50", 50), ("rtt100", 100)]
-
-# Map base backend to its latency variant.
-_LATENCY_VARIANT = {"s3": "s3-latency", "sftp": "sftp-latency", "azure": "azure-latency"}
 
 # Style constants.
 _FONT_FAMILY = "sans-serif"

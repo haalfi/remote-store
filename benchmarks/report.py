@@ -72,6 +72,26 @@ TARGET_LABELS: dict[str, dict[str, str]] = {
     "azure": {"remote_store": "remote-store", "azure_blob_raw": "azure-blob", "adlfs": "adlfs"},
 }
 
+# ---- Chart / run-of-record configuration ----------------------------------
+# These live here rather than in benchmarks/charts.py so the matplotlib-free
+# tooling (slim_run_of_record's guard) can import them without pulling in
+# matplotlib; charts.py re-imports them.
+
+# Backends shown in comparative charts (must have a raw SDK baseline).
+COMPARATIVE_BACKENDS = ["s3", "s3-pyarrow", "sftp", "azure"]
+
+# Map a base backend to its Toxiproxy latency variant (overhead-vs-rtt chart).
+_LATENCY_VARIANT = {"s3": "s3-latency", "sftp": "sftp-latency", "azure": "azure-latency"}
+
+# Operations for the overhead chart and the run-of-record clean-file guard.
+OVERHEAD_OPS: list[tuple[str, dict[str, Any], str]] = [
+    ("test_write_bytes", {"payload": 1048576}, "Write 1MB"),
+    ("test_read_bytes", {"payload": 1048576}, "Read 1MB"),
+    ("test_exists_hit", {}, "Exists"),
+    ("test_list_files", {}, "List 50"),
+    ("test_delete", {}, "Delete"),
+]
+
 # ---------------------------------------------------------------------------
 
 
