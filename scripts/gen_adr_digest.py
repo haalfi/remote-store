@@ -158,7 +158,9 @@ def parse(path: Path) -> tuple[Adr | None, list[str]]:
     dec_match = DECISION_RE.search(text)
     if not dec_match:
         errors.append(f"{path.name}: missing <!-- adr:decision --> fence")
-    decision = " ".join(dec_match.group(1).split()) if dec_match else ""
+    # Preserve internal structure (a decision is often a lead-in + list); only
+    # trim the outer whitespace. Collapsing to one line would drop the layers.
+    decision = dec_match.group(1).strip() if dec_match else ""
 
     adr = Adr(
         path=path,
@@ -242,7 +244,7 @@ def render(adrs: list[Adr]) -> str:
         lines.append(f"## {status}")
         lines.append("")
         for a in group:
-            lines.append(f"### [{a.id}]({a.path.name}) — {a.title}")
+            lines.append(f"### [{a.id}]({a.path.name}): {a.title}")
             lines.append("")
             lines.append(a.decision or "_(no decision recorded)_")
             edges = []

@@ -19,11 +19,11 @@ This surfaced when writing example scripts: every natural usage pattern for "lis
 
 <!-- adr:decision -->
 Split path resolution in `Store` into two tiers:
-<!-- /adr:decision -->
 
 1. **`_full_path(path)`** — accepts empty string `""` to mean "the store root." If `root_path` is set, returns `root_path`; otherwise returns `""`. Non-empty paths still validate through `RemotePath`.
 
 2. **`_require_file_path(path)`** — rejects empty strings with `InvalidPath`. Used by file-targeted operations where an empty path is nonsensical.
+<!-- /adr:decision -->
 
 ### Method classification
 

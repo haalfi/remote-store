@@ -102,10 +102,15 @@ class TestParse:
         _, errors = _mod.parse(path)
         assert any("not in ['Proposed', 'Accepted', 'Superseded']" in e for e in errors)
 
-    def test_decision_whitespace_is_collapsed(self, tmp_path):
-        path = _write(tmp_path, "0009", decision="line one\n  line two")
+    def test_decision_preserves_list_structure(self, tmp_path):
+        # A decision is often a lead-in + list; the layers must survive extraction
+        # rather than being collapsed onto one line (PR #909 review).
+        decision = "Three tiers:\n\n1. **A** — first tier.\n2. **B** — second tier."
+        path = _write(tmp_path, "0009", decision=decision)
         adr, _ = _mod.parse(path)
-        assert adr.decision == "line one line two"
+        assert adr.decision == decision
+        assert "1. **A**" in adr.decision
+        assert "2. **B**" in adr.decision
 
     def test_multiple_links_in_one_cell(self, tmp_path):
         path = _write(tmp_path, "0020", supersedes=["ADR-0018", "ADR-0019"])
@@ -204,7 +209,7 @@ class TestRender:
         assert "## Superseded" in out
         # Accepted group precedes Superseded group.
         assert out.index("## Accepted") < out.index("## Superseded")
-        assert "### [ADR-0001](0001-first.md) — First" in out
+        assert "### [ADR-0001](0001-first.md): First" in out
         assert "Decision one." in out
         assert "> superseded by ADR-0007." in out
 

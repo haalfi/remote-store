@@ -35,7 +35,11 @@ access. Orchestrator aggregates results and handles cross-domain concerns.
 ## Decision
 
 <!-- adr:decision -->
-**Option C — Claude Code native agents** with the following architecture:
+**Option C — Claude Code native agents.** An orchestrator (the main session)
+spawns domain-scoped experts (Backend, Ext, Test, Doc) in parallel via the
+Agent tool; each runs with full repo access, and the orchestrator aggregates
+their results and handles cross-domain concerns (ripple-checks, CHANGELOG,
+BACKLOG, validation).
 <!-- /adr:decision -->
 
 ```

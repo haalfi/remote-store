@@ -47,7 +47,6 @@ makes sense in the context of the published documentation site but is still
 <!-- adr:decision -->
 Supersedes ADR-0006's two-tier model.  Content lives in one of three places,
 determined by its nature:
-<!-- /adr:decision -->
 
 1. **Source directories** — content readable on GitHub without MkDocs
    (`README.md`, `guides/`, `sdd/`, `examples/`, `src/`).
@@ -58,6 +57,7 @@ determined by its nature:
 3. **Build hook (`scripts/gen_pages.py`)** — pure mechanics: filesystem
    scanning, template filling, link rewriting, navigation assembly.
    No authored prose.
+<!-- /adr:decision -->
 
 ### Content homes by type
 

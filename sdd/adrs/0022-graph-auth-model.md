@@ -42,10 +42,10 @@ later through user-supplied providers.
 <!-- adr:decision -->
 The backend depends on a **token-provider callable**, not a concrete
 auth class. Two variants cover sync and async call sites:
-<!-- /adr:decision -->
 
 - `Callable[[], str]` — synchronous provider.
 - `Callable[[], Awaitable[str]]` — async provider.
+<!-- /adr:decision -->
 
 A built-in helper, `GraphAuth`, wraps MSAL and implements both
 client-credentials and device-code flows, exposing the result as one
