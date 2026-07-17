@@ -95,13 +95,14 @@ class Capability(enum.Enum):
       in-memory backends, SQL blob stores) do **not** declare this flag.
       Callers can use ``store.supports(Capability.LAZY_READ)`` to know
       whether partial reads avoid loading the entire file.
-    - ``WRITE_RESULT_NATIVE`` -- Quality flag: the backend populates the
-      rich fields of the returned ``WriteResult`` (``etag``,
-      ``version_id``, and where applicable ``last_modified`` and
-      ``digest``) directly from its write response.  Which rich fields are
-      filled depends on what that response carries — SFTP, for one, returns
-      ``last_modified=None`` because its write response has no timestamp
-      (call ``get_file_info()`` for the mtime).  Does **not** gate
+    - ``WRITE_RESULT_NATIVE`` -- Quality flag: the backend fills each rich
+      field of the returned ``WriteResult`` (``etag``, ``version_id``,
+      ``last_modified``, ``digest``) directly from its write response, but
+      only when that response carries the field — which fields are filled
+      depends on the backend.  Some native backends fill none: SFTP's write
+      response has no metadata at all, so it returns only ``path`` / ``size``
+      / ``source`` and leaves every rich field ``None`` (call
+      ``get_file_info()`` for the metadata).  Does **not** gate
       any method — ``Store.write*()`` works on every backend.
       Backends without this flag return a ``WriteResult`` with only
       ``path`` and ``size`` populated (``source == "basic"``);

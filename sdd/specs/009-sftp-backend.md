@@ -136,9 +136,11 @@ transport that has gone inactive is reconnected before the operation runs.
 **(2)** A drop that leaves the transport flag `True` but the SFTP channel dead
 (idle-channel timeout, subsystem restart, half-open partition) is invisible to
 tier 1; it is caught on the operation itself, whose `EOFError` /
-`OSError('Socket is closed')` / `ECONNRESET` / `EPIPE` maps to
+`OSError('Socket is closed')` / `ECONNRESET` / `EPIPE` / `ECONNABORTED` maps to
 `BackendUnavailable` and invalidates the cached client, so the *next* `_sftp`
-access reconnects.
+access reconnects. Every operation routes its failure through `_map_exception`
+(see SFTP-023) for this to hold — including the listing operations and
+`open_atomic`'s streamed-write phase, which classify their own errors.
 **Rationale:** The property is accessed several times per operation, so the
 former `stat('.')` liveness probe multiplied each operation's RTT count. The
 transport flag costs nothing on the wire; tier 2 restores the reconnect
@@ -239,7 +241,11 @@ mapped to `NotFound`.
 ### SFTP-023: BackendUnavailable Mapping
 
 **Invariant:** `paramiko.SSHException` and its subclasses (authentication failures,
-channel errors, etc.) are mapped to `BackendUnavailable`.
+channel errors, etc.) are mapped to `BackendUnavailable`. So are the dropped-
+connection signals that are *not* `SSHException` subclasses — `EOFError`,
+`OSError('Socket is closed')` (no `errno`), and `OSError` with `errno` in
+`ECONNRESET` / `EPIPE` / `ECONNABORTED` — which additionally invalidate the
+cached SFTP client so the next operation reconnects (see SFTP-010, tier 2).
 
 ### SFTP-024: No Native Exception Leakage
 

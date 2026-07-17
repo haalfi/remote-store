@@ -988,9 +988,19 @@ class SFTPBackend(Backend):
                 yield f
             with self._errors(path):
                 self._promote(tmp_path, sftp_path, path, overwrite=overwrite)
-        except Exception:
+        except Exception as exc:
             with contextlib.suppress(Exception):
                 self._sftp.remove(tmp_path)
+            # BK-313 tier 2: a channel death during the temp-file open or the
+            # caller's streamed writes is a backend failure, not a user
+            # exception (_is_connection_dead matches only the former), so it must
+            # invalidate the client and surface as BackendUnavailable like every
+            # other op — the promote step already runs inside _errors(). Anything
+            # else (the caller's own exception, a mapped RemoteStoreError)
+            # propagates unchanged.
+            if self._is_connection_dead(exc):
+                self._sftp_client = None
+                raise BackendUnavailable(str(exc), path=path, backend=self.name) from None
             raise
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
@@ -1084,10 +1094,11 @@ class SFTPBackend(Backend):
         """
         try:
             yield from self._list_files_depth(path, recursive=recursive, max_depth=max_depth, _depth=0)
-        except RemoteStoreError:
-            raise
         except Exception as exc:  # noqa: BLE001
-            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
+            # BK-313: route through _map_exception (not a bare RemoteStoreError)
+            # so a channel death mid-listing invalidates the client and reconnects
+            # on the next call (SFTP-010 tier 2), same as the single-object ops.
+            raise self._map_exception(exc, path) from None
 
     def _list_files_depth(
         self,
@@ -1141,10 +1152,8 @@ class SFTPBackend(Backend):
                 if stat.S_ISDIR(attr.st_mode):
                     rel = f"{path}/{attr.filename}" if path else attr.filename
                     yield FolderEntry(path=RemotePath(rel), name=attr.filename)
-        except RemoteStoreError:
-            raise
         except Exception as exc:  # noqa: BLE001
-            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
+            raise self._map_exception(exc, path) from None  # BK-313 tier 2 — see list_files
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         """Yield the immediate files and folders under *path* in one listing.
@@ -1171,10 +1180,8 @@ class SFTPBackend(Backend):
                 elif stat.S_ISDIR(attr.st_mode):
                     rel = f"{path}/{attr.filename}" if path else attr.filename
                     yield FolderEntry(path=RemotePath(rel), name=attr.filename)
-        except RemoteStoreError:
-            raise
         except Exception as exc:  # noqa: BLE001
-            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
+            raise self._map_exception(exc, path) from None  # BK-313 tier 2 — see list_files
 
     def get_file_info(self, path: str) -> FileInfo:
         """Return metadata for the file at *path* from a single ``stat`` round-trip.

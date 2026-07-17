@@ -500,6 +500,88 @@ class TestSFTPConnection:
         # Next call reconnects transparently.
         assert sftp_backend.exists("test.txt") is False
 
+    @pytest.mark.spec("SFTP-010")
+    def test_channel_death_during_listing_maps_and_reconnects(self, sftp_backend: Backend) -> None:
+        """SFTP-010 tier 2 must also hold for the listing operations.
+
+        BK-313 review: ``list_files`` / ``list_folders`` / ``iter_children``
+        classify their own errors rather than going through ``_errors()``. If
+        they raise a bare ``RemoteStoreError`` instead of routing through
+        ``_map_exception``, a channel death mid-listing never invalidates the
+        client, so listing-only workloads wedge permanently. This pins that they
+        share the tier-2 mapping + reconnect.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("f.txt", b"x")  # a top-level file to list
+        sftp_backend._sftp_client.close()  # kill channel, transport stays up
+
+        with pytest.raises(BackendUnavailable):
+            list(sftp_backend.list_files(""))
+        assert sftp_backend._sftp_client is None
+        # Reconnects and lists on the next call.
+        assert [str(fi.path) for fi in sftp_backend.list_files("")] == ["f.txt"]
+
+    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.parametrize(
+        "exc",
+        [
+            pytest.param(EOFError("channel closed"), id="eof"),
+            pytest.param(OSError("Socket is closed"), id="socket-closed-no-errno"),
+            pytest.param(OSError(errno.ECONNRESET, "reset"), id="econnreset"),
+            pytest.param(OSError(errno.EPIPE, "broken pipe"), id="epipe"),
+            pytest.param(OSError(errno.ECONNABORTED, "aborted"), id="econnaborted"),
+        ],
+    )
+    def test_dead_connection_signal_maps_to_unavailable_and_invalidates(self, exc: Exception) -> None:
+        """SFTP-023 tier 2: each dropped-connection signal maps + invalidates the client.
+
+        The channel-death integration test only exercises the ``'Socket is
+        closed'`` text branch (that is what a client-side close raises). This
+        drives every signal ``_is_connection_dead`` matches straight through
+        ``_map_exception`` so a dropped ``EOFError`` arm (how a real server-side
+        drop surfaces) or an errno branch cannot silently regress.
+        """
+        backend = SFTPBackend(host="h", username="u", password="p", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        sentinel = object()
+        backend._sftp_client = sentinel  # type: ignore[assignment]
+        mapped = backend._map_exception(exc, "some/path")
+        assert isinstance(mapped, BackendUnavailable)
+        assert backend._sftp_client is None, "a dead-connection signal must invalidate the cached client"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_live_errno_does_not_invalidate_client(self) -> None:
+        """SFTP-023: a routine errno (ENOENT) is not a connection death — leave the client alone."""
+        backend = SFTPBackend(host="h", username="u", password="p", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        sentinel = object()
+        backend._sftp_client = sentinel  # type: ignore[assignment]
+        mapped = backend._map_exception(OSError(errno.ENOENT, "missing"), "some/path")
+        assert isinstance(mapped, NotFound)
+        assert backend._sftp_client is sentinel, "a non-connection error must not invalidate the client"
+
+    @pytest.mark.spec("SFTP-003")
+    @pytest.mark.parametrize("op", ["write", "write_atomic"])
+    def test_overwrite_true_issues_no_pre_write_stat(self, sftp_backend: Backend, op: str) -> None:
+        """BK-313: the ``overwrite=True`` path must not stat the target before writing.
+
+        This is the round-trip the optimization removes; nothing else pins it,
+        so re-adding a pre-write stat (undoing BK-313) would otherwise ship
+        green. A spy records every ``stat`` argument and asserts the target path
+        is never among them on the overwrite success path.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("ovw.txt", b"v1")  # seed the existing file
+        target = sftp_backend._sftp_path("ovw.txt")
+        real_stat = sftp_backend._sftp_client.stat
+        seen: list[str] = []
+
+        def _spy(remote_path: str, *args: Any, **kwargs: Any) -> Any:
+            seen.append(remote_path)
+            return real_stat(remote_path, *args, **kwargs)
+
+        sftp_backend._sftp_client.stat = _spy  # type: ignore[method-assign]
+        getattr(sftp_backend, op)("ovw.txt", b"v2", overwrite=True)
+        assert target not in seen, f"overwrite=True issued a pre-write stat on the target: {seen}"
+
 
 # endregion
 

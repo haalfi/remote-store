@@ -15,7 +15,8 @@ surprising_ripples:
   - src/remote_store/_models.py
   - docs-src/reference/api/store.md
   - docs-src/guides/write-integrity.md
-review_rounds: 1
+  - sdd/specs/003-backend-adapter-contract.md
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -68,7 +69,7 @@ phases:
       - file: src/remote_store/backends/_sftp.py
         section: "_is_connected, _sftp property, _map_exception"
         read_type: reference
-        extract: "The measured counts ran higher than the code's explicit stats: _is_connected() did a stat('.') round-trip on every _sftp access. Replaced with the transport's is_active() flag (local, no round-trip); the dominant cut. PR review then caught that is_active() tracks the transport, not the SFTP channel, so a channel-only drop wedged permanently — added tier 2: _map_exception maps the dead-channel exception to BackendUnavailable and clears _sftp_client so the next access reconnects"
+        extract: "The measured counts ran higher than the code's explicit stats: _is_connected() did a stat('.') round-trip on every _sftp access. Replaced with the transport's is_active() flag (local, no round-trip); the dominant cut. PR review round 1 caught that is_active() tracks the transport, not the SFTP channel, so a channel-only drop wedged permanently — added tier 2: _map_exception maps the dead-channel exception to BackendUnavailable and clears _sftp_client so the next access reconnects. Round 2 caught that the listing ops and open_atomic's yield phase bypass _map_exception, so tier 2 never fired there — routed them through it; also that CAP-007 (003 spec) still claimed native = all rich fields populated, contradicting SFTP now populating none"
       - file: sdd/specs/009-sftp-backend.md
         section: "SFTP-010"
         read_type: gate
