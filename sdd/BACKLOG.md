@@ -71,6 +71,41 @@ and the highest ID already in this file, then take the next integer. Run
   those are algorithm-name → impl lookup tables, not security policy.
   Surfaced during BK-198 (PR 613) review.
 
+- [ ] **BK-313 — SFTP backend: cut per-operation metadata round-trips**
+  spec: — · effort: M · audience: user.api
+  `SFTPBackend` issues several extra SFTP `stat` round-trips per operation that
+  raw paramiko skips, and SFTP is synchronous, so each is one network RTT. On
+  the ID-230 run of record the SFTP overhead vs raw paramiko is **~6×RTT for
+  write and ~3×RTT for read**, and it is **payload-independent** (1KB/64KB/1MB
+  all ~110–124 ms write / ~57–71 ms read at rtt20 — verified), i.e. a fixed
+  round-trip count, not data chunking. Under 100 ms RTT that is +280–561 ms per
+  op. S3 adds ~1 extra HEAD and Azure ~0, so this is SFTP-specific, and it is a
+  deliberate contract/metadata cost, **not a defect** — but much of it is
+  avoidable.
+  **Where the round-trips come from** (`src/remote_store/backends/_sftp.py`):
+  `write()` does a pre-write `stat` (overwrite / is-dir guard, :832),
+  `_ensure_parent_dirs` (a `stat` per ancestor, :840), and a **post-write
+  `stat`** purely to populate `WriteResult.size` / `last_modified` (:853);
+  `read_bytes()` pays a `_check_not_dir` `stat` (:789, whose docstring notes the
+  extra round-trip); `delete` / `exists` carry similar prechecks.
+  **Optimizations, highest-value first:**
+  1. **Drop / lazy the post-write `stat`.** `WriteResult.size` is already
+     `len(content)`; only `last_modified` needs the server. Make it lazy or omit
+     it on the streaming write path — saves one RTT on *every* SFTP write. This
+     changes `WriteResult.last_modified` semantics → `user.api`, CHANGELOG, and a
+     conformance check.
+  2. **Skip the pre-write `stat` when `overwrite=True`** (the common case): the
+     open truncates anyway; the stat only backs the `overwrite=False` guard and
+     the dir-type check.
+  3. **Reconsider `_check_not_dir` on read/delete** (paid "for simplicity" per
+     its docstring) — the open/remove error mapping may already cover it.
+  Together these take SFTP write from ~6 to ~2–3 extra round-trips. Preserve the
+  error-type contract (`NotFound` / `InvalidPath` / `AlreadyExists`) and the
+  `WriteResult` contract. Measure before/after with `hatch run
+  bench-latency-matrix`; the ID-230 run of record
+  (`benchmarks/results/run-of-record/rtt*.json`) is the baseline. Surfaced during
+  the ID-230 chart review (PR #906).
+
 ---
 
 ## Lint / CI Completeness
@@ -105,6 +140,45 @@ and the highest ID already in this file, then take the next integer. Run
 ---
 
 ## Docs & Discoverability
+
+- [ ] **BK-314 — Benchmark overhead: present in ms, not %, and fix the "shrinks as a share" narrative**
+  spec: — · effort: M · audience: user.site
+  The two overhead charts plot overhead as a **percentage** of raw-SDK time
+  (`chart_overhead` → `overhead.svg`, "Overhead vs raw SDK (%)"; and
+  `chart_overhead_vs_rtt` → `overhead-vs-rtt.svg`, "Average overhead vs raw SDK
+  (%)"; `benchmarks/charts.py:132,195`). These are the only two %-framed charts
+  — throughput is MB/s, s3-comparison is ms. Percentage hides the absolute cost
+  and, worse, the surrounding prose builds a **false premise** on it: the
+  performance guide narrates the fixed per-op cost as "shrink[ing] as a *share*
+  of total time" as RTT grows, with the example "a 1 ms overhead on a 100 ms
+  round trip is 1%" (`docs-src/explanation/performance.md:9-13,34,45-46,92-94`;
+  `README.md:230`).
+  **Why the premise is wrong:** the ID-230 run of record shows remote-store's
+  overhead is itself **round-trip driven** (extra `stat` calls — see BK-313), so
+  the absolute ms overhead **grows with RTT** rather than staying a fixed 1 ms.
+  SFTP write overhead is ~6×RTT, so at 100 ms RTT it is ~+560 ms, not a
+  vanishing 1%. The "1 ms on a 100 ms round trip" example is simply untrue for
+  SFTP; the % axis is what let the misreading stand.
+  **Scope (charts + prose, one item — same misrepresentation, two surfaces):**
+  1. Recast both overhead charts to **absolute ms** overhead (remote-store minus
+     raw), dropping the % y-axis. A generator was prototyped during the PR #906
+     review (grouped ms-by-backend for the clean profile; ms-vs-RTT line showing
+     the overhead *growing*).
+  2. **Add a decomposition chart:** stacked raw-SDK time + remote-store overhead
+     (ms) per RTT profile, overhead labelled in ms and as share-of-total, so the
+     fixed op time vs the latency-scaled overhead are both visible.
+  3. **Correct the prose** in `performance.md` (lede, Overhead at a Glance, What
+     Happens Under Real Latency, Practical Takeaways) and `README.md:230`:
+     replace "shrinks as a share / 1 ms on 100 ms is 1%" with the accurate
+     mechanism — overhead is a round-trip *count*, so the ms cost scales with
+     RTT; its share of total time can rise or fall, but the absolute cost grows.
+  Keep the ID-230 framing: **present** the overhead, do not judge acceptability
+  — ms is factual presentation, not a verdict. Also update the chart alt-text /
+  embeds (`performance.md:20,24,48`), any chart guard/tests, and the
+  `benchmarks/README.md` regeneration recipe if axis labels are cited; then
+  regenerate the SVGs from `benchmarks/results/run-of-record/{clean,rtt*}.json`
+  and recommit them. No spec/FEATURES ripple; `user.site` → CHANGELOG on ship.
+  Surfaced during the ID-230 chart review (PR #906).
 
 - [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
   spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling
