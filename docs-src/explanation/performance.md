@@ -114,6 +114,14 @@ fsspec, see the Detailed Comparative Tables section on the
   path issues a fresh listing like raw boto3.
 - **Delete overhead.** 2-3x vs raw SDK across all backends is expected
   from the error-mapping layer and not an optimization target.
+- **SFTP write throughput is an emulator artifact.** On the Docker OpenSSH
+  container, a 1MB SFTP write takes hundreds of milliseconds — far slower than
+  the same write via `sshfs` or against a real server — because the paramiko
+  transport issues many small, unpipelined SFTP write packets over the local
+  container. remote-store and raw paramiko land within a few percent of each
+  other on that row, so the *overhead* the chart reports is right; the absolute
+  SFTP write throughput is not representative of a tuned or cloud SFTP endpoint.
+  Measure your own server with `hatch run bench-cloud`.
 - **Streaming reads keep memory constant** regardless of file size.
 
 ## Methodology

@@ -304,13 +304,26 @@ that artifact and commit its files — CI never pushes to docs.
 **Regenerating locally (or re-slimming a raw run).** With the compose stack up:
 
 ```bash
-# 1. Run the clean + RTT matrix, capturing raw JSON per profile.
+# 1. Run the clean + RTT matrix, capturing raw JSON per profile. These flags
+#    MUST match the run-of-record job in .github/workflows/benchmark.yml — run
+#    verbatim without them and the clean run hits the adlfs 10MB failure
+#    (BUG-233) and the RTT loop trips the per-test watchdog:
+#      * --bench-timeout=300 — standard-tier 10MB SFTP writes (~50s over
+#        pytest-benchmark's rounds) flirt with the default 60s watchdog and can
+#        trip a late KeyboardInterrupt that aborts the session.
+#      * clean -k drops the fsspec 10MB cells (adlfs errors on 10MB raw bytes;
+#        no run-of-record chart plots fsspec at 10MB).
+#      * RTT -k restricts to the five overhead ops the chart reads; the pedantic
+#        copy/move/streaming RS-only tests under latency otherwise exceed the
+#        watchdog and trip the same fatal interrupt.
 pytest benchmarks/ --benchmark-json=clean-raw.json \
-  --backend local,s3,s3-pyarrow,sftp,azure -m "not full"
+  --backend local,s3,s3-pyarrow,sftp,azure -m "not full" --bench-timeout=300 \
+  -k "not (10MB and (adlfs or s3fs or sshfs))"
 for p in rtt20 rtt50 rtt100; do
   pytest benchmarks/ --benchmark-json="$p-raw.json" \
     --backend s3-latency,sftp-latency,azure-latency --network-profile "$p" \
-    --pool-size=20 --bench-timeout=120 -m "not standard and not full"
+    --pool-size=20 --bench-timeout=300 -m "not standard and not full" \
+    -k "test_write_bytes or test_read_bytes or test_exists_hit or test_list_files or (test_delete and not folder)"
 done
 
 # 2. Slim to the committed shape AND assert the three chart invariants below.
