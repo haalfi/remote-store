@@ -71,41 +71,6 @@ and the highest ID already in this file, then take the next integer. Run
   those are algorithm-name → impl lookup tables, not security policy.
   Surfaced during BK-198 (PR 613) review.
 
-- [ ] **BK-313 — SFTP backend: cut per-operation metadata round-trips**
-  spec: — · effort: M · audience: user.api
-  `SFTPBackend` issues several extra SFTP `stat` round-trips per operation that
-  raw paramiko skips, and SFTP is synchronous, so each is one network RTT. On
-  the ID-230 run of record the SFTP overhead vs raw paramiko is **~6×RTT for
-  write and ~3×RTT for read**, and it is **payload-independent** (1KB/64KB/1MB
-  all ~110–124 ms write / ~57–71 ms read at rtt20 — verified), i.e. a fixed
-  round-trip count, not data chunking. Under 100 ms RTT that is +280–561 ms per
-  op. S3 adds ~1 extra HEAD and Azure ~0, so this is SFTP-specific, and it is a
-  deliberate contract/metadata cost, **not a defect** — but much of it is
-  avoidable.
-  **Where the round-trips come from** (`src/remote_store/backends/_sftp.py`):
-  `write()` does a pre-write `stat` (overwrite / is-dir guard, :832),
-  `_ensure_parent_dirs` (a `stat` per ancestor, :840), and a **post-write
-  `stat`** purely to populate `WriteResult.size` / `last_modified` (:853);
-  `read_bytes()` pays a `_check_not_dir` `stat` (:789, whose docstring notes the
-  extra round-trip); `delete` / `exists` carry similar prechecks.
-  **Optimizations, highest-value first:**
-  1. **Drop / lazy the post-write `stat`.** `WriteResult.size` is already
-     `len(content)`; only `last_modified` needs the server. Make it lazy or omit
-     it on the streaming write path — saves one RTT on *every* SFTP write. This
-     changes `WriteResult.last_modified` semantics → `user.api`, CHANGELOG, and a
-     conformance check.
-  2. **Skip the pre-write `stat` when `overwrite=True`** (the common case): the
-     open truncates anyway; the stat only backs the `overwrite=False` guard and
-     the dir-type check.
-  3. **Reconsider `_check_not_dir` on read/delete** (paid "for simplicity" per
-     its docstring) — the open/remove error mapping may already cover it.
-  Together these take SFTP write from ~6 to ~2–3 extra round-trips. Preserve the
-  error-type contract (`NotFound` / `InvalidPath` / `AlreadyExists`) and the
-  `WriteResult` contract. Measure before/after with `hatch run
-  bench-latency-matrix`; the ID-230 run of record
-  (`benchmarks/results/run-of-record/rtt*.json`) is the baseline. Surfaced during
-  the ID-230 chart review (PR #906).
-
 ---
 
 ## Lint / CI Completeness

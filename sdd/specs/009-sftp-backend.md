@@ -51,7 +51,13 @@ construction (see SFTP-004).
 **Invariant:** `SFTPBackend` declares capabilities:
 `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `WRITE_RESULT_NATIVE`. Does not declare `GLOB` (no native pattern matching; use `list_files(pattern=…)` or `ext.glob` for client-side fallback).
 **Rationale:**
-- `WRITE_RESULT_NATIVE`: `write()` and `write_atomic()` perform a `sftp.stat()` round-trip after upload/rename to populate `last_modified`.
+- `WRITE_RESULT_NATIVE`: `write()` and `write_atomic()` populate `size` (counted
+  during upload) and `source` from the write path itself. `last_modified` is
+  `None` — SFTP's write response carries no timestamp, and the backend does not
+  stat after upload/rename to fetch one (BK-313: that round-trip was paid on
+  every write). WR-001a permits `None` for a field the write response omits, so
+  the declaration rests on `size` / `source`; callers needing the mtime call
+  `get_file_info()`.
 - `ATOMIC_WRITE`: Simulated via temp file + rename (see SFTP-014). Orphan temp
   files are possible on connection failure — documented caveat.
 - `MOVE`: Implemented via `posix_rename` with fallback (see SFTP-018).
@@ -123,10 +129,17 @@ See also: spec `025-retry-policy.md` (RET-010).
 
 ### SFTP-010: Staleness Detection and Reconnect
 
-**Invariant:** The lazy `_sftp` property checks connection liveness by calling
-`stat('.')`. If the connection is stale (e.g. server dropped it), the backend
-reconnects transparently.
-**Postconditions:** Callers do not need to handle connection drops explicitly.
+**Invariant:** The lazy `_sftp` property checks connection liveness via the SSH
+transport's active state — a local flag read with no network round-trip
+(BK-313). A transport that has gone inactive (the server dropped the connection,
+closing the channel) is reconnected transparently on next use.
+**Rationale:** The property is accessed several times per operation; a
+round-trip liveness probe (the former `stat('.')`) multiplied each operation's
+RTT count. `is_active()` costs nothing on the wire and still catches the common
+server-dropped-the-connection case.
+**Postconditions:** A healthy connection is reused without a per-operation probe
+round-trip. A drop the transport has not yet observed surfaces on the operation
+as `BackendUnavailable`; the following call re-establishes the connection.
 
 ---
 

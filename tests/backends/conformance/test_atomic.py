@@ -200,8 +200,22 @@ _FIELD_CAPABILITY: dict[str, Capability | None] = {
 }
 
 # name → (reason, strict).  Add an entry when a WRITE_RESULT_NATIVE backend
-# temporarily returns last_modified=None from write() (e.g. new declaration lag).
-_LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {}
+# returns last_modified=None from write(): either temporarily (e.g. new
+# declaration lag) or — as with the SFTP entry below — permanently and by
+# design, because the protocol's write response carries no timestamp and the
+# backend refuses to buy one with an extra round-trip. Both cases are the same
+# assertion; the reason string is what distinguishes a gap from a decision.
+_LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {
+    "sftp": (
+        "BK-313: SFTP's write response carries no timestamp, and the post-write sftp.stat() that "
+        "used to supply one cost a round-trip on every write (~6xRTT total overhead vs raw paramiko "
+        "on the ID-230 run of record). It is dropped by design, so last_modified is None on both "
+        "write paths — permitted by WR-001a, pinned positively by "
+        "tests/backends/sftp/test_write_result.py, and specified in SFTP-003 / WR-003. "
+        "strict=True so a reintroduced stat fails loud rather than silently restoring the cost.",
+        True,
+    ),
+}
 
 # name → (reason, strict).  Add an entry when a backend's write path temporarily
 # disagrees with get_file_info() on etag, digest, or last_modified.
@@ -378,7 +392,10 @@ class TestWriteResultConformance:
         assert result.size == info.size
         assert result.etag == info.etag
         assert result.digest == info.digest
-        if info.modified_at is not None:
+        # Both sides must be populated to compare: WR-001a lets a backend leave
+        # last_modified None when its write response omits the timestamp (SFTP,
+        # BK-313), and that is not a disagreement with get_file_info().
+        if info.modified_at is not None and result.last_modified is not None:
             assert result.last_modified == info.modified_at
 
     @pytest.mark.large_payload

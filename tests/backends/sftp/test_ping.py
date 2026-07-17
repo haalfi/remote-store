@@ -74,9 +74,26 @@ def test_sftp_probe_is_stat_basepath() -> None:
 
 @pytest.mark.spec("PING-006")
 def test_sftp_not_found() -> None:
-    from paramiko import SFTPAttributes
-
     err = OSError(errno.ENOENT, "No such file")
-    backend, _ = _sftp_backend(stat_side_effect=[MagicMock(spec=SFTPAttributes), err])
+    # BK-313: liveness is now a local ``is_active()`` check (mocked True in the
+    # helper), so ``check_health``'s base-path ``stat`` is the only round-trip —
+    # a single side-effect, not two.
+    backend, _ = _sftp_backend(stat_side_effect=[err])
     with pytest.raises(NotFound):
         backend.check_health()
+
+
+@pytest.mark.spec("SFTP-010")
+def test_is_connected_uses_transport_active_not_a_round_trip() -> None:
+    """BK-313: liveness reads the transport's active flag, issuing no ``stat``.
+
+    An inactive transport reads as not-connected (so the next ``_sftp`` access
+    reconnects), and the check never calls ``stat`` — the round-trip that used
+    to be paid on every property access.
+    """
+    backend, sftp_mock = _sftp_backend()
+    assert backend._is_connected() is True
+    backend._ssh_client.get_transport.return_value.is_active.return_value = False
+    assert backend._is_connected() is False
+    # internal: the liveness check must not probe the wire (Rule 3 exception).
+    sftp_mock.stat.assert_not_called()

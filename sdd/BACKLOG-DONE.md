@@ -50,6 +50,35 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `!.claude/agents/` negation in `.gitignore` was needed or the personas would
   never commit. No CHANGELOG — dev tooling/process, not user-facing.
 
+- [x] **BK-313 — SFTP backend: cut per-operation metadata round-trips**
+  spec: SFTP-003, SFTP-010, WR-003 · effort: M · audience: user.api
+  `SFTPBackend` paid extra synchronous `stat` round-trips per operation that raw
+  paramiko skips — payload-independent, so at 100 ms RTT each was ~+100 ms. Four
+  cuts. **(1) Post-write stat dropped** in `write()` / `write_atomic()`:
+  `WriteResult.size` is the byte count from the upload and SFTP's write response
+  carries no timestamp, so the stat only supplied `last_modified` — now `None` on
+  the SFTP write path (the `user.api` change; WR-001a already permits `None` for a
+  field the write response omits). **(2) Pre-write stat skipped when
+  `overwrite=True`**: the open truncates anyway; the stat only backed the
+  `overwrite=False` guard and the is-dir check. **(3) `_check_not_dir` dropped from
+  `read_bytes` / `delete`**: the is-dir → `InvalidPath` contract is now classified
+  lazily on the open/remove failure path (new `_raise_if_dir`), off the happy path.
+  `read` (streaming) and `open_atomic` keep an eager check — both hand back a
+  handle before any I/O, and a real OpenSSH server opens a directory for reading
+  without error (caught by the `sftp_docker` lane, which the in-process paramiko
+  server could not reproduce). **(4) Connection-liveness probe made local** (SFTP-010):
+  `_is_connected()` read the transport's `is_active()` flag instead of issuing a
+  `stat('.')` round-trip on every `_sftp` property access — the dominant cost,
+  since one operation touches the property several times. Error-type contract
+  (`NotFound` / `InvalidPath` / `AlreadyExists`) and the `WriteResult` contract
+  preserved; the `test_errors.py` SFTP suite (in-process + `sftp_docker`) is the
+  safety net. Measured round-trips (in-process paramiko, warm channel, parent
+  exists): overwrite write 11→4, `write_atomic` 13→5, read 8→5, `read_bytes` 7→4,
+  delete 4→1. The SFTP entry in `test_atomic.py`'s `_LAST_MODIFIED_XFAIL` is
+  `strict=True`, so a reintroduced post-write stat fails loud. Trace:
+  [bk-313-sftp-roundtrips.yml](traces/bk-313-sftp-roundtrips.yml). Surfaced during
+  the ID-230 chart review (PR #906).
+
 - [x] **ID-230 — Benchmark overhead story: reproducible run of record + user-decides framing**
   spec: — · effort: M · audience: user.site, library.maintainer
   Purpose-2 half of the benchmark-suite rework (purpose-1 governance shipped as

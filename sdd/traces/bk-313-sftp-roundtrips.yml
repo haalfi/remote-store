@@ -1,0 +1,81 @@
+id: BK-313
+title: "SFTP backend: cut per-operation metadata round-trips"
+trigger: "The ID-230 run of record showed SFTP paying ~6xRTT (write) / ~3xRTT (read) over raw paramiko, payload-independent — a fixed count of contract/metadata stat round-trips, much of it avoidable"
+source_items:
+  - BK-313
+  - ID-230
+audience:
+  - user.api
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-313 (item)"
+        read_type: gate
+        extract: "Three optimisations, priority order; preserve the error-type and WriteResult contracts"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Spec section, Public method signature"
+        read_type: gate
+        extract: "Anticipate the ripples: spec-marked tests follow a spec edit; docstrings follow a behaviour change"
+      - file: src/remote_store/backends/_sftp.py
+        section: "write, write_atomic, read, read_bytes, delete, _check_not_dir, _map_exception"
+        read_type: reference
+        extract: "Locate each stat round-trip and confirm _map_exception has no dir->InvalidPath rule, so _check_not_dir is what carries that contract"
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/045-write-result.md
+        section: "WR-001a, WR-003"
+        read_type: gate
+        extract: "WR-003 mandated the post-write stat for SFTP; WR-001a already allows last_modified=None when the write response omits it"
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-003"
+        read_type: gate
+        extract: "WRITE_RESULT_NATIVE rationale cited the post-write stat; it must now rest on size/source alone"
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "_LAST_MODIFIED_XFAIL, test_native_populates_last_modified, test_write_result_rich_fields_match_file_info"
+        read_type: gate
+        extract: "The xfail registry is the built-in mechanism for a WRITE_RESULT_NATIVE backend that returns last_modified=None"
+      - file: tests/backends/conformance/test_errors.py
+        section: "read/write/delete directory + file-ancestor cases"
+        read_type: gate
+        extract: "The safety net for moving is-dir detection to the error path — every case runs against sftp_inproc"
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "write, write_atomic"
+        read_type: reference
+        extract: "Drop the post-write stat; size is already the byte count, last_modified becomes None"
+  - id: implement_liveness
+    name: Implement (liveness probe)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connected, _sftp property"
+        read_type: reference
+        extract: "The measured counts ran higher than the code's explicit stats: _is_connected() did a stat('.') round-trip on every _sftp access. Replaced with the transport's is_active() flag (local, no round-trip); the dominant cut"
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-010"
+        read_type: gate
+        extract: "SFTP-010 mandated the stat('.') mechanism; amended to transport-liveness with the reconnect contract preserved"
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/conformance/test_errors.py
+        section: "read/write/delete directory + file-ancestor cases (sftp_docker lane)"
+        read_type: verify
+        extract: "The sftp_docker lane (real atmoz/sftp, no toxiproxy) caught what in-process could not: OpenSSH opens a directory for reading without error, so streaming read's lazy is-dir classification never fired. Reverted read (and open_atomic) to an eager check; read_bytes/delete stay lazy (docker-proven)"
+      - file: src/remote_store/backends/_sftp.py
+        section: "write, write_atomic, read, read_bytes, delete, _is_connected"
+        read_type: verify
+        extract: "Final measured round-trips (in-process paramiko, warm channel, parent exists): overwrite write 11->4, write_atomic 13->5, read 8->5, read_bytes 7->4, delete 4->1"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Spec section, Public method signature"
+        read_type: verify
+        extract: "Spec-marked tests, docstrings, CHANGELOG, BACKLOG-DONE"

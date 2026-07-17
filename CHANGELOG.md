@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-313: SFTP operations issue far fewer metadata round-trips. `WriteResult.last_modified` is now `None` on the SFTP `write()` / `write_atomic()` path (the post-write `stat` is dropped; `size` and `source` are unaffected); the pre-write and read/delete type-check stats move off the happy path; and the per-operation connection-liveness check is now a local transport probe instead of a `stat('.')` round-trip. Measured against an in-process paramiko server (warm channel, parent dir present): overwrite `write` 11→4 round-trips, `write_atomic` 13→5, `read` 8→5, `read_bytes` 7→4, `delete` 4→1
 - BUG-231: GraphBackend.check_health() probes the drive so ping() can fail
 - BK-310: Pin the backend enumeration order in the add-a-backend checklist
 - BK-311: Sync the stale tagline and backend-membership mirrors
