@@ -9,25 +9,26 @@ and ``machine_info`` — and then asserts the three invariants that otherwise fa
 with no error (ID-230).
 
 **This slimming deliberately diverges from the ``baseline/local-baseline.json``
-recipe.** The baseline is a single clean-profile file that never feeds the
-overhead-vs-RTT chart, so it can drop the top-level ``network_profile`` key. The
-run of record **must not**: ``charts.py`` groups profiles by that *in-file*
-field, not the filename (``charts._load_profile_data``). Strip it and every file
-collapses to ``"clean"``, ``overhead_by_profile`` ends up with ``< 2`` profiles,
-and the overhead-vs-RTT chart renders its placeholder instead of the real chart.
+recipe.** The baseline is a single clean-profile file that never feeds the RTT
+charts, so it can drop the top-level ``network_profile`` key. The run of record
+**must not**: ``charts.py`` groups profiles by that *in-file* field, not the
+filename (``charts._load_profile_data``). Strip it and every file collapses to
+``"clean"``, ``overhead_by_profile`` ends up with ``< 2`` profiles, and both RTT
+charts render their placeholder instead of the real chart.
 
 The three guarded invariants (see the ID-230 plan, § 3.5):
 
 1. **Profiles present** — the committed set carries ``"clean"`` plus at least one
-   latency profile, so the overhead-vs-RTT chart has ``>= 2`` profiles to plot
-   and does not fall back to its placeholder.
+   latency profile, so the two RTT charts (``overhead-vs-rtt`` and
+   ``overhead-decomposition``) have ``>= 2`` profiles to plot and do not fall
+   back to their placeholder.
 2. **Latency files use ``-latency`` variants, both sides of the ratio** — each
    rtt file carries ``s3-latency`` / ``sftp-latency`` / ``azure-latency``
    benchmarks for *both* the ``remote_store`` target and its paired raw SDK
-   target, so ``charts.py``'s ``_LATENCY_VARIANT`` lookup hits and the
-   overhead-vs-rtt chart (which divides remote_store by raw) has both operands.
-   A run that proxied the *base* backends, or captured only one side of the
-   ratio, drops the series silently.
+   target, so ``charts.py``'s ``_LATENCY_VARIANT`` lookup hits and the RTT charts
+   (which subtract raw from remote_store) have both operands. A run that proxied
+   the *base* backends, or captured only one side of the ratio, drops the series
+   silently.
 3. **Clean file carries the base comparative backends, both sides of the ratio**
    — the clean file has ``s3`` / ``s3-pyarrow`` / ``sftp`` / ``azure``
    ``remote_store`` **and** paired raw-SDK data for the overhead ops, so the
@@ -113,12 +114,12 @@ def _backend_targets(benchmarks: list[dict[str, Any]]) -> dict[str, set[str]]:
 
 
 def _missing_ratio_sides(targets_by_backend: dict[str, set[str]], required: list[str]) -> list[str]:
-    """Required backends missing either side of the overhead ratio the chart computes.
+    """Required backends missing either operand of the overhead the chart computes.
 
-    Each overhead chart divides a backend's ``remote_store`` mean by its raw-SDK
-    mean, so *both* target kinds must be present or the series blanks/omits
-    silently. Checking only one side (as an earlier revision did) lets a file
-    with just a raw-SDK entry pass while the chart reads an absent
+    Each overhead chart subtracts a backend's raw-SDK mean from its
+    ``remote_store`` mean, so *both* target kinds must be present or the series
+    blanks/omits silently. Checking only one side (as an earlier revision did)
+    lets a file with just a raw-SDK entry pass while the chart reads an absent
     ``remote_store`` cell.
     """
     missing: list[str] = []
@@ -145,7 +146,7 @@ def guard(out_dir: Path) -> list[str]:
         errors.append(f"guard 1: no 'clean' profile among {[f.name for f in files]}")
     if len(profiles) < 2:
         errors.append(
-            f"guard 1: overhead-vs-rtt needs >= 2 distinct profiles, found {sorted(profiles)} "
+            f"guard 1: the RTT charts need >= 2 distinct profiles, found {sorted(profiles)} "
             "(did the slim drop the top-level network_profile key?)"
         )
 
@@ -172,14 +173,14 @@ def guard(out_dir: Path) -> list[str]:
                 )
         else:
             # Guard 2: each rtt file must carry both the -latency remote_store
-            # variant AND its paired raw-SDK target — the overhead-vs-rtt chart
-            # divides one by the other, so a missing raw side drops the series
-            # just as silently as a missing remote_store side.
+            # variant AND its paired raw-SDK target — the RTT charts subtract one
+            # from the other, so a missing raw side drops the series just as
+            # silently as a missing remote_store side.
             missing = _missing_ratio_sides(_backend_targets(benches), sorted(_REQUIRED_LATENCY))
             if missing:
                 errors.append(
                     f"guard 2: latency file {f.name} ({profile}) is missing the remote_store or "
-                    f"paired raw-SDK target for {missing} (overhead-vs-rtt series would drop silently)"
+                    f"paired raw-SDK target for {missing} (the RTT charts' series would drop silently)"
                 )
     return errors
 

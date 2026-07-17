@@ -109,7 +109,7 @@ def test_guard_passes_on_well_formed_set(tmp_path: Path) -> None:
 
 
 def test_guard_flags_single_profile(tmp_path: Path) -> None:
-    # Guard 1: only a clean file -> overhead-vs-rtt would render its placeholder.
+    # Guard 1: only a clean file -> the RTT charts would render their placeholder.
     out = tmp_path / "out"
     slim.slim_file(_write(tmp_path / "c.json", _clean_raw(["s3", "s3-pyarrow", "sftp", "azure"])), out)
     errors = slim.guard(out)
@@ -161,7 +161,7 @@ def test_guard_flags_clean_backend_with_only_raw_target(tmp_path: Path) -> None:
 
 def test_guard_flags_latency_backend_missing_raw_side(tmp_path: Path) -> None:
     # Guard 2 (ratio-aware): a latency backend with remote_store but no paired
-    # raw-SDK target drops the overhead-vs-rtt series (which divides one by the
+    # raw-SDK target drops the RTT charts' series (which subtract one from the
     # other) just as silently as a missing remote_store side.
     out = tmp_path / "out"
     slim.slim_file(_write(tmp_path / "c.json", _clean_raw(["s3", "s3-pyarrow", "sftp", "azure"])), out)

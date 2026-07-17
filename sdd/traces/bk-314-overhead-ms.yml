@@ -15,6 +15,13 @@ audience:
   - user.site
 expected_ripples:
   - sdd/backlogid.json
+surprising_ripples:
+  # PR #908 review caught two stale mirrors of the same invariant/premise that
+  # neither the cited reads nor the ripple-check table anticipated:
+  - benchmarks/slim_run_of_record.py  # guard docstring/messages named only overhead-vs-rtt; the decomposition shares the guarded data path
+  - tests/scripts/test_slim_run_of_record.py  # same guard narration echoed in test comments
+  - DEVELOPMENT_STORY.md  # :609 still asserted the refuted "fixed cost becomes irrelevant at real-world latencies" as a benchmark finding
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
