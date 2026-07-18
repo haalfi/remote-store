@@ -299,7 +299,7 @@ and the highest ID already in this file, then take the next integer. Run
   and several `sdd/` research docs). Convert all non-trivial ASCII diagrams; leave simple
   inline flows (single arrows, short sequences) as text.
 
-- [~] **ID-232 — Rewrite ADR Decision sections to state decisions, not spec/impl detail**
+- [ ] **ID-232 — Rewrite ADR Decision sections to state decisions, not spec/impl detail (research complete)**
   spec: — · effort: L · audience: library.maintainer
   `gen_adr_digest` (PR #909) lifts each ADR's whole `## Decision` section into
   `sdd/adrs/DIGEST.md`, which made visible that many Decision sections drifted

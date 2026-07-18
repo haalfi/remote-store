@@ -2,10 +2,11 @@
 
 **Date:** 2026-07-18
 **Backlog items:** ID-232 (Rewrite ADR Decision sections to state decisions, not spec/impl detail)
-**Status:** Draft for review, not yet in `sdd/research/`. Synthesis authored by hand
-from two adversarial-verification passes of the deep-research harness: pass 1 (19
-confirmed claims) covers the *staleness* half; pass 2 (12 confirmed) covers the
-*concealment* half. See the claim ledger and method caveats in the appendix.
+**Status:** Advisory research informing ID-232 (not a spec or ADR). Synthesis
+authored by hand from two adversarial-verification passes of the deep-research
+harness: pass 1 (19 confirmed claims) covers the *staleness* half; pass 2 (12
+confirmed) covers the *concealment* half. See the claim ledger and method caveats in
+the appendix.
 **Related:** [`research-doc-content-longevity.md`](research-doc-content-longevity.md)
 and [`sdd/CONTENT-RULES.md`](../CONTENT-RULES.md), the *documentation*
 instantiation of the same principle. This document is the cross-domain foundation
