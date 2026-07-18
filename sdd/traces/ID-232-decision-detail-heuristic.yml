@@ -11,7 +11,7 @@ source_items:
 audience:
   - contributor.tooling
   - contributor.process
-review_rounds: 1
+review_rounds: 2
 co_shipped_items:
   - BUG-234
 discovery_followups:
@@ -177,4 +177,12 @@ phases:
           Advisory messages steer Phase-B disposition, so they must not pre-judge
           it. Also untested CLI plumbing (main argparse routing) sat outside
           --cov=remote_store; added TestMainCli driving main() via sys.argv.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check ADR rows (both presentations)"
+        read_type: reference
+        extract: >-
+          Round-2 review: the durable ripple rows cited (ID-232), a self-reference
+          to the PR adding them, unlike the (ID-17x) rows that cross-reference a
+          standing verifier. Dropped the backlog-ID mention from both rows —
+          durable prose describes the behavior, not the ticket (CONTENT-RULES).
         outcome: ok

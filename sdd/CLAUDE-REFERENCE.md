@@ -64,7 +64,7 @@ Read this before starting. One line per trigger.
 | Docs navigation               | Per-section `_nav.yml` files, `docs-src/guides/backends/index.md`, [AUTHORING Rule 1](AUTHORING.md#file-classification), [DOCUMENTATION § Content homes](DOCUMENTATION.md#content-homes) |
 | API reference page            | [DOCUMENTATION § API page building blocks](DOCUMENTATION.md#api-page-building-blocks) + required sections |
 | Example script                | README examples table, generated `tutorial/examples/<slug>.md`, `tests/test_examples.py` import |
-| ADR                           | `preflight`'s `gen_adr_digest.py --check` gates digest freshness **and** supersession-graph consistency: a `STALE:` failure is fixed by `hatch run gen-adr-digest` + committing `sdd/adrs/DIGEST.md`; a `DRIFT:` failure is fixed by editing the ADR's `## Status` metadata (regenerating won't clear it); it also prints `ADVICE` notices for bloated `## Decision` sections (word budget, version pins, heading depth) — these do not change the exit code, but they are for acting on (relocate the mislocated detail), not ignoring: review-enforced, like `CONTENT-RULES` (ID-232) |
+| ADR                           | `preflight`'s `gen_adr_digest.py --check` gates digest freshness **and** supersession-graph consistency: a `STALE:` failure is fixed by `hatch run gen-adr-digest` + committing `sdd/adrs/DIGEST.md`; a `DRIFT:` failure is fixed by editing the ADR's `## Status` metadata (regenerating won't clear it); it also prints `ADVICE` notices for bloated `## Decision` sections (word budget, version pins, heading depth) — these do not change the exit code, but they are for acting on (relocate the mislocated detail), not ignoring: review-enforced, like `CONTENT-RULES` |
 | Tracker ID in published prose | Any backlog/spec coordinate (`PREFIX-NNN`, `spec NNN`, `RFC-NNNN`, `ADR-NNNN`, `PR #NNN`) leaking into a docstring rendered by mkdocstrings or any `.md` under `docs-src/` (plus README, FEATURES, CONTRIBUTING); [CONTENT-RULES Rules 1 + 5](CONTENT-RULES.md#rules). Out of scope: `sdd/**`, CHANGELOG, DEVELOPMENT_STORY, source `#` comments |
 | Local-machine reference in any committed file | Grep all changed file types (`.md`, `.py`, `.sh`, `.yml`, `.dfy`, `.tla`) for: `See memory `, `` captured as `<slug>.md` `` (Claude Code memory slugs), `[A-Z]:\\[A-Za-z]` (Windows drive paths — skip `\n`/`\r`/`\t` escape sequences), `~/.claude`, `.claude/projects`. Replace each with the principle it refers to, inline. Enforced by the shared [PR validation gates](#pr-validation-gates) that `/pr` and `/fix-pr` both run. |
 
@@ -206,7 +206,7 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | `ADVICE` notices for bloated `## Decision` sections (word |
 |                            | budget, version pins, heading depth): these do not change |
 |                            | the exit code, but are for acting on (relocate the        |
-|                            | detail), not ignoring — review-enforced (ID-232)         |
+|                            | detail), not ignoring — review-enforced                  |
 | **Tracker ID in published prose** | Any backlog or spec coordinate (`PREFIX-NNN`,      |
 | (any prose change that touches | `spec NNN`, `RFC-NNNN`, `ADR-NNNN`, `PR #NNN`) leaking |
 | docstrings of public symbols | into a docstring under `src/remote_store/` or any        |
