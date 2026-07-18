@@ -14,7 +14,7 @@ The ripple-check has two presentations of the same set of triggers, grouped by S
 - The **Pre-work index** below is a one-line-per-trigger scan you read **before starting work** that might touch any of the triggers. It exists because 3/9 sampled PRs missed ripples by consulting the table only at verify-end (`sdd/research/research-agent-workflow-substrate.md` § 2.3).
 - The **Detailed checklist** below it lists the same triggers with the full ripple set, used at verify-end after the diff is complete and by PR reviewers.
 
-Both presentations contain the same 25 trigger rows in the same order. Trigger names are bare topics (no leading article). If you add, remove, rename, or re-order a row, update both presentations and any trace `section:` strings that cite the row by name.
+Both presentations contain the same trigger rows in the same order. Trigger names are bare topics (no leading article). If you add, remove, rename, or re-order a row, update both presentations and any trace `section:` strings that cite the row by name.
 
 <!-- Two-presentations-one-source: row names, row count, and row order must
 match between "Pre-work index" and "Detailed checklist". Trace section strings
@@ -194,8 +194,8 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | (new or restructured)      | and building blocks for required sections                 |
 | **Example script**         | README examples table, generated `tutorial/examples/<slug>.md` |
 |                            | `tests/test_examples.py` import                           |
-| **ADR**                    | `gen_adr_digest.py --check` in `preflight` (ID-233) is a  |
-| (add / edit `sdd/adrs/*.md`) | drift gate over two independent failures. `STALE:` (the |
+| **ADR**                    | `gen_adr_digest.py --check` in `preflight` is a drift     |
+| (add / edit `sdd/adrs/*.md`) | gate over two independent failures. `STALE:` (the       |
 |                            | committed `sdd/adrs/DIGEST.md` no longer matches a fresh   |
 |                            | render) → run `hatch run gen-adr-digest`, commit the      |
 |                            | digest. `DRIFT:` (supersession-graph inconsistency — a    |
