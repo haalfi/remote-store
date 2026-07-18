@@ -51,11 +51,27 @@ construction (see SFTP-004).
 **Invariant:** `SFTPBackend` declares capabilities:
 `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `WRITE_RESULT_NATIVE`. Does not declare `GLOB` (no native pattern matching; use `list_files(pattern=…)` or `ext.glob` for client-side fallback).
 **Rationale:**
-- `WRITE_RESULT_NATIVE`: `write()` and `write_atomic()` perform a `sftp.stat()` round-trip after upload/rename to populate `last_modified`.
+- `WRITE_RESULT_NATIVE`: `write()` and `write_atomic()` populate `size` (counted
+  during upload) and `source` from the write path itself. Every rich field
+  (`etag` / `version_id` / `last_modified` / `digest`) is `None` — SFTP's write
+  response carries no metadata at all, and the backend does not stat after
+  upload/rename to fetch any (BK-313: that round-trip was paid on every write).
+  WR-001a permits `None` for a field the write response omits, so the declaration
+  rests on `size` / `source`; callers needing the metadata call `get_file_info()`.
 - `ATOMIC_WRITE`: Simulated via temp file + rename (see SFTP-014). Orphan temp
   files are possible on connection failure — documented caveat.
 - `MOVE`: Implemented via `posix_rename` with fallback (see SFTP-018).
 - `COPY`: Implemented via read + write (no server-side copy in SFTP, see SFTP-019).
+- Read-path directory rejection is **lazy** for `read_bytes` (BK-313: the eager
+  `stat` was the round-trip removed): a directory target raises `InvalidPath`
+  only because reading it fails. This assumes the server either refuses to open
+  a directory for reading or reports a non-zero directory `st_size` — both hold
+  on OpenSSH, where a directory reports `st_size == 4096`. A non-standard server
+  that opens a directory for reading *and* reports `st_size == 0` would make
+  `read_bytes` return empty bytes rather than raising `InvalidPath`. `read`
+  (streaming) keeps an **eager** check instead, because a streaming read never
+  issues the in-band I/O that would surface the directory. Accepted as a
+  documented server assumption (audit-020 M3).
 
 ### SFTP-004: Lazy Connection
 
@@ -123,10 +139,38 @@ See also: spec `025-retry-policy.md` (RET-010).
 
 ### SFTP-010: Staleness Detection and Reconnect
 
-**Invariant:** The lazy `_sftp` property checks connection liveness by calling
-`stat('.')`. If the connection is stale (e.g. server dropped it), the backend
-reconnects transparently.
-**Postconditions:** Callers do not need to handle connection drops explicitly.
+**Invariant:** Staleness is detected in two tiers, neither of which spends a
+per-operation round-trip. **(1)** The lazy `_sftp` property reads the SSH
+transport's `is_active()` flag — a local check, no bytes on the wire; a
+transport that has gone inactive is reconnected before the operation runs.
+**(2)** A drop that leaves the transport flag `True` but the SFTP channel dead
+(idle-channel timeout, subsystem restart, half-open partition) is invisible to
+tier 1; it is caught on the operation itself and mapped to `BackendUnavailable`,
+which invalidates the cached client so the *next* `_sftp` access reconnects. The
+trigger is the *conclusion* that the connection is unusable, not any single
+signal: **every** mapping that concludes `BackendUnavailable` clears the client,
+across the full dead-connection signal set (`EOFError`, `OSError('Socket is
+closed')`, the socket-teardown errnos, `socket.timeout`, and the paramiko
+`SFTPError` / `SSHException` / `ChannelException` families — see SFTP-023).
+Anchoring recovery to that conclusion rather than an enumerated list is what
+keeps a signal the list forgot (e.g. a `socket.timeout` from the channel
+timeout) from wedging the long-lived backend. Operations outside the default
+`_errors()` scope must still route through this mapping for the guarantee to
+hold: the listing operations route their failure through `_map_exception`, and
+`open_atomic`'s streamed-write phase — which yields the handle outside
+`_errors()` — routes its backend failures (a dead channel or any paramiko SSH /
+protocol error surfaced during the caller's writes) through `_map_exception`
+too, while its temp-file open and promote steps run inside `_errors()`.
+**Rationale:** The property is accessed several times per operation, so the
+former `stat('.')` liveness probe multiplied each operation's RTT count — but it
+doubled as a universal self-heal, reconnecting a dead client of *any* kind on
+the next op. The transport flag costs nothing on the wire; tier 2 restores that
+self-heal for a channel-only death by clearing the client on every
+`BackendUnavailable`, without adding a probe to the happy path.
+**Postconditions:** A healthy connection is reused with no per-operation probe
+round-trip. A dropped connection surfaces as `BackendUnavailable` and the
+following call re-establishes it — recovery may take one failed call when the
+drop is channel-only (tier 2).
 
 ---
 
@@ -218,12 +262,34 @@ mapped to `NotFound`.
 ### SFTP-023: BackendUnavailable Mapping
 
 **Invariant:** `paramiko.SSHException` and its subclasses (authentication failures,
-channel errors, etc.) are mapped to `BackendUnavailable`.
+`ChannelException`, etc.) are mapped to `BackendUnavailable`. So are the dropped-
+connection signals that are *not* `SSHException` subclasses: `EOFError`,
+`OSError('Socket is closed')` (no `errno`), `OSError` with `errno` in
+`ECONNRESET` / `EPIPE` / `ECONNABORTED` / `ETIMEDOUT` / `ESHUTDOWN` / `ENOTCONN` /
+`EBADF`, `socket.timeout` / `TimeoutError` (matched by type, since a half-open
+instance often carries no matching `errno`), and `paramiko.SFTPError` (an
+SFTP-protocol failure that subclasses neither `OSError` nor `SSHException`).
+**Every** `BackendUnavailable` this mapping returns — the `SSHException` family
+included — invalidates the cached SFTP client so the next operation reconnects
+(see SFTP-010, tier 2). The list is not the guarantee: recovery is anchored to
+the `BackendUnavailable` *conclusion*, so a dead-connection signal the list has
+not enumerated still clears the client rather than wedging the backend. One
+exception keeps its own branch first: `IncompatiblePeer` (a connect-time
+`SSHException`) is mapped with a diagnostic hint before the generic `SSHException`
+mapping, so the hint is not lost.
 
 ### SFTP-024: No Native Exception Leakage
 
-**Invariant:** No paramiko, socket, or OS exceptions propagate to callers. All are
-mapped to `remote_store` error types per BE-021.
+**Invariant:** No paramiko, socket, or OS exception raised *by the backend* — an
+operation's own I/O, including `open_atomic`'s temp-file open, the caller-facing
+handle's flush/close, and the promote — propagates to callers; all are mapped to
+`remote_store` error types per BE-021. The only non-mapped exceptions are those
+the **caller** raises inside an `open_atomic` yield block (their `with` body)
+that are not themselves dead-connection signals: those are not the backend's and
+propagate unchanged, leaving the target untouched. `open_atomic` distinguishes
+by scope — the temp open, flush, and promote run inside `_errors()`, while the
+yielded write does not; a dead-connection signal surfacing from that write is
+still mapped to `BackendUnavailable` (it is indistinguishable from a real drop).
 **Postconditions:** `backend` attribute is set to `"sftp"` on all mapped errors.
 
 ---

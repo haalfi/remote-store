@@ -117,21 +117,58 @@ class TestWriteErrorFidelity:
     those test cells; only the file-ancestor cells actually run.
     """
 
-    @pytest.mark.spec("BE-008")
-    def test_write_on_directory_raises_error(self, backend: Backend) -> None:
-        """IsDir(path) ==> InvalidPath (NOT AlreadyExists)."""
-        _skip_flat_namespace(backend)
-        backend.write("wdir/file.txt", b"x")
-        with pytest.raises(InvalidPath, match="wdir"):
-            backend.write("wdir", b"data")
+    @pytest.mark.parametrize(
+        ("method", "cap"),
+        [
+            pytest.param("write", Capability.WRITE, id="write", marks=pytest.mark.spec("BE-008")),
+            pytest.param(
+                "write_atomic",
+                Capability.ATOMIC_WRITE,
+                id="write_atomic",
+                marks=pytest.mark.spec("BE-008"),
+            ),
+        ],
+    )
+    def test_write_on_directory_raises_error(self, backend: Backend, method: str, cap: Capability) -> None:
+        """IsDir(path) ==> InvalidPath (NOT AlreadyExists).
 
-    @pytest.mark.spec("BE-008")
-    def test_write_on_directory_overwrite_still_raises_error(self, backend: Backend) -> None:
-        """IsDir(path) ==> InvalidPath even with overwrite=True."""
+        Parametrised over ``write`` and ``write_atomic`` (BK-313): the two
+        share BE-008 but reach it through different code — ``write`` opens the
+        target directly, ``write_atomic`` stats it before staging a temp file.
+        """
+        _require(backend, cap)
         _skip_flat_namespace(backend)
-        backend.write("wdir2/file.txt", b"x")
-        with pytest.raises(InvalidPath, match="wdir2"):
-            backend.write("wdir2", b"data", overwrite=True)
+        backend.write(f"wdir_{method}/file.txt", b"x")
+        with pytest.raises(InvalidPath, match=f"wdir_{method}"):
+            getattr(backend, method)(f"wdir_{method}", b"data")
+
+    @pytest.mark.parametrize(
+        ("method", "cap"),
+        [
+            pytest.param("write", Capability.WRITE, id="write", marks=pytest.mark.spec("BE-008")),
+            pytest.param(
+                "write_atomic",
+                Capability.ATOMIC_WRITE,
+                id="write_atomic",
+                marks=pytest.mark.spec("BE-008"),
+            ),
+        ],
+    )
+    def test_write_on_directory_overwrite_still_raises_error(
+        self, backend: Backend, method: str, cap: Capability
+    ) -> None:
+        """IsDir(path) ==> InvalidPath even with overwrite=True.
+
+        BK-313: ``overwrite=True`` skips the pre-write stat, so the is-dir
+        contract is enforced lazily on the open/rename failure — ``_open_write``
+        for ``write`` and ``_promote`` for ``write_atomic``. This is the only
+        test that drives ``_promote``'s directory-classification branch.
+        """
+        _require(backend, cap)
+        _skip_flat_namespace(backend)
+        backend.write(f"wdir2_{method}/file.txt", b"x")
+        with pytest.raises(InvalidPath, match=f"wdir2_{method}"):
+            getattr(backend, method)(f"wdir2_{method}", b"data", overwrite=True)
 
     @pytest.mark.parametrize("body_kind", ["bytes", "stream"])
     @pytest.mark.parametrize(

@@ -84,8 +84,18 @@ consistent fields. Verified in `MemoryBackend.dfy`. Python backstop in
 `test_large_streamed_write_result_matches_file_info`), mirrored for the
 async backends in
 `tests/backends/conformance/test_async_extended.py::TestAsyncWriteResultConformance`.
+A backend whose write response omits a rich field returns `None` for it (the
+field schema above) and does not thereby contradict the stored `FileInfo`: the
+consistency obligation binds the fields the write path populates. `SFTPBackend`
+is the one such backend today — `last_modified` is `None` on both its write
+paths (SFTP-003, BK-313) — recorded as a `strict=True`
+`_LAST_MODIFIED_XFAIL` entry against `test_native_populates_last_modified`, so
+the obligation still fails loud for every other declaring backend and a
+reintroduced SFTP stat fails loud too. The Dafny model is unaffected: only
+`MemoryBackend`, which populates every field, is verified.
 `test_write_result_rich_fields_match_file_info` cross-checks `size` (alongside
-`etag`/`digest`/`last_modified`) against `get_file_info()`, and
+`etag`/`digest`/`last_modified`, the latter only where both sides are
+populated) against `get_file_info()`, and
 `test_large_streamed_write_result_matches_file_info` extends that consistency
 check to the multipart / block-staged / upload-session write paths on backends
 declaring a distinct large-write path (gated by the `large_write_distinct`
@@ -118,7 +128,8 @@ on every backend.
   derives `size` from `stat().st_size` — the same single `stat()` call that
   populates `last_modified`, so size and mtime share one I/O round trip.
 - For non-seekable `BinaryIO` input on `SFTPBackend`: bytes are counted during
-  upload; a subsequent `sftp.stat()` populates `last_modified` only.
+  upload, and no `sftp.stat()` follows — so `size` costs no round trip and
+  `last_modified` is `None` on both SFTP write paths (BK-313; see SFTP-003).
 - For other `WRITE_RESULT_NATIVE` backends (Azure, S3, S3-PyArrow, Memory,
   SQLBlob): `size` is available from the write response or from in-process
   data — no extra I/O round trip for size.
@@ -131,11 +142,13 @@ does not declare the capability, `source == "basic"`.
 
 **Formal coverage:** encoded in `BackendContract.dfy` as a `Write`
 postcondition: `r.Ok? ⇒ r.value.source == (if CapWriteResultNative in
-capabilities then NativeSource else BasicSource)`. A backend that
-declares the capability but fails to populate `source = Native` — or
-fails to populate the rich fields that the spec promises alongside it —
-does not satisfy the refinement. Verified in `MemoryBackend.dfy`. Python
-backstop in
+capabilities then NativeSource else BasicSource)`. A backend that declares the
+capability but fails to populate `source = Native` does not satisfy the
+refinement. Rich-field population is governed separately by WR-001a, which binds
+only the fields a backend's write path actually populates — so a native backend
+that leaves a field `None` when its write response omits it (as `SFTPBackend`
+does for every rich field) is conformant, not a violation. Verified in
+`MemoryBackend.dfy`. Python backstop in
 `tests/backends/conformance/test_atomic.py::TestWriteResultConformance::test_source_matches_write_result_native`.
 See ID-151.
 

@@ -21,11 +21,18 @@
     Only `path` and `size` are guaranteed to be populated on every write.
     All other fields depend on the `source` discriminator:
 
-    - `source="native"` — rich fields populated; requires `Capability.WRITE_RESULT_NATIVE`.
+    - `source="native"` — the backend filled the optional fields from its write
+      response; requires `Capability.WRITE_RESULT_NATIVE`. Trust the fields the
+      response carries, but a native backend may still leave an individual field
+      `None` when its response omits it, or even leave every rich field `None`
+      (e.g. SFTP's write response carries no metadata, so `etag` / `version_id` /
+      `last_modified` / `digest` are all `None`); call `get_file_info()` for a
+      field you need.
     - `source="basic"` — only `path` and `size` are reliable.
     - `source="sidecar"` — fields sourced from a `get_file_info()` enrichment call.
 
-    Always check `source` before reading any optional field.
+    Always check `source` before reading any optional field, and check the
+    specific field — `source="native"` does not guarantee every field is set.
 
 ::: remote_store.FolderEntry
 

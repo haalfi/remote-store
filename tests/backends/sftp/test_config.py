@@ -6,6 +6,7 @@ All tests are skipped if dependencies are not installed.
 
 from __future__ import annotations
 
+import contextlib
 import errno
 import io
 import os
@@ -46,6 +47,20 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from remote_store._backend import Backend
+
+
+def _os_with_errno(code: int, msg: str) -> OSError:
+    """Build a *plain* ``OSError`` carrying ``.errno = code``.
+
+    ``OSError(code, msg)`` is auto-promoted by CPython to an errno-specific
+    subclass (e.g. ``ETIMEDOUT`` -> ``TimeoutError``), which ``_is_connection_dead``
+    may match on a *type* branch before the errno tuple. Constructing a bare
+    ``OSError`` and setting ``.errno`` afterwards keeps it a plain ``OSError`` so
+    the errno-tuple membership itself is what the test exercises.
+    """
+    exc = OSError(msg)
+    exc.errno = code
+    return exc
 
 
 @pytest.fixture
@@ -472,6 +487,397 @@ class TestSFTPConnection:
         sftp_backend._close_clients()
         # Next operation should reconnect automatically
         assert sftp_backend.exists("test.txt") is False
+
+    @pytest.mark.spec("SFTP-010")
+    def test_channel_death_maps_to_unavailable_then_reconnects(self, sftp_backend: Backend) -> None:
+        """SFTP-010 tier 2: a dead channel under a live transport is honest and self-heals.
+
+        BK-313 review: the ``is_active()`` liveness probe tracks the SSH
+        transport, not the SFTP channel. Closing only the channel leaves the
+        transport ``is_active()`` — so ``_is_connected`` cannot see the drop.
+        The contract is upheld on the operation instead: it must surface as
+        ``BackendUnavailable`` (not a generic ``RemoteStoreError``) and clear
+        the cached client so the *next* call reconnects rather than wedging on
+        the dead channel forever. Reproduces in-process (a client-side channel
+        close is server-agnostic).
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("test.txt")  # establish the connection
+        transport = sftp_backend._ssh_client.get_transport()
+        # Kill the SFTP channel but leave the transport up.
+        sftp_backend._sftp_client.close()
+        assert transport.is_active() is True, "precondition: transport survives a channel close"
+
+        with pytest.raises(BackendUnavailable):
+            sftp_backend.exists("test.txt")
+        # The failed op must have invalidated the cached client for tier-2 recovery.
+        assert sftp_backend._sftp_client is None
+        # Next call reconnects transparently.
+        assert sftp_backend.exists("test.txt") is False
+
+    @pytest.mark.spec("SFTP-010")
+    @pytest.mark.parametrize("method", ["list_files", "list_folders", "iter_children"])
+    def test_channel_death_during_listing_maps_and_reconnects(self, sftp_backend: Backend, method: str) -> None:
+        """SFTP-010 tier 2 must also hold for every listing operation.
+
+        BK-313 review: ``list_files`` / ``list_folders`` / ``iter_children``
+        classify their own errors rather than going through ``_errors()``. If
+        any raises a bare ``RemoteStoreError`` instead of routing through
+        ``_map_exception``, a channel death mid-listing never invalidates the
+        client, so a listing-only workload wedges permanently. All three share
+        the wiring and the docstring claims the trio, so all three are driven
+        here — pinning only ``list_files`` would let a reverted sibling ship
+        green. Seed both a top-level file and a folder so each of the three
+        yields something to iterate on the post-reconnect call.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("f.txt", b"x")  # top-level file  -> list_files / iter_children
+        sftp_backend.write("d/g.txt", b"x")  # top-level folder -> list_folders / iter_children
+        sftp_backend._sftp_client.close()  # kill channel, transport stays up
+
+        with pytest.raises(BackendUnavailable):
+            list(getattr(sftp_backend, method)(""))
+        assert sftp_backend._sftp_client is None
+        # Reconnects and yields on the next call.
+        assert list(getattr(sftp_backend, method)("")), f"{method} did not reconnect and yield"
+
+    @pytest.mark.spec("SFTP-010")
+    @pytest.mark.spec("SFTP-023")
+    def test_channel_death_during_open_atomic_maps_and_reconnects(self, sftp_backend: Backend) -> None:
+        """SFTP-010 tier 2 for ``open_atomic``'s yield phase (BK-313).
+
+        ``open_atomic`` yields the write handle *outside* ``_errors()``, so a
+        channel death during the caller's streamed write is classified by a
+        separate inline arm that calls ``_map_exception`` directly (the temp-file
+        open, flush/close, and promote run inside ``_errors()`` and are mapped
+        there instead). That arm is the only such inline call; without this
+        test it could be deleted with the suite green. Pin that it invalidates
+        the client, surfaces ``BackendUnavailable``, and reconnects.
+
+        The death is injected at ``write`` — a large streamed write flushes
+        mid-stream, so a real drop surfaces there, *inside* the yield block. That
+        routes it through the inline arm (raw ``EOFError`` → outer handler →
+        ``_is_connection_dead`` → map + invalidate), which is the arm this test
+        exists to pin; a death at ``close`` instead would be mapped by the
+        ``_errors()``-wrapped close and never reach the inline arm. Deterministic,
+        and unlike closing the live channel it opens no server-side temp file to
+        leak (a real kill orphans the in-process server's handle →
+        ``ResourceWarning``).
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("warmup.txt", b"x")  # force a live connection + parent dir
+
+        class _DeadHandle:
+            def write(self, _data: bytes) -> None:
+                raise EOFError("server closed connection")  # mid-write flush into a dead channel
+
+            def close(self) -> None:
+                return None  # nothing real opened; cleanup close is a no-op
+
+        sftp_backend._sftp_client.file = lambda *a, **k: _DeadHandle()  # type: ignore[method-assign]
+        with pytest.raises(BackendUnavailable), sftp_backend.open_atomic("oa_death.txt") as f:  # noqa: PT012
+            f.write(b"payload")
+        assert sftp_backend._sftp_client is None  # internal: tier-2 recovery contract
+        assert sftp_backend.exists("oa_death.txt") is False  # reconnects; aborted write left nothing
+
+    @pytest.mark.spec("SFTP-003")
+    def test_open_atomic_overwrite_false_issues_single_stat(self, sftp_backend: Backend) -> None:
+        """BK-313: ``open_atomic`` folds its dir-check and existence check into one stat.
+
+        The eager dir-check (the handle escapes, so a directory must be rejected
+        up front) and the ``overwrite=False`` existence check used to be two
+        back-to-back stats on the same path. This pins that they collapse to a
+        single round-trip; splitting them again would re-add the RTT this PR cuts.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")  # warm the lazy connection so _sftp_client is live
+        target = sftp_backend._sftp_path("oa_single.txt")
+        real_stat = sftp_backend._sftp_client.stat
+        seen: list[str] = []
+
+        def _spy(remote_path: str, *args: Any, **kwargs: Any) -> Any:
+            seen.append(remote_path)
+            return real_stat(remote_path, *args, **kwargs)
+
+        sftp_backend._sftp_client.stat = _spy  # type: ignore[method-assign]
+        with sftp_backend.open_atomic("oa_single.txt") as f:  # overwrite defaults to False
+            f.write(b"payload")
+        assert seen.count(target) == 1, f"open_atomic(overwrite=False) stat'd the target {seen.count(target)}x: {seen}"
+
+    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.parametrize(
+        "exc",
+        [
+            pytest.param(EOFError("channel closed"), id="eof"),
+            pytest.param(OSError("Socket is closed"), id="socket-closed-no-errno"),
+            pytest.param(OSError(errno.ECONNRESET, "reset"), id="econnreset"),
+            pytest.param(OSError(errno.EPIPE, "broken pipe"), id="epipe"),
+            pytest.param(OSError(errno.ECONNABORTED, "aborted"), id="econnaborted"),
+            # audit-020 H1: signals that mapped to an error but never cleared the
+            # cached client, so with is_active() still True the backend wedged
+            # permanently. A clean close only ever raises the EOFError/'socket is
+            # closed' pair above, which is why three review rounds missed these.
+            # The teardown errnos use a *bare* OSError (see _os_with_errno) so the
+            # errno-tuple branch is what fires: OSError(ETIMEDOUT, ...) would else
+            # construct as TimeoutError and be caught by the type branch instead,
+            # leaving the tuple entry unpinned (deletable-green).
+            pytest.param(_os_with_errno(errno.ETIMEDOUT, "timed out"), id="etimedout"),
+            pytest.param(_os_with_errno(errno.ESHUTDOWN, "shutdown"), id="eshutdown"),
+            pytest.param(_os_with_errno(errno.ENOTCONN, "not connected"), id="enotconn"),
+            pytest.param(_os_with_errno(errno.EBADF, "bad fd"), id="ebadf"),
+            pytest.param(TimeoutError("timed out"), id="socket-timeout"),
+            pytest.param(paramiko.SFTPError("Garbage packet received"), id="sftperror"),
+            pytest.param(paramiko.SSHException("Server connection dropped"), id="sshexception"),
+            pytest.param(paramiko.ChannelException(2, "open failed"), id="channelexception"),
+        ],
+    )
+    def test_dead_connection_signal_maps_to_unavailable_and_invalidates(self, exc: Exception) -> None:
+        """SFTP-023 tier 2: each dropped-connection signal maps + invalidates the client.
+
+        The channel-death integration test only exercises the ``'Socket is
+        closed'`` text branch (that is what a client-side close raises). This
+        drives every dead-connection signal ``_map_exception`` recognises — the
+        clean-close pair, the socket-teardown errnos, ``socket.timeout``, and the
+        paramiko ``SFTPError`` / ``SSHException`` / ``ChannelException`` families
+        (audit-020 H1) — straight through ``_map_exception`` so any of them
+        failing to both map to ``BackendUnavailable`` and clear the client (which
+        would re-wedge the backend) fails loud.
+        """
+        backend = SFTPBackend(host="h", username="u", password="p", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        sentinel = object()
+        backend._sftp_client = sentinel  # type: ignore[assignment]
+        mapped = backend._map_exception(exc, "some/path")
+        assert isinstance(mapped, BackendUnavailable)
+        assert backend._sftp_client is None, "a dead-connection signal must invalidate the cached client"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_live_errno_does_not_invalidate_client(self) -> None:
+        """SFTP-023: a routine errno (ENOENT) is not a connection death — leave the client alone."""
+        backend = SFTPBackend(host="h", username="u", password="p", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        sentinel = object()
+        backend._sftp_client = sentinel  # type: ignore[assignment]
+        mapped = backend._map_exception(OSError(errno.ENOENT, "missing"), "some/path")
+        assert isinstance(mapped, NotFound)
+        assert backend._sftp_client is sentinel, "a non-connection error must not invalidate the client"
+
+    @pytest.mark.spec("SFTP-010")
+    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.parametrize(
+        "exc",
+        [
+            pytest.param(TimeoutError("timed out"), id="socket-timeout"),
+            pytest.param(paramiko.SSHException("Server connection dropped"), id="sshexception"),
+            pytest.param(paramiko.ChannelException(2, "open failed"), id="channelexception"),
+            pytest.param(paramiko.SFTPError("Garbage packet received"), id="sftperror"),
+            pytest.param(OSError(errno.ETIMEDOUT, "timed out"), id="etimedout"),
+        ],
+    )
+    def test_non_eof_channel_death_maps_and_reconnects(self, sftp_backend: Backend, exc: Exception) -> None:
+        """SFTP-010 tier 2 must fire for dead-channel signals beyond a clean close.
+
+        audit-020 H1: master's ``stat('.')`` liveness probe self-healed a dead
+        client of *any* kind on the next op. BK-313 replaced it with the local
+        ``is_active()`` flag plus tier-2 invalidation, but tier-2 recognised only
+        the clean-close pair (``EOFError`` / ``'Socket is closed'``). Every other
+        dead-channel signal mapped to an error yet left the client cached, and
+        with ``is_active()`` still ``True`` the backend wedged permanently. Inject
+        each at a live op (transport stays up) and assert it surfaces
+        ``BackendUnavailable``, invalidates the client, and the next op
+        reconnects instead of re-failing.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("probe.txt", b"x")  # warm the connection + parent dir
+        real = sftp_backend._sftp_client
+
+        class _RaiseOnStat:
+            def stat(self, *a: Any, **k: Any) -> Any:
+                raise exc
+
+            def __getattr__(self, name: str) -> Any:
+                return getattr(real, name)
+
+        sftp_backend._sftp_client = _RaiseOnStat()  # type: ignore[assignment]
+        with pytest.raises(BackendUnavailable):
+            sftp_backend.exists("probe.txt")
+        assert sftp_backend._sftp_client is None, "the dead client must be invalidated for tier-2 reconnect"
+        assert sftp_backend.exists("probe.txt") is True, "the next op must reconnect, not wedge on the dead client"
+
+    @pytest.mark.spec("SFTP-024")
+    def test_open_atomic_maps_temp_open_failure(self, sftp_backend: Backend) -> None:
+        """audit-020 M2: a backend failure opening the temp file maps like write/write_atomic.
+
+        ``open_atomic``'s temp-file open runs outside ``_errors()`` so the
+        caller's own in-block exceptions stay raw. Before the fix, a *backend*
+        failure opening the temp file (e.g. ``EACCES`` on a read-only directory)
+        also escaped raw, violating the method's ``Raises: PermissionDenied``
+        contract and the "all backend errors are RemoteStoreError" rule. Inject
+        ``EACCES`` at the temp-file open and assert it maps to ``PermissionDenied``.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("warm.txt", b"x")  # warm the connection
+        real_file = sftp_backend._sftp_client.file
+
+        def _deny(remote_path: str, mode: str = "r", *a: Any, **k: Any) -> Any:
+            if "w" in mode:  # the temp-file open; reads pass through
+                raise PermissionError(errno.EACCES, "Permission denied")
+            return real_file(remote_path, mode, *a, **k)
+
+        sftp_backend._sftp_client.file = _deny  # type: ignore[method-assign]
+        with pytest.raises(PermissionDenied), sftp_backend.open_atomic("oa_perm.txt") as f:  # noqa: PT012
+            f.write(b"x")
+
+    @pytest.mark.spec("SFTP-024")
+    def test_open_atomic_maps_close_failure(self, sftp_backend: Backend) -> None:
+        """audit-020 M2 (close half): a backend failure flushing/closing the temp handle maps.
+
+        The temp-file *open* was wrapped in ``_errors()``, but the handle
+        flush/close at clean exit ran outside it, so a non-connection backend
+        failure there — disk-full / quota, which a real server returns as
+        ``SSH_FX_FAILURE`` → ``IOError`` with ``errno=None`` — escaped raw, unlike
+        ``write``/``write_atomic`` (whose whole body sits inside ``_errors()``).
+        Inject an errno-less ``OSError`` at the handle close and assert it maps to
+        a ``RemoteStoreError`` (not a raw ``OSError``), while the caller's own
+        in-block exceptions still propagate unmapped (covered elsewhere).
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("warm.txt", b"x")  # warm the connection
+        real_file = sftp_backend._sftp_client.file
+
+        class _FailCloseHandle:
+            """Delegates to a real temp handle but raises an errno-less OSError on close/flush."""
+
+            def __init__(self, inner: Any) -> None:
+                self._inner = inner
+
+            def __enter__(self) -> _FailCloseHandle:
+                return self
+
+            def __exit__(self, *exc: object) -> None:
+                self.close()  # the flush-at-close is where disk-full/quota surfaces
+
+            def close(self) -> None:
+                self._inner.close()  # release the real handle so it does not leak
+                raise OSError("Failure")  # errno=None, like SSH_FX_FAILURE (disk-full/quota)
+
+            def __getattr__(self, name: str) -> Any:
+                return getattr(self._inner, name)
+
+        def _wrap(remote_path: str, mode: str = "r", *a: Any, **k: Any) -> Any:
+            if "w" in mode:
+                return _FailCloseHandle(real_file(remote_path, mode, *a, **k))
+            return real_file(remote_path, mode, *a, **k)
+
+        sftp_backend._sftp_client.file = _wrap  # type: ignore[method-assign]
+        with pytest.raises(RemoteStoreError) as exc_info, sftp_backend.open_atomic("oa_close.txt") as f:  # noqa: PT012
+            f.write(b"x")
+        assert not isinstance(exc_info.value, BackendUnavailable), "errno-less disk-full is not a connection death"
+
+    @pytest.mark.spec("SFTP-010")
+    def test_open_atomic_connection_death_skips_temp_cleanup(self, sftp_backend: Backend) -> None:
+        """A yield-phase connection death must not attempt a reconnect-to-unlink.
+
+        The best-effort temp `remove` is gated on the connection being alive: a
+        dead-channel signal skips it, because unlinking the temp over a dropped
+        connection would spin up a fresh tenacity reconnect (against a possibly
+        down server) only for `_map_exception` to null the client again — the
+        exact waste the flush/close-death guard avoids. The orphan temp is
+        unavoidable on a dead channel regardless. A spy on `remove` asserts it is
+        never called on the connection-death path (removing the guard's
+        `not connection_lost` clause would re-attempt it).
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("warmup.txt", b"x")  # live connection + parent dir
+        remove_calls: list[str] = []
+        real_remove = sftp_backend._sftp_client.remove
+
+        def _spy_remove(remote_path: str, *a: Any, **k: Any) -> Any:
+            remove_calls.append(remote_path)
+            return real_remove(remote_path, *a, **k)
+
+        sftp_backend._sftp_client.remove = _spy_remove  # type: ignore[method-assign]
+
+        class _DeadWriteHandle:
+            def write(self, _data: bytes) -> None:
+                raise EOFError("server closed connection")  # yield-phase channel death
+
+            def close(self) -> None:
+                return None
+
+        sftp_backend._sftp_client.file = lambda *a, **k: _DeadWriteHandle()  # type: ignore[method-assign]
+        with pytest.raises(BackendUnavailable), sftp_backend.open_atomic("oa_nocleanup.txt") as f:  # noqa: PT012
+            f.write(b"payload")
+        assert remove_calls == [], "connection-death open_atomic must not reconnect just to unlink the temp"
+        assert sftp_backend._sftp_client is None  # still invalidated for tier-2 recovery
+
+    @pytest.mark.spec("SFTP-010")
+    @pytest.mark.spec("SFTP-024")
+    def test_read_stream_eoferror_maps_and_reconnects(self, sftp_backend: Backend) -> None:
+        """audit-020 M1 at the SFTP level: a read-path ``EOFError`` maps + invalidates the client.
+
+        paramiko raises ``EOFError`` (not an ``OSError``) on a channel death
+        mid-read. ``read()`` wraps the handle in ``_ErrorMappingStream``, so
+        pulling bytes after the drop must surface ``BackendUnavailable``,
+        invalidate the client, and reconnect on the next read. The direct
+        ``_ErrorMappingStream`` unit test (fake mapper, no ``BufferedReader``)
+        pins none of this — dropping the wrap at ``read()`` would leave read-path
+        channel deaths escaping raw with that test still green.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("r.txt", b"payload")  # warm + a real file to read
+        real_file = sftp_backend._sftp_client.file
+
+        class _EOFReadHandle:
+            """Delegates to a real read handle but raises EOFError on read (channel death)."""
+
+            def __init__(self, inner: Any) -> None:
+                self._inner = inner
+
+            def readinto(self, _b: Any) -> int:
+                raise EOFError("server closed connection")
+
+            def read(self, _size: int = -1) -> bytes:
+                raise EOFError("server closed connection")
+
+            def __getattr__(self, name: str) -> Any:
+                return getattr(self._inner, name)
+
+        def _wrap(remote_path: str, mode: str = "r", *a: Any, **k: Any) -> Any:
+            if "r" in mode:
+                return _EOFReadHandle(real_file(remote_path, mode, *a, **k))
+            return real_file(remote_path, mode, *a, **k)
+
+        sftp_backend._sftp_client.file = _wrap  # type: ignore[method-assign]
+        stream = sftp_backend.read("r.txt")
+        with pytest.raises(BackendUnavailable):
+            stream.read()
+        with contextlib.suppress(Exception):
+            stream.close()  # release the wrapped real handle
+        assert sftp_backend._sftp_client is None, "a read-path channel death must invalidate the client"
+        assert sftp_backend.read_bytes("r.txt") == b"payload", "the next read must reconnect, not wedge"
+
+    @pytest.mark.spec("SFTP-003")
+    @pytest.mark.parametrize("op", ["write", "write_atomic"])
+    def test_overwrite_true_issues_no_pre_write_stat(self, sftp_backend: Backend, op: str) -> None:
+        """BK-313: the ``overwrite=True`` path must not stat the target before writing.
+
+        This is the round-trip the optimization removes; nothing else pins it,
+        so re-adding a pre-write stat (undoing BK-313) would otherwise ship
+        green. A spy records every ``stat`` argument and asserts the target path
+        is never among them on the overwrite success path.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("ovw.txt", b"v1")  # seed the existing file
+        target = sftp_backend._sftp_path("ovw.txt")
+        real_stat = sftp_backend._sftp_client.stat
+        seen: list[str] = []
+
+        def _spy(remote_path: str, *args: Any, **kwargs: Any) -> Any:
+            seen.append(remote_path)
+            return real_stat(remote_path, *args, **kwargs)
+
+        sftp_backend._sftp_client.stat = _spy  # type: ignore[method-assign]
+        getattr(sftp_backend, op)("ovw.txt", b"v2", overwrite=True)
+        assert target not in seen, f"overwrite=True issued a pre-write stat on the target: {seen}"
 
 
 # endregion

@@ -41,9 +41,10 @@ class _ErrorMappingStream(io.RawIOBase):
 
     When the caller reads from a stream returned by ``Backend.read()``, the
     backend's ``_errors()`` context manager has already exited.  Any native
-    ``OSError`` raised during ``stream.read()`` would leak unmapped.  This
-    wrapper intercepts I/O methods and passes ``OSError`` subclasses through
-    the backend's error classifier so callers see ``RemoteStoreError`` subtypes.
+    ``OSError`` -- or ``EOFError``, which paramiko raises (and which is *not* an
+    ``OSError``) when an SFTP channel dies mid-read -- would otherwise leak
+    unmapped.  This wrapper intercepts I/O methods and passes both through the
+    backend's error classifier so callers see ``RemoteStoreError`` subtypes.
 
     Programming errors (``TypeError``, ``ValueError``, ``AttributeError``, etc.)
     are **not** caught -- they propagate normally.
@@ -71,7 +72,7 @@ class _ErrorMappingStream(io.RawIOBase):
     def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
         try:
             return cast(int, self._inner.readinto(b))  # noqa: TC006
-        except OSError as exc:
+        except (OSError, EOFError) as exc:
             raise self._mapper(exc, self._path) from exc
 
     # endregion
@@ -81,14 +82,14 @@ class _ErrorMappingStream(io.RawIOBase):
         try:
             data = self._inner.read(size)
             return cast(bytes | None, data)  # noqa: TC006
-        except OSError as exc:
+        except (OSError, EOFError) as exc:
             raise self._mapper(exc, self._path) from exc
 
     def readline(self, size: int = -1) -> bytes:  # type: ignore[override]
         try:
             data = self._inner.readline(size)
             return cast(bytes, data)  # noqa: TC006
-        except OSError as exc:
+        except (OSError, EOFError) as exc:
             raise self._mapper(exc, self._path) from exc
 
     def seek(self, offset: int, whence: int = 0) -> int:
@@ -98,7 +99,7 @@ class _ErrorMappingStream(io.RawIOBase):
             if result is None:
                 return self._inner.tell() or 0
             return int(result)
-        except OSError as exc:
+        except (OSError, EOFError) as exc:
             raise self._mapper(exc, self._path) from exc
 
     def seekable(self) -> bool:
@@ -109,7 +110,7 @@ class _ErrorMappingStream(io.RawIOBase):
             result = self._inner.tell()
             # paramiko SFTPFile.tell() should return int, but guard anyway
             return int(result) if result is not None else 0
-        except OSError as exc:
+        except (OSError, EOFError) as exc:
             raise self._mapper(exc, self._path) from exc
 
     def close(self) -> None:
@@ -129,7 +130,7 @@ class _ErrorMappingStream(io.RawIOBase):
             return line
         except StopIteration:
             raise
-        except OSError as exc:  # defensive: unreachable if self.readline() maps all OSErrors  # pragma: no cover
+        except (OSError, EOFError) as exc:  # defensive: readline() already maps these  # pragma: no cover
             raise self._mapper(exc, self._path) from exc
 
     # endregion

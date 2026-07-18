@@ -50,6 +50,48 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `!.claude/agents/` negation in `.gitignore` was needed or the personas would
   never commit. No CHANGELOG — dev tooling/process, not user-facing.
 
+- [x] **BK-313 — SFTP backend: cut per-operation metadata round-trips**
+  spec: SFTP-003, SFTP-010, WR-003 · effort: M · audience: user.api
+  `SFTPBackend` paid extra synchronous `stat` round-trips per operation that raw
+  paramiko skips — payload-independent, so at 100 ms RTT each was ~+100 ms. Four
+  cuts. **(1) Post-write stat dropped** in `write()` / `write_atomic()`:
+  `WriteResult.size` is the byte count from the upload and SFTP's write response
+  carries no timestamp, so the stat only supplied `last_modified` — now `None` on
+  the SFTP write path (the `user.api` change; WR-001a already permits `None` for a
+  field the write response omits). **(2) Pre-write stat skipped when
+  `overwrite=True`**: the open truncates anyway; the stat only backed the
+  `overwrite=False` guard and the is-dir check. **(3) `_check_not_dir` dropped from
+  `read_bytes` / `delete`**: the is-dir → `InvalidPath` contract is now classified
+  lazily on the open/remove failure path (new `_raise_if_dir`), off the happy path.
+  `read` (streaming) and `open_atomic` keep an eager check — both hand back a
+  handle before any I/O, and a real OpenSSH server opens a directory for reading
+  without error (caught by the `sftp_docker` lane, which the in-process paramiko
+  server could not reproduce). **(4) Connection-liveness probe made local** (SFTP-010):
+  `_is_connected()` reads the transport's `is_active()` flag instead of issuing a
+  `stat('.')` round-trip on every `_sftp` property access — the dominant cost,
+  since one operation touches the property several times. The flag tracks the SSH
+  transport, not the SFTP channel, so a second detection tier catches a
+  channel-only drop on the operation itself, maps it to `BackendUnavailable`, and
+  clears `_sftp_client` so the next call reconnects. A pre-merge correctness audit
+  (audit-020) then found the initial tier-2 signal set incomplete — `socket.timeout`
+  (from the channel timeout), `SFTPError`, the `SSHException` / `ChannelException`
+  family, and the `EBADF` / `ETIMEDOUT` / `ESHUTDOWN` / `ENOTCONN` errnos mapped to
+  an error but never cleared the client, re-wedging the long-lived backend — so
+  invalidation is anchored to the `BackendUnavailable` *conclusion* (every such
+  mapping clears the client) across a widened signal set, still without a
+  per-op `stat('.')`. The same audit closed two error-mapping leaks on the failure
+  path: a streamed `read()` now maps a mid-read `EOFError` instead of leaking it
+  raw, and `open_atomic` maps a flush/close failure like `write` / `write_atomic`.
+  Low-severity edges (L1–L6) deferred to BK-316. Error-type contract
+  (`NotFound` / `InvalidPath` / `AlreadyExists`) and the `WriteResult` contract
+  preserved; the `test_errors.py` SFTP suite (in-process + `sftp_docker`) is the
+  safety net. Measured round-trips (in-process paramiko, warm channel, parent
+  exists): overwrite write 11→4, `write_atomic` 13→5, read 8→5, `read_bytes` 7→4,
+  delete 4→1. The SFTP entry in `test_atomic.py`'s `_LAST_MODIFIED_XFAIL` is
+  `strict=True`, so a reintroduced post-write stat fails loud. Trace:
+  [bk-313-sftp-roundtrips.yml](traces/bk-313-sftp-roundtrips.yml). Surfaced during
+  the ID-230 chart review (PR #906).
+
 - [x] **ID-230 — Benchmark overhead story: reproducible run of record + user-decides framing**
   spec: — · effort: M · audience: user.site, library.maintainer
   Purpose-2 half of the benchmark-suite rework (purpose-1 governance shipped as

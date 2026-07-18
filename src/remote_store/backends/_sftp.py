@@ -730,8 +730,12 @@ class SFTPBackend(Backend):
         """Open *path* for reading and return a buffered, streaming handle.
 
         Reads lazily over the SFTP channel (wrapped in a ``BufferedReader``), so
-        memory stays constant regardless of file size; one extra ``stat``
-        round-trip guards against *path* being a directory before the open.
+        memory stays constant regardless of file size. Because the read is
+        deferred, *path* being a directory must be rejected before the handle is
+        returned — a real OpenSSH server opens a directory for reading without
+        error and only fails on the first read, which this streaming path never
+        issues itself. So this one read path keeps an eager type check, unlike
+        ``read_bytes`` (which reads immediately and classifies on failure).
 
         Raises:
             NotFound: If the file does not exist, or a path component is itself a
@@ -743,7 +747,10 @@ class SFTPBackend(Backend):
         """
         with self._errors(path):
             sftp_path = self._sftp_path(path)
-            self._check_not_dir(sftp_path, path)
+            # BK-313: eager, unlike read_bytes/delete — a streaming read never
+            # issues the read that would surface a directory target on a real
+            # OpenSSH server, so it must be rejected before the handle escapes.
+            self._raise_if_dir(sftp_path, path)
             try:
                 f: BinaryIO = self._sftp.file(sftp_path, "r")
             except OSError as exc:
@@ -776,17 +783,25 @@ class SFTPBackend(Backend):
         Prefetches and materialises the whole file in memory (unlike the lazy
         ``read`` stream).
 
+        Directory rejection is lazy (unlike ``read``, which stats eagerly): a
+        directory target raises ``InvalidPath`` only because the read of it
+        fails. This assumes the server either refuses to open a directory for
+        reading or reports a non-zero directory ``st_size`` — both hold on
+        OpenSSH, where a directory reports ``st_size == 4096``. A non-standard
+        server that opens a directory for reading *and* reports ``st_size == 0``
+        would make this return empty bytes rather than raising ``InvalidPath``.
+
         Raises:
             NotFound: If the file does not exist, or a path component is itself a
                 file.
-            InvalidPath: If *path* names a directory.
+            InvalidPath: If *path* names a directory (subject to the server
+                assumption above).
             PermissionDenied: If the server denies access (``EACCES``).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails mid-read.
         """
         with self._errors(path):
             sftp_path = self._sftp_path(path)
-            self._check_not_dir(sftp_path, path)
             try:
                 with self._sftp.file(sftp_path, "r") as f:
                     f.prefetch()
@@ -795,6 +810,8 @@ class SFTPBackend(Backend):
                 code = getattr(exc, "errno", None)
                 if code == errno.ENOENT:
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+                # BK-313: lazy is-dir classification — see ``read``.
+                self._raise_if_dir(sftp_path, path)
                 if code is None and self._has_file_ancestor(sftp_path):
                     # ID-209 round-3: see ``read`` — file-ancestor recheck
                     # to disambiguate generic SSH_FX_FAILURE from the
@@ -818,6 +835,12 @@ class SFTPBackend(Backend):
         see a half-written file. Missing parent directories are created first
         (one ``stat`` per ancestor).
 
+        The returned ``WriteResult`` carries ``size`` (counted during upload)
+        and ``source="native"``, but every rich field — ``last_modified``,
+        ``etag``, ``version_id``, ``digest`` — is ``None``: SFTP's write response
+        carries no metadata at all, and the backend does not stat afterwards to
+        fetch any. Call ``get_file_info`` when the metadata is needed.
+
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If *path* names a directory, or an ancestor of *path*
@@ -828,17 +851,22 @@ class SFTPBackend(Backend):
         """
         with self._errors(path):
             sftp_path = self._sftp_path(path)
-            try:
-                st = self._sftp.stat(sftp_path)
-                if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
-                    raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
-                if not overwrite:
+            if not overwrite:
+                # BK-313: this stat only backs the overwrite=False guard. On the
+                # common overwrite=True path the open truncates anyway, so the
+                # round-trip is skipped there and the is-dir contract is carried
+                # lazily by ``_open_write`` on the (rare) open failure instead.
+                try:
+                    st = self._sftp.stat(sftp_path)
+                except OSError as exc:
+                    if getattr(exc, "errno", None) != errno.ENOENT:
+                        raise
+                else:
+                    if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
+                        raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-            except OSError as exc:
-                if getattr(exc, "errno", None) != errno.ENOENT:
-                    raise
             self._ensure_parent_dirs(sftp_path)
-            with self._sftp.file(sftp_path, "w") as f:
+            with self._open_write(sftp_path, path) as f:
                 if isinstance(content, bytes):
                     f.write(content)
                     size = len(content)
@@ -850,10 +878,12 @@ class SFTPBackend(Backend):
                             break
                         f.write(chunk)
                         size += len(chunk)
-            post_stat = self._sftp.stat(sftp_path)
-        mtime = post_stat.st_mtime
-        last_modified = datetime.fromtimestamp(mtime, tz=timezone.utc) if mtime is not None else None
-        return WriteResult(path=RemotePath(path), size=size, source="native", last_modified=last_modified)
+        # BK-313: no post-write stat. ``size`` is the byte count taken during
+        # upload and SFTP's write response carries no timestamp, so the stat
+        # bought nothing but ``last_modified`` — one RTT on every write. WR-001a
+        # permits ``last_modified is None`` when the write response omits it;
+        # call ``get_file_info`` when the mtime is actually needed.
+        return WriteResult(path=RemotePath(path), size=size, source="native", last_modified=None)
 
     def write_atomic(
         self,
@@ -871,6 +901,10 @@ class SFTPBackend(Backend):
         ``posix_rename`` fall back to a plain ``rename`` (non-atomic overwrite:
         the target is removed first), and the temp file is cleaned up on failure.
 
+        As in ``write``, the returned ``WriteResult`` carries ``size`` and
+        ``source="native"`` but leaves every rich field (``last_modified`` /
+        ``etag`` / ``version_id`` / ``digest``) ``None``.
+
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If *path* names a directory, or an ancestor of *path*
@@ -881,14 +915,20 @@ class SFTPBackend(Backend):
         """
         with self._errors(path):
             sftp_path = self._sftp_path(path)
-            self._check_not_dir(sftp_path, path)
             if not overwrite:
+                # BK-313: one stat, two contracts — the is-dir type check used to
+                # pay a round-trip of its own here. With overwrite=True there is
+                # no stat at all; ``_promote`` classifies a directory target on
+                # the rename failure instead.
                 try:
-                    self._sftp.stat(sftp_path)
-                    raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+                    st = self._sftp.stat(sftp_path)
                 except OSError as exc:
                     if getattr(exc, "errno", None) != errno.ENOENT:
                         raise
+                else:
+                    if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
+                        raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
+                    raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
             self._ensure_parent_dirs(sftp_path)
             # Write to temp file, then rename
             name = sftp_path.rsplit("/", 1)[-1] if "/" in sftp_path else sftp_path
@@ -908,22 +948,14 @@ class SFTPBackend(Backend):
                                 break
                             f.write(chunk)
                             size += len(chunk)
-                try:
-                    self._sftp.posix_rename(tmp_path, sftp_path)
-                except OSError:  # pragma: no cover -- fallback for servers without posix_rename
-                    if overwrite:
-                        with contextlib.suppress(OSError):
-                            self._sftp.remove(sftp_path)
-                    self._sftp.rename(tmp_path, sftp_path)
+                self._promote(tmp_path, sftp_path, path, overwrite=overwrite)
             except Exception:
                 # Attempt to clean up temp file on failure
                 with contextlib.suppress(Exception):
                     self._sftp.remove(tmp_path)
                 raise
-            post_stat = self._sftp.stat(sftp_path)
-        mtime = post_stat.st_mtime
-        last_modified = datetime.fromtimestamp(mtime, tz=timezone.utc) if mtime is not None else None
-        return WriteResult(path=RemotePath(path), size=size, source="native", last_modified=last_modified)
+        # BK-313: no post-rename stat — see ``write``.
+        return WriteResult(path=RemotePath(path), size=size, source="native", last_modified=None)
 
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
@@ -945,34 +977,84 @@ class SFTPBackend(Backend):
         # Setup phase: existence check + parent dirs (within error mapping)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
-            self._check_not_dir(sftp_path, path)
-            if not overwrite:
-                try:
-                    self._sftp.stat(sftp_path)
+            # BK-313: one eager stat carries both contracts. Unlike ``write`` /
+            # ``write_atomic`` — which skip the stat entirely on ``overwrite=True``
+            # and classify a directory target lazily on the open/rename failure —
+            # this method hands the caller a handle to stream into, so a directory
+            # target must fail before they write a byte, not at promote time. That
+            # stat is unavoidable; fold the ``overwrite=False`` existence check
+            # into it rather than paying a second round-trip on the same path.
+            try:
+                st = self._sftp.stat(sftp_path)
+            except OSError as exc:
+                if getattr(exc, "errno", None) != errno.ENOENT:
+                    raise
+                # ENOENT: target absent — nothing to reject, proceed to write.
+            else:
+                if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
+                    raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
+                if not overwrite:
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-                except OSError as exc:
-                    if getattr(exc, "errno", None) != errno.ENOENT:
-                        raise
             self._ensure_parent_dirs(sftp_path)
             name = sftp_path.rsplit("/", 1)[-1] if "/" in sftp_path else sftp_path
             parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else "."
             tmp_name = f".~tmp.{name}.{uuid.uuid4().hex[:8]}"
             tmp_path = f"{parent}/{tmp_name}"
-        # Yield phase: outside _errors() so user exceptions propagate cleanly
+        # The temp-file open is a backend op: wrap it in _errors() so a failure
+        # there (e.g. EACCES on a read-only directory) maps like write /
+        # write_atomic instead of leaking raw (audit-020 M2). Nothing is created
+        # if it fails, so there is no temp file to clean up.
+        with self._errors(path):
+            handle = self._sftp.file(tmp_path, "w")
+        # Yield phase: the caller's writes run outside _errors() so a user
+        # exception propagates unmapped.
         try:
-            with self._sftp.file(tmp_path, "w") as f:
-                yield f
+            try:
+                yield handle
+            except BaseException:
+                # Abnormal exit (the caller's own exception, a backend death
+                # during their writes, GeneratorExit): close the handle
+                # best-effort and re-raise; the target is left untouched. The
+                # outer handler classifies a backend death; a caller exception
+                # falls through it unchanged.
+                with contextlib.suppress(Exception):
+                    handle.close()
+                raise
+            # Normal completion: the flush at close and the promote are backend
+            # ops — wrap them in _errors() so a failure there maps like
+            # write/write_atomic. Disk-full / quota surfaces as an errno-less
+            # SSH_FX_FAILURE at *flush*, not at open, so mapping only the temp
+            # open (audit-020 M2) left this half leaking raw.
             with self._errors(path):
-                try:
-                    self._sftp.posix_rename(tmp_path, sftp_path)
-                except OSError:  # pragma: no cover -- fallback for servers without posix_rename
-                    if overwrite:
-                        with contextlib.suppress(OSError):
-                            self._sftp.remove(sftp_path)
-                    self._sftp.rename(tmp_path, sftp_path)
-        except Exception:
-            with contextlib.suppress(Exception):
-                self._sftp.remove(tmp_path)
+                handle.close()
+                self._promote(tmp_path, sftp_path, path, overwrite=overwrite)
+        except Exception as exc:
+            import paramiko
+
+            # Was the connection itself lost? Two shapes reach here: a flush/close
+            # death already ran through _errors() above and arrives mapped (client
+            # already nulled), or a yield-phase death arrives raw as a
+            # dead-channel signal / SSHException. Either way the connection is
+            # gone.
+            connection_lost = self._is_connection_dead(exc) or isinstance(exc, paramiko.SSHException)
+            # Best-effort temp cleanup — but never at the cost of a reconnect.
+            # Skip it when the client is already gone (a flush/close death nulled
+            # it) OR when this exc is itself a dead-connection signal: unlinking
+            # the temp over a dropped connection would spin up a fresh tenacity
+            # reconnect (against a possibly down server) only for _map_exception
+            # to null it again two lines down. The orphan temp is unavoidable on a
+            # dead channel regardless (see BK-316 for the temp-cleanup edges).
+            if self._sftp_client is not None and not connection_lost:
+                with contextlib.suppress(Exception):
+                    self._sftp.remove(tmp_path)
+            # A backend death surfaced during the caller's streamed writes is a
+            # backend error, not the caller's: route it through _map_exception
+            # (which, for a raw dead-channel signal, also invalidates the client).
+            # Flush/close and promote failures were already mapped by the
+            # _errors() block above; the caller's own in-block exceptions (not
+            # connection signals) propagate unchanged.
+            if connection_lost:
+                raise self._map_exception(exc, path) from None
             raise
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
@@ -988,7 +1070,6 @@ class SFTPBackend(Backend):
         """
         with self._errors(path):
             sftp_path = self._sftp_path(path)
-            self._check_not_dir(sftp_path, path)
             try:
                 self._sftp.remove(sftp_path)
             except OSError as exc:
@@ -996,6 +1077,10 @@ class SFTPBackend(Backend):
                     if not missing_ok:
                         raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
                     return
+                # BK-313: lazy is-dir classification — see ``read``. Note this
+                # runs before ``missing_ok`` can swallow anything: a directory is
+                # a type mismatch, not a missing file.
+                self._raise_if_dir(sftp_path, path)
                 raise
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
@@ -1063,10 +1148,11 @@ class SFTPBackend(Backend):
         """
         try:
             yield from self._list_files_depth(path, recursive=recursive, max_depth=max_depth, _depth=0)
-        except RemoteStoreError:
-            raise
         except Exception as exc:  # noqa: BLE001
-            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
+            # BK-313: route through _map_exception (not a bare RemoteStoreError)
+            # so a channel death mid-listing invalidates the client and reconnects
+            # on the next call (SFTP-010 tier 2), same as the single-object ops.
+            raise self._map_exception(exc, path) from None
 
     def _list_files_depth(
         self,
@@ -1120,10 +1206,8 @@ class SFTPBackend(Backend):
                 if stat.S_ISDIR(attr.st_mode):
                     rel = f"{path}/{attr.filename}" if path else attr.filename
                     yield FolderEntry(path=RemotePath(rel), name=attr.filename)
-        except RemoteStoreError:
-            raise
         except Exception as exc:  # noqa: BLE001
-            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
+            raise self._map_exception(exc, path) from None  # BK-313 tier 2 — see list_files
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         """Yield the immediate files and folders under *path* in one listing.
@@ -1150,10 +1234,8 @@ class SFTPBackend(Backend):
                 elif stat.S_ISDIR(attr.st_mode):
                     rel = f"{path}/{attr.filename}" if path else attr.filename
                     yield FolderEntry(path=RemotePath(rel), name=attr.filename)
-        except RemoteStoreError:
-            raise
         except Exception as exc:  # noqa: BLE001
-            raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
+            raise self._map_exception(exc, path) from None  # BK-313 tier 2 — see list_files
 
     def get_file_info(self, path: str) -> FileInfo:
         """Return metadata for the file at *path* from a single ``stat`` round-trip.
@@ -1516,14 +1598,23 @@ class SFTPBackend(Backend):
         return ssh
 
     def _is_connected(self) -> bool:
-        """Check if the SFTP connection is alive."""
+        """Return True if the SSH transport is up, without a network round-trip.
+
+        The transport's ``is_active()`` is a local flag read: no bytes cross the
+        wire. The ``_sftp`` property is touched several times per Store operation
+        (existence guard, parent walk, open/remove), so a round-trip liveness
+        probe here would multiply each operation's RTT count.
+
+        This flag tracks the SSH *transport*, not the SFTP *channel*: a channel
+        that dies under a still-live transport reads as active here and is not
+        caught. ``_map_exception`` closes that gap — it maps the dead-channel
+        exception to ``BackendUnavailable`` and clears ``_sftp_client``, so the
+        next access to this property reconnects.
+        """
         if self._sftp_client is None or self._ssh_client is None:
             return False
-        try:
-            self._sftp_client.stat(".")
-            return True
-        except Exception:  # pragma: no cover -- requires transport failure  # noqa: BLE001
-            return False
+        transport = self._ssh_client.get_transport()
+        return transport is not None and transport.is_active()
 
     def _resolve_host_keys(self, direct: str | None, config: dict[str, Any] | None) -> str | None:
         """Resolve known host keys: code > config > env > file fallback."""
@@ -1568,21 +1659,87 @@ class SFTPBackend(Backend):
             return f"{self._base_path}/{path}"
         return self._base_path
 
-    def _check_not_dir(self, sftp_path: str, path: str) -> None:
-        """Raise InvalidPath if *sftp_path* is a directory (type-mismatch guard).
+    def _raise_if_dir(self, sftp_path: str, path: str) -> None:
+        """Raise ``InvalidPath`` if *sftp_path* is a directory; return otherwise.
 
-        Note: this issues an extra ``stat`` round-trip.  ``write()`` folds
-        the check into its existing stat; callers like ``read()`` and
-        ``delete()`` pay the extra call for simplicity.
+        This ``stat`` is what carries the file-vs-directory type-mismatch
+        contract: ``_map_exception`` cannot recover the distinction on its own,
+        because a server rejecting "open/remove a directory as a file" reports
+        EISDIR, EACCES, or an errno-less SSH_FX_FAILURE depending on the
+        platform, and none of those implies *directory*.
+
+        ``read_bytes`` / ``delete`` / ``write`` / ``write_atomic`` call this from
+        their **error** path, so the round-trip is paid only by an operation that
+        has already failed — never by a successful one, which is the common case
+        by a wide margin.  Those callers re-raise the original exception if this
+        returns: a stat saying "not a directory", or one that fails itself (the
+        entry vanished in a race, the server denies stat), leaves the original
+        failure to ``_map_exception``.
+
+        ``read`` is **eager** instead — it must reject a directory before handing
+        back a handle, because the deferred I/O that would otherwise surface it
+        never runs in-band (a real OpenSSH server opens a directory for reading
+        and only errors on the first read, which the streaming path never
+        issues). ``open_atomic`` also rejects a directory up front for the same
+        reason, but folds that check into its own single setup ``stat`` rather
+        than calling this helper.
         """
         try:
             st = self._sftp.stat(sftp_path)
-            if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
-                raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
-        except OSError as exc:
-            if getattr(exc, "errno", None) == errno.ENOENT:
-                return  # path doesn't exist — let caller handle NotFound
+        except OSError:
+            return  # cannot classify — let the caller's original error stand
+        if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
+            raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
+
+    def _open_write(self, sftp_path: str, path: str) -> BinaryIO:
+        """Open *sftp_path* for writing, classifying a directory target lazily.
+
+        ``write`` does not stat before opening when ``overwrite=True``, so the
+        "*path* names a directory ⇒ ``InvalidPath``" contract is enforced here,
+        on the failure path (see ``_raise_if_dir``).
+        """
+        try:
+            f: BinaryIO = self._sftp.file(sftp_path, "w")
+        except OSError:
+            self._raise_if_dir(sftp_path, path)
             raise
+        return f
+
+    def _promote(self, tmp_path: str, sftp_path: str, path: str, *, overwrite: bool) -> None:
+        """Rename *tmp_path* onto *sftp_path*, classifying a directory target lazily.
+
+        Shared by ``write_atomic`` and ``open_atomic``. ``posix_rename`` is
+        atomic on POSIX-compliant servers; the fallback covers servers without
+        the extension.
+
+        A directory target fails ``posix_rename`` too, so the ``InvalidPath``
+        classification happens here rather than in an eager stat before the
+        upload. It runs *before* the fallback so a directory is never fed to the
+        fallback's ``remove`` + ``rename``.
+
+        Cost note: a server that lacks ``posix_rename`` raises ``OSError`` on
+        *every* rename, so on that server class this stat is paid once per
+        atomic write even for a non-directory target — a round-trip this PR
+        otherwise removes. It is kept ahead of the fallback deliberately: the
+        alternative (fallback first, classify on its failure) would feed a
+        directory target to ``remove`` + ``rename``. The extra stat is bounded
+        to servers without the (near-universal) ``posix-rename@openssh.com``
+        extension, hence the fallback's ``# pragma: no cover``.
+        """
+        try:
+            self._sftp.posix_rename(tmp_path, sftp_path)
+        except OSError:
+            self._raise_if_dir(sftp_path, path)
+            self._rename_fallback(tmp_path, sftp_path, overwrite=overwrite)
+
+    def _rename_fallback(  # pragma: no cover -- fallback for servers without posix_rename
+        self, tmp_path: str, sftp_path: str, *, overwrite: bool
+    ) -> None:
+        """Promote *tmp_path* with a plain ``rename`` (non-atomic overwrite)."""
+        if overwrite:
+            with contextlib.suppress(OSError):
+                self._sftp.remove(sftp_path)
+        self._sftp.rename(tmp_path, sftp_path)
 
     def _base_relative_ancestor_dirs(self, sftp_path: str) -> Iterator[str]:
         """Yield each ancestor directory of *sftp_path*, from ``self._base_path``
@@ -1713,6 +1870,59 @@ class SFTPBackend(Backend):
         except Exception as exc:  # noqa: BLE001
             raise self._map_exception(exc, path) from None
 
+    @staticmethod
+    def _is_connection_dead(exc: Exception) -> bool:
+        """Return True if *exc* signals a dropped or unusable SSH/SFTP connection.
+
+        paramiko surfaces a dead channel in several unrelated shapes, none
+        carrying an errno the ENOENT/EACCES/EEXIST/ENOTDIR dispatch in
+        ``_map_exception`` recognises: ``EOFError`` (not an ``OSError``);
+        ``OSError('Socket is closed')`` with no errno (paramiko's own literal,
+        not an OS-locale message, so matching it is safe on non-English hosts);
+        an ``OSError`` carrying a socket-teardown errno (``ECONNRESET`` /
+        ``EPIPE`` / ``ECONNABORTED`` / ``ETIMEDOUT`` / ``ESHUTDOWN`` /
+        ``ENOTCONN`` / ``EBADF``); a ``socket.timeout`` / ``TimeoutError`` (an
+        ``OSError`` whose half-open instance usually carries no matching errno,
+        so it is matched by type — the most realistic trigger, since a slow op
+        hits the channel timeout); and a ``paramiko.SFTPError`` (an SFTP-protocol
+        failure that subclasses neither ``OSError`` nor ``SSHException``). All
+        are matched here so ``_map_exception`` maps them to ``BackendUnavailable``
+        *and* invalidates the cached client so the next operation reconnects.
+
+        ``paramiko.SSHException`` and its subclasses (e.g. ``ChannelException``)
+        are deliberately *not* matched here: ``_map_exception`` has a dedicated
+        ``SSHException`` branch that also clears the client, kept after the
+        ``IncompatiblePeer`` branch so that error keeps its diagnostic hint. This
+        enumeration is therefore not exhaustive by design — the invariant that a
+        dead connection reconnects is upheld by ``_map_exception`` clearing the
+        client on *every* ``BackendUnavailable`` it returns, not by this list.
+        """
+        import paramiko
+
+        if isinstance(exc, (EOFError, paramiko.SFTPError)):
+            return True
+        if isinstance(exc, TimeoutError):  # socket.timeout is TimeoutError (3.10+)
+            return True
+        if isinstance(exc, OSError):
+            code = getattr(exc, "errno", None)
+            if code in (
+                errno.ECONNRESET,
+                errno.EPIPE,
+                errno.ECONNABORTED,
+                # ETIMEDOUT here is belt-and-suspenders: a CPython-constructed
+                # socket timeout is promoted to TimeoutError and caught by the
+                # type branch above, so this entry only fires for an exotic plain
+                # OSError that carries the errno without the subclass.
+                errno.ETIMEDOUT,
+                errno.ESHUTDOWN,
+                errno.ENOTCONN,
+                errno.EBADF,
+            ):
+                return True
+            if code is None and "socket is closed" in str(exc).lower():
+                return True
+        return False
+
     def _map_exception(self, exc: Exception, path: str) -> RemoteStoreError:
         """Classify an exception into a remote_store error.
 
@@ -1725,6 +1935,18 @@ class SFTPBackend(Backend):
             return exc
         if isinstance(exc, FileNotFoundError):
             return NotFound(f"Not found: {path}", path=path, backend=self.name)
+        if self._is_connection_dead(exc):
+            # BK-313: the ``_is_connected`` liveness check reads the SSH
+            # transport's ``is_active()`` flag — a local, no-round-trip probe.
+            # That flag tracks the transport, not the SFTP channel, so a channel
+            # that dies under a still-live transport (idle-channel timeout, sftp
+            # subsystem restart, half-open partition) leaves ``is_active()``
+            # ``True`` and the probe cannot see it. Invalidate the client here,
+            # on the operation that actually surfaced the drop, so the *next*
+            # ``_sftp`` access reconnects (SFTP-010) rather than reusing a dead
+            # client forever. The op itself is reported as ``BackendUnavailable``.
+            self._sftp_client = None
+            return BackendUnavailable(str(exc), path=path, backend=self.name)
         if isinstance(exc, OSError):
             code = getattr(exc, "errno", None)
             if code == errno.ENOENT:
@@ -1750,6 +1972,12 @@ class SFTPBackend(Backend):
                 return NotFound(f"Not found: {path}", path=path, backend=self.name)
             return RemoteStoreError(str(exc), path=path, backend=self.name)
         if isinstance(exc, paramiko.ssh_exception.IncompatiblePeer):
+            # audit-020 H1: keep the "every BackendUnavailable invalidates the
+            # client" invariant literal. IncompatiblePeer is a connect-time
+            # negotiation failure, so the client is already None here — this is a
+            # no-op in practice, not a live-channel recovery — but stating it
+            # keeps the invariant true for every BackendUnavailable return.
+            self._sftp_client = None
             # IncompatiblePeer wraps host-key / KEX / cipher / MAC negotiation
             # failures; only the host-key variant is addressable by
             # enable_ssh_rsa_compat. Match the paramiko message substring so the
@@ -1784,6 +2012,13 @@ class SFTPBackend(Backend):
                 backend=self.name,
             )
         if isinstance(exc, paramiko.SSHException):
+            # audit-020 H1: an SSHException reaching here on a live operation
+            # (e.g. ChannelException — a channel-only death) means the channel is
+            # unusable, but ``is_active()`` stays True, so the client must be
+            # invalidated or every later op reuses the dead channel forever. The
+            # SFTPError / socket-teardown / timeout signals clear via
+            # ``_is_connection_dead`` above; this covers the SSHException family.
+            self._sftp_client = None
             return BackendUnavailable(str(exc), path=path, backend=self.name)
         return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover
 

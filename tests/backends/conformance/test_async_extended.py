@@ -1079,7 +1079,12 @@ class TestAsyncWriteResultConformance:
         assert result.size == info.size
         assert result.etag == info.etag
         assert result.digest == info.digest
-        if info.modified_at is not None:
+        # Mirrors the sync guard (test_atomic.py): WR-001a lets a backend leave
+        # last_modified None when its write response omits the timestamp, and
+        # that is not a disagreement with get_file_info(). No async backend does
+        # so today — the sync-side case is SFTP (BK-313), which has no async
+        # fixture — but the two suites are kept identical on purpose.
+        if info.modified_at is not None and result.last_modified is not None:
             assert result.last_modified == info.modified_at
 
     @pytest.mark.large_payload

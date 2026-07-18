@@ -95,18 +95,24 @@ class Capability(enum.Enum):
       in-memory backends, SQL blob stores) do **not** declare this flag.
       Callers can use ``store.supports(Capability.LAZY_READ)`` to know
       whether partial reads avoid loading the entire file.
-    - ``WRITE_RESULT_NATIVE`` -- Quality flag: the backend populates the
-      rich fields of the returned ``WriteResult`` (``etag``,
-      ``last_modified``, ``version_id``, and where applicable
-      ``digest``) directly from its write response.  Does **not** gate
+    - ``WRITE_RESULT_NATIVE`` -- Quality flag: the backend fills each rich
+      field of the returned ``WriteResult`` (``etag``, ``version_id``,
+      ``last_modified``, ``digest``) directly from its write response, but
+      only when that response carries the field — which fields are filled
+      depends on the backend.  Some native backends fill none: SFTP's write
+      response has no metadata at all, so it returns only ``path`` / ``size``
+      / ``source`` and leaves every rich field ``None`` (call
+      ``get_file_info()`` for the metadata).  Does **not** gate
       any method — ``Store.write*()`` works on every backend.
       Backends without this flag return a ``WriteResult`` with only
       ``path`` and ``size`` populated (``source == "basic"``);
       ``metadata`` is governed independently by the ``USER_METADATA``
       capability and is not subject to this flag.
-      Use ``store.supports(Capability.WRITE_RESULT_NATIVE)`` to decide
-      whether to call ``store.get_file_info()`` after a write if you
-      need the full metadata set.
+      ``store.supports(Capability.WRITE_RESULT_NATIVE)`` tells you whether the
+      rich fields *may* be populated, not that any given one is: a native
+      backend can still leave an individual field ``None`` (SFTP leaves all of
+      them). Check the specific field you need, or call
+      ``store.get_file_info()`` when you must have it.
     """
 
     # Core I/O

@@ -71,40 +71,38 @@ and the highest ID already in this file, then take the next integer. Run
   those are algorithm-name → impl lookup tables, not security policy.
   Surfaced during BK-198 (PR 613) review.
 
-- [ ] **BK-313 — SFTP backend: cut per-operation metadata round-trips**
-  spec: — · effort: M · audience: user.api
-  `SFTPBackend` issues several extra SFTP `stat` round-trips per operation that
-  raw paramiko skips, and SFTP is synchronous, so each is one network RTT. On
-  the ID-230 run of record the SFTP overhead vs raw paramiko is **~6×RTT for
-  write and ~3×RTT for read**, and it is **payload-independent** (1KB/64KB/1MB
-  all ~110–124 ms write / ~57–71 ms read at rtt20 — verified), i.e. a fixed
-  round-trip count, not data chunking. Under 100 ms RTT that is +280–561 ms per
-  op. S3 adds ~1 extra HEAD and Azure ~0, so this is SFTP-specific, and it is a
-  deliberate contract/metadata cost, **not a defect** — but much of it is
-  avoidable.
-  **Where the round-trips come from** (`src/remote_store/backends/_sftp.py`):
-  `write()` does a pre-write `stat` (overwrite / is-dir guard, :832),
-  `_ensure_parent_dirs` (a `stat` per ancestor, :840), and a **post-write
-  `stat`** purely to populate `WriteResult.size` / `last_modified` (:853);
-  `read_bytes()` pays a `_check_not_dir` `stat` (:789, whose docstring notes the
-  extra round-trip); `delete` / `exists` carry similar prechecks.
-  **Optimizations, highest-value first:**
-  1. **Drop / lazy the post-write `stat`.** `WriteResult.size` is already
-     `len(content)`; only `last_modified` needs the server. Make it lazy or omit
-     it on the streaming write path — saves one RTT on *every* SFTP write. This
-     changes `WriteResult.last_modified` semantics → `user.api`, CHANGELOG, and a
-     conformance check.
-  2. **Skip the pre-write `stat` when `overwrite=True`** (the common case): the
-     open truncates anyway; the stat only backs the `overwrite=False` guard and
-     the dir-type check.
-  3. **Reconsider `_check_not_dir` on read/delete** (paid "for simplicity" per
-     its docstring) — the open/remove error mapping may already cover it.
-  Together these take SFTP write from ~6 to ~2–3 extra round-trips. Preserve the
-  error-type contract (`NotFound` / `InvalidPath` / `AlreadyExists`) and the
-  `WriteResult` contract. Measure before/after with `hatch run
-  bench-latency-matrix`; the ID-230 run of record
-  (`benchmarks/results/run-of-record/rtt*.json`) is the baseline. Surfaced during
-  the ID-230 chart review (PR #906).
+- [ ] **BK-316 — SFTP low-severity correctness edges (audit-020 L1–L6)**
+  spec: SFTP-023, SFTP-024 · effort: M · audience: user.api
+  Six low-severity edges audit-020 surfaced while reviewing BK-313; each is
+  independent and splittable, and most are pre-existing patterns the round-trip
+  refactor preserved rather than introduced (so they were correctly deferred out
+  of PR #910, which fixed the audit's High/Medium items H1/M1/M2 and recorded the
+  M3 decision). Mostly manifest only on non-OpenSSH servers whose error shapes
+  differ, so all are static-or-partial-live:
+  - **L1** `_raise_if_dir` swallows *all* `OSError`, so a directory whose
+    classification stat itself fails (e.g. `EACCES`) degrades to a generic
+    `RemoteStoreError` instead of `PermissionDenied` (master's `_check_not_dir`
+    re-raised non-`ENOENT`).
+  - **L2** mode-less servers (`st_mode is None`): a directory target yields
+    `AlreadyExists`/generic, never `InvalidPath`; three mode-less policies coexist
+    across `write`/`write_atomic`/`open_atomic`/`_ensure_parent_dirs`. Fold into
+    one helper.
+  - **L3** `delete` under a file-ancestor lacks the `_has_file_ancestor` recheck
+    that `read`/`read_bytes` have, so on a server that reports an errno-less
+    `SSH_FX_FAILURE` it degrades to `RemoteStoreError` instead of `NotFound`.
+  - **L4** cleanup after a promote-death reconnects: the best-effort temp
+    `remove()` re-enters the `_sftp` property and can run the full tenacity
+    retry/backoff against a down server inside suppressed cleanup, blocking the
+    original error for seconds. Bound or skip the reconnect there.
+  - **L5** `open_atomic` temp file orphaned on `GeneratorExit`/`KeyboardInterrupt`
+    (`BaseException`, not caught by the `except Exception` cleanup) — litter, not
+    corruption (the atomic contract holds). Consider `BaseException`-aware cleanup.
+  - **L6** `_has_file_ancestor` returns `False` on any opaque stat error while
+    walking, so the `read`/`read_bytes` file-ancestor recheck does not fire and
+    an errno-less failure degrades to `RemoteStoreError` instead of `NotFound`
+    (deliberately conservative; ID-209). Reconsider alongside L1.
+  Details and per-finding line refs in
+  `sdd/audits/audit-020-sftp-roundtrips-correctness.md` (§ Low / Nits, group G4).
 
 ---
 

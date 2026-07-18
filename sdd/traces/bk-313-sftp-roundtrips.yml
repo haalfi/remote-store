@@ -1,0 +1,176 @@
+id: BK-313
+title: "SFTP backend: cut per-operation metadata round-trips"
+trigger: "The ID-230 run of record showed SFTP paying ~6xRTT (write) / ~3xRTT (read) over raw paramiko, payload-independent — a fixed count of contract/metadata stat round-trips, much of it avoidable"
+source_items:
+  - BK-313
+  - ID-230
+audience:
+  - user.api
+expected_ripples:
+  - sdd/backlogid.json
+  - tests/backends/sftp/test_write_result.py
+surprising_ripples:
+  - src/remote_store/_capabilities.py
+  - src/remote_store/_backend.py
+  - src/remote_store/_models.py
+  - docs-src/reference/api/store.md
+  - docs-src/guides/write-integrity.md
+  - sdd/specs/003-backend-adapter-contract.md
+  # Round 3: the "native does not imply every rich field populated" loosening
+  # had more surfaces than rounds 1-2 caught — the doc-consistency chain kept
+  # expanding (store.md sibling admonitions -> models.md admonition -> async.md
+  # guide) and one spec sibling (045 WR-004 formal-coverage prose) still carried
+  # the old absolute claim alongside the already-fixed CAP-007.
+  - docs-src/reference/api/models.md
+  - docs-src/guides/async.md
+  - sdd/specs/045-write-result.md
+  # audit-020 (pre-merge SFTP correctness audit): removing master's per-op
+  # stat('.') liveness probe also removed its universal self-heal, so tier-2's
+  # incomplete dead-signal set now wedged the backend permanently on any signal
+  # it did not recognise (SSHException/SFTPError/socket.timeout/EBADF/ETIMEDOUT).
+  # The read-stream error wrapper was the surprising co-ripple: it caught only
+  # OSError, so a channel-death EOFError leaked raw AND never invalidated the
+  # client (a read-path instance of the same wedge).
+  - src/remote_store/_stream.py
+discovery_followups:
+  - BK-316
+review_rounds: 5
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-313 (item)"
+        read_type: gate
+        extract: "Three optimisations, priority order; preserve the error-type and WriteResult contracts"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Spec section, Public method signature"
+        read_type: gate
+        extract: "Anticipate the ripples: spec-marked tests follow a spec edit; docstrings follow a behaviour change"
+      - file: src/remote_store/backends/_sftp.py
+        section: "write, write_atomic, read, read_bytes, delete, _check_not_dir, _map_exception"
+        read_type: reference
+        extract: "Locate each stat round-trip and confirm _map_exception has no dir->InvalidPath rule, so _check_not_dir is what carries that contract"
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/045-write-result.md
+        section: "WR-001a, WR-003"
+        read_type: gate
+        extract: "WR-003 mandated the post-write stat for SFTP; WR-001a already allows last_modified=None when the write response omits it"
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-003"
+        read_type: gate
+        extract: "WRITE_RESULT_NATIVE rationale cited the post-write stat; it must now rest on size/source alone"
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "_LAST_MODIFIED_XFAIL, test_native_populates_last_modified, test_write_result_rich_fields_match_file_info"
+        read_type: gate
+        extract: "The xfail registry is the built-in mechanism for a WRITE_RESULT_NATIVE backend that returns last_modified=None"
+      - file: tests/backends/conformance/test_errors.py
+        section: "read/write/delete directory + file-ancestor cases"
+        read_type: gate
+        extract: "Assumed the sftp_inproc lane was a sufficient safety net for moving is-dir detection to the error path. It was not — the real-OpenSSH sftp_docker lane later exposed that streaming read/open_atomic need eager checks (see verify phase), and PR review flagged that _promote's dir branch and the liveness reconnect had no coverage at all"
+        outcome: misleading
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "write, write_atomic"
+        read_type: reference
+        extract: "Drop the post-write stat; size is already the byte count, last_modified becomes None"
+  - id: implement_liveness
+    name: Implement (liveness probe)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connected, _sftp property, _map_exception"
+        read_type: reference
+        extract: "The measured counts ran higher than the code's explicit stats: _is_connected() did a stat('.') round-trip on every _sftp access. Replaced with the transport's is_active() flag (local, no round-trip); the dominant cut. PR review round 1 caught that is_active() tracks the transport, not the SFTP channel, so a channel-only drop wedged permanently — added tier 2: _map_exception maps the dead-channel exception to BackendUnavailable and clears _sftp_client so the next access reconnects. Round 2 caught that the listing ops and open_atomic's yield phase bypass _map_exception, so tier 2 never fired there — routed them through it; also that CAP-007 (003 spec) still claimed native = all rich fields populated, contradicting SFTP now populating none"
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-010"
+        read_type: gate
+        extract: "SFTP-010 mandated the stat('.') mechanism; amended to two-tier detection (transport flag + on-operation channel-death mapping) that keeps the BackendUnavailable + reconnect postcondition honest"
+  - id: review_round3
+    name: Review (round 3, method-by-method)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "open_atomic"
+        read_type: reference
+        extract: "open_atomic(overwrite=False) still paid two back-to-back stats on the same path (eager _raise_if_dir + existence stat) — the clearest missed round-trip in a round-trip-cutting PR. Folded into one stat carrying both the dir->InvalidPath and existing->AlreadyExists contracts, matching write/write_atomic. _raise_if_dir no longer has open_atomic as a caller (docstring updated). Each method's src+test reviewed by a scoped subagent expert before moving on: the open_atomic pass caught two broken new tests (a spy captured _sftp_client.stat before the lazy connection was warmed -> AttributeError; a real channel-kill leaked the in-process server's temp handle -> flaky PytestUnraisableExceptionWarning) — fixed with a connection warmup and a patched-handle injection respectively"
+      - file: tests/backends/sftp/test_config.py
+        section: "test_channel_death_during_listing_maps_and_reconnects, test_channel_death_during_open_atomic_maps_and_reconnects, test_open_atomic_overwrite_false_issues_single_stat"
+        read_type: reference
+        extract: "Coverage gaps the tier-2 wiring left: the listing channel-death test drove only list_files though list_folders/iter_children share the _map_exception routing (a reverted sibling would ship green) — parametrised over all three. open_atomic's inline tier-2 arm (yield phase, outside _errors) was un-pinned and deletable with the suite green — pinned. Added a single-stat regression guard for the fold"
+      - file: sdd/specs/045-write-result.md
+        section: "WR-004"
+        read_type: gate
+        extract: "WR-004's Formal-coverage prose still said a native backend that 'fails to populate the rich fields' does not satisfy the refinement — read literally that condemned SFTP (populates none) and contradicted WR-001a and the round-2 CAP-007 loosening. The Dafny Write postcondition binds only source (rich-field population is empirically checked, not Dafny-expressible), so the clause also misdescribed the formal model. Dropped it; rich-field population is deferred to WR-001a. The 'native does not imply all rich fields' loosening also reached two more doc surfaces rounds 1-2 missed (models.md admonition, async.md guide)"
+        outcome: misleading
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/conformance/test_errors.py
+        section: "read/write/delete directory + file-ancestor cases (sftp_docker lane)"
+        read_type: verify
+        extract: "The sftp_docker lane (real atmoz/sftp, no toxiproxy) caught what in-process could not: OpenSSH opens a directory for reading without error, so streaming read's lazy is-dir classification never fired. Reverted read (and open_atomic) to an eager check; read_bytes/delete stay lazy (docker-proven)"
+      - file: src/remote_store/backends/_sftp.py
+        section: "write, write_atomic, read, read_bytes, delete, _is_connected"
+        read_type: verify
+        extract: "Final measured round-trips (in-process paramiko, warm channel, parent exists): overwrite write 11->4, write_atomic 13->5, read 8->5, read_bytes 7->4, delete 4->1"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Spec section, Public method signature"
+        read_type: verify
+        extract: "Spec-marked tests, docstrings, CHANGELOG, BACKLOG-DONE"
+  - id: audit_020
+    name: Audit-020 correctness fixes (pre-merge)
+    steps:
+      - file: sdd/audits/audit-020-sftp-roundtrips-correctness.md
+        section: "H1, M1, M2, M3"
+        read_type: gate
+        extract: "A pre-merge SFTP-correctness audit (line-read + two expert sub-agents + a live atmoz/sftp battery + exception injection) confirmed the visible core (lazy is-dir, 20/20 live) but found the staleness layer the perf change reshaped had regressed. Every finding re-reproduced here (live harness / injection) before any code change, per the audit's own report-only stance."
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connection_dead, _map_exception (SSHException + IncompatiblePeer branches)"
+        read_type: reference
+        extract: "H1 (High availability regression, BK-313-introduced): removing master's stat('.') probe removed its universal self-heal, leaving tier-2's _is_connection_dead set as the SOLE reconnect trigger — and incomplete. Injection-confirmed wedge (transport stays is_active()==True) for SSHException/ChannelException/SFTPError/socket.timeout/EBADF/ETIMEDOUT. Fix follows the CONCLUSION not one predicate: _map_exception now clears _sftp_client on every BackendUnavailable it returns (SSHException + IncompatiblePeer branches), and _is_connection_dead widened to SFTPError + TimeoutError + the socket-teardown errnos. NOT reintroducing stat('.') — the round-trip cut is preserved. Docstring's completeness claim corrected."
+        outcome: misleading
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream.readinto/read/readline/seek/tell"
+        read_type: reference
+        extract: "M1: the read-stream wrapper caught only OSError, but paramiko raises EOFError (not an OSError) on a channel death mid-read, so it leaked raw to the read() consumer AND never routed through _map_exception (a read-path H1 wedge). Injection-confirmed (tmp/eof_probe.py). Now catches (OSError, EOFError)."
+      - file: src/remote_store/backends/_sftp.py
+        section: "open_atomic yield phase; read_bytes docstring"
+        read_type: reference
+        extract: "M2: open_atomic's temp-file open ran outside _errors(), so a non-connection backend failure (live-confirmed EACCES on a chmod 0o555 dir) leaked a raw PermissionError, unlike write/write_atomic. Fix: temp-open wrapped in _errors(); the yield-phase handler routes backend failures (dead channel or any paramiko SSH/protocol error) through _map_exception while caller in-block exceptions stay raw. M3 (MUST-DECIDE): read_bytes' lazy directory rejection is server-st_size-dependent (safe on OpenSSH's 4096; a server reporting dir st_size==0 would return b''). User decided keep-lazy-and-document; assumption recorded in the read_bytes docstring and SFTP-003. L1-L6 deferred to BK-316."
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-010, SFTP-023, SFTP-003"
+        read_type: gate
+        extract: "SFTP-010/023 amended: recovery is anchored to the BackendUnavailable conclusion (every such mapping clears the client), not an enumerated signal list; widened the non-SSHException list and stated the SSHException family also invalidates; SFTP-003 records the read_bytes lazy-dir-rejection server assumption (M3)."
+  - id: review_round4
+    name: Review (round 4, method-by-method)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "open_atomic yield phase; _map_exception dead-signal set"
+        read_type: reference
+        extract: "Fourth-pass PR review (5-expert panel + live atmoz/sftp) found the audit-020 M2 fix was HALF done: it wrapped the temp OPEN in _errors() but the caller-facing handle's flush/close still ran outside it, so an errno-less disk-full/quota SSH_FX_FAILURE at flush leaked a raw OSError (live-reproduced). Fixed by moving handle.close()+promote into an _errors() block on the normal-completion path while the yielded write stays outside; a cleanup guard (if self._sftp_client is not None) stops the best-effort temp remove from reconnecting just to unlink a file after a flush/close death already nulled the client (partial L4 relief). Worked method-by-method with scoped subagent reviewers per method (src+test): the open_atomic reviewer caught that my first test moved the death onto the close path (mapped via _errors, bypassing the inline tier-2 arm), leaving that arm deletable-green — retargeted the injected death to the caller's write() so it exercises the inline arm (coverage-confirmed)."
+      - file: tests/backends/sftp/test_config.py
+        section: "dead-signal params (_os_with_errno), read-stream EOFError, open_atomic close-failure"
+        read_type: reference
+        extract: "Test-completeness holes the review found: the dead-signal unit test omitted ESHUTDOWN/ENOTCONN (deletable-green) and its ETIMEDOUT param was masked by the TimeoutError type branch (OSError(ETIMEDOUT,...) constructs as TimeoutError) — added a _os_with_errno helper building a bare OSError with .errno set so the errno-tuple branch is what fires, plus ESHUTDOWN/ENOTCONN params. Added an SFTP-level read-path EOFError integration test (the existing _stream.py unit test used a fake mapper + no BufferedReader, so it pinned neither the read() wrap nor the real client-invalidation). Added open_atomic close-failure test. ETIMEDOUT tuple entry noted as belt-and-suspenders (a real socket timeout is a TimeoutError caught by the type branch)."
+      - file: src/remote_store/_models.py
+        section: "WriteResult docstring; store.md / aio/store.md / aio/backend.md / write-integrity.md; SFTP-003"
+        read_type: reference
+        extract: "Consistency: round-3's 'every rich field None' carve-out was PARTIAL — the canonical _models.py WriteResult docstring, the write/write_atomic docstrings, and four hand-written admonitions still singled out last_modified, implying etag/version_id/digest ARE populated for SFTP (they are not — its write response carries no metadata). A documentation-expert completeness sweep found aio/backend.md was the last-missed surface after the first pass. All aligned to 'SFTP leaves every rich field None'. The BACKLOG-DONE BK-313 entry's tier-2 description (pre-audit signal set + a since-disproven wedge-free claim) was also corrected to the shipped post-audit behavior."
+        outcome: misleading
+  - id: review_round5
+    name: Review (round 5, final)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "open_atomic yield-phase cleanup guard"
+        read_type: reference
+        extract: "Final-round review was clean (0 bug/spec/test/consistency/ripple/security) bar one low-severity Possible: the round-4 cleanup guard (if _sftp_client is not None) only skipped the reconnect-to-unlink for the flush/close-death case (client already nulled by _errors). A yield-phase death arrives raw (client not yet nulled), so on a full transport drop the cleanup would reconnect solely to remove the temp, then _map_exception nulls it again — the same pathology on the other branch. Applied the reviewer's suggestion: gate cleanup on the connection also being alive (factor out connection_lost = _is_connection_dead(exc) or SSHException; skip remove when the client is gone OR the failure is a connection death). Pinned by a new test spying on remove() (deletable-green otherwise, since the channel-death test creates no real temp)."
+      - file: CHANGELOG.md
+        section: "Unreleased BK-313 entry"
+        read_type: reference
+        extract: "Review: the Unreleased entry had grown into a verbose audit-020 paragraph; trimmed back to an id+title stub per the Unreleased-stub-only convention (full prose is authored at release; detail lives in BACKLOG-DONE and this trace)."

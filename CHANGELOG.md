@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-313: SFTP `write()`/`write_atomic()` return all-`None` `WriteResult` rich fields; far fewer per-operation metadata round-trips, plus audit-020 SFTP failure-path correctness fixes
 - BUG-231: GraphBackend.check_health() probes the drive so ping() can fail
 - BK-310: Pin the backend enumeration order in the add-a-backend checklist
 - BK-311: Sync the stale tagline and backend-membership mirrors

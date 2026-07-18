@@ -67,6 +67,32 @@ class _FailingStream(io.RawIOBase):
         raise OSError("disk failure")
 
 
+class _EOFStream(io.RawIOBase):
+    """Raises ``EOFError`` on every read op — how paramiko signals a channel death mid-read.
+
+    paramiko's ``_read_all`` / ``_read_response`` raise ``EOFError`` (which is
+    *not* an ``OSError``) when the channel dies during a streamed read.
+    """
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
+        raise EOFError("server closed connection")
+
+    def read(self, size: int = -1) -> bytes:  # type: ignore[override]
+        raise EOFError("server closed connection")
+
+    def readline(self, size: int = -1) -> bytes:  # type: ignore[override]
+        raise EOFError("server closed connection")
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        raise EOFError("server closed connection")
+
+    def tell(self) -> int:
+        raise EOFError("server closed connection")
+
+
 class _FailingCloseStream(io.RawIOBase):
     """A stream that raises on close."""
 
@@ -195,6 +221,29 @@ class TestErrorMappingStreamErrors:
     )
     def test_operation_remaps_oserror(self, action) -> None:
         stream = _ErrorMappingStream(_FailingStream(), _test_mapper, "f.txt")
+        with pytest.raises(NotFound, match="mapped"):
+            action(stream)
+
+    @pytest.mark.parametrize(
+        "action",
+        [
+            pytest.param(lambda s: s.read(), id="read"),
+            pytest.param(lambda s: s.readinto(bytearray(10)), id="readinto"),
+            pytest.param(lambda s: s.readline(), id="readline"),
+            pytest.param(lambda s: s.seek(0), id="seek"),
+            pytest.param(lambda s: s.tell(), id="tell"),
+            pytest.param(lambda s: next(iter(s)), id="iteration"),
+        ],
+    )
+    def test_operation_remaps_eoferror(self, action) -> None:
+        """audit-020 M1: ``EOFError`` must map like ``OSError``.
+
+        paramiko raises ``EOFError`` (not an ``OSError``) on a channel death
+        mid-read. The wrapper caught only ``OSError``, so an ``EOFError`` escaped
+        raw to the ``read()`` consumer, unmapped — and for the SFTP backend that
+        also meant the dead client was never invalidated (a read-path wedge).
+        """
+        stream = _ErrorMappingStream(_EOFStream(), _test_mapper, "f.txt")
         with pytest.raises(NotFound, match="mapped"):
             action(stream)
 

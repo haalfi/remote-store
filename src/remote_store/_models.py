@@ -114,7 +114,13 @@ class WriteResult:
         size: Bytes written.
         source: Provenance of the optional fields.
             ``"native"`` — the backend populated them from its write
-            response; trust ``digest``, ``etag``, and ``last_modified``.
+            response; trust the rich fields the response carries (``digest``,
+            ``etag``, ``last_modified``). A given backend may still leave a
+            field ``None`` when its response omits it, and one may leave *every*
+            rich field ``None`` — SFTP's write response carries no metadata at
+            all, so ``digest`` / ``etag`` / ``version_id`` / ``last_modified``
+            are all ``None`` there; call ``Store.head()`` / ``get_file_info()``
+            for them.
             ``"basic"`` — only ``path`` and ``size`` are reliable; call
             ``Store.head()`` or use ``ext.write`` helpers if you need
             more.

@@ -38,8 +38,10 @@ text = await store.read_text("config.yaml")
 ## Write results and metadata
 
 `write()` and `write_atomic()` return a [`WriteResult`](../reference/api/models.md) carrying at minimum
-the written path and size. Backends that declare `WRITE_RESULT_NATIVE` also populate
-`digest`, `etag`, and `last_modified` from the upload response. Both methods accept an optional
+the written path and size. Backends that declare `WRITE_RESULT_NATIVE` fill the rich fields
+(`digest`, `etag`, `last_modified`) from the upload response — but only the fields that response
+carries, so a native backend can still leave one `None` (SFTP has no write-time metadata and leaves
+all of them `None`; call `get_file_info()` for a field you need). Both methods accept an optional
 `metadata=` keyword argument (a `Mapping[str, str]`) for backends that declare
 `USER_METADATA`; others raise `CapabilityNotSupported` if non-empty metadata is passed.
 
