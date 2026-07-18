@@ -138,9 +138,12 @@ transport that has gone inactive is reconnected before the operation runs.
 tier 1; it is caught on the operation itself, whose `EOFError` /
 `OSError('Socket is closed')` / `ECONNRESET` / `EPIPE` / `ECONNABORTED` maps to
 `BackendUnavailable` and invalidates the cached client, so the *next* `_sftp`
-access reconnects. Every operation routes its failure through `_map_exception`
-(see SFTP-023) for this to hold — including the listing operations and
-`open_atomic`'s streamed-write phase, which classify their own errors.
+access reconnects. Operations outside the default `_errors()` scope must still
+apply this classification for the guarantee to hold: the listing operations
+route their failure through `_map_exception` (see SFTP-023), and `open_atomic`'s
+streamed-write phase — which yields the handle outside `_errors()` — applies the
+same tier-2 classification inline (its promote step routes through
+`_map_exception` normally).
 **Rationale:** The property is accessed several times per operation, so the
 former `stat('.')` liveness probe multiplied each operation's RTT count. The
 transport flag costs nothing on the wire; tier 2 restores the reconnect

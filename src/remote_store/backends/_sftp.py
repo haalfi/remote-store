@@ -966,17 +966,24 @@ class SFTPBackend(Backend):
         # Setup phase: existence check + parent dirs (within error mapping)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
-            # Eager, unlike ``write`` / ``write_atomic``: this method hands the
-            # caller a handle to stream into, so a directory target must fail
-            # before they write a byte, not at promote time (BK-313).
-            self._raise_if_dir(sftp_path, path)
-            if not overwrite:
-                try:
-                    self._sftp.stat(sftp_path)
+            # BK-313: one eager stat carries both contracts. Unlike ``write`` /
+            # ``write_atomic`` — which skip the stat entirely on ``overwrite=True``
+            # and classify a directory target lazily on the open/rename failure —
+            # this method hands the caller a handle to stream into, so a directory
+            # target must fail before they write a byte, not at promote time. That
+            # stat is unavoidable; fold the ``overwrite=False`` existence check
+            # into it rather than paying a second round-trip on the same path.
+            try:
+                st = self._sftp.stat(sftp_path)
+            except OSError as exc:
+                if getattr(exc, "errno", None) != errno.ENOENT:
+                    raise
+                # ENOENT: target absent — nothing to reject, proceed to write.
+            else:
+                if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
+                    raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
+                if not overwrite:
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-                except OSError as exc:
-                    if getattr(exc, "errno", None) != errno.ENOENT:
-                        raise
             self._ensure_parent_dirs(sftp_path)
             name = sftp_path.rsplit("/", 1)[-1] if "/" in sftp_path else sftp_path
             parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else "."
@@ -1622,12 +1629,13 @@ class SFTPBackend(Backend):
         entry vanished in a race, the server denies stat), leaves the original
         failure to ``_map_exception``.
 
-        Two callers are **eager** instead — they must reject a directory before
-        handing back a handle, because the deferred I/O that would otherwise
-        surface it never runs in-band: ``read`` (a real OpenSSH server opens a
-        directory for reading and only errors on the first read, which the
-        streaming path never issues) and ``open_atomic`` (yields a write handle
-        to the caller).
+        ``read`` is **eager** instead — it must reject a directory before handing
+        back a handle, because the deferred I/O that would otherwise surface it
+        never runs in-band (a real OpenSSH server opens a directory for reading
+        and only errors on the first read, which the streaming path never
+        issues). ``open_atomic`` also rejects a directory up front for the same
+        reason, but folds that check into its own single setup ``stat`` rather
+        than calling this helper.
         """
         try:
             st = self._sftp.stat(sftp_path)

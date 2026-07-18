@@ -521,6 +521,67 @@ class TestSFTPConnection:
         # Reconnects and lists on the next call.
         assert [str(fi.path) for fi in sftp_backend.list_files("")] == ["f.txt"]
 
+    @pytest.mark.spec("SFTP-010")
+    @pytest.mark.spec("SFTP-023")
+    def test_channel_death_during_open_atomic_maps_and_reconnects(self, sftp_backend: Backend) -> None:
+        """SFTP-010 tier 2 for ``open_atomic``'s yield phase (BK-313).
+
+        ``open_atomic`` yields the write handle *outside* ``_errors()``, so a
+        channel death during the streamed write (or the temp-file open/close) is
+        classified by a separate inline arm, not ``_map_exception``. That arm is
+        the only inline copy of the invalidate-and-reconnect logic; without this
+        test it could be deleted with the suite green. Pin that it invalidates
+        the client, surfaces ``BackendUnavailable``, and reconnects.
+
+        The channel death is injected by patching ``_sftp_client.file`` to yield
+        a handle whose exit raises ``OSError("Socket is closed")`` — the same
+        signal a real mid-write drop raises. This is deterministic and, unlike
+        closing the live channel, opens no server-side temp file to leak (a real
+        kill orphans the in-process server's handle → ``ResourceWarning``).
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("warmup.txt", b"x")  # force a live connection + parent dir
+
+        class _DeadHandle:
+            def __enter__(self) -> _DeadHandle:
+                return self
+
+            def __exit__(self, *exc: object) -> None:
+                raise OSError("Socket is closed")  # errno-less: how a dead channel surfaces
+
+            def write(self, _data: bytes) -> None:
+                return None  # buffered; the drop surfaces at flush/close, i.e. block exit
+
+        sftp_backend._sftp_client.file = lambda *a, **k: _DeadHandle()  # type: ignore[method-assign]
+        with pytest.raises(BackendUnavailable), sftp_backend.open_atomic("oa_death.txt") as f:  # noqa: PT012
+            f.write(b"payload")
+        assert sftp_backend._sftp_client is None  # internal: tier-2 recovery contract
+        assert sftp_backend.exists("oa_death.txt") is False  # reconnects; aborted write left nothing
+
+    @pytest.mark.spec("SFTP-003")
+    def test_open_atomic_overwrite_false_issues_single_stat(self, sftp_backend: Backend) -> None:
+        """BK-313: ``open_atomic`` folds its dir-check and existence check into one stat.
+
+        The eager dir-check (the handle escapes, so a directory must be rejected
+        up front) and the ``overwrite=False`` existence check used to be two
+        back-to-back stats on the same path. This pins that they collapse to a
+        single round-trip; splitting them again would re-add the RTT this PR cuts.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")  # warm the lazy connection so _sftp_client is live
+        target = sftp_backend._sftp_path("oa_single.txt")
+        real_stat = sftp_backend._sftp_client.stat
+        seen: list[str] = []
+
+        def _spy(remote_path: str, *args: Any, **kwargs: Any) -> Any:
+            seen.append(remote_path)
+            return real_stat(remote_path, *args, **kwargs)
+
+        sftp_backend._sftp_client.stat = _spy  # type: ignore[method-assign]
+        with sftp_backend.open_atomic("oa_single.txt") as f:  # overwrite defaults to False
+            f.write(b"payload")
+        assert seen.count(target) == 1, f"open_atomic(overwrite=False) stat'd the target {seen.count(target)}x: {seen}"
+
     @pytest.mark.spec("SFTP-023")
     @pytest.mark.parametrize(
         "exc",
