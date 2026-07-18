@@ -14,7 +14,7 @@ The ripple-check has two presentations of the same set of triggers, grouped by S
 - The **Pre-work index** below is a one-line-per-trigger scan you read **before starting work** that might touch any of the triggers. It exists because 3/9 sampled PRs missed ripples by consulting the table only at verify-end (`sdd/research/research-agent-workflow-substrate.md` § 2.3).
 - The **Detailed checklist** below it lists the same triggers with the full ripple set, used at verify-end after the diff is complete and by PR reviewers.
 
-Both presentations contain the same 24 trigger rows in the same order. Trigger names are bare topics (no leading article). If you add, remove, rename, or re-order a row, update both presentations and any trace `section:` strings that cite the row by name.
+Both presentations contain the same 25 trigger rows in the same order. Trigger names are bare topics (no leading article). If you add, remove, rename, or re-order a row, update both presentations and any trace `section:` strings that cite the row by name.
 
 <!-- Two-presentations-one-source: row names, row count, and row order must
 match between "Pre-work index" and "Detailed checklist". Trace section strings
@@ -63,6 +63,7 @@ Read this before starting. One line per trigger.
 | Docs navigation               | Per-section `_nav.yml` files, `docs-src/guides/backends/index.md`, [AUTHORING Rule 1](AUTHORING.md#file-classification), [DOCUMENTATION § Content homes](DOCUMENTATION.md#content-homes) |
 | API reference page            | [DOCUMENTATION § API page building blocks](DOCUMENTATION.md#api-page-building-blocks) + required sections |
 | Example script                | README examples table, generated `tutorial/examples/<slug>.md`, `tests/test_examples.py` import |
+| ADR                           | Regenerate `sdd/adrs/DIGEST.md` via `hatch run gen-adr-digest`; `preflight` runs `gen_adr_digest.py --check` |
 | Tracker ID in published prose | Any backlog/spec coordinate (`PREFIX-NNN`, `spec NNN`, `RFC-NNNN`, `ADR-NNNN`, `PR #NNN`) leaking into a docstring rendered by mkdocstrings or any `.md` under `docs-src/` (plus README, FEATURES, CONTRIBUTING); [CONTENT-RULES Rules 1 + 5](CONTENT-RULES.md#rules). Out of scope: `sdd/**`, CHANGELOG, DEVELOPMENT_STORY, source `#` comments |
 | Local-machine reference in any committed file | Grep all changed file types (`.md`, `.py`, `.sh`, `.yml`, `.dfy`, `.tla`) for: `See memory `, `` captured as `<slug>.md` `` (Claude Code memory slugs), `[A-Z]:\\[A-Za-z]` (Windows drive paths — skip `\n`/`\r`/`\t` escape sequences), `~/.claude`, `.claude/projects`. Replace each with the principle it refers to, inline. Enforced by the shared [PR validation gates](#pr-validation-gates) that `/pr` and `/fix-pr` both run. |
 
@@ -193,6 +194,9 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | (new or restructured)      | and building blocks for required sections                 |
 | **Example script**         | README examples table, generated `tutorial/examples/<slug>.md` |
 |                            | `tests/test_examples.py` import                           |
+| **ADR**                    | Run `hatch run gen-adr-digest`, commit                    |
+| (add / edit `sdd/adrs/*.md`) | `sdd/adrs/DIGEST.md`. Freshness is gated by              |
+|                            | `gen_adr_digest.py --check` in `preflight` (ID-233)       |
 | **Tracker ID in published prose** | Any backlog or spec coordinate (`PREFIX-NNN`,      |
 | (any prose change that touches | `spec NNN`, `RFC-NNNN`, `ADR-NNNN`, `PR #NNN`) leaking |
 | docstrings of public symbols | into a docstring under `src/remote_store/` or any        |

@@ -137,18 +137,6 @@ and the highest ID already in this file, then take the next integer. Run
   into separate IDs. No priority until the gate is shown to miss a real
   regression; promote to BK-prefix at that point.
 
-- [ ] **ID-233 — Wire `gen-adr-digest-check` into `preflight` when the ADR digest tool graduates**
-  spec: — · effort: S · audience: platform.tooling
-  `scripts/gen_adr_digest.py` shipped as a scoped trial (PR #909) with its
-  `gen-adr-digest-check` alias deliberately left out of `preflight`/`lint` — the
-  only `gen-*` `--check` not gate-wired. Freshness/drift is currently guarded by
-  `tests/scripts/test_gen_adr_digest.py::TestRealAdrs` (routed in via `scripts/`
-  test coverage), so there is no silent-staleness gap, but the guarantee is split
-  between a test and an unused alias. When the trial graduates, wire
-  `python scripts/gen_adr_digest.py --check` into `preflight` alongside its peers
-  (`gen_graph`, `gen_features`, `gen_graph_viz`), and add the SDD ceremony the
-  trial skipped (backlog/trace/CHANGELOG as applicable).
-
 ---
 
 ## Docs & Discoverability
