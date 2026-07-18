@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-233 — Wire `gen-adr-digest-check` into `preflight` when the ADR digest tool graduates**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  `scripts/gen_adr_digest.py` shipped as a scoped trial (PR #909) with its
+  `gen-adr-digest-check` alias deliberately left out of `preflight`/`lint` — the
+  only `gen-*` `--check` not gate-wired. Graduated it: `python
+  scripts/gen_adr_digest.py --check` now sits in the `preflight` array in
+  `pyproject.toml` alongside its peers (`gen_graph`, `gen_features`,
+  `gen_graph_viz`, `drift_check render-docs`), so CI's drift gate (the lint job
+  runs `uvx hatch run preflight`) fails on a stale `sdd/adrs/DIGEST.md` — no
+  separate workflow edit, the script list is the single source (BK-269). Proven
+  to bite: a throwaway ADR edit without regenerating makes `hatch run preflight`
+  fail STALE. A new **ADR** ripple-check row in `sdd/CLAUDE-REFERENCE.md` (both
+  presentations, 24→25 rows) documents the regenerate step next to the other
+  generated artifacts. `TestRealAdrs` in `tests/scripts/test_gen_adr_digest.py`
+  now overlaps the gate and is kept deliberately (belt-and-suspenders: it
+  localizes a failure to a clear unit-test message); its stale "not wired into
+  the gate" comment was refreshed. No CHANGELOG — dev tooling/process, not
+  user-facing.
+
 - [x] **BK-315 — Extract `/orchestrate` expert personas into reusable subagent files**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
   The five domain-expert personas were fenced prompt blocks inline in

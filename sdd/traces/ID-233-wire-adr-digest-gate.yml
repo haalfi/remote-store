@@ -1,0 +1,64 @@
+id: ID-233
+title: "Wire gen-adr-digest-check into preflight when the ADR digest tool graduates"
+trigger: |
+  scripts/gen_adr_digest.py shipped as a scoped trial (PR #909) with its
+  gen-adr-digest-check alias deliberately left out of preflight/lint — the only
+  gen-* --check not gate-wired. Freshness was guarded only by
+  tests/scripts/test_gen_adr_digest.py::TestRealAdrs, splitting the guarantee
+  between a test and an unused alias.
+source_items:
+  - ID-233
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+discovery_followups:
+  - ID-234
+review_rounds: 3
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-233 (item)"
+        read_type: gate
+        extract: "Scope: wire gen_adr_digest.py --check into preflight alongside its gen-* peers; add the SDD ceremony the trial skipped (backlog/trace/CHANGELOG as applicable)"
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] preflight"
+        read_type: gate
+        extract: "Current preflight array and BK-269 comment: the script list is the single source, CI runs it via `uvx hatch run preflight` in the lint job — no separate workflow edit needed"
+      - file: scripts/gen_adr_digest.py
+        section: "argument parser (--check flag)"
+        read_type: verify
+        extract: "Confirm --check flag exists and exits non-zero on a stale digest before wiring"
+  - id: wire
+    name: Wire the gate
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] preflight"
+        read_type: gate
+        extract: "Insert `python scripts/gen_adr_digest.py --check` next to gen_graph_viz.py --check, before drift_check render-docs --check; extend the leading comment's script list"
+  - id: docs
+    name: Document the regenerate step
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / ADR (new row, Docs section)"
+        read_type: reference
+        extract: "Add an ADR trigger row to both Pre-work index and Detailed checklist. Bump the header note 24 -> 25 trigger rows. PR-review correction: the row must split the two --check failure modes — STALE (regenerate + commit DIGEST.md) vs DRIFT (edit the ADR's ## Status metadata; regenerating won't clear it), since drift_warnings() is independent of render()"
+        outcome: unclear
+      - file: tests/scripts/test_gen_adr_digest.py
+        section: "TestRealAdrs (class comment)"
+        read_type: reference
+        extract: "Refresh the stale 'not wired into the gate' comment; note the belt-and-suspenders overlap — the tests stay because they localize a failure to a clear unit-test message"
+  - id: verify
+    name: Verify
+    steps:
+      - file: pyproject.toml
+        section: "preflight (prove the gate bites)"
+        read_type: verify
+        extract: "Throwaway edit to one sdd/adrs/*.md without regenerating -> `hatch run preflight` FAILS with a STALE message; revert and re-run green"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "Trace shipped same PR; BACKLOG -> BACKLOG-DONE moved; CHANGELOG skipped per audience rule (contributor.tooling / contributor.process, no user-facing framework)"

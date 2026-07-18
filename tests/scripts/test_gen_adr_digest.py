@@ -347,7 +347,13 @@ class TestCheck:
 # ---------------------------------------------------------------------------
 # The real ADR tree (PR #909 review, finding 4): guard the committed digest
 # against the actual sdd/adrs so a forgotten fence/table or a stale DIGEST.md
-# fails a test, even though gen-adr-digest-check is not wired into the gate.
+# fails a test.
+#
+# Belt-and-suspenders (ID-233): freshness is now primarily gated in CI by
+# `gen_adr_digest.py --check` in `preflight`. These tests intentionally overlap
+# that gate — they are kept because they localize a failure to a clear
+# unit-test message (which ADR failed to parse, which drift edge, digest
+# mismatch) instead of a bare non-zero exit from the check script.
 # ---------------------------------------------------------------------------
 
 
