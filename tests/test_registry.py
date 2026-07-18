@@ -209,8 +209,9 @@ class TestRegistryBackendFactory:
 
     @pytest.mark.spec("REG-008")
     def test_register_backend(self) -> None:
-        from remote_store._registry import _BACKEND_FACTORIES
+        from remote_store._registry import _BACKEND_FACTORIES, _register_builtin_backends
 
+        _register_builtin_backends()  # populate the registry; do not rely on prior-test import order
         assert "local" in _BACKEND_FACTORIES
 
     @pytest.mark.spec("REG-008")

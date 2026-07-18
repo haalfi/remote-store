@@ -8,6 +8,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-234 — `test_register_backend` depends on prior-test registry population**
+  spec: REG-008 · effort: S · audience: infra.test
+  `tests/test_registry.py::test_register_backend` asserted `"local" in
+  _BACKEND_FACTORIES` without first calling `_register_builtin_backends()`, so it
+  passed only when an earlier test in the same worker had already constructed a
+  `Store`/`Registry` (which populates the global lazily via `Registry.__init__`).
+  Run in isolation, or when xdist sharding placed it first, it failed with
+  `assert 'local' in {}`. Surfaced when ID-232's new `test_gen_adr_digest.py`
+  cases re-sharded the parallel run and exposed the latent ordering dependency.
+  Fix mirrors the sibling `test_optional_backend_registered_if_importable`: call
+  `_register_builtin_backends()` before the assert. Co-shipped with ID-232 Phase
+  A. No CHANGELOG — test-only.
+
 - [x] **ID-233 — Wire `gen-adr-digest-check` into `preflight` when the ADR digest tool graduates**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
   `scripts/gen_adr_digest.py` shipped as a scoped trial (PR #909) with its
