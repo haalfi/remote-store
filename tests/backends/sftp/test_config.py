@@ -6,6 +6,7 @@ All tests are skipped if dependencies are not installed.
 
 from __future__ import annotations
 
+import contextlib
 import errno
 import io
 import os
@@ -46,6 +47,20 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from remote_store._backend import Backend
+
+
+def _os_with_errno(code: int, msg: str) -> OSError:
+    """Build a *plain* ``OSError`` carrying ``.errno = code``.
+
+    ``OSError(code, msg)`` is auto-promoted by CPython to an errno-specific
+    subclass (e.g. ``ETIMEDOUT`` -> ``TimeoutError``), which ``_is_connection_dead``
+    may match on a *type* branch before the errno tuple. Constructing a bare
+    ``OSError`` and setting ``.errno`` afterwards keeps it a plain ``OSError`` so
+    the errno-tuple membership itself is what the test exercises.
+    """
+    exc = OSError(msg)
+    exc.errno = code
+    return exc
 
 
 @pytest.fixture
@@ -532,30 +547,32 @@ class TestSFTPConnection:
         """SFTP-010 tier 2 for ``open_atomic``'s yield phase (BK-313).
 
         ``open_atomic`` yields the write handle *outside* ``_errors()``, so a
-        channel death during the streamed write (or the temp-file open/close) is
-        classified by a separate inline arm, not ``_map_exception``. That arm is
-        the only inline copy of the invalidate-and-reconnect logic; without this
+        channel death during the caller's streamed write is classified by a
+        separate inline arm that calls ``_map_exception`` directly (the temp-file
+        open, flush/close, and promote run inside ``_errors()`` and are mapped
+        there instead). That arm is the only such inline call; without this
         test it could be deleted with the suite green. Pin that it invalidates
         the client, surfaces ``BackendUnavailable``, and reconnects.
 
-        The channel death is injected by patching ``_sftp_client.file`` to yield
-        a handle whose exit raises ``OSError("Socket is closed")`` — the same
-        signal a real mid-write drop raises. This is deterministic and, unlike
-        closing the live channel, opens no server-side temp file to leak (a real
-        kill orphans the in-process server's handle → ``ResourceWarning``).
+        The death is injected at ``write`` — a large streamed write flushes
+        mid-stream, so a real drop surfaces there, *inside* the yield block. That
+        routes it through the inline arm (raw ``EOFError`` → outer handler →
+        ``_is_connection_dead`` → map + invalidate), which is the arm this test
+        exists to pin; a death at ``close`` instead would be mapped by the
+        ``_errors()``-wrapped close and never reach the inline arm. Deterministic,
+        and unlike closing the live channel it opens no server-side temp file to
+        leak (a real kill orphans the in-process server's handle →
+        ``ResourceWarning``).
         """
         assert isinstance(sftp_backend, SFTPBackend)
         sftp_backend.write("warmup.txt", b"x")  # force a live connection + parent dir
 
         class _DeadHandle:
-            def __enter__(self) -> _DeadHandle:
-                return self
-
-            def __exit__(self, *exc: object) -> None:
-                raise OSError("Socket is closed")  # errno-less: how a dead channel surfaces
-
             def write(self, _data: bytes) -> None:
-                return None  # buffered; the drop surfaces at flush/close, i.e. block exit
+                raise EOFError("server closed connection")  # mid-write flush into a dead channel
+
+            def close(self) -> None:
+                return None  # nothing real opened; cleanup close is a no-op
 
         sftp_backend._sftp_client.file = lambda *a, **k: _DeadHandle()  # type: ignore[method-assign]
         with pytest.raises(BackendUnavailable), sftp_backend.open_atomic("oa_death.txt") as f:  # noqa: PT012
@@ -600,8 +617,14 @@ class TestSFTPConnection:
             # cached client, so with is_active() still True the backend wedged
             # permanently. A clean close only ever raises the EOFError/'socket is
             # closed' pair above, which is why three review rounds missed these.
-            pytest.param(OSError(errno.ETIMEDOUT, "timed out"), id="etimedout"),
-            pytest.param(OSError(errno.EBADF, "bad fd"), id="ebadf"),
+            # The teardown errnos use a *bare* OSError (see _os_with_errno) so the
+            # errno-tuple branch is what fires: OSError(ETIMEDOUT, ...) would else
+            # construct as TimeoutError and be caught by the type branch instead,
+            # leaving the tuple entry unpinned (deletable-green).
+            pytest.param(_os_with_errno(errno.ETIMEDOUT, "timed out"), id="etimedout"),
+            pytest.param(_os_with_errno(errno.ESHUTDOWN, "shutdown"), id="eshutdown"),
+            pytest.param(_os_with_errno(errno.ENOTCONN, "not connected"), id="enotconn"),
+            pytest.param(_os_with_errno(errno.EBADF, "bad fd"), id="ebadf"),
             pytest.param(TimeoutError("timed out"), id="socket-timeout"),
             pytest.param(paramiko.SFTPError("Garbage packet received"), id="sftperror"),
             pytest.param(paramiko.SSHException("Server connection dropped"), id="sshexception"),
@@ -702,6 +725,98 @@ class TestSFTPConnection:
         sftp_backend._sftp_client.file = _deny  # type: ignore[method-assign]
         with pytest.raises(PermissionDenied), sftp_backend.open_atomic("oa_perm.txt") as f:  # noqa: PT012
             f.write(b"x")
+
+    @pytest.mark.spec("SFTP-024")
+    def test_open_atomic_maps_close_failure(self, sftp_backend: Backend) -> None:
+        """audit-020 M2 (close half): a backend failure flushing/closing the temp handle maps.
+
+        The temp-file *open* was wrapped in ``_errors()``, but the handle
+        flush/close at clean exit ran outside it, so a non-connection backend
+        failure there — disk-full / quota, which a real server returns as
+        ``SSH_FX_FAILURE`` → ``IOError`` with ``errno=None`` — escaped raw, unlike
+        ``write``/``write_atomic`` (whose whole body sits inside ``_errors()``).
+        Inject an errno-less ``OSError`` at the handle close and assert it maps to
+        a ``RemoteStoreError`` (not a raw ``OSError``), while the caller's own
+        in-block exceptions still propagate unmapped (covered elsewhere).
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("warm.txt", b"x")  # warm the connection
+        real_file = sftp_backend._sftp_client.file
+
+        class _FailCloseHandle:
+            """Delegates to a real temp handle but raises an errno-less OSError on close/flush."""
+
+            def __init__(self, inner: Any) -> None:
+                self._inner = inner
+
+            def __enter__(self) -> _FailCloseHandle:
+                return self
+
+            def __exit__(self, *exc: object) -> None:
+                self.close()  # the flush-at-close is where disk-full/quota surfaces
+
+            def close(self) -> None:
+                self._inner.close()  # release the real handle so it does not leak
+                raise OSError("Failure")  # errno=None, like SSH_FX_FAILURE (disk-full/quota)
+
+            def __getattr__(self, name: str) -> Any:
+                return getattr(self._inner, name)
+
+        def _wrap(remote_path: str, mode: str = "r", *a: Any, **k: Any) -> Any:
+            if "w" in mode:
+                return _FailCloseHandle(real_file(remote_path, mode, *a, **k))
+            return real_file(remote_path, mode, *a, **k)
+
+        sftp_backend._sftp_client.file = _wrap  # type: ignore[method-assign]
+        with pytest.raises(RemoteStoreError) as exc_info, sftp_backend.open_atomic("oa_close.txt") as f:  # noqa: PT012
+            f.write(b"x")
+        assert not isinstance(exc_info.value, BackendUnavailable), "errno-less disk-full is not a connection death"
+
+    @pytest.mark.spec("SFTP-010")
+    @pytest.mark.spec("SFTP-024")
+    def test_read_stream_eoferror_maps_and_reconnects(self, sftp_backend: Backend) -> None:
+        """audit-020 M1 at the SFTP level: a read-path ``EOFError`` maps + invalidates the client.
+
+        paramiko raises ``EOFError`` (not an ``OSError``) on a channel death
+        mid-read. ``read()`` wraps the handle in ``_ErrorMappingStream``, so
+        pulling bytes after the drop must surface ``BackendUnavailable``,
+        invalidate the client, and reconnect on the next read. The direct
+        ``_ErrorMappingStream`` unit test (fake mapper, no ``BufferedReader``)
+        pins none of this — dropping the wrap at ``read()`` would leave read-path
+        channel deaths escaping raw with that test still green.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("r.txt", b"payload")  # warm + a real file to read
+        real_file = sftp_backend._sftp_client.file
+
+        class _EOFReadHandle:
+            """Delegates to a real read handle but raises EOFError on read (channel death)."""
+
+            def __init__(self, inner: Any) -> None:
+                self._inner = inner
+
+            def readinto(self, _b: Any) -> int:
+                raise EOFError("server closed connection")
+
+            def read(self, _size: int = -1) -> bytes:
+                raise EOFError("server closed connection")
+
+            def __getattr__(self, name: str) -> Any:
+                return getattr(self._inner, name)
+
+        def _wrap(remote_path: str, mode: str = "r", *a: Any, **k: Any) -> Any:
+            if "r" in mode:
+                return _EOFReadHandle(real_file(remote_path, mode, *a, **k))
+            return real_file(remote_path, mode, *a, **k)
+
+        sftp_backend._sftp_client.file = _wrap  # type: ignore[method-assign]
+        stream = sftp_backend.read("r.txt")
+        with pytest.raises(BackendUnavailable):
+            stream.read()
+        with contextlib.suppress(Exception):
+            stream.close()  # release the wrapped real handle
+        assert sftp_backend._sftp_client is None, "a read-path channel death must invalidate the client"
+        assert sftp_backend.read_bytes("r.txt") == b"payload", "the next read must reconnect, not wedge"
 
     @pytest.mark.spec("SFTP-003")
     @pytest.mark.parametrize("op", ["write", "write_atomic"])

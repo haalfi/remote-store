@@ -74,9 +74,10 @@
 !!! info "Quality flag: `Capability.WRITE_RESULT_NATIVE`"
     When declared, the returned `WriteResult` rich fields (`etag`, `version_id`,
     `last_modified`, `digest`) are populated from the backend's write response —
-    each only when that response carries it. SFTP, for instance, declares the
-    flag but returns `last_modified=None` (its write response has no timestamp;
-    call `get_file_info()` for the mtime). Without the flag, only locally
+    each only when that response carries it, so a native backend may leave some,
+    or even all, of them `None`. SFTP, for instance, declares the flag but its
+    write response carries no metadata, so it returns every rich field `None`
+    (call `get_file_info()` for the metadata). Without the flag, only locally
     computable fields are set.
 
 ::: remote_store.Store.write

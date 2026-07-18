@@ -52,12 +52,12 @@ construction (see SFTP-004).
 `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `WRITE_RESULT_NATIVE`. Does not declare `GLOB` (no native pattern matching; use `list_files(pattern=…)` or `ext.glob` for client-side fallback).
 **Rationale:**
 - `WRITE_RESULT_NATIVE`: `write()` and `write_atomic()` populate `size` (counted
-  during upload) and `source` from the write path itself. `last_modified` is
-  `None` — SFTP's write response carries no timestamp, and the backend does not
-  stat after upload/rename to fetch one (BK-313: that round-trip was paid on
-  every write). WR-001a permits `None` for a field the write response omits, so
-  the declaration rests on `size` / `source`; callers needing the mtime call
-  `get_file_info()`.
+  during upload) and `source` from the write path itself. Every rich field
+  (`etag` / `version_id` / `last_modified` / `digest`) is `None` — SFTP's write
+  response carries no metadata at all, and the backend does not stat after
+  upload/rename to fetch any (BK-313: that round-trip was paid on every write).
+  WR-001a permits `None` for a field the write response omits, so the declaration
+  rests on `size` / `source`; callers needing the metadata call `get_file_info()`.
 - `ATOMIC_WRITE`: Simulated via temp file + rename (see SFTP-014). Orphan temp
   files are possible on connection failure — documented caveat.
 - `MOVE`: Implemented via `posix_rename` with fallback (see SFTP-018).
@@ -280,8 +280,16 @@ mapping, so the hint is not lost.
 
 ### SFTP-024: No Native Exception Leakage
 
-**Invariant:** No paramiko, socket, or OS exceptions propagate to callers. All are
-mapped to `remote_store` error types per BE-021.
+**Invariant:** No paramiko, socket, or OS exception raised *by the backend* — an
+operation's own I/O, including `open_atomic`'s temp-file open, the caller-facing
+handle's flush/close, and the promote — propagates to callers; all are mapped to
+`remote_store` error types per BE-021. The only non-mapped exceptions are those
+the **caller** raises inside an `open_atomic` yield block (their `with` body)
+that are not themselves dead-connection signals: those are not the backend's and
+propagate unchanged, leaving the target untouched. `open_atomic` distinguishes
+by scope — the temp open, flush, and promote run inside `_errors()`, while the
+yielded write does not; a dead-connection signal surfacing from that write is
+still mapped to `BackendUnavailable` (it is indistinguishable from a real drop).
 **Postconditions:** `backend` attribute is set to `"sftp"` on all mapped errors.
 
 ---

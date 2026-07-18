@@ -24,9 +24,10 @@
     - `source="native"` — the backend filled the optional fields from its write
       response; requires `Capability.WRITE_RESULT_NATIVE`. Trust the fields the
       response carries, but a native backend may still leave an individual field
-      `None` when its response omits it (e.g. SFTP has no write-time timestamp,
-      so `last_modified` is `None`, and in fact leaves every rich field `None`);
-      call `get_file_info()` for a field you need.
+      `None` when its response omits it, or even leave every rich field `None`
+      (e.g. SFTP's write response carries no metadata, so `etag` / `version_id` /
+      `last_modified` / `digest` are all `None`); call `get_file_info()` for a
+      field you need.
     - `source="basic"` — only `path` and `size` are reliable.
     - `source="sidecar"` — fields sourced from a `get_file_info()` enrichment call.
 

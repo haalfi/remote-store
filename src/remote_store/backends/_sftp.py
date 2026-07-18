@@ -836,9 +836,10 @@ class SFTPBackend(Backend):
         (one ``stat`` per ancestor).
 
         The returned ``WriteResult`` carries ``size`` (counted during upload)
-        and ``source="native"``, but ``last_modified`` is ``None``: SFTP's write
-        response has no timestamp and the backend does not stat afterwards to
-        fetch one. Call ``get_file_info`` when the mtime is needed.
+        and ``source="native"``, but every rich field — ``last_modified``,
+        ``etag``, ``version_id``, ``digest`` — is ``None``: SFTP's write response
+        carries no metadata at all, and the backend does not stat afterwards to
+        fetch any. Call ``get_file_info`` when the metadata is needed.
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
@@ -901,7 +902,8 @@ class SFTPBackend(Backend):
         the target is removed first), and the temp file is cleaned up on failure.
 
         As in ``write``, the returned ``WriteResult`` carries ``size`` and
-        ``source="native"`` but leaves ``last_modified`` as ``None``.
+        ``source="native"`` but leaves every rich field (``last_modified`` /
+        ``etag`` / ``version_id`` / ``digest``) ``None``.
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
@@ -1007,20 +1009,41 @@ class SFTPBackend(Backend):
         # Yield phase: the caller's writes run outside _errors() so a user
         # exception propagates unmapped.
         try:
-            with handle:
+            try:
                 yield handle
+            except BaseException:
+                # Abnormal exit (the caller's own exception, a backend death
+                # during their writes, GeneratorExit): close the handle
+                # best-effort and re-raise; the target is left untouched. The
+                # outer handler classifies a backend death; a caller exception
+                # falls through it unchanged.
+                with contextlib.suppress(Exception):
+                    handle.close()
+                raise
+            # Normal completion: the flush at close and the promote are backend
+            # ops — wrap them in _errors() so a failure there maps like
+            # write/write_atomic. Disk-full / quota surfaces as an errno-less
+            # SSH_FX_FAILURE at *flush*, not at open, so mapping only the temp
+            # open (audit-020 M2) left this half leaking raw.
             with self._errors(path):
+                handle.close()
                 self._promote(tmp_path, sftp_path, path, overwrite=overwrite)
         except Exception as exc:
-            with contextlib.suppress(Exception):
-                self._sftp.remove(tmp_path)
-            # A backend failure surfaced during the caller's streamed writes or
-            # the handle flush — a dead channel, or any paramiko SSH/protocol
-            # error — is a backend error, not the caller's: route it through
-            # _map_exception so it maps (and, for a dead connection, invalidates
-            # the client) exactly as the in-_errors() paths do (audit-020 H1/M2).
-            # The caller's own in-block exceptions, and anything the _errors()
-            # blocks above already mapped, propagate unchanged.
+            # Best-effort temp cleanup — but only over a client we still hold. If
+            # a flush/close death already ran through _errors() above, it has
+            # nulled _sftp_client; re-entering the _sftp property here would spin
+            # up a fresh connection (tenacity retry/backoff against a possibly
+            # down server) purely to unlink a temp file, and would undo the
+            # invalidation the next op relies on. Skip cleanup in that case.
+            if self._sftp_client is not None:
+                with contextlib.suppress(Exception):
+                    self._sftp.remove(tmp_path)
+            # A backend death surfaced during the caller's streamed writes — a
+            # dead channel or any paramiko SSH/protocol error — is a backend
+            # error, not the caller's: route it through _map_exception (which, for
+            # a dead connection, also invalidates the client). Flush/close and
+            # promote failures are already mapped by the _errors() block above;
+            # the caller's own in-block exceptions propagate unchanged.
             import paramiko
 
             if self._is_connection_dead(exc) or isinstance(exc, paramiko.SSHException):
@@ -1879,6 +1902,10 @@ class SFTPBackend(Backend):
                 errno.ECONNRESET,
                 errno.EPIPE,
                 errno.ECONNABORTED,
+                # ETIMEDOUT here is belt-and-suspenders: a CPython-constructed
+                # socket timeout is promoted to TimeoutError and caught by the
+                # type branch above, so this entry only fires for an exotic plain
+                # OSError that carries the errno without the subclass.
                 errno.ETIMEDOUT,
                 errno.ESHUTDOWN,
                 errno.ENOTCONN,

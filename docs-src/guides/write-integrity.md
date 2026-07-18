@@ -5,8 +5,9 @@ carrying whatever metadata the backend produced during the write —
 ETag, version ID, last-modified timestamp, and (on Azure) a server-echoed
 content hash. Backends that populate these fields from their write response
 declare `Capability.WRITE_RESULT_NATIVE`, each filling whatever that response
-carries (SFTP, for one, has no write-time timestamp, so `last_modified` is
-`None` there — call `get_file_info()` for it); backends without the flag return
+carries — some fill all these fields, some none (SFTP's write response carries
+no metadata at all, so it leaves every rich field `None` — call
+`get_file_info()` for the metadata); backends without the flag return
 a minimal `WriteResult` with `path` and `size` only.
 
 When you need a content hash regardless of backend, use the helpers in

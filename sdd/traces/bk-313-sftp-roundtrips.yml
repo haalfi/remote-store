@@ -34,7 +34,7 @@ surprising_ripples:
   - src/remote_store/_stream.py
 discovery_followups:
   - BK-316
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -147,3 +147,19 @@ phases:
         section: "SFTP-010, SFTP-023, SFTP-003"
         read_type: gate
         extract: "SFTP-010/023 amended: recovery is anchored to the BackendUnavailable conclusion (every such mapping clears the client), not an enumerated signal list; widened the non-SSHException list and stated the SSHException family also invalidates; SFTP-003 records the read_bytes lazy-dir-rejection server assumption (M3)."
+  - id: review_round4
+    name: Review (round 4, method-by-method)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "open_atomic yield phase; _map_exception dead-signal set"
+        read_type: reference
+        extract: "Fourth-pass PR review (5-expert panel + live atmoz/sftp) found the audit-020 M2 fix was HALF done: it wrapped the temp OPEN in _errors() but the caller-facing handle's flush/close still ran outside it, so an errno-less disk-full/quota SSH_FX_FAILURE at flush leaked a raw OSError (live-reproduced). Fixed by moving handle.close()+promote into an _errors() block on the normal-completion path while the yielded write stays outside; a cleanup guard (if self._sftp_client is not None) stops the best-effort temp remove from reconnecting just to unlink a file after a flush/close death already nulled the client (partial L4 relief). Worked method-by-method with scoped subagent reviewers per method (src+test): the open_atomic reviewer caught that my first test moved the death onto the close path (mapped via _errors, bypassing the inline tier-2 arm), leaving that arm deletable-green — retargeted the injected death to the caller's write() so it exercises the inline arm (coverage-confirmed)."
+      - file: tests/backends/sftp/test_config.py
+        section: "dead-signal params (_os_with_errno), read-stream EOFError, open_atomic close-failure"
+        read_type: reference
+        extract: "Test-completeness holes the review found: the dead-signal unit test omitted ESHUTDOWN/ENOTCONN (deletable-green) and its ETIMEDOUT param was masked by the TimeoutError type branch (OSError(ETIMEDOUT,...) constructs as TimeoutError) — added a _os_with_errno helper building a bare OSError with .errno set so the errno-tuple branch is what fires, plus ESHUTDOWN/ENOTCONN params. Added an SFTP-level read-path EOFError integration test (the existing _stream.py unit test used a fake mapper + no BufferedReader, so it pinned neither the read() wrap nor the real client-invalidation). Added open_atomic close-failure test. ETIMEDOUT tuple entry noted as belt-and-suspenders (a real socket timeout is a TimeoutError caught by the type branch)."
+      - file: src/remote_store/_models.py
+        section: "WriteResult docstring; store.md / aio/store.md / aio/backend.md / write-integrity.md; SFTP-003"
+        read_type: reference
+        extract: "Consistency: round-3's 'every rich field None' carve-out was PARTIAL — the canonical _models.py WriteResult docstring, the write/write_atomic docstrings, and four hand-written admonitions still singled out last_modified, implying etag/version_id/digest ARE populated for SFTP (they are not — its write response carries no metadata). A documentation-expert completeness sweep found aio/backend.md was the last-missed surface after the first pass. All aligned to 'SFTP leaves every rich field None'. The BACKLOG-DONE BK-313 entry's tier-2 description (pre-audit signal set + a since-disproven wedge-free claim) was also corrected to the shipped post-audit behavior."
+        outcome: misleading

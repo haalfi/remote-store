@@ -70,12 +70,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `_is_connected()` reads the transport's `is_active()` flag instead of issuing a
   `stat('.')` round-trip on every `_sftp` property access — the dominant cost,
   since one operation touches the property several times. The flag tracks the SSH
-  transport, not the SFTP channel, so PR review added a second detection tier:
-  `_map_exception` maps a dead-channel exception (`EOFError` /
-  `OSError('Socket is closed')` / `ECONNRESET` / `EPIPE`) to `BackendUnavailable`
-  and clears `_sftp_client`, so a channel-only drop under a live transport
-  surfaces honestly and the next call reconnects instead of wedging on the dead
-  client. Error-type contract
+  transport, not the SFTP channel, so a second detection tier catches a
+  channel-only drop on the operation itself, maps it to `BackendUnavailable`, and
+  clears `_sftp_client` so the next call reconnects. A pre-merge correctness audit
+  (audit-020) then found the initial tier-2 signal set incomplete — `socket.timeout`
+  (from the channel timeout), `SFTPError`, the `SSHException` / `ChannelException`
+  family, and the `EBADF` / `ETIMEDOUT` / `ESHUTDOWN` / `ENOTCONN` errnos mapped to
+  an error but never cleared the client, re-wedging the long-lived backend — so
+  invalidation is anchored to the `BackendUnavailable` *conclusion* (every such
+  mapping clears the client) across a widened signal set, still without a
+  per-op `stat('.')`. The same audit closed two error-mapping leaks on the failure
+  path: a streamed `read()` now maps a mid-read `EOFError` instead of leaking it
+  raw, and `open_atomic` maps a flush/close failure like `write` / `write_atomic`.
+  Low-severity edges (L1–L6) deferred to BK-316. Error-type contract
   (`NotFound` / `InvalidPath` / `AlreadyExists`) and the `WriteResult` contract
   preserved; the `test_errors.py` SFTP suite (in-process + `sftp_docker`) is the
   safety net. Measured round-trips (in-process paramiko, warm channel, parent
