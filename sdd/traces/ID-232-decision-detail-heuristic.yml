@@ -27,6 +27,8 @@ surprising_ripples:
   - sdd/rfcs/rfc-0010-graph-backend.md
   - src/remote_store/aio/backends/_graph/auth.py
   - tests/backends/dafny/test_raise_if_err.py
+  - src/remote_store/_config.py
+  - sdd/specs/005-error-model.md
 phases:
   - id: orient
     name: Orient
@@ -400,4 +402,25 @@ phases:
           "one decision = one scannable unit" rule in the Decision guidance —
           immediately visible to author and reviewer. Reframed the old "size"
           wording to "smell detector, not the target".
+        outcome: ok
+      - file: src/remote_store/_config.py
+        section: "_SENSITIVE_KEYS comment (~L28)"
+        read_type: reference
+        extract: >-
+          Review round on the redo: restructuring the ADRs into bullets removed
+          more `### <section>` headings, breaking more inbound `§ <section>`
+          anchors in files outside the diff. Swept the whole repo for
+          `ADR-002\d §`; the live ones were `_config.py` (`§ Credential masking`)
+          and `005-error-model.md` (`§ Attributes`). Repointed both to cite the
+          ADR generically; historical traces keep the old names.
+        outcome: misleading
+      - file: sdd/adrs/0021-graph-sdk-choice.md
+        section: "Decision (Pins-live bullet)"
+        read_type: reference
+        extract: >-
+          Review: "Pins live in pyproject.toml" is not a decision — it is
+          bookkeeping about the tooling choice already made. Removed it from the
+          Decision list and moved the pointer to the Consequences dependency-
+          footprint bullet. A Decision bullet must state a decision, not a
+          location.
         outcome: ok

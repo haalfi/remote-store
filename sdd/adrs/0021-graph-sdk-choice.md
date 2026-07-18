@@ -67,8 +67,6 @@ supported auth library, lightweight, stable, and used by
   where the SDK's coverage would start to earn its weight.
 - **`Office365-REST-Python-Client` out of scope.** Legacy SharePoint
   REST is not a goal (RFC-0010).
-- **Pins live in `pyproject.toml`.** The `graph` extra's pinned set and
-  each pin's rationale are recorded there, their authoritative home.
 
 ## Consequences
 
@@ -78,7 +76,8 @@ supported auth library, lightweight, stable, and used by
   `httpx` is not in the base install — users who install only the
   `graph` extra pay for it once; users who already had
   `remote-store[httpx]` for `ReadOnlyHttpBackend` pay for nothing
-  extra.
+  extra. The `graph` extra pins the exact versions in `pyproject.toml`,
+  their authoritative home.
 - **Full control of request layer.** Error mapping, retry,
   `Retry-After` handling, and monitor-URL polling are written
   directly against `httpx.Response` and raw status codes. No

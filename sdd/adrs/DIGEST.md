@@ -845,8 +845,6 @@ disagreements autonomously — it presents the conflict and asks.
   where the SDK's coverage would start to earn its weight.
 - **`Office365-REST-Python-Client` out of scope.** Legacy SharePoint
   REST is not a goal (RFC-0010).
-- **Pins live in `pyproject.toml`.** The `graph` extra's pinned set and
-  each pin's rationale are recorded there, their authoritative home.
 
 ### [ADR-0022](0022-graph-auth-model.md): Microsoft Graph Auth Model — Dual Flows Behind a Token-Provider Protocol
 
