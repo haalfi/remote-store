@@ -1,5 +1,5 @@
 id: ID-232
-title: "Advisory 'Decision = decision only' heuristic in gen_adr_digest (Phase A)"
+title: "Rewrite ADR Decision sections to state decisions (Phase A: advisory heuristic; Phase B: Graph 0021-0024 rewrite)"
 trigger: >-
   ID-232 research merged; Phase A opens: build an advisory, non-failing warning
   that flags ADR ## Decision sections carrying spec/impl detail (the shape that
@@ -9,8 +9,9 @@ trigger: >-
 source_items:
   - ID-232
 audience:
-  - contributor.tooling
   - contributor.process
+  - library.maintainer
+  - contributor.tooling
 review_rounds: 2
 co_shipped_items:
   - BUG-234
@@ -22,6 +23,8 @@ expected_ripples:
   - sdd/BACKLOG.md
 surprising_ripples:
   - tests/test_registry.py
+  - sdd/specs/044-graph-backend.md
+  - sdd/rfcs/rfc-0010-graph-backend.md
 phases:
   - id: orient
     name: Orient
@@ -185,4 +188,130 @@ phases:
           to the PR adding them, unlike the (ID-17x) rows that cross-reference a
           standing verifier. Dropped the backlog-ID mention from both rows —
           durable prose describes the behavior, not the ticket (CONTENT-RULES).
+        outcome: ok
+  - id: orient
+    name: Orient (Phase B rewrite)
+    steps:
+      - file: sdd/research/research-id-232-detail-placement-durability.md
+        section: "7 (Operational tests), 8 (ADR bridge / worked ADR-0021)"
+        read_type: gate
+        extract: >-
+          The three-condition gate + signal pair (concealment ↔
+          justification-sufficiency); bookkeeping-vs-constraint distinction. The
+          ADR-0021 pins read as bookkeeping (evict); a CVE floor or hard-compat
+          requirement would stay. Don't over-correct to a length target.
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-006, GR-007, GR-008, GR-026, GR-045"
+        read_type: gate
+        extract: >-
+          Verify relocation homes exist before deleting. GR-026 owns the poller
+          cadence/timeout; GR-045 owns the 423 mapping. GR-007 already describes
+          the token cache but its "single source of truth" pointer aimed AT
+          ADR-0022 — the home was inverted and had to be flipped to make the spec
+          self-contained.
+        outcome: misleading
+      - file: pyproject.toml
+        section: "[project.optional-dependencies] graph"
+        read_type: reference
+        extract: >-
+          Every ADR-0021 pin and its rationale already live here (httpx<1.0
+          BUG-225, msal-extensions floor keeping portalocker optional, lazy
+          platformdirs, BK-291) — the ADR's pin list is pure duplication, safe to
+          evict to a pointer.
+        outcome: ok
+      - file: sdd/specs/005-error-model.md
+        section: "ERR-013"
+        read_type: reference
+        extract: >-
+          ResourceLocked meaning/home; ERR-013 points back to ADR-0024 §
+          Attributes for the lock_owner reasoning, so that reasoning is
+          load-bearing and stays in the ADR (do not relocate it).
+        outcome: ok
+  - id: design
+    name: Design (Phase B rewrite)
+    steps:
+      - file: sdd/research/research-id-232-detail-placement-durability.md
+        section: "5 (deep vs shallow relocation), 7.2 (justification-sufficiency)"
+        read_type: reference
+        extract: >-
+          Per-ADR plan: keep decision + constraint-bearing rationale; relocate
+          bookkeeping→pyproject, cache mechanism→GR-007 (deep, into an existing
+          home), cadence→GR-026. Keep the home-less GraphAuth flow params inline
+          rather than drop them — anti-over-correction guard.
+        outcome: ok
+  - id: implement
+    name: Implement (Phase B rewrite)
+    steps:
+      - file: sdd/adrs/0021-graph-sdk-choice.md
+        section: "Decision"
+        read_type: reference
+        extract: >-
+          Evict the graph-extra pin list to a pyproject pointer; keep the
+          httpx-vs-msgraph-sdk rejection rationale (narrow surface; SDKs don't
+          carry the hard work). Clears both version-specifier flags.
+        outcome: ok
+      - file: sdd/adrs/0022-graph-auth-model.md
+        section: "Decision"
+        read_type: reference
+        extract: >-
+          Gut the ~506-word Token-caching mechanism → GR-007; keep the
+          BK-291/Windows-os.replace(WinError 5) constraint rationale a reviewer
+          needs to reverse; condense masking/provider/config to spec pointers.
+          908→450 words (still advisory, but every word decision-grade).
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-007 (Postconditions), GR-008, Dependencies line"
+        read_type: reference
+        extract: >-
+          Land the residual token-cache facts in GR-007 (canonical path,
+          CrossPlatLock/PersistedTokenCache, override rules, ≈5s contended-lock
+          bound/BK-292) and flip GR-007 to single source of truth; repoint the
+          GR-008 cross-ref and the Dependencies pointer (→ pyproject).
+        outcome: ok
+      - file: sdd/rfcs/rfc-0010-graph-backend.md
+        section: "Auth model (token cache location)"
+        read_type: reference
+        extract: >-
+          Repoint the token-cache-location SSOT pointer from "ADR-0022 § Token
+          caching" to GR-007; drop the stale SerializableTokenCache mention (the
+          hand-rolled cache BK-291 replaced).
+        outcome: ok
+      - file: sdd/adrs/0023-async-monitor-polling.md
+        section: "Decision"
+        read_type: reference
+        extract: >-
+          Sonnet subagent: relocate the poller Contract param list → GR-026;
+          fold the migration mechanics into Consequences; keep the backend-local
+          / no-capability / not-in-ext placement rationale and the parser-driven
+          shape. 454→~300 words.
+        outcome: ok
+      - file: sdd/adrs/0024-resource-locked-error.md
+        section: "Decision"
+        read_type: reference
+        extract: >-
+          Sonnet subagent: relocate retry guidance→RET-015, mapping→GR-045,
+          bundled-impl/delivery→spec 005 / BackendContract.dfy / BACKLOG ID-127
+          (Consequences); keep the no-lock_owner + why-a-new-type rationale.
+          383→~260 words.
+        outcome: ok
+  - id: verify
+    name: Verify (Phase B rewrite)
+    steps:
+      - file: scripts/gen_adr_digest.py
+        section: "--check (advisory stream)"
+        read_type: verify
+        extract: >-
+          Before/after instrument: 0021/0023/0024 no longer flagged; 0022
+          908→450 (still over budget but decision-grade, not over-corrected per
+          §7.2); corpus Decision total 11009→10265; DIGEST regenerated, graph
+          consistent.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Spec section"
+        read_type: verify
+        extract: >-
+          ADR↔spec SSOT consistency: no dangling "§ Token caching" pointers
+          remain (GR-007/GR-008/rfc-0010 all repointed); relocated facts verified
+          in their homes before deletion; hatch run lint green.
         outcome: ok

@@ -50,28 +50,24 @@ supported auth library, lightweight, stable, and used by
 
 ## Decision
 
-Build the backend on `httpx` (async client) plus `msal` for token
-acquisition and cache serialization.
+Build the backend on `httpx` (async client) for the HTTP transport plus
+`msal` for token acquisition and cache serialization. The backend
+constructs an `httpx.AsyncClient` internally and treats Graph as a
+narrow REST surface with hand-written request helpers, pagination, and
+error mapping.
 
-The `graph` optional extra pins:
+`msgraph-sdk` is explicitly rejected. The surface this backend needs is
+narrow (see Context), and the non-trivial work — upload-session chunking
+with resume, async-operation polling, URL-expiry-mid-read handling — is
+carried by none of the candidate SDKs, so adopting one adds transitive
+weight (the Kiota runtime plus `azure-identity`) without removing code
+the backend must write regardless. `httpx` is already an optional
+runtime dependency, and `msal` is Microsoft's supported, lightweight
+auth library. `Office365-REST-Python-Client` is out of scope (legacy
+SharePoint REST is not a goal — see RFC-0010).
 
-- `httpx` — async HTTP transport.
-- `msal` — token acquisition (used by the built-in `GraphAuth` helper).
-- `msal-extensions` (`>=1.3`) — multi-process-safe token-cache
-  persistence (`PersistedTokenCache` + cross-process file lock, BK-291);
-  the `>=1.3` floor keeps `portalocker` an optional extra rather than a
-  hard transitive dependency. Consumed only by `GraphAuth`, lazily.
-- `platformdirs` — resolves the MSAL token-cache path under
-  `user_config_dir("remote-store")`; consumed only by `GraphAuth` and
-  imported lazily so callers supplying their own token-provider
-  callable never load it (see ADR-0022).
-
-The backend constructs an `httpx.AsyncClient` internally and treats
-Graph as a narrow REST surface with hand-written request helpers,
-pagination, and error mapping.
-
-`msgraph-sdk` is explicitly rejected. `Office365-REST-Python-Client`
-is out of scope (legacy SharePoint REST is not a goal — see RFC-0010).
+The `graph` extra's pinned dependency set, and the rationale for each
+pin, live in `pyproject.toml` (their authoritative home).
 
 ## Consequences
 

@@ -105,9 +105,9 @@ The backend itself depends on a **token-provider callable**, not on
 
 Users with their own auth plumbing (managed identity, corporate
 broker, custom refresh) supply any callable matching one of those
-shapes. MSAL token caching uses `SerializableTokenCache` with a
-persistent backing file. Token cache location: see ADR-0022 § Token
-caching for the canonical path and override rules (single source of
+shapes. MSAL token caching uses a persistent backing file; the cache
+path, mechanism, and override rules are specified by GR-007 in
+[044-graph-backend.md](../specs/044-graph-backend.md) (single source of
 truth).
 
 Authorization headers are redacted anywhere request or response

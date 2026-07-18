@@ -310,13 +310,21 @@ and the highest ID already in this file, then take the next integer. Run
   Research (advisory): [`research-id-232-detail-placement-durability.md`](research/research-id-232-detail-placement-durability.md)
   supplies the rewrite criterion (a three-condition placement gate: change-rate,
   cost-of-staleness, and local justificatory need, all three required) and tests.
-  Phase A (shipped, this PR): `gen_adr_digest --check` now emits non-gating
+  Phase A (shipped): `gen_adr_digest --check` now emits non-gating
   `ADVICE` notices for Decision sections over a word budget, carrying version
   specifiers, or nesting past H3 — the "keep it enforced, not just visible"
   heuristic is built and advisory-only, never affecting the exit code. Phase B
-  (pending): the rewrites themselves, Graph 0021–0024 first per the research;
-  the trace for that work opens when the rewrites begin. Open (Phase B):
-  rewrite all 30 ADRs or just Graph 0021–0024 first.
+  (this PR): the Graph ADRs 0021–0024 rewritten to the decision plus only its
+  irreducible rationale. Bookkeeping pins moved to `pyproject.toml`; the
+  token-cache mechanism to spec 044 GR-007 (now the single source of truth, with
+  the ADR-0022/GR-008/RFC-0010 pointers flipped to match); poller cadence to
+  GR-026; error mapping and retry to GR-045/RET-015. Each relocated fact was
+  verified present in its home before removal (one-copy-per-fact). Digest result:
+  0021/0023/0024 clear the heuristic and 0022 drops 908→450 words (still over the
+  advisory budget, but every remaining word is decision-grade per the research's
+  justification-sufficiency test — not over-corrected to a length target).
+  Remaining (next batch, why this stays `[~]`): the other advisory-flagged
+  Decisions (0006, 0007, 0008, 0014, 0025–0028) sweep the same gate.
 
 ---
 

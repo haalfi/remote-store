@@ -41,69 +41,41 @@ shape (`UploadId` + `complete-multipart-upload`, not a monitor URL).
 
 Ship the polling logic **backend-local** in
 `src/remote_store/aio/backends/_graph/monitor.py` (a module inside
-the Graph sub-package, alongside `backend.py` / `http.py` /
-`transfer.py` / `auth.py`), or inline in `backend.py` if it stays
-under ~100 lines. The Graph backend lives under `aio/backends/`
-because it is async-native (matching `aio/backends/_azure.py`); the
-poller follows. It is part of the Graph sub-package, not a shared
-facility. No public API surface and no Store-level capability is
-introduced.
+the Graph sub-package, or inline in `backend.py` if it stays small).
+The Graph backend lives under `aio/backends/` because it is
+async-native (matching `aio/backends/_azure.py`); the poller follows.
+It is part of the Graph sub-package, not a shared facility, and
+introduces no public API surface and no Store-level capability.
 
-If and when a second backend genuinely needs the same shape — measured
-in a follow-up implementation, not predicted here — a hoisting ADR
-supersedes this one. Until then, YAGNI: one consumer, one location.
+The poller is **parser-driven**: a `status_parser` callable maps each
+poll response to `pending` / `succeeded` / `failed`, so the loop is
+already shaped for a second consumer's response format without being
+made a generic helper today. The cadence and timeout contract
+(intervals, backoff, `copy_timeout`, `Retry-After`, `5xx`-as-pending,
+cancellation) is owned by GR-026 and not restated here.
 
-### Contract
+**YAGNI: one consumer, one location.** An earlier draft hoisted the
+loop into a shared `backends/_async_monitor.py` on the premise that
+Azure cross-account copy and similar `202`-monitor patterns would
+reuse it. No second consumer exists: same-account Azure copy completes
+server-side without polling, cross-account Azure copy is not
+implemented, and S3 multipart completion uses a different shape
+(`UploadId` + `complete-multipart-upload`, not a monitor URL). Reverse
+this decision only when a second backend genuinely needs the same
+shape, measured in a follow-up rather than predicted here; a hoisting
+ADR then supersedes this one.
 
-The poller exposes an async function with these parameters:
+**Why not a Store capability.** A capability such as `ASYNC_COPY`
+would leak an implementation detail into the public API and invite
+callers to branch on "is this copy asynchronous?", which is the wrong
+question. `Store.copy()` is synchronous from the caller's view
+(ADR-0012); the backend presents that result regardless of how it
+gets there.
 
-- **`monitor_url`** — the URL returned in the `Location` header.
-- **`client`** — the backend's `httpx.AsyncClient`.
-- **`status_parser`** — callable that inspects a poll response and
-  returns one of `pending`, `succeeded`, or `failed` along with an
-  optional error payload. Graph supplies its own
-  `parse_graph_monitor_response`; the contract stays parser-driven
-  in case a second consumer reuses just the loop (without making the
-  poller itself a generic helper today).
-- **`initial_interval`** — polling interval floor. Default 1 s.
-- **`max_interval`** — polling interval ceiling. Default 30 s.
-- **`backoff_factor`** — multiplicative increase applied to the
-  interval between successive polls that return `pending`. Default 2.
-- **`timeout`** — overall wall-clock limit. On expiry, raises
-  `BackendUnavailable` with the context fields specified by GR-026.
-
-The poller honours `Retry-After` headers from the monitor endpoint
-(overriding the computed interval when larger), treats transient
-`5xx` responses during polling as `pending`, and propagates
-`asyncio.CancelledError`.
-
-### Why not a Store capability
-
-A new capability (e.g. `ASYNC_COPY`) would leak an implementation
-detail into the public API. Callers of `Store.copy()` already treat
-the operation as synchronous from their point of view — the backend's
-job is to present that synchronous result, regardless of how it gets
-there. Declaring a capability would invite callers to branch on "is
-this copy going to be asynchronous?", which is the wrong question.
-
-### Why not in `ext/`
-
-Extensions use only the public Store/Backend API (ADR-0008). The
-poller operates on raw HTTP, takes an `httpx.AsyncClient`, and serves
-only the backend implementer. Placing it in `ext/` would misrepresent
-its audience and scope.
-
-### What changes if a second consumer arrives
-
-The migration path from backend-local to shared is mechanical: lift
-the function to a shared location (`aio/backends/_async_monitor.py`
-if both consumers are async-native; `backends/_async_monitor.py` if a
-sync consumer also wants it), add a re-export from the original
-`aio/backends/_graph/monitor.py` for a release, supersede this ADR.
-The `status_parser` parameter is already shaped to support a second
-consumer's response format; no API redesign is required at hoist
-time. The current decision optimises for not paying that cost until
-there is a real demand for it.
+**Why not in `ext/`.** Extensions use only the public Store/Backend
+API (ADR-0008). The poller operates on raw HTTP, takes an
+`httpx.AsyncClient`, and serves only the backend implementer; placing
+it in `ext/` would misrepresent its audience.
 
 ## Consequences
 
@@ -121,8 +93,12 @@ there is a real demand for it.
   part of the Graph backend test surface.
 - **No new capability.** `CapabilitySet` is unchanged. Callers do
   not observe whether an operation polled internally.
-- **Future hoist is cheap.** Parser-driven contract means lifting
-  the function does not require redesigning it.
+- **Future hoist is cheap.** The migration is mechanical: lift the
+  function to a shared location (`aio/backends/_async_monitor.py`, or
+  `backends/_async_monitor.py` if a sync consumer also wants it), add
+  a re-export from `_graph/monitor.py` for one release, and supersede
+  this ADR. The parser-driven contract means no redesign at hoist
+  time.
 
 ## References
 
