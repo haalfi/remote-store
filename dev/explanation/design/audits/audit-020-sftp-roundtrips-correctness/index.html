@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/specs/015-store-child/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/audits/audit-020-sftp-roundtrips-correctness/">
       
       
-        <link rel="prev" href="../014-pyarrow-filesystem-adapter/">
+        <link rel="prev" href="../audit-019-azure-backend-review/">
       
       
-        <link rel="next" href="../016-ext-batch/">
+        <link rel="next" href="../../rfcs/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>015: Store.child() Specification - remote-store</title>
+        <title>020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#storechild-specification" class="md-skip">
+        <a href="#audit-020-sftp-backend-correctness-bk-313-pr-910-round-trip-cut-review" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              015: Store.child() Specification
+              020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review
             
           </span>
         </div>
@@ -6216,6 +6216,8 @@
                 
   
   
+    
+  
   
   
     
@@ -6226,15 +6228,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_9" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../audits/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -6258,7 +6260,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_9_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_9_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_8_9">
             <span class="md-nav__icon md-icon"></span>
             
@@ -6276,7 +6278,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-001-adversarial-review/" class="md-nav__link">
+      <a href="../audit-001-adversarial-review/" class="md-nav__link">
         
   
   
@@ -6304,7 +6306,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-002-design-compliance/" class="md-nav__link">
+      <a href="../audit-002-design-compliance/" class="md-nav__link">
         
   
   
@@ -6332,7 +6334,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-003-documentation/" class="md-nav__link">
+      <a href="../audit-003-documentation/" class="md-nav__link">
         
   
   
@@ -6360,7 +6362,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-004-docs-structural-consistency/" class="md-nav__link">
+      <a href="../audit-004-docs-structural-consistency/" class="md-nav__link">
         
   
   
@@ -6388,7 +6390,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-005-laziness-memory/" class="md-nav__link">
+      <a href="../audit-005-laziness-memory/" class="md-nav__link">
         
   
   
@@ -6416,7 +6418,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-006-docs-list-completeness/" class="md-nav__link">
+      <a href="../audit-006-docs-list-completeness/" class="md-nav__link">
         
   
   
@@ -6444,7 +6446,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-007-test-behavior-assertions/" class="md-nav__link">
+      <a href="../audit-007-test-behavior-assertions/" class="md-nav__link">
         
   
   
@@ -6472,7 +6474,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-008-package-bugs/" class="md-nav__link">
+      <a href="../audit-008-package-bugs/" class="md-nav__link">
         
   
   
@@ -6500,7 +6502,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-009-backend-specifics-visibility/" class="md-nav__link">
+      <a href="../audit-009-backend-specifics-visibility/" class="md-nav__link">
         
   
   
@@ -6528,7 +6530,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-010-ext-private-imports/" class="md-nav__link">
+      <a href="../audit-010-ext-private-imports/" class="md-nav__link">
         
   
   
@@ -6556,7 +6558,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-011-docs-v023-gaps/" class="md-nav__link">
+      <a href="../audit-011-docs-v023-gaps/" class="md-nav__link">
         
   
   
@@ -6584,7 +6586,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-012-docs-structure/" class="md-nav__link">
+      <a href="../audit-012-docs-structure/" class="md-nav__link">
         
   
   
@@ -6612,7 +6614,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-013-docstring-style/" class="md-nav__link">
+      <a href="../audit-013-docstring-style/" class="md-nav__link">
         
   
   
@@ -6640,7 +6642,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
+      <a href="../audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
         
   
   
@@ -6668,7 +6670,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-015-spec-traceability/" class="md-nav__link">
+      <a href="../audit-015-spec-traceability/" class="md-nav__link">
         
   
   
@@ -6696,7 +6698,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-016-graph-backend-review/" class="md-nav__link">
+      <a href="../audit-016-graph-backend-review/" class="md-nav__link">
         
   
   
@@ -6724,7 +6726,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-017-dev-process-gate-topology/" class="md-nav__link">
+      <a href="../audit-017-dev-process-gate-topology/" class="md-nav__link">
         
   
   
@@ -6752,7 +6754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-018-ci-operations/" class="md-nav__link">
+      <a href="../audit-018-ci-operations/" class="md-nav__link">
         
   
   
@@ -6780,7 +6782,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-019-azure-backend-review/" class="md-nav__link">
+      <a href="../audit-019-azure-backend-review/" class="md-nav__link">
         
   
   
@@ -6805,10 +6807,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -6824,6 +6853,148 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#high" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔴 High
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🔴 High">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#h1-dead-connection-signals-outside-_is_connection_dead-permanently-wedge-the-client-no-reconnect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        H1 — Dead-connection signals outside _is_connection_dead permanently wedge the client (no reconnect)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#medium" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🟠 Medium
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🟠 Medium">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#m1-streaming-read-leaks-a-raw-eoferror-to-the-consumer-unmapped-and-does-not-invalidate-the-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M1 — Streaming read() leaks a raw EOFError to the consumer (unmapped) and does not invalidate the client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m2-open_atomic-leaks-a-raw-permissionerror-where-writewrite_atomic-map-to-permissiondenied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M2 — open_atomic leaks a raw PermissionError where write/write_atomic map to PermissionDenied
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m3-read_bytes-on-a-directory-depends-on-the-server-raising-on-read-a-server-reporting-dir-st_size0-returns-b-wrong-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M3 — read_bytes on a directory depends on the server raising on read; a server reporting dir st_size==0 returns b'' (wrong data)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#low-nits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🟡 Low / Nits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verified-strengths-checked-not-rubber-stamped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verified strengths (checked, not rubber-stamped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proposed-backlog-items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposed backlog items
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -8707,8 +8878,6 @@
                 
   
   
-    
-  
   
   
     
@@ -8719,15 +8888,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_12" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_12" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../specs/" class="md-nav__link ">
               
   
   
@@ -8751,7 +8920,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_12_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_12_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_8_12">
             <span class="md-nav__icon md-icon"></span>
             
@@ -8769,7 +8938,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../001-store-api/" class="md-nav__link">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -8797,7 +8966,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../002-registry-config/" class="md-nav__link">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -8825,7 +8994,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -8853,7 +9022,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../004-path-model/" class="md-nav__link">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -8881,7 +9050,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../005-error-model/" class="md-nav__link">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -8909,7 +9078,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../006-streaming-io/" class="md-nav__link">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -8937,7 +9106,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../007-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -8965,7 +9134,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../008-s3-backend/" class="md-nav__link">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -8993,7 +9162,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../009-sftp-backend/" class="md-nav__link">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -9021,7 +9190,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../010-native-path-resolution/" class="md-nav__link">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -9049,7 +9218,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -9077,7 +9246,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../012-azure-backend/" class="md-nav__link">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -9105,7 +9274,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../013-memory-backend/" class="md-nav__link">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -9133,7 +9302,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -9158,37 +9327,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    015: Store.child() Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -9204,175 +9346,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Requirements
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Requirements">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#child-001-method-signature" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-001: Method Signature
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-002-root-composition" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-002: Root Composition
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-003-subpath-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-003: Subpath Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-004-backend-sharing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-004: Backend Sharing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-005-chaining" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-005: Chaining
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-006-close-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-006: Close Semantics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-007-context-manager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-007: Context Manager
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-008-equality" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-008: Equality
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-009-path-round-trip" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-009: Path Round-Trip
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-010-thread-safety" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-010: Thread Safety
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-011-repr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-011: Repr
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -9385,7 +9358,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -9413,7 +9386,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -9441,7 +9414,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../018-glob/" class="md-nav__link">
+      <a href="../../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -9469,7 +9442,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../019-ext-observe/" class="md-nav__link">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -9497,7 +9470,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../020-credential-hygiene/" class="md-nav__link">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -9525,7 +9498,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../021-config-loaders/" class="md-nav__link">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -9553,7 +9526,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -9581,7 +9554,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../023-ext-cache/" class="md-nav__link">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -9609,7 +9582,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../024-ext-partition/" class="md-nav__link">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -9637,7 +9610,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../025-retry-policy/" class="md-nav__link">
+      <a href="../../specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -9665,7 +9638,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../026-health-check/" class="md-nav__link">
+      <a href="../../specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -9693,7 +9666,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../027-iter-children/" class="md-nav__link">
+      <a href="../../specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -9721,7 +9694,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../028-read-text/" class="md-nav__link">
+      <a href="../../specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -9749,7 +9722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -9777,7 +9750,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../030-write-text/" class="md-nav__link">
+      <a href="../../specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -9805,7 +9778,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../031-ext-dagster/" class="md-nav__link">
+      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -9833,7 +9806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../032-http-backend/" class="md-nav__link">
+      <a href="../../specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -9861,7 +9834,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../033-ext-streams/" class="md-nav__link">
+      <a href="../../specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -9889,7 +9862,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../034-ext-integrity/" class="md-nav__link">
+      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -9917,7 +9890,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../035-content-digest/" class="md-nav__link">
+      <a href="../../specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -9945,7 +9918,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../036-seekable-read/" class="md-nav__link">
+      <a href="../../specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -9973,7 +9946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../037-depth-limited-listing/" class="md-nav__link">
+      <a href="../../specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -10001,7 +9974,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../../specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -10029,7 +10002,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../../specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -10057,7 +10030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../040-sql-blob-backend/" class="md-nav__link">
+      <a href="../../specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -10085,7 +10058,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../041-sql-query-backend/" class="md-nav__link">
+      <a href="../../specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -10113,7 +10086,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../042-ext-parquet/" class="md-nav__link">
+      <a href="../../specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -10141,7 +10114,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../043-resolution-plan/" class="md-nav__link">
+      <a href="../../specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -10169,7 +10142,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../044-graph-backend/" class="md-nav__link">
+      <a href="../../specs/044-graph-backend/" class="md-nav__link">
         
   
   
@@ -10197,7 +10170,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../045-write-result/" class="md-nav__link">
+      <a href="../../specs/045-write-result/" class="md-nav__link">
         
   
   
@@ -10225,7 +10198,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../046-ext-write/" class="md-nav__link">
+      <a href="../../specs/046-ext-write/" class="md-nav__link">
         
   
   
@@ -10253,7 +10226,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../047-docs-framework-tooling/" class="md-nav__link">
+      <a href="../../specs/047-docs-framework-tooling/" class="md-nav__link">
         
   
   
@@ -10281,7 +10254,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../048-testing-architecture/" class="md-nav__link">
+      <a href="../../specs/048-testing-architecture/" class="md-nav__link">
         
   
   
@@ -10309,7 +10282,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../049-live-recording-architecture/" class="md-nav__link">
+      <a href="../../specs/049-live-recording-architecture/" class="md-nav__link">
         
   
   
@@ -10337,7 +10310,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../050-doc-graph-model/" class="md-nav__link">
+      <a href="../../specs/050-doc-graph-model/" class="md-nav__link">
         
   
   
@@ -10408,10 +10381,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#summary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Summary
       
     </span>
   </a>
@@ -10419,132 +10392,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#high" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Requirements
+        🔴 High
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Requirements">
+    <nav class="md-nav" aria-label="🔴 High">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#child-001-method-signature" class="md-nav__link">
+  <a href="#h1-dead-connection-signals-outside-_is_connection_dead-permanently-wedge-the-client-no-reconnect" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CHILD-001: Method Signature
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-002-root-composition" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-002: Root Composition
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-003-subpath-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-003: Subpath Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-004-backend-sharing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-004: Backend Sharing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-005-chaining" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-005: Chaining
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-006-close-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-006: Close Semantics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-007-context-manager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-007: Context Manager
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-008-equality" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-008: Equality
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-009-path-round-trip" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-009: Path Round-Trip
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-010-thread-safety" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-010: Thread Safety
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#child-011-repr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CHILD-011: Repr
+        H1 — Dead-connection signals outside _is_connection_dead permanently wedge the client (no reconnect)
       
     </span>
   </a>
@@ -10553,6 +10416,89 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#medium" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🟠 Medium
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🟠 Medium">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#m1-streaming-read-leaks-a-raw-eoferror-to-the-consumer-unmapped-and-does-not-invalidate-the-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M1 — Streaming read() leaks a raw EOFError to the consumer (unmapped) and does not invalidate the client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m2-open_atomic-leaks-a-raw-permissionerror-where-writewrite_atomic-map-to-permissiondenied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M2 — open_atomic leaks a raw PermissionError where write/write_atomic map to PermissionDenied
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m3-read_bytes-on-a-directory-depends-on-the-server-raising-on-read-a-server-reporting-dir-st_size0-returns-b-wrong-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M3 — read_bytes on a directory depends on the server raising on read; a server reporting dir st_size==0 returns b'' (wrong data)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#low-nits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🟡 Low / Nits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verified-strengths-checked-not-rubber-stamped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verified strengths (checked, not rubber-stamped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proposed-backlog-items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposed backlog items
+      
+    </span>
+  </a>
   
 </li>
       
@@ -10573,34 +10519,371 @@
 
 
 
-<h1 id="storechild-specification">Store.child() Specification<a class="headerlink" href="#storechild-specification" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>Store.child(subpath)</code> returns a new Store scoped to a subfolder of the parent, sharing the parent's backend instance. This enables runtime sub-scoping for folder isolation in service DI, multi-tenant routing, and hierarchical data layouts — without creating new backend connections.</p>
-<p><strong>Related:</strong> <a href="../001-store-api/">001-store-api.md</a> (STORE-008), ID-021.</p>
+<h1 id="audit-020-sftp-backend-correctness-bk-313-pr-910-round-trip-cut-review">Audit 020 — SFTP backend correctness (BK-313 / PR #910) round-trip-cut review<a class="headerlink" href="#audit-020-sftp-backend-correctness-bk-313-pr-910-round-trip-cut-review" title="Permanent link">&para;</a></h1>
+<p><strong>Backlog item:</strong> BK-313 (cut SFTP per-operation metadata round-trips; PR #910,
+branch <code>claude/bk-313-sftp-roundtrips-pgx7n2</code>). Follow-ups proposed at the end.
+<strong>Date:</strong> 2026-07-18
+<strong>Scope:</strong> The SFTP backend code logic only — <code>src/remote_store/backends/_sftp.py</code>
+(the 292-line BK-313 diff and the paths it touches) plus the lazy-read error
+wrapper it depends on, <code>src/remote_store/_stream.py</code>. Specs and tests were read as
+<strong>helpers</strong> (to establish intent and to check whether a suspected defect is
+covered), not as audit targets. Adjacent changed files (<code>_capabilities.py</code>,
+<code>_backend.py</code>, <code>_models.py</code>) were out of scope except where the SFTP path depends
+on them.
+<strong>Method:</strong> line-by-line read of the file and the full <code>master...HEAD</code> diff; two
+scoped expert sub-agents (one on the connection-liveness / staleness / reconnect
+layer, one on the file-vs-directory classification and error-code mapping);
+then <strong>live verification against the real <code>atmoz/sftp</code> (OpenSSH) container</strong>
+(<code>infra-sftp-1</code>, host port 2222) and <strong>targeted exception-injection</strong> to confirm
+the connection-staleness behaviour that a clean channel close cannot reproduce.
+Every finding below was reproduced empirically (live op, real read-only directory,
+or injected paramiko exception) unless explicitly marked static-only. This is a
+<strong>report-only</strong> audit — nothing was modified. Dispositions in the proposals section
+are advisory; the user decides what becomes work.</p>
+<p><strong>Severity key:</strong> 🔴 High · 🟠 Medium · 🟡 Low / Nit.
+Each finding tag (H1, M2, L3…) is referenced by the proposals table at the end.</p>
 <hr />
-<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
-<h3 id="child-001-method-signature">CHILD-001: Method Signature<a class="headerlink" href="#child-001-method-signature" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>Store</code> exposes a method <code>child(subpath: str) -&gt; Store</code>. The <code>subpath</code> argument is a non-empty relative path.</p>
-<h3 id="child-002-root-composition">CHILD-002: Root Composition<a class="headerlink" href="#child-002-root-composition" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The child store's effective root is <code>{parent_root}/{subpath}</code> when the parent has a non-empty root, or just <code>{subpath}</code> when the parent root is empty.</p>
-<h3 id="child-003-subpath-validation">CHILD-003: Subpath Validation<a class="headerlink" href="#child-003-subpath-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The <code>subpath</code> argument is validated via <code>RemotePath</code>. Empty strings, paths containing <code>..</code> segments, and paths containing null bytes are rejected with <code>InvalidPath</code>.</p>
-<h3 id="child-004-backend-sharing">CHILD-004: Backend Sharing<a class="headerlink" href="#child-004-backend-sharing" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The child store's backend is the same object as the parent's backend (identity, not equality). No new connections are created.</p>
-<h3 id="child-005-chaining">CHILD-005: Chaining<a class="headerlink" href="#child-005-chaining" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>store.child("a").child("b")</code> produces a Store equivalent to <code>store.child("a/b")</code> — same backend identity and same effective root.</p>
-<h3 id="child-006-close-semantics">CHILD-006: Close Semantics<a class="headerlink" href="#child-006-close-semantics" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>child.close()</code> does <strong>not</strong> close the shared backend. Only the store that owns the backend (the original parent) may close it.</p>
-<h3 id="child-007-context-manager">CHILD-007: Context Manager<a class="headerlink" href="#child-007-context-manager" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> A child store supports the context manager protocol. Exiting the <code>with</code> block calls the child's <code>close()</code>, which — per CHILD-006 — does not close the backend.</p>
-<h3 id="child-008-equality">CHILD-008: Equality<a class="headerlink" href="#child-008-equality" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> A child store compares equal to (and hashes the same as) a directly constructed <code>Store</code> with the same backend instance and the same effective root path.</p>
-<h3 id="child-009-path-round-trip">CHILD-009: Path Round-Trip<a class="headerlink" href="#child-009-path-round-trip" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Paths returned by listing methods on a child store are child-relative. They can be fed directly back into the child's other methods (read, write, delete, etc.) without modification.</p>
-<h3 id="child-010-thread-safety">CHILD-010: Thread Safety<a class="headerlink" href="#child-010-thread-safety" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>child()</code> and the returned Store are safe to use across threads. The child inherits the parent's thread-safety guarantees (STORE-007).</p>
-<h3 id="child-011-repr">CHILD-011: Repr<a class="headerlink" href="#child-011-repr" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>repr(child)</code> shows the combined effective root path. It is indistinguishable from the repr of a directly constructed Store with the same root.</p>
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p>The <strong>visible core of BK-313 — moving file-vs-directory classification from eager
+pre-<code>stat</code> checks to lazy post-failure classification — is correct on real
+OpenSSH.</strong> A 20-case live battery against <code>atmoz/sftp</code> passed every case: a
+directory target yields <code>InvalidPath</code> across <code>read</code> / <code>read_bytes</code> / <code>write</code> /
+<code>write_atomic</code> / <code>open_atomic</code> / <code>delete</code> (including <code>missing_ok=True</code>), a
+file-ancestor yields <code>NotFound</code>, a missing path yields <code>NotFound</code>, and an existing
+file with <code>overwrite=False</code> yields <code>AlreadyExists</code>. The raw probe confirmed the two
+server behaviours the design rests on: OpenSSH opens a directory for reading without
+error (so <code>read</code>/<code>open_atomic</code> correctly keep an eager check), and it reports a
+directory <code>st_size</code> of <strong>4096</strong> (so <code>read_bytes</code>'s lazy path fires because the read
+raises rather than returning empty). <code>_promote</code>/<code>_rename_fallback</code>, the
+base-relative ancestor walk, the chroot boundary handling, and the
+<code>WriteResult(last_modified=None)</code> behaviour change all check out.</p>
+<p><strong>The material risk is not in the classification refactor — it is in the
+connection-staleness layer the perf change quietly reshaped.</strong> Master's
+<code>_is_connected()</code> issued a <code>stat('.')</code> round-trip on <strong>every</strong> <code>_sftp</code> access; that
+round-trip was the round-trip BK-313 set out to remove, but it doubled as a
+<strong>universal self-heal</strong> — a dead client of <em>any</em> kind was detected and reconnected
+on the very next operation. BK-313 replaced it with the local <code>transport.is_active()</code>
+flag (the legitimate win) and compensated with a "tier-2" scheme: <code>_map_exception</code>
+clears the cached client <strong>only inside its <code>_is_connection_dead(exc)</code> branch</strong>.
+Because <code>is_active()</code> stays <code>True</code> on a channel-only death, that branch is now the
+<em>sole</em> remaining reconnect trigger — and its signal set is incomplete. Every
+dead-connection signal it does not recognise now <strong>permanently wedges</strong> the backend:
+the op is reported (as <code>BackendUnavailable</code> or, worse, a generic <code>RemoteStoreError</code>),
+the dead client is never cleared, <code>is_active()</code> keeps returning <code>True</code>, and <strong>every
+subsequent operation reuses the dead client forever</strong> (H1). Master self-healed all of
+these. This is a genuine High-severity availability regression, and it slipped all
+three prior review rounds and both test lanes because every channel-death test uses a
+<em>clean</em> close, which happens to hit the one handled signal.</p>
+<p>Two related Medium error-mapping leaks share the same layer: a streaming <code>read()</code>
+leaks a raw <code>EOFError</code> to the consumer (M1), and <code>open_atomic</code> leaks a raw
+<code>PermissionError</code> where its siblings map to <code>PermissionDenied</code> (M2). A fourth item
+(M3) is a portability edge in <code>read_bytes</code>'s new lazy directory rejection. The Low
+items are mostly pre-existing patterns preserved through the refactor.</p>
+<hr />
+<h2 id="high">🔴 High<a class="headerlink" href="#high" title="Permanent link">&para;</a></h2>
+<h3 id="h1-dead-connection-signals-outside-_is_connection_dead-permanently-wedge-the-client-no-reconnect">H1 — Dead-connection signals outside <code>_is_connection_dead</code> permanently wedge the client (no reconnect)<a class="headerlink" href="#h1-dead-connection-signals-outside-_is_connection_dead-permanently-wedge-the-client-no-reconnect" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong> <code>src/remote_store/backends/_sftp.py:1553-1570</code> (<code>_is_connected</code>, now a
+local flag read); <code>:1826-1848</code> (<code>_is_connection_dead</code>); <code>:1862-1873</code> (the
+<code>_map_exception</code> branch that clears <code>_sftp_client</code> — the <strong>only</strong> clear on the
+operation path); <code>:1932-1934</code> (the <code>SSHException</code> and generic-<code>RemoteStoreError</code>
+tails that map an error <strong>without</strong> clearing the client).</p>
+<p>The reconnect loop works only when <code>_map_exception</code> reaches the
+<code>_is_connection_dead(exc)</code> branch and sets <code>self._sftp_client = None</code>; the next
+<code>_sftp</code> access then sees <code>_sftp_client is None</code> and reconnects. But
+<code>_is_connection_dead</code> matches only <code>EOFError</code> and <code>OSError</code> with errno in
+<code>{ECONNRESET, EPIPE, ECONNABORTED}</code> or errno <code>None</code> + the literal <code>"socket is
+closed"</code>. Any other dead-channel signal maps to <code>BackendUnavailable</code> (via the
+<code>paramiko.SSHException</code> tail) or to a bare <code>RemoteStoreError</code> (the generic tail)
+<strong>without clearing the client</strong>, and with <code>transport.is_active()</code> still <code>True</code>
+the wedge is permanent.</p>
+<p><strong>Empirically confirmed by injection</strong> (exception injected at the client's <code>stat()</code>;
+transport left active so <code>_is_connected()</code> keeps returning <code>True</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Injected signal</th>
+<th>1st op maps to</th>
+<th>client cleared?</th>
+<th>2nd op</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EOFError</code> <em>(baseline)</em></td>
+<td><code>BackendUnavailable</code></td>
+<td>✅</td>
+<td>self-heals</td>
+</tr>
+<tr>
+<td><code>OSError('Socket is closed')</code> <em>(baseline)</em></td>
+<td><code>BackendUnavailable</code></td>
+<td>✅</td>
+<td>self-heals</td>
+</tr>
+<tr>
+<td><code>paramiko.SSHException('Server connection dropped')</code></td>
+<td><code>BackendUnavailable</code></td>
+<td>❌</td>
+<td><strong>WEDGED</strong></td>
+</tr>
+<tr>
+<td><code>paramiko.ChannelException</code> (SSHException subclass)</td>
+<td><code>BackendUnavailable</code></td>
+<td>❌</td>
+<td><strong>WEDGED</strong></td>
+</tr>
+<tr>
+<td><code>paramiko.SFTPError('Garbage packet received')</code></td>
+<td><code>RemoteStoreError</code></td>
+<td>❌</td>
+<td><strong>WEDGED</strong></td>
+</tr>
+<tr>
+<td><code>socket.timeout</code> / <code>TimeoutError</code></td>
+<td><code>RemoteStoreError</code></td>
+<td>❌</td>
+<td><strong>WEDGED</strong></td>
+</tr>
+<tr>
+<td><code>OSError(EBADF)</code></td>
+<td><code>RemoteStoreError</code></td>
+<td>❌</td>
+<td><strong>WEDGED</strong></td>
+</tr>
+<tr>
+<td><code>OSError(ETIMEDOUT)</code></td>
+<td><code>RemoteStoreError</code></td>
+<td>❌</td>
+<td><strong>WEDGED</strong></td>
+</tr>
+</tbody>
+</table>
+<p>"WEDGED" = the second op re-fails identically with no reconnect attempt (verified).
+Type facts underpinning the gap (checked against the installed paramiko):
+<code>issubclass(EOFError, OSError)</code> is <code>False</code>; <code>socket.timeout is TimeoutError</code> and it
+is an <code>OSError</code> but a half-open/idle instance typically carries no matching errno;
+<code>paramiko.SFTPError</code> subclasses neither <code>OSError</code> nor <code>SSHException</code>;
+<code>paramiko.ChannelException</code> subclasses <code>SSHException</code>, not <code>OSError</code>.</p>
+<p><strong>Consumer impact.</strong> The most realistic trigger is <strong><code>socket.timeout</code></strong>:
+<code>_connect</code> sets <code>channel_timeout=self._timeout</code> (default 10 s), so a single slow or
+half-open operation raises <code>socket.timeout</code> → generic <code>RemoteStoreError</code> → wedge, and
+the long-lived <code>SFTPBackend</code> becomes <strong>permanently unusable even after the server
+recovers</strong>, until the process restarts. Long-lived connections are exactly this
+backend's use case. Two secondary problems ride along: (a) <code>socket.timeout</code> and
+<code>SFTPError</code> are availability failures but map to a bare <code>RemoteStoreError</code>, so a
+caller backing off on <code>BackendUnavailable</code> never catches them; (b) the
+<code>_is_connection_dead</code> docstring asserts its enumeration is complete ("paramiko
+surfaces a dead channel as <code>EOFError</code> or … <code>ECONNRESET</code>/<code>EPIPE</code>/<code>ECONNABORTED</code>"),
+which is false for the cases above. The PR summary's own claim — "a <strong>second
+detection tier</strong> keeps SFTP-010 honest … the next call reconnects instead of
+wedging" — does not hold for this signal tail.</p>
+<p><strong>Origin:</strong> BK-313-introduced. Master's <code>stat('.')</code> liveness probe self-healed every
+row of the table on the following operation, at the cost of the round-trip this PR
+correctly removed. The regression is the incompleteness of the compensating tier-2,
+not the removal itself.</p>
+<hr />
+<h2 id="medium">🟠 Medium<a class="headerlink" href="#medium" title="Permanent link">&para;</a></h2>
+<h3 id="m1-streaming-read-leaks-a-raw-eoferror-to-the-consumer-unmapped-and-does-not-invalidate-the-client">M1 — Streaming <code>read()</code> leaks a raw <code>EOFError</code> to the consumer (unmapped) and does not invalidate the client<a class="headerlink" href="#m1-streaming-read-leaks-a-raw-eoferror-to-the-consumer-unmapped-and-does-not-invalidate-the-client" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong> <code>src/remote_store/_stream.py:71-85</code> (<code>_ErrorMappingStream.readinto</code>/<code>read</code>
+catch <strong>only <code>OSError</code></strong>); reached via <code>src/remote_store/backends/_sftp.py:774-775</code>
+(the lazy <code>BufferedReader</code> returned by <code>read()</code>).</p>
+<p><code>read()</code> returns a lazy stream; by the time the caller pulls bytes, the <code>_errors()</code>
+context manager has exited, so <code>_ErrorMappingStream</code> is the sole mapping site. It
+intercepts <code>OSError</code> only. paramiko raises <code>EOFError</code> (not an <code>OSError</code>) on read EOF
+in <code>_read_all</code>/<code>_read_response</code>, so a channel death that surfaces that way escapes
+<strong>raw</strong> to the consumer. <strong>Confirmed by direct injection:</strong> an inner stream raising
+<code>EOFError</code>, wrapped exactly as <code>read()</code> wraps it (<code>_ErrorMappingStream</code> +
+<code>io.BufferedReader</code>), delivers a bare <code>EOFError</code> to <code>buf.read()</code>
+(<code>isinstance(e, RemoteStoreError)</code> is <code>False</code>). Because the raw error never routes
+through <code>_map_exception</code>, it is also an H1 instance for the read path (client not
+cleared → wedge on subsequent ops).</p>
+<p>Nuance worth recording: a <em>clean</em> socket close during a live streamed read surfaces
+as <code>OSError('Socket is closed')</code>, which <strong>is</strong> caught and correctly mapped to
+<code>BackendUnavailable</code> (live-confirmed: mid-stream channel close → <code>BackendUnavailable</code>,
+client cleared). So M1 bites only on the <code>EOFError</code> death mode, but that mode is real
+on paramiko's read path.</p>
+<p><strong>Origin:</strong> the raw-<code>EOFError</code>-on-read contract leak is pre-existing (the wrapper
+never handled <code>EOFError</code>); the <em>wedge</em> consequence is BK-313 (master's probe
+self-healed it regardless of how it was reported). The listing ops
+(<code>list_files</code>/<code>list_folders</code>/<code>iter_children</code>) do <strong>not</strong> share this leak — BK-313
+correctly routed them through <code>_map_exception</code>, and an <code>EOFError</code> raised during lazy
+<code>listdir_attr</code> iteration is caught there (live-confirmed: <code>BackendUnavailable</code> +
+reconnect).</p>
+<h3 id="m2-open_atomic-leaks-a-raw-permissionerror-where-writewrite_atomic-map-to-permissiondenied">M2 — <code>open_atomic</code> leaks a raw <code>PermissionError</code> where <code>write</code>/<code>write_atomic</code> map to <code>PermissionDenied</code><a class="headerlink" href="#m2-open_atomic-leaks-a-raw-permissionerror-where-writewrite_atomic-map-to-permissiondenied" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>src/remote_store/backends/_sftp.py:992-1011</code> (the yield-phase <code>try/except</code>).</p>
+<p>The temp-file open (<code>self._sftp.file(tmp_path, "w")</code>) and the caller's streamed
+writes run <strong>outside</strong> <code>_errors()</code> — deliberately, so a caller's own exception
+propagates unmapped. But the <code>except</code> handler maps <strong>only</strong> connection-death
+(<code>_is_connection_dead(exc)</code>); every other backend failure during the temp-open hits
+the bare <code>raise</code> at <code>:1011</code> and escapes raw, unlike <code>write</code>/<code>write_atomic</code>, whose
+temp-open runs inside <code>_errors()</code>. Unlike <code>_map_exception</code>, this inline handler also
+lacks the <code>paramiko.SSHException → BackendUnavailable</code> fallback.</p>
+<p><strong>Live-confirmed</strong> against a real <code>chmod 0o555</code> directory on the container: <code>write</code>
+→ <code>PermissionDenied</code> ✅, <code>write_atomic</code> → <code>PermissionDenied</code> ✅,
+<strong><code>open_atomic</code> → raw <code>PermissionError</code></strong> ❌. This violates <code>open_atomic</code>'s own
+documented <code>Raises: PermissionDenied</code> clause and the backend contract that all
+backend errors are <code>RemoteStoreError</code> subtypes. The same window leaks any other
+non-connection-dead temp-open failure raw (disk-full <code>ENOSPC</code>, quota <code>EDQUOT</code>, a
+race that removes the parent between setup and open, a <code>paramiko.SSHException</code>).</p>
+<p><strong>Origin:</strong> the temp-open-outside-<code>_errors()</code> shape is pre-existing, but BK-313
+rewrote this exact <code>except</code> handler (adding the tier-2 arm) and left the general
+mapping gap in place; the method's docstring promises <code>PermissionDenied</code>.</p>
+<h3 id="m3-read_bytes-on-a-directory-depends-on-the-server-raising-on-read-a-server-reporting-dir-st_size0-returns-b-wrong-data">M3 — <code>read_bytes</code> on a directory depends on the server <em>raising</em> on read; a server reporting dir <code>st_size==0</code> returns <code>b''</code> (wrong data)<a class="headerlink" href="#m3-read_bytes-on-a-directory-depends-on-the-server-raising-on-read-a-server-reporting-dir-st_size0-returns-b-wrong-data" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>src/remote_store/backends/_sftp.py:794-811</code>.</p>
+<p>BK-313 removed <code>read_bytes</code>'s eager <code>_check_not_dir</code>; the <code>InvalidPath</code>
+classification now runs only inside <code>except OSError</code> (the lazy <code>_raise_if_dir</code> at
+<code>:805</code>). It fires only if <code>_sftp.file(dir,'r')</code> + <code>prefetch()</code> + <code>read()</code> <strong>raises</strong>.
+When a server opens a directory for reading (which OpenSSH does) and reports a
+directory <code>st_size</code> of <code>0</code>, paramiko's prefetch issues no read request and
+<code>read()</code> short-circuits at EOF, <strong>returning <code>b''</code></strong> — so <code>read_bytes</code> would return
+empty bytes for a directory instead of raising <code>InvalidPath</code>. This is a wrong-<em>data</em>
+outcome, not merely a wrong error type.</p>
+<p><strong>On the audited server the risk does not materialise:</strong> OpenSSH reports dir
+<code>st_size == 4096</code>, so the read raises <code>Failure</code> (errno <code>None</code>) and the lazy path
+correctly produces <code>InvalidPath</code> (live-confirmed). The exposure is to a
+non-OpenSSH / non-standard server that opens a directory for read and reports size
+<code>0</code>. Not reproducible on the available container.</p>
+<p><strong>Origin:</strong> BK-313-introduced (the eager check that previously covered this on all
+servers was removed). Static-plus-partial-live; the empty-<code>b''</code> branch needs a
+server that reports dir size 0 to confirm end-to-end.</p>
+<hr />
+<h2 id="low-nits">🟡 Low / Nits<a class="headerlink" href="#low-nits" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p><strong>L1 — <code>_raise_if_dir</code> swallows <em>all</em> <code>OSError</code>, so a directory whose
+  classification stat itself fails goes unclassified.</strong>
+  <code>_sftp.py:1640-1645</code> (<code>except OSError: return</code>). If the follow-up stat fails for a
+  reason other than the target being a readable directory — e.g. a
+  permission-restricted server returns <code>EACCES</code> on the stat — <code>InvalidPath</code> is
+  silently not raised and the caller re-raises its original error, degrading to a
+  generic <code>RemoteStoreError</code>. Master's <code>_check_not_dir</code> re-raised non-<code>ENOENT</code> stat
+  errors (<code>if errno != ENOENT: raise</code>), surfacing that as <code>PermissionDenied</code>. Narrow
+  (needs a server whose classification stat errors differently from the op); BK-313
+  widened the swallow. Static-only.</p>
+</li>
+<li>
+<p><strong>L2 — Mode-less servers: a directory target yields <code>AlreadyExists</code>/generic, never
+  <code>InvalidPath</code>.</strong> <code>_sftp.py:855, 918, 983</code>. The guard is <code>st.st_mode is not None and
+  S_ISDIR(...)</code>; when <code>st_mode is None</code> the is-dir branch is skipped and
+  <code>overwrite=False</code> falls through to <code>AlreadyExists</code>. Inconsistent with
+  <code>_ensure_parent_dirs</code> (<code>:1809</code>), which treats mode-less defensively as "not a
+  directory ⇒ <code>InvalidPath</code>". Three different mode-less policies coexist across the
+  file. <strong>Pre-existing</strong> (guard predates BK-313, relocated verbatim). Static-only.</p>
+</li>
+<li>
+<p><strong>L3 — <code>delete</code> under a file-ancestor lacks the <code>_has_file_ancestor</code> recheck that
+  <code>read</code>/<code>read_bytes</code> have.</strong> <code>_sftp.py:1024-1037</code>. On OpenSSH the case is correct
+  (unlink under a file-ancestor → <code>ENOENT</code> → <code>NotFound</code>, live-confirmed). On a server
+  that surfaces it as an errno-less <code>SSH_FX_FAILURE</code>, <code>delete</code> has no <code>code is None
+  and _has_file_ancestor → NotFound</code> recheck (unlike <code>read</code> at <code>:760</code> and <code>read_bytes</code>
+  at <code>:806</code>), so <code>_raise_if_dir</code> swallows the generic failure and it degrades to
+  <code>RemoteStoreError</code> instead of <code>NotFound</code>. <strong>Pre-existing</strong> read-vs-delete
+  inconsistency. Static-only.</p>
+</li>
+<li>
+<p><strong>L4 — Cleanup after a promote-death reconnects.</strong> <code>_sftp.py:943-944</code> (write_atomic),
+  <code>:998-1000</code> (open_atomic). When <code>_promote</code> fails inside the inner <code>_errors()</code>,
+  <code>_map_exception</code> clears <code>_sftp_client</code>; the outer <code>except</code> then calls
+  <code>self._sftp.remove(tmp_path)</code>, which re-enters the <code>_sftp</code> property and triggers a
+  full <code>_connect()</code>. <strong>Confirmed:</strong> 1 reconnect call during the failed op (fast
+  against the up server, 0.17 s). Against a genuinely down server this runs the full
+  tenacity retry/backoff loop (up to <code>max_attempts</code>, exponential backoff to
+  <code>backoff_max</code>) <strong>inside best-effort temp cleanup</strong>, blocking the original error's
+  propagation for many seconds. Efficiency, bounded, suppressed. Surfaced more sharply
+  now that <code>is_active()</code> gates the property.</p>
+</li>
+<li>
+<p><strong>L5 — <code>open_atomic</code> temp file orphaned on <code>GeneratorExit</code>/<code>KeyboardInterrupt</code>.</strong>
+  <code>_sftp.py:998</code>. The cleanup <code>remove(tmp_path)</code> lives under <code>except Exception</code>; both
+  interrupt types are <code>BaseException</code>, so an abandoned/GC'd <code>with open_atomic(...)</code>
+  block leaves the <code>.~tmp.&lt;name&gt;.&lt;hex&gt;</code> file on the server. The atomic contract holds
+  (<code>_promote</code> never runs → target untouched), so this is litter, not corruption.
+  <strong>Pre-existing</strong> shape, restructured by BK-313.</p>
+</li>
+<li>
+<p><strong>L6 — <code>_has_file_ancestor</code> returns <code>False</code> on any opaque stat error while
+  walking.</strong> <code>_sftp.py:1758-1764</code>. If the stat of an ancestor that <em>is</em> a regular file
+  fails non-<code>ENOENT</code> (e.g. <code>EACCES</code> on that file), the helper returns <code>False</code>, so the
+  <code>read</code>/<code>read_bytes</code> file-ancestor recheck does not fire and the errno-less failure
+  degrades to <code>RemoteStoreError</code> instead of <code>NotFound</code>. Documented as deliberately
+  conservative; unusual to be able to stat a directory but not its file child.
+  <strong>Pre-existing</strong> (ID-209). Static-only.</p>
+</li>
+</ul>
+<hr />
+<h2 id="verified-strengths-checked-not-rubber-stamped">Verified strengths (checked, not rubber-stamped)<a class="headerlink" href="#verified-strengths-checked-not-rubber-stamped" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Is-dir classification is correct on real OpenSSH.</strong> 20/20 live cases pass:
+  directory → <code>InvalidPath</code> across <code>read</code>/<code>read_bytes</code>/<code>write</code>/<code>write_atomic</code>/
+  <code>open_atomic</code>/<code>delete</code> (incl. <code>overwrite=True/False</code> and <code>missing_ok=True</code>);
+  file-ancestor → <code>NotFound</code>; missing → <code>NotFound</code>; existing file + <code>overwrite=False</code>
+  → <code>AlreadyExists</code>. The raw probe confirmed the two server facts the design rests on
+  (OpenSSH opens a directory for reading without error; directory <code>st_size == 4096</code>).</li>
+<li><strong><code>_promote</code> / <code>_rename_fallback</code> are correct.</strong> <code>_raise_if_dir</code> runs <em>before</em> the
+  fallback, so a directory target is never fed to the fallback's <code>remove</code> + <code>rename</code>;
+  the fallback respects the overwrite contract (plain <code>rename</code> when <code>overwrite=False</code>,
+  <code>remove</code>-then-<code>rename</code> when <code>True</code>).</li>
+<li><strong>The handled tier-2 path works.</strong> A clean channel close (transport still active)
+  is detected on the next op: <code>EOFError</code>/<code>OSError('Socket is closed')</code> →
+  <code>BackendUnavailable</code>, client cleared, next op reconnects. Live-confirmed for a
+  single-object op, a listing op, and <code>open_atomic</code>'s inline yield-phase arm.</li>
+<li><strong><code>_connect</code> failure leaves clients <code>None</code>.</strong> <code>_close_clients()</code> nulls both up
+  front; new clients are assigned only after <code>_do_connect()</code> succeeds; on failure
+  <code>ssh.close()</code> + re-raise leaves <code>_sftp_client</code> <code>None</code>, so the next access retries.
+  No half-open client.</li>
+<li><strong><code>WriteResult(last_modified=None)</code> change is sound.</strong> <code>size</code> is the byte count
+  taken during upload; the dropped post-write stat bought only <code>last_modified</code>, and
+  WR-001a permits <code>None</code> when the write response omits it.</li>
+<li><strong><code>__del__</code> / <code>_del_cleanup</code> / <code>_close_clients</code> are shutdown-safe</strong> (guarded
+  <code>getattr</code>, no <code>contextlib</code> reliance during teardown, TOFU host-key save before
+  close).</li>
+</ul>
+<hr />
+<h2 id="proposed-backlog-items">Proposed backlog items<a class="headerlink" href="#proposed-backlog-items" title="Permanent link">&para;</a></h2>
+<p>Advisory groupings for the user to accept, split, or decline (per the Audits rule,
+this audit proposes; nothing is filed without sign-off).</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Findings</th>
+<th>Scope / files</th>
+<th>Suggested disposition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>G1 — Tier-2 staleness completeness (the regression)</strong></td>
+<td><strong>H1</strong> (+ the <code>socket.timeout</code>/<code>SFTPError</code> mis-classification and the M1 read-stream wedge)</td>
+<td><code>_is_connection_dead</code> (<code>:1826</code>), <code>_map_exception</code> <code>SSHException</code>/generic tails (<code>:1932-1934</code>), the <code>open_atomic</code> inline handler (<code>:992-1011</code>), <code>_stream.py</code> (<code>:71-85</code>); SFTP-010</td>
+<td>Make client-invalidation follow the <strong>conclusion</strong> (unusable connection ⇒ clear <code>_sftp_client</code>) rather than one predicate: clear in the <code>SSHException</code> branch and the generic tail when the error is an availability failure; widen <code>_is_connection_dead</code> to <code>SFTPError</code> and socket-teardown/timeout errnos (map those to <code>BackendUnavailable</code>, not generic); give the <code>open_atomic</code> handler the <code>SSHException</code> fallback; have <code>_ErrorMappingStream</code> catch <code>EOFError</code>. Restores master's universal self-heal without the per-op <code>stat('.')</code>. Add channel-death tests that inject <strong>non-<code>EOFError</code></strong> signals (the existing tests use clean closes and miss the whole tail). Correct the <code>_is_connection_dead</code> docstring's completeness claim.</td>
+</tr>
+<tr>
+<td><strong>G2 — <code>open_atomic</code> error-mapping parity</strong></td>
+<td><strong>M2</strong></td>
+<td><code>open_atomic</code> yield phase (<code>:992-1011</code>)</td>
+<td>Map non-connection-dead backend failures from the temp-open to <code>RemoteStoreError</code> subtypes (as <code>write</code>/<code>write_atomic</code> do) while still letting the caller's own in-block exceptions propagate unmapped. Add a read-only-directory test asserting <code>PermissionDenied</code> (folds into G1 if the handler is reworked there).</td>
+</tr>
+<tr>
+<td><strong>G3 — <code>read_bytes</code> directory rejection portability</strong></td>
+<td><strong>M3</strong></td>
+<td><code>read_bytes</code> (<code>:794-811</code>)</td>
+<td>Decide: restore an eager directory check for <code>read_bytes</code> (as <code>read</code> keeps), or document that lazy rejection assumes the server reports a non-zero directory <code>st_size</code> / raises on directory read. Low real-world hit on OpenSSH; the decision is whether to guarantee it cross-server.</td>
+</tr>
+<tr>
+<td><strong>G4 — Low-severity correctness edges (mostly pre-existing)</strong></td>
+<td><strong>L1, L2, L3, L4, L5, L6</strong></td>
+<td>as cited per finding</td>
+<td>Independent, splittable: fold the mode-less policy into one helper (L2); add the <code>delete</code> file-ancestor recheck for parity with <code>read</code> (L3); bound or skip the reconnect during best-effort cleanup (L4); consider <code>BaseException</code>-aware temp cleanup (L5); reconsider <code>_raise_if_dir</code>'s swallow-all vs re-raising non-classifying stat errors (L1, L6).</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Priority ordering:</strong> G1 (High availability regression, and the natural place to
+also close M1/M2's shared root) → G2 → G3 → G4.</p>
+<p><strong>Note on this PR.</strong> H1, M1, M2, and M3 are BK-313-introduced (H1/M3 directly; M1/M2
+are pre-existing leaks whose <em>wedge</em> consequence or <em>touched-handler</em> ownership this
+PR takes on). A companion handover records which of these PR #910 should address
+before merge versus defer to a follow-up.</p>
 
 
 
@@ -10636,7 +10919,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../014-pyarrow-filesystem-adapter/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 014: PyArrow FileSystem Adapter Specification">
+          <a href="../audit-019-azure-backend-review/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 019: Azure backend (ID-219) expectation-driven review">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -10646,20 +10929,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                014: PyArrow FileSystem Adapter Specification
+                019: Azure backend (ID-219) expectation-driven review
               </div>
             </div>
           </a>
         
         
           
-          <a href="../016-ext-batch/" class="md-footer__link md-footer__link--next" aria-label="Next: 016: ext.batch - Batch Operations Specification">
+          <a href="../../rfcs/" class="md-footer__link md-footer__link--next" aria-label="Next: RFCs">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                016: ext.batch - Batch Operations Specification
+                RFCs
               </div>
             </div>
             <div class="md-footer__button md-icon">

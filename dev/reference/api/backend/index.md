@@ -204,8 +204,11 @@ Parameters:
 Returns:
 
 - `WriteResult` – A WriteResult with at least path and size populated.
-- `WriteResult` – Backends declaring WRITE_RESULT_NATIVE also populate etag,
-- `WriteResult` – last_modified, and where available digest and version_id.
+- `WriteResult` – Backends declaring WRITE_RESULT_NATIVE also fill etag,
+- `WriteResult` – version_id, last_modified, and digest — but only the
+- `WriteResult` – ones the write response carries, which varies by backend (SFTP's
+- `WriteResult` – response has no metadata, so it leaves every rich field None;
+- `WriteResult` – call get_file_info() for them).
 
 Raises:
 

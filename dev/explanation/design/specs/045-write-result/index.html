@@ -6801,6 +6801,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10807,8 +10835,18 @@ consistent fields. Verified in <code>MemoryBackend.dfy</code>. Python backstop i
 <code>test_large_streamed_write_result_matches_file_info</code>), mirrored for the
 async backends in
 <code>tests/backends/conformance/test_async_extended.py::TestAsyncWriteResultConformance</code>.
+A backend whose write response omits a rich field returns <code>None</code> for it (the
+field schema above) and does not thereby contradict the stored <code>FileInfo</code>: the
+consistency obligation binds the fields the write path populates. <code>SFTPBackend</code>
+is the one such backend today — <code>last_modified</code> is <code>None</code> on both its write
+paths (SFTP-003, BK-313) — recorded as a <code>strict=True</code>
+<code>_LAST_MODIFIED_XFAIL</code> entry against <code>test_native_populates_last_modified</code>, so
+the obligation still fails loud for every other declaring backend and a
+reintroduced SFTP stat fails loud too. The Dafny model is unaffected: only
+<code>MemoryBackend</code>, which populates every field, is verified.
 <code>test_write_result_rich_fields_match_file_info</code> cross-checks <code>size</code> (alongside
-<code>etag</code>/<code>digest</code>/<code>last_modified</code>) against <code>get_file_info()</code>, and
+<code>etag</code>/<code>digest</code>/<code>last_modified</code>, the latter only where both sides are
+populated) against <code>get_file_info()</code>, and
 <code>test_large_streamed_write_result_matches_file_info</code> extends that consistency
 check to the multipart / block-staged / upload-session write paths on backends
 declaring a distinct large-write path (gated by the <code>large_write_distinct</code>
@@ -10837,7 +10875,8 @@ on every backend.</p>
   derives <code>size</code> from <code>stat().st_size</code> — the same single <code>stat()</code> call that
   populates <code>last_modified</code>, so size and mtime share one I/O round trip.</li>
 <li>For non-seekable <code>BinaryIO</code> input on <code>SFTPBackend</code>: bytes are counted during
-  upload; a subsequent <code>sftp.stat()</code> populates <code>last_modified</code> only.</li>
+  upload, and no <code>sftp.stat()</code> follows — so <code>size</code> costs no round trip and
+  <code>last_modified</code> is <code>None</code> on both SFTP write paths (BK-313; see SFTP-003).</li>
 <li>For other <code>WRITE_RESULT_NATIVE</code> backends (Azure, S3, S3-PyArrow, Memory,
   SQLBlob): <code>size</code> is available from the write response or from in-process
   data — no extra I/O round trip for size.</li>
@@ -10848,11 +10887,13 @@ successful <code>Store.write*()</code> returns <code>WriteResult.source == "nati
 does not declare the capability, <code>source == "basic"</code>.</p>
 <p><strong>Formal coverage:</strong> encoded in <code>BackendContract.dfy</code> as a <code>Write</code>
 postcondition: <code>r.Ok? ⇒ r.value.source == (if CapWriteResultNative in
-capabilities then NativeSource else BasicSource)</code>. A backend that
-declares the capability but fails to populate <code>source = Native</code> — or
-fails to populate the rich fields that the spec promises alongside it —
-does not satisfy the refinement. Verified in <code>MemoryBackend.dfy</code>. Python
-backstop in
+capabilities then NativeSource else BasicSource)</code>. A backend that declares the
+capability but fails to populate <code>source = Native</code> does not satisfy the
+refinement. Rich-field population is governed separately by WR-001a, which binds
+only the fields a backend's write path actually populates — so a native backend
+that leaves a field <code>None</code> when its write response omits it (as <code>SFTPBackend</code>
+does for every rich field) is conformant, not a violation. Verified in
+<code>MemoryBackend.dfy</code>. Python backstop in
 <code>tests/backends/conformance/test_atomic.py::TestWriteResultConformance::test_source_matches_write_result_native</code>.
 See ID-151.</p>
 <h2 id="wr-005-basic-source-guarantees">WR-005: Basic Source Guarantees<a class="headerlink" href="#wr-005-basic-source-guarantees" title="Permanent link">&para;</a></h2>

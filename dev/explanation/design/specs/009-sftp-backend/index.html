@@ -6801,6 +6801,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11185,11 +11213,27 @@ construction (see SFTP-004).</p>
 <p><strong>Invariant:</strong> <code>SFTPBackend</code> declares capabilities:
 <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>WRITE_RESULT_NATIVE</code>. Does not declare <code>GLOB</code> (no native pattern matching; use <code>list_files(pattern=…)</code> or <code>ext.glob</code> for client-side fallback).
 <strong>Rationale:</strong>
-- <code>WRITE_RESULT_NATIVE</code>: <code>write()</code> and <code>write_atomic()</code> perform a <code>sftp.stat()</code> round-trip after upload/rename to populate <code>last_modified</code>.
+- <code>WRITE_RESULT_NATIVE</code>: <code>write()</code> and <code>write_atomic()</code> populate <code>size</code> (counted
+  during upload) and <code>source</code> from the write path itself. Every rich field
+  (<code>etag</code> / <code>version_id</code> / <code>last_modified</code> / <code>digest</code>) is <code>None</code> — SFTP's write
+  response carries no metadata at all, and the backend does not stat after
+  upload/rename to fetch any (BK-313: that round-trip was paid on every write).
+  WR-001a permits <code>None</code> for a field the write response omits, so the declaration
+  rests on <code>size</code> / <code>source</code>; callers needing the metadata call <code>get_file_info()</code>.
 - <code>ATOMIC_WRITE</code>: Simulated via temp file + rename (see SFTP-014). Orphan temp
   files are possible on connection failure — documented caveat.
 - <code>MOVE</code>: Implemented via <code>posix_rename</code> with fallback (see SFTP-018).
-- <code>COPY</code>: Implemented via read + write (no server-side copy in SFTP, see SFTP-019).</p>
+- <code>COPY</code>: Implemented via read + write (no server-side copy in SFTP, see SFTP-019).
+- Read-path directory rejection is <strong>lazy</strong> for <code>read_bytes</code> (BK-313: the eager
+  <code>stat</code> was the round-trip removed): a directory target raises <code>InvalidPath</code>
+  only because reading it fails. This assumes the server either refuses to open
+  a directory for reading or reports a non-zero directory <code>st_size</code> — both hold
+  on OpenSSH, where a directory reports <code>st_size == 4096</code>. A non-standard server
+  that opens a directory for reading <em>and</em> reports <code>st_size == 0</code> would make
+  <code>read_bytes</code> return empty bytes rather than raising <code>InvalidPath</code>. <code>read</code>
+  (streaming) keeps an <strong>eager</strong> check instead, because a streaming read never
+  issues the in-band I/O that would surface the directory. Accepted as a
+  documented server assumption (audit-020 M3).</p>
 <h3 id="sftp-004-lazy-connection">SFTP-004: Lazy Connection<a class="headerlink" href="#sftp-004-lazy-connection" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. The SSH/SFTP connection is
 established lazily on first operation.
@@ -11239,10 +11283,38 @@ See also: spec <code>025-retry-policy.md</code> (RET-010).
 <strong>Retried exceptions:</strong> <code>paramiko.SSHException</code>, <code>OSError</code>, <code>EOFError</code>.
 <strong>Postconditions:</strong> After all retries are exhausted, the original exception is reraised.</p>
 <h3 id="sftp-010-staleness-detection-and-reconnect">SFTP-010: Staleness Detection and Reconnect<a class="headerlink" href="#sftp-010-staleness-detection-and-reconnect" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The lazy <code>_sftp</code> property checks connection liveness by calling
-<code>stat('.')</code>. If the connection is stale (e.g. server dropped it), the backend
-reconnects transparently.
-<strong>Postconditions:</strong> Callers do not need to handle connection drops explicitly.</p>
+<p><strong>Invariant:</strong> Staleness is detected in two tiers, neither of which spends a
+per-operation round-trip. <strong>(1)</strong> The lazy <code>_sftp</code> property reads the SSH
+transport's <code>is_active()</code> flag — a local check, no bytes on the wire; a
+transport that has gone inactive is reconnected before the operation runs.
+<strong>(2)</strong> A drop that leaves the transport flag <code>True</code> but the SFTP channel dead
+(idle-channel timeout, subsystem restart, half-open partition) is invisible to
+tier 1; it is caught on the operation itself and mapped to <code>BackendUnavailable</code>,
+which invalidates the cached client so the <em>next</em> <code>_sftp</code> access reconnects. The
+trigger is the <em>conclusion</em> that the connection is unusable, not any single
+signal: <strong>every</strong> mapping that concludes <code>BackendUnavailable</code> clears the client,
+across the full dead-connection signal set (<code>EOFError</code>, <code>OSError('Socket is
+closed')</code>, the socket-teardown errnos, <code>socket.timeout</code>, and the paramiko
+<code>SFTPError</code> / <code>SSHException</code> / <code>ChannelException</code> families — see SFTP-023).
+Anchoring recovery to that conclusion rather than an enumerated list is what
+keeps a signal the list forgot (e.g. a <code>socket.timeout</code> from the channel
+timeout) from wedging the long-lived backend. Operations outside the default
+<code>_errors()</code> scope must still route through this mapping for the guarantee to
+hold: the listing operations route their failure through <code>_map_exception</code>, and
+<code>open_atomic</code>'s streamed-write phase — which yields the handle outside
+<code>_errors()</code> — routes its backend failures (a dead channel or any paramiko SSH /
+protocol error surfaced during the caller's writes) through <code>_map_exception</code>
+too, while its temp-file open and promote steps run inside <code>_errors()</code>.
+<strong>Rationale:</strong> The property is accessed several times per operation, so the
+former <code>stat('.')</code> liveness probe multiplied each operation's RTT count — but it
+doubled as a universal self-heal, reconnecting a dead client of <em>any</em> kind on
+the next op. The transport flag costs nothing on the wire; tier 2 restores that
+self-heal for a channel-only death by clearing the client on every
+<code>BackendUnavailable</code>, without adding a probe to the happy path.
+<strong>Postconditions:</strong> A healthy connection is reused with no per-operation probe
+round-trip. A dropped connection surfaces as <code>BackendUnavailable</code> and the
+following call re-establishes it — recovery may take one failed call when the
+drop is channel-only (tier 2).</p>
 <hr />
 <h2 id="filesystem-model">Filesystem Model<a class="headerlink" href="#filesystem-model" title="Permanent link">&para;</a></h2>
 <h3 id="sftp-011-real-directories">SFTP-011: Real Directories<a class="headerlink" href="#sftp-011-real-directories" title="Permanent link">&para;</a></h3>
@@ -11302,10 +11374,32 @@ mapped to <code>NotFound</code>.
 <p><strong>Invariant:</strong> <code>IOError</code> with <code>errno.EEXIST</code> (errno 17) is mapped to <code>AlreadyExists</code>.</p>
 <h3 id="sftp-023-backendunavailable-mapping">SFTP-023: BackendUnavailable Mapping<a class="headerlink" href="#sftp-023-backendunavailable-mapping" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>paramiko.SSHException</code> and its subclasses (authentication failures,
-channel errors, etc.) are mapped to <code>BackendUnavailable</code>.</p>
+<code>ChannelException</code>, etc.) are mapped to <code>BackendUnavailable</code>. So are the dropped-
+connection signals that are <em>not</em> <code>SSHException</code> subclasses: <code>EOFError</code>,
+<code>OSError('Socket is closed')</code> (no <code>errno</code>), <code>OSError</code> with <code>errno</code> in
+<code>ECONNRESET</code> / <code>EPIPE</code> / <code>ECONNABORTED</code> / <code>ETIMEDOUT</code> / <code>ESHUTDOWN</code> / <code>ENOTCONN</code> /
+<code>EBADF</code>, <code>socket.timeout</code> / <code>TimeoutError</code> (matched by type, since a half-open
+instance often carries no matching <code>errno</code>), and <code>paramiko.SFTPError</code> (an
+SFTP-protocol failure that subclasses neither <code>OSError</code> nor <code>SSHException</code>).
+<strong>Every</strong> <code>BackendUnavailable</code> this mapping returns — the <code>SSHException</code> family
+included — invalidates the cached SFTP client so the next operation reconnects
+(see SFTP-010, tier 2). The list is not the guarantee: recovery is anchored to
+the <code>BackendUnavailable</code> <em>conclusion</em>, so a dead-connection signal the list has
+not enumerated still clears the client rather than wedging the backend. One
+exception keeps its own branch first: <code>IncompatiblePeer</code> (a connect-time
+<code>SSHException</code>) is mapped with a diagnostic hint before the generic <code>SSHException</code>
+mapping, so the hint is not lost.</p>
 <h3 id="sftp-024-no-native-exception-leakage">SFTP-024: No Native Exception Leakage<a class="headerlink" href="#sftp-024-no-native-exception-leakage" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No paramiko, socket, or OS exceptions propagate to callers. All are
-mapped to <code>remote_store</code> error types per BE-021.
+<p><strong>Invariant:</strong> No paramiko, socket, or OS exception raised <em>by the backend</em> — an
+operation's own I/O, including <code>open_atomic</code>'s temp-file open, the caller-facing
+handle's flush/close, and the promote — propagates to callers; all are mapped to
+<code>remote_store</code> error types per BE-021. The only non-mapped exceptions are those
+the <strong>caller</strong> raises inside an <code>open_atomic</code> yield block (their <code>with</code> body)
+that are not themselves dead-connection signals: those are not the backend's and
+propagate unchanged, leaving the target untouched. <code>open_atomic</code> distinguishes
+by scope — the temp open, flush, and promote run inside <code>_errors()</code>, while the
+yielded write does not; a dead-connection signal surfacing from that write is
+still mapped to <code>BackendUnavailable</code> (it is indistinguishable from a real drop).
 <strong>Postconditions:</strong> <code>backend</code> attribute is set to <code>"sftp"</code> on all mapped errors.</p>
 <hr />
 <h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>

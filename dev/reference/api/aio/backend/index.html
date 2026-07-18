@@ -7334,6 +7334,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../explanation/design/audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11639,9 +11667,13 @@ this capability. Most backends declare it.
 </div>
 <div class="admonition info">
 <p class="admonition-title">Quality flag: <code>Capability.WRITE_RESULT_NATIVE</code></p>
-<p>When declared, the returned <code>WriteResult</code> fields (<code>etag</code>, <code>version_id</code>,
-<code>last_modified</code>, <code>digest</code>) are populated from the backend's write response.
-Without it, only locally computable fields are set.</p>
+<p>When declared, the returned <code>WriteResult</code> rich fields (<code>etag</code>, <code>version_id</code>,
+<code>last_modified</code>, <code>digest</code>) are populated from the backend's write response —
+each only when that response carries it, so a native backend may leave some,
+or even all, of them <code>None</code>. SFTP, for instance, declares the flag but its
+write response carries no metadata, so it returns every rich field <code>None</code>
+(call <code>get_file_info()</code> for the metadata). Without the flag, only locally
+computable fields are set.</p>
 </div>
 
 

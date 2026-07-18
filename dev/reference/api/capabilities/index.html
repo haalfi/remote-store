@@ -6909,6 +6909,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../explanation/design/audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10470,18 +10498,24 @@ Use <code>Store.supports()</code> to query at runtime.</p>
   in-memory backends, SQL blob stores) do <strong>not</strong> declare this flag.
   Callers can use <code>store.supports(Capability.LAZY_READ)</code> to know
   whether partial reads avoid loading the entire file.</li>
-<li><code>WRITE_RESULT_NATIVE</code> -- Quality flag: the backend populates the
-  rich fields of the returned <code>WriteResult</code> (<code>etag</code>,
-  <code>last_modified</code>, <code>version_id</code>, and where applicable
-  <code>digest</code>) directly from its write response.  Does <strong>not</strong> gate
+<li><code>WRITE_RESULT_NATIVE</code> -- Quality flag: the backend fills each rich
+  field of the returned <code>WriteResult</code> (<code>etag</code>, <code>version_id</code>,
+  <code>last_modified</code>, <code>digest</code>) directly from its write response, but
+  only when that response carries the field — which fields are filled
+  depends on the backend.  Some native backends fill none: SFTP's write
+  response has no metadata at all, so it returns only <code>path</code> / <code>size</code>
+  / <code>source</code> and leaves every rich field <code>None</code> (call
+  <code>get_file_info()</code> for the metadata).  Does <strong>not</strong> gate
   any method — <code>Store.write*()</code> works on every backend.
   Backends without this flag return a <code>WriteResult</code> with only
   <code>path</code> and <code>size</code> populated (<code>source == "basic"</code>);
   <code>metadata</code> is governed independently by the <code>USER_METADATA</code>
   capability and is not subject to this flag.
-  Use <code>store.supports(Capability.WRITE_RESULT_NATIVE)</code> to decide
-  whether to call <code>store.get_file_info()</code> after a write if you
-  need the full metadata set.</li>
+  <code>store.supports(Capability.WRITE_RESULT_NATIVE)</code> tells you whether the
+  rich fields <em>may</em> be populated, not that any given one is: a native
+  backend can still leave an individual field <code>None</code> (SFTP leaves all of
+  them). Check the specific field you need, or call
+  <code>store.get_file_info()</code> when you must have it.</li>
 </ul>
 
 

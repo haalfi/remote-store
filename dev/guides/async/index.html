@@ -7006,6 +7006,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10603,8 +10631,10 @@ into memory in a single call:</p>
 </code></pre></div>
 <h2 id="write-results-and-metadata">Write results and metadata<a class="headerlink" href="#write-results-and-metadata" title="Permanent link">&para;</a></h2>
 <p><code>write()</code> and <code>write_atomic()</code> return a <a href="../../reference/api/models/"><code>WriteResult</code></a> carrying at minimum
-the written path and size. Backends that declare <code>WRITE_RESULT_NATIVE</code> also populate
-<code>digest</code>, <code>etag</code>, and <code>last_modified</code> from the upload response. Both methods accept an optional
+the written path and size. Backends that declare <code>WRITE_RESULT_NATIVE</code> fill the rich fields
+(<code>digest</code>, <code>etag</code>, <code>last_modified</code>) from the upload response — but only the fields that response
+carries, so a native backend can still leave one <code>None</code> (SFTP has no write-time metadata and leaves
+all of them <code>None</code>; call <code>get_file_info()</code> for a field you need). Both methods accept an optional
 <code>metadata=</code> keyword argument (a <code>Mapping[str, str]</code>) for backends that declare
 <code>USER_METADATA</code>; others raise <code>CapabilityNotSupported</code> if non-empty metadata is passed.</p>
 <h2 id="writing-with-async-iterators">Writing with async iterators<a class="headerlink" href="#writing-with-async-iterators" title="Permanent link">&para;</a></h2>

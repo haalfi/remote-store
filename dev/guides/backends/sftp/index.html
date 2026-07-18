@@ -7251,6 +7251,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../explanation/design/audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11834,8 +11862,12 @@ or fails.</p>
 
         <p>Open <em>path</em> for reading and return a buffered, streaming handle.</p>
 <p>Reads lazily over the SFTP channel (wrapped in a <code>BufferedReader</code>), so
-memory stays constant regardless of file size; one extra <code>stat</code>
-round-trip guards against <em>path</em> being a directory before the open.</p>
+memory stays constant regardless of file size. Because the read is
+deferred, <em>path</em> being a directory must be rejected before the handle is
+returned — a real OpenSSH server opens a directory for reading without
+error and only fails on the first read, which this streaming path never
+issues itself. So this one read path keeps an eager type check, unlike
+<code>read_bytes</code> (which reads immediately and classifies on failure).</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11893,6 +11925,13 @@ or fails mid-read.</p>
         <p>Read and return the full file content as bytes.</p>
 <p>Prefetches and materialises the whole file in memory (unlike the lazy
 <code>read</code> stream).</p>
+<p>Directory rejection is lazy (unlike <code>read</code>, which stats eagerly): a
+directory target raises <code>InvalidPath</code> only because the read of it
+fails. This assumes the server either refuses to open a directory for
+reading or reports a non-zero directory <code>st_size</code> — both hold on
+OpenSSH, where a directory reports <code>st_size == 4096</code>. A non-standard
+server that opens a directory for reading <em>and</em> reports <code>st_size == 0</code>
+would make this return empty bytes rather than raising <code>InvalidPath</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11909,7 +11948,8 @@ file.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../../reference/api/errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> names a directory.</p>
+            <p>If <em>path</em> names a directory (subject to the server
+assumption above).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -11964,6 +12004,11 @@ temp-and-rename), so a dropped connection mid-write can leave a partial
 or truncated file there — use <code>write_atomic</code> when readers must never
 see a half-written file. Missing parent directories are created first
 (one <code>stat</code> per ancestor).</p>
+<p>The returned <code>WriteResult</code> carries <code>size</code> (counted during upload)
+and <code>source="native"</code>, but every rich field — <code>last_modified</code>,
+<code>etag</code>, <code>version_id</code>, <code>digest</code> — is <code>None</code>: SFTP's write response
+carries no metadata at all, and the backend does not stat afterwards to
+fetch any. Call <code>get_file_info</code> when the metadata is needed.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12035,6 +12080,9 @@ temp file in the destination directory, then promoted with
 <code>posix_rename</code> (atomic on POSIX-compliant servers). Servers without
 <code>posix_rename</code> fall back to a plain <code>rename</code> (non-atomic overwrite:
 the target is removed first), and the temp file is cleaned up on failure.</p>
+<p>As in <code>write</code>, the returned <code>WriteResult</code> carries <code>size</code> and
+<code>source="native"</code> but leaves every rich field (<code>last_modified</code> /
+<code>etag</code> / <code>version_id</code> / <code>digest</code>) <code>None</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>

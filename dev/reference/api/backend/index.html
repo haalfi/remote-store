@@ -7354,6 +7354,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../explanation/design/audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11870,7 +11898,7 @@ file. Only honoured when the backend declares <code>USER_METADATA</code>.</p>
    (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
           –
           <div class="doc-md-description">
-            <p>Backends declaring <code>WRITE_RESULT_NATIVE</code> also populate <code>etag</code>,</p>
+            <p>Backends declaring <code>WRITE_RESULT_NATIVE</code> also fill <code>etag</code>,</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -11882,7 +11910,43 @@ file. Only honoured when the backend declares <code>USER_METADATA</code>.</p>
    (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
           –
           <div class="doc-md-description">
-            <p><code>last_modified</code>, and where available <code>digest</code> and <code>version_id</code>.</p>
+            <p><code>version_id</code>, <code>last_modified</code>, and <code>digest</code> — but only the</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
+          –
+          <div class="doc-md-description">
+            <p>ones the write response carries, which varies by backend (SFTP's</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
+          –
+          <div class="doc-md-description">
+            <p>response has no metadata, so it leaves every rich field <code>None</code>;</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
+          –
+          <div class="doc-md-description">
+            <p>call <code>get_file_info()</code> for them).</p>
           </div>
         </li>
     </ul>

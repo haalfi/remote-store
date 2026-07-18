@@ -6801,6 +6801,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11175,7 +11203,7 @@
 <li><code>ATOMIC_MOVE</code> — <code>move()</code> is guaranteed atomic under concurrent access (i.e. any reader observes either the pre-move or the post-move state, never a partial state). Backends that implement move as copy-then-delete do <strong>not</strong> declare this flag. Callers <strong>must not</strong> assume atomicity; they <strong>should</strong> check <code>Store.supports(Capability.ATOMIC_MOVE)</code> before relying on atomic rename semantics.</li>
 <li><code>SEEKABLE_READ</code> — <code>read()</code> always returns a natively seekable stream (<code>stream.seekable()</code> is <code>True</code>) with zero overhead. Backends that omit this flag still support <code>Store.read_seekable()</code> via an optimized override or spool fallback, but <code>read()</code> itself may return a non-seekable stream. The flag describes a property of <code>read()</code> rather than gating any additional method.</li>
 <li><code>LAZY_READ</code> — <code>read()</code> fetches data lazily on demand from the native source rather than loading the entire file into memory before returning. Backends that pre-load all file contents before returning a stream (e.g. in-memory backends, SQL blob stores) do <strong>not</strong> declare this flag. Callers can use <code>Store.supports(Capability.LAZY_READ)</code> to know whether partial reads avoid loading the entire file. This flag describes a property of <code>read()</code> rather than gating any additional method.</li>
-<li><code>WRITE_RESULT_NATIVE</code> — <code>write*()</code> returns a <code>WriteResult</code> with <code>source == "native"</code> and all rich fields (<code>etag</code>, <code>version_id</code>, <code>last_modified</code>, etc.) populated from the backend's write response. Backends that omit this flag still return a <code>WriteResult</code>, but with <code>source == "basic"</code> (only <code>path</code> and <code>size</code> guaranteed). Does <strong>not</strong> gate any method. See <a href="../045-write-result/">045-write-result.md</a> (WR-004, WR-009).</li>
+<li><code>WRITE_RESULT_NATIVE</code> — <code>write*()</code> returns a <code>WriteResult</code> with <code>source == "native"</code> and each rich field (<code>etag</code>, <code>version_id</code>, <code>last_modified</code>, <code>digest</code>) populated from the backend's write response <em>when that response carries it</em> — which fields are filled depends on the backend, and a native backend whose write response carries no metadata (SFTP) populates none, leaving only <code>path</code>/<code>size</code>/<code>source</code>. Backends that omit this flag still return a <code>WriteResult</code>, but with <code>source == "basic"</code> (only <code>path</code> and <code>size</code> guaranteed). Does <strong>not</strong> gate any method. See <a href="../045-write-result/">045-write-result.md</a> (WR-004, WR-009).</li>
 </ul>
 <p><strong>Strict-gate capabilities</strong> (raise <code>CapabilityNotSupported</code> before I/O when the backend lacks the capability and the caller passes the guarded kwarg):</p>
 <ul>

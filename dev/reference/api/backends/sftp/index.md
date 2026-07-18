@@ -128,7 +128,7 @@ read(path: str) -> BinaryIO
 
 Open *path* for reading and return a buffered, streaming handle.
 
-Reads lazily over the SFTP channel (wrapped in a `BufferedReader`), so memory stays constant regardless of file size; one extra `stat` round-trip guards against *path* being a directory before the open.
+Reads lazily over the SFTP channel (wrapped in a `BufferedReader`), so memory stays constant regardless of file size. Because the read is deferred, *path* being a directory must be rejected before the handle is returned — a real OpenSSH server opens a directory for reading without error and only fails on the first read, which this streaming path never issues itself. So this one read path keeps an eager type check, unlike `read_bytes` (which reads immediately and classifies on failure).
 
 Raises:
 
@@ -147,10 +147,12 @@ Read and return the full file content as bytes.
 
 Prefetches and materialises the whole file in memory (unlike the lazy `read` stream).
 
+Directory rejection is lazy (unlike `read`, which stats eagerly): a directory target raises `InvalidPath` only because the read of it fails. This assumes the server either refuses to open a directory for reading or reports a non-zero directory `st_size` — both hold on OpenSSH, where a directory reports `st_size == 4096`. A non-standard server that opens a directory for reading *and* reports `st_size == 0` would make this return empty bytes rather than raising `InvalidPath`.
+
 Raises:
 
 - `NotFound` – If the file does not exist, or a path component is itself a file.
-- `InvalidPath` – If path names a directory.
+- `InvalidPath` – If path names a directory (subject to the server assumption above).
 - `PermissionDenied` – If the server denies access (EACCES).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-read.
 
@@ -169,6 +171,8 @@ write(
 Write *content* to *path*, streaming it over the SFTP channel.
 
 The bytes are streamed straight to the destination file (no temp-and-rename), so a dropped connection mid-write can leave a partial or truncated file there — use `write_atomic` when readers must never see a half-written file. Missing parent directories are created first (one `stat` per ancestor).
+
+The returned `WriteResult` carries `size` (counted during upload) and `source="native"`, but every rich field — `last_modified`, `etag`, `version_id`, `digest` — is `None`: SFTP's write response carries no metadata at all, and the backend does not stat afterwards to fetch any. Call `get_file_info` when the metadata is needed.
 
 Raises:
 
@@ -192,6 +196,8 @@ write_atomic(
 Write *content* to *path* atomically via a temp file plus server rename.
 
 Readers never observe a partial file: the body is streamed to a hidden temp file in the destination directory, then promoted with `posix_rename` (atomic on POSIX-compliant servers). Servers without `posix_rename` fall back to a plain `rename` (non-atomic overwrite: the target is removed first), and the temp file is cleaned up on failure.
+
+As in `write`, the returned `WriteResult` carries `size` and `source="native"` but leaves every rich field (`last_modified` / `etag` / `version_id` / `digest`) `None`.
 
 Raises:
 

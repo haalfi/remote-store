@@ -7064,6 +7064,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../explanation/design/audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11293,7 +11321,13 @@ backend implementation.</p>
           <div class="doc-md-description">
             <p>Provenance of the optional fields.
 <code>"native"</code> — the backend populated them from its write
-response; trust <code>digest</code>, <code>etag</code>, and <code>last_modified</code>.
+response; trust the rich fields the response carries (<code>digest</code>,
+<code>etag</code>, <code>last_modified</code>). A given backend may still leave a
+field <code>None</code> when its response omits it, and one may leave <em>every</em>
+rich field <code>None</code> — SFTP's write response carries no metadata at
+all, so <code>digest</code> / <code>etag</code> / <code>version_id</code> / <code>last_modified</code>
+are all <code>None</code> there; call <code>Store.head()</code> / <code>get_file_info()</code>
+for them.
 <code>"basic"</code> — only <code>path</code> and <code>size</code> are reliable; call
 <code>Store.head()</code> or use <code>ext.write</code> helpers if you need
 more.
@@ -11386,11 +11420,18 @@ when the backend's write response omits it.</p>
 <p>Only <code>path</code> and <code>size</code> are guaranteed to be populated on every write.
 All other fields depend on the <code>source</code> discriminator:</p>
 <ul>
-<li><code>source="native"</code> — rich fields populated; requires <code>Capability.WRITE_RESULT_NATIVE</code>.</li>
+<li><code>source="native"</code> — the backend filled the optional fields from its write
+  response; requires <code>Capability.WRITE_RESULT_NATIVE</code>. Trust the fields the
+  response carries, but a native backend may still leave an individual field
+  <code>None</code> when its response omits it, or even leave every rich field <code>None</code>
+  (e.g. SFTP's write response carries no metadata, so <code>etag</code> / <code>version_id</code> /
+  <code>last_modified</code> / <code>digest</code> are all <code>None</code>); call <code>get_file_info()</code> for a
+  field you need.</li>
 <li><code>source="basic"</code> — only <code>path</code> and <code>size</code> are reliable.</li>
 <li><code>source="sidecar"</code> — fields sourced from a <code>get_file_info()</code> enrichment call.</li>
 </ul>
-<p>Always check <code>source</code> before reading any optional field.</p>
+<p>Always check <code>source</code> before reading any optional field, and check the
+specific field — <code>source="native"</code> does not guarantee every field is set.</p>
 </div>
 
 

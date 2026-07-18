@@ -1,6 +1,6 @@
 # Write Integrity
 
-Every `Store.write*()` call returns a [`WriteResult`](https://docs.remotestore.dev/stable/reference/api/models/#remote_store.WriteResult) carrying whatever metadata the backend produced during the write — ETag, version ID, last-modified timestamp, and (on Azure) a server-echoed content hash. Backends that fully populate these fields declare `Capability.WRITE_RESULT_NATIVE`; others return a minimal `WriteResult` with `path` and `size` only.
+Every `Store.write*()` call returns a [`WriteResult`](https://docs.remotestore.dev/stable/reference/api/models/#remote_store.WriteResult) carrying whatever metadata the backend produced during the write — ETag, version ID, last-modified timestamp, and (on Azure) a server-echoed content hash. Backends that populate these fields from their write response declare `Capability.WRITE_RESULT_NATIVE`, each filling whatever that response carries — some fill all these fields, some none (SFTP's write response carries no metadata at all, so it leaves every rich field `None` — call `get_file_info()` for the metadata); backends without the flag return a minimal `WriteResult` with `path` and `size` only.
 
 When you need a content hash regardless of backend, use the helpers in [`ext.write`](https://docs.remotestore.dev/stable/reference/api/extensions/write/index.md) (sync) or [`aio.ext.write`](https://docs.remotestore.dev/stable/reference/api/aio/extensions/write/index.md) (async). They compute the digest client-side as bytes flow through the stream, so the hash is always available.
 

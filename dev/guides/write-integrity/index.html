@@ -6912,6 +6912,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10382,9 +10410,12 @@
 <p>Every <code>Store.write*()</code> call returns a <a href="../../reference/api/models/#remote_store.WriteResult"><code>WriteResult</code></a>
 carrying whatever metadata the backend produced during the write —
 ETag, version ID, last-modified timestamp, and (on Azure) a server-echoed
-content hash. Backends that fully populate these fields declare
-<code>Capability.WRITE_RESULT_NATIVE</code>; others return a minimal <code>WriteResult</code>
-with <code>path</code> and <code>size</code> only.</p>
+content hash. Backends that populate these fields from their write response
+declare <code>Capability.WRITE_RESULT_NATIVE</code>, each filling whatever that response
+carries — some fill all these fields, some none (SFTP's write response carries
+no metadata at all, so it leaves every rich field <code>None</code> — call
+<code>get_file_info()</code> for the metadata); backends without the flag return
+a minimal <code>WriteResult</code> with <code>path</code> and <code>size</code> only.</p>
 <p>When you need a content hash regardless of backend, use the helpers in
 <a href="../../reference/api/extensions/write/"><code>ext.write</code></a> (sync) or
 <a href="../../reference/api/aio/extensions/write/"><code>aio.ext.write</code></a> (async). They compute the
