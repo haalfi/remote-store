@@ -310,13 +310,24 @@ and the highest ID already in this file, then take the next integer. Run
   Research (advisory): [`research-id-232-detail-placement-durability.md`](research/research-id-232-detail-placement-durability.md)
   supplies the rewrite criterion (a three-condition placement gate: change-rate,
   cost-of-staleness, and local justificatory need, all three required) and tests.
-  Phase A (shipped, this PR): `gen_adr_digest --check` now emits non-gating
+  Phase A (shipped): `gen_adr_digest --check` now emits non-gating
   `ADVICE` notices for Decision sections over a word budget, carrying version
   specifiers, or nesting past H3 — the "keep it enforced, not just visible"
   heuristic is built and advisory-only, never affecting the exit code. Phase B
-  (pending): the rewrites themselves, Graph 0021–0024 first per the research;
-  the trace for that work opens when the rewrites begin. Open (Phase B):
-  rewrite all 30 ADRs or just Graph 0021–0024 first.
+  (this PR): the Graph ADRs 0021–0024 rewritten against the three-condition gate
+  (not the heuristic). Each Decision states its decisions as scannable units
+  (bullets, or a short subsection) with the reasons and reversal triggers inline,
+  and only volatile spec/impl detail behind a pointer. Relocations, each verified
+  in its home before removal: the graph pins to `pyproject.toml`; the token-cache
+  mechanism to the code (`_graph/auth.py`), with GR-007 owning only the contract
+  (cache path, override rules, multi-process safety); poller cadence to GR-026;
+  error mapping and retry to GR-045 / RET-015. The digest shrinking is a byproduct
+  of correct placement, not the goal (three of four fall under the advisory
+  budget; 0022 sits just over it because its reversal triggers and cache
+  rationale are load-bearing — kept, not trimmed to the number). The gate, not
+  the heuristic, is the criterion the next batch inherits.
+  Remaining (next batch, why this stays `[~]`): the other advisory-flagged
+  Decisions (0006, 0007, 0008, 0014, 0025–0028) sweep the same gate.
 
 ---
 

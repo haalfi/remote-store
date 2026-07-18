@@ -48,61 +48,28 @@ condition, so the error type does not exist yet. With Graph, it does.
 
 ## Decision
 
-Add `ResourceLocked` as a new concrete error type in
-`src/remote_store/_errors.py`, alongside the other canonical errors.
-It inherits directly from `RemoteStoreError` per the flat hierarchy
-rule (ERR-008): one level deep, no intermediate categories.
+Add `ResourceLocked` as a new concrete error type. The decisions:
 
-### Semantics
-
-- **Meaning.** The target resource exists and the caller is
-  authorised, but the resource is currently locked by another
-  session or process and the operation cannot proceed right now.
-- **Attributes.** Standard `path` and `backend` per the existing
-  error constructor pattern (ERR-001). No new fields. Earlier
-  drafts reserved an optional `lock_owner: str | None` — dropped
-  on reality check: Graph does not surface the lock holder, no
-  other backend emits this condition today, and adding a field "in
-  case" violates the project's no-speculative-API rule. A future
-  backend that genuinely surfaces the holder widens this class via
-  a covering spec amendment. (Spec 005 has no structured
-  `RemoteStoreError.context` surface today; routing extras through
-  `.context["lock_owner"]` is not available as a fallback and is
-  not part of this decision.)
-- **Retry guidance.** Not safely retried by the default retry policy
-  — RET-015 classifies `ResourceLocked` as terminal. Callers may
-  retry at their own cadence.
-
-### Mapped conditions
-
-- Graph `423 Locked` / `resourceLocked` → `ResourceLocked`.
-
-Future backends that emit equivalent conditions (SharePoint REST
-check-out, SMB lock conflicts, WebDAV `423`) map to the same type
-when added.
-
-### Bundled implementation
-
-`ResourceLocked` is unreachable from any backend other than Graph in
-v1, so the runtime class, the spec 005 entry (ERR-013), the Dafny
-`Error.ResourceLocked(path: string, backend: string)` variant
-(matching the `(path: string, backend: string)` shape every other
-non-`BackendUnavailable` variant uses in
-`sdd/formal/BackendContract.dfy`, so `_raise_if_err` can dispatch it
-through the existing `err.path` / `err.backend` reader), and its
-dispatch in `tests/backends/dafny/_helpers.py::_raise_if_err` ship as
-one coupled bundle, never the variant alone. Spec 005 records ERR-013
-at RFC acceptance.
-
-**Delivery under ID-127.** This ADR was written assuming a single Graph
-backend PR, in which the bundle would land "in the same PR as the Graph
-sub-package (`aio/backends/_graph/`)." ID-127's phased roadmap instead
-lands the bundle one step earlier — in the GR-CONTRACT step, ahead of the
-sub-package, which follows in GR-CORE. The decision is unchanged and its
-intention still honoured: the variant never ships orphaned (its only
-raiser, the Graph `423` mapper, lands in the same ID-127 delivery) and the
-bundle stays coupled. See ID-127 in `sdd/BACKLOG.md` for the
-bundled-sub-task note.
+- **A new type, not a reuse.** None of the existing errors fit HTTP
+  `423`: the caller is authorised (not `PermissionDenied`), it is not a
+  write conflict (not `AlreadyExists`), the backend is reachable (not
+  `BackendUnavailable`), and generic `RemoteStoreError` loses the
+  actionable "locked now, may clear" signal.
+- **Flat under `RemoteStoreError`.** One level deep, no intermediate
+  category (ERR-008).
+- **`path` + `backend` only; no `lock_owner`.** Graph does not surface
+  the lock holder and no other backend emits this today, so a
+  speculative field is dropped (no-speculative-API rule). **Reverse
+  (widen the class)** only when a backend genuinely surfaces the holder,
+  via a covering spec amendment — ERR-013 points back here for exactly
+  this reasoning.
+- **Terminal; caller-driven retry.** Not retried by the default policy
+  (RET-015); callers choose their own cadence.
+- **Reusable across backends.** Future equivalents — SharePoint
+  check-out, SMB lock conflicts, WebDAV `423` — map to the same type;
+  that reuse is why this is a canonical error, not a Graph-local one.
+  Graph's `423 resourceLocked` is the only mapped source today (GR-045
+  owns the mapping).
 
 ## Consequences
 
@@ -118,6 +85,12 @@ bundled-sub-task note.
 - **Future-proofing without speculation.** The error exists for any
   future backend that genuinely needs it; the class stays minimal
   until a real second consumer arrives.
+- **Ships as a coupled bundle.** The runtime class, the spec 005
+  ERR-013 entry, the Dafny `Error.ResourceLocked(path, backend)`
+  variant, and its `_raise_if_err` test dispatch land together, never
+  the variant alone. Delivered under ID-127 (GR-CONTRACT step) — see
+  `sdd/BACKLOG.md`; the detailed coupling mechanics live in spec 005,
+  `sdd/formal/BackendContract.dfy`, and BACKLOG ID-127.
 - **No supersession.** This ADR does not supersede or deprecate any
   prior ADR.
 

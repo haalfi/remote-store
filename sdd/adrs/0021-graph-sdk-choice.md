@@ -50,28 +50,22 @@ supported auth library, lightweight, stable, and used by
 
 ## Decision
 
-Build the backend on `httpx` (async client) plus `msal` for token
-acquisition and cache serialization.
-
-The `graph` optional extra pins:
-
-- `httpx` — async HTTP transport.
-- `msal` — token acquisition (used by the built-in `GraphAuth` helper).
-- `msal-extensions` (`>=1.3`) — multi-process-safe token-cache
-  persistence (`PersistedTokenCache` + cross-process file lock, BK-291);
-  the `>=1.3` floor keeps `portalocker` an optional extra rather than a
-  hard transitive dependency. Consumed only by `GraphAuth`, lazily.
-- `platformdirs` — resolves the MSAL token-cache path under
-  `user_config_dir("remote-store")`; consumed only by `GraphAuth` and
-  imported lazily so callers supplying their own token-provider
-  callable never load it (see ADR-0022).
-
-The backend constructs an `httpx.AsyncClient` internally and treats
-Graph as a narrow REST surface with hand-written request helpers,
-pagination, and error mapping.
-
-`msgraph-sdk` is explicitly rejected. `Office365-REST-Python-Client`
-is out of scope (legacy SharePoint REST is not a goal — see RFC-0010).
+- **Build on `httpx` + `msal`.** Use `httpx`'s async client for the HTTP
+  transport and `msal` for token acquisition and cache serialization.
+  `httpx` is already an optional runtime dependency, and `msal` is
+  Microsoft's supported, lightweight auth library.
+- **Hand-written REST surface.** Construct an `httpx.AsyncClient`
+  internally and treat Graph as a narrow REST surface with hand-written
+  request helpers, pagination, and error mapping.
+- **Reject `msgraph-sdk`.** Adopting an SDK adds transitive weight (the
+  Kiota runtime plus `azure-identity`) without removing the hard parts the
+  backend must hand-write against this narrow surface regardless:
+  resumable uploads, async-operation polling, mid-read URL refresh.
+  **Reverse** if the backend later grows to a materially broader Graph
+  surface (mail, calendar, groups), where the SDK's coverage would start
+  to earn its weight.
+- **`Office365-REST-Python-Client` out of scope.** Legacy SharePoint
+  REST is not a goal (RFC-0010).
 
 ## Consequences
 
@@ -81,7 +75,8 @@ is out of scope (legacy SharePoint REST is not a goal — see RFC-0010).
   `httpx` is not in the base install — users who install only the
   `graph` extra pay for it once; users who already had
   `remote-store[httpx]` for `ReadOnlyHttpBackend` pay for nothing
-  extra.
+  extra. The `graph` extra pins the exact versions in `pyproject.toml`,
+  their authoritative home.
 - **Full control of request layer.** Error mapping, retry,
   `Retry-After` handling, and monitor-URL polling are written
   directly against `httpx.Response` and raw status codes. No
@@ -92,9 +87,8 @@ is out of scope (legacy SharePoint REST is not a goal — see RFC-0010).
   landed and the conformance suite is parameterised for it.
 - **Maintenance responsibility stays with us.** The Graph drives /
   items v1.0 surface is stable; ongoing churn is expected to be low.
-  If the backend later grows to cover a materially broader Graph
-  surface (mail, calendar, Teams messages, groups), `msgraph-sdk`
-  becomes worth re-evaluating. A new ADR would supersede this one.
+  Re-evaluating `msgraph-sdk` begins at the Decision's reverse trigger (a
+  materially broader Graph surface) and would supersede this ADR.
 
 ## References
 

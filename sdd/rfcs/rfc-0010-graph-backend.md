@@ -63,7 +63,7 @@ gap is the point of this RFC.
 **Module:** `remote_store.aio.backends._graph` (sub-package; async-native)
 **Name:** `"graph"`
 **Optional extra:** `pip install "remote-store[graph]"`
-**Dependencies:** see ADR-0021 for the locked dependency set.
+**Dependencies:** the `graph` extra's pinned set lives in `pyproject.toml`; see ADR-0021 for the SDK choice.
 **Spec:** `sdd/specs/044-graph-backend.md` (GR-001 through GR-058,
 grouped by topic, with later additions slotted under the section
 they belong to rather than appended at the end — IDs are
@@ -105,9 +105,9 @@ The backend itself depends on a **token-provider callable**, not on
 
 Users with their own auth plumbing (managed identity, corporate
 broker, custom refresh) supply any callable matching one of those
-shapes. MSAL token caching uses `SerializableTokenCache` with a
-persistent backing file. Token cache location: see ADR-0022 § Token
-caching for the canonical path and override rules (single source of
+shapes. MSAL token caching uses a persistent backing file; the cache
+path, mechanism, and override rules are specified by GR-007 in
+[044-graph-backend.md](../specs/044-graph-backend.md) (single source of
 truth).
 
 Authorization headers are redacted anywhere request or response
@@ -458,8 +458,8 @@ authoritative tier; Stage 1 replay is what runs in default CI.
   The `dafny_oracle` and `dafny_oracle_async` fixtures
   (`fixtures.toml:83-99`) participate in the conformance spine, so
   the variant addition and dispatcher update are conformance-fixture-
-  affecting changes — bundled with the impl PR per the ADR-0024
-  "Bundled implementation" section.
+  affecting changes — bundled with the impl PR per ADR-0024
+  (Consequences: "Ships as a coupled bundle").
 - **e2e chain.** `tests/e2e/test_async_streaming_integrity.py`
   builds its async chain by hand in the test body; there is no
   registration seam. Wiring Graph in requires (a) adding two-layer-
@@ -531,8 +531,8 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
 
 - **Backends.** New `graph` backend. `FEATURES.md` row added in the
   implementation phase.
-- **Extras.** New `graph` extra in `pyproject.toml`. See ADR-0021 for
-  the locked dependency set.
+- **Extras.** New `graph` extra in `pyproject.toml`, which holds the
+  pinned dependency set; ADR-0021 records the SDK choice.
 - **Spec 005 (errors).** Amended at RFC acceptance to add ERR-013
   `ResourceLocked`. The runtime class (`remote_store._errors.ResourceLocked`)
   and Dafny variant ship with the backend implementation per the

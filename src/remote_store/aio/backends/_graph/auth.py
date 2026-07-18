@@ -181,8 +181,9 @@ class GraphAuth:
         # + write-through) and read-retrying search(), so concurrent workers
         # sharing the default cache path can no longer truncate or tear it (the
         # plain truncate-then-write that flush_cache used to do). The sibling
-        # ``<path>.lockfile`` is the cross-process lock. See ADR-0022 § Token
-        # caching.
+        # ``<path>.lockfile`` is the cross-process lock. This comment owns the
+        # mechanism; GR-007 in sdd/specs/044-graph-backend.md owns the cache
+        # path, override rules, and multi-process-safety contract.
         cache = _build_token_cache(self._resolve_cache_path())
         self._cache = cache
         return cache

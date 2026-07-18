@@ -1,5 +1,5 @@
 id: ID-232
-title: "Advisory 'Decision = decision only' heuristic in gen_adr_digest (Phase A)"
+title: "Rewrite ADR Decision sections to state decisions (Phase A: advisory heuristic; Phase B: Graph 0021-0024 rewrite)"
 trigger: >-
   ID-232 research merged; Phase A opens: build an advisory, non-failing warning
   that flags ADR ## Decision sections carrying spec/impl detail (the shape that
@@ -9,8 +9,9 @@ trigger: >-
 source_items:
   - ID-232
 audience:
-  - contributor.tooling
   - contributor.process
+  - library.maintainer
+  - contributor.tooling
 review_rounds: 2
 co_shipped_items:
   - BUG-234
@@ -22,6 +23,12 @@ expected_ripples:
   - sdd/BACKLOG.md
 surprising_ripples:
   - tests/test_registry.py
+  - sdd/specs/044-graph-backend.md
+  - sdd/rfcs/rfc-0010-graph-backend.md
+  - src/remote_store/aio/backends/_graph/auth.py
+  - tests/backends/dafny/test_raise_if_err.py
+  - src/remote_store/_config.py
+  - sdd/specs/005-error-model.md
 phases:
   - id: orient
     name: Orient
@@ -185,4 +192,303 @@ phases:
           to the PR adding them, unlike the (ID-17x) rows that cross-reference a
           standing verifier. Dropped the backlog-ID mention from both rows —
           durable prose describes the behavior, not the ticket (CONTENT-RULES).
+        outcome: ok
+  - id: orient
+    name: Orient (Phase B rewrite)
+    steps:
+      - file: sdd/research/research-id-232-detail-placement-durability.md
+        section: "7 (Operational tests), 8 (ADR bridge / worked ADR-0021)"
+        read_type: gate
+        extract: >-
+          The three-condition gate + signal pair (concealment ↔
+          justification-sufficiency); bookkeeping-vs-constraint distinction. The
+          ADR-0021 pins read as bookkeeping (evict); a CVE floor or hard-compat
+          requirement would stay. Don't over-correct to a length target — read
+          here but not absorbed: the first pass still optimized for the heuristic,
+          surfaced later by the author critique.
+        outcome: unclear
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-006, GR-007, GR-008, GR-026, GR-045"
+        read_type: gate
+        extract: >-
+          Verify relocation homes exist before deleting. GR-026 owns the poller
+          cadence/timeout; GR-045 owns the 423 mapping. GR-007 already describes
+          the token cache but its "single source of truth" pointer aimed AT
+          ADR-0022 — the home was inverted and had to be flipped to make the spec
+          self-contained.
+        outcome: misleading
+      - file: pyproject.toml
+        section: "[project.optional-dependencies] graph"
+        read_type: reference
+        extract: >-
+          Every ADR-0021 pin and its rationale already live here (httpx<1.0
+          BUG-225, msal-extensions floor keeping portalocker optional, lazy
+          platformdirs, BK-291) — the ADR's pin list is pure duplication, safe to
+          evict to a pointer.
+        outcome: ok
+      - file: sdd/specs/005-error-model.md
+        section: "ERR-013"
+        read_type: reference
+        extract: >-
+          ResourceLocked meaning/home; ERR-013 points back to ADR-0024 §
+          Attributes for the lock_owner reasoning, so that reasoning is
+          load-bearing and stays in the ADR (do not relocate it).
+        outcome: ok
+  - id: design
+    name: Design (Phase B rewrite)
+    steps:
+      - file: sdd/research/research-id-232-detail-placement-durability.md
+        section: "5 (deep vs shallow relocation), 7.2 (justification-sufficiency)"
+        read_type: reference
+        extract: >-
+          Per-ADR plan: keep decision + constraint-bearing rationale; relocate
+          bookkeeping→pyproject, cache mechanism→GR-007 (deep, into an existing
+          home), cadence→GR-026. Keep the home-less GraphAuth flow params inline
+          rather than drop them — anti-over-correction guard.
+        outcome: ok
+  - id: implement
+    name: Implement (Phase B rewrite)
+    steps:
+      - file: sdd/adrs/0021-graph-sdk-choice.md
+        section: "Decision"
+        read_type: reference
+        extract: >-
+          Evict the graph-extra pin list to a pyproject pointer; keep the
+          httpx-vs-msgraph-sdk rejection rationale (narrow surface; SDKs don't
+          carry the hard work). Clears both version-specifier flags.
+        outcome: ok
+      - file: sdd/adrs/0022-graph-auth-model.md
+        section: "Decision"
+        read_type: reference
+        extract: >-
+          Gut the ~506-word Token-caching mechanism → GR-007; keep the
+          BK-291/Windows-os.replace(WinError 5) constraint rationale a reviewer
+          needs to reverse; condense masking/provider/config to spec pointers.
+          908→450 words (still advisory, but every word decision-grade).
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-007 (Postconditions), GR-008, Dependencies line"
+        read_type: reference
+        extract: >-
+          Land the residual token-cache facts in GR-007 (canonical path,
+          CrossPlatLock/PersistedTokenCache, override rules, ≈5s contended-lock
+          bound/BK-292) and flip GR-007 to single source of truth; repoint the
+          GR-008 cross-ref and the Dependencies pointer (→ pyproject).
+        outcome: ok
+      - file: sdd/rfcs/rfc-0010-graph-backend.md
+        section: "Auth model (token cache location)"
+        read_type: reference
+        extract: >-
+          Repoint the token-cache-location SSOT pointer from "ADR-0022 § Token
+          caching" to GR-007; drop the stale SerializableTokenCache mention (the
+          hand-rolled cache BK-291 replaced).
+        outcome: ok
+      - file: sdd/adrs/0023-async-monitor-polling.md
+        section: "Decision"
+        read_type: reference
+        extract: >-
+          Sonnet subagent: relocate the poller Contract param list → GR-026;
+          fold the migration mechanics into Consequences; keep the backend-local
+          / no-capability / not-in-ext placement rationale and the parser-driven
+          shape. 454→~300 words.
+        outcome: ok
+      - file: sdd/adrs/0024-resource-locked-error.md
+        section: "Decision"
+        read_type: reference
+        extract: >-
+          Sonnet subagent: relocate retry guidance→RET-015, mapping→GR-045,
+          bundled-impl/delivery→spec 005 / BackendContract.dfy / BACKLOG ID-127
+          (Consequences); keep the no-lock_owner + why-a-new-type rationale.
+          383→~260 words.
+        outcome: ok
+  - id: verify
+    name: Verify (Phase B rewrite)
+    steps:
+      - file: scripts/gen_adr_digest.py
+        section: "--check (advisory stream)"
+        read_type: verify
+        extract: >-
+          Before/after instrument: 0021/0023/0024 no longer flagged; 0022
+          908→450 (still over budget but decision-grade, not over-corrected per
+          §7.2); corpus Decision total 11009→10265; DIGEST regenerated, graph
+          consistent.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Spec section"
+        read_type: verify
+        extract: >-
+          ADR↔spec SSOT consistency; relocated facts verified in their homes
+          before deletion; hatch run lint green. The pre-review sweep grepped only
+          *.md, so it flipped GR-007/GR-008/rfc-0010(L109) but claimed "no dangling
+          pointers remain" while three more rfc-0010 pointers and two source
+          comments still cited the renamed sections. The ripple-check itself did
+          not mislead; the grep scope was mine to widen.
+        outcome: ok
+  - id: fix
+    name: Address PR review (Phase B)
+    steps:
+      - file: sdd/adrs/0023-async-monitor-polling.md
+        section: "Decision (YAGNI paragraph)"
+        read_type: reference
+        extract: >-
+          Review (concealment): the subagent's YAGNI paragraph restated Context
+          L29-38 near-verbatim — the word-count heuristic misses redundancy.
+          Trimmed to the decision-grade residue; Context owns the "why no second
+          consumer" evidence.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0010-graph-backend.md
+        section: "L66, L461-462, L534-535"
+        read_type: reference
+        extract: >-
+          Review (ripple): the pin relocation + ADR-0024 section rename left three
+          more durable RFC pointers stale (dependency-set L66/L534, "Bundled
+          implementation" section-name L461). Repointed to pyproject.toml and the
+          ADR-0024 "Ships as a coupled bundle" Consequences bullet.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/auth.py
+        section: "_build_cache comment (~L184)"
+        read_type: reference
+        extract: >-
+          Review: a source comment still cited "ADR-0022 § Token caching" (renamed;
+          SSOT now GR-007). The ripple-check exempts source # comments from the
+          tracker-ID rule, so no gate flagged it — a genuinely surprising ripple.
+          Repointed to GR-007.
+        outcome: misleading
+      - file: tests/backends/dafny/test_raise_if_err.py
+        section: "module docstring (~L5)"
+        read_type: reference
+        extract: >-
+          Review: docstring cited the removed "ADR-0024 § Bundled implementation"
+          heading; repointed to the ADR-0024 "Ships as a coupled bundle"
+          Consequences bullet. Touching this + auth.py escalates the mechanical
+          gate to `hatch run all` (code path).
+        outcome: ok
+  - id: redesign
+    name: Redesign after author critique (gate, not heuristic)
+    steps:
+      - file: sdd/research/research-id-232-detail-placement-durability.md
+        section: "1 (one-line result), 10.1 (gate not length)"
+        read_type: gate
+        extract: >-
+          Author critique: the first pass optimized for the digest heuristic
+          (flag-clearing / word-count), which is exactly the inversion the
+          research warns against — the digest is an advisory smell detector, not
+          the target. Core result: minimize *mismatched* detail, not detail;
+          brevity is a byproduct of correct placement. The research delivered the
+          correction cleanly; the earlier miss was execution, not the doc.
+        outcome: ok
+      - file: sdd/adrs/0021-graph-sdk-choice.md
+        section: "Decision (0021-0024, all four)"
+        read_type: reference
+        extract: >-
+          Author feedback: a prose blob hides where one decision ends and the
+          next begins. Restructured every Decision into scannable units — bullets
+          for the parallel-decision ADRs (0021/0023/0024), a short intro + bullets
+          + one subsection for 0022 — each with a bold lead and an inline reversal
+          trigger. Re-ran justification-sufficiency with no links followed.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/auth.py
+        section: "_load_cache comment (~L178)"
+        read_type: reference
+        extract: >-
+          §5 shallow-relocation fix: the token-cache mechanism's real home is the
+          code (auth.py already carried the BK-291 mechanism comment). The first
+          pass had duplicated the class-name mechanism into GR-007. Trimmed GR-007
+          back to the contract (path, override, multi-process-safety) and scoped
+          the comment to own the mechanism — de-duplicating the spec↔code copy.
+        outcome: misleading
+      - file: sdd/templates/adr-template.md
+        section: "## Decision guidance"
+        read_type: reference
+        extract: >-
+          Placed the research one-line result (minimize mismatched detail, not
+          detail; brevity is a byproduct) plus the three-condition gate and the
+          "one decision = one scannable unit" rule in the Decision guidance —
+          immediately visible to author and reviewer. Reframed the old "size"
+          wording to "smell detector, not the target".
+        outcome: ok
+      - file: src/remote_store/_config.py
+        section: "_SENSITIVE_KEYS comment (~L28)"
+        read_type: reference
+        extract: >-
+          Review round on the redo: restructuring the ADRs into bullets removed
+          more `### <section>` headings, breaking more inbound `§ <section>`
+          anchors in files outside the diff. Swept the whole repo for
+          `ADR-002\d §`; the live ones were `_config.py` (`§ Credential masking`)
+          and `005-error-model.md` (`§ Attributes`). Repointed both to cite the
+          ADR generically; historical traces keep the old names.
+        outcome: misleading
+      - file: sdd/adrs/0021-graph-sdk-choice.md
+        section: "Decision (Pins-live bullet)"
+        read_type: reference
+        extract: >-
+          Review: "Pins live in pyproject.toml" is not a decision — it is
+          bookkeeping about the tooling choice already made. Removed it from the
+          Decision list and moved the pointer to the Consequences dependency-
+          footprint bullet. A Decision bullet must state a decision, not a
+          location.
+        outcome: ok
+      - file: sdd/adrs/0023-async-monitor-polling.md
+        section: "Decision (0021 + 0023, digest self-containment)"
+        read_type: reference
+        extract: >-
+          Read of the DIGEST alone (the no-links view): 0021 and 0023 leaned on
+          "(see Context)" / "(Context has the reality-check)", but the digest
+          lifts only ## Decision, so Context is invisible there. Inlined the
+          one-clause evidence (0023: Azure server-side / S3 different shape) and
+          dropped the pointers, so each digest entry now justifies itself
+          without a section the digest omits — condensed, not the verbatim
+          Context restatement an earlier review had rejected.
+        outcome: ok
+  - id: review_polish
+    name: Address review (staleness, reversal triggers, tag accuracy)
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-232 (Phase B summary)"
+        read_type: reference
+        extract: >-
+          Review (principle 3): the Phase B summary still described the superseded
+          first pass — GR-007 as SSOT for the mechanism, "0022 908→450, still over
+          budget". Rewrote to the shipped tree in gate terms (mechanism in the
+          code, GR-007 owns the contract, all four under budget as a byproduct) so
+          the next-batch executor inherits the corrected criterion.
+        outcome: ok
+      - file: sdd/adrs/0022-graph-auth-model.md
+        section: "Decision (token-provider-callable bullet)"
+        read_type: reference
+        extract: >-
+          Review (§7.2): 0021/0023/0024 each had an inline reversal trigger but
+          0022's core decision did not — silence is what the signal pair rules
+          out. Added a Reverse condition (per-request scopes, token metadata, or
+          tight MSAL coupling a bare callable cannot express).
+        outcome: ok
+      - file: sdd/adrs/0021-graph-sdk-choice.md
+        section: "Decision Reject bullet + Consequences"
+        read_type: reference
+        extract: >-
+          Review (one-copy-per-fact): the Decision reverse trigger and the
+          Consequences "Maintenance responsibility" bullet stated the same
+          escalation and had drifted (mail/calendar/groups vs +Teams messages);
+          and the hard-work triple was verbatim in Context and the Reject bullet.
+          Pointed Consequences at the Decision's trigger and paraphrased the
+          triple so the copies no longer drift silently.
+        outcome: ok
+      - file: sdd/templates/adr-template.md
+        section: "Placement principle blockquote"
+        read_type: reference
+        extract: >-
+          Review (CONTENT-RULES / research §9): "(ID-232 research)" was a bare
+          ticket citation. Replaced with a path link to the research doc and named
+          it the single source of truth, this blockquote its paraphrase — durable
+          prose cites the artifact, not the ticket.
+        outcome: ok
+      - file: sdd/traces/ID-232-decision-detail-heuristic.yml
+        section: "outcome tags (orient / verify / redesign research reads)"
+        read_type: reference
+        extract: >-
+          Review (schema semantics): `misleading` means the doc told the agent
+          something wrong — a false positive against the research (§1/§10.1) and
+          the ripple-check, which did not lie; the misses were execution. Retagged
+          those to `ok` and moved the signal to the orient read (`unclear`: read
+          the "don't over-correct" warning, still over-corrected).
         outcome: ok

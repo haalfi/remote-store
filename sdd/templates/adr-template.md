@@ -29,9 +29,22 @@ Name the forces in play, not the solution.
 
 ## Decision
 
-Lead with the decision in one clear sentence or short paragraph, then explain
-the chosen design — resolution rules, tiers, diagrams, code sketches. Avoid
-restating the context.
+> **Placement principle** (paraphrased from the
+> [detail-placement research](../research/research-id-232-detail-placement-durability.md),
+> which remains the single source of truth for the full gate, signal pair, and
+> caveats). Minimize *mismatched* detail, not
+> detail. Brevity is a byproduct of correct placement, never the target — never
+> delete a load-bearing reason to hit a length budget. A fact stays in
+> `## Decision` only if it passes the three-condition gate: its change-rate fits
+> the ADR's heavy revision cost, its correctness matters at this layer, **and**
+> it justifies or constrains the decision. Read each Decision alone, no links
+> followed: a competent engineer must be able to see *why* the choice was made
+> and *when* to reverse it.
+
+**Structure each decision as its own scannable unit** — a bulleted item or a
+short bolded sub-heading, not a prose blob — so a reader can see where one
+decision ends and the next begins. Lead with the decision; do not restate the
+context.
 
 The **entire `## Decision` section** (up to the next `##`) is lifted verbatim
 into `sdd/adrs/DIGEST.md`, so keep it to the decision and its essential detail;
@@ -39,13 +52,14 @@ anything you would not want in the digest belongs under `## Consequences` or a
 later `##` section. Internal `###` sub-headings are demoted automatically to
 nest under the digest entry.
 
-State decision-rate content: the choice, the reasons that would reverse it,
-and any constraint-bearing facts (e.g. a CVE floor, a hard compatibility
-requirement) — these stay even when they name a version. Bookkeeping spec
-detail — routine pins, contracts, wire mechanics — moves to the spec or
-`pyproject.toml`; consequence-rate content (realized tradeoffs, escalation
-triggers) goes under `## Consequences`. `gen-adr-digest` emits an advisory
-size/spec-detail check to help keep this honest.
+Place by the gate, not by size: the choice, the reasons that would reverse it,
+and constraint-bearing facts (e.g. a CVE floor, a hard compatibility
+requirement) **stay** even when they name a version. Bookkeeping spec detail —
+routine pins, contracts, wire mechanics — moves to its authoritative home (the
+spec, `pyproject.toml`, or the code); consequence-rate content (realized
+tradeoffs, escalation triggers) goes under `## Consequences`. `gen-adr-digest`
+emits an advisory size/spec-detail check to help keep this honest — it is a
+smell detector for human judgment, not the target.
 
 ## Consequences
 

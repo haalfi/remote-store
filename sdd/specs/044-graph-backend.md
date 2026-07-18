@@ -17,7 +17,7 @@ ADRs: [0021](../adrs/0021-graph-sdk-choice.md) (SDK),
 [0023](../adrs/0023-async-monitor-polling.md) (monitor poller),
 [0024](../adrs/0024-resource-locked-error.md) (`ResourceLocked`).
 
-**Dependencies:** see [ADR-0021](../adrs/0021-graph-sdk-choice.md) for the locked dependency set.
+**Dependencies:** the `graph` extra's pinned set (and each pin's rationale) lives in `pyproject.toml`; see [ADR-0021](../adrs/0021-graph-sdk-choice.md) for the SDK choice.
 **Optional extra:** `pip install "remote-store[graph]"`
 **Backend name:** `"graph"`
 
@@ -180,8 +180,16 @@ retrying past a dirty read, so a consumer sharing the default cache path
 (the common multi-worker deployment) never observes a corrupt cache
 (BK-291). The on-disk write is an in-place truncate-and-write, **not** an
 atomic rename; corruption-freedom comes from the lock + read-retry, not
-atomicity. See ADR-0022 § Token caching for the canonical path, the lock
-mechanism, and override rules (single source of truth). Cache access is **best-effort on both paths**: a
+atomicity. The cache file lives at
+`platformdirs.user_config_dir("remote-store")` (default
+`graph_token_cache.json`); callers override the path with `cache_path=`, or
+bypass `GraphAuth` and MSAL entirely by supplying their own token-provider
+callable. A *contended* synchronous acquisition blocks the calling thread (and
+thus the event loop) until the cross-process lock is free; the async `GraphAuth`
+path offloads acquisition to avoid this (GR-008, BK-292). GR-007 owns the cache
+path, override rules, and the multi-process-safety contract (single source of
+truth); the persistence mechanism itself lives in `_graph/auth.py`.
+Cache access is **best-effort on both paths**: a
 write/lock-contention failure (the write-through under the lock) *and* a read
 failure (a corrupt or persistently-contended cache making the reload re-raise)
 are logged and swallowed — a read miss degrades to a fresh acquisition, a write
@@ -217,8 +225,8 @@ invokes the callable lazily — never from `__init__`.
   instance: the synchronous `get_token` / `__call__`, and the
   asynchronous `aget_token` (a `Callable[[], Awaitable[str]]`). On the
   event loop, `aget_token` is preferred: it offloads the blocking MSAL
-  acquisition — including a contended token-cache lock wait (GR-007,
-  ADR-0022 § Token caching) — to a worker thread so the loop is never
+  acquisition — including a contended token-cache lock wait (GR-007) —
+  to a worker thread so the loop is never
   blocked, and **single-flights** concurrent acquisitions so N coroutines
   acquiring at once (including the re-invocation after a `401`) share
   **one** acquisition rather than each reaching the identity provider. A
