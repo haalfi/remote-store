@@ -10409,7 +10409,32 @@
 
 <h1 id="adr-0011-retry-per-backend-native-configuration">ADR-0011: Retry - Per-Backend Native Configuration<a class="headerlink" href="#adr-0011-retry-per-backend-native-configuration" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Status</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td>Supersedes</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Superseded by</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Amends</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>ID-010 requires a unified retry policy for transient backend errors.
 The SFTP backend has hardcoded tenacity retry on <code>_connect()</code> (3 attempts,

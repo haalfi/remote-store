@@ -10431,7 +10431,32 @@
 
 <h1 id="adr-0009-glob-three-tier-design">ADR-0009: Glob - Three-Tier Design<a class="headerlink" href="#adr-0009-glob-three-tier-design" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Status</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td>Supersedes</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Superseded by</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Amends</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>Glob/pattern matching for file listing has been an open design question
 since v0.6.0 (BK-002, ID-007). The original <code>Capability.GLOB</code> was removed
@@ -10447,6 +10472,11 @@ on most backends (discoverability pit), simple name filtering requires an
 extension, and two entry points create confusion about which to use.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>Three tiers of pattern matching, with clear escalation:</p>
+<ol>
+<li><strong><code>list_files(pattern=…)</code></strong> — simple <code>fnmatch</code> name filtering at the Store level; works on every backend with <code>LIST</code>, no new capability.</li>
+<li><strong><code>store.glob(pattern)</code></strong> — native backend glob, gated on <code>Capability.GLOB</code> (only Local implements it initially).</li>
+<li><strong><code>ext.glob.glob_files(store, pattern)</code></strong> — portable full recursive glob; uses <code>store.glob()</code> when available, else falls back to <code>list_files</code> + client-side regex.</li>
+</ol>
 <h3 id="tier-1-list_filespattern-simple-name-filtering">Tier 1: <code>list_files(pattern=…)</code> — simple name filtering<a class="headerlink" href="#tier-1-list_filespattern-simple-name-filtering" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;logs&quot;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;*.log&quot;</span><span class="p">)</span>
 </code></pre></div>

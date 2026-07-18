@@ -10453,7 +10453,32 @@
 
 <h1 id="adr-0028-testing-architecture-with-kind-and-stage-axes-and-http-replay-demotion">ADR-0028: Testing Architecture with Kind and Stage Axes and HTTP Replay Demotion<a class="headerlink" href="#adr-0028-testing-architecture-with-kind-and-stage-axes-and-http-replay-demotion" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Status</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td>Supersedes</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Superseded by</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Amends</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>The repository has not had a dedicated testing-architecture decision
 record. The de facto state lives in <a href="../../testing/"><code>sdd/TESTING.md</code></a>
@@ -10485,12 +10510,18 @@ replay mechanism is honest only for HTTP-transport backends; protocols
 that ride on SSH or DB wire formats are not reachable by HTTP capture
 tools without a custom transport adapter.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>The architecture rests on five coupled commitments. They share
-rationale: the demotion mechanism only works because the axes are
-separated, the gate works only because gating is native, and the scope
-works only because the spec calls out where it does not apply. One ADR
-captures the bundle. Any commitment that later evolves can be
-superseded individually.</p>
+<p>The testing architecture rests on five coupled commitments:</p>
+<ol>
+<li><strong>Two orthogonal axes</strong> — separate <em>kind</em> (pure, mocked, real-local, real-live) from <em>stage</em> (1/2/3 by cost); a fixture declares one of each.</li>
+<li><strong>Conformance as the cross-backend spine</strong> — one parametrised suite over the public <code>Store</code> / <code>Backend</code> API that every backend runs; backend-specific behaviour is isolated per backend.</li>
+<li><strong>HTTP cassette + replay as a Stage 1 fixture</strong> — a <code>&lt;backend&gt;_replay</code> fixture runs the real SDK path against a recorded cassette (Stage 3 records, Stage 1 replays); scoped to HTTP-transport backends only.</li>
+<li><strong>Capability gating via native pytest</strong> — parametrize id-filtering plus <code>pytest.mark.skipif</code>, no custom <code>@requires</code> marker layer.</li>
+<li><strong>Explicit cassette refresh</strong> — cassettes regenerate only when a developer runs <code>pytest --stage=3 --record</code> and commits the diff; CI never silently re-records.</li>
+</ol>
+<p>They share rationale: the demotion mechanism only works because the axes are
+separated, the gate works only because gating is native, and the scope works
+only because the spec calls out where it does not apply. One ADR captures the
+bundle; any commitment that later evolves can be superseded individually.</p>
 <h3 id="two-orthogonal-axes-kind-and-stage">Two orthogonal axes: kind and stage<a class="headerlink" href="#two-orthogonal-axes-kind-and-stage" title="Permanent link">&para;</a></h3>
 <p>A linear list of "stages" running unit, emulator, live collapses two
 distinct concerns. <em>What the test wires up</em> is one axis (kind: pure,

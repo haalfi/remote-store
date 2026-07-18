@@ -10365,7 +10365,32 @@
 
 <h1 id="adr-0004-empty-path-semantics-in-store">ADR-0004: Empty Path Semantics in Store<a class="headerlink" href="#adr-0004-empty-path-semantics-in-store" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Status</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td>Supersedes</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Superseded by</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Amends</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p><code>RemotePath</code> rejects empty strings (PATH-008), and <code>Store._full_path</code> validated all paths through <code>RemotePath</code>. This meant <code>store.list_files("")</code> and <code>store.list_folders("")</code> raised <code>InvalidPath</code> — users had no way to query the store root.</p>
 <p>This surfaced when writing example scripts: every natural usage pattern for "list everything in the store" required passing <code>""</code> as the path argument.</p>

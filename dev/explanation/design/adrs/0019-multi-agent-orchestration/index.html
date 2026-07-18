@@ -10409,7 +10409,32 @@
 
 <h1 id="adr-0019-multi-agent-orchestration-architecture">ADR-0019: Multi-Agent Orchestration Architecture<a class="headerlink" href="#adr-0019-multi-agent-orchestration-architecture" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Status</td>
+<td>Superseded</td>
+</tr>
+<tr>
+<td>Supersedes</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Superseded by</td>
+<td>ADR-0020</td>
+</tr>
+<tr>
+<td>Amends</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>As remote-store grows (~41 source files, 55 test files, 72 doc files), complex
 tasks (new backends, cross-cutting features, spec-driven changes) require
@@ -10428,7 +10453,11 @@ inheritance), and violates KISS for a problem that has a native solution.</p>
 domain experts via the Agent tool. Experts run in parallel with full repo
 access. Orchestrator aggregates results and handles cross-domain concerns.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p><strong>Option C — Claude Code native agents</strong> with the following architecture:</p>
+<p><strong>Option C — Claude Code native agents.</strong> An orchestrator (the main session)
+spawns domain-scoped experts (Backend, Ext, Test, Doc) in parallel via the
+Agent tool; each runs with full repo access, and the orchestrator aggregates
+their results and handles cross-domain concerns (ripple-checks, CHANGELOG,
+BACKLOG, validation).</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Task (user invokes /orchestrate)
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>         ↓
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    Orchestrator
@@ -10463,7 +10492,7 @@ extension files aren't directly modified. For SDD-only changes, all 4 review.</p
 4. Validates via <code>hatch run all</code></p>
 <h3 id="domain-boundaries">Domain boundaries<a class="headerlink" href="#domain-boundaries" title="Permanent link">&para;</a></h3>
 <blockquote>
-<p><strong>Superseded by <a href="../0031-expert-personas-as-subagent-files/">ADR-0031</a>.</strong> The
+<p><strong>Amended by <a href="../0031-expert-personas-as-subagent-files/">ADR-0031</a>.</strong> The
 per-expert persona definitions (identity, domain, foundation, constraints) now
 live as standalone Claude Code subagents in <code>.claude/agents/</code>, referenced by
 the <code>/orchestrate</code> skill via <code>subagent_type</code>, rather than inline in the skill.

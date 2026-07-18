@@ -10443,7 +10443,32 @@
 
 <h1 id="adr-0005-bidirectional-path-resolution-via-to_key">ADR-0005: Bidirectional Path Resolution via <code>to_key</code><a class="headerlink" href="#adr-0005-bidirectional-path-resolution-via-to_key" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Status</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td>Supersedes</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Superseded by</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Amends</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>The Store API has a round-trip problem. Users pass <strong>store-relative keys</strong>
 (e.g. <code>"reports/q1.csv"</code>) into Store methods, and the Store joins them with
@@ -10471,6 +10496,11 @@ backend-native/absolute path to a store-relative key</strong>.</p>
 layer, which currently doesn't do it at all.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>Introduce <code>to_key</code> at two levels:</p>
+<ol>
+<li><strong><code>Backend.to_key(native_path) -&gt; str</code></strong> — concrete ABC method (identity default) that strips the backend's own root/prefix, replacing the scattered <code>_rel_path</code> / <code>relative_to</code> patterns.</li>
+<li><strong><code>Store.to_key(path) -&gt; str</code></strong> — public method composing backend conversion with store-root stripping.</li>
+</ol>
+<p>Store listing methods also strip <code>root_path</code> from returned paths so <code>FileInfo.path</code> round-trips back into other Store methods.</p>
 <h3 id="1-backendto_keynative_path-str-str">1. <code>Backend.to_key(native_path: str) -&gt; str</code><a class="headerlink" href="#1-backendto_keynative_path-str-str" title="Permanent link">&para;</a></h3>
 <p>Concrete method on the Backend ABC (identity default). Converts a
 backend-native path to a backend-relative key by stripping the backend's own

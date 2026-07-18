@@ -10365,7 +10365,32 @@
 
 <h1 id="adr-0030-azure-hns-is-an-explicit-declaration-not-auto-detected">ADR-0030: Azure HNS Is an Explicit Declaration, Not Auto-Detected<a class="headerlink" href="#adr-0030-azure-hns-is-an-explicit-declaration-not-auto-detected" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Status</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td>Supersedes</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Superseded by</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Amends</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>ADLS Gen2 (Hierarchical Namespace, HNS) accounts and plain Blob Storage
 accounts differ in semantics the Azure backend must adapt to: atomic
@@ -10394,7 +10419,9 @@ return stale authorization state, or be denied by least-privilege credentials.</
 fact as a runtime discovery is the design error.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>The Azure backend no longer auto-detects HNS. The account's nature is a
-<strong>mandatory, explicit</strong> constructor and config input:</p>
+<strong>mandatory, explicit</strong> constructor and config input, declared as a required
+<code>hns: bool</code> on both <code>AzureBackend</code> and <code>AsyncAzureBackend</code> (no default; a
+missing or non-<code>bool</code> value raises at construction).</p>
 <ul>
 <li><code>AzureBackend(..., hns: bool)</code> and <code>AsyncAzureBackend(..., hns: bool)</code> —
   there is no default. A backend constructed without <code>hns</code>, or with a

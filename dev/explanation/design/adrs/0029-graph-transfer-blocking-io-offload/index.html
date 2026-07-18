@@ -10331,9 +10331,35 @@
 
 <h1 id="adr-0029-offload-graph-transfer-spool-io-off-the-event-loop">ADR-0029: Offload Graph Transfer Spool I/O off the Event Loop<a class="headerlink" href="#adr-0029-offload-graph-transfer-spool-io-off-the-event-loop" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted — supersedes the "Worker-thread starvation under high concurrency"
-risk of <a href="../0025-async-to-sync-backend-adapter/">ADR-0025</a> § Risks (that bullet
-only; the rest of ADR-0025 stays in effect).</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Status</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td>Supersedes</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Superseded by</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Amends</td>
+<td>ADR-0025</td>
+</tr>
+</tbody>
+</table>
+<p>Amends the "Worker-thread starvation under high concurrency" risk of
+<a href="../0025-async-to-sync-backend-adapter/">ADR-0025</a> § Risks (that bullet only;
+the rest of ADR-0025 stays in effect).</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>ADR-0025 introduced <code>AsyncBackendSyncAdapter</code> and, in its § Risks, flagged that
 all sync callers share one event loop and that a CPU-bound backend could stall

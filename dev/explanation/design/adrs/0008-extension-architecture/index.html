@@ -10597,7 +10597,32 @@
 
 <h1 id="adr-0008-extension-namespace-contract-ext">ADR-0008: Extension Namespace Contract (<code>ext.*</code>)<a class="headerlink" href="#adr-0008-extension-namespace-contract-ext" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Status</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td>Supersedes</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Superseded by</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Amends</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>The project has three extensions (<code>ext.arrow</code>, <code>ext.batch</code>, <code>ext.transfer</code>)
 that emerged organically but follow consistent patterns:</p>
@@ -10622,6 +10647,14 @@ on it.  It does not define an extension framework with interfaces,
 hooks, lifecycle management, or plugin discovery.  Those patterns will
 be designed when needed (see "Future patterns" below).</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>The <code>ext.*</code> namespace contract for stateless utility extensions:</p>
+<ul>
+<li><strong>Location</strong> — extensions live in <code>src/remote_store/ext/&lt;name&gt;.py</code> (single module) or <code>src/remote_store/ext/&lt;name&gt;/</code> (sub-package); <code>ext/__init__.py</code> re-exports nothing, each extension is imported directly.</li>
+<li><strong>Public API only</strong> — extensions use only the public <code>Store</code> / <code>Backend</code> API (no private-attribute access); <code>Store.unwrap(type_hint)</code> is the sanctioned escape hatch.</li>
+<li><strong>Module exports</strong> — every extension module defines <code>__all__</code>.</li>
+<li><strong>Lifecycle</strong> — extensions never own the <code>Store</code>; they must not close it or use it as a context manager.</li>
+<li><strong>Error propagation</strong> — <code>CapabilityNotSupported</code> must propagate to the caller, never be suppressed.</li>
+</ul>
 <h3 id="extension-location">Extension location<a class="headerlink" href="#extension-location" title="Permanent link">&para;</a></h3>
 <p>Extensions live in <code>src/remote_store/ext/&lt;name&gt;.py</code> (single module) or
 <code>src/remote_store/ext/&lt;name&gt;/</code> (sub-package for complex extensions).

@@ -10387,7 +10387,32 @@
 
 <h1 id="adr-0016-seekable-read-three-tier-design">ADR-0016: Seekable Read — Three-Tier Design<a class="headerlink" href="#adr-0016-seekable-read-three-tier-design" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Status</td>
+<td>Superseded</td>
+</tr>
+<tr>
+<td>Supersedes</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Superseded by</td>
+<td>ADR-0017</td>
+</tr>
+<tr>
+<td>Amends</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p><code>Store.read()</code> returns <code>BinaryIO</code> but spec SIO-001 explicitly does not
 guarantee seekability. Whether the returned stream is seekable depends
@@ -10406,6 +10431,11 @@ this class of problem: capability flag → native Store method →
 portable extension fallback.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>Apply the ADR-0009 three-tier pattern to seekable reads:</p>
+<ol>
+<li><strong><code>Capability.SEEKABLE_READ</code></strong> — a new capability flag; backends that always return seekable streams from <code>read()</code> declare it.</li>
+<li><strong><code>Store.read()</code></strong> — the existing contract; no new method, the flag adds a static guarantee alongside the per-stream <code>stream.seekable()</code> check.</li>
+<li><strong><code>ext.seekable.seekable_read()</code></strong> — a portable fallback that wraps a non-seekable stream.</li>
+</ol>
 <h3 id="tier-1-capabilityseekable_read">Tier 1: <code>Capability.SEEKABLE_READ</code><a class="headerlink" href="#tier-1-capabilityseekable_read" title="Permanent link">&para;</a></h3>
 <p>A new <code>Capability</code> enum member. Backends that always return seekable
 streams from <code>read()</code> declare it. Users query with
