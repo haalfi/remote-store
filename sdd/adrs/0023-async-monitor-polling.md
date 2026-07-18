@@ -45,9 +45,11 @@ shape (`UploadId` + `complete-multipart-upload`, not a monitor URL).
   because the Graph backend is async-native (matching
   `aio/backends/_azure.py`).
 - **Not a shared facility (YAGNI).** No second `202`-monitor consumer
-  exists today (Context has the reality-check). **Reverse** only when a
-  second backend genuinely needs the same shape, measured in a follow-up
-  rather than predicted here; a hoisting ADR then supersedes this one.
+  exists today: same-account Azure copy completes server-side without
+  polling, and S3 multipart completion uses a different shape (not a
+  monitor URL). **Reverse** only when a second backend genuinely needs
+  the same shape, measured in a follow-up rather than predicted here; a
+  hoisting ADR then supersedes this one.
 - **Parser-driven shape.** The poller takes a `status_parser` mapping
   each poll response to `pending` / `succeeded` / `failed`, so the loop
   is already shaped for a second consumer without being a generic helper

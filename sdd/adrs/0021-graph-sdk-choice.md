@@ -57,10 +57,10 @@ supported auth library, lightweight, stable, and used by
 - **Hand-written REST surface.** Construct an `httpx.AsyncClient`
   internally and treat Graph as a narrow REST surface with hand-written
   request helpers, pagination, and error mapping.
-- **Reject `msgraph-sdk`.** The surface this backend needs is narrow
-  (see Context), and the non-trivial work — upload-session chunking with
-  resume, async-operation polling, URL-expiry-mid-read handling — is
-  carried by none of the candidate SDKs. Adopting one adds transitive
+- **Reject `msgraph-sdk`.** The surface this backend needs is narrow,
+  and the non-trivial work — upload-session chunking with resume,
+  async-operation polling, URL-expiry-mid-read handling — is carried by
+  none of the candidate SDKs. Adopting one adds transitive
   weight (the Kiota runtime plus `azure-identity`) without removing code
   the backend must write regardless. **Reverse** if the backend later
   grows to a materially broader Graph surface (mail, calendar, groups),

@@ -424,3 +424,15 @@ phases:
           footprint bullet. A Decision bullet must state a decision, not a
           location.
         outcome: ok
+      - file: sdd/adrs/0023-async-monitor-polling.md
+        section: "Decision (0021 + 0023, digest self-containment)"
+        read_type: reference
+        extract: >-
+          Read of the DIGEST alone (the no-links view): 0021 and 0023 leaned on
+          "(see Context)" / "(Context has the reality-check)", but the digest
+          lifts only ## Decision, so Context is invisible there. Inlined the
+          one-clause evidence (0023: Azure server-side / S3 different shape) and
+          dropped the pointers, so each digest entry now justifies itself
+          without a section the digest omits — condensed, not the verbatim
+          Context restatement an earlier review had rejected.
+        outcome: ok

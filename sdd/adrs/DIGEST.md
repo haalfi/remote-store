@@ -835,10 +835,10 @@ disagreements autonomously — it presents the conflict and asks.
 - **Hand-written REST surface.** Construct an `httpx.AsyncClient`
   internally and treat Graph as a narrow REST surface with hand-written
   request helpers, pagination, and error mapping.
-- **Reject `msgraph-sdk`.** The surface this backend needs is narrow
-  (see Context), and the non-trivial work — upload-session chunking with
-  resume, async-operation polling, URL-expiry-mid-read handling — is
-  carried by none of the candidate SDKs. Adopting one adds transitive
+- **Reject `msgraph-sdk`.** The surface this backend needs is narrow,
+  and the non-trivial work — upload-session chunking with resume,
+  async-operation polling, URL-expiry-mid-read handling — is carried by
+  none of the candidate SDKs. Adopting one adds transitive
   weight (the Kiota runtime plus `azure-identity`) without removing code
   the backend must write regardless. **Reverse** if the backend later
   grows to a materially broader Graph surface (mail, calendar, groups),
@@ -904,9 +904,11 @@ specified by GR-007; the persistence mechanism itself lives in
   because the Graph backend is async-native (matching
   `aio/backends/_azure.py`).
 - **Not a shared facility (YAGNI).** No second `202`-monitor consumer
-  exists today (Context has the reality-check). **Reverse** only when a
-  second backend genuinely needs the same shape, measured in a follow-up
-  rather than predicted here; a hoisting ADR then supersedes this one.
+  exists today: same-account Azure copy completes server-side without
+  polling, and S3 multipart completion uses a different shape (not a
+  monitor URL). **Reverse** only when a second backend genuinely needs
+  the same shape, measured in a follow-up rather than predicted here; a
+  hoisting ADR then supersedes this one.
 - **Parser-driven shape.** The poller takes a `status_parser` mapping
   each poll response to `pending` / `succeeded` / `failed`, so the loop
   is already shaped for a second consumer without being a generic helper
