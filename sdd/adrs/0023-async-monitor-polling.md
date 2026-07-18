@@ -54,16 +54,11 @@ made a generic helper today. The cadence and timeout contract
 (intervals, backoff, `copy_timeout`, `Retry-After`, `5xx`-as-pending,
 cancellation) is owned by GR-026 and not restated here.
 
-**YAGNI: one consumer, one location.** An earlier draft hoisted the
-loop into a shared `backends/_async_monitor.py` on the premise that
-Azure cross-account copy and similar `202`-monitor patterns would
-reuse it. No second consumer exists: same-account Azure copy completes
-server-side without polling, cross-account Azure copy is not
-implemented, and S3 multipart completion uses a different shape
-(`UploadId` + `complete-multipart-upload`, not a monitor URL). Reverse
-this decision only when a second backend genuinely needs the same
-shape, measured in a follow-up rather than predicted here; a hoisting
-ADR then supersedes this one.
+**YAGNI: one consumer, one location.** No second `202`-monitor consumer
+exists today (Context has the reality-check). Reverse this decision only
+when a second backend genuinely needs the same shape, measured in a
+follow-up rather than predicted here; a hoisting ADR then supersedes
+this one.
 
 **Why not a Store capability.** A capability such as `ASYNC_COPY`
 would leak an implementation detail into the public API and invite

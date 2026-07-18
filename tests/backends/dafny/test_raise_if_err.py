@@ -2,8 +2,8 @@
 
 The Dafny ``MemoryBackend`` oracle never returns ``Error.ResourceLocked`` —
 the in-memory filesystem has no lock condition — so the conformance suite
-that drives the oracle never exercises that dispatch arm (ADR-0024 §
-Bundled implementation). This test constructs the Dafny ``Result_Err``
+that drives the oracle never exercises that dispatch arm (ADR-0024,
+Consequences: "Ships as a coupled bundle"). This test constructs the Dafny ``Result_Err``
 variant by hand and pumps it through ``_raise_if_err`` to prove the arm
 maps it to the runtime ``remote_store.ResourceLocked``, keeping the
 formal-oracle error surface complete as the variant lands.

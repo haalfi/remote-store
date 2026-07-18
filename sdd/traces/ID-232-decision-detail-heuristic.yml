@@ -25,6 +25,8 @@ surprising_ripples:
   - tests/test_registry.py
   - sdd/specs/044-graph-backend.md
   - sdd/rfcs/rfc-0010-graph-backend.md
+  - src/remote_store/aio/backends/_graph/auth.py
+  - tests/backends/dafny/test_raise_if_err.py
 phases:
   - id: orient
     name: Orient
@@ -311,7 +313,48 @@ phases:
         section: "Ripple-check / Spec section"
         read_type: verify
         extract: >-
-          ADR↔spec SSOT consistency: no dangling "§ Token caching" pointers
-          remain (GR-007/GR-008/rfc-0010 all repointed); relocated facts verified
-          in their homes before deletion; hatch run lint green.
+          ADR↔spec SSOT consistency; relocated facts verified in their homes
+          before deletion; hatch run lint green. The pre-review sweep grepped only
+          *.md, so it flipped GR-007/GR-008/rfc-0010(L109) but claimed "no dangling
+          pointers remain" while three more rfc-0010 pointers and two source
+          comments still cited the renamed sections.
+        outcome: misleading
+  - id: fix
+    name: Address PR review (Phase B)
+    steps:
+      - file: sdd/adrs/0023-async-monitor-polling.md
+        section: "Decision (YAGNI paragraph)"
+        read_type: reference
+        extract: >-
+          Review (concealment): the subagent's YAGNI paragraph restated Context
+          L29-38 near-verbatim — the word-count heuristic misses redundancy.
+          Trimmed to the decision-grade residue; Context owns the "why no second
+          consumer" evidence.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0010-graph-backend.md
+        section: "L66, L461-462, L534-535"
+        read_type: reference
+        extract: >-
+          Review (ripple): the pin relocation + ADR-0024 section rename left three
+          more durable RFC pointers stale (dependency-set L66/L534, "Bundled
+          implementation" section-name L461). Repointed to pyproject.toml and the
+          ADR-0024 "Ships as a coupled bundle" Consequences bullet.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/auth.py
+        section: "_build_cache comment (~L184)"
+        read_type: reference
+        extract: >-
+          Review: a source comment still cited "ADR-0022 § Token caching" (renamed;
+          SSOT now GR-007). The ripple-check exempts source # comments from the
+          tracker-ID rule, so no gate flagged it — a genuinely surprising ripple.
+          Repointed to GR-007.
+        outcome: misleading
+      - file: tests/backends/dafny/test_raise_if_err.py
+        section: "module docstring (~L5)"
+        read_type: reference
+        extract: >-
+          Review: docstring cited the removed "ADR-0024 § Bundled implementation"
+          heading; repointed to the ADR-0024 "Ships as a coupled bundle"
+          Consequences bullet. Touching this + auth.py escalates the mechanical
+          gate to `hatch run all` (code path).
         outcome: ok
