@@ -501,25 +501,30 @@ class TestSFTPConnection:
         assert sftp_backend.exists("test.txt") is False
 
     @pytest.mark.spec("SFTP-010")
-    def test_channel_death_during_listing_maps_and_reconnects(self, sftp_backend: Backend) -> None:
-        """SFTP-010 tier 2 must also hold for the listing operations.
+    @pytest.mark.parametrize("method", ["list_files", "list_folders", "iter_children"])
+    def test_channel_death_during_listing_maps_and_reconnects(self, sftp_backend: Backend, method: str) -> None:
+        """SFTP-010 tier 2 must also hold for every listing operation.
 
         BK-313 review: ``list_files`` / ``list_folders`` / ``iter_children``
         classify their own errors rather than going through ``_errors()``. If
-        they raise a bare ``RemoteStoreError`` instead of routing through
+        any raises a bare ``RemoteStoreError`` instead of routing through
         ``_map_exception``, a channel death mid-listing never invalidates the
-        client, so listing-only workloads wedge permanently. This pins that they
-        share the tier-2 mapping + reconnect.
+        client, so a listing-only workload wedges permanently. All three share
+        the wiring and the docstring claims the trio, so all three are driven
+        here — pinning only ``list_files`` would let a reverted sibling ship
+        green. Seed both a top-level file and a folder so each of the three
+        yields something to iterate on the post-reconnect call.
         """
         assert isinstance(sftp_backend, SFTPBackend)
-        sftp_backend.write("f.txt", b"x")  # a top-level file to list
+        sftp_backend.write("f.txt", b"x")  # top-level file  -> list_files / iter_children
+        sftp_backend.write("d/g.txt", b"x")  # top-level folder -> list_folders / iter_children
         sftp_backend._sftp_client.close()  # kill channel, transport stays up
 
         with pytest.raises(BackendUnavailable):
-            list(sftp_backend.list_files(""))
+            list(getattr(sftp_backend, method)(""))
         assert sftp_backend._sftp_client is None
-        # Reconnects and lists on the next call.
-        assert [str(fi.path) for fi in sftp_backend.list_files("")] == ["f.txt"]
+        # Reconnects and yields on the next call.
+        assert list(getattr(sftp_backend, method)("")), f"{method} did not reconnect and yield"
 
     @pytest.mark.spec("SFTP-010")
     @pytest.mark.spec("SFTP-023")
