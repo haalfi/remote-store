@@ -71,6 +71,39 @@ and the highest ID already in this file, then take the next integer. Run
   those are algorithm-name → impl lookup tables, not security policy.
   Surfaced during BK-198 (PR 613) review.
 
+- [ ] **BK-316 — SFTP low-severity correctness edges (audit-020 L1–L6)**
+  spec: SFTP-023, SFTP-024 · effort: M · audience: user.api
+  Six low-severity edges audit-020 surfaced while reviewing BK-313; each is
+  independent and splittable, and most are pre-existing patterns the round-trip
+  refactor preserved rather than introduced (so they were correctly deferred out
+  of PR #910, which fixed the audit's High/Medium items H1/M1/M2 and recorded the
+  M3 decision). Mostly manifest only on non-OpenSSH servers whose error shapes
+  differ, so all are static-or-partial-live:
+  - **L1** `_raise_if_dir` swallows *all* `OSError`, so a directory whose
+    classification stat itself fails (e.g. `EACCES`) degrades to a generic
+    `RemoteStoreError` instead of `PermissionDenied` (master's `_check_not_dir`
+    re-raised non-`ENOENT`).
+  - **L2** mode-less servers (`st_mode is None`): a directory target yields
+    `AlreadyExists`/generic, never `InvalidPath`; three mode-less policies coexist
+    across `write`/`write_atomic`/`open_atomic`/`_ensure_parent_dirs`. Fold into
+    one helper.
+  - **L3** `delete` under a file-ancestor lacks the `_has_file_ancestor` recheck
+    that `read`/`read_bytes` have, so on a server that reports an errno-less
+    `SSH_FX_FAILURE` it degrades to `RemoteStoreError` instead of `NotFound`.
+  - **L4** cleanup after a promote-death reconnects: the best-effort temp
+    `remove()` re-enters the `_sftp` property and can run the full tenacity
+    retry/backoff against a down server inside suppressed cleanup, blocking the
+    original error for seconds. Bound or skip the reconnect there.
+  - **L5** `open_atomic` temp file orphaned on `GeneratorExit`/`KeyboardInterrupt`
+    (`BaseException`, not caught by the `except Exception` cleanup) — litter, not
+    corruption (the atomic contract holds). Consider `BaseException`-aware cleanup.
+  - **L6** `_has_file_ancestor` returns `False` on any opaque stat error while
+    walking, so the `read`/`read_bytes` file-ancestor recheck does not fire and
+    an errno-less failure degrades to `RemoteStoreError` instead of `NotFound`
+    (deliberately conservative; ID-209). Reconsider alongside L1.
+  Details and per-finding line refs in
+  `sdd/audits/audit-020-sftp-roundtrips-correctness.md` (§ Low / Nits, group G4).
+
 ---
 
 ## Lint / CI Completeness

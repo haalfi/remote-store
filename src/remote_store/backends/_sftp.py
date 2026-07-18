@@ -783,10 +783,19 @@ class SFTPBackend(Backend):
         Prefetches and materialises the whole file in memory (unlike the lazy
         ``read`` stream).
 
+        Directory rejection is lazy (unlike ``read``, which stats eagerly): a
+        directory target raises ``InvalidPath`` only because the read of it
+        fails. This assumes the server either refuses to open a directory for
+        reading or reports a non-zero directory ``st_size`` — both hold on
+        OpenSSH, where a directory reports ``st_size == 4096``. A non-standard
+        server that opens a directory for reading *and* reports ``st_size == 0``
+        would make this return empty bytes rather than raising ``InvalidPath``.
+
         Raises:
             NotFound: If the file does not exist, or a path component is itself a
                 file.
-            InvalidPath: If *path* names a directory.
+            InvalidPath: If *path* names a directory (subject to the server
+                assumption above).
             PermissionDenied: If the server denies access (``EACCES``).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails mid-read.
@@ -989,25 +998,33 @@ class SFTPBackend(Backend):
             parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else "."
             tmp_name = f".~tmp.{name}.{uuid.uuid4().hex[:8]}"
             tmp_path = f"{parent}/{tmp_name}"
-        # Yield phase: outside _errors() so user exceptions propagate cleanly
+        # The temp-file open is a backend op: wrap it in _errors() so a failure
+        # there (e.g. EACCES on a read-only directory) maps like write /
+        # write_atomic instead of leaking raw (audit-020 M2). Nothing is created
+        # if it fails, so there is no temp file to clean up.
+        with self._errors(path):
+            handle = self._sftp.file(tmp_path, "w")
+        # Yield phase: the caller's writes run outside _errors() so a user
+        # exception propagates unmapped.
         try:
-            with self._sftp.file(tmp_path, "w") as f:
-                yield f
+            with handle:
+                yield handle
             with self._errors(path):
                 self._promote(tmp_path, sftp_path, path, overwrite=overwrite)
         except Exception as exc:
             with contextlib.suppress(Exception):
                 self._sftp.remove(tmp_path)
-            # BK-313 tier 2: a channel death during the temp-file open or the
-            # caller's streamed writes is a backend failure, not a user
-            # exception (_is_connection_dead matches only the former), so it must
-            # invalidate the client and surface as BackendUnavailable like every
-            # other op — the promote step already runs inside _errors(). Anything
-            # else (the caller's own exception, a mapped RemoteStoreError)
-            # propagates unchanged.
-            if self._is_connection_dead(exc):
-                self._sftp_client = None
-                raise BackendUnavailable(str(exc), path=path, backend=self.name) from None
+            # A backend failure surfaced during the caller's streamed writes or
+            # the handle flush — a dead channel, or any paramiko SSH/protocol
+            # error — is a backend error, not the caller's: route it through
+            # _map_exception so it maps (and, for a dead connection, invalidates
+            # the client) exactly as the in-_errors() paths do (audit-020 H1/M2).
+            # The caller's own in-block exceptions, and anything the _errors()
+            # blocks above already mapped, propagate unchanged.
+            import paramiko
+
+            if self._is_connection_dead(exc) or isinstance(exc, paramiko.SSHException):
+                raise self._map_exception(exc, path) from None
             raise
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
@@ -1825,23 +1842,48 @@ class SFTPBackend(Backend):
 
     @staticmethod
     def _is_connection_dead(exc: Exception) -> bool:
-        """Return True if *exc* signals a dropped SSH/SFTP connection.
+        """Return True if *exc* signals a dropped or unusable SSH/SFTP connection.
 
-        paramiko surfaces a dead channel as ``EOFError`` or as
-        ``OSError('Socket is closed')`` with no ``errno``, and a dropped socket
-        as ``ECONNRESET`` / ``EPIPE`` / ``ECONNABORTED``. None of these carries
-        an errno the ENOENT/EACCES/EEXIST/ENOTDIR dispatch in ``_map_exception``
-        recognises, so they would otherwise fall through to a generic
-        ``RemoteStoreError``; they are matched here to map to
-        ``BackendUnavailable`` and trigger a reconnect. The ``'Socket is
-        closed'`` text is paramiko's own literal, not an OS-locale message, so
-        matching it is safe on non-English hosts.
+        paramiko surfaces a dead channel in several unrelated shapes, none
+        carrying an errno the ENOENT/EACCES/EEXIST/ENOTDIR dispatch in
+        ``_map_exception`` recognises: ``EOFError`` (not an ``OSError``);
+        ``OSError('Socket is closed')`` with no errno (paramiko's own literal,
+        not an OS-locale message, so matching it is safe on non-English hosts);
+        an ``OSError`` carrying a socket-teardown errno (``ECONNRESET`` /
+        ``EPIPE`` / ``ECONNABORTED`` / ``ETIMEDOUT`` / ``ESHUTDOWN`` /
+        ``ENOTCONN`` / ``EBADF``); a ``socket.timeout`` / ``TimeoutError`` (an
+        ``OSError`` whose half-open instance usually carries no matching errno,
+        so it is matched by type — the most realistic trigger, since a slow op
+        hits the channel timeout); and a ``paramiko.SFTPError`` (an SFTP-protocol
+        failure that subclasses neither ``OSError`` nor ``SSHException``). All
+        are matched here so ``_map_exception`` maps them to ``BackendUnavailable``
+        *and* invalidates the cached client so the next operation reconnects.
+
+        ``paramiko.SSHException`` and its subclasses (e.g. ``ChannelException``)
+        are deliberately *not* matched here: ``_map_exception`` has a dedicated
+        ``SSHException`` branch that also clears the client, kept after the
+        ``IncompatiblePeer`` branch so that error keeps its diagnostic hint. This
+        enumeration is therefore not exhaustive by design — the invariant that a
+        dead connection reconnects is upheld by ``_map_exception`` clearing the
+        client on *every* ``BackendUnavailable`` it returns, not by this list.
         """
-        if isinstance(exc, EOFError):
+        import paramiko
+
+        if isinstance(exc, (EOFError, paramiko.SFTPError)):
+            return True
+        if isinstance(exc, TimeoutError):  # socket.timeout is TimeoutError (3.10+)
             return True
         if isinstance(exc, OSError):
             code = getattr(exc, "errno", None)
-            if code in (errno.ECONNRESET, errno.EPIPE, errno.ECONNABORTED):
+            if code in (
+                errno.ECONNRESET,
+                errno.EPIPE,
+                errno.ECONNABORTED,
+                errno.ETIMEDOUT,
+                errno.ESHUTDOWN,
+                errno.ENOTCONN,
+                errno.EBADF,
+            ):
                 return True
             if code is None and "socket is closed" in str(exc).lower():
                 return True
@@ -1896,6 +1938,12 @@ class SFTPBackend(Backend):
                 return NotFound(f"Not found: {path}", path=path, backend=self.name)
             return RemoteStoreError(str(exc), path=path, backend=self.name)
         if isinstance(exc, paramiko.ssh_exception.IncompatiblePeer):
+            # audit-020 H1: keep the "every BackendUnavailable invalidates the
+            # client" invariant literal. IncompatiblePeer is a connect-time
+            # negotiation failure, so the client is already None here — this is a
+            # no-op in practice, not a live-channel recovery — but stating it
+            # keeps the invariant true for every BackendUnavailable return.
+            self._sftp_client = None
             # IncompatiblePeer wraps host-key / KEX / cipher / MAC negotiation
             # failures; only the host-key variant is addressable by
             # enable_ssh_rsa_compat. Match the paramiko message substring so the
@@ -1930,6 +1978,13 @@ class SFTPBackend(Backend):
                 backend=self.name,
             )
         if isinstance(exc, paramiko.SSHException):
+            # audit-020 H1: an SSHException reaching here on a live operation
+            # (e.g. ChannelException — a channel-only death) means the channel is
+            # unusable, but ``is_active()`` stays True, so the client must be
+            # invalidated or every later op reuses the dead channel forever. The
+            # SFTPError / socket-teardown / timeout signals clear via
+            # ``_is_connection_dead`` above; this covers the SSHException family.
+            self._sftp_client = None
             return BackendUnavailable(str(exc), path=path, backend=self.name)
         return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover
 

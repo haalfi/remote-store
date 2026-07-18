@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BK-313: SFTP `write()`/`write_atomic()` now return `last_modified=None`; far fewer per-operation metadata round-trips
+- BK-313: SFTP `write()`/`write_atomic()` now return `last_modified=None`; far fewer per-operation metadata round-trips. Pre-merge audit (audit-020) correctness fixes on the SFTP failure path: a dead channel now always reconnects instead of wedging the long-lived backend — previously drop signals the tier-2 set had missed (`socket.timeout` from the channel timeout, `SSHException`/`ChannelException`, `SFTPError`, `EBADF`/`ETIMEDOUT`) mapped to an error but never invalidated the client; a streamed `read()` now maps an `EOFError` mid-read to `BackendUnavailable` instead of leaking it raw; and `open_atomic` maps a permission failure to `PermissionDenied` like `write`/`write_atomic`
 - BUG-231: GraphBackend.check_health() probes the drive so ping() can fail
 - BK-310: Pin the backend enumeration order in the add-a-backend checklist
 - BK-311: Sync the stale tagline and backend-membership mirrors

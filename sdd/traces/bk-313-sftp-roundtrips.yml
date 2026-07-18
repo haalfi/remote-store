@@ -24,6 +24,16 @@ surprising_ripples:
   - docs-src/reference/api/models.md
   - docs-src/guides/async.md
   - sdd/specs/045-write-result.md
+  # audit-020 (pre-merge SFTP correctness audit): removing master's per-op
+  # stat('.') liveness probe also removed its universal self-heal, so tier-2's
+  # incomplete dead-signal set now wedged the backend permanently on any signal
+  # it did not recognise (SSHException/SFTPError/socket.timeout/EBADF/ETIMEDOUT).
+  # The read-stream error wrapper was the surprising co-ripple: it caught only
+  # OSError, so a channel-death EOFError leaked raw AND never invalidated the
+  # client (a read-path instance of the same wedge).
+  - src/remote_store/_stream.py
+discovery_followups:
+  - BK-316
 review_rounds: 3
 phases:
   - id: orient
@@ -113,3 +123,27 @@ phases:
         section: "Detailed checklist / Spec section, Public method signature"
         read_type: verify
         extract: "Spec-marked tests, docstrings, CHANGELOG, BACKLOG-DONE"
+  - id: audit_020
+    name: Audit-020 correctness fixes (pre-merge)
+    steps:
+      - file: sdd/audits/audit-020-sftp-roundtrips-correctness.md
+        section: "H1, M1, M2, M3"
+        read_type: gate
+        extract: "A pre-merge SFTP-correctness audit (line-read + two expert sub-agents + a live atmoz/sftp battery + exception injection) confirmed the visible core (lazy is-dir, 20/20 live) but found the staleness layer the perf change reshaped had regressed. Every finding re-reproduced here (live harness / injection) before any code change, per the audit's own report-only stance."
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connection_dead, _map_exception (SSHException + IncompatiblePeer branches)"
+        read_type: reference
+        extract: "H1 (High availability regression, BK-313-introduced): removing master's stat('.') probe removed its universal self-heal, leaving tier-2's _is_connection_dead set as the SOLE reconnect trigger — and incomplete. Injection-confirmed wedge (transport stays is_active()==True) for SSHException/ChannelException/SFTPError/socket.timeout/EBADF/ETIMEDOUT. Fix follows the CONCLUSION not one predicate: _map_exception now clears _sftp_client on every BackendUnavailable it returns (SSHException + IncompatiblePeer branches), and _is_connection_dead widened to SFTPError + TimeoutError + the socket-teardown errnos. NOT reintroducing stat('.') — the round-trip cut is preserved. Docstring's completeness claim corrected."
+        outcome: misleading
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream.readinto/read/readline/seek/tell"
+        read_type: reference
+        extract: "M1: the read-stream wrapper caught only OSError, but paramiko raises EOFError (not an OSError) on a channel death mid-read, so it leaked raw to the read() consumer AND never routed through _map_exception (a read-path H1 wedge). Injection-confirmed (tmp/eof_probe.py). Now catches (OSError, EOFError)."
+      - file: src/remote_store/backends/_sftp.py
+        section: "open_atomic yield phase; read_bytes docstring"
+        read_type: reference
+        extract: "M2: open_atomic's temp-file open ran outside _errors(), so a non-connection backend failure (live-confirmed EACCES on a chmod 0o555 dir) leaked a raw PermissionError, unlike write/write_atomic. Fix: temp-open wrapped in _errors(); the yield-phase handler routes backend failures (dead channel or any paramiko SSH/protocol error) through _map_exception while caller in-block exceptions stay raw. M3 (MUST-DECIDE): read_bytes' lazy directory rejection is server-st_size-dependent (safe on OpenSSH's 4096; a server reporting dir st_size==0 would return b''). User decided keep-lazy-and-document; assumption recorded in the read_bytes docstring and SFTP-003. L1-L6 deferred to BK-316."
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-010, SFTP-023, SFTP-003"
+        read_type: gate
+        extract: "SFTP-010/023 amended: recovery is anchored to the BackendUnavailable conclusion (every such mapping clears the client), not an enumerated signal list; widened the non-SSHException list and stated the SSHException family also invalidates; SFTP-003 records the read_bytes lazy-dir-rejection server assumption (M3)."
