@@ -20,6 +20,10 @@ sdd_kinds:
     title_prefixes:
       - "ADR-{num}: "
     status: Accepted
+    # DIGEST.md is a generated cross-ADR summary (scripts/gen_adr_digest.py),
+    # not an ADR — keep it out of the numbered ADR nav and dual-render bridge.
+    skip_stems:
+      - DIGEST
 
   - slug: specs
     source_dir: sdd/specs

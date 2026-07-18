@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value      |
+| ------------- | ---------- |
+| Status        | Superseded |
+| Supersedes    | —          |
+| Superseded by | ADR-0020   |
+| Amends        | —          |
 
 ## Context
 
@@ -29,7 +34,11 @@ access. Orchestrator aggregates results and handles cross-domain concerns.
 
 ## Decision
 
-**Option C — Claude Code native agents** with the following architecture:
+**Option C — Claude Code native agents.** An orchestrator (the main session)
+spawns domain-scoped experts (Backend, Ext, Test, Doc) in parallel via the
+Agent tool; each runs with full repo access, and the orchestrator aggregates
+their results and handles cross-domain concerns (ripple-checks, CHANGELOG,
+BACKLOG, validation).
 
 ```
 Task (user invokes /orchestrate)
@@ -71,7 +80,7 @@ The orchestrator:
 
 ### Domain boundaries
 
-> **Superseded by [ADR-0031](0031-expert-personas-as-subagent-files.md).** The
+> **Amended by [ADR-0031](0031-expert-personas-as-subagent-files.md).** The
 > per-expert persona definitions (identity, domain, foundation, constraints) now
 > live as standalone Claude Code subagents in `.claude/agents/`, referenced by
 > the `/orchestrate` skill via `subagent_type`, rather than inline in the skill.

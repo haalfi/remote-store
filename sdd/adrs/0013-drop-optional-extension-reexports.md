@@ -2,7 +2,15 @@
 
 ## Status
 
-Accepted — supersedes the "Export rules" section of ADR-0008.
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | ADR-0008 |
+
+Amends only the "Export rules" section of
+[ADR-0008](0008-extension-architecture.md); the rest of ADR-0008 stands.
 
 ## Context
 

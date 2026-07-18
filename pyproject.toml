@@ -292,6 +292,8 @@ gen-graph-viz = "python scripts/gen_graph_viz.py {args}"
 gen-graph-viz-check = "python scripts/gen_graph_viz.py --check"
 gen-backlogid = "python scripts/gen_backlogid.py {args}"
 gen-backlogid-check = "python scripts/gen_backlogid.py --check"
+gen-adr-digest = "python scripts/gen_adr_digest.py {args}"
+gen-adr-digest-check = "python scripts/gen_adr_digest.py --check"
 gen-api-check = "python scripts/check_api_docs.py"
 check-docstring-parity = "python scripts/check_docstring_parity.py {args}"
 # ID-182 drift-guard helpers. `drift-check extras|resolve|diff|refresh-baseline|render-docs`

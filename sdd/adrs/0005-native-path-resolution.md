@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -38,6 +43,11 @@ layer, which currently doesn't do it at all.
 ## Decision
 
 Introduce `to_key` at two levels:
+
+1. **`Backend.to_key(native_path) -> str`** — concrete ABC method (identity default) that strips the backend's own root/prefix, replacing the scattered `_rel_path` / `relative_to` patterns.
+2. **`Store.to_key(path) -> str`** — public method composing backend conversion with store-root stripping.
+
+Store listing methods also strip `root_path` from returned paths so `FileInfo.path` round-trips back into other Store methods.
 
 ### 1. `Backend.to_key(native_path: str) -> str`
 

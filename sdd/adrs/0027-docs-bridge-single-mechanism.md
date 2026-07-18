@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -26,19 +31,18 @@ disagreed.
 
 ## Decision
 
-Two coupled commitments: an architectural choice and the gate that
-keeps it true. The recurring failure across the prior ADRs was not
-that the chosen mechanism was wrong; each was reasonable for the case
-that introduced it. The failure was that nothing prevented the next
-mechanism from being added alongside. A decision to "use one bridge"
-without a check that detects the second bridge degrades to a
-preference. The architecture below is the choice; the gate (third
-sub-decision) is what stops the preference from being negotiated away
-on the next deadline.
+One documentation bridge, kept single by an enforcement gate. Three coupled
+sub-decisions:
 
-Three sub-decisions follow: the bridge itself, the classification
-mechanism (an aspect of the architecture, chosen so the bridge does
-not need a parallel for special cases), and the gate.
+1. **One bridge, by construction** — `scripts/docs/scan.py:scan_dual_files` is the sole source-discovery function and `render.py:render_dual_pages` the sole render function; other helpers are removed, not deprecated. New content shapes extend this one mechanism rather than adding a parallel one.
+2. **Classification next to the file** — each `.md` declares its class via an HTML-comment marker, with a directory-default fallback; a file with no marker and no default is unclassified and fails the gate (G-01). No central manifest that can drift from the files.
+3. **Enforcement at PR time** — a check script fails the build if any framework rule is violated, so "use one bridge" cannot silently degrade to a preference.
+
+The recurring failure across the prior ADRs was not that the chosen mechanism
+was wrong; each was reasonable for the case that introduced it. The failure was
+that nothing prevented the next mechanism from being added alongside — a "use
+one bridge" decision without a check that detects the second bridge degrades to
+a preference.
 
 ### One bridge, by construction
 

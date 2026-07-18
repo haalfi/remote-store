@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
@@ -37,7 +42,9 @@ fact as a runtime discovery is the design error.
 ## Decision
 
 The Azure backend no longer auto-detects HNS. The account's nature is a
-**mandatory, explicit** constructor and config input:
+**mandatory, explicit** constructor and config input, declared as a required
+`hns: bool` on both `AzureBackend` and `AsyncAzureBackend` (no default; a
+missing or non-`bool` value raises at construction).
 
 - `AzureBackend(..., hns: bool)` and `AsyncAzureBackend(..., hns: bool)` —
   there is no default. A backend constructed without `hns`, or with a

@@ -2,7 +2,12 @@
 
 ## Status
 
-Superseded by [ADR-0007](0007-docs-src-literate-nav.md)
+| Field         | Value      |
+| ------------- | ---------- |
+| Status        | Superseded |
+| Supersedes    | —          |
+| Superseded by | ADR-0007   |
+| Amends        | —          |
 
 ## Context
 

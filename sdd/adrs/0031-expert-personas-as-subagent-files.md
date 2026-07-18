@@ -2,7 +2,14 @@
 
 ## Status
 
-Accepted — supersedes the persona-definition realization of
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | ADR-0019 |
+
+Amends the persona-definition realization of
 [ADR-0019](0019-multi-agent-orchestration.md) (its "Domain boundaries" clause).
 Orthogonal to [ADR-0020](0020-orchestrate-iterative-convergence.md), which owns
 the convergence flow and is unaffected.

@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value      |
+| ------------- | ---------- |
+| Status        | Superseded |
+| Supersedes    | —          |
+| Superseded by | ADR-0017   |
+| Amends        | —          |
 
 ## Context
 
@@ -28,6 +33,10 @@ portable extension fallback.
 ## Decision
 
 Apply the ADR-0009 three-tier pattern to seekable reads:
+
+1. **`Capability.SEEKABLE_READ`** — a new capability flag; backends that always return seekable streams from `read()` declare it.
+2. **`Store.read()`** — the existing contract; no new method, the flag adds a static guarantee alongside the per-stream `stream.seekable()` check.
+3. **`ext.seekable.seekable_read()`** — a portable fallback that wraps a non-seekable stream.
 
 ### Tier 1: `Capability.SEEKABLE_READ`
 

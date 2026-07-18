@@ -2,9 +2,16 @@
 
 ## Status
 
-Accepted — supersedes the "Worker-thread starvation under high concurrency"
-risk of [ADR-0025](0025-async-to-sync-backend-adapter.md) § Risks (that bullet
-only; the rest of ADR-0025 stays in effect).
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | ADR-0025 |
+
+Amends the "Worker-thread starvation under high concurrency" risk of
+[ADR-0025](0025-async-to-sync-backend-adapter.md) § Risks (that bullet only;
+the rest of ADR-0025 stays in effect).
 
 ## Context
 

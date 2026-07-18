@@ -137,6 +137,18 @@ and the highest ID already in this file, then take the next integer. Run
   into separate IDs. No priority until the gate is shown to miss a real
   regression; promote to BK-prefix at that point.
 
+- [ ] **ID-233 — Wire `gen-adr-digest-check` into `preflight` when the ADR digest tool graduates**
+  spec: — · effort: S · audience: platform.tooling
+  `scripts/gen_adr_digest.py` shipped as a scoped trial (PR #909) with its
+  `gen-adr-digest-check` alias deliberately left out of `preflight`/`lint` — the
+  only `gen-*` `--check` not gate-wired. Freshness/drift is currently guarded by
+  `tests/scripts/test_gen_adr_digest.py::TestRealAdrs` (routed in via `scripts/`
+  test coverage), so there is no silent-staleness gap, but the guarantee is split
+  between a test and an unused alias. When the trial graduates, wire
+  `python scripts/gen_adr_digest.py --check` into `preflight` alongside its peers
+  (`gen_graph`, `gen_features`, `gen_graph_viz`), and add the SDD ceremony the
+  trial skipped (backlog/trace/CHANGELOG as applicable).
+
 ---
 
 ## Docs & Discoverability
@@ -280,6 +292,20 @@ and the highest ID already in this file, then take the next integer. Run
   MkDocs via `pymdownx.superfences` (already used in `docs-src/index.md`
   and several `sdd/` research docs). Convert all non-trivial ASCII diagrams; leave simple
   inline flows (single arrows, short sequences) as text.
+
+- [ ] **ID-232 — Rewrite ADR Decision sections to state decisions, not spec/impl detail**
+  spec: — · effort: L · audience: library.maintainer
+  `gen_adr_digest` (PR #909) lifts each ADR's whole `## Decision` section into
+  `sdd/adrs/DIGEST.md`, which made visible that many Decision sections drifted
+  from stating a decision into mixing spec, API, and implementation detail — the
+  Graph ADRs (0021–0024) worst. The ADR discipline (state the decision; push
+  detail to the relevant spec or `## Consequences`) eroded over time. Rewrite
+  each Decision section to a crisp decision plus only essential detail,
+  relocating spec/impl specifics to the spec or Consequences; the digest is the
+  before/after visibility check (a shorter, decision-only digest is the signal).
+  Open: all 30 vs Graph 0021–0024 first; whether to add a lightweight
+  "Decision = decision only" heuristic to `gen_adr_digest` (e.g. warn on H3 depth
+  or section length) so the discipline stays enforced, not just visible.
 
 ---
 

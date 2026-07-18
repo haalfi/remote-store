@@ -2,7 +2,15 @@
 
 ## Status
 
-Accepted — supersedes the "ProxyStore contract" visibility clause of ADR-0014.
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | ADR-0014 |
+
+Amends only the "ProxyStore contract" visibility clause of
+[ADR-0014](0014-middleware-path-1-proxy-store-stream-wrappers.md).
 
 ## Context
 

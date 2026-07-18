@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted — supersedes [ADR-0019](0019-multi-agent-orchestration.md)
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | ADR-0019 |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 

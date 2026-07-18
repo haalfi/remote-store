@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | ADR-0006 |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 

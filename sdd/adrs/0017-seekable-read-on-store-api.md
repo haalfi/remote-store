@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted (supersedes [ADR-0016](0016-seekable-read-three-tier-design.md))
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | ADR-0016 |
+| Superseded by | —        |
+| Amends        | —        |
 
 ## Context
 
