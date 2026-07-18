@@ -12062,7 +12062,7 @@ ADRs: <a href="../../adrs/0021-graph-sdk-choice/">0021</a> (SDK),
 <a href="../../adrs/0022-graph-auth-model/">0022</a> (auth),
 <a href="../../adrs/0023-async-monitor-polling/">0023</a> (monitor poller),
 <a href="../../adrs/0024-resource-locked-error/">0024</a> (<code>ResourceLocked</code>).</p>
-<p><strong>Dependencies:</strong> see <a href="../../adrs/0021-graph-sdk-choice/">ADR-0021</a> for the locked dependency set.
+<p><strong>Dependencies:</strong> the <code>graph</code> extra's pinned set (and each pin's rationale) lives in <code>pyproject.toml</code>; see <a href="../../adrs/0021-graph-sdk-choice/">ADR-0021</a> for the SDK choice.
 <strong>Optional extra:</strong> <code>pip install "remote-store[graph]"</code>
 <strong>Backend name:</strong> <code>"graph"</code></p>
 <hr />
@@ -12204,8 +12204,16 @@ retrying past a dirty read, so a consumer sharing the default cache path
 (the common multi-worker deployment) never observes a corrupt cache
 (BK-291). The on-disk write is an in-place truncate-and-write, <strong>not</strong> an
 atomic rename; corruption-freedom comes from the lock + read-retry, not
-atomicity. See ADR-0022 § Token caching for the canonical path, the lock
-mechanism, and override rules (single source of truth). Cache access is <strong>best-effort on both paths</strong>: a
+atomicity. The cache file lives at
+<code>platformdirs.user_config_dir("remote-store")</code> (default
+<code>graph_token_cache.json</code>); callers override the path with <code>cache_path=</code>, or
+bypass <code>GraphAuth</code> and MSAL entirely by supplying their own token-provider
+callable. A <em>contended</em> synchronous acquisition blocks the calling thread (and
+thus the event loop) until the cross-process lock is free; the async <code>GraphAuth</code>
+path offloads acquisition to avoid this (GR-008, BK-292). GR-007 owns the cache
+path, override rules, and the multi-process-safety contract (single source of
+truth); the persistence mechanism itself lives in <code>_graph/auth.py</code>.
+Cache access is <strong>best-effort on both paths</strong>: a
 write/lock-contention failure (the write-through under the lock) <em>and</em> a read
 failure (a corrupt or persistently-contended cache making the reload re-raise)
 are logged and swallowed — a read miss degrades to a fresh acquisition, a write
@@ -12239,8 +12247,8 @@ invokes the callable lazily — never from <code>__init__</code>.
   instance: the synchronous <code>get_token</code> / <code>__call__</code>, and the
   asynchronous <code>aget_token</code> (a <code>Callable[[], Awaitable[str]]</code>). On the
   event loop, <code>aget_token</code> is preferred: it offloads the blocking MSAL
-  acquisition — including a contended token-cache lock wait (GR-007,
-  ADR-0022 § Token caching) — to a worker thread so the loop is never
+  acquisition — including a contended token-cache lock wait (GR-007) —
+  to a worker thread so the loop is never
   blocked, and <strong>single-flights</strong> concurrent acquisitions so N coroutines
   acquiring at once (including the re-invocation after a <code>401</code>) share
   <strong>one</strong> acquisition rather than each reaching the identity provider. A

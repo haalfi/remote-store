@@ -6079,45 +6079,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Semantics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mapped-conditions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Mapped conditions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#bundled-implementation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bundled implementation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10383,45 +10344,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Semantics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mapped-conditions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Mapped conditions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#bundled-implementation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bundled implementation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10526,57 +10448,29 @@ on the same item. The condition is:</p>
 <p>No other backend in the project today emits <code>423</code> or an equivalent
 condition, so the error type does not exist yet. With Graph, it does.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Add <code>ResourceLocked</code> as a new concrete error type in
-<code>src/remote_store/_errors.py</code>, alongside the other canonical errors.
-It inherits directly from <code>RemoteStoreError</code> per the flat hierarchy
-rule (ERR-008): one level deep, no intermediate categories.</p>
-<h3 id="semantics">Semantics<a class="headerlink" href="#semantics" title="Permanent link">&para;</a></h3>
+<p>Add <code>ResourceLocked</code> as a new concrete error type. The decisions:</p>
 <ul>
-<li><strong>Meaning.</strong> The target resource exists and the caller is
-  authorised, but the resource is currently locked by another
-  session or process and the operation cannot proceed right now.</li>
-<li><strong>Attributes.</strong> Standard <code>path</code> and <code>backend</code> per the existing
-  error constructor pattern (ERR-001). No new fields. Earlier
-  drafts reserved an optional <code>lock_owner: str | None</code> — dropped
-  on reality check: Graph does not surface the lock holder, no
-  other backend emits this condition today, and adding a field "in
-  case" violates the project's no-speculative-API rule. A future
-  backend that genuinely surfaces the holder widens this class via
-  a covering spec amendment. (Spec 005 has no structured
-  <code>RemoteStoreError.context</code> surface today; routing extras through
-  <code>.context["lock_owner"]</code> is not available as a fallback and is
-  not part of this decision.)</li>
-<li><strong>Retry guidance.</strong> Not safely retried by the default retry policy
-  — RET-015 classifies <code>ResourceLocked</code> as terminal. Callers may
-  retry at their own cadence.</li>
+<li><strong>A new type, not a reuse.</strong> None of the existing errors fit HTTP
+  <code>423</code>: the caller is authorised (not <code>PermissionDenied</code>), it is not a
+  write conflict (not <code>AlreadyExists</code>), the backend is reachable (not
+  <code>BackendUnavailable</code>), and generic <code>RemoteStoreError</code> loses the
+  actionable "locked now, may clear" signal.</li>
+<li><strong>Flat under <code>RemoteStoreError</code>.</strong> One level deep, no intermediate
+  category (ERR-008).</li>
+<li><strong><code>path</code> + <code>backend</code> only; no <code>lock_owner</code>.</strong> Graph does not surface
+  the lock holder and no other backend emits this today, so a
+  speculative field is dropped (no-speculative-API rule). <strong>Reverse
+  (widen the class)</strong> only when a backend genuinely surfaces the holder,
+  via a covering spec amendment — ERR-013 points back here for exactly
+  this reasoning.</li>
+<li><strong>Terminal; caller-driven retry.</strong> Not retried by the default policy
+  (RET-015); callers choose their own cadence.</li>
+<li><strong>Reusable across backends.</strong> Future equivalents — SharePoint
+  check-out, SMB lock conflicts, WebDAV <code>423</code> — map to the same type;
+  that reuse is why this is a canonical error, not a Graph-local one.
+  Graph's <code>423 resourceLocked</code> is the only mapped source today (GR-045
+  owns the mapping).</li>
 </ul>
-<h3 id="mapped-conditions">Mapped conditions<a class="headerlink" href="#mapped-conditions" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Graph <code>423 Locked</code> / <code>resourceLocked</code> → <code>ResourceLocked</code>.</li>
-</ul>
-<p>Future backends that emit equivalent conditions (SharePoint REST
-check-out, SMB lock conflicts, WebDAV <code>423</code>) map to the same type
-when added.</p>
-<h3 id="bundled-implementation">Bundled implementation<a class="headerlink" href="#bundled-implementation" title="Permanent link">&para;</a></h3>
-<p><code>ResourceLocked</code> is unreachable from any backend other than Graph in
-v1, so the runtime class, the spec 005 entry (ERR-013), the Dafny
-<code>Error.ResourceLocked(path: string, backend: string)</code> variant
-(matching the <code>(path: string, backend: string)</code> shape every other
-non-<code>BackendUnavailable</code> variant uses in
-<code>sdd/formal/BackendContract.dfy</code>, so <code>_raise_if_err</code> can dispatch it
-through the existing <code>err.path</code> / <code>err.backend</code> reader), and its
-dispatch in <code>tests/backends/dafny/_helpers.py::_raise_if_err</code> ship as
-one coupled bundle, never the variant alone. Spec 005 records ERR-013
-at RFC acceptance.</p>
-<p><strong>Delivery under ID-127.</strong> This ADR was written assuming a single Graph
-backend PR, in which the bundle would land "in the same PR as the Graph
-sub-package (<code>aio/backends/_graph/</code>)." ID-127's phased roadmap instead
-lands the bundle one step earlier — in the GR-CONTRACT step, ahead of the
-sub-package, which follows in GR-CORE. The decision is unchanged and its
-intention still honoured: the variant never ships orphaned (its only
-raiser, the Graph <code>423</code> mapper, lands in the same ID-127 delivery) and the
-bundle stays coupled. See ID-127 in <code>sdd/BACKLOG.md</code> for the
-bundled-sub-task note.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Honest error signal.</strong> Graph callers distinguish "locked right
@@ -10591,6 +10485,12 @@ bundled-sub-task note.</p>
 <li><strong>Future-proofing without speculation.</strong> The error exists for any
   future backend that genuinely needs it; the class stays minimal
   until a real second consumer arrives.</li>
+<li><strong>Ships as a coupled bundle.</strong> The runtime class, the spec 005
+  ERR-013 entry, the Dafny <code>Error.ResourceLocked(path, backend)</code>
+  variant, and its <code>_raise_if_err</code> test dispatch land together, never
+  the variant alone. Delivered under ID-127 (GR-CONTRACT step) — see
+  <code>sdd/BACKLOG.md</code>; the detailed coupling mechanics live in spec 005,
+  <code>sdd/formal/BackendContract.dfy</code>, and BACKLOG ID-127.</li>
 <li><strong>No supersession.</strong> This ADR does not supersede or deprecate any
   prior ADR.</li>
 </ul>

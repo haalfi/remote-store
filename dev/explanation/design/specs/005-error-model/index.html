@@ -10646,7 +10646,7 @@ concurrent upload session on the same item).
 <strong>Postconditions:</strong> <code>path</code> and <code>backend</code> attributes are set. No
 additional fields — a future backend that genuinely surfaces the
 lock holder widens this class via a covering spec amendment
-(ADR-0024 § Attributes).
+(ADR-0024).
 <strong>Retry guidance:</strong> Not treated as transient by the default retry
 policy. Callers decide their own retry cadence, if any.
 <strong>Example:</strong>

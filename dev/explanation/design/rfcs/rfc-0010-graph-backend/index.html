@@ -11082,7 +11082,7 @@ gap is the point of this RFC.</p>
 <p><strong>Module:</strong> <code>remote_store.aio.backends._graph</code> (sub-package; async-native)
 <strong>Name:</strong> <code>"graph"</code>
 <strong>Optional extra:</strong> <code>pip install "remote-store[graph]"</code>
-<strong>Dependencies:</strong> see ADR-0021 for the locked dependency set.
+<strong>Dependencies:</strong> the <code>graph</code> extra's pinned set lives in <code>pyproject.toml</code>; see ADR-0021 for the SDK choice.
 <strong>Spec:</strong> <code>sdd/specs/044-graph-backend.md</code> (GR-001 through GR-058,
 grouped by topic, with later additions slotted under the section
 they belong to rather than appended at the end — IDs are
@@ -11134,9 +11134,9 @@ endpoints, async-native, custom polling and upload-session logic):</p>
 </ul>
 <p>Users with their own auth plumbing (managed identity, corporate
 broker, custom refresh) supply any callable matching one of those
-shapes. MSAL token caching uses <code>SerializableTokenCache</code> with a
-persistent backing file. Token cache location: see ADR-0022 § Token
-caching for the canonical path and override rules (single source of
+shapes. MSAL token caching uses a persistent backing file; the cache
+path, mechanism, and override rules are specified by GR-007 in
+<a href="../../specs/044-graph-backend/">044-graph-backend.md</a> (single source of
 truth).</p>
 <p>Authorization headers are redacted anywhere request or response
 metadata surfaces in logs, error messages, or debug dumps (AF-008).</p>
@@ -11451,8 +11451,8 @@ authoritative tier; Stage 1 replay is what runs in default CI.</p>
   The <code>dafny_oracle</code> and <code>dafny_oracle_async</code> fixtures
   (<code>fixtures.toml:83-99</code>) participate in the conformance spine, so
   the variant addition and dispatcher update are conformance-fixture-
-  affecting changes — bundled with the impl PR per the ADR-0024
-  "Bundled implementation" section.
+  affecting changes — bundled with the impl PR per ADR-0024
+  (Consequences: "Ships as a coupled bundle").
 - <strong>e2e chain.</strong> <code>tests/e2e/test_async_streaming_integrity.py</code>
   builds its async chain by hand in the test body; there is no
   registration seam. Wiring Graph in requires (a) adding two-layer-
@@ -11512,8 +11512,8 @@ deferred in GR-011 so the deferral is tracked.</p>
 <ul>
 <li><strong>Backends.</strong> New <code>graph</code> backend. <code>FEATURES.md</code> row added in the
   implementation phase.</li>
-<li><strong>Extras.</strong> New <code>graph</code> extra in <code>pyproject.toml</code>. See ADR-0021 for
-  the locked dependency set.</li>
+<li><strong>Extras.</strong> New <code>graph</code> extra in <code>pyproject.toml</code>, which holds the
+  pinned dependency set; ADR-0021 records the SDK choice.</li>
 <li><strong>Spec 005 (errors).</strong> Amended at RFC acceptance to add ERR-013
   <code>ResourceLocked</code>. The runtime class (<code>remote_store._errors.ResourceLocked</code>)
   and Dafny variant ship with the backend implementation per the

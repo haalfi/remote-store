@@ -6051,56 +6051,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Contract
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-not-a-store-capability" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why not a Store capability
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-not-in-ext" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why not in ext/
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-changes-if-a-second-consumer-arrives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What changes if a second consumer arrives
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10394,56 +10344,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Contract
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-not-a-store-capability" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why not a Store capability
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-not-in-ext" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why not in ext/
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-changes-if-a-second-consumer-arrives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What changes if a second consumer arrives
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10538,62 +10438,31 @@ is not implemented. S3 multipart-copy completion uses a different
 shape (<code>UploadId</code> + <code>complete-multipart-upload</code>, not a monitor URL).
 "Shared helper" was speculative reuse for a single consumer.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Ship the polling logic <strong>backend-local</strong> in
-<code>src/remote_store/aio/backends/_graph/monitor.py</code> (a module inside
-the Graph sub-package, alongside <code>backend.py</code> / <code>http.py</code> /
-<code>transfer.py</code> / <code>auth.py</code>), or inline in <code>backend.py</code> if it stays
-under ~100 lines. The Graph backend lives under <code>aio/backends/</code>
-because it is async-native (matching <code>aio/backends/_azure.py</code>); the
-poller follows. It is part of the Graph sub-package, not a shared
-facility. No public API surface and no Store-level capability is
-introduced.</p>
-<p>If and when a second backend genuinely needs the same shape — measured
-in a follow-up implementation, not predicted here — a hoisting ADR
-supersedes this one. Until then, YAGNI: one consumer, one location.</p>
-<h3 id="contract">Contract<a class="headerlink" href="#contract" title="Permanent link">&para;</a></h3>
-<p>The poller exposes an async function with these parameters:</p>
 <ul>
-<li><strong><code>monitor_url</code></strong> — the URL returned in the <code>Location</code> header.</li>
-<li><strong><code>client</code></strong> — the backend's <code>httpx.AsyncClient</code>.</li>
-<li><strong><code>status_parser</code></strong> — callable that inspects a poll response and
-  returns one of <code>pending</code>, <code>succeeded</code>, or <code>failed</code> along with an
-  optional error payload. Graph supplies its own
-  <code>parse_graph_monitor_response</code>; the contract stays parser-driven
-  in case a second consumer reuses just the loop (without making the
-  poller itself a generic helper today).</li>
-<li><strong><code>initial_interval</code></strong> — polling interval floor. Default 1 s.</li>
-<li><strong><code>max_interval</code></strong> — polling interval ceiling. Default 30 s.</li>
-<li><strong><code>backoff_factor</code></strong> — multiplicative increase applied to the
-  interval between successive polls that return <code>pending</code>. Default 2.</li>
-<li><strong><code>timeout</code></strong> — overall wall-clock limit. On expiry, raises
-  <code>BackendUnavailable</code> with the context fields specified by GR-026.</li>
+<li><strong>Ship the poller backend-local.</strong> Put the polling logic in
+  <code>src/remote_store/aio/backends/_graph/monitor.py</code> (inline in
+  <code>backend.py</code> if it stays small). It lives under <code>aio/backends/</code>
+  because the Graph backend is async-native (matching
+  <code>aio/backends/_azure.py</code>).</li>
+<li><strong>Not a shared facility (YAGNI).</strong> No second <code>202</code>-monitor consumer
+  exists today: same-account Azure copy completes server-side without
+  polling, and S3 multipart completion uses a different shape (not a
+  monitor URL). <strong>Reverse</strong> only when a second backend genuinely needs
+  the same shape, measured in a follow-up rather than predicted here; a
+  hoisting ADR then supersedes this one.</li>
+<li><strong>Parser-driven shape.</strong> The poller takes a <code>status_parser</code> mapping
+  each poll response to <code>pending</code> / <code>succeeded</code> / <code>failed</code>, so the loop
+  is already shaped for a second consumer without being a generic helper
+  today. Cadence and timeout defaults are the spec's (GR-026).</li>
+<li><strong>No Store capability.</strong> A capability such as <code>ASYNC_COPY</code> would leak
+  an implementation detail into the public API and invite callers to
+  branch on "is this copy asynchronous?", the wrong question.
+  <code>Store.copy()</code> is synchronous from the caller's view (ADR-0012); the
+  backend presents that result regardless of how it gets there.</li>
+<li><strong>Not in <code>ext/</code>.</strong> Extensions use only the public Store/Backend API
+  (ADR-0008); the poller operates on raw HTTP, takes an
+  <code>httpx.AsyncClient</code>, and serves only the backend implementer.</li>
 </ul>
-<p>The poller honours <code>Retry-After</code> headers from the monitor endpoint
-(overriding the computed interval when larger), treats transient
-<code>5xx</code> responses during polling as <code>pending</code>, and propagates
-<code>asyncio.CancelledError</code>.</p>
-<h3 id="why-not-a-store-capability">Why not a Store capability<a class="headerlink" href="#why-not-a-store-capability" title="Permanent link">&para;</a></h3>
-<p>A new capability (e.g. <code>ASYNC_COPY</code>) would leak an implementation
-detail into the public API. Callers of <code>Store.copy()</code> already treat
-the operation as synchronous from their point of view — the backend's
-job is to present that synchronous result, regardless of how it gets
-there. Declaring a capability would invite callers to branch on "is
-this copy going to be asynchronous?", which is the wrong question.</p>
-<h3 id="why-not-in-ext">Why not in <code>ext/</code><a class="headerlink" href="#why-not-in-ext" title="Permanent link">&para;</a></h3>
-<p>Extensions use only the public Store/Backend API (ADR-0008). The
-poller operates on raw HTTP, takes an <code>httpx.AsyncClient</code>, and serves
-only the backend implementer. Placing it in <code>ext/</code> would misrepresent
-its audience and scope.</p>
-<h3 id="what-changes-if-a-second-consumer-arrives">What changes if a second consumer arrives<a class="headerlink" href="#what-changes-if-a-second-consumer-arrives" title="Permanent link">&para;</a></h3>
-<p>The migration path from backend-local to shared is mechanical: lift
-the function to a shared location (<code>aio/backends/_async_monitor.py</code>
-if both consumers are async-native; <code>backends/_async_monitor.py</code> if a
-sync consumer also wants it), add a re-export from the original
-<code>aio/backends/_graph/monitor.py</code> for a release, supersede this ADR.
-The <code>status_parser</code> parameter is already shaped to support a second
-consumer's response format; no API redesign is required at hoist
-time. The current decision optimises for not paying that cost until
-there is a real demand for it.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>One file, one consumer.</strong> No premature abstraction; the polling
@@ -10610,8 +10479,12 @@ there is a real demand for it.</p>
   part of the Graph backend test surface.</li>
 <li><strong>No new capability.</strong> <code>CapabilitySet</code> is unchanged. Callers do
   not observe whether an operation polled internally.</li>
-<li><strong>Future hoist is cheap.</strong> Parser-driven contract means lifting
-  the function does not require redesigning it.</li>
+<li><strong>Future hoist is cheap.</strong> The migration is mechanical: lift the
+  function to a shared location (<code>aio/backends/_async_monitor.py</code>, or
+  <code>backends/_async_monitor.py</code> if a sync consumer also wants it), add
+  a re-export from <code>_graph/monitor.py</code> for one release, and supersede
+  this ADR. The parser-driven contract means no redesign at hoist
+  time.</li>
 </ul>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>

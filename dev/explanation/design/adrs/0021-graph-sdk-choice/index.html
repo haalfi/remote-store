@@ -10449,26 +10449,24 @@ no other backend pulls it transitively. <code>msal</code> is Microsoft's
 supported auth library, lightweight, stable, and used by
 <code>azure-identity</code> internally.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Build the backend on <code>httpx</code> (async client) plus <code>msal</code> for token
-acquisition and cache serialization.</p>
-<p>The <code>graph</code> optional extra pins:</p>
 <ul>
-<li><code>httpx</code> — async HTTP transport.</li>
-<li><code>msal</code> — token acquisition (used by the built-in <code>GraphAuth</code> helper).</li>
-<li><code>msal-extensions</code> (<code>&gt;=1.3</code>) — multi-process-safe token-cache
-  persistence (<code>PersistedTokenCache</code> + cross-process file lock, BK-291);
-  the <code>&gt;=1.3</code> floor keeps <code>portalocker</code> an optional extra rather than a
-  hard transitive dependency. Consumed only by <code>GraphAuth</code>, lazily.</li>
-<li><code>platformdirs</code> — resolves the MSAL token-cache path under
-  <code>user_config_dir("remote-store")</code>; consumed only by <code>GraphAuth</code> and
-  imported lazily so callers supplying their own token-provider
-  callable never load it (see ADR-0022).</li>
+<li><strong>Build on <code>httpx</code> + <code>msal</code>.</strong> Use <code>httpx</code>'s async client for the HTTP
+  transport and <code>msal</code> for token acquisition and cache serialization.
+  <code>httpx</code> is already an optional runtime dependency, and <code>msal</code> is
+  Microsoft's supported, lightweight auth library.</li>
+<li><strong>Hand-written REST surface.</strong> Construct an <code>httpx.AsyncClient</code>
+  internally and treat Graph as a narrow REST surface with hand-written
+  request helpers, pagination, and error mapping.</li>
+<li><strong>Reject <code>msgraph-sdk</code>.</strong> Adopting an SDK adds transitive weight (the
+  Kiota runtime plus <code>azure-identity</code>) without removing the hard parts the
+  backend must hand-write against this narrow surface regardless:
+  resumable uploads, async-operation polling, mid-read URL refresh.
+  <strong>Reverse</strong> if the backend later grows to a materially broader Graph
+  surface (mail, calendar, groups), where the SDK's coverage would start
+  to earn its weight.</li>
+<li><strong><code>Office365-REST-Python-Client</code> out of scope.</strong> Legacy SharePoint
+  REST is not a goal (RFC-0010).</li>
 </ul>
-<p>The backend constructs an <code>httpx.AsyncClient</code> internally and treats
-Graph as a narrow REST surface with hand-written request helpers,
-pagination, and error mapping.</p>
-<p><code>msgraph-sdk</code> is explicitly rejected. <code>Office365-REST-Python-Client</code>
-is out of scope (legacy SharePoint REST is not a goal — see RFC-0010).</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Narrow dependency footprint.</strong> <code>httpx</code> + <code>msal</code> +
@@ -10477,7 +10475,8 @@ is out of scope (legacy SharePoint REST is not a goal — see RFC-0010).</p>
   <code>httpx</code> is not in the base install — users who install only the
   <code>graph</code> extra pay for it once; users who already had
   <code>remote-store[httpx]</code> for <code>ReadOnlyHttpBackend</code> pay for nothing
-  extra.</li>
+  extra. The <code>graph</code> extra pins the exact versions in <code>pyproject.toml</code>,
+  their authoritative home.</li>
 <li><strong>Full control of request layer.</strong> Error mapping, retry,
   <code>Retry-After</code> handling, and monitor-URL polling are written
   directly against <code>httpx.Response</code> and raw status codes. No
@@ -10488,9 +10487,8 @@ is out of scope (legacy SharePoint REST is not a goal — see RFC-0010).</p>
   landed and the conformance suite is parameterised for it.</li>
 <li><strong>Maintenance responsibility stays with us.</strong> The Graph drives /
   items v1.0 surface is stable; ongoing churn is expected to be low.
-  If the backend later grows to cover a materially broader Graph
-  surface (mail, calendar, Teams messages, groups), <code>msgraph-sdk</code>
-  becomes worth re-evaluating. A new ADR would supersede this one.</li>
+  Re-evaluating <code>msgraph-sdk</code> begins at the Decision's reverse trigger (a
+  materially broader Graph surface) and would supersede this ADR.</li>
 </ul>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>

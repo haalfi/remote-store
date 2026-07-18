@@ -6027,54 +6027,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#flows-covered-by-graphauth" class="md-nav__link">
+  <a href="#token-cache-why-persistedtokencache" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Flows covered by GraphAuth
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#token-caching" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Token caching
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-the-backend-does-with-the-provider" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What the backend does with the provider
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#credential-masking" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Credential masking
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#config-loader-responsibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Config loader responsibility
+        Token cache: why PersistedTokenCache
       
     </span>
   </a>
@@ -10409,54 +10365,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#flows-covered-by-graphauth" class="md-nav__link">
+  <a href="#token-cache-why-persistedtokencache" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Flows covered by GraphAuth
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#token-caching" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Token caching
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-the-backend-does-with-the-provider" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What the backend does with the provider
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#credential-masking" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Credential masking
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#config-loader-responsibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Config loader responsibility
+        Token cache: why PersistedTokenCache
       
     </span>
   </a>
@@ -10560,113 +10472,55 @@ be able to obtain a current one.</p>
 Azure CLI login) are out of scope for v1 but are likely to surface
 later through user-supplied providers.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>The backend depends on a <strong>token-provider callable</strong>, not a concrete
-auth class. Two variants cover sync and async call sites:</p>
+<p>The backend authenticates through a <strong>token-provider callable</strong>, not a
+concrete auth class. The decisions:</p>
 <ul>
-<li><code>Callable[[], str]</code> — synchronous provider.</li>
-<li><code>Callable[[], Awaitable[str]]</code> — async provider.</li>
+<li><strong>Token-provider callable, two shapes.</strong> The backend accepts
+  <code>Callable[[], str]</code> (sync) or <code>Callable[[], Awaitable[str]]</code> (async)
+  and never couples to MSAL through its constructor. Users who obtain
+  tokens another way (managed identity, corporate broker, custom refresh)
+  supply their own callable. <strong>Reverse</strong> (via a new ADR) only if the
+  backend needs auth features a bare token-returning callable cannot
+  express — per-request scope selection, token metadata, or tight MSAL
+  coupling.</li>
+<li><strong>Built-in <code>GraphAuth</code> helper.</strong> Wraps MSAL and exposes both callable
+  shapes, covering two flows: <strong>client-credentials</strong> (app-only,
+  admin-consented <code>Files.ReadWrite.All</code> / <code>Sites.ReadWrite.All</code>) and
+  <strong>device-code</strong> (delegated, interactive). GR-006 / GR-007 specify each
+  flow's config fields.</li>
+<li><strong>Lazy invocation.</strong> The provider is called on first request and once
+  more on a <code>401 InvalidAuthenticationToken</code> (one-shot refresh + retry,
+  GR-029); the backend caches no token. Callers who bring their own
+  provider load none of <code>msal</code> / <code>msal-extensions</code> / <code>platformdirs</code>.</li>
+<li><strong>Credential masking on two surfaces.</strong> <code>client_secret</code> is a <code>Secret</code>
+  (masked in <code>__repr__</code>) and auto-wrapped from config via
+  <code>_SENSITIVE_KEYS</code>; the <code>Authorization</code> bearer is redacted from logs and
+  never enters exception text. Mechanisms: GR-035, SEC-003 / SEC-004 /
+  SEC-007.</li>
+<li><strong>Config-built backends get a default <code>GraphAuth</code>.</strong> The registry
+  builds one from static config (ADR-0001); user-supplied callables are
+  expressible only through direct construction. The <code>graph</code> extra's pins
+  live in <code>pyproject.toml</code> (ADR-0021 records the SDK choice).</li>
 </ul>
-<p>A built-in helper, <code>GraphAuth</code>, wraps MSAL and implements both
-client-credentials and device-code flows, exposing the result as one
-of the two callables. Users who already have another way to obtain a
-token (managed identity, corporate auth broker, custom refresh
-strategy) substitute their own callable. The backend does not couple
-to MSAL through the constructor signature — only through the optional
-default helper.</p>
-<h3 id="flows-covered-by-graphauth">Flows covered by <code>GraphAuth</code><a class="headerlink" href="#flows-covered-by-graphauth" title="Permanent link">&para;</a></h3>
+<h3 id="token-cache-why-persistedtokencache">Token cache: why <code>PersistedTokenCache</code><a class="headerlink" href="#token-cache-why-persistedtokencache" title="Permanent link">&para;</a></h3>
+<p><code>GraphAuth</code> persists the MSAL cache through
+<code>msal_extensions.PersistedTokenCache</code> (a cross-process lock plus a
+dirty-read retry, no atomic rename) and wraps it to swallow-and-log
+persistence failures, so a cache error degrades to re-acquisition rather
+than breaking an in-flight <code>read</code> / <code>write</code>. Two facts a reviewer needs
+to keep or reverse this choice:</p>
 <ul>
-<li><strong>Client-credentials.</strong> <code>tenant_id</code>, <code>client_id</code>, and
-  <code>client_secret</code> (or <code>client_certificate</code>). Admin-consented
-  application permissions (<code>Files.ReadWrite.All</code>,
-  <code>Sites.ReadWrite.All</code>) on the target tenant.</li>
-<li><strong>Device-code.</strong> <code>tenant_id</code> and <code>client_id</code> (public client).
-  Delegated permissions. The user completes the login in a browser;
-  MSAL caches the resulting refresh token.</li>
+<li>It replaced a hand-rolled <code>SerializableTokenCache</code> + truncate-at-open
+  flush, under which a concurrent reader could observe a torn cache and
+  be forced to re-login (BK-291).</li>
+<li>A bare temp-file + <code>os.replace</code> was rejected because on Windows
+  <code>os.replace</code> raises <code>PermissionError</code> (<code>WinError 5</code>) when the
+  destination is held open by a concurrent reader; the
+  lock-plus-read-retry design sidesteps rename entirely.</li>
 </ul>
-<h3 id="token-caching">Token caching<a class="headerlink" href="#token-caching" title="Permanent link">&para;</a></h3>
-<p>The token cache is an <code>msal_extensions.PersistedTokenCache</code> backed by a
-<code>FilePersistence</code> file under <code>platformdirs.user_config_dir("remote-store")</code>
-(default <code>graph_token_cache.json</code>). <code>PersistedTokenCache</code> is
-<strong>multi-process-safe</strong>: every MSAL acquisition routes through its
-<code>modify()</code>, which holds a cross-process <code>CrossPlatLock</code> (a sibling
-<code>&lt;cache_path&gt;.lockfile</code>), reload-merges the on-disk state, then writes it
-back — and its <code>search()</code> read path retries on a dirty read. The write
-itself is an in-place truncate-and-write (<code>FilePersistence.save</code>), <strong>not</strong> an
-atomic rename; corruption-freedom is provided not by atomicity but by the lock
-<strong>serializing concurrent writers</strong> and the read-retry <strong>tolerating a torn read</strong>
-(readers do not hold the lock, so they can momentarily observe a truncated file —
-which is exactly why <code>search()</code> retries). The net effect for concurrent
-<code>GraphAuth</code>/<code>GraphBackend</code> instances or processes sharing the default cache (the
-common multi-worker deployment) is that a consumer never observes a corrupt
-cache.</p>
-<p>This replaced the original hand-rolled <code>SerializableTokenCache</code> +
-<code>open(path, "w").write(...)</code> flush, which truncated the file at <code>open</code> before
-writing (BK-291): a concurrent reader could observe an empty/torn cache,
-forcing a re-login. A bare temp-file + <code>os.replace</code> was rejected because on
-Windows <code>os.replace</code> raises <code>PermissionError</code> (<code>WinError 5</code>) when the
-destination is held open by a concurrent reader or contended by another
-replace; <code>PersistedTokenCache</code> sidesteps that entirely (lock + read-retry,
-no rename). Because persistence is now continuous, <code>GraphAuth.flush_cache</code>
-is a best-effort no-op retained only for the GR-051 <code>close()</code> hook.</p>
-<p>Cache access moved <em>inside</em> MSAL's acquisition — <code>modify()</code> writes through
-under the lock, and <code>search()</code> reload-merges on every acquisition — so an
-unguarded write failure (<code>OSError</code> / lock exception) <em>or</em> read failure (a
-corrupt / persistently-contended cache making <code>search()</code> re-raise after its
-dirty-read retries) would escape <code>get_token</code> untyped mid-<code>read</code> / <code>write</code>,
-regressing the best-effort-swallow the old <code>flush_cache</code> provided and the
-GR-006 / GR-008 typed-error contract. The multi-process design makes dirty
-reads a new, more frequent failure mode (every acquisition reloads), so the
-read path matters as much as the write path. <code>GraphAuth</code> therefore wraps the
-cache in a thin <code>PersistedTokenCache</code> subclass: <code>modify()</code> swallows+logs
-persistence failures (degrade to re-acquisition), and <code>search()</code> swallows+logs
-read failures and returns <code>[]</code> (degrade to a cache miss → fresh acquisition),
-keeping acquisition non-breaking while preserving multi-process safety on the
-happy path. The lock wait runs on the calling thread, and because the sync
-provider is invoked directly on the event loop (no <code>to_thread</code>), a <em>contended</em>
-acquisition blocks the loop for the lock backend's timeout — up to ≈5 s with the
-<code>filelock</code> fallback that ships when <code>portalocker</code> is absent (it is not in the
-resolved <code>graph</code> lock). Offloading the acquisition off the event loop belongs to
-the async-<code>GraphAuth</code> path (BK-292), not the sync provider; the bound is stated
-here so the deferral is not misread as negligible.</p>
-<p>Users can override the path with <code>cache_path=</code> or supply their own
-token-provider callable to bypass <code>GraphAuth</code> (and MSAL) altogether.</p>
-<p><code>platformdirs</code>, <code>msal</code>, and <code>msal-extensions</code> are runtime dependencies of
-the built-in <code>GraphAuth</code> implementation (see ADR-0021 for the full <code>graph</code>
-extra dependency set). Callers that supply their own provider and never
-instantiate <code>GraphAuth</code> do not load any of them at import time (standard
-lazy-import pattern, applied here to the <code>aio/backends/_graph/auth</code> module).</p>
-<h3 id="what-the-backend-does-with-the-provider">What the backend does with the provider<a class="headerlink" href="#what-the-backend-does-with-the-provider" title="Permanent link">&para;</a></h3>
-<p>The provider is called lazily: no token acquisition happens in
-<code>__init__</code>. The backend invokes the callable on first request and on
-<code>401 InvalidAuthenticationToken</code> responses (one-shot refresh + retry,
-per GR-029). Results are not cached inside the backend — MSAL (or the
-user-supplied provider) owns the lifetime policy.</p>
-<h3 id="credential-masking">Credential masking<a class="headerlink" href="#credential-masking" title="Permanent link">&para;</a></h3>
-<p>Two concrete mechanisms cover credential leakage:</p>
-<ul>
-<li><strong><code>Secret</code> wrapper at config and <code>__repr__</code>.</strong> <code>GraphAuth</code> accepts
-  <code>client_secret: str | Secret</code>, calls <code>.reveal()</code> internally per
-  SEC-004, and exposes a <code>__repr__</code> that masks the secret per AF-008.
-  <code>client_secret</code> and <code>client_certificate</code> are in the default
-  <code>_SENSITIVE_KEYS</code> set (SEC-003), so <code>RegistryConfig.from_dict()</code>
-  auto-wraps them — config-loaded Graph backends inherit the same
-  auto-wrap protection as S3 / Azure / SFTP credentials. (ID-127 added
-  the two keys to the set; they predate the Graph backend's own
-  surface, landing with the GR-CORE config ripple.)</li>
-<li><strong><code>Authorization</code> header redaction at the request boundary.</strong> The
-  bearer token is replaced with the literal <code>"***"</code> in any
-  DEBUG-level log record emitted by the backend, and never appears
-  in <code>repr()</code> / <code>str()</code> of any exception the backend raises (GR-035).
-  <code>SecretRedactionFilter</code> (SEC-007) catches the path where headers
-  are logged via <code>record.args</code>. The backend does not pass the header
-  into exception messages.</li>
-</ul>
-<h3 id="config-loader-responsibility">Config loader responsibility<a class="headerlink" href="#config-loader-responsibility" title="Permanent link">&para;</a></h3>
-<p>When the registry constructs a Graph backend from TOML / YAML / dict
-config (per the Registry → Backends architecture in ADR-0001), it
-builds a default <code>GraphAuth</code> from the config fields and passes its
-callable into the backend. User-supplied callables are not expressible
-in static config and only apply to direct construction.</p>
+<p>The cache path, override rules, and the multi-process-safety contract are
+specified by GR-007; the persistence mechanism itself lives in
+<code>_graph/auth.py</code>.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Testability.</strong> Unit tests stub the callable with a lambda
