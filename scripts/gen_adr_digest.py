@@ -40,10 +40,21 @@ Check mode (--check):
     Read-only. Exit 0 when every ADR is well-formed, the supersession graph is
     consistent, and DIGEST.md matches a fresh render. Exit 1 otherwise. Suitable
     as a lint gate.
+
+Advisory stream (both modes):
+    Each ``## Decision`` section is additionally checked, on its raw (undemoted)
+    body, against a word budget, presence of version specifiers (e.g. ``>=1.3``,
+    which usually belong in pyproject/spec rather than prose), and heading depth
+    (a ``####`` or deeper heading inside a Decision is a smell). Flagged ADRs
+    print non-failing ``ADVICE`` notices, plus a corpus-wide Decision word-count
+    summary, in both normal and ``--check`` mode. Thresholds are configurable via
+    ``--max-decision-words`` / ``--max-decision-depth``. This stream never changes
+    the exit status — it is advisory only, not a gate (ID-232 research §8).
 """
 
 from __future__ import annotations
 
+import argparse
 import dataclasses
 import re
 import sys
@@ -55,6 +66,11 @@ DIGEST = ADR_DIR / "DIGEST.md"
 
 STATUSES = ("Proposed", "Accepted", "Superseded")
 LINK_KEYS = ("supersedes", "superseded-by", "amends")
+
+# Advisory thresholds for the (non-failing) Decision-bloat heuristic — see the
+# "Advisory stream" note in the module docstring and `advisory_notices()`.
+DECISION_WORD_BUDGET = 350
+DECISION_MAX_DEPTH = 3  # H3; deeper (####) headings inside a Decision are a smell
 
 # Real ADR files are named NNNN-slug.md; DIGEST.md and any future non-numbered
 # companion must not be parsed as an ADR.
@@ -170,6 +186,7 @@ class Adr:
     superseded_by: list[str]
     amends: list[str]
     decision: str
+    decision_raw: str  # undemoted ## Decision body, for advisory measurement
 
 
 def _norm_id(number: str) -> str:
@@ -222,6 +239,7 @@ def parse(path: Path) -> tuple[Adr | None, list[str]]:
         superseded_by=links["superseded-by"],
         amends=links["amends"],
         decision=decision,
+        decision_raw=body,
     )
     return adr, errors
 
@@ -294,6 +312,148 @@ def drift_warnings(adrs: list[Adr]) -> list[str]:
     return warnings
 
 
+# Advisory-only heuristics: never gate (see the module docstring's "Advisory
+# stream" note). Measured on the *raw*, undemoted Decision body — `a.decision`
+# has already been heading-demoted by +2, which would corrupt depth checks.
+_VERSION_SPEC_RE = re.compile(r"(?:>=|<=|==|~=|!=)\s*\d+(?:\.\d+)*")
+
+
+def _version_specs_outside_fences(body: str) -> list[str]:
+    """Version-specifier literals (e.g. ``>=1.3``) outside fenced code blocks."""
+    matches: list[str] = []
+    in_code = False
+    for line in body.splitlines():
+        if _fence_toggle(line):
+            in_code = not in_code
+            continue
+        if in_code:
+            continue
+        matches.extend(m.group(0) for m in _VERSION_SPEC_RE.finditer(line))
+    return matches
+
+
+def _deepest_heading_over(body: str, max_depth: int) -> int:
+    """Deepest ATX heading level exceeding *max_depth* outside fenced code
+    blocks, or 0 if none exceed it."""
+    deepest = 0
+    in_code = False
+    for line in body.splitlines():
+        if _fence_toggle(line):
+            in_code = not in_code
+            continue
+        if in_code:
+            continue
+        m = _HEADING_RE.match(line)
+        if m:
+            level = len(m.group(1))
+            if level > max_depth:
+                deepest = max(deepest, level)
+    return deepest
+
+
+def _count_subsections_and_fences(body: str) -> tuple[int, int]:
+    """(count of exact ``### `` subsection headings, count of fenced code
+    blocks) outside/around fences, on the raw Decision body."""
+    subsections = 0
+    fence_toggles = 0
+    in_code = False
+    for line in body.splitlines():
+        if _fence_toggle(line):
+            in_code = not in_code
+            fence_toggles += 1
+            continue
+        if not in_code and line.startswith("### "):
+            subsections += 1
+    return subsections, fence_toggles // 2
+
+
+def _subsections(body: str) -> list[tuple[str, str]]:
+    """Split *body* into (title, text) segments on exact ``### `` headings
+    outside fenced code blocks. Text before the first such heading is titled
+    ``(preamble)``. Headings inside fences do not split a segment."""
+    segments: list[tuple[str, list[str]]] = [("(preamble)", [])]
+    in_code = False
+    for line in body.splitlines():
+        if _fence_toggle(line):
+            in_code = not in_code
+            segments[-1][1].append(line)
+            continue
+        if not in_code and line.startswith("### "):
+            segments.append((line.lstrip("#").strip(), []))
+            continue
+        segments[-1][1].append(line)
+    return [(title, "\n".join(lines)) for title, lines in segments]
+
+
+def decision_word_total(adrs: list[Adr]) -> int:
+    """Total word count across every ADR's raw Decision body — the
+    before/after corpus metric for a Decision-slimming pass."""
+    return sum(len(a.decision_raw.split()) for a in adrs)
+
+
+def advisory_notices(
+    adrs: list[Adr],
+    *,
+    word_budget: int = DECISION_WORD_BUDGET,
+    max_depth: int = DECISION_MAX_DEPTH,
+) -> list[str]:
+    """Non-failing advisory signals on each ADR's raw ``## Decision`` body.
+
+    Three triggers, any one of which flags the ADR:
+    1. Word budget — the Decision body exceeds *word_budget* words.
+    2. Version specifiers — pins like ``>=1.3`` outside fenced code, which
+       usually belong in pyproject/spec rather than ADR prose.
+    3. Heading depth — a heading deeper than *max_depth* (default H3), a
+       forward guardrail against Decisions growing their own outline.
+
+    Enrichment (subsection/code-block counts, heaviest subsections) is
+    reported alongside a length flag but never triggers one by itself.
+
+    Returns one combined notice string per flagged ADR (unflagged ADRs are
+    omitted), without a leading label — callers prefix via `_report`, same as
+    `drift_warnings`. Never affects exit status: advisory only (ID-232
+    research §8).
+    """
+    notices: list[str] = []
+    for a in adrs:
+        body = a.decision_raw
+        words = len(body.split())
+        over_budget = words > word_budget
+        specs = _version_specs_outside_fences(body)
+        deepest = _deepest_heading_over(body, max_depth)
+
+        if not (over_budget or specs or deepest):
+            continue
+
+        parts: list[str] = []
+        if over_budget:
+            overage = words - word_budget
+            subsection_count, code_blocks = _count_subsections_and_fences(body)
+            piece = (
+                f"Decision {words} words (budget {word_budget}, +{overage}); "
+                f"{subsection_count} subsections, {code_blocks} code blocks"
+            )
+            heavy = sorted(
+                ((title, len(text.split())) for title, text in _subsections(body) if len(text.split()) > 100),
+                key=lambda item: item[1],
+                reverse=True,
+            )[:3]
+            if heavy:
+                heavy_str = ", ".join(f"'{title}' (~{count} w)" for title, count in heavy)
+                piece += f"; heaviest: {heavy_str}"
+            parts.append(piece)
+        if specs:
+            parts.append(
+                f"Decision carries {len(specs)} version specifier(s) (e.g. '{specs[0]}') "
+                "— spec-rate pins belong in pyproject/spec"
+            )
+        if deepest:
+            parts.append(f"Decision has a heading at depth {deepest} (max advised {max_depth}); consider flattening")
+
+        notices.append(f"{a.id} ({a.path.name}): " + "; ".join(parts))
+    return notices
+
+
 def render(adrs: list[Adr]) -> str:
     lines = [
         "# ADR digest",
@@ -336,7 +496,19 @@ def _report(stream, label: str, items: list[str]) -> None:
         print(f"{label} {item}", file=stream)
 
 
-def generate() -> int:
+def _report_advice(adrs: list[Adr], *, word_budget: int, max_depth: int) -> None:
+    """Print the advisory ADVICE stream plus the corpus summary line. Purely
+    additive output — never consulted for the caller's return value."""
+    notices = advisory_notices(adrs, word_budget=word_budget, max_depth=max_depth)
+    if notices:
+        _report(sys.stdout, "ADVICE", notices)
+    total = decision_word_total(adrs)
+    print(f"Decision total: {total} words across {len(adrs)} ADR(s).")
+    if notices:
+        print(f"{len(notices)} advisory notice(s); advisory only, never a gate (ID-232 research §8).")
+
+
+def generate(*, word_budget: int = DECISION_WORD_BUDGET, max_depth: int = DECISION_MAX_DEPTH) -> int:
     adrs, errors = load_all(ADR_DIR)
     errors += hard_errors(adrs)
     if errors:
@@ -350,10 +522,11 @@ def generate() -> int:
     if warnings:
         _report(sys.stdout, "DRIFT", warnings)
         print(f"{len(warnings)} drift warning(s) — see above.")
+    _report_advice(adrs, word_budget=word_budget, max_depth=max_depth)
     return 0
 
 
-def check() -> int:
+def check(*, word_budget: int = DECISION_WORD_BUDGET, max_depth: int = DECISION_MAX_DEPTH) -> int:
     adrs, errors = load_all(ADR_DIR)
     errors += hard_errors(adrs)
     if errors:
@@ -375,16 +548,36 @@ def check() -> int:
     if stale:
         print(f"STALE: {DIGEST.relative_to(ROOT)} is out of date. Run: hatch run gen-adr-digest")
 
-    if stale or warnings:
-        return 1
-    print(f"OK — {len(adrs)} ADR(s), digest current, graph consistent.")
-    return 0
+    result = 1 if (stale or warnings) else 0
+    if result == 0:
+        print(f"OK — {len(adrs)} ADR(s), digest current, graph consistent.")
+    _report_advice(adrs, word_budget=word_budget, max_depth=max_depth)
+    return result
 
 
 def main() -> int:
-    if "--check" in sys.argv[1:]:
-        return check()
-    return generate()
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Read-only: exit 1 on hard errors, drift, or a stale DIGEST.md; 0 otherwise.",
+    )
+    parser.add_argument(
+        "--max-decision-words",
+        type=int,
+        default=DECISION_WORD_BUDGET,
+        help=f"Advisory word budget for a ## Decision body (default {DECISION_WORD_BUDGET}).",
+    )
+    parser.add_argument(
+        "--max-decision-depth",
+        type=int,
+        default=DECISION_MAX_DEPTH,
+        help=f"Advisory max heading depth inside a ## Decision body (default {DECISION_MAX_DEPTH}).",
+    )
+    args = parser.parse_args()
+    if args.check:
+        return check(word_budget=args.max_decision_words, max_depth=args.max_decision_depth)
+    return generate(word_budget=args.max_decision_words, max_depth=args.max_decision_depth)
 
 
 if __name__ == "__main__":

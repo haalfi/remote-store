@@ -5,6 +5,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / "scripts"
 
@@ -272,6 +274,113 @@ class TestRender:
 
 
 # ---------------------------------------------------------------------------
+# advisory_notices / decision_word_total (ID-232 Phase A: non-failing
+# Decision-bloat heuristic)
+# ---------------------------------------------------------------------------
+
+
+class TestAdvisory:
+    """ID-232: advisory (non-failing) Decision-bloat heuristic."""
+
+    @pytest.mark.spec("ID-232")
+    def test_long_decision_flags_only_the_bloated_adr(self, tmp_path):
+        _write(tmp_path, "0001", slug="bloated", decision="word " * 400)
+        _write(tmp_path, "0002", slug="tight")  # default tight decision, alongside
+        adrs, _ = _mod.load_all(tmp_path)
+        notices = _mod.advisory_notices(adrs)
+        assert len(notices) == 1
+        notice = notices[0]
+        assert notice.startswith("ADR-0001 (0001-bloated.md): ")
+        assert "400 words" in notice
+        assert "+50" in notice  # 400 - budget(350)
+        assert not any(n.startswith("ADR-0002 ") for n in notices)
+
+    @pytest.mark.spec("ID-232")
+    def test_tight_decision_is_not_flagged(self, tmp_path):
+        _write(tmp_path, "0001", slug="tight")  # default: "We will do the sensible thing."
+        adrs, _ = _mod.load_all(tmp_path)
+        assert _mod.advisory_notices(adrs) == []
+
+    @pytest.mark.spec("ID-232")
+    def test_short_decision_with_version_pin_is_flagged(self, tmp_path):
+        # Short prose (well under the word budget) still trips the version-
+        # specifier trigger — proves length is not what caught it.
+        decision = "Use httpx and msal (msal-extensions >=1.3 keeps portalocker optional)."
+        _write(tmp_path, "0001", slug="pin", decision=decision)
+        adrs, _ = _mod.load_all(tmp_path)
+        notices = _mod.advisory_notices(adrs)
+        assert len(notices) == 1
+        notice = notices[0]
+        assert notice.startswith("ADR-0001 ")
+        assert "version specifier" in notice
+        assert ">=1.3" in notice
+        assert "words (budget" not in notice  # the length trigger did not also fire
+
+    @pytest.mark.spec("ID-232")
+    def test_version_pin_inside_fence_is_not_flagged(self, tmp_path):
+        decision = 'Short prose about installation.\n\n```python\ninstall("pkg>=1.3")\n```\n'
+        _write(tmp_path, "0001", slug="fenced-pin", decision=decision)
+        adrs, _ = _mod.load_all(tmp_path)
+        assert _mod.advisory_notices(adrs) == []
+
+    @pytest.mark.spec("ID-232")
+    def test_h4_heading_flags_depth(self, tmp_path):
+        decision = "Lead.\n\n#### Too Deep\n\nDetail here."
+        _write(tmp_path, "0001", slug="deep", decision=decision)
+        adrs, _ = _mod.load_all(tmp_path)
+        notices = _mod.advisory_notices(adrs)
+        assert len(notices) == 1
+        notice = notices[0]
+        assert notice.startswith("ADR-0001 ")
+        assert "depth 4" in notice
+        assert "max advised 3" in notice
+
+    @pytest.mark.spec("ID-232")
+    def test_h3_heading_is_not_flagged_by_depth(self, tmp_path):
+        decision = "Lead.\n\n### Fine Subsection\n\nDetail here."
+        _write(tmp_path, "0001", slug="h3", decision=decision)
+        adrs, _ = _mod.load_all(tmp_path)
+        assert _mod.advisory_notices(adrs) == []
+
+    @pytest.mark.spec("ID-232")
+    def test_heaviest_subsection_is_named_lightest_is_not(self, tmp_path):
+        heavy_body = "word " * 300  # > 100 words
+        light_body = "word " * 60  # < 100 words
+        decision = f"Lead in.\n\n### Heavy\n\n{heavy_body}\n\n### Light\n\n{light_body}"
+        _write(tmp_path, "0001", slug="heavy-light", decision=decision)
+        adrs, _ = _mod.load_all(tmp_path)
+        notices = _mod.advisory_notices(adrs)
+        assert len(notices) == 1
+        notice = notices[0]
+        assert "'Heavy'" in notice
+        assert "'Light'" not in notice
+
+    @pytest.mark.spec("ID-232")
+    def test_custom_word_budget_is_respected(self, tmp_path):
+        decision = "word " * 200
+        _write(tmp_path, "0001", slug="midlength", decision=decision)
+        adrs, _ = _mod.load_all(tmp_path)
+        assert _mod.advisory_notices(adrs) == []  # silent at the default 350 budget
+        notices = _mod.advisory_notices(adrs, word_budget=100)
+        assert len(notices) == 1
+        assert "200 words" in notices[0]
+        assert "budget 100" in notices[0]
+
+    @pytest.mark.spec("ID-232")
+    def test_multiple_triggers_combine_into_one_notice(self, tmp_path):
+        # Both the word budget AND a version specifier fire on the same ADR.
+        decision = "word " * 360 + "\n\nSee pkg >=1.3 for details."
+        _write(tmp_path, "0001", slug="multi", decision=decision)
+        adrs, _ = _mod.load_all(tmp_path)
+        notices = _mod.advisory_notices(adrs)
+        assert len(notices) == 1  # one combined notice, not two
+        notice = notices[0]
+        assert "words (budget" in notice
+        assert "version specifier" in notice
+        assert ">=1.3" in notice
+
+
+# ---------------------------------------------------------------------------
 # generate / check
 # ---------------------------------------------------------------------------
 
@@ -309,6 +418,16 @@ class TestGenerate:
         assert not _mod.DIGEST.exists()
         assert "ERROR" in capsys.readouterr().err
 
+    @pytest.mark.spec("ID-232")
+    def test_advisory_bloat_does_not_fail_generate(self, tmp_path, monkeypatch, capsys):
+        # Advisory-neutrality: a bloated Decision must never turn generate()
+        # into a gate — it still writes and returns 0, just prints ADVICE.
+        adr_dir = _setup_repo(tmp_path, monkeypatch)
+        _write(adr_dir, "0001", slug="bloated", decision="word " * 400)
+        assert _mod.generate() == 0
+        assert _mod.DIGEST.exists()
+        assert "ADVICE" in capsys.readouterr().out
+
 
 class TestCheck:
     def test_clean_returns_zero(self, tmp_path, monkeypatch, capsys):
@@ -343,6 +462,42 @@ class TestCheck:
         assert _mod.check() == 1
         assert "not found" in capsys.readouterr().out
 
+    @pytest.mark.spec("ID-232")
+    def test_advisory_bloat_does_not_fail_check(self, tmp_path, monkeypatch, capsys):
+        # Advisory-neutrality: a bloated Decision must never turn check() into
+        # a stricter gate — it still returns 0 when nothing else is wrong.
+        adr_dir = _setup_repo(tmp_path, monkeypatch)
+        _write(adr_dir, "0001", slug="bloated", decision="word " * 400)
+        _mod.generate()
+        capsys.readouterr()
+        assert _mod.check() == 0
+        out = capsys.readouterr().out
+        assert "ADVICE" in out
+        assert "Decision total:" in out
+
+    @pytest.mark.spec("ID-232")
+    def test_advisory_does_not_mask_a_real_drift_failure(self, tmp_path, monkeypatch, capsys):
+        # Advice and a real gate failure can coexist in the same run: ADVICE
+        # is additive output, not a substitute for the drift/staleness gate.
+        adr_dir = _setup_repo(tmp_path, monkeypatch)
+        _write(adr_dir, "0016", slug="old", status="Accepted", decision="word " * 400)
+        _write(adr_dir, "0017", slug="new", supersedes=["ADR-0016"])
+        _mod.generate()
+        capsys.readouterr()
+        assert _mod.check() == 1
+        out = capsys.readouterr().out
+        assert "DRIFT" in out
+        assert "ADVICE" in out
+
+    @pytest.mark.spec("ID-232")
+    def test_check_prints_decision_total_summary(self, tmp_path, monkeypatch, capsys):
+        adr_dir = _setup_repo(tmp_path, monkeypatch)
+        _write(adr_dir, "0001", slug="first")
+        _mod.generate()
+        capsys.readouterr()
+        _mod.check()
+        assert "Decision total:" in capsys.readouterr().out
+
 
 # ---------------------------------------------------------------------------
 # The real ADR tree (PR #909 review, finding 4): guard the committed digest
@@ -371,3 +526,15 @@ class TestRealAdrs:
     def test_committed_digest_matches_fresh_render(self):
         adrs, _ = _mod.load_all(_mod.ADR_DIR)
         assert _mod.DIGEST.read_text(encoding="utf-8") == _mod.render(adrs)
+
+    @pytest.mark.spec("ID-232")
+    def test_tight_real_adrs_are_never_flagged(self):
+        # Negative-direction pin only (per ID-232 Phase A scope): the known
+        # tight ADRs must stay silent. Phase B will rewrite the known
+        # offenders (0021/0022/0023/0024/0025/0008), so asserting those ARE
+        # flagged would break the moment that rewrite lands — only pin the
+        # tight-stays-silent direction here.
+        adrs, _ = _mod.load_all(_mod.ADR_DIR)
+        notices = _mod.advisory_notices(adrs)
+        assert not any(n.startswith("ADR-0002 ") for n in notices)
+        assert not any(n.startswith("ADR-0004 ") for n in notices)

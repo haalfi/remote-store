@@ -39,6 +39,11 @@ anything you would not want in the digest belongs under `## Consequences` or a
 later `##` section. Internal `###` sub-headings are demoted automatically to
 nest under the digest entry.
 
+State decision-rate content only: the choice and the reasons that would
+reverse it. Spec/impl detail — version pins, contracts, wire mechanics —
+belongs in the spec or `## Consequences`, not here; `gen-adr-digest` emits an
+advisory size/spec-detail check to help keep this honest.
+
 ## Consequences
 
 What becomes true after this decision?
