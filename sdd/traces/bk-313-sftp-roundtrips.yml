@@ -34,7 +34,7 @@ surprising_ripples:
   - src/remote_store/_stream.py
 discovery_followups:
   - BK-316
-review_rounds: 4
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
@@ -163,3 +163,14 @@ phases:
         read_type: reference
         extract: "Consistency: round-3's 'every rich field None' carve-out was PARTIAL — the canonical _models.py WriteResult docstring, the write/write_atomic docstrings, and four hand-written admonitions still singled out last_modified, implying etag/version_id/digest ARE populated for SFTP (they are not — its write response carries no metadata). A documentation-expert completeness sweep found aio/backend.md was the last-missed surface after the first pass. All aligned to 'SFTP leaves every rich field None'. The BACKLOG-DONE BK-313 entry's tier-2 description (pre-audit signal set + a since-disproven wedge-free claim) was also corrected to the shipped post-audit behavior."
         outcome: misleading
+  - id: review_round5
+    name: Review (round 5, final)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "open_atomic yield-phase cleanup guard"
+        read_type: reference
+        extract: "Final-round review was clean (0 bug/spec/test/consistency/ripple/security) bar one low-severity Possible: the round-4 cleanup guard (if _sftp_client is not None) only skipped the reconnect-to-unlink for the flush/close-death case (client already nulled by _errors). A yield-phase death arrives raw (client not yet nulled), so on a full transport drop the cleanup would reconnect solely to remove the temp, then _map_exception nulls it again — the same pathology on the other branch. Applied the reviewer's suggestion: gate cleanup on the connection also being alive (factor out connection_lost = _is_connection_dead(exc) or SSHException; skip remove when the client is gone OR the failure is a connection death). Pinned by a new test spying on remove() (deletable-green otherwise, since the channel-death test creates no real temp)."
+      - file: CHANGELOG.md
+        section: "Unreleased BK-313 entry"
+        read_type: reference
+        extract: "Review: the Unreleased entry had grown into a verbose audit-020 paragraph; trimmed back to an id+title stub per the Unreleased-stub-only convention (full prose is authored at release; detail lives in BACKLOG-DONE and this trace)."

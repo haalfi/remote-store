@@ -773,6 +773,43 @@ class TestSFTPConnection:
         assert not isinstance(exc_info.value, BackendUnavailable), "errno-less disk-full is not a connection death"
 
     @pytest.mark.spec("SFTP-010")
+    def test_open_atomic_connection_death_skips_temp_cleanup(self, sftp_backend: Backend) -> None:
+        """A yield-phase connection death must not attempt a reconnect-to-unlink.
+
+        The best-effort temp `remove` is gated on the connection being alive: a
+        dead-channel signal skips it, because unlinking the temp over a dropped
+        connection would spin up a fresh tenacity reconnect (against a possibly
+        down server) only for `_map_exception` to null the client again — the
+        exact waste the flush/close-death guard avoids. The orphan temp is
+        unavoidable on a dead channel regardless. A spy on `remove` asserts it is
+        never called on the connection-death path (removing the guard's
+        `not connection_lost` clause would re-attempt it).
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("warmup.txt", b"x")  # live connection + parent dir
+        remove_calls: list[str] = []
+        real_remove = sftp_backend._sftp_client.remove
+
+        def _spy_remove(remote_path: str, *a: Any, **k: Any) -> Any:
+            remove_calls.append(remote_path)
+            return real_remove(remote_path, *a, **k)
+
+        sftp_backend._sftp_client.remove = _spy_remove  # type: ignore[method-assign]
+
+        class _DeadWriteHandle:
+            def write(self, _data: bytes) -> None:
+                raise EOFError("server closed connection")  # yield-phase channel death
+
+            def close(self) -> None:
+                return None
+
+        sftp_backend._sftp_client.file = lambda *a, **k: _DeadWriteHandle()  # type: ignore[method-assign]
+        with pytest.raises(BackendUnavailable), sftp_backend.open_atomic("oa_nocleanup.txt") as f:  # noqa: PT012
+            f.write(b"payload")
+        assert remove_calls == [], "connection-death open_atomic must not reconnect just to unlink the temp"
+        assert sftp_backend._sftp_client is None  # still invalidated for tier-2 recovery
+
+    @pytest.mark.spec("SFTP-010")
     @pytest.mark.spec("SFTP-024")
     def test_read_stream_eoferror_maps_and_reconnects(self, sftp_backend: Backend) -> None:
         """audit-020 M1 at the SFTP level: a read-path ``EOFError`` maps + invalidates the client.

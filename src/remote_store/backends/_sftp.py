@@ -1029,24 +1029,31 @@ class SFTPBackend(Backend):
                 handle.close()
                 self._promote(tmp_path, sftp_path, path, overwrite=overwrite)
         except Exception as exc:
-            # Best-effort temp cleanup — but only over a client we still hold. If
-            # a flush/close death already ran through _errors() above, it has
-            # nulled _sftp_client; re-entering the _sftp property here would spin
-            # up a fresh connection (tenacity retry/backoff against a possibly
-            # down server) purely to unlink a temp file, and would undo the
-            # invalidation the next op relies on. Skip cleanup in that case.
-            if self._sftp_client is not None:
-                with contextlib.suppress(Exception):
-                    self._sftp.remove(tmp_path)
-            # A backend death surfaced during the caller's streamed writes — a
-            # dead channel or any paramiko SSH/protocol error — is a backend
-            # error, not the caller's: route it through _map_exception (which, for
-            # a dead connection, also invalidates the client). Flush/close and
-            # promote failures are already mapped by the _errors() block above;
-            # the caller's own in-block exceptions propagate unchanged.
             import paramiko
 
-            if self._is_connection_dead(exc) or isinstance(exc, paramiko.SSHException):
+            # Was the connection itself lost? Two shapes reach here: a flush/close
+            # death already ran through _errors() above and arrives mapped (client
+            # already nulled), or a yield-phase death arrives raw as a
+            # dead-channel signal / SSHException. Either way the connection is
+            # gone.
+            connection_lost = self._is_connection_dead(exc) or isinstance(exc, paramiko.SSHException)
+            # Best-effort temp cleanup — but never at the cost of a reconnect.
+            # Skip it when the client is already gone (a flush/close death nulled
+            # it) OR when this exc is itself a dead-connection signal: unlinking
+            # the temp over a dropped connection would spin up a fresh tenacity
+            # reconnect (against a possibly down server) only for _map_exception
+            # to null it again two lines down. The orphan temp is unavoidable on a
+            # dead channel regardless (see BK-316 for the temp-cleanup edges).
+            if self._sftp_client is not None and not connection_lost:
+                with contextlib.suppress(Exception):
+                    self._sftp.remove(tmp_path)
+            # A backend death surfaced during the caller's streamed writes is a
+            # backend error, not the caller's: route it through _map_exception
+            # (which, for a raw dead-channel signal, also invalidates the client).
+            # Flush/close and promote failures were already mapped by the
+            # _errors() block above; the caller's own in-block exceptions (not
+            # connection signals) propagate unchanged.
+            if connection_lost:
                 raise self._map_exception(exc, path) from None
             raise
 
