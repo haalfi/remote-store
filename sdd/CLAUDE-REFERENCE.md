@@ -14,12 +14,13 @@ The ripple-check has two presentations of the same set of triggers, grouped by S
 - The **Pre-work index** below is a one-line-per-trigger scan you read **before starting work** that might touch any of the triggers. It exists because 3/9 sampled PRs missed ripples by consulting the table only at verify-end (`sdd/research/research-agent-workflow-substrate.md` § 2.3).
 - The **Detailed checklist** below it lists the same triggers with the full ripple set, used at verify-end after the diff is complete and by PR reviewers.
 
-Both presentations contain the same trigger rows in the same order. Trigger names are bare topics (no leading article). If you add, remove, rename, or re-order a row, update both presentations and any trace `section:` strings that cite the row by name.
+Both presentations cover the same triggers in the same lifecycle order, but they are not strictly row-for-row identical: the Detailed checklist expands some triggers into finer rows (e.g. the gating dicts split into sync and async), so its row count runs a little higher. Trigger names are bare topics (no leading article). If you add, remove, rename, or re-order a trigger, update both presentations and any trace `section:` strings that cite the row by name.
 
-<!-- Two-presentations-one-source: row names, row count, and row order must
-match between "Pre-work index" and "Detailed checklist". Trace section strings
-(sdd/traces/*.yml) cite row names verbatim — renaming requires updating those
-too. Reviewer-enforced; if drift recurs, promote a check script into BACKLOG. -->
+<!-- Two-presentations-one-source: the same triggers appear in both, in the same
+order; the Detailed checklist may expand one trigger into several rows, so the
+row counts are not required to be equal. Trace section strings (sdd/traces/*.yml)
+cite row names verbatim — renaming requires updating those too. Reviewer-enforced;
+if drift recurs, promote a check script into BACKLOG. -->
 
 <a id="pre-work-index"></a>
 ### Pre-work index

@@ -13,7 +13,7 @@ audience:
   - contributor.process
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
