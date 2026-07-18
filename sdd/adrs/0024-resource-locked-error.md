@@ -48,37 +48,28 @@ condition, so the error type does not exist yet. With Graph, it does.
 
 ## Decision
 
-Add `ResourceLocked` as a new concrete error type in
-`src/remote_store/_errors.py`, alongside the other canonical errors.
-It inherits directly from `RemoteStoreError` per the flat hierarchy
-rule (ERR-008): one level deep, no intermediate categories.
+Add `ResourceLocked` as a new concrete error type. The decisions:
 
-**Why a new type.** None of the existing errors fit the `423`
-condition. The caller is authenticated and authorised, so not
-`PermissionDenied`; the file is not a write conflict, so not
-`AlreadyExists`; the backend is reachable and responsive, so not
-`BackendUnavailable`; and collapsing the case into generic
-`RemoteStoreError` would lose the actionable "locked now, may clear"
-signal. The full invariant is owned by ERR-013.
-
-**Attributes: `path` and `backend` only, no `lock_owner`.** Earlier
-drafts reserved an optional `lock_owner: str | None`; dropped because
-Graph does not surface the lock holder, no other backend emits this
-condition today, and adding a field "in case" violates the
-no-speculative-API rule. A future backend that genuinely surfaces the
-holder widens this class via a covering spec amendment — ERR-013
-points back to this section for exactly that reasoning, so it stays
-here. (Spec 005 has no structured `RemoteStoreError.context` surface,
-so routing extras through `.context` is not an available fallback and
-is not part of this decision.)
-
-**Reusable, not Graph-specific.** Graph `423 resourceLocked` is the
-only mapped source today (GR-045 owns the mapping), but future
-equivalents — SharePoint check-out, SMB lock conflicts, WebDAV `423`
-— map to the same type when added; that reuse is why this is a
-canonical error rather than a Graph-local one. It is terminal under
-the default retry policy (RET-015); callers may retry at their own
-cadence.
+- **A new type, not a reuse.** None of the existing errors fit HTTP
+  `423`: the caller is authorised (not `PermissionDenied`), it is not a
+  write conflict (not `AlreadyExists`), the backend is reachable (not
+  `BackendUnavailable`), and generic `RemoteStoreError` loses the
+  actionable "locked now, may clear" signal.
+- **Flat under `RemoteStoreError`.** One level deep, no intermediate
+  category (ERR-008).
+- **`path` + `backend` only; no `lock_owner`.** Graph does not surface
+  the lock holder and no other backend emits this today, so a
+  speculative field is dropped (no-speculative-API rule). **Reverse
+  (widen the class)** only when a backend genuinely surfaces the holder,
+  via a covering spec amendment — ERR-013 points back here for exactly
+  this reasoning.
+- **Terminal; caller-driven retry.** Not retried by the default policy
+  (RET-015); callers choose their own cadence.
+- **Reusable across backends.** Future equivalents — SharePoint
+  check-out, SMB lock conflicts, WebDAV `423` — map to the same type;
+  that reuse is why this is a canonical error, not a Graph-local one.
+  Graph's `423 resourceLocked` is the only mapped source today (GR-045
+  owns the mapping).
 
 ## Consequences
 

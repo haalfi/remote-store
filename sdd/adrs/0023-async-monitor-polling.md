@@ -39,38 +39,27 @@ shape (`UploadId` + `complete-multipart-upload`, not a monitor URL).
 
 ## Decision
 
-Ship the polling logic **backend-local** in
-`src/remote_store/aio/backends/_graph/monitor.py` (a module inside
-the Graph sub-package, or inline in `backend.py` if it stays small).
-The Graph backend lives under `aio/backends/` because it is
-async-native (matching `aio/backends/_azure.py`); the poller follows.
-It is part of the Graph sub-package, not a shared facility, and
-introduces no public API surface and no Store-level capability.
-
-The poller is **parser-driven**: a `status_parser` callable maps each
-poll response to `pending` / `succeeded` / `failed`, so the loop is
-already shaped for a second consumer's response format without being
-made a generic helper today. The cadence and timeout contract
-(intervals, backoff, `copy_timeout`, `Retry-After`, `5xx`-as-pending,
-cancellation) is owned by GR-026 and not restated here.
-
-**YAGNI: one consumer, one location.** No second `202`-monitor consumer
-exists today (Context has the reality-check). Reverse this decision only
-when a second backend genuinely needs the same shape, measured in a
-follow-up rather than predicted here; a hoisting ADR then supersedes
-this one.
-
-**Why not a Store capability.** A capability such as `ASYNC_COPY`
-would leak an implementation detail into the public API and invite
-callers to branch on "is this copy asynchronous?", which is the wrong
-question. `Store.copy()` is synchronous from the caller's view
-(ADR-0012); the backend presents that result regardless of how it
-gets there.
-
-**Why not in `ext/`.** Extensions use only the public Store/Backend
-API (ADR-0008). The poller operates on raw HTTP, takes an
-`httpx.AsyncClient`, and serves only the backend implementer; placing
-it in `ext/` would misrepresent its audience.
+- **Ship the poller backend-local.** Put the polling logic in
+  `src/remote_store/aio/backends/_graph/monitor.py` (inline in
+  `backend.py` if it stays small). It lives under `aio/backends/`
+  because the Graph backend is async-native (matching
+  `aio/backends/_azure.py`).
+- **Not a shared facility (YAGNI).** No second `202`-monitor consumer
+  exists today (Context has the reality-check). **Reverse** only when a
+  second backend genuinely needs the same shape, measured in a follow-up
+  rather than predicted here; a hoisting ADR then supersedes this one.
+- **Parser-driven shape.** The poller takes a `status_parser` mapping
+  each poll response to `pending` / `succeeded` / `failed`, so the loop
+  is already shaped for a second consumer without being a generic helper
+  today. Cadence and timeout defaults are the spec's (GR-026).
+- **No Store capability.** A capability such as `ASYNC_COPY` would leak
+  an implementation detail into the public API and invite callers to
+  branch on "is this copy asynchronous?", the wrong question.
+  `Store.copy()` is synchronous from the caller's view (ADR-0012); the
+  backend presents that result regardless of how it gets there.
+- **Not in `ext/`.** Extensions use only the public Store/Backend API
+  (ADR-0008); the poller operates on raw HTTP, takes an
+  `httpx.AsyncClient`, and serves only the backend implementer.
 
 ## Consequences
 

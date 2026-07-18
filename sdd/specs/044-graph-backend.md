@@ -180,16 +180,15 @@ retrying past a dirty read, so a consumer sharing the default cache path
 (the common multi-worker deployment) never observes a corrupt cache
 (BK-291). The on-disk write is an in-place truncate-and-write, **not** an
 atomic rename; corruption-freedom comes from the lock + read-retry, not
-atomicity. The cache is an `msal_extensions.PersistedTokenCache` over a
-`FilePersistence` file at `platformdirs.user_config_dir("remote-store")`
-(default `graph_token_cache.json`), guarded cross-process by a `CrossPlatLock`
-sibling `<cache_path>.lockfile`. Callers override the path with `cache_path=`,
-or bypass `GraphAuth` and MSAL entirely by supplying their own token-provider
-callable. A *contended* synchronous acquisition blocks on that lock on the
-calling thread for the lock backend's timeout (up to ~5 s with the `filelock`
-fallback that ships when `portalocker` is absent); the async `GraphAuth` path
-offloads acquisition off the event loop to avoid this (GR-008, BK-292). GR-007
-is the single source of truth for the cache path, mechanism, and override rules.
+atomicity. The cache file lives at
+`platformdirs.user_config_dir("remote-store")` (default
+`graph_token_cache.json`); callers override the path with `cache_path=`, or
+bypass `GraphAuth` and MSAL entirely by supplying their own token-provider
+callable. A *contended* synchronous acquisition blocks the calling thread (and
+thus the event loop) until the cross-process lock is free; the async `GraphAuth`
+path offloads acquisition to avoid this (GR-008, BK-292). GR-007 owns the cache
+path, override rules, and the multi-process-safety contract (single source of
+truth); the persistence mechanism itself lives in `_graph/auth.py`.
 Cache access is **best-effort on both paths**: a
 write/lock-contention failure (the write-through under the lock) *and* a read
 failure (a corrupt or persistently-contended cache making the reload re-raise)

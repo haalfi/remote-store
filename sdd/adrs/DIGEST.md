@@ -828,160 +828,124 @@ disagreements autonomously — it presents the conflict and asks.
 
 ### [ADR-0021](0021-graph-sdk-choice.md): Microsoft Graph SDK Choice — `httpx` + `msal`
 
-Build the backend on `httpx` (async client) for the HTTP transport plus
-`msal` for token acquisition and cache serialization. The backend
-constructs an `httpx.AsyncClient` internally and treats Graph as a
-narrow REST surface with hand-written request helpers, pagination, and
-error mapping.
-
-`msgraph-sdk` is explicitly rejected. The surface this backend needs is
-narrow (see Context), and the non-trivial work — upload-session chunking
-with resume, async-operation polling, URL-expiry-mid-read handling — is
-carried by none of the candidate SDKs, so adopting one adds transitive
-weight (the Kiota runtime plus `azure-identity`) without removing code
-the backend must write regardless. `httpx` is already an optional
-runtime dependency, and `msal` is Microsoft's supported, lightweight
-auth library. `Office365-REST-Python-Client` is out of scope (legacy
-SharePoint REST is not a goal — see RFC-0010).
-
-The `graph` extra's pinned dependency set, and the rationale for each
-pin, live in `pyproject.toml` (their authoritative home).
+- **Build on `httpx` + `msal`.** Use `httpx`'s async client for the HTTP
+  transport and `msal` for token acquisition and cache serialization.
+  `httpx` is already an optional runtime dependency, and `msal` is
+  Microsoft's supported, lightweight auth library.
+- **Hand-written REST surface.** Construct an `httpx.AsyncClient`
+  internally and treat Graph as a narrow REST surface with hand-written
+  request helpers, pagination, and error mapping.
+- **Reject `msgraph-sdk`.** The surface this backend needs is narrow
+  (see Context), and the non-trivial work — upload-session chunking with
+  resume, async-operation polling, URL-expiry-mid-read handling — is
+  carried by none of the candidate SDKs. Adopting one adds transitive
+  weight (the Kiota runtime plus `azure-identity`) without removing code
+  the backend must write regardless. **Reverse** if the backend later
+  grows to a materially broader Graph surface (mail, calendar, groups),
+  where the SDK's coverage would start to earn its weight.
+- **`Office365-REST-Python-Client` out of scope.** Legacy SharePoint
+  REST is not a goal (RFC-0010).
+- **Pins live in `pyproject.toml`.** The `graph` extra's pinned set and
+  each pin's rationale are recorded there, their authoritative home.
 
 ### [ADR-0022](0022-graph-auth-model.md): Microsoft Graph Auth Model — Dual Flows Behind a Token-Provider Protocol
 
-The backend depends on a **token-provider callable**, not a concrete
-auth class. Two variants cover sync and async call sites:
+The backend authenticates through a **token-provider callable**, not a
+concrete auth class. The decisions:
 
-- `Callable[[], str]` — synchronous provider.
-- `Callable[[], Awaitable[str]]` — async provider.
-
-A built-in helper, `GraphAuth`, wraps MSAL and implements both
-client-credentials and device-code flows, exposing the result as one
-of the two callables. Users who already have another way to obtain a
-token (managed identity, corporate auth broker, custom refresh
-strategy) substitute their own callable. The backend does not couple
-to MSAL through the constructor signature — only through the optional
-default helper.
-
-`GraphAuth` covers two flows: **client-credentials** (app-only,
-admin-consented `Files.ReadWrite.All` / `Sites.ReadWrite.All`;
-`tenant_id` + `client_id` + `client_secret` or `client_certificate`) and
-**device-code** (delegated, interactive; `tenant_id` + `client_id` public
-client). GR-006 and GR-007 specify each flow.
+- **Token-provider callable, two shapes.** The backend accepts
+  `Callable[[], str]` (sync) or `Callable[[], Awaitable[str]]` (async)
+  and never couples to MSAL through its constructor. Users who obtain
+  tokens another way (managed identity, corporate broker, custom refresh)
+  supply their own callable.
+- **Built-in `GraphAuth` helper.** Wraps MSAL and exposes both callable
+  shapes, covering two flows: **client-credentials** (app-only,
+  admin-consented `Files.ReadWrite.All` / `Sites.ReadWrite.All`) and
+  **device-code** (delegated, interactive). GR-006 / GR-007 specify each
+  flow's config fields.
+- **Lazy invocation.** The provider is called on first request and once
+  more on a `401 InvalidAuthenticationToken` (one-shot refresh + retry,
+  GR-029); the backend caches no token. Callers who bring their own
+  provider load none of `msal` / `msal-extensions` / `platformdirs`.
+- **Credential masking on two surfaces.** `client_secret` is a `Secret`
+  (masked in `__repr__`) and auto-wrapped from config via
+  `_SENSITIVE_KEYS`; the `Authorization` bearer is redacted from logs and
+  never enters exception text. Mechanisms: GR-035, SEC-003 / SEC-004 /
+  SEC-007.
+- **Config-built backends get a default `GraphAuth`.** The registry
+  builds one from static config (ADR-0001); user-supplied callables are
+  expressible only through direct construction. The `graph` extra's pins
+  live in `pyproject.toml` (ADR-0021 records the SDK choice).
 
 ##### Token cache: why `PersistedTokenCache`
 
 `GraphAuth` persists the MSAL cache through
 `msal_extensions.PersistedTokenCache` (a cross-process lock plus a
-dirty-read retry, no atomic rename), and wraps it to swallow-and-log
-persistence failures so a cache error degrades to re-acquisition instead
-of escaping `get_token` and breaking an in-flight `read` / `write` (the
-GR-006 / GR-008 typed-error contract). This replaced a hand-rolled
-`SerializableTokenCache` + truncate-at-open flush, under which a
-concurrent reader could observe an empty or torn cache and be forced to
-re-login (BK-291). A bare temp-file + `os.replace` was rejected because
-on Windows `os.replace` raises `PermissionError` (`WinError 5`) when the
-destination is held open by a concurrent reader; the lock-plus-read-retry
-design sidesteps rename entirely. The cache mechanism, canonical path,
-override rules, and the contended-lock cost are specified by GR-007
-(single source of truth).
+dirty-read retry, no atomic rename) and wraps it to swallow-and-log
+persistence failures, so a cache error degrades to re-acquisition rather
+than breaking an in-flight `read` / `write`. Two facts a reviewer needs
+to keep or reverse this choice:
 
-##### Provider invocation and lazy dependency
+- It replaced a hand-rolled `SerializableTokenCache` + truncate-at-open
+  flush, under which a concurrent reader could observe a torn cache and
+  be forced to re-login (BK-291).
+- A bare temp-file + `os.replace` was rejected because on Windows
+  `os.replace` raises `PermissionError` (`WinError 5`) when the
+  destination is held open by a concurrent reader; the
+  lock-plus-read-retry design sidesteps rename entirely.
 
-The provider is called lazily — never in `__init__` — on first request
-and once more on a `401 InvalidAuthenticationToken` (one-shot refresh +
-retry per GR-029); the backend caches no token, so MSAL or the
-user-supplied provider owns lifetime. Callers who supply their own
-provider and never instantiate `GraphAuth` load none of `msal` /
-`msal-extensions` / `platformdirs` at import time. The `graph` extra's
-pinned set lives in `pyproject.toml`; ADR-0021 records the SDK choice.
-
-##### Credential masking
-
-Credentials are masked on two surfaces: `GraphAuth` takes
-`client_secret: str | Secret`, reveals it only internally, and masks it
-in `__repr__`; and config-loaded backends inherit the same auto-wrap
-because `client_secret` / `client_certificate` are in the default
-`_SENSITIVE_KEYS` set. The `Authorization` bearer is redacted from every
-backend log record and never appears in exception text. The mechanisms
-are specified by GR-035 (header redaction) and SEC-003 / SEC-004 /
-SEC-007 (the `Secret` wrapper, `_SENSITIVE_KEYS`, `SecretRedactionFilter`).
-
-##### Config loader responsibility
-
-When the registry constructs a Graph backend from static config
-(ADR-0001), it builds a default `GraphAuth` from the config fields and
-passes its callable in. User-supplied callables are expressible only
-through direct construction, not static config.
+The cache path, override rules, and the multi-process-safety contract are
+specified by GR-007; the persistence mechanism itself lives in
+`_graph/auth.py`.
 
 ### [ADR-0023](0023-async-monitor-polling.md): Async Monitor-URL Polling — Backend-Local in `_graph`
 
-Ship the polling logic **backend-local** in
-`src/remote_store/aio/backends/_graph/monitor.py` (a module inside
-the Graph sub-package, or inline in `backend.py` if it stays small).
-The Graph backend lives under `aio/backends/` because it is
-async-native (matching `aio/backends/_azure.py`); the poller follows.
-It is part of the Graph sub-package, not a shared facility, and
-introduces no public API surface and no Store-level capability.
-
-The poller is **parser-driven**: a `status_parser` callable maps each
-poll response to `pending` / `succeeded` / `failed`, so the loop is
-already shaped for a second consumer's response format without being
-made a generic helper today. The cadence and timeout contract
-(intervals, backoff, `copy_timeout`, `Retry-After`, `5xx`-as-pending,
-cancellation) is owned by GR-026 and not restated here.
-
-**YAGNI: one consumer, one location.** No second `202`-monitor consumer
-exists today (Context has the reality-check). Reverse this decision only
-when a second backend genuinely needs the same shape, measured in a
-follow-up rather than predicted here; a hoisting ADR then supersedes
-this one.
-
-**Why not a Store capability.** A capability such as `ASYNC_COPY`
-would leak an implementation detail into the public API and invite
-callers to branch on "is this copy asynchronous?", which is the wrong
-question. `Store.copy()` is synchronous from the caller's view
-(ADR-0012); the backend presents that result regardless of how it
-gets there.
-
-**Why not in `ext/`.** Extensions use only the public Store/Backend
-API (ADR-0008). The poller operates on raw HTTP, takes an
-`httpx.AsyncClient`, and serves only the backend implementer; placing
-it in `ext/` would misrepresent its audience.
+- **Ship the poller backend-local.** Put the polling logic in
+  `src/remote_store/aio/backends/_graph/monitor.py` (inline in
+  `backend.py` if it stays small). It lives under `aio/backends/`
+  because the Graph backend is async-native (matching
+  `aio/backends/_azure.py`).
+- **Not a shared facility (YAGNI).** No second `202`-monitor consumer
+  exists today (Context has the reality-check). **Reverse** only when a
+  second backend genuinely needs the same shape, measured in a follow-up
+  rather than predicted here; a hoisting ADR then supersedes this one.
+- **Parser-driven shape.** The poller takes a `status_parser` mapping
+  each poll response to `pending` / `succeeded` / `failed`, so the loop
+  is already shaped for a second consumer without being a generic helper
+  today. Cadence and timeout defaults are the spec's (GR-026).
+- **No Store capability.** A capability such as `ASYNC_COPY` would leak
+  an implementation detail into the public API and invite callers to
+  branch on "is this copy asynchronous?", the wrong question.
+  `Store.copy()` is synchronous from the caller's view (ADR-0012); the
+  backend presents that result regardless of how it gets there.
+- **Not in `ext/`.** Extensions use only the public Store/Backend API
+  (ADR-0008); the poller operates on raw HTTP, takes an
+  `httpx.AsyncClient`, and serves only the backend implementer.
 
 ### [ADR-0024](0024-resource-locked-error.md): `ResourceLocked` Error Type
 
-Add `ResourceLocked` as a new concrete error type in
-`src/remote_store/_errors.py`, alongside the other canonical errors.
-It inherits directly from `RemoteStoreError` per the flat hierarchy
-rule (ERR-008): one level deep, no intermediate categories.
+Add `ResourceLocked` as a new concrete error type. The decisions:
 
-**Why a new type.** None of the existing errors fit the `423`
-condition. The caller is authenticated and authorised, so not
-`PermissionDenied`; the file is not a write conflict, so not
-`AlreadyExists`; the backend is reachable and responsive, so not
-`BackendUnavailable`; and collapsing the case into generic
-`RemoteStoreError` would lose the actionable "locked now, may clear"
-signal. The full invariant is owned by ERR-013.
-
-**Attributes: `path` and `backend` only, no `lock_owner`.** Earlier
-drafts reserved an optional `lock_owner: str | None`; dropped because
-Graph does not surface the lock holder, no other backend emits this
-condition today, and adding a field "in case" violates the
-no-speculative-API rule. A future backend that genuinely surfaces the
-holder widens this class via a covering spec amendment — ERR-013
-points back to this section for exactly that reasoning, so it stays
-here. (Spec 005 has no structured `RemoteStoreError.context` surface,
-so routing extras through `.context` is not an available fallback and
-is not part of this decision.)
-
-**Reusable, not Graph-specific.** Graph `423 resourceLocked` is the
-only mapped source today (GR-045 owns the mapping), but future
-equivalents — SharePoint check-out, SMB lock conflicts, WebDAV `423`
-— map to the same type when added; that reuse is why this is a
-canonical error rather than a Graph-local one. It is terminal under
-the default retry policy (RET-015); callers may retry at their own
-cadence.
+- **A new type, not a reuse.** None of the existing errors fit HTTP
+  `423`: the caller is authorised (not `PermissionDenied`), it is not a
+  write conflict (not `AlreadyExists`), the backend is reachable (not
+  `BackendUnavailable`), and generic `RemoteStoreError` loses the
+  actionable "locked now, may clear" signal.
+- **Flat under `RemoteStoreError`.** One level deep, no intermediate
+  category (ERR-008).
+- **`path` + `backend` only; no `lock_owner`.** Graph does not surface
+  the lock holder and no other backend emits this today, so a
+  speculative field is dropped (no-speculative-API rule). **Reverse
+  (widen the class)** only when a backend genuinely surfaces the holder,
+  via a covering spec amendment — ERR-013 points back here for exactly
+  this reasoning.
+- **Terminal; caller-driven retry.** Not retried by the default policy
+  (RET-015); callers choose their own cadence.
+- **Reusable across backends.** Future equivalents — SharePoint
+  check-out, SMB lock conflicts, WebDAV `423` — map to the same type;
+  that reuse is why this is a canonical error, not a Graph-local one.
+  Graph's `423 resourceLocked` is the only mapped source today (GR-045
+  owns the mapping).
 
 ### [ADR-0025](0025-async-to-sync-backend-adapter.md): Async-to-Sync Backend Adapter (`AsyncBackendSyncAdapter`)
 

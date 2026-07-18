@@ -358,3 +358,46 @@ phases:
           Consequences bullet. Touching this + auth.py escalates the mechanical
           gate to `hatch run all` (code path).
         outcome: ok
+  - id: redesign
+    name: Redesign after author critique (gate, not heuristic)
+    steps:
+      - file: sdd/research/research-id-232-detail-placement-durability.md
+        section: "1 (one-line result), 10.1 (gate not length)"
+        read_type: gate
+        extract: >-
+          Author critique: the first pass optimized for the digest heuristic
+          (flag-clearing / word-count), which is exactly the inversion the
+          research warns against — the digest is an advisory smell detector, not
+          the target. Core result: minimize *mismatched* detail, not detail;
+          brevity is a byproduct of correct placement.
+        outcome: misleading
+      - file: sdd/adrs/0021-graph-sdk-choice.md
+        section: "Decision (0021-0024, all four)"
+        read_type: reference
+        extract: >-
+          Author feedback: a prose blob hides where one decision ends and the
+          next begins. Restructured every Decision into scannable units — bullets
+          for the parallel-decision ADRs (0021/0023/0024), a short intro + bullets
+          + one subsection for 0022 — each with a bold lead and an inline reversal
+          trigger. Re-ran justification-sufficiency with no links followed.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/auth.py
+        section: "_load_cache comment (~L178)"
+        read_type: reference
+        extract: >-
+          §5 shallow-relocation fix: the token-cache mechanism's real home is the
+          code (auth.py already carried the BK-291 mechanism comment). The first
+          pass had duplicated the class-name mechanism into GR-007. Trimmed GR-007
+          back to the contract (path, override, multi-process-safety) and scoped
+          the comment to own the mechanism — de-duplicating the spec↔code copy.
+        outcome: misleading
+      - file: sdd/templates/adr-template.md
+        section: "## Decision guidance"
+        read_type: reference
+        extract: >-
+          Placed the research one-line result (minimize mismatched detail, not
+          detail; brevity is a byproduct) plus the three-condition gate and the
+          "one decision = one scannable unit" rule in the Decision guidance —
+          immediately visible to author and reviewer. Reframed the old "size"
+          wording to "smell detector, not the target".
+        outcome: ok

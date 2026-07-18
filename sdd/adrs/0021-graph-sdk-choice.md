@@ -50,24 +50,25 @@ supported auth library, lightweight, stable, and used by
 
 ## Decision
 
-Build the backend on `httpx` (async client) for the HTTP transport plus
-`msal` for token acquisition and cache serialization. The backend
-constructs an `httpx.AsyncClient` internally and treats Graph as a
-narrow REST surface with hand-written request helpers, pagination, and
-error mapping.
-
-`msgraph-sdk` is explicitly rejected. The surface this backend needs is
-narrow (see Context), and the non-trivial work — upload-session chunking
-with resume, async-operation polling, URL-expiry-mid-read handling — is
-carried by none of the candidate SDKs, so adopting one adds transitive
-weight (the Kiota runtime plus `azure-identity`) without removing code
-the backend must write regardless. `httpx` is already an optional
-runtime dependency, and `msal` is Microsoft's supported, lightweight
-auth library. `Office365-REST-Python-Client` is out of scope (legacy
-SharePoint REST is not a goal — see RFC-0010).
-
-The `graph` extra's pinned dependency set, and the rationale for each
-pin, live in `pyproject.toml` (their authoritative home).
+- **Build on `httpx` + `msal`.** Use `httpx`'s async client for the HTTP
+  transport and `msal` for token acquisition and cache serialization.
+  `httpx` is already an optional runtime dependency, and `msal` is
+  Microsoft's supported, lightweight auth library.
+- **Hand-written REST surface.** Construct an `httpx.AsyncClient`
+  internally and treat Graph as a narrow REST surface with hand-written
+  request helpers, pagination, and error mapping.
+- **Reject `msgraph-sdk`.** The surface this backend needs is narrow
+  (see Context), and the non-trivial work — upload-session chunking with
+  resume, async-operation polling, URL-expiry-mid-read handling — is
+  carried by none of the candidate SDKs. Adopting one adds transitive
+  weight (the Kiota runtime plus `azure-identity`) without removing code
+  the backend must write regardless. **Reverse** if the backend later
+  grows to a materially broader Graph surface (mail, calendar, groups),
+  where the SDK's coverage would start to earn its weight.
+- **`Office365-REST-Python-Client` out of scope.** Legacy SharePoint
+  REST is not a goal (RFC-0010).
+- **Pins live in `pyproject.toml`.** The `graph` extra's pinned set and
+  each pin's rationale are recorded there, their authoritative home.
 
 ## Consequences
 
