@@ -45,8 +45,10 @@ restated. The single-line result, stated up front:
 > A fact belongs in an artifact only if it passes three conditions together: it
 > changes at a rate compatible with how expensive the artifact is to revise; its
 > correctness actually matters at that layer; and it is needed to justify or
-> constrain the decisions made there. Rate-of-change is one condition of three,
-> not the whole rule.
+> constrain the decisions made there. This is a strict conjunction: all three must
+> hold, and failure of any one is disqualifying. Rate-of-change is one condition of
+> three, not the whole rule, and it is not the primary one; do not collapse the gate
+> back into "fast-changing, therefore exclude."
 
 ### 1.1 Two distinct harms, two distinct anchor sets, unequal evidence
 
@@ -160,13 +162,20 @@ third conditions:
 > artifact whose change-rate fits, plus (ii) a low-cost amendment channel so a
 > durable artifact can *absorb* change rather than resist it.
 
-A constitution can afford detail because it has Article V, a cheap-enough amendment
-channel matched to the volatility it carries. An ADR Decision section cannot afford
-spec-detail because its amendment channel is heavy (a superseding ADR), so
-mislocated volatile detail there goes stale silently rather than being cheaply
-amended. Same principle, opposite prescription, because the *change-channel cost
-differs*. That asymmetry is the actual insight, and it only appears once you refuse
-to force the tidy story.
+The causal chain, made explicit, is the whole point:
+
+- Constitution → **cheap** amendment (Article V) → can *tolerate* embedded detail,
+  because when the detail dates, amending it is low-cost.
+- ADR → **expensive** revision (a superseding ADR) → must *externalize* volatile
+  detail, because when it dates there is no cheap way to correct it in place, so it
+  rots silently.
+
+A constitution can afford detail because it has a cheap-enough amendment channel
+matched to the volatility it carries. An ADR Decision section cannot afford
+spec-detail because its amendment channel is heavy, so mislocated volatile detail
+there goes stale silently rather than being cheaply amended. Same principle,
+opposite prescription, because the *change-channel cost differs*. That asymmetry is
+the actual insight, and it only appears once you refuse to force the tidy story.
 
 **The constraint case, why rate alone would mislocate.** Some facts change rarely
 yet are decision-critical *because they are invariants the choice must respect*:
@@ -303,6 +312,24 @@ knowledge, so it is a tendency, not a law.) This is the empirical backing for th
 justification-sufficiency counterweight: past some point, extraction *adds* reader
 cost, so "keep it inline" can be correct for load-bearing justification.
 
+**Observable symptoms, since the evidence is analogy.** The harm-A anchors do not
+study prose, so do not wait for them to. Detect concealment by its *local, visible*
+proxies instead, which need no citation to act on:
+
+- **Reviewers miss or misstate the decision.** If readers of a Decision section
+  cannot reliably repeat the choice back, the signal is buried, whatever the word
+  count says.
+- **The summary is longer than the conclusion it summarizes.** A digest entry, or an
+  opening paragraph, that runs longer than the thing it abstracts is doing no
+  compression (the shallow-module tell, §5's cover-the-body test).
+- **A section with a *simple core* is reread.** Reread is a noisy signal on its own,
+  since genuinely complex material is legitimately reread (intrinsic load, not
+  concealment). It indicates concealment only when the underlying claim is simple but
+  the reader still has to loop to extract it past surrounding detail.
+
+These are diagnostic heuristics, not measurements; they turn the analogy into
+something a reviewer can check without instrumentation.
+
 **What produced no citation-grade evidence.** Anchors 4 (ADR practice beyond Nygard:
 AWS, ThoughtWorks, Azure) and 5 (policy-vs-configuration separation: OPA, 12-factor)
 returned **zero verified claims** this pass; every candidate source was rated
@@ -385,10 +412,17 @@ the other against too little, and a decision-grade artifact must pass both.
    belong here; see §3.)
 
 4. **Single-source-of-truth / duplication test.** Does this fact already have an
-   authoritative home (a spec, `FEATURES.md`, the code, a benchmark artifact)? If
-   yes, state the principle and link; every inline copy is a future contradiction.
-   Relocate *into* that home (a **deep** move), never into a new thin satellite (a
-   **shallow** move that just spreads surface; §5).
+   authoritative home? A home qualifies on three counts: it is **versioned** (tracked,
+   with a definite location), **owned** (it is the single source of truth for that
+   fact, so no other artifact restates it), and **updated via a cheaper path than the
+   ADR**. The last is the discriminating criterion, since it is the change-channel
+   logic (§3) reappearing; "versioned" is table-stakes in this repo and should not
+   carry the decision by itself. Examples: a spec, `FEATURES.md`, the code,
+   `pyproject.toml`, a benchmark artifact. If a home exists, state the principle and
+   link; every inline copy is a future contradiction. Relocate *into* that home (a
+   **deep** move), never into a new thin satellite (a **shallow** move that just
+   spreads surface; §5). If no qualifying home exists, that is a signal the fact may
+   be load-bearing here after all, not that you should mint a satellite to hold it.
 
 5. **Amortization test (from Kaplow).** How often is this detail actually read or
    applied? Precise, front-loaded detail earns its maintenance cost only when the
