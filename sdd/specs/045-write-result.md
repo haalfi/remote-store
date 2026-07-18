@@ -142,11 +142,13 @@ does not declare the capability, `source == "basic"`.
 
 **Formal coverage:** encoded in `BackendContract.dfy` as a `Write`
 postcondition: `r.Ok? ⇒ r.value.source == (if CapWriteResultNative in
-capabilities then NativeSource else BasicSource)`. A backend that
-declares the capability but fails to populate `source = Native` — or
-fails to populate the rich fields that the spec promises alongside it —
-does not satisfy the refinement. Verified in `MemoryBackend.dfy`. Python
-backstop in
+capabilities then NativeSource else BasicSource)`. A backend that declares the
+capability but fails to populate `source = Native` does not satisfy the
+refinement. Rich-field population is governed separately by WR-001a, which binds
+only the fields a backend's write path actually populates — so a native backend
+that leaves a field `None` when its write response omits it (as `SFTPBackend`
+does for every rich field) is conformant, not a violation. Verified in
+`MemoryBackend.dfy`. Python backstop in
 `tests/backends/conformance/test_atomic.py::TestWriteResultConformance::test_source_matches_write_result_native`.
 See ID-151.
 

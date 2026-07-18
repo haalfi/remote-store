@@ -108,9 +108,11 @@ class Capability(enum.Enum):
       ``path`` and ``size`` populated (``source == "basic"``);
       ``metadata`` is governed independently by the ``USER_METADATA``
       capability and is not subject to this flag.
-      Use ``store.supports(Capability.WRITE_RESULT_NATIVE)`` to decide
-      whether to call ``store.get_file_info()`` after a write if you
-      need the full metadata set.
+      ``store.supports(Capability.WRITE_RESULT_NATIVE)`` tells you whether the
+      rich fields *may* be populated, not that any given one is: a native
+      backend can still leave an individual field ``None`` (SFTP leaves all of
+      them). Check the specific field you need, or call
+      ``store.get_file_info()`` when you must have it.
     """
 
     # Core I/O

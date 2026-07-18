@@ -16,7 +16,15 @@ surprising_ripples:
   - docs-src/reference/api/store.md
   - docs-src/guides/write-integrity.md
   - sdd/specs/003-backend-adapter-contract.md
-review_rounds: 2
+  # Round 3: the "native does not imply every rich field populated" loosening
+  # had more surfaces than rounds 1-2 caught — the doc-consistency chain kept
+  # expanding (store.md sibling admonitions -> models.md admonition -> async.md
+  # guide) and one spec sibling (045 WR-004 formal-coverage prose) still carried
+  # the old absolute claim alongside the already-fixed CAP-007.
+  - docs-src/reference/api/models.md
+  - docs-src/guides/async.md
+  - sdd/specs/045-write-result.md
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -74,6 +82,22 @@ phases:
         section: "SFTP-010"
         read_type: gate
         extract: "SFTP-010 mandated the stat('.') mechanism; amended to two-tier detection (transport flag + on-operation channel-death mapping) that keeps the BackendUnavailable + reconnect postcondition honest"
+  - id: review_round3
+    name: Review (round 3, method-by-method)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "open_atomic"
+        read_type: reference
+        extract: "open_atomic(overwrite=False) still paid two back-to-back stats on the same path (eager _raise_if_dir + existence stat) — the clearest missed round-trip in a round-trip-cutting PR. Folded into one stat carrying both the dir->InvalidPath and existing->AlreadyExists contracts, matching write/write_atomic. _raise_if_dir no longer has open_atomic as a caller (docstring updated). Each method's src+test reviewed by a scoped subagent expert before moving on: the open_atomic pass caught two broken new tests (a spy captured _sftp_client.stat before the lazy connection was warmed -> AttributeError; a real channel-kill leaked the in-process server's temp handle -> flaky PytestUnraisableExceptionWarning) — fixed with a connection warmup and a patched-handle injection respectively"
+      - file: tests/backends/sftp/test_config.py
+        section: "test_channel_death_during_listing_maps_and_reconnects, test_channel_death_during_open_atomic_maps_and_reconnects, test_open_atomic_overwrite_false_issues_single_stat"
+        read_type: reference
+        extract: "Coverage gaps the tier-2 wiring left: the listing channel-death test drove only list_files though list_folders/iter_children share the _map_exception routing (a reverted sibling would ship green) — parametrised over all three. open_atomic's inline tier-2 arm (yield phase, outside _errors) was un-pinned and deletable with the suite green — pinned. Added a single-stat regression guard for the fold"
+      - file: sdd/specs/045-write-result.md
+        section: "WR-004"
+        read_type: gate
+        extract: "WR-004's Formal-coverage prose still said a native backend that 'fails to populate the rich fields' does not satisfy the refinement — read literally that condemned SFTP (populates none) and contradicted WR-001a and the round-2 CAP-007 loosening. The Dafny Write postcondition binds only source (rich-field population is empirically checked, not Dafny-expressible), so the clause also misdescribed the formal model. Dropped it; rich-field population is deferred to WR-001a. The 'native does not imply all rich fields' loosening also reached two more doc surfaces rounds 1-2 missed (models.md admonition, async.md guide)"
+        outcome: misleading
   - id: verify
     name: Verify
     steps:
