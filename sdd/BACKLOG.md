@@ -299,16 +299,21 @@ and the highest ID already in this file, then take the next integer. Run
   and several `sdd/` research docs). Convert all non-trivial ASCII diagrams; leave simple
   inline flows (single arrows, short sequences) as text.
 
-- [ ] **ID-232 — Rewrite ADR Decision sections to state decisions, not spec/impl detail**
+- [ ] **ID-232 — Rewrite ADR Decision sections to state decisions, not spec/impl detail (research complete)**
   spec: — · effort: L · audience: library.maintainer
   `gen_adr_digest` (PR #909) lifts each ADR's whole `## Decision` section into
   `sdd/adrs/DIGEST.md`, which made visible that many Decision sections drifted
-  from stating a decision into mixing spec, API, and implementation detail — the
-  Graph ADRs (0021–0024) worst. The ADR discipline (state the decision; push
+  from stating a decision into mixing spec, API, and implementation detail, with
+  the Graph ADRs (0021–0024) worst. The ADR discipline (state the decision; push
   detail to the relevant spec or `## Consequences`) eroded over time. Rewrite
   each Decision section to a crisp decision plus only essential detail,
   relocating spec/impl specifics to the spec or Consequences; the digest is the
   before/after visibility check (a shorter, decision-only digest is the signal).
+  Research (advisory): [`research-id-232-detail-placement-durability.md`](research/research-id-232-detail-placement-durability.md)
+  supplies the rewrite criterion (a three-condition placement gate: change-rate,
+  cost-of-staleness, and local justificatory need, all three required) and tests, and
+  recommends Graph 0021–0024 first with the `gen_adr_digest` heuristic prototyped
+  advisory-only. Implementation pending; the trace opens when the rewrites begin.
   Open: all 30 vs Graph 0021–0024 first; whether to add a lightweight
   "Decision = decision only" heuristic to `gen_adr_digest` (e.g. warn on H3 depth
   or section length) so the discipline stays enforced, not just visible.
