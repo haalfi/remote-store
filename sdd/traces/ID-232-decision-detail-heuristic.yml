@@ -11,6 +11,7 @@ source_items:
 audience:
   - contributor.tooling
   - contributor.process
+review_rounds: 1
 co_shipped_items:
   - BUG-234
 discovery_followups:
@@ -155,3 +156,25 @@ phases:
           tests re-sharded xdist and surfaced it. Fixed (BUG-234) by mirroring the
           sibling test's registration call; ripple the digest work did not predict.
         outcome: misleading
+  - id: fix
+    name: Address PR review
+    steps:
+      - file: sdd/research/research-id-232-detail-placement-durability.md
+        section: "3, 7.2, 8, 10.6 (constraint category)"
+        read_type: gate
+        extract: >-
+          Review caught that the notice/template wording erased the research's
+          constraint category: a version pin that is a CVE floor or hard-compat
+          requirement STAYS in the Decision. My messages said pins belong in
+          spec unconditionally — the over-correction 10.6 warns against. Reworded
+          the version-pin notice, the H4 notice (relocate, not just flatten), and
+          the ADR template to carry the bookkeeping-vs-constraint distinction.
+        outcome: ok
+      - file: scripts/gen_adr_digest.py
+        section: "advisory_notices (version-spec + depth messages)"
+        read_type: reference
+        extract: >-
+          Advisory messages steer Phase-B disposition, so they must not pre-judge
+          it. Also untested CLI plumbing (main argparse routing) sat outside
+          --cov=remote_store; added TestMainCli driving main() via sys.argv.
+        outcome: ok

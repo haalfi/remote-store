@@ -445,10 +445,14 @@ def advisory_notices(
         if specs:
             parts.append(
                 f"Decision carries {len(specs)} version specifier(s) (e.g. '{specs[0]}') "
-                "— spec-rate pins belong in pyproject/spec"
+                "— bookkeeping pins move to pyproject/spec, but constraint-bearing "
+                "floors (a CVE, a hard compatibility requirement) stay (research §8)"
             )
         if deepest:
-            parts.append(f"Decision has a heading at depth {deepest} (max advised {max_depth}); consider flattening")
+            parts.append(
+                f"Decision has a heading at depth {deepest} (max advised {max_depth}); "
+                "nesting past H3 usually marks spec-rate detail — relocate it, don't just flatten (research §8)"
+            )
 
         notices.append(f"{a.id} ({a.path.name}): " + "; ".join(parts))
     return notices

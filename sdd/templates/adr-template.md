@@ -39,10 +39,13 @@ anything you would not want in the digest belongs under `## Consequences` or a
 later `##` section. Internal `###` sub-headings are demoted automatically to
 nest under the digest entry.
 
-State decision-rate content only: the choice and the reasons that would
-reverse it. Spec/impl detail — version pins, contracts, wire mechanics —
-belongs in the spec or `## Consequences`, not here; `gen-adr-digest` emits an
-advisory size/spec-detail check to help keep this honest.
+State decision-rate content: the choice, the reasons that would reverse it,
+and any constraint-bearing facts (e.g. a CVE floor, a hard compatibility
+requirement) — these stay even when they name a version. Bookkeeping spec
+detail — routine pins, contracts, wire mechanics — moves to the spec or
+`pyproject.toml`; consequence-rate content (realized tradeoffs, escalation
+triggers) goes under `## Consequences`. `gen-adr-digest` emits an advisory
+size/spec-detail check to help keep this honest.
 
 ## Consequences
 

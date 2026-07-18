@@ -499,6 +499,40 @@ class TestCheck:
         assert "Decision total:" in capsys.readouterr().out
 
 
+class TestMainCli:
+    """The argparse surface in main() — flag-to-parameter wiring. `scripts/`
+    sits outside `--cov=remote_store`, so without these a routing regression
+    (a swapped or mis-named `args.*`) would pass CI silently (PR #914 review)."""
+
+    def _one_midlength_adr(self, tmp_path, monkeypatch) -> None:
+        # 200-word Decision: over a 100 budget, under the 350 default — so the
+        # notice appears iff the flag actually reaches advisory_notices().
+        adr_dir = _setup_repo(tmp_path, monkeypatch)
+        _write(adr_dir, "0001", slug="mid", decision="word " * 200)
+        _mod.generate()  # fresh digest so check() is otherwise clean
+
+    @pytest.mark.spec("ID-232")
+    def test_check_flag_routes_word_budget(self, tmp_path, monkeypatch, capsys):
+        self._one_midlength_adr(tmp_path, monkeypatch)
+        capsys.readouterr()
+        monkeypatch.setattr(sys, "argv", ["gen_adr_digest.py", "--check", "--max-decision-words", "100"])
+        assert _mod.main() == 0  # advisory output never fails the gate
+        out = capsys.readouterr().out
+        assert "ADVICE" in out
+        assert "200 words" in out
+        assert "budget 100" in out  # the flag value reached the notice
+
+    @pytest.mark.spec("ID-232")
+    def test_check_uses_default_budget_without_flag(self, tmp_path, monkeypatch, capsys):
+        # Same ADR is silent at the default 350 budget: proves the flag, not an
+        # always-on path, produced the notice above (guards the swap regression).
+        self._one_midlength_adr(tmp_path, monkeypatch)
+        capsys.readouterr()
+        monkeypatch.setattr(sys, "argv", ["gen_adr_digest.py", "--check"])
+        assert _mod.main() == 0
+        assert "ADVICE" not in capsys.readouterr().out
+
+
 # ---------------------------------------------------------------------------
 # The real ADR tree (PR #909 review, finding 4): guard the committed digest
 # against the actual sdd/adrs so a forgotten fence/table or a stale DIGEST.md
