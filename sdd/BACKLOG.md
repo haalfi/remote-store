@@ -314,15 +314,18 @@ and the highest ID already in this file, then take the next integer. Run
   `ADVICE` notices for Decision sections over a word budget, carrying version
   specifiers, or nesting past H3 — the "keep it enforced, not just visible"
   heuristic is built and advisory-only, never affecting the exit code. Phase B
-  (this PR): the Graph ADRs 0021–0024 rewritten to the decision plus only its
-  irreducible rationale. Bookkeeping pins moved to `pyproject.toml`; the
-  token-cache mechanism to spec 044 GR-007 (now the single source of truth, with
-  the ADR-0022/GR-008/RFC-0010 pointers flipped to match); poller cadence to
-  GR-026; error mapping and retry to GR-045/RET-015. Each relocated fact was
-  verified present in its home before removal (one-copy-per-fact). Digest result:
-  0021/0023/0024 clear the heuristic and 0022 drops 908→450 words (still over the
-  advisory budget, but every remaining word is decision-grade per the research's
-  justification-sufficiency test — not over-corrected to a length target).
+  (this PR): the Graph ADRs 0021–0024 rewritten against the three-condition gate
+  (not the heuristic). Each Decision states its decisions as scannable units
+  (bullets, or a short subsection) with the reasons and reversal triggers inline,
+  and only volatile spec/impl detail behind a pointer. Relocations, each verified
+  in its home before removal: the graph pins to `pyproject.toml`; the token-cache
+  mechanism to the code (`_graph/auth.py`), with GR-007 owning only the contract
+  (cache path, override rules, multi-process safety); poller cadence to GR-026;
+  error mapping and retry to GR-045 / RET-015. The digest shrinking is a byproduct
+  of correct placement, not the goal (three of four fall under the advisory
+  budget; 0022 sits just over it because its reversal triggers and cache
+  rationale are load-bearing — kept, not trimmed to the number). The gate, not
+  the heuristic, is the criterion the next batch inherits.
   Remaining (next batch, why this stays `[~]`): the other advisory-flagged
   Decisions (0006, 0007, 0008, 0014, 0025–0028) sweep the same gate.
 

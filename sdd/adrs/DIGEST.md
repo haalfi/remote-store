@@ -835,14 +835,13 @@ disagreements autonomously — it presents the conflict and asks.
 - **Hand-written REST surface.** Construct an `httpx.AsyncClient`
   internally and treat Graph as a narrow REST surface with hand-written
   request helpers, pagination, and error mapping.
-- **Reject `msgraph-sdk`.** The surface this backend needs is narrow,
-  and the non-trivial work — upload-session chunking with resume,
-  async-operation polling, URL-expiry-mid-read handling — is carried by
-  none of the candidate SDKs. Adopting one adds transitive
-  weight (the Kiota runtime plus `azure-identity`) without removing code
-  the backend must write regardless. **Reverse** if the backend later
-  grows to a materially broader Graph surface (mail, calendar, groups),
-  where the SDK's coverage would start to earn its weight.
+- **Reject `msgraph-sdk`.** Adopting an SDK adds transitive weight (the
+  Kiota runtime plus `azure-identity`) without removing the hard parts the
+  backend must hand-write against this narrow surface regardless:
+  resumable uploads, async-operation polling, mid-read URL refresh.
+  **Reverse** if the backend later grows to a materially broader Graph
+  surface (mail, calendar, groups), where the SDK's coverage would start
+  to earn its weight.
 - **`Office365-REST-Python-Client` out of scope.** Legacy SharePoint
   REST is not a goal (RFC-0010).
 
@@ -855,7 +854,10 @@ concrete auth class. The decisions:
   `Callable[[], str]` (sync) or `Callable[[], Awaitable[str]]` (async)
   and never couples to MSAL through its constructor. Users who obtain
   tokens another way (managed identity, corporate broker, custom refresh)
-  supply their own callable.
+  supply their own callable. **Reverse** (via a new ADR) only if the
+  backend needs auth features a bare token-returning callable cannot
+  express — per-request scope selection, token metadata, or tight MSAL
+  coupling.
 - **Built-in `GraphAuth` helper.** Wraps MSAL and exposes both callable
   shapes, covering two flows: **client-credentials** (app-only,
   admin-consented `Files.ReadWrite.All` / `Sites.ReadWrite.All`) and

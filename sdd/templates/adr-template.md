@@ -29,7 +29,10 @@ Name the forces in play, not the solution.
 
 ## Decision
 
-> **Placement principle (ID-232 research).** Minimize *mismatched* detail, not
+> **Placement principle** (paraphrased from the
+> [detail-placement research](../research/research-id-232-detail-placement-durability.md),
+> which remains the single source of truth for the full gate, signal pair, and
+> caveats). Minimize *mismatched* detail, not
 > detail. Brevity is a byproduct of correct placement, never the target — never
 > delete a load-bearing reason to hit a length budget. A fact stays in
 > `## Decision` only if it passes the three-condition gate: its change-rate fits

@@ -203,8 +203,10 @@ phases:
           The three-condition gate + signal pair (concealment ↔
           justification-sufficiency); bookkeeping-vs-constraint distinction. The
           ADR-0021 pins read as bookkeeping (evict); a CVE floor or hard-compat
-          requirement would stay. Don't over-correct to a length target.
-        outcome: ok
+          requirement would stay. Don't over-correct to a length target — read
+          here but not absorbed: the first pass still optimized for the heuristic,
+          surfaced later by the author critique.
+        outcome: unclear
       - file: sdd/specs/044-graph-backend.md
         section: "GR-006, GR-007, GR-008, GR-026, GR-045"
         read_type: gate
@@ -319,8 +321,9 @@ phases:
           before deletion; hatch run lint green. The pre-review sweep grepped only
           *.md, so it flipped GR-007/GR-008/rfc-0010(L109) but claimed "no dangling
           pointers remain" while three more rfc-0010 pointers and two source
-          comments still cited the renamed sections.
-        outcome: misleading
+          comments still cited the renamed sections. The ripple-check itself did
+          not mislead; the grep scope was mine to widen.
+        outcome: ok
   - id: fix
     name: Address PR review (Phase B)
     steps:
@@ -371,8 +374,9 @@ phases:
           (flag-clearing / word-count), which is exactly the inversion the
           research warns against — the digest is an advisory smell detector, not
           the target. Core result: minimize *mismatched* detail, not detail;
-          brevity is a byproduct of correct placement.
-        outcome: misleading
+          brevity is a byproduct of correct placement. The research delivered the
+          correction cleanly; the earlier miss was execution, not the doc.
+        outcome: ok
       - file: sdd/adrs/0021-graph-sdk-choice.md
         section: "Decision (0021-0024, all four)"
         read_type: reference
@@ -435,4 +439,56 @@ phases:
           dropped the pointers, so each digest entry now justifies itself
           without a section the digest omits — condensed, not the verbatim
           Context restatement an earlier review had rejected.
+        outcome: ok
+  - id: review_polish
+    name: Address review (staleness, reversal triggers, tag accuracy)
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-232 (Phase B summary)"
+        read_type: reference
+        extract: >-
+          Review (principle 3): the Phase B summary still described the superseded
+          first pass — GR-007 as SSOT for the mechanism, "0022 908→450, still over
+          budget". Rewrote to the shipped tree in gate terms (mechanism in the
+          code, GR-007 owns the contract, all four under budget as a byproduct) so
+          the next-batch executor inherits the corrected criterion.
+        outcome: ok
+      - file: sdd/adrs/0022-graph-auth-model.md
+        section: "Decision (token-provider-callable bullet)"
+        read_type: reference
+        extract: >-
+          Review (§7.2): 0021/0023/0024 each had an inline reversal trigger but
+          0022's core decision did not — silence is what the signal pair rules
+          out. Added a Reverse condition (per-request scopes, token metadata, or
+          tight MSAL coupling a bare callable cannot express).
+        outcome: ok
+      - file: sdd/adrs/0021-graph-sdk-choice.md
+        section: "Decision Reject bullet + Consequences"
+        read_type: reference
+        extract: >-
+          Review (one-copy-per-fact): the Decision reverse trigger and the
+          Consequences "Maintenance responsibility" bullet stated the same
+          escalation and had drifted (mail/calendar/groups vs +Teams messages);
+          and the hard-work triple was verbatim in Context and the Reject bullet.
+          Pointed Consequences at the Decision's trigger and paraphrased the
+          triple so the copies no longer drift silently.
+        outcome: ok
+      - file: sdd/templates/adr-template.md
+        section: "Placement principle blockquote"
+        read_type: reference
+        extract: >-
+          Review (CONTENT-RULES / research §9): "(ID-232 research)" was a bare
+          ticket citation. Replaced with a path link to the research doc and named
+          it the single source of truth, this blockquote its paraphrase — durable
+          prose cites the artifact, not the ticket.
+        outcome: ok
+      - file: sdd/traces/ID-232-decision-detail-heuristic.yml
+        section: "outcome tags (orient / verify / redesign research reads)"
+        read_type: reference
+        extract: >-
+          Review (schema semantics): `misleading` means the doc told the agent
+          something wrong — a false positive against the research (§1/§10.1) and
+          the ripple-check, which did not lie; the misses were execution. Retagged
+          those to `ok` and moved the signal to the orient read (`unclear`: read
+          the "don't over-correct" warning, still over-corrected).
         outcome: ok

@@ -57,14 +57,13 @@ supported auth library, lightweight, stable, and used by
 - **Hand-written REST surface.** Construct an `httpx.AsyncClient`
   internally and treat Graph as a narrow REST surface with hand-written
   request helpers, pagination, and error mapping.
-- **Reject `msgraph-sdk`.** The surface this backend needs is narrow,
-  and the non-trivial work — upload-session chunking with resume,
-  async-operation polling, URL-expiry-mid-read handling — is carried by
-  none of the candidate SDKs. Adopting one adds transitive
-  weight (the Kiota runtime plus `azure-identity`) without removing code
-  the backend must write regardless. **Reverse** if the backend later
-  grows to a materially broader Graph surface (mail, calendar, groups),
-  where the SDK's coverage would start to earn its weight.
+- **Reject `msgraph-sdk`.** Adopting an SDK adds transitive weight (the
+  Kiota runtime plus `azure-identity`) without removing the hard parts the
+  backend must hand-write against this narrow surface regardless:
+  resumable uploads, async-operation polling, mid-read URL refresh.
+  **Reverse** if the backend later grows to a materially broader Graph
+  surface (mail, calendar, groups), where the SDK's coverage would start
+  to earn its weight.
 - **`Office365-REST-Python-Client` out of scope.** Legacy SharePoint
   REST is not a goal (RFC-0010).
 
@@ -88,9 +87,8 @@ supported auth library, lightweight, stable, and used by
   landed and the conformance suite is parameterised for it.
 - **Maintenance responsibility stays with us.** The Graph drives /
   items v1.0 surface is stable; ongoing churn is expected to be low.
-  If the backend later grows to cover a materially broader Graph
-  surface (mail, calendar, Teams messages, groups), `msgraph-sdk`
-  becomes worth re-evaluating. A new ADR would supersede this one.
+  Re-evaluating `msgraph-sdk` begins at the Decision's reverse trigger (a
+  materially broader Graph surface) and would supersede this ADR.
 
 ## References
 

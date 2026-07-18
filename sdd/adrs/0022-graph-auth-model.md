@@ -46,7 +46,10 @@ concrete auth class. The decisions:
   `Callable[[], str]` (sync) or `Callable[[], Awaitable[str]]` (async)
   and never couples to MSAL through its constructor. Users who obtain
   tokens another way (managed identity, corporate broker, custom refresh)
-  supply their own callable.
+  supply their own callable. **Reverse** (via a new ADR) only if the
+  backend needs auth features a bare token-returning callable cannot
+  express — per-request scope selection, token metadata, or tight MSAL
+  coupling.
 - **Built-in `GraphAuth` helper.** Wraps MSAL and exposes both callable
   shapes, covering two flows: **client-credentials** (app-only,
   admin-consented `Files.ReadWrite.All` / `Sites.ReadWrite.All`) and
