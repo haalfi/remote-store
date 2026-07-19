@@ -13991,6 +13991,7 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
 <li>BK-313: SFTP <code>write()</code>/<code>write_atomic()</code> return all-<code>None</code> <code>WriteResult</code> rich fields; far fewer per-operation metadata round-trips, plus audit-020 SFTP failure-path correctness fixes</li>
+<li>BK-316: SFTP failure paths on non-OpenSSH servers now map to precise error types (<code>PermissionDenied</code> / <code>NotFound</code> / <code>InvalidPath</code>) instead of a generic <code>RemoteStoreError</code>, and an interrupted or connection-dropped atomic write no longer leaves temp-file litter or stalls on a mid-cleanup reconnect</li>
 <li>BUG-231: GraphBackend.check_health() probes the drive so ping() can fail</li>
 <li>BK-310: Pin the backend enumeration order in the add-a-backend checklist</li>
 <li>BK-311: Sync the stale tagline and backend-membership mirrors</li>

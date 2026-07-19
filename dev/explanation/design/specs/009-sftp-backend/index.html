@@ -11340,7 +11340,14 @@ the same directory as the target, then renames to the target via <code>posix_ren
 remains. This is <strong>simulated</strong> atomicity, not true atomicity — the capability is
 declared to enable the write-then-rename pattern, but the caveat must be documented.
 <strong>Postconditions:</strong> On success, the temp file is gone and the target contains the
-new content. On failure, the backend attempts to clean up the temp file.</p>
+new content. On failure, the backend makes a <strong>best-effort</strong> temp-file cleanup that
+never reconnects: when the failure is itself a dropped-connection signal (or the
+client is already invalidated), the cleanup unlink is deliberately skipped rather
+than triggering a fresh connect against a possibly-down server inside the
+error-handling path — so the orphan-temp caveat above holds and the original error
+propagates without a multi-second reconnect stall. An abnormal exit of an
+<code>open_atomic</code> block (including a <code>GeneratorExit</code> / <code>KeyboardInterrupt</code>) removes the
+temp file under the same best-effort guard.</p>
 <h3 id="sftp-015-atomic-write-overwrite-semantics">SFTP-015: Atomic Write Overwrite Semantics<a class="headerlink" href="#sftp-015-atomic-write-overwrite-semantics" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write_atomic(path, content, overwrite=False)</code> raises <code>AlreadyExists</code>
 if the target already exists. With <code>overwrite=True</code>, the existing file is replaced.</p>
