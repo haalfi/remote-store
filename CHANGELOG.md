@@ -7,14 +7,61 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BK-313: SFTP `write()`/`write_atomic()` return all-`None` `WriteResult` rich fields; far fewer per-operation metadata round-trips, plus audit-020 SFTP failure-path correctness fixes
-- BK-316: SFTP failure paths on non-OpenSSH servers now map to precise error types (`PermissionDenied` / `NotFound` / `InvalidPath`) instead of a generic `RemoteStoreError`, and an interrupted or connection-dropped atomic write no longer leaves temp-file litter or stalls on a mid-cleanup reconnect
-- BUG-231: GraphBackend.check_health() probes the drive so ping() can fail
-- BK-310: Pin the backend enumeration order in the add-a-backend checklist
-- BK-311: Sync the stale tagline and backend-membership mirrors
-- BUG-232: Lift the `pyarrow<25` cap from the `arrow` and `sql-query` extras so all pyarrow extras allow pyarrow 25
-- ID-230: Present benchmark overhead as measured values (a neutral magnitude band plus a factual faster/slower direction), not an acceptability verdict; rebuild `comparative.md` and the charts from a committed, reproducible run of record
-- BK-314: Present benchmark overhead in absolute milliseconds rather than as a percentage of raw SDK time, add a raw+overhead decomposition chart, and correct the "overhead shrinks as a share" narrative to the round-trip-count mechanism
+## [0.30.0] - 2026-07-19
+
+### Changed
+
+- **SFTP `write()` / `write_atomic()` cut per-operation metadata round-trips**
+  (BK-313): the backend dropped the extra synchronous `stat` round-trips it paid
+  per operation that raw paramiko skips (payload-independent, about +100 ms each
+  at 100 ms RTT). Four cuts: a post-write stat, a pre-write stat on
+  `overwrite=True`, the eager is-directory check on `read_bytes` / `delete` (now
+  classified lazily on the failure path), and a `stat('.')` liveness probe
+  replaced by a local transport `is_active()` check. **Behavior change:** the
+  SFTP write path no longer returns a `last_modified` timestamp on `WriteResult`.
+  The dropped stat was its only source and SFTP's write response carries none
+  (`WR-001a` already permits `None` for a field the response omits);
+  `WriteResult.size` is unaffected, and no other backend changes. Re-read with
+  `get_file_info()` if you need the timestamp. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0291-to-v0300).
+
+### Fixed
+
+- **SFTP failure paths on non-OpenSSH servers map to precise error types**
+  (BK-316): closing the audit-020 low-severity correctness edges, a permission /
+  not-found / invalid-path failure on servers whose error shapes differ from
+  OpenSSH (errno-less `SSH_FX_FAILURE`, mode-less stats, `EACCES` on a
+  classification stat) now raises `PermissionDenied` / `NotFound` / `InvalidPath`
+  instead of a generic `RemoteStoreError`, and an interrupted or
+  connection-dropped atomic write no longer leaves a temp file behind or stalls
+  on a mid-cleanup reconnect. Every new type subclasses `RemoteStoreError`, so an
+  `except RemoteStoreError` clause is unaffected; see the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0291-to-v0300)
+  if you catch specific types.
+- **`GraphBackend.check_health()` now probes the drive** (BUG-231): the health
+  check contacted nothing, so `ping()` could not fail even when the Graph drive
+  was unreachable. It now issues a real drive probe.
+- **`pyarrow<25` cap lifted from the `arrow` and `sql-query` extras** (BUG-232):
+  the two extras were pinned `pyarrow>=12.0.0,<25` while `s3-pyarrow` carried no
+  ceiling, so a standalone `pip install remote-store[s3-pyarrow]` resolved
+  pyarrow 25 while its siblings held at 24. The shared arrow / parquet / S3
+  surface was verified against pyarrow 25, so every pyarrow extra now aligns on
+  an unbounded `pyarrow>=12.0.0`.
+
+### Documentation
+
+- **Benchmark overhead presented as measured values, not a verdict** (ID-230):
+  rebuilt `comparative.md` and the benchmark charts from a committed, reproducible
+  run of record, presenting overhead as a neutral magnitude band plus a factual
+  faster/slower direction rather than an acceptability judgment.
+- **Benchmark overhead shown in absolute milliseconds** (BK-314): the overhead
+  charts now plot absolute ms (remote-store minus raw) rather than a percentage of
+  raw-SDK time, add a raw + overhead decomposition chart, and correct the
+  "overhead shrinks as a share" narrative to the round-trip-count mechanism, whose
+  absolute ms cost scales with round-trip time.
+- **Pinned the backend enumeration order in the add-a-backend checklist**
+  (BK-310).
+- **Synced the stale tagline and backend-membership mirrors** (BK-311).
 
 ## [0.29.1] - 2026-07-09
 

@@ -8,6 +8,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+*(none)*
+
+## v0.30.0
+
 - [x] **BUG-233 — `adlfs` benchmark target errors on 10MB raw-bytes writes**
   spec: — · effort: S · audience: infra.test
   Root cause was not adlfs but a cosmetic warning promoted to an error: aiohttp
