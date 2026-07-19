@@ -364,7 +364,11 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
 - **Local-machine reference gate.** Not covered by either target above. Grep
   changed files for private local-machine references unreachable from the repo,
   per the [ripple-check Local-machine reference row](#pre-work-index) (patterns +
-  scope live there). Fix before finishing.
+  scope live there). Fix before finishing. One self-match is expected: this
+  file's own ripple-check rows (Pre-work index and Detailed checklist) are where
+  those patterns are defined, so a grep over a PR that edits
+  `sdd/CLAUDE-REFERENCE.md` hits the pattern catalogue itself. That is the
+  definitional home, not a leak; recognise it and move on.
 - **Qualitative review.** The `check_*`/`docs-check` scripts in the mechanical
   gate enforce the mechanical rules but not the judgment-based ones. Review the
   changed tests against [`TESTING.md`](TESTING.md) (assertion depth, mock

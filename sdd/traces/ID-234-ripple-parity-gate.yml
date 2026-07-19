@@ -15,7 +15,7 @@ audience:
   - contributor.process
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -80,3 +80,7 @@ phases:
         section: "anchoring check (rule 3) docstring + header note"
         read_type: verify
         extract: "PR #921 review: the anchoring rule was over-documented as an unconditional guarantee. It only catches a forgotten Detailed-only trigger when it LEADS its section; one placed after a shared trigger is indistinguishable from a legitimate expansion and passes. Softened the docstring, inline comment, and CLAUDE-REFERENCE.md header note to state the real scope; added a test locking the blind spot. Also removed dead iter_reference() + its Iterator import"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates / Local-machine reference gate"
+        read_type: verify
+        extract: "PR #921 leak-focused review: the ripple-check's own pattern-defining rows (Pre-work + the new Detailed Local-machine reference row) always match the manual leak-grep the gate prescribes, so any PR editing this file self-matches. Added a one-line carve-out to the gate bullet noting this file is the definitional home, not a leak. Encoded where the procedure is documented (CLAUDE-REFERENCE.md), not in the skill files"
