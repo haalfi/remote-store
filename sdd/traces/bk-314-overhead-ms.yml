@@ -22,13 +22,23 @@ surprising_ripples:
   - benchmarks/slim_run_of_record.py  # guard docstring/messages named only overhead-vs-rtt; the decomposition shares the guarded data path
   - tests/scripts/test_slim_run_of_record.py  # same guard narration echoed in test comments
   - DEVELOPMENT_STORY.md  # :609 still asserted the refuted "fixed cost becomes irrelevant at real-world latencies" as a benchmark finding
-# review_rounds counts three submissions: round 1 (pre-hold) caught the stale
+# review_rounds counts four submissions: round 1 (pre-hold) caught the stale
 # mirrors above; rounds 2-3 (post-BK-313 resume) caught prose over-generalizing
 # against its own chart (Azure listing carve-out), the decomposition's
 # unweighted-ms mean reading as SFTP raw growth (emulator caveat added at the
 # embed, not re-weighted — absolute ms is the deliberate BK-314 framing), and the
-# Unreleased CHANGELOG entries needing id+title stubs. No new backlog items.
-review_rounds: 3
+# Unreleased CHANGELOG entries needing id+title stubs. Round 4 (a deep prose-vs-
+# data pass) caught the remaining consistency debt: the "SFTP/Azure stay near zero"
+# claim vs the emulator-noise dip visible on the vs-rtt chart and the decomposition
+# overhead segment (both now qualified as within measurement noise); the retained
+# "Delete 2-3x across all backends / error-mapping layer" caveat, false on both the
+# embedded data (SFTP/Azure ~1.0x) and the round-trip mechanism (S3 delete's exists
+# pre-check is the extra round trip); the README universalizing the S3-specific
+# RTT-growth claim; and the doc recommending bench-report-user (still %-bands) while
+# arguing ms-not-share (closed with a note, not a report.py change). No new backlog
+# items; a possible follow-up to add ms deltas to bench-report-user is left to the
+# maintainer's call.
+review_rounds: 4
 phases:
   - id: orient
     name: Orient

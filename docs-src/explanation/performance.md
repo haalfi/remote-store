@@ -42,9 +42,9 @@ Patterns from Docker benchmarks (MinIO, Azurite, OpenSSH):
   — Tier 1 C++ range requests — not raw throughput.
 - **Azure** and **SFTP**: per-operation overhead is near zero — a millisecond or
   two either way on a clean link — except Azure listing, which the chart shows
-  running faster than the raw SDK (the same listing win S3 shows). It stays near
-  zero under latency too, because neither backend adds extra protocol round trips
-  per operation.
+  running faster than the raw SDK (the same listing win S3 shows). Because neither
+  backend adds extra protocol round trips per operation, their real overhead stays
+  near zero under latency too.
 - **Local**: all operations are sub-millisecond; overhead versus raw pathlib is
   a sub-millisecond cost per call. Whether that registers depends on your
   call volume and how much of your latency budget is local I/O.
@@ -57,11 +57,13 @@ Regenerate numbers for your own hardware with `hatch run bench-report`
 Under realistic network round-trip times (20–100 ms), the absolute overhead
 **grows** wherever remote-store's extra work is itself a count of round trips.
 The chart below tracks the average overhead in milliseconds as simulated RTT
-rises: for S3 it climbs steadily, since each extra round trip costs one more RTT;
-SFTP and Azure, which add no extra round trips per operation, stay near zero
-throughout.
+rises: for S3 it climbs steadily, since each extra round trip costs one more RTT.
+SFTP and Azure add no extra round trips per operation, so their real overhead
+stays near zero — the SFTP line dips noticeably below zero at mid-range RTT only
+because its multi-second emulator write dominates the five-op average, a
+measurement artifact rather than overhead (see the caveat below).
 
-![Average overhead in milliseconds versus network round-trip time; the S3 line rises with RTT while SFTP and Azure stay near zero](../img/benchmarks/overhead-vs-rtt.svg)
+![Average overhead in milliseconds versus network round-trip time; the S3 line rises with RTT while the SFTP and Azure lines hover near zero, wandering only on measurement noise](../img/benchmarks/overhead-vs-rtt.svg)
 
 The single largest case is an S3 write or delete, which carries about one extra
 protocol round trip of overhead — so on the order of one RTT (~+100 ms on a
@@ -72,10 +74,12 @@ latency-scaled overhead are both visible:
 
 ![Stacked bars decomposing mean time per operation into raw SDK time and remote-store overhead per RTT profile, for S3, SFTP, and Azure](../img/benchmarks/overhead-decomposition.svg)
 
-One caveat for the SFTP panel: its raw bar is a plain mean across operations, so it
-is dominated by the 1MB write — an unrepresentative emulator artifact (see
-[SFTP write throughput](#caveats) below). Read the near-zero overhead segment, not
-the raw total's growth, as this chart's point.
+One caveat for the SFTP panel: both the raw bar and the overhead segment are plain
+means across operations, so both are dominated by the 1MB write — an
+unrepresentative emulator artifact (see [SFTP write throughput](#caveats) below).
+That write's measurement noise alone can swing the labelled SFTP overhead a fair
+way below zero at mid-range RTT, so read it as near zero within noise (the backend
+adds no extra round trips), not as a real speedup, and ignore the raw bar's growth.
 
 The overhead's *share* of the total moves independently of its absolute size: for
 S3 it grows into a visible slice of the average operation under latency, while for
@@ -152,7 +156,9 @@ interfaces:
 
 Results vary by hardware, network, and service version. Generate numbers for
 your environment with `hatch run bench-report` (summary) or
-`hatch run bench-report-user` (condensed, with magnitude bands).
+`hatch run bench-report-user` (condensed, with magnitude bands). Those bands are
+*shares* of the raw-SDK time — a quick relative read; the absolute millisecond
+delta, which is what scales with RTT, is in `bench-report` and the charts above.
 
 For a full per-backend comparison of remote-store against the raw SDK and
 fsspec, see the Detailed Comparative Tables section on the
@@ -171,8 +177,11 @@ fsspec, see the Detailed Comparative Tables section on the
   only when the cache is explicitly re-enabled via
   `client_options={"use_listings_cache": True}`; with the default, the s3fs
   path issues a fresh listing like raw boto3.
-- **Delete overhead.** 2-3x vs raw SDK across all backends is expected
-  from the error-mapping layer and not an optimization target.
+- **Delete overhead is an S3 pattern, not universal.** The S3 backends check
+  that the object exists before removing it, an extra round trip, so their delete
+  runs about double raw boto3 on a clean link and scales with RTT like other
+  round-trip overhead. SFTP and Azure delete within a percent of their raw SDKs —
+  they add no extra round trip.
 - **SFTP write throughput is an emulator artifact.** On the Docker OpenSSH
   container, a 1MB SFTP write takes close to a second — far slower than the same
   write via `sshfs` or against a real server — because the paramiko transport

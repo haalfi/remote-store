@@ -227,7 +227,7 @@ For the full method list, see the [API reference](https://docs.remotestore.dev/s
 
 ## Performance
 
-remote-store adds a small number of extra protocol round trips per operation over the raw SDK, so the overhead is a few milliseconds on a fast link but its absolute cost grows with network round-trip time (an S3 write or delete carries about one extra round trip of overhead, on the order of one RTT); S3 listing is faster than raw boto3 via s3fs connection caching. The [performance guide](https://docs.remotestore.dev/stable/explanation/performance/) has the measured numbers in milliseconds, the methodology, and the `hatch run bench-*` levers to test the overhead against your own workload — whether it is acceptable is your call, not a number this table can give you.
+remote-store adds at most a small number of extra protocol round trips per operation over the raw SDK. Where it does — an S3 write or delete carries about one extra round trip — the overhead is a few milliseconds on a fast link but its absolute cost grows with network round-trip time (on the order of one RTT per extra round trip); backends that add none, such as SFTP and Azure, stay near zero at any latency. S3 listing is faster than raw boto3 via s3fs connection caching. The [performance guide](https://docs.remotestore.dev/stable/explanation/performance/) has the measured numbers in milliseconds, the methodology, and the `hatch run bench-*` levers to test the overhead against your own workload — whether it is acceptable is your call, not a number this table can give you.
 
 ## Extensions
 
