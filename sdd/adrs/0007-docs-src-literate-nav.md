@@ -42,99 +42,52 @@ makes sense in the context of the published documentation site but is still
 
 ## Decision
 
-### Principle: three-tier content architecture
+### A third content tier (supersedes ADR-0006)
 
-Supersedes ADR-0006's two-tier model.  Content lives in one of three places,
-determined by its nature:
+Content lives in one of **three** tiers, chosen by its nature, replacing
+ADR-0006's binary "source directory or build script" rule:
 
-1. **Source directories** — content readable on GitHub without MkDocs
-   (`README.md`, `guides/`, `sdd/`, `examples/`, `src/`).
-2. **`docs-src/`** — site-specific authored content: landing pages, index
-   pages, `include-markdown` wrappers, `mkdocstrings` directives, `.tmpl`
-   templates for dynamic index pages, and per-section `_nav.yml` files.
-   Checked into version control.
-3. **Build hook (`scripts/gen_pages.py`)** — pure mechanics: filesystem
-   scanning, template filling, link rewriting, navigation assembly.
-   No authored prose.
+- **Source directories** (`README.md`, `guides/`, `sdd/`, `examples/`, `src/`):
+  anything readable on GitHub without MkDocs.
+- **`docs-src/`**: site-only authored prose with no standalone existence on
+  GitHub, such as API-reference overviews, section landing pages, and example
+  indexes. Version-controlled.
+- **Build hook**: pure mechanics (scanning, template filling, link rewriting,
+  nav assembly). No authored prose.
 
-### Content homes by type
+**Why the third tier:** ADR-0006's two-way rule left authored prose that only
+makes sense inside the published site with no home, so ~100 lines of it were
+trapped as Python string literals in the build script: undiscoverable, hard to
+edit, hard to review. The tier exists to house exactly that category.
 
-| Content type | Source location | Audience |
-|---|---|---|
-| Project introduction, installation, quick start | `README.md` | Both |
-| User-facing guides (backends, streaming, patterns) | `guides/` | Package users |
-| Runnable code examples | `examples/` | Package users |
-| API docstrings | Python source (`src/`) | Both |
-| Design specs | `sdd/specs/` | Developers |
-| Architecture decision records | `sdd/adrs/` | Developers |
-| Design process & overview | `sdd/` (root files) | Developers |
-| Contributor workflow | `CONTRIBUTING.md` | Developers |
-| Release history | `CHANGELOG.md` | Both |
-| Development narrative | `DEVELOPMENT_STORY.md` | Developers |
-| Site landing pages, section indexes, API ref layout | `docs-src/` | Site-specific |
-| Dynamic index templates (specs, ADRs) | `docs-src/**/_index.tmpl` | Site-specific |
-| Section navigation ordering | `docs-src/**/_nav.yml` | Site-specific |
+*Reverse if* site-only authored prose stops being a distinct category
+(everything becomes either GitHub-readable source or pure mechanics),
+collapsing back to ADR-0006's two tiers.
 
-### The `docs-src/` directory
+### The placement rule
 
-MkDocs reads `docs-src/` as its `docs_dir`.  It contains:
+> Readable on GitHub without MkDocs goes in a **source directory**. Authored
+> prose meaningful only as part of the docs site goes in **`docs-src/`**. Pure
+> build mechanics go in the **build hook**.
 
-- **Include wrappers** that pull content from source directories via
-  `include-markdown` (e.g., `changelog.md` includes `../CHANGELOG.md`).
-- **Directive pages** for `mkdocstrings` API reference and `pymdownx.snippets`
-  example embeds.
-- **Static authored pages** like `api/index.md` (API overview) and
-  `examples/index.md` (examples overview) — curated site content that has
-  no meaningful standalone existence on GitHub.
-- **Templates** (`_index.tmpl`) whose static preamble is authored in Markdown;
-  dynamic rows are injected by the build hook.
-- **Navigation files** (`_nav.yml`) declaring the ordered list of pages in
-  each section.  The build hook reads these recursively to assemble the
-  site-wide `SUMMARY.md`.
+The full content-type-to-location map is reference material owned by the
+placement authority, [`AUTHORING.md`](../AUTHORING.md); this rule applies it
+rather than restating it.
 
-### Build process
+### The build hook tier holds mechanism, never prose
 
-The MkDocs "literate" plugin stack replaces the monolithic build script:
+The build hook replaced ADR-0006's monolithic script with a literate MkDocs
+plugin stack that carries no authored content and no hand-maintained
+navigation: section ordering lives beside the content in `_nav.yml`, not in a
+central `nav:` block. The mechanism itself (plugin choices,
+`_nav.yml`-to-`SUMMARY.md` assembly, link rewriting) is specified in
+[spec 047](../specs/047-docs-framework-tooling.md) (DOCFRAME-001, DOCFRAME-007)
+and pinned in `pyproject.toml`. This ADR fixes only the tier's boundary:
+mechanics carry no authored prose.
 
-- **`mkdocs-gen-files`** runs `scripts/gen_pages.py` during the build to
-  create virtual pages (spec/ADR/RFC wrappers, filled templates, link-
-  rewritten pages, copied assets) and assemble `SUMMARY.md` from the
-  per-section `_nav.yml` files.
-- **`mkdocs-literate-nav`** reads the generated `SUMMARY.md` for navigation,
-  eliminating the static `nav:` block in `mkdocs.yml`.
-- **`mkdocs-section-index`** maps section landing pages to their parent
-  nav entry.
-
-No pre-build step is required.  No `docs/` directory is generated on disk.
-
-### Navigation convention
-
-Each directory in `docs-src/` may contain a `_nav.yml` file:
-
-```yaml
-# docs-src/backends/_nav.yml
-- Local: local.md
-- S3: s3.md
-- S3-PyArrow: s3-pyarrow.md
-- SFTP: sftp.md
-- Azure: azure.md
-```
-
-- Entries are `label: file.md` for leaf pages.
-- Entries ending with `/` (e.g., `Specs: specs/`) are subsections — the build
-  hook recurses into that directory's `_nav.yml`.
-- Sections without a `_nav.yml` that match a scanned directory (`design/specs`,
-  `design/adrs`) are populated automatically from the filesystem scan.
-- Adding a page to a section means creating the `.md` file and adding one
-  line to the section's `_nav.yml`.  No Python is touched.
-
-### Where to put new content — decision rule
-
-> If you can read it on GitHub and it makes sense without MkDocs, it belongs
-> in a source directory.  If it is authored prose that only makes sense as
-> part of the documentation site, it belongs in `docs-src/`.  If it is pure
-> build mechanics (scanning, templating, link rewriting), it belongs in the
-> build hook.
+*Reverse if* the "mechanics tier carries no authored content" boundary is
+itself abandoned. The concrete mechanism is spec 047's to evolve; ADR-0027 has
+since narrowed it to a single bridge.
 
 ## Consequences
 

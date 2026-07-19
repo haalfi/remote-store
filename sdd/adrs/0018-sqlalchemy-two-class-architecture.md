@@ -41,30 +41,32 @@ setup.
 
 ## Decision
 
-**Option B — Two concrete backends, shared base.**
+**Option B: two concrete backends over a shared private base.**
 
 ```
 _SQLAlchemyBaseBackend(Backend)   # private, not exported
-├── SQLBlobBackend                # v1 — full read-write KV store
-└── SQLQueryBackend               # v2 — read-only query materializer
+├── SQLBlobBackend                # v1, full read-write KV store
+└── SQLQueryBackend               # v2, read-only query materializer
 ```
 
-### Engine lifecycle: owned vs borrowed
+- **Two classes, not one `mode` flag.** The blob and query use cases have
+  fundamentally different invariants (read-write vs read-only), capability sets,
+  and dependencies (`[sql]` vs `[sql-query]`); a `mode="blob"|"query"` parameter
+  would spread `if mode == ...` branching through every method. *Reverse if* the
+  two use cases converge on one invariant set and dependency footprint.
+- **A shared base, not two independent classes.** `_SQLAlchemyBaseBackend`
+  centralises engine lifecycle, health check, error mapping, and SQLite
+  detection, avoiding Option C's duplication while each subclass keeps its own
+  Backend contract and evolves independently. *Reverse if* the shared surface
+  shrinks to near nothing, making the base pure indirection.
+- **The base is private.** It is not exported or documented for users, so it
+  stays free to evolve. *Reverse if* third parties need to subclass it to build
+  their own SQL backend.
 
-The base accepts exactly one of `url: str` or `engine: Engine`:
-
-- `url` → creates and **owns** the engine. `close()` disposes it.
-- `engine` → **borrows** it. `close()` is a no-op.
-
-This lets standalone scripts get automatic cleanup while web apps share
-their connection pool.
-
-### Folder semantics: virtual prefixes
-
-Unlike `MemoryBackend` and `LocalBackend` (which use explicit folder nodes),
-`SQLBlobBackend` uses **virtual prefix-based folders** — a "folder" is any
-key prefix that has child keys. This matches the S3/Azure pattern and avoids
-maintaining a separate folder table or marker rows.
+The engine `url`-vs-`engine` (owned vs borrowed) lifecycle and the virtual
+prefix-based folder model are spec-rate and live in
+[spec 040](../specs/040-sql-blob-backend.md) (SQL-BLOB-001, SQL-BLOB-025,
+SQL-BLOB-041, SQL-BLOB-061).
 
 ## Consequences
 

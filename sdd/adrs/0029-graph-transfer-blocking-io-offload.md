@@ -45,15 +45,16 @@ every sibling coroutine for the duration of the disk op — the exact
 
 ## Decision
 
-Dispatch the blocking spool I/O in `transfer.py` through `asyncio.to_thread`:
-the range-fallback `_spooled_window` write/seek/read, the `spool_content`
-write/tell/seek, and the `_upload_chunks` per-chunk seek+read (bundled into one
-`_seek_read` hop). The spool objects are accessed sequentially under `await`, so
-single-threaded offload is safe; nothing else holds the reader concurrently.
+Dispatch the Graph transfer's blocking spool file I/O off the event loop via
+`asyncio.to_thread`, on both the read-path range fallback and the write-path
+unknown-length upload. The spool objects are accessed sequentially under `await`,
+with nothing else holding the reader concurrently, so single-threaded offload is
+safe. *Reverse if* a spool ever gains a concurrent reader: the sequential-access
+invariant that makes single-threaded offload safe would no longer hold.
 
-This realises ADR-0025's own prescription ("`asyncio.to_thread` for hot paths")
-in-backend rather than leaving it deferred, and corrects the mischaracterised
-example.
+The exact spool methods and per-operation thread hops are code-level and live in
+`transfer.py`, with the spool contracts in [spec 044](../specs/044-graph-backend.md)
+§ GR-015 (range-fallback spool) and § GR-019 (upload-session spool).
 
 ## Consequences
 

@@ -48,83 +48,44 @@ tools without a custom transport adapter.
 
 ## Decision
 
-The testing architecture rests on five coupled commitments:
+The testing architecture rests on five coupled commitments. They share one
+rationale: the demotion mechanism works only because the axes are separated, the
+gate works only because gating is native, and the scope holds only because the
+spec calls out where it does not apply. One ADR captures the bundle; any
+commitment that later evolves can be superseded individually. Spec contracts live
+in [spec 048](../specs/048-testing-architecture.md).
 
-1. **Two orthogonal axes** — separate *kind* (pure, mocked, real-local, real-live) from *stage* (1/2/3 by cost); a fixture declares one of each.
-2. **Conformance as the cross-backend spine** — one parametrised suite over the public `Store` / `Backend` API that every backend runs; backend-specific behaviour is isolated per backend.
-3. **HTTP cassette + replay as a Stage 1 fixture** — a `<backend>_replay` fixture runs the real SDK path against a recorded cassette (Stage 3 records, Stage 1 replays); scoped to HTTP-transport backends only.
-4. **Capability gating via native pytest** — parametrize id-filtering plus `pytest.mark.skipif`, no custom `@requires` marker layer.
-5. **Explicit cassette refresh** — cassettes regenerate only when a developer runs `pytest --stage=3 --record` and commits the diff; CI never silently re-records.
-
-They share rationale: the demotion mechanism only works because the axes are
-separated, the gate works only because gating is native, and the scope works
-only because the spec calls out where it does not apply. One ADR captures the
-bundle; any commitment that later evolves can be superseded individually.
-
-### Two orthogonal axes: kind and stage
-
-A linear list of "stages" running unit, emulator, live collapses two
-distinct concerns. *What the test wires up* is one axis (kind: pure,
-mocked, real-local, real-live). *How expensive it is to run* is
-another (stage: 1, 2, 3, ordered by cost and required infrastructure).
-The architecture separates them. A fixture declares one of each. Spec
-contracts in [spec 048](../specs/048-testing-architecture.md) TEST-001.
-
-A linear collapse hides real options. Replay is a real-SDK code path
-that runs at Stage 1 cost; a single-axis ordering cannot express that
-combination.
-
-### Conformance as the cross-backend spine; backend-specific tests isolated per backend
-
-Conformance is one parametrised test set referencing only the public
-`Store` and `Backend` API. Every backend that exposes the API runs
-the full suite. Behaviour that only one backend exhibits, whether
-protocol quirks, storage-model semantics, or vendor configuration, is
-isolated to that backend's own home, separate from the spine.
-
-Two consequences follow at once. "Add a backend, get conformance for
-free" becomes the literal mechanism. And backend-specific tests gain
-a home that is not interleaved with the cross-backend suite. Spec
-contracts in TEST-002 and TEST-003. Layout in TEST-010.
-
-### HTTP cassette and replay as a Stage 1 fixture, scoped to HTTP backends
-
-A `<backend>_replay` Stage 1 fixture exercises the real SDK code path
-with the HTTP transport stubbed by a recorded cassette. Stage 3 runs
-record. Stage 1 runs replay. A Stage-3-discovered behaviour, once
-recorded, runs at zero cost in every default CI run. That is the
-demotion mechanism the third force in the Context describes.
-
-The mechanism applies to HTTP-transport backends only. Backends that
-speak SSH binary or a DB wire protocol are not reachable by available
-capture tools without a custom transport adapter, and that work is not
-in scope here. For excluded backends, Stage 2 (Docker) is the cheapest
-source of truth, with no Stage 3 to Stage 1 demotion path until and
-unless dedicated work delivers one. Spec contracts in TEST-007 and
-TEST-008.
-
-### Capability gating uses native pytest mechanisms
-
-Conformance tests gate on cross-backend `Capability` values via
-parametrize id-filtering and `pytest.mark.skipif`. No `@requires(...)`
-custom marker layer is introduced. A reader can trace from the
-parametrize call to the fixture registry without indirection or a
-plugin hook.
-
-The cost paid is verbosity in a few helper functions. The cost avoided
-is a parallel marker system that needs its own conftest hook,
-documentation, and IDE-tooling integration. Spec contracts in
-TEST-005.
-
-### Cassette refresh is explicit
-
-Cassettes regenerate when a developer runs `pytest --stage=3 --record`
-and commits the diff. CI does not silently re-record. The refresh is
-auditable as a normal PR. Drift between cassettes and real-service
-responses is detected by the next manual refresh. A scheduled refresh
-job is schedulable later if drift becomes painful. The reverse default,
-scheduling from day one, couples the cost-controlled tier to a recurring
-job before any empirical drift data exists. Spec contracts in TEST-009.
+- **Two orthogonal axes: kind and stage.** Separate *what a test wires up* (kind:
+  pure, mocked, real-local, real-live) from *how expensive it is to run* (stage:
+  1/2/3 by cost); a fixture declares one of each. A single linear stage list
+  collapses the two and hides real options, notably replay: a real-SDK code path
+  that runs at Stage 1 cost, which no single-axis ordering can express (TEST-001).
+  *Reverse if* a single axis ever expresses every kind/cost combination in use.
+- **Conformance as the cross-backend spine.** One parametrised suite over the
+  public `Store` / `Backend` API that every backend runs, so "add a backend, get
+  conformance for free" is the literal mechanism; backend-specific behaviour is
+  isolated to that backend's own home, not interleaved with the spine (TEST-002,
+  TEST-003, TEST-010). *Reverse if* the public API stops being a sufficient
+  cross-backend contract.
+- **HTTP cassette and replay as a Stage 1 fixture.** A `<backend>_replay` fixture
+  runs the real SDK path against a recorded cassette (Stage 3 records, Stage 1
+  replays), demoting a Stage-3-discovered behaviour to zero-cost CI. Scoped to
+  HTTP-transport backends only: SSH-binary and DB-wire protocols are not reachable
+  by available capture tools without a custom transport adapter, so their cheapest
+  source of truth stays Stage 2 with no demotion path (TEST-007, TEST-008).
+  *Reverse if* a capture mechanism for non-HTTP transports becomes worth its cost.
+- **Capability gating via native pytest.** Parametrize id-filtering plus
+  `pytest.mark.skipif`, with no custom `@requires` marker layer, so a reader
+  traces from the parametrize call to the fixture registry without a plugin hook.
+  The cost is verbosity in a few helpers; the cost avoided is a parallel marker
+  system with its own conftest hook, docs, and IDE integration (TEST-005).
+  *Reverse if* native gating can no longer express the capability matrix.
+- **Explicit cassette refresh.** Cassettes regenerate only when a developer runs
+  `pytest --stage=3 --record` and commits the diff; CI never silently re-records.
+  Scheduling a refresh from day one would couple the cost-controlled tier to a
+  recurring job before any empirical drift data exists; a scheduled job is
+  additive later if drift becomes painful (TEST-009). *Reverse if* observed drift
+  makes manual refresh unreliable.
 
 ## Consequences
 

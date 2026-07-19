@@ -35,56 +35,34 @@ of SDK retry and is harder to reason about.
 
 ## Decision
 
-Use **Option B (per-backend native configuration)**.
+Use **Option B: per-backend native retry configuration**, a `RetryPolicy` that
+maps to each backend's own retry mechanism.
 
-1. Backends own their transport — retry is a transport concern.
-2. The policy replaces SDK defaults, avoiding retry multiplication.
-3. Minimal API surface: one frozen dataclass, one constructor parameter.
-4. No new core dependencies — `tenacity` stays in the SFTP `sftp` extra.
+- **Retry is a transport concern, so backends own it.** Each backend translates
+  one `RetryPolicy` into its native mechanism (SFTP tenacity, S3 botocore, Azure
+  `ExponentialRetry`, S3-PyArrow both sides); Local and Memory reject `retry`
+  because it is meaningless for local I/O. *Reverse if* a cross-cutting retry
+  concern emerges that no single backend can own (e.g. mid-operation reconnect
+  spanning backends).
+- **The policy replaces SDK defaults rather than stacking on them,** so retries
+  do not multiply. That was the flaw in Option A (a Store-level tenacity wrapper)
+  and Option C (an `ext/` retry proxy), both of which compose on top of SDK
+  retry. *Reverse if* a use case genuinely needs layered retry at two levels.
+- **One configuration point: a single frozen dataclass and one constructor
+  parameter.** `BackendConfig` carries it and the Registry merges it in, keeping
+  the surface minimal and discoverable. *Reverse if* the single knob cannot
+  express a required policy and users are pushed back to `client_options`.
+- **No new core dependency.** `tenacity` stays confined to the `sftp` extra, not
+  the zero-dependency core. *Reverse if* a core-level retry mechanism becomes
+  unavoidable.
 
-### RetryPolicy dataclass
+Application-level retry (mid-operation reconnect, idempotency checks) is out of
+scope, and could later be a composing `ext/retry.py` middleware.
 
-A frozen dataclass in `_config.py` with five fields:
-
-- `max_attempts` (int, default 3): Total attempts including initial.
-  Set to 1 to disable retry.
-- `backoff_base` (float, default 1.0): Base delay in seconds.
-- `backoff_max` (float, default 60.0): Ceiling for exponential backoff.
-- `jitter` (float, default 1.0): Max random jitter per delay.
-- `timeout` (float | None, default None): Total wall-clock limit.
-
-A `RetryPolicy.disabled()` classmethod returns `RetryPolicy(max_attempts=1)`.
-
-### Backend mapping
-
-Each backend translates the policy into its native retry mechanism:
-
-- **SFTP:** Replaces hardcoded tenacity decorator with policy-driven
-  `stop_after_attempt`, `wait_exponential`, `wait_random`, optionally
-  `stop_after_delay`.
-- **S3:** Maps to `botocore.config.Config(retries={"max_attempts": N,
-  "mode": "standard"})` merged into `client_options`.
-- **Azure:** Maps to `ExponentialRetry(retry_total=N-1,
-  initial_backoff=base, random_jitter_range=jitter)` set as
-  `retry_policy` in client options.
-- **S3-PyArrow:** Maps to both PyArrow C++ side (`max_attempts`) and
-  s3fs side (same as S3).
-- **Local/Memory:** Do not accept `retry` parameter — TypeError if
-  provided (correct: retry is meaningless for local I/O).
-
-### BackendConfig integration
-
-`BackendConfig` gains a `retry: RetryPolicy | None = None` field.
-`Registry._get_backend()` merges `retry` into `options` before
-constructing the backend. `from_dict()` parses `retry` from nested
-dicts in the config.
-
-### Scope
-
-The policy controls **connection retry** (SFTP) and **SDK-level
-operation retry** (S3, Azure). Application-level retry (reconnect
-mid-operation, idempotency checks) is out of scope and could be
-addressed by a future `ext/retry.py` middleware.
+The `RetryPolicy` fields and defaults, the `disabled()` factory, the per-backend
+SDK mappings, the Local/Memory `TypeError`, and the `BackendConfig`/`from_dict`
+wiring are spec-rate and live in [spec 025](../specs/025-retry-policy.md)
+(RET-001, RET-003, RET-004 through RET-006, RET-010 through RET-014).
 
 ## Consequences
 

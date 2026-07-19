@@ -41,47 +41,35 @@ fact as a runtime discovery is the design error.
 
 ## Decision
 
-The Azure backend no longer auto-detects HNS. The account's nature is a
-**mandatory, explicit** constructor and config input, declared as a required
-`hns: bool` on both `AzureBackend` and `AsyncAzureBackend` (no default; a
-missing or non-`bool` value raises at construction).
+**HNS status is a mandatory, explicit declaration, never auto-detected.** Both
+`AzureBackend` and `AsyncAzureBackend` take a required `hns: bool` (no default);
+`_hns` is set once from it, with no probe, cache, warn-once state, or
+per-operation snapshot.
 
-- `AzureBackend(..., hns: bool)` and `AsyncAzureBackend(..., hns: bool)` —
-  there is no default. A backend constructed without `hns`, or with a
-  non-`bool` value, raises `ValueError` at construction time (fail loud, never
-  silently infer). The declaration must be a real boolean, not a truthy/falsy
-  proxy: config env-var resolution yields strings, so a `${VAR}` placeholder
-  resolving to `"false"` would otherwise coerce to `True` via `bool(...)` and
-  silently re-enable HNS — the very misdetection class this decision removes.
-- `_hns` becomes an immutable attribute set from the declared value. No probe,
-  no cache, no warn-once state, no per-operation snapshot.
+- **Why mandatory rather than a detected default.** The account's HNS status is a
+  fixed, deployment-time fact, but the old `GetAccountInfo` probe *guessed* it at
+  runtime from a network call that can fail, return stale authorization state
+  (e.g. an RBAC-propagation `403`), or be denied by least-privilege credentials.
+  That produced sticky misdetection, per-operation re-probe storms, and torn
+  reads mid-operation. A declared value cannot fail, so the one-time cost of
+  stating a known fact buys removal of the entire failure class and determinism
+  from construction. The value must be a real `bool`, not a truthy/falsy proxy,
+  because config env-var resolution yields strings and a `"false"` placeholder
+  would otherwise coerce to `True` and silently re-enable HNS. *Reverse if* a
+  deployment-time-reliable, authorization-independent way to detect HNS emerges.
+- **Discovery stays available, but only when asked, and fail-loud.**
+  `AzureUtils.detect_hns()` / `adetect_hns()` issue a single `GetAccountInfo`
+  call and return a `bool`; unlike the former implicit probe, a probe error is
+  raised rather than swallowed and degraded to flat semantics. This mirrors the
+  established pattern for connection facts that are discoverable but must not be
+  silently inferred (`SFTPUtils.scan_host_keys`, `GraphUtils.resolve_drive_id`).
+  *Reverse if* discovery becomes reliable enough to fold back into construction.
 
-For users who do not know an account's HNS status, a public one-shot helper
-discovers it explicitly:
-
-- `AzureUtils.detect_hns(...)` (sync) and `AzureUtils.adetect_hns(...)` (async)
-  issue a single `GetAccountInfo` call and return a `bool`. Unlike the former
-  implicit probe, these are **fail-loud**: a probe error is mapped to a
-  `remote_store` error and raised, not swallowed and degraded to flat
-  semantics.
-
-This mirrors the established helper pattern for connection facts that are
-discoverable but should not be silently inferred: `SFTPUtils.scan_host_keys`
-and `GraphUtils.resolve_drive_id`.
-
-### Why mandatory rather than a detected default
-
-A detected default reintroduces every failure mode above: the probe can fail,
-return stale authorization state, or be denied. A declared value cannot. The
-small one-time cost — the user must state a fact they already know, or call
-`detect_hns()` once — buys the removal of an entire failure class and makes the
-backend's behaviour deterministic from construction.
-
-### Migration
-
-This is a breaking change: every existing Azure call site must add `hns=`.
-Pre-v1 semver permits the change in a minor bump. The migration guide documents
-the before/after and the `detect_hns()` discovery recipe.
+The exact constructor signatures, the `ValueError` validation, the real-`bool`
+coercion rule, `_hns` immutability, and the `detect_hns`/`adetect_hns` contract
+are spec-rate and live in [spec 012](../specs/012-azure-backend.md) (AZ-001,
+AZ-005, AZ-006). The breaking migration (every call site adds `hns=`) is in
+Consequences.
 
 ## Consequences
 

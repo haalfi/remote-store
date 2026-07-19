@@ -89,7 +89,7 @@ class AsyncBackendSyncAdapter(Backend):
 
     def __init__(self, async_backend: AsyncBackend) -> None:
         # Lazy import keeps the core module free of an unconditional
-        # ``aio/`` dependency (ADR-0025 § Module placement).
+        # ``aio/`` dependency (ADR-0025, Decision: sync-core module placement).
         from remote_store.aio._async_backend import AsyncBackend as _AsyncBackend
 
         if not isinstance(async_backend, _AsyncBackend):

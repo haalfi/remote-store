@@ -66,276 +66,115 @@ multiple bridge libraries.
 
 ## Decision
 
-Introduce a new class `AsyncBackendSyncAdapter` under
-`remote_store.aio` that implements the sync `Backend` ABC by
-delegating to an `AsyncBackend` running on a private event loop in a
-dedicated background thread. Do **not** invert `SyncBackendAdapter`;
-the execution direction is different enough that two distinct adapters
-are clearer than one parameterised bridge.
+Introduce `AsyncBackendSyncAdapter`, a class implementing the sync `Backend` ABC
+by delegating to a wrapped `AsyncBackend` that runs on a private event loop in a
+dedicated daemon thread (**Option D** of the four weighed in Context). It mirrors
+`SyncBackendAdapter` (ADR-0012); together they form the full bidirectional bridge
+the hybrid model needs.
 
-The `AsyncBackendSyncAdapter` is the mirror of `SyncBackendAdapter`
-(ADR-0012). Together they provide the full bidirectional bridge the
-hybrid model needs.
+**Private loop on a dedicated daemon thread, not `asyncio.run()` per call and not
+`nest_asyncio`.** `asyncio` forbids re-entering a running loop, and a fresh loop
+per call forfeits the async SDK's connection pools and auth-token cache; a
+per-adapter private loop keeps the client alive while sync callers submit
+coroutines via `run_coroutine_threadsafe` and block on the returned `Future`.
+*Reverse if* the stdlib gains safe nested-loop execution, or the wrapped backends
+stop needing cross-call client reuse.
+
+**Two distinct adapters, not one parameterised bridge.** The two boundary
+directions differ enough that two named classes read clearer than one flag-driven
+bridge. *Reverse if* a single parameterised bridge proves clearer in practice.
+
+**The module lives in the sync core (`src/remote_store/_async_to_sync_adapter.py`),
+not under `aio/`.** It implements the sync `Backend`, so it belongs with sync
+code; placing it under `aio/` would force every sync `Store` user wrapping an
+async backend to import the `aio/` runtime at construction, inverting the
+invariant that sync code stays independent of `aio/`. `AsyncBackend` is imported
+lazily in `__init__` to keep that core-to-`aio` edge off the top level. *Reverse
+if* the sync-independent-of-`aio/` layering invariant is abandoned.
 
 ### Ownership model
 
-- **One loop per adapter instance.** The adapter creates a new
-  `asyncio.new_event_loop()` and starts a daemon `threading.Thread`
-  that runs `loop.run_forever()`. The loop is private — not shared,
-  not exposed, not reused across adapter instances.
-- **One thread per adapter instance.** The loop thread is created in
-  `__init__` and joined in `close()`. It is dedicated to this adapter;
-  no other work is scheduled on it.
-- **Thread-safe for concurrent sync callers.** Multiple threads may
-  call sync methods on the same adapter concurrently. Each call
-  submits an independent coroutine to the loop and blocks on its own
-  future. Ordering between concurrent callers is not guaranteed;
-  callers that need deterministic ordering must coordinate
-  externally (e.g. their own lock or queue).
-
-### Submission and blocking
-
-- Each sync method wraps the corresponding `AsyncBackend` coroutine
-  and submits it via `asyncio.run_coroutine_threadsafe(coro, loop)`.
-- The sync method blocks on the returned `concurrent.futures.Future`.
-  `Future.result()` propagates the coroutine's return value or
-  re-raises its exception.
-- Non-I/O methods (`name`, `capabilities`, `to_key`, `native_path`,
-  `resolve`, `unwrap`) delegate directly to the wrapped async backend
-  without the loop, mirroring `SyncBackendAdapter`'s passthrough.
-- I/O methods that return scalars or `None` — `exists`, `is_file`,
-  `is_folder`, `read_bytes`, `get_file_info`, `get_folder_info`,
-  `move`, `copy`, `delete`, `delete_folder`, **`check_health`** —
-  follow the standard submit-and-block pattern. `check_health()`
-  is explicitly **not** a no-op: connectivity errors from the
-  wrapped async backend must reach the sync caller verbatim.
-- `Future.result()` blocks without a per-call timeout. Timeout
-  responsibility belongs to the wrapped `AsyncBackend`: backends
-  should impose their own timeouts internally (e.g.
-  `asyncio.wait_for`) or rely on SDK session-level timeouts.
-  The adapter's `close(timeout=…)` provides a global shutdown
-  bound; there is no per-operation equivalent.
+One private loop and one daemon thread per adapter instance, never shared or
+reused; the adapter is a **one-shot resource**, so a closed adapter raises rather
+than restarting the loop. Concurrent sync callers are serialised onto the single
+loop, which *manufactures* thread-safety for a loop-safe async backend;
+**ordering between concurrent callers is not guaranteed**, so callers needing
+order coordinate externally. *Reverse if* a backend needs multi-loop parallelism
+one serialising loop cannot give. Exact concurrency bounds and no-crossover
+guarantee: spec 029 § ASYNC-089.
 
 ### Streaming iterators and open streams
 
-- `read(path)` returns a sync file-like stream whose `read(n)` pumps
-  chunks out of the backend's `AsyncIterator[bytes]`. The stream
-  holds an internal byte buffer carrying the unread tail of the most
-  recently fetched chunk: `read(n)` first drains that buffer, and
-  only submits a new `__anext__` coroutine when the buffer is empty
-  and more bytes are still required.  This satisfies the `BinaryIO`
-  contract that `read(n)` returns at most *n* bytes even when the
-  backend yields larger chunks.  The stream exposes `read(n)`,
-  `close()`, `seekable()` (returns `False`), and `readable()`
-  (returns `True`); `seek`, `tell`, and `fileno` are not provided.
-  `close()` submits the async iterator's `aclose()` to the loop.
-- `list_files`, `list_folders`, `glob`, `iter_children` return sync
-  iterators backed by the same chunk-pull pattern. Materialising the
-  full listing up front is **not** acceptable: native-async backends
-  exist precisely to stream, and the sync wrapper must preserve that.
-- The underlying async iterator handle lives on the loop; every
-  step crosses the thread boundary via `run_coroutine_threadsafe`.
-- **Single-chunk in-flight invariant.** The adapter has at most one
-  outstanding `__anext__` per stream/iterator: no look-ahead, no
-  read-ahead pool, no parallel prefetch. The unread tail of the
-  most recently fetched chunk (held in the `read()` stream's byte
-  buffer described above) is the *only* sanctioned per-stream
-  buffer. The bridge must not reintroduce the memory bloat that
-  materialising the full listing would cause.
+`read()` and the listing iterators **pump chunks lazily across the boundary and
+never materialise** the full stream or listing, since native-async backends exist
+to stream and the sync wrapper preserves that. The rule is **at most one
+outstanding `__anext__` per stream/iterator** (no read-ahead), the only
+per-stream buffer being the unread tail of the last chunk. *Reverse if* a wrapped
+backend cannot stream, making materialisation unavoidable. Exact
+`BinaryIO`/short-read surface and buffer mechanics: spec 029 § ASYNC-080,
+ASYNC-081.
 
 ### Write-side content
 
-The sync `Backend.write()` / `write_atomic()` accept the sync
-`WritableContent = BinaryIO | bytes` (`src/remote_store/_types.py`).
-There is no sync iterator-of-bytes input — that shape exists only on
-the async side as `AsyncWritableContent = bytes | AsyncIterator[bytes]`
-(`src/remote_store/aio/_types.py`). The bridge therefore goes
-**sync `BinaryIO` → `AsyncIterator[bytes]`**, not the other way:
-
-- `bytes` content is forwarded as-is to the async coroutine.
-- `BinaryIO` content is wrapped in an internal `AsyncIterator[bytes]`
-  that calls `asyncio.to_thread(stream.read, chunk_size)` per chunk
-  inside the submitted coroutine, so the event loop never blocks on
-  the caller's blocking file object. The single-chunk in-flight
-  invariant from § Streaming applies symmetrically: at most one
-  pending `to_thread` per write, no parallel pre-read.
-- `write_atomic(path, content, …)` follows the identical pattern.
-  The `ATOMIC_WRITE` capability gate is enforced by the wrapped
-  async backend, not the adapter — the adapter forwards the call
-  unchanged and lets the backend raise `CapabilityNotSupported` if
-  the gate is closed.
-- `open_atomic(path, …)` — abstract on sync `Backend`, with **no
-  async analogue** on `AsyncBackend`. The adapter synthesises it as
-  a context manager that yields a `SpooledTemporaryFile`; on clean
-  `__exit__` the spool is rewound and submitted to the wrapped
-  backend's `write_atomic` (a single `bytes`/`BinaryIO` write); on
-  exception the spool is dropped and `path` is untouched. The
-  capability gate is the same as `write_atomic` — backends without
-  `ATOMIC_WRITE` raise `CapabilityNotSupported` when the spool
-  flushes. (Synthesising over `write_atomic` rather than extending
-  `AsyncBackend` keeps the async ABC unchanged; ID-127 does not need
-  an `open_atomic`-shaped Graph operation.)
-
-### Cancellation
-
-- Cancellation flows from sync to async by calling
-  `Future.cancel()` on the `concurrent.futures.Future` returned by
-  `run_coroutine_threadsafe`. This schedules `Task.cancel()` on the
-  underlying asyncio task.
-- Async backends are expected to honour `asyncio.CancelledError`
-  normally; cleanup (closing HTTP responses, releasing connections,
-  aborting upload sessions) happens inside the async code as usual.
-- `concurrent.futures.Future.cancel()` is a best-effort flag, and
-  `asyncio.Task.cancel()` only *requests* cancellation — the task
-  observes `CancelledError` at the next `await` point and may
-  still run cleanup before it actually exits (CPython issues
-  python/cpython#103819 and python/cpython#105836 document the
-  exact semantics). The adapter's `close()` therefore waits for
-  in-flight tasks to drain before stopping the loop; ad-hoc
-  per-call cancellation surfaces `CancelledError` to the sync
-  caller without a teardown guarantee.
-- `KeyboardInterrupt` is **not** specially handled. It propagates
-  out of the blocking `Future.result()` like any other exception;
-  the in-flight async task is left running and is cancelled when
-  the adapter's `close()` runs (or when the daemon thread is
-  reaped at process exit). Adding KI-to-cancel translation would
-  give this one backend behaviour that no sync backend has, which
-  costs more in contract asymmetry than the convenience earns.
+The bridge runs **sync `BinaryIO` to `AsyncIterator[bytes]`** (the sync side has
+no iterator-of-bytes input), pulling the `BinaryIO` via `asyncio.to_thread` so
+the loop never blocks on the caller's file object. **`open_atomic` is synthesised
+over the backend's `write_atomic`** (spool, flush on clean exit, drop on error)
+rather than adding an `open_atomic`-shaped op to `AsyncBackend`, keeping the async
+ABC unchanged and leaving Graph (ID-127) nothing new to implement. The
+`ATOMIC_WRITE` gate is enforced by the wrapped backend. *Reverse if* a backend
+needs a native incremental async atomic write. Exact spool/flush and
+mid-write-failure semantics: spec 029 § ASYNC-085, ASYNC-091.
 
 ### Behaviour when the caller is in a running loop
 
-- **Default: fail fast.** If a sync method is invoked from a thread
-  with a running event loop, the adapter raises a clear
-  `RuntimeError` explaining that the sync Store API cannot block a
-  running loop and directing the caller to `AsyncStore` instead.
-  This keeps the sync contract genuinely sync and prevents
-  deadlocks. Aligned with ADR-0012 § Async posture: the sync
-  `Store` is **not coroutine-safe**, by design — async callers use
-  `AsyncStore`, full stop.
-- **Detection.** The adapter checks
-  `asyncio.get_running_loop()` (which raises if no loop is running)
-  to decide. Detection happens at the entry of every blocking call,
-  not at adapter construction, because the caller's loop context is
-  per-call.
-- **No opt-in nest-asyncio path in v1.** The door is open to add one
-  later behind an explicit flag, but the default design does not
-  require it and the first release does not ship it. Notebook and
-  GUI users are directed to use `AsyncStore` directly.
-
-### `nest_asyncio` stance
-
-- Not a runtime dependency. Not imported by the adapter.
-- If a future compatibility mode is added, it will be an explicit
-  opt-in with its own ADR. This ADR commits to *not* relying on
-  `nest_asyncio` for correctness.
-
-### Lifecycle
-
-- `close(timeout: float | None = 30.0)` submits
-  `self._async_backend.aclose()` to the loop, waits for in-flight
-  tasks to drain, calls `loop.call_soon_threadsafe(loop.stop)`, and
-  joins the thread with the supplied bound. The default of 30 s
-  matches the existing per-backend network-call ceilings; passing
-  `None` waits indefinitely. If the timeout expires, the adapter
-  logs a warning at `WARNING` level naming the unfinished tasks and
-  returns; the daemon thread is torn down with the process.
-- Context-manager protocol (`__enter__` / `__exit__`) delegates to
-  `close()` on exit.
-- The adapter is a one-shot resource: once closed, further calls
-  raise a clear error rather than silently restarting the loop.
-
-### Error propagation
-
-- Exceptions raised inside the async coroutine are re-raised
-  verbatim in the sync caller via `Future.result()`. Traceback
-  preservation follows the standard `concurrent.futures` behaviour.
-- Error types and the canonical `path` / `backend` attributes
-  (ERR-001 in `sdd/specs/005-error-model.md`) are preserved
-  exactly: the adapter does not wrap or translate exceptions, and
-  the error-mapping rules established by `AsyncBackend`
-  implementations under ADR-0012 reach the sync caller unchanged.
-- `TimeoutError` from the async layer stays `TimeoutError`;
-  `ResourceLocked` (ADR-0024) stays `ResourceLocked`; and so on.
-
-### `read_seekable` (sync-only convenience)
-
-`read_seekable` is concrete on the sync `Backend` (with a
-`SpooledTemporaryFile` fallback over `read()`); it has **no async
-analogue** on `AsyncBackend`. The adapter does *not* override it:
-the inherited default sees a chunk-pull stream, calls `.seekable()`
-(which returns `False`), and spools to disk-or-memory exactly as it
-already does for the synchronous backends that emit non-seekable
-streams. No new code path is needed; this section exists so the
-implementer does not mistakenly wire a no-op.
-
-A future native fast-path (e.g. issuing per-`read()` HTTP `Range`
-requests directly through the async backend, mirroring
-`AzureBackend`) is out of scope for this ADR. If added, it would
-need an explicit async `read_seekable`-shaped operation on
-`AsyncBackend` and is tracked as a Graph follow-up.
+**Fail fast:** invoked from a thread with a running loop, a blocking method
+raises `RuntimeError` pointing the caller to `AsyncStore`, keeping the sync
+contract genuinely sync and preventing deadlock (per ADR-0012, sync `Store` is
+not coroutine-safe by design). **No `nest_asyncio` in v1**, which would
+monkey-patch global `asyncio`; the adapter neither imports nor depends on it.
+*Reverse if* notebook/GUI demand justifies an explicit opt-in mode, which ships
+behind its own flag and its own ADR. Exact detection point and message stem:
+spec 029 § ASYNC-082.
 
 ### Capability translation
 
-The adapter does **not** blindly forward the wrapped backend's
-`CapabilitySet`. The bridge changes the observable shape of two
-capabilities and must mask one off:
+The adapter **translates** the wrapped `CapabilitySet` rather than
+blind-forwarding it: **`SEEKABLE_READ` is masked off** because the chunk-pull
+stream is forward-only (random-access callers fall through to `read_seekable`'s
+spool, as every non-seekable sync backend already does); `LAZY_READ` and the rest
+pass through unchanged. **`unwrap()` raises `CapabilityNotSupported`** by default
+because an async handle bound to the private loop is unsafe from the caller's
+thread, unless the backend exposes a sync-safe handle. *Reverse if* a native
+async seekable-read op is added, letting `SEEKABLE_READ` pass through. Exact
+translation/gating table and unwrap exemption: spec 029 § ASYNC-084, ASYNC-086.
 
-- **`SEEKABLE_READ` — masked off.** SIO-008 promises that
-  `Backend.read()` returns a natively seekable stream. The chunk-pull
-  pump returned by this adapter is forward-only; no `seek()`
-  accelerator can be honoured without buffering. The adapter strips
-  `SEEKABLE_READ` from the forwarded set even when the wrapped
-  async backend declares it. Callers that need random access go
-  through `read_seekable` and pay the spool cost (above), which is
-  the same fallback every non-seekable sync backend already uses.
-- **`LAZY_READ` — preserved.** SIO-009 requires `read()` to fetch
-  data lazily on demand. The single-chunk in-flight invariant +
-  `__anext__`-per-`read(n)` cadence preserves laziness end-to-end:
-  the bridge never pre-reads beyond what the sync caller has asked
-  for. Forwarded unchanged.
-- **`ATOMIC_WRITE`, `ATOMIC_MOVE`, `GLOB`, and the remaining flags**
-  — preserved unchanged. The async coroutine performs the operation;
-  the bridge only marshals the call. Folder listing and folder
-  deletion have no dedicated capability flag; they remain gated by
-  `LIST` / `DELETE` on the wrapped backend per the sync `Backend`
-  contract (see spec 029 § ASYNC-084).
+### Lifecycle
 
-`resolve()` delegates directly (no I/O, no loop).
-
-`unwrap()` is **not** a generic passthrough: an `httpx.AsyncClient`
-returned from a sync `unwrap()` is bound to the private loop in the
-daemon thread, and using it from the caller's thread will fail or
-corrupt loop state. The adapter raises `CapabilityNotSupported`
-unless the wrapped backend exposes a sync-safe handle (mirroring
-`SyncBackendAdapter.unwrap`'s behaviour for unsupported types). The
-async handle remains reachable to coroutines submitted via the same
-adapter; callers that need it directly should construct an
-`AsyncStore` instead.
-
-### Module placement
-
-`src/remote_store/_async_to_sync_adapter.py` — in the **core**
-module, not under `aio/`. Symmetric with `SyncBackendAdapter`
-(which lives in `aio/` because it implements `AsyncBackend`):
-this adapter implements the sync `Backend` ABC, so it belongs
-with the sync core. Putting it under `aio/` would force every
-sync `Store` user that wraps an async backend to import the
-`aio/` runtime modules at construction time, inverting the layering
-invariant that sync code stays independent of `aio/`.
-
-`AsyncBackend` is imported lazily inside the adapter's `__init__`
-to avoid a top-level core → aio import. Public re-export from
-`remote_store` follows the `SyncBackendAdapter` re-export pattern
-in shape (alongside `Backend`, `Store`).
+`close(timeout=30.0)` drains in-flight tasks, stops the loop, and joins the
+thread within a bounded timeout (default matches the per-backend network
+ceilings; `None` waits forever; on expiry it logs a `WARNING` and lets the daemon
+thread be reaped at process exit); `__enter__`/`__exit__` delegate to it.
+**Errors cross verbatim:** no wrapping or translation, so error types and the
+ERR-001 `path`/`backend` attributes (spec 005) reach the sync caller unchanged;
+`check_health()` is likewise not a no-op and does not swallow the backend's probe
+errors. **Cancellation is best-effort:** `Future.cancel()` only requests
+`Task.cancel()`, observed at the next `await`, so `close()` drains before
+stopping; `KeyboardInterrupt` is not special-cased, because KI-to-cancel would
+give this one backend behaviour no other sync backend has. **No per-call
+timeout:** per-operation timeouts are the wrapped backend's responsibility;
+`close()` is the only global bound. *Reverse if* per-operation cancellation or
+timeout becomes a cross-backend contract. Exact drain order, message stems, and
+failure-mode semantics: spec 029 § ASYNC-083, ASYNC-087, ASYNC-088, ASYNC-090,
+ASYNC-092, ASYNC-093.
 
 ### Store-level wiring
 
-The sync `Store` gains a construction path that accepts an
-`AsyncBackend` and wraps it with `AsyncBackendSyncAdapter`
-automatically — the mirror of `AsyncStore`'s auto-wrap of sync
-`Backend` (ADR-0012 § 2). Registry integration for the Graph
-backend is specified in spec 044; the adapter itself is backend-
-agnostic.
+The sync `Store` gains a construction path that auto-wraps a supplied
+`AsyncBackend` in this adapter, mirroring `AsyncStore`'s auto-wrap of a sync
+`Backend`. The adapter is backend-agnostic; Graph registry integration lives in
+spec 044. *Reverse if* the auto-wrap convenience is removed from the `Store`
+constructor.
 
 ## Consequences
 
