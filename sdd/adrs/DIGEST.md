@@ -379,7 +379,8 @@ imports these symbols from the top level.
 Users import optional extensions from their canonical module path, e.g.
 `from remote_store.ext.arrow import pyarrow_fs`. This makes every
 optional-dependency extension consistent, including dagster, which already used
-this pattern. The full removed-symbol list is in the CHANGELOG "Removed" entry.
+this pattern. The removal is documented in the CHANGELOG "Removed" entry; each
+affected symbol is discoverable from its extension module's `__all__`.
 
 *Reverse if* top-level convenience imports are wanted back: a module-level
 `__getattr__` in `__init__.py` (Python 3.7+) can expose the symbols lazily

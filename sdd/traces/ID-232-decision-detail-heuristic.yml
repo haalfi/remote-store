@@ -696,11 +696,13 @@ phases:
         read_type: verify
         extract: >-
           Confirmed a PRE-EXISTING dangling citation the sweep did not introduce:
-          spec 029 (L500, L587) cites "ADR-0012 § Async posture" and
-          "§ error-mapping rules", but ADR-0012 has always been a flat numbered
-          list with no such headings. Out of scope for the Decision rewrite (the
-          judge flagged it for a separate fix); left untouched, surfaced to the
-          user.
+          "ADR-0012 § Async posture" / "§ error-mapping rules" is cited where
+          ADR-0012 has always been a flat numbered list with no such headings.
+          PR3 review widened the cluster: it is THREE sites, not two, namely
+          spec 029 L500 + L587 AND ADR-0025 References L301-302 (my first note
+          undercounted at "the two in spec 029"). Out of scope for the Decision
+          rewrite (judge flagged for a separate fix); left untouched, the full
+          three-site cluster surfaced to the user for a follow-up backlog item.
         outcome: misleading
       - file: sdd/BACKLOG-DONE.md
         section: "ID-232 (Unreleased)"
