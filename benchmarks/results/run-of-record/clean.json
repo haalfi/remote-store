@@ -27,1942 +27,4310 @@
       "count": 4,
       "arch_string_raw": "x86_64",
       "vendor_id_raw": "AuthenticAMD",
-      "brand_raw": "AMD EPYC 7763 64-Core Processor",
-      "hz_advertised_friendly": "3.2444 GHz",
-      "hz_actual_friendly": "3.2444 GHz",
+      "brand_raw": "AMD EPYC 9V74 80-Core Processor",
+      "hz_advertised_friendly": "2.8451 GHz",
+      "hz_actual_friendly": "2.8451 GHz",
       "hz_advertised": [
-        3244362000,
+        2845107000,
         0
       ],
       "hz_actual": [
-        3244362000,
+        2845107000,
         0
       ],
       "stepping": 1,
-      "model": 1,
-      "family": 25
+      "model": 17,
+      "family": 25,
+      "flags": [
+        "3dnowext",
+        "3dnowprefetch",
+        "abm",
+        "adx",
+        "aes",
+        "aperfmperf",
+        "apic",
+        "arat",
+        "avx",
+        "avx2",
+        "bmi1",
+        "bmi2",
+        "clflush",
+        "clflushopt",
+        "clwb",
+        "clzero",
+        "cmov",
+        "cmp_legacy",
+        "constant_tsc",
+        "cpuid",
+        "cr8_legacy",
+        "cx16",
+        "cx8",
+        "de",
+        "decodeassists",
+        "erms",
+        "extd_apicid",
+        "f16c",
+        "flushbyasid",
+        "fma",
+        "fpu",
+        "fsgsbase",
+        "fsrm",
+        "fxsr",
+        "fxsr_opt",
+        "ht",
+        "hypervisor",
+        "invpcid",
+        "lahf_lm",
+        "lm",
+        "mca",
+        "mce",
+        "misalignsse",
+        "mmx",
+        "mmxext",
+        "movbe",
+        "msr",
+        "mtrr",
+        "nonstop_tsc",
+        "nopl",
+        "npt",
+        "nrip_save",
+        "nx",
+        "osvw",
+        "osxsave",
+        "pae",
+        "pat",
+        "pausefilter",
+        "pcid",
+        "pclmulqdq",
+        "pdpe1gb",
+        "pfthreshold",
+        "pge",
+        "pni",
+        "popcnt",
+        "pse",
+        "pse36",
+        "rdpid",
+        "rdpru",
+        "rdrand",
+        "rdrnd",
+        "rdseed",
+        "rdtscp",
+        "rep_good",
+        "sep",
+        "sha",
+        "sha_ni",
+        "smap",
+        "smep",
+        "sse",
+        "sse2",
+        "sse4_1",
+        "sse4_2",
+        "sse4a",
+        "ssse3",
+        "svm",
+        "syscall",
+        "topoext",
+        "tsc",
+        "tsc_known_freq",
+        "tsc_reliable",
+        "tsc_scale",
+        "umip",
+        "user_shstk",
+        "v_vmsave_vmload",
+        "vaes",
+        "vmcb_clean",
+        "vme",
+        "vmmcall",
+        "vpclmulqdq",
+        "xgetbv1",
+        "xsave",
+        "xsavec",
+        "xsaveerptr",
+        "xsaveopt",
+        "xsaves"
+      ],
+      "l3_cache_size": 1048576,
+      "l2_cache_size": 2097152,
+      "l1_data_cache_size": 65536,
+      "l1_instruction_cache_size": 65536,
+      "l2_cache_line_size": 1024,
+      "l2_cache_associativity": 6
     }
   },
   "benchmarks": [
     {
       "name": "test_cache_cold_read[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.00011415469207707674 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0001112292000009063
+      }
     },
     {
       "name": "test_cache_cold_read[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.00410644256497088 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.004105173671140617
+      }
     },
     {
       "name": "test_cache_cold_read[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.0019212481459854212 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.0019860040076333176
+      }
     },
     {
       "name": "test_cache_cold_read[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.009433163740890232 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.008682208085635319
+      }
     },
     {
       "name": "test_cache_cold_read[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.003574754848101218 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.004312526277777761
+      }
     },
     {
       "name": "test_cache_warm_read[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 1.1105096018310903e-06 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 1.0435262131307556e-06
+      }
     },
     {
       "name": "test_cache_warm_read[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 9.883045788002035e-07 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 1.036052344367714e-06
+      }
     },
     {
       "name": "test_cache_warm_read[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 1.03121806392197e-06 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 1.0447211245623904e-06
+      }
     },
     {
       "name": "test_cache_warm_read[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 1.1063801820761987e-06 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 1.0389392951872028e-06
+      }
     },
     {
       "name": "test_cache_warm_read[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 1.0451164080609654e-06 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 9.209926573227231e-07
+      }
     },
     {
       "name": "test_uncached_read_baseline[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.00010626084915084281 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 8.555661191813155e-05
+      }
     },
     {
       "name": "test_uncached_read_baseline[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.004077479556756439 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.0043866908823528995
+      }
     },
     {
       "name": "test_uncached_read_baseline[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.001876509786427448 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.0019115241648591278
+      }
     },
     {
       "name": "test_uncached_read_baseline[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.009319555420233883 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.008139574046391734
+      }
     },
     {
       "name": "test_uncached_read_baseline[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.0031167749421770192 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.0034490085895198643
+      }
     },
     {
       "name": "test_delete[local-remote_store]",
-      "params": { "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 0.00010377797499991459 }
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 7.963417499958326e-05
+      }
     },
     {
       "name": "test_delete[local-pathlib_raw]",
-      "params": { "bench_target": ["local", "pathlib_raw"] },
-      "stats": { "mean": 2.8010714999879837e-05 }
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 2.3898695000141856e-05
+      }
     },
     {
       "name": "test_delete[local-fsspec_local]",
-      "params": { "bench_target": ["local", "fsspec_local"] },
-      "stats": { "mean": 2.3934905000118077e-05 }
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 2.302059999998107e-05
+      }
     },
     {
       "name": "test_delete[s3-remote_store]",
-      "params": { "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.004674192120000598 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.004615957990000154
+      }
     },
     {
       "name": "test_delete[s3-boto3_raw]",
-      "params": { "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.0024556207449998625 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0021564215199988013
+      }
     },
     {
       "name": "test_delete[s3-s3fs]",
-      "params": { "bench_target": ["s3", "s3fs"] },
-      "stats": { "mean": 0.0022752577250000883 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "s3fs"
+        ]
+      },
+      "stats": {
+        "mean": 0.0022670324049997247
+      }
     },
     {
       "name": "test_delete[s3-pyarrow-remote_store]",
-      "params": { "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.0047743156399998555 }
+      "params": {
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.00491581846000038
+      }
     },
     {
       "name": "test_delete[s3-pyarrow-boto3_raw]",
-      "params": { "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.002330796435000195 }
+      "params": {
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0021217585750000724
+      }
     },
     {
       "name": "test_delete[sftp-remote_store]",
-      "params": { "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 0.0013788961899989971 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0003289734450004289
+      }
     },
     {
       "name": "test_delete[sftp-paramiko_raw]",
-      "params": { "bench_target": ["sftp", "paramiko_raw"] },
-      "stats": { "mean": 0.0003660586200005156 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0003289688000000268
+      }
     },
     {
       "name": "test_delete[sftp-sshfs]",
-      "params": { "bench_target": ["sftp", "sshfs"] },
-      "stats": { "mean": 0.0014171718749995676 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "sshfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.0012637306400000625
+      }
     },
     {
       "name": "test_delete[azure-remote_store]",
-      "params": { "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.002599470660000094 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.002522971669999521
+      }
     },
     {
       "name": "test_delete[azure-azure_blob_raw]",
-      "params": { "bench_target": ["azure", "azure_blob_raw"] },
-      "stats": { "mean": 0.002449175404999764 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0025611371100004734
+      }
     },
     {
       "name": "test_delete[azure-adlfs]",
-      "params": { "bench_target": ["azure", "adlfs"] },
-      "stats": { "mean": 0.00736790522999911 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "adlfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.008225548299999658
+      }
     },
     {
       "name": "test_copy[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.00031678590973722504 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00028475076336469216
+      }
     },
     {
       "name": "test_copy[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.01190153056818359 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.012225706349999754
+      }
     },
     {
       "name": "test_copy[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.0043495515874438714 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.004926958182265672
+      }
     },
     {
       "name": "test_copy[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.007150469661971135 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.004604255487903216
+      }
     },
     {
       "name": "test_copy[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.005162703815788891 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.005214866179487181
+      }
     },
     {
       "name": "test_move[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.0002278005450008891 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0001837874550002283
+      }
     },
     {
       "name": "test_move[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.018799009439999993 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.01912405391500002
+      }
     },
     {
       "name": "test_move[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.01112272143499979 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.012180422809997964
+      }
     },
     {
       "name": "test_move[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.0034414093699992065 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.0016431169599998442
+      }
     },
     {
       "name": "test_move[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.009752141835000288 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.010524358914999539
+      }
     },
     {
       "name": "test_copy_across_subtrees[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.0003949243622318198 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00033447674712601286
+      }
     },
     {
       "name": "test_copy_across_subtrees[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.011355482682929727 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.012346130918921198
+      }
     },
     {
       "name": "test_copy_across_subtrees[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.004203832164999994 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.004262205223350431
+      }
     },
     {
       "name": "test_copy_across_subtrees[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.00872935565178347 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.0043786025849999535
+      }
     },
     {
       "name": "test_copy_across_subtrees[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.0050562300000006445 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.005865705522470956
+      }
     },
     {
       "name": "test_move_across_subtrees[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.0002873333700009084 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.000247326750000525
+      }
     },
     {
       "name": "test_move_across_subtrees[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.018796227630000713 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.02010321359999807
+      }
     },
     {
       "name": "test_move_across_subtrees[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.011340563459999089 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.012102741659998344
+      }
     },
     {
       "name": "test_move_across_subtrees[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.005842761789999997 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.002424151820001441
+      }
     },
     {
       "name": "test_move_across_subtrees[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.009762926650000453 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.010294434120000346
+      }
     },
     {
       "name": "test_delete_folder_recursive[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.0008247168484851472 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0008469462424260876
+      }
     },
     {
       "name": "test_delete_folder_recursive[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.026992376151515497 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.027713671606064874
+      }
     },
     {
       "name": "test_delete_folder_recursive[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.02794625903030554 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.02844843854545547
+      }
     },
     {
       "name": "test_delete_folder_recursive[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.03389280975757415 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.016821436272730732
+      }
     },
     {
       "name": "test_delete_folder_recursive[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.1277999651515133 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.136509592878793
+      }
     },
     {
       "name": "test_write_large[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.003255455199996504 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0029296247999980097
+      }
     },
     {
       "name": "test_write_large[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.06472236820000035 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.06863364419999698
+      }
     },
     {
       "name": "test_write_large[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.0595245259999956 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.058496793799997705
+      }
     },
     {
       "name": "test_write_large[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 8.98255598299998 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 9.061138423999989
+      }
     },
     {
       "name": "test_write_large[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.1728985143999921 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.16813097940001853
+      }
     },
     {
       "name": "test_read_large[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.0011770450000085475 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0009614377999923818
+      }
     },
     {
       "name": "test_read_large[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.023697740000000068 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.023495154800014007
+      }
     },
     {
       "name": "test_read_large[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.05950853599999846 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.06431154520000745
+      }
     },
     {
       "name": "test_read_large[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.1974806842000021 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.17846053919998894
+      }
     },
     {
       "name": "test_read_large[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.05239909240000316 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.04942289359998995
+      }
     },
     {
       "name": "test_stream_read_large[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.001567922400010957 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0017559563999952842
+      }
     },
     {
       "name": "test_stream_read_large[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.024226074399996377 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.023446724999973866
+      }
     },
     {
       "name": "test_stream_read_large[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.20935870499998827 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.20507574459999206
+      }
     },
     {
       "name": "test_stream_read_large[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 2.1626979654000023 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 2.151589331600019
+      }
     },
     {
       "name": "test_stream_read_large[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.061785296400000786 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.05510218580000128
+      }
     },
     {
       "name": "test_stream_write_large[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.00382317159997001 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0034761301999878926
+      }
     },
     {
       "name": "test_stream_write_large[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.07303272579999884 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.0778854544000069
+      }
     },
     {
       "name": "test_stream_write_large[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.05721335159997807 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.06404145960000278
+      }
     },
     {
       "name": "test_stream_write_large[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 8.997626233599988 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 9.0725621886
+      }
     },
     {
       "name": "test_stream_write_large[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.15198096700001998 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.16580836299998508
+      }
     },
     {
       "name": "test_roundtrip_large[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.0051032776000056405 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.003831172399998195
+      }
     },
     {
       "name": "test_roundtrip_large[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.08962398099998836 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.09110812499999384
+      }
     },
     {
       "name": "test_roundtrip_large[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.1181759675999956 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.1177128373999949
+      }
     },
     {
       "name": "test_roundtrip_large[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 9.193964779400016 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 9.237571190000006
+      }
     },
     {
       "name": "test_roundtrip_large[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.22555940600000213 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.2126896892000218
+      }
     },
     {
       "name": "test_list_files[local-remote_store]",
-      "params": { "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 0.0010244263425482048 }
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0009534736854665319
+      }
     },
     {
       "name": "test_list_files[local-pathlib_raw]",
-      "params": { "bench_target": ["local", "pathlib_raw"] },
-      "stats": { "mean": 0.0013350604178405223 }
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0012237925517232223
+      }
     },
     {
       "name": "test_list_files[local-fsspec_local]",
-      "params": { "bench_target": ["local", "fsspec_local"] },
-      "stats": { "mean": 0.00010594719803663847 }
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 0.00010454248428201808
+      }
     },
     {
       "name": "test_list_files[s3-remote_store]",
-      "params": { "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.0003720227843194723 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0003017464200024733
+      }
     },
     {
       "name": "test_list_files[s3-boto3_raw]",
-      "params": { "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.008519620865165941 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0077273305412843725
+      }
     },
     {
       "name": "test_list_files[s3-s3fs]",
-      "params": { "bench_target": ["s3", "s3fs"] },
-      "stats": { "mean": 0.00017593662744943954 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "s3fs"
+        ]
+      },
+      "stats": {
+        "mean": 0.00012269076470084996
+      }
     },
     {
       "name": "test_list_files[s3-pyarrow-remote_store]",
-      "params": { "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.008885357640004941 }
+      "params": {
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.008539503166660486
+      }
     },
     {
       "name": "test_list_files[s3-pyarrow-boto3_raw]",
-      "params": { "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.008796383336957092 }
+      "params": {
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.007728954402779209
+      }
     },
     {
       "name": "test_list_files[sftp-remote_store]",
-      "params": { "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 0.0039053203462793614 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.003399496725390688
+      }
     },
     {
       "name": "test_list_files[sftp-paramiko_raw]",
-      "params": { "bench_target": ["sftp", "paramiko_raw"] },
-      "stats": { "mean": 0.0033946490096846225 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0031634491060232453
+      }
     },
     {
       "name": "test_list_files[sftp-sshfs]",
-      "params": { "bench_target": ["sftp", "sshfs"] },
-      "stats": { "mean": 0.003994763239999429 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "sshfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.0037552049832656393
+      }
     },
     {
       "name": "test_list_files[azure-remote_store]",
-      "params": { "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.01908538277777754 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.018618783571432523
+      }
     },
     {
       "name": "test_list_files[azure-azure_blob_raw]",
-      "params": { "bench_target": ["azure", "azure_blob_raw"] },
-      "stats": { "mean": 0.029593525192310084 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.029850929262288745
+      }
     },
     {
       "name": "test_list_files[azure-adlfs]",
-      "params": { "bench_target": ["azure", "adlfs"] },
-      "stats": { "mean": 0.00016670302856677414 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "adlfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.0001620911463383314
+      }
     },
     {
       "name": "test_iter_children[local-remote_store]",
-      "params": { "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 0.0006510124627811213 }
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.000593572536967412
+      }
     },
     {
       "name": "test_iter_children[s3-remote_store]",
-      "params": { "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.0002683155344796213 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.00021223625926554464
+      }
     },
     {
       "name": "test_iter_children[s3-boto3_raw]",
-      "params": { "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.005550462305343132 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.00557380202289936
+      }
     },
     {
       "name": "test_iter_children[s3-s3fs]",
-      "params": { "bench_target": ["s3", "s3fs"] },
-      "stats": { "mean": 0.00012377487931009205 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "s3fs"
+        ]
+      },
+      "stats": {
+        "mean": 8.673890909201211e-05
+      }
     },
     {
       "name": "test_iter_children[s3-pyarrow-remote_store]",
-      "params": { "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.00631611984745871 }
+      "params": {
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.006173845071427105
+      }
     },
     {
       "name": "test_iter_children[s3-pyarrow-boto3_raw]",
-      "params": { "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.005719545246482222 }
+      "params": {
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0060705571496601825
+      }
     },
     {
       "name": "test_iter_children[sftp-remote_store]",
-      "params": { "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 0.0029808819285720373 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.002522013004159309
+      }
     },
     {
       "name": "test_iter_children[azure-remote_store]",
-      "params": { "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.010920244610386735 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.010774385476190943
+      }
     },
     {
       "name": "test_list_1000_files[local-remote_store]",
-      "params": { "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 0.017702575851848854 }
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0172781927368423
+      }
     },
     {
       "name": "test_list_1000_files[local-pathlib_raw]",
-      "params": { "bench_target": ["local", "pathlib_raw"] },
-      "stats": { "mean": 0.02722633944736835 }
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.02469025087500114
+      }
     },
     {
       "name": "test_list_1000_files[local-fsspec_local]",
-      "params": { "bench_target": ["local", "fsspec_local"] },
-      "stats": { "mean": 0.0018239421364530128 }
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 0.0017721925405413531
+      }
     },
     {
       "name": "test_list_1000_files[s3-remote_store]",
-      "params": { "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.004499553142855868 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.004691253777770675
+      }
     },
     {
       "name": "test_list_1000_files[s3-boto3_raw]",
-      "params": { "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.1908685289999994 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.15907490989999928
+      }
     },
     {
       "name": "test_list_1000_files[s3-s3fs]",
-      "params": { "bench_target": ["s3", "s3fs"] },
-      "stats": { "mean": 0.00021182425000176863 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "s3fs"
+        ]
+      },
+      "stats": {
+        "mean": 0.00022084866665434473
+      }
     },
     {
       "name": "test_list_1000_files[s3-pyarrow-remote_store]",
-      "params": { "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.13585579685715338 }
+      "params": {
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.10517856412499071
+      }
     },
     {
       "name": "test_list_1000_files[s3-pyarrow-boto3_raw]",
-      "params": { "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.12788972487498285 }
+      "params": {
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.09974809663636754
+      }
     },
     {
       "name": "test_list_1000_files[sftp-remote_store]",
-      "params": { "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 0.04809381293333293 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.07114741453333788
+      }
     },
     {
       "name": "test_list_1000_files[sftp-paramiko_raw]",
-      "params": { "bench_target": ["sftp", "paramiko_raw"] },
-      "stats": { "mean": 0.049682976666662805 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.045931758767443
+      }
     },
     {
       "name": "test_list_1000_files[sftp-sshfs]",
-      "params": { "bench_target": ["sftp", "sshfs"] },
-      "stats": { "mean": 0.0383579568461589 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "sshfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.0372302595000021
+      }
     },
     {
       "name": "test_list_1000_files[azure-remote_store]",
-      "params": { "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.3634645719999753 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.3400651304000121
+      }
     },
     {
       "name": "test_list_1000_files[azure-azure_blob_raw]",
-      "params": { "bench_target": ["azure", "azure_blob_raw"] },
-      "stats": { "mean": 0.29758448200002474 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.2647181576000321
+      }
     },
     {
       "name": "test_list_1000_files[azure-adlfs]",
-      "params": { "bench_target": ["azure", "adlfs"] },
-      "stats": { "mean": 0.0005468704000122671 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "adlfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.0004666262000000643
+      }
     },
     {
       "name": "test_list_deep_recursive[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.06525752533332252 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.05684138266671349
+      }
     },
     {
       "name": "test_list_deep_recursive[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 2.2687003253333464 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 2.1820490290000407
+      }
     },
     {
       "name": "test_list_deep_recursive[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 2.3201920950000385 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 2.0193386630000227
+      }
     },
     {
       "name": "test_list_deep_recursive[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 1.5179880520000022 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 1.0884554930000074
+      }
     },
     {
       "name": "test_list_deep_recursive[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.48369946833334626 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.5042102816666633
+      }
     },
     {
       "name": "test_per_folder_stats[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.004564203492963051 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.004288508831776254
+      }
     },
     {
       "name": "test_per_folder_stats[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.10237588633335942 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.10925889722219988
+      }
     },
     {
       "name": "test_per_folder_stats[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.12404858966667437 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.09929127999998855
+      }
     },
     {
       "name": "test_per_folder_stats[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.03827770399999671 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.029553063185176143
+      }
     },
     {
       "name": "test_per_folder_stats[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.11582657242857815 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.15471682322225255
+      }
     },
     {
       "name": "test_list_200_files_recursive[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.0044362730190479335 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.004124635493275442
+      }
     },
     {
       "name": "test_list_200_files_recursive[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.058152772333338966 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.05300598482352491
+      }
     },
     {
       "name": "test_list_200_files_recursive[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.05552355873333757 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.05250453318750914
+      }
     },
     {
       "name": "test_list_200_files_recursive[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.029204581209289118 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.022684944537047613
+      }
     },
     {
       "name": "test_list_200_files_recursive[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.08173803281251679 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.05629775962501071
+      }
     },
     {
       "name": "test_list_200_files_non_recursive[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.0005407554686280045 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0004463748623408053
+      }
     },
     {
       "name": "test_list_200_files_non_recursive[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.00532849501563426 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.0049831087142878
+      }
     },
     {
       "name": "test_list_200_files_non_recursive[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.0053075167376947004 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.0051849648906312495
+      }
     },
     {
       "name": "test_list_200_files_non_recursive[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.002756780177035767 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.0022838229574890572
+      }
     },
     {
       "name": "test_list_200_files_non_recursive[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.009072456400000798 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.009912296963632756
+      }
     },
     {
       "name": "test_list_folders_at_root[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.00026720999966816684 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00024488110096458474
+      }
     },
     {
       "name": "test_list_folders_at_root[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.005156042716412773 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.005792551898316483
+      }
     },
     {
       "name": "test_list_folders_at_root[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.005425870898307039 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.005766486733337691
+      }
     },
     {
       "name": "test_list_folders_at_root[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.0027710919462624463 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.0022459111326523324
+      }
     },
     {
       "name": "test_list_folders_at_root[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.009190873805549258 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.009336515448600065
+      }
     },
     {
       "name": "test_iter_children_at_root[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.0005551450541362606 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0005295213570971286
+      }
     },
     {
       "name": "test_iter_children_at_root[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.005313072090910792 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.00545513708621472
+      }
     },
     {
       "name": "test_iter_children_at_root[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.005280037303025024 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.0054056113559180765
+      }
     },
     {
       "name": "test_iter_children_at_root[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.0028610504436114284 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.0022820628063787178
+      }
     },
     {
       "name": "test_iter_children_at_root[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.00899637323656803 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.009348288769230679
+      }
     },
     {
       "name": "test_exists_deep_path[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.00010733959129181141 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 9.685759838921037e-05
+      }
     },
     {
       "name": "test_exists_deep_path[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.002068796025402366 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.002000838917038206
+      }
     },
     {
       "name": "test_exists_deep_path[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.002091805745099221 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.0021248261506497173
+      }
     },
     {
       "name": "test_exists_deep_path[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.0007350813550491052 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.0002929438690691665
+      }
     },
     {
       "name": "test_exists_deep_path[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.0034807063611888324 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.0023865124561961598
+      }
     },
     {
       "name": "test_get_folder_info_large_dir[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.002332426415233068 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0024793967897560015
+      }
     },
     {
       "name": "test_get_folder_info_large_dir[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.057946368666671334 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.05923088285715039
+      }
     },
     {
       "name": "test_get_folder_info_large_dir[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.05653343540000151 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.09356561720000324
+      }
     },
     {
       "name": "test_get_folder_info_large_dir[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.02803139062222676 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.022701066379305492
+      }
     },
     {
       "name": "test_get_folder_info_large_dir[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.06057566429410599 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.05359125705261871
+      }
     },
     {
       "name": "test_exists_hit[local-remote_store]",
-      "params": { "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 7.499702303087793e-05 }
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 6.207524259130035e-05
+      }
     },
     {
       "name": "test_exists_hit[local-pathlib_raw]",
-      "params": { "bench_target": ["local", "pathlib_raw"] },
-      "stats": { "mean": 1.0057664363471963e-05 }
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 9.687426007431112e-06
+      }
     },
     {
       "name": "test_exists_hit[local-fsspec_local]",
-      "params": { "bench_target": ["local", "fsspec_local"] },
-      "stats": { "mean": 6.9807649341381886e-06 }
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 7.012602090321175e-06
+      }
     },
     {
       "name": "test_exists_hit[s3-remote_store]",
-      "params": { "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.0020415015339365736 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.002176340874090407
+      }
     },
     {
       "name": "test_exists_hit[s3-boto3_raw]",
-      "params": { "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.001863869779999082 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0019153847395473583
+      }
     },
     {
       "name": "test_exists_hit[s3-s3fs]",
-      "params": { "bench_target": ["s3", "s3fs"] },
-      "stats": { "mean": 0.0020688916621144646 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "s3fs"
+        ]
+      },
+      "stats": {
+        "mean": 0.0020473656139028064
+      }
     },
     {
       "name": "test_exists_hit[s3-pyarrow-remote_store]",
-      "params": { "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.00201462116629973 }
+      "params": {
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.002008921536707067
+      }
     },
     {
       "name": "test_exists_hit[s3-pyarrow-boto3_raw]",
-      "params": { "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.0019624356501493022 }
+      "params": {
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.002130881074065285
+      }
     },
     {
       "name": "test_exists_hit[sftp-remote_store]",
-      "params": { "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 0.0007052733829941331 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0002935060000005158
+      }
     },
     {
       "name": "test_exists_hit[sftp-paramiko_raw]",
-      "params": { "bench_target": ["sftp", "paramiko_raw"] },
-      "stats": { "mean": 0.0003520939407607049 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0002969471924018135
+      }
     },
     {
       "name": "test_exists_hit[sftp-sshfs]",
-      "params": { "bench_target": ["sftp", "sshfs"] },
-      "stats": { "mean": 0.0007872576373140492 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "sshfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.000662268843707375
+      }
     },
     {
       "name": "test_exists_hit[azure-remote_store]",
-      "params": { "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.002330450291045357 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.002560230232431324
+      }
     },
     {
       "name": "test_exists_hit[azure-azure_blob_raw]",
-      "params": { "bench_target": ["azure", "azure_blob_raw"] },
-      "stats": { "mean": 0.002338891440235161 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0024961131815742555
+      }
     },
     {
       "name": "test_exists_hit[azure-adlfs]",
-      "params": { "bench_target": ["azure", "adlfs"] },
-      "stats": { "mean": 0.00238849204438558 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "adlfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.0024891228913061975
+      }
     },
     {
       "name": "test_exists_miss[local-remote_store]",
-      "params": { "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 7.220829507788357e-05 }
+      "params": {
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 5.8583093984624165e-05
+      }
     },
     {
       "name": "test_exists_miss[local-pathlib_raw]",
-      "params": { "bench_target": ["local", "pathlib_raw"] },
-      "stats": { "mean": 9.584610371909127e-06 }
+      "params": {
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 9.287448818237357e-06
+      }
     },
     {
       "name": "test_exists_miss[local-fsspec_local]",
-      "params": { "bench_target": ["local", "fsspec_local"] },
-      "stats": { "mean": 4.552544932731409e-06 }
+      "params": {
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 5.019043680075895e-06
+      }
     },
     {
       "name": "test_exists_miss[s3-remote_store]",
-      "params": { "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.050264744100024926 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0034504814444618307
+      }
     },
     {
       "name": "test_exists_miss[s3-boto3_raw]",
-      "params": { "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.0014933926576584265 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0015384564141395275
+      }
     },
     {
       "name": "test_exists_miss[s3-s3fs]",
-      "params": { "bench_target": ["s3", "s3fs"] },
-      "stats": { "mean": 0.003457216300012078 }
+      "params": {
+        "bench_target": [
+          "s3",
+          "s3fs"
+        ]
+      },
+      "stats": {
+        "mean": 0.004013931299994056
+      }
     },
     {
       "name": "test_exists_miss[s3-pyarrow-remote_store]",
-      "params": { "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.003410908333320448 }
+      "params": {
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.004554162799968254
+      }
     },
     {
       "name": "test_exists_miss[s3-pyarrow-boto3_raw]",
-      "params": { "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.0015213373552649245 }
+      "params": {
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0016051389187831252
+      }
     },
     {
       "name": "test_exists_miss[sftp-remote_store]",
-      "params": { "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 0.0006792979999740315 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.00030981933334336037
+      }
     },
     {
       "name": "test_exists_miss[sftp-paramiko_raw]",
-      "params": { "bench_target": ["sftp", "paramiko_raw"] },
-      "stats": { "mean": 0.0003528240820105205 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0002812734058445484
+      }
     },
     {
       "name": "test_exists_miss[sftp-sshfs]",
-      "params": { "bench_target": ["sftp", "sshfs"] },
-      "stats": { "mean": 0.0007641964583484651 }
+      "params": {
+        "bench_target": [
+          "sftp",
+          "sshfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.000647123642855669
+      }
     },
     {
       "name": "test_exists_miss[azure-remote_store]",
-      "params": { "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.004440924663924761 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.004987780184211637
+      }
     },
     {
       "name": "test_exists_miss[azure-azure_blob_raw]",
-      "params": { "bench_target": ["azure", "azure_blob_raw"] },
-      "stats": { "mean": 0.0021063498520422345 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.006518044359999067
+      }
     },
     {
       "name": "test_exists_miss[azure-adlfs]",
-      "params": { "bench_target": ["azure", "adlfs"] },
-      "stats": { "mean": 0.005188319049998569 }
+      "params": {
+        "bench_target": [
+          "azure",
+          "adlfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.006307208415381201
+      }
     },
     {
       "name": "test_get_file_info[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 8.863463295630491e-05 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 7.558028455100782e-05
+      }
     },
     {
       "name": "test_get_file_info[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.0020367034659786966 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.002149576024691422
+      }
     },
     {
       "name": "test_get_file_info[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.0020513709271637965 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.0020751009785858095
+      }
     },
     {
       "name": "test_get_file_info[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.0007065050977906187 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.00031005157328540476
+      }
     },
     {
       "name": "test_get_file_info[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.002338283171640957 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.00252329149127768
+      }
     },
     {
       "name": "test_seekable_open_read[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.00013511685589594883 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00013188832526710091
+      }
     },
     {
       "name": "test_seekable_open_read[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.005385411138885527 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.006069783090911155
+      }
     },
     {
       "name": "test_seekable_open_read[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.0030114034391200083 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.002985269845901742
+      }
     },
     {
       "name": "test_seekable_open_read[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.25260914840002896 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.2477568716000178
+      }
     },
     {
       "name": "test_seekable_open_read[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.3529464606000374 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.34677342720003707
+      }
     },
     {
       "name": "test_seekable_sequential_chunks[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.00015525958614687435 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00014829510809232505
+      }
     },
     {
       "name": "test_seekable_sequential_chunks[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.005445001434481881 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.005836957027975052
+      }
     },
     {
       "name": "test_seekable_sequential_chunks[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.021291430625000867 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.021645574395840583
+      }
     },
     {
       "name": "test_seekable_sequential_chunks[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.21324136500000654 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.21059206966666957
+      }
     },
     {
       "name": "test_seekable_sequential_chunks[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.05110991358824054 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.05276516366667591
+      }
     },
     {
       "name": "test_seekable_random_seeks[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.00011467601909145617 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0001024592523286085
+      }
     },
     {
       "name": "test_seekable_random_seeks[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.011957677846150242 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.01261351695774638
+      }
     },
     {
       "name": "test_seekable_random_seeks[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.013742835083334626 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.013474907097231734
+      }
     },
     {
       "name": "test_seekable_random_seeks[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.021290021664891898 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.019992680413330265
+      }
     },
     {
       "name": "test_seekable_random_seeks[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.029418579657148516 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.027643273130444828
+      }
     },
     {
       "name": "test_write_bytes[1KB-local-remote_store]",
-      "params": { "payload": 1024, "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 0.0001897126046191127 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0001554732150161205
+      }
     },
     {
       "name": "test_write_bytes[1KB-local-pathlib_raw]",
-      "params": { "payload": 1024, "bench_target": ["local", "pathlib_raw"] },
-      "stats": { "mean": 9.238053914838567e-05 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 7.427666547013872e-05
+      }
     },
     {
       "name": "test_write_bytes[1KB-local-fsspec_local]",
-      "params": { "payload": 1024, "bench_target": ["local", "fsspec_local"] },
-      "stats": { "mean": 9.130636152312357e-05 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 7.236104700262921e-05
+      }
     },
     {
       "name": "test_write_bytes[1KB-s3-remote_store]",
-      "params": { "payload": 1024, "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.005548510800008444 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.005059525181805343
+      }
     },
     {
       "name": "test_write_bytes[1KB-s3-boto3_raw]",
-      "params": { "payload": 1024, "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.0033530916909114694 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.003067386841116871
+      }
     },
     {
       "name": "test_write_bytes[1KB-s3-s3fs]",
-      "params": { "payload": 1024, "bench_target": ["s3", "s3fs"] },
-      "stats": { "mean": 0.0034806628181782303 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3",
+          "s3fs"
+        ]
+      },
+      "stats": {
+        "mean": 0.003148655300003611
+      }
     },
     {
       "name": "test_write_bytes[1KB-s3-pyarrow-remote_store]",
-      "params": { "payload": 1024, "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.009355281199987076 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.009353074125002081
+      }
     },
     {
       "name": "test_write_bytes[1KB-s3-pyarrow-boto3_raw]",
-      "params": { "payload": 1024, "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.0032364046652349045 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.003096626504807559
+      }
     },
     {
       "name": "test_write_bytes[1KB-sftp-remote_store]",
-      "params": { "payload": 1024, "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 0.004210742857188572 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0016722834999806462
+      }
     },
     {
       "name": "test_write_bytes[1KB-sftp-paramiko_raw]",
-      "params": { "payload": 1024, "bench_target": ["sftp", "paramiko_raw"] },
-      "stats": { "mean": 0.0021178908877911556 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "sftp",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0018597074011805893
+      }
     },
     {
       "name": "test_write_bytes[1KB-sftp-sshfs]",
-      "params": { "payload": 1024, "bench_target": ["sftp", "sshfs"] },
-      "stats": { "mean": 0.006971427523819243 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "sftp",
+          "sshfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.005876644307669756
+      }
     },
     {
       "name": "test_write_bytes[1KB-azure-remote_store]",
-      "params": { "payload": 1024, "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.0035786753602479672 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0031190602619091123
+      }
     },
     {
       "name": "test_write_bytes[1KB-azure-azure_blob_raw]",
-      "params": { "payload": 1024, "bench_target": ["azure", "azure_blob_raw"] },
-      "stats": { "mean": 0.003418826890294022 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "azure",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0031954966399978897
+      }
     },
     {
       "name": "test_write_bytes[1KB-azure-adlfs]",
-      "params": { "payload": 1024, "bench_target": ["azure", "adlfs"] },
-      "stats": { "mean": 0.007034323958678704 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "azure",
+          "adlfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.008249462682700735
+      }
     },
     {
       "name": "test_read_bytes[1KB-local-remote_store]",
-      "params": { "payload": 1024, "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 9.172141396207825e-05 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 7.650284083131998e-05
+      }
     },
     {
       "name": "test_read_bytes[1KB-local-pathlib_raw]",
-      "params": { "payload": 1024, "bench_target": ["local", "pathlib_raw"] },
-      "stats": { "mean": 2.132353748612336e-05 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 2.0871083097687508e-05
+      }
     },
     {
       "name": "test_read_bytes[1KB-local-fsspec_local]",
-      "params": { "payload": 1024, "bench_target": ["local", "fsspec_local"] },
-      "stats": { "mean": 2.3796832714774895e-05 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 2.4579791902731144e-05
+      }
     },
     {
       "name": "test_read_bytes[1KB-s3-remote_store]",
-      "params": { "payload": 1024, "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.004093007160627214 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0043405933118287245
+      }
     },
     {
       "name": "test_read_bytes[1KB-s3-boto3_raw]",
-      "params": { "payload": 1024, "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.002079023270700192 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0020631174676253544
+      }
     },
     {
       "name": "test_read_bytes[1KB-s3-s3fs]",
-      "params": { "payload": 1024, "bench_target": ["s3", "s3fs"] },
-      "stats": { "mean": 0.004409561645837969 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3",
+          "s3fs"
+        ]
+      },
+      "stats": {
+        "mean": 0.004635937532267206
+      }
     },
     {
       "name": "test_read_bytes[1KB-s3-pyarrow-remote_store]",
-      "params": { "payload": 1024, "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.0018496143102686752 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0018640087452844378
+      }
     },
     {
       "name": "test_read_bytes[1KB-s3-pyarrow-boto3_raw]",
-      "params": { "payload": 1024, "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.002005061641508712 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.00208782915254539
+      }
     },
     {
       "name": "test_read_bytes[1KB-sftp-remote_store]",
-      "params": { "payload": 1024, "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 0.0029579042570531387 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0018185705315961708
+      }
     },
     {
       "name": "test_read_bytes[1KB-sftp-paramiko_raw]",
-      "params": { "payload": 1024, "bench_target": ["sftp", "paramiko_raw"] },
-      "stats": { "mean": 0.0019999017509678167 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "sftp",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0017853483658562025
+      }
     },
     {
       "name": "test_read_bytes[1KB-sftp-sshfs]",
-      "params": { "payload": 1024, "bench_target": ["sftp", "sshfs"] },
-      "stats": { "mean": 0.0029657822166163166 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "sftp",
+          "sshfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.002341133924323298
+      }
     },
     {
       "name": "test_read_bytes[1KB-azure-remote_store]",
-      "params": { "payload": 1024, "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.0026435086583373076 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.002875726475352881
+      }
     },
     {
       "name": "test_read_bytes[1KB-azure-azure_blob_raw]",
-      "params": { "payload": 1024, "bench_target": ["azure", "azure_blob_raw"] },
-      "stats": { "mean": 0.0025827705648661984 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "azure",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.005800395133335521
+      }
     },
     {
       "name": "test_read_bytes[1KB-azure-adlfs]",
-      "params": { "payload": 1024, "bench_target": ["azure", "adlfs"] },
-      "stats": { "mean": 0.005998731165608527 }
+      "params": {
+        "payload": 1024,
+        "bench_target": [
+          "azure",
+          "adlfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.006939716288728428
+      }
     },
     {
       "name": "test_write_stream[1KB-local]",
-      "params": { "payload": 1024, "bench_backend": "local" },
-      "stats": { "mean": 0.00019531734402390555 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00015581241472662491
+      }
     },
     {
       "name": "test_write_stream[1KB-s3-minio]",
-      "params": { "payload": 1024, "bench_backend": "s3" },
-      "stats": { "mean": 0.011182031400005598 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.009899899428579115
+      }
     },
     {
       "name": "test_write_stream[1KB-s3-pyarrow-minio]",
-      "params": { "payload": 1024, "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.013247678999960044 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.014344408333322968
+      }
     },
     {
       "name": "test_write_stream[1KB-sftp-docker]",
-      "params": { "payload": 1024, "bench_backend": "sftp" },
-      "stats": { "mean": 0.004148344857152811 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.0018780419999681424
+      }
     },
     {
       "name": "test_write_stream[1KB-azure-azurite]",
-      "params": { "payload": 1024, "bench_backend": "azure" },
-      "stats": { "mean": 0.008393761490378456 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.010567012724137364
+      }
     },
     {
       "name": "test_read_stream[1KB-local]",
-      "params": { "payload": 1024, "bench_backend": "local" },
-      "stats": { "mean": 9.251015959702465e-05 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 7.55514775264745e-05
+      }
     },
     {
       "name": "test_read_stream[1KB-s3-minio]",
-      "params": { "payload": 1024, "bench_backend": "s3" },
-      "stats": { "mean": 0.004269400959774613 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.004864899358782022
+      }
     },
     {
       "name": "test_read_stream[1KB-s3-pyarrow-minio]",
-      "params": { "payload": 1024, "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.001855511786307713 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.0018663653987040373
+      }
     },
     {
       "name": "test_read_stream[1KB-sftp-docker]",
-      "params": { "payload": 1024, "bench_backend": "sftp" },
-      "stats": { "mean": 0.00335151787632516 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.0022330091313545776
+      }
     },
     {
       "name": "test_read_stream[1KB-azure-azurite]",
-      "params": { "payload": 1024, "bench_backend": "azure" },
-      "stats": { "mean": 0.0027097239016824733 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.002699563581247588
+      }
     },
     {
       "name": "test_roundtrip[1KB-local]",
-      "params": { "payload": 1024, "bench_backend": "local" },
-      "stats": { "mean": 0.00030519881223009147 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.000243866201461136
+      }
     },
     {
       "name": "test_roundtrip[1KB-s3-minio]",
-      "params": { "payload": 1024, "bench_backend": "s3" },
-      "stats": { "mean": 0.013443365599982826 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.013415217888880053
+      }
     },
     {
       "name": "test_roundtrip[1KB-s3-pyarrow-minio]",
-      "params": { "payload": 1024, "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.015162583888885214 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.01640616137501638
+      }
     },
     {
       "name": "test_roundtrip[1KB-sftp-docker]",
-      "params": { "payload": 1024, "bench_backend": "sftp" },
-      "stats": { "mean": 0.006660379285725477 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.0034728181666802507
+      }
     },
     {
       "name": "test_roundtrip[1KB-azure-azurite]",
-      "params": { "payload": 1024, "bench_backend": "azure" },
-      "stats": { "mean": 0.008124869048542987 }
+      "params": {
+        "payload": 1024,
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.009801661029996467
+      }
     },
     {
       "name": "test_write_bytes[64KB-local-remote_store]",
-      "params": { "payload": 65536, "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 0.00020779557340820155 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.00017268183546876798
+      }
     },
     {
       "name": "test_write_bytes[64KB-local-pathlib_raw]",
-      "params": { "payload": 65536, "bench_target": ["local", "pathlib_raw"] },
-      "stats": { "mean": 0.00011289075871505943 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 8.756738155395842e-05
+      }
     },
     {
       "name": "test_write_bytes[64KB-local-fsspec_local]",
-      "params": { "payload": 65536, "bench_target": ["local", "fsspec_local"] },
-      "stats": { "mean": 0.0001105077522214454 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 8.822553702877266e-05
+      }
     },
     {
       "name": "test_write_bytes[64KB-s3-remote_store]",
-      "params": { "payload": 65536, "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.005939286600005289 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0060816927000246325
+      }
     },
     {
       "name": "test_write_bytes[64KB-s3-boto3_raw]",
-      "params": { "payload": 65536, "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.003948068848169573 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.003814124793649248
+      }
     },
     {
       "name": "test_write_bytes[64KB-s3-s3fs]",
-      "params": { "payload": 65536, "bench_target": ["s3", "s3fs"] },
-      "stats": { "mean": 0.00412717990909848 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3",
+          "s3fs"
+        ]
+      },
+      "stats": {
+        "mean": 0.004673545000009148
+      }
     },
     {
       "name": "test_write_bytes[64KB-s3-pyarrow-remote_store]",
-      "params": { "payload": 65536, "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.010507013900019046 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.010638951399971574
+      }
     },
     {
       "name": "test_write_bytes[64KB-s3-pyarrow-boto3_raw]",
-      "params": { "payload": 65536, "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.003755119400005195 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0034239949583317517
+      }
     },
     {
       "name": "test_write_bytes[64KB-sftp-remote_store]",
-      "params": { "payload": 65536, "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 0.05996376199999531 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.05216543220001313
+      }
     },
     {
       "name": "test_write_bytes[64KB-sftp-paramiko_raw]",
-      "params": { "payload": 65536, "bench_target": ["sftp", "paramiko_raw"] },
-      "stats": { "mean": 0.05693560845455956 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "sftp",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.05646807317391054
+      }
     },
     {
       "name": "test_write_bytes[64KB-sftp-sshfs]",
-      "params": { "payload": 65536, "bench_target": ["sftp", "sshfs"] },
-      "stats": { "mean": 0.007911735700014333 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "sftp",
+          "sshfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.006517766846137909
+      }
     },
     {
       "name": "test_write_bytes[64KB-azure-remote_store]",
-      "params": { "payload": 65536, "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.003942424189398769 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0045338409852880256
+      }
     },
     {
       "name": "test_write_bytes[64KB-azure-azure_blob_raw]",
-      "params": { "payload": 65536, "bench_target": ["azure", "azure_blob_raw"] },
-      "stats": { "mean": 0.0038707524708158137 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "azure",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.004666273956763689
+      }
     },
     {
       "name": "test_write_bytes[64KB-azure-adlfs]",
-      "params": { "payload": 65536, "bench_target": ["azure", "adlfs"] },
-      "stats": { "mean": 0.016537577101835857 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "azure",
+          "adlfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.009194002683665187
+      }
     },
     {
       "name": "test_read_bytes[64KB-local-remote_store]",
-      "params": { "payload": 65536, "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 9.621495450073663e-05 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 7.875817141256316e-05
+      }
     },
     {
       "name": "test_read_bytes[64KB-local-pathlib_raw]",
-      "params": { "payload": 65536, "bench_target": ["local", "pathlib_raw"] },
-      "stats": { "mean": 2.4691774666414747e-05 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 2.297446677260667e-05
+      }
     },
     {
       "name": "test_read_bytes[64KB-local-fsspec_local]",
-      "params": { "payload": 65536, "bench_target": ["local", "fsspec_local"] },
-      "stats": { "mean": 2.7812072772698587e-05 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 2.637982528500033e-05
+      }
     },
     {
       "name": "test_read_bytes[64KB-s3-remote_store]",
-      "params": { "payload": 65536, "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.0040718434239097505 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.004371244320223371
+      }
     },
     {
       "name": "test_read_bytes[64KB-s3-boto3_raw]",
-      "params": { "payload": 65536, "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.002129762068404936 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0021240761690176297
+      }
     },
     {
       "name": "test_read_bytes[64KB-s3-s3fs]",
-      "params": { "payload": 65536, "bench_target": ["s3", "s3fs"] },
-      "stats": { "mean": 0.004434313342467124 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3",
+          "s3fs"
+        ]
+      },
+      "stats": {
+        "mean": 0.004807489105633227
+      }
     },
     {
       "name": "test_read_bytes[64KB-s3-pyarrow-remote_store]",
-      "params": { "payload": 65536, "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.001883120272724449 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.00194757881683561
+      }
     },
     {
       "name": "test_read_bytes[64KB-s3-pyarrow-boto3_raw]",
-      "params": { "payload": 65536, "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.002151623397355405 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0022805623969470823
+      }
     },
     {
       "name": "test_read_bytes[64KB-sftp-remote_store]",
-      "params": { "payload": 65536, "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 0.009508869665451542 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.008157860203705276
+      }
     },
     {
       "name": "test_read_bytes[64KB-sftp-paramiko_raw]",
-      "params": { "payload": 65536, "bench_target": ["sftp", "paramiko_raw"] },
-      "stats": { "mean": 0.008411970439435439 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "sftp",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.008239945926205817
+      }
     },
     {
       "name": "test_read_bytes[64KB-sftp-sshfs]",
-      "params": { "payload": 65536, "bench_target": ["sftp", "sshfs"] },
-      "stats": { "mean": 0.0034173641035725464 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "sftp",
+          "sshfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.0030508407302597697
+      }
     },
     {
       "name": "test_read_bytes[64KB-azure-remote_store]",
-      "params": { "payload": 65536, "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.002848997033949818 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.002942335471153421
+      }
     },
     {
       "name": "test_read_bytes[64KB-azure-azure_blob_raw]",
-      "params": { "payload": 65536, "bench_target": ["azure", "azure_blob_raw"] },
-      "stats": { "mean": 0.0027729593361862713 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "azure",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0028442683195920447
+      }
     },
     {
       "name": "test_read_bytes[64KB-azure-adlfs]",
-      "params": { "payload": 65536, "bench_target": ["azure", "adlfs"] },
-      "stats": { "mean": 0.006227236333339116 }
+      "params": {
+        "payload": 65536,
+        "bench_target": [
+          "azure",
+          "adlfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.006241512127662194
+      }
     },
     {
       "name": "test_write_stream[64KB-local]",
-      "params": { "payload": 65536, "bench_backend": "local" },
-      "stats": { "mean": 0.0002134812945276018 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00017546744474038775
+      }
     },
     {
       "name": "test_write_stream[64KB-s3-minio]",
-      "params": { "payload": 65536, "bench_backend": "s3" },
-      "stats": { "mean": 0.009912817900010395 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.010019272999999076
+      }
     },
     {
       "name": "test_write_stream[64KB-s3-pyarrow-minio]",
-      "params": { "payload": 65536, "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.016135531399993398 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.015573711399997591
+      }
     },
     {
       "name": "test_write_stream[64KB-sftp-docker]",
-      "params": { "payload": 65536, "bench_backend": "sftp" },
-      "stats": { "mean": 0.059378197166665814 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.05196986059997925
+      }
     },
     {
       "name": "test_write_stream[64KB-azure-azurite]",
-      "params": { "payload": 65536, "bench_backend": "azure" },
-      "stats": { "mean": 0.008628704970296984 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.010065050471263052
+      }
     },
     {
       "name": "test_read_stream[64KB-local]",
-      "params": { "payload": 65536, "bench_backend": "local" },
-      "stats": { "mean": 9.620313091411545e-05 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 7.709515604743526e-05
+      }
     },
     {
       "name": "test_read_stream[64KB-s3-minio]",
-      "params": { "payload": 65536, "bench_backend": "s3" },
-      "stats": { "mean": 0.004347763727274412 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.004647524248360812
+      }
     },
     {
       "name": "test_read_stream[64KB-s3-pyarrow-minio]",
-      "params": { "payload": 65536, "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.0019433124295437148 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.0019365116971034988
+      }
     },
     {
       "name": "test_read_stream[64KB-sftp-docker]",
-      "params": { "payload": 65536, "bench_backend": "sftp" },
-      "stats": { "mean": 0.014997415814683826 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.014137072717680966
+      }
     },
     {
       "name": "test_read_stream[64KB-azure-azurite]",
-      "params": { "payload": 65536, "bench_backend": "azure" },
-      "stats": { "mean": 0.0026978874254114816 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.0032825218831211353
+      }
     },
     {
       "name": "test_roundtrip[64KB-local]",
-      "params": { "payload": 65536, "bench_backend": "local" },
-      "stats": { "mean": 0.0003217600159150925 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0002656445628794567
+      }
     },
     {
       "name": "test_roundtrip[64KB-s3-minio]",
-      "params": { "payload": 65536, "bench_backend": "s3" },
-      "stats": { "mean": 0.013859378666691353 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.013963558999964536
+      }
     },
     {
       "name": "test_roundtrip[64KB-s3-pyarrow-minio]",
-      "params": { "payload": 65536, "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.01542711155553257 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.01708238271427425
+      }
     },
     {
       "name": "test_roundtrip[64KB-sftp-docker]",
-      "params": { "payload": 65536, "bench_backend": "sftp" },
-      "stats": { "mean": 0.069462959833326 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.05452349619997676
+      }
     },
     {
       "name": "test_roundtrip[64KB-azure-azurite]",
-      "params": { "payload": 65536, "bench_backend": "azure" },
-      "stats": { "mean": 0.00928286834999426 }
+      "params": {
+        "payload": 65536,
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.009883441777781677
+      }
     },
     {
       "name": "test_write_bytes[1MB-local-remote_store]",
-      "params": { "payload": 1048576, "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 0.0004545072441337082 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0003832510347833902
+      }
     },
     {
       "name": "test_write_bytes[1MB-local-pathlib_raw]",
-      "params": { "payload": 1048576, "bench_target": ["local", "pathlib_raw"] },
-      "stats": { "mean": 0.000732454462378184 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0006847694610266117
+      }
     },
     {
       "name": "test_write_bytes[1MB-local-fsspec_local]",
-      "params": { "payload": 1048576, "bench_target": ["local", "fsspec_local"] },
-      "stats": { "mean": 0.0003468763072331461 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 0.0004549009128256131
+      }
     },
     {
       "name": "test_write_bytes[1MB-s3-remote_store]",
-      "params": { "payload": 1048576, "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.010789819666683798 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.012462626499981866
+      }
     },
     {
       "name": "test_write_bytes[1MB-s3-boto3_raw]",
-      "params": { "payload": 1048576, "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.008280162018522745 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.009264324252747648
+      }
     },
     {
       "name": "test_write_bytes[1MB-s3-s3fs]",
-      "params": { "payload": 1048576, "bench_target": ["s3", "s3fs"] },
-      "stats": { "mean": 0.009008566181798662 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3",
+          "s3fs"
+        ]
+      },
+      "stats": {
+        "mean": 0.010586249299979044
+      }
     },
     {
       "name": "test_write_bytes[1MB-s3-pyarrow-remote_store]",
-      "params": { "payload": 1048576, "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.012881510888898143 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.014260385000000042
+      }
     },
     {
       "name": "test_write_bytes[1MB-s3-pyarrow-boto3_raw]",
-      "params": { "payload": 1048576, "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.008483578737859362 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.009440798191010626
+      }
     },
     {
       "name": "test_write_bytes[1MB-sftp-remote_store]",
-      "params": { "payload": 1048576, "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 0.8871110174000023 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.8901272501999756
+      }
     },
     {
       "name": "test_write_bytes[1MB-sftp-paramiko_raw]",
-      "params": { "payload": 1048576, "bench_target": ["sftp", "paramiko_raw"] },
-      "stats": { "mean": 0.885091564199979 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "sftp",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.8903441403999978
+      }
     },
     {
       "name": "test_write_bytes[1MB-sftp-sshfs]",
-      "params": { "payload": 1048576, "bench_target": ["sftp", "sshfs"] },
-      "stats": { "mean": 0.017751656941166347 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "sftp",
+          "sshfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.014599019363675903
+      }
     },
     {
       "name": "test_write_bytes[1MB-azure-remote_store]",
-      "params": { "payload": 1048576, "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.01075809673810113 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.01094563917708058
+      }
     },
     {
       "name": "test_write_bytes[1MB-azure-azure_blob_raw]",
-      "params": { "payload": 1048576, "bench_target": ["azure", "azure_blob_raw"] },
-      "stats": { "mean": 0.011051120287874888 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "azure",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.01100494586206788
+      }
     },
     {
       "name": "test_write_bytes[1MB-azure-adlfs]",
-      "params": { "payload": 1048576, "bench_target": ["azure", "adlfs"] },
-      "stats": { "mean": 0.016289163758068707 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "azure",
+          "adlfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.015469515419364333
+      }
     },
     {
       "name": "test_read_bytes[1MB-local-remote_store]",
-      "params": { "payload": 1048576, "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 0.0001399272214985083 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.00013493217626486253
+      }
     },
     {
       "name": "test_read_bytes[1MB-local-pathlib_raw]",
-      "params": { "payload": 1048576, "bench_target": ["local", "pathlib_raw"] },
-      "stats": { "mean": 6.403316237413877e-05 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 7.372665695683387e-05
+      }
     },
     {
       "name": "test_read_bytes[1MB-local-fsspec_local]",
-      "params": { "payload": 1048576, "bench_target": ["local", "fsspec_local"] },
-      "stats": { "mean": 6.684524479319768e-05 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 7.7495966490386e-05
+      }
     },
     {
       "name": "test_read_bytes[1MB-s3-remote_store]",
-      "params": { "payload": 1048576, "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.00543577828082247 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.00567451162936828
+      }
     },
     {
       "name": "test_read_bytes[1MB-s3-boto3_raw]",
-      "params": { "payload": 1048576, "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.003256547805902681 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.003122442473686174
+      }
     },
     {
       "name": "test_read_bytes[1MB-s3-s3fs]",
-      "params": { "payload": 1048576, "bench_target": ["s3", "s3fs"] },
-      "stats": { "mean": 0.0055369640672191 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3",
+          "s3fs"
+        ]
+      },
+      "stats": {
+        "mean": 0.005508193125002059
+      }
     },
     {
       "name": "test_read_bytes[1MB-s3-pyarrow-remote_store]",
-      "params": { "payload": 1048576, "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.006988804437035604 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.00681516322916309
+      }
     },
     {
       "name": "test_read_bytes[1MB-s3-pyarrow-boto3_raw]",
-      "params": { "payload": 1048576, "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.00304285157008701 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0030849008073316093
+      }
     },
     {
       "name": "test_read_bytes[1MB-sftp-remote_store]",
-      "params": { "payload": 1048576, "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 0.05137991092045721 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.04855002877193308
+      }
     },
     {
       "name": "test_read_bytes[1MB-sftp-paramiko_raw]",
-      "params": { "payload": 1048576, "bench_target": ["sftp", "paramiko_raw"] },
-      "stats": { "mean": 0.050016579172415206 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "sftp",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0465734375353577
+      }
     },
     {
       "name": "test_read_bytes[1MB-sftp-sshfs]",
-      "params": { "payload": 1048576, "bench_target": ["sftp", "sshfs"] },
-      "stats": { "mean": 0.014623635661291334 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "sftp",
+          "sshfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.011171516776318856
+      }
     },
     {
       "name": "test_read_bytes[1MB-azure-remote_store]",
-      "params": { "payload": 1048576, "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.005847804900002467 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0056617753711345085
+      }
     },
     {
       "name": "test_read_bytes[1MB-azure-azure_blob_raw]",
-      "params": { "payload": 1048576, "bench_target": ["azure", "azure_blob_raw"] },
-      "stats": { "mean": 0.005981528333335121 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "azure",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.005801399506910251
+      }
     },
     {
       "name": "test_read_bytes[1MB-azure-adlfs]",
-      "params": { "payload": 1048576, "bench_target": ["azure", "adlfs"] },
-      "stats": { "mean": 0.012255940652625884 }
+      "params": {
+        "payload": 1048576,
+        "bench_target": [
+          "azure",
+          "adlfs"
+        ]
+      },
+      "stats": {
+        "mean": 0.012387012288667223
+      }
     },
     {
       "name": "test_write_stream[1MB-local]",
-      "params": { "payload": 1048576, "bench_backend": "local" },
-      "stats": { "mean": 0.0004963706184387148 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0004452447829245836
+      }
     },
     {
       "name": "test_write_stream[1MB-s3-minio]",
-      "params": { "payload": 1048576, "bench_backend": "s3" },
-      "stats": { "mean": 0.015001622700003736 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.015206184555583806
+      }
     },
     {
       "name": "test_write_stream[1MB-s3-pyarrow-minio]",
-      "params": { "payload": 1048576, "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.01742590612498418 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.01792595825000376
+      }
     },
     {
       "name": "test_write_stream[1MB-sftp-docker]",
-      "params": { "payload": 1048576, "bench_backend": "sftp" },
-      "stats": { "mean": 0.8867427940000198 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.8883035694
+      }
     },
     {
       "name": "test_write_stream[1MB-azure-azurite]",
-      "params": { "payload": 1048576, "bench_backend": "azure" },
-      "stats": { "mean": 0.015000447184615951 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.013632802636374725
+      }
     },
     {
       "name": "test_read_stream[1MB-local]",
-      "params": { "payload": 1048576, "bench_backend": "local" },
-      "stats": { "mean": 0.0001549669755564592 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.00014723857117579083
+      }
     },
     {
       "name": "test_read_stream[1MB-s3-minio]",
-      "params": { "payload": 1048576, "bench_backend": "s3" },
-      "stats": { "mean": 0.00546974464335782 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.005294199443705298
+      }
     },
     {
       "name": "test_read_stream[1MB-s3-pyarrow-minio]",
-      "params": { "payload": 1048576, "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.021666599166659733 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.021578429229168233
+      }
     },
     {
       "name": "test_read_stream[1MB-sftp-docker]",
-      "params": { "payload": 1048576, "bench_backend": "sftp" },
-      "stats": { "mean": 0.21291052016662584 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.2111283449999822
+      }
     },
     {
       "name": "test_read_stream[1MB-azure-azurite]",
-      "params": { "payload": 1048576, "bench_backend": "azure" },
-      "stats": { "mean": 0.006047660376341526 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.005720015711108949
+      }
     },
     {
       "name": "test_roundtrip[1MB-local]",
-      "params": { "payload": 1048576, "bench_backend": "local" },
-      "stats": { "mean": 0.0006059622148136946 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0005310801614446762
+      }
     },
     {
       "name": "test_roundtrip[1MB-s3-minio]",
-      "params": { "payload": 1048576, "bench_backend": "s3" },
-      "stats": { "mean": 0.01967588162499112 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.021171921399991335
+      }
     },
     {
       "name": "test_roundtrip[1MB-s3-pyarrow-minio]",
-      "params": { "payload": 1048576, "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.026089500888878722 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.02427616112503017
+      }
     },
     {
       "name": "test_roundtrip[1MB-sftp-docker]",
-      "params": { "payload": 1048576, "bench_backend": "sftp" },
-      "stats": { "mean": 0.9345449974000075 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.9695542970000133
+      }
     },
     {
       "name": "test_roundtrip[1MB-azure-azurite]",
-      "params": { "payload": 1048576, "bench_backend": "azure" },
-      "stats": { "mean": 0.019572565018515214 }
+      "params": {
+        "payload": 1048576,
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.01893891255000426
+      }
     },
     {
       "name": "test_write_bytes[10MB-local-remote_store]",
-      "params": { "payload": 10485760, "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 0.01029521119642682 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.011678916132469661
+      }
     },
     {
       "name": "test_write_bytes[10MB-local-pathlib_raw]",
-      "params": { "payload": 10485760, "bench_target": ["local", "pathlib_raw"] },
-      "stats": { "mean": 0.011121207591510808 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.011257226377307116
+      }
     },
     {
       "name": "test_write_bytes[10MB-local-fsspec_local]",
-      "params": { "payload": 10485760, "bench_target": ["local", "fsspec_local"] },
-      "stats": { "mean": 0.010342696324015155 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 0.012033293928573186
+      }
     },
     {
       "name": "test_write_bytes[10MB-s3-remote_store]",
-      "params": { "payload": 10485760, "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.04898445637499549 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.05306523742857345
+      }
     },
     {
       "name": "test_write_bytes[10MB-s3-boto3_raw]",
-      "params": { "payload": 10485760, "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.04603387127272382 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.049593530850006576
+      }
     },
     {
       "name": "test_write_bytes[10MB-s3-pyarrow-remote_store]",
-      "params": { "payload": 10485760, "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.04580726071428996 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.04677655883333879
+      }
     },
     {
       "name": "test_write_bytes[10MB-s3-pyarrow-boto3_raw]",
-      "params": { "payload": 10485760, "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.04654159861903346 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.04994684124999367
+      }
     },
     {
       "name": "test_write_bytes[10MB-sftp-remote_store]",
-      "params": { "payload": 10485760, "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 8.884700901799988 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 8.914462714200022
+      }
     },
     {
       "name": "test_write_bytes[10MB-sftp-paramiko_raw]",
-      "params": { "payload": 10485760, "bench_target": ["sftp", "paramiko_raw"] },
-      "stats": { "mean": 8.875755966400039 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "sftp",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 8.939700821199972
+      }
     },
     {
       "name": "test_write_bytes[10MB-azure-remote_store]",
-      "params": { "payload": 10485760, "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.1095671758888683 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.11895940712500419
+      }
     },
     {
       "name": "test_write_bytes[10MB-azure-azure_blob_raw]",
-      "params": { "payload": 10485760, "bench_target": ["azure", "azure_blob_raw"] },
-      "stats": { "mean": 0.0706199745000049 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "azure",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.06623040384208348
+      }
     },
     {
       "name": "test_read_bytes[10MB-local-remote_store]",
-      "params": { "payload": 10485760, "bench_target": ["local", "remote_store"] },
-      "stats": { "mean": 0.000458570506251732 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "local",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.0006038789425016618
+      }
     },
     {
       "name": "test_read_bytes[10MB-local-pathlib_raw]",
-      "params": { "payload": 10485760, "bench_target": ["local", "pathlib_raw"] },
-      "stats": { "mean": 0.0003725993570089079 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "local",
+          "pathlib_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.0005292867536371142
+      }
     },
     {
       "name": "test_read_bytes[10MB-local-fsspec_local]",
-      "params": { "payload": 10485760, "bench_target": ["local", "fsspec_local"] },
-      "stats": { "mean": 0.000379750153740952 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "local",
+          "fsspec_local"
+        ]
+      },
+      "stats": {
+        "mean": 0.0005339490607586623
+      }
     },
     {
       "name": "test_read_bytes[10MB-s3-remote_store]",
-      "params": { "payload": 10485760, "bench_target": ["s3", "remote_store"] },
-      "stats": { "mean": 0.01612931633872728 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "s3",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.015789095066649377
+      }
     },
     {
       "name": "test_read_bytes[10MB-s3-boto3_raw]",
-      "params": { "payload": 10485760, "bench_target": ["s3", "boto3_raw"] },
-      "stats": { "mean": 0.013137922974348654 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "s3",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.014784735044784936
+      }
     },
     {
       "name": "test_read_bytes[10MB-s3-pyarrow-remote_store]",
-      "params": { "payload": 10485760, "bench_target": ["s3-pyarrow", "remote_store"] },
-      "stats": { "mean": 0.058202333499998024 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "s3-pyarrow",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.05960350622221237
+      }
     },
     {
       "name": "test_read_bytes[10MB-s3-pyarrow-boto3_raw]",
-      "params": { "payload": 10485760, "bench_target": ["s3-pyarrow", "boto3_raw"] },
-      "stats": { "mean": 0.012336398301376653 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "s3-pyarrow",
+          "boto3_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.014693068365067308
+      }
     },
     {
       "name": "test_read_bytes[10MB-sftp-remote_store]",
-      "params": { "payload": 10485760, "bench_target": ["sftp", "remote_store"] },
-      "stats": { "mean": 0.11904379263637566 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "sftp",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.11174105488892867
+      }
     },
     {
       "name": "test_read_bytes[10MB-sftp-paramiko_raw]",
-      "params": { "payload": 10485760, "bench_target": ["sftp", "paramiko_raw"] },
-      "stats": { "mean": 0.12517631375002716 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "sftp",
+          "paramiko_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.11431837538465026
+      }
     },
     {
       "name": "test_read_bytes[10MB-azure-remote_store]",
-      "params": { "payload": 10485760, "bench_target": ["azure", "remote_store"] },
-      "stats": { "mean": 0.03725897099995044 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "azure",
+          "remote_store"
+        ]
+      },
+      "stats": {
+        "mean": 0.03464952962497705
+      }
     },
     {
       "name": "test_read_bytes[10MB-azure-azure_blob_raw]",
-      "params": { "payload": 10485760, "bench_target": ["azure", "azure_blob_raw"] },
-      "stats": { "mean": 0.03891188223331786 }
+      "params": {
+        "payload": 10485760,
+        "bench_target": [
+          "azure",
+          "azure_blob_raw"
+        ]
+      },
+      "stats": {
+        "mean": 0.036476439791670145
+      }
     },
     {
       "name": "test_write_stream[10MB-local]",
-      "params": { "payload": 10485760, "bench_backend": "local" },
-      "stats": { "mean": 0.004692651935216889 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.008522930610757911
+      }
     },
     {
       "name": "test_write_stream[10MB-s3-minio]",
-      "params": { "payload": 10485760, "bench_backend": "s3" },
-      "stats": { "mean": 0.05964613899995389 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.06563437066665756
+      }
     },
     {
       "name": "test_write_stream[10MB-s3-pyarrow-minio]",
-      "params": { "payload": 10485760, "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.04854251042856309 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.05099604157144962
+      }
     },
     {
       "name": "test_write_stream[10MB-sftp-docker]",
-      "params": { "payload": 10485760, "bench_backend": "sftp" },
-      "stats": { "mean": 8.88452016299998 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 8.940542452999988
+      }
     },
     {
       "name": "test_write_stream[10MB-azure-azurite]",
-      "params": { "payload": 10485760, "bench_backend": "azure" },
-      "stats": { "mean": 0.11043897922223146 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.11926834755553904
+      }
     },
     {
       "name": "test_read_stream[10MB-local]",
-      "params": { "payload": 10485760, "bench_backend": "local" },
-      "stats": { "mean": 0.0006779066343379917 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0007740184151163032
+      }
     },
     {
       "name": "test_read_stream[10MB-s3-minio]",
-      "params": { "payload": 10485760, "bench_backend": "s3" },
-      "stats": { "mean": 0.01367951149123065 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.013698128458337856
+      }
     },
     {
       "name": "test_read_stream[10MB-s3-pyarrow-minio]",
-      "params": { "payload": 10485760, "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.20831026059995567 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.2107494911998856
+      }
     },
     {
       "name": "test_read_stream[10MB-sftp-docker]",
-      "params": { "payload": 10485760, "bench_backend": "sftp" },
-      "stats": { "mean": 2.084206144799964 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 2.064456604999987
+      }
     },
     {
       "name": "test_read_stream[10MB-azure-azurite]",
-      "params": { "payload": 10485760, "bench_backend": "azure" },
-      "stats": { "mean": 0.045853441681815224 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.041905251699987885
+      }
     },
     {
       "name": "test_roundtrip[10MB-local]",
-      "params": { "payload": 10485760, "bench_backend": "local" },
-      "stats": { "mean": 0.00458461692726773 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.006485626501807764
+      }
     },
     {
       "name": "test_roundtrip[10MB-s3-minio]",
-      "params": { "payload": 10485760, "bench_backend": "s3" },
-      "stats": { "mean": 0.06819668042856263 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.07306601366667564
+      }
     },
     {
       "name": "test_roundtrip[10MB-s3-pyarrow-minio]",
-      "params": { "payload": 10485760, "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.11312184539997361 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.11079526019993864
+      }
     },
     {
       "name": "test_roundtrip[10MB-sftp-docker]",
-      "params": { "payload": 10485760, "bench_backend": "sftp" },
-      "stats": { "mean": 9.008803447199943 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 9.04900092779999
+      }
     },
     {
       "name": "test_roundtrip[10MB-azure-azurite]",
-      "params": { "payload": 10485760, "bench_backend": "azure" },
-      "stats": { "mean": 0.14896530524998752 }
+      "params": {
+        "payload": 10485760,
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.1558828548750455
+      }
     },
     {
       "name": "test_write_latency[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 0.00019251224997560712 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 0.0001589264000131152
+      }
     },
     {
       "name": "test_write_latency[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.009802577849984572 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.009495255000001635
+      }
     },
     {
       "name": "test_write_latency[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.013841857599982178 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.014971033699987401
+      }
     },
     {
       "name": "test_write_latency[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.004015533299980234 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.001854401049979515
+      }
     },
     {
       "name": "test_write_latency[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.006275956099989344 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.005915506949963856
+      }
     },
     {
       "name": "test_ttfb_read[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 9.900139996261714e-05 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 7.551124998599335e-05
+      }
     },
     {
       "name": "test_ttfb_read[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.004422169299971301 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.004451237000012043
+      }
     },
     {
       "name": "test_ttfb_read[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.001939650249994429 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.0017741845999807992
+      }
     },
     {
       "name": "test_ttfb_read[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.002711036249957033 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.0014517658999807282
+      }
     },
     {
       "name": "test_ttfb_read[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.00264340285000344 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.0028178997499594518
+      }
     },
     {
       "name": "test_ttfb_exists[local]",
-      "params": { "bench_backend": "local" },
-      "stats": { "mean": 7.968579999442226e-05 }
+      "params": {
+        "bench_backend": "local"
+      },
+      "stats": {
+        "mean": 7.109664998097286e-05
+      }
     },
     {
       "name": "test_ttfb_exists[s3-minio]",
-      "params": { "bench_backend": "s3" },
-      "stats": { "mean": 0.0020557754500259763 }
+      "params": {
+        "bench_backend": "s3"
+      },
+      "stats": {
+        "mean": 0.0023594165999497817
+      }
     },
     {
       "name": "test_ttfb_exists[s3-pyarrow-minio]",
-      "params": { "bench_backend": "s3-pyarrow" },
-      "stats": { "mean": 0.0019995122000523225 }
+      "params": {
+        "bench_backend": "s3-pyarrow"
+      },
+      "stats": {
+        "mean": 0.002077131450005254
+      }
     },
     {
       "name": "test_ttfb_exists[sftp-docker]",
-      "params": { "bench_backend": "sftp" },
-      "stats": { "mean": 0.0006980443000088599 }
+      "params": {
+        "bench_backend": "sftp"
+      },
+      "stats": {
+        "mean": 0.0002832345499996336
+      }
     },
     {
       "name": "test_ttfb_exists[azure-azurite]",
-      "params": { "bench_backend": "azure" },
-      "stats": { "mean": 0.0023159763499961627 }
+      "params": {
+        "bench_backend": "azure"
+      },
+      "stats": {
+        "mean": 0.0023484818999804703
+      }
     }
   ]
 }
