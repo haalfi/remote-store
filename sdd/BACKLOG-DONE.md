@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-234 — Reconcile the two ripple-check presentations to true row-parity (or enforce it)**
+  spec: — · effort: M · audience: contributor.tooling, contributor.process
+  `sdd/CLAUDE-REFERENCE.md`'s ripple-check has a Pre-work index and a Detailed
+  checklist long described as holding the same triggers in the same order — but
+  the Detailed checklist expands two triggers into sync + async pairs (`_GATING
+  dict`, `_BACKEND_GATING dict`; intentional) and had silently dropped one
+  (`Local-machine reference in any committed file`; a real gap no reader of
+  either table alone could see). Chose enforcement over strict row-parity —
+  strict row-for-row would fight the blessed expansion design.
+  `scripts/check_ripple_parity.py` (new; wired into `lint` and `docs-gate`, the
+  latter because a `sdd/`-only edit skips the `lint` job's CODE_PAT) makes the
+  Pre-work index the canonical spine: every Pre-work trigger must appear in the
+  Detailed checklist under the same section and in the same order; the Detailed
+  checklist may add expansion rows but may not drop, re-order, or float an
+  unanchored trigger. Reconciled the one genuine gap (added the missing Detailed
+  row) and one parser hazard (the `New authoritative process doc` name had
+  wrapped across two bold cells; now a single bold leading cell, so each bold
+  cell is exactly one trigger and any future re-wrap fails the gate). Header note
+  + enforcement comment restated to point at the gate. Deferred (noted in the
+  header note): validating trace `section:` strings against live row names.
+  Trace: `sdd/traces/ID-234-ripple-parity-gate.yml`. No CHANGELOG — tooling and
+  internal `sdd/` process, not user-facing.
+
 - [x] **ID-232 — Rewrite ADR Decision sections to state decisions, not spec/impl detail**
   spec: — · effort: L · audience: library.maintainer
   `gen_adr_digest` (PR #909) lifts each ADR's whole `## Decision` into

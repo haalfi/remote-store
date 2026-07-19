@@ -1,0 +1,78 @@
+id: ID-234
+title: "Reconcile the two ripple-check presentations to true row-parity (or enforce it)"
+trigger: |
+  sdd/CLAUDE-REFERENCE.md presents the ripple-check twice (Pre-work index +
+  Detailed checklist), long described as the same triggers in the same order.
+  ID-233's PR #912 review restated the header note to admit they diverge — the
+  Detailed checklist expands the gating dicts (+2) and had dropped the
+  Local-machine reference row (-1) — but left the deeper fix (reconcile or
+  enforce mechanically) as this follow-up.
+source_items:
+  - ID-234
+  - ID-233
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-234 (item)"
+        read_type: gate
+        extract: "Scope: reconcile the two presentations to a true row-for-row mapping, OR add a check script verifying each trigger appears in both in the same order; the enforcement comment already flags 'promote a check script into BACKLOG'"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table (Pre-work index + Detailed checklist)"
+        read_type: gate
+        extract: "Enumerated both presentations: 27 Pre-work triggers vs 28 Detailed rows. The gating splits (_GATING dict, _BACKEND_GATING dict -> sync+async) are intentional per the header note; the missing Local-machine reference row is a genuine gap. Decided enforcement over strict row-parity — strict row-for-row would fight the blessed expansion design"
+  - id: implement
+    name: Write the gate
+    steps:
+      - file: scripts/check_backend_order.py
+        section: "(full)"
+        read_type: reference
+        extract: "Structural template for a stdlib-only Markdown-parsing gate: module docstring stating what/why/exit-codes, frozen Violation dataclass, collect_violations()/main(argv) with --repo-root, remediation printed to stderr"
+      - file: scripts/check_ripple_parity.py
+        section: "(new file)"
+        read_type: gate
+        extract: "Pre-work index = canonical spine: every Pre-work trigger must appear in the Detailed checklist under the same section and order; expansions allowed but must be anchored (follow a shared trigger in-section). Parser rule: each bold leading cell is exactly one trigger — which required reconciling one wrapped name (see docs phase)"
+  - id: docs
+    name: Reconcile the doc
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Docs (new Local-machine reference row)"
+        read_type: gate
+        extract: "Added the missing Detailed row expanding the Pre-work one-liner (grep patterns + scope + PR-validation-gate enforcement), so the Detailed checklist carries every Pre-work trigger"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Release & meta (New authoritative process doc row)"
+        read_type: reference
+        extract: "Trigger name had wrapped across two bold leading cells (**New authoritative** / **process doc in `sdd/`**), which read as two triggers. Collapsed to a single bold leading cell so the parser rule 'one bold cell = one trigger' holds; a future re-wrap now fails the gate loudly"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table (header note + enforcement comment)"
+        read_type: gate
+        extract: "Restated both to say the invariant is machine-enforced by scripts/check_ripple_parity.py (in lint and docs-gate); flagged the two things the gate does not police (single-bold-cell names; trace section: strings deferred)"
+  - id: wire
+    name: Wire the gate
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint / docs-gate"
+        read_type: gate
+        extract: "Added to the lint list; added a check-ripple-parity standalone script entry and put it in docs-gate — dual-wire, since a sdd/-only edit skips the lint job's CODE_PAT but hits the docs job's DOCS_PAT (^sdd/). Same pattern as check-no-tracker-refs / check-backend-order"
+      - file: tests/scripts/test_check_ripple_parity.py
+        section: "(new file)"
+        read_type: reference
+        extract: "Unit tests for the parser and invariant: omission (the live bug), reorder, unanchored-expansion, empty-block vacuous-guard, wrapped-name-fails, and the sync/async expansion passing; plus a repo-clean assertion against the real reference"
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_ripple_parity.py
+        section: "prove the gate bites"
+        read_type: verify
+        extract: "Before adding the Local-machine row the gate FAILED naming exactly that trigger as missing; after the reconcile it passes. Parser change proven: consecutive distinct bold triggers (Spec section / Capability) no longer mis-merge"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "Trace ships same PR; BACKLOG -> BACKLOG-DONE moved; backlogid.json regenerated; CHANGELOG skipped per audience rule (contributor.tooling / contributor.process, no user-facing framework)"

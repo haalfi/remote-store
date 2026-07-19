@@ -16,11 +16,14 @@ The ripple-check has two presentations of the same set of triggers, grouped by S
 
 Both presentations cover the same triggers in the same lifecycle order, but they are not strictly row-for-row identical: the Detailed checklist expands some triggers into finer rows (e.g. the gating dicts split into sync and async), so its row count runs a little higher. Trigger names are bare topics (no leading article). If you add, remove, rename, or re-order a trigger, update both presentations and any trace `section:` strings that cite the row by name.
 
+This is machine-enforced by `scripts/check_ripple_parity.py` (in `lint` and `docs-gate`): every Pre-work index trigger must appear in the Detailed checklist under the same section, in the same order. The Detailed checklist may add expansion rows with no Pre-work twin (the gating splits), but may not drop or re-order a trigger, and an expansion may not precede its parent within a section. Two things the gate does not police, so mind them by hand: a trigger's *name* must be one bold leading cell (a name wrapped across two bold cells reads as two unknown triggers and fails the gate, so keep it on one row), and trace `section:` strings are not yet checked against live row names.
+
 <!-- Two-presentations-one-source: the same triggers appear in both, in the same
 order; the Detailed checklist may expand one trigger into several rows, so the
 row counts are not required to be equal. Trace section strings (sdd/traces/*.yml)
-cite row names verbatim — renaming requires updating those too. Reviewer-enforced;
-if drift recurs, promote a check script into BACKLOG. -->
+cite row names verbatim — renaming requires updating those too. Enforced by
+scripts/check_ripple_parity.py (in `lint` and `docs-gate`): every Pre-work
+trigger must appear in the Detailed checklist under the same section and order. -->
 
 <a id="pre-work-index"></a>
 ### Pre-work index
@@ -218,6 +221,15 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | `sdd/**`, CHANGELOG, DEVELOPMENT_STORY, agent harness   |
 |                            | files, generated artefacts under `docs-src/_data/`,     |
 |                            | and `#` comments inside source files                    |
+| **Local-machine reference in any committed file** | Grep every changed file type (`.md`, `.py`, `.sh`, |
+| (private path or memory     | `.yml`, `.dfy`, `.tla`) for references unreachable from   |
+| slug unreachable from the   | the repo: `See memory `, `` captured as `<slug>.md` ``    |
+| repo)                       | (Claude Code memory slugs), `[A-Z]:\\[A-Za-z]` (Windows  |
+|                            | drive paths, skipping the `\n`/`\r`/`\t` escape           |
+|                            | sequences), `~/.claude`, `.claude/projects`. Replace     |
+|                            | each with the principle it refers to, inline. Enforced   |
+|                            | by the shared [PR validation gates](#pr-validation-gates) |
+|                            | that `/pr` and `/fix-pr` both run.                        |
 
 #### Release & meta
 
@@ -239,8 +251,8 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | then `hatch run gen-graph` to re-stamp `graph.json`.      |
 |                            | Full checklist: [CONTRIBUTING.md § Phase 2](../CONTRIBUTING.md#phase-2). |
 | **Source/test/spec counts**| README badge + CI coverage report (no manual table)       |
-| **New authoritative**      | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) |
-| **process doc in `sdd/`**  | (if part of the trio), [CONTRIBUTING.md § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) |
+| **New authoritative process doc in `sdd/`** | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) |
+|                            | (if part of the trio), [CONTRIBUTING.md § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) |
 |                            | (Scope subsection within), sibling authority docs         |
 |                            | (back-references in their Intent & Scope),                |
 |                            | `.claude/skills/*/SKILL.md` foundation lists,             |
