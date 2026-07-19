@@ -20,14 +20,24 @@ Configuration systems often layer multiple sources (config files, env vars, CLI 
 
 ## Decision
 
-**Config-as-code has absolute priority. No merging, no env var overrides.**
-
-Resolution rules:
-
-1. If `RegistryConfig` is provided in code → use it exclusively
-2. If no config is provided → environment variables may be used as a fallback
-3. No layering, no merging between sources
-4. Backend defaults apply last (within a single config source)
+- **Config-as-code has absolute priority.** A `RegistryConfig` built in code
+  is used exclusively, with no layering or merging between configuration
+  sources. Chosen so the same code yields the same behavior regardless of host
+  environment (determinism; test isolation from stray env vars). *Reverse if*
+  determinism becomes a net liability: a first-class multi-source/override
+  requirement emerges that user-side pre-processing genuinely cannot serve.
+- **Environment variables are never read automatically.** The Registry performs
+  no env-var fallback: constructing without a config yields an empty
+  `RegistryConfig`, not an env-sourced one. Any env-var sourcing is explicit,
+  user-side pre-processing (`resolve_env()`, Pydantic `BaseSettings`) that
+  produces the final dict *before* construction; once the config is constructed,
+  no further env lookups occur (spec 021 § CFG-021). *Reverse if* a built-in
+  env-driven bootstrap is deliberately adopted (which also reopens the
+  determinism decision above).
+- **Backend defaults apply last, within a single config source.** "No merging"
+  forbids combining across sources; it does not forbid a backend filling its
+  unset options from its own defaults inside one source. *Reverse if*
+  backend-default resolution moves out of config resolution.
 
 ## Consequences
 

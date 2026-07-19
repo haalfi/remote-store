@@ -38,166 +38,70 @@ be designed when needed (see "Future patterns" below).
 
 ## Decision
 
-The `ext.*` namespace contract for stateless utility extensions:
+The `ext.*` namespace contract for stateless utility extensions: standalone
+functions that accept a `Store` and operate on it. Framework concerns
+(interfaces, hooks, lifecycle management, plugin discovery) are out of scope and
+get their own ADRs when built.
 
-- **Location** — extensions live in `src/remote_store/ext/<name>.py` (single module) or `src/remote_store/ext/<name>/` (sub-package); `ext/__init__.py` re-exports nothing, each extension is imported directly.
-- **Public API only** — extensions use only the public `Store` / `Backend` API (no private-attribute access); `Store.unwrap(type_hint)` is the sanctioned escape hatch.
-- **Module exports** — every extension module defines `__all__`.
-- **Lifecycle** — extensions never own the `Store`; they must not close it or use it as a context manager.
-- **Error propagation** — `CapabilityNotSupported` must propagate to the caller, never be suppressed.
-
-### Extension location
-
-Extensions live in `src/remote_store/ext/<name>.py` (single module) or
-`src/remote_store/ext/<name>/` (sub-package for complex extensions).
-The `ext/__init__.py` re-exports nothing; each extension is imported
-directly by the user or by `remote_store.__init__`.
-
-### Public API only
-
-Extensions MUST use only the public `Store` and `Backend` API.  Direct
-access to private attributes (e.g., `store._backend`) is forbidden.
-`Store.unwrap(type_hint)` is the approved escape hatch for native
-backend access.
-
-### Module exports
-
-Every extension module defines `__all__` listing its public symbols.
-
-### Lifecycle rules
-
-Extensions do not own `Store` lifecycle.  They must never call
-`store.close()` or use the Store as a context manager.  The caller owns
-the Store and is responsible for its lifecycle.
-
-### Error propagation
-
-`CapabilityNotSupported` raised by Store methods MUST propagate to the
-extension's caller.  Extensions must not catch and suppress it.
+- **Location.** Extensions live in `src/remote_store/ext/<name>.py` (single
+  module) or `src/remote_store/ext/<name>/` (sub-package for complex ones);
+  `ext/__init__.py` re-exports nothing, so each extension is imported directly.
+  *Reverse if* a plugin-discovery mechanism (deferred) requires a registry in
+  `__init__`.
+- **Public API only.** Extensions use only the public `Store` / `Backend` API;
+  private-attribute access (`store._backend`) is forbidden. `Store.unwrap(type_hint)`
+  is the sanctioned escape hatch for native backend handles. *Reverse if* a
+  required capability becomes impossible to express through the public API.
+- **Module exports.** Every extension module defines `__all__`. *Reverse if*
+  the project drops explicit export lists project-wide.
+- **Lifecycle.** Extensions never own the `Store`: they must not close it or
+  use it as a context manager. The caller owns lifecycle. *Reverse if* an
+  extension legitimately needs to own a Store it constructs (a different
+  pattern, warranting a new ADR).
+- **Error propagation.** `CapabilityNotSupported` must propagate to the caller,
+  never be suppressed, so callers see an honest capability boundary rather than
+  a silent wrong result. *Reverse if* the capability model stops using
+  exceptions to signal unsupported operations.
+- **Zero-dependency core.** Core `remote-store` takes no third-party
+  dependencies; optional deps are declared as extras in `pyproject.toml`.
+  Extension code must guard optional-dependency imports (including inside
+  `TYPE_CHECKING` blocks, which mypy still evaluates) rather than importing them
+  unconditionally. This constraint is why the optional-dependency extension
+  category exists at all. *Reverse if* the zero-dependency-core promise is
+  abandoned.
 
 ### Capability-probe exception pattern
 
-The rule "CapabilityNotSupported MUST propagate" has one documented
-exception: the **capability-probe** pattern.  Extensions MAY catch
-`CapabilityNotSupported` when probing for an **optional native backend**
-during initialization, provided:
+`CapabilityNotSupported` MAY be caught in exactly one case: an extension
+**probing for an optional native backend at initialization**, where a graceful
+fallback exists (e.g. `ext.arrow` Tier 1 native fast-path falling through to
+Tier 2/3 I/O). The catch must be narrowly scoped to the expected exceptions and
+commented. This is the sole sanctioned exception to "must propagate," and it is
+bounded to *optional* features with a fallback; a probe for a *required*
+operation must still propagate. Any new extension using this pattern must cite
+this section and document its fallback strategy in comments. *Reverse if*
+capability probing moves to an explicit `supports()`-style API that removes the
+need to catch.
 
-1. The probe is for an **optional feature**, not a required operation.
-2. A graceful fallback exists (e.g., Tier 2/3 I/O paths in `ext.arrow`).
-3. The catch is narrowly scoped to expected exceptions (e.g.,
-   `(CapabilityNotSupported, TypeError, OSError)` for cloud backends).
-4. A comment explains the probe, exceptions caught, and fallback strategy.
-5. The catch MAY be annotated with `# noqa: BLE001` as a documentation marker
-   if the implementation uses a broad catch; the annotation is optional if the
-   catch is already narrow and specific.
+The exact exception tuple, the `# noqa: BLE001` marker, and the concrete probe
+live in the code (`ext/arrow.py`) and in spec `014-pyarrow-filesystem-adapter`
+§ PA-001, which points here for rationale.
 
-**Example:** `ext.arrow` Tier 1 probe (`src/remote_store/ext/arrow.py`
-line 177).  The `StoreFileSystemHandler.__init__` probes for a native PyArrow
-backend via `store.unwrap(pafs.FileSystem)`.  If the backend doesn't
-support unwrap or the type doesn't match, the probe gracefully falls back
-to Tier 2/3 (full-file materialization or byte-range reads).
+### Deferred and relocated
 
-Any new extension using this pattern MUST cite this section and document
-the fallback strategy explicitly in comments.
-
-### Export rules
-
-> Superseded by ADR-0013 — optional-dependency extensions are no longer
-> re-exported from `remote_store.__init__`. Import them directly from
-> `remote_store.ext.<name>`.
-
-Two patterns, determined by dependency requirements:
-
-1. **Pure Python (no extra dependencies).**
-   Exported unconditionally from `remote_store.__init__`.  Users get
-   the symbols with `import remote_store` or
-   `from remote_store import <name>`.
-
-2. **Optional dependency (requires an extra).**
-   The extension module guards its dependency import at the top level
-   with a `try/except ModuleNotFoundError` that raises a helpful error:
-
-   ```python
-   # In ext/<name>.py:
-   try:
-       import pyarrow as pa
-   except ModuleNotFoundError as _exc:
-       raise ModuleNotFoundError(
-           "PyArrow is required for the arrow extension. "
-           "Install it with: pip install 'remote-store[arrow]'"
-       ) from _exc
-   ```
-
-   `remote_store.__init__` conditionally re-exports these symbols with
-   a silent `try/except ImportError` guard so that `from remote_store
-   import pyarrow_fs` works when the dependency is installed, but core
-   package import never fails:
-
-   ```python
-   # In remote_store/__init__.py:
-   try:
-       from remote_store.ext.arrow import StoreFileSystemHandler, pyarrow_fs
-       __all__ += ["StoreFileSystemHandler", "pyarrow_fs"]
-   except ImportError:
-       pass
-   ```
-
-### Dependency rules
-
-- Core `remote-store` stays zero-dependency.
-- Optional dependencies are declared as extras in
-  `pyproject.toml [project.optional-dependencies]`.
-- Extension code must not import optional dependencies at the top level
-  in `TYPE_CHECKING` blocks without a guard, since mypy may still
-  evaluate those imports.
-
-### Development lifecycle
-
-New extensions follow the SDD pipeline:
-
-1. RFC in `sdd/rfcs/` (proposal and design discussion).
-2. Spec in `sdd/specs/` (contract and invariants).
-3. Tests in `tests/test_<name>.py` with `@pytest.mark.spec("ID")`.
-4. Implementation in `src/remote_store/ext/<name>.py`.
-5. Guide in `guides/` and docs wiring in `docs-src/`.
-6. CHANGELOG and BACKLOG updated in the same commit.
-
-Tests live at `tests/test_<name>.py` (flat, not `tests/ext/`).
-
-### Third-party extensions
-
-External packages should use the naming convention
-`remote-store-<name>` (PyPI package name).  They should:
-
-- Use only the public Store/Backend API.
-- Use `register_backend()` for backend registration (if applicable).
-- Use `Store.unwrap()` for native handle access.
-- For backend extensions: reuse the conformance test suite by importing
-  and parameterizing it.
-
-Entry-point based plugin discovery is deferred until third-party
-extensions emerge and the discovery mechanism can be designed with
-real use cases.
-
-### Future patterns (not yet designed)
-
-The current convention covers **stateless utility extensions** —
-standalone functions that accept a Store and return results.  Planned
-extensions will require additional patterns:
-
-- **`ext.notify`** (ID-024) needs a hook/interceptor mechanism to wrap
-  Store operations.  Likely a decorator or proxy Store pattern:
-  `store = instrument(store, on_read=..., on_error=...)`.
-- **`ext.cache`** (ID-025) needs a wrapping/proxy pattern that sits
-  between the caller and the Store, intercepting reads and caching
-  results.
-- **Streaming atomic writes** (ID-026) needs a context manager protocol
-  integrated with the Store.
-
-These patterns will be designed as separate ADRs when the extensions
-are implemented.  This ADR's rules (public API only, `__all__`,
-dependency management, test location) apply to all extension types;
-the additional patterns will layer on top.
+- **Optional-extension re-exports.** Removed, superseded by **ADR-0013**.
+  Optional-dependency extensions are imported from `remote_store.ext.<name>`,
+  never re-exported from `remote_store.__init__`. Pure-Python extensions remain
+  unconditionally exported.
+- **Stateful patterns.** Hook/interceptor (`ext.notify`), proxy/wrapping
+  (`ext.cache`), and context-manager streaming writes are not covered here; each
+  is designed in its own ADR when the extension is built. The rules above
+  (public API only, `__all__`, dependency guarding, error propagation) apply to
+  all extension types.
+- **Authoring pipeline, test location, third-party naming (`remote-store-<name>`),
+  and plugin discovery** live in CONTRIBUTING § "Adding an Extension", the
+  operational checklist. Entry-point discovery stays deferred until real
+  third-party extensions exist.
 
 ## Consequences
 
