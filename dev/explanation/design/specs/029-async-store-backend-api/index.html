@@ -12848,7 +12848,7 @@ raises <code>RuntimeError</code> with a message stem
 directs the caller to use <code>AsyncStore</code> instead. Detection is per-call,
 not per-construction.
 <strong>Rationale:</strong> The sync <code>Store</code> API is not coroutine-safe by design
-(ADR-0012 § Async posture).  Fail-fast beats deadlock.
+(ADR-0012, the hybrid sync/async model).  Fail-fast beats deadlock.
 <strong>See also:</strong> <a href="../../adrs/0025-async-to-sync-backend-adapter/">ADR-0025</a>
 § Behaviour when the caller is in a running loop.</p>
 <h3 id="async-083-closed-adapter-reuse">ASYNC-083: Closed-adapter Reuse<a class="headerlink" href="#async-083-closed-adapter-reuse" title="Permanent link">&para;</a></h3>
@@ -12924,7 +12924,7 @@ does not wrap, translate, or re-label exceptions.  Specifically:</p>
   <code>concurrent.futures</code> behaviour.</li>
 </ul>
 <p><strong>See also:</strong> <a href="../005-error-model/">005-error-model.md</a> (ERR-001),
-ADR-0012 § error-mapping rules.</p>
+ADR-0012 (same error model across sync and async).</p>
 <h3 id="async-088-lifecycle-closetimeout">ASYNC-088: Lifecycle — <code>close(timeout)</code><a class="headerlink" href="#async-088-lifecycle-closetimeout" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>close(timeout: float | None = 30.0)</code> performs the
 following drain order:</p>
