@@ -6122,17 +6122,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#submission-and-blocking" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Submission and blocking
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#streaming-iterators-and-open-streams" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6155,65 +6144,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cancellation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cancellation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#behaviour-when-the-caller-is-in-a-running-loop" class="md-nav__link">
     <span class="md-ellipsis">
       
         Behaviour when the caller is in a running loop
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#nest_asyncio-stance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        nest_asyncio stance
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#lifecycle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Lifecycle
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#error-propagation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error propagation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#read_seekable-sync-only-convenience" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        read_seekable (sync-only convenience)
       
     </span>
   </a>
@@ -6232,10 +6166,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#module-placement" class="md-nav__link">
+  <a href="#lifecycle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Module placement
+        Lifecycle
       
     </span>
   </a>
@@ -10536,17 +10470,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#submission-and-blocking" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Submission and blocking
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#streaming-iterators-and-open-streams" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10569,65 +10492,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cancellation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cancellation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#behaviour-when-the-caller-is-in-a-running-loop" class="md-nav__link">
     <span class="md-ellipsis">
       
         Behaviour when the caller is in a running loop
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#nest_asyncio-stance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        nest_asyncio stance
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#lifecycle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Lifecycle
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#error-propagation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error propagation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#read_seekable-sync-only-convenience" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        read_seekable (sync-only convenience)
       
     </span>
   </a>
@@ -10646,10 +10514,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#module-placement" class="md-nav__link">
+  <a href="#lifecycle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Module placement
+        Lifecycle
       
     </span>
   </a>
@@ -10815,263 +10683,98 @@ lifetime. Sync methods submit coroutines via
 sync" pattern documented in the <code>asyncio</code> stdlib and battle-tested in
 multiple bridge libraries.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Introduce a new class <code>AsyncBackendSyncAdapter</code> under
-<code>remote_store.aio</code> that implements the sync <code>Backend</code> ABC by
-delegating to an <code>AsyncBackend</code> running on a private event loop in a
-dedicated background thread. Do <strong>not</strong> invert <code>SyncBackendAdapter</code>;
-the execution direction is different enough that two distinct adapters
-are clearer than one parameterised bridge.</p>
-<p>The <code>AsyncBackendSyncAdapter</code> is the mirror of <code>SyncBackendAdapter</code>
-(ADR-0012). Together they provide the full bidirectional bridge the
-hybrid model needs.</p>
+<p>Introduce <code>AsyncBackendSyncAdapter</code>, a class implementing the sync <code>Backend</code> ABC
+by delegating to a wrapped <code>AsyncBackend</code> that runs on a private event loop in a
+dedicated daemon thread (<strong>Option D</strong> of the four weighed in Context). It mirrors
+<code>SyncBackendAdapter</code> (ADR-0012); together they form the full bidirectional bridge
+the hybrid model needs.</p>
+<p><strong>Private loop on a dedicated daemon thread, not <code>asyncio.run()</code> per call and not
+<code>nest_asyncio</code>.</strong> <code>asyncio</code> forbids re-entering a running loop, and a fresh loop
+per call forfeits the async SDK's connection pools and auth-token cache; a
+per-adapter private loop keeps the client alive while sync callers submit
+coroutines via <code>run_coroutine_threadsafe</code> and block on the returned <code>Future</code>.
+<em>Reverse if</em> the stdlib gains safe nested-loop execution, or the wrapped backends
+stop needing cross-call client reuse.</p>
+<p><strong>Two distinct adapters, not one parameterised bridge.</strong> The two boundary
+directions differ enough that two named classes read clearer than one flag-driven
+bridge. <em>Reverse if</em> a single parameterised bridge proves clearer in practice.</p>
+<p><strong>The module lives in the sync core (<code>src/remote_store/_async_to_sync_adapter.py</code>),
+not under <code>aio/</code>.</strong> It implements the sync <code>Backend</code>, so it belongs with sync
+code; placing it under <code>aio/</code> would force every sync <code>Store</code> user wrapping an
+async backend to import the <code>aio/</code> runtime at construction, inverting the
+invariant that sync code stays independent of <code>aio/</code>. <code>AsyncBackend</code> is imported
+lazily in <code>__init__</code> to keep that core-to-<code>aio</code> edge off the top level. <em>Reverse
+if</em> the sync-independent-of-<code>aio/</code> layering invariant is abandoned.</p>
 <h3 id="ownership-model">Ownership model<a class="headerlink" href="#ownership-model" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>One loop per adapter instance.</strong> The adapter creates a new
-  <code>asyncio.new_event_loop()</code> and starts a daemon <code>threading.Thread</code>
-  that runs <code>loop.run_forever()</code>. The loop is private — not shared,
-  not exposed, not reused across adapter instances.</li>
-<li><strong>One thread per adapter instance.</strong> The loop thread is created in
-  <code>__init__</code> and joined in <code>close()</code>. It is dedicated to this adapter;
-  no other work is scheduled on it.</li>
-<li><strong>Thread-safe for concurrent sync callers.</strong> Multiple threads may
-  call sync methods on the same adapter concurrently. Each call
-  submits an independent coroutine to the loop and blocks on its own
-  future. Ordering between concurrent callers is not guaranteed;
-  callers that need deterministic ordering must coordinate
-  externally (e.g. their own lock or queue).</li>
-</ul>
-<h3 id="submission-and-blocking">Submission and blocking<a class="headerlink" href="#submission-and-blocking" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Each sync method wraps the corresponding <code>AsyncBackend</code> coroutine
-  and submits it via <code>asyncio.run_coroutine_threadsafe(coro, loop)</code>.</li>
-<li>The sync method blocks on the returned <code>concurrent.futures.Future</code>.
-  <code>Future.result()</code> propagates the coroutine's return value or
-  re-raises its exception.</li>
-<li>Non-I/O methods (<code>name</code>, <code>capabilities</code>, <code>to_key</code>, <code>native_path</code>,
-  <code>resolve</code>, <code>unwrap</code>) delegate directly to the wrapped async backend
-  without the loop, mirroring <code>SyncBackendAdapter</code>'s passthrough.</li>
-<li>I/O methods that return scalars or <code>None</code> — <code>exists</code>, <code>is_file</code>,
-  <code>is_folder</code>, <code>read_bytes</code>, <code>get_file_info</code>, <code>get_folder_info</code>,
-  <code>move</code>, <code>copy</code>, <code>delete</code>, <code>delete_folder</code>, <strong><code>check_health</code></strong> —
-  follow the standard submit-and-block pattern. <code>check_health()</code>
-  is explicitly <strong>not</strong> a no-op: connectivity errors from the
-  wrapped async backend must reach the sync caller verbatim.</li>
-<li><code>Future.result()</code> blocks without a per-call timeout. Timeout
-  responsibility belongs to the wrapped <code>AsyncBackend</code>: backends
-  should impose their own timeouts internally (e.g.
-  <code>asyncio.wait_for</code>) or rely on SDK session-level timeouts.
-  The adapter's <code>close(timeout=…)</code> provides a global shutdown
-  bound; there is no per-operation equivalent.</li>
-</ul>
+<p>One private loop and one daemon thread per adapter instance, never shared or
+reused; the adapter is a <strong>one-shot resource</strong>, so a closed adapter raises rather
+than restarting the loop. Concurrent sync callers are serialised onto the single
+loop, which <em>manufactures</em> thread-safety for a loop-safe async backend;
+<strong>ordering between concurrent callers is not guaranteed</strong>, so callers needing
+order coordinate externally. <em>Reverse if</em> a backend needs multi-loop parallelism
+one serialising loop cannot give. Exact concurrency bounds and no-crossover
+guarantee: spec 029 § ASYNC-089.</p>
 <h3 id="streaming-iterators-and-open-streams">Streaming iterators and open streams<a class="headerlink" href="#streaming-iterators-and-open-streams" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>read(path)</code> returns a sync file-like stream whose <code>read(n)</code> pumps
-  chunks out of the backend's <code>AsyncIterator[bytes]</code>. The stream
-  holds an internal byte buffer carrying the unread tail of the most
-  recently fetched chunk: <code>read(n)</code> first drains that buffer, and
-  only submits a new <code>__anext__</code> coroutine when the buffer is empty
-  and more bytes are still required.  This satisfies the <code>BinaryIO</code>
-  contract that <code>read(n)</code> returns at most <em>n</em> bytes even when the
-  backend yields larger chunks.  The stream exposes <code>read(n)</code>,
-  <code>close()</code>, <code>seekable()</code> (returns <code>False</code>), and <code>readable()</code>
-  (returns <code>True</code>); <code>seek</code>, <code>tell</code>, and <code>fileno</code> are not provided.
-  <code>close()</code> submits the async iterator's <code>aclose()</code> to the loop.</li>
-<li><code>list_files</code>, <code>list_folders</code>, <code>glob</code>, <code>iter_children</code> return sync
-  iterators backed by the same chunk-pull pattern. Materialising the
-  full listing up front is <strong>not</strong> acceptable: native-async backends
-  exist precisely to stream, and the sync wrapper must preserve that.</li>
-<li>The underlying async iterator handle lives on the loop; every
-  step crosses the thread boundary via <code>run_coroutine_threadsafe</code>.</li>
-<li><strong>Single-chunk in-flight invariant.</strong> The adapter has at most one
-  outstanding <code>__anext__</code> per stream/iterator: no look-ahead, no
-  read-ahead pool, no parallel prefetch. The unread tail of the
-  most recently fetched chunk (held in the <code>read()</code> stream's byte
-  buffer described above) is the <em>only</em> sanctioned per-stream
-  buffer. The bridge must not reintroduce the memory bloat that
-  materialising the full listing would cause.</li>
-</ul>
+<p><code>read()</code> and the listing iterators <strong>pump chunks lazily across the boundary and
+never materialise</strong> the full stream or listing, since native-async backends exist
+to stream and the sync wrapper preserves that. The rule is <strong>at most one
+outstanding <code>__anext__</code> per stream/iterator</strong> (no read-ahead), the only
+per-stream buffer being the unread tail of the last chunk. <em>Reverse if</em> a wrapped
+backend cannot stream, making materialisation unavoidable. Exact
+<code>BinaryIO</code>/short-read surface and buffer mechanics: spec 029 § ASYNC-080,
+ASYNC-081.</p>
 <h3 id="write-side-content">Write-side content<a class="headerlink" href="#write-side-content" title="Permanent link">&para;</a></h3>
-<p>The sync <code>Backend.write()</code> / <code>write_atomic()</code> accept the sync
-<code>WritableContent = BinaryIO | bytes</code> (<code>src/remote_store/_types.py</code>).
-There is no sync iterator-of-bytes input — that shape exists only on
-the async side as <code>AsyncWritableContent = bytes | AsyncIterator[bytes]</code>
-(<code>src/remote_store/aio/_types.py</code>). The bridge therefore goes
-<strong>sync <code>BinaryIO</code> → <code>AsyncIterator[bytes]</code></strong>, not the other way:</p>
-<ul>
-<li><code>bytes</code> content is forwarded as-is to the async coroutine.</li>
-<li><code>BinaryIO</code> content is wrapped in an internal <code>AsyncIterator[bytes]</code>
-  that calls <code>asyncio.to_thread(stream.read, chunk_size)</code> per chunk
-  inside the submitted coroutine, so the event loop never blocks on
-  the caller's blocking file object. The single-chunk in-flight
-  invariant from § Streaming applies symmetrically: at most one
-  pending <code>to_thread</code> per write, no parallel pre-read.</li>
-<li><code>write_atomic(path, content, …)</code> follows the identical pattern.
-  The <code>ATOMIC_WRITE</code> capability gate is enforced by the wrapped
-  async backend, not the adapter — the adapter forwards the call
-  unchanged and lets the backend raise <code>CapabilityNotSupported</code> if
-  the gate is closed.</li>
-<li><code>open_atomic(path, …)</code> — abstract on sync <code>Backend</code>, with <strong>no
-  async analogue</strong> on <code>AsyncBackend</code>. The adapter synthesises it as
-  a context manager that yields a <code>SpooledTemporaryFile</code>; on clean
-  <code>__exit__</code> the spool is rewound and submitted to the wrapped
-  backend's <code>write_atomic</code> (a single <code>bytes</code>/<code>BinaryIO</code> write); on
-  exception the spool is dropped and <code>path</code> is untouched. The
-  capability gate is the same as <code>write_atomic</code> — backends without
-  <code>ATOMIC_WRITE</code> raise <code>CapabilityNotSupported</code> when the spool
-  flushes. (Synthesising over <code>write_atomic</code> rather than extending
-  <code>AsyncBackend</code> keeps the async ABC unchanged; ID-127 does not need
-  an <code>open_atomic</code>-shaped Graph operation.)</li>
-</ul>
-<h3 id="cancellation">Cancellation<a class="headerlink" href="#cancellation" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Cancellation flows from sync to async by calling
-  <code>Future.cancel()</code> on the <code>concurrent.futures.Future</code> returned by
-  <code>run_coroutine_threadsafe</code>. This schedules <code>Task.cancel()</code> on the
-  underlying asyncio task.</li>
-<li>Async backends are expected to honour <code>asyncio.CancelledError</code>
-  normally; cleanup (closing HTTP responses, releasing connections,
-  aborting upload sessions) happens inside the async code as usual.</li>
-<li><code>concurrent.futures.Future.cancel()</code> is a best-effort flag, and
-  <code>asyncio.Task.cancel()</code> only <em>requests</em> cancellation — the task
-  observes <code>CancelledError</code> at the next <code>await</code> point and may
-  still run cleanup before it actually exits (CPython issues
-  python/cpython#103819 and python/cpython#105836 document the
-  exact semantics). The adapter's <code>close()</code> therefore waits for
-  in-flight tasks to drain before stopping the loop; ad-hoc
-  per-call cancellation surfaces <code>CancelledError</code> to the sync
-  caller without a teardown guarantee.</li>
-<li><code>KeyboardInterrupt</code> is <strong>not</strong> specially handled. It propagates
-  out of the blocking <code>Future.result()</code> like any other exception;
-  the in-flight async task is left running and is cancelled when
-  the adapter's <code>close()</code> runs (or when the daemon thread is
-  reaped at process exit). Adding KI-to-cancel translation would
-  give this one backend behaviour that no sync backend has, which
-  costs more in contract asymmetry than the convenience earns.</li>
-</ul>
+<p>The bridge runs <strong>sync <code>BinaryIO</code> to <code>AsyncIterator[bytes]</code></strong> (the sync side has
+no iterator-of-bytes input), pulling the <code>BinaryIO</code> via <code>asyncio.to_thread</code> so
+the loop never blocks on the caller's file object. <strong><code>open_atomic</code> is synthesised
+over the backend's <code>write_atomic</code></strong> (spool, flush on clean exit, drop on error)
+rather than adding an <code>open_atomic</code>-shaped op to <code>AsyncBackend</code>, keeping the async
+ABC unchanged and leaving Graph (ID-127) nothing new to implement. The
+<code>ATOMIC_WRITE</code> gate is enforced by the wrapped backend. <em>Reverse if</em> a backend
+needs a native incremental async atomic write. Exact spool/flush and
+mid-write-failure semantics: spec 029 § ASYNC-085, ASYNC-091.</p>
 <h3 id="behaviour-when-the-caller-is-in-a-running-loop">Behaviour when the caller is in a running loop<a class="headerlink" href="#behaviour-when-the-caller-is-in-a-running-loop" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Default: fail fast.</strong> If a sync method is invoked from a thread
-  with a running event loop, the adapter raises a clear
-  <code>RuntimeError</code> explaining that the sync Store API cannot block a
-  running loop and directing the caller to <code>AsyncStore</code> instead.
-  This keeps the sync contract genuinely sync and prevents
-  deadlocks. Aligned with ADR-0012 § Async posture: the sync
-  <code>Store</code> is <strong>not coroutine-safe</strong>, by design — async callers use
-  <code>AsyncStore</code>, full stop.</li>
-<li><strong>Detection.</strong> The adapter checks
-  <code>asyncio.get_running_loop()</code> (which raises if no loop is running)
-  to decide. Detection happens at the entry of every blocking call,
-  not at adapter construction, because the caller's loop context is
-  per-call.</li>
-<li><strong>No opt-in nest-asyncio path in v1.</strong> The door is open to add one
-  later behind an explicit flag, but the default design does not
-  require it and the first release does not ship it. Notebook and
-  GUI users are directed to use <code>AsyncStore</code> directly.</li>
-</ul>
-<h3 id="nest_asyncio-stance"><code>nest_asyncio</code> stance<a class="headerlink" href="#nest_asyncio-stance" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Not a runtime dependency. Not imported by the adapter.</li>
-<li>If a future compatibility mode is added, it will be an explicit
-  opt-in with its own ADR. This ADR commits to <em>not</em> relying on
-  <code>nest_asyncio</code> for correctness.</li>
-</ul>
-<h3 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>close(timeout: float | None = 30.0)</code> submits
-  <code>self._async_backend.aclose()</code> to the loop, waits for in-flight
-  tasks to drain, calls <code>loop.call_soon_threadsafe(loop.stop)</code>, and
-  joins the thread with the supplied bound. The default of 30 s
-  matches the existing per-backend network-call ceilings; passing
-  <code>None</code> waits indefinitely. If the timeout expires, the adapter
-  logs a warning at <code>WARNING</code> level naming the unfinished tasks and
-  returns; the daemon thread is torn down with the process.</li>
-<li>Context-manager protocol (<code>__enter__</code> / <code>__exit__</code>) delegates to
-  <code>close()</code> on exit.</li>
-<li>The adapter is a one-shot resource: once closed, further calls
-  raise a clear error rather than silently restarting the loop.</li>
-</ul>
-<h3 id="error-propagation">Error propagation<a class="headerlink" href="#error-propagation" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Exceptions raised inside the async coroutine are re-raised
-  verbatim in the sync caller via <code>Future.result()</code>. Traceback
-  preservation follows the standard <code>concurrent.futures</code> behaviour.</li>
-<li>Error types and the canonical <code>path</code> / <code>backend</code> attributes
-  (ERR-001 in <code>sdd/specs/005-error-model.md</code>) are preserved
-  exactly: the adapter does not wrap or translate exceptions, and
-  the error-mapping rules established by <code>AsyncBackend</code>
-  implementations under ADR-0012 reach the sync caller unchanged.</li>
-<li><code>TimeoutError</code> from the async layer stays <code>TimeoutError</code>;
-  <code>ResourceLocked</code> (ADR-0024) stays <code>ResourceLocked</code>; and so on.</li>
-</ul>
-<h3 id="read_seekable-sync-only-convenience"><code>read_seekable</code> (sync-only convenience)<a class="headerlink" href="#read_seekable-sync-only-convenience" title="Permanent link">&para;</a></h3>
-<p><code>read_seekable</code> is concrete on the sync <code>Backend</code> (with a
-<code>SpooledTemporaryFile</code> fallback over <code>read()</code>); it has <strong>no async
-analogue</strong> on <code>AsyncBackend</code>. The adapter does <em>not</em> override it:
-the inherited default sees a chunk-pull stream, calls <code>.seekable()</code>
-(which returns <code>False</code>), and spools to disk-or-memory exactly as it
-already does for the synchronous backends that emit non-seekable
-streams. No new code path is needed; this section exists so the
-implementer does not mistakenly wire a no-op.</p>
-<p>A future native fast-path (e.g. issuing per-<code>read()</code> HTTP <code>Range</code>
-requests directly through the async backend, mirroring
-<code>AzureBackend</code>) is out of scope for this ADR. If added, it would
-need an explicit async <code>read_seekable</code>-shaped operation on
-<code>AsyncBackend</code> and is tracked as a Graph follow-up.</p>
+<p><strong>Fail fast:</strong> invoked from a thread with a running loop, a blocking method
+raises <code>RuntimeError</code> pointing the caller to <code>AsyncStore</code>, keeping the sync
+contract genuinely sync and preventing deadlock (per ADR-0012, sync <code>Store</code> is
+not coroutine-safe by design). <strong>No <code>nest_asyncio</code> in v1</strong>, which would
+monkey-patch global <code>asyncio</code>; the adapter neither imports nor depends on it.
+<em>Reverse if</em> notebook/GUI demand justifies an explicit opt-in mode, which ships
+behind its own flag and its own ADR. Exact detection point and message stem:
+spec 029 § ASYNC-082.</p>
 <h3 id="capability-translation">Capability translation<a class="headerlink" href="#capability-translation" title="Permanent link">&para;</a></h3>
-<p>The adapter does <strong>not</strong> blindly forward the wrapped backend's
-<code>CapabilitySet</code>. The bridge changes the observable shape of two
-capabilities and must mask one off:</p>
-<ul>
-<li><strong><code>SEEKABLE_READ</code> — masked off.</strong> SIO-008 promises that
-  <code>Backend.read()</code> returns a natively seekable stream. The chunk-pull
-  pump returned by this adapter is forward-only; no <code>seek()</code>
-  accelerator can be honoured without buffering. The adapter strips
-  <code>SEEKABLE_READ</code> from the forwarded set even when the wrapped
-  async backend declares it. Callers that need random access go
-  through <code>read_seekable</code> and pay the spool cost (above), which is
-  the same fallback every non-seekable sync backend already uses.</li>
-<li><strong><code>LAZY_READ</code> — preserved.</strong> SIO-009 requires <code>read()</code> to fetch
-  data lazily on demand. The single-chunk in-flight invariant +
-  <code>__anext__</code>-per-<code>read(n)</code> cadence preserves laziness end-to-end:
-  the bridge never pre-reads beyond what the sync caller has asked
-  for. Forwarded unchanged.</li>
-<li><strong><code>ATOMIC_WRITE</code>, <code>ATOMIC_MOVE</code>, <code>GLOB</code>, and the remaining flags</strong>
-  — preserved unchanged. The async coroutine performs the operation;
-  the bridge only marshals the call. Folder listing and folder
-  deletion have no dedicated capability flag; they remain gated by
-  <code>LIST</code> / <code>DELETE</code> on the wrapped backend per the sync <code>Backend</code>
-  contract (see spec 029 § ASYNC-084).</li>
-</ul>
-<p><code>resolve()</code> delegates directly (no I/O, no loop).</p>
-<p><code>unwrap()</code> is <strong>not</strong> a generic passthrough: an <code>httpx.AsyncClient</code>
-returned from a sync <code>unwrap()</code> is bound to the private loop in the
-daemon thread, and using it from the caller's thread will fail or
-corrupt loop state. The adapter raises <code>CapabilityNotSupported</code>
-unless the wrapped backend exposes a sync-safe handle (mirroring
-<code>SyncBackendAdapter.unwrap</code>'s behaviour for unsupported types). The
-async handle remains reachable to coroutines submitted via the same
-adapter; callers that need it directly should construct an
-<code>AsyncStore</code> instead.</p>
-<h3 id="module-placement">Module placement<a class="headerlink" href="#module-placement" title="Permanent link">&para;</a></h3>
-<p><code>src/remote_store/_async_to_sync_adapter.py</code> — in the <strong>core</strong>
-module, not under <code>aio/</code>. Symmetric with <code>SyncBackendAdapter</code>
-(which lives in <code>aio/</code> because it implements <code>AsyncBackend</code>):
-this adapter implements the sync <code>Backend</code> ABC, so it belongs
-with the sync core. Putting it under <code>aio/</code> would force every
-sync <code>Store</code> user that wraps an async backend to import the
-<code>aio/</code> runtime modules at construction time, inverting the layering
-invariant that sync code stays independent of <code>aio/</code>.</p>
-<p><code>AsyncBackend</code> is imported lazily inside the adapter's <code>__init__</code>
-to avoid a top-level core → aio import. Public re-export from
-<code>remote_store</code> follows the <code>SyncBackendAdapter</code> re-export pattern
-in shape (alongside <code>Backend</code>, <code>Store</code>).</p>
+<p>The adapter <strong>translates</strong> the wrapped <code>CapabilitySet</code> rather than
+blind-forwarding it: <strong><code>SEEKABLE_READ</code> is masked off</strong> because the chunk-pull
+stream is forward-only (random-access callers fall through to <code>read_seekable</code>'s
+spool, as every non-seekable sync backend already does); <code>LAZY_READ</code> and the rest
+pass through unchanged. <strong><code>unwrap()</code> raises <code>CapabilityNotSupported</code></strong> by default
+because an async handle bound to the private loop is unsafe from the caller's
+thread, unless the backend exposes a sync-safe handle. <em>Reverse if</em> a native
+async seekable-read op is added, letting <code>SEEKABLE_READ</code> pass through. Exact
+translation/gating table and unwrap exemption: spec 029 § ASYNC-084, ASYNC-086.</p>
+<h3 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h3>
+<p><code>close(timeout=30.0)</code> drains in-flight tasks, stops the loop, and joins the
+thread within a bounded timeout (default matches the per-backend network
+ceilings; <code>None</code> waits forever; on expiry it logs a <code>WARNING</code> and lets the daemon
+thread be reaped at process exit); <code>__enter__</code>/<code>__exit__</code> delegate to it.
+<strong>Errors cross verbatim:</strong> no wrapping or translation, so error types and the
+ERR-001 <code>path</code>/<code>backend</code> attributes (spec 005) reach the sync caller unchanged;
+<code>check_health()</code> is likewise not a no-op and does not swallow the backend's probe
+errors. <strong>Cancellation is best-effort:</strong> <code>Future.cancel()</code> only requests
+<code>Task.cancel()</code>, observed at the next <code>await</code>, so <code>close()</code> drains before
+stopping; <code>KeyboardInterrupt</code> is not special-cased, because KI-to-cancel would
+give this one backend behaviour no other sync backend has. <strong>No per-call
+timeout:</strong> per-operation timeouts are the wrapped backend's responsibility;
+<code>close()</code> is the only global bound. <em>Reverse if</em> per-operation cancellation or
+timeout becomes a cross-backend contract. Exact drain order, message stems, and
+failure-mode semantics: spec 029 § ASYNC-083, ASYNC-087, ASYNC-088, ASYNC-090,
+ASYNC-092, ASYNC-093.</p>
 <h3 id="store-level-wiring">Store-level wiring<a class="headerlink" href="#store-level-wiring" title="Permanent link">&para;</a></h3>
-<p>The sync <code>Store</code> gains a construction path that accepts an
-<code>AsyncBackend</code> and wraps it with <code>AsyncBackendSyncAdapter</code>
-automatically — the mirror of <code>AsyncStore</code>'s auto-wrap of sync
-<code>Backend</code> (ADR-0012 § 2). Registry integration for the Graph
-backend is specified in spec 044; the adapter itself is backend-
-agnostic.</p>
+<p>The sync <code>Store</code> gains a construction path that auto-wraps a supplied
+<code>AsyncBackend</code> in this adapter, mirroring <code>AsyncStore</code>'s auto-wrap of a sync
+<code>Backend</code>. The adapter is backend-agnostic; Graph registry integration lives in
+spec 044. <em>Reverse if</em> the auto-wrap convenience is removed from the <code>Store</code>
+constructor.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Graph backend unblocked.</strong> ID-127 can ship a single

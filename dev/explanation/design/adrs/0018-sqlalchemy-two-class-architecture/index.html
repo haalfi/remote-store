@@ -5911,34 +5911,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#engine-lifecycle-owned-vs-borrowed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Engine lifecycle: owned vs borrowed
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#folder-semantics-virtual-prefixes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Folder semantics: virtual prefixes
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10361,34 +10333,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#engine-lifecycle-owned-vs-borrowed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Engine lifecycle: owned vs borrowed
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#folder-semantics-virtual-prefixes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Folder semantics: virtual prefixes
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10473,24 +10417,30 @@ evolution, independent dependency extras (<code>[sql]</code> vs <code>[sql-query
 Duplicates engine lifecycle, health check, error mapping, and SQLite PRAGMA
 setup.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p><strong>Option B — Two concrete backends, shared base.</strong></p>
+<p><strong>Option B: two concrete backends over a shared private base.</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>_SQLAlchemyBaseBackend(Backend)   # private, not exported
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── SQLBlobBackend                # v1 — full read-write KV store
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>└── SQLQueryBackend               # v2 — read-only query materializer
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── SQLBlobBackend                # v1, full read-write KV store
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>└── SQLQueryBackend               # v2, read-only query materializer
 </code></pre></div>
-<h3 id="engine-lifecycle-owned-vs-borrowed">Engine lifecycle: owned vs borrowed<a class="headerlink" href="#engine-lifecycle-owned-vs-borrowed" title="Permanent link">&para;</a></h3>
-<p>The base accepts exactly one of <code>url: str</code> or <code>engine: Engine</code>:</p>
 <ul>
-<li><code>url</code> → creates and <strong>owns</strong> the engine. <code>close()</code> disposes it.</li>
-<li><code>engine</code> → <strong>borrows</strong> it. <code>close()</code> is a no-op.</li>
+<li><strong>Two classes, not one <code>mode</code> flag.</strong> The blob and query use cases have
+  fundamentally different invariants (read-write vs read-only), capability sets,
+  and dependencies (<code>[sql]</code> vs <code>[sql-query]</code>); a <code>mode="blob"|"query"</code> parameter
+  would spread <code>if mode == ...</code> branching through every method. <em>Reverse if</em> the
+  two use cases converge on one invariant set and dependency footprint.</li>
+<li><strong>A shared base, not two independent classes.</strong> <code>_SQLAlchemyBaseBackend</code>
+  centralises engine lifecycle, health check, error mapping, and SQLite
+  detection, avoiding Option C's duplication while each subclass keeps its own
+  Backend contract and evolves independently. <em>Reverse if</em> the shared surface
+  shrinks to near nothing, making the base pure indirection.</li>
+<li><strong>The base is private.</strong> It is not exported or documented for users, so it
+  stays free to evolve. <em>Reverse if</em> third parties need to subclass it to build
+  their own SQL backend.</li>
 </ul>
-<p>This lets standalone scripts get automatic cleanup while web apps share
-their connection pool.</p>
-<h3 id="folder-semantics-virtual-prefixes">Folder semantics: virtual prefixes<a class="headerlink" href="#folder-semantics-virtual-prefixes" title="Permanent link">&para;</a></h3>
-<p>Unlike <code>MemoryBackend</code> and <code>LocalBackend</code> (which use explicit folder nodes),
-<code>SQLBlobBackend</code> uses <strong>virtual prefix-based folders</strong> — a "folder" is any
-key prefix that has child keys. This matches the S3/Azure pattern and avoids
-maintaining a separate folder table or marker rows.</p>
+<p>The engine <code>url</code>-vs-<code>engine</code> (owned vs borrowed) lifecycle and the virtual
+prefix-based folder model are spec-rate and live in
+<a href="../../specs/040-sql-blob-backend/">spec 040</a> (SQL-BLOB-001, SQL-BLOB-025,
+SQL-BLOB-041, SQL-BLOB-061).</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>SQLBlobBackend</code> ships as v1 with <code>sqlalchemy</code> as its only dependency.</li>

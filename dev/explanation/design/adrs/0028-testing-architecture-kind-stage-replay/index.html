@@ -6191,67 +6191,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#two-orthogonal-axes-kind-and-stage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Two orthogonal axes: kind and stage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#conformance-as-the-cross-backend-spine-backend-specific-tests-isolated-per-backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Conformance as the cross-backend spine; backend-specific tests isolated per backend
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-cassette-and-replay-as-a-stage-1-fixture-scoped-to-http-backends" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP cassette and replay as a Stage 1 fixture, scoped to HTTP backends
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#capability-gating-uses-native-pytest-mechanisms" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Capability gating uses native pytest mechanisms
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cassette-refresh-is-explicit" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cassette refresh is explicit
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10405,67 +10344,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#two-orthogonal-axes-kind-and-stage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Two orthogonal axes: kind and stage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#conformance-as-the-cross-backend-spine-backend-specific-tests-isolated-per-backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Conformance as the cross-backend spine; backend-specific tests isolated per backend
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-cassette-and-replay-as-a-stage-1-fixture-scoped-to-http-backends" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP cassette and replay as a Stage 1 fixture, scoped to HTTP backends
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#capability-gating-uses-native-pytest-mechanisms" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Capability gating uses native pytest mechanisms
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cassette-refresh-is-explicit" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cassette refresh is explicit
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10566,69 +10444,45 @@ replay mechanism is honest only for HTTP-transport backends; protocols
 that ride on SSH or DB wire formats are not reachable by HTTP capture
 tools without a custom transport adapter.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>The testing architecture rests on five coupled commitments:</p>
-<ol>
-<li><strong>Two orthogonal axes</strong> — separate <em>kind</em> (pure, mocked, real-local, real-live) from <em>stage</em> (1/2/3 by cost); a fixture declares one of each.</li>
-<li><strong>Conformance as the cross-backend spine</strong> — one parametrised suite over the public <code>Store</code> / <code>Backend</code> API that every backend runs; backend-specific behaviour is isolated per backend.</li>
-<li><strong>HTTP cassette + replay as a Stage 1 fixture</strong> — a <code>&lt;backend&gt;_replay</code> fixture runs the real SDK path against a recorded cassette (Stage 3 records, Stage 1 replays); scoped to HTTP-transport backends only.</li>
-<li><strong>Capability gating via native pytest</strong> — parametrize id-filtering plus <code>pytest.mark.skipif</code>, no custom <code>@requires</code> marker layer.</li>
-<li><strong>Explicit cassette refresh</strong> — cassettes regenerate only when a developer runs <code>pytest --stage=3 --record</code> and commits the diff; CI never silently re-records.</li>
-</ol>
-<p>They share rationale: the demotion mechanism only works because the axes are
-separated, the gate works only because gating is native, and the scope works
-only because the spec calls out where it does not apply. One ADR captures the
-bundle; any commitment that later evolves can be superseded individually.</p>
-<h3 id="two-orthogonal-axes-kind-and-stage">Two orthogonal axes: kind and stage<a class="headerlink" href="#two-orthogonal-axes-kind-and-stage" title="Permanent link">&para;</a></h3>
-<p>A linear list of "stages" running unit, emulator, live collapses two
-distinct concerns. <em>What the test wires up</em> is one axis (kind: pure,
-mocked, real-local, real-live). <em>How expensive it is to run</em> is
-another (stage: 1, 2, 3, ordered by cost and required infrastructure).
-The architecture separates them. A fixture declares one of each. Spec
-contracts in <a href="../../specs/048-testing-architecture/">spec 048</a> TEST-001.</p>
-<p>A linear collapse hides real options. Replay is a real-SDK code path
-that runs at Stage 1 cost; a single-axis ordering cannot express that
-combination.</p>
-<h3 id="conformance-as-the-cross-backend-spine-backend-specific-tests-isolated-per-backend">Conformance as the cross-backend spine; backend-specific tests isolated per backend<a class="headerlink" href="#conformance-as-the-cross-backend-spine-backend-specific-tests-isolated-per-backend" title="Permanent link">&para;</a></h3>
-<p>Conformance is one parametrised test set referencing only the public
-<code>Store</code> and <code>Backend</code> API. Every backend that exposes the API runs
-the full suite. Behaviour that only one backend exhibits, whether
-protocol quirks, storage-model semantics, or vendor configuration, is
-isolated to that backend's own home, separate from the spine.</p>
-<p>Two consequences follow at once. "Add a backend, get conformance for
-free" becomes the literal mechanism. And backend-specific tests gain
-a home that is not interleaved with the cross-backend suite. Spec
-contracts in TEST-002 and TEST-003. Layout in TEST-010.</p>
-<h3 id="http-cassette-and-replay-as-a-stage-1-fixture-scoped-to-http-backends">HTTP cassette and replay as a Stage 1 fixture, scoped to HTTP backends<a class="headerlink" href="#http-cassette-and-replay-as-a-stage-1-fixture-scoped-to-http-backends" title="Permanent link">&para;</a></h3>
-<p>A <code>&lt;backend&gt;_replay</code> Stage 1 fixture exercises the real SDK code path
-with the HTTP transport stubbed by a recorded cassette. Stage 3 runs
-record. Stage 1 runs replay. A Stage-3-discovered behaviour, once
-recorded, runs at zero cost in every default CI run. That is the
-demotion mechanism the third force in the Context describes.</p>
-<p>The mechanism applies to HTTP-transport backends only. Backends that
-speak SSH binary or a DB wire protocol are not reachable by available
-capture tools without a custom transport adapter, and that work is not
-in scope here. For excluded backends, Stage 2 (Docker) is the cheapest
-source of truth, with no Stage 3 to Stage 1 demotion path until and
-unless dedicated work delivers one. Spec contracts in TEST-007 and
-TEST-008.</p>
-<h3 id="capability-gating-uses-native-pytest-mechanisms">Capability gating uses native pytest mechanisms<a class="headerlink" href="#capability-gating-uses-native-pytest-mechanisms" title="Permanent link">&para;</a></h3>
-<p>Conformance tests gate on cross-backend <code>Capability</code> values via
-parametrize id-filtering and <code>pytest.mark.skipif</code>. No <code>@requires(...)</code>
-custom marker layer is introduced. A reader can trace from the
-parametrize call to the fixture registry without indirection or a
-plugin hook.</p>
-<p>The cost paid is verbosity in a few helper functions. The cost avoided
-is a parallel marker system that needs its own conftest hook,
-documentation, and IDE-tooling integration. Spec contracts in
-TEST-005.</p>
-<h3 id="cassette-refresh-is-explicit">Cassette refresh is explicit<a class="headerlink" href="#cassette-refresh-is-explicit" title="Permanent link">&para;</a></h3>
-<p>Cassettes regenerate when a developer runs <code>pytest --stage=3 --record</code>
-and commits the diff. CI does not silently re-record. The refresh is
-auditable as a normal PR. Drift between cassettes and real-service
-responses is detected by the next manual refresh. A scheduled refresh
-job is schedulable later if drift becomes painful. The reverse default,
-scheduling from day one, couples the cost-controlled tier to a recurring
-job before any empirical drift data exists. Spec contracts in TEST-009.</p>
+<p>The testing architecture rests on five coupled commitments. They share one
+rationale: the demotion mechanism works only because the axes are separated, the
+gate works only because gating is native, and the scope holds only because the
+spec calls out where it does not apply. One ADR captures the bundle; any
+commitment that later evolves can be superseded individually. Spec contracts live
+in <a href="../../specs/048-testing-architecture/">spec 048</a>.</p>
+<ul>
+<li><strong>Two orthogonal axes: kind and stage.</strong> Separate <em>what a test wires up</em> (kind:
+  pure, mocked, real-local, real-live) from <em>how expensive it is to run</em> (stage:
+  1/2/3 by cost); a fixture declares one of each. A single linear stage list
+  collapses the two and hides real options, notably replay: a real-SDK code path
+  that runs at Stage 1 cost, which no single-axis ordering can express (TEST-001).
+  <em>Reverse if</em> a single axis ever expresses every kind/cost combination in use.</li>
+<li><strong>Conformance as the cross-backend spine.</strong> One parametrised suite over the
+  public <code>Store</code> / <code>Backend</code> API that every backend runs, so "add a backend, get
+  conformance for free" is the literal mechanism; backend-specific behaviour is
+  isolated to that backend's own home, not interleaved with the spine (TEST-002,
+  TEST-003, TEST-010). <em>Reverse if</em> the public API stops being a sufficient
+  cross-backend contract.</li>
+<li><strong>HTTP cassette and replay as a Stage 1 fixture.</strong> A <code>&lt;backend&gt;_replay</code> fixture
+  runs the real SDK path against a recorded cassette (Stage 3 records, Stage 1
+  replays), demoting a Stage-3-discovered behaviour to zero-cost CI. Scoped to
+  HTTP-transport backends only: SSH-binary and DB-wire protocols are not reachable
+  by available capture tools without a custom transport adapter, so their cheapest
+  source of truth stays Stage 2 with no demotion path (TEST-007, TEST-008).
+  <em>Reverse if</em> a capture mechanism for non-HTTP transports becomes worth its cost.</li>
+<li><strong>Capability gating via native pytest.</strong> Parametrize id-filtering plus
+  <code>pytest.mark.skipif</code>, with no custom <code>@requires</code> marker layer, so a reader
+  traces from the parametrize call to the fixture registry without a plugin hook.
+  The cost is verbosity in a few helpers; the cost avoided is a parallel marker
+  system with its own conftest hook, docs, and IDE integration (TEST-005).
+  <em>Reverse if</em> native gating can no longer express the capability matrix.</li>
+<li><strong>Explicit cassette refresh.</strong> Cassettes regenerate only when a developer runs
+  <code>pytest --stage=3 --record</code> and commits the diff; CI never silently re-records.
+  Scheduling a refresh from day one would couple the cost-controlled tier to a
+  recurring job before any empirical drift data exists; a scheduled job is
+  additive later if drift becomes painful (TEST-009). <em>Reverse if</em> observed drift
+  makes manual refresh unreliable.</li>
+</ul>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <p>Adding a backend that satisfies the <code>Backend</code> or <code>AsyncBackend</code> ABC
 and registers a fixture extends conformance coverage without

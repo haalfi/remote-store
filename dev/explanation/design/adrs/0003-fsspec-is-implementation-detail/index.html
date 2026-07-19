@@ -10400,13 +10400,23 @@
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p><strong>fsspec is an implementation detail, never exposed in the public API.</strong></p>
 <ul>
-<li>Backend adapters <em>may</em> use fsspec internally (e.g., S3 via <code>s3fs</code>, Azure via <code>adlfs</code>)</li>
-<li>The <code>Backend</code> ABC is our own contract — it does not extend or depend on fsspec</li>
-<li>The <code>unwrap()</code> escape hatch allows extensions to access native handles (including fsspec filesystems) when they knowingly accept the coupling</li>
+<li><strong>Backend adapters may use fsspec internally</strong> (e.g. S3 via <code>s3fs</code>, Azure via
+  <code>adlfs</code>), or boto3, paramiko, or raw stdlib. The implementor chooses; nothing
+  in the public API reveals which.</li>
+<li><strong>The <code>Backend</code> ABC is our own contract, not fsspec's.</strong> It does not extend or
+  depend on fsspec. A separate ABC earns its maintenance cost because ours is
+  deliberately stricter than fsspec's interface: capability-driven,
+  error-normalized, streaming-first. That stricter contract is the reason to
+  hide fsspec rather than re-export it.</li>
+<li><strong>Native handles stay reachable through a type-safe, explicit escape hatch</strong>
+  (<code>unwrap()</code>), so extensions that knowingly accept backend coupling keep full
+  access without being forced onto the normalized surface. The <code>unwrap()</code> API
+  contract lives in spec 003 § BE-022; this ADR owns only the decision to keep
+  fsspec behind it.</li>
 </ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Extension that needs native access:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">fs</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">fsspec</span><span class="o">.</span><span class="n">AbstractFileSystem</span><span class="p">)</span>  <span class="c1"># explicit, type-safe</span>
-</code></pre></div>
+<p><em>Reverse if</em> our ABC's stricter guarantees stop earning their cost: e.g. fsspec
+gains equivalent capability negotiation and error normalization, so a separate
+contract would duplicate the ecosystem rather than add over it.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Public API is stable regardless of fsspec changes</li>
@@ -10414,7 +10424,7 @@
 <li>Backend implementors can use fsspec, boto3, paramiko, or raw stdlib — their choice</li>
 <li>Extensions that need native access use <code>unwrap()</code> — explicit coupling, not accidental</li>
 <li>The local backend uses only stdlib (no fsspec) — proves the abstraction works without it</li>
-<li>Trade-off: we must maintain our own ABC instead of reusing fsspec's. This is intentional — our contract is stricter (capability-driven, error-normalized, streaming-first).</li>
+<li>Trade-off: we maintain our own ABC instead of reusing fsspec's. Intentional; the stricter contract (see Decision) is worth the cost.</li>
 </ul>
 
 

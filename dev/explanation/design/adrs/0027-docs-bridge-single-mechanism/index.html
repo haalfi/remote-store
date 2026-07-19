@@ -6163,45 +6163,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#one-bridge-by-construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        One bridge, by construction
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#classification-next-to-the-file-not-in-a-manifest" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Classification next to the file, not in a manifest
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#enforcement-at-pr-time" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Enforcement at PR time
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10383,45 +10344,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#one-bridge-by-construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        One bridge, by construction
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#classification-next-to-the-file-not-in-a-manifest" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Classification next to the file, not in a manifest
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#enforcement-at-pr-time" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Enforcement at PR time
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10509,40 +10431,30 @@ but did not pick or enforce the mechanism, so the rule and the build
 disagreed.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>One documentation bridge, kept single by an enforcement gate. Three coupled
-sub-decisions:</p>
-<ol>
-<li><strong>One bridge, by construction</strong> — <code>scripts/docs/scan.py:scan_dual_files</code> is the sole source-discovery function and <code>render.py:render_dual_pages</code> the sole render function; other helpers are removed, not deprecated. New content shapes extend this one mechanism rather than adding a parallel one.</li>
-<li><strong>Classification next to the file</strong> — each <code>.md</code> declares its class via an HTML-comment marker, with a directory-default fallback; a file with no marker and no default is unclassified and fails the gate (G-01). No central manifest that can drift from the files.</li>
-<li><strong>Enforcement at PR time</strong> — a check script fails the build if any framework rule is violated, so "use one bridge" cannot silently degrade to a preference.</li>
-</ol>
-<p>The recurring failure across the prior ADRs was not that the chosen mechanism
-was wrong; each was reasonable for the case that introduced it. The failure was
-that nothing prevented the next mechanism from being added alongside — a "use
-one bridge" decision without a check that detects the second bridge degrades to
-a preference.</p>
-<h3 id="one-bridge-by-construction">One bridge, by construction<a class="headerlink" href="#one-bridge-by-construction" title="Permanent link">&para;</a></h3>
-<p><code>scripts/docs/scan.py:scan_dual_files</code> is the single source-discovery
-function for dual content. <code>scripts/docs/render.py:render_dual_pages</code> is
-the single render function. Other discovery and render helpers in the
-docs pipeline are removed, not deprecated. New content shapes extend
-this one mechanism; they do not add a parallel one. Contracts in
-<a href="../../specs/047-docs-framework-tooling/">spec 047</a> DOCFRAME-001,
-DOCFRAME-005.</p>
-<h3 id="classification-next-to-the-file-not-in-a-manifest">Classification next to the file, not in a manifest<a class="headerlink" href="#classification-next-to-the-file-not-in-a-manifest" title="Permanent link">&para;</a></h3>
-<p>Each <code>.md</code> file declares its class on itself via an HTML-comment marker.
-Absence falls back to a directory-default rule (per
-<a href="../../authoring/"><code>AUTHORING.md</code></a> Rule 1 and its directory-defaults
-table); a file with no marker AND no matching default is unclassified
-and fails the gate (G-01). A central manifest is auditable but lives
-apart from the files it classifies, so additions land in one place and
-the manifest in another. The marker cannot drift from the file because
-it is part of the file. Contracts in
-<a href="../../specs/047-docs-framework-tooling/">spec 047</a> DOCFRAME-002.</p>
-<h3 id="enforcement-at-pr-time">Enforcement at PR time<a class="headerlink" href="#enforcement-at-pr-time" title="Permanent link">&para;</a></h3>
-<p>A check script (DOCFRAME-004) fails the build if any framework rule is
-violated, including the "one bridge" rule itself. This is the half that
-the prior ADRs left out. Without it, the next contributor under
-deadline pressure adds the next mechanism and the cycle resumes.</p>
+sub-decisions, each stated once:</p>
+<ul>
+<li><strong>One bridge, by construction.</strong> A single source-discovery function and a
+  single render function carry all dual content; other discovery and render
+  helpers are removed, not deprecated. New content shapes extend this one
+  mechanism instead of adding a parallel one. The function names and the removal
+  set are owned by <a href="../../specs/047-docs-framework-tooling/">spec 047</a>
+  (DOCFRAME-001, DOCFRAME-005). <em>Reverse if</em> a content shape genuinely cannot be
+  served by extending the single bridge, forcing a second mechanism.</li>
+<li><strong>Classification next to the file, not in a manifest.</strong> Each <code>.md</code> declares its
+  class via an HTML-comment marker, with a directory-default fallback (per
+  <a href="../../authoring/"><code>AUTHORING.md</code></a> Rule 1); a file with no marker and no default
+  is unclassified and fails the gate. The marker cannot drift from the file
+  because it is part of it, unlike a central manifest that lives apart from what
+  it classifies. Marker contract: spec 047 (DOCFRAME-002). <em>Reverse if</em> structured
+  per-page metadata is ever needed that an HTML comment cannot carry (moving to
+  YAML frontmatter, per Alternatives).</li>
+<li><strong>Enforcement at PR time.</strong> A check script fails the build if any framework
+  rule is violated, including the "one bridge" rule itself. This is the half the
+  prior ADRs (0006, 0007, BK-167) left out: without a check that detects the
+  second bridge, "use one bridge" silently degrades to a preference, which is
+  exactly how the accumulation happened. Gate contract: spec 047 (DOCFRAME-004).
+  <em>Reverse if</em> the one-bridge rule itself is retired.</li>
+</ul>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li>One discovery function, one render function. Reviewers can read the

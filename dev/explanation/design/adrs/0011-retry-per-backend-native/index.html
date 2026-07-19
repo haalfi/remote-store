@@ -5715,56 +5715,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#retrypolicy-dataclass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RetryPolicy dataclass
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#backend-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Backend mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#backendconfig-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        BackendConfig integration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scope
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10383,56 +10333,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#retrypolicy-dataclass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RetryPolicy dataclass
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#backend-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Backend mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#backendconfig-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        BackendConfig integration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scope
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10509,50 +10409,33 @@ defaults, no multiplication.</p>
 of SDK retry and is harder to reason about.</p>
 <p><strong>Option D - Hybrid B + C.</strong> Most complex, two configuration points.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Use <strong>Option B (per-backend native configuration)</strong>.</p>
-<ol>
-<li>Backends own their transport — retry is a transport concern.</li>
-<li>The policy replaces SDK defaults, avoiding retry multiplication.</li>
-<li>Minimal API surface: one frozen dataclass, one constructor parameter.</li>
-<li>No new core dependencies — <code>tenacity</code> stays in the SFTP <code>sftp</code> extra.</li>
-</ol>
-<h3 id="retrypolicy-dataclass">RetryPolicy dataclass<a class="headerlink" href="#retrypolicy-dataclass" title="Permanent link">&para;</a></h3>
-<p>A frozen dataclass in <code>_config.py</code> with five fields:</p>
+<p>Use <strong>Option B: per-backend native retry configuration</strong>, a <code>RetryPolicy</code> that
+maps to each backend's own retry mechanism.</p>
 <ul>
-<li><code>max_attempts</code> (int, default 3): Total attempts including initial.
-  Set to 1 to disable retry.</li>
-<li><code>backoff_base</code> (float, default 1.0): Base delay in seconds.</li>
-<li><code>backoff_max</code> (float, default 60.0): Ceiling for exponential backoff.</li>
-<li><code>jitter</code> (float, default 1.0): Max random jitter per delay.</li>
-<li><code>timeout</code> (float | None, default None): Total wall-clock limit.</li>
+<li><strong>Retry is a transport concern, so backends own it.</strong> Each backend translates
+  one <code>RetryPolicy</code> into its native mechanism (SFTP tenacity, S3 botocore, Azure
+  <code>ExponentialRetry</code>, S3-PyArrow both sides); Local and Memory reject <code>retry</code>
+  because it is meaningless for local I/O. <em>Reverse if</em> a cross-cutting retry
+  concern emerges that no single backend can own (e.g. mid-operation reconnect
+  spanning backends).</li>
+<li><strong>The policy replaces SDK defaults rather than stacking on them,</strong> so retries
+  do not multiply. That was the flaw in Option A (a Store-level tenacity wrapper)
+  and Option C (an <code>ext/</code> retry proxy), both of which compose on top of SDK
+  retry. <em>Reverse if</em> a use case genuinely needs layered retry at two levels.</li>
+<li><strong>One configuration point: a single frozen dataclass and one constructor
+  parameter.</strong> <code>BackendConfig</code> carries it and the Registry merges it in, keeping
+  the surface minimal and discoverable. <em>Reverse if</em> the single knob cannot
+  express a required policy and users are pushed back to <code>client_options</code>.</li>
+<li><strong>No new core dependency.</strong> <code>tenacity</code> stays confined to the <code>sftp</code> extra, not
+  the zero-dependency core. <em>Reverse if</em> a core-level retry mechanism becomes
+  unavoidable.</li>
 </ul>
-<p>A <code>RetryPolicy.disabled()</code> classmethod returns <code>RetryPolicy(max_attempts=1)</code>.</p>
-<h3 id="backend-mapping">Backend mapping<a class="headerlink" href="#backend-mapping" title="Permanent link">&para;</a></h3>
-<p>Each backend translates the policy into its native retry mechanism:</p>
-<ul>
-<li><strong>SFTP:</strong> Replaces hardcoded tenacity decorator with policy-driven
-  <code>stop_after_attempt</code>, <code>wait_exponential</code>, <code>wait_random</code>, optionally
-  <code>stop_after_delay</code>.</li>
-<li><strong>S3:</strong> Maps to <code>botocore.config.Config(retries={"max_attempts": N,
-  "mode": "standard"})</code> merged into <code>client_options</code>.</li>
-<li><strong>Azure:</strong> Maps to <code>ExponentialRetry(retry_total=N-1,
-  initial_backoff=base, random_jitter_range=jitter)</code> set as
-  <code>retry_policy</code> in client options.</li>
-<li><strong>S3-PyArrow:</strong> Maps to both PyArrow C++ side (<code>max_attempts</code>) and
-  s3fs side (same as S3).</li>
-<li><strong>Local/Memory:</strong> Do not accept <code>retry</code> parameter — TypeError if
-  provided (correct: retry is meaningless for local I/O).</li>
-</ul>
-<h3 id="backendconfig-integration">BackendConfig integration<a class="headerlink" href="#backendconfig-integration" title="Permanent link">&para;</a></h3>
-<p><code>BackendConfig</code> gains a <code>retry: RetryPolicy | None = None</code> field.
-<code>Registry._get_backend()</code> merges <code>retry</code> into <code>options</code> before
-constructing the backend. <code>from_dict()</code> parses <code>retry</code> from nested
-dicts in the config.</p>
-<h3 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h3>
-<p>The policy controls <strong>connection retry</strong> (SFTP) and <strong>SDK-level
-operation retry</strong> (S3, Azure). Application-level retry (reconnect
-mid-operation, idempotency checks) is out of scope and could be
-addressed by a future <code>ext/retry.py</code> middleware.</p>
+<p>Application-level retry (mid-operation reconnect, idempotency checks) is out of
+scope, and could later be a composing <code>ext/retry.py</code> middleware.</p>
+<p>The <code>RetryPolicy</code> fields and defaults, the <code>disabled()</code> factory, the per-backend
+SDK mappings, the Local/Memory <code>TypeError</code>, and the <code>BackendConfig</code>/<code>from_dict</code>
+wiring are spec-rate and live in <a href="../../specs/025-retry-policy/">spec 025</a>
+(RET-001, RET-003, RET-004 through RET-006, RET-010 through RET-014).</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Users get a single, discoverable retry knob across all cloud backends.</li>

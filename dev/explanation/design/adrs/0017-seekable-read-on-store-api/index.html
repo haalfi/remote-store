@@ -5883,67 +5883,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#backendread_seekablepath-binaryio" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Backend.read_seekable(path) -&gt; BinaryIO
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#storeread_seekablepath-binaryio" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Store.read_seekable(path) -&gt; BinaryIO
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#arrow-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Arrow integration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#removal-of-extseekable" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Removal of ext.seekable
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#proxystore-cascade" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ProxyStore cascade
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10394,67 +10333,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#backendread_seekablepath-binaryio" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Backend.read_seekable(path) -&gt; BinaryIO
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#storeread_seekablepath-binaryio" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Store.read_seekable(path) -&gt; BinaryIO
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#arrow-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Arrow integration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#removal-of-extseekable" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Removal of ext.seekable
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#proxystore-cascade" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ProxyStore cascade
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10542,36 +10420,31 @@ you need.</p>
 path and won't call an extension function.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>Add <code>read_seekable()</code> to <code>Backend</code> and <code>Store</code> as a concrete (non-abstract)
-method alongside the existing <code>read()</code>.</p>
-<h3 id="backendread_seekablepath-binaryio"><code>Backend.read_seekable(path) -&gt; BinaryIO</code><a class="headerlink" href="#backendread_seekablepath-binaryio" title="Permanent link">&para;</a></h3>
-<p>Default implementation: delegates to <code>read()</code>. If the returned stream is
-already seekable, returns it directly. Otherwise, spools into a
-<code>SpooledTemporaryFile</code> (same logic as the removed <code>ext.seekable</code>).</p>
-<p>Backends MAY override to provide an optimized implementation:</p>
+method alongside <code>read()</code>, superseding ADR-0016's <code>ext.seekable</code> approach.</p>
 <ul>
-<li><strong>AzureBackend</strong>: returns <code>_AzureRangeReader</code> — a seekable
-  <code>io.RawIOBase</code> where each <code>readinto()</code> issues a single HTTP Range
-  request via <code>download_blob(offset=, length=)</code>.</li>
-<li><strong>HttpBackend</strong>: could implement HTTP Range in the future (not in
-  this change).</li>
+<li><strong>A first-class method, not an extension.</strong> Consuming abstractions that control
+  the read path (PyArrow's <code>FileSystem</code>, Dagster's <code>IOManager</code>) will not call an
+  extension function, so seekability has to live on the Store/Backend surface to
+  reach them at all. <em>Reverse if</em> those abstractions gain a way to consume an
+  extension helper directly, removing the need for a built-in method.</li>
+<li><strong>The default spools; backends may override for true random access.</strong> The
+  default delegates to <code>read()</code> and spools a non-seekable stream into a
+  <code>SpooledTemporaryFile</code>; a backend like Azure overrides to return a range reader
+  that maps each seek+read to a single HTTP Range request. This is the tension
+  <code>ext.seekable</code> could not resolve: whole-file spooling defeats the byte-saving
+  that random access exists for. <em>Reverse if</em> one read path can serve both
+  sequential and sparse-random access without a per-backend override.</li>
+<li><strong><code>ext.seekable</code> is removed (never released) and <code>SEEKABLE_READ</code> shifts
+  meaning.</strong> Its whole-file-spool behaviour is subsumed by the default; the
+  capability now signals that <code>read_seekable()</code> is zero-overhead (the backend
+  natively returns seekable streams), still useful for branching at setup time.
+  <em>Reverse if</em> the original "<code>read()</code> returns seekable" meaning is needed again.</li>
 </ul>
-<h3 id="storeread_seekablepath-binaryio"><code>Store.read_seekable(path) -&gt; BinaryIO</code><a class="headerlink" href="#storeread_seekablepath-binaryio" title="Permanent link">&para;</a></h3>
-<p>Delegates to <code>backend.read_seekable()</code> with path resolution, capability
-checks, and logging — same pattern as <code>Store.read()</code>.</p>
-<h3 id="arrow-integration">Arrow integration<a class="headerlink" href="#arrow-integration" title="Permanent link">&para;</a></h3>
-<p><code>StoreFileSystemHandler.open_input_file()</code> calls <code>store.read_seekable()</code>
-instead of <code>store.read()</code> for the Tier 3 path. This gives PyArrow a
-seekable, random-access-optimized handle on all backends without
-materializing the full file.</p>
-<h3 id="removal-of-extseekable">Removal of <code>ext.seekable</code><a class="headerlink" href="#removal-of-extseekable" title="Permanent link">&para;</a></h3>
-<p><code>ext.seekable.seekable_read()</code> is removed (never released — introduced
-after v0.19.0 in ID-100). Its functionality is subsumed by
-<code>Store.read_seekable()</code>. The <code>SEEKABLE_READ</code> capability shifts meaning:
-it now indicates that <code>read_seekable()</code> is zero-overhead (no spooling
-needed, the backend natively returns seekable streams).</p>
-<h3 id="proxystore-cascade"><code>ProxyStore</code> cascade<a class="headerlink" href="#proxystore-cascade" title="Permanent link">&para;</a></h3>
-<p><code>ProxyStore.read_seekable()</code> delegates to <code>self._inner.read_seekable()</code>.
-<code>ObservedStore</code> hooks around it. <code>CachedStore</code> inherits the default.</p>
+<p>Exact signatures, the spool mechanic, the <code>_AzureRangeReader</code> override, Store
+delegation, the Arrow call site, and the <code>ProxyStore</code> cascade are spec-rate and
+live in <a href="../../specs/036-seekable-read/">spec 036</a> (SEEK-002, SEEK-003, SEEK-005,
+SEEK-006, SEEK-008, SEEK-009). A future <code>HttpBackend</code> Range implementation is
+noted in Consequences.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Store API grows by one method.</strong> This is the main trade-off. The

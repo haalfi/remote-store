@@ -6247,34 +6247,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#why-mandatory-rather-than-a-detected-default" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why mandatory rather than a detected default
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#migration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Migration
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10361,34 +10333,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#why-mandatory-rather-than-a-detected-default" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why mandatory rather than a detected default
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#migration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Migration
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10474,43 +10418,35 @@ return stale authorization state, or be denied by least-privilege credentials.</
 <p>The account's HNS status is a fixed, deployment-time fact. Treating a fixed
 fact as a runtime discovery is the design error.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>The Azure backend no longer auto-detects HNS. The account's nature is a
-<strong>mandatory, explicit</strong> constructor and config input, declared as a required
-<code>hns: bool</code> on both <code>AzureBackend</code> and <code>AsyncAzureBackend</code> (no default; a
-missing or non-<code>bool</code> value raises at construction).</p>
+<p><strong>HNS status is a mandatory, explicit declaration, never auto-detected.</strong> Both
+<code>AzureBackend</code> and <code>AsyncAzureBackend</code> take a required <code>hns: bool</code> (no default);
+<code>_hns</code> is set once from it, with no probe, cache, warn-once state, or
+per-operation snapshot.</p>
 <ul>
-<li><code>AzureBackend(..., hns: bool)</code> and <code>AsyncAzureBackend(..., hns: bool)</code> —
-  there is no default. A backend constructed without <code>hns</code>, or with a
-  non-<code>bool</code> value, raises <code>ValueError</code> at construction time (fail loud, never
-  silently infer). The declaration must be a real boolean, not a truthy/falsy
-  proxy: config env-var resolution yields strings, so a <code>${VAR}</code> placeholder
-  resolving to <code>"false"</code> would otherwise coerce to <code>True</code> via <code>bool(...)</code> and
-  silently re-enable HNS — the very misdetection class this decision removes.</li>
-<li><code>_hns</code> becomes an immutable attribute set from the declared value. No probe,
-  no cache, no warn-once state, no per-operation snapshot.</li>
+<li><strong>Why mandatory rather than a detected default.</strong> The account's HNS status is a
+  fixed, deployment-time fact, but the old <code>GetAccountInfo</code> probe <em>guessed</em> it at
+  runtime from a network call that can fail, return stale authorization state
+  (e.g. an RBAC-propagation <code>403</code>), or be denied by least-privilege credentials.
+  That produced sticky misdetection, per-operation re-probe storms, and torn
+  reads mid-operation. A declared value cannot fail, so the one-time cost of
+  stating a known fact buys removal of the entire failure class and determinism
+  from construction. The value must be a real <code>bool</code>, not a truthy/falsy proxy,
+  because config env-var resolution yields strings and a <code>"false"</code> placeholder
+  would otherwise coerce to <code>True</code> and silently re-enable HNS. <em>Reverse if</em> a
+  deployment-time-reliable, authorization-independent way to detect HNS emerges.</li>
+<li><strong>Discovery stays available, but only when asked, and fail-loud.</strong>
+  <code>AzureUtils.detect_hns()</code> / <code>adetect_hns()</code> issue a single <code>GetAccountInfo</code>
+  call and return a <code>bool</code>; unlike the former implicit probe, a probe error is
+  raised rather than swallowed and degraded to flat semantics. This mirrors the
+  established pattern for connection facts that are discoverable but must not be
+  silently inferred (<code>SFTPUtils.scan_host_keys</code>, <code>GraphUtils.resolve_drive_id</code>).
+  <em>Reverse if</em> discovery becomes reliable enough to fold back into construction.</li>
 </ul>
-<p>For users who do not know an account's HNS status, a public one-shot helper
-discovers it explicitly:</p>
-<ul>
-<li><code>AzureUtils.detect_hns(...)</code> (sync) and <code>AzureUtils.adetect_hns(...)</code> (async)
-  issue a single <code>GetAccountInfo</code> call and return a <code>bool</code>. Unlike the former
-  implicit probe, these are <strong>fail-loud</strong>: a probe error is mapped to a
-  <code>remote_store</code> error and raised, not swallowed and degraded to flat
-  semantics.</li>
-</ul>
-<p>This mirrors the established helper pattern for connection facts that are
-discoverable but should not be silently inferred: <code>SFTPUtils.scan_host_keys</code>
-and <code>GraphUtils.resolve_drive_id</code>.</p>
-<h3 id="why-mandatory-rather-than-a-detected-default">Why mandatory rather than a detected default<a class="headerlink" href="#why-mandatory-rather-than-a-detected-default" title="Permanent link">&para;</a></h3>
-<p>A detected default reintroduces every failure mode above: the probe can fail,
-return stale authorization state, or be denied. A declared value cannot. The
-small one-time cost — the user must state a fact they already know, or call
-<code>detect_hns()</code> once — buys the removal of an entire failure class and makes the
-backend's behaviour deterministic from construction.</p>
-<h3 id="migration">Migration<a class="headerlink" href="#migration" title="Permanent link">&para;</a></h3>
-<p>This is a breaking change: every existing Azure call site must add <code>hns=</code>.
-Pre-v1 semver permits the change in a minor bump. The migration guide documents
-the before/after and the <code>detect_hns()</code> discovery recipe.</p>
+<p>The exact constructor signatures, the <code>ValueError</code> validation, the real-<code>bool</code>
+coercion rule, <code>_hns</code> immutability, and the <code>detect_hns</code>/<code>adetect_hns</code> contract
+are spec-rate and live in <a href="../../specs/012-azure-backend/">spec 012</a> (AZ-001,
+AZ-005, AZ-006). The breaking migration (every call site adds <code>hns=</code>) is in
+Consequences.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The backend is deterministic from construction: no network call decides which

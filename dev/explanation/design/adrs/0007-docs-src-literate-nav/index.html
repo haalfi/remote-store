@@ -5624,10 +5624,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#principle-three-tier-content-architecture" class="md-nav__link">
+  <a href="#a-third-content-tier-supersedes-adr-0006" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Principle: three-tier content architecture
+        A third content tier (supersedes ADR-0006)
       
     </span>
   </a>
@@ -5635,10 +5635,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#content-homes-by-type" class="md-nav__link">
+  <a href="#the-placement-rule" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Content homes by type
+        The placement rule
       
     </span>
   </a>
@@ -5646,43 +5646,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#the-docs-src-directory" class="md-nav__link">
+  <a href="#the-build-hook-tier-holds-mechanism-never-prose" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The docs-src/ directory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#build-process" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Build process
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#navigation-convention" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Navigation convention
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#where-to-put-new-content-decision-rule" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where to put new content — decision rule
+        The build hook tier holds mechanism, never prose
       
     </span>
   </a>
@@ -10443,10 +10410,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#principle-three-tier-content-architecture" class="md-nav__link">
+  <a href="#a-third-content-tier-supersedes-adr-0006" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Principle: three-tier content architecture
+        A third content tier (supersedes ADR-0006)
       
     </span>
   </a>
@@ -10454,10 +10421,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#content-homes-by-type" class="md-nav__link">
+  <a href="#the-placement-rule" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Content homes by type
+        The placement rule
       
     </span>
   </a>
@@ -10465,43 +10432,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#the-docs-src-directory" class="md-nav__link">
+  <a href="#the-build-hook-tier-holds-mechanism-never-prose" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The docs-src/ directory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#build-process" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Build process
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#navigation-convention" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Navigation convention
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#where-to-put-new-content-decision-rule" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where to put new content — decision rule
+        The build hook tier holds mechanism, never prose
       
     </span>
   </a>
@@ -10597,152 +10531,46 @@ makes sense in the context of the published documentation site but is still
   (auto-scanned) but required a manual <code>mkdocs.yml</code> update.</li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<h3 id="principle-three-tier-content-architecture">Principle: three-tier content architecture<a class="headerlink" href="#principle-three-tier-content-architecture" title="Permanent link">&para;</a></h3>
-<p>Supersedes ADR-0006's two-tier model.  Content lives in one of three places,
-determined by its nature:</p>
-<ol>
-<li><strong>Source directories</strong> — content readable on GitHub without MkDocs
-   (<code>README.md</code>, <code>guides/</code>, <code>sdd/</code>, <code>examples/</code>, <code>src/</code>).</li>
-<li><strong><code>docs-src/</code></strong> — site-specific authored content: landing pages, index
-   pages, <code>include-markdown</code> wrappers, <code>mkdocstrings</code> directives, <code>.tmpl</code>
-   templates for dynamic index pages, and per-section <code>_nav.yml</code> files.
-   Checked into version control.</li>
-<li><strong>Build hook (<code>scripts/gen_pages.py</code>)</strong> — pure mechanics: filesystem
-   scanning, template filling, link rewriting, navigation assembly.
-   No authored prose.</li>
-</ol>
-<h3 id="content-homes-by-type">Content homes by type<a class="headerlink" href="#content-homes-by-type" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Content type</th>
-<th>Source location</th>
-<th>Audience</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Project introduction, installation, quick start</td>
-<td><code>README.md</code></td>
-<td>Both</td>
-</tr>
-<tr>
-<td>User-facing guides (backends, streaming, patterns)</td>
-<td><code>guides/</code></td>
-<td>Package users</td>
-</tr>
-<tr>
-<td>Runnable code examples</td>
-<td><code>examples/</code></td>
-<td>Package users</td>
-</tr>
-<tr>
-<td>API docstrings</td>
-<td>Python source (<code>src/</code>)</td>
-<td>Both</td>
-</tr>
-<tr>
-<td>Design specs</td>
-<td><code>sdd/specs/</code></td>
-<td>Developers</td>
-</tr>
-<tr>
-<td>Architecture decision records</td>
-<td><code>sdd/adrs/</code></td>
-<td>Developers</td>
-</tr>
-<tr>
-<td>Design process &amp; overview</td>
-<td><code>sdd/</code> (root files)</td>
-<td>Developers</td>
-</tr>
-<tr>
-<td>Contributor workflow</td>
-<td><code>CONTRIBUTING.md</code></td>
-<td>Developers</td>
-</tr>
-<tr>
-<td>Release history</td>
-<td><code>CHANGELOG.md</code></td>
-<td>Both</td>
-</tr>
-<tr>
-<td>Development narrative</td>
-<td><code>DEVELOPMENT_STORY.md</code></td>
-<td>Developers</td>
-</tr>
-<tr>
-<td>Site landing pages, section indexes, API ref layout</td>
-<td><code>docs-src/</code></td>
-<td>Site-specific</td>
-</tr>
-<tr>
-<td>Dynamic index templates (specs, ADRs)</td>
-<td><code>docs-src/**/_index.tmpl</code></td>
-<td>Site-specific</td>
-</tr>
-<tr>
-<td>Section navigation ordering</td>
-<td><code>docs-src/**/_nav.yml</code></td>
-<td>Site-specific</td>
-</tr>
-</tbody>
-</table>
-<h3 id="the-docs-src-directory">The <code>docs-src/</code> directory<a class="headerlink" href="#the-docs-src-directory" title="Permanent link">&para;</a></h3>
-<p>MkDocs reads <code>docs-src/</code> as its <code>docs_dir</code>.  It contains:</p>
+<h3 id="a-third-content-tier-supersedes-adr-0006">A third content tier (supersedes ADR-0006)<a class="headerlink" href="#a-third-content-tier-supersedes-adr-0006" title="Permanent link">&para;</a></h3>
+<p>Content lives in one of <strong>three</strong> tiers, chosen by its nature, replacing
+ADR-0006's binary "source directory or build script" rule:</p>
 <ul>
-<li><strong>Include wrappers</strong> that pull content from source directories via
-  <code>include-markdown</code> (e.g., <code>changelog.md</code> includes <code>../CHANGELOG.md</code>).</li>
-<li><strong>Directive pages</strong> for <code>mkdocstrings</code> API reference and <code>pymdownx.snippets</code>
-  example embeds.</li>
-<li><strong>Static authored pages</strong> like <code>api/index.md</code> (API overview) and
-  <code>examples/index.md</code> (examples overview) — curated site content that has
-  no meaningful standalone existence on GitHub.</li>
-<li><strong>Templates</strong> (<code>_index.tmpl</code>) whose static preamble is authored in Markdown;
-  dynamic rows are injected by the build hook.</li>
-<li><strong>Navigation files</strong> (<code>_nav.yml</code>) declaring the ordered list of pages in
-  each section.  The build hook reads these recursively to assemble the
-  site-wide <code>SUMMARY.md</code>.</li>
+<li><strong>Source directories</strong> (<code>README.md</code>, <code>guides/</code>, <code>sdd/</code>, <code>examples/</code>, <code>src/</code>):
+  anything readable on GitHub without MkDocs.</li>
+<li><strong><code>docs-src/</code></strong>: site-only authored prose with no standalone existence on
+  GitHub, such as API-reference overviews, section landing pages, and example
+  indexes. Version-controlled.</li>
+<li><strong>Build hook</strong>: pure mechanics (scanning, template filling, link rewriting,
+  nav assembly). No authored prose.</li>
 </ul>
-<h3 id="build-process">Build process<a class="headerlink" href="#build-process" title="Permanent link">&para;</a></h3>
-<p>The MkDocs "literate" plugin stack replaces the monolithic build script:</p>
-<ul>
-<li><strong><code>mkdocs-gen-files</code></strong> runs <code>scripts/gen_pages.py</code> during the build to
-  create virtual pages (spec/ADR/RFC wrappers, filled templates, link-
-  rewritten pages, copied assets) and assemble <code>SUMMARY.md</code> from the
-  per-section <code>_nav.yml</code> files.</li>
-<li><strong><code>mkdocs-literate-nav</code></strong> reads the generated <code>SUMMARY.md</code> for navigation,
-  eliminating the static <code>nav:</code> block in <code>mkdocs.yml</code>.</li>
-<li><strong><code>mkdocs-section-index</code></strong> maps section landing pages to their parent
-  nav entry.</li>
-</ul>
-<p>No pre-build step is required.  No <code>docs/</code> directory is generated on disk.</p>
-<h3 id="navigation-convention">Navigation convention<a class="headerlink" href="#navigation-convention" title="Permanent link">&para;</a></h3>
-<p>Each directory in <code>docs-src/</code> may contain a <code>_nav.yml</code> file:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># docs-src/backends/_nav.yml</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Local</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local.md</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">S3</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3.md</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">S3-PyArrow</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3-pyarrow.md</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">SFTP</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sftp.md</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Azure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure.md</span>
-</code></pre></div>
-<ul>
-<li>Entries are <code>label: file.md</code> for leaf pages.</li>
-<li>Entries ending with <code>/</code> (e.g., <code>Specs: specs/</code>) are subsections — the build
-  hook recurses into that directory's <code>_nav.yml</code>.</li>
-<li>Sections without a <code>_nav.yml</code> that match a scanned directory (<code>design/specs</code>,
-  <code>design/adrs</code>) are populated automatically from the filesystem scan.</li>
-<li>Adding a page to a section means creating the <code>.md</code> file and adding one
-  line to the section's <code>_nav.yml</code>.  No Python is touched.</li>
-</ul>
-<h3 id="where-to-put-new-content-decision-rule">Where to put new content — decision rule<a class="headerlink" href="#where-to-put-new-content-decision-rule" title="Permanent link">&para;</a></h3>
+<p><strong>Why the third tier:</strong> ADR-0006's two-way rule left authored prose that only
+makes sense inside the published site with no home, so ~100 lines of it were
+trapped as Python string literals in the build script: undiscoverable, hard to
+edit, hard to review. The tier exists to house exactly that category.</p>
+<p><em>Reverse if</em> site-only authored prose stops being a distinct category
+(everything becomes either GitHub-readable source or pure mechanics),
+collapsing back to ADR-0006's two tiers.</p>
+<h3 id="the-placement-rule">The placement rule<a class="headerlink" href="#the-placement-rule" title="Permanent link">&para;</a></h3>
 <blockquote>
-<p>If you can read it on GitHub and it makes sense without MkDocs, it belongs
-in a source directory.  If it is authored prose that only makes sense as
-part of the documentation site, it belongs in <code>docs-src/</code>.  If it is pure
-build mechanics (scanning, templating, link rewriting), it belongs in the
-build hook.</p>
+<p>Readable on GitHub without MkDocs goes in a <strong>source directory</strong>. Authored
+prose meaningful only as part of the docs site goes in <strong><code>docs-src/</code></strong>. Pure
+build mechanics go in the <strong>build hook</strong>.</p>
 </blockquote>
+<p>The full content-type-to-location map is reference material owned by the
+placement authority, <a href="../../authoring/"><code>AUTHORING.md</code></a>; this rule applies it
+rather than restating it.</p>
+<h3 id="the-build-hook-tier-holds-mechanism-never-prose">The build hook tier holds mechanism, never prose<a class="headerlink" href="#the-build-hook-tier-holds-mechanism-never-prose" title="Permanent link">&para;</a></h3>
+<p>The build hook replaced ADR-0006's monolithic script with a literate MkDocs
+plugin stack that carries no authored content and no hand-maintained
+navigation: section ordering lives beside the content in <code>_nav.yml</code>, not in a
+central <code>nav:</code> block. The mechanism itself (plugin choices,
+<code>_nav.yml</code>-to-<code>SUMMARY.md</code> assembly, link rewriting) is specified in
+<a href="../../specs/047-docs-framework-tooling/">spec 047</a> (DOCFRAME-001, DOCFRAME-007)
+and pinned in <code>pyproject.toml</code>. This ADR fixes only the tier's boundary:
+mechanics carry no authored prose.</p>
+<p><em>Reverse if</em> the "mechanics tier carries no authored content" boundary is
+itself abandoned. The concrete mechanism is spec 047's to evolve; ADR-0027 has
+since narrowed it to a single bridge.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Single source of truth.</strong> Every piece of content has exactly one home.
