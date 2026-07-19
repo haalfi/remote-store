@@ -627,3 +627,51 @@ phases:
           (CAP-007/spec 003/TESTING.md) and missed the in-ADR retention. No edit;
           resolved the thread noting the home.
         outcome: ok
+  - id: apply
+    name: Apply PR2 (duplication rewrites, touches code)
+    steps:
+      - file: sdd/adrs/0025-async-to-sync-backend-adapter.md
+        section: Decision
+        read_type: reference
+        extract: >-
+          Ten duplication rewrites (0003, 0007, 0011, 0017, 0018, 0025, 0027,
+          0028, 0029, 0030), each evicting spec-restatement to its verified home
+          and keeping decision + constraint-bearing why + reverse trigger. 0025
+          the largest: 1917->892 words, mechanics relocated to spec 029
+          (ASYNC-080..093, the ADR's own declared authoritative home), fixing the
+          intro's aio-vs-sync-core contradiction. Homes verified present before
+          delete for every relocation.
+        outcome: ok
+      - file: src/remote_store/_async_to_sync_adapter.py
+        section: "_load lazy-import comment (~L92)"
+        read_type: reference
+        extract: >-
+          Surprising ripple: dropping ADR-0025's "### Module placement" heading
+          (folded into a bold-lead bullet) broke a source comment citing
+          "ADR-0025 § Module placement". The ripple-check exempts source #
+          comments, so no gate caught it; git grep "ADR-0025 §" did. Repointed to
+          cite the ADR generically (Decision: sync-core module placement).
+        outcome: misleading
+      - file: sdd/specs/040-sql-blob-backend.md
+        section: "SQL-BLOB-001/025/041/061"
+        read_type: verify
+        extract: >-
+          Verify-before-delete caught a planner error: the 0018 plan named the
+          home "spec 040-sqlalchemy-backend.md", which does not exist. The real
+          file is 040-sql-blob-backend.md; confirmed it owns the owned/borrowed
+          engine + virtual-prefix contracts before relocating. AUTHORING.md
+          (0007's home) owns placement by classification, not a verbatim
+          content-type table, but is the repo's placement SSOT, so the relocation
+          is to the authority, not a copy.
+        outcome: ok
+      - file: sdd/adrs/DIGEST.md
+        section: "(regenerated)"
+        read_type: verify
+        extract: >-
+          gen-adr-digest regenerated, --check exits 0. Corpus 9457->7975 words
+          (10008 at ID-232 start). Remaining overages all deliberate gate-driven
+          leaves (0025 +542 for a complex bidirectional bridge, 0028 +67, plus
+          the PR1 leaves). PR2 touches a .py comment, so the whole-PR gate is
+          hatch run all: 7204 passed, coverage 96%, examples + notebooks + docs
+          all green.
+        outcome: ok

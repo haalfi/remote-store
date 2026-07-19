@@ -47,14 +47,23 @@ User → Store → Backend (ABC) → Local/S3/Azure/SFTP
 
 **fsspec is an implementation detail, never exposed in the public API.**
 
-- Backend adapters *may* use fsspec internally (e.g., S3 via `s3fs`, Azure via `adlfs`)
-- The `Backend` ABC is our own contract — it does not extend or depend on fsspec
-- The `unwrap()` escape hatch allows extensions to access native handles (including fsspec filesystems) when they knowingly accept the coupling
+- **Backend adapters may use fsspec internally** (e.g. S3 via `s3fs`, Azure via
+  `adlfs`), or boto3, paramiko, or raw stdlib. The implementor chooses; nothing
+  in the public API reveals which.
+- **The `Backend` ABC is our own contract, not fsspec's.** It does not extend or
+  depend on fsspec. A separate ABC earns its maintenance cost because ours is
+  deliberately stricter than fsspec's interface: capability-driven,
+  error-normalized, streaming-first. That stricter contract is the reason to
+  hide fsspec rather than re-export it.
+- **Native handles stay reachable through a type-safe, explicit escape hatch**
+  (`unwrap()`), so extensions that knowingly accept backend coupling keep full
+  access without being forced onto the normalized surface. The `unwrap()` API
+  contract lives in spec 003 § BE-022; this ADR owns only the decision to keep
+  fsspec behind it.
 
-```python
-# Extension that needs native access:
-fs = backend.unwrap(fsspec.AbstractFileSystem)  # explicit, type-safe
-```
+*Reverse if* our ABC's stricter guarantees stop earning their cost: e.g. fsspec
+gains equivalent capability negotiation and error normalization, so a separate
+contract would duplicate the ecosystem rather than add over it.
 
 ### [ADR-0004](0004-empty-path-semantics.md): Empty Path Semantics in Store
 
@@ -113,99 +122,52 @@ the full methods-that-strip enumeration are spec-rate and live in spec 010
 
 ### [ADR-0007](0007-docs-src-literate-nav.md): Three-Tier Documentation Architecture with docs-src/ and Literate Nav
 
-##### Principle: three-tier content architecture
+##### A third content tier (supersedes ADR-0006)
 
-Supersedes ADR-0006's two-tier model.  Content lives in one of three places,
-determined by its nature:
+Content lives in one of **three** tiers, chosen by its nature, replacing
+ADR-0006's binary "source directory or build script" rule:
 
-1. **Source directories** — content readable on GitHub without MkDocs
-   (`README.md`, `guides/`, `sdd/`, `examples/`, `src/`).
-2. **`docs-src/`** — site-specific authored content: landing pages, index
-   pages, `include-markdown` wrappers, `mkdocstrings` directives, `.tmpl`
-   templates for dynamic index pages, and per-section `_nav.yml` files.
-   Checked into version control.
-3. **Build hook (`scripts/gen_pages.py`)** — pure mechanics: filesystem
-   scanning, template filling, link rewriting, navigation assembly.
-   No authored prose.
+- **Source directories** (`README.md`, `guides/`, `sdd/`, `examples/`, `src/`):
+  anything readable on GitHub without MkDocs.
+- **`docs-src/`**: site-only authored prose with no standalone existence on
+  GitHub, such as API-reference overviews, section landing pages, and example
+  indexes. Version-controlled.
+- **Build hook**: pure mechanics (scanning, template filling, link rewriting,
+  nav assembly). No authored prose.
 
-##### Content homes by type
+**Why the third tier:** ADR-0006's two-way rule left authored prose that only
+makes sense inside the published site with no home, so ~100 lines of it were
+trapped as Python string literals in the build script: undiscoverable, hard to
+edit, hard to review. The tier exists to house exactly that category.
 
-| Content type | Source location | Audience |
-|---|---|---|
-| Project introduction, installation, quick start | `README.md` | Both |
-| User-facing guides (backends, streaming, patterns) | `guides/` | Package users |
-| Runnable code examples | `examples/` | Package users |
-| API docstrings | Python source (`src/`) | Both |
-| Design specs | `sdd/specs/` | Developers |
-| Architecture decision records | `sdd/adrs/` | Developers |
-| Design process & overview | `sdd/` (root files) | Developers |
-| Contributor workflow | `CONTRIBUTING.md` | Developers |
-| Release history | `CHANGELOG.md` | Both |
-| Development narrative | `DEVELOPMENT_STORY.md` | Developers |
-| Site landing pages, section indexes, API ref layout | `docs-src/` | Site-specific |
-| Dynamic index templates (specs, ADRs) | `docs-src/**/_index.tmpl` | Site-specific |
-| Section navigation ordering | `docs-src/**/_nav.yml` | Site-specific |
+*Reverse if* site-only authored prose stops being a distinct category
+(everything becomes either GitHub-readable source or pure mechanics),
+collapsing back to ADR-0006's two tiers.
 
-##### The `docs-src/` directory
+##### The placement rule
 
-MkDocs reads `docs-src/` as its `docs_dir`.  It contains:
+> Readable on GitHub without MkDocs goes in a **source directory**. Authored
+> prose meaningful only as part of the docs site goes in **`docs-src/`**. Pure
+> build mechanics go in the **build hook**.
 
-- **Include wrappers** that pull content from source directories via
-  `include-markdown` (e.g., `changelog.md` includes `../CHANGELOG.md`).
-- **Directive pages** for `mkdocstrings` API reference and `pymdownx.snippets`
-  example embeds.
-- **Static authored pages** like `api/index.md` (API overview) and
-  `examples/index.md` (examples overview) — curated site content that has
-  no meaningful standalone existence on GitHub.
-- **Templates** (`_index.tmpl`) whose static preamble is authored in Markdown;
-  dynamic rows are injected by the build hook.
-- **Navigation files** (`_nav.yml`) declaring the ordered list of pages in
-  each section.  The build hook reads these recursively to assemble the
-  site-wide `SUMMARY.md`.
+The full content-type-to-location map is reference material owned by the
+placement authority, [`AUTHORING.md`](../AUTHORING.md); this rule applies it
+rather than restating it.
 
-##### Build process
+##### The build hook tier holds mechanism, never prose
 
-The MkDocs "literate" plugin stack replaces the monolithic build script:
+The build hook replaced ADR-0006's monolithic script with a literate MkDocs
+plugin stack that carries no authored content and no hand-maintained
+navigation: section ordering lives beside the content in `_nav.yml`, not in a
+central `nav:` block. The mechanism itself (plugin choices,
+`_nav.yml`-to-`SUMMARY.md` assembly, link rewriting) is specified in
+[spec 047](../specs/047-docs-framework-tooling.md) (DOCFRAME-001, DOCFRAME-007)
+and pinned in `pyproject.toml`. This ADR fixes only the tier's boundary:
+mechanics carry no authored prose.
 
-- **`mkdocs-gen-files`** runs `scripts/gen_pages.py` during the build to
-  create virtual pages (spec/ADR/RFC wrappers, filled templates, link-
-  rewritten pages, copied assets) and assemble `SUMMARY.md` from the
-  per-section `_nav.yml` files.
-- **`mkdocs-literate-nav`** reads the generated `SUMMARY.md` for navigation,
-  eliminating the static `nav:` block in `mkdocs.yml`.
-- **`mkdocs-section-index`** maps section landing pages to their parent
-  nav entry.
-
-No pre-build step is required.  No `docs/` directory is generated on disk.
-
-##### Navigation convention
-
-Each directory in `docs-src/` may contain a `_nav.yml` file:
-
-```yaml
-# docs-src/backends/_nav.yml
-- Local: local.md
-- S3: s3.md
-- S3-PyArrow: s3-pyarrow.md
-- SFTP: sftp.md
-- Azure: azure.md
-```
-
-- Entries are `label: file.md` for leaf pages.
-- Entries ending with `/` (e.g., `Specs: specs/`) are subsections — the build
-  hook recurses into that directory's `_nav.yml`.
-- Sections without a `_nav.yml` that match a scanned directory (`design/specs`,
-  `design/adrs`) are populated automatically from the filesystem scan.
-- Adding a page to a section means creating the `.md` file and adding one
-  line to the section's `_nav.yml`.  No Python is touched.
-
-##### Where to put new content — decision rule
-
-> If you can read it on GitHub and it makes sense without MkDocs, it belongs
-> in a source directory.  If it is authored prose that only makes sense as
-> part of the documentation site, it belongs in `docs-src/`.  If it is pure
-> build mechanics (scanning, templating, link rewriting), it belongs in the
-> build hook.
+*Reverse if* the "mechanics tier carries no authored content" boundary is
+itself abandoned. The concrete mechanism is spec 047's to evolve; ADR-0027 has
+since narrowed it to a single bridge.
 
 > supersedes ADR-0006.
 
@@ -331,56 +293,34 @@ not intercept or modify them. The factory function is `observe()`.
 
 ### [ADR-0011](0011-retry-per-backend-native.md): Retry - Per-Backend Native Configuration
 
-Use **Option B (per-backend native configuration)**.
+Use **Option B: per-backend native retry configuration**, a `RetryPolicy` that
+maps to each backend's own retry mechanism.
 
-1. Backends own their transport — retry is a transport concern.
-2. The policy replaces SDK defaults, avoiding retry multiplication.
-3. Minimal API surface: one frozen dataclass, one constructor parameter.
-4. No new core dependencies — `tenacity` stays in the SFTP `sftp` extra.
+- **Retry is a transport concern, so backends own it.** Each backend translates
+  one `RetryPolicy` into its native mechanism (SFTP tenacity, S3 botocore, Azure
+  `ExponentialRetry`, S3-PyArrow both sides); Local and Memory reject `retry`
+  because it is meaningless for local I/O. *Reverse if* a cross-cutting retry
+  concern emerges that no single backend can own (e.g. mid-operation reconnect
+  spanning backends).
+- **The policy replaces SDK defaults rather than stacking on them,** so retries
+  do not multiply. That was the flaw in Option A (a Store-level tenacity wrapper)
+  and Option C (an `ext/` retry proxy), both of which compose on top of SDK
+  retry. *Reverse if* a use case genuinely needs layered retry at two levels.
+- **One configuration point: a single frozen dataclass and one constructor
+  parameter.** `BackendConfig` carries it and the Registry merges it in, keeping
+  the surface minimal and discoverable. *Reverse if* the single knob cannot
+  express a required policy and users are pushed back to `client_options`.
+- **No new core dependency.** `tenacity` stays confined to the `sftp` extra, not
+  the zero-dependency core. *Reverse if* a core-level retry mechanism becomes
+  unavoidable.
 
-##### RetryPolicy dataclass
+Application-level retry (mid-operation reconnect, idempotency checks) is out of
+scope, and could later be a composing `ext/retry.py` middleware.
 
-A frozen dataclass in `_config.py` with five fields:
-
-- `max_attempts` (int, default 3): Total attempts including initial.
-  Set to 1 to disable retry.
-- `backoff_base` (float, default 1.0): Base delay in seconds.
-- `backoff_max` (float, default 60.0): Ceiling for exponential backoff.
-- `jitter` (float, default 1.0): Max random jitter per delay.
-- `timeout` (float | None, default None): Total wall-clock limit.
-
-A `RetryPolicy.disabled()` classmethod returns `RetryPolicy(max_attempts=1)`.
-
-##### Backend mapping
-
-Each backend translates the policy into its native retry mechanism:
-
-- **SFTP:** Replaces hardcoded tenacity decorator with policy-driven
-  `stop_after_attempt`, `wait_exponential`, `wait_random`, optionally
-  `stop_after_delay`.
-- **S3:** Maps to `botocore.config.Config(retries={"max_attempts": N,
-  "mode": "standard"})` merged into `client_options`.
-- **Azure:** Maps to `ExponentialRetry(retry_total=N-1,
-  initial_backoff=base, random_jitter_range=jitter)` set as
-  `retry_policy` in client options.
-- **S3-PyArrow:** Maps to both PyArrow C++ side (`max_attempts`) and
-  s3fs side (same as S3).
-- **Local/Memory:** Do not accept `retry` parameter — TypeError if
-  provided (correct: retry is meaningless for local I/O).
-
-##### BackendConfig integration
-
-`BackendConfig` gains a `retry: RetryPolicy | None = None` field.
-`Registry._get_backend()` merges `retry` into `options` before
-constructing the backend. `from_dict()` parses `retry` from nested
-dicts in the config.
-
-##### Scope
-
-The policy controls **connection retry** (SFTP) and **SDK-level
-operation retry** (S3, Azure). Application-level retry (reconnect
-mid-operation, idempotency checks) is out of scope and could be
-addressed by a future `ext/retry.py` middleware.
+The `RetryPolicy` fields and defaults, the `disabled()` factory, the per-backend
+SDK mappings, the Local/Memory `TypeError`, and the `BackendConfig`/`from_dict`
+wiring are spec-rate and live in [spec 025](../specs/025-retry-policy.md)
+(RET-001, RET-003, RET-004 through RET-006, RET-010 through RET-014).
 
 ### [ADR-0012](0012-async-store-backend-api.md): Async Store / Backend API — Hybrid Model
 
@@ -529,75 +469,62 @@ in effect.
 ### [ADR-0017](0017-seekable-read-on-store-api.md): Seekable Read on Store API
 
 Add `read_seekable()` to `Backend` and `Store` as a concrete (non-abstract)
-method alongside the existing `read()`.
+method alongside `read()`, superseding ADR-0016's `ext.seekable` approach.
 
-##### `Backend.read_seekable(path) -> BinaryIO`
+- **A first-class method, not an extension.** Consuming abstractions that control
+  the read path (PyArrow's `FileSystem`, Dagster's `IOManager`) will not call an
+  extension function, so seekability has to live on the Store/Backend surface to
+  reach them at all. *Reverse if* those abstractions gain a way to consume an
+  extension helper directly, removing the need for a built-in method.
+- **The default spools; backends may override for true random access.** The
+  default delegates to `read()` and spools a non-seekable stream into a
+  `SpooledTemporaryFile`; a backend like Azure overrides to return a range reader
+  that maps each seek+read to a single HTTP Range request. This is the tension
+  `ext.seekable` could not resolve: whole-file spooling defeats the byte-saving
+  that random access exists for. *Reverse if* one read path can serve both
+  sequential and sparse-random access without a per-backend override.
+- **`ext.seekable` is removed (never released) and `SEEKABLE_READ` shifts
+  meaning.** Its whole-file-spool behaviour is subsumed by the default; the
+  capability now signals that `read_seekable()` is zero-overhead (the backend
+  natively returns seekable streams), still useful for branching at setup time.
+  *Reverse if* the original "`read()` returns seekable" meaning is needed again.
 
-Default implementation: delegates to `read()`. If the returned stream is
-already seekable, returns it directly. Otherwise, spools into a
-`SpooledTemporaryFile` (same logic as the removed `ext.seekable`).
-
-Backends MAY override to provide an optimized implementation:
-
-- **AzureBackend**: returns `_AzureRangeReader` — a seekable
-  `io.RawIOBase` where each `readinto()` issues a single HTTP Range
-  request via `download_blob(offset=, length=)`.
-- **HttpBackend**: could implement HTTP Range in the future (not in
-  this change).
-
-##### `Store.read_seekable(path) -> BinaryIO`
-
-Delegates to `backend.read_seekable()` with path resolution, capability
-checks, and logging — same pattern as `Store.read()`.
-
-##### Arrow integration
-
-`StoreFileSystemHandler.open_input_file()` calls `store.read_seekable()`
-instead of `store.read()` for the Tier 3 path. This gives PyArrow a
-seekable, random-access-optimized handle on all backends without
-materializing the full file.
-
-##### Removal of `ext.seekable`
-
-`ext.seekable.seekable_read()` is removed (never released — introduced
-after v0.19.0 in ID-100). Its functionality is subsumed by
-`Store.read_seekable()`. The `SEEKABLE_READ` capability shifts meaning:
-it now indicates that `read_seekable()` is zero-overhead (no spooling
-needed, the backend natively returns seekable streams).
-
-##### `ProxyStore` cascade
-
-`ProxyStore.read_seekable()` delegates to `self._inner.read_seekable()`.
-`ObservedStore` hooks around it. `CachedStore` inherits the default.
+Exact signatures, the spool mechanic, the `_AzureRangeReader` override, Store
+delegation, the Arrow call site, and the `ProxyStore` cascade are spec-rate and
+live in [spec 036](../specs/036-seekable-read.md) (SEEK-002, SEEK-003, SEEK-005,
+SEEK-006, SEEK-008, SEEK-009). A future `HttpBackend` Range implementation is
+noted in Consequences.
 
 > supersedes ADR-0016.
 
 ### [ADR-0018](0018-sqlalchemy-two-class-architecture.md): SQLAlchemy Backend — Two-Class Architecture with Shared Base
 
-**Option B — Two concrete backends, shared base.**
+**Option B: two concrete backends over a shared private base.**
 
 ```
 _SQLAlchemyBaseBackend(Backend)   # private, not exported
-├── SQLBlobBackend                # v1 — full read-write KV store
-└── SQLQueryBackend               # v2 — read-only query materializer
+├── SQLBlobBackend                # v1, full read-write KV store
+└── SQLQueryBackend               # v2, read-only query materializer
 ```
 
-##### Engine lifecycle: owned vs borrowed
+- **Two classes, not one `mode` flag.** The blob and query use cases have
+  fundamentally different invariants (read-write vs read-only), capability sets,
+  and dependencies (`[sql]` vs `[sql-query]`); a `mode="blob"|"query"` parameter
+  would spread `if mode == ...` branching through every method. *Reverse if* the
+  two use cases converge on one invariant set and dependency footprint.
+- **A shared base, not two independent classes.** `_SQLAlchemyBaseBackend`
+  centralises engine lifecycle, health check, error mapping, and SQLite
+  detection, avoiding Option C's duplication while each subclass keeps its own
+  Backend contract and evolves independently. *Reverse if* the shared surface
+  shrinks to near nothing, making the base pure indirection.
+- **The base is private.** It is not exported or documented for users, so it
+  stays free to evolve. *Reverse if* third parties need to subclass it to build
+  their own SQL backend.
 
-The base accepts exactly one of `url: str` or `engine: Engine`:
-
-- `url` → creates and **owns** the engine. `close()` disposes it.
-- `engine` → **borrows** it. `close()` is a no-op.
-
-This lets standalone scripts get automatic cleanup while web apps share
-their connection pool.
-
-##### Folder semantics: virtual prefixes
-
-Unlike `MemoryBackend` and `LocalBackend` (which use explicit folder nodes),
-`SQLBlobBackend` uses **virtual prefix-based folders** — a "folder" is any
-key prefix that has child keys. This matches the S3/Azure pattern and avoids
-maintaining a separate folder table or marker rows.
+The engine `url`-vs-`engine` (owned vs borrowed) lifecycle and the virtual
+prefix-based folder model are spec-rate and live in
+[spec 040](../specs/040-sql-blob-backend.md) (SQL-BLOB-001, SQL-BLOB-025,
+SQL-BLOB-041, SQL-BLOB-061).
 
 ### [ADR-0020](0020-orchestrate-iterative-convergence.md): Orchestrate Iterative Convergence Model
 
@@ -769,276 +696,115 @@ Add `ResourceLocked` as a new concrete error type. The decisions:
 
 ### [ADR-0025](0025-async-to-sync-backend-adapter.md): Async-to-Sync Backend Adapter (`AsyncBackendSyncAdapter`)
 
-Introduce a new class `AsyncBackendSyncAdapter` under
-`remote_store.aio` that implements the sync `Backend` ABC by
-delegating to an `AsyncBackend` running on a private event loop in a
-dedicated background thread. Do **not** invert `SyncBackendAdapter`;
-the execution direction is different enough that two distinct adapters
-are clearer than one parameterised bridge.
+Introduce `AsyncBackendSyncAdapter`, a class implementing the sync `Backend` ABC
+by delegating to a wrapped `AsyncBackend` that runs on a private event loop in a
+dedicated daemon thread (**Option D** of the four weighed in Context). It mirrors
+`SyncBackendAdapter` (ADR-0012); together they form the full bidirectional bridge
+the hybrid model needs.
 
-The `AsyncBackendSyncAdapter` is the mirror of `SyncBackendAdapter`
-(ADR-0012). Together they provide the full bidirectional bridge the
-hybrid model needs.
+**Private loop on a dedicated daemon thread, not `asyncio.run()` per call and not
+`nest_asyncio`.** `asyncio` forbids re-entering a running loop, and a fresh loop
+per call forfeits the async SDK's connection pools and auth-token cache; a
+per-adapter private loop keeps the client alive while sync callers submit
+coroutines via `run_coroutine_threadsafe` and block on the returned `Future`.
+*Reverse if* the stdlib gains safe nested-loop execution, or the wrapped backends
+stop needing cross-call client reuse.
+
+**Two distinct adapters, not one parameterised bridge.** The two boundary
+directions differ enough that two named classes read clearer than one flag-driven
+bridge. *Reverse if* a single parameterised bridge proves clearer in practice.
+
+**The module lives in the sync core (`src/remote_store/_async_to_sync_adapter.py`),
+not under `aio/`.** It implements the sync `Backend`, so it belongs with sync
+code; placing it under `aio/` would force every sync `Store` user wrapping an
+async backend to import the `aio/` runtime at construction, inverting the
+invariant that sync code stays independent of `aio/`. `AsyncBackend` is imported
+lazily in `__init__` to keep that core-to-`aio` edge off the top level. *Reverse
+if* the sync-independent-of-`aio/` layering invariant is abandoned.
 
 ##### Ownership model
 
-- **One loop per adapter instance.** The adapter creates a new
-  `asyncio.new_event_loop()` and starts a daemon `threading.Thread`
-  that runs `loop.run_forever()`. The loop is private — not shared,
-  not exposed, not reused across adapter instances.
-- **One thread per adapter instance.** The loop thread is created in
-  `__init__` and joined in `close()`. It is dedicated to this adapter;
-  no other work is scheduled on it.
-- **Thread-safe for concurrent sync callers.** Multiple threads may
-  call sync methods on the same adapter concurrently. Each call
-  submits an independent coroutine to the loop and blocks on its own
-  future. Ordering between concurrent callers is not guaranteed;
-  callers that need deterministic ordering must coordinate
-  externally (e.g. their own lock or queue).
-
-##### Submission and blocking
-
-- Each sync method wraps the corresponding `AsyncBackend` coroutine
-  and submits it via `asyncio.run_coroutine_threadsafe(coro, loop)`.
-- The sync method blocks on the returned `concurrent.futures.Future`.
-  `Future.result()` propagates the coroutine's return value or
-  re-raises its exception.
-- Non-I/O methods (`name`, `capabilities`, `to_key`, `native_path`,
-  `resolve`, `unwrap`) delegate directly to the wrapped async backend
-  without the loop, mirroring `SyncBackendAdapter`'s passthrough.
-- I/O methods that return scalars or `None` — `exists`, `is_file`,
-  `is_folder`, `read_bytes`, `get_file_info`, `get_folder_info`,
-  `move`, `copy`, `delete`, `delete_folder`, **`check_health`** —
-  follow the standard submit-and-block pattern. `check_health()`
-  is explicitly **not** a no-op: connectivity errors from the
-  wrapped async backend must reach the sync caller verbatim.
-- `Future.result()` blocks without a per-call timeout. Timeout
-  responsibility belongs to the wrapped `AsyncBackend`: backends
-  should impose their own timeouts internally (e.g.
-  `asyncio.wait_for`) or rely on SDK session-level timeouts.
-  The adapter's `close(timeout=…)` provides a global shutdown
-  bound; there is no per-operation equivalent.
+One private loop and one daemon thread per adapter instance, never shared or
+reused; the adapter is a **one-shot resource**, so a closed adapter raises rather
+than restarting the loop. Concurrent sync callers are serialised onto the single
+loop, which *manufactures* thread-safety for a loop-safe async backend;
+**ordering between concurrent callers is not guaranteed**, so callers needing
+order coordinate externally. *Reverse if* a backend needs multi-loop parallelism
+one serialising loop cannot give. Exact concurrency bounds and no-crossover
+guarantee: spec 029 § ASYNC-089.
 
 ##### Streaming iterators and open streams
 
-- `read(path)` returns a sync file-like stream whose `read(n)` pumps
-  chunks out of the backend's `AsyncIterator[bytes]`. The stream
-  holds an internal byte buffer carrying the unread tail of the most
-  recently fetched chunk: `read(n)` first drains that buffer, and
-  only submits a new `__anext__` coroutine when the buffer is empty
-  and more bytes are still required.  This satisfies the `BinaryIO`
-  contract that `read(n)` returns at most *n* bytes even when the
-  backend yields larger chunks.  The stream exposes `read(n)`,
-  `close()`, `seekable()` (returns `False`), and `readable()`
-  (returns `True`); `seek`, `tell`, and `fileno` are not provided.
-  `close()` submits the async iterator's `aclose()` to the loop.
-- `list_files`, `list_folders`, `glob`, `iter_children` return sync
-  iterators backed by the same chunk-pull pattern. Materialising the
-  full listing up front is **not** acceptable: native-async backends
-  exist precisely to stream, and the sync wrapper must preserve that.
-- The underlying async iterator handle lives on the loop; every
-  step crosses the thread boundary via `run_coroutine_threadsafe`.
-- **Single-chunk in-flight invariant.** The adapter has at most one
-  outstanding `__anext__` per stream/iterator: no look-ahead, no
-  read-ahead pool, no parallel prefetch. The unread tail of the
-  most recently fetched chunk (held in the `read()` stream's byte
-  buffer described above) is the *only* sanctioned per-stream
-  buffer. The bridge must not reintroduce the memory bloat that
-  materialising the full listing would cause.
+`read()` and the listing iterators **pump chunks lazily across the boundary and
+never materialise** the full stream or listing, since native-async backends exist
+to stream and the sync wrapper preserves that. The rule is **at most one
+outstanding `__anext__` per stream/iterator** (no read-ahead), the only
+per-stream buffer being the unread tail of the last chunk. *Reverse if* a wrapped
+backend cannot stream, making materialisation unavoidable. Exact
+`BinaryIO`/short-read surface and buffer mechanics: spec 029 § ASYNC-080,
+ASYNC-081.
 
 ##### Write-side content
 
-The sync `Backend.write()` / `write_atomic()` accept the sync
-`WritableContent = BinaryIO | bytes` (`src/remote_store/_types.py`).
-There is no sync iterator-of-bytes input — that shape exists only on
-the async side as `AsyncWritableContent = bytes | AsyncIterator[bytes]`
-(`src/remote_store/aio/_types.py`). The bridge therefore goes
-**sync `BinaryIO` → `AsyncIterator[bytes]`**, not the other way:
-
-- `bytes` content is forwarded as-is to the async coroutine.
-- `BinaryIO` content is wrapped in an internal `AsyncIterator[bytes]`
-  that calls `asyncio.to_thread(stream.read, chunk_size)` per chunk
-  inside the submitted coroutine, so the event loop never blocks on
-  the caller's blocking file object. The single-chunk in-flight
-  invariant from § Streaming applies symmetrically: at most one
-  pending `to_thread` per write, no parallel pre-read.
-- `write_atomic(path, content, …)` follows the identical pattern.
-  The `ATOMIC_WRITE` capability gate is enforced by the wrapped
-  async backend, not the adapter — the adapter forwards the call
-  unchanged and lets the backend raise `CapabilityNotSupported` if
-  the gate is closed.
-- `open_atomic(path, …)` — abstract on sync `Backend`, with **no
-  async analogue** on `AsyncBackend`. The adapter synthesises it as
-  a context manager that yields a `SpooledTemporaryFile`; on clean
-  `__exit__` the spool is rewound and submitted to the wrapped
-  backend's `write_atomic` (a single `bytes`/`BinaryIO` write); on
-  exception the spool is dropped and `path` is untouched. The
-  capability gate is the same as `write_atomic` — backends without
-  `ATOMIC_WRITE` raise `CapabilityNotSupported` when the spool
-  flushes. (Synthesising over `write_atomic` rather than extending
-  `AsyncBackend` keeps the async ABC unchanged; ID-127 does not need
-  an `open_atomic`-shaped Graph operation.)
-
-##### Cancellation
-
-- Cancellation flows from sync to async by calling
-  `Future.cancel()` on the `concurrent.futures.Future` returned by
-  `run_coroutine_threadsafe`. This schedules `Task.cancel()` on the
-  underlying asyncio task.
-- Async backends are expected to honour `asyncio.CancelledError`
-  normally; cleanup (closing HTTP responses, releasing connections,
-  aborting upload sessions) happens inside the async code as usual.
-- `concurrent.futures.Future.cancel()` is a best-effort flag, and
-  `asyncio.Task.cancel()` only *requests* cancellation — the task
-  observes `CancelledError` at the next `await` point and may
-  still run cleanup before it actually exits (CPython issues
-  python/cpython#103819 and python/cpython#105836 document the
-  exact semantics). The adapter's `close()` therefore waits for
-  in-flight tasks to drain before stopping the loop; ad-hoc
-  per-call cancellation surfaces `CancelledError` to the sync
-  caller without a teardown guarantee.
-- `KeyboardInterrupt` is **not** specially handled. It propagates
-  out of the blocking `Future.result()` like any other exception;
-  the in-flight async task is left running and is cancelled when
-  the adapter's `close()` runs (or when the daemon thread is
-  reaped at process exit). Adding KI-to-cancel translation would
-  give this one backend behaviour that no sync backend has, which
-  costs more in contract asymmetry than the convenience earns.
+The bridge runs **sync `BinaryIO` to `AsyncIterator[bytes]`** (the sync side has
+no iterator-of-bytes input), pulling the `BinaryIO` via `asyncio.to_thread` so
+the loop never blocks on the caller's file object. **`open_atomic` is synthesised
+over the backend's `write_atomic`** (spool, flush on clean exit, drop on error)
+rather than adding an `open_atomic`-shaped op to `AsyncBackend`, keeping the async
+ABC unchanged and leaving Graph (ID-127) nothing new to implement. The
+`ATOMIC_WRITE` gate is enforced by the wrapped backend. *Reverse if* a backend
+needs a native incremental async atomic write. Exact spool/flush and
+mid-write-failure semantics: spec 029 § ASYNC-085, ASYNC-091.
 
 ##### Behaviour when the caller is in a running loop
 
-- **Default: fail fast.** If a sync method is invoked from a thread
-  with a running event loop, the adapter raises a clear
-  `RuntimeError` explaining that the sync Store API cannot block a
-  running loop and directing the caller to `AsyncStore` instead.
-  This keeps the sync contract genuinely sync and prevents
-  deadlocks. Aligned with ADR-0012 § Async posture: the sync
-  `Store` is **not coroutine-safe**, by design — async callers use
-  `AsyncStore`, full stop.
-- **Detection.** The adapter checks
-  `asyncio.get_running_loop()` (which raises if no loop is running)
-  to decide. Detection happens at the entry of every blocking call,
-  not at adapter construction, because the caller's loop context is
-  per-call.
-- **No opt-in nest-asyncio path in v1.** The door is open to add one
-  later behind an explicit flag, but the default design does not
-  require it and the first release does not ship it. Notebook and
-  GUI users are directed to use `AsyncStore` directly.
-
-##### `nest_asyncio` stance
-
-- Not a runtime dependency. Not imported by the adapter.
-- If a future compatibility mode is added, it will be an explicit
-  opt-in with its own ADR. This ADR commits to *not* relying on
-  `nest_asyncio` for correctness.
-
-##### Lifecycle
-
-- `close(timeout: float | None = 30.0)` submits
-  `self._async_backend.aclose()` to the loop, waits for in-flight
-  tasks to drain, calls `loop.call_soon_threadsafe(loop.stop)`, and
-  joins the thread with the supplied bound. The default of 30 s
-  matches the existing per-backend network-call ceilings; passing
-  `None` waits indefinitely. If the timeout expires, the adapter
-  logs a warning at `WARNING` level naming the unfinished tasks and
-  returns; the daemon thread is torn down with the process.
-- Context-manager protocol (`__enter__` / `__exit__`) delegates to
-  `close()` on exit.
-- The adapter is a one-shot resource: once closed, further calls
-  raise a clear error rather than silently restarting the loop.
-
-##### Error propagation
-
-- Exceptions raised inside the async coroutine are re-raised
-  verbatim in the sync caller via `Future.result()`. Traceback
-  preservation follows the standard `concurrent.futures` behaviour.
-- Error types and the canonical `path` / `backend` attributes
-  (ERR-001 in `sdd/specs/005-error-model.md`) are preserved
-  exactly: the adapter does not wrap or translate exceptions, and
-  the error-mapping rules established by `AsyncBackend`
-  implementations under ADR-0012 reach the sync caller unchanged.
-- `TimeoutError` from the async layer stays `TimeoutError`;
-  `ResourceLocked` (ADR-0024) stays `ResourceLocked`; and so on.
-
-##### `read_seekable` (sync-only convenience)
-
-`read_seekable` is concrete on the sync `Backend` (with a
-`SpooledTemporaryFile` fallback over `read()`); it has **no async
-analogue** on `AsyncBackend`. The adapter does *not* override it:
-the inherited default sees a chunk-pull stream, calls `.seekable()`
-(which returns `False`), and spools to disk-or-memory exactly as it
-already does for the synchronous backends that emit non-seekable
-streams. No new code path is needed; this section exists so the
-implementer does not mistakenly wire a no-op.
-
-A future native fast-path (e.g. issuing per-`read()` HTTP `Range`
-requests directly through the async backend, mirroring
-`AzureBackend`) is out of scope for this ADR. If added, it would
-need an explicit async `read_seekable`-shaped operation on
-`AsyncBackend` and is tracked as a Graph follow-up.
+**Fail fast:** invoked from a thread with a running loop, a blocking method
+raises `RuntimeError` pointing the caller to `AsyncStore`, keeping the sync
+contract genuinely sync and preventing deadlock (per ADR-0012, sync `Store` is
+not coroutine-safe by design). **No `nest_asyncio` in v1**, which would
+monkey-patch global `asyncio`; the adapter neither imports nor depends on it.
+*Reverse if* notebook/GUI demand justifies an explicit opt-in mode, which ships
+behind its own flag and its own ADR. Exact detection point and message stem:
+spec 029 § ASYNC-082.
 
 ##### Capability translation
 
-The adapter does **not** blindly forward the wrapped backend's
-`CapabilitySet`. The bridge changes the observable shape of two
-capabilities and must mask one off:
+The adapter **translates** the wrapped `CapabilitySet` rather than
+blind-forwarding it: **`SEEKABLE_READ` is masked off** because the chunk-pull
+stream is forward-only (random-access callers fall through to `read_seekable`'s
+spool, as every non-seekable sync backend already does); `LAZY_READ` and the rest
+pass through unchanged. **`unwrap()` raises `CapabilityNotSupported`** by default
+because an async handle bound to the private loop is unsafe from the caller's
+thread, unless the backend exposes a sync-safe handle. *Reverse if* a native
+async seekable-read op is added, letting `SEEKABLE_READ` pass through. Exact
+translation/gating table and unwrap exemption: spec 029 § ASYNC-084, ASYNC-086.
 
-- **`SEEKABLE_READ` — masked off.** SIO-008 promises that
-  `Backend.read()` returns a natively seekable stream. The chunk-pull
-  pump returned by this adapter is forward-only; no `seek()`
-  accelerator can be honoured without buffering. The adapter strips
-  `SEEKABLE_READ` from the forwarded set even when the wrapped
-  async backend declares it. Callers that need random access go
-  through `read_seekable` and pay the spool cost (above), which is
-  the same fallback every non-seekable sync backend already uses.
-- **`LAZY_READ` — preserved.** SIO-009 requires `read()` to fetch
-  data lazily on demand. The single-chunk in-flight invariant +
-  `__anext__`-per-`read(n)` cadence preserves laziness end-to-end:
-  the bridge never pre-reads beyond what the sync caller has asked
-  for. Forwarded unchanged.
-- **`ATOMIC_WRITE`, `ATOMIC_MOVE`, `GLOB`, and the remaining flags**
-  — preserved unchanged. The async coroutine performs the operation;
-  the bridge only marshals the call. Folder listing and folder
-  deletion have no dedicated capability flag; they remain gated by
-  `LIST` / `DELETE` on the wrapped backend per the sync `Backend`
-  contract (see spec 029 § ASYNC-084).
+##### Lifecycle
 
-`resolve()` delegates directly (no I/O, no loop).
-
-`unwrap()` is **not** a generic passthrough: an `httpx.AsyncClient`
-returned from a sync `unwrap()` is bound to the private loop in the
-daemon thread, and using it from the caller's thread will fail or
-corrupt loop state. The adapter raises `CapabilityNotSupported`
-unless the wrapped backend exposes a sync-safe handle (mirroring
-`SyncBackendAdapter.unwrap`'s behaviour for unsupported types). The
-async handle remains reachable to coroutines submitted via the same
-adapter; callers that need it directly should construct an
-`AsyncStore` instead.
-
-##### Module placement
-
-`src/remote_store/_async_to_sync_adapter.py` — in the **core**
-module, not under `aio/`. Symmetric with `SyncBackendAdapter`
-(which lives in `aio/` because it implements `AsyncBackend`):
-this adapter implements the sync `Backend` ABC, so it belongs
-with the sync core. Putting it under `aio/` would force every
-sync `Store` user that wraps an async backend to import the
-`aio/` runtime modules at construction time, inverting the layering
-invariant that sync code stays independent of `aio/`.
-
-`AsyncBackend` is imported lazily inside the adapter's `__init__`
-to avoid a top-level core → aio import. Public re-export from
-`remote_store` follows the `SyncBackendAdapter` re-export pattern
-in shape (alongside `Backend`, `Store`).
+`close(timeout=30.0)` drains in-flight tasks, stops the loop, and joins the
+thread within a bounded timeout (default matches the per-backend network
+ceilings; `None` waits forever; on expiry it logs a `WARNING` and lets the daemon
+thread be reaped at process exit); `__enter__`/`__exit__` delegate to it.
+**Errors cross verbatim:** no wrapping or translation, so error types and the
+ERR-001 `path`/`backend` attributes (spec 005) reach the sync caller unchanged;
+`check_health()` is likewise not a no-op and does not swallow the backend's probe
+errors. **Cancellation is best-effort:** `Future.cancel()` only requests
+`Task.cancel()`, observed at the next `await`, so `close()` drains before
+stopping; `KeyboardInterrupt` is not special-cased, because KI-to-cancel would
+give this one backend behaviour no other sync backend has. **No per-call
+timeout:** per-operation timeouts are the wrapped backend's responsibility;
+`close()` is the only global bound. *Reverse if* per-operation cancellation or
+timeout becomes a cross-backend contract. Exact drain order, message stems, and
+failure-mode semantics: spec 029 § ASYNC-083, ASYNC-087, ASYNC-088, ASYNC-090,
+ASYNC-092, ASYNC-093.
 
 ##### Store-level wiring
 
-The sync `Store` gains a construction path that accepts an
-`AsyncBackend` and wraps it with `AsyncBackendSyncAdapter`
-automatically — the mirror of `AsyncStore`'s auto-wrap of sync
-`Backend` (ADR-0012 § 2). Registry integration for the Graph
-backend is specified in spec 044; the adapter itself is backend-
-agnostic.
+The sync `Store` gains a construction path that auto-wraps a supplied
+`AsyncBackend` in this adapter, mirroring `AsyncStore`'s auto-wrap of a sync
+`Backend`. The adapter is backend-agnostic; Graph registry integration lives in
+spec 044. *Reverse if* the auto-wrap convenience is removed from the `Store`
+constructor.
 
 ### [ADR-0026](0026-strict-gate-on-kwarg.md): Strict-Gate Pattern for Optional Capability Kwargs
 
@@ -1072,184 +838,117 @@ that capability is removed rather than relocated.
 ### [ADR-0027](0027-docs-bridge-single-mechanism.md): Single Bridge with Enforcement, Not Layered Mechanisms
 
 One documentation bridge, kept single by an enforcement gate. Three coupled
-sub-decisions:
+sub-decisions, each stated once:
 
-1. **One bridge, by construction** — `scripts/docs/scan.py:scan_dual_files` is the sole source-discovery function and `render.py:render_dual_pages` the sole render function; other helpers are removed, not deprecated. New content shapes extend this one mechanism rather than adding a parallel one.
-2. **Classification next to the file** — each `.md` declares its class via an HTML-comment marker, with a directory-default fallback; a file with no marker and no default is unclassified and fails the gate (G-01). No central manifest that can drift from the files.
-3. **Enforcement at PR time** — a check script fails the build if any framework rule is violated, so "use one bridge" cannot silently degrade to a preference.
-
-The recurring failure across the prior ADRs was not that the chosen mechanism
-was wrong; each was reasonable for the case that introduced it. The failure was
-that nothing prevented the next mechanism from being added alongside — a "use
-one bridge" decision without a check that detects the second bridge degrades to
-a preference.
-
-##### One bridge, by construction
-
-`scripts/docs/scan.py:scan_dual_files` is the single source-discovery
-function for dual content. `scripts/docs/render.py:render_dual_pages` is
-the single render function. Other discovery and render helpers in the
-docs pipeline are removed, not deprecated. New content shapes extend
-this one mechanism; they do not add a parallel one. Contracts in
-[spec 047](../specs/047-docs-framework-tooling.md) DOCFRAME-001,
-DOCFRAME-005.
-
-##### Classification next to the file, not in a manifest
-
-Each `.md` file declares its class on itself via an HTML-comment marker.
-Absence falls back to a directory-default rule (per
-[`AUTHORING.md`](../AUTHORING.md) Rule 1 and its directory-defaults
-table); a file with no marker AND no matching default is unclassified
-and fails the gate (G-01). A central manifest is auditable but lives
-apart from the files it classifies, so additions land in one place and
-the manifest in another. The marker cannot drift from the file because
-it is part of the file. Contracts in
-[spec 047](../specs/047-docs-framework-tooling.md) DOCFRAME-002.
-
-##### Enforcement at PR time
-
-A check script (DOCFRAME-004) fails the build if any framework rule is
-violated, including the "one bridge" rule itself. This is the half that
-the prior ADRs left out. Without it, the next contributor under
-deadline pressure adds the next mechanism and the cycle resumes.
+- **One bridge, by construction.** A single source-discovery function and a
+  single render function carry all dual content; other discovery and render
+  helpers are removed, not deprecated. New content shapes extend this one
+  mechanism instead of adding a parallel one. The function names and the removal
+  set are owned by [spec 047](../specs/047-docs-framework-tooling.md)
+  (DOCFRAME-001, DOCFRAME-005). *Reverse if* a content shape genuinely cannot be
+  served by extending the single bridge, forcing a second mechanism.
+- **Classification next to the file, not in a manifest.** Each `.md` declares its
+  class via an HTML-comment marker, with a directory-default fallback (per
+  [`AUTHORING.md`](../AUTHORING.md) Rule 1); a file with no marker and no default
+  is unclassified and fails the gate. The marker cannot drift from the file
+  because it is part of it, unlike a central manifest that lives apart from what
+  it classifies. Marker contract: spec 047 (DOCFRAME-002). *Reverse if* structured
+  per-page metadata is ever needed that an HTML comment cannot carry (moving to
+  YAML frontmatter, per Alternatives).
+- **Enforcement at PR time.** A check script fails the build if any framework
+  rule is violated, including the "one bridge" rule itself. This is the half the
+  prior ADRs (0006, 0007, BK-167) left out: without a check that detects the
+  second bridge, "use one bridge" silently degrades to a preference, which is
+  exactly how the accumulation happened. Gate contract: spec 047 (DOCFRAME-004).
+  *Reverse if* the one-bridge rule itself is retired.
 
 ### [ADR-0028](0028-testing-architecture-kind-stage-replay.md): Testing Architecture with Kind and Stage Axes and HTTP Replay Demotion
 
-The testing architecture rests on five coupled commitments:
+The testing architecture rests on five coupled commitments. They share one
+rationale: the demotion mechanism works only because the axes are separated, the
+gate works only because gating is native, and the scope holds only because the
+spec calls out where it does not apply. One ADR captures the bundle; any
+commitment that later evolves can be superseded individually. Spec contracts live
+in [spec 048](../specs/048-testing-architecture.md).
 
-1. **Two orthogonal axes** — separate *kind* (pure, mocked, real-local, real-live) from *stage* (1/2/3 by cost); a fixture declares one of each.
-2. **Conformance as the cross-backend spine** — one parametrised suite over the public `Store` / `Backend` API that every backend runs; backend-specific behaviour is isolated per backend.
-3. **HTTP cassette + replay as a Stage 1 fixture** — a `<backend>_replay` fixture runs the real SDK path against a recorded cassette (Stage 3 records, Stage 1 replays); scoped to HTTP-transport backends only.
-4. **Capability gating via native pytest** — parametrize id-filtering plus `pytest.mark.skipif`, no custom `@requires` marker layer.
-5. **Explicit cassette refresh** — cassettes regenerate only when a developer runs `pytest --stage=3 --record` and commits the diff; CI never silently re-records.
-
-They share rationale: the demotion mechanism only works because the axes are
-separated, the gate works only because gating is native, and the scope works
-only because the spec calls out where it does not apply. One ADR captures the
-bundle; any commitment that later evolves can be superseded individually.
-
-##### Two orthogonal axes: kind and stage
-
-A linear list of "stages" running unit, emulator, live collapses two
-distinct concerns. *What the test wires up* is one axis (kind: pure,
-mocked, real-local, real-live). *How expensive it is to run* is
-another (stage: 1, 2, 3, ordered by cost and required infrastructure).
-The architecture separates them. A fixture declares one of each. Spec
-contracts in [spec 048](../specs/048-testing-architecture.md) TEST-001.
-
-A linear collapse hides real options. Replay is a real-SDK code path
-that runs at Stage 1 cost; a single-axis ordering cannot express that
-combination.
-
-##### Conformance as the cross-backend spine; backend-specific tests isolated per backend
-
-Conformance is one parametrised test set referencing only the public
-`Store` and `Backend` API. Every backend that exposes the API runs
-the full suite. Behaviour that only one backend exhibits, whether
-protocol quirks, storage-model semantics, or vendor configuration, is
-isolated to that backend's own home, separate from the spine.
-
-Two consequences follow at once. "Add a backend, get conformance for
-free" becomes the literal mechanism. And backend-specific tests gain
-a home that is not interleaved with the cross-backend suite. Spec
-contracts in TEST-002 and TEST-003. Layout in TEST-010.
-
-##### HTTP cassette and replay as a Stage 1 fixture, scoped to HTTP backends
-
-A `<backend>_replay` Stage 1 fixture exercises the real SDK code path
-with the HTTP transport stubbed by a recorded cassette. Stage 3 runs
-record. Stage 1 runs replay. A Stage-3-discovered behaviour, once
-recorded, runs at zero cost in every default CI run. That is the
-demotion mechanism the third force in the Context describes.
-
-The mechanism applies to HTTP-transport backends only. Backends that
-speak SSH binary or a DB wire protocol are not reachable by available
-capture tools without a custom transport adapter, and that work is not
-in scope here. For excluded backends, Stage 2 (Docker) is the cheapest
-source of truth, with no Stage 3 to Stage 1 demotion path until and
-unless dedicated work delivers one. Spec contracts in TEST-007 and
-TEST-008.
-
-##### Capability gating uses native pytest mechanisms
-
-Conformance tests gate on cross-backend `Capability` values via
-parametrize id-filtering and `pytest.mark.skipif`. No `@requires(...)`
-custom marker layer is introduced. A reader can trace from the
-parametrize call to the fixture registry without indirection or a
-plugin hook.
-
-The cost paid is verbosity in a few helper functions. The cost avoided
-is a parallel marker system that needs its own conftest hook,
-documentation, and IDE-tooling integration. Spec contracts in
-TEST-005.
-
-##### Cassette refresh is explicit
-
-Cassettes regenerate when a developer runs `pytest --stage=3 --record`
-and commits the diff. CI does not silently re-record. The refresh is
-auditable as a normal PR. Drift between cassettes and real-service
-responses is detected by the next manual refresh. A scheduled refresh
-job is schedulable later if drift becomes painful. The reverse default,
-scheduling from day one, couples the cost-controlled tier to a recurring
-job before any empirical drift data exists. Spec contracts in TEST-009.
+- **Two orthogonal axes: kind and stage.** Separate *what a test wires up* (kind:
+  pure, mocked, real-local, real-live) from *how expensive it is to run* (stage:
+  1/2/3 by cost); a fixture declares one of each. A single linear stage list
+  collapses the two and hides real options, notably replay: a real-SDK code path
+  that runs at Stage 1 cost, which no single-axis ordering can express (TEST-001).
+  *Reverse if* a single axis ever expresses every kind/cost combination in use.
+- **Conformance as the cross-backend spine.** One parametrised suite over the
+  public `Store` / `Backend` API that every backend runs, so "add a backend, get
+  conformance for free" is the literal mechanism; backend-specific behaviour is
+  isolated to that backend's own home, not interleaved with the spine (TEST-002,
+  TEST-003, TEST-010). *Reverse if* the public API stops being a sufficient
+  cross-backend contract.
+- **HTTP cassette and replay as a Stage 1 fixture.** A `<backend>_replay` fixture
+  runs the real SDK path against a recorded cassette (Stage 3 records, Stage 1
+  replays), demoting a Stage-3-discovered behaviour to zero-cost CI. Scoped to
+  HTTP-transport backends only: SSH-binary and DB-wire protocols are not reachable
+  by available capture tools without a custom transport adapter, so their cheapest
+  source of truth stays Stage 2 with no demotion path (TEST-007, TEST-008).
+  *Reverse if* a capture mechanism for non-HTTP transports becomes worth its cost.
+- **Capability gating via native pytest.** Parametrize id-filtering plus
+  `pytest.mark.skipif`, with no custom `@requires` marker layer, so a reader
+  traces from the parametrize call to the fixture registry without a plugin hook.
+  The cost is verbosity in a few helpers; the cost avoided is a parallel marker
+  system with its own conftest hook, docs, and IDE integration (TEST-005).
+  *Reverse if* native gating can no longer express the capability matrix.
+- **Explicit cassette refresh.** Cassettes regenerate only when a developer runs
+  `pytest --stage=3 --record` and commits the diff; CI never silently re-records.
+  Scheduling a refresh from day one would couple the cost-controlled tier to a
+  recurring job before any empirical drift data exists; a scheduled job is
+  additive later if drift becomes painful (TEST-009). *Reverse if* observed drift
+  makes manual refresh unreliable.
 
 ### [ADR-0029](0029-graph-transfer-blocking-io-offload.md): Offload Graph Transfer Spool I/O off the Event Loop
 
-Dispatch the blocking spool I/O in `transfer.py` through `asyncio.to_thread`:
-the range-fallback `_spooled_window` write/seek/read, the `spool_content`
-write/tell/seek, and the `_upload_chunks` per-chunk seek+read (bundled into one
-`_seek_read` hop). The spool objects are accessed sequentially under `await`, so
-single-threaded offload is safe; nothing else holds the reader concurrently.
+Dispatch the Graph transfer's blocking spool file I/O off the event loop via
+`asyncio.to_thread`, on both the read-path range fallback and the write-path
+unknown-length upload. The spool objects are accessed sequentially under `await`,
+with nothing else holding the reader concurrently, so single-threaded offload is
+safe. *Reverse if* a spool ever gains a concurrent reader: the sequential-access
+invariant that makes single-threaded offload safe would no longer hold.
 
-This realises ADR-0025's own prescription ("`asyncio.to_thread` for hot paths")
-in-backend rather than leaving it deferred, and corrects the mischaracterised
-example.
+The exact spool methods and per-operation thread hops are code-level and live in
+`transfer.py`, with the spool contracts in [spec 044](../specs/044-graph-backend.md)
+§ GR-015 (range-fallback spool) and § GR-019 (upload-session spool).
 
 > amends ADR-0025 (clause).
 
 ### [ADR-0030](0030-azure-hns-explicit-declaration.md): Azure HNS Is an Explicit Declaration, Not Auto-Detected
 
-The Azure backend no longer auto-detects HNS. The account's nature is a
-**mandatory, explicit** constructor and config input, declared as a required
-`hns: bool` on both `AzureBackend` and `AsyncAzureBackend` (no default; a
-missing or non-`bool` value raises at construction).
+**HNS status is a mandatory, explicit declaration, never auto-detected.** Both
+`AzureBackend` and `AsyncAzureBackend` take a required `hns: bool` (no default);
+`_hns` is set once from it, with no probe, cache, warn-once state, or
+per-operation snapshot.
 
-- `AzureBackend(..., hns: bool)` and `AsyncAzureBackend(..., hns: bool)` —
-  there is no default. A backend constructed without `hns`, or with a
-  non-`bool` value, raises `ValueError` at construction time (fail loud, never
-  silently infer). The declaration must be a real boolean, not a truthy/falsy
-  proxy: config env-var resolution yields strings, so a `${VAR}` placeholder
-  resolving to `"false"` would otherwise coerce to `True` via `bool(...)` and
-  silently re-enable HNS — the very misdetection class this decision removes.
-- `_hns` becomes an immutable attribute set from the declared value. No probe,
-  no cache, no warn-once state, no per-operation snapshot.
+- **Why mandatory rather than a detected default.** The account's HNS status is a
+  fixed, deployment-time fact, but the old `GetAccountInfo` probe *guessed* it at
+  runtime from a network call that can fail, return stale authorization state
+  (e.g. an RBAC-propagation `403`), or be denied by least-privilege credentials.
+  That produced sticky misdetection, per-operation re-probe storms, and torn
+  reads mid-operation. A declared value cannot fail, so the one-time cost of
+  stating a known fact buys removal of the entire failure class and determinism
+  from construction. The value must be a real `bool`, not a truthy/falsy proxy,
+  because config env-var resolution yields strings and a `"false"` placeholder
+  would otherwise coerce to `True` and silently re-enable HNS. *Reverse if* a
+  deployment-time-reliable, authorization-independent way to detect HNS emerges.
+- **Discovery stays available, but only when asked, and fail-loud.**
+  `AzureUtils.detect_hns()` / `adetect_hns()` issue a single `GetAccountInfo`
+  call and return a `bool`; unlike the former implicit probe, a probe error is
+  raised rather than swallowed and degraded to flat semantics. This mirrors the
+  established pattern for connection facts that are discoverable but must not be
+  silently inferred (`SFTPUtils.scan_host_keys`, `GraphUtils.resolve_drive_id`).
+  *Reverse if* discovery becomes reliable enough to fold back into construction.
 
-For users who do not know an account's HNS status, a public one-shot helper
-discovers it explicitly:
-
-- `AzureUtils.detect_hns(...)` (sync) and `AzureUtils.adetect_hns(...)` (async)
-  issue a single `GetAccountInfo` call and return a `bool`. Unlike the former
-  implicit probe, these are **fail-loud**: a probe error is mapped to a
-  `remote_store` error and raised, not swallowed and degraded to flat
-  semantics.
-
-This mirrors the established helper pattern for connection facts that are
-discoverable but should not be silently inferred: `SFTPUtils.scan_host_keys`
-and `GraphUtils.resolve_drive_id`.
-
-##### Why mandatory rather than a detected default
-
-A detected default reintroduces every failure mode above: the probe can fail,
-return stale authorization state, or be denied. A declared value cannot. The
-small one-time cost — the user must state a fact they already know, or call
-`detect_hns()` once — buys the removal of an entire failure class and makes the
-backend's behaviour deterministic from construction.
-
-##### Migration
-
-This is a breaking change: every existing Azure call site must add `hns=`.
-Pre-v1 semver permits the change in a minor bump. The migration guide documents
-the before/after and the `detect_hns()` discovery recipe.
+The exact constructor signatures, the `ValueError` validation, the real-`bool`
+coercion rule, `_hns` immutability, and the `detect_hns`/`adetect_hns` contract
+are spec-rate and live in [spec 012](../specs/012-azure-backend.md) (AZ-001,
+AZ-005, AZ-006). The breaking migration (every call site adds `hns=`) is in
+Consequences.
 
 ### [ADR-0031](0031-expert-personas-as-subagent-files.md): Expert Personas as Standalone Subagent Files
 

@@ -44,46 +44,31 @@ path and won't call an extension function.
 ## Decision
 
 Add `read_seekable()` to `Backend` and `Store` as a concrete (non-abstract)
-method alongside the existing `read()`.
+method alongside `read()`, superseding ADR-0016's `ext.seekable` approach.
 
-### `Backend.read_seekable(path) -> BinaryIO`
+- **A first-class method, not an extension.** Consuming abstractions that control
+  the read path (PyArrow's `FileSystem`, Dagster's `IOManager`) will not call an
+  extension function, so seekability has to live on the Store/Backend surface to
+  reach them at all. *Reverse if* those abstractions gain a way to consume an
+  extension helper directly, removing the need for a built-in method.
+- **The default spools; backends may override for true random access.** The
+  default delegates to `read()` and spools a non-seekable stream into a
+  `SpooledTemporaryFile`; a backend like Azure overrides to return a range reader
+  that maps each seek+read to a single HTTP Range request. This is the tension
+  `ext.seekable` could not resolve: whole-file spooling defeats the byte-saving
+  that random access exists for. *Reverse if* one read path can serve both
+  sequential and sparse-random access without a per-backend override.
+- **`ext.seekable` is removed (never released) and `SEEKABLE_READ` shifts
+  meaning.** Its whole-file-spool behaviour is subsumed by the default; the
+  capability now signals that `read_seekable()` is zero-overhead (the backend
+  natively returns seekable streams), still useful for branching at setup time.
+  *Reverse if* the original "`read()` returns seekable" meaning is needed again.
 
-Default implementation: delegates to `read()`. If the returned stream is
-already seekable, returns it directly. Otherwise, spools into a
-`SpooledTemporaryFile` (same logic as the removed `ext.seekable`).
-
-Backends MAY override to provide an optimized implementation:
-
-- **AzureBackend**: returns `_AzureRangeReader` — a seekable
-  `io.RawIOBase` where each `readinto()` issues a single HTTP Range
-  request via `download_blob(offset=, length=)`.
-- **HttpBackend**: could implement HTTP Range in the future (not in
-  this change).
-
-### `Store.read_seekable(path) -> BinaryIO`
-
-Delegates to `backend.read_seekable()` with path resolution, capability
-checks, and logging — same pattern as `Store.read()`.
-
-### Arrow integration
-
-`StoreFileSystemHandler.open_input_file()` calls `store.read_seekable()`
-instead of `store.read()` for the Tier 3 path. This gives PyArrow a
-seekable, random-access-optimized handle on all backends without
-materializing the full file.
-
-### Removal of `ext.seekable`
-
-`ext.seekable.seekable_read()` is removed (never released — introduced
-after v0.19.0 in ID-100). Its functionality is subsumed by
-`Store.read_seekable()`. The `SEEKABLE_READ` capability shifts meaning:
-it now indicates that `read_seekable()` is zero-overhead (no spooling
-needed, the backend natively returns seekable streams).
-
-### `ProxyStore` cascade
-
-`ProxyStore.read_seekable()` delegates to `self._inner.read_seekable()`.
-`ObservedStore` hooks around it. `CachedStore` inherits the default.
+Exact signatures, the spool mechanic, the `_AzureRangeReader` override, Store
+delegation, the Arrow call site, and the `ProxyStore` cascade are spec-rate and
+live in [spec 036](../specs/036-seekable-read.md) (SEEK-002, SEEK-003, SEEK-005,
+SEEK-006, SEEK-008, SEEK-009). A future `HttpBackend` Range implementation is
+noted in Consequences.
 
 ## Consequences
 

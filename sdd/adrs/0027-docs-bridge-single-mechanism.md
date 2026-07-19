@@ -32,46 +32,29 @@ disagreed.
 ## Decision
 
 One documentation bridge, kept single by an enforcement gate. Three coupled
-sub-decisions:
+sub-decisions, each stated once:
 
-1. **One bridge, by construction** — `scripts/docs/scan.py:scan_dual_files` is the sole source-discovery function and `render.py:render_dual_pages` the sole render function; other helpers are removed, not deprecated. New content shapes extend this one mechanism rather than adding a parallel one.
-2. **Classification next to the file** — each `.md` declares its class via an HTML-comment marker, with a directory-default fallback; a file with no marker and no default is unclassified and fails the gate (G-01). No central manifest that can drift from the files.
-3. **Enforcement at PR time** — a check script fails the build if any framework rule is violated, so "use one bridge" cannot silently degrade to a preference.
-
-The recurring failure across the prior ADRs was not that the chosen mechanism
-was wrong; each was reasonable for the case that introduced it. The failure was
-that nothing prevented the next mechanism from being added alongside — a "use
-one bridge" decision without a check that detects the second bridge degrades to
-a preference.
-
-### One bridge, by construction
-
-`scripts/docs/scan.py:scan_dual_files` is the single source-discovery
-function for dual content. `scripts/docs/render.py:render_dual_pages` is
-the single render function. Other discovery and render helpers in the
-docs pipeline are removed, not deprecated. New content shapes extend
-this one mechanism; they do not add a parallel one. Contracts in
-[spec 047](../specs/047-docs-framework-tooling.md) DOCFRAME-001,
-DOCFRAME-005.
-
-### Classification next to the file, not in a manifest
-
-Each `.md` file declares its class on itself via an HTML-comment marker.
-Absence falls back to a directory-default rule (per
-[`AUTHORING.md`](../AUTHORING.md) Rule 1 and its directory-defaults
-table); a file with no marker AND no matching default is unclassified
-and fails the gate (G-01). A central manifest is auditable but lives
-apart from the files it classifies, so additions land in one place and
-the manifest in another. The marker cannot drift from the file because
-it is part of the file. Contracts in
-[spec 047](../specs/047-docs-framework-tooling.md) DOCFRAME-002.
-
-### Enforcement at PR time
-
-A check script (DOCFRAME-004) fails the build if any framework rule is
-violated, including the "one bridge" rule itself. This is the half that
-the prior ADRs left out. Without it, the next contributor under
-deadline pressure adds the next mechanism and the cycle resumes.
+- **One bridge, by construction.** A single source-discovery function and a
+  single render function carry all dual content; other discovery and render
+  helpers are removed, not deprecated. New content shapes extend this one
+  mechanism instead of adding a parallel one. The function names and the removal
+  set are owned by [spec 047](../specs/047-docs-framework-tooling.md)
+  (DOCFRAME-001, DOCFRAME-005). *Reverse if* a content shape genuinely cannot be
+  served by extending the single bridge, forcing a second mechanism.
+- **Classification next to the file, not in a manifest.** Each `.md` declares its
+  class via an HTML-comment marker, with a directory-default fallback (per
+  [`AUTHORING.md`](../AUTHORING.md) Rule 1); a file with no marker and no default
+  is unclassified and fails the gate. The marker cannot drift from the file
+  because it is part of it, unlike a central manifest that lives apart from what
+  it classifies. Marker contract: spec 047 (DOCFRAME-002). *Reverse if* structured
+  per-page metadata is ever needed that an HTML comment cannot carry (moving to
+  YAML frontmatter, per Alternatives).
+- **Enforcement at PR time.** A check script fails the build if any framework
+  rule is violated, including the "one bridge" rule itself. This is the half the
+  prior ADRs (0006, 0007, BK-167) left out: without a check that detects the
+  second bridge, "use one bridge" silently degrades to a preference, which is
+  exactly how the accumulation happened. Gate contract: spec 047 (DOCFRAME-004).
+  *Reverse if* the one-bridge rule itself is retired.
 
 ## Consequences
 

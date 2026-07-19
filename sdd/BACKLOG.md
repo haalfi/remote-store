@@ -326,20 +326,22 @@ and the highest ID already in this file, then take the next integer. Run
   budget; 0022 sits just over it because its reversal triggers and cache
   rationale are load-bearing — kept, not trimmed to the number). The gate, not
   the heuristic, is the criterion the next batch inherits.
-  Phase C (all-ADR gate sweep, in progress — why this stays `[~]`): every live
-  ADR (28, superseded 0006/0016/0019 excluded) triaged through the placement
-  gate, not just the word-budget-flagged set — the flag catches size, the gate
-  catches mismatched detail regardless of size (five of the eight flagged were
-  the inverse: unflagged ADRs still carrying a stale pin/roster). Verdicts:
+  Phase C (all-ADR gate sweep; why this stays `[~]`): every live ADR (28,
+  superseded 0006/0016/0019 excluded) triaged through the placement gate, not
+  just the word-budget-flagged set. The flag catches size; the gate catches
+  mismatched detail regardless of size (five of the eight flagged were the
+  inverse: unflagged ADRs still carrying a stale pin or roster). Verdicts:
   5 leave (0001, 0021–0024), 23 change. Shipping split, correctness-first.
-  PR1 (landed here): 8 ADRs whose Decision contradicted shipped code/spec —
+  PR1 (landed): 8 ADRs whose Decision contradicted shipped code/spec, namely
   0002 (env-var fallback vs CFG-021), 0004/0008/0020 (stale rosters/locations),
   0009 (stale GLOB snapshot), 0014 (stale `_owns_backend`), 0026 (stale adapter
   masking), 0005 (spec-vs-ADR `list_folders`, resolved on the spec's side per
-  principle 5). PR2 (pending): duplication rewrites (0003, 0007, 0011, 0017,
-  0018, 0025, 0027–0030). PR3 (pending): reverse-trigger amends (0010, 0012,
-  0013, 0015, 0031). Remaining Decision overages are deliberate gate-driven
-  leaves (constraint-bearing rationale kept, not trimmed to a number).
+  principle 5). PR2 (landed): 10 duplication rewrites (0003, 0007, 0011, 0017,
+  0018, 0025, 0027–0030) evicting spec-restatement to verified homes; 0025 the
+  largest at 1917→892 words. PR3 (pending, last piece): reverse-trigger amends
+  (0010, 0012, 0013, 0015, 0031). Corpus 10008→7975 words. Remaining Decision
+  overages are deliberate gate-driven leaves (constraint-bearing rationale kept,
+  not trimmed to a number).
 
 ---
 
