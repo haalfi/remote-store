@@ -1,0 +1,77 @@
+id: BUG-233
+title: "adlfs benchmark target errors on 10MB raw-bytes writes"
+trigger: >-
+  AdlfsTarget.write of a 10MB payload raised RuntimeError: Failed to upload
+  block: Sending a large body directly with raw bytes ... under the suite's
+  filterwarnings=error, surfaced when ID-230 first ran the standard tier.
+source_items:
+  - BUG-233
+audience:
+  - infra.test
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-233 (item)"
+        read_type: gate
+        extract: "Repro command, io.BytesIO fix sketch, and the run-of-record -k exclusion to lift"
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "Reproduce the failing test and see it fail before implementing the fix"
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: benchmarks/targets/_fsspec.py
+        section: "AdlfsTarget.write"
+        read_type: reference
+        extract: "fs.open(...).write(bytes) buffers then stages the block — the failing path"
+        outcome: ok
+      - file: benchmarks/targets/_raw_sdk.py
+        section: "AzureBlobRawTarget.write"
+        read_type: reference
+        extract: >-
+          upload_blob(data=bytes) streams via aiohttp BytesIOPayload, so the raw
+          target does NOT trip the warning — proving the fault is adlfs's
+          memoryview stage_block path, not the payload size itself
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: benchmarks/targets/_fsspec.py
+        section: "_quiet_large_raw_body / AdlfsTarget.write"
+        read_type: reference
+        extract: >-
+          Diverged from the io.BytesIO/pipe_file sketch (it would switch adlfs to
+          single-put for all sizes and change published 1MB numbers); scoped a
+          catch_warnings suppression of the one aiohttp ResourceWarning around the
+          default write path instead
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: benchmarks/test_throughput.py
+        section: "TestWriteThroughput / TestReadThroughput [10MB-azure-adlfs]"
+        read_type: verify
+        extract: "Failed before the fix, pass after, against a local Azurite container"
+        outcome: ok
+      - file: .github/workflows/benchmark.yml
+        section: "run-of-record clean profile -k"
+        read_type: verify
+        extract: >-
+          Lifted adlfs from the exclusion (now not (10MB and (s3fs or sshfs))) so
+          the clean run exercises the fix; s3fs/sshfs stay excluded (unplotted)
+        outcome: ok
+      - file: benchmarks/README.md
+        section: "Regenerating locally — clean run recipe"
+        read_type: verify
+        extract: "Same -k expression mirrored in the maintainer recipe; kept in sync"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience (derived CHANGELOG rule)"
+        read_type: verify
+        extract: "infra.test-only audience skips CHANGELOG"
+        outcome: ok

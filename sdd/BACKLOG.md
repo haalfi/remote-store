@@ -455,27 +455,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
 
-- [ ] **BUG-233 — `adlfs` benchmark target errors on 10MB raw-bytes writes**
-  spec: — · effort: S · audience: infra.test
-  The `adlfs` fsspec comparison target (`benchmarks/targets/_fsspec.py`) fails on
-  a 10MB write against Azurite with `RuntimeError: Failed to upload block:
-  Sending a large body directly with raw bytes might lock the event loop. You
-  should probably pass an io.BytesIO object instead!`. It only surfaces at the
-  `standard` tier (quick caps at 1MB), so it went unseen until the ID-230
-  run-of-record job first ran the standard tier against Docker Azure.
-  **Repro:** with the compose stack up,
-  `pytest benchmarks/test_throughput.py -k "10MB and adlfs" --backend azure`.
-  **Fix sketch:** wrap large payloads in `io.BytesIO` in the `Adlfs` target's
-  write/read path — adlfs's async uploader rejects a raw-`bytes` body above a
-  size threshold and asks for a file-like object.
-  **Impact:** benchmark comparison only, and only the Azure *fsspec* cell at
-  10MB. remote-store's own `AzureBackend` 10MB writes pass, so the published
-  overhead numbers are unaffected — no run-of-record chart plots fsspec targets
-  at 10MB. Currently deselected in the run-of-record clean run via
-  `-k "not (10MB and (adlfs or s3fs or sshfs))"` (`.github/workflows/benchmark.yml`);
-  lifting that exclusion once fixed restores the adlfs 10MB throughput cell.
-  Surfaced during ID-230.
-
 - [ ] **BK-242 — Flat-NS file-ancestor pre-check perf (SQLBlob IN-list, memoisation)**
   spec: — · effort: S · audience: infra.test, library.maintainer
   ID-211 review surfaced two perf optimisations the disposition (b)

@@ -172,18 +172,19 @@ jobs:
       # late-firing KeyboardInterrupt that aborts the session after the
       # benchmarks have already passed. 300s clears them with wide margin.
       #
-      # -k "not (10MB and (adlfs or s3fs or sshfs))": the fsspec comparison
-      # targets are not plotted at 10MB by any run-of-record output — throughput
-      # charts plot remote_store + the raw SDK only, and comparative.md's fsspec
-      # cells are 1MB — and adlfs specifically errors on a 10MB raw-bytes write
-      # ("pass an io.BytesIO object instead"). Drop those unused cells so the
-      # standard-tier run stays green; the 10MB remote_store + raw-SDK points the
-      # throughput chart needs are kept.
+      # -k "not (10MB and (s3fs or sshfs))": the s3fs/sshfs comparison targets
+      # are not plotted at 10MB by any run-of-record output — throughput charts
+      # plot remote_store + the raw SDK only, and comparative.md's fsspec cells
+      # are 1MB — so drop those unused cells to keep the standard-tier run lean.
+      # adlfs stays in: BUG-233 fixed its 10MB raw-bytes write (the aiohttp >1 MiB
+      # ResourceWarning is now suppressed in AdlfsTarget.write), so this run also
+      # exercises the fix. The 10MB remote_store + raw-SDK points the throughput
+      # chart needs are kept.
       - name: Benchmark — clean profile (standard tier)
         run: |
           pytest benchmarks/ --benchmark-sort=mean --benchmark-json=clean-raw.json \
             --backend local,s3,s3-pyarrow,sftp,azure -m "not full" --bench-timeout=300 \
-            -k "not (10MB and (adlfs or s3fs or sshfs))"
+            -k "not (10MB and (s3fs or sshfs))"
 
       # RTT matrix on the -latency backend variants. The overhead-vs-rtt chart
       # reads ONLY the OVERHEAD_OPS, so restrict the matrix to those five ops via

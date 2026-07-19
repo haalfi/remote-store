@@ -306,19 +306,18 @@ that artifact and commit its files — CI never pushes to docs.
 ```bash
 # 1. Run the clean + RTT matrix, capturing raw JSON per profile. These flags
 #    MUST match the run-of-record job in .github/workflows/benchmark.yml — run
-#    verbatim without them and the clean run hits the adlfs 10MB failure
-#    (BUG-233) and the RTT loop trips the per-test watchdog:
+#    verbatim without them and the RTT loop trips the per-test watchdog:
 #      * --bench-timeout=300 — standard-tier 10MB SFTP writes (~50s over
 #        pytest-benchmark's rounds) flirt with the default 60s watchdog and can
 #        trip a late KeyboardInterrupt that aborts the session.
-#      * clean -k drops the fsspec 10MB cells (adlfs errors on 10MB raw bytes;
-#        no run-of-record chart plots fsspec at 10MB).
+#      * clean -k drops the s3fs/sshfs 10MB cells (no run-of-record chart plots
+#        fsspec at 10MB). adlfs stays in — BUG-233 fixed its 10MB raw-bytes write.
 #      * RTT -k restricts to the five overhead ops the chart reads; the pedantic
 #        copy/move/streaming RS-only tests under latency otherwise exceed the
 #        watchdog and trip the same fatal interrupt.
 pytest benchmarks/ --benchmark-json=clean-raw.json \
   --backend local,s3,s3-pyarrow,sftp,azure -m "not full" --bench-timeout=300 \
-  -k "not (10MB and (adlfs or s3fs or sshfs))"
+  -k "not (10MB and (s3fs or sshfs))"
 for p in rtt20 rtt50 rtt100; do
   pytest benchmarks/ --benchmark-json="$p-raw.json" \
     --backend s3-latency,sftp-latency,azure-latency --network-profile "$p" \
