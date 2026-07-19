@@ -8,6 +8,7 @@ source_items:
   - BUG-233
 audience:
   - infra.test
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -49,6 +50,15 @@ phases:
           single-put for all sizes and change published 1MB numbers); scoped a
           catch_warnings suppression of the one aiohttp ResourceWarning around the
           default write path instead
+        outcome: ok
+      - file: benchmarks/targets/_fsspec.py
+        section: "_quiet_large_raw_body filter"
+        read_type: reference
+        extract: >-
+          PR #923 review flagged that a message-text filter couples to aiohttp's
+          exact wording and would silently stop matching on a reword; re-anchored
+          the filter on the origin module (aiohttp.payload) — narrower than
+          category-only, with no string coupling
         outcome: ok
   - id: verify
     name: Verify

@@ -23,14 +23,20 @@ def _quiet_large_raw_body() -> Iterator[None]:
     adlfs re-raises as ``RuntimeError: Failed to upload block: ...`` — so 10 MB
     writes error where 1 MB ones (below the threshold) pass. The upload itself is
     fine; the warning is cosmetic (no event loop to lock in a sync benchmark), so
-    scope the suppression to this one message and keep the default write path — a
-    faithful measurement of what a plain ``fs.open(...).write(bytes)`` user gets.
+    suppress it and keep the default write path — a faithful measurement of what a
+    plain ``fs.open(...).write(bytes)`` user gets.
+
+    Anchor the filter on the warning's origin module (``aiohttp.payload``) rather
+    than its message text: it stays narrow (only that ResourceWarning, not every
+    unrelated leak warning during the write) without coupling to aiohttp's exact
+    wording, which would silently stop matching on a future message reword and
+    re-break the very 10 MB cell this suppression exists for.
     """
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message="Sending a large body directly with raw bytes",
             category=ResourceWarning,
+            module=r"aiohttp\.payload",
         )
         yield
 
