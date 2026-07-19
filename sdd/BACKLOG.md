@@ -106,45 +106,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Docs & Discoverability
 
-- [ ] **BK-314 — Benchmark overhead: present in ms, not %, and fix the "shrinks as a share" narrative**
-  spec: — · effort: M · audience: user.site
-  The two overhead charts plot overhead as a **percentage** of raw-SDK time
-  (`chart_overhead` → `overhead.svg`, "Overhead vs raw SDK (%)"; and
-  `chart_overhead_vs_rtt` → `overhead-vs-rtt.svg`, "Average overhead vs raw SDK
-  (%)"; `benchmarks/charts.py:132,195`). These are the only two %-framed charts
-  — throughput is MB/s, s3-comparison is ms. Percentage hides the absolute cost
-  and, worse, the surrounding prose builds a **false premise** on it: the
-  performance guide narrates the fixed per-op cost as "shrink[ing] as a *share*
-  of total time" as RTT grows, with the example "a 1 ms overhead on a 100 ms
-  round trip is 1%" (`docs-src/explanation/performance.md:9-13,34,45-46,92-94`;
-  `README.md:230`).
-  **Why the premise is wrong:** the ID-230 run of record shows remote-store's
-  overhead is itself **round-trip driven** (extra `stat` calls — see BK-313), so
-  the absolute ms overhead **grows with RTT** rather than staying a fixed 1 ms.
-  SFTP write overhead is ~6×RTT, so at 100 ms RTT it is ~+560 ms, not a
-  vanishing 1%. The "1 ms on a 100 ms round trip" example is simply untrue for
-  SFTP; the % axis is what let the misreading stand.
-  **Scope (charts + prose, one item — same misrepresentation, two surfaces):**
-  1. Recast both overhead charts to **absolute ms** overhead (remote-store minus
-     raw), dropping the % y-axis. A generator was prototyped during the PR #906
-     review (grouped ms-by-backend for the clean profile; ms-vs-RTT line showing
-     the overhead *growing*).
-  2. **Add a decomposition chart:** stacked raw-SDK time + remote-store overhead
-     (ms) per RTT profile, overhead labelled in ms and as share-of-total, so the
-     fixed op time vs the latency-scaled overhead are both visible.
-  3. **Correct the prose** in `performance.md` (lede, Overhead at a Glance, What
-     Happens Under Real Latency, Practical Takeaways) and `README.md:230`:
-     replace "shrinks as a share / 1 ms on 100 ms is 1%" with the accurate
-     mechanism — overhead is a round-trip *count*, so the ms cost scales with
-     RTT; its share of total time can rise or fall, but the absolute cost grows.
-  Keep the ID-230 framing: **present** the overhead, do not judge acceptability
-  — ms is factual presentation, not a verdict. Also update the chart alt-text /
-  embeds (`performance.md:20,24,48`), any chart guard/tests, and the
-  `benchmarks/README.md` regeneration recipe if axis labels are cited; then
-  regenerate the SVGs from `benchmarks/results/run-of-record/{clean,rtt*}.json`
-  and recommit them. No spec/FEATURES ripple; `user.site` → CHANGELOG on ship.
-  Surfaced during the ID-230 chart review (PR #906).
-
 - [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
   spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling
   Our docs foundation is entering maintenance mode as its authors converge on a

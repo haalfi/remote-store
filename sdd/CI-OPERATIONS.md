@@ -167,7 +167,7 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   starts catching real rot, promote it to the drift-guard pattern.
 - **The `run-of-record` job (ID-230).** A second, opt-in job in the same
   workflow produces the **published overhead story** — the fresh source behind
-  `benchmarks/results/comparative.md` and the four docs charts. It runs **only**
+  `benchmarks/results/comparative.md` and the five docs charts. It runs **only**
   on `workflow_dispatch` with the `run_of_record` input checked (never on the
   weekly schedule — a full latency matrix every Monday is CI cost for no gate
   value). Unlike the correctness gate, it brings up the **full compose stack**

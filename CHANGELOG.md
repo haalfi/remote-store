@@ -13,7 +13,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - BK-310: Pin the backend enumeration order in the add-a-backend checklist
 - BK-311: Sync the stale tagline and backend-membership mirrors
 - BUG-232: Lift the `pyarrow<25` cap from the `arrow` and `sql-query` extras so all pyarrow extras allow pyarrow 25
-- ID-230: Present benchmark overhead, don't judge it. `bench-report --user` now reports a neutral magnitude band (`sub-ms`/`<10%`/`10-50%`/`>50%`) plus a factual faster/slower direction instead of an acceptability verdict (`Negligible`/`Favorable`/…); the performance guide and README lead with the measured delta and the "overhead shrinks as a share of total time as round-trip grows" mechanism, leaving the acceptability call to the reader. The published `comparative.md` and the four charts are refreshed from a reproducible Linux/Docker **run of record** (committed source JSON under `benchmarks/results/run-of-record/`, replacing the stale 2026-04-12 Windows-laptop numbers whose chart source was never committed); a `workflow_dispatch` `run_of_record` job + `hatch run bench-run-of-record` slim/guard rebuild them from committed inputs
+- ID-230: Present benchmark overhead as measured values (a neutral magnitude band plus a factual faster/slower direction), not an acceptability verdict; rebuild `comparative.md` and the charts from a committed, reproducible run of record
+- BK-314: Present benchmark overhead in absolute milliseconds rather than as a percentage of raw SDK time, add a raw+overhead decomposition chart, and correct the "overhead shrinks as a share" narrative to the round-trip-count mechanism
 
 ## [0.29.1] - 2026-07-09
 

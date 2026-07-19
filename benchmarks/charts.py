@@ -125,12 +125,18 @@ def _extract_throughput(
 
 
 # ---------------------------------------------------------------------------
-# Chart 1: Overhead % by backend (grouped bar)
+# Chart 1: Overhead (ms) by backend (grouped bar)
 # ---------------------------------------------------------------------------
 
 
 def chart_overhead(benchmarks: list[dict[str, Any]], output: Path) -> None:
-    """Generate grouped bar chart: overhead % vs raw SDK per backend."""
+    """Generate grouped bar chart: absolute ms overhead vs raw SDK per backend.
+
+    Overhead is ``remote_store - raw_sdk`` in milliseconds (BK-314) — the
+    absolute cost the wrapper adds, not a percentage of raw time. A percentage
+    axis hides that the cost is a fixed number of extra round trips, so under
+    latency it scales with RTT rather than shrinking to a vanishing share.
+    """
     data = _build_comparative_table(benchmarks, ops=OVERHEAD_OPS)
     op_labels = [label for _, _, label in OVERHEAD_OPS]
     backends = [b for b in COMPARATIVE_BACKENDS if any(b in data.get(op, {}) for op in op_labels)]
@@ -148,9 +154,8 @@ def chart_overhead(benchmarks: list[dict[str, Any]], output: Path) -> None:
             targets = data.get(op_label, {}).get(backend, {})
             rs = targets.get("remote_store")
             raw = targets.get(RAW_SDK_TARGET.get(backend, ""))
-            if rs is not None and raw is not None and raw > 0:
-                pct = ((rs - raw) / raw) * 100
-                overheads.append(pct)
+            if rs is not None and raw is not None:
+                overheads.append((rs - raw) * 1000)
             else:
                 overheads.append(float("nan"))
 
@@ -165,12 +170,12 @@ def chart_overhead(benchmarks: list[dict[str, Any]], output: Path) -> None:
             linewidth=0.5,
         )
         # Value labels on bars (bar_label handles alignment automatically).
-        labels = [f"{v:+.0f}%" if not np.isnan(v) and abs(v) > 3 else "" for v in overheads]
+        labels = [f"{v:+.1f}" if not np.isnan(v) and abs(v) >= 0.1 else "" for v in overheads]
         ax.bar_label(bars, labels=labels, fontsize=7, label_type="edge")
 
     ax.set_xlabel("")
-    ax.set_ylabel("Overhead vs raw SDK (%)", fontsize=_LABEL_SIZE)
-    ax.set_title("Abstraction overhead by backend", fontsize=_TITLE_SIZE, pad=12)
+    ax.set_ylabel("Overhead vs raw SDK (ms)", fontsize=_LABEL_SIZE)
+    ax.set_title("Abstraction overhead by backend (clean, no added latency)", fontsize=_TITLE_SIZE, pad=12)
     ax.set_xticks(x)
     ax.set_xticklabels(op_labels, fontsize=_TICK_SIZE)
     ax.tick_params(axis="y", labelsize=_TICK_SIZE)
@@ -192,11 +197,47 @@ def chart_overhead(benchmarks: list[dict[str, Any]], output: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _overhead_ms_by_profile(
+    profile_data: dict[str, list[dict[str, Any]]],
+    base_backends: list[str],
+) -> dict[str, dict[str, dict[str, tuple[float, float]]]]:
+    """Return ``{profile: {base_backend: {op_label: (raw_ms, overhead_ms)}}}``.
+
+    Uses the base backend for the ``clean`` profile and the Toxiproxy
+    ``-latency`` variant for each latency profile, so the overhead ratio has
+    both operands (see the run-of-record guard 2). Overhead is
+    ``(remote_store - raw_sdk)`` in milliseconds.
+    """
+    out: dict[str, dict[str, dict[str, tuple[float, float]]]] = {}
+    for profile, benchmarks in profile_data.items():
+        data = _build_comparative_table(benchmarks, ops=OVERHEAD_OPS)
+        per_backend: dict[str, dict[str, tuple[float, float]]] = {}
+        for base in base_backends:
+            bk = _LATENCY_VARIANT[base] if profile != "clean" else base
+            raw_key = RAW_SDK_TARGET.get(bk, RAW_SDK_TARGET.get(base, ""))
+            op_ms: dict[str, tuple[float, float]] = {}
+            for _, _, op_label in OVERHEAD_OPS:
+                targets = data.get(op_label, {}).get(bk, {})
+                rs = targets.get("remote_store")
+                raw = targets.get(raw_key)
+                if rs is not None and raw is not None:
+                    op_ms[op_label] = (raw * 1000, (rs - raw) * 1000)
+            if op_ms:
+                per_backend[base] = op_ms
+        if per_backend:
+            out[profile] = per_backend
+    return out
+
+
 def chart_overhead_vs_rtt(
     profile_data: dict[str, list[dict[str, Any]]],
     output: Path,
 ) -> None:
-    """Generate line chart: overhead % at different RTTs.
+    """Generate line chart: absolute ms overhead at different RTTs.
+
+    Overhead is remote-store minus raw SDK in milliseconds (BK-314). Because the
+    wrapper's cost is a fixed number of extra round trips, the line *rises* with
+    RTT rather than flattening toward a vanishing percentage.
 
     Args:
         profile_data: ``{profile_name: benchmarks_list}`` from multiple
@@ -204,37 +245,16 @@ def chart_overhead_vs_rtt(
             and at least one latency profile.
         output: Path for the SVG file.
     """
-    # Compute overhead % per (backend, op) at each RTT.
-    # Use latency backends (s3-latency etc.) for latency profiles,
-    # and base backends (s3 etc.) for clean profile.
-    ops = OVERHEAD_OPS
+    # Compute ms overhead per (backend, op) at each RTT. Use latency backends
+    # (s3-latency etc.) for latency profiles, base backends for clean.
     base_backends = ["s3", "sftp", "azure"]
 
-    # Build {profile: {base_backend: {op_label: overhead_pct}}}
-    overhead_by_profile: dict[str, dict[str, dict[str, float]]] = {}
-
-    for profile, benchmarks in profile_data.items():
-        data = _build_comparative_table(benchmarks, ops=ops)
-        per_backend: dict[str, dict[str, float]] = {}
-
-        for base in base_backends:
-            # For clean profile, use base backend; for latency, use latency variant.
-            bk = _LATENCY_VARIANT[base] if profile != "clean" else base
-            raw_key = RAW_SDK_TARGET.get(bk, RAW_SDK_TARGET.get(base, ""))
-            op_overheads: dict[str, float] = {}
-
-            for _, _, op_label in ops:
-                targets = data.get(op_label, {}).get(bk, {})
-                rs = targets.get("remote_store")
-                raw = targets.get(raw_key)
-                if rs is not None and raw is not None and raw > 0:
-                    op_overheads[op_label] = ((rs - raw) / raw) * 100
-
-            if op_overheads:
-                per_backend[base] = op_overheads
-
-        if per_backend:
-            overhead_by_profile[profile] = per_backend
+    # Build {profile: {base_backend: {op_label: avg overhead_ms}}}
+    raw_ovh_by_profile = _overhead_ms_by_profile(profile_data, base_backends)
+    overhead_by_profile: dict[str, dict[str, dict[str, float]]] = {
+        profile: {base: {op: ovh for op, (_raw, ovh) in ops.items()} for base, ops in per_backend.items()}
+        for profile, per_backend in raw_ovh_by_profile.items()
+    }
 
     if len(overhead_by_profile) < 2:
         # Not enough data — generate placeholder.
@@ -252,7 +272,7 @@ def chart_overhead_vs_rtt(
             transform=ax.transAxes,
         )
         ax.set_xlabel("Network latency (ms)", fontsize=_LABEL_SIZE)
-        ax.set_ylabel("Overhead vs raw SDK (%)", fontsize=_LABEL_SIZE)
+        ax.set_ylabel("Overhead vs raw SDK (ms)", fontsize=_LABEL_SIZE)
         ax.set_title("Overhead vs network latency", fontsize=_TITLE_SIZE, pad=12)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
@@ -290,8 +310,8 @@ def chart_overhead_vs_rtt(
             )
 
     ax.set_xlabel("Network round-trip time (ms)", fontsize=_LABEL_SIZE)
-    ax.set_ylabel("Average overhead vs raw SDK (%)", fontsize=_LABEL_SIZE)
-    ax.set_title("Overhead vs network latency", fontsize=_TITLE_SIZE, pad=12)
+    ax.set_ylabel("Average overhead vs raw SDK (ms)", fontsize=_LABEL_SIZE)
+    ax.set_title("Overhead grows with round-trip time", fontsize=_TITLE_SIZE, pad=12)
     ax.set_xticks(rtts)
     ax.tick_params(axis="both", labelsize=_TICK_SIZE)
     ax.axhline(y=0, color="black", linewidth=0.5)
@@ -301,6 +321,150 @@ def chart_overhead_vs_rtt(
     ax.spines["right"].set_visible(False)
 
     fig.tight_layout()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output, format="svg", bbox_inches="tight")
+    plt.close(fig)
+    print(f"  {output}")
+
+
+# ---------------------------------------------------------------------------
+# Chart 2b: Overhead decomposition — raw SDK time + overhead (ms) stacked
+# ---------------------------------------------------------------------------
+
+# Decomposition stack colors: raw SDK time as a recessive base, remote-store
+# overhead as the accent that carries the story.
+_RAW_STACK_COLOR = "#C5CAE9"  # indigo 100
+_OVERHEAD_STACK_COLOR = "#3F51B5"  # indigo 500
+
+
+def chart_overhead_decomposition(
+    profile_data: dict[str, list[dict[str, Any]]],
+    output: Path,
+) -> None:
+    """Stacked bars: raw SDK time + remote-store overhead (ms) per RTT profile.
+
+    One panel per network backend; each bar decomposes the mean per-op time
+    (averaged across the overhead ops) into the raw SDK cost and the
+    remote-store overhead on top, labelled in ms and as a share of the total
+    (BK-314). It makes the mechanism visible: the raw op time and the overhead
+    both scale with RTT because both are round-trip counts, so the absolute
+    overhead grows even where its share of the total stays modest.
+
+    Args:
+        profile_data: ``{profile_name: benchmarks_list}`` across
+            ``--network-profile`` runs. Needs ``"clean"`` plus at least one
+            latency profile.
+        output: Path for the SVG file.
+    """
+    base_backends = ["s3", "sftp", "azure"]
+    raw_ovh = _overhead_ms_by_profile(profile_data, base_backends)
+
+    # Average raw and overhead across the ops present, per (profile, backend).
+    # {backend: {profile: (avg_raw_ms, avg_overhead_ms)}}
+    by_backend: dict[str, dict[str, tuple[float, float]]] = {}
+    for profile, per_backend in raw_ovh.items():
+        for base, op_ms in per_backend.items():
+            raws = [raw for raw, _ in op_ms.values()]
+            ovhs = [ovh for _, ovh in op_ms.values()]
+            if raws:
+                by_backend.setdefault(base, {})[profile] = (
+                    sum(raws) / len(raws),
+                    sum(ovhs) / len(ovhs),
+                )
+
+    profiles_ordered = [p for p, _ in RTT_PROFILES if any(p in v for v in by_backend.values())]
+    backends = [b for b in base_backends if b in by_backend]
+
+    if len(profiles_ordered) < 2 or not backends:
+        # Not enough data — generate a placeholder mirroring the RTT chart.
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.text(
+            0.5,
+            0.5,
+            "Overhead decomposition chart\n\nRun benchmarks at each network profile\n"
+            "and re-run bench-charts to populate.\n\n"
+            f"Profiles found: {', '.join(sorted(profile_data.keys())) or 'none'}",
+            ha="center",
+            va="center",
+            fontsize=_LABEL_SIZE,
+            color="#888",
+            transform=ax.transAxes,
+        )
+        ax.set_ylabel("Mean time per op (ms)", fontsize=_LABEL_SIZE)
+        ax.set_title("Where the time goes: raw SDK + remote-store overhead", fontsize=_TITLE_SIZE, pad=12)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        fig.tight_layout()
+        output.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(output, format="svg", bbox_inches="tight")
+        plt.close(fig)
+        print(f"  {output} (placeholder — need clean + at least one latency profile)")
+        return
+
+    rtt_lookup = dict(RTT_PROFILES)
+    x = np.arange(len(profiles_ordered))
+    xtick_labels = [f"{p}\n{rtt_lookup[p]} ms" for p in profiles_ordered]
+
+    fig, axes = plt.subplots(1, len(backends), figsize=(4.2 * len(backends), 4.5))
+    if len(backends) == 1:
+        axes = [axes]
+
+    for ax, backend in zip(axes, backends, strict=True):
+        raws = [by_backend[backend].get(p, (float("nan"), float("nan")))[0] for p in profiles_ordered]
+        ovhs = [by_backend[backend].get(p, (float("nan"), float("nan")))[1] for p in profiles_ordered]
+        # A stacked bar can only draw a non-negative segment; clamp the drawn
+        # overhead height but always label the true (possibly negative) value.
+        drawn_ovh = [max(0.0, o) if not np.isnan(o) else 0.0 for o in ovhs]
+
+        ax.bar(
+            x,
+            raws,
+            0.6,
+            color=_RAW_STACK_COLOR,
+            edgecolor="white",
+            linewidth=0.5,
+            label="Raw SDK time",
+        )
+        ax.bar(
+            x,
+            drawn_ovh,
+            0.6,
+            bottom=raws,
+            color=_OVERHEAD_STACK_COLOR,
+            edgecolor="white",
+            linewidth=0.8,  # 2px surface gap between the two fills
+            label="remote-store overhead",
+        )
+
+        for xi, raw, ovh in zip(x, raws, ovhs, strict=True):
+            if np.isnan(raw) or np.isnan(ovh):
+                continue
+            total = raw + ovh
+            share = (ovh / total * 100) if total > 0 else 0.0
+            top = raw + max(0.0, ovh)
+            # `{:+.0f}` carries the sign itself — a positive overhead reads
+            # "+30 ms", a faster-than-raw one "-2 ms" (never "+-2 ms").
+            text = f"{ovh:+.0f} ms\n({share:+.0f}%)" if abs(ovh) >= 0.5 else "~0 ms"
+            ax.text(xi, top, text, ha="center", va="bottom", fontsize=7, color="#212121")
+
+        ax.set_title(BACKEND_LABELS.get(backend, backend), fontsize=_LABEL_SIZE)
+        ax.set_xticks(x)
+        ax.set_xticklabels(xtick_labels, fontsize=_TICK_SIZE)
+        ax.tick_params(axis="y", labelsize=_TICK_SIZE)
+        ax.margins(y=0.15)  # headroom for the top labels
+        ax.grid(axis="y", alpha=_GRID_ALPHA)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+    axes[0].set_ylabel("Mean time per op (ms)", fontsize=_LABEL_SIZE)
+    fig.tight_layout()
+    # Title on top, then a single shared legend just below it (identity is
+    # never colour-alone); both sit above the panels with a clear gap.
+    fig.suptitle("Where the time goes: raw SDK + remote-store overhead", fontsize=_TITLE_SIZE, y=1.13)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(
+        handles, labels, fontsize=_TICK_SIZE, frameon=False, loc="upper center", bbox_to_anchor=(0.5, 1.05), ncol=2
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, format="svg", bbox_inches="tight")
     plt.close(fig)
@@ -524,11 +688,12 @@ def main() -> None:
     chart_throughput(benchmarks, args.output_dir / "throughput.svg")
     chart_s3_comparison(benchmarks, args.output_dir / "s3-comparison.svg")
 
-    # Overhead-vs-RTT needs data from multiple network profiles.
+    # Overhead-vs-RTT and the decomposition need data from multiple profiles.
     profile_data = _load_profile_data(files)
     profiles_found = sorted(profile_data.keys())
     print(f"Network profiles found: {', '.join(profiles_found)}")
     chart_overhead_vs_rtt(profile_data, args.output_dir / "overhead-vs-rtt.svg")
+    chart_overhead_decomposition(profile_data, args.output_dir / "overhead-decomposition.svg")
 
     print("Done.")
 

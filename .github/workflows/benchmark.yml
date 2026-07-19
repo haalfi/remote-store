@@ -125,7 +125,7 @@ jobs:
           retention-days: 90
 
   # ID-230: the reproducible "run of record" that feeds the published overhead
-  # story (benchmarks/results/comparative.md + the four docs charts). This is
+  # story (benchmarks/results/comparative.md + the five docs charts). This is
   # NOT the weekly correctness/regression gate above — it is opt-in via the
   # `run_of_record` dispatch input, because loading the full latency matrix onto
   # every Monday run is CI cost for no gate value (the gate is `benchmark`).
@@ -133,7 +133,7 @@ jobs:
   # It brings up the FULL compose stack (Toxiproxy wired in front of the network
   # backends via infra/docker-compose.yml + infra/toxiproxy.json) rather than the
   # start-backends action, which has no Toxiproxy. It emits a `run-of-record`
-  # artifact (slimmed source JSON + regenerated comparative.md + 4 SVGs) that a
+  # artifact (slimmed source JSON + regenerated comparative.md + 5 SVGs) that a
   # maintainer downloads and COMMITS — CI is never given push rights to docs.
   run-of-record:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_of_record }}
@@ -186,8 +186,9 @@ jobs:
             --backend local,s3,s3-pyarrow,sftp,azure -m "not full" --bench-timeout=300 \
             -k "not (10MB and (s3fs or sshfs))"
 
-      # RTT matrix on the -latency backend variants. The overhead-vs-rtt chart
-      # reads ONLY the OVERHEAD_OPS, so restrict the matrix to those five ops via
+      # RTT matrix on the -latency backend variants. The overhead-vs-rtt and
+      # overhead-decomposition charts read ONLY the OVERHEAD_OPS, so restrict the
+      # matrix to those five ops via
       # -k (write/read 1MB, exists, list, delete — `not folder` drops the pedantic
       # test_delete_folder_recursive). Running the full quick tier three times
       # under simulated latency is slow, and the pedantic copy/move/streaming
@@ -237,6 +238,7 @@ jobs:
             benchmarks/results/comparative.md
             docs-src/img/benchmarks/overhead.svg
             docs-src/img/benchmarks/overhead-vs-rtt.svg
+            docs-src/img/benchmarks/overhead-decomposition.svg
             docs-src/img/benchmarks/throughput.svg
             docs-src/img/benchmarks/s3-comparison.svg
           retention-days: 90
