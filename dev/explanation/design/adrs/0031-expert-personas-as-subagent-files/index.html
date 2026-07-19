@@ -10419,10 +10419,9 @@ either way — structurally identical, constraint-faithful output, differing onl
 within normal run-to-run variance. See BK-315.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>Each expert persona is a <strong>standalone Claude Code subagent</strong> in
-<code>.claude/agents/&lt;name&gt;.md</code> — the single source of truth for that persona.
+<code>.claude/agents/&lt;name&gt;.md</code>, the single source of truth for that persona.
 The <code>/orchestrate</code> skill no longer embeds personas; it references each expert by
-<code>subagent_type</code> (in its Step 4 execute sections) and supplies the per-call task
-and mode in the invocation prompt.</p>
+<code>subagent_type</code> and supplies the per-call task and mode in the invocation prompt.</p>
 <ul>
 <li><strong>Repo-root-relative paths.</strong> Personas cite <code>sdd/TESTING.md</code> etc. as plain
   paths (agents run with cwd at the repo root).</li>
@@ -10430,6 +10429,10 @@ and mode in the invocation prompt.</p>
   constraints, and done-when; the invocation prompt carries the task, the specs
   to trace, and the mode (implement vs review).</li>
 </ul>
+<p><em>Reverse if</em> the split stops paying off: the personas are never reused outside
+<code>/orchestrate</code>, or their model-routability (the main loop spawning an expert
+outside an orchestration run) proves more harmful than the reuse is worth,
+favouring a re-inlined, fully-gated model.</p>
 <p>Domain boundaries, the three orchestration modes, the convergence flow, and
 cross-domain file ownership (README/CHANGELOG owned by the orchestrator) are
 unchanged.</p>

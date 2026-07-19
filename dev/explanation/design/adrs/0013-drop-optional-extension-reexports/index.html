@@ -10435,19 +10435,21 @@ cost and are part of the core value proposition.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>Remove the conditional <code>try/except ImportError</code> re-export blocks for all
 optional-dependency extensions (<code>arrow</code>, <code>otel</code>, <code>pydantic</code>, <code>yaml</code>) from
-<code>remote_store/__init__.py</code> and <code>__all__</code>.</p>
-<p>Users import optional extensions from their canonical module path:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span><span class="p">,</span> <span class="n">otel_observe</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_pydantic</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.yaml</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_yaml</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">dagster_io_manager</span>
-</code></pre></div>
-<p>This makes all optional-dependency extensions consistent — including
-dagster, which was already using this pattern.</p>
-<p>The rest of ADR-0008 (public-API-only rule, <code>__all__</code>, lifecycle rules,
-error propagation, dependency rules, development lifecycle, third-party
-conventions) remains in effect.</p>
+<code>remote_store/__init__.py</code> and <code>__all__</code>. Each <code>try</code> block eagerly imports the
+extension and its dependency at <code>import remote_store</code> time (Dagster alone costs
+~2-5 s), penalising users who never call it, and no source, test, or example
+imports these symbols from the top level.</p>
+<p>Users import optional extensions from their canonical module path, e.g.
+<code>from remote_store.ext.arrow import pyarrow_fs</code>. This makes every
+optional-dependency extension consistent, including dagster, which already used
+this pattern. The removal is documented in the CHANGELOG "Removed" entry; each
+affected symbol is discoverable from its extension module's <code>__all__</code>.</p>
+<p><em>Reverse if</em> top-level convenience imports are wanted back: a module-level
+<code>__getattr__</code> in <code>__init__.py</code> (Python 3.7+) can expose the symbols lazily
+without the eager-load cost, rather than re-introducing the <code>try/except</code>
+pattern.</p>
+<p>This amends only ADR-0008's export rules; the rest of ADR-0008 (public-API-only,
+<code>__all__</code>, lifecycle, error propagation, dependency rules) remains in effect.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Faster imports.</strong> <code>import remote_store</code> no longer eagerly loads
@@ -10462,11 +10464,6 @@ conventions) remains in effect.</p>
   guides migration.</li>
 <li><strong>Pure-Python extensions unchanged.</strong> <code>from remote_store import
   batch_delete, glob_files, observe</code> etc. continue to work.</li>
-<li><strong>Future direction.</strong> If top-level convenience imports are ever wanted back
-  without the eager-load cost, Python 3.7+ module-level <code>__getattr__</code> in
-  <code>__init__.py</code> enables lazy loading — the symbol appears in the namespace
-  but the heavy dependency only imports on first access.  This avoids
-  re-introducing the <code>try/except ImportError</code> pattern.</li>
 </ul>
 
 

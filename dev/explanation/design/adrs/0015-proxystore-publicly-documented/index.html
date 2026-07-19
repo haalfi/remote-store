@@ -10441,14 +10441,19 @@ explicitly avoided.</p>
 </li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Export <code>ProxyStore</code> from <code>remote_store</code> and document it in the API
-reference. The class remains an internal delegation base by design:
-it centralises private-attribute coupling (<code>_backend</code>, <code>_root</code>,
-<code>_owns_backend</code>) and default delegation. It is not a middleware
-framework and gains no new hooks or dispatch machinery.</p>
-<p>The rest of ADR-0014 (delegation model, <code>_wrap_child()</code> hook, stream
-wrappers, integrity functions, migration trigger for Path 2) remains
-in effect.</p>
+<ul>
+<li><strong>Export <code>ProxyStore</code> from <code>remote_store</code> and document it in the API
+  reference.</strong> It remains an internal delegation base by design, centralising the
+  private-attribute coupling (<code>_backend</code>, <code>_root</code>, <code>_owns_backend</code>) and default
+  delegation; it is not a middleware framework and gains no new hooks or dispatch
+  machinery. This documents a surface users already see (in the <code>ObservedStore</code> /
+  <code>CachedStore</code> class hierarchy) and that extension authors already need, while
+  adding no new API. <em>Reverse if</em> a real hook/dispatch surface is ever needed
+  (ADR-0014's Path-2 migration), at which point this document-only decision
+  reopens and the public contract is redesigned.</li>
+</ul>
+<p>The rest of ADR-0014 (delegation model, <code>_wrap_child()</code> hook, stream wrappers,
+integrity functions, migration trigger for Path 2) remains in effect.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Documented.</strong> <code>ProxyStore</code> has an API reference page, appears in

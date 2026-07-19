@@ -10424,56 +10424,51 @@ with no user-facing benefit.</p>
 <code>AsyncStore</code>.</p>
 <ol>
 <li>
-<p><strong>Separate async types.</strong> <code>AsyncBackend</code> (ABC) and <code>AsyncStore</code> are
-   distinct types from <code>Backend</code> and <code>Store</code>. No shared base class — they
-   serve separate use cases. Follows the httpx pattern (separate <code>Client</code>
-   / <code>AsyncClient</code>, shared config types).</p>
+<p><strong>Separate async types.</strong> <code>AsyncBackend</code> (ABC) and <code>AsyncStore</code> are distinct
+   from <code>Backend</code> and <code>Store</code>, with no shared base, because they serve separate
+   use cases (the httpx <code>Client</code>/<code>AsyncClient</code> pattern). <em>Reverse if</em> a shared
+   base removes more duplication than the type separation costs.</p>
 </li>
 <li>
-<p><strong>Auto-wrapping.</strong> <code>AsyncStore</code> accepts both <code>AsyncBackend</code> and sync
-   <code>Backend</code>. If given a sync <code>Backend</code>, it auto-wraps via
-   <code>SyncBackendAdapter</code>. Users get async immediately with existing
-   backends, no manual wrapping needed.</p>
+<p><strong>Auto-wrapping.</strong> <code>AsyncStore</code> accepts both an <code>AsyncBackend</code> and a sync
+   <code>Backend</code>, auto-wrapping the latter via <code>SyncBackendAdapter</code>, so async users
+   get immediate value with existing backends and no manual wrapping. <em>Reverse
+   if</em> implicit wrapping hides a correctness or performance cost that an explicit
+   wrap would surface.</p>
 </li>
 <li>
 <p><strong><code>read()</code> returns <code>AsyncIterator[bytes]</code>.</strong> There is no standard
-   <code>AsyncBinaryIO</code> in Python. <code>AsyncIterator[bytes]</code> is the idiomatic
-   async streaming pattern (used by httpx, aiohttp). <code>read_bytes()</code>
-   remains the convenience method returning <code>bytes</code>.</p>
+   <code>AsyncBinaryIO</code> in Python, and <code>AsyncIterator[bytes]</code> is the idiomatic async
+   streaming shape (httpx, aiohttp); <code>read_bytes()</code> stays the <code>bytes</code>
+   convenience. <em>Reverse if</em> a standard async binary-file protocol emerges.</p>
 </li>
 <li>
-<p><strong><code>aclose()</code> naming.</strong> Follows the Python convention for async
-   cleanup: <code>aclose</code> on async generators, <code>asyncio.StreamWriter</code>, and
-   redis-py. <code>__aexit__</code> calls <code>aclose()</code>.</p>
+<p><strong><code>asyncio</code> only, no anyio or trio.</strong> Chosen for simplicity (fewer
+   abstractions, easier debugging), not dependency cost; the async audience
+   already has anyio transitively. <em>Reverse if</em> a supported runtime needs
+   trio/anyio semantics asyncio cannot express (a non-breaking change).</p>
 </li>
 <li>
-<p><strong><code>asyncio</code> only.</strong> No anyio or trio dependency. The rationale is
-   simplicity (fewer abstractions, easier debugging), not dependency cost
-   — our async audience (FastAPI, Starlette, httpx users) already has
-   anyio transitively. Can be revisited without breaking changes.</p>
+<p><strong>Non-I/O methods stay sync.</strong> Operations with no I/O have no reason to be
+   async. <em>Reverse if</em> one gains an I/O dependency.</p>
 </li>
 <li>
-<p><strong>Iterator materialization.</strong> <code>SyncBackendAdapter</code> materializes
-   <code>list_files()</code>, <code>list_folders()</code>, <code>glob()</code>, and <code>iter_children()</code> in
-   a thread (collects to list, then yields). Cannot stream across thread
-   boundaries. Native async backends (Phase 2) stream properly.</p>
+<p><strong>Phased rollout.</strong> Phase 1 ships the core surface, Phase 2 native async
+   backends, Phase 3 async extensions, each with its own spec. <em>Reverse if</em>
+   delivering the surface whole beats staging it.</p>
 </li>
 <li>
-<p><strong>Non-I/O methods stay sync.</strong> <code>to_key()</code>, <code>unwrap()</code>,
-   <code>native_path()</code>, <code>capabilities</code>, <code>name</code> — no I/O, no reason to be
-   async.</p>
-</li>
-<li>
-<p><strong>Phased rollout.</strong> Phase 1: core surface (<code>AsyncBackend</code>,
-   <code>SyncBackendAdapter</code>, <code>AsyncStore</code>, <code>AsyncMemoryBackend</code>). Phase 2:
-   native async backends. Phase 3: async extensions. Each phase gets its
-   own spec.</p>
-</li>
-<li>
-<p><strong>Zero new runtime deps in Phase 1.</strong> Uses only stdlib <code>asyncio</code>.
-   Optional async deps (asyncssh) come in Phase 2 as extras.</p>
+<p><strong>Zero new runtime deps in Phase 1.</strong> Phase 1 uses only stdlib <code>asyncio</code>,
+   preserving the core's zero-dependency floor; optional async deps (asyncssh)
+   arrive as Phase 2 extras. <em>Reverse only</em> by deliberately abandoning the
+   zero-dependency-core promise.</p>
 </li>
 </ol>
+<p>The <code>aclose()</code> naming and wiring, the exact non-I/O method roster, and the
+<code>read_bytes</code> contract are spec-rate and live in
+<a href="../../specs/029-async-store-backend-api/">spec 029</a> (ASYNC-007, ASYNC-020,
+ASYNC-022, ASYNC-023, ASYNC-034). <code>SyncBackendAdapter</code>'s iterator materialization
+is a realized consequence of auto-wrapping, covered under Consequences.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Async users unblocked immediately with existing sync backends via
