@@ -298,8 +298,7 @@ constructor.
 
 ## References
 
-- ADR-0012: Async Store / Backend API — Hybrid Model (§ Async
-  posture, error-mapping rules)
+- ADR-0012: Async Store / Backend API — Hybrid Model
 - ADR-0023: Async Monitor-URL Polling
 - ADR-0024: `ResourceLocked` Error Type
 - RFC-0010: Microsoft Graph Backend (§ Async posture)

@@ -497,7 +497,7 @@ raises `RuntimeError` with a message stem
 directs the caller to use `AsyncStore` instead. Detection is per-call,
 not per-construction.
 **Rationale:** The sync `Store` API is not coroutine-safe by design
-(ADR-0012 § Async posture).  Fail-fast beats deadlock.
+(ADR-0012, the hybrid sync/async model).  Fail-fast beats deadlock.
 **See also:** [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
 § Behaviour when the caller is in a running loop.
 
@@ -584,7 +584,7 @@ does not wrap, translate, or re-label exceptions.  Specifically:
   `concurrent.futures` behaviour.
 
 **See also:** [005-error-model.md](005-error-model.md) (ERR-001),
-ADR-0012 § error-mapping rules.
+ADR-0012 (same error model across sync and async).
 
 ### ASYNC-088: Lifecycle — `close(timeout)`
 
