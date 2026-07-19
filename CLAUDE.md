@@ -15,6 +15,7 @@ Spec-Driven Development (SDD).
 5. **Specs are source of truth**: code vs spec conflict: code is wrong. Backlog vs history conflict: backlog is wrong. Fix the less authoritative side.
 6. **Run it, don't just type-check it**: verify behavior, not signatures. Reproduce bugs before claiming fixes. Test what matters, not just what type-checks.
 7. **Be critical, not agreeable**: challenge assumptions, question completeness, flag what's missing. Especially in reviews: a rubber-stamp is worse than no review. Ask what's untested, what could break, what's absent from the checklist.
+8. **Minimize mismatched detail, not detail**: durable artifacts — code, docs, specs, tests — keep the detail whose change-rate and correctness-locus fit the artifact, and relocate detail that belongs to another layer to its authoritative home (per principle 4). Brevity is a byproduct of correct placement, never the target: never delete a load-bearing reason to hit a length budget.
 
 ## Feature reference
 
