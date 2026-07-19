@@ -2,7 +2,43 @@
 
 from __future__ import annotations
 
+import contextlib
+import warnings
+from typing import TYPE_CHECKING
+
 from benchmarks.targets._protocol import BenchTarget
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+
+@contextlib.contextmanager
+def _quiet_large_raw_body() -> Iterator[None]:
+    """Silence aiohttp's >1 MiB raw-body ``ResourceWarning`` for one call.
+
+    aiohttp warns (``payload.py``) when a raw ``bytes``/``memoryview`` body over
+    ``TOO_LARGE_BYTES_BODY`` (2**20) is sent, and adlfs's buffered-file write
+    stages the whole payload as a single ``memoryview`` block. Under the suite's
+    ``filterwarnings = error`` the warning is promoted to an exception, which
+    adlfs re-raises as ``RuntimeError: Failed to upload block: ...`` — so 10 MB
+    writes error where 1 MB ones (below the threshold) pass. The upload itself is
+    fine; the warning is cosmetic (no event loop to lock in a sync benchmark), so
+    suppress it and keep the default write path — a faithful measurement of what a
+    plain ``fs.open(...).write(bytes)`` user gets.
+
+    Anchor the filter on the warning's origin module (``aiohttp.payload``) rather
+    than its message text: it stays narrow (only that ResourceWarning, not every
+    unrelated leak warning during the write) without coupling to aiohttp's exact
+    wording, which would silently stop matching on a future message reword and
+    re-break the very 10 MB cell this suppression exists for.
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            category=ResourceWarning,
+            module=r"aiohttp\.payload",
+        )
+        yield
 
 
 class S3fsTarget(BenchTarget):
@@ -80,7 +116,10 @@ class AdlfsTarget(BenchTarget):
         return f"{self._container}/{path}"
 
     def write(self, path: str, data: bytes) -> None:
-        with self._fs.open(self._full(path), "wb") as f:
+        # adlfs stages the payload as one raw memoryview block; suppress aiohttp's
+        # cosmetic >1 MiB ResourceWarning so the suite's error-on-warning does not
+        # fail 10 MB writes. See _quiet_large_raw_body for the full rationale.
+        with _quiet_large_raw_body(), self._fs.open(self._full(path), "wb") as f:
             f.write(data)
 
     def read(self, path: str) -> bytes:

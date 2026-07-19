@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-233 — `adlfs` benchmark target errors on 10MB raw-bytes writes**
+  spec: — · effort: S · audience: infra.test
+  Root cause was not adlfs but a cosmetic warning promoted to an error: aiohttp
+  (`payload.py`) warns when a raw `bytes`/`memoryview` body over `TOO_LARGE_BYTES_BODY`
+  (2**20) is sent, and adlfs's buffered-file write stages a 10MB payload as one
+  raw `memoryview` block (`spec.py:_stage_block`). The suite's `filterwarnings = error`
+  turned that `ResourceWarning` into the `RuntimeError: Failed to upload block: …`
+  adlfs re-raises, so 10MB writes errored where 1MB (below the threshold) passed.
+  The raw-Azure target does *not* fail because `upload_blob` streams the body
+  (aiohttp `BytesIOPayload`, no warning). **Fix:** diverged from the item's
+  `io.BytesIO`/`pipe_file` sketch — that would switch adlfs to single-put for all
+  sizes and change the already-published 1MB numbers. Instead scoped a
+  `_quiet_large_raw_body()` context manager in `benchmarks/targets/_fsspec.py` that
+  silences only that one message around `AdlfsTarget.write`, keeping the default
+  `fs.open(...).write(bytes)` path (a faithful measurement of what a plain adlfs
+  user gets; the upload itself always succeeded). Reproduced the failure against
+  Azurite, applied the fix, confirmed the `10MB-azure-adlfs` write+read cells pass.
+  Lifted adlfs from the run-of-record `-k` exclusion in `.github/workflows/benchmark.yml`
+  (now `not (10MB and (s3fs or sshfs))`) so the clean run exercises the fix, and
+  updated the matching `benchmarks/README.md` recipe; s3fs/sshfs stay excluded
+  (unplotted at 10MB, out of scope). No CHANGELOG entry (infra.test). Surfaced
+  during ID-230.
+
 - [x] **BK-316 — SFTP low-severity correctness edges (audit-020 L1–L6)**
   spec: SFTP-010, SFTP-014, SFTP-020, SFTP-021, SFTP-023, BE-008 · effort: M · audience: user.api
   Closed the audit-020 group-G4 tail deferred out of PR #910. Every edge manifests
