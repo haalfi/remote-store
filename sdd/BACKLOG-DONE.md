@@ -8,6 +8,33 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-232 — Rewrite ADR Decision sections to state decisions, not spec/impl detail**
+  spec: — · effort: L · audience: library.maintainer
+  `gen_adr_digest` (PR #909) lifts each ADR's whole `## Decision` into
+  `sdd/adrs/DIGEST.md`, which made visible that many Decisions had drifted from
+  stating a decision into restating spec, API, and implementation detail. Fixed
+  against the three-condition placement gate from
+  [`research-id-232-detail-placement-durability.md`](research/research-id-232-detail-placement-durability.md)
+  (change-rate, cost-of-staleness, local justificatory need; all three required),
+  now also CLAUDE.md principle #8.
+  Phase A: `gen_adr_digest --check` gained non-gating `ADVICE` notices (word
+  budget, version specifiers, H4 depth) as an advisory smell detector, never a
+  gate. Phase B: the Graph ADRs 0021–0024 rewritten against the gate. Phase C
+  swept **every live ADR** (28; superseded 0006/0016/0019 excluded) through the
+  gate, not just the word-budget-flagged set, because the flag catches size while
+  the gate catches mismatched detail regardless of size; five of the eight flagged
+  offenders were the inverse (unflagged ADRs still carrying a stale pin or roster).
+  Verdict: 5 left with reasons (0001, 0021–0024; 0022 a deliberate over-budget
+  leave whose reversal triggers and cache rationale are load-bearing), 23
+  rewritten, every relocation verified present in its home before removal. Shipped
+  in three PRs: PR1 (#917) the 8 correctness/staleness defects where a Decision
+  contradicted shipped code/spec; PR2 (#918) the 10 duplication rewrites (0025 the
+  largest, 1917→892 words); PR3 the 5 reverse-trigger amends. Corpus 10008→8223
+  words as a byproduct of correct placement, not a target; remaining overages are
+  deliberate gate-driven leaves. Trace:
+  `sdd/traces/ID-232-decision-detail-heuristic.yml`. No CHANGELOG (internal `sdd/`
+  docs; audience contributor/maintainer).
+
 - [x] **BUG-234 — `test_register_backend` depends on prior-test registry population**
   spec: REG-008 · effort: S · audience: infra.test
   `tests/test_registry.py::test_register_backend` asserted `"local" in

@@ -297,52 +297,6 @@ and the highest ID already in this file, then take the next integer. Run
   and several `sdd/` research docs). Convert all non-trivial ASCII diagrams; leave simple
   inline flows (single arrows, short sequences) as text.
 
-- [~] **ID-232 — Rewrite ADR Decision sections to state decisions, not spec/impl detail**
-  spec: — · effort: L · audience: library.maintainer
-  `gen_adr_digest` (PR #909) lifts each ADR's whole `## Decision` section into
-  `sdd/adrs/DIGEST.md`, which made visible that many Decision sections drifted
-  from stating a decision into mixing spec, API, and implementation detail, with
-  the Graph ADRs (0021–0024) worst. The ADR discipline (state the decision; push
-  detail to the relevant spec or `## Consequences`) eroded over time. Rewrite
-  each Decision section to a crisp decision plus only essential detail,
-  relocating spec/impl specifics to the spec or Consequences; the digest is the
-  before/after visibility check (a shorter, decision-only digest is the signal).
-  Research (advisory): [`research-id-232-detail-placement-durability.md`](research/research-id-232-detail-placement-durability.md)
-  supplies the rewrite criterion (a three-condition placement gate: change-rate,
-  cost-of-staleness, and local justificatory need, all three required) and tests.
-  Phase A (shipped): `gen_adr_digest --check` now emits non-gating
-  `ADVICE` notices for Decision sections over a word budget, carrying version
-  specifiers, or nesting past H3 — the "keep it enforced, not just visible"
-  heuristic is built and advisory-only, never affecting the exit code. Phase B
-  (this PR): the Graph ADRs 0021–0024 rewritten against the three-condition gate
-  (not the heuristic). Each Decision states its decisions as scannable units
-  (bullets, or a short subsection) with the reasons and reversal triggers inline,
-  and only volatile spec/impl detail behind a pointer. Relocations, each verified
-  in its home before removal: the graph pins to `pyproject.toml`; the token-cache
-  mechanism to the code (`_graph/auth.py`), with GR-007 owning only the contract
-  (cache path, override rules, multi-process safety); poller cadence to GR-026;
-  error mapping and retry to GR-045 / RET-015. The digest shrinking is a byproduct
-  of correct placement, not the goal (three of four fall under the advisory
-  budget; 0022 sits just over it because its reversal triggers and cache
-  rationale are load-bearing — kept, not trimmed to the number). The gate, not
-  the heuristic, is the criterion the next batch inherits.
-  Phase C (all-ADR gate sweep; why this stays `[~]`): every live ADR (28,
-  superseded 0006/0016/0019 excluded) triaged through the placement gate, not
-  just the word-budget-flagged set. The flag catches size; the gate catches
-  mismatched detail regardless of size (five of the eight flagged were the
-  inverse: unflagged ADRs still carrying a stale pin or roster). Verdicts:
-  5 leave (0001, 0021–0024), 23 change. Shipping split, correctness-first.
-  PR1 (landed): 8 ADRs whose Decision contradicted shipped code/spec, namely
-  0002 (env-var fallback vs CFG-021), 0004/0008/0020 (stale rosters/locations),
-  0009 (stale GLOB snapshot), 0014 (stale `_owns_backend`), 0026 (stale adapter
-  masking), 0005 (spec-vs-ADR `list_folders`, resolved on the spec's side per
-  principle 5). PR2 (landed): 10 duplication rewrites (0003, 0007, 0011, 0017,
-  0018, 0025, 0027–0030) evicting spec-restatement to verified homes; 0025 the
-  largest at 1917→892 words. PR3 (pending, last piece): reverse-trigger amends
-  (0010, 0012, 0013, 0015, 0031). Corpus 10008→7975 words. Remaining Decision
-  overages are deliberate gate-driven leaves (constraint-bearing rationale kept,
-  not trimmed to a number).
-
 ---
 
 ## API Ergonomics

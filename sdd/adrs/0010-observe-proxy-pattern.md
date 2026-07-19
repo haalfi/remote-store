@@ -33,27 +33,28 @@ implementation — calls bypass hooks with no warning.
 
 ## Decision
 
-Use **Option A (proxy subclass)** with a mandatory **drift-protection
-test** that asserts `ObservedStore` overrides every public method of
-`Store`. This catches missing overrides at CI time.
+Use **Option A (proxy subclass)**: `ObservedStore(Store)` explicitly overrides
+every public method, guarded by a **mandatory drift-protection test** (OBS-007)
+that fails CI if any public `Store` method lacks an override.
 
-The drift-protection test inspects `Store.__dict__` for public callable
-members and verifies that `ObservedStore.__dict__` contains an override
-for each one. This is specified as OBS-007 in the spec.
+- **Why a real subclass, not a `__getattr__` proxy (Option B).** An explicit
+  subclass keeps `isinstance(observed, Store)` true, preserves static typing and
+  IDE navigation, and keeps the instrumentation legible; a `__getattr__` wrapper
+  auto-picks-up new methods but loses all three. *Reverse if* the maintenance cost
+  of explicit overrides ever outweighs that benefit (for example, if `Store`
+  grows large and volatile).
+- **The drift test is what makes Option A viable.** Option A's one hazard is that
+  a newly added `Store` method silently inherits the un-instrumented base and
+  bypasses hooks; OBS-007 catches that at CI. The test is a hard requirement for
+  any proxy subclass of `Store`, not an optional extra.
+- **Named `ext.observe`, not `ext.notify`.** "Observe" describes the read-only,
+  side-effect-free nature of the hooks; the factory is `observe()`. *Reverse if*
+  the hooks ever gain interception or mutation semantics, at which point
+  "notify"/"intercept" naming fits.
 
-### Reusability
-
-The proxy subclass pattern established here is reusable for future
-wrappers such as `ext.cache` (ID-025). The drift-protection test
-technique generalises: any proxy subclass of `Store` can include an
-analogous assertion.
-
-### Naming
-
-The extension is named `ext.observe` (not `ext.notify` from the
-original backlog). "Observe" better describes the read-only,
-side-effect-free nature of the hooks — they observe operations but do
-not intercept or modify them. The factory function is `observe()`.
+The `__dict__`-introspection mechanism of the drift test and the `observe()`
+signature are spec-rate and live in [spec 019](../specs/019-ext-observe.md)
+(OBS-002, OBS-007).
 
 ## Consequences
 
