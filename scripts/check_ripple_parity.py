@@ -26,9 +26,20 @@ rows that have no Pre-work equivalent (the sync/async splits), but:
 
 * it may not *omit* a Pre-work trigger,
 * it may not *reorder* the shared triggers, and
-* an expansion row may not float free -- within a section it must follow at
-  least one shared (Pre-work) trigger, so a genuinely new trigger added only to
-  the Detailed checklist (and forgotten in the Pre-work index) is still caught.
+* an expansion row may not *lead* its section -- the first trigger under a
+  ``#### Section`` header must be a shared (Pre-work) trigger, not a
+  Detailed-only one.
+
+The scope of that third rule is deliberately narrow, and worth being honest
+about: the gate cannot tell a legitimate sync/async expansion from a trigger
+that was added to the Detailed checklist and *forgotten* in the Pre-work index
+-- both are "a bold Detailed cell with no Pre-work twin". So the anchoring rule
+only catches the section-leading case. A forgotten trigger placed *after* a
+shared trigger in the same section passes (presence and order still hold, and
+the section is already marked seen). Presence + order in the Pre-work -> Detailed
+direction is the real guarantee; the anchoring rule is a partial backstop, not a
+full one. Catching every forgotten trigger would need a declared expansion map,
+which would itself go stale -- the tradeoff this gate deliberately declines.
 
 This is trigger-parity, not row-parity: the Detailed checklist's higher row
 count is by design, so a checksum on row counts (which never held) is the wrong
@@ -66,10 +77,6 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from collections.abc import Iterator
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _REFERENCE = _REPO_ROOT / "sdd" / "CLAUDE-REFERENCE.md"
@@ -268,9 +275,11 @@ def check(pre: list[Trigger], det: list[Trigger]) -> list[Violation]:
                 )
             )
 
-    # 3. Anchored expansions: an extra Detailed trigger (no Pre-work twin) must
-    #    follow a shared trigger within its section, so a new trigger added only
-    #    to the Detailed checklist cannot masquerade as an expansion.
+    # 3. Section-leading expansions: the first trigger under a section header
+    #    must be shared, not Detailed-only. This is a partial backstop -- a
+    #    Detailed-only trigger placed after a shared one is indistinguishable
+    #    from a legitimate expansion and passes (see the module docstring). The
+    #    presence + order checks above are the real guarantee.
     pre_key_set = {t.key for t in pre}
     seen_shared_in_section: set[str] = set()
     for t in det:
@@ -309,10 +318,6 @@ _REMEDIATION = (
     "section, in the same order. The Detailed checklist may add expansion rows "
     "(e.g. the sync/async gating splits), but must not drop or re-order a trigger."
 )
-
-
-def iter_reference(repo_root: Path) -> Iterator[Path]:
-    yield repo_root / "sdd" / "CLAUDE-REFERENCE.md"
 
 
 def main(argv: list[str] | None = None) -> int:

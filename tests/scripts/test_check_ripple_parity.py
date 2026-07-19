@@ -131,10 +131,9 @@ class TestInvariant:
         assert len(violations) == 1
         assert "out of order" in violations[0].message
 
-    def test_unanchored_expansion_fails(self, tmp_path: Path) -> None:
-        """A new trigger added only to the Detailed checklist cannot hide as an
-        expansion: with no shared trigger before it in the section, it is flagged.
-        """
+    def test_section_leading_unanchored_expansion_fails(self, tmp_path: Path) -> None:
+        """A Detailed-only trigger that *leads* its section is flagged: no shared
+        trigger precedes it, so it cannot be a legitimate expansion."""
         pre = "#### Code surface\n\n| Trigger  | Ripples |\n|----------|---------|\n| Backend  | table |\n"
         det = (
             "#### Code surface\n\n"
@@ -145,6 +144,22 @@ class TestInvariant:
         )
         violations = _violations(tmp_path, pre, det)
         assert any("Brand new only" in v.message for v in violations)
+
+    def test_unanchored_expansion_after_shared_trigger_passes(self, tmp_path: Path) -> None:
+        """Documents the gate's known blind spot (PR #921 review): a Detailed-only
+        trigger placed *after* a shared trigger is indistinguishable from a
+        legitimate sync/async expansion, so it passes. The docstring and header
+        note state this scope; this test locks it so a future change that tightens
+        the gate updates the prose too."""
+        pre = "#### Code surface\n\n| Trigger  | Ripples |\n|----------|---------|\n| Backend  | table |\n"
+        det = (
+            "#### Code surface\n\n"
+            "| Trigger              | Also check |\n"
+            "|----------------------|------------|\n"
+            "| **Backend**          | table |\n"
+            "| **Forgotten in pre** | invented here, after a shared trigger |\n"
+        )
+        assert _violations(tmp_path, pre, det) == []
 
     def test_empty_blocks_fail_loudly(self, tmp_path: Path) -> None:
         """A structural change that empties a table fails rather than passing
