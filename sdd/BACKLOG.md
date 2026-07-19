@@ -135,24 +135,6 @@ and the highest ID already in this file, then take the next integer. Run
   into separate IDs. No priority until the gate is shown to miss a real
   regression; promote to BK-prefix at that point.
 
-- [ ] **ID-234 — Reconcile the two ripple-check presentations to true row-parity (or enforce it)**
-  spec: — · effort: M · audience: platform.tooling
-  `sdd/CLAUDE-REFERENCE.md`'s ripple-check has a Pre-work index and a
-  Detailed checklist that were long described as holding the same rows in
-  the same order — but they never did. The Detailed checklist expands the
-  gating dicts into sync + async rows (+2) and omits the inline
-  `Local-machine reference` row (−1), so the Pre-work index carries 27
-  triggers and the Detailed checklist 28. ID-233's PR restated the header
-  note + enforcement comment to describe the real relationship (same
-  triggers, same order; the Detailed checklist may expand one trigger into
-  several rows) rather than assert a checksum that never held. This item is
-  the deeper fix: either reconcile the two presentations to a true
-  row-for-row mapping, or add a check script that verifies each trigger
-  name appears in both presentations in the same order (the enforcement
-  comment already flags "if drift recurs, promote a check script into
-  BACKLOG"). A script would also let trace `section:` strings be validated
-  against live row names. Surfaced in the PR #912 review.
-
 ---
 
 ## Docs & Discoverability
