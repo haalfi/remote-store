@@ -42,16 +42,20 @@ within normal run-to-run variance. See BK-315.
 ## Decision
 
 Each expert persona is a **standalone Claude Code subagent** in
-`.claude/agents/<name>.md` — the single source of truth for that persona.
+`.claude/agents/<name>.md`, the single source of truth for that persona.
 The `/orchestrate` skill no longer embeds personas; it references each expert by
-`subagent_type` (in its Step 4 execute sections) and supplies the per-call task
-and mode in the invocation prompt.
+`subagent_type` and supplies the per-call task and mode in the invocation prompt.
 
 - **Repo-root-relative paths.** Personas cite `sdd/TESTING.md` etc. as plain
   paths (agents run with cwd at the repo root).
 - **Per-call context via the prompt.** The static persona holds identity, domain,
   constraints, and done-when; the invocation prompt carries the task, the specs
   to trace, and the mode (implement vs review).
+
+*Reverse if* the split stops paying off: the personas are never reused outside
+`/orchestrate`, or their model-routability (the main loop spawning an expert
+outside an orchestration run) proves more harmful than the reuse is worth,
+favouring a re-inlined, fully-gated model.
 
 Domain boundaries, the three orchestration modes, the convergence flow, and
 cross-domain file ownership (README/CHANGELOG owned by the orchestrator) are

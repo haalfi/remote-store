@@ -51,46 +51,44 @@ with no user-facing benefit.
 Use **Option C (Hybrid)**: `AsyncBackend` ABC + `SyncBackendAdapter` +
 `AsyncStore`.
 
-1. **Separate async types.** `AsyncBackend` (ABC) and `AsyncStore` are
-   distinct types from `Backend` and `Store`. No shared base class — they
-   serve separate use cases. Follows the httpx pattern (separate `Client`
-   / `AsyncClient`, shared config types).
+1. **Separate async types.** `AsyncBackend` (ABC) and `AsyncStore` are distinct
+   from `Backend` and `Store`, with no shared base, because they serve separate
+   use cases (the httpx `Client`/`AsyncClient` pattern). *Reverse if* a shared
+   base removes more duplication than the type separation costs.
 
-2. **Auto-wrapping.** `AsyncStore` accepts both `AsyncBackend` and sync
-   `Backend`. If given a sync `Backend`, it auto-wraps via
-   `SyncBackendAdapter`. Users get async immediately with existing
-   backends, no manual wrapping needed.
+2. **Auto-wrapping.** `AsyncStore` accepts both an `AsyncBackend` and a sync
+   `Backend`, auto-wrapping the latter via `SyncBackendAdapter`, so async users
+   get immediate value with existing backends and no manual wrapping. *Reverse
+   if* implicit wrapping hides a correctness or performance cost that an explicit
+   wrap would surface.
 
 3. **`read()` returns `AsyncIterator[bytes]`.** There is no standard
-   `AsyncBinaryIO` in Python. `AsyncIterator[bytes]` is the idiomatic
-   async streaming pattern (used by httpx, aiohttp). `read_bytes()`
-   remains the convenience method returning `bytes`.
+   `AsyncBinaryIO` in Python, and `AsyncIterator[bytes]` is the idiomatic async
+   streaming shape (httpx, aiohttp); `read_bytes()` stays the `bytes`
+   convenience. *Reverse if* a standard async binary-file protocol emerges.
 
-4. **`aclose()` naming.** Follows the Python convention for async
-   cleanup: `aclose` on async generators, `asyncio.StreamWriter`, and
-   redis-py. `__aexit__` calls `aclose()`.
+4. **`asyncio` only, no anyio or trio.** Chosen for simplicity (fewer
+   abstractions, easier debugging), not dependency cost; the async audience
+   already has anyio transitively. *Reverse if* a supported runtime needs
+   trio/anyio semantics asyncio cannot express (a non-breaking change).
 
-5. **`asyncio` only.** No anyio or trio dependency. The rationale is
-   simplicity (fewer abstractions, easier debugging), not dependency cost
-   — our async audience (FastAPI, Starlette, httpx users) already has
-   anyio transitively. Can be revisited without breaking changes.
+5. **Non-I/O methods stay sync.** Operations with no I/O have no reason to be
+   async. *Reverse if* one gains an I/O dependency.
 
-6. **Iterator materialization.** `SyncBackendAdapter` materializes
-   `list_files()`, `list_folders()`, `glob()`, and `iter_children()` in
-   a thread (collects to list, then yields). Cannot stream across thread
-   boundaries. Native async backends (Phase 2) stream properly.
+6. **Phased rollout.** Phase 1 ships the core surface, Phase 2 native async
+   backends, Phase 3 async extensions, each with its own spec. *Reverse if*
+   delivering the surface whole beats staging it.
 
-7. **Non-I/O methods stay sync.** `to_key()`, `unwrap()`,
-   `native_path()`, `capabilities`, `name` — no I/O, no reason to be
-   async.
+7. **Zero new runtime deps in Phase 1.** Phase 1 uses only stdlib `asyncio`,
+   preserving the core's zero-dependency floor; optional async deps (asyncssh)
+   arrive as Phase 2 extras. *Reverse only* by deliberately abandoning the
+   zero-dependency-core promise.
 
-8. **Phased rollout.** Phase 1: core surface (`AsyncBackend`,
-   `SyncBackendAdapter`, `AsyncStore`, `AsyncMemoryBackend`). Phase 2:
-   native async backends. Phase 3: async extensions. Each phase gets its
-   own spec.
-
-9. **Zero new runtime deps in Phase 1.** Uses only stdlib `asyncio`.
-   Optional async deps (asyncssh) come in Phase 2 as extras.
+The `aclose()` naming and wiring, the exact non-I/O method roster, and the
+`read_bytes` contract are spec-rate and live in
+[spec 029](../specs/029-async-store-backend-api.md) (ASYNC-007, ASYNC-020,
+ASYNC-022, ASYNC-023, ASYNC-034). `SyncBackendAdapter`'s iterator materialization
+is a realized consequence of auto-wrapping, covered under Consequences.
 
 ## Consequences
 

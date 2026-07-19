@@ -37,15 +37,18 @@ In practice, `ProxyStore` is already visible to users:
 
 ## Decision
 
-Export `ProxyStore` from `remote_store` and document it in the API
-reference. The class remains an internal delegation base by design:
-it centralises private-attribute coupling (`_backend`, `_root`,
-`_owns_backend`) and default delegation. It is not a middleware
-framework and gains no new hooks or dispatch machinery.
+- **Export `ProxyStore` from `remote_store` and document it in the API
+  reference.** It remains an internal delegation base by design, centralising the
+  private-attribute coupling (`_backend`, `_root`, `_owns_backend`) and default
+  delegation; it is not a middleware framework and gains no new hooks or dispatch
+  machinery. This documents a surface users already see (in the `ObservedStore` /
+  `CachedStore` class hierarchy) and that extension authors already need, while
+  adding no new API. *Reverse if* a real hook/dispatch surface is ever needed
+  (ADR-0014's Path-2 migration), at which point this document-only decision
+  reopens and the public contract is redesigned.
 
-The rest of ADR-0014 (delegation model, `_wrap_child()` hook, stream
-wrappers, integrity functions, migration trigger for Path 2) remains
-in effect.
+The rest of ADR-0014 (delegation model, `_wrap_child()` hook, stream wrappers,
+integrity functions, migration trigger for Path 2) remains in effect.
 
 ## Consequences
 

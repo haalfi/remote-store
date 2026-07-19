@@ -52,24 +52,23 @@ cost and are part of the core value proposition.
 
 Remove the conditional `try/except ImportError` re-export blocks for all
 optional-dependency extensions (`arrow`, `otel`, `pydantic`, `yaml`) from
-`remote_store/__init__.py` and `__all__`.
+`remote_store/__init__.py` and `__all__`. Each `try` block eagerly imports the
+extension and its dependency at `import remote_store` time (Dagster alone costs
+~2-5 s), penalising users who never call it, and no source, test, or example
+imports these symbols from the top level.
 
-Users import optional extensions from their canonical module path:
+Users import optional extensions from their canonical module path, e.g.
+`from remote_store.ext.arrow import pyarrow_fs`. This makes every
+optional-dependency extension consistent, including dagster, which already used
+this pattern. The full removed-symbol list is in the CHANGELOG "Removed" entry.
 
-```python
-from remote_store.ext.arrow import pyarrow_fs
-from remote_store.ext.otel import otel_hooks, otel_observe
-from remote_store.ext.pydantic import from_pydantic
-from remote_store.ext.yaml import from_yaml
-from remote_store.ext.dagster import dagster_io_manager
-```
+*Reverse if* top-level convenience imports are wanted back: a module-level
+`__getattr__` in `__init__.py` (Python 3.7+) can expose the symbols lazily
+without the eager-load cost, rather than re-introducing the `try/except`
+pattern.
 
-This makes all optional-dependency extensions consistent — including
-dagster, which was already using this pattern.
-
-The rest of ADR-0008 (public-API-only rule, `__all__`, lifecycle rules,
-error propagation, dependency rules, development lifecycle, third-party
-conventions) remains in effect.
+This amends only ADR-0008's export rules; the rest of ADR-0008 (public-API-only,
+`__all__`, lifecycle, error propagation, dependency rules) remains in effect.
 
 ## Consequences
 
@@ -85,8 +84,3 @@ conventions) remains in effect.
   guides migration.
 - **Pure-Python extensions unchanged.** `from remote_store import
   batch_delete, glob_files, observe` etc. continue to work.
-- **Future direction.** If top-level convenience imports are ever wanted back
-  without the eager-load cost, Python 3.7+ module-level `__getattr__` in
-  `__init__.py` enables lazy loading — the symbol appears in the namespace
-  but the heavy dependency only imports on first access.  This avoids
-  re-introducing the `try/except ImportError` pattern.

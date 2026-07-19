@@ -675,3 +675,41 @@ phases:
           hatch run all: 7204 passed, coverage 96%, examples + notebooks + docs
           all green.
         outcome: ok
+  - id: apply
+    name: Apply PR3 (reverse-trigger amends) and close ID-232
+    steps:
+      - file: sdd/adrs/0012-async-store-backend-api.md
+        section: Decision
+        read_type: reference
+        extract: >-
+          The 5 marginal amends (0010, 0012, 0013, 0015, 0031): each adds the
+          missing inline reverse trigger and pulls the why up from Context, with a
+          light relocation where one applied (0010 drift mechanism -> OBS-002/007;
+          0013 removed-symbol list -> CHANGELOG; 0012 aclose/read_bytes/method
+          roster -> spec 029 ASYNC-007/020/022/023/034). 0012 citation-critical:
+          preserved the numbered list with decision #2 = auto-wrapping, dropping
+          only #4 (aclose) and #6 (materialization) so #1/#2/#3 keep their
+          numbers.
+        outcome: ok
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ADR-0012 § Async posture / § error-mapping rules"
+        read_type: verify
+        extract: >-
+          Confirmed a PRE-EXISTING dangling citation the sweep did not introduce:
+          spec 029 (L500, L587) cites "ADR-0012 § Async posture" and
+          "§ error-mapping rules", but ADR-0012 has always been a flat numbered
+          list with no such headings. Out of scope for the Decision rewrite (the
+          judge flagged it for a separate fix); left untouched, surfaced to the
+          user.
+        outcome: misleading
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-232 (Unreleased)"
+        read_type: reference
+        extract: >-
+          Closed ID-232: moved from BACKLOG.md to BACKLOG-DONE.md (newest-first),
+          reframed as "swept all live ADRs through the gate; rewrote 23 where it
+          was worth it, left 5 with reasons" and dropped the next-batch framing.
+          Corpus 10008->8223 words end to end (up from PR2's 7975 because the
+          amends ADD reverse triggers and inline justification; brevity is a
+          byproduct, not the target). PR3 is docs-only -> lint + docs-gate.
+        outcome: ok

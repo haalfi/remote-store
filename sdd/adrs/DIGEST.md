@@ -269,27 +269,28 @@ GLOB-009, GLOB-014).
 
 ### [ADR-0010](0010-observe-proxy-pattern.md): Observe - Proxy Subclass Pattern
 
-Use **Option A (proxy subclass)** with a mandatory **drift-protection
-test** that asserts `ObservedStore` overrides every public method of
-`Store`. This catches missing overrides at CI time.
+Use **Option A (proxy subclass)**: `ObservedStore(Store)` explicitly overrides
+every public method, guarded by a **mandatory drift-protection test** (OBS-007)
+that fails CI if any public `Store` method lacks an override.
 
-The drift-protection test inspects `Store.__dict__` for public callable
-members and verifies that `ObservedStore.__dict__` contains an override
-for each one. This is specified as OBS-007 in the spec.
+- **Why a real subclass, not a `__getattr__` proxy (Option B).** An explicit
+  subclass keeps `isinstance(observed, Store)` true, preserves static typing and
+  IDE navigation, and keeps the instrumentation legible; a `__getattr__` wrapper
+  auto-picks-up new methods but loses all three. *Reverse if* the maintenance cost
+  of explicit overrides ever outweighs that benefit (for example, if `Store`
+  grows large and volatile).
+- **The drift test is what makes Option A viable.** Option A's one hazard is that
+  a newly added `Store` method silently inherits the un-instrumented base and
+  bypasses hooks; OBS-007 catches that at CI. The test is a hard requirement for
+  any proxy subclass of `Store`, not an optional extra.
+- **Named `ext.observe`, not `ext.notify`.** "Observe" describes the read-only,
+  side-effect-free nature of the hooks; the factory is `observe()`. *Reverse if*
+  the hooks ever gain interception or mutation semantics, at which point
+  "notify"/"intercept" naming fits.
 
-##### Reusability
-
-The proxy subclass pattern established here is reusable for future
-wrappers such as `ext.cache` (ID-025). The drift-protection test
-technique generalises: any proxy subclass of `Store` can include an
-analogous assertion.
-
-##### Naming
-
-The extension is named `ext.observe` (not `ext.notify` from the
-original backlog). "Observe" better describes the read-only,
-side-effect-free nature of the hooks — they observe operations but do
-not intercept or modify them. The factory function is `observe()`.
+The `__dict__`-introspection mechanism of the drift test and the `observe()`
+signature are spec-rate and live in [spec 019](../specs/019-ext-observe.md)
+(OBS-002, OBS-007).
 
 ### [ADR-0011](0011-retry-per-backend-native.md): Retry - Per-Backend Native Configuration
 
@@ -327,69 +328,66 @@ wiring are spec-rate and live in [spec 025](../specs/025-retry-policy.md)
 Use **Option C (Hybrid)**: `AsyncBackend` ABC + `SyncBackendAdapter` +
 `AsyncStore`.
 
-1. **Separate async types.** `AsyncBackend` (ABC) and `AsyncStore` are
-   distinct types from `Backend` and `Store`. No shared base class — they
-   serve separate use cases. Follows the httpx pattern (separate `Client`
-   / `AsyncClient`, shared config types).
+1. **Separate async types.** `AsyncBackend` (ABC) and `AsyncStore` are distinct
+   from `Backend` and `Store`, with no shared base, because they serve separate
+   use cases (the httpx `Client`/`AsyncClient` pattern). *Reverse if* a shared
+   base removes more duplication than the type separation costs.
 
-2. **Auto-wrapping.** `AsyncStore` accepts both `AsyncBackend` and sync
-   `Backend`. If given a sync `Backend`, it auto-wraps via
-   `SyncBackendAdapter`. Users get async immediately with existing
-   backends, no manual wrapping needed.
+2. **Auto-wrapping.** `AsyncStore` accepts both an `AsyncBackend` and a sync
+   `Backend`, auto-wrapping the latter via `SyncBackendAdapter`, so async users
+   get immediate value with existing backends and no manual wrapping. *Reverse
+   if* implicit wrapping hides a correctness or performance cost that an explicit
+   wrap would surface.
 
 3. **`read()` returns `AsyncIterator[bytes]`.** There is no standard
-   `AsyncBinaryIO` in Python. `AsyncIterator[bytes]` is the idiomatic
-   async streaming pattern (used by httpx, aiohttp). `read_bytes()`
-   remains the convenience method returning `bytes`.
+   `AsyncBinaryIO` in Python, and `AsyncIterator[bytes]` is the idiomatic async
+   streaming shape (httpx, aiohttp); `read_bytes()` stays the `bytes`
+   convenience. *Reverse if* a standard async binary-file protocol emerges.
 
-4. **`aclose()` naming.** Follows the Python convention for async
-   cleanup: `aclose` on async generators, `asyncio.StreamWriter`, and
-   redis-py. `__aexit__` calls `aclose()`.
+4. **`asyncio` only, no anyio or trio.** Chosen for simplicity (fewer
+   abstractions, easier debugging), not dependency cost; the async audience
+   already has anyio transitively. *Reverse if* a supported runtime needs
+   trio/anyio semantics asyncio cannot express (a non-breaking change).
 
-5. **`asyncio` only.** No anyio or trio dependency. The rationale is
-   simplicity (fewer abstractions, easier debugging), not dependency cost
-   — our async audience (FastAPI, Starlette, httpx users) already has
-   anyio transitively. Can be revisited without breaking changes.
+5. **Non-I/O methods stay sync.** Operations with no I/O have no reason to be
+   async. *Reverse if* one gains an I/O dependency.
 
-6. **Iterator materialization.** `SyncBackendAdapter` materializes
-   `list_files()`, `list_folders()`, `glob()`, and `iter_children()` in
-   a thread (collects to list, then yields). Cannot stream across thread
-   boundaries. Native async backends (Phase 2) stream properly.
+6. **Phased rollout.** Phase 1 ships the core surface, Phase 2 native async
+   backends, Phase 3 async extensions, each with its own spec. *Reverse if*
+   delivering the surface whole beats staging it.
 
-7. **Non-I/O methods stay sync.** `to_key()`, `unwrap()`,
-   `native_path()`, `capabilities`, `name` — no I/O, no reason to be
-   async.
+7. **Zero new runtime deps in Phase 1.** Phase 1 uses only stdlib `asyncio`,
+   preserving the core's zero-dependency floor; optional async deps (asyncssh)
+   arrive as Phase 2 extras. *Reverse only* by deliberately abandoning the
+   zero-dependency-core promise.
 
-8. **Phased rollout.** Phase 1: core surface (`AsyncBackend`,
-   `SyncBackendAdapter`, `AsyncStore`, `AsyncMemoryBackend`). Phase 2:
-   native async backends. Phase 3: async extensions. Each phase gets its
-   own spec.
-
-9. **Zero new runtime deps in Phase 1.** Uses only stdlib `asyncio`.
-   Optional async deps (asyncssh) come in Phase 2 as extras.
+The `aclose()` naming and wiring, the exact non-I/O method roster, and the
+`read_bytes` contract are spec-rate and live in
+[spec 029](../specs/029-async-store-backend-api.md) (ASYNC-007, ASYNC-020,
+ASYNC-022, ASYNC-023, ASYNC-034). `SyncBackendAdapter`'s iterator materialization
+is a realized consequence of auto-wrapping, covered under Consequences.
 
 ### [ADR-0013](0013-drop-optional-extension-reexports.md): Drop Optional-Extension Re-exports from `__init__.py`
 
 Remove the conditional `try/except ImportError` re-export blocks for all
 optional-dependency extensions (`arrow`, `otel`, `pydantic`, `yaml`) from
-`remote_store/__init__.py` and `__all__`.
+`remote_store/__init__.py` and `__all__`. Each `try` block eagerly imports the
+extension and its dependency at `import remote_store` time (Dagster alone costs
+~2-5 s), penalising users who never call it, and no source, test, or example
+imports these symbols from the top level.
 
-Users import optional extensions from their canonical module path:
+Users import optional extensions from their canonical module path, e.g.
+`from remote_store.ext.arrow import pyarrow_fs`. This makes every
+optional-dependency extension consistent, including dagster, which already used
+this pattern. The full removed-symbol list is in the CHANGELOG "Removed" entry.
 
-```python
-from remote_store.ext.arrow import pyarrow_fs
-from remote_store.ext.otel import otel_hooks, otel_observe
-from remote_store.ext.pydantic import from_pydantic
-from remote_store.ext.yaml import from_yaml
-from remote_store.ext.dagster import dagster_io_manager
-```
+*Reverse if* top-level convenience imports are wanted back: a module-level
+`__getattr__` in `__init__.py` (Python 3.7+) can expose the symbols lazily
+without the eager-load cost, rather than re-introducing the `try/except`
+pattern.
 
-This makes all optional-dependency extensions consistent — including
-dagster, which was already using this pattern.
-
-The rest of ADR-0008 (public-API-only rule, `__all__`, lifecycle rules,
-error propagation, dependency rules, development lifecycle, third-party
-conventions) remains in effect.
+This amends only ADR-0008's export rules; the rest of ADR-0008 (public-API-only,
+`__all__`, lifecycle, error propagation, dependency rules) remains in effect.
 
 > amends ADR-0008 (clause).
 
@@ -454,15 +452,18 @@ authors can subclass it.
 
 ### [ADR-0015](0015-proxystore-publicly-documented.md): Document ProxyStore in the Public API Reference
 
-Export `ProxyStore` from `remote_store` and document it in the API
-reference. The class remains an internal delegation base by design:
-it centralises private-attribute coupling (`_backend`, `_root`,
-`_owns_backend`) and default delegation. It is not a middleware
-framework and gains no new hooks or dispatch machinery.
+- **Export `ProxyStore` from `remote_store` and document it in the API
+  reference.** It remains an internal delegation base by design, centralising the
+  private-attribute coupling (`_backend`, `_root`, `_owns_backend`) and default
+  delegation; it is not a middleware framework and gains no new hooks or dispatch
+  machinery. This documents a surface users already see (in the `ObservedStore` /
+  `CachedStore` class hierarchy) and that extension authors already need, while
+  adding no new API. *Reverse if* a real hook/dispatch surface is ever needed
+  (ADR-0014's Path-2 migration), at which point this document-only decision
+  reopens and the public contract is redesigned.
 
-The rest of ADR-0014 (delegation model, `_wrap_child()` hook, stream
-wrappers, integrity functions, migration trigger for Path 2) remains
-in effect.
+The rest of ADR-0014 (delegation model, `_wrap_child()` hook, stream wrappers,
+integrity functions, migration trigger for Path 2) remains in effect.
 
 > amends ADR-0014 (clause).
 
@@ -953,16 +954,20 @@ Consequences.
 ### [ADR-0031](0031-expert-personas-as-subagent-files.md): Expert Personas as Standalone Subagent Files
 
 Each expert persona is a **standalone Claude Code subagent** in
-`.claude/agents/<name>.md` — the single source of truth for that persona.
+`.claude/agents/<name>.md`, the single source of truth for that persona.
 The `/orchestrate` skill no longer embeds personas; it references each expert by
-`subagent_type` (in its Step 4 execute sections) and supplies the per-call task
-and mode in the invocation prompt.
+`subagent_type` and supplies the per-call task and mode in the invocation prompt.
 
 - **Repo-root-relative paths.** Personas cite `sdd/TESTING.md` etc. as plain
   paths (agents run with cwd at the repo root).
 - **Per-call context via the prompt.** The static persona holds identity, domain,
   constraints, and done-when; the invocation prompt carries the task, the specs
   to trace, and the mode (implement vs review).
+
+*Reverse if* the split stops paying off: the personas are never reused outside
+`/orchestrate`, or their model-routability (the main loop spawning an expert
+outside an orchestration run) proves more harmful than the reuse is worth,
+favouring a re-inlined, fully-gated model.
 
 Domain boundaries, the three orchestration modes, the convergence flow, and
 cross-domain file ownership (README/CHANGELOG owned by the orchestrator) are
