@@ -8,6 +8,42 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-316 — SFTP low-severity correctness edges (audit-020 L1–L6)**
+  spec: SFTP-010, SFTP-014, SFTP-020, SFTP-021, SFTP-023, BE-008 · effort: M · audience: user.api
+  Closed the audit-020 group-G4 tail deferred out of PR #910. Every edge manifests
+  only on non-OpenSSH servers whose error shapes differ (errno-less
+  `SSH_FX_FAILURE`, mode-less stats, `EACCES` on a classification stat), so each is
+  injection-tested in `tests/backends/sftp/test_config.py`; the
+  OpenSSH-reproducible subset (L1 permission path, L5 temp-litter, L3
+  no-regression) is additionally covered live against the `atmoz/sftp` container in
+  `tests/e2e/test_sftp_correctness_edges.py`. **L1** `_raise_if_dir` now re-raises a
+  permission (`EACCES`/`EPERM`) classification-stat failure so it maps to
+  `PermissionDenied` rather than a generic `RemoteStoreError`, kept narrow
+  (permission only) so the errno-less file-ancestor path is preserved. **L2** the
+  mode-less-target policy folds into one `_classify_existing_target` helper treating
+  a mode-less target defensively as `InvalidPath` (matching `_ensure_parent_dirs`),
+  unified on the eager existence-check path — the `overwrite=False` check for all
+  three writers plus `open_atomic`'s eager `overwrite=True` stat. The lazy
+  failure-path classifier `_raise_if_dir` and the move/copy is-dir guards keep the
+  opposite `st_mode is not None` stance by design (raising `InvalidPath` on a
+  failure path could mask a real `NotFound`); one accepted consequence is that a
+  mode-less existing regular file under `overwrite=False` surfaces `InvalidPath`
+  rather than `AlreadyExists`. **L3** `delete` gains
+  `read`/`read_bytes`' `code is None and _has_file_ancestor -> NotFound` recheck,
+  honouring `missing_ok` like the ENOENT arm. **L4/L5** `write_atomic` and
+  `open_atomic` both clean up the temp file on failure — including a
+  `KeyboardInterrupt`/`GeneratorExit` interrupt — under a no-reconnect guard: the
+  orphan temp is unavoidable on a genuinely dead channel, but the original error
+  propagates without a multi-second reconnect stall, and an interrupted write leaves
+  no litter (the atomic contract already held). **L6** closed
+  working-as-intended: `_has_file_ancestor` returning `False` on an opaque ancestor
+  stat error is the deliberate ID-209 conservative choice (reasoning recorded, no
+  code change). SFTP-014 gained a best-effort/no-reconnect cleanup note; the SFTP
+  benchmark quick tier (38 tests) shows the changed methods on par with raw paramiko
+  (error-path-only edits). Trace:
+  [bk-316-sftp-correctness-edges.yml](traces/bk-316-sftp-correctness-edges.yml).
+  Surfaced by audit-020 during the BK-313 review (PR #910).
+
 - [x] **ID-234 — Reconcile the two ripple-check presentations to true row-parity (or enforce it)**
   spec: — · effort: M · audience: contributor.tooling, contributor.process
   `sdd/CLAUDE-REFERENCE.md`'s ripple-check has a Pre-work index and a Detailed

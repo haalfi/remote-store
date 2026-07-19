@@ -862,8 +862,7 @@ class SFTPBackend(Backend):
                     if getattr(exc, "errno", None) != errno.ENOENT:
                         raise
                 else:
-                    if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
-                        raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
+                    self._classify_existing_target(st, path)
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
             self._ensure_parent_dirs(sftp_path)
             with self._open_write(sftp_path, path) as f:
@@ -926,8 +925,7 @@ class SFTPBackend(Backend):
                     if getattr(exc, "errno", None) != errno.ENOENT:
                         raise
                 else:
-                    if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
-                        raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
+                    self._classify_existing_target(st, path)
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
             self._ensure_parent_dirs(sftp_path)
             # Write to temp file, then rename
@@ -949,10 +947,28 @@ class SFTPBackend(Backend):
                             f.write(chunk)
                             size += len(chunk)
                 self._promote(tmp_path, sftp_path, path, overwrite=overwrite)
-            except Exception:
-                # Attempt to clean up temp file on failure
-                with contextlib.suppress(Exception):
-                    self._sftp.remove(tmp_path)
+            except BaseException as exc:
+                import paramiko
+
+                # Best-effort temp cleanup — but never at the cost of a reconnect
+                # (audit-020 L4, mirroring ``open_atomic``'s guard). If the failure
+                # is a dropped-connection signal, ``remove`` would re-enter the
+                # ``_sftp`` property and, against a down server, run the full
+                # tenacity reconnect/backoff inside this suppressed cleanup only for
+                # ``_errors``/``_map_exception`` to null the client immediately
+                # after — blocking the original error for seconds. The orphan temp
+                # is unavoidable on a dead channel regardless; skip the unlink there
+                # and let ``_errors`` map + invalidate. A normal failure (EIO,
+                # EACCES, a stream read error) still cleans up as before. The catch
+                # is ``BaseException`` so a ``KeyboardInterrupt`` mid-write also
+                # removes the temp (audit-020 L5 symmetry with ``open_atomic``);
+                # only an ``Exception`` can be a connection death, never an interrupt.
+                connection_lost = isinstance(exc, Exception) and (
+                    self._is_connection_dead(exc) or isinstance(exc, paramiko.SSHException)
+                )
+                if self._sftp_client is not None and not connection_lost:
+                    with contextlib.suppress(Exception):
+                        self._sftp.remove(tmp_path)
                 raise
         # BK-313: no post-rename stat — see ``write``.
         return WriteResult(path=RemotePath(path), size=size, source="native", last_modified=None)
@@ -991,8 +1007,7 @@ class SFTPBackend(Backend):
                     raise
                 # ENOENT: target absent — nothing to reject, proceed to write.
             else:
-                if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
-                    raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
+                self._classify_existing_target(st, path)
                 if not overwrite:
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
             self._ensure_parent_dirs(sftp_path)
@@ -1028,22 +1043,30 @@ class SFTPBackend(Backend):
             with self._errors(path):
                 handle.close()
                 self._promote(tmp_path, sftp_path, path, overwrite=overwrite)
-        except Exception as exc:
+        except BaseException as exc:
             import paramiko
 
             # Was the connection itself lost? Two shapes reach here: a flush/close
             # death already ran through _errors() above and arrives mapped (client
             # already nulled), or a yield-phase death arrives raw as a
             # dead-channel signal / SSHException. Either way the connection is
-            # gone.
-            connection_lost = self._is_connection_dead(exc) or isinstance(exc, paramiko.SSHException)
+            # gone. Only an ``Exception`` can be a connection death — a
+            # ``GeneratorExit`` / ``KeyboardInterrupt`` (BaseException, not
+            # Exception) is an interrupt, never a backend error.
+            connection_lost = isinstance(exc, Exception) and (
+                self._is_connection_dead(exc) or isinstance(exc, paramiko.SSHException)
+            )
             # Best-effort temp cleanup — but never at the cost of a reconnect.
             # Skip it when the client is already gone (a flush/close death nulled
             # it) OR when this exc is itself a dead-connection signal: unlinking
             # the temp over a dropped connection would spin up a fresh tenacity
             # reconnect (against a possibly down server) only for _map_exception
             # to null it again two lines down. The orphan temp is unavoidable on a
-            # dead channel regardless (see BK-316 for the temp-cleanup edges).
+            # dead channel regardless. This cleanup now also runs for a
+            # GeneratorExit / KeyboardInterrupt (audit-020 L5): an abandoned or
+            # GC'd ``with open_atomic(...)`` block would otherwise leave the temp
+            # file littering the server. The atomic contract already held
+            # (``_promote`` never ran → target untouched); this only removes litter.
             if self._sftp_client is not None and not connection_lost:
                 with contextlib.suppress(Exception):
                     self._sftp.remove(tmp_path)
@@ -1052,8 +1075,12 @@ class SFTPBackend(Backend):
             # (which, for a raw dead-channel signal, also invalidates the client).
             # Flush/close and promote failures were already mapped by the
             # _errors() block above; the caller's own in-block exceptions (not
-            # connection signals) propagate unchanged.
-            if connection_lost:
+            # connection signals) and any interrupt (GeneratorExit /
+            # KeyboardInterrupt) propagate unchanged.
+            # ``connection_lost`` already implies ``isinstance(exc, Exception)``;
+            # the redundant check narrows the type for ``_map_exception`` (which
+            # takes ``Exception``, never a bare ``BaseException`` interrupt).
+            if isinstance(exc, Exception) and connection_lost:
                 raise self._map_exception(exc, path) from None
             raise
 
@@ -1073,7 +1100,8 @@ class SFTPBackend(Backend):
             try:
                 self._sftp.remove(sftp_path)
             except OSError as exc:
-                if getattr(exc, "errno", None) == errno.ENOENT:
+                code = getattr(exc, "errno", None)
+                if code == errno.ENOENT:
                     if not missing_ok:
                         raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
                     return
@@ -1081,6 +1109,18 @@ class SFTPBackend(Backend):
                 # runs before ``missing_ok`` can swallow anything: a directory is
                 # a type mismatch, not a missing file.
                 self._raise_if_dir(sftp_path, path)
+                # BK-316 (L3): parity with the file-ancestor recheck in ``read`` /
+                # ``read_bytes``. A regular-file ancestor makes the unlink
+                # impossible; OpenSSH reports it as ``ENOENT`` (handled above), but
+                # a server that surfaces it as an errno-less ``SSH_FX_FAILURE``
+                # would else degrade to a generic ``RemoteStoreError``. A
+                # file-ancestor is a "does-not-exist" case, so honour ``missing_ok``
+                # exactly as the ENOENT arm above — otherwise the same call would
+                # raise here but return silently on an ENOENT (OpenSSH) server.
+                if code is None and self._has_file_ancestor(sftp_path):
+                    if not missing_ok:
+                        raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
+                    return
                 raise
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
@@ -1672,9 +1712,13 @@ class SFTPBackend(Backend):
         their **error** path, so the round-trip is paid only by an operation that
         has already failed — never by a successful one, which is the common case
         by a wide margin.  Those callers re-raise the original exception if this
-        returns: a stat saying "not a directory", or one that fails itself (the
-        entry vanished in a race, the server denies stat), leaves the original
-        failure to ``_map_exception``.
+        returns: a stat saying "not a directory", or one that fails
+        unclassifiably (the entry vanished in a race → ``ENOENT``, or an
+        errno-less ``SSH_FX_FAILURE``), leaves the original failure to
+        ``_map_exception``.  One classification-stat failure is *not* swallowed:
+        a **permission** error (``EACCES`` / ``EPERM``) re-raises so a server that
+        denies even statting the target surfaces ``PermissionDenied`` rather than a
+        generic ``RemoteStoreError``.
 
         ``read`` is **eager** instead — it must reject a directory before handing
         back a handle, because the deferred I/O that would otherwise surface it
@@ -1686,9 +1730,57 @@ class SFTPBackend(Backend):
         """
         try:
             st = self._sftp.stat(sftp_path)
-        except OSError:
+        except OSError as exc:
+            # BK-316 (L1): the classification stat's *own* failure normally must
+            # not override the caller's original error — a raced-away target
+            # (``ENOENT``) or an errno-less ``SSH_FX_FAILURE`` (the ambiguous shape
+            # the caller's file-ancestor recheck handles downstream, L3/L6) is
+            # swallowed so the original failure stands. A *permission* error is the
+            # exception: a server that denies even statting the target should
+            # surface ``PermissionDenied``, not degrade to a generic
+            # ``RemoteStoreError`` (master's ``_check_not_dir`` re-raised it). The
+            # re-raise is kept narrow — permission only — so it never masks the
+            # file-ancestor ``NotFound`` path on a server whose classification stat
+            # reports the failure with a different errno.
+            if getattr(exc, "errno", None) in (errno.EACCES, errno.EPERM):
+                raise
             return  # cannot classify — let the caller's original error stand
         if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
+            raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
+
+    def _classify_existing_target(self, st: Any, path: str) -> None:
+        """Reject an existing write *target* that is not usable as a plain file.
+
+        Called by ``write`` / ``write_atomic`` / ``open_atomic`` wherever they have
+        already stat'd the target: ``write`` / ``write_atomic`` only on the
+        ``overwrite=False`` existence check (they skip the stat on ``overwrite=True``),
+        while ``open_atomic`` stats eagerly and so calls this on **both**
+        overwrite modes. Raises ``InvalidPath`` when *st* is a directory **or**
+        mode-less, and returns for a regular file so the caller runs its own
+        ``AlreadyExists`` / overwrite policy.
+
+        The mode-less case (``st.st_mode is None`` — how some non-OpenSSH servers
+        represent an unsupported/absent mode field) is treated **defensively** as
+        not-a-plain-file: the entry exists but its type is unknown, so failing loud
+        with ``InvalidPath`` beats silently reporting ``AlreadyExists`` (which
+        asserts it *is* a file) or risking an overwrite of a directory. This matches
+        ``_ensure_parent_dirs``'s existing stance on a mode-less ancestor.
+
+        Scope of the fold: this unifies the mode-less policy on the **eager
+        existence-check** path only — the ``overwrite=False`` check for all three
+        writers, plus ``open_atomic``'s eager ``overwrite=True`` stat. The *lazy*
+        failure-path classifier ``_raise_if_dir`` (used on the ``overwrite=True``
+        ``write`` / ``write_atomic`` path and on ``read`` / ``read_bytes`` /
+        ``delete``) and the ``move`` / ``copy`` is-dir guards deliberately keep the
+        opposite ``st_mode is not None`` stance: on a *failure* path the entry's
+        existence is not established, so raising ``InvalidPath`` for a mode-less
+        result could mask a real ``NotFound`` or other error — whereas here the
+        entry provably exists. One accepted consequence: on a mode-less server an
+        existing **regular file** under ``overwrite=False`` surfaces ``InvalidPath``
+        rather than ``AlreadyExists``, because the server cannot distinguish a file
+        from a directory and a silent directory overwrite is the worse failure.
+        """
+        if st is not None and (st.st_mode is None or stat.S_ISDIR(st.st_mode)):
             raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
 
     def _open_write(self, sftp_path: str, path: str) -> BinaryIO:
@@ -1807,7 +1899,11 @@ class SFTPBackend(Backend):
                     return False  # ancestor missing, not a file
                 # Opaque error walking the chain (below the base) — be
                 # conservative and let the caller's original failure
-                # surface as-is.
+                # surface as-is. BK-316 (L6) reconsidered widening this to
+                # distinguish e.g. EACCES and kept it deliberately: being able to
+                # stat a directory but not its regular-file child is unusual, and a
+                # false "no file ancestor" here only forgoes the NotFound upgrade —
+                # the caller's original error still surfaces mapped (ID-209).
                 return False
             if st.st_mode is None or not stat.S_ISDIR(st.st_mode):
                 return True  # ancestor exists and is not a directory

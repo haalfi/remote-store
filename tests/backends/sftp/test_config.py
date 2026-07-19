@@ -2606,3 +2606,275 @@ class TestSFTPCredentialMasking:
 
 
 # endregion
+
+
+# region: Low-severity correctness edges (BK-316, audit-020 L1-L5)
+
+
+class TestSFTPLowSeverityCorrectnessEdges:
+    """BK-316 (audit-020 group G4): low-severity edges that manifest only on
+    non-OpenSSH servers whose error shapes differ — an errno-less
+    ``SSH_FX_FAILURE``, a mode-less stat (``st_mode is None``), or an ``EACCES``
+    on a classification stat. A real OpenSSH server never emits the trigger
+    shape, so these are injection-tested here; the OpenSSH-reproducible subset
+    (L1/L3/L5) is additionally covered live in ``tests/e2e`` (L4 is injection-only —
+    a dropped connection cannot be provoked mid-cleanup on the live container).
+    """
+
+    @pytest.mark.spec("SFTP-020")
+    @pytest.mark.parametrize("missing_ok", [False, True])
+    def test_delete_file_ancestor_errnoless_failure_honours_missing_ok(
+        self, sftp_backend: Backend, missing_ok: bool
+    ) -> None:
+        """L3: ``delete``'s file-ancestor recheck maps ``NotFound`` and honours ``missing_ok``.
+
+        On OpenSSH, unlinking under a regular-file ancestor fails ``ENOENT`` and
+        maps to ``NotFound`` (or returns silently under ``missing_ok=True``). A
+        server that reports it as an errno-less ``SSH_FX_FAILURE`` used to degrade
+        to a generic ``RemoteStoreError`` because ``delete`` — unlike ``read`` /
+        ``read_bytes`` — lacked the ``code is None and _has_file_ancestor`` recheck.
+        A file-ancestor is a "does-not-exist" case, so the recheck must mirror the
+        ENOENT arm's ``missing_ok`` handling — otherwise the same call would raise
+        here but return silently on an ENOENT (OpenSSH) server. Inject the
+        errno-less shape at ``remove``; the real regular-file ancestor makes
+        ``_has_file_ancestor`` true.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("parent.txt", b"data")  # real regular-file ancestor
+
+        def _remove_errnoless(_path: str) -> None:
+            raise OSError("Failure")  # SSH_FX_FAILURE shape: .errno is None
+
+        with patch.object(sftp_backend._sftp_client, "remove", side_effect=_remove_errnoless):
+            if missing_ok:
+                sftp_backend.delete("parent.txt/child.txt", missing_ok=True)  # must not raise
+                assert sftp_backend.exists("parent.txt")  # ancestor untouched, call swallowed
+            else:
+                with pytest.raises(NotFound):
+                    sftp_backend.delete("parent.txt/child.txt")
+
+    @pytest.mark.spec("SFTP-010")
+    @pytest.mark.spec("SFTP-014")
+    @pytest.mark.spec("SFTP-023")
+    def test_write_atomic_dead_promote_skips_reconnecting_cleanup(self, sftp_backend: Backend) -> None:
+        """L4: ``write_atomic``'s temp cleanup must not reconnect on a dead channel.
+
+        When ``_promote`` dies with a dropped-connection signal, the best-effort
+        ``remove(tmp_path)`` would re-enter the ``_sftp`` property and, against a
+        down server, run the full tenacity reconnect/backoff inside suppressed
+        cleanup — stalling the original error for seconds (audit-020 L4). The
+        best-effort / no-reconnect cleanup guarantee is the SFTP-014 clause this
+        change added; ``open_atomic`` already guarded it, ``write_atomic`` did not.
+        Inject a dead-channel signal at ``posix_rename`` (an ``EOFError`` bypasses
+        ``_promote``'s ``except OSError`` and propagates raw) and assert the
+        cleanup ``remove`` is skipped, the error maps to ``BackendUnavailable``,
+        and the client is invalidated.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("warmup.txt", b"x")  # live connection + parent dir
+
+        with (
+            patch.object(sftp_backend._sftp_client, "posix_rename", side_effect=EOFError("channel closed")),
+            patch.object(sftp_backend._sftp_client, "remove") as remove_spy,
+            pytest.raises(BackendUnavailable),
+        ):
+            sftp_backend.write_atomic("wa_dead.txt", b"payload", overwrite=True)
+        remove_spy.assert_not_called()
+        assert sftp_backend._sftp_client is None  # dead signal mapped + invalidated
+
+    @pytest.mark.spec("SFTP-021")
+    def test_raise_if_dir_permission_stat_maps_permission_denied(self, sftp_backend: Backend) -> None:
+        """L1: a classification stat that fails with ``EACCES`` surfaces ``PermissionDenied``.
+
+        ``_raise_if_dir`` (the lazy is-dir check on ``read_bytes`` / ``delete`` /
+        ``write_atomic``'s error path) swallowed *all* stat failures, so a server
+        that denies even statting the target degraded the caller's error to a
+        generic ``RemoteStoreError`` instead of ``PermissionDenied`` (master's
+        ``_check_not_dir`` re-raised non-``ENOENT``). The fix re-raises only
+        *permission* errors; errno-less ``SSH_FX_FAILURE`` stays swallowed so the
+        downstream file-ancestor recheck (L3/L6) still fires. Inject an errno-less
+        op failure at ``file`` and ``EACCES`` at the classification ``stat``.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")  # warm the live connection
+
+        def _file_fails(*_a: object, **_k: object) -> object:
+            raise OSError("Failure")  # errno-less op failure -> lazy classification
+
+        def _stat_eacces(*_a: object, **_k: object) -> object:
+            raise OSError(errno.EACCES, "Permission denied")
+
+        with (
+            patch.object(sftp_backend._sftp_client, "file", side_effect=_file_fails),
+            patch.object(sftp_backend._sftp_client, "stat", side_effect=_stat_eacces),
+            pytest.raises(PermissionDenied),
+        ):
+            sftp_backend.read_bytes("denied.txt")
+
+    @pytest.mark.spec("SFTP-021")
+    def test_raise_if_dir_narrow_reraise_preserves_file_ancestor_notfound(self, sftp_backend: Backend) -> None:
+        """L1 guard: the permission-only re-raise must not swallow the file-ancestor ``NotFound``.
+
+        The L1 fix re-raises *only* permission classification-stat errors; an
+        errno-less ``SSH_FX_FAILURE`` on that stat must stay swallowed so the
+        caller's downstream file-ancestor recheck still fires (protects L3/L6).
+        This is the discriminating case for the narrowness: with a **real
+        regular-file ancestor** and an errno-less classification stat on the
+        target, the narrow fix reaches the file-ancestor arm and maps ``NotFound``;
+        an over-widened fix (re-raise *every* non-``ENOENT`` classification stat
+        error) would re-raise the errno-less stat first and degrade to a generic
+        ``RemoteStoreError`` — turning this assertion red. A same-errno-less-stat
+        test with no ancestor lands on the generic mapping under master, the narrow
+        fix, *and* the over-widened fix alike, so it cannot tell them apart.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("parent.txt", b"data")  # real regular-file ancestor
+        target = sftp_backend._sftp_path("parent.txt/child.txt")
+        real_stat = sftp_backend._sftp_client.stat
+
+        def _file_fails(*_a: object, **_k: object) -> object:
+            raise OSError("Failure")  # errno-less op failure -> lazy classification
+
+        def _stat_errnoless_on_target(path: str, *a: object, **k: object) -> object:
+            if path == target:
+                raise OSError("Failure")  # errno-less classification stat on the target
+            return real_stat(path, *a, **k)  # ancestor stats stay real so the walk resolves
+
+        with (
+            patch.object(sftp_backend._sftp_client, "file", side_effect=_file_fails),
+            patch.object(sftp_backend._sftp_client, "stat", side_effect=_stat_errnoless_on_target),
+            pytest.raises(NotFound),
+        ):
+            sftp_backend.read_bytes("parent.txt/child.txt")
+
+    @pytest.mark.spec("SFTP-014")
+    @pytest.mark.parametrize("interrupt", [GeneratorExit, KeyboardInterrupt])
+    def test_open_atomic_temp_cleaned_on_base_exception(
+        self, sftp_backend: Backend, interrupt: type[BaseException]
+    ) -> None:
+        """L5: an abandoned ``open_atomic`` block leaves no temp-file litter.
+
+        The abnormal-exit cleanup only ran under ``except Exception``, so a
+        ``GeneratorExit`` (abandoned / GC'd ``with`` block) or ``KeyboardInterrupt``
+        — both ``BaseException``, not ``Exception`` — closed the handle but left the
+        ``.~tmp.<name>.<hex>`` file on the server (litter, not corruption: the
+        atomic contract holds because ``_promote`` never ran). The fix removes the
+        temp on the ``BaseException`` path too (reusing L4's no-reconnect guard),
+        while still propagating the interrupt unchanged.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("warmup.txt", b"x")  # live connection + parent dir
+
+        with pytest.raises(interrupt), sftp_backend.open_atomic("oa_interrupt.txt") as f:  # noqa: PT012
+            f.write(b"partial")
+            raise interrupt
+
+        temp_files = [fi for fi in sftp_backend.list_files("") if fi.name.startswith(".~tmp.")]
+        assert temp_files == [], f"temp file orphaned on {interrupt.__name__}: {temp_files}"
+        assert sftp_backend.exists("oa_interrupt.txt") is False  # target untouched
+
+    @pytest.mark.spec("SFTP-014")
+    def test_write_atomic_temp_cleaned_on_keyboard_interrupt(self, sftp_backend: Backend) -> None:
+        """L5 symmetry: a ``KeyboardInterrupt`` mid ``write_atomic`` leaves no temp litter.
+
+        ``write_atomic``'s cleanup was widened to ``except BaseException`` so an
+        interrupt during the streamed write (or ``_promote``) removes the
+        ``.~tmp.*`` file under the same no-reconnect guard ``open_atomic`` uses
+        (L5). ``write_atomic`` never yields, so there is no ``GeneratorExit`` case —
+        only ``KeyboardInterrupt``. Inject it from the stream's ``read`` after the
+        temp file is open; assert the temp is gone and the interrupt propagates.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("warmup.txt", b"x")  # live connection + parent dir
+
+        class _InterruptStream(io.BytesIO):
+            def read(self, _size: int = -1) -> bytes:
+                raise KeyboardInterrupt("user abort mid-write")
+
+        with pytest.raises(KeyboardInterrupt):
+            sftp_backend.write_atomic("wa_interrupt.txt", _InterruptStream(b"payload"))
+
+        temp_files = [fi for fi in sftp_backend.list_files("") if fi.name.startswith(".~tmp.")]
+        assert temp_files == [], f"temp orphaned on KeyboardInterrupt: {temp_files}"
+        assert sftp_backend.exists("wa_interrupt.txt") is False  # target untouched
+
+    @pytest.mark.spec("BE-008")
+    @pytest.mark.parametrize("method", ["write", "write_atomic", "open_atomic"])
+    def test_modeless_existing_target_maps_invalid_path(self, sftp_backend: Backend, method: str) -> None:
+        """L2: a mode-less existing target (``st_mode is None``) yields ``InvalidPath`` uniformly.
+
+        On a server that reports no mode field, the is-dir guard
+        (``st_mode is not None and S_ISDIR``) never fired, so an existing mode-less
+        target fell through to ``AlreadyExists`` (``write`` / ``write_atomic`` /
+        ``open_atomic``) — never the defensive ``InvalidPath`` that
+        ``_ensure_parent_dirs`` already raised for a mode-less *ancestor*. The
+        folded ``_classify_existing_target`` helper treats a mode-less target
+        defensively as not-a-plain-file, aligning all three on the
+        ``overwrite=False`` existence-check path (the ``overwrite=True`` path is
+        covered separately — ``write`` / ``write_atomic`` skip the stat there, while
+        ``open_atomic`` still classifies eagerly). Overwrite defaults ``False`` so
+        the existence stat runs.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("ml_target.txt", b"real")  # a real file at the path
+        target = sftp_backend._sftp_path("ml_target.txt")
+        real_stat = sftp_backend._sftp_client.stat
+
+        class _ModelessAttrs:
+            st_mode = None
+            st_size = 0
+            st_mtime = None
+
+        def _stat(path: str, *a: object, **k: object) -> object:
+            if path == target:
+                return _ModelessAttrs()  # server returned an entry with no mode field
+            return real_stat(path, *a, **k)
+
+        with (  # noqa: PT012
+            patch.object(sftp_backend._sftp_client, "stat", side_effect=_stat),
+            pytest.raises(InvalidPath),
+        ):
+            if method == "open_atomic":
+                with sftp_backend.open_atomic("ml_target.txt") as f:
+                    f.write(b"x")
+            else:
+                getattr(sftp_backend, method)("ml_target.txt", b"data")  # overwrite defaults to False
+
+    @pytest.mark.spec("BE-008")
+    def test_modeless_target_open_atomic_overwrite_true_still_invalid(self, sftp_backend: Backend) -> None:
+        """L2 boundary: ``open_atomic`` classifies a mode-less target even under ``overwrite=True``.
+
+        ``open_atomic`` stats the target eagerly (it hands back a handle, so a
+        non-file must be rejected before the caller writes a byte), so
+        ``_classify_existing_target`` runs regardless of ``overwrite``. This pins
+        the resulting behaviour change: a mode-less existing target now raises
+        ``InvalidPath`` even with ``overwrite=True`` (old code proceeded to
+        overwrite). ``write`` / ``write_atomic`` differ — they skip the existence
+        stat entirely on ``overwrite=True`` (BK-313) and so do not classify a
+        mode-less target — which is why the folded policy is unified only on the
+        ``overwrite=False`` path, not universally.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("ml_ow.txt", b"real")  # a real file at the path
+        target = sftp_backend._sftp_path("ml_ow.txt")
+        real_stat = sftp_backend._sftp_client.stat
+
+        class _ModelessAttrs:
+            st_mode = None
+            st_size = 0
+            st_mtime = None
+
+        def _stat(path: str, *a: object, **k: object) -> object:
+            if path == target:
+                return _ModelessAttrs()  # server returned an entry with no mode field
+            return real_stat(path, *a, **k)
+
+        with (  # noqa: PT012
+            patch.object(sftp_backend._sftp_client, "stat", side_effect=_stat),
+            pytest.raises(InvalidPath),
+            sftp_backend.open_atomic("ml_ow.txt", overwrite=True),
+        ):
+            pass  # InvalidPath raises in open_atomic's eager setup stat, before yield
+
+
+# endregion

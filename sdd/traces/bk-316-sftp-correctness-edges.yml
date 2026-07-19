@@ -1,0 +1,140 @@
+id: BK-316
+title: "SFTP low-severity correctness edges (audit-020 L1–L6)"
+trigger: >-
+  audit-020 (the BK-313 pre-merge correctness review) surfaced six low-severity
+  SFTP failure-path edges and deferred them out of PR #910 as group G4. Each
+  manifests only on non-OpenSSH servers whose error shapes differ (errno-less
+  SSH_FX_FAILURE, mode-less stats, EACCES on a classification stat), so on a real
+  OpenSSH box they are invisible.
+source_items:
+  - BK-316
+  - BK-313
+audience:
+  - user.api
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  # check_no_tracker_refs treats docstrings as published surfaces, so the L1/L2
+  # explanatory "(BK-316 Lx)" tags placed in the _raise_if_dir /
+  # _classify_existing_target docstrings failed the gate — the IDs had to move
+  # into adjacent `#` comments (which are exempt). Not anticipated by the
+  # ripple-check table; the tracker-ref gate caught it.
+  - src/remote_store/backends/_sftp.py
+  # The benchmark run and the live e2e lane were user-requested mid-work, not in
+  # the ripple-check; the live file is new and the benchmark exercised the
+  # changed write/write_atomic/open_atomic/delete methods against the container.
+  - tests/e2e/test_sftp_correctness_edges.py
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-316 (item)"
+        read_type: gate
+        extract: "Six independent, splittable edges L1–L6; spec SFTP-023/024; effort M; audience user.api"
+      - file: sdd/audits/audit-020-sftp-roundtrips-correctness.md
+        section: "Low / Nits (L1–L6), Proposed backlog items (group G4)"
+        read_type: gate
+        extract: "Per-finding line refs, origin (pre-existing vs BK-313), and the advisory dispositions per edge"
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir, _has_file_ancestor, _ensure_parent_dirs, write/write_atomic/open_atomic guards, delete"
+        read_type: reference
+        extract: >-
+          Current state — open_atomic already carried the L4 reconnect guard and a
+          BaseException handle-close (BK-313 review residue), so L4/L5 were a
+          port-the-pattern job, not a from-scratch design
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-003, SFTP-014, SFTP-020, SFTP-021, SFTP-024"
+        read_type: gate
+        extract: "Existing error-mapping and atomic-write invariants the edges must conform to, not contradict"
+      - file: tests/backends/sftp/test_config.py
+        section: "_os_with_errno, sftp_backend fixture, TestSFTPErrorMapping/TestSFTPNonEnoentOSErrors injection patterns"
+        read_type: reference
+        extract: "Established injection conventions (patch.object on _sftp_client.stat/file/remove) to reuse for L1–L5"
+  - id: implement
+    name: Implement (failing test first per edge)
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPLowSeverityCorrectnessEdges (new)"
+        read_type: reference
+        extract: >-
+          One injection test per edge, each run red before the fix. L3 delete
+          file-ancestor→NotFound; L4 write_atomic no-reconnect cleanup; L1
+          permission re-raise + errno-less-swallowed guard; L5 open_atomic
+          BaseException temp cleanup; L2 mode-less target→InvalidPath across all three
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir (L1), delete (L3), write_atomic except (L4), open_atomic except (L5), _classify_existing_target (L2)"
+        read_type: reference
+        extract: >-
+          L1 kept NARROW (re-raise EACCES/EPERM only, not master's blanket
+          non-ENOENT) — a blanket re-raise would mask the downstream file-ancestor
+          NotFound path (L3/L6) on a server whose classification stat reports a
+          different errno. The L1↔L3/L6 interaction is the load-bearing subtlety.
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor opaque-error return (L6)"
+        read_type: reference
+        extract: >-
+          L6 closed working-as-intended (no code change): opaque-stat→False is the
+          deliberate ID-209 conservative choice; only a note added, not a behaviour flip
+  - id: verify
+    name: Verify (two lanes + benchmark + ripple-check)
+    steps:
+      - file: tests/e2e/test_sftp_correctness_edges.py
+        section: "TestSFTPCorrectnessEdgesLive (new)"
+        read_type: verify
+        extract: >-
+          Live atmoz/sftp lane: L5 (GeneratorExit→no temp orphan) and L1-permission
+          (chmod 0o555 dir→PermissionDenied) genuinely reproduce; L3 is
+          no-regression only, L2/L4 injection-only (OpenSSH cannot emit their shape)
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-014 (postconditions)"
+        read_type: verify
+        extract: >-
+          Added best-effort/no-reconnect cleanup note capturing L4's deliberate
+          dead-channel skip and L5's interrupt cleanup, consistent with the
+          existing orphan-temp caveat
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG→DONE move, CHANGELOG stub, failing-test-before-fix, docstrings, trace — all same PR"
+  - id: review
+    name: Review (PR #922, round 1)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "delete (L3 arm)"
+        read_type: verify
+        extract: >-
+          Review caught a real defect: the new L3 file-ancestor arm raised NotFound
+          unconditionally, ignoring missing_ok — the ENOENT arm honours it, so the
+          same delete(..., missing_ok=True) raised on an errno-less server but
+          returned silently on OpenSSH. Gated the raise on `not missing_ok` + return.
+        outcome: misleading
+      - file: tests/backends/sftp/test_config.py
+        section: "L1 guard test; L3 test; L2 test"
+        read_type: verify
+        extract: >-
+          The L1 errno-less-swallow guard was vacuous (master, narrow fix, and the
+          over-widened regression all land on generic RemoteStoreError) — rewritten
+          to a real-file-ancestor + errno-less-classification-stat case asserting
+          NotFound, which only the narrow fix passes. Added missing_ok=True to the L3
+          test and an open_atomic overwrite=True case to the L2 set (both untested gaps).
+      - file: src/remote_store/backends/_sftp.py
+        section: "write_atomic except; _classify_existing_target docstring"
+        read_type: verify
+        extract: >-
+          L4/L5 asymmetry: write_atomic caught only `except Exception`, so a
+          KeyboardInterrupt orphaned the temp that L5 fixes for open_atomic — widened
+          to `except BaseException` for symmetry. Softened the "fold three policies
+          into one" claim: unified on overwrite=False (plus open_atomic's eager
+          overwrite=True stat), not universally. Dropped rot-prone `:NNN` line cites.
+      - file: src/remote_store/backends/_sftp.py
+        section: "_classify_existing_target docstring (round 2)"
+        read_type: verify
+        extract: >-
+          Second review round: the fold is eager-existence-check-path only —
+          _raise_if_dir (lazy failure-path) and the move/copy is-dir guards keep the
+          opposite `st_mode is not None` stance by design (raising InvalidPath on a
+          failure path could mask a real NotFound). Documented the accepted
+          consequence: a mode-less existing regular file under overwrite=False
+          surfaces InvalidPath, not AlreadyExists. Docs-only; no behaviour change.
