@@ -41,8 +41,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   1 ms overhead on a 100 ms round trip is 1%". That is wrong: remote-store's
   overhead is itself **round-trip driven** (extra protocol round trips — see
   BK-313), so the absolute ms cost **grows** with RTT. On the run of record an S3
-  write or delete carries about one extra round trip (~+90 to +110 ms at 100 ms
-  RTT), while backends that add no extra round trips per operation stay near zero.
+  write or delete carries about one extra round trip (on the order of one RTT),
+  while backends that add no extra round trips per operation stay near zero.
   **Fixes:** both overhead charts recast to **absolute ms** overhead (remote-store
   minus raw), dropping the % y-axis; a new **decomposition chart**
   (`overhead-decomposition.svg`) stacks raw-SDK time + remote-store overhead per

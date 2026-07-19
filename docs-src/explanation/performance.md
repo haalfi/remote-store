@@ -55,23 +55,24 @@ Regenerate numbers for your own hardware with `hatch run bench-report`
 Under realistic network round-trip times (20–100 ms), the absolute overhead
 **grows** wherever remote-store's extra work is itself a count of round trips.
 The chart below tracks the average overhead in milliseconds as simulated RTT
-rises: for S3 it climbs from near zero on a clean link to about +42 ms at 100 ms
-RTT; SFTP and Azure, which add no extra round trips per operation, stay near zero
+rises: for S3 it climbs steadily, since each extra round trip costs one more RTT;
+SFTP and Azure, which add no extra round trips per operation, stay near zero
 throughout.
 
 ![Average overhead in milliseconds versus network round-trip time; the S3 line rises with RTT while SFTP and Azure stay near zero](../img/benchmarks/overhead-vs-rtt.svg)
 
 The single largest case is an S3 write or delete, which carries about one extra
-protocol round trip of overhead — roughly +90 to +110 ms at 100 ms RTT. The
-decomposition below splits each operation's mean time into the raw SDK cost and
-the remote-store overhead stacked on top, labelled in milliseconds and as a share
-of the total, so the raw op time and the latency-scaled overhead are both visible:
+protocol round trip of overhead — so on the order of one RTT (~+100 ms on a
+100 ms link). The decomposition below splits each operation's mean time into the
+raw SDK cost and the remote-store overhead stacked on top, labelled in
+milliseconds and as a share of the total, so the raw op time and the
+latency-scaled overhead are both visible:
 
 ![Stacked bars decomposing mean time per operation into raw SDK time and remote-store overhead per RTT profile, for S3, SFTP, and Azure](../img/benchmarks/overhead-decomposition.svg)
 
 The overhead's *share* of the total moves independently of its absolute size: for
-S3 it rises from near zero to roughly a quarter or more of the average operation
-under latency, while for SFTP and Azure it stays near zero. The share is not the
+S3 it grows into a visible slice of the average operation under latency, while for
+SFTP and Azure it stays near zero. The share is not the
 cost — the milliseconds are.
 
 The benchmark suite simulates latency using [Toxiproxy](https://github.com/Shopify/toxiproxy)
