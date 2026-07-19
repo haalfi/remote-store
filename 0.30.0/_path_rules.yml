@@ -1,0 +1,56 @@
+# Folder rules for the documentation bridge.
+#
+# Each entry describes one SDD subdirectory: where its sources live in the
+# repo, where they appear on the docs site, and how their pages are titled
+# and listed. The bridge derives the source -> dest map from these rules.
+#
+# Per-file markers (<!-- doc: dual dest=... -->) override these rules for
+# individual files. Files matching no rule and carrying no marker fall to
+# G-01 (must be classified explicitly).
+#
+# Destination: every entry renders at explanation/design/<slug>/<stem>.md.
+#
+# Loaded by scripts/docs/scan.py:_load_sdd_kinds.
+# Spec: DOCFRAME-008.
+
+sdd_kinds:
+  - slug: adrs
+    source_dir: sdd/adrs
+    nav_label: ADRs
+    title_prefixes:
+      - "ADR-{num}: "
+    status: Accepted
+    # DIGEST.md is a generated cross-ADR summary (scripts/gen_adr_digest.py),
+    # not an ADR — keep it out of the numbered ADR nav and dual-render bridge.
+    skip_stems:
+      - DIGEST
+
+  - slug: specs
+    source_dir: sdd/specs
+    nav_label: Specs
+    title_prefixes:
+      - "Spec {num}: "
+      - "Spec-{num}: "
+      - "{num}: "
+
+  - slug: rfcs
+    source_dir: sdd/rfcs
+    nav_label: RFCs
+    glob: "rfc-*.md"
+    status: Proposed
+
+  - slug: audits
+    source_dir: sdd/audits
+    nav_label: Audits
+    glob: "audit-*.md"
+    title_prefixes:
+      - "Audit {num} -- "
+      - "Audit {num} — "
+
+  - slug: research
+    source_dir: sdd/research
+    nav_label: Research
+    glob: "research-*.md"
+    title_prefixes:
+      - "Research: "
+    numbered: false
