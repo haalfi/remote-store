@@ -30,7 +30,7 @@ concerns need to compose?
 
 ## Decision
 
-**Choose Path 1 — a `ProxyStore` delegation base plus stream-level wrappers,
+**Choose Path 1: a `ProxyStore` delegation base plus stream-level wrappers,
 not a middleware framework (Path 2).** `ProxyStore` centralizes the
 private-attribute coupling (`_backend`, `_root`, `_owns_backend`) and default
 delegation shared by `ObservedStore` and `CachedStore`; subclasses override
@@ -53,19 +53,19 @@ breaks no public API, so it is safe to defer rather than build speculatively.
   signatures and return types; `ProxyStore` is a base class, not a new public
   surface.
 
-**Scope — what Path 1 delivers**
+**Scope: what Path 1 delivers**
 
 - `ProxyStore` internal base (`_proxy.py`) with a `_wrap_child()` hook.
 - New `ext.streams` (progress + checksum `BinaryIO` wrappers) and `ext.integrity`
   (pure checksum/verify functions). The exact class list and per-symbol
   contracts are owned by specs `033-ext-streams` and `034-ext-integrity`.
 
-**Scope — what Path 1 excludes (the boundary against Path 2)**
+**Scope: what Path 1 excludes (the boundary against Path 2)**
 
 - No `ProgressStore`/`ChecksumStore` proxies; no before/after/short-circuit
   hooks; no category dispatch, middleware merging, or public middleware API.
 - No `Store.read()`/`write()` signature changes for progress or checksums.
-- No data-model change (`ContentDigest`, `FileInfo.digest`/`etag`) — deferred
+- No data-model change (`ContentDigest`, `FileInfo.digest`/`etag`), deferred
   to ID-008.
 
 **ProxyStore contract**
@@ -77,10 +77,10 @@ implement (the base raises). Construction, delegation, and `_wrap_child()`
 mechanics are owned by `src/remote_store/_proxy.py`; the ADR-0010
 drift-protection tests hold delegation to the full `Store` surface. *Amended by
 ADR-0015:* the original "internal, must not be subclassed by user code" clause
-is superseded — `ProxyStore` is now exported and documented so extension
+is superseded; `ProxyStore` is now exported and documented so extension
 authors can subclass it.
 
-**Migration trigger for Path 2 — reverse this decision when any becomes true**
+**Migration trigger for Path 2 (reverse this decision when any becomes true)**
 
 - three or more store-level concerns must compose on one operation path;
 - wrapper ordering becomes product-significant, not merely internal;

@@ -42,17 +42,17 @@ layer, which currently doesn't do it at all.
 
 ## Decision
 
-- **A `to_key` primitive at two levels — `Backend.to_key` and `Store.to_key`,
-  same name by design (clear intent, composable).** Both the broken listing
+- **A `to_key` primitive at two levels, `Backend.to_key` and `Store.to_key`,
+  same-named by design (clear intent, composable).** Both the broken listing
   round-trip and external-path conversion reduce to one operation: stripping a
   layer's own root. `Backend.to_key` strips the backend's native root/prefix;
   `Store.to_key` composes that with stripping `root_path` to yield a
   store-relative key. *Reverse if* a use case needs a path transform that is not
-  root-stripping — then `to_key` is the wrong primitive, not merely
+  root-stripping; then `to_key` is the wrong primitive, not merely
   under-featured.
 - **`Backend.to_key` is a concrete ABC method with an identity default.** Only
   backends with a custom root override it; every other backend inherits the
-  identity, so the change is zero-behavioral for them — the
+  identity, so the change is zero-behavioral for them: the
   backward-compatibility invariant. *Reverse if* the identity default ever
   yields a wrong key for an un-overridden backend, which would mean the default
   is unsafe and the method must become abstract.

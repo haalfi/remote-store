@@ -34,12 +34,12 @@ other's output.
 ## Decision
 
 **Adopt an iterative convergence model, replacing the single-pass model.**
-Planning, execution, and post-processing are wrapped in feedback loops — plan
+Planning, execution, and post-processing are wrapped in feedback loops (plan
 refinement before execution, result consolidation after, and expert
-cross-review — so experts act on each other's *actual output*, not the plan
+cross-review), so experts act on each other's *actual output*, not the plan
 alone. That gap is what single-pass could not close for coupled, multi-domain
 work. *Reverse if* the loops stop catching cross-domain mismatches that
-single-pass missed — i.e. the loop overhead no longer pays for itself.
+single-pass missed, so the loop overhead no longer pays for itself.
 
 **Gate loop depth on task complexity, via three modes (Simple / Standard /
 Complex).** Trivial single-domain work runs plan → execute → review with no
@@ -58,8 +58,8 @@ issues rather than surfacing them to the user.
 **The user is the sole tie-breaker.** The orchestrator presents expert
 disagreements and waits; it never adjudicates them autonomously, keeping a
 human as final authority on contested changes. *Reverse only* as a deliberate
-authority change — if orchestration is ever trusted to resolve domain conflicts
-without a human — never as a tuning tweak.
+authority change (if orchestration is ever trusted to resolve domain conflicts
+without a human), never as a tuning tweak.
 
 **Carry forward ADR-0019's delegation structure; replace only its control
 flow.** Domain-expert delegation, per-domain boundaries and foundation docs,

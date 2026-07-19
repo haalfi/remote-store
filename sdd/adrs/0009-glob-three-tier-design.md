@@ -33,18 +33,18 @@ A single lowest-common-denominator API and a two-tier design were both
 rejected: a bare `store.glob()` throws on most backends (a discoverability
 pit), and simple name filtering should not require an extension.
 
-- **Tier 1 — `list_files(pattern=…)`: `fnmatch` name filtering at the Store
+- **Tier 1 (`list_files(pattern=…)`): `fnmatch` name filtering at the Store
   level.** Works on every backend with `LIST`, no new capability; covers the
   common "give me the CSVs in this folder" case. *Reverse if* every backend
   gains cheap recursive matching, collapsing the need for higher tiers.
-- **Tier 2 — `store.glob(pattern)`: native backend glob, gated on
+- **Tier 2 (`store.glob(pattern)`): native backend glob, gated on
   `Capability.GLOB`.** Like `unwrap()`, opt-in direct access to a
   backend-specific feature for users who know their backend and want native
   semantics. The gate exists because native glob support is **unequal** across
-  backends — only backends with a genuine native implementation declare `GLOB`
+  backends; only backends with a genuine native implementation declare `GLOB`
   (the current roster is spec-rate; see spec 018 § GLOB-005/018/019/020).
   *Reverse if* native glob becomes universal, making the gate meaningless.
-- **Tier 3 — `ext.glob.glob_files(store, pattern)`: portable full recursive
+- **Tier 3 (`ext.glob.glob_files(store, pattern)`): portable full recursive
   glob.** Delegates to `store.glob()` when `GLOB` is available, else falls back
   to `list_files` + client-side matching. This fallback is why the design is
   three tiers, not two: portable recursive glob cannot be guaranteed at the

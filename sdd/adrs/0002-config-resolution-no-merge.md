@@ -21,10 +21,10 @@ Configuration systems often layer multiple sources (config files, env vars, CLI 
 ## Decision
 
 - **Config-as-code has absolute priority.** A `RegistryConfig` built in code
-  is used exclusively — no layering, no merging between configuration sources.
-  Chosen so the same code yields the same behavior regardless of host
+  is used exclusively, with no layering or merging between configuration
+  sources. Chosen so the same code yields the same behavior regardless of host
   environment (determinism; test isolation from stray env vars). *Reverse if*
-  determinism becomes a net liability — a first-class multi-source/override
+  determinism becomes a net liability: a first-class multi-source/override
   requirement emerges that user-side pre-processing genuinely cannot serve.
 - **Environment variables are never read automatically.** The Registry performs
   no env-var fallback: constructing without a config yields an empty

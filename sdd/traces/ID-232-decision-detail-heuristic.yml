@@ -591,3 +591,39 @@ phases:
           (0008 +145, 0014 +63, 0020 +9) are deliberate gate-driven leaves.
           Docs-only diff -> lint + docs-gate, both green.
         outcome: ok
+  - id: fix
+    name: Address PR1 review (#917)
+    steps:
+      - file: sdd/adrs/0008-extension-architecture.md
+        section: "Decision (all 8 rewritten Decisions)"
+        read_type: reference
+        extract: >-
+          User review finding (typography): the rewrites overused em dashes.
+          Swept all 8 Decision sections to house style (periods/colons/commas;
+          bold-lead bullets take a period, not "— "; parenthetical em-dash pairs
+          became parens/commas). Kept em dashes only as the Status-table N/A
+          value; left pre-existing Context/Consequences prose untouched (not in
+          this PR's diff). Applies going forward to PR2/PR3 authoring.
+        outcome: ok
+      - file: sdd/adrs/0008-extension-architecture.md
+        section: "Capability-probe exception pattern"
+        read_type: reference
+        extract: >-
+          Review (content-preservation, Possible): the rewrite dropped the old
+          "any new extension MUST cite this section and document its fallback
+          strategy in comments" obligation, keeping only "commented". Restored
+          the cite-this-section clause; it is a real (if minor) normative rule on
+          future extensions, so under the PR's no-content-lost bar it stays.
+        outcome: ok
+      - file: sdd/adrs/0026-strict-gate-on-kwarg.md
+        section: Consequences
+        read_type: verify
+        extract: >-
+          Review (content-preservation, Possible): flagged the dropped
+          negative-test instruction. Verified it was NOT lost — retained in this
+          ADR's ## Consequences ("every non-declaring backend must have a
+          negative test asserting CapabilityNotSupported"), its correct home for
+          a testing obligation. The reviewer searched the relocation targets
+          (CAP-007/spec 003/TESTING.md) and missed the in-ADR retention. No edit;
+          resolved the thread noting the home.
+        outcome: ok

@@ -73,8 +73,8 @@ existing method rather than the method as a whole.
 An optional kwarg that requests a specific backend capability MUST raise
 `CapabilityNotSupported` **before any I/O** when the backend does not declare
 that capability. Never silently drop the kwarg: a silent drop turns a caller's
-durability assumption — correlation IDs and idempotency tokens carried in
-`metadata=` — into an untraceable correctness failure discovered later, in a
+durability assumption (correlation IDs and idempotency tokens carried in
+`metadata=`) into an untraceable correctness failure discovered later, in a
 different service, with the explaining context already gone. *Reverse if* a
 future consumer class treats such a kwarg as purely advisory with no downstream
 correctness dependence; then silent degradation, not a raise, becomes the
@@ -83,8 +83,8 @@ defensible default.
 **Strict gate on kwarg (the pattern).** A capability is a *strict gate on
 kwarg* when it:
 
-1. does not gate the method — the method works without the kwarg;
-2. gates one optional argument — supplying it requires the capability;
+1. does not gate the method, which works without the kwarg;
+2. gates one optional argument, so supplying it requires the capability;
 3. is enforced once, at the Store layer (not per backend), raising
    `CapabilityNotSupported` before any I/O when the capability is absent and
    the argument is supplied.
@@ -93,7 +93,7 @@ kwarg* when it:
 live registry of strict-gate capabilities is CAP-007 (spec 003); each
 instance's per-backend contract lives in its feature spec (e.g. WR-010). A new
 instance is added by declaring a capability, gating its kwarg at the Store
-layer, and registering it in CAP-007 — no new enforcement site. *Reverse if* a
+layer, and registering it in CAP-007, with no new enforcement site. *Reverse if* a
 gated argument becomes universally supported across backends; then the gate for
 that capability is removed rather than relocated.
 
