@@ -208,7 +208,14 @@ the same directory as the target, then renames to the target via `posix_rename`.
 remains. This is **simulated** atomicity, not true atomicity — the capability is
 declared to enable the write-then-rename pattern, but the caveat must be documented.
 **Postconditions:** On success, the temp file is gone and the target contains the
-new content. On failure, the backend attempts to clean up the temp file.
+new content. On failure, the backend makes a **best-effort** temp-file cleanup that
+never reconnects: when the failure is itself a dropped-connection signal (or the
+client is already invalidated), the cleanup unlink is deliberately skipped rather
+than triggering a fresh connect against a possibly-down server inside the
+error-handling path — so the orphan-temp caveat above holds and the original error
+propagates without a multi-second reconnect stall. An abnormal exit of an
+`open_atomic` block (including a `GeneratorExit` / `KeyboardInterrupt`) removes the
+temp file under the same best-effort guard.
 
 ### SFTP-015: Atomic Write Overwrite Semantics
 

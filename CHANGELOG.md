@@ -8,6 +8,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ## [Unreleased]
 
 - BK-313: SFTP `write()`/`write_atomic()` return all-`None` `WriteResult` rich fields; far fewer per-operation metadata round-trips, plus audit-020 SFTP failure-path correctness fixes
+- BK-316: Close the audit-020 low-severity SFTP correctness tail (L1–L6) — permission-aware `_raise_if_dir`, `delete` file-ancestor `NotFound` parity, no reconnect inside `write_atomic` cleanup on a dead channel, `open_atomic` temp cleanup on interrupt, and one folded mode-less-target policy (`InvalidPath`); mostly non-OpenSSH error-shape edges
 - BUG-231: GraphBackend.check_health() probes the drive so ping() can fail
 - BK-310: Pin the backend enumeration order in the add-a-backend checklist
 - BK-311: Sync the stale tagline and backend-membership mirrors
