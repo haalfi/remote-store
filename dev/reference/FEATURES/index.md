@@ -1,4 +1,4 @@
-# Features — remote-store v0.29.1
+# Features — remote-store v0.30.0
 
 Authoritative snapshot of what remote-store delivers in this version. Updated each release. **This is the single reference for the package's feature surface.**
 

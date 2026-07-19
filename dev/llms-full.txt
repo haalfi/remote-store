@@ -19875,6 +19875,47 @@ Breaking changes and upgrade paths between `remote-store` versions.
 
 `remote-store` has been published on PyPI since v0.11.0 (first Beta release). The core Store API is stable, but extensions may evolve. This page documents changes that require action when upgrading.
 
+## v0.29.1 to v0.30.0
+
+**SFTP `write()` / `write_atomic()` no longer return a `last_modified` timestamp:**
+
+To cut per-operation round trips, the SFTP backend dropped the post-write `stat` call that was the only source of `WriteResult.last_modified` on the write path. SFTP's write response carries no timestamp, so the field is now `None` after an SFTP `write()` or `write_atomic()`. `WriteResult.size` (the uploaded byte count) is unaffected, and no other backend changes.
+
+```
+# Before (v0.29.1): last_modified populated from a post-write stat
+result = store.write("data.bin", payload)   # SFTP backend
+result.last_modified                          # datetime(...)
+
+# After (v0.30.0): last_modified is None on the SFTP write path
+result = store.write("data.bin", payload)
+result.last_modified                          # None
+```
+
+If you need the timestamp after a write, read it back explicitly:
+
+```
+info = store.get_file_info("data.bin")
+info.last_modified
+```
+
+**Why:** the timestamp cost a synchronous `stat` round trip per write that raw paramiko skips, about +100 ms at 100 ms RTT. `WR-001a` already permits `None` for a field a backend's write response does not carry, so `None` is within the existing `WriteResult` contract.
+
+**SFTP failure paths now raise precise error types on non-OpenSSH servers:**
+
+Several SFTP failure paths that previously raised a generic `RemoteStoreError` on servers whose error shapes differ from OpenSSH now raise the canonical type:
+
+| Condition (non-OpenSSH server)                             | Old error          | New error          |
+| ---------------------------------------------------------- | ------------------ | ------------------ |
+| Permission-denied classification stat (`EACCES`/`EPERM`)   | `RemoteStoreError` | `PermissionDenied` |
+| Mode-less existing target on an `overwrite=False` write    | `RemoteStoreError` | `InvalidPath`      |
+| `delete` of a missing path behind an opaque-error ancestor | `RemoteStoreError` | `NotFound`         |
+
+One accepted consequence of the defensive mode-less policy: a mode-less *regular file* written under `overwrite=False` now surfaces `InvalidPath` rather than `AlreadyExists`. The `delete` recheck honours `missing_ok=True` exactly as the ENOENT path already did.
+
+All new types subclass `RemoteStoreError`, so an `except RemoteStoreError` clause is unaffected and most code needs no change. **If you catch specific types**, a failure that previously fell through to a generic handler will now be caught by a narrower `except PermissionDenied` / `except NotFound` / `except InvalidPath` clause first.
+
+**Scope:** SFTP only, and only on non-OpenSSH servers whose error shapes differ from OpenSSH. An OpenSSH-backed SFTP endpoint already raised the precise types and is unchanged.
+
 ## v0.28.0 to v0.29.0
 
 **Azure HNS is now an explicit, mandatory declaration:**
@@ -20172,7 +20213,7 @@ The table below is the projection of those lock files onto the top-level package
 | -------- | ------------ |
 | `pyyaml` | `6.0.3`      |
 
-# Features — remote-store v0.29.1
+# Features — remote-store v0.30.0
 
 Authoritative snapshot of what remote-store delivers in this version. Updated each release. **This is the single reference for the package's feature surface.**
 

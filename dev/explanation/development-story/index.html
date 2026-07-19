@@ -5652,6 +5652,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-44-minimize-mismatched-detail-not-detail-v0300" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 44: Minimize Mismatched Detail, Not Detail (v0.30.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11450,6 +11461,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-44-minimize-mismatched-detail-not-detail-v0300" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 44: Minimize Mismatched Detail, Not Detail (v0.30.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -12106,6 +12128,12 @@
 <p><strong>The docstrings and the agent-facing bundles were pulled up to the same bar.</strong> ID-228 backfilled method-level contract docstrings — per-operation <code>Raises:</code>, read-after-write/atomicity notes, cost/laziness notes — onto the six thin backends (Local, Memory, SFTP, SQLBlob, Azure, and the S3 family), which had stated their contract only in a class-docstring blurb while <code>GraphBackend</code>'s methods already carried the full story; the backfill is kept in agreement with the ID-227 matrices that harvest the same cells. Two artifacts joined the docs for coding agents and LLMs: Markdown page twins plus a concatenated <code>llms-full.txt</code> built from the <em>rendered</em> site (ID-220, so they capture the mkdocstrings API reference and the link rewrites a raw-source bundler would miss), and <code>llms-api.txt</code> (ID-226) — the entire public API as one code-shaped skeleton, exact signatures and full docstrings with the bodies elided.</p>
 <p><strong>The one behavioural change was a dependency cap, and it earned its place by refusing to lie.</strong> The weekly drift guard's <code>--pre</code> re-resolution pulled <code>httpx==1.0.dev3</code> into the <code>graph</code> and <code>httpx</code> extras and the async graph backend stopped importing. The first diagnosis read it as an exception-hierarchy reorg; the reality was a wholesale client-API rewrite that drops <code>AsyncClient</code> and most of the surface the backend is built on. Coding around the one missing symbol would have turned an honest import failure into a falsely-green import that explodes later at runtime, so the fix was to cap both extras at <code>httpx&gt;=0.24.0,&lt;1.0</code> and file the real 1.0 port as ID-229 (BUG-225). The guard also exposed a blind spot in itself: the <code>graph</code> smoke leg had fallen back to a top-level import that never touches the async module, so it read green while the pin was broken — now wired to import the graph transport directly.</p>
 <p><strong>The lesson:</strong> this project's oldest recurring lesson is that a documentation rule a human enforces is one that eventually slips, and it has spent releases converting those rules into CI gates — CONTENT-RULES, the API-docs drift checks, the tracker-ref lint. v0.29.1 took the next step and made the <em>content itself</em> generated-and-verified rather than merely rule-checked: the feature tables are projected from a model and fail the build on drift, and the guarantee cells are cross-checked against the capability flags they describe. BUG-227 is the proof of why that matters — a table maintained by hand had been wrong for a dozen releases and no reader ever filed it, because a wrong-but-plausible type is invisible until something checks it against the code. The cheapest way to keep a document true is to stop maintaining it by hand.</p>
+<h3 id="phase-44-minimize-mismatched-detail-not-detail-v0300">Phase 44: Minimize Mismatched Detail, Not Detail (v0.30.0)<a class="headerlink" href="#phase-44-minimize-mismatched-detail-not-detail-v0300" title="Permanent link">&para;</a></h3>
+<p>v0.30.0's through-line is a principle the project only named this cycle and then applied across its durable texts: detail belongs in the layer whose change-rate and correctness-locus fit it, and the rest relocates to its authoritative home, with brevity following as a byproduct. It became core principle 8.</p>
+<p><strong>ADRs were the first target.</strong> A research pass on the scope and placement of detail in durable texts found ADR <em>Decision</em> sections restating spec clauses and implementation specifics that a spec or the source already owned, copied detail that goes stale where it sits because its correctness is checked somewhere else. A gate-sweep rewrote every live ADR's Decision section to state the decision and its rationale and defer the mechanics, and a new <code>gen-adr-digest</code> tool (table-based metadata markers, an advisory Decision-bloat heuristic, wired into the preflight gate) makes the discipline mechanical rather than remembered.</p>
+<p><strong>The benchmark correction started in the backend, not the prose.</strong> Fixing the overhead story was real engineering before it was any docs work. The SFTP backend paid extra synchronous <code>stat</code> round-trips on every operation that raw paramiko skips: a post-write stat feeding only a <code>last_modified</code>, a pre-write stat made redundant by an <code>overwrite=True</code> truncate, eager is-directory checks on the read and delete happy paths, and a <code>stat('.')</code> liveness probe on every connection touch. Cutting them (BK-313) dropped a <code>write_atomic</code> from 13 warm-channel round-trips to 5, and meant re-deriving the behavior those stats used to guarantee. A pre-merge correctness audit caught the edges (BK-316): a channel-drop signal set that re-wedged a long-lived backend, a streamed <code>read()</code> leaking a mid-read <code>EOFError</code>, and non-OpenSSH failure paths raising a generic error where a precise <code>PermissionDenied</code> / <code>NotFound</code> / <code>InvalidPath</code> belonged. The one visible API change is small, an SFTP <code>write()</code> no longer returns a <code>last_modified</code> the removed round-trip was its only source of, but the work behind it was not.</p>
+<p><strong>Then the numbers told the truth, and principle 8 shaped how they were told.</strong> With SFTP's per-op overhead collapsed to near zero, the old charts were exposed as not merely stale but wrong in mechanism: they plotted overhead as a percentage of raw-SDK time and narrated a fixed cost that "shrinks as a share" of a slower link, when remote-store's overhead is round-trip driven and its millisecond cost <em>grows</em> with latency. The fix presented overhead in absolute ms decomposed against the raw op cost and deferred the volatile magnitudes to the embedded chart, whose committed run of record is their authoritative home. The worked example re-anchored from SFTP to S3, the backend now carrying the largest round-trip-driven overhead.</p>
+<p><strong>The lesson:</strong> the cheapest way to keep a durable document true is to stop it holding detail it cannot keep current. A Decision section that restates a spec clause, or a benchmark sentence that hard-codes a millisecond, is correct only until the thing it copied moves, and then it is a lie no reader can see. Principle 8 is not "write less"; it is "write each fact where its correctness is checked," and brevity is what is left over.</p>
 <h2 id="reproducing-this-workflow">Reproducing This Workflow<a class="headerlink" href="#reproducing-this-workflow" title="Permanent link">&para;</a></h2>
 <p>If you want to try this approach on your own project:</p>
 <ol>
