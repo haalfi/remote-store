@@ -10901,8 +10901,8 @@ and directories are created per test fixture and cleaned up after.</p>
 <h2 id="detailed-comparative-tables">Detailed Comparative Tables<a class="headerlink" href="#detailed-comparative-tables" title="Permanent link">&para;</a></h2>
 <p>Per-backend tables comparing remote-store, raw SDK, and fsspec for each
 operation. Generated with <code>hatch run bench-report-comparative-md</code>.</p>
-<!-- Generated 2026-07-16 18:11 UTC -->
-<!-- Hardware: AMD EPYC 7763 64-Core Processor, Python 3.13.14, Linux -->
+<!-- Generated 2026-07-19 14:02 UTC -->
+<!-- Hardware: AMD EPYC 9V74 80-Core Processor, Python 3.13.14, Linux -->
 <!-- doc: repo-only -->
 
 <h3 id="local">Local<a class="headerlink" href="#local" title="Permanent link">&para;</a></h3>
@@ -10918,33 +10918,33 @@ operation. Generated with <code>hatch run bench-report-comparative-md</code>.</p
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">455us</td>
-<td style="text-align: right;">732us (1.6x slower)</td>
-<td style="text-align: right;">347us (1.3x faster)</td>
+<td style="text-align: right;">383us</td>
+<td style="text-align: right;">685us (1.8x slower)</td>
+<td style="text-align: right;">455us (1.2x slower)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td style="text-align: right;">140us</td>
-<td style="text-align: right;">64us (2.2x faster)</td>
-<td style="text-align: right;">67us (2.1x faster)</td>
+<td style="text-align: right;">135us</td>
+<td style="text-align: right;">74us (1.8x faster)</td>
+<td style="text-align: right;">77us (1.7x faster)</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
-<td style="text-align: right;">75us</td>
-<td style="text-align: right;">10us (7.5x faster)</td>
-<td style="text-align: right;">7us (10.7x faster)</td>
+<td style="text-align: right;">62us</td>
+<td style="text-align: right;">10us (6.4x faster)</td>
+<td style="text-align: right;">7us (8.9x faster)</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">1.0ms</td>
-<td style="text-align: right;">1.3ms (1.3x slower)</td>
-<td style="text-align: right;">106us (9.7x faster)</td>
+<td style="text-align: right;">953us</td>
+<td style="text-align: right;">1.2ms (1.3x slower)</td>
+<td style="text-align: right;">105us (9.1x faster)</td>
 </tr>
 <tr>
 <td>Delete</td>
-<td style="text-align: right;">104us</td>
-<td style="text-align: right;">28us (3.7x faster)</td>
-<td style="text-align: right;">24us (4.3x faster)</td>
+<td style="text-align: right;">80us</td>
+<td style="text-align: right;">24us (3.3x faster)</td>
+<td style="text-align: right;">23us (3.5x faster)</td>
 </tr>
 </tbody>
 </table>
@@ -10961,33 +10961,33 @@ operation. Generated with <code>hatch run bench-report-comparative-md</code>.</p
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">10.8ms</td>
-<td style="text-align: right;">8.3ms (1.3x faster)</td>
-<td style="text-align: right;">9.0ms (1.2x faster)</td>
+<td style="text-align: right;">12.5ms</td>
+<td style="text-align: right;">9.3ms (1.3x faster)</td>
+<td style="text-align: right;">10.6ms (1.2x faster)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td style="text-align: right;">5.4ms</td>
-<td style="text-align: right;">3.3ms (1.7x faster)</td>
+<td style="text-align: right;">5.7ms</td>
+<td style="text-align: right;">3.1ms (1.8x faster)</td>
 <td style="text-align: right;">5.5ms</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
-<td style="text-align: right;">2.0ms</td>
+<td style="text-align: right;">2.2ms</td>
 <td style="text-align: right;">1.9ms (1.1x faster)</td>
-<td style="text-align: right;">2.1ms</td>
+<td style="text-align: right;">2.0ms (1.1x faster)</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">372us</td>
-<td style="text-align: right;">8.5ms (22.9x slower)</td>
-<td style="text-align: right;">176us (2.1x faster)</td>
+<td style="text-align: right;">302us</td>
+<td style="text-align: right;">7.7ms (25.6x slower)</td>
+<td style="text-align: right;">123us (2.5x faster)</td>
 </tr>
 <tr>
 <td>Delete</td>
-<td style="text-align: right;">4.7ms</td>
-<td style="text-align: right;">2.5ms (1.9x faster)</td>
-<td style="text-align: right;">2.3ms (2.1x faster)</td>
+<td style="text-align: right;">4.6ms</td>
+<td style="text-align: right;">2.2ms (2.1x faster)</td>
+<td style="text-align: right;">2.3ms (2.0x faster)</td>
 </tr>
 </tbody>
 </table>
@@ -11003,28 +11003,28 @@ operation. Generated with <code>hatch run bench-report-comparative-md</code>.</p
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">12.9ms</td>
-<td style="text-align: right;">8.5ms (1.5x faster)</td>
+<td style="text-align: right;">14.3ms</td>
+<td style="text-align: right;">9.4ms (1.5x faster)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td style="text-align: right;">7.0ms</td>
-<td style="text-align: right;">3.0ms (2.3x faster)</td>
+<td style="text-align: right;">6.8ms</td>
+<td style="text-align: right;">3.1ms (2.2x faster)</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
 <td style="text-align: right;">2.0ms</td>
-<td style="text-align: right;">2.0ms</td>
+<td style="text-align: right;">2.1ms (1.1x slower)</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">8.9ms</td>
-<td style="text-align: right;">8.8ms</td>
+<td style="text-align: right;">8.5ms</td>
+<td style="text-align: right;">7.7ms (1.1x faster)</td>
 </tr>
 <tr>
 <td>Delete</td>
-<td style="text-align: right;">4.8ms</td>
-<td style="text-align: right;">2.3ms (2.0x faster)</td>
+<td style="text-align: right;">4.9ms</td>
+<td style="text-align: right;">2.1ms (2.3x faster)</td>
 </tr>
 </tbody>
 </table>
@@ -11041,33 +11041,33 @@ operation. Generated with <code>hatch run bench-report-comparative-md</code>.</p
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">887ms</td>
-<td style="text-align: right;">885ms</td>
-<td style="text-align: right;">17.8ms (50.0x faster)</td>
+<td style="text-align: right;">890ms</td>
+<td style="text-align: right;">890ms</td>
+<td style="text-align: right;">14.6ms (61.0x faster)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
-<td style="text-align: right;">51.4ms</td>
-<td style="text-align: right;">50.0ms</td>
-<td style="text-align: right;">14.6ms (3.5x faster)</td>
+<td style="text-align: right;">48.6ms</td>
+<td style="text-align: right;">46.6ms</td>
+<td style="text-align: right;">11.2ms (4.3x faster)</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
-<td style="text-align: right;">705us</td>
-<td style="text-align: right;">352us (2.0x faster)</td>
-<td style="text-align: right;">787us (1.1x slower)</td>
+<td style="text-align: right;">294us</td>
+<td style="text-align: right;">297us</td>
+<td style="text-align: right;">662us (2.3x slower)</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">3.9ms</td>
-<td style="text-align: right;">3.4ms (1.2x faster)</td>
-<td style="text-align: right;">4.0ms</td>
+<td style="text-align: right;">3.4ms</td>
+<td style="text-align: right;">3.2ms (1.1x faster)</td>
+<td style="text-align: right;">3.8ms (1.1x slower)</td>
 </tr>
 <tr>
 <td>Delete</td>
-<td style="text-align: right;">1.4ms</td>
-<td style="text-align: right;">366us (3.8x faster)</td>
-<td style="text-align: right;">1.4ms</td>
+<td style="text-align: right;">329us</td>
+<td style="text-align: right;">329us</td>
+<td style="text-align: right;">1.3ms (3.8x slower)</td>
 </tr>
 </tbody>
 </table>
@@ -11084,33 +11084,33 @@ operation. Generated with <code>hatch run bench-report-comparative-md</code>.</p
 <tbody>
 <tr>
 <td>Write 1MB</td>
-<td style="text-align: right;">10.8ms</td>
-<td style="text-align: right;">11.1ms</td>
-<td style="text-align: right;">16.3ms (1.5x slower)</td>
+<td style="text-align: right;">10.9ms</td>
+<td style="text-align: right;">11.0ms</td>
+<td style="text-align: right;">15.5ms (1.4x slower)</td>
 </tr>
 <tr>
 <td>Read 1MB</td>
+<td style="text-align: right;">5.7ms</td>
 <td style="text-align: right;">5.8ms</td>
-<td style="text-align: right;">6.0ms</td>
-<td style="text-align: right;">12.3ms (2.1x slower)</td>
+<td style="text-align: right;">12.4ms (2.2x slower)</td>
 </tr>
 <tr>
 <td>Exists (hit)</td>
-<td style="text-align: right;">2.3ms</td>
-<td style="text-align: right;">2.3ms</td>
-<td style="text-align: right;">2.4ms</td>
+<td style="text-align: right;">2.6ms</td>
+<td style="text-align: right;">2.5ms</td>
+<td style="text-align: right;">2.5ms</td>
 </tr>
 <tr>
 <td>List 50 files</td>
-<td style="text-align: right;">19.1ms</td>
-<td style="text-align: right;">29.6ms (1.6x slower)</td>
-<td style="text-align: right;">167us (114.5x faster)</td>
+<td style="text-align: right;">18.6ms</td>
+<td style="text-align: right;">29.9ms (1.6x slower)</td>
+<td style="text-align: right;">162us (114.9x faster)</td>
 </tr>
 <tr>
 <td>Delete</td>
+<td style="text-align: right;">2.5ms</td>
 <td style="text-align: right;">2.6ms</td>
-<td style="text-align: right;">2.4ms (1.1x faster)</td>
-<td style="text-align: right;">7.4ms (2.8x slower)</td>
+<td style="text-align: right;">8.2ms (3.3x slower)</td>
 </tr>
 </tbody>
 </table>
