@@ -10678,39 +10678,74 @@ the <strong>measured</strong> overhead of that wrapper and the levers to test it
 your own workload. It does not tell you whether the overhead is acceptable —
 that depends on your call volume, latency budget, and alternatives, so it is
 your call, not the library's.</p>
-<p>The overhead is a <strong>fixed per-operation cost</strong>. Its size in isolation is what
-the numbers below report; whether it is worth paying is a function of how much
-of your total time is spent in storage calls versus network round-trips. As
-network round-trip time grows, a fixed per-op cost shrinks as a <em>share</em> of
-total time (see <a href="#what-happens-under-real-latency">What Happens Under Real Latency</a>).
-To measure it for your own hardware and latency, use the levers in
+<p>remote-store's overhead comes from the work the wrapper does around each call:
+chiefly a small, fixed number of <strong>extra protocol round trips per operation</strong>
+(for example an extra <code>stat</code> to resolve a path before a write), plus a
+sub-millisecond CPU cost. That has a consequence the numbers below make concrete.
+Where the wrapper adds round trips, its cost <strong>scales with network round-trip
+time</strong>, because the cost of a round trip <em>is</em> the round-trip time. So the
+absolute overhead <strong>grows</strong> with latency rather than staying a fixed millisecond
+or two; its <em>share</em> of the total call can rise or fall depending on how
+round-trip-bound the raw operation already is (see
+<a href="#what-happens-under-real-latency">What Happens Under Real Latency</a>). Backends
+that add no extra round trips stay near zero at every latency. The numbers below
+report that cost in milliseconds; whether it is worth paying is your call. To
+measure it for your own hardware and latency, use the levers in
 <a href="#running-benchmarks">Running Benchmarks</a> — the <code>hatch run bench-*</code> commands and
 the four <code>--network-profile</code> profiles.</p>
 <h2 id="overhead-at-a-glance">Overhead at a Glance<a class="headerlink" href="#overhead-at-a-glance" title="Permanent link">&para;</a></h2>
-<p>The chart below shows remote-store's overhead (%) versus raw SDK calls for
-each backend. Negative values mean remote-store is <em>faster</em> than calling
-the SDK directly (often due to connection pooling and caching).</p>
-<p><img alt="Abstraction overhead by backend" src="../../img/benchmarks/overhead.svg" /></p>
+<p>The chart below shows remote-store's overhead in <strong>milliseconds</strong> versus raw
+SDK calls for each backend, measured on the clean profile (no added latency).
+Negative values mean remote-store is <em>faster</em> than calling the SDK directly
+(often due to connection pooling and caching).</p>
+<p><img alt="Abstraction overhead in milliseconds by backend, clean profile" src="../../img/benchmarks/overhead.svg" /></p>
 <p>Patterns from Docker benchmarks (MinIO, Azurite, OpenSSH):</p>
 <ul>
-<li><strong>S3</strong>: reads and writes add modest overhead over raw boto3; listing is
-  significantly faster via s3fs connection caching.</li>
+<li><strong>S3</strong>: reads and writes add a few milliseconds over raw boto3; listing is
+  faster in absolute terms via s3fs connection caching. Those few milliseconds
+  are extra protocol round trips, so the overhead grows with network round-trip
+  time (quantified in the next section).</li>
 <li><strong>S3-PyArrow</strong>: reads carry more overhead than the S3 backend (PyArrow C++
   data path); writes are comparable. The trade-off is native PyArrow integration
   — Tier 1 C++ range requests — not raw throughput.</li>
-<li><strong>Azure</strong> and <strong>SFTP</strong>: per-operation overhead is a fixed cost added on top
-  of each call; as a share of total time it shrinks as network round-trip time
-  grows (quantified in the next section).</li>
+<li><strong>Azure</strong> and <strong>SFTP</strong>: per-operation overhead is near zero — a millisecond or
+  two either way on a clean link — except Azure listing, which the chart shows
+  running faster than the raw SDK (the same listing win S3 shows). Because neither
+  backend adds extra protocol round trips per operation, their real overhead stays
+  near zero under latency too.</li>
 <li><strong>Local</strong>: all operations are sub-millisecond; overhead versus raw pathlib is
-  a fixed sub-millisecond cost per call. Whether that registers depends on your
+  a sub-millisecond cost per call. Whether that registers depends on your
   call volume and how much of your latency budget is local I/O.</li>
 </ul>
 <p>Regenerate numbers for your own hardware with <code>hatch run bench-report</code>
 (see <a href="#running-benchmarks">Running Benchmarks</a>).</p>
 <h2 id="what-happens-under-real-latency">What Happens Under Real Latency<a class="headerlink" href="#what-happens-under-real-latency" title="Permanent link">&para;</a></h2>
-<p>Under realistic network round-trip times (20–100 ms), overhead as a percentage
-shrinks. For example, a 1 ms overhead on a 100 ms round trip is 1%.</p>
-<p><img alt="Overhead vs RTT" src="../../img/benchmarks/overhead-vs-rtt.svg" /></p>
+<p>Under realistic network round-trip times (20–100 ms), the absolute overhead
+<strong>grows</strong> wherever remote-store's extra work is itself a count of round trips.
+The chart below tracks the average overhead in milliseconds as simulated RTT
+rises: for S3 it climbs steadily, since each extra round trip costs one more RTT.
+SFTP and Azure add no extra round trips per operation, so their real overhead
+stays near zero — the SFTP line dips noticeably below zero at mid-range RTT only
+because its multi-second emulator write dominates the five-op average, a
+measurement artifact rather than overhead (see the caveat below).</p>
+<p><img alt="Average overhead in milliseconds versus network round-trip time; the S3 line rises with RTT while the SFTP and Azure lines hover near zero, wandering only on measurement noise" src="../../img/benchmarks/overhead-vs-rtt.svg" /></p>
+<p>The single largest case is an S3 write or delete, which carries about one extra
+protocol round trip of overhead — so on the order of one RTT (~+100 ms on a
+100 ms link). The decomposition below splits each operation's mean time into the
+raw SDK cost and the remote-store overhead stacked on top, labelled in
+milliseconds and as a share of the total, so the raw op time and the
+latency-scaled overhead are both visible:</p>
+<p><img alt="Stacked bars decomposing mean time per operation into raw SDK time and remote-store overhead per RTT profile, for S3, SFTP, and Azure" src="../../img/benchmarks/overhead-decomposition.svg" /></p>
+<p>One caveat for the SFTP panel: both the raw bar and the overhead segment are plain
+means across operations, so both are dominated by the 1MB write — an
+unrepresentative emulator artifact (see <a href="#caveats">SFTP write throughput</a> below).
+That write's measurement noise alone can swing the labelled SFTP overhead a fair
+way below zero at mid-range RTT, so read it as near zero within noise (the backend
+adds no extra round trips), not as a real speedup, and ignore the raw bar's growth.</p>
+<p>The overhead's <em>share</em> of the total moves independently of its absolute size: for
+S3 it grows into a visible slice of the average operation under latency, while for
+SFTP and Azure it stays near zero. The share is not the
+cost — the milliseconds are.</p>
 <p>The benchmark suite simulates latency using <a href="https://github.com/Shopify/toxiproxy">Toxiproxy</a>
 with four named profiles:</p>
 <table>
@@ -10752,7 +10787,7 @@ with four named profiles:</p>
 <h2 id="throughput-by-file-size">Throughput by File Size<a class="headerlink" href="#throughput-by-file-size" title="Permanent link">&para;</a></h2>
 <p>How throughput scales with file size, comparing remote-store to raw SDK:</p>
 <p><img alt="Throughput by file size" src="../../img/benchmarks/throughput.svg" /></p>
-<p>At larger file sizes, throughput converges as the fixed per-operation overhead
+<p>At larger file sizes, throughput converges as the per-operation overhead
 is amortized across more bytes.</p>
 <h2 id="s3-vs-s3-pyarrow">S3 vs S3-PyArrow<a class="headerlink" href="#s3-vs-s3-pyarrow" title="Permanent link">&para;</a></h2>
 <p>Both S3 backends connect to the same service. S3 uses s3fs (Python), S3-PyArrow
@@ -10772,14 +10807,17 @@ byte streaming, the regular S3 backend is faster.</p>
 <li><strong>Overhead is per operation, not per byte.</strong> It shows up across many small
   calls (exists, metadata, small reads/writes, listings) and fades on larger
   transfers, where it is spread across more bytes.</li>
-<li><strong>As round-trip time grows, the fixed cost is a smaller share of each call.</strong>
-  At 20–100 ms RTT a per-operation cost of a few milliseconds or less is a low
-  fraction of total call time (1 ms on a 100 ms round trip is 1%).</li>
-<li><strong>Workload shape drives the impact.</strong> The same fixed cost is a large share of
-  a sub-millisecond local <code>exists</code> and a small share of a 100 MB transfer, so
-  call-heavy patterns feel it more than bulk I/O.</li>
+<li><strong>As round-trip time grows, so does the absolute overhead.</strong> remote-store's
+  extra work is a count of protocol round trips, so its millisecond cost scales
+  with RTT rather than shrinking to a vanishing fraction — an S3 write or delete
+  carries about one extra round trip of overhead (~+90 to +110 ms at 100 ms RTT).
+  Its <em>share</em> of the total call can rise or fall, but the absolute cost grows;
+  measure it for your own latency.</li>
+<li><strong>Workload shape drives the impact.</strong> The same per-operation cost is a large
+  share of a sub-millisecond local <code>exists</code> and a small share of a 100 MB
+  transfer, so call-heavy patterns feel it more than bulk I/O.</li>
 <li><strong>Throughput converges with file size.</strong> Larger files approach raw-SDK
-  throughput as the fixed per-operation cost is amortized across more bytes.</li>
+  throughput as the per-operation cost is amortized across more bytes.</li>
 <li><strong>Measure, then reduce call count where it matters.</strong> Benchmark your own
   workload with <code>hatch run bench-*</code> and the <code>--network-profile</code> profiles; batch
   or cache calls if the per-operation cost dominates your access pattern.</li>
@@ -10795,7 +10833,9 @@ interfaces:</p>
 <h3 id="sample-results">Sample Results<a class="headerlink" href="#sample-results" title="Permanent link">&para;</a></h3>
 <p>Results vary by hardware, network, and service version. Generate numbers for
 your environment with <code>hatch run bench-report</code> (summary) or
-<code>hatch run bench-report-user</code> (condensed, with magnitude bands).</p>
+<code>hatch run bench-report-user</code> (condensed, with magnitude bands). Those bands are
+<em>shares</em> of the raw-SDK time — a quick relative read; the absolute millisecond
+delta, which is what scales with RTT, is in <code>bench-report</code> and the charts above.</p>
 <p>For a full per-backend comparison of remote-store against the raw SDK and
 fsspec, see the Detailed Comparative Tables section on the
 <a href="https://docs.remotestore.dev/stable/explanation/performance/">Performance page</a>.</p>
@@ -10812,15 +10852,19 @@ fsspec, see the Detailed Comparative Tables section on the
   only when the cache is explicitly re-enabled via
   <code>client_options={"use_listings_cache": True}</code>; with the default, the s3fs
   path issues a fresh listing like raw boto3.</li>
-<li><strong>Delete overhead.</strong> 2-3x vs raw SDK across all backends is expected
-  from the error-mapping layer and not an optimization target.</li>
+<li><strong>Delete overhead is an S3 pattern, not universal.</strong> The S3 backends check
+  that the object exists before removing it, an extra round trip, so their delete
+  runs about double raw boto3 on a clean link and scales with RTT like other
+  round-trip overhead. SFTP and Azure delete within a percent of their raw SDKs —
+  they add no extra round trip.</li>
 <li><strong>SFTP write throughput is an emulator artifact.</strong> On the Docker OpenSSH
-  container, a 1MB SFTP write takes hundreds of milliseconds — far slower than
-  the same write via <code>sshfs</code> or against a real server — because the paramiko
-  transport issues many small, unpipelined SFTP write packets over the local
-  container. remote-store and raw paramiko land within a few percent of each
-  other on that row, so the <em>overhead</em> the chart reports is right; the absolute
-  SFTP write throughput is not representative of a tuned or cloud SFTP endpoint.
+  container, a 1MB SFTP write takes close to a second — far slower than the same
+  write via <code>sshfs</code> or against a real server — because the paramiko transport
+  issues many small, unpipelined SFTP write packets over the local container.
+  remote-store and raw paramiko land within a percent of each other on that row,
+  because the write path adds no metadata round trips of its own, so the
+  <em>overhead</em> the chart reports is right; the absolute SFTP write throughput is
+  not representative of a tuned or cloud SFTP endpoint.
   Measure your own server with <code>hatch run bench-cloud</code>.</li>
 <li><strong>Streaming reads keep memory constant</strong> regardless of file size.</li>
 </ul>
