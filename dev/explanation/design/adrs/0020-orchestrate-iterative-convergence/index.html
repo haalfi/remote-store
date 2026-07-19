@@ -5967,67 +5967,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#three-modes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Three modes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#flow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Flow
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#expert-responses" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Expert responses
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tie-breaking" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tie-breaking
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-stays-from-adr-0019" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What stays from ADR-0019
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10394,67 +10333,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#three-modes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Three modes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#flow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Flow
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#expert-responses" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Expert responses
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tie-breaking" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tie-breaking
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-stays-from-adr-0019" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What stays from ADR-0019
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10534,75 +10412,47 @@ emerged:</p>
 but lacks feedback loops for complex work where experts need to see each
 other's output.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Replace the single-pass model with an <strong>iterative convergence model</strong> that
-adds plan refinement, consolidation, and review loops — with complexity-based
-mode selection to avoid unnecessary overhead.</p>
-<h3 id="three-modes">Three modes<a class="headerlink" href="#three-modes" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Mode</th>
-<th>When</th>
-<th>Flow</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Simple</strong></td>
-<td>Trivial plan, clear scope</td>
-<td>Plan → Execute → Review (1×) → Finish</td>
-</tr>
-<tr>
-<td><strong>Standard</strong></td>
-<td>Multi-domain, clear requirements</td>
-<td>Plan → Refine (1×) → Execute → Consolidate → Review (1–2×) → Finish</td>
-</tr>
-<tr>
-<td><strong>Complex</strong></td>
-<td>Ambiguity, tight coupling, unknowns</td>
-<td>Same as Standard, but user confirms before Execute and before each Review round</td>
-</tr>
-</tbody>
-</table>
-<p>The orchestrator selects the mode during planning. The user can override.</p>
-<h3 id="flow">Flow<a class="headerlink" href="#flow" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>1. PLAN         — orchestrator drafts architecture plan
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>2. REFINE       — experts review plan (1 round, parallel)
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>                  → orchestrator integrates feedback
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>                  → unresolved points → user decides
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>3. EXECUTE      — experts implement (parallel or sequential per plan)
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>4. CONSOLIDATE  — orchestrator collects results:
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                  ✓ done  |  ✗ blocked (with reason)  |  ⚠ needs input
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>                  → blocked: clarify with expert, re-execute
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>                  → needs input: escalate to user
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>5. REVIEW       — all experts review all output (parallel)
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                  → clean: proceed to finish
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>                  → issues: experts fix → re-review (max 2 rounds total)
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>                  → still open after 2: user decides
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>6. FINISH       — CHANGELOG, BACKLOG, validate, commit, summary
-</code></pre></div>
-<p><strong>Simple mode</strong> skips steps 2 (Refine) and 4 (Consolidate); review is
-single-pass with no loop.</p>
-<h3 id="expert-responses">Expert responses<a class="headerlink" href="#expert-responses" title="Permanent link">&para;</a></h3>
-<p>Structured when reporting issues (status + blockers + artifacts).
-Free-form when clean ("done, no issues"). No over-engineered format.</p>
-<h3 id="tie-breaking">Tie-breaking<a class="headerlink" href="#tie-breaking" title="Permanent link">&para;</a></h3>
-<p>The user breaks all ties. The orchestrator never overrides expert
-disagreements autonomously — it presents the conflict and asks.</p>
-<h3 id="what-stays-from-adr-0019">What stays from ADR-0019<a class="headerlink" href="#what-stays-from-adr-0019" title="Permanent link">&para;</a></h3>
-<ul>
-<li>4 domain experts (Store &amp; Backend, Extension, Testing, Documentation)</li>
-<li>Domain boundaries and foundation docs</li>
-<li>Cross-domain files owned by orchestrator (CHANGELOG, BACKLOG, README)</li>
-<li>Bug-fix TDD mode (Testing Expert goes first)</li>
-<li>Ripple-check audit in finalization</li>
-</ul>
+<p><strong>Adopt an iterative convergence model, replacing the single-pass model.</strong>
+Planning, execution, and post-processing are wrapped in feedback loops (plan
+refinement before execution, result consolidation after, and expert
+cross-review), so experts act on each other's <em>actual output</em>, not the plan
+alone. That gap is what single-pass could not close for coupled, multi-domain
+work. <em>Reverse if</em> the loops stop catching cross-domain mismatches that
+single-pass missed, so the loop overhead no longer pays for itself.</p>
+<p><strong>Gate loop depth on task complexity, via three modes (Simple / Standard /
+Complex).</strong> Trivial single-domain work runs plan → execute → review with no
+refinement or consolidation; multi-domain work adds both; ambiguous or
+tightly-coupled work additionally requires user confirmation before executing
+and before each review round. The loops <em>are</em> the model's cost, so trivial
+tasks must be able to opt out of them. The orchestrator picks the mode; the
+user overrides. <em>Reverse if</em> one mode serves in practice (collapse the tiers)
+or a failure class appears that the three do not cover.</p>
+<p><strong>Bound review to a fixed maximum number of rounds; the user resolves anything
+still open after the cap.</strong> A hard round cap guarantees termination instead of
+unbounded convergence. <em>Reverse if</em> the cap routinely discards unresolved real
+issues rather than surfacing them to the user.</p>
+<p><strong>The user is the sole tie-breaker.</strong> The orchestrator presents expert
+disagreements and waits; it never adjudicates them autonomously, keeping a
+human as final authority on contested changes. <em>Reverse only</em> as a deliberate
+authority change (if orchestration is ever trusted to resolve domain conflicts
+without a human), never as a tuning tweak.</p>
+<p><strong>Carry forward ADR-0019's delegation structure; replace only its control
+flow.</strong> Domain-expert delegation, per-domain boundaries and foundation docs,
+orchestrator-owned cross-domain files (CHANGELOG, BACKLOG, README), and bug-fix
+TDD ordering (Testing Expert first) are unchanged. <em>Reverse per those
+mechanisms' own records</em> (ADR-0019 and its amendments) if the delegation
+structure itself is revisited.</p>
+<p>The concrete step sequence, per-mode flow, consolidation status legend, exact
+round cap, expert-response format, and the current expert roster are
+operational contract, not decision rationale. They live in the <code>/orchestrate</code>
+skill (<code>.claude/skills/orchestrate/SKILL.md</code>) and the persona files
+(<code>.claude/agents/</code>), which are edited when the process is tuned.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Complex tasks get feedback loops that catch cross-domain mismatches early.</li>
 <li>Simple tasks stay fast — no unnecessary refinement or consolidation.</li>
 <li>User is always the final authority on unresolved disagreements.</li>
-<li>Max 2 review rounds prevents infinite convergence loops.</li>
+<li>The bounded review-round cap prevents infinite convergence loops.</li>
 <li>Plan refinement catches expert-identified gaps before any code is written.</li>
 <li>More orchestrator complexity — the skill is longer and has branching logic.</li>
 </ul>

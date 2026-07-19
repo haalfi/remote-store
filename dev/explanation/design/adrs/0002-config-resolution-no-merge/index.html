@@ -10400,14 +10400,26 @@
 <li>Test fragility (tests affected by host env vars)</li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p><strong>Config-as-code has absolute priority. No merging, no env var overrides.</strong></p>
-<p>Resolution rules:</p>
-<ol>
-<li>If <code>RegistryConfig</code> is provided in code → use it exclusively</li>
-<li>If no config is provided → environment variables may be used as a fallback</li>
-<li>No layering, no merging between sources</li>
-<li>Backend defaults apply last (within a single config source)</li>
-</ol>
+<ul>
+<li><strong>Config-as-code has absolute priority.</strong> A <code>RegistryConfig</code> built in code
+  is used exclusively, with no layering or merging between configuration
+  sources. Chosen so the same code yields the same behavior regardless of host
+  environment (determinism; test isolation from stray env vars). <em>Reverse if</em>
+  determinism becomes a net liability: a first-class multi-source/override
+  requirement emerges that user-side pre-processing genuinely cannot serve.</li>
+<li><strong>Environment variables are never read automatically.</strong> The Registry performs
+  no env-var fallback: constructing without a config yields an empty
+  <code>RegistryConfig</code>, not an env-sourced one. Any env-var sourcing is explicit,
+  user-side pre-processing (<code>resolve_env()</code>, Pydantic <code>BaseSettings</code>) that
+  produces the final dict <em>before</em> construction; once the config is constructed,
+  no further env lookups occur (spec 021 § CFG-021). <em>Reverse if</em> a built-in
+  env-driven bootstrap is deliberately adopted (which also reopens the
+  determinism decision above).</li>
+<li><strong>Backend defaults apply last, within a single config source.</strong> "No merging"
+  forbids combining across sources; it does not forbid a backend filling its
+  unset options from its own defaults inside one source. <em>Reverse if</em>
+  backend-default resolution moves out of config resolution.</li>
+</ul>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Deterministic: same code = same behavior, regardless of environment</li>

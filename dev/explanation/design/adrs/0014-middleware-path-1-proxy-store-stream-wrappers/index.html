@@ -5799,67 +5799,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-we-build" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What we build
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-we-do-not-build" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What we do NOT build
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#proxystore-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ProxyStore contract
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#migration-trigger-for-path-2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Migration trigger for Path 2
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10416,67 +10355,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-we-build" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What we build
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-we-do-not-build" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What we do NOT build
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#proxystore-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ProxyStore contract
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#migration-trigger-for-path-2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Migration trigger for Path 2
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10575,102 +10453,59 @@ design options (A through H) and identified two viable paths:</p>
 <p>The decision depends on the extension roadmap: how many proxy-based
 concerns need to compose?</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p><strong>We choose Path 1 (ProxyStore base + stream wrappers).</strong></p>
-<p>ProxyStore is a delegation base class, not a middleware framework. It
-centralizes the private-attribute coupling (<code>_backend</code>, <code>_root</code>,
-<code>_owns_backend</code>) and provides default delegation for all Store methods.
-Subclasses override only the methods they intercept.</p>
-<h3 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h3>
-<ol>
-<li>
-<p><strong>Only observe + cache compose today.</strong> Retry is already shipped as
-   per-backend native configuration (ADR-0011, <code>RetryPolicy</code>). Circuit
-   breaker, rate limiting, and fault injection are post-v1 ideas with
-   no committed timeline. Two proxy wrappers do not justify a dispatch
-   framework.</p>
-</li>
-<li>
-<p><strong>Progress and checksums are stream concerns, not Store concerns.</strong>
-   <code>ProgressReader(store.read("file.bin"), callback)</code> is the right
-   abstraction — it composes with any <code>BinaryIO</code>, requires no Store
-   wrapping, and correctly skips cache hits (no stream to wrap).</p>
-</li>
-<li>
-<p><strong>No breaking changes.</strong> <code>observe()</code> and <code>cached_store()</code> factories
-   keep their existing signatures and return types. ProxyStore is an
-   internal base class, not a public API.</p>
-</li>
-<li>
-<p><strong>The refactor from Path 1 to Path 2 is internal-only.</strong> If a third
-   policy-like proxy becomes necessary, migrating from ProxyStore to
-   <code>_MiddlewareProxy</code> does not break public API. But we do not build
-   that infrastructure speculatively.</p>
-</li>
-</ol>
-<h3 id="what-we-build">What we build<a class="headerlink" href="#what-we-build" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Module</th>
-<th>Contents</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>_proxy.py</code> (internal)</td>
-<td><code>ProxyStore</code> base class with <code>_wrap_child()</code> hook</td>
-</tr>
-<tr>
-<td><code>ext.streams</code> (new)</td>
-<td><code>ProgressReader</code>, <code>ProgressWriter</code>, <code>ChecksumReader</code>, <code>ChecksumWriter</code></td>
-</tr>
-<tr>
-<td><code>ext.integrity</code> (new)</td>
-<td><code>checksum()</code>, <code>verify()</code> — pure functions returning strings</td>
-</tr>
-</tbody>
-</table>
-<h3 id="what-we-do-not-build">What we do NOT build<a class="headerlink" href="#what-we-do-not-build" title="Permanent link">&para;</a></h3>
+<p><strong>Choose Path 1: a <code>ProxyStore</code> delegation base plus stream-level wrappers,
+not a middleware framework (Path 2).</strong> <code>ProxyStore</code> centralizes the
+private-attribute coupling (<code>_backend</code>, <code>_root</code>, <code>_owns_backend</code>) and default
+delegation shared by <code>ObservedStore</code> and <code>CachedStore</code>; subclasses override
+only the methods they intercept. Progress and checksums ship as <code>BinaryIO</code>
+wrappers (<code>ext.streams</code>) and pure functions (<code>ext.integrity</code>), never as Store
+proxies. <em>Reverse when</em> a third policy-like proxy must compose (see the
+migration triggers below); the Path 1 → Path 2 refactor is internal-only and
+breaks no public API, so it is safe to defer rather than build speculatively.</p>
+<p><strong>Why Path 1, not a dispatch framework</strong></p>
 <ul>
-<li>No <code>ProgressStore</code> or <code>ChecksumStore</code> proxy wrappers.</li>
-<li>No <code>_before_*</code> / <code>_after_*</code> / <code>_short_circuit_*</code> hooks on ProxyStore.</li>
-<li>No category dispatch, no middleware merging, no public middleware API.</li>
-<li>No changes to <code>Store.read()</code> or <code>Store.write()</code> signatures for
-  progress or checksums.</li>
-<li>No data model changes (<code>ContentDigest</code>, <code>FileInfo.digest</code>/<code>etag</code>) —
-  those ship separately under ID-008 when backends populate them.</li>
+<li><strong>Only observe + cache compose today.</strong> Retry already ships as per-backend
+  native config (ADR-0011, <code>RetryPolicy</code>); circuit-breaker, rate-limiting, and
+  fault-injection are post-v1 with no committed timeline. Two wrappers do not
+  justify dispatch machinery.</li>
+<li><strong>Progress and checksums are stream concerns, not Store concerns.</strong> A
+  <code>BinaryIO</code> wrapper composes with any stream, needs no Store wrapping, and
+  correctly skips cache hits (no stream to wrap).</li>
+<li><strong>No breaking changes.</strong> <code>observe()</code> and <code>cached_store()</code> keep their
+  signatures and return types; <code>ProxyStore</code> is a base class, not a new public
+  surface.</li>
 </ul>
-<h3 id="proxystore-contract">ProxyStore contract<a class="headerlink" href="#proxystore-contract" title="Permanent link">&para;</a></h3>
-<p><code>ProxyStore(Store)</code> is an internal abstract base class. It is not part
-of the public API and must not be subclassed by user code.</p>
-<p><strong>Construction:</strong> <code>__init__(self, inner: Store)</code> copies <code>_backend</code>,
-<code>_root</code>, and <code>_owns_backend</code> from the inner store. Exposes
-<code>inner: Store</code> as a read-only property.</p>
-<p><strong>Delegation:</strong> Every public <code>Store</code> method has a default implementation
-that delegates to <code>self._inner.&lt;method&gt;(...)</code>. Subclasses override only
-the methods they intercept. Drift-protection tests (from ADR-0010)
-verify that ProxyStore covers the full Store API surface.</p>
-<p><strong><code>_wrap_child()</code> hook:</strong> <code>ProxyStore.child(subpath)</code> calls
-<code>self._inner.child(subpath)</code> to create the inner child, then calls
-<code>self._wrap_child(inner_child) -&gt; Store</code> to let the subclass wrap it.</p>
+<p><strong>Scope: what Path 1 delivers</strong></p>
 <ul>
-<li>The base <code>_wrap_child()</code> raises <code>NotImplementedError</code> — subclasses
-  must provide an implementation.</li>
-<li><code>CachedStore._wrap_child()</code> returns a new <code>CachedStore</code> with the same
-  TTL, max_entries, and backend config.</li>
-<li><code>ObservedStore._wrap_child()</code> returns a new <code>ObservedStore</code> with the
-  same hooks.</li>
-<li>Subclasses must not return <code>None</code>. The return value must be a <code>Store</code>.</li>
+<li><code>ProxyStore</code> internal base (<code>_proxy.py</code>) with a <code>_wrap_child()</code> hook.</li>
+<li>New <code>ext.streams</code> (progress + checksum <code>BinaryIO</code> wrappers) and <code>ext.integrity</code>
+  (pure checksum/verify functions). The exact class list and per-symbol
+  contracts are owned by specs <code>033-ext-streams</code> and <code>034-ext-integrity</code>.</li>
 </ul>
-<p>This fixes BUG-003: <code>cached_store(s).child("sub")</code> now returns a
-<code>CachedStore</code>, not a plain <code>Store</code>.</p>
-<h3 id="migration-trigger-for-path-2">Migration trigger for Path 2<a class="headerlink" href="#migration-trigger-for-path-2" title="Permanent link">&para;</a></h3>
-<p>Move to merged middleware only when one of these becomes true:</p>
+<p><strong>Scope: what Path 1 excludes (the boundary against Path 2)</strong></p>
 <ul>
-<li>Three or more store-level concerns must compose on the same operation path.</li>
-<li>Ordering between wrappers becomes product-significant, not just internal.</li>
-<li>One concern must short-circuit another in a general way.</li>
-<li>Adding a new concern would require broad override duplication again.</li>
+<li>No <code>ProgressStore</code>/<code>ChecksumStore</code> proxies; no before/after/short-circuit
+  hooks; no category dispatch, middleware merging, or public middleware API.</li>
+<li>No <code>Store.read()</code>/<code>write()</code> signature changes for progress or checksums.</li>
+<li>No data-model change (<code>ContentDigest</code>, <code>FileInfo.digest</code>/<code>etag</code>), deferred
+  to ID-008.</li>
+</ul>
+<p><strong>ProxyStore contract</strong></p>
+<p><code>ProxyStore(Store)</code> is a delegation base: it adopts the inner store's backend
+coupling, delegates every public <code>Store</code> method to its inner store by default,
+and propagates <code>child()</code> through <code>_wrap_child()</code>, which subclasses must
+implement (the base raises). Construction, delegation, and <code>_wrap_child()</code>
+mechanics are owned by <code>src/remote_store/_proxy.py</code>; the ADR-0010
+drift-protection tests hold delegation to the full <code>Store</code> surface. <em>Amended by
+ADR-0015:</em> the original "internal, must not be subclassed by user code" clause
+is superseded; <code>ProxyStore</code> is now exported and documented so extension
+authors can subclass it.</p>
+<p><strong>Migration trigger for Path 2 (reverse this decision when any becomes true)</strong></p>
+<ul>
+<li>three or more store-level concerns must compose on one operation path;</li>
+<li>wrapper ordering becomes product-significant, not merely internal;</li>
+<li>one concern must short-circuit another in a general way;</li>
+<li>adding a concern would again require broad override duplication.</li>
 </ul>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
@@ -10682,7 +10517,8 @@ verify that ProxyStore covers the full Store API surface.</p>
 <li><strong>Two-level inheritance</strong> (<code>Store -&gt; ProxyStore -&gt; CachedStore</code>) adds
   one layer of indirection. Acceptable for two consumers.</li>
 <li><strong><code>child()</code> propagation ships with ProxyStore.</strong> Default: child stores
-  inherit wrapper behavior via <code>_wrap_child()</code>.</li>
+  inherit wrapper behavior via <code>_wrap_child()</code>. This fixes BUG-003:
+  <code>cached_store(s).child("sub")</code> returns a <code>CachedStore</code>, not a plain <code>Store</code>.</li>
 <li><strong>Two proxy layers remain</strong> when composing <code>observe(cached_store(store))</code>.
   The performance cost is two Python function calls per operation (&lt;1us),
   negligible against real I/O.</li>

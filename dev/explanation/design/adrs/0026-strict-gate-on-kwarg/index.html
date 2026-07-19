@@ -6174,67 +6174,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#naming-the-pattern-strict-gate-on-kwarg" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Naming the pattern: strict gate on kwarg
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#precedent-method-level-raise-before-io-gate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Precedent (method-level raise-before-I/O gate)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#strict-gate-on-kwarg-instances" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Strict-gate-on-kwarg instances
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-to-apply-the-pattern-for-future-capabilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How to apply the pattern for future capabilities
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#adapter-masking-as-a-defensive-application-of-the-strict-gate-pattern" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Adapter masking as a defensive application of the strict-gate pattern
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10472,67 +10411,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#naming-the-pattern-strict-gate-on-kwarg" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Naming the pattern: strict gate on kwarg
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#precedent-method-level-raise-before-io-gate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Precedent (method-level raise-before-I/O gate)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#strict-gate-on-kwarg-instances" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Strict-gate-on-kwarg instances
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-to-apply-the-pattern-for-future-capabilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How to apply the pattern for future capabilities
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#adapter-masking-as-a-defensive-application-of-the-strict-gate-pattern" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Adapter masking as a defensive application of the strict-gate pattern
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10640,88 +10518,31 @@ only the use of the kwarg, not the method.</p>
 <p>This is a new pattern: a capability that gates a specific <strong>kwarg</strong> on an
 existing method rather than the method as a whole.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>When a caller passes an optional kwarg that requires a specific capability,
-and the backend does not declare that capability, raise
-<code>CapabilityNotSupported</code> <strong>before any I/O</strong>. Never silently drop the kwarg.</p>
-<h3 id="naming-the-pattern-strict-gate-on-kwarg">Naming the pattern: strict gate on kwarg<a class="headerlink" href="#naming-the-pattern-strict-gate-on-kwarg" title="Permanent link">&para;</a></h3>
-<p>A <em>strict gate on kwarg</em> is a capability that:</p>
+<p>An optional kwarg that requests a specific backend capability MUST raise
+<code>CapabilityNotSupported</code> <strong>before any I/O</strong> when the backend does not declare
+that capability. Never silently drop the kwarg: a silent drop turns a caller's
+durability assumption (correlation IDs and idempotency tokens carried in
+<code>metadata=</code>) into an untraceable correctness failure discovered later, in a
+different service, with the explaining context already gone. <em>Reverse if</em> a
+future consumer class treats such a kwarg as purely advisory with no downstream
+correctness dependence; then silent degradation, not a raise, becomes the
+defensible default.</p>
+<p><strong>Strict gate on kwarg (the pattern).</strong> A capability is a <em>strict gate on
+kwarg</em> when it:</p>
 <ol>
-<li>Does not gate the method — the method works without it.</li>
-<li>Does gate a specific optional argument — passing that argument requires
-   the capability.</li>
-<li>Raises <code>CapabilityNotSupported</code> before any I/O if the backend lacks the
-   capability and the argument is supplied.</li>
+<li>does not gate the method, which works without the kwarg;</li>
+<li>gates one optional argument, so supplying it requires the capability;</li>
+<li>is enforced once, at the Store layer (not per backend), raising
+   <code>CapabilityNotSupported</code> before any I/O when the capability is absent and
+   the argument is supplied.</li>
 </ol>
-<p>The validation happens in the Store layer (one place), not in each backend.</p>
-<h3 id="precedent-method-level-raise-before-io-gate">Precedent (method-level raise-before-I/O gate)<a class="headerlink" href="#precedent-method-level-raise-before-io-gate" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Capability</th>
-<th>Gate target</th>
-<th>Method(s)</th>
-<th>Spec ref</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>ATOMIC_WRITE</code></td>
-<td>whole method</td>
-<td><code>write_atomic()</code></td>
-<td>AW-002</td>
-</tr>
-</tbody>
-</table>
-<p><code>ATOMIC_WRITE</code> is not a strict-gate-on-kwarg instance — it gates the
-entire method, not an optional kwarg. It appears here because it
-established the raise-before-I/O principle that the strict-gate-on-kwarg
-pattern inherits. Future contributors should not use this row as a
-pattern template.</p>
-<h3 id="strict-gate-on-kwarg-instances">Strict-gate-on-kwarg instances<a class="headerlink" href="#strict-gate-on-kwarg-instances" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Capability</th>
-<th>Gate target</th>
-<th>Method(s)</th>
-<th>Spec ref</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>USER_METADATA</code></td>
-<td><code>metadata=</code> kwarg</td>
-<td><code>write*()</code> variants</td>
-<td>WR-010</td>
-</tr>
-</tbody>
-</table>
-<p><code>USER_METADATA</code> is the first true strict-gate-on-kwarg instance. New
-instances of this pattern go in this table.</p>
-<h3 id="how-to-apply-the-pattern-for-future-capabilities">How to apply the pattern for future capabilities<a class="headerlink" href="#how-to-apply-the-pattern-for-future-capabilities" title="Permanent link">&para;</a></h3>
-<p>When designing a new optional kwarg on an existing Store method:</p>
-<ol>
-<li>Define a new <code>Capability</code> enum member for the feature.</li>
-<li>Add Store-layer validation: if the kwarg is non-<code>None</code> / non-default and
-   the backend lacks the capability, raise <code>CapabilityNotSupported</code>.</li>
-<li>Add the capability to <code>CAP-007</code> (spec 003) under the strict-gate section.</li>
-<li>Document per-backend declarations in the feature spec (e.g., WR-010).</li>
-<li>Add negative tests: every non-declaring backend raises on the guarded kwarg.</li>
-</ol>
-<h3 id="adapter-masking-as-a-defensive-application-of-the-strict-gate-pattern">Adapter masking as a defensive application of the strict-gate pattern<a class="headerlink" href="#adapter-masking-as-a-defensive-application-of-the-strict-gate-pattern" title="Permanent link">&para;</a></h3>
-<p><code>AsyncBackendSyncAdapter</code> applies the pattern defensively via capability masking.
-It strips <code>USER_METADATA</code> (and <code>WRITE_RESULT_NATIVE</code>) from the inner async
-backend's capability set, even when the wrapped backend declares them.  Without
-masking, the Store-layer WR-010 gate would pass a non-empty <code>metadata=</code> argument
-through to the adapter, but the adapter has no forwarding target — the async ABC
-does not yet accept <code>metadata=</code>.  A silent drop would violate WR-012 (the
-<code>WriteResult.metadata</code> echo guarantee) without triggering any error.</p>
-<p>Masking is the mechanism that keeps the strict-gate invariant intact across
-adapter wrapping: the gate fires at the Store layer (<code>CapabilityNotSupported</code>)
-before the adapter is reached, so no I/O runs and no metadata is silently lost.
-This is not an exception to the pattern; it is the same pattern applied one layer
-earlier.  When the async ABC grows <code>metadata=</code> support (Step 3c), the masking is
-removed and the adapter naturally inherits the inner backend's declarations.</p>
+<p><code>USER_METADATA</code> gating <code>metadata=</code> on <code>write*()</code> is the first instance. The
+live registry of strict-gate capabilities is CAP-007 (spec 003); each
+instance's per-backend contract lives in its feature spec (e.g. WR-010). A new
+instance is added by declaring a capability, gating its kwarg at the Store
+layer, and registering it in CAP-007, with no new enforcement site. <em>Reverse if</em> a
+gated argument becomes universally supported across backends; then the gate for
+that capability is removed rather than relocated.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Callers get a clear, early error rather than a silent correctness failure.</li>

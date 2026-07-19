@@ -5564,56 +5564,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-backendto_keynative_path-str-str" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Backend.to_key(native_path: str) -&gt; str
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-storeto_keypath-str-str" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Store.to_key(path: str) -&gt; str
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-round-trip-fix" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Round-trip fix
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-design-choices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key design choices
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10417,56 +10367,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-backendto_keynative_path-str-str" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Backend.to_key(native_path: str) -&gt; str
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-storeto_keypath-str-str" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Store.to_key(path: str) -&gt; str
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-round-trip-fix" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Round-trip fix
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-design-choices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key design choices
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -10551,53 +10451,36 @@ backend-native/absolute path to a store-relative key</strong>.</p>
 <p>None of them strip the <strong>store root</strong> — that responsibility belongs to the Store
 layer, which currently doesn't do it at all.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Introduce <code>to_key</code> at two levels:</p>
-<ol>
-<li><strong><code>Backend.to_key(native_path) -&gt; str</code></strong> — concrete ABC method (identity default) that strips the backend's own root/prefix, replacing the scattered <code>_rel_path</code> / <code>relative_to</code> patterns.</li>
-<li><strong><code>Store.to_key(path) -&gt; str</code></strong> — public method composing backend conversion with store-root stripping.</li>
-</ol>
-<p>Store listing methods also strip <code>root_path</code> from returned paths so <code>FileInfo.path</code> round-trips back into other Store methods.</p>
-<h3 id="1-backendto_keynative_path-str-str">1. <code>Backend.to_key(native_path: str) -&gt; str</code><a class="headerlink" href="#1-backendto_keynative_path-str-str" title="Permanent link">&para;</a></h3>
-<p>Concrete method on the Backend ABC (identity default). Converts a
-backend-native path to a backend-relative key by stripping the backend's own
-root/prefix.</p>
 <ul>
-<li><strong>Local:</strong> strips filesystem root → <code>"/tmp/store/data/file.txt"</code> → <code>"data/file.txt"</code></li>
-<li><strong>S3:</strong> strips bucket prefix → <code>"my-bucket/data/file.txt"</code> → <code>"data/file.txt"</code></li>
-<li><strong>SFTP:</strong> strips base_path → <code>"/srv/sftp/data/file.txt"</code> → <code>"data/file.txt"</code></li>
+<li><strong>A <code>to_key</code> primitive at two levels, <code>Backend.to_key</code> and <code>Store.to_key</code>,
+  same-named by design (clear intent, composable).</strong> Both the broken listing
+  round-trip and external-path conversion reduce to one operation: stripping a
+  layer's own root. <code>Backend.to_key</code> strips the backend's native root/prefix;
+  <code>Store.to_key</code> composes that with stripping <code>root_path</code> to yield a
+  store-relative key. <em>Reverse if</em> a use case needs a path transform that is not
+  root-stripping; then <code>to_key</code> is the wrong primitive, not merely
+  under-featured.</li>
+<li><strong><code>Backend.to_key</code> is a concrete ABC method with an identity default.</strong> Only
+  backends with a custom root override it; every other backend inherits the
+  identity, so the change is zero-behavioral for them: the
+  backward-compatibility invariant. <em>Reverse if</em> the identity default ever
+  yields a wrong key for an un-overridden backend, which would mean the default
+  is unsafe and the method must become abstract.</li>
+<li><strong><code>to_key</code> is pure, deterministic, and total (no I/O, no side effects).</strong> That
+  purity is what makes a concrete default safe to inherit and lets the inverse
+  round-trip hold. <em>Reverse if</em> a backend's native→key mapping genuinely
+  requires I/O, breaking totality.</li>
+<li><strong>The Store owns the round-trip guarantee.</strong> The Store layer strips
+  <code>root_path</code>; backends only know their own root. The path-returning listing
+  methods (<code>list_files</code>, <code>get_file_info</code>, <code>get_folder_info</code>) strip <code>root_path</code>
+  so returned paths feed back into Store methods without double-prefixing;
+  <code>list_folders</code> returns immediate subfolder <em>names</em> and is unaffected (spec 010
+  § NPR-015). <em>Reverse if</em> backends must become root-aware for another reason,
+  making a single Store-level strip point insufficient.</li>
 </ul>
-<p>Replaces the existing scattered <code>_rel_path</code> / <code>relative_to</code> patterns with a
-single, consistent hook.</p>
-<h3 id="2-storeto_keypath-str-str">2. <code>Store.to_key(path: str) -&gt; str</code><a class="headerlink" href="#2-storeto_keypath-str-str" title="Permanent link">&para;</a></h3>
-<p>Public method. Composes backend conversion with store-root stripping:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>backend.to_key(native_path)  →  strip root_path prefix  →  store-relative key
-</code></pre></div>
-<p>Example:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">sftp</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">store</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;/srv/sftp/data/reports/q1.csv&quot;</span><span class="p">)</span>  <span class="c1"># → &quot;reports/q1.csv&quot;</span>
-</code></pre></div></p>
-<h3 id="3-round-trip-fix">3. Round-trip fix<a class="headerlink" href="#3-round-trip-fix" title="Permanent link">&para;</a></h3>
-<p>Store listing methods (<code>list_files</code>, <code>list_folders</code>, <code>get_file_info</code>,
-<code>get_folder_info</code>) strip <code>root_path</code> from returned paths so that <code>FileInfo.path</code>
-is directly usable as input to other Store methods.</p>
-<h3 id="key-design-choices">Key design choices<a class="headerlink" href="#key-design-choices" title="Permanent link">&para;</a></h3>
-<ol>
-<li>
-<p><strong>Same name at both levels</strong> — <code>to_key</code> at Backend and Store. Clear intent,
-   composable.</p>
-</li>
-<li>
-<p><strong>Concrete method, not abstract</strong> — existing backends inherit the identity
-   default. Only backends with custom roots override.</p>
-</li>
-<li>
-<p><strong>Pure and deterministic</strong> — no I/O, no side effects. Testable in isolation.</p>
-</li>
-<li>
-<p><strong>Store owns the round-trip guarantee</strong> — the Store layer strips <code>root_path</code>,
-   not the backend. Backends only know about their own root.</p>
-</li>
-</ol>
+<p>Exact signatures, per-backend stripping examples, the composition sequence, and
+the full methods-that-strip enumeration are spec-rate and live in spec 010
+(NPR-003, NPR-006/007/008, NPR-010/011, NPR-014/015).</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Round-trip works</strong> — <code>FileInfo.path</code> from listing is directly usable as
