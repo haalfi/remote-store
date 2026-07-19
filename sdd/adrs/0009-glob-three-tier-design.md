@@ -28,64 +28,32 @@ extension, and two entry points create confusion about which to use.
 
 ## Decision
 
-Three tiers of pattern matching, with clear escalation:
+Three tiers of pattern matching, each covering a case the tier below cannot.
+A single lowest-common-denominator API and a two-tier design were both
+rejected: a bare `store.glob()` throws on most backends (a discoverability
+pit), and simple name filtering should not require an extension.
 
-1. **`list_files(pattern=…)`** — simple `fnmatch` name filtering at the Store level; works on every backend with `LIST`, no new capability.
-2. **`store.glob(pattern)`** — native backend glob, gated on `Capability.GLOB` (only Local implements it initially).
-3. **`ext.glob.glob_files(store, pattern)`** — portable full recursive glob; uses `store.glob()` when available, else falls back to `list_files` + client-side regex.
+- **Tier 1 — `list_files(pattern=…)`: `fnmatch` name filtering at the Store
+  level.** Works on every backend with `LIST`, no new capability; covers the
+  common "give me the CSVs in this folder" case. *Reverse if* every backend
+  gains cheap recursive matching, collapsing the need for higher tiers.
+- **Tier 2 — `store.glob(pattern)`: native backend glob, gated on
+  `Capability.GLOB`.** Like `unwrap()`, opt-in direct access to a
+  backend-specific feature for users who know their backend and want native
+  semantics. The gate exists because native glob support is **unequal** across
+  backends — only backends with a genuine native implementation declare `GLOB`
+  (the current roster is spec-rate; see spec 018 § GLOB-005/018/019/020).
+  *Reverse if* native glob becomes universal, making the gate meaningless.
+- **Tier 3 — `ext.glob.glob_files(store, pattern)`: portable full recursive
+  glob.** Delegates to `store.glob()` when `GLOB` is available, else falls back
+  to `list_files` + client-side matching. This fallback is why the design is
+  three tiers, not two: portable recursive glob cannot be guaranteed at the
+  Store level. *Reverse if* a portable recursive glob can be guaranteed for
+  every backend, letting Tier 3 fold into the Store API.
 
-### Tier 1: `list_files(pattern=…)` — simple name filtering
-
-```python
-store.list_files("logs", pattern="*.log")
-```
-
-- `pattern` is an `fnmatch` pattern matched against each file's **name**.
-- Applied at the `Store` level — works with every backend that has `LIST`.
-- No new capability required.
-- Covers the most common use case: "give me the CSVs in this folder."
-
-### Tier 2: `store.glob(pattern)` — native backend access
-
-```python
-store.glob("**/*.csv")  # only if backend supports GLOB
-```
-
-- Capability-gated on `Capability.GLOB`.
-- Like `unwrap()`: opt-in direct access to a backend-specific feature.
-- Only `LocalBackend` implements it (via `pathlib.Path.glob()`).
-- Users who call this **know** their backend and want native semantics.
-
-### Tier 3: `ext.glob.glob_files(store, pattern)` — portable full glob
-
-```python
-from remote_store.ext.glob import glob_files
-glob_files(store, "data/**/*.csv")
-```
-
-- Full recursive glob patterns (`**`, wildcards in directory segments).
-- Delegates to `store.glob()` when GLOB is available, otherwise falls
-  back to `list_files` + client-side regex matching.
-- The recommended API when `list_files(pattern=)` isn't enough and
-  you want code that works across all backends.
-
-### Pattern syntax
-
-- `*` — any characters except `/`
-- `**` — zero or more path segments (recursive)
-- `?` — single non-separator character
-- `[abc]` — character class
-- `[!abc]` — negated character class
-
-`list_files(pattern=…)` uses stdlib `fnmatch` (complete, well-tested).
-`ext.glob` uses a regex converter that supports the full syntax above.
-
-### Non-Local backends
-
-S3, S3-PyArrow, SFTP, Azure, and Memory do not declare
-`Capability.GLOB` in this iteration. They can add native
-glob implementations in future releases (S3 and Azure have
-prefix-optimized listing that could be leveraged).
+Pattern grammar, exact signatures, and the `fnmatch`/regex-converter mechanics
+are spec-rate and live in spec 018 (Overview, GLOB-001, GLOB-005, GLOB-006,
+GLOB-009, GLOB-014).
 
 ## Consequences
 

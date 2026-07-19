@@ -492,3 +492,102 @@ phases:
           those to `ok` and moved the signal to the orient read (`unclear`: read
           the "don't over-correct" warning, still over-corrected).
         outcome: ok
+  - id: orient
+    name: Orient (Phase C — all-ADR gate sweep)
+    steps:
+      - file: sdd/research/research-id-232-detail-placement-durability.md
+        section: "3, 7, 8"
+        read_type: gate
+        extract: >-
+          Re-grounded the criterion for a full-corpus sweep, not the flagged-8:
+          the word budget catches size, the three-condition gate catches
+          mismatched detail regardless of size. Restated the gate + signal pair
+          + constraint category verbatim into every planner prompt.
+        outcome: ok
+      - file: sdd/adrs/0006-documentation-architecture.md
+        section: Status
+        read_type: gate
+        extract: >-
+          Regenerated the superseded set (grep Status.*Superseded) rather than
+          trusting the handover list: 0006, 0016, 0019 — excluded as historical
+          record. 0006 is word-budget-flagged yet must NOT be touched, the exact
+          reason status (not the flag) decides eligibility.
+        outcome: ok
+      - file: sdd/specs/021-config-loaders.md
+        section: CFG-021
+        read_type: verify
+        extract: >-
+          Independently verified the judge's highest-value claim before trusting
+          the triage: CFG-021 ("opt-in only; no loader reads env unless the
+          caller opts in; once constructed, no further env lookups") contradicts
+          ADR-0002's rule 2 "env vars may be a fallback". Confirmed a real
+          correctness defect, not a hallucination.
+        outcome: ok
+  - id: triage
+    name: Triage + judge (read-only fan-out, one reconciling judge)
+    steps:
+      - file: scripts/gen_adr_digest.py
+        section: "--check (ADVICE stream)"
+        read_type: reference
+        extract: >-
+          Ran --check for the input signal only (flagged 0007/0008/0014/0022/
+          0025-0028), then a 28-planner sdd-expert Workflow fan-out + 1
+          high-effort judge holding all plans for cross-ADR dedup. Verdicts:
+          5 leave (0001, 0021-0024), 23 change, zero judge overturns. The sweep's
+          whole payoff was the unflagged-but-mismatched class (0002/0004/0005/
+          0009/0014/0020/0026) a flag-only pass never finds.
+        outcome: ok
+      - file: scripts/gen_adr_digest.py
+        section: "LINK_KEYS (amends schema)"
+        read_type: reference
+        extract: >-
+          Caught an over-eager judge suggestion (challenge-over-eager, not a doc
+          fault): it proposed adding an "Amended by ADR-0015" Status row to
+          ADR-0014, but the digest schema has no reciprocal amended-by field
+          (LINK_KEYS = supersedes/superseded-by/amends) and the 0008<-0013 pair
+          records the amendment only inline. Followed the code — noted it inline,
+          left the Status table untouched.
+        outcome: ok
+  - id: apply
+    name: Apply PR1 (correctness/staleness, docs-only)
+    steps:
+      - file: sdd/adrs/0002-config-resolution-no-merge.md
+        section: Decision
+        read_type: reference
+        extract: >-
+          Env-var-fallback rule contradicted CFG-021; rewrote to the accurate
+          opt-in-only invariant, folded restating rules, added per-decision
+          reverse triggers. The ADR asserted behavior the shipped code + spec
+          contradict.
+        outcome: misleading
+      - file: sdd/adrs/0005-native-path-resolution.md
+        section: Decision
+        read_type: reference
+        extract: >-
+          Spec-vs-ADR conflict: ADR listed list_folders among root-stripping
+          methods; NPR-014/015 exclude it (returns names, unaffected). Per
+          principle 5 fixed the ADR side; relocated signatures/examples/diagram
+          to spec 010 (verified present before delete).
+        outcome: misleading
+      - file: sdd/adrs/0009-glob-three-tier-design.md
+        section: Decision
+        read_type: reference
+        extract: >-
+          Dropped the stale "S3/Azure don't declare GLOB" snapshot (GLOB-018/019/
+          020 contradict) and the "only Local implements it" framing; kept the
+          unequal-native-support constraint that justifies the gate; relocated
+          grammar/signatures to spec 018.
+        outcome: misleading
+      - file: sdd/adrs/DIGEST.md
+        section: "(regenerated)"
+        read_type: verify
+        extract: >-
+          Also fixed stale claims in 0004 (method roster vs STORE-002), 0008
+          (tests/ext/ location + superseded Export-rules blocks), 0014
+          (_owns_backend copies-from-inner vs _proxy.py sets False), 0020 (4 vs 5
+          experts), 0026 (adapter masking vs Phase-3c reality). Ripple sweep
+          clean (only preserved-phrase § citations). gen-adr-digest regenerated,
+          --check exits 0. Corpus 10008->9478 words; remaining PR1 overages
+          (0008 +145, 0014 +63, 0020 +9) are deliberate gate-driven leaves.
+          Docs-only diff -> lint + docs-gate, both green.
+        outcome: ok

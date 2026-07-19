@@ -33,65 +33,52 @@ other's output.
 
 ## Decision
 
-Replace the single-pass model with an **iterative convergence model** that
-adds plan refinement, consolidation, and review loops — with complexity-based
-mode selection to avoid unnecessary overhead.
+**Adopt an iterative convergence model, replacing the single-pass model.**
+Planning, execution, and post-processing are wrapped in feedback loops — plan
+refinement before execution, result consolidation after, and expert
+cross-review — so experts act on each other's *actual output*, not the plan
+alone. That gap is what single-pass could not close for coupled, multi-domain
+work. *Reverse if* the loops stop catching cross-domain mismatches that
+single-pass missed — i.e. the loop overhead no longer pays for itself.
 
-### Three modes
+**Gate loop depth on task complexity, via three modes (Simple / Standard /
+Complex).** Trivial single-domain work runs plan → execute → review with no
+refinement or consolidation; multi-domain work adds both; ambiguous or
+tightly-coupled work additionally requires user confirmation before executing
+and before each review round. The loops *are* the model's cost, so trivial
+tasks must be able to opt out of them. The orchestrator picks the mode; the
+user overrides. *Reverse if* one mode serves in practice (collapse the tiers)
+or a failure class appears that the three do not cover.
 
-| Mode | When | Flow |
-|------|------|------|
-| **Simple** | Trivial plan, clear scope | Plan → Execute → Review (1×) → Finish |
-| **Standard** | Multi-domain, clear requirements | Plan → Refine (1×) → Execute → Consolidate → Review (1–2×) → Finish |
-| **Complex** | Ambiguity, tight coupling, unknowns | Same as Standard, but user confirms before Execute and before each Review round |
+**Bound review to a fixed maximum number of rounds; the user resolves anything
+still open after the cap.** A hard round cap guarantees termination instead of
+unbounded convergence. *Reverse if* the cap routinely discards unresolved real
+issues rather than surfacing them to the user.
 
-The orchestrator selects the mode during planning. The user can override.
+**The user is the sole tie-breaker.** The orchestrator presents expert
+disagreements and waits; it never adjudicates them autonomously, keeping a
+human as final authority on contested changes. *Reverse only* as a deliberate
+authority change — if orchestration is ever trusted to resolve domain conflicts
+without a human — never as a tuning tweak.
 
-### Flow
+**Carry forward ADR-0019's delegation structure; replace only its control
+flow.** Domain-expert delegation, per-domain boundaries and foundation docs,
+orchestrator-owned cross-domain files (CHANGELOG, BACKLOG, README), and bug-fix
+TDD ordering (Testing Expert first) are unchanged. *Reverse per those
+mechanisms' own records* (ADR-0019 and its amendments) if the delegation
+structure itself is revisited.
 
-```
-1. PLAN         — orchestrator drafts architecture plan
-2. REFINE       — experts review plan (1 round, parallel)
-                  → orchestrator integrates feedback
-                  → unresolved points → user decides
-3. EXECUTE      — experts implement (parallel or sequential per plan)
-4. CONSOLIDATE  — orchestrator collects results:
-                  ✓ done  |  ✗ blocked (with reason)  |  ⚠ needs input
-                  → blocked: clarify with expert, re-execute
-                  → needs input: escalate to user
-5. REVIEW       — all experts review all output (parallel)
-                  → clean: proceed to finish
-                  → issues: experts fix → re-review (max 2 rounds total)
-                  → still open after 2: user decides
-6. FINISH       — CHANGELOG, BACKLOG, validate, commit, summary
-```
-
-**Simple mode** skips steps 2 (Refine) and 4 (Consolidate); review is
-single-pass with no loop.
-
-### Expert responses
-
-Structured when reporting issues (status + blockers + artifacts).
-Free-form when clean ("done, no issues"). No over-engineered format.
-
-### Tie-breaking
-
-The user breaks all ties. The orchestrator never overrides expert
-disagreements autonomously — it presents the conflict and asks.
-
-### What stays from ADR-0019
-
-- 4 domain experts (Store & Backend, Extension, Testing, Documentation)
-- Domain boundaries and foundation docs
-- Cross-domain files owned by orchestrator (CHANGELOG, BACKLOG, README)
-- Bug-fix TDD mode (Testing Expert goes first)
-- Ripple-check audit in finalization
+The concrete step sequence, per-mode flow, consolidation status legend, exact
+round cap, expert-response format, and the current expert roster are
+operational contract, not decision rationale. They live in the `/orchestrate`
+skill (`.claude/skills/orchestrate/SKILL.md`) and the persona files
+(`.claude/agents/`), which are edited when the process is tuned.
 
 ## Consequences
 
 - Complex tasks get feedback loops that catch cross-domain mismatches early.
 - Simple tasks stay fast — no unnecessary refinement or consolidation.
 - User is always the final authority on unresolved disagreements.
-- Max 2 review rounds prevents infinite convergence loops.
+- The bounded review-round cap prevents infinite convergence loops.
 - Plan refinement catches expert-identified gaps before any code is written.
 - More orchestrator complexity — the skill is longer and has branching logic.

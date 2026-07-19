@@ -30,90 +30,62 @@ concerns need to compose?
 
 ## Decision
 
-**We choose Path 1 (ProxyStore base + stream wrappers).**
+**Choose Path 1 — a `ProxyStore` delegation base plus stream-level wrappers,
+not a middleware framework (Path 2).** `ProxyStore` centralizes the
+private-attribute coupling (`_backend`, `_root`, `_owns_backend`) and default
+delegation shared by `ObservedStore` and `CachedStore`; subclasses override
+only the methods they intercept. Progress and checksums ship as `BinaryIO`
+wrappers (`ext.streams`) and pure functions (`ext.integrity`), never as Store
+proxies. *Reverse when* a third policy-like proxy must compose (see the
+migration triggers below); the Path 1 → Path 2 refactor is internal-only and
+breaks no public API, so it is safe to defer rather than build speculatively.
 
-ProxyStore is a delegation base class, not a middleware framework. It
-centralizes the private-attribute coupling (`_backend`, `_root`,
-`_owns_backend`) and provides default delegation for all Store methods.
-Subclasses override only the methods they intercept.
+**Why Path 1, not a dispatch framework**
 
-### Rationale
+- **Only observe + cache compose today.** Retry already ships as per-backend
+  native config (ADR-0011, `RetryPolicy`); circuit-breaker, rate-limiting, and
+  fault-injection are post-v1 with no committed timeline. Two wrappers do not
+  justify dispatch machinery.
+- **Progress and checksums are stream concerns, not Store concerns.** A
+  `BinaryIO` wrapper composes with any stream, needs no Store wrapping, and
+  correctly skips cache hits (no stream to wrap).
+- **No breaking changes.** `observe()` and `cached_store()` keep their
+  signatures and return types; `ProxyStore` is a base class, not a new public
+  surface.
 
-1. **Only observe + cache compose today.** Retry is already shipped as
-   per-backend native configuration (ADR-0011, `RetryPolicy`). Circuit
-   breaker, rate limiting, and fault injection are post-v1 ideas with
-   no committed timeline. Two proxy wrappers do not justify a dispatch
-   framework.
+**Scope — what Path 1 delivers**
 
-2. **Progress and checksums are stream concerns, not Store concerns.**
-   `ProgressReader(store.read("file.bin"), callback)` is the right
-   abstraction — it composes with any `BinaryIO`, requires no Store
-   wrapping, and correctly skips cache hits (no stream to wrap).
+- `ProxyStore` internal base (`_proxy.py`) with a `_wrap_child()` hook.
+- New `ext.streams` (progress + checksum `BinaryIO` wrappers) and `ext.integrity`
+  (pure checksum/verify functions). The exact class list and per-symbol
+  contracts are owned by specs `033-ext-streams` and `034-ext-integrity`.
 
-3. **No breaking changes.** `observe()` and `cached_store()` factories
-   keep their existing signatures and return types. ProxyStore is an
-   internal base class, not a public API.
+**Scope — what Path 1 excludes (the boundary against Path 2)**
 
-4. **The refactor from Path 1 to Path 2 is internal-only.** If a third
-   policy-like proxy becomes necessary, migrating from ProxyStore to
-   `_MiddlewareProxy` does not break public API. But we do not build
-   that infrastructure speculatively.
+- No `ProgressStore`/`ChecksumStore` proxies; no before/after/short-circuit
+  hooks; no category dispatch, middleware merging, or public middleware API.
+- No `Store.read()`/`write()` signature changes for progress or checksums.
+- No data-model change (`ContentDigest`, `FileInfo.digest`/`etag`) — deferred
+  to ID-008.
 
-### What we build
+**ProxyStore contract**
 
-| Module | Contents |
-|--------|----------|
-| `_proxy.py` (internal) | `ProxyStore` base class with `_wrap_child()` hook |
-| `ext.streams` (new) | `ProgressReader`, `ProgressWriter`, `ChecksumReader`, `ChecksumWriter` |
-| `ext.integrity` (new) | `checksum()`, `verify()` — pure functions returning strings |
+`ProxyStore(Store)` is a delegation base: it adopts the inner store's backend
+coupling, delegates every public `Store` method to its inner store by default,
+and propagates `child()` through `_wrap_child()`, which subclasses must
+implement (the base raises). Construction, delegation, and `_wrap_child()`
+mechanics are owned by `src/remote_store/_proxy.py`; the ADR-0010
+drift-protection tests hold delegation to the full `Store` surface. *Amended by
+ADR-0015:* the original "internal, must not be subclassed by user code" clause
+is superseded — `ProxyStore` is now exported and documented so extension
+authors can subclass it.
 
-### What we do NOT build
+**Migration trigger for Path 2 — reverse this decision when any becomes true**
 
-- No `ProgressStore` or `ChecksumStore` proxy wrappers.
-- No `_before_*` / `_after_*` / `_short_circuit_*` hooks on ProxyStore.
-- No category dispatch, no middleware merging, no public middleware API.
-- No changes to `Store.read()` or `Store.write()` signatures for
-  progress or checksums.
-- No data model changes (`ContentDigest`, `FileInfo.digest`/`etag`) —
-  those ship separately under ID-008 when backends populate them.
-
-### ProxyStore contract
-
-`ProxyStore(Store)` is an internal abstract base class. It is not part
-of the public API and must not be subclassed by user code.
-
-**Construction:** `__init__(self, inner: Store)` copies `_backend`,
-`_root`, and `_owns_backend` from the inner store. Exposes
-`inner: Store` as a read-only property.
-
-**Delegation:** Every public `Store` method has a default implementation
-that delegates to `self._inner.<method>(...)`. Subclasses override only
-the methods they intercept. Drift-protection tests (from ADR-0010)
-verify that ProxyStore covers the full Store API surface.
-
-**`_wrap_child()` hook:** `ProxyStore.child(subpath)` calls
-`self._inner.child(subpath)` to create the inner child, then calls
-`self._wrap_child(inner_child) -> Store` to let the subclass wrap it.
-
-- The base `_wrap_child()` raises `NotImplementedError` — subclasses
-  must provide an implementation.
-- `CachedStore._wrap_child()` returns a new `CachedStore` with the same
-  TTL, max_entries, and backend config.
-- `ObservedStore._wrap_child()` returns a new `ObservedStore` with the
-  same hooks.
-- Subclasses must not return `None`. The return value must be a `Store`.
-
-This fixes BUG-003: `cached_store(s).child("sub")` now returns a
-`CachedStore`, not a plain `Store`.
-
-### Migration trigger for Path 2
-
-Move to merged middleware only when one of these becomes true:
-
-- Three or more store-level concerns must compose on the same operation path.
-- Ordering between wrappers becomes product-significant, not just internal.
-- One concern must short-circuit another in a general way.
-- Adding a new concern would require broad override duplication again.
+- three or more store-level concerns must compose on one operation path;
+- wrapper ordering becomes product-significant, not merely internal;
+- one concern must short-circuit another in a general way;
+- adding a concern would again require broad override duplication.
 
 ## Consequences
 
@@ -125,7 +97,8 @@ Move to merged middleware only when one of these becomes true:
 - **Two-level inheritance** (`Store -> ProxyStore -> CachedStore`) adds
   one layer of indirection. Acceptable for two consumers.
 - **`child()` propagation ships with ProxyStore.** Default: child stores
-  inherit wrapper behavior via `_wrap_child()`.
+  inherit wrapper behavior via `_wrap_child()`. This fixes BUG-003:
+  `cached_store(s).child("sub")` returns a `CachedStore`, not a plain `Store`.
 - **Two proxy layers remain** when composing `observe(cached_store(store))`.
   The performance cost is two Python function calls per operation (<1us),
   negligible against real I/O.

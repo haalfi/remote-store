@@ -19,24 +19,24 @@ This surfaced when writing example scripts: every natural usage pattern for "lis
 
 Split path resolution in `Store` into two tiers:
 
-1. **`_full_path(path)`** — accepts empty string `""` to mean "the store root." If `root_path` is set, returns `root_path`; otherwise returns `""`. Non-empty paths still validate through `RemotePath`.
+- **`_full_path(path)` accepts `""` (and `"."`) as the store root.** Folder and
+  query operations resolve an empty path to the store root instead of raising;
+  non-empty paths still validate through `RemotePath`, so PATH-008 is untouched.
+  *Reverse if* `RemotePath` is changed to accept `""` directly — the second tier
+  would then be redundant.
+- **`_require_file_path(path)` rejects `""` for file-targeted operations.** An
+  empty path to a file operation is nonsensical, so it fails early with
+  `InvalidPath` rather than reaching a backend. *Reverse if* any file operation
+  gains meaningful root semantics (none exists today).
+- **`delete_folder("")` is rejected even though it is a folder operation.**
+  Deleting the store root is destructive and almost certainly unintended, so it
+  is the deliberate exception to the folder-op accept rule and raises
+  `InvalidPath`. *Reverse if* an explicit "empty the store" workflow is ever
+  needed — that must be a distinct, guarded entry point, never a bare empty path.
 
-2. **`_require_file_path(path)`** — rejects empty strings with `InvalidPath`. Used by file-targeted operations where an empty path is nonsensical.
-
-### Method classification
-
-| Accepts `""` (folder/query ops) | Rejects `""` (file-targeted ops) |
-|--------------------------------|----------------------------------|
-| `exists` | `read`, `read_bytes` |
-| `is_file`, `is_folder` | `write`, `write_atomic` |
-| `list_files`, `list_folders` | `delete` |
-| `get_folder_info` | `delete_folder` |
-| | `get_file_info` |
-| | `move`, `copy` |
-
-### Rationale for `delete_folder("")` rejection
-
-Even though `delete_folder` is a folder operation, deleting the store root is destructive and almost certainly unintended. It is rejected with `InvalidPath("Cannot delete the store root")`.
+The authoritative, per-method roster of which operations accept vs. reject the
+root is spec-rate and lives in spec 001 § STORE-002, which tracks method
+additions as the API grows.
 
 ## Consequences
 

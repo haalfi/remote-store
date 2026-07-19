@@ -42,58 +42,35 @@ layer, which currently doesn't do it at all.
 
 ## Decision
 
-Introduce `to_key` at two levels:
+- **A `to_key` primitive at two levels — `Backend.to_key` and `Store.to_key`,
+  same name by design (clear intent, composable).** Both the broken listing
+  round-trip and external-path conversion reduce to one operation: stripping a
+  layer's own root. `Backend.to_key` strips the backend's native root/prefix;
+  `Store.to_key` composes that with stripping `root_path` to yield a
+  store-relative key. *Reverse if* a use case needs a path transform that is not
+  root-stripping — then `to_key` is the wrong primitive, not merely
+  under-featured.
+- **`Backend.to_key` is a concrete ABC method with an identity default.** Only
+  backends with a custom root override it; every other backend inherits the
+  identity, so the change is zero-behavioral for them — the
+  backward-compatibility invariant. *Reverse if* the identity default ever
+  yields a wrong key for an un-overridden backend, which would mean the default
+  is unsafe and the method must become abstract.
+- **`to_key` is pure, deterministic, and total (no I/O, no side effects).** That
+  purity is what makes a concrete default safe to inherit and lets the inverse
+  round-trip hold. *Reverse if* a backend's native→key mapping genuinely
+  requires I/O, breaking totality.
+- **The Store owns the round-trip guarantee.** The Store layer strips
+  `root_path`; backends only know their own root. The path-returning listing
+  methods (`list_files`, `get_file_info`, `get_folder_info`) strip `root_path`
+  so returned paths feed back into Store methods without double-prefixing;
+  `list_folders` returns immediate subfolder *names* and is unaffected (spec 010
+  § NPR-015). *Reverse if* backends must become root-aware for another reason,
+  making a single Store-level strip point insufficient.
 
-1. **`Backend.to_key(native_path) -> str`** — concrete ABC method (identity default) that strips the backend's own root/prefix, replacing the scattered `_rel_path` / `relative_to` patterns.
-2. **`Store.to_key(path) -> str`** — public method composing backend conversion with store-root stripping.
-
-Store listing methods also strip `root_path` from returned paths so `FileInfo.path` round-trips back into other Store methods.
-
-### 1. `Backend.to_key(native_path: str) -> str`
-
-Concrete method on the Backend ABC (identity default). Converts a
-backend-native path to a backend-relative key by stripping the backend's own
-root/prefix.
-
-- **Local:** strips filesystem root → `"/tmp/store/data/file.txt"` → `"data/file.txt"`
-- **S3:** strips bucket prefix → `"my-bucket/data/file.txt"` → `"data/file.txt"`
-- **SFTP:** strips base_path → `"/srv/sftp/data/file.txt"` → `"data/file.txt"`
-
-Replaces the existing scattered `_rel_path` / `relative_to` patterns with a
-single, consistent hook.
-
-### 2. `Store.to_key(path: str) -> str`
-
-Public method. Composes backend conversion with store-root stripping:
-
-```text
-backend.to_key(native_path)  →  strip root_path prefix  →  store-relative key
-```
-
-Example:
-```python
-store = Store(backend=sftp, root_path="data")
-store.to_key("/srv/sftp/data/reports/q1.csv")  # → "reports/q1.csv"
-```
-
-### 3. Round-trip fix
-
-Store listing methods (`list_files`, `list_folders`, `get_file_info`,
-`get_folder_info`) strip `root_path` from returned paths so that `FileInfo.path`
-is directly usable as input to other Store methods.
-
-### Key design choices
-
-1. **Same name at both levels** — `to_key` at Backend and Store. Clear intent,
-   composable.
-
-2. **Concrete method, not abstract** — existing backends inherit the identity
-   default. Only backends with custom roots override.
-
-3. **Pure and deterministic** — no I/O, no side effects. Testable in isolation.
-
-4. **Store owns the round-trip guarantee** — the Store layer strips `root_path`,
-   not the backend. Backends only know about their own root.
+Exact signatures, per-backend stripping examples, the composition sequence, and
+the full methods-that-strip enumeration are spec-rate and live in spec 010
+(NPR-003, NPR-006/007/008, NPR-010/011, NPR-014/015).
 
 ## Consequences
 

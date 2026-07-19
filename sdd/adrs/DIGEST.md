@@ -24,14 +24,24 @@ User → Store → Backend (ABC) → Local/S3/Azure/SFTP
 
 ### [ADR-0002](0002-config-resolution-no-merge.md): Configuration Resolution - No Merging
 
-**Config-as-code has absolute priority. No merging, no env var overrides.**
-
-Resolution rules:
-
-1. If `RegistryConfig` is provided in code → use it exclusively
-2. If no config is provided → environment variables may be used as a fallback
-3. No layering, no merging between sources
-4. Backend defaults apply last (within a single config source)
+- **Config-as-code has absolute priority.** A `RegistryConfig` built in code
+  is used exclusively — no layering, no merging between configuration sources.
+  Chosen so the same code yields the same behavior regardless of host
+  environment (determinism; test isolation from stray env vars). *Reverse if*
+  determinism becomes a net liability — a first-class multi-source/override
+  requirement emerges that user-side pre-processing genuinely cannot serve.
+- **Environment variables are never read automatically.** The Registry performs
+  no env-var fallback: constructing without a config yields an empty
+  `RegistryConfig`, not an env-sourced one. Any env-var sourcing is explicit,
+  user-side pre-processing (`resolve_env()`, Pydantic `BaseSettings`) that
+  produces the final dict *before* construction; once the config is constructed,
+  no further env lookups occur (spec 021 § CFG-021). *Reverse if* a built-in
+  env-driven bootstrap is deliberately adopted (which also reopens the
+  determinism decision above).
+- **Backend defaults apply last, within a single config source.** "No merging"
+  forbids combining across sources; it does not forbid a backend filling its
+  unset options from its own defaults inside one source. *Reverse if*
+  backend-default resolution moves out of config resolution.
 
 ### [ADR-0003](0003-fsspec-is-implementation-detail.md): fsspec Is an Implementation Detail
 
@@ -50,79 +60,56 @@ fs = backend.unwrap(fsspec.AbstractFileSystem)  # explicit, type-safe
 
 Split path resolution in `Store` into two tiers:
 
-1. **`_full_path(path)`** — accepts empty string `""` to mean "the store root." If `root_path` is set, returns `root_path`; otherwise returns `""`. Non-empty paths still validate through `RemotePath`.
+- **`_full_path(path)` accepts `""` (and `"."`) as the store root.** Folder and
+  query operations resolve an empty path to the store root instead of raising;
+  non-empty paths still validate through `RemotePath`, so PATH-008 is untouched.
+  *Reverse if* `RemotePath` is changed to accept `""` directly — the second tier
+  would then be redundant.
+- **`_require_file_path(path)` rejects `""` for file-targeted operations.** An
+  empty path to a file operation is nonsensical, so it fails early with
+  `InvalidPath` rather than reaching a backend. *Reverse if* any file operation
+  gains meaningful root semantics (none exists today).
+- **`delete_folder("")` is rejected even though it is a folder operation.**
+  Deleting the store root is destructive and almost certainly unintended, so it
+  is the deliberate exception to the folder-op accept rule and raises
+  `InvalidPath`. *Reverse if* an explicit "empty the store" workflow is ever
+  needed — that must be a distinct, guarded entry point, never a bare empty path.
 
-2. **`_require_file_path(path)`** — rejects empty strings with `InvalidPath`. Used by file-targeted operations where an empty path is nonsensical.
-
-##### Method classification
-
-| Accepts `""` (folder/query ops) | Rejects `""` (file-targeted ops) |
-|--------------------------------|----------------------------------|
-| `exists` | `read`, `read_bytes` |
-| `is_file`, `is_folder` | `write`, `write_atomic` |
-| `list_files`, `list_folders` | `delete` |
-| `get_folder_info` | `delete_folder` |
-| | `get_file_info` |
-| | `move`, `copy` |
-
-##### Rationale for `delete_folder("")` rejection
-
-Even though `delete_folder` is a folder operation, deleting the store root is destructive and almost certainly unintended. It is rejected with `InvalidPath("Cannot delete the store root")`.
+The authoritative, per-method roster of which operations accept vs. reject the
+root is spec-rate and lives in spec 001 § STORE-002, which tracks method
+additions as the API grows.
 
 ### [ADR-0005](0005-native-path-resolution.md): Bidirectional Path Resolution via `to_key`
 
-Introduce `to_key` at two levels:
+- **A `to_key` primitive at two levels — `Backend.to_key` and `Store.to_key`,
+  same name by design (clear intent, composable).** Both the broken listing
+  round-trip and external-path conversion reduce to one operation: stripping a
+  layer's own root. `Backend.to_key` strips the backend's native root/prefix;
+  `Store.to_key` composes that with stripping `root_path` to yield a
+  store-relative key. *Reverse if* a use case needs a path transform that is not
+  root-stripping — then `to_key` is the wrong primitive, not merely
+  under-featured.
+- **`Backend.to_key` is a concrete ABC method with an identity default.** Only
+  backends with a custom root override it; every other backend inherits the
+  identity, so the change is zero-behavioral for them — the
+  backward-compatibility invariant. *Reverse if* the identity default ever
+  yields a wrong key for an un-overridden backend, which would mean the default
+  is unsafe and the method must become abstract.
+- **`to_key` is pure, deterministic, and total (no I/O, no side effects).** That
+  purity is what makes a concrete default safe to inherit and lets the inverse
+  round-trip hold. *Reverse if* a backend's native→key mapping genuinely
+  requires I/O, breaking totality.
+- **The Store owns the round-trip guarantee.** The Store layer strips
+  `root_path`; backends only know their own root. The path-returning listing
+  methods (`list_files`, `get_file_info`, `get_folder_info`) strip `root_path`
+  so returned paths feed back into Store methods without double-prefixing;
+  `list_folders` returns immediate subfolder *names* and is unaffected (spec 010
+  § NPR-015). *Reverse if* backends must become root-aware for another reason,
+  making a single Store-level strip point insufficient.
 
-1. **`Backend.to_key(native_path) -> str`** — concrete ABC method (identity default) that strips the backend's own root/prefix, replacing the scattered `_rel_path` / `relative_to` patterns.
-2. **`Store.to_key(path) -> str`** — public method composing backend conversion with store-root stripping.
-
-Store listing methods also strip `root_path` from returned paths so `FileInfo.path` round-trips back into other Store methods.
-
-##### 1. `Backend.to_key(native_path: str) -> str`
-
-Concrete method on the Backend ABC (identity default). Converts a
-backend-native path to a backend-relative key by stripping the backend's own
-root/prefix.
-
-- **Local:** strips filesystem root → `"/tmp/store/data/file.txt"` → `"data/file.txt"`
-- **S3:** strips bucket prefix → `"my-bucket/data/file.txt"` → `"data/file.txt"`
-- **SFTP:** strips base_path → `"/srv/sftp/data/file.txt"` → `"data/file.txt"`
-
-Replaces the existing scattered `_rel_path` / `relative_to` patterns with a
-single, consistent hook.
-
-##### 2. `Store.to_key(path: str) -> str`
-
-Public method. Composes backend conversion with store-root stripping:
-
-```text
-backend.to_key(native_path)  →  strip root_path prefix  →  store-relative key
-```
-
-Example:
-```python
-store = Store(backend=sftp, root_path="data")
-store.to_key("/srv/sftp/data/reports/q1.csv")  # → "reports/q1.csv"
-```
-
-##### 3. Round-trip fix
-
-Store listing methods (`list_files`, `list_folders`, `get_file_info`,
-`get_folder_info`) strip `root_path` from returned paths so that `FileInfo.path`
-is directly usable as input to other Store methods.
-
-##### Key design choices
-
-1. **Same name at both levels** — `to_key` at Backend and Store. Clear intent,
-   composable.
-
-2. **Concrete method, not abstract** — existing backends inherit the identity
-   default. Only backends with custom roots override.
-
-3. **Pure and deterministic** — no I/O, no side effects. Testable in isolation.
-
-4. **Store owns the round-trip guarantee** — the Store layer strips `root_path`,
-   not the backend. Backends only know about their own root.
+Exact signatures, per-backend stripping examples, the composition sequence, and
+the full methods-that-strip enumeration are spec-rate and live in spec 010
+(NPR-003, NPR-006/007/008, NPR-010/011, NPR-014/015).
 
 ### [ADR-0007](0007-docs-src-literate-nav.md): Three-Tier Documentation Architecture with docs-src/ and Literate Nav
 
@@ -224,227 +211,97 @@ Each directory in `docs-src/` may contain a `_nav.yml` file:
 
 ### [ADR-0008](0008-extension-architecture.md): Extension Namespace Contract (`ext.*`)
 
-The `ext.*` namespace contract for stateless utility extensions:
+The `ext.*` namespace contract for stateless utility extensions — standalone
+functions that accept a `Store` and operate on it. Framework concerns
+(interfaces, hooks, lifecycle management, plugin discovery) are out of scope and
+get their own ADRs when built.
 
-- **Location** — extensions live in `src/remote_store/ext/<name>.py` (single module) or `src/remote_store/ext/<name>/` (sub-package); `ext/__init__.py` re-exports nothing, each extension is imported directly.
-- **Public API only** — extensions use only the public `Store` / `Backend` API (no private-attribute access); `Store.unwrap(type_hint)` is the sanctioned escape hatch.
-- **Module exports** — every extension module defines `__all__`.
-- **Lifecycle** — extensions never own the `Store`; they must not close it or use it as a context manager.
-- **Error propagation** — `CapabilityNotSupported` must propagate to the caller, never be suppressed.
-
-##### Extension location
-
-Extensions live in `src/remote_store/ext/<name>.py` (single module) or
-`src/remote_store/ext/<name>/` (sub-package for complex extensions).
-The `ext/__init__.py` re-exports nothing; each extension is imported
-directly by the user or by `remote_store.__init__`.
-
-##### Public API only
-
-Extensions MUST use only the public `Store` and `Backend` API.  Direct
-access to private attributes (e.g., `store._backend`) is forbidden.
-`Store.unwrap(type_hint)` is the approved escape hatch for native
-backend access.
-
-##### Module exports
-
-Every extension module defines `__all__` listing its public symbols.
-
-##### Lifecycle rules
-
-Extensions do not own `Store` lifecycle.  They must never call
-`store.close()` or use the Store as a context manager.  The caller owns
-the Store and is responsible for its lifecycle.
-
-##### Error propagation
-
-`CapabilityNotSupported` raised by Store methods MUST propagate to the
-extension's caller.  Extensions must not catch and suppress it.
+- **Location** — extensions live in `src/remote_store/ext/<name>.py` (single
+  module) or `src/remote_store/ext/<name>/` (sub-package for complex ones);
+  `ext/__init__.py` re-exports nothing — each extension is imported directly.
+  *Reverse if* a plugin-discovery mechanism (deferred) requires a registry in
+  `__init__`.
+- **Public API only** — extensions use only the public `Store` / `Backend` API;
+  private-attribute access (`store._backend`) is forbidden. `Store.unwrap(type_hint)`
+  is the sanctioned escape hatch for native backend handles. *Reverse if* a
+  required capability becomes impossible to express through the public API.
+- **Module exports** — every extension module defines `__all__`. *Reverse if*
+  the project drops explicit export lists project-wide.
+- **Lifecycle** — extensions never own the `Store`: they must not close it or
+  use it as a context manager. The caller owns lifecycle. *Reverse if* an
+  extension legitimately needs to own a Store it constructs (a different
+  pattern — new ADR).
+- **Error propagation** — `CapabilityNotSupported` must propagate to the caller,
+  never be suppressed, so callers see an honest capability boundary rather than
+  a silent wrong result. *Reverse if* the capability model stops using
+  exceptions to signal unsupported operations.
+- **Zero-dependency core** — core `remote-store` takes no third-party
+  dependencies; optional deps are declared as extras in `pyproject.toml`.
+  Extension code must guard optional-dependency imports (including inside
+  `TYPE_CHECKING` blocks, which mypy still evaluates) rather than importing them
+  unconditionally. This constraint is why the optional-dependency extension
+  category exists at all. *Reverse if* the zero-dependency-core promise is
+  abandoned.
 
 ##### Capability-probe exception pattern
 
-The rule "CapabilityNotSupported MUST propagate" has one documented
-exception: the **capability-probe** pattern.  Extensions MAY catch
-`CapabilityNotSupported` when probing for an **optional native backend**
-during initialization, provided:
+`CapabilityNotSupported` MAY be caught in exactly one case: an extension
+**probing for an optional native backend at initialization**, where a graceful
+fallback exists (e.g. `ext.arrow` Tier 1 native fast-path falling through to
+Tier 2/3 I/O). The catch must be narrowly scoped to the expected exceptions and
+commented. This is the sole sanctioned exception to "must propagate," and it is
+bounded to *optional* features with a fallback — a probe for a *required*
+operation must still propagate. *Reverse if* capability probing moves to an
+explicit `supports()`-style API that removes the need to catch.
 
-1. The probe is for an **optional feature**, not a required operation.
-2. A graceful fallback exists (e.g., Tier 2/3 I/O paths in `ext.arrow`).
-3. The catch is narrowly scoped to expected exceptions (e.g.,
-   `(CapabilityNotSupported, TypeError, OSError)` for cloud backends).
-4. A comment explains the probe, exceptions caught, and fallback strategy.
-5. The catch MAY be annotated with `# noqa: BLE001` as a documentation marker
-   if the implementation uses a broad catch; the annotation is optional if the
-   catch is already narrow and specific.
+The exact exception tuple, the `# noqa: BLE001` marker, and the concrete probe
+live in the code (`ext/arrow.py`) and in spec `014-pyarrow-filesystem-adapter`
+§ PA-001, which points here for rationale.
 
-**Example:** `ext.arrow` Tier 1 probe (`src/remote_store/ext/arrow.py`
-line 177).  The `StoreFileSystemHandler.__init__` probes for a native PyArrow
-backend via `store.unwrap(pafs.FileSystem)`.  If the backend doesn't
-support unwrap or the type doesn't match, the probe gracefully falls back
-to Tier 2/3 (full-file materialization or byte-range reads).
+##### Deferred and relocated
 
-Any new extension using this pattern MUST cite this section and document
-the fallback strategy explicitly in comments.
-
-##### Export rules
-
-> Superseded by ADR-0013 — optional-dependency extensions are no longer
-> re-exported from `remote_store.__init__`. Import them directly from
-> `remote_store.ext.<name>`.
-
-Two patterns, determined by dependency requirements:
-
-1. **Pure Python (no extra dependencies).**
-   Exported unconditionally from `remote_store.__init__`.  Users get
-   the symbols with `import remote_store` or
-   `from remote_store import <name>`.
-
-2. **Optional dependency (requires an extra).**
-   The extension module guards its dependency import at the top level
-   with a `try/except ModuleNotFoundError` that raises a helpful error:
-
-   ```python
-   # In ext/<name>.py:
-   try:
-       import pyarrow as pa
-   except ModuleNotFoundError as _exc:
-       raise ModuleNotFoundError(
-           "PyArrow is required for the arrow extension. "
-           "Install it with: pip install 'remote-store[arrow]'"
-       ) from _exc
-   ```
-
-   `remote_store.__init__` conditionally re-exports these symbols with
-   a silent `try/except ImportError` guard so that `from remote_store
-   import pyarrow_fs` works when the dependency is installed, but core
-   package import never fails:
-
-   ```python
-   # In remote_store/__init__.py:
-   try:
-       from remote_store.ext.arrow import StoreFileSystemHandler, pyarrow_fs
-       __all__ += ["StoreFileSystemHandler", "pyarrow_fs"]
-   except ImportError:
-       pass
-   ```
-
-##### Dependency rules
-
-- Core `remote-store` stays zero-dependency.
-- Optional dependencies are declared as extras in
-  `pyproject.toml [project.optional-dependencies]`.
-- Extension code must not import optional dependencies at the top level
-  in `TYPE_CHECKING` blocks without a guard, since mypy may still
-  evaluate those imports.
-
-##### Development lifecycle
-
-New extensions follow the SDD pipeline:
-
-1. RFC in `sdd/rfcs/` (proposal and design discussion).
-2. Spec in `sdd/specs/` (contract and invariants).
-3. Tests in `tests/test_<name>.py` with `@pytest.mark.spec("ID")`.
-4. Implementation in `src/remote_store/ext/<name>.py`.
-5. Guide in `guides/` and docs wiring in `docs-src/`.
-6. CHANGELOG and BACKLOG updated in the same commit.
-
-Tests live at `tests/test_<name>.py` (flat, not `tests/ext/`).
-
-##### Third-party extensions
-
-External packages should use the naming convention
-`remote-store-<name>` (PyPI package name).  They should:
-
-- Use only the public Store/Backend API.
-- Use `register_backend()` for backend registration (if applicable).
-- Use `Store.unwrap()` for native handle access.
-- For backend extensions: reuse the conformance test suite by importing
-  and parameterizing it.
-
-Entry-point based plugin discovery is deferred until third-party
-extensions emerge and the discovery mechanism can be designed with
-real use cases.
-
-##### Future patterns (not yet designed)
-
-The current convention covers **stateless utility extensions** —
-standalone functions that accept a Store and return results.  Planned
-extensions will require additional patterns:
-
-- **`ext.notify`** (ID-024) needs a hook/interceptor mechanism to wrap
-  Store operations.  Likely a decorator or proxy Store pattern:
-  `store = instrument(store, on_read=..., on_error=...)`.
-- **`ext.cache`** (ID-025) needs a wrapping/proxy pattern that sits
-  between the caller and the Store, intercepting reads and caching
-  results.
-- **Streaming atomic writes** (ID-026) needs a context manager protocol
-  integrated with the Store.
-
-These patterns will be designed as separate ADRs when the extensions
-are implemented.  This ADR's rules (public API only, `__all__`,
-dependency management, test location) apply to all extension types;
-the additional patterns will layer on top.
+- **Optional-extension re-exports** — removed; superseded by **ADR-0013**.
+  Optional-dependency extensions are imported from `remote_store.ext.<name>`,
+  never re-exported from `remote_store.__init__`. Pure-Python extensions remain
+  unconditionally exported.
+- **Stateful patterns** — hook/interceptor (`ext.notify`), proxy/wrapping
+  (`ext.cache`), and context-manager streaming writes are not covered here; each
+  is designed in its own ADR when the extension is built. The rules above
+  (public API only, `__all__`, dependency guarding, error propagation) apply to
+  all extension types.
+- **Authoring pipeline, test location, third-party naming (`remote-store-<name>`),
+  and plugin discovery** live in CONTRIBUTING § "Adding an Extension" — the
+  operational checklist. Entry-point discovery stays deferred until real
+  third-party extensions exist.
 
 ### [ADR-0009](0009-glob-three-tier-design.md): Glob - Three-Tier Design
 
-Three tiers of pattern matching, with clear escalation:
+Three tiers of pattern matching, each covering a case the tier below cannot.
+A single lowest-common-denominator API and a two-tier design were both
+rejected: a bare `store.glob()` throws on most backends (a discoverability
+pit), and simple name filtering should not require an extension.
 
-1. **`list_files(pattern=…)`** — simple `fnmatch` name filtering at the Store level; works on every backend with `LIST`, no new capability.
-2. **`store.glob(pattern)`** — native backend glob, gated on `Capability.GLOB` (only Local implements it initially).
-3. **`ext.glob.glob_files(store, pattern)`** — portable full recursive glob; uses `store.glob()` when available, else falls back to `list_files` + client-side regex.
+- **Tier 1 — `list_files(pattern=…)`: `fnmatch` name filtering at the Store
+  level.** Works on every backend with `LIST`, no new capability; covers the
+  common "give me the CSVs in this folder" case. *Reverse if* every backend
+  gains cheap recursive matching, collapsing the need for higher tiers.
+- **Tier 2 — `store.glob(pattern)`: native backend glob, gated on
+  `Capability.GLOB`.** Like `unwrap()`, opt-in direct access to a
+  backend-specific feature for users who know their backend and want native
+  semantics. The gate exists because native glob support is **unequal** across
+  backends — only backends with a genuine native implementation declare `GLOB`
+  (the current roster is spec-rate; see spec 018 § GLOB-005/018/019/020).
+  *Reverse if* native glob becomes universal, making the gate meaningless.
+- **Tier 3 — `ext.glob.glob_files(store, pattern)`: portable full recursive
+  glob.** Delegates to `store.glob()` when `GLOB` is available, else falls back
+  to `list_files` + client-side matching. This fallback is why the design is
+  three tiers, not two: portable recursive glob cannot be guaranteed at the
+  Store level. *Reverse if* a portable recursive glob can be guaranteed for
+  every backend, letting Tier 3 fold into the Store API.
 
-##### Tier 1: `list_files(pattern=…)` — simple name filtering
-
-```python
-store.list_files("logs", pattern="*.log")
-```
-
-- `pattern` is an `fnmatch` pattern matched against each file's **name**.
-- Applied at the `Store` level — works with every backend that has `LIST`.
-- No new capability required.
-- Covers the most common use case: "give me the CSVs in this folder."
-
-##### Tier 2: `store.glob(pattern)` — native backend access
-
-```python
-store.glob("**/*.csv")  # only if backend supports GLOB
-```
-
-- Capability-gated on `Capability.GLOB`.
-- Like `unwrap()`: opt-in direct access to a backend-specific feature.
-- Only `LocalBackend` implements it (via `pathlib.Path.glob()`).
-- Users who call this **know** their backend and want native semantics.
-
-##### Tier 3: `ext.glob.glob_files(store, pattern)` — portable full glob
-
-```python
-from remote_store.ext.glob import glob_files
-glob_files(store, "data/**/*.csv")
-```
-
-- Full recursive glob patterns (`**`, wildcards in directory segments).
-- Delegates to `store.glob()` when GLOB is available, otherwise falls
-  back to `list_files` + client-side regex matching.
-- The recommended API when `list_files(pattern=)` isn't enough and
-  you want code that works across all backends.
-
-##### Pattern syntax
-
-- `*` — any characters except `/`
-- `**` — zero or more path segments (recursive)
-- `?` — single non-separator character
-- `[abc]` — character class
-- `[!abc]` — negated character class
-
-`list_files(pattern=…)` uses stdlib `fnmatch` (complete, well-tested).
-`ext.glob` uses a regex converter that supports the full syntax above.
-
-##### Non-Local backends
-
-S3, S3-PyArrow, SFTP, Azure, and Memory do not declare
-`Capability.GLOB` in this iteration. They can add native
-glob implementations in future releases (S3 and Azure have
-prefix-optimized listing that could be leveraged).
+Pattern grammar, exact signatures, and the `fnmatch`/regex-converter mechanics
+are spec-rate and live in spec 018 (Overview, GLOB-001, GLOB-005, GLOB-006,
+GLOB-009, GLOB-014).
 
 ### [ADR-0010](0010-observe-proxy-pattern.md): Observe - Proxy Subclass Pattern
 
@@ -596,90 +453,62 @@ conventions) remains in effect.
 
 ### [ADR-0014](0014-middleware-path-1-proxy-store-stream-wrappers.md): Middleware Architecture — Path 1 (ProxyStore + Stream Wrappers)
 
-**We choose Path 1 (ProxyStore base + stream wrappers).**
+**Choose Path 1 — a `ProxyStore` delegation base plus stream-level wrappers,
+not a middleware framework (Path 2).** `ProxyStore` centralizes the
+private-attribute coupling (`_backend`, `_root`, `_owns_backend`) and default
+delegation shared by `ObservedStore` and `CachedStore`; subclasses override
+only the methods they intercept. Progress and checksums ship as `BinaryIO`
+wrappers (`ext.streams`) and pure functions (`ext.integrity`), never as Store
+proxies. *Reverse when* a third policy-like proxy must compose (see the
+migration triggers below); the Path 1 → Path 2 refactor is internal-only and
+breaks no public API, so it is safe to defer rather than build speculatively.
 
-ProxyStore is a delegation base class, not a middleware framework. It
-centralizes the private-attribute coupling (`_backend`, `_root`,
-`_owns_backend`) and provides default delegation for all Store methods.
-Subclasses override only the methods they intercept.
+**Why Path 1, not a dispatch framework**
 
-##### Rationale
+- **Only observe + cache compose today.** Retry already ships as per-backend
+  native config (ADR-0011, `RetryPolicy`); circuit-breaker, rate-limiting, and
+  fault-injection are post-v1 with no committed timeline. Two wrappers do not
+  justify dispatch machinery.
+- **Progress and checksums are stream concerns, not Store concerns.** A
+  `BinaryIO` wrapper composes with any stream, needs no Store wrapping, and
+  correctly skips cache hits (no stream to wrap).
+- **No breaking changes.** `observe()` and `cached_store()` keep their
+  signatures and return types; `ProxyStore` is a base class, not a new public
+  surface.
 
-1. **Only observe + cache compose today.** Retry is already shipped as
-   per-backend native configuration (ADR-0011, `RetryPolicy`). Circuit
-   breaker, rate limiting, and fault injection are post-v1 ideas with
-   no committed timeline. Two proxy wrappers do not justify a dispatch
-   framework.
+**Scope — what Path 1 delivers**
 
-2. **Progress and checksums are stream concerns, not Store concerns.**
-   `ProgressReader(store.read("file.bin"), callback)` is the right
-   abstraction — it composes with any `BinaryIO`, requires no Store
-   wrapping, and correctly skips cache hits (no stream to wrap).
+- `ProxyStore` internal base (`_proxy.py`) with a `_wrap_child()` hook.
+- New `ext.streams` (progress + checksum `BinaryIO` wrappers) and `ext.integrity`
+  (pure checksum/verify functions). The exact class list and per-symbol
+  contracts are owned by specs `033-ext-streams` and `034-ext-integrity`.
 
-3. **No breaking changes.** `observe()` and `cached_store()` factories
-   keep their existing signatures and return types. ProxyStore is an
-   internal base class, not a public API.
+**Scope — what Path 1 excludes (the boundary against Path 2)**
 
-4. **The refactor from Path 1 to Path 2 is internal-only.** If a third
-   policy-like proxy becomes necessary, migrating from ProxyStore to
-   `_MiddlewareProxy` does not break public API. But we do not build
-   that infrastructure speculatively.
+- No `ProgressStore`/`ChecksumStore` proxies; no before/after/short-circuit
+  hooks; no category dispatch, middleware merging, or public middleware API.
+- No `Store.read()`/`write()` signature changes for progress or checksums.
+- No data-model change (`ContentDigest`, `FileInfo.digest`/`etag`) — deferred
+  to ID-008.
 
-##### What we build
+**ProxyStore contract**
 
-| Module | Contents |
-|--------|----------|
-| `_proxy.py` (internal) | `ProxyStore` base class with `_wrap_child()` hook |
-| `ext.streams` (new) | `ProgressReader`, `ProgressWriter`, `ChecksumReader`, `ChecksumWriter` |
-| `ext.integrity` (new) | `checksum()`, `verify()` — pure functions returning strings |
+`ProxyStore(Store)` is a delegation base: it adopts the inner store's backend
+coupling, delegates every public `Store` method to its inner store by default,
+and propagates `child()` through `_wrap_child()`, which subclasses must
+implement (the base raises). Construction, delegation, and `_wrap_child()`
+mechanics are owned by `src/remote_store/_proxy.py`; the ADR-0010
+drift-protection tests hold delegation to the full `Store` surface. *Amended by
+ADR-0015:* the original "internal, must not be subclassed by user code" clause
+is superseded — `ProxyStore` is now exported and documented so extension
+authors can subclass it.
 
-##### What we do NOT build
+**Migration trigger for Path 2 — reverse this decision when any becomes true**
 
-- No `ProgressStore` or `ChecksumStore` proxy wrappers.
-- No `_before_*` / `_after_*` / `_short_circuit_*` hooks on ProxyStore.
-- No category dispatch, no middleware merging, no public middleware API.
-- No changes to `Store.read()` or `Store.write()` signatures for
-  progress or checksums.
-- No data model changes (`ContentDigest`, `FileInfo.digest`/`etag`) —
-  those ship separately under ID-008 when backends populate them.
-
-##### ProxyStore contract
-
-`ProxyStore(Store)` is an internal abstract base class. It is not part
-of the public API and must not be subclassed by user code.
-
-**Construction:** `__init__(self, inner: Store)` copies `_backend`,
-`_root`, and `_owns_backend` from the inner store. Exposes
-`inner: Store` as a read-only property.
-
-**Delegation:** Every public `Store` method has a default implementation
-that delegates to `self._inner.<method>(...)`. Subclasses override only
-the methods they intercept. Drift-protection tests (from ADR-0010)
-verify that ProxyStore covers the full Store API surface.
-
-**`_wrap_child()` hook:** `ProxyStore.child(subpath)` calls
-`self._inner.child(subpath)` to create the inner child, then calls
-`self._wrap_child(inner_child) -> Store` to let the subclass wrap it.
-
-- The base `_wrap_child()` raises `NotImplementedError` — subclasses
-  must provide an implementation.
-- `CachedStore._wrap_child()` returns a new `CachedStore` with the same
-  TTL, max_entries, and backend config.
-- `ObservedStore._wrap_child()` returns a new `ObservedStore` with the
-  same hooks.
-- Subclasses must not return `None`. The return value must be a `Store`.
-
-This fixes BUG-003: `cached_store(s).child("sub")` now returns a
-`CachedStore`, not a plain `Store`.
-
-##### Migration trigger for Path 2
-
-Move to merged middleware only when one of these becomes true:
-
-- Three or more store-level concerns must compose on the same operation path.
-- Ordering between wrappers becomes product-significant, not just internal.
-- One concern must short-circuit another in a general way.
-- Adding a new concern would require broad override duplication again.
+- three or more store-level concerns must compose on one operation path;
+- wrapper ordering becomes product-significant, not merely internal;
+- one concern must short-circuit another in a general way;
+- adding a concern would again require broad override duplication.
 
 ### [ADR-0015](0015-proxystore-publicly-documented.md): Document ProxyStore in the Public API Reference
 
@@ -770,59 +599,46 @@ maintaining a separate folder table or marker rows.
 
 ### [ADR-0020](0020-orchestrate-iterative-convergence.md): Orchestrate Iterative Convergence Model
 
-Replace the single-pass model with an **iterative convergence model** that
-adds plan refinement, consolidation, and review loops — with complexity-based
-mode selection to avoid unnecessary overhead.
+**Adopt an iterative convergence model, replacing the single-pass model.**
+Planning, execution, and post-processing are wrapped in feedback loops — plan
+refinement before execution, result consolidation after, and expert
+cross-review — so experts act on each other's *actual output*, not the plan
+alone. That gap is what single-pass could not close for coupled, multi-domain
+work. *Reverse if* the loops stop catching cross-domain mismatches that
+single-pass missed — i.e. the loop overhead no longer pays for itself.
 
-##### Three modes
+**Gate loop depth on task complexity, via three modes (Simple / Standard /
+Complex).** Trivial single-domain work runs plan → execute → review with no
+refinement or consolidation; multi-domain work adds both; ambiguous or
+tightly-coupled work additionally requires user confirmation before executing
+and before each review round. The loops *are* the model's cost, so trivial
+tasks must be able to opt out of them. The orchestrator picks the mode; the
+user overrides. *Reverse if* one mode serves in practice (collapse the tiers)
+or a failure class appears that the three do not cover.
 
-| Mode | When | Flow |
-|------|------|------|
-| **Simple** | Trivial plan, clear scope | Plan → Execute → Review (1×) → Finish |
-| **Standard** | Multi-domain, clear requirements | Plan → Refine (1×) → Execute → Consolidate → Review (1–2×) → Finish |
-| **Complex** | Ambiguity, tight coupling, unknowns | Same as Standard, but user confirms before Execute and before each Review round |
+**Bound review to a fixed maximum number of rounds; the user resolves anything
+still open after the cap.** A hard round cap guarantees termination instead of
+unbounded convergence. *Reverse if* the cap routinely discards unresolved real
+issues rather than surfacing them to the user.
 
-The orchestrator selects the mode during planning. The user can override.
+**The user is the sole tie-breaker.** The orchestrator presents expert
+disagreements and waits; it never adjudicates them autonomously, keeping a
+human as final authority on contested changes. *Reverse only* as a deliberate
+authority change — if orchestration is ever trusted to resolve domain conflicts
+without a human — never as a tuning tweak.
 
-##### Flow
+**Carry forward ADR-0019's delegation structure; replace only its control
+flow.** Domain-expert delegation, per-domain boundaries and foundation docs,
+orchestrator-owned cross-domain files (CHANGELOG, BACKLOG, README), and bug-fix
+TDD ordering (Testing Expert first) are unchanged. *Reverse per those
+mechanisms' own records* (ADR-0019 and its amendments) if the delegation
+structure itself is revisited.
 
-```
-1. PLAN         — orchestrator drafts architecture plan
-2. REFINE       — experts review plan (1 round, parallel)
-                  → orchestrator integrates feedback
-                  → unresolved points → user decides
-3. EXECUTE      — experts implement (parallel or sequential per plan)
-4. CONSOLIDATE  — orchestrator collects results:
-                  ✓ done  |  ✗ blocked (with reason)  |  ⚠ needs input
-                  → blocked: clarify with expert, re-execute
-                  → needs input: escalate to user
-5. REVIEW       — all experts review all output (parallel)
-                  → clean: proceed to finish
-                  → issues: experts fix → re-review (max 2 rounds total)
-                  → still open after 2: user decides
-6. FINISH       — CHANGELOG, BACKLOG, validate, commit, summary
-```
-
-**Simple mode** skips steps 2 (Refine) and 4 (Consolidate); review is
-single-pass with no loop.
-
-##### Expert responses
-
-Structured when reporting issues (status + blockers + artifacts).
-Free-form when clean ("done, no issues"). No over-engineered format.
-
-##### Tie-breaking
-
-The user breaks all ties. The orchestrator never overrides expert
-disagreements autonomously — it presents the conflict and asks.
-
-##### What stays from ADR-0019
-
-- 4 domain experts (Store & Backend, Extension, Testing, Documentation)
-- Domain boundaries and foundation docs
-- Cross-domain files owned by orchestrator (CHANGELOG, BACKLOG, README)
-- Bug-fix TDD mode (Testing Expert goes first)
-- Ripple-check audit in finalization
+The concrete step sequence, per-mode flow, consolidation status legend, exact
+round cap, expert-response format, and the current expert roster are
+operational contract, not decision rationale. They live in the `/orchestrate`
+skill (`.claude/skills/orchestrate/SKILL.md`) and the persona files
+(`.claude/agents/`), which are edited when the process is tuned.
 
 > supersedes ADR-0019.
 
@@ -1224,70 +1040,32 @@ agnostic.
 
 ### [ADR-0026](0026-strict-gate-on-kwarg.md): Strict-Gate Pattern for Optional Capability Kwargs
 
-When a caller passes an optional kwarg that requires a specific capability,
-and the backend does not declare that capability, raise
-`CapabilityNotSupported` **before any I/O**. Never silently drop the kwarg.
+An optional kwarg that requests a specific backend capability MUST raise
+`CapabilityNotSupported` **before any I/O** when the backend does not declare
+that capability. Never silently drop the kwarg: a silent drop turns a caller's
+durability assumption — correlation IDs and idempotency tokens carried in
+`metadata=` — into an untraceable correctness failure discovered later, in a
+different service, with the explaining context already gone. *Reverse if* a
+future consumer class treats such a kwarg as purely advisory with no downstream
+correctness dependence; then silent degradation, not a raise, becomes the
+defensible default.
 
-##### Naming the pattern: strict gate on kwarg
+**Strict gate on kwarg (the pattern).** A capability is a *strict gate on
+kwarg* when it:
 
-A *strict gate on kwarg* is a capability that:
+1. does not gate the method — the method works without the kwarg;
+2. gates one optional argument — supplying it requires the capability;
+3. is enforced once, at the Store layer (not per backend), raising
+   `CapabilityNotSupported` before any I/O when the capability is absent and
+   the argument is supplied.
 
-1. Does not gate the method — the method works without it.
-2. Does gate a specific optional argument — passing that argument requires
-   the capability.
-3. Raises `CapabilityNotSupported` before any I/O if the backend lacks the
-   capability and the argument is supplied.
-
-The validation happens in the Store layer (one place), not in each backend.
-
-##### Precedent (method-level raise-before-I/O gate)
-
-| Capability       | Gate target   | Method(s)         | Spec ref |
-| ---------------- | ------------- | ----------------- | -------- |
-| `ATOMIC_WRITE`   | whole method  | `write_atomic()`  | AW-002   |
-
-`ATOMIC_WRITE` is not a strict-gate-on-kwarg instance — it gates the
-entire method, not an optional kwarg. It appears here because it
-established the raise-before-I/O principle that the strict-gate-on-kwarg
-pattern inherits. Future contributors should not use this row as a
-pattern template.
-
-##### Strict-gate-on-kwarg instances
-
-| Capability       | Gate target        | Method(s)             | Spec ref |
-| ---------------- | ------------------ | --------------------- | -------- |
-| `USER_METADATA`  | `metadata=` kwarg  | `write*()` variants   | WR-010   |
-
-`USER_METADATA` is the first true strict-gate-on-kwarg instance. New
-instances of this pattern go in this table.
-
-##### How to apply the pattern for future capabilities
-
-When designing a new optional kwarg on an existing Store method:
-
-1. Define a new `Capability` enum member for the feature.
-2. Add Store-layer validation: if the kwarg is non-`None` / non-default and
-   the backend lacks the capability, raise `CapabilityNotSupported`.
-3. Add the capability to `CAP-007` (spec 003) under the strict-gate section.
-4. Document per-backend declarations in the feature spec (e.g., WR-010).
-5. Add negative tests: every non-declaring backend raises on the guarded kwarg.
-
-##### Adapter masking as a defensive application of the strict-gate pattern
-
-`AsyncBackendSyncAdapter` applies the pattern defensively via capability masking.
-It strips `USER_METADATA` (and `WRITE_RESULT_NATIVE`) from the inner async
-backend's capability set, even when the wrapped backend declares them.  Without
-masking, the Store-layer WR-010 gate would pass a non-empty `metadata=` argument
-through to the adapter, but the adapter has no forwarding target — the async ABC
-does not yet accept `metadata=`.  A silent drop would violate WR-012 (the
-`WriteResult.metadata` echo guarantee) without triggering any error.
-
-Masking is the mechanism that keeps the strict-gate invariant intact across
-adapter wrapping: the gate fires at the Store layer (`CapabilityNotSupported`)
-before the adapter is reached, so no I/O runs and no metadata is silently lost.
-This is not an exception to the pattern; it is the same pattern applied one layer
-earlier.  When the async ABC grows `metadata=` support (Step 3c), the masking is
-removed and the adapter naturally inherits the inner backend's declarations.
+`USER_METADATA` gating `metadata=` on `write*()` is the first instance. The
+live registry of strict-gate capabilities is CAP-007 (spec 003); each
+instance's per-backend contract lives in its feature spec (e.g. WR-010). A new
+instance is added by declaring a capability, gating its kwarg at the Store
+layer, and registering it in CAP-007 — no new enforcement site. *Reverse if* a
+gated argument becomes universally supported across backends; then the gate for
+that capability is removed rather than relocated.
 
 ### [ADR-0027](0027-docs-bridge-single-mechanism.md): Single Bridge with Enforcement, Not Layered Mechanisms
 
