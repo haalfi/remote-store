@@ -41,8 +41,10 @@ Patterns from Docker benchmarks (MinIO, Azurite, OpenSSH):
   data path); writes are comparable. The trade-off is native PyArrow integration
   — Tier 1 C++ range requests — not raw throughput.
 - **Azure** and **SFTP**: per-operation overhead is near zero — a millisecond or
-  two either way on a clean link — and it stays near zero under latency, because
-  neither backend adds extra protocol round trips per operation.
+  two either way on a clean link — except Azure listing, which the chart shows
+  running faster than the raw SDK (the same listing win S3 shows). It stays near
+  zero under latency too, because neither backend adds extra protocol round trips
+  per operation.
 - **Local**: all operations are sub-millisecond; overhead versus raw pathlib is
   a sub-millisecond cost per call. Whether that registers depends on your
   call volume and how much of your latency budget is local I/O.
@@ -69,6 +71,11 @@ milliseconds and as a share of the total, so the raw op time and the
 latency-scaled overhead are both visible:
 
 ![Stacked bars decomposing mean time per operation into raw SDK time and remote-store overhead per RTT profile, for S3, SFTP, and Azure](../img/benchmarks/overhead-decomposition.svg)
+
+One caveat for the SFTP panel: its raw bar is a plain mean across operations, so it
+is dominated by the 1MB write — an unrepresentative emulator artifact (see
+[SFTP write throughput](#caveats) below). Read the near-zero overhead segment, not
+the raw total's growth, as this chart's point.
 
 The overhead's *share* of the total moves independently of its absolute size: for
 S3 it grows into a visible slice of the average operation under latency, while for

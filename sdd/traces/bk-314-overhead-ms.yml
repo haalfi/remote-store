@@ -22,7 +22,13 @@ surprising_ripples:
   - benchmarks/slim_run_of_record.py  # guard docstring/messages named only overhead-vs-rtt; the decomposition shares the guarded data path
   - tests/scripts/test_slim_run_of_record.py  # same guard narration echoed in test comments
   - DEVELOPMENT_STORY.md  # :609 still asserted the refuted "fixed cost becomes irrelevant at real-world latencies" as a benchmark finding
-review_rounds: 1
+# review_rounds counts three submissions: round 1 (pre-hold) caught the stale
+# mirrors above; rounds 2-3 (post-BK-313 resume) caught prose over-generalizing
+# against its own chart (Azure listing carve-out), the decomposition's
+# unweighted-ms mean reading as SFTP raw growth (emulator caveat added at the
+# embed, not re-weighted — absolute ms is the deliberate BK-314 framing), and the
+# Unreleased CHANGELOG entries needing id+title stubs. No new backlog items.
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
