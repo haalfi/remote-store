@@ -24,7 +24,7 @@ surprising_ripples:
   # the ripple-check; the live file is new and the benchmark exercised the
   # changed write/write_atomic/open_atomic/delete methods against the container.
   - tests/e2e/test_sftp_correctness_edges.py
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -128,3 +128,13 @@ phases:
           to `except BaseException` for symmetry. Softened the "fold three policies
           into one" claim: unified on overwrite=False (plus open_atomic's eager
           overwrite=True stat), not universally. Dropped rot-prone `:NNN` line cites.
+      - file: src/remote_store/backends/_sftp.py
+        section: "_classify_existing_target docstring (round 2)"
+        read_type: verify
+        extract: >-
+          Second review round: the fold is eager-existence-check-path only —
+          _raise_if_dir (lazy failure-path) and the move/copy is-dir guards keep the
+          opposite `st_mode is not None` stance by design (raising InvalidPath on a
+          failure path could mask a real NotFound). Documented the accepted
+          consequence: a mode-less existing regular file under overwrite=False
+          surfaces InvalidPath, not AlreadyExists. Docs-only; no behaviour change.

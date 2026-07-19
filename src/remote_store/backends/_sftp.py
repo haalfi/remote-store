@@ -1764,11 +1764,21 @@ class SFTPBackend(Backend):
         not-a-plain-file: the entry exists but its type is unknown, so failing loud
         with ``InvalidPath`` beats silently reporting ``AlreadyExists`` (which
         asserts it *is* a file) or risking an overwrite of a directory. This matches
-        ``_ensure_parent_dirs``'s existing stance on a mode-less ancestor. It unifies
-        the mode-less policy on the paths that stat the target — the
-        ``overwrite=False`` existence check for all three, plus ``open_atomic``'s
-        eager ``overwrite=True`` stat; ``write`` / ``write_atomic`` on
-        ``overwrite=True`` skip the stat entirely and so never reach this classifier.
+        ``_ensure_parent_dirs``'s existing stance on a mode-less ancestor.
+
+        Scope of the fold: this unifies the mode-less policy on the **eager
+        existence-check** path only — the ``overwrite=False`` check for all three
+        writers, plus ``open_atomic``'s eager ``overwrite=True`` stat. The *lazy*
+        failure-path classifier ``_raise_if_dir`` (used on the ``overwrite=True``
+        ``write`` / ``write_atomic`` path and on ``read`` / ``read_bytes`` /
+        ``delete``) and the ``move`` / ``copy`` is-dir guards deliberately keep the
+        opposite ``st_mode is not None`` stance: on a *failure* path the entry's
+        existence is not established, so raising ``InvalidPath`` for a mode-less
+        result could mask a real ``NotFound`` or other error — whereas here the
+        entry provably exists. One accepted consequence: on a mode-less server an
+        existing **regular file** under ``overwrite=False`` surfaces ``InvalidPath``
+        rather than ``AlreadyExists``, because the server cannot distinguish a file
+        from a directory and a silent directory overwrite is the worse failure.
         """
         if st is not None and (st.st_mode is None or stat.S_ISDIR(st.st_mode)):
             raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)

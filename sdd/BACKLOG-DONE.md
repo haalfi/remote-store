@@ -22,9 +22,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (permission only) so the errno-less file-ancestor path is preserved. **L2** the
   mode-less-target policy folds into one `_classify_existing_target` helper treating
   a mode-less target defensively as `InvalidPath` (matching `_ensure_parent_dirs`),
-  unified on the `overwrite=False` existence-check path for all three writers plus
-  `open_atomic`'s eager `overwrite=True` stat (`write`/`write_atomic` skip the stat
-  on `overwrite=True`, so they do not classify there). **L3** `delete` gains
+  unified on the eager existence-check path — the `overwrite=False` check for all
+  three writers plus `open_atomic`'s eager `overwrite=True` stat. The lazy
+  failure-path classifier `_raise_if_dir` and the move/copy is-dir guards keep the
+  opposite `st_mode is not None` stance by design (raising `InvalidPath` on a
+  failure path could mask a real `NotFound`); one accepted consequence is that a
+  mode-less existing regular file under `overwrite=False` surfaces `InvalidPath`
+  rather than `AlreadyExists`. **L3** `delete` gains
   `read`/`read_bytes`' `code is None and _has_file_ancestor -> NotFound` recheck,
   honouring `missing_ok` like the ENOENT arm. **L4/L5** `write_atomic` and
   `open_atomic` both clean up the temp file on failure — including a
