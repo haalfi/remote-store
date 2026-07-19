@@ -31,6 +31,35 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (unplotted at 10MB, out of scope). No CHANGELOG entry (infra.test). Surfaced
   during ID-230.
 
+- [x] **BK-314 — Benchmark overhead: present in ms, not %, and fix the "shrinks as a share" narrative**
+  spec: — · effort: M · audience: user.site
+  Follow-up to the ID-230 chart review (PR #906). The two overhead charts plotted
+  overhead as a **percentage** of raw-SDK time (`chart_overhead` → `overhead.svg`,
+  `chart_overhead_vs_rtt` → `overhead-vs-rtt.svg`), and the performance guide built
+  a **false premise** on the % framing — narrating the overhead as a fixed per-op
+  cost that "shrinks as a share of total time" as RTT grows, with the example "a
+  1 ms overhead on a 100 ms round trip is 1%". That is wrong: remote-store's
+  overhead is itself **round-trip driven** (extra protocol round trips — see
+  BK-313), so the absolute ms cost **grows** with RTT. On the run of record an S3
+  write or delete carries about one extra round trip (~+90 to +110 ms at 100 ms
+  RTT), while backends that add no extra round trips per operation stay near zero.
+  **Fixes:** both overhead charts recast to **absolute ms** overhead (remote-store
+  minus raw), dropping the % y-axis; a new **decomposition chart**
+  (`overhead-decomposition.svg`) stacks raw-SDK time + remote-store overhead per
+  RTT profile, labelling the overhead in ms and as share-of-total so the raw op
+  time and the latency-scaled overhead are both visible; and the prose in
+  `docs-src/explanation/performance.md` (lede, Overhead at a Glance, What Happens
+  Under Real Latency, Practical Takeaways) + `README.md` + `DEVELOPMENT_STORY.md`
+  replaced with the accurate round-trip-count mechanism (ms scales with RTT; share
+  of total can rise or fall, absolute cost grows). The SVGs were regenerated from
+  the committed run of record and the `benchmark.yml` / `benchmarks/README.md` /
+  `CI-OPERATIONS.md` "four charts" references bumped to five. Kept the ID-230
+  framing: **present** the overhead in ms, do not judge acceptability. No
+  spec/FEATURES ripple. Finalized after BK-313 landed and the run of record was
+  regenerated (PR #924): SFTP's per-op overhead collapsed to near zero, so the
+  worked example re-anchored from SFTP to S3, the backend now carrying the largest
+  round-trip-driven overhead.
+
 - [x] **BK-316 — SFTP low-severity correctness edges (audit-020 L1–L6)**
   spec: SFTP-010, SFTP-014, SFTP-020, SFTP-021, SFTP-023, BE-008 · effort: M · audience: user.api
   Closed the audit-020 group-G4 tail deferred out of PR #910. Every edge manifests

@@ -3,10 +3,11 @@ title: "Benchmark overhead: present in ms, not %, and fix the 'shrinks as a shar
 trigger: >-
   The two overhead charts plotted overhead as a percentage of raw-SDK time, and
   the performance guide built a false premise on the % framing ("a 1 ms overhead
-  on a 100 ms round trip is 1%"). The ID-230 run of record shows remote-store's
-  overhead is itself round-trip driven (BK-313), so the absolute ms cost grows
-  with RTT (SFTP write ~6xRTT, ~+560 ms at 100 ms) rather than staying a fixed
-  1 ms — the % axis let the misreading stand.
+  on a 100 ms round trip is 1%"). The run of record shows remote-store's overhead
+  is itself round-trip driven (BK-313), so the absolute ms cost grows with RTT
+  (an S3 write/delete adds ~1xRTT, ~+90-110 ms at 100 ms; SFTP collapsed to ~0
+  after BK-313 removed its extra stats) rather than staying a fixed 1 ms — the %
+  axis let the misreading stand.
 source_items:
   - BK-314
   - ID-230
@@ -41,7 +42,7 @@ phases:
       - file: benchmarks/results/run-of-record/rtt100.json
         section: "(data)"
         read_type: reference
-        extract: "Verified the mechanism on the run of record: SFTP write overhead +561 ms at 100 ms RTT (~6xRTT), S3 write ~+109 ms, Azure ~0 — overhead is a round-trip count"
+        extract: "Verified the mechanism on the post-BK-313 run of record: S3 write ~+93 ms / delete ~+107 ms at 100 ms RTT (~1xRTT), SFTP ~0 (BK-313 removed the extra stats), Azure ~0 — overhead is a round-trip count"
   - id: implement
     name: Implement
     steps:
