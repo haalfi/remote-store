@@ -24,7 +24,7 @@ surprising_ripples:
   # the ripple-check; the live file is new and the benchmark exercised the
   # changed write/write_atomic/open_atomic/delete methods against the container.
   - tests/e2e/test_sftp_correctness_edges.py
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -98,3 +98,33 @@ phases:
         section: "Ripple-check table / Bug fix"
         read_type: verify
         extract: "BACKLOG→DONE move, CHANGELOG stub, failing-test-before-fix, docstrings, trace — all same PR"
+  - id: review
+    name: Review (PR #922, round 1)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "delete (L3 arm)"
+        read_type: verify
+        extract: >-
+          Review caught a real defect: the new L3 file-ancestor arm raised NotFound
+          unconditionally, ignoring missing_ok — the ENOENT arm honours it, so the
+          same delete(..., missing_ok=True) raised on an errno-less server but
+          returned silently on OpenSSH. Gated the raise on `not missing_ok` + return.
+        outcome: misleading
+      - file: tests/backends/sftp/test_config.py
+        section: "L1 guard test; L3 test; L2 test"
+        read_type: verify
+        extract: >-
+          The L1 errno-less-swallow guard was vacuous (master, narrow fix, and the
+          over-widened regression all land on generic RemoteStoreError) — rewritten
+          to a real-file-ancestor + errno-less-classification-stat case asserting
+          NotFound, which only the narrow fix passes. Added missing_ok=True to the L3
+          test and an open_atomic overwrite=True case to the L2 set (both untested gaps).
+      - file: src/remote_store/backends/_sftp.py
+        section: "write_atomic except; _classify_existing_target docstring"
+        read_type: verify
+        extract: >-
+          L4/L5 asymmetry: write_atomic caught only `except Exception`, so a
+          KeyboardInterrupt orphaned the temp that L5 fixes for open_atomic — widened
+          to `except BaseException` for symmetry. Softened the "fold three policies
+          into one" claim: unified on overwrite=False (plus open_atomic's eager
+          overwrite=True stat), not universally. Dropped rot-prone `:NNN` line cites.

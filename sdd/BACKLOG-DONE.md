@@ -9,7 +9,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ## Unreleased
 
 - [x] **BK-316 — SFTP low-severity correctness edges (audit-020 L1–L6)**
-  spec: SFTP-014, SFTP-020, SFTP-021, BE-008 · effort: M · audience: user.api
+  spec: SFTP-010, SFTP-014, SFTP-020, SFTP-021, SFTP-023, BE-008 · effort: M · audience: user.api
   Closed the audit-020 group-G4 tail deferred out of PR #910. Every edge manifests
   only on non-OpenSSH servers whose error shapes differ (errno-less
   `SSH_FX_FAILURE`, mode-less stats, `EACCES` on a classification stat), so each is
@@ -20,15 +20,18 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   permission (`EACCES`/`EPERM`) classification-stat failure so it maps to
   `PermissionDenied` rather than a generic `RemoteStoreError`, kept narrow
   (permission only) so the errno-less file-ancestor path is preserved. **L2** the
-  three divergent mode-less-target policies fold into one `_classify_existing_target`
-  helper treating a mode-less target defensively as `InvalidPath` (matching
-  `_ensure_parent_dirs`). **L3** `delete` gains `read`/`read_bytes`' `code is None
-  and _has_file_ancestor -> NotFound` recheck. **L4** `write_atomic`'s temp cleanup
-  no longer reconnects on a dead channel (mirrors `open_atomic`'s guard): the orphan
-  temp is unavoidable there, but the original error propagates without a
-  multi-second reconnect stall. **L5** `open_atomic` removes its temp file on a
-  `GeneratorExit`/`KeyboardInterrupt` abort (previously `except Exception` only)
-  under the same no-reconnect guard — litter, not corruption. **L6** closed
+  mode-less-target policy folds into one `_classify_existing_target` helper treating
+  a mode-less target defensively as `InvalidPath` (matching `_ensure_parent_dirs`),
+  unified on the `overwrite=False` existence-check path for all three writers plus
+  `open_atomic`'s eager `overwrite=True` stat (`write`/`write_atomic` skip the stat
+  on `overwrite=True`, so they do not classify there). **L3** `delete` gains
+  `read`/`read_bytes`' `code is None and _has_file_ancestor -> NotFound` recheck,
+  honouring `missing_ok` like the ENOENT arm. **L4/L5** `write_atomic` and
+  `open_atomic` both clean up the temp file on failure — including a
+  `KeyboardInterrupt`/`GeneratorExit` interrupt — under a no-reconnect guard: the
+  orphan temp is unavoidable on a genuinely dead channel, but the original error
+  propagates without a multi-second reconnect stall, and an interrupted write leaves
+  no litter (the atomic contract already held). **L6** closed
   working-as-intended: `_has_file_ancestor` returning `False` on an opaque ancestor
   stat error is the deliberate ID-209 conservative choice (reasoning recorded, no
   code change). SFTP-014 gained a best-effort/no-reconnect cleanup note; the SFTP
