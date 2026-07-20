@@ -37,10 +37,11 @@ above never sees:
 
 * context7 manifest caps (BK-317): the root ``context7.json`` and the
   docs-site ``docs-src/context7.json`` must stay within Context7's per-field
-  maxima (``folders`` <= 5, ``excludeFolders`` <= 50, ``excludeFiles`` <= 100,
-  ``rules`` <= 50 of <= 255 chars each). Context7 silently rejects a manifest
-  that exceeds one on save / re-parse, so the entry stops tracking its source;
-  this fails that offline instead.
+  maxima for the ``folders`` / ``excludeFolders`` / ``excludeFiles`` / ``rules``
+  lists (and per-rule length) — the values live in ``_CONTEXT7_LIST_CAPS`` /
+  ``_CONTEXT7_RULE_MAX_CHARS``. Context7 silently rejects a manifest that
+  exceeds one on save / re-parse, so the entry stops tracking its source; this
+  fails that offline instead.
 
 Exit 0 = clean.  Exit 1 = broken links found.
 """
@@ -708,11 +709,13 @@ def check_context7_paths(repo_root: Path) -> list[BrokenLink]:
     return broken
 
 
-# Context7 project-settings field caps, observed in the context7.com dashboard.
-# A manifest that exceeds one is silently rejected by Context7 on save /
-# re-parse, so the indexed entry stops tracking its source — "Folders to Include"
-# growing to 7 (> 5) is exactly what blocked a re-parse and stranded an outdated
-# tagline (BK-317). Rules additionally cap at 255 chars each (BK-311 hit this).
+# Context7 project-settings field caps, observed in the context7.com dashboard —
+# and their single authoritative home. Describe them qualitatively elsewhere and
+# point here rather than restating the numbers (principle 8). A manifest that
+# exceeds a cap is silently rejected by Context7 on save / re-parse, so the
+# indexed entry stops tracking its source: "Folders to Include" growing past its
+# cap is exactly what blocked a re-parse and stranded an outdated tagline
+# (BK-317). Rules additionally cap on per-rule length (BK-311 hit this).
 _CONTEXT7_LIST_CAPS = {
     "folders": 5,
     "excludeFolders": 50,
@@ -732,15 +735,15 @@ _CONTEXT7_CAP_MANIFESTS = ("context7.json", "docs-src/context7.json")
 def check_context7_limits(repo_root: Path) -> list[BrokenLink]:
     """BK-317: every ``context7.json`` stays within Context7's dashboard caps.
 
-    Context7 enforces per-field maxima ("Folders to Include" <= 5, "Folders to
-    Exclude" <= 50, "Files to Exclude" <= 100, "Custom Rules" <= 50 of <= 255
-    chars each). Exceeding one makes Context7's save / re-parse fail silently, so
-    the indexed entry stops tracking its source — the failure mode this gate
-    turns into an offline lint error. Runs over both the repo-root manifest and
-    the docs-site ``docs-src/context7.json`` (the docs-root website entry, whose
-    ``rules`` list is equally subject to the caps). Complements
-    ``check_context7_paths`` (which checks the root manifest's path-list entries
-    resolve, not that the lists fit).
+    Context7 enforces per-field maxima on the include/exclude lists and the
+    custom-rules list (count and per-rule length); the values live in
+    ``_CONTEXT7_LIST_CAPS`` and ``_CONTEXT7_RULE_MAX_CHARS``. Exceeding one makes
+    Context7's save / re-parse fail silently, so the indexed entry stops tracking
+    its source — the failure mode this gate turns into an offline lint error.
+    Runs over both the repo-root manifest and the docs-site
+    ``docs-src/context7.json`` (the docs-root website entry, whose ``rules`` list
+    is equally subject to the caps). Complements ``check_context7_paths`` (which
+    checks the root manifest's path-list entries resolve, not that the lists fit).
     """
     broken: list[BrokenLink] = []
     for rel in _CONTEXT7_CAP_MANIFESTS:

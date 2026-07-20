@@ -16,7 +16,7 @@ co_shipped_items:
   - BK-318
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -91,10 +91,21 @@ phases:
         section: "check_context7_limits + module docstring"
         read_type: gate
         extract: >
-          PR #929 review caught two gaps. The caps gate guarded only the root
-          manifest, but this PR promotes docs-src/context7.json to an
+          PR #929 review round 1 caught two gaps. The caps gate guarded only the
+          root manifest, but this PR promotes docs-src/context7.json to an
           authoritative Context7 source whose rules list is subject to the same
           silent cap failure — so the check now loops over both manifests. And
           the module docstring enumerated 4 of the 5 wired gates; it now names
           the BK-317 caps gate alongside the BK-307 path gate.
+        outcome: ok
+      - file: scripts/docs/check_links.py
+        section: "_CONTEXT7_LIST_CAPS + docstrings + tests"
+        read_type: gate
+        extract: >
+          Round 2 (principle 8 + coverage): the cap literals were restated in the
+          adjacent comment and both docstrings, so the numbers now live only in
+          _CONTEXT7_LIST_CAPS / _CONTEXT7_RULE_MAX_CHARS and the prose points at
+          them. Added over-cap tests for excludeFolders (50) and excludeFiles
+          (100), whose literals were previously asserted by nothing (the live
+          control passes by being under the caps, not by pinning the values).
         outcome: ok

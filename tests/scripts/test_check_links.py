@@ -646,6 +646,22 @@ def test_check_context7_limits_flags_folders_over_cap(check_links_mod, tmp_path)
     assert "exceeds Context7 max of 5" in broken[0].resolved
 
 
+def test_check_context7_limits_flags_too_many_exclude_folders(check_links_mod, tmp_path):
+    # Pins the excludeFolders cap literal (50): a typo'd cap would change the
+    # "max of 50" message and fail here, where the live control (under all caps)
+    # never would.
+    _write_context7(tmp_path, excludeFolders=[f"d{i}/" for i in range(51)])
+    broken = check_links_mod.check_context7_limits(tmp_path)
+    assert any("excludeFolders" in b.raw and "max of 50" in b.resolved for b in broken)
+
+
+def test_check_context7_limits_flags_too_many_exclude_files(check_links_mod, tmp_path):
+    # Pins the excludeFiles cap literal (100), same rationale as above.
+    _write_context7(tmp_path, excludeFiles=[f"f{i}.txt" for i in range(101)])
+    broken = check_links_mod.check_context7_limits(tmp_path)
+    assert any("excludeFiles" in b.raw and "max of 100" in b.resolved for b in broken)
+
+
 def test_check_context7_limits_flags_too_many_rules(check_links_mod, tmp_path):
     _write_context7(tmp_path, rules=[f"rule {i}" for i in range(51)])
     broken = check_links_mod.check_context7_limits(tmp_path)
