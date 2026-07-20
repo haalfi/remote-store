@@ -1,0 +1,111 @@
+id: BK-317
+title: "Fix the stale Context7 repo entry and claim the docs-root entry"
+trigger: >
+  The Context7 dashboard for the repo entry still showed the pre-OneDrive
+  four-backend tagline and refused to save with "Folders to Include: Array
+  exceeds maximum size of 5", while the root context7.json folders list carried
+  7 entries. Separately, the docs-domain-root Context7 website (remotestore_dev)
+  was unclaimable because docs-src/context7.json (served via the RTD
+  /context7.json -> /stable/context7.json redirect) declared url ..._stable, so
+  the root claim failed on a url-field mismatch.
+source_items:
+  - BK-317
+audience:
+  - user.discoverability.llm
+co_shipped_items:
+  - BK-318
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: context7.json
+        section: "folders"
+        read_type: gate
+        extract: >
+          7 include entries against Context7's now-enforced max of 5; the
+          description already carried the OneDrive tagline, so the stale
+          dashboard text was a blocked re-parse, not a content gap.
+        outcome: ok
+      - file: docs-src/context7.json
+        section: "url"
+        read_type: gate
+        extract: >
+          url is ..._stable; the file is served at /stable/context7.json and the
+          root /context7.json redirects to it, so the root entry can only be
+          claimed if this file's url is flipped to remotestore_dev.
+        outcome: ok
+      - file: scripts/docs/check_links.py
+        section: "check_context7_paths + _CONTEXT7_MANIFEST"
+        read_type: reference
+        extract: >
+          BK-307 already validates the root manifest offline (paths resolve);
+          extend the same machinery with a field-cap check rather than a new
+          gate, and wire it into main() (no pyproject change).
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: context7.json
+        section: "folders"
+        read_type: gate
+        extract: "Dropped sdd/adrs/ + sdd/specs/ (contributor-facing, mirrored in docs-src/explanation/); kept the 5 highest-value includes."
+        outcome: ok
+      - file: docs-src/context7.json
+        section: "url"
+        read_type: gate
+        extract: "Flipped url to .../websites/remotestore_dev; description (OneDrive) and rules[7] (stable snapshot) stay accurate since the root resolves to the stable default version."
+        outcome: ok
+      - file: scripts/docs/check_links.py
+        section: "check_context7_limits"
+        read_type: gate
+        extract: "New function: folders <= 5, excludeFolders <= 50, excludeFiles <= 100, rules <= 50 and each <= 255 chars; appended to main()'s broken list."
+        outcome: ok
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_check_links.py
+        section: "BK-317 field-cap cases"
+        read_type: gate
+        extract: "6 folders fails, 5 passes; >50 rules fails; 256-char rule fails, 255 passes; missing manifest no-ops; live positive control asserts the real manifest is within caps. Wrote the cases first and confirmed the AttributeError failure before implementing."
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/traces/_schema.yml
+        section: "audience derived rule"
+        read_type: verify
+        extract: "audience leads with user.discoverability.llm, so a CHANGELOG entry is required (precedent ID-176, BK-311)."
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Backlog item touched + CHANGELOG entry"
+        read_type: verify
+        extract: "Trace shipped in-PR; CHANGELOG one-line stub under [Unreleased]; BACKLOG-DONE + backlogid.json (gen-backlogid) refreshed. The context7.com url is external, out of the offline gate's scope."
+        outcome: ok
+  - id: fix
+    name: Address review
+    steps:
+      - file: scripts/docs/check_links.py
+        section: "check_context7_limits + module docstring"
+        read_type: gate
+        extract: >
+          PR #929 review round 1 caught two gaps. The caps gate guarded only the
+          root manifest, but this PR promotes docs-src/context7.json to an
+          authoritative Context7 source whose rules list is subject to the same
+          silent cap failure — so the check now loops over both manifests. And
+          the module docstring enumerated 4 of the 5 wired gates; it now names
+          the BK-317 caps gate alongside the BK-307 path gate.
+        outcome: ok
+      - file: scripts/docs/check_links.py
+        section: "_CONTEXT7_LIST_CAPS + docstrings + tests"
+        read_type: gate
+        extract: >
+          Round 2 (principle 8 + coverage): the cap literals were restated in the
+          adjacent comment and both docstrings, so the numbers now live only in
+          _CONTEXT7_LIST_CAPS / _CONTEXT7_RULE_MAX_CHARS and the prose points at
+          them. Added over-cap tests for excludeFolders (50) and excludeFiles
+          (100), whose literals were previously asserted by nothing (the live
+          control passes by being under the caps, not by pinning the values).
+        outcome: ok

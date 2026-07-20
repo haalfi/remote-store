@@ -621,3 +621,91 @@ def test_context7_paths_against_live_repo(check_links_mod):
     assert (ROOT / "context7.json").exists()
     broken = check_links_mod.check_context7_paths(ROOT)
     assert broken == [], "\n".join(f"{b.raw} → {b.resolved}" for b in broken)
+
+
+# ---------------------------------------------------------------------------
+# BK-317: root context7.json field caps (Context7 dashboard maxima)
+# ---------------------------------------------------------------------------
+# Context7's project-settings UI enforces per-field maxima. The repo
+# context7.json is Context7's source of truth, so a manifest that exceeds one
+# silently fails Context7's save / re-parse (the entry then goes stale with
+# nothing to catch it — exactly what "Folders to Include" = 7 > 5 did). This
+# gate fails that offline, complementing the BK-307 path check above.
+
+
+def test_check_context7_limits_folders_within_cap(check_links_mod, tmp_path):
+    _write_context7(tmp_path, folders=[f"d{i}/" for i in range(5)])
+    assert check_links_mod.check_context7_limits(tmp_path) == []
+
+
+def test_check_context7_limits_flags_folders_over_cap(check_links_mod, tmp_path):
+    _write_context7(tmp_path, folders=[f"d{i}/" for i in range(6)])
+    broken = check_links_mod.check_context7_limits(tmp_path)
+    assert len(broken) == 1
+    assert "folders" in broken[0].raw
+    assert "exceeds Context7 max of 5" in broken[0].resolved
+
+
+def test_check_context7_limits_flags_too_many_exclude_folders(check_links_mod, tmp_path):
+    # Pins the excludeFolders cap literal (50): a typo'd cap would change the
+    # "max of 50" message and fail here, where the live control (under all caps)
+    # never would.
+    _write_context7(tmp_path, excludeFolders=[f"d{i}/" for i in range(51)])
+    broken = check_links_mod.check_context7_limits(tmp_path)
+    assert any("excludeFolders" in b.raw and "max of 50" in b.resolved for b in broken)
+
+
+def test_check_context7_limits_flags_too_many_exclude_files(check_links_mod, tmp_path):
+    # Pins the excludeFiles cap literal (100), same rationale as above.
+    _write_context7(tmp_path, excludeFiles=[f"f{i}.txt" for i in range(101)])
+    broken = check_links_mod.check_context7_limits(tmp_path)
+    assert any("excludeFiles" in b.raw and "max of 100" in b.resolved for b in broken)
+
+
+def test_check_context7_limits_flags_too_many_rules(check_links_mod, tmp_path):
+    _write_context7(tmp_path, rules=[f"rule {i}" for i in range(51)])
+    broken = check_links_mod.check_context7_limits(tmp_path)
+    assert any("rules" in b.raw and "max of 50" in b.resolved for b in broken)
+
+
+def test_check_context7_limits_flags_overlong_rule(check_links_mod, tmp_path):
+    _write_context7(tmp_path, rules=["x" * 256])
+    broken = check_links_mod.check_context7_limits(tmp_path)
+    assert any("255" in b.resolved for b in broken)
+
+
+def test_check_context7_limits_accepts_boundary_rule(check_links_mod, tmp_path):
+    # 255 chars is the documented maximum, not one past it.
+    _write_context7(tmp_path, rules=["x" * 255], folders=["a/"])
+    assert check_links_mod.check_context7_limits(tmp_path) == []
+
+
+def test_check_context7_limits_checks_docs_manifest(check_links_mod, tmp_path):
+    # docs-src/context7.json is an authoritative Context7 source too (the
+    # docs-root website entry served via the RTD redirect), so its rules caps
+    # are enforced as well — one file over from the root manifest.
+    import json
+
+    (tmp_path / "docs-src").mkdir()
+    (tmp_path / "docs-src" / "context7.json").write_text(json.dumps({"rules": ["x" * 256]}))
+    broken = check_links_mod.check_context7_limits(tmp_path)
+    assert len(broken) == 1
+    assert broken[0].source.name == "context7.json"
+    assert "docs-src" in str(broken[0].source)
+    assert "255" in broken[0].resolved
+
+
+def test_check_context7_limits_missing_manifest_is_noop(check_links_mod, tmp_path):
+    assert check_links_mod.check_context7_limits(tmp_path) == []
+
+
+def test_context7_limits_against_live_repo(check_links_mod):
+    """The real root context7.json stays within Context7's field caps."""
+    import subprocess
+
+    result = subprocess.run(["git", "rev-parse", "--git-dir"], cwd=ROOT, capture_output=True)
+    if result.returncode != 0:
+        pytest.skip("not a git checkout")
+    assert (ROOT / "context7.json").exists()
+    broken = check_links_mod.check_context7_limits(ROOT)
+    assert broken == [], "\n".join(f"{b.raw} → {b.resolved}" for b in broken)

@@ -23,9 +23,9 @@ Three rules, all enforced by ``main`` over every git-tracked ``.md`` file:
   heading-adjacency (M3) of every ``<a id>`` in a target file are checked
   in the same pass.
 
-One further rule extends the same offline machinery to the repo's
-non-Markdown discovery files (BK-307), which the ``.md``-only walk above
-never sees:
+Two further rules extend the same offline machinery to the repo's
+non-Markdown discovery files (BK-307, BK-317), which the ``.md``-only walk
+above never sees:
 
 * context7 manifest paths (BK-307): every entry in the root
   ``context7.json`` ``folders`` / ``excludeFolders`` / ``excludeFiles``
@@ -34,6 +34,14 @@ never sees:
   ``folders`` / ``excludeFolders`` are repo-root-relative paths while
   ``excludeFiles`` matches by *filename only* (basename); the context7.com
   ``url`` is external and out of scope.
+
+* context7 manifest caps (BK-317): the root ``context7.json`` and the
+  docs-site ``docs-src/context7.json`` must stay within Context7's per-field
+  maxima for the ``folders`` / ``excludeFolders`` / ``excludeFiles`` / ``rules``
+  lists (and per-rule length) — the values live in ``_CONTEXT7_LIST_CAPS`` /
+  ``_CONTEXT7_RULE_MAX_CHARS``. Context7 silently rejects a manifest that
+  exceeds one on save / re-parse, so the entry stops tracking its source; this
+  fails that offline instead.
 
 Exit 0 = clean.  Exit 1 = broken links found.
 """
@@ -701,6 +709,78 @@ def check_context7_paths(repo_root: Path) -> list[BrokenLink]:
     return broken
 
 
+# Context7 project-settings field caps, observed in the context7.com dashboard —
+# and their single authoritative home. Describe them qualitatively elsewhere and
+# point here rather than restating the numbers (principle 8). A manifest that
+# exceeds a cap is silently rejected by Context7 on save / re-parse, so the
+# indexed entry stops tracking its source: "Folders to Include" growing past its
+# cap is exactly what blocked a re-parse and stranded an outdated tagline
+# (BK-317). Rules additionally cap on per-rule length (BK-311 hit this).
+_CONTEXT7_LIST_CAPS = {
+    "folders": 5,
+    "excludeFolders": 50,
+    "excludeFiles": 100,
+    "rules": 50,
+}
+_CONTEXT7_RULE_MAX_CHARS = 255
+
+# Both manifests Context7 treats as authoritative sources are subject to the
+# caps: the repo-root manifest (the GitHub-repo entry) and the docs-site
+# manifest (the docs-root website entry, served via the RTD /context7.json
+# redirect). The docs manifest carries only ``rules`` — no folders/exclude*
+# lists — which the shared loop skips automatically.
+_CONTEXT7_CAP_MANIFESTS = ("context7.json", "docs-src/context7.json")
+
+
+def check_context7_limits(repo_root: Path) -> list[BrokenLink]:
+    """BK-317: every ``context7.json`` stays within Context7's dashboard caps.
+
+    Context7 enforces per-field maxima on the include/exclude lists and the
+    custom-rules list (count and per-rule length); the values live in
+    ``_CONTEXT7_LIST_CAPS`` and ``_CONTEXT7_RULE_MAX_CHARS``. Exceeding one makes
+    Context7's save / re-parse fail silently, so the indexed entry stops tracking
+    its source — the failure mode this gate turns into an offline lint error.
+    Runs over both the repo-root manifest and the docs-site
+    ``docs-src/context7.json`` (the docs-root website entry, whose ``rules`` list
+    is equally subject to the caps). Complements ``check_context7_paths`` (which
+    checks the root manifest's path-list entries resolve, not that the lists fit).
+    """
+    broken: list[BrokenLink] = []
+    for rel in _CONTEXT7_CAP_MANIFESTS:
+        manifest = (repo_root / rel).resolve()
+        try:
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+
+        for field, cap in _CONTEXT7_LIST_CAPS.items():
+            value = data.get(field)
+            if isinstance(value, list) and len(value) > cap:
+                broken.append(
+                    BrokenLink(
+                        source=manifest,
+                        line=0,
+                        raw=field,
+                        resolved=f"{len(value)} entries exceeds Context7 max of {cap}",
+                    )
+                )
+
+        rules = data.get("rules", [])
+        if isinstance(rules, list):
+            for i, rule in enumerate(rules):
+                if isinstance(rule, str) and len(rule) > _CONTEXT7_RULE_MAX_CHARS:
+                    broken.append(
+                        BrokenLink(
+                            source=manifest,
+                            line=0,
+                            raw=f"rules[{i}]",
+                            resolved=f"{len(rule)} chars exceeds Context7 max of {_CONTEXT7_RULE_MAX_CHARS}",
+                        )
+                    )
+
+    return broken
+
+
 def _format_broken(broken: list[BrokenLink], repo_root: Path) -> str:
     lines: list[str] = []
     for b in sorted(broken, key=lambda b: (str(b.source), b.line)):
@@ -730,6 +810,7 @@ def main(argv: list[str] | None = None) -> int:
         + check_docs_site_links(repo_root, valid_pages=docs_site_pages)
         + check_repo_link_fragments(repo_root)
         + check_context7_paths(repo_root)
+        + check_context7_limits(repo_root)
     )
 
     if broken:

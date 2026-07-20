@@ -8,7 +8,41 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
-*(none)*
+- [x] **BK-317 — Fix the stale Context7 repo entry and claim the docs-root entry**
+  spec: — · effort: S · audience: user.discoverability.llm
+  Context7 lists remote-store three times: the GitHub repo, the stable docs site,
+  and the docs-domain root. The repo entry was stuck: its `context7.json`
+  `folders` array had 7 entries but Context7 now caps "Folders to Include" at 5,
+  so every re-parse failed validation — which is why the dashboard still showed
+  the pre-OneDrive four-backend tagline even though the file already read
+  "…S3, SFTP, Azure, or OneDrive". Cutting `folders` to 5 (dropped `sdd/adrs/` +
+  `sdd/specs/` — contributor-facing and already mirrored in
+  `docs-src/explanation/`) clears the validation error and lets the tagline sync
+  on the next parse. Added `check_context7_limits` to `scripts/docs/check_links.py`
+  (folders ≤ 5, excludeFolders ≤ 50, excludeFiles ≤ 100, rules ≤ 50 and ≤ 255
+  chars each) so the cap cannot silently regrow, with tests in
+  `tests/scripts/test_check_links.py`. Flipped `docs-src/context7.json` `url` to
+  `…/websites/remotestore_dev` so the retained docs-root entry is claimable; the
+  redundant `…_stable` entry is retired (root and `/stable/` serve the same RTD
+  content). **Post-merge dashboard steps (external):** delete the
+  `remotestore_dev_stable` entry and re-parse the repo entry; the docs-root `url`
+  reaches `/stable/` only on the next release (RTD `/stable/` = highest tag)
+  unless the single RTD `/context7.json` redirect is temporarily repointed at
+  `/latest/`. Co-shipped with BK-318.
+
+- [x] **BK-318 — Document Read the Docs ops in the CI-operations handbook**
+  spec: — · effort: S · audience: infra.ci, contributor.process
+  The RTD build (the canonical `docs.remotestore.dev`, default version `stable`),
+  its tag-activate automation rule, and the single manual `/context7.json` →
+  `/stable/context7.json` redirect lived only in the RTD dashboard and scattered
+  CONTRIBUTING lines. Added a Read the Docs runbook to `sdd/CI-OPERATIONS.md` as
+  an external-automation exception: RTD builds without a contributor present but
+  is not a `.github/workflows/` file, so `scripts/check_ci_inventory.py` does not
+  parse it (documented by convention, not enforcement). Captures the build
+  triggers, the dashboard-held state the maintainer owns, and the in-repo
+  `.readthedocs.yaml` / `gen_llms_api.sh` pieces. No CHANGELOG (infra.ci /
+  contributor.process, introduces no new framework or spec). Co-shipped with
+  BK-317.
 
 ## v0.30.0
 
