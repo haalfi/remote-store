@@ -664,6 +664,21 @@ def test_check_context7_limits_accepts_boundary_rule(check_links_mod, tmp_path):
     assert check_links_mod.check_context7_limits(tmp_path) == []
 
 
+def test_check_context7_limits_checks_docs_manifest(check_links_mod, tmp_path):
+    # docs-src/context7.json is an authoritative Context7 source too (the
+    # docs-root website entry served via the RTD redirect), so its rules caps
+    # are enforced as well — one file over from the root manifest.
+    import json
+
+    (tmp_path / "docs-src").mkdir()
+    (tmp_path / "docs-src" / "context7.json").write_text(json.dumps({"rules": ["x" * 256]}))
+    broken = check_links_mod.check_context7_limits(tmp_path)
+    assert len(broken) == 1
+    assert broken[0].source.name == "context7.json"
+    assert "docs-src" in str(broken[0].source)
+    assert "255" in broken[0].resolved
+
+
 def test_check_context7_limits_missing_manifest_is_noop(check_links_mod, tmp_path):
     assert check_links_mod.check_context7_limits(tmp_path) == []
 

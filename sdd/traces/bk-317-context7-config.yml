@@ -16,7 +16,7 @@ co_shipped_items:
   - BK-318
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -83,4 +83,18 @@ phases:
         section: "Ripple-check / Backlog item touched + CHANGELOG entry"
         read_type: verify
         extract: "Trace shipped in-PR; CHANGELOG one-line stub under [Unreleased]; BACKLOG-DONE + backlogid.json (gen-backlogid) refreshed. The context7.com url is external, out of the offline gate's scope."
+        outcome: ok
+  - id: fix
+    name: Address review
+    steps:
+      - file: scripts/docs/check_links.py
+        section: "check_context7_limits + module docstring"
+        read_type: gate
+        extract: >
+          PR #929 review caught two gaps. The caps gate guarded only the root
+          manifest, but this PR promotes docs-src/context7.json to an
+          authoritative Context7 source whose rules list is subject to the same
+          silent cap failure — so the check now loops over both manifests. And
+          the module docstring enumerated 4 of the 5 wired gates; it now names
+          the BK-317 caps gate alongside the BK-307 path gate.
         outcome: ok
