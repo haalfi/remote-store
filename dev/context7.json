@@ -1,6 +1,6 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
-  "url": "https://context7.com/websites/remotestore_dev_stable",
+  "url": "https://context7.com/websites/remotestore_dev",
   "public_key": "pk_RLXTOPnD0ztmnjMEWuqDN",
   "projectTitle": "remote-store docs",
   "description": "Full documentation for remote-store: tutorials, how-to guides, API reference, and design explanations. Write file storage code once, run it against local files, S3, SFTP, Azure, or OneDrive.",

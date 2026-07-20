@@ -5278,6 +5278,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#read-the-docs-docs-site-build-hosting-external-exception-to-inventory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read the Docs — docs site build &amp; hosting (external, exception to inventory)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#adding-a-guard" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10473,6 +10484,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#read-the-docs-docs-site-build-hosting-external-exception-to-inventory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read the Docs — docs site build &amp; hosting (external, exception to inventory)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#adding-a-guard" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10514,8 +10536,12 @@ For each guard it answers the four questions a maintainer has when one fires:
 what it does, when it runs, where its finding shows up, and how to act. Covers
 every workflow under <code>.github/workflows/</code> that runs without a contributor
 present (scheduled sweeps and review-triggered automation) plus the dependabot
-update streams. The gating push/PR test matrix and coverage lanes are merge
-gates, not maintenance guards, and live in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p>
+update streams. One <strong>external</strong> entry — Read the Docs — is also covered: it
+builds the docs site without a contributor present but lives outside
+<code>.github/workflows/</code>, and its build triggers plus dashboard-held configuration
+have no other home in the repo. The gating push/PR test matrix and coverage
+lanes are merge gates, not maintenance guards, and live in
+<a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p>
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
@@ -10545,7 +10571,9 @@ gates, not maintenance guards, and live in <a href="../../contributing/"><code>C
 <code>pull_request_review</code>, plus the dependabot update streams. Each row below has a
 runbook in this section. <code>scripts/check_ci_inventory.py</code> (wired into
 <code>hatch run lint</code>) parses <code>.github/workflows/*.yml</code> and fails if a family
-workflow is not named here.</p>
+workflow is not named here. Read the Docs is the one <strong>external</strong> row — not a
+<code>.github/workflows/</code> file, so <code>check_ci_inventory.py</code> does not parse it; it is
+documented here by convention, not enforcement.</p>
 <table>
 <thead>
 <tr>
@@ -10585,6 +10613,12 @@ workflow is not named here.</p>
 <td>Mon 04:17 UTC + dispatch</td>
 <td>red run + <code>benchmark-results</code> artifact + job summary</td>
 <td>runbook below (exception)</td>
+</tr>
+<tr>
+<td>Read the Docs (external)</td>
+<td><code>master</code> push + release tag</td>
+<td>RTD build dashboard + the live site</td>
+<td>runbook below (external exception)</td>
 </tr>
 </tbody>
 </table>
@@ -10728,6 +10762,48 @@ documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p
   Azurite/SFTP from their block-prone registries. A failure in the
   <code>start-backends</code> step (image pull/health-check) is infra noise — re-run the
   job — not a benchmark regression.</li>
+</ul>
+<h3 id="read-the-docs-docs-site-build-hosting-external-exception-to-inventory">Read the Docs — docs site build &amp; hosting (external, exception to inventory)<a class="headerlink" href="#read-the-docs-docs-site-build-hosting-external-exception-to-inventory" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>What it does:</strong> Read the Docs builds the MkDocs site (<code>.readthedocs.yaml</code>,
+  which points at <code>mkdocs.yml</code>) and serves it at <strong><code>docs.remotestore.dev</code></strong> — the
+  canonical docs site. (The mike → <code>gh-pages</code> build in <code>docs.yml</code> is a <em>separate</em>
+  GitHub Pages deployment with its own <code>dev</code>/<code>latest</code> aliases; it does not serve
+  this domain.) A <code>post_build</code> job runs <code>scripts/docs/gen_llms_api.sh</code> (ID-226) to
+  emit <code>/llms-api.txt</code> next to the <code>mkdocs-llmstxt</code> <code>llms.txt</code> / <code>llms-full.txt</code>
+  (ID-220).</li>
+<li><strong>When:</strong> every push to <code>master</code> (builds the <code>latest</code> version) and each release
+  tag. Tag builds are activated by the RTD <strong>automation rule</strong> "Activate version
+  on tag creation" (type Tag, empty pattern = all tags); RTD then re-points the
+  built-in <code>stable</code> version at the newest tag. Not a <code>.github/workflows/</code> job.</li>
+<li><strong>Where the finding shows up:</strong> the <strong>RTD build dashboard</strong> (build logs on
+  app.readthedocs.org) and the live site. No GitHub Actions run, no red X, no
+  rolling issue — this is why it is an <strong>exception</strong>, and why
+  <code>scripts/check_ci_inventory.py</code> does not parse it (that gate reads
+  <code>.github/workflows/*.yml</code> only; RTD is inventoried here by convention).</li>
+<li><strong>Out-of-repo state the maintainer owns (RTD dashboard):</strong></li>
+<li><strong>Default version <code>stable</code></strong> with URL scheme <code>/&lt;version&gt;/&lt;filename&gt;</code>, so the
+    canonical deep-link form is <code>docs.remotestore.dev/stable/…</code> and every doc link
+    uses it.</li>
+<li><strong>One redirect</strong> (Admin → Redirects): <code>/context7.json</code> →
+    <code>/stable/context7.json</code>. It lets Context7 fetch the docs-site manifest (built
+    from <code>docs-src/context7.json</code>) at the domain root. Because <code>/stable/</code> is the
+    highest-tag build, a change to that manifest reaches the redirect target only
+    on the next release; repoint the redirect at <code>/latest/context7.json</code> to serve
+    the <code>master</code> build sooner.</li>
+<li>The <strong>automation rule</strong> above and the <strong><code>docs.remotestore.dev</code> custom
+    domain</strong>.</li>
+<li><strong>In-repo pieces kept in sync:</strong> <code>.readthedocs.yaml</code> (Python pinned to
+  <code>.python-version</code>, enforced by <code>scripts/check_readthedocs_python.py</code> in
+  <code>hatch run lint</code>); <code>scripts/docs/gen_llms_api.sh</code> (pins <code>lx</code>, non-fatal by
+  contract — always exits 0, so it never fails a build).</li>
+<li><strong>How to act:</strong> on a failed build, open the RTD build log. A Python-version
+  mismatch is already caught by <code>check_readthedocs_python.py</code>, so a red build is
+  usually a <code>mkdocs build --strict</code> error (reproduce with <code>hatch run docs-build</code>);
+  the non-fatal <code>post_build</code> cannot fail it. After a release, confirm
+  <code>docs.remotestore.dev/stable/</code> shows the new version, per
+  <a href="../../contributing/"><code>CONTRIBUTING.md</code></a> § Release, Phase 5. Editing the docs-site
+  manifest identity or its redirect is a dashboard action, not a repo change.</li>
 </ul>
 <h3 id="adding-a-guard">Adding a guard<a class="headerlink" href="#adding-a-guard" title="Permanent link">&para;</a></h3>
 <p>A new scheduled or review-triggered workflow must, in the same change:</p>
