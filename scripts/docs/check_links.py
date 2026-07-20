@@ -701,6 +701,59 @@ def check_context7_paths(repo_root: Path) -> list[BrokenLink]:
     return broken
 
 
+# Context7 project-settings field caps, observed in the context7.com dashboard.
+# The repo context7.json IS Context7's source of truth, so a manifest that
+# exceeds one of these silently fails Context7's save / re-parse — the entry
+# then goes stale with nothing to catch it. "Folders to Include" growing to 7
+# (> 5) is exactly what blocked a re-parse and stranded an outdated tagline
+# (BK-317). Rules additionally cap at 255 chars each (BK-311 already hit this).
+_CONTEXT7_LIST_CAPS = {
+    "folders": 5,
+    "excludeFolders": 50,
+    "excludeFiles": 100,
+    "rules": 50,
+}
+_CONTEXT7_RULE_MAX_CHARS = 255
+
+
+def check_context7_limits(repo_root: Path) -> list[BrokenLink]:
+    """BK-317: root ``context7.json`` fields stay within Context7's dashboard caps.
+
+    Context7 enforces per-field maxima ("Folders to Include" <= 5, "Folders to
+    Exclude" <= 50, "Files to Exclude" <= 100, "Custom Rules" <= 50 of <= 255
+    chars each). Exceeding one makes Context7's save / re-parse fail silently, so
+    the indexed entry stops tracking the repo — the failure mode this gate turns
+    into an offline lint error. Complements ``check_context7_paths`` (which
+    checks that the path-list entries resolve, not that the lists fit).
+    """
+    manifest = (repo_root / _CONTEXT7_MANIFEST).resolve()
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+
+    broken: list[BrokenLink] = []
+
+    def _flag(field: str, why: str) -> None:
+        broken.append(BrokenLink(source=manifest, line=0, raw=field, resolved=why))
+
+    for field, cap in _CONTEXT7_LIST_CAPS.items():
+        value = data.get(field)
+        if isinstance(value, list) and len(value) > cap:
+            _flag(field, f"{len(value)} entries exceeds Context7 max of {cap}")
+
+    rules = data.get("rules", [])
+    if isinstance(rules, list):
+        for i, rule in enumerate(rules):
+            if isinstance(rule, str) and len(rule) > _CONTEXT7_RULE_MAX_CHARS:
+                _flag(
+                    f"rules[{i}]",
+                    f"{len(rule)} chars exceeds Context7 max of {_CONTEXT7_RULE_MAX_CHARS}",
+                )
+
+    return broken
+
+
 def _format_broken(broken: list[BrokenLink], repo_root: Path) -> str:
     lines: list[str] = []
     for b in sorted(broken, key=lambda b: (str(b.source), b.line)):
@@ -730,6 +783,7 @@ def main(argv: list[str] | None = None) -> int:
         + check_docs_site_links(repo_root, valid_pages=docs_site_pages)
         + check_repo_link_fragments(repo_root)
         + check_context7_paths(repo_root)
+        + check_context7_limits(repo_root)
     )
 
     if broken:

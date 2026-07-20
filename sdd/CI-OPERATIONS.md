@@ -8,8 +8,12 @@ For each guard it answers the four questions a maintainer has when one fires:
 what it does, when it runs, where its finding shows up, and how to act. Covers
 every workflow under `.github/workflows/` that runs without a contributor
 present (scheduled sweeps and review-triggered automation) plus the dependabot
-update streams. The gating push/PR test matrix and coverage lanes are merge
-gates, not maintenance guards, and live in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
+update streams. One **external** entry — Read the Docs — is also covered: it
+builds the docs site without a contributor present but lives outside
+`.github/workflows/`, and its build triggers plus dashboard-held configuration
+have no other home in the repo. The gating push/PR test matrix and coverage
+lanes are merge gates, not maintenance guards, and live in
+[`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## Rules
 
@@ -38,7 +42,9 @@ The scheduled/automated family is every workflow that runs on `schedule` or
 `pull_request_review`, plus the dependabot update streams. Each row below has a
 runbook in this section. `scripts/check_ci_inventory.py` (wired into
 `hatch run lint`) parses `.github/workflows/*.yml` and fails if a family
-workflow is not named here.
+workflow is not named here. Read the Docs is the one **external** row — not a
+`.github/workflows/` file, so `check_ci_inventory.py` does not parse it; it is
+documented here by convention, not enforcement.
 
 | Guard | When | Finding shows up in | How to act |
 |---|---|---|---|
@@ -47,6 +53,7 @@ workflow is not named here.
 | dependabot + `dependabot-auto-merge.yml` | Mon (weekly) | update PR + its CI status | per-ecosystem runbook below |
 | `codeql.yml` | push / PR + Mon 06:00 UTC | Security tab alerts | runbook below (exception) |
 | `benchmark.yml` | Mon 04:17 UTC + dispatch | red run + `benchmark-results` artifact + job summary | runbook below (exception) |
+| Read the Docs (external) | `master` push + release tag | RTD build dashboard + the live site | runbook below (external exception) |
 
 `ci.yml` (push / PR) is the gating test matrix, not a maintenance guard: a
 contributor is present to read its result, so it sits outside this family and is
@@ -189,6 +196,48 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   Azurite/SFTP from their block-prone registries. A failure in the
   `start-backends` step (image pull/health-check) is infra noise — re-run the
   job — not a benchmark regression.
+
+### Read the Docs — docs site build & hosting (external, exception to inventory)
+
+- **What it does:** Read the Docs builds the MkDocs site (`.readthedocs.yaml`,
+  which points at `mkdocs.yml`) and serves it at **`docs.remotestore.dev`** — the
+  canonical docs site. (The mike → `gh-pages` build in `docs.yml` is a *separate*
+  GitHub Pages deployment with its own `dev`/`latest` aliases; it does not serve
+  this domain.) A `post_build` job runs `scripts/docs/gen_llms_api.sh` (ID-226) to
+  emit `/llms-api.txt` next to the `mkdocs-llmstxt` `llms.txt` / `llms-full.txt`
+  (ID-220).
+- **When:** every push to `master` (builds the `latest` version) and each release
+  tag. Tag builds are activated by the RTD **automation rule** "Activate version
+  on tag creation" (type Tag, empty pattern = all tags); RTD then re-points the
+  built-in `stable` version at the newest tag. Not a `.github/workflows/` job.
+- **Where the finding shows up:** the **RTD build dashboard** (build logs on
+  app.readthedocs.org) and the live site. No GitHub Actions run, no red X, no
+  rolling issue — this is why it is an **exception**, and why
+  `scripts/check_ci_inventory.py` does not parse it (that gate reads
+  `.github/workflows/*.yml` only; RTD is inventoried here by convention).
+- **Out-of-repo state the maintainer owns (RTD dashboard):**
+  - **Default version `stable`** with URL scheme `/<version>/<filename>`, so the
+    canonical deep-link form is `docs.remotestore.dev/stable/…` and every doc link
+    uses it.
+  - **One redirect** (Admin → Redirects): `/context7.json` →
+    `/stable/context7.json`. It lets Context7 fetch the docs-site manifest (built
+    from `docs-src/context7.json`) at the domain root. Because `/stable/` is the
+    highest-tag build, a change to that manifest reaches the redirect target only
+    on the next release; repoint the redirect at `/latest/context7.json` to serve
+    the `master` build sooner.
+  - The **automation rule** above and the **`docs.remotestore.dev` custom
+    domain**.
+- **In-repo pieces kept in sync:** `.readthedocs.yaml` (Python pinned to
+  `.python-version`, enforced by `scripts/check_readthedocs_python.py` in
+  `hatch run lint`); `scripts/docs/gen_llms_api.sh` (pins `lx`, non-fatal by
+  contract — always exits 0, so it never fails a build).
+- **How to act:** on a failed build, open the RTD build log. A Python-version
+  mismatch is already caught by `check_readthedocs_python.py`, so a red build is
+  usually a `mkdocs build --strict` error (reproduce with `hatch run docs-build`);
+  the non-fatal `post_build` cannot fail it. After a release, confirm
+  `docs.remotestore.dev/stable/` shows the new version, per
+  [`CONTRIBUTING.md`](../CONTRIBUTING.md) § Release, Phase 5. Editing the docs-site
+  manifest identity or its redirect is a dashboard action, not a repo change.
 
 ### Adding a guard
 

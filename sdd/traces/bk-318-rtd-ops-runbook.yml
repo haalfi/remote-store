@@ -1,0 +1,71 @@
+id: BK-318
+title: "Document Read the Docs ops in the CI-operations handbook"
+trigger: >
+  BK-317's investigation established that docs.remotestore.dev is served by Read
+  the Docs (default version stable), that a single manual RTD redirect maps
+  /context7.json to /stable/context7.json, and that tag builds are activated by
+  an RTD automation rule. None of this out-of-repo operational state was written
+  down anywhere in the repo, so a maintainer had to reverse-engineer it from the
+  dashboard.
+source_items:
+  - BK-318
+audience:
+  - infra.ci
+  - contributor.process
+co_shipped_items:
+  - BK-317
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/CI-OPERATIONS.md
+        section: "Intent & Scope / Rules / Inventory"
+        read_type: gate
+        extract: >
+          The handbook is scoped to .github/workflows/ guards + dependabot and is
+          enforced by check_ci_inventory.py. RTD is not a workflow, so it fits
+          only as an external exception (like codeql/benchmark are Rule-1
+          exceptions), needing an Intent sentence and an inventory note.
+        outcome: ok
+      - file: scripts/check_ci_inventory.py
+        section: "check()"
+        read_type: gate
+        extract: >
+          The gate only checks workflow -> handbook (every family .github/workflows
+          file must be named). It never reverse-checks, so adding an RTD section
+          with no backing workflow needs no script or test change.
+        outcome: ok
+      - file: .readthedocs.yaml
+        section: "(full)"
+        read_type: reference
+        extract: "mkdocs config = mkdocs.yml; python pinned to .python-version (check_readthedocs_python.py); post_build runs gen_llms_api.sh (ID-226)."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/CI-OPERATIONS.md
+        section: "Read the Docs runbook (new)"
+        read_type: gate
+        extract: >
+          Added the runbook (what/when/where/how-to-act) plus an out-of-repo-state
+          block (default version stable, the one /context7.json redirect, the
+          tag-activate automation rule, the custom domain) and an in-repo-pieces
+          block; recorded the check_ci_inventory.py non-parse as the exception
+          rationale. Edited only the sdd source (dual-dest regenerates the docs page).
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/traces/_schema.yml
+        section: "audience derived rule"
+        read_type: verify
+        extract: "audience is infra.ci / contributor.process with no user.* and no new framework/spec, so the CHANGELOG-required rule does not fire."
+        outcome: ok
+      - file: sdd/CI-OPERATIONS.md
+        section: "Inventory at a glance"
+        read_type: verify
+        extract: "check_ci_inventory.py still passes: the five existing family workflows remain named; the new RTD row is inert to the workflow->handbook direction."
+        outcome: ok

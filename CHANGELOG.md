@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-317: Fix stale Context7 repo entry (folders cap, OneDrive tagline) and claim the docs-root entry
+
 ## [0.30.0] - 2026-07-19
 
 ### Changed

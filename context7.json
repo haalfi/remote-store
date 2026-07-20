@@ -9,8 +9,6 @@
     "src/remote_store/",
     "docs-src/",
     "examples/",
-    "sdd/adrs/",
-    "sdd/specs/",
     "README.md",
     "FEATURES.md"
   ],
