@@ -61,7 +61,7 @@ jobs:
       sftp-scopes: ${{ steps.set-scopes.outputs.sftp-scopes }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
       - id: set-scopes
@@ -171,7 +171,7 @@ jobs:
       # a venv that did not have pytest. The mutate-specific dep
       # (``pytest-gremlins``) lives in the ``[mutate]`` extra — the single
       # source of truth for the pin — installed alongside ``[dev]``.
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
       - uses: astral-sh/setup-uv@v8.3.2
@@ -257,7 +257,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
       - name: Download all outcomes
