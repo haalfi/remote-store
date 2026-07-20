@@ -59,7 +59,7 @@ jobs:
           azurite: 'true'
           sftp: 'true'
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           # Single-source the primary interpreter, same as ci.yml's setup job.
           python-version-file: .python-version
@@ -155,7 +155,7 @@ jobs:
       - name: Start backends + Toxiproxy (compose)
         run: docker compose -f infra/docker-compose.yml up -d --wait minio azurite sftp toxiproxy
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
       - uses: astral-sh/setup-uv@v8.3.2
