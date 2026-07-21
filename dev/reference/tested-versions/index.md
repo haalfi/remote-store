@@ -14,7 +14,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[azure]`
 
-*Captured 2026-07-13 on Python 3.13.*
+*Captured 2026-07-21 on Python 3.13.*
 
 | Package                       | Tested up to |
 | ----------------------------- | ------------ |
@@ -23,22 +23,22 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[dagster]`
 
-*Captured 2026-07-16 on Python 3.13.*
+*Captured 2026-07-21 on Python 3.13.*
 
 | Package   | Tested up to |
 | --------- | ------------ |
-| `dagster` | `1.13.13`    |
+| `dagster` | `1.13.14`    |
 
 ## `[graph]`
 
-*Captured 2026-07-13 on Python 3.13.*
+*Captured 2026-07-21 on Python 3.13.*
 
 | Package           | Tested up to |
 | ----------------- | ------------ |
 | `httpx`           | `0.28.1`     |
-| `msal`            | `1.38.0rc1`  |
+| `msal`            | `1.38.0rc2`  |
 | `msal-extensions` | `1.3.1`      |
-| `platformdirs`    | `4.10.0`     |
+| `platformdirs`    | `4.10.1`     |
 
 ## `[httpx]`
 
@@ -50,11 +50,11 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[otel]`
 
-*Captured 2026-07-13 on Python 3.13.*
+*Captured 2026-07-21 on Python 3.13.*
 
 | Package             | Tested up to |
 | ------------------- | ------------ |
-| `opentelemetry-api` | `1.43.0`     |
+| `opentelemetry-api` | `1.44.0`     |
 
 ## `[pydantic]`
 
@@ -75,7 +75,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[s3]`
 
-*Captured 2026-07-13 on Python 3.13.*
+*Captured 2026-07-21 on Python 3.13.*
 
 | Package | Tested up to |
 | ------- | ------------ |
@@ -83,7 +83,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[s3-pyarrow]`
 
-*Captured 2026-07-14 on Python 3.13.*
+*Captured 2026-07-21 on Python 3.13.*
 
 | Package   | Tested up to |
 | --------- | ------------ |
