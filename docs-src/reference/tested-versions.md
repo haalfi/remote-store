@@ -15,7 +15,7 @@ _Captured 2026-07-14 on Python 3.13._
 
 ## `[azure]`
 
-_Captured 2026-07-13 on Python 3.13._
+_Captured 2026-07-21 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -24,22 +24,22 @@ _Captured 2026-07-13 on Python 3.13._
 
 ## `[dagster]`
 
-_Captured 2026-07-16 on Python 3.13._
+_Captured 2026-07-21 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `dagster` | `1.13.13` |
+| `dagster` | `1.13.14` |
 
 ## `[graph]`
 
-_Captured 2026-07-13 on Python 3.13._
+_Captured 2026-07-21 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
 | `httpx` | `0.28.1` |
-| `msal` | `1.38.0rc1` |
+| `msal` | `1.38.0rc2` |
 | `msal-extensions` | `1.3.1` |
-| `platformdirs` | `4.10.0` |
+| `platformdirs` | `4.10.1` |
 
 ## `[httpx]`
 
@@ -51,11 +51,11 @@ _Captured 2026-07-13 on Python 3.13._
 
 ## `[otel]`
 
-_Captured 2026-07-13 on Python 3.13._
+_Captured 2026-07-21 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `opentelemetry-api` | `1.43.0` |
+| `opentelemetry-api` | `1.44.0` |
 
 ## `[pydantic]`
 
@@ -76,7 +76,7 @@ _Captured 2026-07-13 on Python 3.13._
 
 ## `[s3]`
 
-_Captured 2026-07-13 on Python 3.13._
+_Captured 2026-07-21 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -84,7 +84,7 @@ _Captured 2026-07-13 on Python 3.13._
 
 ## `[s3-pyarrow]`
 
-_Captured 2026-07-14 on Python 3.13._
+_Captured 2026-07-21 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
