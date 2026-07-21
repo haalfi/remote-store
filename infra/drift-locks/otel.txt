@@ -1,7 +1,7 @@
 # extra: otel
 # python: 3.13
-# captured: 2026-07-13
+# captured: 2026-07-21
 # Regenerate with: hatch run drift-check refresh-baseline otel
 
-opentelemetry-api==1.43.0
+opentelemetry-api==1.44.0
 typing-extensions==4.16.0
