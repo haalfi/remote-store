@@ -55,8 +55,17 @@ surprising_ripples:
     20-job cap), a re-hardcoded interpreter enumeration in CONTRIBUTING, and the
     durations-refresh command duplicated between ci.yml and the CI-OPERATIONS
     runbook that owns it. All four fixed.
+  - >-
+    Third review round propagated the fail-closed hardening to ci.yml's
+    test-primary (the sole per-PR live carrier — same --stage=2 + RS_REQUIRE_MINIO
+    the moto/coverage overlap does not reliably backstop), added a `concurrency`
+    group to ci.yml itself (superseded PR pushes were stacking against the 20-job
+    cap the redesign optimises), and caught two stale-inventory ripples the change
+    left behind: CONTRIBUTING attributed the Codecov upload to test-primary (moved
+    to coverage-gate) and ci_service_images.sh's cache-consumer list predated the
+    Stage-1 `test` job + the ci-full priming job. All four fixed.
 discovery_followups: []
-review_rounds: 6
+review_rounds: 7
 phases:
   - id: orient
     name: Orient / measure

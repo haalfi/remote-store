@@ -4,8 +4,10 @@
 # Sourced (`. scripts/ci_service_images.sh`), not executed: it only assigns the
 # three backend image refs so that every start site agrees on the exact same
 # pin. Consumers:
-#   - .github/actions/start-backends/action.yml  (test / test-primary / e2e / pyarrow-major-check)
-#   - .github/workflows/ci.yml  (the prepare-images cache-priming job)
+#   - .github/actions/start-backends/action.yml  (test-primary / test-primary-sftp / e2e / pyarrow-major-check; ci-full.yml test-full)
+#   - .github/workflows/ci.yml  (the prepare-images cache-priming job; note the
+#     BK-319 `test` job is Stage 1 / no Docker and is NOT a consumer)
+#   - .github/workflows/ci-full.yml  (its own prepare-images primes the same key)
 #   - .github/workflows/publish.yml  (azurite)
 #   - .github/workflows/mutation.yml  (minio / azurite / sftp)
 #

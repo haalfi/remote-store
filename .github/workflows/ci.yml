@@ -10,6 +10,14 @@ env:
   UV_SYSTEM_PYTHON: 1
   UV_LINK_MODE: copy
 
+# A superseded PR-branch push (force-push or quick follow-up) must not keep
+# occupying slots against the account's 20-job cap (ADR-0032) — the redesign's
+# ~24-job fan-out makes that contention material. Cancel only for pull_request:
+# a cancelled master push would lose coverage-gate's Codecov badge upload.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -241,6 +249,14 @@ jobs:
     needs: [setup, prepare-images]
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
+    # Fail-closed parity with ci-full.yml's test-full: this is the sole per-PR
+    # carrier of the live-backend guarantee. RS_REQUIRE_MINIO=1 exits if MinIO is
+    # unreachable, and the explicit --stage=2 below removes the docker-probe
+    # auto-detect that could otherwise drop a loaded runner to Stage 1 and pass
+    # green having skipped every live test (the 95% floor's moto overlap does not
+    # reliably catch a MinIO-only skip).
+    env:
+      RS_REQUIRE_MINIO: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -268,7 +284,7 @@ jobs:
       # setup-inclusive durations). TestCommittedCassettePIISweep is deselected and
       # run once in test-cassette-pii (with coverage) so it doesn't tail a shard.
       - run: >-
-          pytest --splits 2 --group ${{ matrix.shard }}
+          pytest --stage=2 --splits 2 --group ${{ matrix.shard }}
           --splitting-algorithm least_duration --durations-path .test_durations_pass1
           --deselect tests/backends/fixtures/test_cassettes.py::TestCommittedCassettePIISweep
           -n auto --cov=remote_store --cov-report= -p no:benchmark --ignore=tests/scripts
