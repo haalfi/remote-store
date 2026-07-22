@@ -516,8 +516,13 @@ exclude = ["**/__init__.py", "**/__pycache__/*"]
 # Required for xdist: each worker writes its own `.coverage.<id>` partial that
 # pytest-cov combines at session end. Also needed across the two-pass `test-cov*`
 # split (--cov-append in pass 2 layers onto pass 1's combined data file).
+# relative_files: the CI coverage-gate combines partial `.coverage` files
+# produced on *different* runners (the sharded test-primary + test-primary-sftp
+# jobs); storing source paths relative to the rootdir makes them line up during
+# `coverage combine` regardless of each runner's absolute checkout path.
 [tool.coverage.run]
 parallel = true
+relative_files = true
 
 [tool.ruff]
 line-length = 120

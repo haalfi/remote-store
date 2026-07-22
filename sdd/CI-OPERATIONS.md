@@ -53,6 +53,7 @@ documented here by convention, not enforcement.
 | dependabot + `dependabot-auto-merge.yml` | Mon (weekly) | update PR + its CI status | per-ecosystem runbook below |
 | `codeql.yml` | push / PR + Mon 06:00 UTC | Security tab alerts | runbook below (exception) |
 | `benchmark.yml` | Mon 04:17 UTC + dispatch | red run + `benchmark-results` artifact + job summary | runbook below (exception) |
+| `ci-full.yml` | `master` push + 03:00 UTC daily + dispatch | red run on the Actions tab | runbook below (exception) |
 | Read the Docs (external) | `master` push + release tag | RTD build dashboard + the live site | runbook below (external exception) |
 
 `ci.yml` (push / PR) is the gating test matrix, not a maintenance guard: a
@@ -196,6 +197,30 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   Azurite/SFTP from their block-prone registries. A failure in the
   `start-backends` step (image pull/health-check) is infra noise — re-run the
   job — not a benchmark regression.
+
+### `ci-full.yml` — full live-backend matrix backstop (exception to Rule 1)
+
+- **What it does:** runs the complete two-pass live-Docker-backend suite (pass-1
+  `-n auto` + serial `sftp_docker`) on **every** supported interpreter
+  (3.10–3.14). This is the pre-BK-319 per-interpreter guarantee. `ci.yml` (the
+  per-PR gate) runs this full Stage-2 suite only on the **primary** interpreter;
+  the four non-primary interpreters run the repo-only **Stage 1** tier there to
+  keep PR wall-clock under 5 min on the 20-concurrent-job cap. `ci-full.yml`
+  restores full-matrix coverage off the per-PR critical path.
+- **When:** every push to `master`, plus 03:00 UTC daily, plus
+  `workflow_dispatch`.
+- **Where the finding shows up:** the **red run on the Actions tab**. Like
+  `codeql.yml` / `benchmark.yml` it opens no rolling issue and has no triage
+  skill — this is a sanctioned Rule-1 exception.
+- **Why an exception:** a maintainer merging to `master` (or reading the nightly
+  status) is present to see a red run; the finding surfaces on GitHub-owned
+  channels. A rolling-issue integration is **deferred** until it earns one — if a
+  non-primary-interpreter-only live-backend regression ever actually slips past
+  the per-PR gate, promote it to the drift-guard pattern.
+- **How to act:** on a red run, open it and read the failing interpreter leg — a
+  genuine test failure is fixed like any other. The same BK-279 image-cache
+  false-red as `benchmark.yml` applies: a `start-backends` step failure
+  (image pull / health-check) is infra noise — re-run the job.
 
 ### Read the Docs — docs site build & hosting (external, exception to inventory)
 
