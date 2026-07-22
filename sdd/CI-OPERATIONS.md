@@ -201,14 +201,25 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 ### `ci-full.yml` — full live-backend matrix backstop (exception to Rule 1)
 
 - **What it does:** runs the complete two-pass live-Docker-backend suite (pass-1
-  `-n auto` + serial `sftp_docker`) on **every** supported interpreter
-  (3.10–3.14). This is the pre-BK-319 per-interpreter guarantee. `ci.yml` (the
+  `-n auto` + serial `sftp_docker`) on **every** supported interpreter (see
+  `FEATURES.md`). This is the pre-BK-319 per-interpreter guarantee. `ci.yml` (the
   per-PR gate) runs this full Stage-2 suite only on the **primary** interpreter;
-  the four non-primary interpreters run the repo-only **Stage 1** tier there to
-  keep PR wall-clock under 5 min on the 20-concurrent-job cap. `ci-full.yml`
-  restores full-matrix coverage off the per-PR critical path.
+  the four non-primary interpreters run the repo-only **Stage 1** tier there so
+  the per-PR gate stays under five minutes within the account's concurrency cap.
+  The decision, the cap, the owner-approved tradeoff, and the reversal condition
+  live in [ADR-0032](adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md);
+  `ci-full.yml` restores full-matrix coverage off the per-PR critical path.
 - **When:** every push to `master`, plus 03:00 UTC daily, plus
   `workflow_dispatch`.
+- **Durations-refresh duty:** the per-PR shards balance off the committed
+  `.test_durations_pass1`. It drifts silently as tests change — unknown tests get
+  the average recorded weight, so nothing *fails*; the only symptom is per-PR
+  shard wall-clock creeping back up (toward the ~1.8× skew BK-319 removed).
+  Refresh it when that skew reappears by running
+  `python scripts/gen_split_durations.py .test_durations_pass1 -- -n auto -p no:benchmark --ignore=tests/scripts`
+  against the live-backend stack and committing the result. The refresh is gated
+  (`.test_durations_pass1` is in `ci.yml`'s `CODE_PAT`), so the refresh PR runs
+  the full gate.
 - **Where the finding shows up:** the **red run on the Actions tab**. Like
   `codeql.yml` / `benchmark.yml` it opens no rolling issue and has no triage
   skill — this is a sanctioned Rule-1 exception.

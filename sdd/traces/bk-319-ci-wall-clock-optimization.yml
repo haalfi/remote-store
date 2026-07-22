@@ -31,8 +31,23 @@ surprising_ripples:
     interpreter without a merge queue (org-only, unavailable on this personal
     repo) required a second scheduled/on-master workflow as the backstop rather
     than a trigger-scoped job in ci.yml.
+  - >-
+    Review round caught doc-drift the ripple-check table has no trigger for: the
+    CI-topology change silently staled sdd/specs/048 (TEST-006 CI mapping still
+    said "default-CI job runs Stage 2") and two CONTRIBUTING claims (release
+    checklist "test 3.10-3.14"; ".python-version ... every workflow reads it").
+    Neither is in any ripple-check row, so nothing prompted the updates.
+  - >-
+    Review caught a self-inflicted gate hole: .test_durations_pass1 was in
+    neither CODE_PAT nor DOCS_PAT, so a lone durations-refresh PR (the flow the
+    ci.yml comment instructs) would skip every job and gate green having
+    validated nothing — added it to CODE_PAT.
+  - >-
+    Review caught that scripts/gen_split_durations.py shipped with no
+    tests/scripts/ twin (TESTING.md placement) and pytest-split was two ad-hoc
+    unpinned install lines absent from [dev] — both closed in the review pass.
 discovery_followups: []
-review_rounds: 4
+review_rounds: 5
 phases:
   - id: orient
     name: Orient / measure

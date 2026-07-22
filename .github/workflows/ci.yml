@@ -41,7 +41,11 @@ jobs:
           # Python (below), so a lone bump must re-run the gating jobs that
           # exercise that interpreter — otherwise code=false skips them and
           # gate goes green without ever testing the new version.
-          CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^\.python-version$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/|^\.github/actions/'
+          # .test_durations_pass1 drives pytest-split shard balancing and is
+          # json.load-ed by every shard at collection; a lone refresh of it (or a
+          # truncated write) must re-run the gate, else code=false skips every
+          # shard and gate goes green having validated nothing (BK-319 review).
+          CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^\.python-version$|^\.test_durations_pass1$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/|^\.github/actions/'
           DOCS_PAT='^(docs-src|src)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/|^scripts/(docs/|check_docs_framework\.py$)|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$CODE_PAT"; then echo "code=true" >> "$GITHUB_OUTPUT"
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
@@ -216,7 +220,7 @@ jobs:
       - uses: astral-sh/setup-uv@v8.3.2
         with:
           cache-suffix: ci-test-stage1-${{ matrix.python-version }}-${{ matrix.shard }}  # BK-230
-      - run: uv pip install -e ".[dev]" pytest-split
+      - run: uv pip install -e ".[dev]"
       # Stage 1 = repo-only tier (no Docker): the sftp_docker / live-s3 / live-azure
       # Stage-2 fixtures are excluded, so this needs no service containers and no
       # prepare-images. Split 2 ways with least_duration bin-packing over the
@@ -259,7 +263,7 @@ jobs:
       - uses: astral-sh/setup-uv@v8.3.2
         with:
           cache-suffix: ci-test-primary-${{ matrix.shard }}  # BK-230
-      - run: uv pip install -e ".[dev]" pytest-split
+      - run: uv pip install -e ".[dev]"
       # The full live-backend Stage-2 pass-1, split 2 ways (least_duration over the
       # setup-inclusive durations). TestCommittedCassettePIISweep is deselected and
       # run once in test-cassette-pii (with coverage) so it doesn't tail a shard.
@@ -279,6 +283,9 @@ jobs:
         with:
           name: cov-primary-${{ matrix.shard }}
           include-hidden-files: true
+          # Artifacts are immutable per run; overwrite lets a job re-run
+          # (re-upload) succeed instead of 409-ing on the existing name.
+          overwrite: true
           path: coverage.primary-${{ matrix.shard }}
 
   test-primary-sftp:
@@ -311,6 +318,7 @@ jobs:
         with:
           name: cov-primary-sftp
           include-hidden-files: true
+          overwrite: true
           path: coverage.primary-sftp
 
   # The two ~45s TestCommittedCassettePIISweep tests are interpreter-independent
@@ -339,6 +347,7 @@ jobs:
         with:
           name: cov-primary-pii
           include-hidden-files: true
+          overwrite: true
           path: coverage.primary-pii
 
   # The coverage gate: combine every primary-Python partial (pass-1 shards +
