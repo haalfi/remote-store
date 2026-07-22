@@ -46,8 +46,17 @@ surprising_ripples:
     Review caught that scripts/gen_split_durations.py shipped with no
     tests/scripts/ twin (TESTING.md placement) and pytest-split was two ad-hoc
     unpinned install lines absent from [dev] — both closed in the review pass.
+  - >-
+    Second review round caught that ci-full.yml — now the sole per-merge carrier
+    of the non-primary live guarantee — was not fail-closed on it: no --stage=2
+    (docker-probe auto-detect could silently drop to Stage 1) and no
+    RS_REQUIRE_MINIO, with no coverage floor to expose the downgrade. Also: no
+    `concurrency` group (master-merge bursts stack 7-slot matrices against the
+    20-job cap), a re-hardcoded interpreter enumeration in CONTRIBUTING, and the
+    durations-refresh command duplicated between ci.yml and the CI-OPERATIONS
+    runbook that owns it. All four fixed.
 discovery_followups: []
-review_rounds: 5
+review_rounds: 6
 phases:
   - id: orient
     name: Orient / measure

@@ -457,7 +457,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 ### Phase 0: Pre-flight
 
 - [ ] Master is clean: `git status` shows no uncommitted changes
-- [ ] CI is green on master: `ci.yml` (lint, typecheck, the tiered test jobs, examples, docs, package) **and** the `ci-full.yml` full live-backend matrix on 3.10–3.14 — the five-interpreter live-backend guarantee runs in `ci-full.yml`, not `ci.yml`
+- [ ] CI is green on master: `ci.yml` (lint, typecheck, the tiered test jobs, examples, docs, package) **and** the `ci-full.yml` full live-backend matrix on every supported interpreter — the full live-backend guarantee runs in `ci-full.yml`, not `ci.yml`
 - [ ] `hatch run all` passes **locally** (constituent scripts in `pyproject.toml`; the pre-commit gate variant deliberately does not enforce the 95% floor — CI does)
 - [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete and move to `BACKLOG-DONE.md`, or defer (`[ ]`)
 - [ ] `[Unreleased]` section in CHANGELOG.md is non-empty

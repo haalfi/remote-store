@@ -21,6 +21,15 @@ env:
   UV_SYSTEM_PYTHON: 1
   UV_LINK_MODE: copy
 
+# A burst of master merges (or schedule + push overlapping) must not stack
+# multiple 7-slot full matrices against the account's 20-job cap (ADR-0032) and
+# starve in-flight PR `ci.yml` gates. Keep only the newest run per ref; the
+# superseding run covers the accumulated state, which is all the backstop needs
+# (per-commit granularity is not part of the ADR-0032 contract).
+concurrency:
+  group: ci-full-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Prime the shared service-image cache once (mirrors ci.yml's prepare-images).
   prepare-images:
@@ -50,6 +59,14 @@ jobs:
   test-full:
     needs: [prepare-images]
     runs-on: ubuntu-latest
+    # This backstop is the SOLE per-merge carrier of the non-primary live-backend
+    # guarantee, and unlike ci.yml's test-primary it has no 95% coverage floor to
+    # expose a silent tier downgrade. So make it fail-closed: RS_REQUIRE_MINIO=1
+    # exits if MinIO did not come up, and the explicit --stage=2 below removes the
+    # docker-probe auto-detect that could otherwise drop a loaded runner to Stage 1
+    # and pass green having run no live tests.
+    env:
+      RS_REQUIRE_MINIO: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -77,8 +94,8 @@ jobs:
       # ID-195 two-pass split: pass 1 runs all backends in parallel with xdist
       # (sftp_docker excluded under PYTEST_XDIST_WORKER); pass 2 runs the
       # sftp_docker conformance serially.
-      - run: pytest -n auto -p no:benchmark --ignore=tests/scripts
-      - run: pytest -p no:benchmark --ignore=tests/scripts -k sftp_docker tests/backends/conformance/
+      - run: pytest --stage=2 -n auto -p no:benchmark --ignore=tests/scripts
+      - run: pytest --stage=2 -p no:benchmark --ignore=tests/scripts -k sftp_docker tests/backends/conformance/
 
   full-gate:
     needs: [prepare-images, test-full]
