@@ -196,9 +196,11 @@ External packages should use the naming convention `remote-store-<name>` and:
 The repo pins its priority interpreter in `.python-version` (the version CI's
 coverage lane runs on), so `uv` and `pyenv` select it automatically and your
 local `hatch run all` reproduces what CI gates on. It is the single source for
-the priority Python across CI: every workflow reads it (`setup-python`'s
+the priority Python across CI: workflows that need it read it (`setup-python`'s
 `python-version-file`, or `ci.yml`'s `setup` job for the matrix), so bumping the
-development version is a one-line edit there.
+development version is a one-line edit there. (The full-matrix `ci-full.yml`
+backstop runs *every* supported interpreter, not the priority one, from a list
+kept equal to `ci.yml`'s `ALL_PYTHONS` by `scripts/check_ci_full_matrix.py`.)
 
 The default hatch env is configured with `path = ".venv"`, so `hatch run`
 creates and owns `.venv/` at the repo root via uv. A separate
@@ -455,7 +457,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 ### Phase 0: Pre-flight
 
 - [ ] Master is clean: `git status` shows no uncommitted changes
-- [ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)
+- [ ] CI is green on master: `ci.yml` (lint, typecheck, the tiered test jobs, examples, docs, package) **and** the `ci-full.yml` full live-backend matrix on every supported interpreter — the full live-backend guarantee runs in `ci-full.yml`, not `ci.yml`
 - [ ] `hatch run all` passes **locally** (constituent scripts in `pyproject.toml`; the pre-commit gate variant deliberately does not enforce the 95% floor — CI does)
 - [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete and move to `BACKLOG-DONE.md`, or defer (`[ ]`)
 - [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
@@ -506,7 +508,7 @@ _Automated by skill agent (`/release`). User role: review and merge PR only._
 - [ ] **[Agent]** Push release branch to origin
 - [ ] **[Agent]** Create PR with link to checklist
 - [ ] **[User]** Review, approve, and merge PR to master — then notify agent
-- [ ] **[Agent]** Confirm CI green on merge commit — including the Codecov upload from the `test-primary` job (the badge reuses this run; `publish.yml` no longer recomputes coverage)
+- [ ] **[Agent]** Confirm CI green on merge commit — including the Codecov upload from the `coverage-gate` job (the badge reuses this run; `publish.yml` no longer recomputes coverage)
 - [ ] **[Agent]** Create GitHub Release directly on GitHub using template (no local tags) — this triggers `publish.yml` (PyPI) and versioned docs deploy
 - [ ] **[Agent]** Watch `publish.yml` — confirm it completes successfully (PyPI publish)
 - [ ] **[Agent]** Delete the release branch

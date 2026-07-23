@@ -1,0 +1,140 @@
+id: BK-319
+title: "Cut PR CI wall-clock below 5 minutes without dropping guarantees"
+trigger: >
+  ci.yml took ~8-9 min per PR: the full two-pass live-backend suite ran on all
+  five interpreters, so the slowest interpreter set the wall-clock. The goal was
+  a sub-5-min PR gate with every existing guarantee (full support-matrix
+  correctness, real-backend fidelity, the 95% coverage floor, cross-platform,
+  docs/examples/notebooks/package, formal-spec parity) preserved.
+source_items:
+  - BK-319
+audience:
+  - infra.ci
+  - contributor.tooling
+  - library.maintainer
+co_shipped_items: []
+expected_ripples:
+  - sdd/CI-OPERATIONS.md
+  - sdd/backlogid.json
+surprising_ripples:
+  - >-
+    pyproject.toml: cross-runner coverage combine needed `relative_files = true`
+    under [tool.coverage.run] — the shard partials are produced on different
+    runners and their absolute src paths must be relativised to line up in combine.
+  - >-
+    scripts/gen_split_durations.py: pytest-split --store-durations records only
+    CALL-phase time, which mis-balanced shards badly (one shard ~1.8x the other)
+    because the live-backend and azure_replay VCR fixtures do their work in SETUP.
+    Needed a new generator recording setup+call+teardown per test.
+  - >-
+    .github/workflows/ci-full.yml: preserving the full live matrix on every
+    interpreter without a merge queue (org-only, unavailable on this personal
+    repo) required a second scheduled/on-master workflow as the backstop rather
+    than a trigger-scoped job in ci.yml.
+  - >-
+    Review round caught doc-drift the ripple-check table has no trigger for: the
+    CI-topology change silently staled sdd/specs/048 (TEST-006 CI mapping still
+    said "default-CI job runs Stage 2") and two CONTRIBUTING claims (release
+    checklist "test 3.10-3.14"; ".python-version ... every workflow reads it").
+    Neither is in any ripple-check row, so nothing prompted the updates.
+  - >-
+    Review caught a self-inflicted gate hole: .test_durations_pass1 was in
+    neither CODE_PAT nor DOCS_PAT, so a lone durations-refresh PR (the flow the
+    ci.yml comment instructs) would skip every job and gate green having
+    validated nothing — added it to CODE_PAT.
+  - >-
+    Review caught that scripts/gen_split_durations.py shipped with no
+    tests/scripts/ twin (TESTING.md placement) and pytest-split was two ad-hoc
+    unpinned install lines absent from [dev] — both closed in the review pass.
+  - >-
+    Second review round caught that ci-full.yml — now the sole per-merge carrier
+    of the non-primary live guarantee — was not fail-closed on it: no --stage=2
+    (docker-probe auto-detect could silently drop to Stage 1) and no
+    RS_REQUIRE_MINIO, with no coverage floor to expose the downgrade. Also: no
+    `concurrency` group (master-merge bursts stack 7-slot matrices against the
+    20-job cap), a re-hardcoded interpreter enumeration in CONTRIBUTING, and the
+    durations-refresh command duplicated between ci.yml and the CI-OPERATIONS
+    runbook that owns it. All four fixed.
+  - >-
+    Third review round propagated the fail-closed hardening to ci.yml's
+    test-primary (the sole per-PR live carrier — same --stage=2 + RS_REQUIRE_MINIO
+    the moto/coverage overlap does not reliably backstop), added a `concurrency`
+    group to ci.yml itself (superseded PR pushes were stacking against the 20-job
+    cap the redesign optimises), and caught two stale-inventory ripples the change
+    left behind: CONTRIBUTING attributed the Codecov upload to test-primary (moved
+    to coverage-gate) and ci_service_images.sh's cache-consumer list predated the
+    Stage-1 `test` job + the ci-full priming job. All four fixed.
+discovery_followups: []
+review_rounds: 7
+phases:
+  - id: orient
+    name: Orient / measure
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test / test-primary / gate jobs"
+        read_type: gate
+        extract: "old two-pass-per-interpreter shape; gate fail-closed semantics; setup path-filter + version-resolution outputs"
+      - file: CLAUDE.md
+        section: "Coverage gate / Parallel tests"
+        read_type: gate
+        extract: "95% strict gate lives in CI (not the Stage-1 hatch run all); two-pass sftp_docker carve-out rationale"
+      - file: .github/actions/start-backends/action.yml
+        section: "(full)"
+        read_type: reference
+        extract: "per-backend start so pass-1 (no sftp_docker under xdist) can skip the sftp container; sftp jobs skip minio/azurite"
+  - id: design
+    name: Design
+    steps:
+      - file: tests/backends/fixtures/registry.py
+        section: "fixture_params / PYTEST_XDIST_WORKER carve-out; stage bands"
+        read_type: gate
+        extract: "sftp_docker excluded under xdist (serial -k lane picks it up); Stage 1 = repo-only tier, Stage 2 = live Docker"
+      - file: tests/conftest.py
+        section: "pytest_addoption / pytest_configure (--stage)"
+        read_type: gate
+        extract: "--stage=1 selects the repo-only tier (no Docker); auto-detects to 1 without a docker daemon"
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] test-cov*; [tool.coverage.run]"
+        read_type: gate
+        extract: "coverage parallel=true already set; test-cov-strict is the 95% CI gate; test-cov-s1 proves Stage-1 is a first-class tier"
+  - id: implement
+    name: Implement
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test (Stage-1 sharded) / test-primary (live sharded+cov) / test-primary-sftp / test-cassette-pii / coverage-gate / gate"
+        read_type: reference
+        extract: "primary=full live sharded x2 + 95% combine; non-primary=Stage-1 sharded x2; PII sweep run once; backend-specialised startup"
+      - file: scripts/gen_split_durations.py
+        section: "(full)"
+        read_type: reference
+        extract: "setup-inclusive pytest-split durations generator (sums setup+call+teardown; xdist controller writes)"
+      - file: .github/workflows/ci-full.yml
+        section: "(full)"
+        read_type: reference
+        extract: "full live matrix on all 5 interpreters, nightly + on push to master — the backstop that keeps no interpreter's live coverage dropped"
+      - file: pyproject.toml
+        section: "[tool.coverage.run] relative_files"
+        read_type: gate
+        extract: "relative_files=true so cross-runner shard partials combine"
+  - id: docs
+    name: Docs / inventory
+    steps:
+      - file: scripts/check_ci_inventory.py
+        section: "family-trigger parser"
+        read_type: gate
+        extract: "ci-full.yml runs on schedule => must be documented in CI-OPERATIONS.md inventory or it fails lint"
+      - file: sdd/CI-OPERATIONS.md
+        section: "inventory table + Exceptions runbook"
+        read_type: reference
+        extract: "added the ci-full row + a Rule-1-exception runbook (red-run-on-Actions, like codeql/benchmark)"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check"
+        read_type: verify
+        extract: "ripples: CI-OPERATIONS inventory (check_ci_inventory), coverage config, gate needs-list, backlog+trace"
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased / BK-319"
+        read_type: verify
+        extract: "archive BK-319 [x]; run gen-backlogid; no CHANGELOG (audience has no user.* entry)"

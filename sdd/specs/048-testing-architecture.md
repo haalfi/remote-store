@@ -269,9 +269,15 @@ without `--stage=3` finds none (the stage filter excludes them). For a
 single backend's live conformance, e.g.:
 `RS_TEST_LIVE_GRAPH=1 pytest tests/backends/conformance -k graph_live --stage=3 -m live`.
 
-**CI mapping:** The default-CI job runs Stage 2. A separate
-manually-triggered or scheduled job runs Stage 3. Per-backend cost
-guardrails for Stage 3 are out of scope for this spec. See Notes.
+**CI mapping:** Per PR (`ci.yml`), the primary interpreter runs Stage 2
+(`test-primary` / `test-primary-sftp`) and the non-primary interpreters
+run Stage 1 (`test`); the full Stage-2 suite on every supported
+interpreter runs in the scheduled/on-master `ci-full.yml` backstop. This
+tiering (BK-319, [ADR-0032](../adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md))
+keeps the per-PR gate under five minutes; the stage invariant itself is
+unchanged. A separate manually-triggered or scheduled job runs Stage 3.
+Per-backend cost guardrails for Stage 3 are out of scope for this spec.
+See Notes.
 
 ---
 

@@ -10,6 +10,14 @@ env:
   UV_SYSTEM_PYTHON: 1
   UV_LINK_MODE: copy
 
+# A superseded PR-branch push (force-push or quick follow-up) must not keep
+# occupying slots against the account's 20-job cap (ADR-0032) — the redesign's
+# ~24-job fan-out makes that contention material. Cancel only for pull_request:
+# a cancelled master push would lose coverage-gate's Codecov badge upload.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -41,7 +49,11 @@ jobs:
           # Python (below), so a lone bump must re-run the gating jobs that
           # exercise that interpreter — otherwise code=false skips them and
           # gate goes green without ever testing the new version.
-          CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^\.python-version$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/|^\.github/actions/'
+          # .test_durations_pass1 drives pytest-split shard balancing and is
+          # json.load-ed by every shard at collection; a lone refresh of it (or a
+          # truncated write) must re-run the gate, else code=false skips every
+          # shard and gate goes green having validated nothing (BK-319 review).
+          CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^\.python-version$|^\.test_durations_pass1$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/|^\.github/actions/'
           DOCS_PAT='^(docs-src|src)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/|^scripts/(docs/|check_docs_framework\.py$)|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$CODE_PAT"; then echo "code=true" >> "$GITHUB_OUTPUT"
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
@@ -172,62 +184,127 @@ jobs:
           path: ci-images
           key: ci-images-v1-${{ hashFiles('scripts/ci_service_images.sh') }}
 
+  # BK-319 CI-time optimization. The old suite ran the FULL two-pass live-backend
+  # suite on every interpreter (~8-9 min: the slowest leg ran pass-1 `-n auto`
+  # ~326s then serial sftp_docker ~100s in sequence, x5 interpreters in parallel).
+  # Measured findings that shaped this design:
+  #   * Oversubscribing xdist (`-n 8/12`) did NOT help — the suite is CPU-bound.
+  #   * Sharding the LIVE-backend suite is inefficient: each shard re-pays the
+  #     per-test live-backend fixture setup (bucket create, container handshakes),
+  #     so 2-way sharding the 3.10 leg summed to ~460s wall, worse than 326s.
+  #   * The account is capped at 20 concurrent jobs, so fanning out more shards
+  #     just forces a second scheduling wave.
+  # So the per-PR gate no longer runs the live-backend suite on every interpreter.
+  # Instead it splits work by TIER (see sdd stage model, tests/conftest.py):
+  #   * `test` — the four non-primary interpreters run the repo-only STAGE 1
+  #     suite (memory/local/moto/azure-replay/sftp-inproc): no Docker, sharded x2,
+  #     exercising every Store/adapter code path so interpreter-specific breakage
+  #     still blocks the PR.
+  #   * `test-primary` / `test-primary-sftp` / `coverage-gate` — the primary
+  #     interpreter runs the FULL live-Docker-backend Stage-2 suite (pass-1
+  #     shard-split by pytest-split + serial sftp_docker) and asserts the 95%
+  #     coverage floor over the combined partials.
+  # The full live-backend suite on ALL interpreters still runs — moved to the
+  # scheduled/on-master `ci-full.yml` backstop so it no longer gates each PR.
+  # Refresh .test_durations_pass1 when shard balance drifts — the flow (when to
+  # refresh, the command, the CODE_PAT gating) lives in
+  # sdd/CI-OPERATIONS.md § `ci-full.yml` (Durations-refresh duty).
   test:
-    needs: [setup, prepare-images]
+    needs: [setup]
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     strategy:
-      # BK-279: one blocked image pull (or any single shard failure) must not
-      # cancel the sibling Python shards — let each report independently.
+      # BK-279: one leg's failure must not cancel its siblings — report each
+      # interpreter/shard independently.
       fail-fast: false
       matrix:
         python-version: ${{ fromJSON(needs.setup.outputs.test-matrix) }}
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v7
-      - name: Restore service-image cache
-        uses: actions/cache/restore@v6
-        with:
-          path: ci-images
-          key: ci-images-v1-${{ hashFiles('scripts/ci_service_images.sh') }}
-      - run: bash scripts/ci_load_images.sh ci-images
-      - uses: ./.github/actions/start-backends
-        with:
-          minio: 'true'
-          azurite: 'true'
-          sftp: 'true'
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v8.3.2
         with:
-          # BK-230: cache-suffix separates this matrix from the test-primary
-          # and e2e save keys. The matrix excludes the primary (line 63:
-          # ALL_PYTHONS - PRIMARY); the suffix is kept anyway so reintroducing
-          # 3.13 into the matrix later does not silently revive the
-          # setup-uv-*-pruned-* reservation race against test-primary.
-          #
-          # The ${matrix.python-version} qualifier also separates the shards
-          # from EACH OTHER: setup-uv resolves the version slot in its key to
-          # `unknown` here, so without it all shards share one byte-identical
-          # key and race to reserve it on a cache miss ("another job may be
-          # creating this cache" in the Post step). Per-version keys also cache
-          # each interpreter's pruned uv cache cleanly instead of restoring
-          # whichever shard happened to save first.
-          cache-suffix: ci-test-matrix-${{ matrix.python-version }}
+          cache-suffix: ci-test-stage1-${{ matrix.python-version }}-${{ matrix.shard }}  # BK-230
       - run: uv pip install -e ".[dev]"
-      # tests/scripts/ exercises scripts/, not remote_store: no multi-version
-      # value, so it runs once in the tooling-tests job below, not here.
-      #
-      # ID-195 two-pass split: pass 1 runs all backends in parallel with xdist;
-      # the sftp_docker fixture is filtered out under PYTEST_XDIST_WORKER
-      # (see registry.fixture_params). Pass 2 runs the sftp_docker conformance
-      # variants serially, since atmoz/sftp's OpenSSH daemon is unreliable
-      # under concurrent connections from multiple workers.
-      - run: pytest -n auto -p no:benchmark --ignore=tests/scripts
-      - run: pytest -p no:benchmark --ignore=tests/scripts -k sftp_docker tests/backends/conformance/
+      # Stage 1 = repo-only tier (no Docker): the sftp_docker / live-s3 / live-azure
+      # Stage-2 fixtures are excluded, so this needs no service containers and no
+      # prepare-images. Split 2 ways with least_duration bin-packing over the
+      # setup-inclusive .test_durations_pass1. The two ~45s TestCommittedCassettePIISweep
+      # tests are interpreter-independent repo-hygiene scans — deselected here and
+      # run once in the test-cassette-pii job so they don't dominate every shard.
+      # tests/scripts/ runs once in tooling-tests; full live matrix in ci-full.yml.
+      - run: >-
+          pytest --stage=1 --splits 2 --group ${{ matrix.shard }}
+          --splitting-algorithm least_duration --durations-path .test_durations_pass1
+          --deselect tests/backends/fixtures/test_cassettes.py::TestCommittedCassettePIISweep
+          -n auto -p no:benchmark --ignore=tests/scripts
 
-  # The coverage gate: the two-pass suite on the primary Python, 95% floor.
+  # Primary Python pass-1 shards WITH coverage. Each shard emits its partial
+  # `.coverage` (parallel=true → unique data files); coverage-gate combines them
+  # with the primary sftp partial and asserts the 95% floor.
   test-primary:
+    needs: [setup, prepare-images]
+    if: needs.setup.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    # Fail-closed parity with ci-full.yml's test-full: this is the sole per-PR
+    # carrier of the live-backend guarantee. RS_REQUIRE_MINIO=1 exits if MinIO is
+    # unreachable, and the explicit --stage=2 below removes the docker-probe
+    # auto-detect that could otherwise drop a loaded runner to Stage 1 and pass
+    # green having skipped every live test (the 95% floor's moto overlap does not
+    # reliably catch a MinIO-only skip).
+    env:
+      RS_REQUIRE_MINIO: "1"
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Restore service-image cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ci-images
+          key: ci-images-v1-${{ hashFiles('scripts/ci_service_images.sh') }}
+      - run: bash scripts/ci_load_images.sh ci-images
+      - uses: ./.github/actions/start-backends
+        with:
+          minio: 'true'
+          azurite: 'true'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ needs.setup.outputs.primary }}
+      - uses: astral-sh/setup-uv@v8.3.2
+        with:
+          cache-suffix: ci-test-primary-${{ matrix.shard }}  # BK-230
+      - run: uv pip install -e ".[dev]"
+      # The full live-backend Stage-2 pass-1, split 2 ways (least_duration over the
+      # setup-inclusive durations). TestCommittedCassettePIISweep is deselected and
+      # run once in test-cassette-pii (with coverage) so it doesn't tail a shard.
+      - run: >-
+          pytest --stage=2 --splits 2 --group ${{ matrix.shard }}
+          --splitting-algorithm least_duration --durations-path .test_durations_pass1
+          --deselect tests/backends/fixtures/test_cassettes.py::TestCommittedCassettePIISweep
+          -n auto --cov=remote_store --cov-report= -p no:benchmark --ignore=tests/scripts
+      # Normalise to a unique, non-dotfile name (upload-artifact skips dotfiles)
+      # for coverage-gate. pytest-cov session-combines xdist workers into a
+      # single `.coverage`; the `combine || true` is belt-and-braces in case any
+      # parallel `.coverage.*` partials remain.
+      - run: |
+          coverage combine 2>/dev/null || true
+          mv .coverage coverage.primary-${{ matrix.shard }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cov-primary-${{ matrix.shard }}
+          include-hidden-files: true
+          # Artifacts are immutable per run; overwrite lets a job re-run
+          # (re-upload) succeed instead of 409-ing on the existing name.
+          overwrite: true
+          path: coverage.primary-${{ matrix.shard }}
+
+  test-primary-sftp:
     needs: [setup, prepare-images]
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
@@ -241,26 +318,88 @@ jobs:
       - run: bash scripts/ci_load_images.sh ci-images
       - uses: ./.github/actions/start-backends
         with:
-          minio: 'true'
-          azurite: 'true'
           sftp: 'true'
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.3.2
         with:
-          cache-suffix: ci-test-primary  # BK-230
+          cache-suffix: ci-test-primary-sftp
       - run: uv pip install -e ".[dev]"
-      # ID-195 two-pass split with --cov-append for pass 2: the 95% floor is
-      # asserted after pass 1's `.coverage` is combined in. --ignore=tests/scripts
-      # keeps those tests out so they don't inflate the denominator. Pass 2 also
-      # emits coverage.xml so the Codecov badge is fed from this authoritative
-      # result (full suite + sftp_docker conformance).
-      - run: pytest -n auto -p no:benchmark --cov=remote_store --cov-report= --ignore=tests/scripts
-      - run: pytest -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-report=xml --cov-fail-under=95 -k sftp_docker tests/backends/conformance/
-      # Upload only on the master push (not PRs) — the badge tracks master, and a
-      # release tag points at a master commit, so the badge reflects the shipped
-      # version.
+      - run: pytest -p no:benchmark --cov=remote_store --cov-report= --ignore=tests/scripts -k sftp_docker tests/backends/conformance/
+      - run: |
+          coverage combine 2>/dev/null || true
+          mv .coverage coverage.primary-sftp
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cov-primary-sftp
+          include-hidden-files: true
+          overwrite: true
+          path: coverage.primary-sftp
+
+  # The two ~45s TestCommittedCassettePIISweep tests are interpreter-independent
+  # repo-hygiene scans (do committed cassettes leak PII) deselected from every
+  # test/test-primary shard so they don't dominate. Run once here on the primary,
+  # WITH coverage, so the 95% floor over the combined partials is unchanged. Stage
+  # 1 (repo-only): no Docker, no service containers.
+  test-cassette-pii:
+    needs: [setup]
+    if: needs.setup.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ needs.setup.outputs.primary }}
+      - uses: astral-sh/setup-uv@v8.3.2
+        with:
+          cache-suffix: ci-test-cassette-pii
+      - run: uv pip install -e ".[dev]"
+      - run: pytest --stage=1 -p no:benchmark --cov=remote_store --cov-report= tests/backends/fixtures/test_cassettes.py::TestCommittedCassettePIISweep
+      - run: |
+          coverage combine 2>/dev/null || true
+          mv .coverage coverage.primary-pii
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cov-primary-pii
+          include-hidden-files: true
+          overwrite: true
+          path: coverage.primary-pii
+
+  # The coverage gate: combine every primary-Python partial (pass-1 shards +
+  # sftp_docker conformance) and assert the 95% floor over the full union —
+  # identical coverage to the old single-job two-pass run, just gathered from
+  # parallel shards. Also emits coverage.xml and feeds the Codecov badge.
+  coverage-gate:
+    needs: [setup, test-primary, test-primary-sftp, test-cassette-pii]
+    if: needs.setup.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ needs.setup.outputs.primary }}
+      - uses: astral-sh/setup-uv@v8.3.2
+        with:
+          enable-cache: false
+      - run: uv pip install coverage
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: cov-primary-*
+          path: cov-parts
+          merge-multiple: true
+      # coverage combine consumes .coverage.* data files; relative_files=true
+      # (pyproject) makes the src paths line up across the shard runners.
+      - name: Combine partials
+        run: |
+          i=0
+          for f in cov-parts/coverage.primary-*; do
+            cp "$f" ".coverage.$i"
+            i=$((i + 1))
+          done
+          coverage combine
+          coverage report --show-missing --fail-under=95
+          coverage xml
       - name: Upload coverage to Codecov
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: codecov/codecov-action@v7
@@ -526,7 +665,7 @@ jobs:
           done
 
   gate:
-    needs: [setup, prepare-images, lint, typecheck, test, test-primary, tooling-tests, pyarrow-major-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
+    needs: [setup, prepare-images, lint, typecheck, test, test-primary, test-primary-sftp, test-cassette-pii, coverage-gate, tooling-tests, pyarrow-major-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -544,6 +683,9 @@ jobs:
             "${{ needs.typecheck.result }}" \
             "${{ needs.test.result }}" \
             "${{ needs.test-primary.result }}" \
+            "${{ needs.test-primary-sftp.result }}" \
+            "${{ needs.test-cassette-pii.result }}" \
+            "${{ needs.coverage-gate.result }}" \
             "${{ needs.tooling-tests.result }}" \
             "${{ needs.pyarrow-major-check.result }}" \
             "${{ needs.test-cross-platform.result }}" \
