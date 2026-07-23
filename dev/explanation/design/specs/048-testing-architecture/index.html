@@ -6204,6 +6204,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0032-tiered-ci-gate-with-full-matrix-backstop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0032: Tiered per-PR CI gate with a full-matrix backstop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10859,9 +10887,15 @@ the live fixtures but deselects every live-marked node; <code>-m live</code>
 without <code>--stage=3</code> finds none (the stage filter excludes them). For a
 single backend's live conformance, e.g.:
 <code>RS_TEST_LIVE_GRAPH=1 pytest tests/backends/conformance -k graph_live --stage=3 -m live</code>.</p>
-<p><strong>CI mapping:</strong> The default-CI job runs Stage 2. A separate
-manually-triggered or scheduled job runs Stage 3. Per-backend cost
-guardrails for Stage 3 are out of scope for this spec. See Notes.</p>
+<p><strong>CI mapping:</strong> Per PR (<code>ci.yml</code>), the primary interpreter runs Stage 2
+(<code>test-primary</code> / <code>test-primary-sftp</code>) and the non-primary interpreters
+run Stage 1 (<code>test</code>); the full Stage-2 suite on every supported
+interpreter runs in the scheduled/on-master <code>ci-full.yml</code> backstop. This
+tiering (BK-319, <a href="../../adrs/0032-tiered-ci-gate-with-full-matrix-backstop/">ADR-0032</a>)
+keeps the per-PR gate under five minutes; the stage invariant itself is
+unchanged. A separate manually-triggered or scheduled job runs Stage 3.
+Per-backend cost guardrails for Stage 3 are out of scope for this spec.
+See Notes.</p>
 <hr />
 <h2 id="test-007-http-cassette-and-replay-layer">TEST-007: HTTP Cassette and Replay Layer<a class="headerlink" href="#test-007-http-cassette-and-replay-layer" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Backends whose transport is HTTP support a

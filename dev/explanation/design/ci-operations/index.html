@@ -5278,6 +5278,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#ci-fullyml-full-live-backend-matrix-backstop-exception-to-rule-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ci-full.yml — full live-backend matrix backstop (exception to Rule 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#read-the-docs-docs-site-build-hosting-external-exception-to-inventory" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6365,6 +6376,34 @@
     
   
     0031: Expert Personas as Standalone Subagent Files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/0032-tiered-ci-gate-with-full-matrix-backstop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0032: Tiered per-PR CI gate with a full-matrix backstop
   
 
     
@@ -10484,6 +10523,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#ci-fullyml-full-live-backend-matrix-backstop-exception-to-rule-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ci-full.yml — full live-backend matrix backstop (exception to Rule 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#read-the-docs-docs-site-build-hosting-external-exception-to-inventory" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10612,6 +10662,12 @@ documented here by convention, not enforcement.</p>
 <td><code>benchmark.yml</code></td>
 <td>Mon 04:17 UTC + dispatch</td>
 <td>red run + <code>benchmark-results</code> artifact + job summary</td>
+<td>runbook below (exception)</td>
+</tr>
+<tr>
+<td><code>ci-full.yml</code></td>
+<td><code>master</code> push + 03:00 UTC daily + dispatch</td>
+<td>red run on the Actions tab</td>
 <td>runbook below (exception)</td>
 </tr>
 <tr>
@@ -10762,6 +10818,41 @@ documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p
   Azurite/SFTP from their block-prone registries. A failure in the
   <code>start-backends</code> step (image pull/health-check) is infra noise — re-run the
   job — not a benchmark regression.</li>
+</ul>
+<h3 id="ci-fullyml-full-live-backend-matrix-backstop-exception-to-rule-1"><code>ci-full.yml</code> — full live-backend matrix backstop (exception to Rule 1)<a class="headerlink" href="#ci-fullyml-full-live-backend-matrix-backstop-exception-to-rule-1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>What it does:</strong> runs the complete two-pass live-Docker-backend suite (pass-1
+  <code>-n auto</code> + serial <code>sftp_docker</code>) on <strong>every</strong> supported interpreter (see
+  <code>FEATURES.md</code>). This is the pre-BK-319 per-interpreter guarantee. <code>ci.yml</code> (the
+  per-PR gate) runs this full Stage-2 suite only on the <strong>primary</strong> interpreter;
+  the four non-primary interpreters run the repo-only <strong>Stage 1</strong> tier there so
+  the per-PR gate stays under five minutes within the account's concurrency cap.
+  The decision, the cap, the owner-approved tradeoff, and the reversal condition
+  live in <a href="../adrs/0032-tiered-ci-gate-with-full-matrix-backstop/">ADR-0032</a>;
+  <code>ci-full.yml</code> restores full-matrix coverage off the per-PR critical path.</li>
+<li><strong>When:</strong> every push to <code>master</code>, plus 03:00 UTC daily, plus
+  <code>workflow_dispatch</code>.</li>
+<li><strong>Durations-refresh duty:</strong> the per-PR shards balance off the committed
+  <code>.test_durations_pass1</code>. It drifts silently as tests change — unknown tests get
+  the average recorded weight, so nothing <em>fails</em>; the only symptom is per-PR
+  shard wall-clock creeping back up (toward the ~1.8× skew BK-319 removed).
+  Refresh it when that skew reappears by running
+  <code>python scripts/gen_split_durations.py .test_durations_pass1 -- -n auto -p no:benchmark --ignore=tests/scripts</code>
+  against the live-backend stack and committing the result. The refresh is gated
+  (<code>.test_durations_pass1</code> is in <code>ci.yml</code>'s <code>CODE_PAT</code>), so the refresh PR runs
+  the full gate.</li>
+<li><strong>Where the finding shows up:</strong> the <strong>red run on the Actions tab</strong>. Like
+  <code>codeql.yml</code> / <code>benchmark.yml</code> it opens no rolling issue and has no triage
+  skill — this is a sanctioned Rule-1 exception.</li>
+<li><strong>Why an exception:</strong> a maintainer merging to <code>master</code> (or reading the nightly
+  status) is present to see a red run; the finding surfaces on GitHub-owned
+  channels. A rolling-issue integration is <strong>deferred</strong> until it earns one — if a
+  non-primary-interpreter-only live-backend regression ever actually slips past
+  the per-PR gate, promote it to the drift-guard pattern.</li>
+<li><strong>How to act:</strong> on a red run, open it and read the failing interpreter leg — a
+  genuine test failure is fixed like any other. The same BK-279 image-cache
+  false-red as <code>benchmark.yml</code> applies: a <code>start-backends</code> step failure
+  (image pull / health-check) is infra noise — re-run the job.</li>
 </ul>
 <h3 id="read-the-docs-docs-site-build-hosting-external-exception-to-inventory">Read the Docs — docs site build &amp; hosting (external, exception to inventory)<a class="headerlink" href="#read-the-docs-docs-site-build-hosting-external-exception-to-inventory" title="Permanent link">&para;</a></h3>
 <ul>

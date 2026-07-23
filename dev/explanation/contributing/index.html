@@ -6703,6 +6703,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0032-tiered-ci-gate-with-full-matrix-backstop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0032: Tiered per-PR CI gate with a full-matrix backstop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11336,9 +11364,11 @@ the forgotten copies are the ones that go stale.</p>
 <p>The repo pins its priority interpreter in <code>.python-version</code> (the version CI's
 coverage lane runs on), so <code>uv</code> and <code>pyenv</code> select it automatically and your
 local <code>hatch run all</code> reproduces what CI gates on. It is the single source for
-the priority Python across CI: every workflow reads it (<code>setup-python</code>'s
+the priority Python across CI: workflows that need it read it (<code>setup-python</code>'s
 <code>python-version-file</code>, or <code>ci.yml</code>'s <code>setup</code> job for the matrix), so bumping the
-development version is a one-line edit there.</p>
+development version is a one-line edit there. (The full-matrix <code>ci-full.yml</code>
+backstop runs <em>every</em> supported interpreter, not the priority one, from a list
+kept equal to <code>ci.yml</code>'s <code>ALL_PYTHONS</code> by <code>scripts/check_ci_full_matrix.py</code>.)</p>
 <p>The default hatch env is configured with <code>path = ".venv"</code>, so <code>hatch run</code>
 creates and owns <code>.venv/</code> at the repo root via uv. A separate
 <code>python -m venv</code> or <code>pip install -e ".[dev]"</code> step duplicates the env that
@@ -11581,7 +11611,7 @@ workflow's runner) so the lock is comparable.</p>
 <h3 id="phase-0-pre-flight">Phase 0: Pre-flight<a class="headerlink" href="#phase-0-pre-flight" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] Master is clean: <code>git status</code> shows no uncommitted changes</li>
-<li>[ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)</li>
+<li>[ ] CI is green on master: <code>ci.yml</code> (lint, typecheck, the tiered test jobs, examples, docs, package) <strong>and</strong> the <code>ci-full.yml</code> full live-backend matrix on every supported interpreter — the full live-backend guarantee runs in <code>ci-full.yml</code>, not <code>ci.yml</code></li>
 <li>[ ] <code>hatch run all</code> passes <strong>locally</strong> (constituent scripts in <code>pyproject.toml</code>; the pre-commit gate variant deliberately does not enforce the 95% floor — CI does)</li>
 <li>[ ] No open <code>[~]</code> items shipping in this release in <code>sdd/BACKLOG.md</code> — complete and move to <code>BACKLOG-DONE.md</code>, or defer (<code>[ ]</code>)</li>
 <li>[ ] <code>[Unreleased]</code> section in CHANGELOG.md is non-empty</li>
@@ -11631,7 +11661,7 @@ workflow's runner) so the lock is comparable.</p>
 <li>[ ] <strong>[Agent]</strong> Push release branch to origin</li>
 <li>[ ] <strong>[Agent]</strong> Create PR with link to checklist</li>
 <li>[ ] <strong>[User]</strong> Review, approve, and merge PR to master — then notify agent</li>
-<li>[ ] <strong>[Agent]</strong> Confirm CI green on merge commit — including the Codecov upload from the <code>test-primary</code> job (the badge reuses this run; <code>publish.yml</code> no longer recomputes coverage)</li>
+<li>[ ] <strong>[Agent]</strong> Confirm CI green on merge commit — including the Codecov upload from the <code>coverage-gate</code> job (the badge reuses this run; <code>publish.yml</code> no longer recomputes coverage)</li>
 <li>[ ] <strong>[Agent]</strong> Create GitHub Release directly on GitHub using template (no local tags) — this triggers <code>publish.yml</code> (PyPI) and versioned docs deploy</li>
 <li>[ ] <strong>[Agent]</strong> Watch <code>publish.yml</code> — confirm it completes successfully (PyPI publish)</li>
 <li>[ ] <strong>[Agent]</strong> Delete the release branch</li>
