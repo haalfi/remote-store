@@ -193,6 +193,10 @@ returns the stream as-is.
 
 - `list_files(path="")` lists from root.
 - `recursive=False` (default) yields only immediate children.
+- `max_depth` is a pruning hint. `Store` always passes it, so your signature
+  must accept it — but you may ignore the value: `Store` applies client-side
+  depth filtering as a safety net. Backends that can prune natively (e.g.
+  a filesystem walk) should honor it for efficiency.
 - `list_folders()` is always non-recursive — only immediate subfolders.
 - Non-existent paths yield nothing (no exception).
 - [`FileInfo`](../reference/api/models.md)`.path` must be a [`RemotePath`](../reference/api/models.md).
@@ -243,7 +247,9 @@ it's `SELECT 1`.
 
 ### Via Registry (YAML config)
 
-Register your backend type before creating a [`Registry`](../reference/api/registry.md):
+Register your backend type before creating a [`Registry`](../reference/api/registry.md).
+YAML loading lives in the `remote_store.ext.yaml` extension and requires the
+`yaml` extra (`pip install "remote-store[yaml]"`):
 
 ```python
 --8<-- "examples/snippets/custom_backend_guide.py:step13-registry"
@@ -619,7 +625,7 @@ are generally thread-safe, so our example doesn't need explicit locking.
 | `open_atomic(path, overwrite)` | `ContextManager[BinaryIO]` | [`AlreadyExists`](../reference/api/errors.md), [`CapabilityNotSupported`](../reference/api/errors.md) |
 | `delete(path, missing_ok)` | `None` | [`NotFound`](../reference/api/errors.md) |
 | `delete_folder(path, recursive, missing_ok)` | `None` | [`NotFound`](../reference/api/errors.md), [`DirectoryNotEmpty`](../reference/api/errors.md) |
-| `list_files(path, recursive)` | `Iterator[`[`FileInfo`](../reference/api/models.md)`]` | — |
+| `list_files(path, recursive, max_depth)` | `Iterator[`[`FileInfo`](../reference/api/models.md)`]` | — |
 | `list_folders(path)` | `Iterator[`[`FolderEntry`](../reference/api/models.md)`]` | — |
 | `get_file_info(path)` | [`FileInfo`](../reference/api/models.md) | [`NotFound`](../reference/api/errors.md) |
 | `get_folder_info(path)` | [`FolderInfo`](../reference/api/models.md) | [`NotFound`](../reference/api/errors.md) |

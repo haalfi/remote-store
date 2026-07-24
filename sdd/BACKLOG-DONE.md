@@ -8,6 +8,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-235 — Custom-backend guide snippets break at runtime**
+  spec: — · effort: S · audience: user.site, user.api_docs
+  A guide-validation audit found three defects a reader following
+  `docs-src/guides/custom-backend-guide.md` would hit: (1) the tutorial
+  `RedisBackend.list_files` omitted `max_depth`, which `Store.list_files`
+  passes unconditionally, so every listing call raised `TypeError`; (2) the
+  Step 13 registry snippet called `RegistryConfig.from_yaml()`, which does
+  not exist (the API is `remote_store.ext.yaml.from_yaml`); (3) the Step 14
+  extensions snippet called `observe(store, hooks=[...])`, but `observe()`
+  has no `hooks` parameter. Root cause: `demo()` exercised only
+  MemoryBackend, so those snippet regions were syntax-checked, never
+  executed. Fix: corrected snippet + guide text, and closed the testing gap
+  in `tests/test_snippets.py` — an ABC signature-drift guard for the
+  tutorial class, a fake-redis Store-level smoke of the tutorial backend,
+  and `demo()` now executes the registry and extensions regions for real.
+
 - [x] **BK-319 — Cut PR CI wall-clock below 5 minutes without dropping guarantees**
   spec: — · effort: L · audience: infra.ci, contributor.tooling, library.maintainer
   The per-PR `ci.yml` gate took ~8–9 min. The old shape ran the full two-pass

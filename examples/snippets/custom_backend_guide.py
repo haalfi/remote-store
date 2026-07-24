@@ -346,7 +346,15 @@ class RedisBackend(Backend):
     # -- Step 9: Listing ---------------------------------------------------
 
     # --8<-- [start:step9-listing]
-    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
+    def list_files(
+        self,
+        path: str,
+        *,
+        recursive: bool = False,
+        max_depth: int | None = None,
+    ) -> Iterator[FileInfo]:
+        # max_depth is a pruning hint: backends with native depth limiting
+        # honor it; everyone else can ignore it — Store filters client-side.
         try:
             for file_path in self._iter_file_paths_under(path):
                 # If not recursive, only yield immediate children
@@ -556,26 +564,33 @@ def _demo_direct_usage() -> None:
     # --8<-- [end:step13-direct]
 
 
-def _demo_registry_usage() -> None:
+def _demo_registry_usage():
     # --8<-- [start:step13-registry]
-    from remote_store import Registry, RegistryConfig, register_backend
+    from remote_store import Registry, register_backend
+    from remote_store.ext.yaml import from_yaml  # needs: pip install "remote-store[yaml]"
 
     register_backend("redis", RedisBackend)
 
-    config = RegistryConfig.from_yaml("stores.yaml")
+    config = from_yaml("stores.yaml")
     registry = Registry(config)
     store = registry.get_store("cache")
     # --8<-- [end:step13-registry]
+    return store
 
 
-def _demo_extensions() -> None:
+def _demo_extensions(store) -> None:
+    events = []
+
+    def my_logging_hook(event) -> None:
+        events.append(event)
+
     # --8<-- [start:step14-extensions]
     from remote_store.ext.batch import batch_copy
     from remote_store.ext.cache import cache
     from remote_store.ext.observe import observe
 
-    # Observability
-    observed = observe(store, hooks=[my_logging_hook])
+    # Observability — my_logging_hook fires after every operation
+    observed = observe(store, on_any=my_logging_hook)
 
     # Caching
     fast = cache(store, ttl=300)
@@ -583,6 +598,11 @@ def _demo_extensions() -> None:
     # Batch operations
     results = batch_copy(store, [("a.txt", "b.txt"), ("c.txt", "d.txt")])
     # --8<-- [end:step14-extensions]
+
+    observed.read_bytes("a.txt")
+    assert events, "observe hook did not fire"
+    assert fast.read_bytes("b.txt") == store.read_bytes("a.txt")
+    assert results.succeeded, "batch_copy copied nothing"
 
 
 def _demo_partial_capabilities() -> None:
@@ -678,11 +698,11 @@ def _demo_test_examples() -> None:
 
 def demo() -> None:
     """Execute testable snippets using MemoryBackend as a stand-in."""
+    import os
+    import tempfile
+
     from remote_store import Store
     from remote_store.backends import MemoryBackend
-    from remote_store.ext.batch import batch_copy
-    from remote_store.ext.cache import cache
-    from remote_store.ext.observe import observe
 
     # --- Verify RedisBackend class is valid Python (importable) ---
     assert RedisBackend.__name__ == "RedisBackend"
@@ -703,18 +723,39 @@ def demo() -> None:
     assert len(files) == 1
     assert files[0].name == "q1.csv"
 
-    # Step 14: extensions work with any backend
-    observed = observe(store)
-    observed.write("ext-test.txt", b"hello", overwrite=True)
-    assert observed.read_bytes("ext-test.txt") == b"hello"
+    # Step 13: registry pattern — runs the guide region against a
+    # memory-backed stores.yaml (no Redis server in the example runner).
+    cwd = os.getcwd()
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        try:
+            os.chdir(tmp_dir)
+            with open("stores.yaml", "w", encoding="utf-8") as f:
+                f.write(
+                    "backends:\n"
+                    "  demo-memory:\n"
+                    "    type: memory\n"
+                    "\n"
+                    "stores:\n"
+                    "  cache:\n"
+                    "    backend: demo-memory\n"
+                    '    root_path: "cache/v2"\n'
+                )
+            try:
+                registry_store = _demo_registry_usage()
+            except ModuleNotFoundError:
+                print("No YAML parser installed; skipping the registry snippet.")
+            else:
+                registry_store.write("hello.txt", b"from-registry")
+                assert registry_store.read_bytes("hello.txt") == b"from-registry"
+        finally:
+            os.chdir(cwd)
 
-    fast = cache(store, ttl=300)
-    fast.write("cached.txt", b"data", overwrite=True)
-    assert fast.read_bytes("cached.txt") == b"data"
-
+    # Step 14: extensions work with any backend — runs the guide region itself
     store.write("a.txt", b"aaa")
-    results = batch_copy(store, [("a.txt", "b.txt")])
+    store.write("c.txt", b"ccc")
+    _demo_extensions(store)
     assert store.read_bytes("b.txt") == b"aaa"
+    assert store.read_bytes("d.txt") == b"ccc"
 
     # Step 5 invariants (via MemoryBackend, same contract)
     assert store.exists("reports/q1.csv")
