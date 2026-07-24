@@ -1,0 +1,119 @@
+"""Unit tests for scripts/check_custom_backend_guide.py (BK-320)."""
+
+from __future__ import annotations
+
+import importlib.util
+import sys
+from pathlib import Path
+
+_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "check_custom_backend_guide.py"
+
+
+def _load():
+    spec = importlib.util.spec_from_file_location("check_custom_backend_guide", _SCRIPT)
+    assert spec is not None
+    assert spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault("check_custom_backend_guide", mod)
+    spec.loader.exec_module(mod)  # type: ignore[union-attr]
+    return mod
+
+
+_mod = _load()
+check_snippet_regions = _mod.check_snippet_regions
+check_abstract_table = _mod.check_abstract_table
+check_conformance_files = _mod.check_conformance_files
+main = _mod.main
+
+_GUIDE = Path(__file__).resolve().parents[2] / "docs-src" / "guides" / "custom-backend-guide.md"
+
+
+class TestSnippetRegions:
+    def test_resolves_real_region(self, tmp_path: Path) -> None:
+        snippet = tmp_path / "snip.py"
+        snippet.write_text("# --8<-- [start:demo]\nx = 1\n# --8<-- [end:demo]\n", encoding="utf-8")
+        guide = '```python\n--8<-- "snip.py:demo"\n```\n'
+        assert check_snippet_regions(guide, tmp_path) == []
+
+    def test_missing_region_flagged(self, tmp_path: Path) -> None:
+        snippet = tmp_path / "snip.py"
+        snippet.write_text("# --8<-- [start:other]\n# --8<-- [end:other]\n", encoding="utf-8")
+        guide = '--8<-- "snip.py:demo"\n'
+        violations = check_snippet_regions(guide, tmp_path)
+        assert len(violations) == 2
+        assert "[start:demo]" in violations[0]
+        assert "[end:demo]" in violations[1]
+
+    def test_missing_file_flagged(self, tmp_path: Path) -> None:
+        violations = check_snippet_regions('--8<-- "gone.py:demo"\n', tmp_path)
+        assert violations == ["snippet file not found: gone.py (region demo)"]
+
+
+class TestAbstractTable:
+    def test_missing_table_flagged(self) -> None:
+        violations = check_abstract_table("# A guide with no table\n")
+        assert len(violations) == 1
+        assert "table not found" in violations[0]
+
+    def test_missing_member_flagged(self) -> None:
+        guide = "### Abstract methods (must implement)\n\n| Member |\n|---|\n| `exists(path)` |\n"
+        violations = check_abstract_table(guide)
+        assert any("missing row for 'read'" in v for v in violations)
+
+    def test_stale_member_flagged(self) -> None:
+        # A row for a method the ABC does not declare abstract must be flagged.
+        real_table = _real_guide_table()
+        guide = real_table + "| `frobnicate(path)` | x | x |\n"
+        violations = check_abstract_table(guide)
+        assert violations == ["abstract-methods table: row 'frobnicate' is not an abstract member of Backend"]
+
+    def test_param_drift_flagged(self) -> None:
+        # Simulate the BUG-235 drift: drop max_depth from the list_files row.
+        real_table = _real_guide_table()
+        drifted = real_table.replace("`list_files(path, recursive, max_depth)`", "`list_files(path, recursive)`")
+        assert drifted != real_table, "guide fixture no longer contains the expected list_files row"
+        violations = check_abstract_table(drifted)
+        assert len(violations) == 1
+        assert "list_files" in violations[0]
+        assert "max_depth" in violations[0]
+
+    def test_real_guide_table_is_clean(self) -> None:
+        assert check_abstract_table(_real_guide_table()) == []
+
+
+def _real_guide_table() -> str:
+    """The current guide's abstract-methods section, as the known-good fixture."""
+    text = _GUIDE.read_text(encoding="utf-8")
+    start = text.index("### Abstract methods")
+    end = text.index("### Optional overrides")
+    return text[start:end]
+
+
+class TestConformanceFiles:
+    def test_existing_file_ok(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+        assert check_conformance_files("see tests/backends/conformance/test_io.py", root) == []
+
+    def test_nonexistent_file_flagged(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+        violations = check_conformance_files("see tests/backends/conformance/test_gone.py", root)
+        assert violations == ["guide names nonexistent conformance file: test_gone.py"]
+
+
+class TestMain:
+    def test_real_guide_passes(self, capsys) -> None:
+        assert main() == 0
+        assert "in sync" in capsys.readouterr().out
+
+    def test_missing_guide_returns_one(self, tmp_path: Path, capsys) -> None:
+        assert main([str(tmp_path / "gone.md")]) == 1
+        assert "guide not found" in capsys.readouterr().err
+
+    def test_drifted_guide_returns_one(self, tmp_path: Path, capsys) -> None:
+        drifted = _GUIDE.read_text(encoding="utf-8").replace(
+            "`list_files(path, recursive, max_depth)`", "`list_files(path, recursive)`"
+        )
+        target = tmp_path / "guide.md"
+        target.write_text(drifted, encoding="utf-8")
+        assert main([str(target)]) == 1
+        assert "list_files" in capsys.readouterr().err

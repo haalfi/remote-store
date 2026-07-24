@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-320: Refresh the custom-backend guide's conformance-registration section to the registry-driven fixture system and add a CI drift gate keeping the guide in sync with the Backend ABC
 - BUG-235: Fix custom-backend guide snippets that broke at runtime (`list_files` missing `max_depth`, nonexistent `RegistryConfig.from_yaml` and `observe(hooks=)` APIs)
 - BK-317: Fix stale Context7 repo entry (folders cap, OneDrive tagline) and claim the docs-root entry
 

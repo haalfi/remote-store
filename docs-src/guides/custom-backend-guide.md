@@ -67,7 +67,7 @@ don't need to handle it.
 Tooling and conformance tests read `YourBackend.CAPABILITIES` without instantiating the class,
 so the constant must be a class attribute — not computed in `__init__`.
 
-Three capabilities added in v0.23.0 are worth declaring when they apply:
+Three quality-flag capabilities are worth declaring when they apply:
 
 - **`USER_METADATA`** — declare this when your backend stores the `metadata=` mapping passed to `write()` and `write_atomic()`. Without it, `Store` raises `CapabilityNotSupported` if the caller passes non-empty metadata.
 - **`WRITE_RESULT_NATIVE`** — declare this when your backend populates `WriteResult` fields beyond the two mandatory ones (`path` and `size`). See the [WriteResult reference](../reference/api/models.md) for the full field list.
@@ -357,6 +357,15 @@ fixture — every registered backend runs the full suite automatically.
 | [`test_streaming.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_streaming.py) | Streaming reads, `LAZY_READ` laziness, resource cleanup | `pytest tests/backends/conformance/test_streaming.py` |
 | [`test_errors.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_errors.py) | Typed-error fidelity across read/write/delete/move/copy paths | `pytest tests/backends/conformance/test_errors.py` |
 | [`test_check_health.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_check_health.py) | `check_health()` contract — error mapping never leaks native SDK exceptions | `pytest tests/backends/conformance/test_check_health.py` |
+| [`test_health_probe_declared.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_health_probe_declared.py) | Structural: every backend overrides `check_health()` with a real probe, or declares an exemption | `pytest tests/backends/conformance/test_health_probe_declared.py` |
+| [`test_concurrency.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_concurrency.py) | Posture-gated concurrency lane — each fixture tested against its declared `concurrency` posture | `pytest tests/backends/conformance/test_concurrency.py` |
+| [`test_close_posture.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_close_posture.py) | Posture-gated `close()` lane — reusable vs. terminal after close | `pytest tests/backends/conformance/test_close_posture.py` |
+
+The directory also carries infrastructure lanes (sync-adapter conformance,
+large-payload guard, xfail guard, replayed examples) and the async suite
+under `aio/` — browse
+[the directory](https://github.com/haalfi/remote-store/tree/master/tests/backends/conformance)
+for the full inventory.
 
 Run the whole suite at once with `pytest tests/backends/conformance/`.
 
@@ -389,65 +398,98 @@ what existing backends happen to do."  See [`sdd/formal/README.md`](https://gith
 
 If you are contributing a backend to remote-store, this is step 3 of
 [CONTRIBUTING.md § Adding a New Backend](../../CONTRIBUTING.md#adding-a-new-backend).
-Add your backend to
-[`tests/backends/conftest.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conftest.py);
-the entire conformance suite then runs against it automatically.
+The test infrastructure is registry-driven: you declare facts in
+two TOML files and add one small factory module under
+[`tests/backends/fixtures/`](https://github.com/haalfi/remote-store/tree/master/tests/backends/fixtures);
+the conformance suite then parametrizes every test over your fixture
+automatically — no conftest edits.
 
-**1. Add an availability guard near the top of `conftest.py`:**
+**1. Declare the backend family in `tests/backends/fixtures/backends.toml`:**
 
-```python
-def _redis_available() -> bool:
-    try:
-        import redis  # noqa: F401
-        return True
-    except ImportError:
-        return False
+```toml
+# tests/backends/fixtures/backends.toml
+[backend.redis]
+sources           = ["src/remote_store/backends/_redis.py"]
+transport         = "fs"          # closed enum: http | ssh | fs | memory | sql
+concurrency       = "thread_safe" # thread_safe | single_connection — required, no default
+flat_namespace    = true          # true when the backend has no real directory entries
+self_op_supported = true          # move(p, p) / copy(p, p) is a safe no-op
 ```
 
-**2. Add a `pytest.param` constant:**
+`concurrency` is deliberately defaultless: a new family must state its
+thread-safety posture or the loader refuses to start.
+
+**2. Declare the fixture in `tests/backends/fixtures/fixtures.toml`:**
+
+```toml
+# tests/backends/fixtures/fixtures.toml
+[fixture.redis]
+backend   = "redis"
+stage     = 1            # 1 = in-process / always available; 2-3 need services
+kind      = "real-local" # pure | mocked | real-local | real-live | replay
+container = "none"       # minio | azurite | sftp | none
+is_async  = false
+```
+
+Per-fixture overrides of `flat_namespace` / `self_op_supported` merge on top
+of the family defaults — that is how the Azurite emulator (flat) and live
+ADLS Gen2 (HNS) share one `azure` family yet disagree.
+
+**3. Add a factory module `tests/backends/fixtures/redis.py`:**
 
 ```python
-_redis_param = pytest.param(
-    "redis",
-    marks=pytest.mark.skipif(not _redis_available(), reason="redis-py not installed"),
+from remote_store.backends._redis import RedisBackend
+from tests.backends.fixtures._loader import load_fixture
+from tests.backends.fixtures.registry import BackendFixture, register
+
+_meta = load_fixture("redis")
+
+
+def _factory() -> RedisBackend:
+    return RedisBackend(url="redis://localhost:6379/0", prefix="test:")
+
+
+register(
+    BackendFixture(
+        factory=_factory,
+        capabilities=frozenset(RedisBackend.CAPABILITIES),
+        cleanup=None,
+        **_meta.to_kwargs(),
+    )
 )
 ```
 
-If your backend requires an external service (like S3, SFTP, or Azurite), add
-a reachability check and a session-scoped server fixture following the existing
-`moto_server` / `sftp_server` / `azurite_server` pattern.
+That's the whole registration: `_load_all()` walks `fixtures.toml` and
+imports the matching factory module, so declaring the fixture and creating
+the module is a one-step change. The conformance conftest's
+`pytest_generate_tests` hook parametrizes every test that takes a `backend`
+argument (or `async_backend` for async fixtures) over the registered
+fixtures:
 
-**3. Add it to the `backend` fixture's `params` list and `elif` branch:**
-
-```python
-@pytest.fixture(
-    params=[
-        _local_param,
-        _memory_param,
-        # ... existing params ...
-        _redis_param,   # ← add here
-    ]
-)
-def backend(request, moto_server, sftp_server, azurite_server, http_server):
-    ...
-    elif request.param == "redis":
-        from remote_store.backends._redis import RedisBackend
-        b = RedisBackend(url="redis://localhost:6379/0", prefix=f"test-{uuid.uuid4().hex}:")
-        yield b
-        b.close()
+```bash
+pytest tests/backends/conformance/ -k redis
 ```
 
-`conftest.py` already imports `uuid` at the top — ensure yours does too if
-you are starting from scratch. Use a unique prefix per test so isolation is
-guaranteed even without a full teardown.
+If your backend requires an external service (like S3, SFTP, or Azurite),
+add a session-scoped server fixture in `tests/backends/conftest.py`
+following the existing `moto_server` / `sftp_server` / `azurite_server`
+pattern; it publishes endpoints into `INFRA`, which your factory reads at
+call time.
 
 ---
 
-### Capability gating with `_require()`
+### Capability gating
 
-Backends may declare a subset of capabilities. The `_require()` helper skips a
-test when the backend lacks the needed capability — so a read-only backend
-cleanly skips all write, move, copy, and delete tests without failures:
+Backends may declare a subset of capabilities, and the suite skips what a
+backend cannot do — a read-only backend cleanly skips all write, move, copy,
+and delete tests without failures. Two mechanisms, in order of preference:
+
+**Class-level filtering** is the primary mechanism: test classes parametrize
+via `fixture_params(*caps)`, so a backend missing a capability never
+enters those tests at all.
+
+**Runtime fallback** is the `_require()` helper, for a single test inside a
+coarsely-filtered class that needs a stricter capability than its siblings:
 
 ```python
 def _require(backend: Backend, *caps: Capability) -> None:
@@ -456,7 +498,7 @@ def _require(backend: Backend, *caps: Capability) -> None:
             pytest.skip(f"Backend does not support {cap.name}")
 ```
 
-Use the same pattern in your own tests:
+Use the same runtime pattern in your own tests:
 
 ```python
 from remote_store import Capability
@@ -487,19 +529,11 @@ Folders are virtual — inferred from key prefixes. A path `a/b/c` implies a
 prefix `a/b/` but no actual directory object exists.
 
 The conformance suite reads this from the per-backend `flat_namespace` flag
-declared in `tests/backends/fixtures/backends.toml`:
-
-```toml
-# tests/backends/fixtures/backends.toml
-[backend.<your-backend>]
-transport         = "fs"        # http | ssh | fs | memory | sql
-flat_namespace    = true        # set true for flat-namespace backends
-self_op_supported = true
-```
-
-A per-fixture override in `fixtures.toml` is also possible — Azurite (the
-flat emulator) and live ADLS Gen2 (HNS) share `backend == "azure"` but
-disagree on `flat_namespace`, so the fixture-level value takes precedence.
+declared in `tests/backends/fixtures/backends.toml` (see the registration
+steps above for the full family entry). A per-fixture override in
+`fixtures.toml` is also possible — Azurite (the flat emulator) and live
+ADLS Gen2 (HNS) share `backend == "azure"` but disagree on
+`flat_namespace`, so the fixture-level value takes precedence.
 Tests that rely on real directory semantics call `_skip_flat_namespace()`,
 which reads the resolved flag from the per-fixture record attached by the
 conformance indirect fixture; no identity-set lookup is needed.
@@ -641,6 +675,7 @@ are generally thread-safe, so our example doesn't need explicit locking.
 | `glob(pattern)` | Raises `CapabilityNotSupported` |
 | `to_key(native_path)` | Identity function |
 | `native_path(path)` | Identity function |
+| `resolve(path)` | Builds a `ResolutionPlan` from `name` and `native_path()`; no I/O. Override to add backend-specific `details` |
 | `check_health()` | No-op |
 | `close()` | No-op |
 | `unwrap(type_hint)` | Raises `CapabilityNotSupported` |

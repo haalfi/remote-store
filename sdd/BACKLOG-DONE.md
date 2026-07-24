@@ -8,6 +8,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-320 — Custom-backend guide: registry-era conformance section + drift gate**
+  spec: — · effort: S · audience: user.site, contributor.tooling
+  Follow-up to the BUG-235 audit. The guide's "Registering in the
+  conformance fixture" section still described the pre-spec-048 mechanism
+  (editing `tests/backends/conftest.py` with an availability guard,
+  `pytest.param`, and a params-list `elif`), contradicting
+  CONTRIBUTING.md § Adding a New Backend; its `backends.toml` example
+  omitted the required `concurrency` key. Rewrote the section to the
+  registry procedure (backends.toml + fixtures.toml + factory module,
+  auto-parametrized via `fixture_params`), reframed `_require()` as the
+  runtime fallback behind class-level filtering, added the newer
+  conformance lanes (concurrency, close-posture, health-probe-declared)
+  to the topic table, dropped the wrong "added in v0.23.0" capability
+  anchor, and added the missing `resolve()` optional-override row. Long
+  term correctness is now mechanical: `scripts/check_custom_backend_guide.py`
+  (in `lint` and `docs-gate`) verifies every snippet region resolves, the
+  abstract-methods table mirrors `Backend.__abstractmethods__`
+  signature-for-signature, and every conformance file the guide names
+  exists.
+
 - [x] **BUG-235 — Custom-backend guide snippets break at runtime**
   spec: — · effort: S · audience: user.site, user.api_docs
   A guide-validation audit found three defects a reader following
