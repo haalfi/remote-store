@@ -18,6 +18,7 @@ co_shipped_items:
   - BUG-235
 expected_ripples:
   - sdd/backlogid.json
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

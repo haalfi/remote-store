@@ -402,7 +402,9 @@ The test infrastructure is registry-driven: you declare facts in
 two TOML files and add one small factory module under
 [`tests/backends/fixtures/`](https://github.com/haalfi/remote-store/tree/master/tests/backends/fixtures);
 the conformance suite then parametrizes every test over your fixture
-automatically — no conftest edits.
+automatically — no conftest edits to register or parametrize it. (A backend
+that needs an external service still adds a server fixture there; see the
+end of this section.)
 
 **1. Declare the backend family in `tests/backends/fixtures/backends.toml`:**
 
@@ -425,7 +427,7 @@ thread-safety posture or the loader refuses to start.
 # tests/backends/fixtures/fixtures.toml
 [fixture.redis]
 backend   = "redis"
-stage     = 1            # 1 = in-process / always available; 2-3 need services
+stage     = 2            # 1 = in-process / always available; 2-3 need services
 kind      = "real-local" # pure | mocked | real-local | real-live | replay
 container = "none"       # minio | azurite | sftp | none
 is_async  = false

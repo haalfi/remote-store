@@ -547,6 +547,9 @@ class RedisBackend(Backend):
 # Step 13-14: Usage examples (exercised with MemoryBackend)
 # ---------------------------------------------------------------------------
 
+if TYPE_CHECKING:
+    from remote_store import Store
+
 
 def _demo_direct_usage() -> None:
     # --8<-- [start:step13-direct]
@@ -564,7 +567,7 @@ def _demo_direct_usage() -> None:
     # --8<-- [end:step13-direct]
 
 
-def _demo_registry_usage():
+def _demo_registry_usage() -> Store:
     # --8<-- [start:step13-registry]
     from remote_store import Registry, register_backend
     from remote_store.ext.yaml import from_yaml  # needs: pip install "remote-store[yaml]"
@@ -578,16 +581,16 @@ def _demo_registry_usage():
     return store
 
 
-def _demo_extensions(store) -> None:
-    events = []
-
-    def my_logging_hook(event) -> None:
-        events.append(event)
-
+def _demo_extensions(store: Store) -> None:
     # --8<-- [start:step14-extensions]
     from remote_store.ext.batch import batch_copy
     from remote_store.ext.cache import cache
     from remote_store.ext.observe import observe
+
+    events = []
+
+    def my_logging_hook(event) -> None:
+        events.append(event)
 
     # Observability — my_logging_hook fires after every operation
     observed = observe(store, on_any=my_logging_hook)
@@ -742,11 +745,14 @@ def demo() -> None:
                 )
             try:
                 registry_store = _demo_registry_usage()
-            except ModuleNotFoundError:
-                print("No YAML parser installed; skipping the registry snippet.")
-            else:
-                registry_store.write("hello.txt", b"from-registry")
-                assert registry_store.read_bytes("hello.txt") == b"from-registry"
+            finally:
+                # The region registers the tutorial class in the process-global
+                # factory map; restore it so in-process callers (pytest) stay clean.
+                from remote_store._registry import _BACKEND_FACTORIES
+
+                _BACKEND_FACTORIES.pop("redis", None)
+            registry_store.write("hello.txt", b"from-registry")
+            assert registry_store.read_bytes("hello.txt") == b"from-registry"
         finally:
             os.chdir(cwd)
 
