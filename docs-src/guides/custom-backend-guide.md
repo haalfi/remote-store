@@ -130,11 +130,13 @@ traceback for debugging.
 - `is_file("")` is always `False`. `is_folder("")` is always `True`.
 
 A layer note on the alias rules: `Store` normalizes `"."` to `""` before
-your backend runs, so through `Store` your backend only ever sees `""`
-for root. The rule to follow: implement the root invariants in terms of
-`""`, and treat `"."` handling as optional defense for direct backend
-callers — the tutorial guards both, which is the safe shape. The precise
-backend-layer obligations live in the
+your backend runs, so your backend never sees `"."` through `Store` — an
+unscoped store's root arrives as `""`, and a scoped store prepends its
+`root_path`, so root arrives as that prefix instead. The rule to follow:
+implement the root invariants in terms of `""`, and treat `"."` handling
+as optional defense for direct backend callers — the tutorial guards
+both, which is the safe shape. The precise backend-layer obligations live
+in the
 [Backend Adapter Contract](../../sdd/specs/003-backend-adapter-contract.md).
 
 ---
@@ -169,7 +171,7 @@ returns the stream as-is.
 
 - `content` is `bytes | BinaryIO`. Normalize with `content if isinstance(content, bytes) else content.read()`.
 - **Both `write()` and `write_atomic()` accept `metadata: Mapping[str, str] | None = None`.** If your backend declares `USER_METADATA`, persist the mapping alongside the file. If it doesn't, ignore the argument — `Store` rejects non-empty metadata before reaching your implementation.
-- **Both methods must return [`WriteResult`](../reference/api/models.md).** Construct it with at minimum `path=RemotePath(path)` and `size=len(raw)`. If your backend can populate richer fields, declare `WRITE_RESULT_NATIVE` and include them. The Redis example returns the two-field minimum.
+- **Both methods must return [`WriteResult`](../reference/api/models.md).** Construct it with at minimum `path=RemotePath(path)` and `size=len(raw)`. If your backend can populate richer fields, declare `WRITE_RESULT_NATIVE` and include them. The Redis example constructs just the two required fields.
 - **Write creates parent folders implicitly** — in Redis, there's nothing to create, but filesystem-based backends must `mkdir -p`.
 - Re-raise your own errors (`AlreadyExists`, `InvalidPath`) before the catch-all `RedisError` handler.
 - Even though Store gates `write_atomic()` via capabilities, implement the methods anyway (they're abstract). Raise `CapabilityNotSupported` as a safety net.
@@ -211,10 +213,14 @@ returns the stream as-is.
   exactly as the code above does: at the backend layer `recursive=False`
   wins (immediate children only, whatever `max_depth` says), and
   `max_depth` prunes recursive listings to the requested depth. `Store`
-  never sends you that combination — its facade overrides `recursive`
-  whenever callers set `max_depth` — so the backend-layer rule is
-  observable only in direct calls, which is exactly how the conformance
-  suite calls you.
+  never sends you a *conflicting* combination — when callers set
+  `max_depth`, its facade derives `recursive` from it, and `max_depth=0`
+  arrives as `recursive=False`, where both rules agree — so the
+  backend-layer precedence is observable only in direct calls, which is
+  how the conformance suite calls you. The tutorial follows the formal
+  backend contract here; where older spec prose differs, the
+  [Backend Adapter Contract](../../sdd/specs/003-backend-adapter-contract.md)
+  and the conformance suite are the operative authorities.
 - `list_folders()` is always non-recursive — only immediate subfolders.
 - Non-existent paths yield nothing (no exception).
 - [`FileInfo`](../reference/api/models.md)`.path` must be a [`RemotePath`](../reference/api/models.md).
@@ -241,14 +247,17 @@ returns the stream as-is.
 --8<-- "examples/snippets/custom_backend_guide.py:step11-move-copy"
 ```
 
-**Contract rules the code above implements:**
+**Rules the code above implements:**
 
 - **`src == dst` is a data-preserving no-op** — never a delete-after-write on
   the same key. Place the no-op return *after* the source check so a missing
-  source still raises `NotFound`.
+  source still raises `NotFound`. (Contract rule.)
 - **Precondition order matters:** a missing source raises `NotFound` before
-  the destination is checked for `AlreadyExists`.
-- Empty source or destination paths raise `InvalidPath`.
+  the destination is checked for `AlreadyExists`. (Contract rule.)
+- Empty source or destination paths raise `InvalidPath` — today a
+  `Store`-enforced convention that shipped backends (and this tutorial)
+  also guard defensively; promoting it to a formal backend-contract clause
+  is tracked spec work.
 
 The conformance suite verifies the no-op rule for backends that declare
 `self_op_supported` (a registration fact covered later in this guide).
@@ -399,7 +408,7 @@ fixture — every registered backend runs the full suite automatically.
 | [`test_streaming.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_streaming.py) | Streaming reads, `LAZY_READ` laziness, resource cleanup | `pytest tests/backends/conformance/test_streaming.py` |
 | [`test_errors.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_errors.py) | Typed-error fidelity across read/write/delete/move/copy paths | `pytest tests/backends/conformance/test_errors.py` |
 | [`test_check_health.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_check_health.py) | `check_health()` contract — error mapping never leaks native SDK exceptions | `pytest tests/backends/conformance/test_check_health.py` |
-| [`test_health_probe_declared.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_health_probe_declared.py) | Structural: every backend overrides `check_health()` with a real probe, or declares an exemption | `pytest tests/backends/conformance/test_health_probe_declared.py` |
+| [`test_health_probe_declared.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_health_probe_declared.py) | Structural: every backend overrides `check_health()` or declares an exemption (presence only; probe behavior is verified per-backend) | `pytest tests/backends/conformance/test_health_probe_declared.py` |
 | [`test_concurrency.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_concurrency.py) | Posture-gated concurrency lane — each fixture tested against its declared `concurrency` posture | `pytest tests/backends/conformance/test_concurrency.py` |
 | [`test_close_posture.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_close_posture.py) | Posture-gated `close()` lane — reusable vs. terminal after close | `pytest tests/backends/conformance/test_close_posture.py` |
 
@@ -648,8 +657,10 @@ def test_move_preserves_content(backend):
     assert backend.read_bytes("dst.txt") == b"hello"
 ```
 
-A backend declaring only `READ` and `LIST` will skip every `WRITE`, `MOVE`,
-`COPY`, and `DELETE` test. The suite still passes — skips are not failures.
+A backend declaring only `READ` and `LIST` never enters the `WRITE`,
+`MOVE`, `COPY`, and `DELETE` lanes at all — class-filtered tests are not
+generated for it — and any stricter test inside a coarser class
+self-skips. The suite still passes: absences and skips are not failures.
 
 ---
 

@@ -14,6 +14,7 @@ audience:
   - user.site
 co_shipped_items:
   - BK-320
+  - BUG-239
 expected_ripples:
   - sdd/backlogid.json
 review_rounds: 6

@@ -29,12 +29,14 @@ truth (a region calling a nonexistent API) is covered by
 ``tests/test_snippets.py`` and ``hatch run examples``, which execute the
 snippet regions.
 
-Known scope limits, on purpose: the ABC tables cover plain methods only —
-properties, classmethods, and class attributes (e.g. ``close_is_terminal``)
-are invisible to ``inspect.isfunction`` and are not gated here; the
+Known scope limits, on purpose: the abstract table gates every
+``__abstractmethods__`` member, abstract properties included, but the
+optional-overrides table covers plain methods only — non-abstract
+properties, classmethods, and class attributes (e.g.
+``close_is_terminal``) are invisible to ``inspect.isfunction``; the
 ``CAPABILITIES`` row is membership-checked but has no parameters to
-compare; and parameters are compared by NAME only (kinds and defaults are
-covered by the executable guard).
+compare; and parameter comparison skips property rows and compares by
+NAME only (kinds and defaults are covered by the executable guard).
 
 Wired into ``hatch run lint`` and ``hatch run docs-gate``.
 

@@ -16,6 +16,7 @@ audience:
   - contributor.tooling
 co_shipped_items:
   - BUG-235
+  - BUG-239
 discovery_followups:
   - BUG-236
   - BUG-237

@@ -1519,7 +1519,7 @@ class TestCloseDrainsPendingTasks:
 
         async def _hang() -> None:
             started.set()
-            await release.wait()  # never set -- hangs until reaped
+            await release.wait()  # never set; hangs until reaped
 
         asyncio.run_coroutine_threadsafe(_hang(), adapter._loop)  # internal: private loop
         assert started.wait(timeout=2.0), "background task never started"

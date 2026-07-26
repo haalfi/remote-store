@@ -39,10 +39,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   to the topic table, dropped the wrong "added in v0.23.0" capability
   anchor, and added the missing `resolve()` optional-override row. Long
   term correctness is now mechanical: `scripts/check_custom_backend_guide.py`
-  (in `lint` and `docs-gate`) verifies every snippet region resolves, the
-  abstract-methods table mirrors `Backend.__abstractmethods__`
-  signature-for-signature, and every conformance file the guide names
-  exists.
+  (in `lint` and `docs-gate`) runs five checks — every snippet include
+  resolves (with floor and parity assertions), the abstract-methods table
+  mirrors `Backend.__abstractmethods__` name-for-name with parameter
+  comparison, the optional-overrides table mirrors the public non-abstract
+  `Backend` methods, every conformance file the guide names exists, and
+  the registration section's fenced TOML validates through the fixture
+  loader's own parsers.
 
 - [x] **BUG-235 — Custom-backend guide snippets break at runtime**
   spec: — · effort: S · audience: user.site

@@ -75,6 +75,21 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **ID-235 — Structural lint for BACKLOG files (entry-header integrity)**
+  spec: — · effort: S · audience: contributor.tooling
+  PR #932 round 5: a string-anchored edit swallowed the
+  `- [x] **BK-320 — ...**` header line in `BACKLOG-DONE.md`, gluing that
+  item's metadata and body into the previous entry. Because
+  `gen_backlogid.py` derives `backlogid.json` from entry headers only,
+  the loss also masked a stale `"BK"` value, and the two defects hid each
+  other from `gen-backlogid --check`. A cheap structural lint closes the
+  class: every `spec: · effort: · audience:` metadata line must be
+  immediately preceded by a `- [x] / - [ ] **PREFIX-NNN — ...**` header;
+  headers are unique across BACKLOG.md + BACKLOG-DONE.md; BACKLOG-DONE
+  entries carry `[x]` only. Natural home: extend
+  `scripts/gen_backlogid.py` (it already parses both files) or a sibling
+  check wired into `lint`.
+
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
   spec: — · effort: L · audience: platform.tooling
   ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review
@@ -190,7 +205,14 @@ and the highest ID already in this file, then take the next integer. Run
   `strict_only` fixture variant and the `_MODULE_FOR` map (its absence
   silently drops ~25 conformance cells — the checklist stays green).
   One item because all three are "contract topics the guide omits";
-  split if any grows.
+  split if any grows. The guide walkthrough left three smaller doc gaps
+  to fold in here too: the error-mapping checklist has no row for
+  unclassifiable native errors (reference backends fall back to the base
+  `RemoteStoreError`); Step 4's `from exc` guidance never mentions the
+  deliberate `from None` pattern some backends use to suppress noisy
+  chained tracebacks; and the `SEEKABLE_READ` design note ("network
+  streams don't qualify") contradicts the shipped range-reader backends
+  that declare it.
 
 - [ ] **BK-323 — Spec the empty-path rule for move/copy (BE-018/BE-019) and add a conformance case**
   spec: 003 · effort: S · audience: library.maintainer
