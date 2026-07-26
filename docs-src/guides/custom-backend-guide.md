@@ -208,9 +208,13 @@ returns the stream as-is.
   *you* return — a backend that ignores the value fails those tests, even
   though `Store` additionally applies client-side depth filtering for its
   own callers. Treat `recursive` and `max_depth` as independent filters,
-  exactly as the code above does: `recursive=False` always wins (immediate
-  children only, whatever `max_depth` says), and `max_depth` prunes
-  recursive listings to the requested depth.
+  exactly as the code above does: at the backend layer `recursive=False`
+  wins (immediate children only, whatever `max_depth` says), and
+  `max_depth` prunes recursive listings to the requested depth. `Store`
+  never sends you that combination — its facade overrides `recursive`
+  whenever callers set `max_depth` — so the backend-layer rule is
+  observable only in direct calls, which is exactly how the conformance
+  suite calls you.
 - `list_folders()` is always non-recursive — only immediate subfolders.
 - Non-existent paths yield nothing (no exception).
 - [`FileInfo`](../reference/api/models.md)`.path` must be a [`RemotePath`](../reference/api/models.md).

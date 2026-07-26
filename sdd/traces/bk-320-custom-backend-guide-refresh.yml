@@ -25,7 +25,7 @@ discovery_followups:
   - BK-323
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 5
+review_rounds: 6
 phases:
   - id: orient
     name: Orient

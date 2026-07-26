@@ -150,14 +150,19 @@ and the highest ID already in this file, then take the next integer. Run
   which spec 037's table claims do not. It is 037's prose/table and the
   docstring that contradict the formal model, not vice versa.
   (2) Precedence when `recursive=False` and `max_depth` are both set:
-  the sync Dafny model and sync tests say `recursive=False` wins
-  (immediate children only), while spec 029 ASYNC-014 says `max_depth`
-  wins, and `SQLBlobBackend`/`SQLQueryBackend` follow the async reading
-  today — violating the sync model. Decide both rules, then align spec
-  037 prose+table, spec 029, the ABC docstrings, and the SQL backends.
-  The custom-backend guide and tutorial backend were aligned to the
-  formal model's side (prune natively; `recursive=False` wins) in PR
-  #932 and track whichever resolution lands.
+  the sync Dafny model and sync backend tests say `recursive=False` wins
+  (immediate children only) at the backend layer, while spec 029
+  ASYNC-014 says `max_depth` wins, `SQLBlobBackend`/`SQLQueryBackend`
+  follow the async reading today — violating the sync model — and the
+  sync `Store` facade itself resolves max_depth-wins for its callers
+  (it derives `recursive` from `max_depth` before dispatching, so
+  backends never see the conflicting combination through `Store`).
+  Decide both rules, then align spec 037 prose+table, spec 029, the
+  Store/AsyncStore docstrings, and the SQL backends. The custom-backend
+  guide, the tutorial backend, and the Backend/AsyncBackend `max_depth`
+  docstrings were aligned to the formal model's side (prune natively;
+  backend-layer `recursive=False` wins) in PR #932 and track whichever
+  resolution lands.
 
 - [ ] **BK-321 — Document the Registry's constructor-kwarg transformations in the custom-backend guide**
   spec: — · effort: S · audience: user.site, user.api

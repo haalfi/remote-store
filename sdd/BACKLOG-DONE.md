@@ -23,6 +23,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   task is then strongly reachable) and force `gc.collect()` in the test
   so the once-flaky path is exercised deterministically. Adapter code is
   correct; test-only fix.
+
+- [x] **BK-320 — Custom-backend guide: registry-era conformance section + drift gate**
   spec: — · effort: S · audience: user.site, contributor.tooling
   Follow-up to the BUG-235 audit. The guide's "Registering in the
   conformance fixture" section still described the pre-spec-048 mechanism

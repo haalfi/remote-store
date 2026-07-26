@@ -193,7 +193,10 @@ class RedisBackend(Backend):
     def _has_children(self, path: str) -> bool:
         """Check if any keys exist under this path prefix."""
         # SCAN may return an empty page with a nonzero cursor, so loop
-        # until a key shows up or the cursor wraps to 0.
+        # until a key shows up or the cursor wraps to 0. Note the cost:
+        # SCAN+MATCH walks the whole keyspace on a miss, so a production
+        # backend should keep a secondary index (e.g. a per-prefix set)
+        # instead of scanning per existence check.
         pattern = f"{self._prefix}file:{path}/*"
         cursor = 0
         while True:
@@ -815,7 +818,7 @@ def demo() -> None:
     # the region actually defines against the real ReadOnlyHttpBackend set.
     import types
 
-    from remote_store.backends._http import ReadOnlyHttpBackend
+    from remote_store.backends import ReadOnlyHttpBackend
 
     read_only_cls = _demo_partial_capabilities()
     assert set(read_only_cls.CAPABILITIES) == set(ReadOnlyHttpBackend.CAPABILITIES)
