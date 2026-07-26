@@ -175,8 +175,13 @@ class _FakeRedisClient:
         return removed
 
     def scan(self, cursor: int = 0, match: str = "*", count: int = 10) -> tuple[int, list[bytes]]:
-        keys = [k.encode() for k in sorted(self._hashes) if fnmatch.fnmatchcase(k, match)]
-        return 0, keys
+        # Faithful to redis-py: SCAN pages the whole keyspace by ``count``
+        # and applies MATCH per page, so a page can be empty while the
+        # cursor is still nonzero — the pitfall the snippet's loops handle.
+        keys = sorted(self._hashes)
+        page = keys[cursor : cursor + count]
+        next_cursor = cursor + count if cursor + count < len(keys) else 0
+        return next_cursor, [k.encode() for k in page if fnmatch.fnmatchcase(k, match)]
 
     def pipeline(self) -> _FakeRedisPipeline:
         return _FakeRedisPipeline(self)
@@ -199,6 +204,27 @@ class _FakeRedisModule:
         @staticmethod
         def from_url(url: str, decode_responses: bool = False) -> _FakeRedisClient:
             return _FakeRedisClient()
+
+
+def _yaml_parser_available() -> bool:
+    """Mirror ext/yaml.py's fallback: either pyyaml or ruamel.yaml will do."""
+    import importlib.util
+
+    return importlib.util.find_spec("yaml") is not None or importlib.util.find_spec("ruamel.yaml") is not None
+
+
+def _backend_with_client(monkeypatch: pytest.MonkeyPatch, client: _FakeRedisClient):
+    """Build the guide's RedisBackend around a specific (possibly failing) client."""
+    import examples.snippets.custom_backend_guide as cbg
+
+    class _Module(_FakeRedisModule):
+        class Redis:
+            @staticmethod
+            def from_url(url: str, decode_responses: bool = False) -> _FakeRedisClient:
+                return client
+
+    monkeypatch.setattr(cbg, "redis", _Module)
+    return cbg.RedisBackend(url="redis://localhost:6379/0", prefix="rs:")
 
 
 @pytest.fixture
@@ -230,10 +256,36 @@ class TestCustomBackendGuideSnippets:
 
     @pytest.mark.spec("ID-057")
     def test_custom_backend_guide_demo(self) -> None:
+        if not _yaml_parser_available():
+            pytest.skip("neither pyyaml nor ruamel.yaml installed (demo's registry region needs one)")
         from examples.snippets.custom_backend_guide import demo
 
         result = demo()
         assert result is None
+
+    @pytest.mark.spec("ID-057")
+    def test_demo_leaves_no_process_state(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """demo() must restore the cwd and undo its global backend registration."""
+        if not _yaml_parser_available():
+            pytest.skip("neither pyyaml nor ruamel.yaml installed (demo's registry region needs one)")
+        from examples.snippets.custom_backend_guide import demo
+        from remote_store._registry import _BACKEND_FACTORIES
+
+        monkeypatch.chdir(tmp_path)
+        demo()
+
+        assert Path.cwd().resolve() == tmp_path.resolve()
+        assert "redis" not in _BACKEND_FACTORIES  # internal: no public observable
+
+    @pytest.mark.spec("ID-057")
+    def test_step13_direct_region_executes(self, monkeypatch: pytest.MonkeyPatch, capsys) -> None:
+        """Run the step13-direct region verbatim against the fake client."""
+        import examples.snippets.custom_backend_guide as cbg
+
+        monkeypatch.setattr(cbg, "redis", _FakeRedisModule)
+        cbg._demo_direct_usage()
+        out = capsys.readouterr().out
+        assert "q1.csv: 12 bytes" in out
 
     @pytest.mark.spec("ID-057")
     def test_redis_backend_signatures_match_backend_abc(self) -> None:
@@ -275,13 +327,14 @@ class TestCustomBackendGuideSnippets:
         names = {f.name for f in store.list_files("a")}
         assert names == {"1.txt", "2.txt"}
 
+        store.write("a/b/c/deeper.txt", b"deepest")
         recursive = {f.name for f in store.list_files("a", recursive=True)}
-        assert recursive == {"1.txt", "2.txt", "deep.txt"}
+        assert recursive == {"1.txt", "2.txt", "deep.txt", "deeper.txt"}
 
-        # The guide's Step 9 claim: a backend may ignore max_depth because
-        # Store filters client-side. This backend ignores it — prove the claim.
+        # Depth cutoffs are discriminating: each level adds a file.
         assert {f.name for f in store.list_files("a", max_depth=0)} == {"1.txt", "2.txt"}
         assert {f.name for f in store.list_files("a", max_depth=1)} == {"1.txt", "2.txt", "deep.txt"}
+        assert {f.name for f in store.list_files("a", max_depth=2)} == {"1.txt", "2.txt", "deep.txt", "deeper.txt"}
 
         assert {f.name for f in store.list_folders("")} == {"a"}
         assert {f.name for f in store.list_folders("a")} == {"b"}
@@ -353,6 +406,134 @@ class TestCustomBackendGuideSnippets:
             backend.move("ghost.txt", "ghost.txt")
         with pytest.raises(NotFound, match="not found"):
             backend.copy("ghost.txt", "ghost.txt")
+
+    @pytest.mark.spec("ID-057")
+    def test_backend_honors_max_depth_natively(self, guide_redis_backend) -> None:
+        """The conformance suite asserts the depth boundary on the backend's own output."""
+        backend = guide_redis_backend
+        backend.write("pc/a.txt", b"1")
+        backend.write("pc/s/b.txt", b"2")
+        backend.write("pc/s/t/c.txt", b"3")
+
+        assert {f.name for f in backend.list_files("pc", recursive=True, max_depth=0)} == {"a.txt"}
+        files = list(backend.list_files("pc", recursive=True, max_depth=1))
+        assert {f.name for f in files} == {"a.txt", "b.txt"}
+        for f in files:
+            depth = str(f.path).removeprefix("pc/").count("/")
+            assert depth <= 1, f"depth boundary violated: {f.path}"
+        assert {f.name for f in backend.list_files("pc", recursive=True, max_depth=2)} == {"a.txt", "b.txt", "c.txt"}
+
+    @pytest.mark.spec("ID-057")
+    def test_error_mapping_never_leaks(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Step 4's cardinal rule, executed: native errors map, never leak."""
+        from remote_store import BackendUnavailable, PermissionDenied
+
+        class _ConnFailClient(_FakeRedisClient):
+            def hget(self, key: str, field: str) -> bytes | None:
+                raise _FakeRedisConnectionError("socket closed")
+
+        backend = _backend_with_client(monkeypatch, _ConnFailClient())
+        with pytest.raises(BackendUnavailable, match="connection failed"):
+            backend.read_bytes("x.txt")
+
+        class _AuthFailClient(_FakeRedisClient):
+            def hget(self, key: str, field: str) -> bytes | None:
+                raise _FakeRedisAuthenticationError("NOAUTH")
+
+        backend = _backend_with_client(monkeypatch, _AuthFailClient())
+        with pytest.raises(PermissionDenied, match="authentication failed"):
+            backend.read_bytes("x.txt")
+
+    @pytest.mark.spec("ID-057")
+    def test_lifecycle_and_atomic_safety_nets(self, guide_redis_backend, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Step 12 check_health()/close() arms and Step 7 CapabilityNotSupported nets."""
+        from remote_store import BackendUnavailable, CapabilityNotSupported, PermissionDenied
+
+        assert guide_redis_backend.check_health() is None
+        guide_redis_backend.close()
+
+        class _DeadClient(_FakeRedisClient):
+            def ping(self) -> bool:
+                raise _FakeRedisConnectionError("refused")
+
+        backend = _backend_with_client(monkeypatch, _DeadClient())
+        with pytest.raises(BackendUnavailable, match="not reachable"):
+            backend.check_health()
+
+        class _LockedClient(_FakeRedisClient):
+            def ping(self) -> bool:
+                raise _FakeRedisAuthenticationError("NOAUTH")
+
+        backend = _backend_with_client(monkeypatch, _LockedClient())
+        with pytest.raises(PermissionDenied, match="authentication failed"):
+            backend.check_health()
+
+        with pytest.raises(CapabilityNotSupported, match="atomic"):
+            guide_redis_backend.write_atomic("x.txt", b"data")
+        with pytest.raises(CapabilityNotSupported, match="atomic"), guide_redis_backend.open_atomic("x.txt"):
+            pass
+
+    @pytest.mark.spec("ID-057")
+    def test_backend_failure_paths(self, guide_redis_store, guide_redis_backend) -> None:
+        """Failure paths the tutorial implements beyond the four basics."""
+        from remote_store import AlreadyExists, InvalidPath, NotFound
+
+        store = guide_redis_store
+        with pytest.raises(NotFound, match="File not found"):
+            store.get_file_info("nope.txt")
+        with pytest.raises(NotFound, match="Folder not found"):
+            store.get_folder_info("nofolder")
+        with pytest.raises(NotFound, match="Folder not found"):
+            store.delete_folder("nofolder")
+        store.delete_folder("nofolder", missing_ok=True)
+
+        store.write("m1.txt", b"one")
+        store.write("m2.txt", b"two")
+        with pytest.raises(AlreadyExists, match="already exists"):
+            store.move("m1.txt", "m2.txt")
+        store.move("m1.txt", "m2.txt", overwrite=True)
+        assert store.read_bytes("m2.txt") == b"one"
+        assert not store.exists("m1.txt")
+
+        with pytest.raises(InvalidPath, match="must not be empty"):
+            guide_redis_backend.write("", b"x")
+
+        store.write("f/x.txt", b"x")
+        assert store.is_folder("f")
+        assert not store.is_folder("missing")
+        assert not store.is_file("f")
+        info = store.get_file_info("f/x.txt")
+        assert (info.name, info.size) == ("x.txt", 1)
+        folder = store.get_folder_info("f")
+        assert (folder.file_count, folder.total_size) == (1, 1)
+
+    @pytest.mark.spec("ID-057")
+    def test_read_returns_seekable_stream(self, guide_redis_store) -> None:
+        """The SEEKABLE_READ declaration rests on read() returning BytesIO."""
+        store = guide_redis_store
+        store.write("s.txt", b"seekme")
+        stream = store.read("s.txt")
+        assert stream.seekable()
+        assert stream.read() == b"seekme"
+        stream.seek(0)
+        assert stream.read(4) == b"seek"
+
+    @pytest.mark.spec("ID-057")
+    def test_scan_pagination_survives_empty_pages(self, guide_redis_backend) -> None:
+        """SCAN can return empty pages with a nonzero cursor; the loops must continue.
+
+        120 keys under ``aa/`` sort ahead of ``zz/``, so with the fake's
+        count-sized pages the first page contains no ``zz/`` match.
+        """
+        backend = guide_redis_backend
+        for i in range(120):
+            backend.write(f"aa/{i:03}.txt", b"x")
+        backend.write("zz/last.txt", b"z")
+
+        assert backend.is_folder("zz")
+        assert backend.exists("zz/last.txt")
+        assert not backend.is_folder("nothere")
+        assert {f.name for f in backend.list_files("zz")} == {"last.txt"}
 
     @pytest.mark.spec("ID-057")
     def test_store_root_invariants(self, guide_redis_store) -> None:

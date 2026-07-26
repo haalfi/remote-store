@@ -29,7 +29,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   exists.
 
 - [x] **BUG-235 — Custom-backend guide snippets break at runtime**
-  spec: — · effort: S · audience: user.site, user.api_docs
+  spec: — · effort: S · audience: user.site
   A guide-validation audit found three defects a reader following
   `docs-src/guides/custom-backend-guide.md` would hit: (1) the tutorial
   `RedisBackend.list_files` omitted `max_depth`, which `Store.list_files`

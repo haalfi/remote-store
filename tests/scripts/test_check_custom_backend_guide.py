@@ -24,6 +24,7 @@ check_snippet_regions = _mod.check_snippet_regions
 check_abstract_table = _mod.check_abstract_table
 check_optional_overrides_table = _mod.check_optional_overrides_table
 check_conformance_files = _mod.check_conformance_files
+check_registration_toml = _mod.check_registration_toml
 main = _mod.main
 
 _GUIDE = Path(__file__).resolve().parents[2] / "docs-src" / "guides" / "custom-backend-guide.md"
@@ -48,6 +49,19 @@ class TestSnippetRegions:
     def test_missing_file_flagged(self, tmp_path: Path) -> None:
         violations = check_snippet_regions('--8<-- "gone.py:demo"\n', tmp_path)
         assert violations == ["snippet file not found: gone.py (region demo)"]
+
+    def test_zero_includes_flagged(self, tmp_path: Path) -> None:
+        # A guide that lost every include must fail, not report clean.
+        violations = check_snippet_regions("# guide with no includes\n", tmp_path)
+        assert len(violations) == 1
+        assert "no --8<-- snippet includes" in violations[0]
+
+    def test_whole_file_include_checked(self, tmp_path: Path) -> None:
+        # pymdownx also supports region-less whole-file includes.
+        (tmp_path / "whole.py").write_text("x = 1\n", encoding="utf-8")
+        assert check_snippet_regions('--8<-- "whole.py"\n', tmp_path) == []
+        violations = check_snippet_regions('--8<-- "gone_whole.py"\n', tmp_path)
+        assert violations == ["snippet file not found: gone_whole.py"]
 
 
 class TestAbstractTable:
@@ -144,6 +158,43 @@ class TestConformanceFiles:
         violations = check_conformance_files("see tests/backends/conformance/test_gone.py", root)
         assert violations == ["guide names nonexistent conformance file: test_gone.py"]
 
+    def test_zero_references_flagged(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+        violations = check_conformance_files("guide with no conformance refs", root)
+        assert len(violations) == 1
+        assert "names no tests/backends/conformance/" in violations[0]
+
+
+class TestRegistrationToml:
+    _ROOT = Path(__file__).resolve().parents[2]
+
+    def test_real_guide_toml_is_valid(self) -> None:
+        text = _GUIDE.read_text(encoding="utf-8")
+        assert check_registration_toml(text, self._ROOT) == []
+
+    def test_invalid_enum_value_flagged(self) -> None:
+        guide = '```toml\n[backend.x]\ntransport = "carrier-pigeon"\nconcurrency = "thread_safe"\n```\n'
+        violations = check_registration_toml(guide, self._ROOT)
+        assert len(violations) == 1
+        assert "carrier-pigeon" in violations[0]
+
+    def test_missing_concurrency_flagged(self) -> None:
+        guide = '```toml\n[backend.x]\ntransport = "http"\n```\n'
+        violations = check_registration_toml(guide, self._ROOT)
+        assert len(violations) == 1
+        assert "concurrency" in violations[0]
+
+    def test_fixture_fields_validated(self) -> None:
+        guide = '```toml\n[fixture.x]\nstage = 9\nkind = "imaginary"\ncontainer = "redis"\n```\n'
+        violations = check_registration_toml(guide, self._ROOT)
+        assert len(violations) == 3
+
+    def test_unparseable_fence_flagged(self) -> None:
+        guide = "```toml\nthis is [not toml\n```\n"
+        violations = check_registration_toml(guide, self._ROOT)
+        assert len(violations) == 1
+        assert "does not parse" in violations[0]
+
 
 class TestMain:
     def test_real_guide_passes(self, capsys) -> None:
@@ -162,3 +213,38 @@ class TestMain:
         target.write_text(drifted, encoding="utf-8")
         assert main([str(target)]) == 1
         assert "list_files" in capsys.readouterr().err
+
+    # One drift case per remaining check, so silently unwiring any check
+    # from main() fails a test (each drift is invisible to the others).
+
+    def test_optional_table_drift_fails_main(self, tmp_path: Path, capsys) -> None:
+        text = _GUIDE.read_text(encoding="utf-8")
+        drifted = "\n".join(line for line in text.splitlines() if not line.startswith("| `resolve("))
+        assert drifted != text, "guide fixture no longer contains the resolve() row"
+        target = tmp_path / "guide.md"
+        target.write_text(drifted, encoding="utf-8")
+        assert main([str(target)]) == 1
+        assert "resolve" in capsys.readouterr().err
+
+    def test_conformance_file_drift_fails_main(self, tmp_path: Path, capsys) -> None:
+        drifted = _GUIDE.read_text(encoding="utf-8").replace(
+            "tests/backends/conformance/test_io.py", "tests/backends/conformance/test_vanished.py"
+        )
+        target = tmp_path / "guide.md"
+        target.write_text(drifted, encoding="utf-8")
+        assert main([str(target)]) == 1
+        assert "test_vanished.py" in capsys.readouterr().err
+
+    def test_snippet_include_drift_fails_main(self, tmp_path: Path, capsys) -> None:
+        drifted = _GUIDE.read_text(encoding="utf-8").replace("--8<--", "(include removed)")
+        target = tmp_path / "guide.md"
+        target.write_text(drifted, encoding="utf-8")
+        assert main([str(target)]) == 1
+        assert "snippet includes" in capsys.readouterr().err
+
+    def test_registration_toml_drift_fails_main(self, tmp_path: Path, capsys) -> None:
+        drifted = _GUIDE.read_text(encoding="utf-8").replace('concurrency       = "thread_safe"', "")
+        target = tmp_path / "guide.md"
+        target.write_text(drifted, encoding="utf-8")
+        assert main([str(target)]) == 1
+        assert "concurrency" in capsys.readouterr().err

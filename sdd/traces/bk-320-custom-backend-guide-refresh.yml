@@ -19,11 +19,13 @@ co_shipped_items:
 discovery_followups:
   - BUG-236
   - BUG-237
+  - BUG-238
   - BK-321
   - BK-322
+  - BK-323
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -100,6 +102,15 @@ phases:
   - id: validate
     name: Walkthrough validation
     steps:
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "Step 5, Step 8, Standalone backend testing"
+        read_type: gate
+        extract: >
+          Walkthrough agents consumed the guide as their sole instruction
+          source; the Step 5/8 root-alias invariants and the standalone
+          checklist's wrong-type rows proved wrong against the
+          conformance-passing s3_boto3 backend — spawned BUG-236/BUG-237
+        outcome: misleading
       - file: src/remote_store/backends/_s3_boto3.py
         section: "(full)"
         read_type: reference

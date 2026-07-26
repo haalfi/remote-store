@@ -360,15 +360,19 @@ class RedisBackend(Backend):
         recursive: bool = False,
         max_depth: int | None = None,
     ) -> Iterator[FileInfo]:
-        # max_depth is a pruning hint: backends with native depth limiting
-        # honor it; everyone else can ignore it — Store filters client-side.
+        # The conformance suite calls backends directly and asserts the
+        # depth boundary on what *you* return, so honor max_depth here.
+        # When set, it also decides recursion (depth 0 = immediate only).
+        if max_depth is not None:
+            recursive = max_depth > 0
         try:
             for file_path in self._iter_file_paths_under(path):
-                # If not recursive, only yield immediate children
-                if not recursive:
-                    rel = file_path.removeprefix(f"{path}/" if path else "")
-                    if "/" in rel:
-                        continue  # Skip nested files
+                rel = file_path.removeprefix(f"{path}/" if path else "")
+                depth = rel.count("/")  # 0 = directly in `path`
+                if not recursive and depth > 0:
+                    continue  # Skip nested files
+                if max_depth is not None and depth > max_depth:
+                    continue  # Prune below the requested depth
 
                 info = self._build_file_info(file_path)
                 if info is not None:
@@ -563,7 +567,7 @@ class RedisBackend(Backend):
 # ---------------------------------------------------------------------------
 
 if TYPE_CHECKING:
-    from remote_store import Store
+    from remote_store import Registry, Store
 
 
 def _demo_direct_usage() -> None:
@@ -582,7 +586,7 @@ def _demo_direct_usage() -> None:
     # --8<-- [end:step13-direct]
 
 
-def _demo_registry_usage() -> Store:
+def _demo_registry_usage() -> tuple[Registry, Store]:
     # --8<-- [start:step13-registry]
     from remote_store import Registry, register_backend
     from remote_store.ext.yaml import from_yaml  # needs: pip install "remote-store[yaml]"
@@ -593,38 +597,41 @@ def _demo_registry_usage() -> Store:
     registry = Registry(config)
     store = registry.get_store("cache")
     # --8<-- [end:step13-registry]
-    return store
+    return registry, store
 
 
 def _demo_extensions(store: Store) -> None:
     # --8<-- [start:step14-extensions]
     from remote_store.ext.batch import batch_copy
     from remote_store.ext.cache import cache
-    from remote_store.ext.observe import observe
+    from remote_store.ext.observe import StoreEvent, observe
 
     events = []
 
-    def my_logging_hook(event) -> None:
+    def my_logging_hook(event: StoreEvent) -> None:
         events.append(event)
 
     # Observability — my_logging_hook fires after every operation
+    # that goes through the observed wrapper
     observed = observe(store, on_any=my_logging_hook)
+    observed.write("a.txt", b"alpha")
+    observed.write("c.txt", b"gamma")
 
     # Caching
     fast = cache(store, ttl=300)
+    fast.read_bytes("a.txt")  # second read within the TTL hits the cache
 
-    # Batch operations (a.txt and c.txt were written in earlier steps;
-    # missing sources don't raise — they land in results.failed)
-    results = batch_copy(store, [("a.txt", "b.txt"), ("c.txt", "d.txt")])
+    # Batch operations (missing sources don't raise — they land in
+    # results.failed)
+    results = batch_copy(observed, [("a.txt", "b.txt"), ("c.txt", "d.txt")])
     # --8<-- [end:step14-extensions]
 
-    observed.read_bytes("a.txt")
     assert events, "observe hook did not fire"
     assert fast.read_bytes("b.txt") == store.read_bytes("a.txt")
     assert results.all_succeeded, "batch_copy reported failures"
 
 
-def _demo_partial_capabilities() -> None:
+def _demo_partial_capabilities() -> type[Backend]:
     # --8<-- [start:partial-capabilities]
     class _ReadOnlyBackend(Backend):  # type: ignore[abstract]
         CAPABILITIES: ClassVar[CapabilitySet] = CapabilitySet(
@@ -640,6 +647,7 @@ def _demo_partial_capabilities() -> None:
             return self.CAPABILITIES
 
     # --8<-- [end:partial-capabilities]
+    return _ReadOnlyBackend
 
 
 def _demo_partial_write() -> None:
@@ -760,7 +768,7 @@ def demo() -> None:
                     '    root_path: "cache/v2"\n'
                 )
             try:
-                registry_store = _demo_registry_usage()
+                registry, registry_store = _demo_registry_usage()
             finally:
                 # The region registers the tutorial class in the process-global
                 # factory map; restore it so in-process callers (pytest) stay clean.
@@ -769,27 +777,32 @@ def demo() -> None:
                 _BACKEND_FACTORIES.pop("redis", None)
             registry_store.write("hello.txt", b"from-registry")
             assert registry_store.read_bytes("hello.txt") == b"from-registry"
+            # get_store() hands out non-owning stores; the registry closes backends.
+            registry.close()
         finally:
             os.chdir(cwd)
 
     # Step 14: extensions work with any backend — runs the guide region itself
-    store.write("a.txt", b"aaa")
-    store.write("c.txt", b"ccc")
     _demo_extensions(store)
-    assert store.read_bytes("b.txt") == b"aaa"
-    assert store.read_bytes("d.txt") == b"ccc"
+    assert store.read_bytes("b.txt") == b"alpha"
+    assert store.read_bytes("d.txt") == b"gamma"
 
     # Step 5 invariants (via MemoryBackend, same contract)
     assert store.exists("reports/q1.csv")
     assert not store.is_file("")
     assert store.is_folder("")
 
-    # Partial capabilities snippet matches the real ReadOnlyHttpBackend set
+    # Partial-capability regions: execute them, then check the class the
+    # region actually defines against the real ReadOnlyHttpBackend set.
     from remote_store.backends._http import ReadOnlyHttpBackend
 
-    partial = CapabilitySet({Capability.READ, Capability.METADATA, Capability.LAZY_READ})
-    assert set(partial) == set(ReadOnlyHttpBackend.CAPABILITIES)
-    assert Capability.WRITE not in partial
+    read_only_cls = _demo_partial_capabilities()
+    assert set(read_only_cls.CAPABILITIES) == set(ReadOnlyHttpBackend.CAPABILITIES)
+    assert Capability.WRITE not in read_only_cls.CAPABILITIES
+    _demo_partial_write()
+
+    # Execute the remaining tutorial regions (definitions run; pytest bodies don't)
+    _demo_test_examples()
 
     print("All custom backend guide snippets passed.")
 

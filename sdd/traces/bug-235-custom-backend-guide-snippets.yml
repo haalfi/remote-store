@@ -12,12 +12,11 @@ source_items:
   - BUG-235
 audience:
   - user.site
-  - user.api_docs
 co_shipped_items:
   - BK-320
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: reproduce
     name: Reproduce
@@ -25,8 +24,12 @@ phases:
       - file: src/remote_store/_backend.py
         section: "list_files"
         read_type: gate
-        extract: "Abstract signature carries max_depth keyword"
-        outcome: ok
+        extract: >
+          Abstract signature carries max_depth keyword; docstring's
+          "backends may ignore it" claim was adopted into the Step 9
+          bullet but contradicts DEPTH-003 conformance (backends must
+          prune natively) — caught in round-3 review, spawned BUG-238
+        outcome: misleading
       - file: src/remote_store/_store.py
         section: "list_files"
         read_type: gate

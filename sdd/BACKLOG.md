@@ -121,17 +121,36 @@ and the highest ID already in this file, then take the next integer. Run
   it in 003 and add conformance cases) or Store policy (then move it out of
   the backend-implementation steps) — a spec decision, not just prose.
 
-- [ ] **BUG-237 — Standalone-testing checklist unachievable for flat-namespace backends**
-  spec: — · effort: S · audience: user.site
+- [ ] **BUG-237 — Wrong-type error expectations: spec vs flat-NS backends vs guide checklist**
+  spec: 003 · effort: M · audience: user.site, library.maintainer
   Same walkthrough: 3 of 21 tests written per the guide's "Standalone
   backend testing" section fail against `S3Boto3Backend` — the wrong-type
   rows ("file path to `get_folder_info`, directory path to `read` raises
   `InvalidPath`") raise `NotFound` on flat-namespace backends, and the
-  `is_file("")` row inherits the BUG-236 problem. The guide's own
-  flat-namespace section explains why, but the checklist carries no
-  carve-out. Add flat-NS qualifiers mirroring the conformance suite's
-  `_skip_flat_namespace` gating; coordinate the `is_file("")` row with
-  BUG-236's resolution.
+  `is_file("")` row inherits the BUG-236 problem. Spec 003 BE-017/BE-021
+  require `InvalidPath` for wrong-type paths regardless of backend (the
+  only spec'd flat-NS exemption is the file-ancestor rule), so per
+  principle 5 the resolution goes through the spec, not the guide: either
+  amend BE-017/BE-021 with an explicit flat-NS carve-out (then add the
+  matching conformance gating and the guide qualifier), or treat the
+  flat-NS backends as nonconformant and fix them. The guide checklist
+  follows whichever side the spec decision lands on; coordinate the
+  `is_file("")` row with BUG-236.
+
+- [ ] **BUG-238 — `max_depth` contract contradiction: spec 037 + ABC docstring vs DEPTH-003 conformance**
+  spec: 037 · effort: M · audience: library.maintainer, user.api_docs
+  Surfaced by PR #932's round-3 review. Three authorities disagree on
+  whether a backend may ignore `list_files(max_depth=)`: spec 037 and the
+  `Backend.list_files` docstring say ignoring is fine ("Store applies
+  client-side filtering as a safety net"), but the conformance suite
+  calls backends directly and asserts the depth boundary on the backend's
+  own output (`test_listing.py` DEPTH-003, Dafny-backed, runs by
+  default), so an ignoring backend fails the suite. Every shipped backend
+  prunes natively — including S3, which spec 037's table claims does not.
+  Decide the authoritative rule (likely: native pruning required, matching
+  the suite and reality), then align spec 037's prose and table, the ABC
+  docstring, and the async twin. The custom-backend guide already teaches
+  the conservative side (honor it) and needs no change from this item.
 
 - [ ] **BK-321 — Document the Registry's constructor-kwarg transformations in the custom-backend guide**
   spec: — · effort: S · audience: user.site, user.api
@@ -160,6 +179,17 @@ and the highest ID already in this file, then take the next integer. Run
   silently drops ~25 conformance cells — the checklist stays green).
   One item because all three are "contract topics the guide omits";
   split if any grows.
+
+- [ ] **BK-323 — Spec the empty-path rule for move/copy (BE-018/BE-019) and add a conformance case**
+  spec: 003 · effort: S · audience: library.maintainer
+  PR #932's round-3 review: the guide's Step 11 presents "empty source or
+  destination raises `InvalidPath`" as a contract rule, and the behavior
+  is real and universal (Memory, SQL, HTTP, and the tutorial backend all
+  implement it), but BE-018/BE-019 list no empty-path clause and no
+  conformance test exercises `move("", dst)` / `move(src, "")`. Per
+  principle 5, add the clause to the spec (mind the Dafny coupling —
+  BE-018/BE-019 are Dafny-backed, so the formal model may need the same
+  precondition) plus a conformance case, rather than weakening the guide.
 
 - [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
   spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling

@@ -70,7 +70,7 @@ so the constant must be a class attribute — not computed in `__init__`.
 Three further capabilities are worth declaring when they apply:
 
 - **`USER_METADATA`** — declare this when your backend stores the `metadata=` mapping passed to `write()` and `write_atomic()`. Without it, `Store` raises `CapabilityNotSupported` if the caller passes non-empty metadata.
-- **`WRITE_RESULT_NATIVE`** — declare this when your backend populates `WriteResult` fields beyond the two mandatory ones (`path` and `size`). See the [WriteResult reference](../reference/api/models.md) for the full field list.
+- **`WRITE_RESULT_NATIVE`** — declare this when your `write*()` methods fill the rich `WriteResult` fields (`etag`, `version_id`, `last_modified`, `digest`) directly from the backend's own write response (`source == "native"`). The criterion is provenance, not field count — which fields land depends on what the response carries, and a native backend may fill none (SFTP declares the flag yet its write response has no metadata). Without the flag, results carry `path`, `size`, and `source == "basic"`. See the [WriteResult reference](../reference/api/models.md) for the full field list.
 - **`LAZY_READ`** — declare this when `read()` fetches data lazily from the remote source. A `BytesIO` return does not qualify — data is already materialized.
 
 The Redis example declares neither `USER_METADATA` nor `WRITE_RESULT_NATIVE` (it stores raw bytes without a metadata column and returns only `path` and `size` at write time).
@@ -129,6 +129,13 @@ traceback for debugging.
 - `""` and `"."` are root aliases. Root always exists and is always a folder.
 - `is_file("")` is always `False`. `is_folder("")` is always `True`.
 
+A layer note on the alias rules: `Store` normalizes `"."` to `""` before
+your backend runs, so backends only ever see `""` for root on the `Store`
+path. Treat the invariants above as the surface your users observe; the
+exact split between what `Store` guarantees and what every backend must
+implement itself is still being firmed up in the backend contract, and
+some shipped backends currently rely on `Store` for parts of it.
+
 ---
 
 ## Step 6: Reading
@@ -179,7 +186,9 @@ returns the stream as-is.
 - `delete()` targets files. `delete_folder()` targets folders.
 - `missing_ok=True` suppresses `NotFound`.
 - `delete_folder(recursive=False)` raises `DirectoryNotEmpty` if the folder has contents.
-- You cannot delete root (`""` or `"."`).
+- You cannot delete root (`""` or `"."`) — `Store` rejects it before your
+  backend runs, so users never reach you with a root delete; the tutorial
+  backend also guards it locally, which is the safer shape.
 
 ---
 
@@ -193,14 +202,14 @@ returns the stream as-is.
 
 - `list_files(path="")` lists from root.
 - `recursive=False` (default) yields only immediate children.
-- `max_depth` is a pruning hint. `Store` always passes it, so your signature
-  must accept it — but you may ignore the value: `Store` applies client-side
-  depth filtering as a safety net. Backends that can prune natively (e.g.
-  a filesystem walk) should honor it for efficiency. If you do honor it,
-  note that `Store` derives `recursive` from `max_depth` whenever it is set
-  (`recursive=True` for depth ≥ 1, `False` for depth 0), so prune on
-  `max_depth` alone rather than combining it with `recursive` — branching
-  on both double-applies the depth rule.
+- **Honor `max_depth`.** `Store` always passes it, and the conformance
+  suite calls your backend directly and asserts the depth boundary on what
+  *you* return — a backend that ignores the value fails those tests, even
+  though `Store` additionally applies client-side depth filtering for its
+  own callers. When `max_depth` is set it also decides recursion (`Store`
+  derives `recursive=True` for depth ≥ 1, `False` for depth 0), so prune
+  on `max_depth` alone rather than combining it with `recursive` —
+  branching on both double-applies the depth rule.
 - `list_folders()` is always non-recursive — only immediate subfolders.
 - Non-existent paths yield nothing (no exception).
 - [`FileInfo`](../reference/api/models.md)`.path` must be a [`RemotePath`](../reference/api/models.md).
@@ -236,8 +245,8 @@ returns the stream as-is.
   the destination is checked for `AlreadyExists`.
 - Empty source or destination paths raise `InvalidPath`.
 
-The conformance suite verifies the no-op rule whenever your registration
-declares `self_op_supported = true` (see the registration steps below).
+The conformance suite verifies the no-op rule for backends that declare
+`self_op_supported` (a registration fact covered later in this guide).
 
 ---
 
@@ -288,6 +297,11 @@ stores:
 
 The `options` dict is unpacked as `**kwargs` to your constructor. Parameter
 names in YAML must match your `__init__` signature exactly.
+
+One ownership note: stores from `registry.get_store()` do not own their
+backend, so `store.close()` is a no-op on them — the registry closes the
+backends it instantiated. Call `registry.close()` when done, or use
+`Registry` as a context manager (`with Registry(config) as registry:`).
 
 ---
 
@@ -415,13 +429,18 @@ what existing backends happen to do."  See [`sdd/formal/README.md`](https://gith
 
 If you are contributing a backend to remote-store, this is step 3 of
 [CONTRIBUTING.md § Adding a New Backend](../../CONTRIBUTING.md#adding-a-new-backend).
-The test infrastructure is registry-driven: you declare facts in
-two TOML files and add one small factory module under
-[`tests/backends/fixtures/`](https://github.com/haalfi/remote-store/tree/master/tests/backends/fixtures);
-the conformance suite then parametrizes every test over your fixture
-automatically — no conftest edits to register or parametrize it. (A backend
-that needs an external service still adds a server fixture there; see the
-end of this section.)
+The test infrastructure is registry-driven. Four steps: declare facts in
+two TOML files, add one small factory module under
+[`tests/backends/fixtures/`](https://github.com/haalfi/remote-store/tree/master/tests/backends/fixtures),
+and classify your family in two by-name conformance lanes (step 4). The
+conformance suite then parametrizes every test over your fixture
+automatically — registration itself needs no conftest edits, though a
+backend that needs an external service still adds a server fixture (see
+the end of this section).
+
+The TOML and Python blocks below show test-infrastructure files, so they
+are hand-written fences rather than executable snippet regions (the CI
+drift gate validates the TOML values against the fixture loader instead).
 
 **1. Declare the backend family in `tests/backends/fixtures/backends.toml`:**
 
@@ -429,14 +448,19 @@ end of this section.)
 # tests/backends/fixtures/backends.toml
 [backend.redis]
 sources           = ["src/remote_store/backends/_redis.py"]
-transport         = "fs"          # closed enum: http | ssh | fs | memory | sql
-concurrency       = "thread_safe" # thread_safe | single_connection — required, no default
+transport         = "fs"
+concurrency       = "thread_safe"
 flat_namespace    = true          # true when the backend has no real directory entries
 self_op_supported = true          # move(p, p) / copy(p, p) is a safe no-op
 ```
 
-`concurrency` is deliberately defaultless: a new family must state its
-thread-safety posture or the loader refuses to start.
+`transport`, `concurrency`, and the fixture fields below are closed enums;
+their members and semantics are documented authoritatively in the two TOML
+files' header comments, and the loader rejects unknown values. Two things
+to know here: `concurrency` is deliberately defaultless — a new family
+must state its thread-safety posture or the loader refuses to start — and
+the values are declarations of fact, so establish them (is your client
+library actually thread-safe?) rather than copying the example's.
 
 **2. Declare the fixture in `tests/backends/fixtures/fixtures.toml`:**
 
@@ -444,9 +468,9 @@ thread-safety posture or the loader refuses to start.
 # tests/backends/fixtures/fixtures.toml
 [fixture.redis]
 backend   = "redis"
-stage     = 2            # 1 = in-process / always available; 2-3 need services
-kind      = "real-local" # pure | mocked | real-local | real-live | replay
-container = "none"       # minio | azurite | sftp | none
+stage     = 2
+kind      = "real-local"
+container = "none"
 is_async  = false
 ```
 
@@ -454,21 +478,32 @@ Per-fixture overrides of `flat_namespace` / `self_op_supported` merge on top
 of the family defaults — that is how the Azurite emulator (flat) and live
 ADLS Gen2 (HNS) share one `azure` family yet disagree.
 
-The example values illustrate the declaration shape; Redis itself has no
-exact member in the closed `transport` and `container` enums (pick the
-nearest transport; a service CI cannot start via `container` is one you
-provision and skip on absence — see step 3). The enum semantics are
-documented authoritatively in the two TOML files' header comments.
+Two of these fields drive collection, so they deserve care:
+
+- **`stage` decides when your fixture participates.** Stage 1 fixtures run
+  everywhere; stage 2–3 fixtures are dropped from parametrization unless
+  the session's stage is high enough. The active stage is auto-detected
+  (stage 2 when a Docker daemon is reachable, stage 1 otherwise) and can be
+  forced with `--stage=N` or the `RS_TEST_STAGE` env var. A service-backed
+  fixture like this one belongs in stage 2.
+- **`kind = "real-live"`** (live cloud) fixtures must also carry
+  `pytest.mark.live` via the registration's `marks=` — the registry
+  rejects a live fixture without it.
+- If CI cannot start your service via `container` (the enum has no member
+  for it, as with Redis here), provision the service yourself and have the
+  factory skip when it is absent — that is step 3's first obligation.
 
 **3. Add a factory module `tests/backends/fixtures/redis.py`:**
 
-The factory is called fresh for **every test**, and the suite runs no
-cleanup unless you provide one. That gives it four obligations beyond
-constructing the backend:
+The module's name must match the fixture name (that is how it gets
+imported — see below). The factory is called fresh for **every test**, and
+the suite runs no cleanup unless you provide one. That gives it four
+obligations beyond constructing the backend:
 
-- **Skip when infrastructure is absent** — factories run at test setup, so a
-  `pytest.skip` there is how a fixture self-excludes on machines without the
-  service or the optional dependency.
+- **Skip when infrastructure is absent** — the optional dependency AND the
+  service itself. Factories run at test setup, so `pytest.skip` there is
+  how a fixture self-excludes; a missing reachability check turns every
+  test into a `BackendUnavailable` failure on machines without the daemon.
 - **Provision the namespace it hands out** — create the bucket/database/
   container the backend points at; the suite assumes writable storage.
 - **Isolate per call** — a unique prefix or bucket per invocation, or
@@ -476,58 +511,80 @@ constructing the backend:
   orphan-artifact failures that look like backend bugs.
 - **Provide `cleanup=`** to close the backend after each test.
 
+Keep backend/SDK imports *inside* the factory functions: `_load_all()`
+imports every factory module at conftest import time, so a module-level
+`import` of an optional dependency would break collection for the whole
+`tests/backends/` tree on machines without it.
+
 ```python
 import uuid
 
 import pytest
 
-from remote_store.backends._redis import RedisBackend
 from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
 
 _meta = load_fixture("redis")
+_URL = "redis://localhost:6379/0"
 
 
-def _factory() -> RedisBackend:
+def _factory():
+    redis = pytest.importorskip("redis", reason="redis-py not installed")
     try:
-        import redis  # noqa: F401
-    except ImportError:
-        pytest.skip("redis-py not installed")
+        redis.Redis.from_url(_URL).ping()
+    except redis.RedisError:
+        pytest.skip("Redis server not reachable")
+
+    from remote_store.backends._redis import RedisBackend
+
     # Unique prefix per call = per-test isolation. Redis needs no
     # provisioning (keys spring into existence); a bucket-based backend
     # would create its bucket here.
-    return RedisBackend(url="redis://localhost:6379/0", prefix=f"test-{uuid.uuid4().hex[:8]}:")
+    return RedisBackend(url=_URL, prefix=f"test-{uuid.uuid4().hex[:8]}:")
 
 
-def _cleanup(backend: RedisBackend) -> None:
+def _capabilities() -> frozenset:
+    try:
+        from remote_store.backends._redis import RedisBackend
+
+        return frozenset(RedisBackend.CAPABILITIES)
+    except ImportError:
+        return frozenset()
+
+
+def _cleanup(backend) -> None:
     backend.close()
 
 
 register(
     BackendFixture(
         factory=_factory,
-        capabilities=frozenset(RedisBackend.CAPABILITIES),
+        capabilities=_capabilities(),
         cleanup=_cleanup,
         **_meta.to_kwargs(),
     )
 )
 ```
 
-That's the whole registration: `_load_all()` walks `fixtures.toml` and
-imports the matching factory module, so declaring the fixture and creating
-the module is a one-step change. The conformance conftest's
-`pytest_generate_tests` hook parametrizes every test that takes a `backend`
-argument (or `async_backend` for async fixtures) over the registered
-fixtures:
+`_load_all()` walks `fixtures.toml` and imports the factory module with
+the same name as each fixture — so a fixture whose module is named
+differently (or a second fixture sharing one module) needs an entry in the
+`_MODULE_FOR` map in `tests/backends/fixtures/__init__.py`, or collection
+dies with `ModuleNotFoundError`. The conformance conftest's
+`pytest_generate_tests` hook then parametrizes every test that takes a
+`backend` argument (or `async_backend` for async fixtures) over the
+registered fixtures:
 
 ```bash
-pytest tests/backends/conformance/ -k redis
+pytest tests/backends/conformance/ -k redis --stage=2
 ```
 
-Expect one or two loud, self-explanatory prompts on the first run: a few
-conformance lanes classify backend families by name (the atomic-move and
-seekable declaration sets in `test_identity.py`, the health-probe module
-list) and their failure messages name the exact edit to make.
+**4. Classify your family in the by-name conformance lanes.** Two
+`test_identity.py` declaration sets (atomic-move and seekable) fail loudly
+for any unclassified family — the failure message names the exact edit.
+One lane does NOT prompt: `test_health_probe_declared.py` discovers
+backends from a hardcoded module import list, and a module missing from it
+is silently not checked — add your backend module there yourself.
 
 If your backend requires an external service (like S3, SFTP, or Azurite),
 add a session-scoped server fixture in `tests/conftest.py` (where
@@ -589,11 +646,9 @@ Folders are virtual — inferred from key prefixes. A path `a/b/c` implies a
 prefix `a/b/` but no actual directory object exists.
 
 The conformance suite reads this from the per-backend `flat_namespace` flag
-declared in `tests/backends/fixtures/backends.toml` (see the registration
-steps above for the full family entry). A per-fixture override in
-`fixtures.toml` is also possible — Azurite (the flat emulator) and live
-ADLS Gen2 (HNS) share `backend == "azure"` but disagree on
-`flat_namespace`, so the fixture-level value takes precedence.
+declared in `tests/backends/fixtures/backends.toml`, with per-fixture
+overrides in `fixtures.toml` taking precedence (see the registration
+steps above for both files and the Azurite-vs-ADLS example).
 Tests that rely on real directory semantics call `_skip_flat_namespace()`,
 which reads the resolved flag from the per-fixture record attached by the
 conformance indirect fixture; no identity-set lookup is needed.
@@ -623,8 +678,12 @@ Before a backend is considered conformant, verify:
 | **Error mapping** | Every native exception maps to a `remote_store` error — nothing leaks | Error mapping checklist above |
 | **Repr safety** | `repr(backend)` does not expose secrets | `pytest tests/backends/conformance/test_identity.py -k test_repr_masks_secrets` |
 
-Two pitfalls in reading these results:
+Three pitfalls in reading these results:
 
+- **Check stage participation first.** A stage-2/3 fixture is silently
+  dropped from parametrization when the session's stage is lower — and the
+  default stage is 1 on machines without a reachable Docker daemon. Pass
+  `--stage=2` (or set `RS_TEST_STAGE`) before suspecting your registration.
 - **The `-k` token is the fixture/family name** (underscores, e.g.
   `s3_boto3`), not the backend's `name` property — a hyphenated `name` like
   `"s3-boto3"` never matches any test id, so `-k` with it silently selects
@@ -632,8 +691,9 @@ Two pitfalls in reading these results:
 - **Green is only meaningful if your fixture actually ran.** Confirm your
   fixture id appears in the parametrized test ids (`pytest --collect-only -q
   ... | grep <fixture-name>`). A handful of passes with thousands
-  deselected, or exit code 5 ("no tests ran"), means the registration never
-  loaded — not that everything self-skipped.
+  deselected, or exit code 5 ("no tests ran"), means the fixture never
+  participated — stage gating or a failed registration, not universal
+  self-skipping.
 
 Skips are expected and acceptable when a backend doesn't declare the relevant
 capability. Failures (not skips) in either suite are blocking.
@@ -671,6 +731,8 @@ focused tests covering the same categories the conformance suite verifies:
 
 - Empty path (`""`) and root alias (`"."`) — root always exists and is always a folder
 - `is_file("")` always returns `False`; `exists("")` never raises
+  (test these through `Store` — see the layer note in Step 5; at the raw
+  backend layer, shipped backends vary on the root/alias edge)
 - Deeply nested paths (`"a/b/c/d/e/file.txt"`)
 - Non-existent paths to `list_files` / `list_folders` yield nothing (no exception)
 - `repr(backend)` does not expose credentials or secrets
