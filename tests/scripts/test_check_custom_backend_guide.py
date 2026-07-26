@@ -22,6 +22,7 @@ def _load():
 _mod = _load()
 check_snippet_regions = _mod.check_snippet_regions
 check_abstract_table = _mod.check_abstract_table
+check_optional_overrides_table = _mod.check_optional_overrides_table
 check_conformance_files = _mod.check_conformance_files
 main = _mod.main
 
@@ -80,6 +81,12 @@ class TestAbstractTable:
     def test_real_guide_table_is_clean(self) -> None:
         assert check_abstract_table(_real_guide_table()) == []
 
+    def test_subheading_terminates_scan(self) -> None:
+        # A #### subheading must end the table scan: the bogus row below it
+        # must NOT be absorbed (and therefore not reported as stale).
+        guide = _real_guide_table() + "#### aside\n\n| `bogus_member(path)` | x | x |\n"
+        assert not any("bogus_member" in v for v in check_abstract_table(guide))
+
 
 def _real_guide_table() -> str:
     """The current guide's abstract-methods section, as the known-good fixture."""
@@ -87,6 +94,44 @@ def _real_guide_table() -> str:
     start = text.index("### Abstract methods")
     end = text.index("### Optional overrides")
     return text[start:end]
+
+
+def _real_overrides_table() -> str:
+    """The current guide's optional-overrides section, as the known-good fixture."""
+    text = _GUIDE.read_text(encoding="utf-8")
+    start = text.index("### Optional overrides")
+    end = text.index("## See also")
+    return text[start:end]
+
+
+class TestOptionalOverridesTable:
+    def test_missing_table_flagged(self) -> None:
+        violations = check_optional_overrides_table("# A guide with no table\n")
+        assert len(violations) == 1
+        assert "table not found" in violations[0]
+
+    def test_missing_member_flagged(self) -> None:
+        # Simulate the BK-320 drift this check exists for: drop the resolve() row.
+        real_table = _real_overrides_table()
+        lines = [line for line in real_table.splitlines() if not line.startswith("| `resolve(")]
+        assert len(lines) < len(real_table.splitlines()), "overrides fixture no longer contains a resolve() row"
+        violations = check_optional_overrides_table("\n".join(lines))
+        assert violations == ["optional-overrides table: missing row for 'resolve'"]
+
+    def test_stale_member_flagged(self) -> None:
+        guide = _real_overrides_table() + "| `frobnicate(path)` | x |\n"
+        violations = check_optional_overrides_table(guide)
+        assert violations == ["optional-overrides table: row 'frobnicate' is not a public non-abstract Backend method"]
+
+    def test_param_drift_flagged(self) -> None:
+        drifted = _real_overrides_table().replace("`unwrap(type_hint)`", "`unwrap(hint)`")
+        violations = check_optional_overrides_table(drifted)
+        assert len(violations) == 1
+        assert "unwrap" in violations[0]
+        assert "type_hint" in violations[0]
+
+    def test_real_guide_table_is_clean(self) -> None:
+        assert check_optional_overrides_table(_real_overrides_table()) == []
 
 
 class TestConformanceFiles:

@@ -272,6 +272,11 @@ class TestCustomBackendGuideSnippets:
         recursive = {f.name for f in store.list_files("a", recursive=True)}
         assert recursive == {"1.txt", "2.txt", "deep.txt"}
 
+        # The guide's Step 9 claim: a backend may ignore max_depth because
+        # Store filters client-side. This backend ignores it — prove the claim.
+        assert {f.name for f in store.list_files("a", max_depth=0)} == {"1.txt", "2.txt"}
+        assert {f.name for f in store.list_files("a", max_depth=1)} == {"1.txt", "2.txt", "deep.txt"}
+
         assert {f.name for f in store.list_folders("")} == {"a"}
         assert {f.name for f in store.list_folders("a")} == {"b"}
 

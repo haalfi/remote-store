@@ -67,7 +67,7 @@ don't need to handle it.
 Tooling and conformance tests read `YourBackend.CAPABILITIES` without instantiating the class,
 so the constant must be a class attribute — not computed in `__init__`.
 
-Three quality-flag capabilities are worth declaring when they apply:
+Three further capabilities are worth declaring when they apply:
 
 - **`USER_METADATA`** — declare this when your backend stores the `metadata=` mapping passed to `write()` and `write_atomic()`. Without it, `Store` raises `CapabilityNotSupported` if the caller passes non-empty metadata.
 - **`WRITE_RESULT_NATIVE`** — declare this when your backend populates `WriteResult` fields beyond the two mandatory ones (`path` and `size`). See the [WriteResult reference](../reference/api/models.md) for the full field list.
@@ -196,7 +196,11 @@ returns the stream as-is.
 - `max_depth` is a pruning hint. `Store` always passes it, so your signature
   must accept it — but you may ignore the value: `Store` applies client-side
   depth filtering as a safety net. Backends that can prune natively (e.g.
-  a filesystem walk) should honor it for efficiency.
+  a filesystem walk) should honor it for efficiency. If you do honor it,
+  note that `Store` derives `recursive` from `max_depth` whenever it is set
+  (`recursive=True` for depth ≥ 1, `False` for depth 0), so prune on
+  `max_depth` alone rather than combining it with `recursive` — branching
+  on both double-applies the depth rule.
 - `list_folders()` is always non-recursive — only immediate subfolders.
 - Non-existent paths yield nothing (no exception).
 - [`FileInfo`](../reference/api/models.md)`.path` must be a [`RemotePath`](../reference/api/models.md).

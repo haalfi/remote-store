@@ -8,10 +8,13 @@ authorities that evolve independently of it, and each has drifted before:
    docs build silently renders an empty code block.
 2. **The Backend ABC** — the guide's "Abstract methods (must implement)"
    table must list exactly ``Backend.__abstractmethods__`` (plus the
-   ``CAPABILITIES`` class attribute), with each row's parameter list
-   matching the ABC signature. This is the prose twin of the executable
-   guard in ``tests/test_snippets.py`` (BUG-235: ``max_depth`` was added
-   to ``list_files`` and the guide never followed).
+   ``CAPABILITIES`` class attribute), and the "Optional overrides" table
+   must list exactly the public non-abstract ``Backend`` methods, with
+   each row's parameter list matching the ABC signature. This is the
+   prose twin of the executable guard in ``tests/test_snippets.py``
+   (BUG-235: ``max_depth`` was added to ``list_files`` and the guide
+   never followed; BK-320 found ``resolve()`` missing from the
+   optional-overrides table the same way).
 3. **The conformance suite** — every ``tests/backends/conformance/*.py``
    file the guide names must exist on disk.
 
@@ -69,15 +72,20 @@ def _parse_member_cell(cell: str) -> tuple[str, list[str] | None]:
     return name.strip(), params
 
 
-def _abstract_table_members(guide_text: str) -> dict[str, list[str] | None]:
-    """Extract ``{member: params-or-None}`` from the abstract-methods table."""
+def _table_members(guide_text: str, heading: str) -> dict[str, list[str] | None]:
+    """Extract ``{member: params-or-None}`` from the table under *heading*.
+
+    The scan ends at the next Markdown heading of ANY level (``#``,
+    ``##``, ``####``, ...) so a future subheading inside the section
+    cannot silently absorb an unrelated table into the member set.
+    """
     members: dict[str, list[str] | None] = {}
     in_section = False
     for line in guide_text.splitlines():
-        if line.startswith("### Abstract methods"):
+        if line.startswith(heading):
             in_section = True
             continue
-        if in_section and line.startswith(("### ", "## ")):
+        if in_section and line.startswith("#"):
             break
         if not in_section:
             continue
@@ -92,31 +100,76 @@ def _abstract_table_members(guide_text: str) -> dict[str, list[str] | None]:
     return members
 
 
-def check_abstract_table(guide_text: str) -> list[str]:
-    """The table must mirror ``Backend.__abstractmethods__`` name-for-name."""
+def _check_member_params(table: dict[str, list[str] | None], expected: set[str], label: str) -> list[str]:
+    """Compare each expected table row's parameter list against the ABC signature.
+
+    Rows outside *expected* are skipped here — they are already reported
+    as stale by the membership check. Known limitation, accepted for a
+    prose table: parameters are compared by NAME only — a kind change
+    (positional to keyword-only) or a default change is invisible here.
+    The executable guard in ``tests/test_snippets.py`` covers kinds and
+    defaults for the tutorial class itself.
+    """
     from remote_store import Backend
 
     violations: list[str] = []
-    table = _abstract_table_members(guide_text)
-    if not table:
-        return ["abstract-methods table not found (heading '### Abstract methods' missing?)"]
-
-    expected = set(Backend.__abstractmethods__) | _EXTRA_TABLE_MEMBERS
-    listed = set(table)
-    for missing in sorted(expected - listed):
-        violations.append(f"abstract-methods table: missing row for '{missing}'")
-    for stale in sorted(listed - expected):
-        violations.append(f"abstract-methods table: row '{stale}' is not an abstract member of Backend")
-
     for name, params in sorted(table.items()):
-        if params is None or name in _EXTRA_TABLE_MEMBERS or name not in expected:
+        if params is None or name not in expected or not hasattr(Backend, name):
             continue
         attr = inspect.getattr_static(Backend, name)
         if isinstance(attr, property):
             continue
         abc_params = [p for p in inspect.signature(getattr(Backend, name)).parameters if p != "self"]
         if params != abc_params:
-            violations.append(f"abstract-methods table: '{name}' params {params} != ABC signature {abc_params}")
+            violations.append(f"{label}: '{name}' params {params} != ABC signature {abc_params}")
+    return violations
+
+
+def check_abstract_table(guide_text: str) -> list[str]:
+    """The table must mirror ``Backend.__abstractmethods__`` name-for-name."""
+    from remote_store import Backend
+
+    table = _table_members(guide_text, "### Abstract methods")
+    if not table:
+        return ["abstract-methods table not found (heading '### Abstract methods' missing?)"]
+
+    violations: list[str] = []
+    expected = set(Backend.__abstractmethods__) | _EXTRA_TABLE_MEMBERS
+    listed = set(table)
+    for missing in sorted(expected - listed):
+        violations.append(f"abstract-methods table: missing row for '{missing}'")
+    for stale in sorted(listed - expected):
+        violations.append(f"abstract-methods table: row '{stale}' is not an abstract member of Backend")
+    violations.extend(_check_member_params(table, expected, "abstract-methods table"))
+    return violations
+
+
+def check_optional_overrides_table(guide_text: str) -> list[str]:
+    """The table must mirror the public non-abstract ``Backend`` methods.
+
+    This is the table BK-320 had to hand-repair (``resolve()`` was
+    missing), so it gets the same membership + parameter gating as the
+    abstract table.
+    """
+    from remote_store import Backend
+
+    table = _table_members(guide_text, "### Optional overrides")
+    if not table:
+        return ["optional-overrides table not found (heading '### Optional overrides' missing?)"]
+
+    violations: list[str] = []
+    abstract = set(Backend.__abstractmethods__)
+    expected = {
+        name
+        for name, member in inspect.getmembers(Backend, predicate=inspect.isfunction)
+        if not name.startswith("_") and name not in abstract
+    }
+    listed = set(table)
+    for missing in sorted(expected - listed):
+        violations.append(f"optional-overrides table: missing row for '{missing}'")
+    for stale in sorted(listed - expected):
+        violations.append(f"optional-overrides table: row '{stale}' is not a public non-abstract Backend method")
+    violations.extend(_check_member_params(table, expected, "optional-overrides table"))
     return violations
 
 
@@ -130,7 +183,7 @@ def check_conformance_files(guide_text: str, root: Path) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run all three checks; return 0 if clean, 1 on violations."""
+    """Run all four checks; return 0 if clean, 1 on violations."""
     guide = Path(argv[0]) if argv else _GUIDE
     if not guide.is_file():
         sys.stderr.write(f"error: guide not found: {guide}\n")
@@ -140,6 +193,7 @@ def main(argv: list[str] | None = None) -> int:
     violations = [
         *check_snippet_regions(guide_text, _ROOT),
         *check_abstract_table(guide_text),
+        *check_optional_overrides_table(guide_text),
         *check_conformance_files(guide_text, _ROOT),
     ]
     if violations:

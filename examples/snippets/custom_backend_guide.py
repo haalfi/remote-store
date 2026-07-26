@@ -605,7 +605,7 @@ def _demo_extensions(store: Store) -> None:
     observed.read_bytes("a.txt")
     assert events, "observe hook did not fire"
     assert fast.read_bytes("b.txt") == store.read_bytes("a.txt")
-    assert results.succeeded, "batch_copy copied nothing"
+    assert results.all_succeeded, "batch_copy reported failures"
 
 
 def _demo_partial_capabilities() -> None:
