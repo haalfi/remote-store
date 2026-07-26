@@ -137,20 +137,27 @@ and the highest ID already in this file, then take the next integer. Run
   follows whichever side the spec decision lands on; coordinate the
   `is_file("")` row with BUG-236.
 
-- [ ] **BUG-238 — `max_depth` contract contradiction: spec 037 + ABC docstring vs DEPTH-003 conformance**
+- [ ] **BUG-238 — `max_depth` contract contradictions: spec 037 + ABC docstring vs DEPTH-003, and recursive-precedence sync vs async**
   spec: 037 · effort: M · audience: library.maintainer, user.api_docs
-  Surfaced by PR #932's round-3 review. Three authorities disagree on
-  whether a backend may ignore `list_files(max_depth=)`: spec 037 and the
-  `Backend.list_files` docstring say ignoring is fine ("Store applies
-  client-side filtering as a safety net"), but the conformance suite
-  calls backends directly and asserts the depth boundary on the backend's
-  own output (`test_listing.py` DEPTH-003, Dafny-backed, runs by
-  default), so an ignoring backend fails the suite. Every shipped backend
-  prunes natively — including S3, which spec 037's table claims does not.
-  Decide the authoritative rule (likely: native pruning required, matching
-  the suite and reality), then align spec 037's prose and table, the ABC
-  docstring, and the async twin. The custom-backend guide already teaches
-  the conservative side (honor it) and needs no change from this item.
+  Surfaced by PR #932's round-3/4 reviews. Two related contradictions.
+  (1) May a backend ignore `list_files(max_depth=)`? Spec 037 and the
+  `Backend.list_files` docstring say yes ("Store applies client-side
+  filtering as a safety net"), but the conformance suite calls backends
+  directly and asserts the depth boundary on the backend's own output
+  (DEPTH-003, matching the Dafny model's native-pruning postcondition,
+  runs by default), so an ignoring backend fails the suite. Every shipped
+  LIST-capable backend prunes natively — including S3 and Azure, both of
+  which spec 037's table claims do not. It is 037's prose/table and the
+  docstring that contradict the formal model, not vice versa.
+  (2) Precedence when `recursive=False` and `max_depth` are both set:
+  the sync Dafny model and sync tests say `recursive=False` wins
+  (immediate children only), while spec 029 ASYNC-014 says `max_depth`
+  wins, and `SQLBlobBackend`/`SQLQueryBackend` follow the async reading
+  today — violating the sync model. Decide both rules, then align spec
+  037 prose+table, spec 029, the ABC docstrings, and the SQL backends.
+  The custom-backend guide and tutorial backend were aligned to the
+  formal model's side (prune natively; `recursive=False` wins) in PR
+  #932 and track whichever resolution lands.
 
 - [ ] **BK-321 — Document the Registry's constructor-kwarg transformations in the custom-backend guide**
   spec: — · effort: S · audience: user.site, user.api

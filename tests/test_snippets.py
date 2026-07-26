@@ -206,13 +206,6 @@ class _FakeRedisModule:
             return _FakeRedisClient()
 
 
-def _yaml_parser_available() -> bool:
-    """Mirror ext/yaml.py's fallback: either pyyaml or ruamel.yaml will do."""
-    import importlib.util
-
-    return importlib.util.find_spec("yaml") is not None or importlib.util.find_spec("ruamel.yaml") is not None
-
-
 def _backend_with_client(monkeypatch: pytest.MonkeyPatch, client: _FakeRedisClient):
     """Build the guide's RedisBackend around a specific (possibly failing) client."""
     import examples.snippets.custom_backend_guide as cbg
@@ -256,8 +249,6 @@ class TestCustomBackendGuideSnippets:
 
     @pytest.mark.spec("ID-057")
     def test_custom_backend_guide_demo(self) -> None:
-        if not _yaml_parser_available():
-            pytest.skip("neither pyyaml nor ruamel.yaml installed (demo's registry region needs one)")
         from examples.snippets.custom_backend_guide import demo
 
         result = demo()
@@ -266,8 +257,6 @@ class TestCustomBackendGuideSnippets:
     @pytest.mark.spec("ID-057")
     def test_demo_leaves_no_process_state(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """demo() must restore the cwd and undo its global backend registration."""
-        if not _yaml_parser_available():
-            pytest.skip("neither pyyaml nor ruamel.yaml installed (demo's registry region needs one)")
         from examples.snippets.custom_backend_guide import demo
         from remote_store._registry import _BACKEND_FACTORIES
 
@@ -276,6 +265,26 @@ class TestCustomBackendGuideSnippets:
 
         assert Path.cwd().resolve() == tmp_path.resolve()
         assert "redis" not in _BACKEND_FACTORIES  # internal: no public observable
+
+    @pytest.mark.spec("ID-057")
+    def test_test_examples_region_executes(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Run every test body the test-examples region defines against a fresh store."""
+        import examples.snippets.custom_backend_guide as cbg
+        from remote_store import Store
+
+        monkeypatch.setattr(cbg, "redis", _FakeRedisModule)
+        funcs = cbg._demo_test_examples()
+        assert set(funcs) == {
+            "test_read_write_roundtrip",
+            "test_write_no_overwrite",
+            "test_read_missing",
+            "test_list_files",
+            "test_list_files_recursive",
+            "test_list_folders",
+        }
+        for name, fn in funcs.items():
+            backend = cbg.RedisBackend(url="redis://localhost:6379/15", prefix=f"{name}:")
+            fn(Store(backend=backend))
 
     @pytest.mark.spec("ID-057")
     def test_step13_direct_region_executes(self, monkeypatch: pytest.MonkeyPatch, capsys) -> None:
@@ -423,26 +432,46 @@ class TestCustomBackendGuideSnippets:
             assert depth <= 1, f"depth boundary violated: {f.path}"
         assert {f.name for f in backend.list_files("pc", recursive=True, max_depth=2)} == {"a.txt", "b.txt", "c.txt"}
 
+        # recursive=False always wins over max_depth (formal contract):
+        # immediate children only, whatever the depth limit says.
+        assert {f.name for f in backend.list_files("pc", recursive=False, max_depth=2)} == {"a.txt"}
+
     @pytest.mark.spec("ID-057")
-    def test_error_mapping_never_leaks(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Step 4's cardinal rule, executed: native errors map, never leak."""
-        from remote_store import BackendUnavailable, PermissionDenied
+    @pytest.mark.parametrize(
+        ("client_method", "native_exc", "mapped", "match"),
+        [
+            ("hget", _FakeRedisConnectionError, "BackendUnavailable", "connection failed"),
+            ("hget", _FakeRedisAuthenticationError, "PermissionDenied", "authentication failed"),
+            ("hget", _FakeRedisError, "BackendUnavailable", "Redis error"),
+            ("exists", _FakeRedisConnectionError, "BackendUnavailable", "connection failed"),
+        ],
+    )
+    def test_error_mapping_never_leaks(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        client_method: str,
+        native_exc: type[Exception],
+        mapped: str,
+        match: str,
+    ) -> None:
+        """Step 4's cardinal rule, executed: native errors map, never leak.
 
-        class _ConnFailClient(_FakeRedisClient):
-            def hget(self, key: str, field: str) -> bytes | None:
-                raise _FakeRedisConnectionError("socket closed")
+        Covers both classified arms, the catch-all fallback, and a second
+        call site (``exists``) beyond the read path.
+        """
+        import remote_store as rs
 
-        backend = _backend_with_client(monkeypatch, _ConnFailClient())
-        with pytest.raises(BackendUnavailable, match="connection failed"):
-            backend.read_bytes("x.txt")
+        class _FailClient(_FakeRedisClient):
+            pass
 
-        class _AuthFailClient(_FakeRedisClient):
-            def hget(self, key: str, field: str) -> bytes | None:
-                raise _FakeRedisAuthenticationError("NOAUTH")
+        def _boom(self, *args, **kwargs):  # noqa: ANN001, ANN002, ANN003
+            raise native_exc("simulated")
 
-        backend = _backend_with_client(monkeypatch, _AuthFailClient())
-        with pytest.raises(PermissionDenied, match="authentication failed"):
-            backend.read_bytes("x.txt")
+        setattr(_FailClient, client_method, _boom)
+        backend = _backend_with_client(monkeypatch, _FailClient())
+        op = backend.read_bytes if client_method == "hget" else backend.exists
+        with pytest.raises(getattr(rs, mapped), match=match):
+            op("x.txt")
 
     @pytest.mark.spec("ID-057")
     def test_lifecycle_and_atomic_safety_nets(self, guide_redis_backend, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -506,6 +535,40 @@ class TestCustomBackendGuideSnippets:
         assert (info.name, info.size) == ("x.txt", 1)
         folder = store.get_folder_info("f")
         assert (folder.file_count, folder.total_size) == (1, 1)
+
+    @pytest.mark.spec("ID-057")
+    @pytest.mark.parametrize(
+        ("method", "args", "error", "match"),
+        [
+            ("move", ("", "dst.txt"), "InvalidPath", "Source path must not be empty"),
+            ("move", ("src.txt", ""), "InvalidPath", "Destination path must not be empty"),
+            ("copy", ("", "dst.txt"), "InvalidPath", "Source path must not be empty"),
+            ("copy", ("src.txt", ""), "InvalidPath", "Destination path must not be empty"),
+            ("delete", ("",), "InvalidPath", "must not be empty"),
+            ("delete_folder", ("",), "InvalidPath", "Cannot delete root"),
+            ("get_file_info", ("",), "NotFound", "empty path"),
+        ],
+    )
+    def test_backend_guard_clauses(self, guide_redis_backend, method, args, error, match) -> None:
+        """The guide states these guards as contract rules; pin each one."""
+        import remote_store as rs
+
+        with pytest.raises(getattr(rs, error), match=match):
+            getattr(guide_redis_backend, method)(*args)
+
+    @pytest.mark.spec("ID-057")
+    def test_copy_overwrite_semantics(self, guide_redis_backend) -> None:
+        """copy() must refuse an existing destination unless overwrite=True."""
+        from remote_store import AlreadyExists
+
+        backend = guide_redis_backend
+        backend.write("c1.txt", b"one")
+        backend.write("c2.txt", b"two")
+        with pytest.raises(AlreadyExists, match="already exists"):
+            backend.copy("c1.txt", "c2.txt")
+        backend.copy("c1.txt", "c2.txt", overwrite=True)
+        assert backend.read_bytes("c2.txt") == b"one"
+        assert backend.read_bytes("c1.txt") == b"one"
 
     @pytest.mark.spec("ID-057")
     def test_read_returns_seekable_stream(self, guide_redis_store) -> None:

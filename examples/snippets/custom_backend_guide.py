@@ -362,9 +362,9 @@ class RedisBackend(Backend):
     ) -> Iterator[FileInfo]:
         # The conformance suite calls backends directly and asserts the
         # depth boundary on what *you* return, so honor max_depth here.
-        # When set, it also decides recursion (depth 0 = immediate only).
-        if max_depth is not None:
-            recursive = max_depth > 0
+        # recursive and max_depth are independent filters: recursive=False
+        # always wins (immediate children only), and max_depth prunes
+        # recursive listings.
         try:
             for file_path in self._iter_file_paths_under(path):
                 rel = file_path.removeprefix(f"{path}/" if path else "")
@@ -586,7 +586,7 @@ def _demo_direct_usage() -> None:
     # --8<-- [end:step13-direct]
 
 
-def _demo_registry_usage() -> tuple[Registry, Store]:
+def _demo_registry_usage() -> bytes:
     # --8<-- [start:step13-registry]
     from remote_store import Registry, register_backend
     from remote_store.ext.yaml import from_yaml  # needs: pip install "remote-store[yaml]"
@@ -594,10 +594,12 @@ def _demo_registry_usage() -> tuple[Registry, Store]:
     register_backend("redis", RedisBackend)
 
     config = from_yaml("stores.yaml")
-    registry = Registry(config)
-    store = registry.get_store("cache")
+    with Registry(config) as registry:  # closes instantiated backends on exit
+        store = registry.get_store("cache")
+        store.write("hello.txt", b"from-registry")
+        data = store.read_bytes("hello.txt")
     # --8<-- [end:step13-registry]
-    return registry, store
+    return data
 
 
 def _demo_extensions(store: Store) -> None:
@@ -617,16 +619,17 @@ def _demo_extensions(store: Store) -> None:
     observed.write("a.txt", b"alpha")
     observed.write("c.txt", b"gamma")
 
-    # Caching
-    fast = cache(store, ttl=300)
-    fast.read_bytes("a.txt")  # second read within the TTL hits the cache
+    # Caching (layered on the observed store: one pipeline, no siblings)
+    fast = cache(observed, ttl=300)
+    fast.read_bytes("a.txt")  # first touch — cache miss
+    fast.read_bytes("a.txt")  # within the TTL — served from the cache
 
-    # Batch operations (missing sources don't raise — they land in
-    # results.failed)
+    # Batch operations
     results = batch_copy(observed, [("a.txt", "b.txt"), ("c.txt", "d.txt")])
     # --8<-- [end:step14-extensions]
 
-    assert events, "observe hook did not fire"
+    assert [e.operation for e in events] == ["write", "write", "read_bytes", "copy", "copy"]
+    assert fast.stats.hits == 1, "cached re-read did not hit"
     assert fast.read_bytes("b.txt") == store.read_bytes("a.txt")
     assert results.all_succeeded, "batch_copy reported failures"
 
@@ -650,7 +653,7 @@ def _demo_partial_capabilities() -> type[Backend]:
     return _ReadOnlyBackend
 
 
-def _demo_partial_write() -> None:
+def _demo_partial_write():
     # --8<-- [start:partial-write]
     def write(
         self,
@@ -667,9 +670,10 @@ def _demo_partial_write() -> None:
         )
 
     # --8<-- [end:partial-write]
+    return write
 
 
-def _demo_test_examples() -> None:
+def _demo_test_examples() -> dict:
     # --8<-- [start:test-examples]
     import pytest
     from remote_store import AlreadyExists, NotFound, Store
@@ -716,6 +720,17 @@ def _demo_test_examples() -> None:
         assert "src" in folders
 
     # --8<-- [end:test-examples]
+    # Hand the test bodies to the harness (tests/test_snippets.py runs each
+    # against a fresh fake-redis Store, so the region is executed, not just
+    # defined). The pytest fixture cannot be called directly and stays here.
+    return {
+        "test_read_write_roundtrip": test_read_write_roundtrip,
+        "test_write_no_overwrite": test_write_no_overwrite,
+        "test_read_missing": test_read_missing,
+        "test_list_files": test_list_files,
+        "test_list_files_recursive": test_list_files_recursive,
+        "test_list_folders": test_list_folders,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -752,35 +767,39 @@ def demo() -> None:
 
     # Step 13: registry pattern — runs the guide region against a
     # memory-backed stores.yaml (no Redis server in the example runner).
-    cwd = os.getcwd()
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        try:
-            os.chdir(tmp_dir)
-            with open("stores.yaml", "w", encoding="utf-8") as f:
-                f.write(
-                    "backends:\n"
-                    "  demo-memory:\n"
-                    "    type: memory\n"
-                    "\n"
-                    "stores:\n"
-                    "  cache:\n"
-                    "    backend: demo-memory\n"
-                    '    root_path: "cache/v2"\n'
-                )
-            try:
-                registry, registry_store = _demo_registry_usage()
-            finally:
-                # The region registers the tutorial class in the process-global
-                # factory map; restore it so in-process callers (pytest) stay clean.
-                from remote_store._registry import _BACKEND_FACTORIES
+    # Guarded on the YAML *parser* only, so a broken ext.yaml import path
+    # still fails loudly instead of being swallowed.
+    import importlib.util
 
-                _BACKEND_FACTORIES.pop("redis", None)
-            registry_store.write("hello.txt", b"from-registry")
-            assert registry_store.read_bytes("hello.txt") == b"from-registry"
-            # get_store() hands out non-owning stores; the registry closes backends.
-            registry.close()
-        finally:
-            os.chdir(cwd)
+    if importlib.util.find_spec("yaml") or importlib.util.find_spec("ruamel.yaml"):
+        cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            try:
+                os.chdir(tmp_dir)
+                with open("stores.yaml", "w", encoding="utf-8") as f:
+                    f.write(
+                        "backends:\n"
+                        "  demo-memory:\n"
+                        "    type: memory\n"
+                        "\n"
+                        "stores:\n"
+                        "  cache:\n"
+                        "    backend: demo-memory\n"
+                        '    root_path: "cache/v2"\n'
+                    )
+                try:
+                    round_trip = _demo_registry_usage()
+                finally:
+                    # The region registers the tutorial class in the process-global
+                    # factory map; restore it so in-process callers (pytest) stay clean.
+                    from remote_store._registry import _BACKEND_FACTORIES
+
+                    _BACKEND_FACTORIES.pop("redis", None)
+                assert round_trip == b"from-registry"
+            finally:
+                os.chdir(cwd)
+    else:
+        print("Skipping the registry snippet: no YAML parser installed.")
 
     # Step 14: extensions work with any backend — runs the guide region itself
     _demo_extensions(store)
@@ -792,17 +811,29 @@ def demo() -> None:
     assert not store.is_file("")
     assert store.is_folder("")
 
-    # Partial-capability regions: execute them, then check the class the
-    # region actually defines against the real ReadOnlyHttpBackend set.
+    # Partial-capability regions: execute their bodies, then check the class
+    # the region actually defines against the real ReadOnlyHttpBackend set.
+    import types
+
     from remote_store.backends._http import ReadOnlyHttpBackend
 
     read_only_cls = _demo_partial_capabilities()
     assert set(read_only_cls.CAPABILITIES) == set(ReadOnlyHttpBackend.CAPABILITIES)
     assert Capability.WRITE not in read_only_cls.CAPABILITIES
-    _demo_partial_write()
+    # Run the property body (the class is abstract, so no instance exists).
+    assert read_only_cls.capabilities.fget(read_only_cls) is read_only_cls.CAPABILITIES
 
-    # Execute the remaining tutorial regions (definitions run; pytest bodies don't)
-    _demo_test_examples()
+    write_fn = _demo_partial_write()
+    try:
+        write_fn(types.SimpleNamespace(name="http"), "x.txt", b"data")
+    except CapabilityNotSupported:
+        pass
+    else:
+        raise AssertionError("partial-write region did not raise CapabilityNotSupported")
+
+    # The test-examples region's bodies run in tests/test_snippets.py against
+    # a fake redis client; here we execute the definitions and count them.
+    assert len(_demo_test_examples()) == 6
 
     print("All custom backend guide snippets passed.")
 

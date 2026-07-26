@@ -70,7 +70,7 @@ so the constant must be a class attribute — not computed in `__init__`.
 Three further capabilities are worth declaring when they apply:
 
 - **`USER_METADATA`** — declare this when your backend stores the `metadata=` mapping passed to `write()` and `write_atomic()`. Without it, `Store` raises `CapabilityNotSupported` if the caller passes non-empty metadata.
-- **`WRITE_RESULT_NATIVE`** — declare this when your `write*()` methods fill the rich `WriteResult` fields (`etag`, `version_id`, `last_modified`, `digest`) directly from the backend's own write response (`source == "native"`). The criterion is provenance, not field count — which fields land depends on what the response carries, and a native backend may fill none (SFTP declares the flag yet its write response has no metadata). Without the flag, results carry `path`, `size`, and `source == "basic"`. See the [WriteResult reference](../reference/api/models.md) for the full field list.
+- **`WRITE_RESULT_NATIVE`** — declare this when your `write*()` methods fill the rich `WriteResult` fields directly from the backend's own write response (`source == "native"`). The criterion is provenance, not field count — which fields land depends on what the response carries, and a native backend may fill none (SFTP declares the flag yet its write response has no metadata). Without the flag, results carry `path`, `size`, and `source == "basic"`. See the [WriteResult reference](../reference/api/models.md) for the full field list.
 - **`LAZY_READ`** — declare this when `read()` fetches data lazily from the remote source. A `BytesIO` return does not qualify — data is already materialized.
 
 The Redis example declares neither `USER_METADATA` nor `WRITE_RESULT_NATIVE` (it stores raw bytes without a metadata column and returns only `path` and `size` at write time).
@@ -130,11 +130,12 @@ traceback for debugging.
 - `is_file("")` is always `False`. `is_folder("")` is always `True`.
 
 A layer note on the alias rules: `Store` normalizes `"."` to `""` before
-your backend runs, so backends only ever see `""` for root on the `Store`
-path. Treat the invariants above as the surface your users observe; the
-exact split between what `Store` guarantees and what every backend must
-implement itself is still being firmed up in the backend contract, and
-some shipped backends currently rely on `Store` for parts of it.
+your backend runs, so through `Store` your backend only ever sees `""`
+for root. The rule to follow: implement the root invariants in terms of
+`""`, and treat `"."` handling as optional defense for direct backend
+callers — the tutorial guards both, which is the safe shape. The precise
+backend-layer obligations live in the
+[Backend Adapter Contract](../../sdd/specs/003-backend-adapter-contract.md).
 
 ---
 
@@ -206,10 +207,10 @@ returns the stream as-is.
   suite calls your backend directly and asserts the depth boundary on what
   *you* return — a backend that ignores the value fails those tests, even
   though `Store` additionally applies client-side depth filtering for its
-  own callers. When `max_depth` is set it also decides recursion (`Store`
-  derives `recursive=True` for depth ≥ 1, `False` for depth 0), so prune
-  on `max_depth` alone rather than combining it with `recursive` —
-  branching on both double-applies the depth rule.
+  own callers. Treat `recursive` and `max_depth` as independent filters,
+  exactly as the code above does: `recursive=False` always wins (immediate
+  children only, whatever `max_depth` says), and `max_depth` prunes
+  recursive listings to the requested depth.
 - `list_folders()` is always non-recursive — only immediate subfolders.
 - Non-existent paths yield nothing (no exception).
 - [`FileInfo`](../reference/api/models.md)`.path` must be a [`RemotePath`](../reference/api/models.md).
@@ -259,6 +260,12 @@ The conformance suite verifies the no-op rule for backends that declare
 `check_health()` should be the **cheapest possible read-only operation**.
 Redis `PING` is ideal. For S3 it's a `HEAD` on the bucket. For a database
 it's `SELECT 1`.
+
+One declarative flag rides along with `close()`: the
+`close_is_terminal: ClassVar[bool]` class attribute (default `False`,
+meaning the backend stays usable after `close()`). Declare `True` when
+use-after-close must fail — the close-posture conformance lane tests
+whichever posture you declare, so an undeclared terminal backend fails it.
 
 ---
 
@@ -432,7 +439,7 @@ If you are contributing a backend to remote-store, this is step 3 of
 The test infrastructure is registry-driven. Four steps: declare facts in
 two TOML files, add one small factory module under
 [`tests/backends/fixtures/`](https://github.com/haalfi/remote-store/tree/master/tests/backends/fixtures),
-and classify your family in two by-name conformance lanes (step 4). The
+and classify your family in the by-name conformance lanes (step 4). The
 conformance suite then parametrizes every test over your fixture
 automatically — registration itself needs no conftest edits, though a
 backend that needs an external service still adds a server fixture (see
@@ -454,13 +461,17 @@ flat_namespace    = true          # true when the backend has no real directory 
 self_op_supported = true          # move(p, p) / copy(p, p) is a safe no-op
 ```
 
-`transport`, `concurrency`, and the fixture fields below are closed enums;
-their members and semantics are documented authoritatively in the two TOML
-files' header comments, and the loader rejects unknown values. Two things
-to know here: `concurrency` is deliberately defaultless — a new family
-must state its thread-safety posture or the loader refuses to start — and
-the values are declarations of fact, so establish them (is your client
-library actually thread-safe?) rather than copying the example's.
+`transport`, `concurrency`, and the fixture's `stage` / `kind` /
+`container` fields below are closed vocabularies; their members and
+semantics are documented authoritatively in the two TOML files' header
+comments, and the loader rejects unknown values. Three things to know
+here: `concurrency` is deliberately defaultless — a new family must state
+its thread-safety posture or the loader refuses to start; the values are
+declarations of fact, so establish them (is your client library actually
+thread-safe?) rather than copying the example's; and some backends have
+no exact member — Redis fits neither `transport` nor `container`
+precisely, so pick the nearest transport (`fs` here is that
+approximation, not a statement that Redis is a filesystem).
 
 **2. Declare the fixture in `tests/backends/fixtures/fixtures.toml`:**
 
@@ -478,7 +489,8 @@ Per-fixture overrides of `flat_namespace` / `self_op_supported` merge on top
 of the family defaults — that is how the Azurite emulator (flat) and live
 ADLS Gen2 (HNS) share one `azure` family yet disagree.
 
-Two of these fields drive collection, so they deserve care:
+Three of these fields deserve extra care — `stage` and `kind` drive
+collection, `container` is about CI provisioning:
 
 - **`stage` decides when your fixture participates.** Stage 1 fixtures run
   everywhere; stage 2–3 fixtures are dropped from parametrization unless
@@ -495,8 +507,9 @@ Two of these fields drive collection, so they deserve care:
 
 **3. Add a factory module `tests/backends/fixtures/redis.py`:**
 
-The module's name must match the fixture name (that is how it gets
-imported — see below). The factory is called fresh for **every test**, and
+The module name matches the fixture name by default (that is how it gets
+imported); a differently-named or shared module needs a `_MODULE_FOR`
+entry — see below. The factory is called fresh for **every test**, and
 the suite runs no cleanup unless you provide one. That gives it four
 obligations beyond constructing the backend:
 
@@ -578,6 +591,9 @@ registered fixtures:
 ```bash
 pytest tests/backends/conformance/ -k redis --stage=2
 ```
+
+Expect this first run to fail in the two `test_identity.py`
+classification lanes until step 4 below is done.
 
 **4. Classify your family in the by-name conformance lanes.** Two
 `test_identity.py` declaration sets (atomic-move and seekable) fail loudly
@@ -731,8 +747,7 @@ focused tests covering the same categories the conformance suite verifies:
 
 - Empty path (`""`) and root alias (`"."`) — root always exists and is always a folder
 - `is_file("")` always returns `False`; `exists("")` never raises
-  (test these through `Store` — see the layer note in Step 5; at the raw
-  backend layer, shipped backends vary on the root/alias edge)
+  (test these through `Store` — see the layer note in Step 5)
 - Deeply nested paths (`"a/b/c/d/e/file.txt"`)
 - Non-existent paths to `list_files` / `list_folders` yield nothing (no exception)
 - `repr(backend)` does not expose credentials or secrets

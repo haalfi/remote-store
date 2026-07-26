@@ -63,6 +63,14 @@ class TestSnippetRegions:
         violations = check_snippet_regions('--8<-- "gone_whole.py"\n', tmp_path)
         assert violations == ["snippet file not found: gone_whole.py"]
 
+    def test_malformed_ref_flagged_by_parity(self, tmp_path: Path) -> None:
+        # A ref the parser cannot read (bad region charset) must not vanish silently.
+        snippet = tmp_path / "snip.py"
+        snippet.write_text("# --8<-- [start:ok]\n# --8<-- [end:ok]\n", encoding="utf-8")
+        guide = '--8<-- "snip.py:ok"\n--8<-- "snip.py:bad.region"\n'
+        violations = check_snippet_regions(guide, tmp_path)
+        assert any("malformed snippet ref" in v for v in violations)
+
 
 class TestAbstractTable:
     def test_missing_table_flagged(self) -> None:
@@ -185,9 +193,31 @@ class TestRegistrationToml:
         assert "concurrency" in violations[0]
 
     def test_fixture_fields_validated(self) -> None:
-        guide = '```toml\n[fixture.x]\nstage = 9\nkind = "imaginary"\ncontainer = "redis"\n```\n'
+        guide = (
+            '```toml\n[backend.x]\ntransport = "http"\nconcurrency = "thread_safe"\n```\n'
+            '```toml\n[fixture.x]\nbackend = "x"\nstage = 9\nkind = "real-local"\n```\n'
+        )
         violations = check_registration_toml(guide, self._ROOT)
-        assert len(violations) == 3
+        assert len(violations) == 1
+        assert "stage" in violations[0]
+
+    def test_unknown_backend_family_flagged(self) -> None:
+        guide = '```toml\n[fixture.x]\nbackend = "no-such-family"\nstage = 1\nkind = "real-local"\n```\n'
+        violations = check_registration_toml(guide, self._ROOT)
+        assert len(violations) == 1
+        assert "not declared in backends.toml" in violations[0]
+
+    def test_loader_type_checks_apply(self) -> None:
+        # Routed through the loader's own parser, so its type checks fire too.
+        guide = '```toml\n[backend.x]\ntransport = "http"\nconcurrency = "thread_safe"\nsources = "oops"\n```\n'
+        violations = check_registration_toml(guide, self._ROOT)
+        assert len(violations) == 1
+        assert "list of strings" in violations[0]
+
+    def test_zero_fences_flagged(self) -> None:
+        violations = check_registration_toml("no fences here", self._ROOT)
+        assert len(violations) == 1
+        assert "no ```toml fences" in violations[0]
 
     def test_unparseable_fence_flagged(self) -> None:
         guide = "```toml\nthis is [not toml\n```\n"

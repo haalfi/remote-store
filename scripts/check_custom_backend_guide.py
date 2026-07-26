@@ -81,6 +81,14 @@ def check_snippet_regions(guide_text: str, root: Path) -> list[str]:
     refs = SNIPPET_REF.findall(guide_text)
     if not refs:
         return ["guide contains no --8<-- snippet includes at all — includes lost or parser broken"]
+    # Parity floor: every --8<-- occurrence must be a well-formed ref the
+    # parser saw, or a malformed ref (bad region charset, missing quotes)
+    # silently drops out of validation.
+    raw_markers = len(re.findall(r"--8<--", guide_text))
+    if raw_markers != len(refs):
+        violations.append(
+            f"{raw_markers} '--8<--' markers but only {len(refs)} parse as includes — malformed snippet ref?"
+        )
     for file_ref, region in refs:
         snippet_path = root / file_ref
         if not snippet_path.is_file():
@@ -224,47 +232,45 @@ def check_conformance_files(guide_text: str, root: Path) -> list[str]:
 
 
 def check_registration_toml(guide_text: str, root: Path) -> list[str]:
-    """The registration section's fenced TOML must satisfy the fixture loader's enums.
+    """The registration section's fenced TOML must satisfy the fixture loader.
 
-    Parses every ```toml fence in the guide and validates the fields the
-    loader treats as closed vocabularies, so the inline examples cannot
-    drift from ``tests/backends/fixtures/_loader.py``.
+    Parses every ```toml fence in the guide, merges the entries, and runs
+    them through the loader's own ``_parse_backend`` / ``_parse_fixture``
+    (not a re-implementation), so the inline examples stay in sync with
+    every validation the loader enforces — enums, required keys, types,
+    and family references — by construction.
     """
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
-    from tests.backends.fixtures._loader import (
-        VALID_CONCURRENCY,
-        VALID_CONTAINERS,
-        VALID_KINDS,
-        VALID_STAGES,
-        VALID_TRANSPORTS,
-    )
+    from tests.backends.fixtures._loader import _parse_backend, _parse_fixture
 
     violations: list[str] = []
     fences = TOML_FENCE.findall(guide_text)
+    if not fences:
+        return ["guide contains no ```toml fences — registration examples lost or parser broken"]
+
+    backends_raw: dict = {}
+    fixtures_raw: dict = {}
     for fence in fences:
-        # Strip the "# path/to/file" comment header before parsing.
         try:
             data = tomllib.loads(fence)
         except tomllib.TOMLDecodeError as exc:
             violations.append(f"registration TOML fence does not parse: {exc}")
             continue
-        for family, entry in data.get("backend", {}).items():
-            where = f"toml example [backend.{family}]"
-            if entry.get("transport") not in VALID_TRANSPORTS:
-                violations.append(f"{where}: transport {entry.get('transport')!r} not in {sorted(VALID_TRANSPORTS)}")
-            if entry.get("concurrency") not in VALID_CONCURRENCY:
-                violations.append(
-                    f"{where}: concurrency {entry.get('concurrency')!r} not in {sorted(VALID_CONCURRENCY)}"
-                )
-        for fixture, entry in data.get("fixture", {}).items():
-            where = f"toml example [fixture.{fixture}]"
-            if entry.get("stage") not in VALID_STAGES:
-                violations.append(f"{where}: stage {entry.get('stage')!r} not in {sorted(VALID_STAGES)}")
-            if entry.get("kind") not in VALID_KINDS:
-                violations.append(f"{where}: kind {entry.get('kind')!r} not in {sorted(VALID_KINDS)}")
-            if entry.get("container") not in VALID_CONTAINERS:
-                violations.append(f"{where}: container {entry.get('container')!r} not in {sorted(VALID_CONTAINERS)}")
+        backends_raw.update(data.get("backend", {}))
+        fixtures_raw.update(data.get("fixture", {}))
+
+    backends = {}
+    for family, entry in backends_raw.items():
+        try:
+            backends[family] = _parse_backend(family, entry)
+        except ValueError as exc:
+            violations.append(f"toml example: {exc}")
+    for fixture, entry in fixtures_raw.items():
+        try:
+            _parse_fixture(fixture, entry, backends)
+        except ValueError as exc:
+            violations.append(f"toml example: {exc}")
     return violations
 
 
